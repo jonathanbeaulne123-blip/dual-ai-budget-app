@@ -284,6 +284,8 @@ describe("register drawing", () => {
     expect(list.textContent).toContain("Jonathan · $535.00");
     expect(list.textContent).toContain("carried in from August · $240.00");
     expect(list.textContent).toContain("not yet $340.00");
+    expect(container.querySelector(".register-svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(container.querySelector(".register")?.getAttribute("aria-label")).toContain("The month owes $3,075.00");
   });
 
   it("keeps loading, error, and offline as presentation-only", () => {
@@ -311,6 +313,7 @@ describe("register fences", () => {
     expect(cssSource).toContain("--reg-carried:");
     expect(cssSource).toContain("--reg-unfunded: var(--copper)");
     expect(cssSource).toContain("stroke-dasharray: 3 2");
+    expect(cssSource).toMatch(/\.register-scroll\s*\{[^}]*overflow-x:\s*auto/s);
     expect(cssSource).not.toMatch(/#[0-9a-fA-F]{3,8}/);
   });
 });

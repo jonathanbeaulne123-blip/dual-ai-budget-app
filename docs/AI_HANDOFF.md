@@ -10,11 +10,15 @@
 
 **Baseline:** `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082` (current main; packet SHA `2879af2` was stale after #283).
 
-**What changed:** `registerView.ts` (`REGISTER_VIEW`, `registerScale`, `segmentWidth`); `Register` presentation component and `register.css`; focused `test/register-view.test.ts`; D-161/D-173 why-note. Worksession: [`worksessions/2026-09-01-register-8-drawing.md`](worksessions/2026-09-01-register-8-drawing.md).
+**What changed:** `registerView.ts` (`REGISTER_VIEW`, `registerScale`, `segmentWidth`); `Register` presentation component and `register.css`; focused `test/register-view.test.ts`; D-161/D-173 why-note. The 900px staff scrolls inside the card; the SVG is decorative and the semantic list is the accessible fact sheet. Worksession: [`worksessions/2026-09-01-register-8-drawing.md`](worksessions/2026-09-01-register-8-drawing.md).
+
+**Verification:** Focused `test/register-view.test.ts` + `test/contribution-register.test.ts`: **20 passed**. `pnpm exec tsc --noEmit` passed. Independent books audit: PASS WITH NOTES. UX audit found missing `overflow-x: auto` after the a11y follow-up; that scroll container is restored on this head. Component harness screenshots at 320/390/720/~1100.
 
 **Data/environment:** Local pure projector/component/CSS/tests only. No hosted row, schema, secret, Production, deploy, or real household data.
 
-**Next owner:** Independent books/UX/privacy review, then Jonathan's merge decision.
+**Next owner:** Jonathan's merge decision. Do not stack Slice 9 on this PR.
+
+## Charter Slice 5 Held core (2026-09-01)
 
 ## Charter Slice 5 Held core (2026-09-01)
 

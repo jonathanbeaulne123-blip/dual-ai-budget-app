@@ -108,7 +108,6 @@ function ReadyDrawing({
   const scale = registerScale(registerMaxRowCents(register.rows));
   const height = drawingHeight(register.rows.length);
   const ruleY = HEADER + register.rows.length * REGISTER_VIEW.rowHeight + 2;
-  const label = registerFigureLabel(register, members);
 
   return (
     <svg
@@ -116,8 +115,8 @@ function ReadyDrawing({
       viewBox={`0 0 ${REGISTER_VIEW.width} ${height}`}
       width={REGISTER_VIEW.width}
       height={height}
-      role="img"
-      aria-label={label}
+      aria-hidden="true"
+      focusable="false"
     >
       <g aria-hidden="true">
         <text className="register-title" x={REGISTER_VIEW.labelLeft} y="12">{registerTitle(register.monthKey)}</text>
@@ -329,8 +328,10 @@ export function Register({
   const showOffline = presentation === "offline";
   const drawOffline = showOffline && canDraw && !emptyTied;
 
+  const figureLabel = showReady || drawOffline ? registerFigureLabel(register, members) : title;
+
   return (
-    <section className="register" aria-label={title}>
+    <section className="register" aria-label={figureLabel}>
       {showOffline ? <p className="register-offline" role="status">{REGISTER_OFFLINE_LINE}</p> : null}
       <div className="register-scroll" tabIndex={0}>
         {showReady || drawOffline ? (

@@ -1,13 +1,13 @@
 # Hearth worksession — Register slice 8 drawing
 
-- **Status:** OPEN
+- **Status:** CLOSED ON BRANCH; DRAFT PR; NOT MERGED; NOT DEPLOYED; NOT LIVE
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/register-8-drawing-115c`
 - **Baseline SHA:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
-- **Head SHA:** pending follow-up a11y/fail-closed commit
+- **Head SHA:** pending this closeout commit
 - **PR or issue:** draft [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285)
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -55,30 +55,33 @@ Inference:
 
 ## Acceptance evidence
 
-- [x] Shared scale, arrival order, conservation, fail-closed, and phone list tests (`test/register-view.test.ts` 11 passed)
-- [x] TypeScript and focused neighbor tests
+- [x] Shared scale, arrival order, conservation, fail-closed, and phone list tests (`test/register-view.test.ts` plus neighbor `contribution-register`: **20 passed**)
+- [x] TypeScript (`pnpm exec tsc --noEmit`)
 - [x] Component visual proof at 320/390/720/~1100 (not kitchen)
-- [ ] Full `pnpm check`: `test:fast` plus build/type; serial `demo-suite` failed on an unrelated Shared-envelope assertion (not this slice)
+- [x] Horizontal scroll restored on `.register-scroll`; SVG is decorative (`aria-hidden`); phone list is the accessible fact sheet
+- [ ] Full `pnpm check`: serial `demo-suite` failed on an unrelated Shared-envelope assertion (not this slice)
 
 ## Plan
 
 - [x] Implement geometry and drawing
 - [x] Focused tests
-- [x] Independent reviews (books PASS WITH NOTES; privacy PASS WITH NOTES; UX PASS WITH NOTES)
+- [x] Independent reviews (books PASS WITH NOTES; UX P0 overflow restored after the a11y follow-up)
 - [x] Draft PR #285
 
 ## Evidence log
 
 Baseline `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`.
+- `7d66bc8` drawing; `452652a` fail-closed + keyboard; this closeout restores `overflow-x: auto` and keeps one AT path.
+- Focused `pnpm exec vitest run test/register-view.test.ts test/contribution-register.test.ts`: **2 files / 20 tests passed**.
 
 ## Decisions
 
-The host supplies member display names and hers/his tones. The component does not infer Bianca/Jonathan from member ids, signed-in viewer, contribution size, or array position.
+The host supplies member display names and hers/his tones. The component does not infer Bianca/Jonathan from member ids, signed-in viewer, contribution size, or array position. The 900px staff is visual; the semantic list is the accessible fact sheet at every width.
 
 ## Remaining uncertainty
 
-Forced-colors contrast of muted text on paper-2 needs measured visual proof. No approved kitchen placement.
+Forced-colors distinct hers/his/carried fills still need measured proof. Empty tied months still show `Nothing owed this month yet.` rather than source totals (packet line). No approved kitchen placement. Serial `demo-suite` failure is outside this slice.
 
 ## Handoff
 
-Next owner: independent books and UX reviewers, then Jonathan's merge decision. This is a branch/PR, not shipped or live.
+Next owner: Jonathan's merge decision on draft [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285). Not shipped. Not live. Do not stack Slice 9 on this PR.

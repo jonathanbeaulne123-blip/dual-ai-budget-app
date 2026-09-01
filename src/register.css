@@ -7,12 +7,20 @@
   --reg-unfunded: var(--copper);
 
   min-width: 0;
+  position: relative;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: var(--paper);
   padding: 16px;
   color: var(--ink);
   font-family: var(--font);
+}
+
+.register-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .register-scroll:focus-visible {
@@ -82,9 +90,15 @@
 }
 
 .register-list {
-  display: none;
-  margin: 16px 0 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  margin: -1px;
   padding: 0;
+  border: 0;
   list-style: none;
 }
 
@@ -116,6 +130,13 @@
 
 @media (max-width: 719px) {
   .register-list {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    margin: 16px 0 0;
     display: grid;
   }
 }
