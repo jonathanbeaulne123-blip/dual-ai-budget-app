@@ -1,14 +1,14 @@
 # Hearth worksession — Charter record
 
-- **Status:** READY FOR PR
+- **Status:** CLOSED; PR OPEN
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `charter/1-record`
 - **Baseline SHA:** `87acccd4f358286693f7a65172aec39d6ca4adbc`
-- **Head SHA:** pending final commit
-- **PR or issue:** pending
+- **Head SHA:** `1cb08bd732c8e31fa71897867e9da2924675968f` (verified implementation; closure metadata is docs-only)
+- **PR or issue:** [#267](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/267)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -53,7 +53,7 @@ Hearth can preserve the household's founding agreement as one typed, defensive r
 - [x] `pnpm test` passes with only documented skips.
 - [x] `pnpm build` passes.
 - [x] Independent targeted review passes.
-- [ ] Branch pushed and PR opened, not merged.
+- [x] Branch pushed and PR opened, not merged.
 
 ## Plan
 
@@ -61,7 +61,7 @@ Hearth can preserve the household's founding agreement as one typed, defensive r
 - [x] Add the pure charter record, current snapshot plumbing, and focused tests.
 - [x] Run focused and full verification.
 - [x] Complete independent review and handoff.
-- [ ] Commit, push, and open the PR.
+- [x] Commit, push, and open the PR.
 
 ## Evidence log
 
@@ -71,6 +71,7 @@ Hearth can preserve the household's founding agreement as one typed, defensive r
 - Full Windows gate: `scripts/verify-windows.ps1 check` — AI surface passed; 215 test files passed / 2 skipped; 1,457 tests passed / 3 skipped; TypeScript and both production builds passed. Existing React `act(...)`, PGlite bundling, and chunk-size warnings remained non-fatal.
 - Independent targeted re-review after snapshot-plumbing repairs: no P0–P3 findings. The reviewer confirmed the actual household boundaries enforce member/Fund custody and retain the charter through Shared split, assembly, and merge.
 - UI viewport evidence: not applicable; this slice adds no UI.
+- Delivery: implementation `1cb08bd732c8e31fa71897867e9da2924675968f` pushed to `charter/1-record`; PR #267 opened against `main`, left unmerged, and reported mergeable by GitHub.
 
 ## Decisions
 
