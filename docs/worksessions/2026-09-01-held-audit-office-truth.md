@@ -1,13 +1,13 @@
 # Hearth worksession — Held Audit Office truth
 
-- **Status:** VERIFIED; MERGE AUTHORIZED; PR #290 OPEN
+- **Status:** CLOSED ON BRANCH; MERGE AUTHORIZED; PR #290
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/held-audit-office-truth`
 - **Baseline SHA:** `a4e399275121b4ca357c683b6bc42e9ae944104d`
-- **Head SHA:** `0df5a9418c1d5af9c2f81ed308ce2588541589f0` before this receipt-only closeout commit
+- **Head SHA:** `ce9ce3b4cb19456878cd12696a4566d0fa575b86` before this final receipt-only closeout commit
 - **PR or issue:** [#290](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/290), follow-up to merged PR [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286)
 - **Risk:** High (Audit Office money presentation beside Confirm authority)
 - **Decision owner:** Jonathan; merge explicitly authorized in chat
@@ -52,7 +52,8 @@ A withdrawn Fund contribution no longer appears as money awaiting confirmation. 
 - 2026-09-01: independent books and privacy/trust follow-up audits both returned PASS with no P0-P2 findings. The privacy reviewer found one stale active-looking review prompt; it was explicitly marked historical and the re-review passed.
 - 2026-09-01: final release review passed for code/docs merge only. No deploy, Production, hosted data, schema, secret, or kitchen-live claim is authorized or implied.
 - 2026-09-01: implementation/evidence commit `0df5a9418c1d5af9c2f81ed308ce2588541589f0` pushed and PR [#290](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/290) opened against unchanged `origin/main@a4e399275121b4ca357c683b6bc42e9ae944104d`.
+- 2026-09-01: exact-head GitHub checks passed on `ce9ce3b4cb19456878cd12696a4566d0fa575b86`: both test jobs, Pages, and Workers Builds succeeded; Supabase Preview was skipped. GitHub reported PR #290 cleanly mergeable. The final closeout commit is documentation only and must receive its own exact-head checks before merge.
 
 ## Handoff
 
-Implementation, local verification, push, and PR are complete. Exact-head CI and the authorized merge remain. Do not deploy; kitchen live remains unproven.
+Implementation, local verification, independent review, push, and PR are complete. Merge is authorized after exact-head CI on this receipt-only closeout. Do not run a separate deploy or infer kitchen-live proof from merge.
