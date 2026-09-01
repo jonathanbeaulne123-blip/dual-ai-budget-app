@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Charter Slice 5 Held core (2026-09-01)
+
+**Status:** Core and architecture are implemented on local branch `codex/charter-slice-5` at `94a9f50d31bdb95b82e2afab52071809c2edae52`, rebased onto clean `origin/main@4c5b94324166e655aa77076493b8bdf838c6e2ed`. **Not pushed, not in a PR, not merged, not kitchen-published, and not live.** Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).
+
+**Household outcome:** The Fund custodian can Hold another member's open contribution proposal for a conversation without rejecting it or moving money. The exact holder can release, the exact proposer can withdraw, and a held proposal remains confirmable.
+
+**Dual Course:** Budget `+3`; Engagement `+2`. Books won: Hold/release create no journal line or balance effect, withdrawal closes only an unconfirmed pending proposal, and confirmation remains the only contribution balance increase.
+
+**Architecture:** D-193 adds immutable Shared `contribution-held`, `contribution-hold-released`, and `contribution-withdrawn` facts; one UI-facing `householdFundContributionMotions` fold; three authority-checked commands; ingest-time lineage validation; compacted command replay/audit retention; and a local PGlite v5→v6 constraint upgrade. No hosted migration or second money writer exists.
+
+**Verification:** Focused core/continuity/PGlite proof passed **62/62**. After rebase, the official `pnpm check` passed AI-policy checks, **227 files / 1,565 tests**, the repository's **2 files / 3 tests intentionally skipped**, TypeScript, Vite production build, Hercules Pro UI, and redirect guard. Diff hygiene and staged secret scan passed. Existing PGlite browser-external/eval, large-chunk, and React test `act(...)` warnings remained non-failing.
+
+**Boundaries:** Local fictional/catalog data only. No React/CSS UI, browser proof, hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, push, PR, merge, deployment, or Production action. The on-device schema upgrade is code that will run only if this branch is later released.
+
+**Next owner:** Cursor implements and proves the existing Fund-panel interaction without changing core semantics. Then Codex independently reviews the exact UI head before Jonathan decides on push/merge/deploy.
+
 ## Test runner lanes (D-170) (2026-09-01)
 
 **Status:** Release candidate on `codex/test-runner-lanes`; no deployment. Risk: **Medium** because verification reliability protects the books boundary.
