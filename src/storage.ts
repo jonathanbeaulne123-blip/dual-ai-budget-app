@@ -297,7 +297,12 @@ export async function selectHouseholdReplica(environment: Environment, household
   return household;
 }
 
-export async function clearHousehold(environment: Environment, householdId?: string): Promise<void> {
+export async function clearHousehold(
+  environment: Environment,
+  householdId?: string,
+  options: { activateRemaining?: boolean } = {},
+): Promise<void> {
+  const activateRemaining = options.activateRemaining ?? true;
   const targetId = householdId ?? activeHouseholdId(environment);
   const catalog = readCatalog(environment);
   const target = targetId ? catalog.find((item) => item.householdId === targetId) : null;
@@ -316,7 +321,7 @@ export async function clearHousehold(environment: Environment, householdId?: str
   localStorage.removeItem(activeKey(environment));
   try { await idbDelete(environment); } catch { /* ignore */ }
   const next = remaining[0];
-  if (next) {
+  if (next && activateRemaining) {
     const household = await loadHousehold(environment, next.householdId);
     if (household) await saveHousehold(household, { activate: true });
   }

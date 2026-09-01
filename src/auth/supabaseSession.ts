@@ -38,6 +38,7 @@ const SESSION_PREFIX = "hearth:v1:supabase-auth:";
 const REQUIRED_GOOGLE_ACCOUNT_SCOPES = "https://www.googleapis.com/auth/drive.file";
 let storeOverride: TokenStore | null = null;
 const refreshFlights = new Map<Environment, Promise<HearthSupabaseSession>>();
+const sessionGenerations = new Map<Environment, number>();
 let authRedirectEnvironment: Environment | null = null;
 let authRedirectStartedAt = 0;
 let authRedirectResetTimer: ReturnType<typeof setTimeout> | null = null;
@@ -65,6 +66,7 @@ export function setSupabaseSessionStore(store: TokenStore | null): void {
 
 export function resetSupabaseAuthConcurrencyForTests(): void {
   refreshFlights.clear();
+  sessionGenerations.clear();
   resetAuthRedirectLatch();
 }
 
@@ -119,7 +121,12 @@ export function saveSupabaseSession(environment: Environment, session: HearthSup
 }
 
 export function clearSupabaseSession(environment: Environment): void {
+  sessionGenerations.set(environment, (sessionGenerations.get(environment) ?? 0) + 1);
   browserStore()?.removeItem(supabaseSessionKey(environment));
+}
+
+function sessionGeneration(environment: Environment): number {
+  return sessionGenerations.get(environment) ?? 0;
 }
 
 function decodeBase64Url(value: string): string {
@@ -194,12 +201,13 @@ export function buildSupabaseGoogleAuthorizeUrl(
 
 export function startSupabaseGoogleSignIn(
   environment: Environment,
-  returnUrl = window.location.href,
+  returnUrl = typeof window === "undefined" ? "" : window.location.href,
   config = readHearthAuthConfig(),
   navigate: (url: string) => void = (url) => window.location.assign(url),
   options: { selectAccount?: boolean } = {},
 ): boolean {
   if (!config) throw new Error("Supabase Google sign-in is not enabled in this build.");
+  if (!returnUrl) throw new Error("Google sign-in needs a browser return address.");
   if (authRedirectEnvironment && Date.now() - authRedirectStartedAt < AUTH_REDIRECT_LATCH_MS) return false;
   authRedirectEnvironment = environment;
   authRedirectStartedAt = Date.now();
@@ -219,6 +227,23 @@ export function startSupabaseGoogleSignIn(
     resetAuthRedirectLatch();
     throw caught;
   }
+}
+
+/** Start the same Google flow after Supabase positively rejects a refresh credential. */
+export function startSupabaseGoogleReauthentication(
+  environment: Environment,
+  returnUrl: string,
+  config = readHearthAuthConfig(),
+  navigate?: (url: string) => void,
+): boolean {
+  return navigate
+    ? startSupabaseGoogleSignIn(environment, returnUrl, config, navigate)
+    : startSupabaseGoogleSignIn(environment, returnUrl, config);
+}
+
+function startBrowserSupabaseGoogleReauthentication(environment: Environment, config: HearthAuthConfig): boolean {
+  if (typeof window === "undefined") return false;
+  return startSupabaseGoogleReauthentication(environment, window.location.href, config);
 }
 
 /** Consume the standard Supabase OAuth hash and remove tokens from the URL. */
@@ -268,6 +293,7 @@ export async function refreshSupabaseSession(
   fetcher: typeof fetch = fetch,
 ): Promise<HearthSupabaseSession> {
   if (!config) throw new Error("Supabase Google sign-in is not enabled in this build.");
+  const refreshGeneration = sessionGeneration(environment);
   try {
     const response = await fetcher(`${config.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
       method: "POST",
@@ -281,8 +307,15 @@ export async function refreshSupabaseSession(
     if (!response.ok) {
       const replacement = replacementSupabaseSession(environment, session);
       if (replacement) return replacement;
-      clearSupabaseSession(environment);
-      throw new Error("Your Hearth cloud session expired. Continue with Google again.");
+      if (sessionGeneration(environment) !== refreshGeneration || !loadSupabaseSession(environment)) {
+        throw new Error("Your Hearth cloud session changed while it was refreshing.");
+      }
+      if (response.status === 400 || response.status === 401) {
+        clearSupabaseSession(environment);
+        startBrowserSupabaseGoogleReauthentication(environment, config);
+        throw new Error("Your Hearth cloud session needs Google confirmation again.");
+      }
+      throw new Error("Hearth could not refresh the cloud session. The saved session is still on this phone; try again when connected.");
     }
     const body = await response.json() as {
       access_token: string;
@@ -299,7 +332,9 @@ export async function refreshSupabaseSession(
       user: body.user,
     });
     const latest = loadSupabaseSession(environment);
-    if (!latest) throw new Error("Your Hearth cloud session changed while it was refreshing. Sign in again if you meant to stay connected.");
+    if (!latest || sessionGeneration(environment) !== refreshGeneration) {
+      throw new Error("Your Hearth cloud session changed while it was refreshing.");
+    }
     const replacement = replacementSupabaseSession(environment, session);
     if (replacement) return replacement;
     saveSupabaseSession(environment, refreshed);

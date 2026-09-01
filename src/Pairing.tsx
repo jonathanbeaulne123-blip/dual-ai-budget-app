@@ -190,7 +190,7 @@ export function WelcomeJoin({
       </button>
       {onScanQr && <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={onScanQr}>Scan invitation QR code</button>}
       {inviteFlowState === "error" && onUseAnotherGoogle && (
-        <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={onUseAnotherGoogle}>
+        <button className="ghost welcome-join__secondary" type="button" onClick={onUseAnotherGoogle}>
           Sign out and try another Google account
         </button>
       )}

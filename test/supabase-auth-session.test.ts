@@ -15,6 +15,7 @@ import {
   saveSupabaseSession,
   setSupabaseSessionStore,
   startSupabaseGoogleSignIn,
+  startSupabaseGoogleReauthentication,
   supabaseAuthEnabled,
   supabaseSessionMatchesGoogleIdentity,
   supabaseSessionFresh,
@@ -45,6 +46,7 @@ afterEach(() => {
   resetSupabaseAuthConcurrencyForTests();
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 describe("Supabase Auth browser session", () => {
@@ -119,8 +121,75 @@ describe("Supabase Auth browser session", () => {
       refreshed,
       config,
       vi.fn(async () => new Response("no", { status: 401 })) as typeof fetch,
-    )).rejects.toThrow(/session expired/i);
+    )).rejects.toThrow(/needs Google confirmation/i);
     expect(loadSupabaseSession("development")).toBeNull();
+  });
+
+  it("keeps the saved session on network and server failures", async () => {
+    setSupabaseSessionStore(memoryStore());
+    const session: HearthSupabaseSession = {
+      accessToken: "access-old",
+      refreshToken: "refresh-old",
+      userId: "old",
+      sessionId: "22222222-2222-4222-8222-222222222222",
+      email: "old@example.com",
+      googleSubject: "sub-old",
+      displayName: "Old",
+      expiresAt: 1_000,
+    };
+    saveSupabaseSession("development", session);
+
+    await expect(refreshSupabaseSession(
+      "development",
+      session,
+      config,
+      vi.fn(async () => new Response("temporarily unavailable", { status: 503 })) as typeof fetch,
+    )).rejects.toThrow(/saved session is still on this phone/i);
+    expect(loadSupabaseSession("development")).toEqual(session);
+  });
+
+  it("opens Google after a refused refresh only while the session is still current", async () => {
+    setSupabaseSessionStore(memoryStore());
+    const session: HearthSupabaseSession = {
+      accessToken: "access-old",
+      refreshToken: "refresh-old",
+      userId: "old",
+      sessionId: "22222222-2222-4222-8222-222222222222",
+      email: "old@example.com",
+      googleSubject: "sub-old",
+      displayName: "Old",
+      expiresAt: 1_000,
+    };
+    const navigate = vi.fn();
+    vi.stubGlobal("window", {
+      location: { href: "https://kitchen.example/account", assign: navigate },
+      addEventListener: vi.fn(),
+    });
+    saveSupabaseSession("development", session);
+
+    await expect(refreshSupabaseSession(
+      "development",
+      session,
+      config,
+      vi.fn(async () => new Response("refused", { status: 401 })) as typeof fetch,
+    )).rejects.toThrow(/needs Google confirmation/i);
+    expect(navigate).toHaveBeenCalledTimes(1);
+
+    resetSupabaseAuthConcurrencyForTests();
+    saveSupabaseSession("development", session);
+    let release!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => { release = resolve; });
+    const refreshing = refreshSupabaseSession(
+      "development",
+      session,
+      config,
+      vi.fn(() => pending) as unknown as typeof fetch,
+    );
+    clearSupabaseSession("development");
+    release(new Response("refused", { status: 401 }));
+
+    await expect(refreshing).rejects.toThrow(/session changed/i);
+    expect(navigate).toHaveBeenCalledTimes(1);
   });
 
   it("shares one expired-session refresh across concurrent background callers", async () => {
@@ -228,6 +297,14 @@ describe("Supabase Auth browser session", () => {
     await vi.advanceTimersByTimeAsync(15_001);
     expect(startSupabaseGoogleSignIn("development", "https://kitchen.example", config, navigate)).toBe(true);
     expect(navigate).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the normal Google entry and redirect latch for required reauthentication", () => {
+    const navigate = vi.fn();
+    expect(startSupabaseGoogleReauthentication("development", "https://kitchen.example/account", config, navigate)).toBe(true);
+    expect(startSupabaseGoogleReauthentication("development", "https://kitchen.example/account", config, navigate)).toBe(false);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    expect(new URL(String(navigate.mock.calls[0]?.[0])).searchParams.get("provider")).toBe("google");
   });
 
   it("forces the Google account chooser for QR invitation entry", async () => {

@@ -22,7 +22,7 @@ describe("first-time entry surface", () => {
     expect(app).toContain("startQrInviteGoogleSignIn(authInvite.token, env)");
     expect(app).toContain("{ selectAccount: true }");
     expect(app).toMatch(/discoveredHouseholdForTarget\(found, \{[\s\S]*householdId: redeemed\.householdId,[\s\S]*memberId: redeemed\.memberId \?\? null/);
-    expect(app).toMatch(/await openDiscoveredLedger\(\{[\s\S]*householdId: match\.household\.householdId,[\s\S]*memberId: match\.memberId,[\s\S]*\}, found\)/);
+    expect(app).toMatch(/await openDiscoveredLedger\(\{[\s\S]*householdId: match\.household\.householdId,[\s\S]*memberId: match\.memberId,[\s\S]*\}, found(?:, shouldContinue)?\)/);
     expect(app).toContain("This house is full");
     expect(app).toContain("Back to Google sign-in");
     expect(app).toContain("await deactivateHouseholdSelection(environment)");
@@ -42,6 +42,16 @@ describe("first-time entry surface", () => {
     expect(join).toContain("Advanced recovery");
     expect(join).toContain("Three-word code or recovery secret");
     expect(join).toContain("Import Hearth Pass");
+  });
+
+  it("keeps account-exit controls available while another account task is busy", () => {
+    expect(app).toContain("onClick={requestClearThisPhone}");
+    expect(app).not.toMatch(/disabled=\{busy\}\s*onClick=\{requestClearThisPhone\}/);
+    expect(app).not.toMatch(/disabled=\{busy\}\s*onClick=\{\(\) => signOutWelcomeGoogle\(\)\}/);
+    expect(join).not.toMatch(/disabled=\{busy\}\s*onClick=\{onUseAnotherGoogle\}/);
+    expect(app).toMatch(/function signOutWelcomeGoogle\(\) \{[\s\S]*cancelAccountFlow\(\)/);
+    expect(app).toMatch(/function tryInviteWithAnotherGoogleAccount\(\) \{[\s\S]*cancelAccountFlow\(\)/);
+    expect(app).toContain("shouldContinue ?? accountFlowGateRef.current.begin().isCurrent");
   });
 
   it("uses the existing code/link parser instead of inventing auth semantics", () => {

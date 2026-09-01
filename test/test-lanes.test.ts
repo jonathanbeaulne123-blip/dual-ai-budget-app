@@ -26,6 +26,11 @@ function directPGliteRuntimeTests() {
     .sort();
 }
 
+const serialFixtureTests = [
+  "demo-shift-statistics.test.ts",
+  "stress-seed.test.ts",
+];
+
 describe("Vitest lanes", () => {
   it("keeps every direct PGlite runtime test in the serial books lane", () => {
     expect(packageJson.scripts?.test).toBe("node scripts/run-test-lanes.mjs");
@@ -33,6 +38,7 @@ describe("Vitest lanes", () => {
     const booksLane = packageJson.scripts?.["test:books"] ?? "";
     const fastLane = packageJson.scripts?.["test:fast"] ?? "";
     const runtimeTests = directPGliteRuntimeTests();
+    const serialTests = [...runtimeTests, ...serialFixtureTests].sort();
 
     expect(runtimeTests).toEqual([
       "almost-there.test.ts",
@@ -51,12 +57,12 @@ describe("Vitest lanes", () => {
       "sync-integrity.test.ts",
       "work-coworkers.test.ts",
     ]);
-    for (const fileName of runtimeTests) {
+    for (const fileName of serialTests) {
       expect(booksLane).toContain(`test/${fileName}`);
       expect(fastLane).toContain(`--exclude=test/${fileName}`);
     }
-    expect([...fastLane.matchAll(/--exclude=test\/([^\s]+)/g)].map((match) => match[1]).sort()).toEqual(runtimeTests);
-    expect([...booksLane.matchAll(/test\/([^\s]+\.test\.ts)/g)].map((match) => match[1]).sort()).toEqual(runtimeTests);
+    expect([...fastLane.matchAll(/--exclude=test\/([^\s]+)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
+    expect([...booksLane.matchAll(/test\/([^\s]+\.test\.ts)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
     expect(booksLane).toContain("--maxWorkers=1");
     expect(fastLane).toContain("--maxWorkers=4");
   });

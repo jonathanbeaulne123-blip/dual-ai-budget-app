@@ -241,7 +241,6 @@ export function GoogleBridgeCard(props: {
           type="button"
           className="ghost"
           style={{ width: "100%", marginTop: 8 }}
-          disabled={working}
           onClick={props.onSignOut}
         >
           Sign out and clear this phone

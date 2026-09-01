@@ -228,6 +228,16 @@ describe("multi-ledger replicas", () => {
     expect(await loadHousehold("development")).toBeNull();
   });
 
+  it("can clear one replica without activating another household", async () => {
+    await saveHousehold(household("HH-ONE", "One"), { memberId: "MEM-001" });
+    await saveHousehold(household("HH-TWO", "Two"), { memberId: "MEM-001", activate: false });
+
+    await clearHousehold("development", "HH-ONE", { activateRemaining: false });
+
+    expect((await listHouseholdReplicas("development")).map((item) => item.householdId)).toEqual(["HH-TWO"]);
+    expect(activeHouseholdId("development")).toBeNull();
+  });
+
   it("refuses a replica whose payload householdId disagrees with the storage key", async () => {
     const valid = household("HH-KEY", "Keyed home");
     const tampered = { ...valid, householdId: "HH-OTHER" };

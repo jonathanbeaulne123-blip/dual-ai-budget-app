@@ -198,6 +198,7 @@ import {
   supabaseAuthEnabled,
   supabaseSessionMatchesGoogleIdentity,
 } from "./auth/supabaseSession.ts";
+import { createAccountFlowGate } from "./auth/accountFlow.ts";
 import {
   clearContinuityOutboxConflictBlocks,
   clearContinuityOutboxForHousehold,
@@ -509,6 +510,8 @@ export function App() {
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busyState, setBusy] = useState(false);
+  const clearThisPhoneInFlightRef = useRef(false);
+  const accountFlowGateRef = useRef(createAccountFlowGate());
   const [error, setError] = useState("");
   const [confirm, setConfirm] = useState<NeedsConfirmationError | null>(null);
   const [toast, setToast] = useState<UndoToken | null>(null);
@@ -2360,7 +2363,10 @@ export function App() {
   async function openDiscoveredLedger(
     target: HouseholdEntryTarget,
     source: DiscoveredHousehold[] = discoveredLedgers,
+    shouldContinue?: () => boolean,
   ): Promise<void> {
+    const accountFlow = shouldContinue ?? accountFlowGateRef.current.begin().isCurrent;
+    if (!accountFlow()) return;
     if (openingHouseholdRef.current) return;
     const found = discoveredHouseholdForTarget(source, target);
     if (!found) throw new Error("That household card is out of date. Refresh your Google households and try again.");
@@ -2373,6 +2379,7 @@ export function App() {
       const candidate = previous?.householdId === found.household.householdId
         ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
         : found.household;
+      if (!accountFlow()) return;
       const googleSession = loadGoogleSession(environment, found.memberId, candidate.householdId)
         ?? loadGoogleSession(environment, "__welcome__");
       const continuityIdentity = continuityIdentityFromGoogle(googleSession);
@@ -2389,6 +2396,7 @@ export function App() {
         }),
       });
       if (!accepted.ok) throw new Error(accepted.userMessage || "Those cloud books could not be accepted on this device.");
+      if (!accountFlow()) return;
       if (accepted.household.householdId !== target.householdId) {
         throw new Error("The accepted books did not match the household card you selected.");
       }
@@ -2404,7 +2412,9 @@ export function App() {
         equationHolds: true,
       });
       rememberSession({ memberId: found.memberId, view: "household", householdId: accepted.household.householdId });
-      setReplicas(await listHouseholdReplicas(environment));
+      const replicas = await listHouseholdReplicas(environment);
+      if (!accountFlow()) return;
+      setReplicas(replicas);
       setDiscoveredLedgers([]);
       setSyncState("synced");
       setBooksStatus({
@@ -2416,11 +2426,12 @@ export function App() {
       });
     } finally {
       if (openingHouseholdRef.current === openingKey) openingHouseholdRef.current = null;
-      setBusy(false);
+      if (accountFlow()) setBusy(false);
     }
   }
 
   function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): void {
+    cancelAccountFlow();
     savePendingAuthInvite({ token, environment: inviteEnvironment });
     setInviteInput(token);
     setPendingAuthInvite(token);
@@ -2439,7 +2450,8 @@ export function App() {
     );
   }
 
-  async function redeemAuthInviteToken(token: string): Promise<void> {
+  async function redeemAuthInviteToken(token: string, shouldContinue: () => boolean = () => true): Promise<void> {
+    if (!shouldContinue()) return;
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
     setInviteInput(token);
@@ -2452,6 +2464,7 @@ export function App() {
         throw new Error(inviteReasonMessage("continuity-disabled"));
       }
       const authSession = await ensureSupabaseSession(environment);
+      if (!shouldContinue()) return;
       if (!authSession) {
         setInviteFlowState("awaiting-google");
         rememberWelcomeGoogleIntent("login");
@@ -2466,6 +2479,7 @@ export function App() {
         displayName: authSession.displayName,
         config: cloudConfig,
       });
+      if (!shouldContinue()) return;
       if (!redeemed.ok) {
         if (isFullHouseInviteReason(redeemed.reason)) {
           setInviteFlowState("idle");
@@ -2485,9 +2499,11 @@ export function App() {
         deviceLabel: describeDeviceLabel(),
         config: cloudConfig,
       });
+      if (!shouldContinue()) return;
       if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
       const identity = { email: authSession.email, subject: authSession.googleSubject };
       const found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+      if (!shouldContinue()) return;
       const match = discoveredHouseholdForTarget(found, {
         householdId: redeemed.householdId,
         memberId: redeemed.memberId ?? null,
@@ -2504,7 +2520,8 @@ export function App() {
       await openDiscoveredLedger({
         householdId: match.household.householdId,
         memberId: match.memberId,
-      }, found);
+      }, found, shouldContinue);
+      if (!shouldContinue()) return;
       setHighlightedHouseholdId(null);
       setPendingAuthInvite(null);
       clearPendingAuthInvite();
@@ -2513,12 +2530,15 @@ export function App() {
       setWelcomeMode("home");
       setError("");
     } catch (caught) {
+      if (!shouldContinue()) return;
       setInviteFlowState("error");
       throw caught;
     }
   }
 
   async function continueWithGoogle(intent?: WelcomeGoogleIntent): Promise<void> {
+    const accountFlow = accountFlowGateRef.current.begin();
+    const shouldContinue = accountFlow.isCurrent;
     const welcomeIntent = intent ?? loadWelcomeGoogleIntent() ?? "login";
     setBusy(true);
     setError("");
@@ -2528,6 +2548,7 @@ export function App() {
       let cloudConfig = readSupabaseConfig();
       if (supabaseAuthEnabled()) {
         let authSession = await ensureSupabaseSession(environment);
+        if (!shouldContinue()) return;
         if (!authSession) {
           const pending = pendingAuthInvite
             || loadPendingAuthInvite()?.token
@@ -2549,6 +2570,7 @@ export function App() {
           deviceLabel: describeDeviceLabel(),
           config: cloudConfig,
         });
+        if (!shouldContinue()) return;
         if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
         identity = { email: authSession.email, subject: authSession.googleSubject };
         identityDetails = {
@@ -2560,7 +2582,7 @@ export function App() {
           || loadPendingAuthInvite()?.token
           || (isAuthInviteToken(inviteInput.trim()) ? inviteInput.trim().toLowerCase() : "");
         if (inviteToken) {
-          await redeemAuthInviteToken(inviteToken);
+          await redeemAuthInviteToken(inviteToken, shouldContinue);
           return;
         }
       } else {
@@ -2570,6 +2592,7 @@ export function App() {
           services: ["identity"],
           selectAccount: true,
         });
+        if (!shouldContinue()) return;
         identity = googleSession.identity;
         identityDetails = {
           ...identity,
@@ -2578,8 +2601,10 @@ export function App() {
         };
       }
       let found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+      if (!shouldContinue()) return;
       if (!found.length && supabaseAuthEnabled() && cloudConfig?.accessToken) {
         const bound = await bindGoogleMemberships({ environment, config: cloudConfig });
+        if (!shouldContinue()) return;
         if (bound.ok && bound.bound > 0) {
           const registered = await registerCurrentHouseholdDevice({
             environment,
@@ -2587,8 +2612,10 @@ export function App() {
             deviceLabel: describeDeviceLabel(),
             config: cloudConfig,
           });
+          if (!shouldContinue()) return;
           if (!registered.ok) throw new Error(inviteReasonMessage(registered.reason));
           found = await discoverContinuityMemberships(identity, environment, cloudConfig);
+          if (!shouldContinue()) return;
         } else if (!bound.ok && bound.reason === "bind-rpc-missing") {
           throw new Error(
             "This kitchen needs migration 010 (bind Google memberships) pasted in the Supabase SQL Editor, then Continue with Google again.",
@@ -2596,6 +2623,7 @@ export function App() {
         }
       }
       if (!found.length) {
+        if (!shouldContinue()) return;
         rememberWelcomeGoogleIntent(null);
         if (environment === "production") {
           if (supabaseAuthEnabled()) clearSupabaseSession(environment);
@@ -2611,6 +2639,7 @@ export function App() {
         setWelcomeMode(welcomeIntent === "create" ? "new" : "home");
         return;
       }
+      if (!shouldContinue()) return;
       rememberWelcomeGoogleIntent(null);
       setWelcomeIdentity(identityDetails);
       setHighlightedHouseholdId(null);
@@ -2618,10 +2647,11 @@ export function App() {
       setWelcomeMode(welcomeIntent === "create" ? "new" : "home");
       setDiscoveredLedgers(found);
     } catch (caught) {
+      if (!shouldContinue()) return;
       if (pendingAuthInvite || loadPendingAuthInvite()) setInviteFlowState("error");
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      setBusy(false);
+      if (shouldContinue()) setBusy(false);
     }
   }
 
@@ -3170,6 +3200,49 @@ export function App() {
     setGuard({ kind: "clear-this-phone" });
   }
 
+  function cancelAccountFlow() {
+    accountFlowGateRef.current.cancel();
+    openingHouseholdRef.current = null;
+  }
+
+  function clearThisPhoneNow() {
+    if (clearThisPhoneInFlightRef.current) return;
+    const current = householdRef.current;
+    if (!current) {
+      signOutWelcomeGoogle();
+      setGuard(null);
+      return;
+    }
+    clearThisPhoneInFlightRef.current = true;
+    cancelAccountFlow();
+    const who = sessionRef.current?.memberId;
+    const hid = current.householdId;
+    if (who) clearUndoHistory(environment, hid, who);
+    clearGoogleSessions(environment);
+    clearSupabaseSession(environment);
+    clearSession(environment);
+    clearPendingAuthInvite();
+    clearSyncAnchor(environment, hid);
+    clearContinuityOutboxForHousehold(environment, hid);
+    closeAdd();
+    householdRef.current = null;
+    sessionRef.current = null;
+    setHistory([]);
+    setToast(null);
+    setPersonalReplica(null);
+    setHousehold(null);
+    setSession(null);
+    setDiscoveredLedgers([]);
+    setGuard(null);
+    setError("");
+    setWelcomeMode("home");
+    setBusy(false);
+    clearThisPhoneInFlightRef.current = false;
+    void clearHousehold(environment, hid, { activateRemaining: false }).catch(() => {
+      setError("Signed out. This phone could not finish removing its offline copy; sign in again before using the books.");
+    });
+  }
+
   async function copyPilotSyncDiagnostic(): Promise<string> {
     const current = householdRef.current;
     const who = sessionRef.current?.memberId;
@@ -3222,6 +3295,7 @@ export function App() {
   }
 
   function signOutWelcomeGoogle() {
+    cancelAccountFlow();
     clearGoogleSessions(environment);
     clearSupabaseSession(environment);
     rememberWelcomeGoogleIntent(null);
@@ -3247,6 +3321,7 @@ export function App() {
 
   function tryInviteWithAnotherGoogleAccount() {
     const token = pendingAuthInvite ?? loadPendingAuthInvite()?.token ?? authInviteTokenFromText(inviteInput);
+    cancelAccountFlow();
     clearGoogleSessions(environment);
     clearSupabaseSession(environment);
     rememberWelcomeGoogleIntent("login");
@@ -3269,6 +3344,7 @@ export function App() {
   async function returnToGoogleEntryAfterFullHouse(): Promise<void> {
     setBusy(true);
     try {
+      cancelAccountFlow();
       clearGoogleSessions(environment);
       clearSupabaseSession(environment);
       clearSession(environment);
@@ -3707,7 +3783,7 @@ export function App() {
                 Back to households
               </button>
               {welcomeSignedIn && (
-                <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} disabled={busy} onClick={() => signOutWelcomeGoogle()}>
+                <button className="ghost" type="button" style={{ width: "100%", marginTop: 8 }} onClick={() => signOutWelcomeGoogle()}>
                   Sign out of Google
                 </button>
               )}
@@ -3782,7 +3858,7 @@ export function App() {
                       </button>
                     </details>
                   )}
-                  <button className="ghost welcome-sign-out" type="button" disabled={busy} onClick={() => signOutWelcomeGoogle()}>
+                  <button className="ghost welcome-sign-out" type="button" onClick={() => signOutWelcomeGoogle()}>
                     Sign out of Google
                   </button>
                 </section>
@@ -4773,7 +4849,6 @@ export function App() {
               type="button"
               className="ghost"
               style={{ width: "100%", marginTop: 8 }}
-              disabled={busy}
               onClick={requestClearThisPhone}
             >
               Sign out
@@ -4976,7 +5051,6 @@ export function App() {
             <button
               className="ghost"
               style={{ width: "100%", marginTop: 8 }}
-              disabled={busy}
               onClick={() => setGuard({ kind: "clear-this-phone" })}
             >
               Sign out and clear this phone
@@ -5364,43 +5438,8 @@ export function App() {
           extra={googleStepUpExtra}
           confirmLabel="Sign out and clear this phone"
           danger
-          busy={busy}
           onCancel={() => setGuard(null)}
-          onConfirm={() => {
-            void (async () => {
-              setBusy(true);
-              try {
-                const who = session?.memberId;
-                const hid = household.householdId;
-                if (who) {
-                  clearUndoHistory(environment, hid, who);
-                }
-                clearGoogleSessions(environment);
-                clearSupabaseSession(environment);
-                clearSession(environment);
-                clearPendingAuthInvite();
-                clearSyncAnchor(environment, hid);
-                clearContinuityOutboxForHousehold(environment, hid);
-                await clearHousehold(environment, hid);
-                closeAdd();
-                householdRef.current = null;
-                sessionRef.current = null;
-                setHistory([]);
-                setToast(null);
-                setPersonalReplica(null);
-                setHousehold(null);
-                setSession(null);
-                setDiscoveredLedgers([]);
-                setGuard(null);
-                setError("");
-                setWelcomeMode("home");
-              } catch (caught) {
-                setError(caught instanceof Error ? caught.message : String(caught));
-              } finally {
-                setBusy(false);
-              }
-            })();
-          }}
+          onConfirm={clearThisPhoneNow}
         />
       )}
       {householdResetGuards}
