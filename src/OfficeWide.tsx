@@ -212,7 +212,7 @@ export function OfficeWide({
   const tipSpark = tipWeekdaySpark(dashboard.tipWeather);
 
   function openMonthList(section: MonthListKind) {
-    setMonthList(section);
+    setMonthList((current) => (current === section ? null : section));
     if (layout.expanded && layout.expanded !== "window") {
       onLayout({ ...layout, expanded: null });
     }

@@ -1,5 +1,37 @@
 # AI Task and Handoff Standard
 
+## Glance plates, seal lists, scrolling month sheet (2026-08-31)
+
+**Status:** Draft [#265](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/265) on `cursor/desk-glance-seals-021f`. Base `main@2690c57`. **Not merged, not deployed, not live.** Risk **High** (presentation). No Production household mutation, hosted schema, or secrets.
+
+**Household outcome:** On wide Shared and Personal Home, the six left stories sit as short glance lines and grow in the mosaic for the drawing, footing, and Cabinet handle. They no longer replace the month sheet. Money in opens this month’s posted income rows. Money out opens this month’s posted expense rows. Leftover spend still goes to Plan. The centre stage is a six-open-card height with inner vertical scroll. iPhone `OfficePhone` still sends the two money seals to the blotter.
+
+**Budget delta (5):** `+3` — glance lines and the two lists are the posted month, not a second Fund story.
+
+**Engagement delta (3):** `+3` — less wall of text; one tap to the matching list; the month sheet no longer eats the whole desk.
+
+**If they conflicted:** books won. Lists are display only. Refunds stay in `partitionLedger` `other`, not expenses. Shared lists use the floor’s visible `household`, not partner-personal rooms. No `goal.savedCents` writes. Phone seals stay on the blotter.
+
+**What changed:** `DeskPlateModel.glance`; plates grow via `openPlateIds` instead of staging; `monthPostedRows`; Money in/out → `MonthPostedList`; leftover spend still `onGo("plan")`; `--stories-open-height` plus stage `overflow-y: auto`; a second tap on an open money seal closes the list. Worksession: [`worksessions/2026-08-31-desk-glance-seals.md`](worksessions/2026-08-31-desk-glance-seals.md).
+
+**Verification:**
+- Focused `test/desk-plates.test.ts` + `test/desk-plates-dom.test.ts`: **25 passed** (glance copy, mosaic toggle, refund-out-of-expenses, iPhone blotter fence, Bianca private Amex canary).
+- `pnpm check` on `3e1398e`: AI surface verified; **1441 passed / 3 skipped / 0 failed**; TypeScript clean; Vite 384 modules; Hercules Pro UI green; no `dist/_redirects`.
+- Independent UX audit: keep; seal `aria-pressed` now toggles off on a second click.
+- Browser, fictional Development demo: 1100 open plate with Month Spread still centre; Money in posted list; 720 stacked open plate; 390 phone still has wax seals and phone story tiles (not desk-plate Cabinets); leftover spend → Plan.
+
+**Uncertainty:** Live forced-colors / reduced-motion DevTools. Phone blotter body is below the story strip, so a seal click can look like a no-op until you scroll. Video review noted possible plate-footing overlap while shrinking toward phone; `OfficePhone` does not render `DeskPlate`.
+
+**Data and environment disclosure:**
+- Development impact: none (branch/PR only)
+- Production impact: none
+- Network calls or data sent: GitHub push of this branch
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none
+- Real household or partner-personal data used: none (fictional Development demo)
+
+**Next owner:** Jonathan. Review draft #265. Do not merge or deploy from this packet.
+
 ## Desk plates — Shared and Personal Home mosaic (2026-08-31)
 
 **Status:** Merged [#260](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/260) as `main@c75d72e`. Kitchen Cloudflare Workers [`33447063786`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33447063786) **success**. Worker version `e57b4a67-fbbb-45a2-b57c-043cda197101`. Live `index-BZnOtUHs.js` → lazy `Office-C6krQOJZ.js` with `desk-plate`, “What is due next”, “What the cards are doing”, `scope!=="personal"`, and Standing. CSS `index-D8gcAel_.css` has `.desk-plate-handle`. HTML `Cache-Control: no-store`. **Merged and kitchen-published.** Risk was **High** presentation, then Release because Jonathan ordered merge/deploy. No Production household mutation, hosted schema, or secrets. Migration 018 was already on `main` from #263; this session did not apply schema.

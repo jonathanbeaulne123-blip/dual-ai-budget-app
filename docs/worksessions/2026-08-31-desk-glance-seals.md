@@ -1,14 +1,14 @@
 # Hearth worksession — Glance plates, seal lists, scrolling month sheet
 
-- **Status:** OPEN; IMPLEMENTING
+- **Status:** OPEN; DRAFT PR
 - **Opened:** 2026-08-31 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/desk-glance-seals-021f`
 - **Baseline SHA:** `2690c57` (`origin/main`)
-- **Head SHA:** (in progress)
-- **PR or issue:** draft against `main`
+- **Head SHA:** (see latest commit on the branch)
+- **PR or issue:** draft [#265](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/265)
 - **Risk:** High (presentation)
 - **Decision owner:** Jonathan
 - **Environment impact:** none — fictional Development demo for proof; no Production, hosted mutation, schema, or secrets
@@ -36,7 +36,7 @@ Facts:
 - Desk plates already ship on `main@2690c57`. Click currently puts the plate on the stage.
 - Money in and Money out both open the Month net blotter.
 - Shared Home stage uses `overflow: visible`, so the Month Spread grows to full height.
-- Jonathan confirmed four notes on 2026-08-31.
+- Jonathan confirmed four notes on 2026-08-31, then confirmed again to finish the packet.
 
 Inferences:
 
@@ -56,39 +56,45 @@ Inferences:
 ### Out of scope
 
 - Leftover spend seal (stays Plan).
-- iPhone `OfficePhone`.
+- iPhone `OfficePhone` destination (stays blotter).
 - Fund math, Kitty restyle, schema, Production, merge, deploy.
 
 ## Acceptance evidence
 
-- [ ] Glance copy; open shows figure, footing, Cabinet
-- [ ] Click no longer replaces the month sheet
-- [ ] Money in / out lists this month; display only
-- [ ] Stage height token matches three open plate rows
-- [ ] Focused tests and `pnpm check`
-- [ ] Draft PR; not merged, not deployed, not live
+- [x] Glance copy; open shows figure, footing, Cabinet
+- [x] Click no longer replaces the month sheet
+- [x] Money in / out lists this month; display only
+- [x] Stage height token matches three open plate rows
+- [x] Focused tests and `pnpm check` (`3e1398e`: 1441 passed / 3 skipped)
+- [x] Draft PR #265; not merged, not deployed, not live
 
 ## Plan
 
-- [ ] Glance field + expand state
-- [ ] Seal month lists
-- [ ] Stage scroll height
-- [ ] Tests, check, draft PR, browser proof
+- [x] Glance field + expand state
+- [x] Seal month lists
+- [x] Stage scroll height
+- [x] Tests, check, draft PR, browser proof
 
 ## Evidence log
 
 - 2026-08-31: Jonathan confirmed the four-note packet. Branched from `origin/main@2690c57`.
+- 2026-08-31: Implementation on `3e1398e`. `pnpm check` 1441 passed / 3 skipped; Vite 384 modules; Hercules Pro UI green.
+- 2026-08-31: Browser on fictional Development demo: 1100 open plate + month sheet; Money in posted list; 720 stacked; 390 phone seals still present; leftover spend → Plan.
+- 2026-08-31: Independent UX audit: keep with reshapes; seal `aria-pressed` now toggles off on a second click.
+- 2026-08-31: Jonathan confirmed again to finish the packet.
 
 ## Decisions
 
 - Multi-open left cards. Height ruler is six open, not the current collapsed stack.
 - Expense list follows `partitionLedger`: refunds are not expenses.
+- A second tap on the open Money in / Money out seal closes the list.
 
 ## Remaining uncertainty
 
 - Live forced-colors / reduced-motion DevTools.
 - At stacked widths the stage sits under the mosaic; the same height cap still applies.
+- Phone Money in blotter body sits below the story strip; a computer-use pass did not always catch the notebook after the seal click, but `OfficePhone` still calls `tapSeal("blotter")`.
 
 ## Handoff
 
-In progress. Local branch until the first commit is pushed.
+Draft PR #265 against `main`. Not merged, not kitchen-published, not live. Next owner: Jonathan.

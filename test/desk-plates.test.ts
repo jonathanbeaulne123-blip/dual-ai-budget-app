@@ -367,6 +367,7 @@ describe("glance copy and month lists", () => {
     expect(expenses.map((row) => row.id)).not.toEqual(expect.arrayContaining(monthRefunds.map((row) => row.id)));
     expect(officeWide).toContain("openMonthList(\"income\")");
     expect(officeWide).toContain("openMonthList(\"expenses\")");
+    expect(officeWide).toContain("current === section ? null : section");
     expect(officeWide).toContain("<MonthPostedList household={household}");
     expect(officeWide).toContain('onClick={() => onGo("plan")}');
     const listSource = officeWide.slice(
