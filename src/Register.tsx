@@ -288,11 +288,12 @@ export function Register({
   const height = drawingHeight(Math.max(register.rows.length, 3));
   const canDraw = register.tiesToProjection && registerMembersDraw(register, members);
   const emptyTied = canDraw && register.rows.length === 0;
+  const showEmpty = emptyTied && presentation !== "loading" && presentation !== "error";
 
   if (presentation === "loading") {
     return (
       <section className="register" aria-busy="true" aria-label={`${title} loading`}>
-        <div className="register-scroll">
+        <div className="register-scroll" tabIndex={0}>
           <svg
             className="register-svg"
             viewBox={`0 0 ${REGISTER_VIEW.width} ${height}`}
@@ -314,33 +315,32 @@ export function Register({
 
   if (presentation === "error") {
     return (
-      <section className="register">
-        <div className="register-scroll">
+      <section className="register" aria-label={title}>
+        <div className="register-scroll" tabIndex={0}>
           <Staff title={title} members={members} height={height} />
         </div>
-        <p className="register-status">{errorLine}</p>
+        <p className="register-status" role="status">{errorLine}</p>
       </section>
     );
   }
 
-  const refusal = presentation === "ready" && !canDraw;
-  const showEmpty = presentation === "ready" && emptyTied;
+  const refusal = !canDraw;
   const showReady = presentation === "ready" && canDraw && !emptyTied;
   const showOffline = presentation === "offline";
   const drawOffline = showOffline && canDraw && !emptyTied;
 
   return (
-    <section className="register">
-      {showOffline ? <p className="register-offline">{REGISTER_OFFLINE_LINE}</p> : null}
-      <div className="register-scroll">
+    <section className="register" aria-label={title}>
+      {showOffline ? <p className="register-offline" role="status">{REGISTER_OFFLINE_LINE}</p> : null}
+      <div className="register-scroll" tabIndex={0}>
         {showReady || drawOffline ? (
           <ReadyDrawing register={register} members={members} />
         ) : (
           <Staff title={title} members={members} height={height} />
         )}
       </div>
-      {refusal ? <p className="register-status">{REGISTER_UNTIED_LINE}</p> : null}
-      {showEmpty ? <p className="register-status">{REGISTER_EMPTY_LINE}</p> : null}
+      {refusal ? <p className="register-status" role="status">{REGISTER_UNTIED_LINE}</p> : null}
+      {showEmpty ? <p className="register-status" role="status">{REGISTER_EMPTY_LINE}</p> : null}
       {(showReady || drawOffline) ? <RegisterList register={register} members={members} /> : null}
     </section>
   );

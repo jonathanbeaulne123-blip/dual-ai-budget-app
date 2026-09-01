@@ -259,6 +259,16 @@ describe("register drawing", () => {
     expect(container.textContent).not.toContain("$1,960.00");
   });
 
+  it("fails closed when mapped members lack a usable tone or name", () => {
+    const register = canonicalRegister();
+    renderRegister(register, [
+      { memberId: BIANCA, displayName: "Bianca", tone: "hers" },
+      { memberId: JONATHAN, displayName: "Jonathan", tone: "" as RegisterMemberView["tone"] },
+    ]);
+    expect(container.textContent).toContain(REGISTER_UNTIED_LINE);
+    expect(container.querySelector("[data-register-segment]")).toBeNull();
+  });
+
   it("repeats the same facts in the phone list", () => {
     const register = canonicalRegister();
     renderRegister(register);

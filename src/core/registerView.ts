@@ -79,16 +79,17 @@ export function registerMembersDraw(
   members: readonly RegisterMemberView[],
 ): boolean {
   const byId = memberViewById(members);
-  const sourceOk = register.sources.every((source) => {
-    if (source.kind === "carried") return true;
-    return Boolean(source.memberId && byId.has(source.memberId));
-  });
-  const totalsOk = register.byMember.every((row) => byId.has(row.memberId));
+  const mapped = (memberId: string | null): boolean => {
+    if (!memberId) return false;
+    const member = byId.get(memberId);
+    return Boolean(member && member.displayName.trim() && (member.tone === "hers" || member.tone === "his"));
+  };
+  const sourceOk = register.sources.every((source) => source.kind === "carried" || mapped(source.memberId));
+  const totalsOk = register.byMember.every((row) => mapped(row.memberId));
   const segmentsOk = register.rows.every((row) => row.segments.every((segment) => {
     const source = register.sources[segment.sourceIndex];
     if (!source) return false;
-    if (source.kind === "carried") return true;
-    return Boolean(source.memberId && byId.has(source.memberId));
+    return source.kind === "carried" || mapped(source.memberId);
   }));
   return sourceOk && totalsOk && segmentsOk;
 }
@@ -126,7 +127,7 @@ export function registerFigureLabel(
   return [
     registerTitle(register.monthKey),
     `The month owes ${registerCad(register.owedCents)}.`,
-    memberTotals,
+    memberTotals ? `${memberTotals}.` : "",
     `Carried in ${registerCad(register.carriedCents)}.`,
     `Unfunded ${registerCad(register.unfundedCents)}.`,
   ].filter(Boolean).join(" ");

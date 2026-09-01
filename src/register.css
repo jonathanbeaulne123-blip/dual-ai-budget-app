@@ -15,11 +15,9 @@
   font-family: var(--font);
 }
 
-.register-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
-  max-width: 100%;
-  min-width: 0;
+.register-scroll:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
 }
 
 .register-svg {

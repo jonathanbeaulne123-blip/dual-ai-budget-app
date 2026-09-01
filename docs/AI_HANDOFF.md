@@ -2,7 +2,7 @@
 
 ## Register slice 8 — the register, drawn (2026-09-01)
 
-**Status:** Implemented on `cursor/register-8-drawing-115c`; draft PR. **Not merged, not kitchen-published, not live.** Risk **High** (financial presentation). No kitchen placement.
+**Status:** Implemented on `cursor/register-8-drawing-115c`; draft PR [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285). **Not merged, not kitchen-published, not live.** Risk **High** (financial presentation). No kitchen placement.
 
 **Household outcome:** Jonathan and Bianca can read the month's Fund obligations as one true-width register: one shared scale, arrival-order segments, unfunded as a dashed outline, and an honest empty staff when the fold does not tie.
 

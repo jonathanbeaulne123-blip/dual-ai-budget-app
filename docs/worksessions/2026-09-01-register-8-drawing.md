@@ -7,8 +7,8 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `cursor/register-8-drawing-115c`
 - **Baseline SHA:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
-- **Head SHA:** pending implementation commit
-- **PR or issue:** draft PR after push
+- **Head SHA:** pending follow-up a11y/fail-closed commit
+- **PR or issue:** draft [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -55,16 +55,17 @@ Inference:
 
 ## Acceptance evidence
 
-- [ ] Shared scale, arrival order, conservation, fail-closed, and phone list tests
-- [ ] Focused plus TypeScript/diff gates
-- [ ] Component visual proof at 320/390/720/~1100, not kitchen proof
+- [x] Shared scale, arrival order, conservation, fail-closed, and phone list tests (`test/register-view.test.ts` 11 passed)
+- [x] TypeScript and focused neighbor tests
+- [x] Component visual proof at 320/390/720/~1100 (not kitchen)
+- [ ] Full `pnpm check`: `test:fast` plus build/type; serial `demo-suite` failed on an unrelated Shared-envelope assertion (not this slice)
 
 ## Plan
 
 - [x] Implement geometry and drawing
-- [ ] Focused tests
-- [ ] Independent reviews
-- [ ] Close after proof
+- [x] Focused tests
+- [x] Independent reviews (books PASS WITH NOTES; privacy PASS WITH NOTES; UX PASS WITH NOTES)
+- [x] Draft PR #285
 
 ## Evidence log
 
