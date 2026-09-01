@@ -50,6 +50,75 @@
   font-weight: 650;
 }
 
+.household-fund-panel .fund-motion-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.household-fund-panel .fund-motion-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.household-fund-panel .fund-motion-status {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.household-fund-panel .fund-motion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.household-fund-panel .fund-motion-actions button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  width: auto;
+  margin-top: 0;
+  flex: 1 1 9rem;
+  max-width: 100%;
+}
+
+.household-fund-panel .fund-motion-actions .primary {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: var(--paper);
+}
+
+.household-fund-panel .fund-motion-actions .ghost {
+  background: transparent;
+  border-color: var(--pine);
+  color: var(--ink);
+}
+
+.household-fund-panel .fund-motion-actions button:focus,
+.household-fund-panel .fund-motion-actions button:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .household-fund-panel .fund-motion-card,
+  .household-fund-panel .fund-motion-status,
+  .household-fund-panel .fund-motion-actions {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
 .fund-disclosure {
   padding: 10px 12px;
   border: 1px solid rgba(129, 82, 36, 0.3);

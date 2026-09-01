@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Charter Slice 5 Held UI (2026-09-01)
+
+**Status:** Branch `cursor/charter-held-ui-115c` from `origin/main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`. **Not a PR, not merged, not kitchen-published, not live, not shipped.** Risk: **High** (consent presentation beside Confirm). Environment: none.
+
+**Household outcome:** Bianca can pause Jonathan's contribution proposal for a calm conversation without rejecting it or moving money. The proposal stays visible and confirmable. The exact holder releases; the exact proposer withdraws.
+
+**Dual Course:** Budget `+3`; Engagement `+2`. Books won: the UI uses the sealed D-193 selector and commands only. Hold/release still do not change Fund projection or journal. Confirm remains the only contribution balance increase. No second motion fold.
+
+**What changed:** `src/HouseholdFundPanel.tsx` waiting queue is `householdFundContributionMotions` filtered to `open` | `held`. Eligible custodian gets equal-weight **Confirm received** and **Hold**. Held uses exact `HOUSEHOLD_FUND_HOLD_COPY.status`. Exact holder **Release Hold**; exact proposer **Withdraw proposal**. Removed `Waiting for Bianca`. Smallest CSS under `.household-fund-panel`. Tests in `test/held-ui.test.ts`. Worksession: [`worksessions/2026-09-01-charter-held-ui.md`](worksessions/2026-09-01-charter-held-ui.md).
+
+**Verification:** Focused `pnpm exec vitest run test/held.test.ts test/household-fund-ui.test.ts test/held-ui.test.ts`, `pnpm exec tsc --noEmit`, and `git diff --check` recorded after this slice. Core `src/core/householdFund.ts`, `src/core/commands.ts`, PGlite, continuity, schema, workers, App.tsx, Office, Charter amendment authoring, and Register slice 8 were not edited.
+
+**Boundaries:** Local fictional Development data only. No hosted schema/row, Supabase, Auth/RLS, secret, provider, bank action, real household data, Production, merge, or deploy.
+
+**Next owner:** Independent High-risk UX/books review of this UI branch. Jonathan decides PR/merge. Do not call this shipped.
+
 ## Charter Slice 5 Held core (2026-09-01)
 
 **Status:** Core and architecture are implemented on branch `codex/charter-slice-5` at code commit `a7729362e469136636f438313215a3b03ccc570d`, rebased onto clean `origin/main@2879af2153affca10709608acbbd6c6e1b202af2` in [PR #283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283). Final High-risk release review passed on the code-equivalent pre-evidence tree; Jonathan explicitly authorized push, merge, and Development kitchen deployment on 2026-09-01. Fresh rebased GitHub and live receipts remain pending at this recorded point. Cursor owns the separate UI/UX implementation from [`briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md`](briefs/CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md).
