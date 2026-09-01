@@ -13,7 +13,7 @@ The original implementation brief [`CURSOR_CHARTER_HELD_UI_HANDOFF_2026-09-01.md
 - **Core (SHIPPED on main, not this PR):** [#283](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/283) merged as `main@ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082` on 2026-09-01. Sealed D-193 commands, selector, copy, PGlite v6 constraint. **Do not re-implement core.**
 - **UI branch:** `cursor/charter-held-ui-115c`
 - **UI base:** `ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082`
-- **UI head:** `b37719dc675f70bbf5e2e46d970169823a8f75f2`
+- **UI head:** `ee704ad28f1a1bc476edbdee3e789748244e1679` (this packet). Product closeout `e800cede3c9cf249b27b6bfafbf84a01a5f1b629`.
 - **Draft PR:** [#286](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286) — **draft, not merged, not kitchen-published, not live, not shipped**
 - **Worksession:** [`docs/worksessions/2026-09-01-charter-held-ui.md`](../worksessions/2026-09-01-charter-held-ui.md)
 - **Risk:** High (consent presentation beside Confirm)
@@ -197,7 +197,7 @@ Review Hearth Charter Slice 5 Held UI only.
 Repo: jonathanbeaulne123-blip/dual-ai-budget-app
 Branch: cursor/charter-held-ui-115c
 Base: ff9d8d8de70c80fd567ba9835b3cc2ffbcd45082 (D-193 core already on main via #283)
-Head: b37719dc675f70bbf5e2e46d970169823a8f75f2
+Head: ee704ad28f1a1bc476edbdee3e789748244e1679
 Draft PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/286
 Packet: docs/briefs/CHARTER_SLICE_5_HELD_UI_RETURN_HANDOFF_2026-09-01.md
 
