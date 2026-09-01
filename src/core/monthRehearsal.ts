@@ -1,5 +1,5 @@
 import { monthEndKey, parseDateKey, parseMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
-import { sha256Hex } from "./commandIdentity.ts";
+import { financialHouseholdFundEventFacts, sha256Hex } from "./commandIdentity.ts";
 import { cloneHousehold } from "./household.ts";
 import { nextId, nowIso } from "./ids.ts";
 import { booksEquation, compileHousehold, trialBalance } from "./journal.ts";
@@ -679,7 +679,7 @@ async function checkpointProjection(household: Household, rehearsal: MonthRehear
     })).sort((left, right) => left.id.localeCompare(right.id)),
     fund: {
       config: scoped.householdFund ?? null,
-      events: shapeHouseholdFundEvents(scoped.fundEvents),
+      events: shapeHouseholdFundEvents(scoped.fundEvents).map(financialHouseholdFundEventFacts),
       settlements: [...(scoped.fundSettlementAllocations ?? [])].sort((left, right) => left.id.localeCompare(right.id)),
     },
     reconciliations: [...scoped.kitchen.books.reconciliations].sort((left, right) => left.id.localeCompare(right.id)),

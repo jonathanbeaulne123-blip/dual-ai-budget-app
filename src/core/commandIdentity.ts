@@ -1,4 +1,4 @@
-import type { CommandReceipt, Household, Transaction } from "./types.ts";
+import type { CommandReceipt, Household, HouseholdFundEvent, Transaction } from "./types.ts";
 
 function byId<T extends { id: string }>(rows: T[] | undefined): T[] {
   return [...(rows ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -14,6 +14,13 @@ function stable(value: unknown): unknown {
     );
   }
   return value;
+}
+
+/** Durable Fund provenance that does not alter the accepted-books financial identity. */
+export function financialHouseholdFundEventFacts(
+  { purpose: _purpose, ...event }: HouseholdFundEvent,
+): Omit<HouseholdFundEvent, "purpose"> {
+  return event;
 }
 
 export function financialAuditFacts(household: Household) {
@@ -116,7 +123,9 @@ export function financialAuditFacts(household: Household) {
     ...(household.charter ? { charter: household.charter } : {}),
     householdFund: household.householdFund ?? null,
     fundMonthPlans: byId(household.fundMonthPlans ?? []),
-    fundEvents: byId(household.fundEvents ?? []),
+    // Purpose remains durable in command/sync facts, but it is editorial provenance,
+    // not Fund financial meaning and must not invalidate accepted-books receipts.
+    fundEvents: byId(household.fundEvents ?? []).map(financialHouseholdFundEventFacts),
     fundSettlementAllocations: byId(household.fundSettlementAllocations ?? []),
     fundKittyAllocations: byId(household.fundKittyAllocations ?? []),
     fundPrivate: household.fundPrivate ?? null,
@@ -165,7 +174,9 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     || Boolean(row.correctedByShiftId && posted.has(row.correctedByShiftId))
     || Boolean(row.correctionOfShiftId && posted.has(row.correctionOfShiftId)));
   const contributions = (next.goalContributions ?? []).filter((row) => posted.has(row.id));
-  const fundEvents = (next.fundEvents ?? []).filter((row) => posted.has(row.id));
+  const fundEvents = (next.fundEvents ?? [])
+    .filter((row) => posted.has(row.id))
+    .map(({ purpose, ...event }) => purpose ? { ...event, purpose } : event);
   const fundSettlementAllocations = (next.fundSettlementAllocations ?? []).filter((row) => posted.has(row.id));
   const fundKittyAllocations = (next.fundKittyAllocations ?? []).filter((row) => posted.has(row.id));
   const fundMonthPlans = (next.fundMonthPlans ?? []).filter((row) => posted.has(row.id));

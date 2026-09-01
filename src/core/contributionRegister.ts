@@ -1,3 +1,7 @@
+// A purpose is a label on money, not a partition of it (D-161, D-173).
+// It never changes which obligation a dollar funds, never creates a balance,
+// and never appears in any arithmetic. It is provenance the register can read back.
+
 import { monthEndKey, monthStartKey, type DateKey } from "./calendar.ts";
 import {
   activeHouseholdFundEvents,
@@ -13,6 +17,7 @@ export type RegisterSource = {
   memberId: string | null;
   date: DateKey;
   amountCents: number;
+  purpose: string;
 };
 
 export type RegisterSegment = {
@@ -79,12 +84,14 @@ export function contributionRegister(household: Household, monthKey: string, tod
     memberId: null,
     date: start,
     amountCents: carriedCents,
+    purpose: "",
   }, ...contributions.map((event) => ({
     kind: "contribution" as const,
     eventId: event.id,
     memberId: event.contributorMemberId,
     date: event.date,
     amountCents: event.amountCents,
+    purpose: event.purpose,
   }))];
   const memberTotals = contributions.reduce<Map<string, number>>((memberAmounts, event) => {
     if (event.contributorMemberId) {

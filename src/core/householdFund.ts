@@ -155,6 +155,7 @@ export function shapeHouseholdFundEvents(value: unknown): HouseholdFundEvent[] {
         ? [...new Set(row.evidenceDigests.filter((id): id is string => typeof id === "string" && Boolean(id)))].sort()
         : [],
       reconciliationTied: typeof row.reconciliationTied === "boolean" ? row.reconciliationTied : null,
+      purpose: String(row.purpose ?? "").trim().slice(0, 90),
       note: String(row.note ?? "").trim().slice(0, 180),
       createdAt,
       updatedAt: isoOrFallback(row.updatedAt, createdAt),

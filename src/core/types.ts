@@ -833,6 +833,7 @@ export type HouseholdFundEvent = {
   relatedTransactionIds: string[];
   evidenceDigests: string[];
   reconciliationTied: boolean | null;
+  purpose: string;
   note: string;
   createdAt: string;
   updatedAt: string;

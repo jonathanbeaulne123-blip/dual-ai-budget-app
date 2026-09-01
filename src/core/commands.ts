@@ -467,6 +467,7 @@ export function postEntry(household: Household, input: {
       relatedTransactionIds: publicRelatedIds,
       evidenceDigests: [],
       reconciliationTied: null,
+      purpose: "",
       note: "",
       createdAt: fundEventAt,
       updatedAt: fundEventAt,
@@ -5456,6 +5457,7 @@ export function proposeHouseholdFundContribution(household: Household, input: {
   contributorMemberId: string;
   amount: string | number;
   date: string;
+  purpose?: string;
   note?: string;
 }): CommitResult {
   const fund = requireHouseholdFund(household);
@@ -5480,6 +5482,7 @@ export function proposeHouseholdFundContribution(household: Household, input: {
     relatedTransactionIds: [],
     evidenceDigests: [],
     reconciliationTied: null,
+    purpose: input.purpose?.trim().slice(0, 90) || "",
     note: input.note?.trim().slice(0, 180) || "",
     createdAt: at,
     updatedAt: at,
@@ -5570,7 +5573,7 @@ export function confirmHouseholdFundSettlement(household: Household, input: {
     createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
     destinationAccountId: destinationId, relatedEventId: null,
     relatedTransactionIds: allocations.map((row) => row.transactionId).sort(), evidenceDigests: [],
-    reconciliationTied: null, note: input.note?.trim().slice(0, 180) || "",
+    reconciliationTied: null, purpose: "", note: input.note?.trim().slice(0, 180) || "",
     createdAt: at, updatedAt: at,
   }];
   const existing = shapeHouseholdFundSettlementAllocations(next.fundSettlementAllocations);
@@ -5613,7 +5616,7 @@ export function allocateHouseholdFundSurplus(household: Household, input: {
     id, fundId: fund.id, kind: "kitty-allocated", amountCents, date: parseDate(input.date),
     createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
     destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
-    reconciliationTied: null, note: input.note?.trim().slice(0, 180) || "Month-end rollover",
+    reconciliationTied: null, purpose: "", note: input.note?.trim().slice(0, 180) || "Month-end rollover",
     createdAt: at, updatedAt: at,
   }];
   next.fundKittyAllocations = [...shapeHouseholdFundKittyAllocations(next.fundKittyAllocations), ...allocations.map((row, index) => ({
@@ -5641,7 +5644,7 @@ export function releaseHouseholdFundKitty(household: Household, input: {
     id, fundId: fund.id, kind: "kitty-released", amountCents, date: parseDate(input.date),
     createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
     destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
-    reconciliationTied: null, note: input.note?.trim().slice(0, 180) || "Released from Kitty Banks",
+    reconciliationTied: null, purpose: "", note: input.note?.trim().slice(0, 180) || "Released from Kitty Banks",
     createdAt: at, updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Released $${(amountCents / 100).toFixed(2)} from Kitty Banks`, [id]);
@@ -5722,7 +5725,7 @@ export function recordHouseholdFundReconciliation(household: Household, input: {
     id: eventId, fundId: fund.id, kind: "reconciliation-recorded", amountCents: 0, date,
     createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
     destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
-    reconciliationTied: differenceCents === 0, note: input.note?.trim().slice(0, 180) || "Weekly reconciliation",
+    reconciliationTied: differenceCents === 0, purpose: "", note: input.note?.trim().slice(0, 180) || "Weekly reconciliation",
     createdAt: at, updatedAt: at,
   }];
   const state = shapeHouseholdFundPrivate(next.fundPrivate, input.memberId);
@@ -5756,7 +5759,7 @@ export function reverseHouseholdFundEvent(household: Household, input: {
     createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: target.contributorMemberId,
     destinationAccountId: target.destinationAccountId, relatedEventId: target.id,
     relatedTransactionIds: [...target.relatedTransactionIds], evidenceDigests: [], reconciliationTied: null,
-    note: input.reason.trim().slice(0, 180), createdAt: at, updatedAt: at,
+    purpose: "", note: input.reason.trim().slice(0, 180), createdAt: at, updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Reversed ${target.id}: ${input.reason.trim()}`, [id]);
 }
@@ -5803,7 +5806,7 @@ export function recordHouseholdFundBankVerification(household: Household, input:
     destinationAccountId: matchedEvidence.find((row) => row.destinationAccountId)?.destinationAccountId ?? null,
     relatedEventId: match.eventIds.length === 1 ? match.eventIds[0]! : null,
     relatedTransactionIds: [], evidenceDigests: digests, reconciliationTied: true,
-    note: `Exact ${match.direction} bank evidence`, createdAt: at, updatedAt: at,
+    purpose: "", note: `Exact ${match.direction} bank evidence`, createdAt: at, updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Verified $${(match.amountCents / 100).toFixed(2)} against read-only bank evidence`, [id]);
 }
