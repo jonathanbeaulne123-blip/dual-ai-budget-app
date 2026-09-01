@@ -7,7 +7,7 @@
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `charter/1-record`
 - **Baseline SHA:** `87acccd4f358286693f7a65172aec39d6ca4adbc`
-- **Head SHA:** `1cb08bd732c8e31fa71897867e9da2924675968f` (verified implementation; closure metadata is docs-only)
+- **Head SHA:** `2bbe03c75e5428789e209bf6489df83177574a57` (verified implementation including release-review repairs; later closure metadata is docs-only)
 - **PR or issue:** [#267](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/267)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -66,12 +66,13 @@ Hearth can preserve the household's founding agreement as one typed, defensive r
 ## Evidence log
 
 - Baseline: `git fetch origin main --prune`; `origin/main` resolved to `87acccd4f358286693f7a65172aec39d6ca4adbc`.
-- Focused: bundled pnpm `exec vitest run test/charter-record.test.ts` — 1 file, 8 tests passed.
+- Focused after release-review repair: bundled pnpm `exec vitest run test/month-rehearsal-golden.test.ts test/charter-record.test.ts test/hosted-cas-two-client.test.ts` — 3 files, 24 tests passed.
 - TypeScript: bundled pnpm `exec tsc --noEmit` — passed with no output.
-- Full Windows gate: `scripts/verify-windows.ps1 check` — AI surface passed; 215 test files passed / 2 skipped; 1,457 tests passed / 3 skipped; TypeScript and both production builds passed. Existing React `act(...)`, PGlite bundling, and chunk-size warnings remained non-fatal.
-- Independent targeted re-review after snapshot-plumbing repairs: no P0–P3 findings. The reviewer confirmed the actual household boundaries enforce member/Fund custody and retain the charter through Shared split, assembly, and merge.
+- Full Windows gate after the final repair: `scripts/verify-windows.ps1 check` — AI surface passed; 215 test files passed / 2 skipped; 1,459 tests passed / 3 skipped; TypeScript and both production builds passed. Existing React `act(...)`, PGlite bundling, and chunk-size warnings remained non-fatal.
+- GitHub code review found two P2 release blockers: charter-only shared edits were absent from the hosted CAS identity, and malformed signature rows could overstate completeness. Repair `2bbe03c75e5428789e209bf6489df83177574a57` includes a present Charter in the shared snapshot identity while preserving legacy hashes for households without one and excluding it from Personal-scope hashes; contextual shaping now emits one line per real member and forces duplicates unsigned.
+- Independent targeted re-review after both repair rounds: no P0–P3 findings. The reviewer confirmed member/Fund custody, Shared round-trip preservation, shared-only CAS identity, and fail-closed signature normalization.
 - UI viewport evidence: not applicable; this slice adds no UI.
-- Delivery: implementation `1cb08bd732c8e31fa71897867e9da2924675968f` pushed to `charter/1-record`; PR #267 opened against `main`, left unmerged, and reported mergeable by GitHub.
+- Delivery: implementation `1cb08bd732c8e31fa71897867e9da2924675968f` plus release repair `2bbe03c75e5428789e209bf6489df83177574a57` prepared on `charter/1-record`; PR #267 remains the merge vehicle.
 
 ## Decisions
 
