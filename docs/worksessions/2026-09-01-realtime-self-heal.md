@@ -6,8 +6,9 @@
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/realtime-self-heal`
-- **Baseline SHA:** `8def9bd9ec70fe9c343f5b63880d0c6db2dcffd8` (`origin/main`)
-- **Head SHA:** verified uncommitted candidate over the baseline; exact commit recorded after local commit
+- **Original baseline SHA:** `8def9bd9ec70fe9c343f5b63880d0c6db2dcffd8` (`origin/main` when work opened)
+- **Final rebased base SHA:** `8ae8071f16b945fe2a174a4df52e62054e1b63f3` (`origin/main`; documentation-only advance from the fully tested code base)
+- **Verified application SHA:** `f3ca474` (committed locally; not pushed)
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -27,7 +28,7 @@ When a visible signed-in Hearth tab loses its Supabase Realtime socket, it resto
 
 ## Verified baseline
 
-- Exact clean baseline is `origin/main@8def9bd9ec70fe9c343f5b63880d0c6db2dcffd8`.
+- Work opened from exact clean `origin/main@8def9bd9ec70fe9c343f5b63880d0c6db2dcffd8`; after concurrent Charter and Fund releases, the application passed its final full gate as `d477c27` over code base `86da91c`, then rebased without application conflict onto documentation-only `origin/main@8ae8071f16b945fe2a174a4df52e62054e1b63f3` as `f3ca474`.
 - The 2026-09-01 privacy-safe receiving-device diagnostic ended at revision 66 with `realtimeStatus: CLOSED`, `freshnessMode: poll`, zero command-Realtime receipts, 27 poll fallbacks, and four snapshot accepts.
 - A local accepted command reached hosted acknowledgement in 880 ms.
 - Three recent fallback snapshot accepts took 4,497–4,972 ms after their poll was scheduled.
@@ -84,10 +85,10 @@ When a visible signed-in Hearth tab loses its Supabase Realtime socket, it resto
 - Diagnostic generated at `2026-09-01T07:21:07Z`; hashed identifiers only, no ledger facts or credentials.
 - Supabase references: Realtime silent-disconnection, heartbeat, and monitoring documentation read on 2026-09-01.
 - Focused exact-tree sync gate: 8 files / 85 tests passed; `tsc --noEmit` and `git diff --check` passed.
-- Full exact-tree application tests: 221 files passed / 2 skipped; 1,531 tests passed / 3 skipped.
+- Full exact final-rebased application tests: 224 files passed / 2 skipped; 1,549 tests passed / 3 skipped.
 - `pnpm ai:verify`: 41 required files passed.
-- The repository's `pnpm check` test and AI phases passed, but its Unix `rm` build wrapper cannot run under the Windows command shell. The exact equivalent stages passed separately: TypeScript, Vite production build (389 modules), Hercules Pro UI build, and explicit absence of `dist/_redirects`.
-- Independent books/trust re-audit: **PASS**, no P0–P2 blocker; prior no-ack and poll-order P1s closed.
+- The repository's `pnpm check` test and AI phases passed, but its Unix `rm` build wrapper cannot run under the Windows command shell. The exact equivalent stages passed separately on the final-rebased application commit: TypeScript, Vite production build (396 modules), Hercules Pro UI build, and explicit absence of `dist/_redirects`.
+- Independent books/trust re-audit: **PASS** on fully tested application `d477c27` over `86da91c`; final `f3ca474` adds only mainline Charter release documentation beneath the unchanged application diff. No P0–P2 blocker; prior no-ack and poll-order P1s closed.
 - Independent continuity/latency re-review: **CONDITIONAL PASS**, no code blocker; browser-level App lifecycle integration and deployed two-device timing remain evidence gaps.
 - Independent hygiene/privacy audit: **CONDITIONAL PASS** pending the then-running full gate; no P0–P3 hygiene/privacy finding, secret, export, private artifact, schema, hosted writer, or Production change.
 
@@ -104,4 +105,4 @@ When a visible signed-in Hearth tab loses its Supabase Realtime socket, it resto
 
 ## Handoff
 
-Local implementation and verification are complete. Next owner: Jonathan for a separate push/merge/Development-deploy decision, then the signed-in two-device 100-sample canary. The branch is not pushed, merged, or deployed.
+Local implementation and verification are complete at final application commit `f3ca474` over `8ae8071`; Jonathan authorized push/merge/Development deployment on 2026-09-01. The signed-in two-device 100-sample canary remains required after deployment. At this record the branch is not yet pushed, merged, or deployed.
