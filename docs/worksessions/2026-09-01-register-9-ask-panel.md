@@ -96,4 +96,4 @@ Payday secondary copy only appears when `householdAsk(..., "payday")` actually t
 
 ## Handoff
 
-Draft PR #288 on `cursor/register-9-ask-panel-115c`. Local + branch + draft PR. Not merged, not deployed, not live. Next owner: Jonathan after independent review. Do not stack metronome or Till.
+Draft PR #288 on `cursor/register-9-ask-panel-115c`. Local + branch + draft PR. Not merged, not deployed, not live. ChatGPT independent-review packets: `docs/briefs/CHATGPT_REGISTER_SLICE_9_ASK_PANEL_REVIEW_2026-09-01.md`, sister slice 8 drawing, optional Held post-merge note. Next owner: Jonathan after GPT-5 Pro review. Do not stack metronome or Till. Do not merge.

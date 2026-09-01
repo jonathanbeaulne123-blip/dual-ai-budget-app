@@ -20,7 +20,9 @@
 
 **Data/environment:** Local pure projector/component/CSS/tests only. No hosted row, schema, secret, Production, deploy, or real household data.
 
-**Next owner:** Independent books + UX review, then Jonathan's merge decision. Do not stack the metronome (slice 10) or Till on this PR.
+**ChatGPT review packets (2026-09-01):** paste-ready GPT-5 Pro prompts in [`briefs/CHATGPT_REGISTER_SLICE_9_ASK_PANEL_REVIEW_2026-09-01.md`](briefs/CHATGPT_REGISTER_SLICE_9_ASK_PANEL_REVIEW_2026-09-01.md) (this branch), [`briefs/CHATGPT_REGISTER_SLICE_8_DRAWING_REVIEW_2026-09-01.md`](briefs/CHATGPT_REGISTER_SLICE_8_DRAWING_REVIEW_2026-09-01.md) (draft #285), and [`briefs/CHATGPT_CHARTER_HELD_UI_POST_MERGE_NOTE_2026-09-01.md`](briefs/CHATGPT_CHARTER_HELD_UI_POST_MERGE_NOTE_2026-09-01.md) (optional; #286 already merged). Product review SHA for Ask remains `08d98f7`. Do not merge or stack #285 with #288.
+
+**Next owner:** Independent ChatGPT review, then Jonathan's merge decision. Do not stack the metronome (slice 10) or Till on this PR.
 
 
 ## Charter Slice 5 Held core (2026-09-01)
