@@ -16,6 +16,38 @@
 
 **Boundaries:** No money command or accounting formula changed. No UI, Supabase, migration, hosted data, provider, Production flag, or secret changed. The only environment action was publishing the reviewed client/Worker bundle to the Development kitchen under D-041.
 
+## Charter page and empty signature line (2026-09-01)
+
+**Status:** Draft PR [#275](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/275) on `cursor/charter-page-021f`, stacked on slice 3 draft [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271). **Not merged, not kitchen-published, not live.** Risk **High** (presentation). Sign/revoke reuse existing Charter commands. No Production household mutation, hosted schema, or secrets.
+
+**Household outcome:** The household charter reads as a paper document. An unsigned line is the same rule and name as a signed one, with nothing added. The viewer may sign only their own line. The other person's blank line is silent.
+
+**Budget delta (5):** `+1` — display of the existing Charter record. No posting, no second envelope.
+
+**Engagement delta (3):** `+3` — the agreement is visible, patient, and never accusing.
+
+**If they conflicted:** books won. No badge, nag, streak, or nav count on an unsigned line. More card no longer says to sign. Held amendments never read as a refusal.
+
+**What changed:** `charterView.ts` (`SIGNATURE_VIEW`, `signatureLines`); `Charter` overlay; More → the charter opens the page when founded. Worksession: [`worksessions/2026-09-01-charter-page.md`](worksessions/2026-09-01-charter-page.md).
+
+**Verification:**
+- Focused page + founding + record + commands + Bianca `app-startup-p1` + `month-rehearsal-mainline`: **39 passed**.
+- `pnpm check` on `53c0bcc`: AI surface verified; **1486 passed / 3 skipped**; `tsc` + Vite + Hercules Pro UI green. Follow-up commit is touch-target + More copy + docs.
+- Independent books audit: **PASS**. Independent UX audit: **PASS WITH NOTES**; P1 sign/revoke `min-width: 44px` fixed after the audit.
+- Browser, fictional Development demo: More → the charter document; Jonathan signed only his line (`1 Sept 2026`); Bianca unsigned with no pending copy; close; viewports 320 / 390 / 720 / ~1100.
+
+**Uncertainty:** Stacked on unmerged slice 3. Dark/forced-colors not verified. App More wiring is not jsdom-covered. `origin/main` has moved to `450be34` (#274 integrity). GPT merge packet requires rebase before land.
+
+**Data and environment disclosure:**
+- Development impact: none (branch/PR only)
+- Production impact: none
+- Network calls or data sent: GitHub push of this branch
+- MCP access: none for household data
+- Hosted rows/schema/secrets/deployments: none (Worker preview is not the kitchen URL)
+- Real household or partner-personal data used: none (fictional Development / catalog)
+
+**Next owner:** Jonathan asked GPT to review and merge slices 3 and 4. Paste-ready packet: [`briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md`](briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md). Rebase onto current `origin/main` (`450be34`, includes #274 charter integrity) before merge. Merging `main` queues D-041 kitchen publish. Do not apply schema or touch Production.
+
 ## Charter founding conversation (2026-09-01)
 
 **Status:** Draft PR [#271](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/271) on `cursor/charter-founding-flow-021f` at `7042d7eca20affd6d58ed2face1dab38fce587da`. Base Charter slice 2 sealed `origin/main@effd7b3` (local branch). **Not merged, not kitchen-published, not live.** Risk **High** (presentation). Writes only through existing Charter commands. No Production household mutation, hosted schema, or secrets.
@@ -47,7 +79,7 @@
 - Hosted rows/schema/secrets/deployments: none
 - Real household or partner-personal data used: none (fictional Development / catalog)
 
-**Next owner:** Jonathan reviews draft PR #271. Do not merge unless asked. Next product slice is Charter 4 (page + empty signature).
+**Next owner:** Jonathan asked GPT to review and merge with slice 4. Packet: [`briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md`](briefs/CHATGPT_CHARTER_3_4_REVIEW_MERGE.md). Rebase onto `origin/main@450be34` (#274) before merge. Kitchen publish follows merge to `main` (D-041).
 
 ## D-189 interrupted local PGlite recovery (2026-08-31)
 
