@@ -72,6 +72,7 @@ Say the Household Fund register's remaining monthly shortfall in one calm senten
 - `pnpm check:windows` → AI surface passed; 224 files passed / 2 skipped; 1,542 tests passed / 3 skipped; TypeScript, production Vite build, Hercules Pro UI build, and redirect guard passed. Existing React `act(...)` warnings remained non-failing and outside this core-only slice.
 - Independent books audit found one P1 in the initial cadence route: `projectCadence` stops advancing an old anchor after 48 intervals. Repair routes every `WorkPaySchedule` through `nextWorkScheduleDate` and adds weekly/biweekly 2024-anchor regressions. Final books audit: PASS, no P0/P1/P2.
 - Independent verifier reran the repaired focused suite, TypeScript, and diff checks: PASS, no P0/P1/P2.
+- PR review found that a zero payday-horizon tail could reuse the full-month `"September is covered."` copy while later-month obligations remained. The release repair keeps covered copy month-only and renders the exact secondary line as `$0.00 of that lands before the {n}th.`; a regression proves the full month can still need money.
 
 ## Decisions
 

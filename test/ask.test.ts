@@ -217,6 +217,34 @@ describe("household Ask", () => {
     expect(ask.register.sources.filter((source) => source.kind === "contribution")).toHaveLength(1);
   });
 
+  it("does not call the whole month covered when only the payday horizon is clear", () => {
+    let household = configuredFund();
+    household = addExpenseRecurrence(household, "100", "2026-09-25", "Phone");
+    household = {
+      ...household,
+      workJobs: [payJob(BIANCA, {
+        cadence: "biweekly",
+        anchorDate: "2026-09-04",
+        weekday: 5,
+        monthDays: [15, 30],
+        customDates: [],
+        reminderTime: "09:00",
+      })],
+    };
+
+    const monthAsk = householdAsk(household, "2026-09-12");
+    const paydayAsk = householdAsk(household, "2026-09-12", "payday");
+
+    expect(monthAsk.askCents).toBe(10000);
+    expect(paydayAsk).toMatchObject({
+      horizon: "payday",
+      throughDate: "2026-09-18",
+      askCents: 0,
+      copy: "$0.00 of that lands before the 18th.",
+    });
+    expect(paydayAsk.copy).not.toContain("September is covered");
+  });
+
   it("keeps the number and appends the exact watching caveat", () => {
     let household = configuredFund("2026-09-01");
     household = addExpenseRecurrence(household, "100", "2026-09-20", "Phone");

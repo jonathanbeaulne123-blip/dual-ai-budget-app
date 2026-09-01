@@ -56,12 +56,12 @@ function askCopy(
   monthKey: string,
 ): string {
   const month = monthName(monthKey);
-  if (askCents === 0) return `${month} is covered.`;
   const caveat = ` — though I've only watched ${weeksWatched} weeks of this house.`;
   if (horizon === "payday") {
     const secondary = `${formatCad(askCents)} of that lands before the ${ordinal(parseDateKey(throughDate).day)}`;
     return confidence === "watching" ? `${secondary}${caveat}` : `${secondary}.`;
   }
+  if (askCents === 0) return `${month} is covered.`;
   return confidence === "watching"
     ? `${month} still needs ${formatCad(askCents)}${caveat}`
     : `${month} still needs ${formatCad(askCents)}.`;
