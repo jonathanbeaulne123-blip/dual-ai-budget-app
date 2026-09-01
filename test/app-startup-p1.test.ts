@@ -2,7 +2,7 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catalogHousehold, startMonthRehearsal, type Household } from "../src/core/index.ts";
+import { catalogHousehold, financialAuditHash, seedDemoHousehold, startMonthRehearsal, type Household } from "../src/core/index.ts";
 
 type Inspection = {
   ok: boolean;
@@ -13,8 +13,10 @@ type Inspection = {
 
 const startup = vi.hoisted(() => ({
   cached: null as Household | null,
-  inspections: [] as Array<Promise<Inspection>>,
+  inspections: [] as Array<Promise<Inspection> | Error>,
+  inspectOptions: [] as Array<{ expectedAuditHash?: string }>,
   inspectCalls: 0,
+  ingestOptions: [] as Array<{ auditHash?: string; incremental?: boolean }>,
   ingestCalls: 0,
   saveCalls: 0,
   reconcileCalls: 0,
@@ -37,17 +39,20 @@ vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/ledger/engine.ts")>();
   return {
     ...actual,
-    inspectBrowserBooks: vi.fn((household: Household) => {
+    inspectBrowserBooks: vi.fn((household: Household, options: { expectedAuditHash?: string } = {}) => {
       startup.inspectCalls += 1;
+      startup.inspectOptions.push(options);
       const next = startup.inspections.shift();
+      if (next instanceof Error) throw next;
       return next ?? Promise.resolve({
         ok: true,
         message: "PGlite agrees.",
         entryCount: household.transactions.length,
       });
     }),
-    ingestHouseholdBooks: vi.fn(async (household: Household) => {
+    ingestHouseholdBooks: vi.fn(async (household: Household, options: { auditHash?: string; incremental?: boolean } = {}) => {
       startup.ingestCalls += 1;
+      startup.ingestOptions.push(options);
       return {
         compiled: {} as never,
         status: {
@@ -151,7 +156,9 @@ describe("cached-shell startup books gate", () => {
     sessionStorage.clear();
     startup.cached = { ...catalogHousehold(), linked: true };
     startup.inspections = [];
+    startup.inspectOptions = [];
     startup.inspectCalls = 0;
+    startup.ingestOptions = [];
     startup.ingestCalls = 0;
     startup.saveCalls = 0;
     startup.reconcileCalls = 0;
@@ -270,6 +277,93 @@ describe("cached-shell startup books gate", () => {
     expect(startup.ingestCalls).toBe(1);
     expect(startup.inspectCalls).toBe(2);
     expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
+  });
+
+  it("rebuilds an interrupted local projection only from its accepted snapshot receipt", async () => {
+    const accepted = { ...seedDemoHousehold(), linked: true };
+    startup.cached = { ...accepted, booksAcceptedHash: await financialAuditHash(accepted) };
+    startup.inspections.push(
+      Promise.resolve({
+        ok: false,
+        issue: "interrupted-transaction",
+        message: "The snapshot has journal facts that PGlite does not. Nothing was discarded.",
+        entryCount: 0,
+      }),
+      Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: startup.cached.transactions.length }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await settleUi();
+
+    expect(startup.ingestCalls).toBe(1);
+    expect(startup.inspectCalls).toBe(2);
+    expect(startup.ingestOptions).toEqual([{ auditHash: startup.cached.booksAcceptedHash, incremental: false }]);
+    expect(startup.inspectOptions[1]).toEqual({ expectedAuditHash: startup.cached.booksAcceptedHash });
+    expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
+  });
+
+  it("runs the same receipt-gated interrupted recovery after Retry validation", async () => {
+    const accepted = { ...seedDemoHousehold(), linked: true };
+    startup.cached = { ...accepted, booksAcceptedHash: await financialAuditHash(accepted) };
+    startup.inspections.push(
+      new Error("PGlite worker was unavailable."),
+      Promise.resolve({
+        ok: false,
+        issue: "interrupted-transaction",
+        message: "The snapshot has journal facts that PGlite does not. Nothing was discarded.",
+        entryCount: 0,
+      }),
+      Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: startup.cached.transactions.length }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await settleUi();
+    expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull();
+
+    act(() => button("Retry validation").click());
+    await settleUi();
+
+    expect(startup.ingestCalls).toBe(1);
+    expect(startup.inspectCalls).toBe(3);
+    expect(startup.ingestOptions).toEqual([{ auditHash: startup.cached.booksAcceptedHash, incremental: false }]);
+    expect(startup.inspectOptions[2]).toEqual({ expectedAuditHash: startup.cached.booksAcceptedHash });
+    expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
+  });
+
+  it("keeps an interrupted projection blocked when its saved receipt does not match", async () => {
+    startup.cached = { ...seedDemoHousehold(), linked: true, booksAcceptedHash: "changed-receipt" };
+    startup.inspections.push(Promise.resolve({
+      ok: false,
+      issue: "interrupted-transaction",
+      message: "The snapshot has journal facts that PGlite does not. Nothing was discarded.",
+      entryCount: 0,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await settleUi();
+
+    expect(startup.ingestCalls).toBe(0);
+    expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull();
+    expect(container.textContent).toContain("receipt-covered money facts changed after acceptance");
+
+    act(() => button("More").click());
+    const reset = button("Start from scratch");
+    expect(reset.disabled).toBe(false);
+    expect(container.textContent).not.toContain("Starting over…");
+    act(() => reset.click());
+    expect(button("Delete all Development households").disabled).toBe(false);
   });
 
   it("keeps Bianca Month inside the current App and opens the current income slideshow", async () => {

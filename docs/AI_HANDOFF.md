@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## D-189 interrupted local PGlite recovery (2026-08-31)
+
+**Status:** Local High-risk release candidate on `codex/pglite-interrupted-recovery` from clean `origin/main@87acccd4f358286693f7a65172aec39d6ca4adbc`. No push, PR, merge, deploy, cloud reset, hosted row, schema, secret, or Production action.
+
+**Household outcome:** A saved household with an exact accepted financial receipt can reconstruct an absent/interrupted on-device PGlite projection and reopen Confirm only after the rebuilt journal passes the same hash/balance inspection. Missing or altered receipts and genuine mismatches remain blocked. The Development reset button no longer falsely says `Starting over…` merely because books validation is blocked.
+
+**Budget delta (5):** `+4` — receipt-proved local books recovery without weakening the write gate.
+
+**Engagement delta (3):** `0` — trust infrastructure; no companion behavior is appropriate while books authority is being repaired.
+
+**Verification:** focused startup/readiness/reset plus real PGlite suites passed **33/33** across the first run; the final startup/readiness/reset rerun passed **12/12**, including exact rebuild options and the Retry-validation path. The exact final tree's complete suite passed **1,453/1,453** with **3** intentional skips after adding the bundled Python and Git Unix tools to this Windows shell. `pnpm ai:verify`, TypeScript, the production Vite build, the Hercules Pro UI build, and `git diff --check` passed. Two independent read-only reviews found no P0/P1 blocker; their notes are recorded in the worksession.
+
+**Environment/data:** local synthetic tests only. Development and Production use the same receipt-gated local recovery logic, but Production continuity remains off and untouched. Google identity and Household/Personal scopes do not change. No peer device is required; outbox/offline/hosted behavior is unchanged.
+
+**Worksession:** [`worksessions/2026-08-31-pglite-interrupted-recovery.md`](worksessions/2026-08-31-pglite-interrupted-recovery.md)
+
 ## Glance plates, seal lists, scrolling month sheet (2026-08-31)
 
 **Status:** Merged [#265](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/265) as `main@7d01b62`. Kitchen Cloudflare Workers [`33460617226`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33460617226) **success**. Worker version `0a9ceae5-6227-409c-8121-dc964631b1e5`. Live `index-Cdc4gCTV.js` → lazy `Office-BC-mxQLw.js` with `desk-plate`, `aria-expanded`, “Income this month”, “Expenses this month”, `month-posted-list`, leftover-spend footing, and no `selectPlate` / `plate-on-stage`. CSS `index-CEcjvoXs.css` has `--stories-open-height: calc(680px + 2.2rem)`, `.desk-plate.is-open`, collapsed `min-height:80px`. HTML `Cache-Control: no-store`. **Merged and kitchen-published.** Risk was **High** presentation, then Release because Jonathan ordered merge/deploy. No Production household mutation, hosted schema, or secrets.
