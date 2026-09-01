@@ -2,7 +2,7 @@
 // It never changes which obligation a dollar funds, never creates a balance,
 // and never appears in any arithmetic. It is provenance the register can read back.
 
-import { monthEndKey, monthStartKey, type DateKey } from "./calendar.ts";
+import { monthEndKey, monthStartKey, parseDateKey, type DateKey } from "./calendar.ts";
 import {
   activeHouseholdFundEvents,
   projectHouseholdFundOperatingBalanceBefore,
@@ -59,9 +59,28 @@ function unfundedRows(obligations: MonthObligations): Pick<ContributionRegister,
 
 /** Allocate carried and confirmed Household Fund cents to month obligations oldest-first. */
 export function contributionRegister(household: Household, monthKey: string, today: DateKey): ContributionRegister {
+  return contributionRegisterThrough(household, monthKey, today, monthEndKey(monthKey));
+}
+
+/** The same FIFO register, bounded to obligations and confirmed sources through one civil date. */
+export function contributionRegisterThrough(
+  household: Household,
+  monthKey: string,
+  today: DateKey,
+  throughDate: DateKey,
+): ContributionRegister {
   const start = monthStartKey(monthKey);
-  const end = monthEndKey(monthKey);
-  const obligations = monthObligations(household, monthKey, today);
+  parseDateKey(throughDate);
+  if (throughDate < start) throw new Error("Register through date cannot precede month start.");
+  const monthEnd = monthEndKey(monthKey);
+  const end = throughDate < monthEnd ? throughDate : monthEnd;
+  const month = monthObligations(household, monthKey, today);
+  const rowsThroughDate = month.rows.filter((row) => row.date <= end);
+  const obligations: MonthObligations = {
+    ...month,
+    rows: rowsThroughDate,
+    owedCents: rowsThroughDate.reduce((sum, row) => sum + row.amountCents, 0),
+  };
   const fund = shapeHouseholdFundConfig(household.householdFund);
   if (!fund) {
     const empty = unfundedRows(obligations);

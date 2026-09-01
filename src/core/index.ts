@@ -28,13 +28,14 @@ export * from "./charter.ts";
 export * from "./charterFounding.ts";
 export * from "./charterView.ts";
 export * from "./monthObligations.ts";
-export { contributionRegister } from "./contributionRegister.ts";
+export { contributionRegister, contributionRegisterThrough } from "./contributionRegister.ts";
 export type {
   ContributionRegister,
   RegisterSegment,
   RegisterSource,
   RegisterRow as ContributionRegisterRow,
 } from "./contributionRegister.ts";
+export * from "./ask.ts";
 export * from "./openingTruth.ts";
 export * from "./monthRehearsal.ts";
 export * from "./monthRehearsalPractice.ts";
