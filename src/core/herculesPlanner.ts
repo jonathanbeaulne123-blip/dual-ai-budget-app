@@ -34,6 +34,27 @@ export function shouldPlanHerculesTools(message: string): boolean {
   return /\b(account|balance|cash|chequ|check|saving|visa|master\s*card|credit|transaction|spent|spend|expense|income|earned|wage|tip|shift|bill|due|rent|hydro|phone|grocer|food|coffee|category|merchant|month|week|compare|change|difference|goal|jar|owed|owing|claim|afford|money|net worth|budget|plan|variance|duplicate|audit|health|books|trial balance|largest|biggest|oracle|monte\s*carlo|forecast|runway|tax\s*milk|outlook|simulate|tonight|protect or chase|household name|ledger name|what.*called|bank account)\b/i.test(message);
 }
 
+/**
+ * Tiny fail-closed selector for obvious reads. It never answers or calculates;
+ * it only keeps a known calculator available when every model planner is quiet.
+ */
+export function deterministicHerculesReadFallback(message: string): HerculesReadToolPlan {
+  const value = message.trim().toLowerCase().replace(/[’']/g, "");
+  if (!plannerAllowed(message)) return { calls: [] };
+  if (/\b(bill|bills|rent|hydro|utilities|utility|phone bill)\b/.test(value)
+    && !/\b(spent|spend|paid|pay|post|add|delete|remove|owed|claim)\b/.test(value)) {
+    const horizonDays = /\b(three months|90 days)\b/.test(value)
+      ? 90
+      : /\b(two weeks|14 days)\b/.test(value)
+        ? 14
+        : /\b(this week|7 days)\b/.test(value)
+          ? 7
+          : 30;
+    return { calls: [{ id: "deterministic-bills", name: "bills_due", args: { horizonDays } }] };
+  }
+  return { calls: [] };
+}
+
 export function herculesPlannerPayload(request: HerculesPlannerRequest): string {
   return JSON.stringify({
     message: request.message.replace(/\s+/g, " ").trim().slice(0, 400),
@@ -52,7 +73,7 @@ export async function planHerculesReadTools(
   const body = herculesPlannerPayload(request);
   for (const url of plannerUrls()) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), deps?.timeoutMs ?? 3500);
+    const timer = setTimeout(() => controller.abort(), deps?.timeoutMs ?? 30000);
     try {
       const response = await fetchFn(url, {
         method: "POST",
@@ -71,5 +92,5 @@ export async function planHerculesReadTools(
       clearTimeout(timer);
     }
   }
-  return { calls: [] };
+  return deterministicHerculesReadFallback(request.message);
 }

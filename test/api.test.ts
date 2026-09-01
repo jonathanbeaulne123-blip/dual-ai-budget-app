@@ -27,6 +27,7 @@ describe("Cloudflare static host pairing", () => {
         ANTHROPIC_MODEL?: string;
         HERCULES_CHAT_PROVIDER_TIMEOUT_MS?: string;
         HERCULES_ALLOW_EXTERNAL_PROVIDERS?: string;
+        HERCULES_ALLOW_FULL_SYNTHETIC_CONTEXT?: string;
         HERCULES_EXTERNAL_DATA_CLASSIFICATION?: string;
       };
     };
@@ -39,8 +40,9 @@ describe("Cloudflare static host pairing", () => {
     expect(config.vars?.GROQ_MODEL).toBe("openai/gpt-oss-120b");
     expect(config.vars?.OPENAI_MODEL).toBe("gpt-4o-mini");
     expect(config.vars?.ANTHROPIC_MODEL).toBe("claude-haiku-4-5");
-    expect(config.vars?.HERCULES_CHAT_PROVIDER_TIMEOUT_MS).toBe("1800");
+    expect(config.vars?.HERCULES_CHAT_PROVIDER_TIMEOUT_MS).toBe("8000");
     expect(config.vars?.HERCULES_ALLOW_EXTERNAL_PROVIDERS).toBe("true");
+    expect(config.vars?.HERCULES_ALLOW_FULL_SYNTHETIC_CONTEXT).toBe("true");
     expect(config.vars?.HERCULES_EXTERNAL_DATA_CLASSIFICATION).toBe("synthetic");
   });
 

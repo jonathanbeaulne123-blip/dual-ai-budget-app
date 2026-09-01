@@ -24,6 +24,15 @@ describe("Bianca month rehearsal UI", () => {
     expect(html).toContain("Choose Bianca");
     expect(html).toContain("Choose Jonathan");
     expect(html).toContain("own signed-in phone");
+    expect(html).toContain("Prove recovery before week 1");
+    expect(html).toContain("Download private backup");
+    expect(html).toContain("Select that backup again");
+    expect(html).toContain("Recovery check still required");
+    expect(html).toContain("Household access lists both people and both current phones");
+    expect(html).toContain("Both phones show Development");
+    expect(html).toContain("false Synced state");
+    expect(html).toContain("not uploaded, added to the household snapshot, or sent to Hercules");
+    expect(html).toMatch(/<button type="button" class="primary" disabled="">Start our month<\/button>/);
     expect(html).not.toMatch(/test case|fixture|QA instruction/i);
     expect(renderToStaticMarkup(createElement(MonthRehearsalPanel, { household: { ...household, environment: "production" }, memberId: "MEM-001", today: "2026-08-28", onApply: () => undefined }))).toBe("");
   });
@@ -61,6 +70,8 @@ describe("Bianca month rehearsal UI", () => {
     expect(panelSource).toContain("Link this evidence");
     expect(panelSource).toContain("Choose another");
     expect(panelSource).toContain("This export contains the clarity and friction notes");
+    expect(panelSource).toContain("verifyCurrentHouseholdRecovery");
+    expect(panelSource).toContain("canStartPrepared");
     expect(css).toContain("@media(max-width:520px)");
   });
 

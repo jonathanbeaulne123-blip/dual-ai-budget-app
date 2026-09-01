@@ -49,7 +49,6 @@ import {
   isInstrumentId,
   loadPhonePlacePrefs,
   householdForHerculesContext,
-  workplaceContextForAiDisclosure,
   CAT,
   NAV,
   WIDE_BREAKPOINT,
@@ -1000,10 +999,13 @@ export function HerculesPresence({
     if (toolPlan.calls.length) {
       const investigation = executeHerculesReadToolPlan(household, toolPlan, today, { memberId, view });
       const groundedAnswer = investigation.talk;
+      const voicedRequest = composeHerculesChatRequest(household, text, briefing, today, memberId, topic, {
+        shareCoordsWithModel: loadPhonePlacePrefs(household.environment).shareCoordsWithModel,
+        view,
+        coworkerIdsForModel,
+      });
       const voiced = await chatHercules({
-        message: text,
-        briefing,
-        householdId: household.householdId,
+        ...voicedRequest,
         grounded: {
           spoken: groundedAnswer.spoken,
           lesson: groundedAnswer.lesson,
@@ -1014,7 +1016,6 @@ export function HerculesPresence({
           groundedAnswer.lesson,
           ...(groundedAnswer.facts ?? []).flatMap((item) => [item.label, item.value]),
         ),
-        workplaceContext: workplaceContextForAiDisclosure(household, memberId, coworkerIdsForModel),
       });
       if (!isCurrentHerculesReply(replyContext, {
         ...activeChatIdentity.current,
@@ -1055,6 +1056,7 @@ export function HerculesPresence({
       ...activeChatIdentity.current,
       requestId: chatGen.current,
     })) return;
+    const usedModelVoice = result.source === "ai" && result.text !== grounded.spoken;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
     reactToChatText(result.text);
@@ -1067,8 +1069,8 @@ export function HerculesPresence({
     }
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
-    setReplyProvider(herculesProviderForDisplayedReply(result));
-    keepTalk(message, result.text, result.source === "ai" ? "ai" : "local", null, coworkerIdsForModel.length > 0);
+    setReplyProvider(herculesProviderForDisplayedReply(result, usedModelVoice));
+    keepTalk(message, result.text, usedModelVoice ? "ai" : "local", null, coworkerIdsForModel.length > 0);
   }
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {

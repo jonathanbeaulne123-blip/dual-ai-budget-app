@@ -381,7 +381,9 @@ describe("Hercules read-only tool brain", () => {
     expect(run.results[1]?.sentence).toMatch(/\$100\.00 from 1 posted row/);
     expect(transactionsForHerculesSource(household.transactions, run.results[0]!.facts[0]!.source).map((row) => row.type)).toEqual(["expense"]);
     expect(transactionsForHerculesSource(household.transactions, run.results[1]!.facts[0]!.source).map((row) => row.type)).toEqual(["income"]);
-    expect(run.results[2]?.facts.map((row) => row.source.recurrenceId)).toEqual(["bill"]);
+    expect(run.results[2]?.sentence).toMatch(/totaling \$1850\.00/i);
+    expect(run.results[2]?.facts[0]?.label).toBe("Scheduled bills total");
+    expect(run.results[2]?.facts.slice(1).map((row) => row.source.recurrenceId)).toEqual(["bill"]);
     expect(run.results[3]?.sentence).toContain("$150.00 of shift income");
 
     const amountSearch = executeHerculesReadToolPlan(household, { calls: [{
@@ -403,6 +405,12 @@ describe("Hercules read-only tool brain", () => {
     const refused = await planHerculesReadTools({ message: "please pay the Visa", page: "home", view: "household" }, { fetch: fetcher });
     expect(refused.calls).toEqual([]);
     expect(fetcher).toHaveBeenCalledTimes(1);
+
+    const fallback = await planHerculesReadTools(
+      { message: "how much are my bills", page: "home", view: "household" },
+      { fetch: vi.fn(async () => new Response("quiet", { status: 503 })) },
+    );
+    expect(fallback).toEqual({ calls: [{ id: "deterministic-bills", name: "bills_due", args: { horizonDays: 30 } }] });
   });
 
   it("exposes a guarded Worker planner and sanitizes model tool output", async () => {
@@ -444,5 +452,61 @@ describe("Hercules read-only tool brain", () => {
     expect(source).toContain("HERCULES_ALLOW_PAID_PROVIDERS");
     expect(source).toContain("@cf/google/gemma-4-26b-a4b-it");
     expect(source).not.toMatch(/name:\s*["']post_entry["']/);
+  });
+
+  it("plans through Gemini then Groq before lower tiers and keeps the plan read-only", async () => {
+    resetChatRateMemory();
+    const request = new Request("https://hearth-books.jonathan-beaulne123.workers.dev/hercules/plan", {
+      method: "POST",
+      headers: {
+        Origin: "https://hearth-books.jonathan-beaulne123.workers.dev",
+        "CF-Connecting-IP": "203.0.113.78",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: "how much are my bills", page: "home", view: "household" }),
+    });
+    const attempts: string[] = [];
+    const bodies: Array<Record<string, unknown>> = [];
+    const upstream = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      attempts.push(url);
+      bodies.push(JSON.parse(String(init?.body || "{}")) as Record<string, unknown>);
+      if (url.includes("generativelanguage.googleapis.com")) {
+        return new Response(JSON.stringify({ candidates: [{ content: { parts: [] } }] }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({ calls: [
+          { name: "post_entry", args: { amount: 50 } },
+          { name: "bills_due", args: { horizonDays: 30, injected: "DROP TABLE" } },
+        ] }) } }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", upstream);
+    const run = vi.fn();
+
+    const response = await worker.fetch(request, {
+      HERCULES_ALLOW_EXTERNAL_PROVIDERS: "true",
+      HERCULES_EXTERNAL_DATA_CLASSIFICATION: "synthetic",
+      GEMINI_API_KEY: "synthetic-gemini-key",
+      GROQ_API_KEY: "synthetic-groq-key",
+      AI: { run },
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: true,
+      provider: "groq",
+      plan: { calls: [{ name: "bills_due", args: { horizonDays: 30 } }] },
+    });
+    expect(attempts).toEqual([
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+      "https://api.groq.com/openai/v1/chat/completions",
+    ]);
+    expect(bodies[0]).toMatchObject({ generationConfig: { maxOutputTokens: 16384, thinkingConfig: { thinkingLevel: "high" } } });
+    expect(bodies[1]).toMatchObject({ max_completion_tokens: 8192, reasoning_effort: "high" });
+    expect(run).not.toHaveBeenCalled();
   });
 });

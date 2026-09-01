@@ -160,11 +160,13 @@ export {
   parseHouseholdExport,
   redactedDiagnostics,
   validateHouseholdImport,
+  verifyCurrentHouseholdRecovery,
   makeConflictBundle,
   parseConflictBundle,
   booksRecoveryAdvice,
   HOUSEHOLD_EXPORT_KIND,
   CONFLICT_BUNDLE_KIND,
+  type CurrentHouseholdRecoveryProof,
 } from "./recovery.ts";
 export { classifyCommitWrite, isLedgerWrite, type CommitWriteKind } from "./writeKind.ts";
 export {

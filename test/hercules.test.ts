@@ -435,11 +435,16 @@ describe("The Hercules Update", () => {
     const asMem001 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-001", "", { view: "personal" });
     expect(asMem001.ledger.recent.some((row) => /gym drop-in/i.test(row.note))).toBe(false);
     expect(asMem001.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(true);
-    const payload001 = herculesModelPayload(asMem001);
-    expect(payload001).not.toMatch(/gym drop-in/i);
-    expect(payload001).toMatch(/haircut/i);
-    expect(payload001).toMatch(/ledgerLines/);
-    expect(payload001).toMatch(/Recent transactions:/);
+    const boundedPayload001 = herculesModelPayload({
+      ...asMem001,
+      fullSyntheticContext: undefined,
+      dataClassification: undefined,
+    });
+    expect(boundedPayload001).not.toMatch(/gym drop-in/i);
+    expect(boundedPayload001).toMatch(/haircut/i);
+    expect(boundedPayload001).toMatch(/ledgerLines/);
+    expect(boundedPayload001).toMatch(/Recent transactions:/);
+    expect(herculesModelPayload(asMem001)).toMatch(/gym drop-in/i);
 
     const asMem002 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-002", "", { view: "personal" });
     expect(asMem002.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(false);

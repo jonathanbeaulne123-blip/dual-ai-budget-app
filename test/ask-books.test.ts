@@ -30,7 +30,14 @@ describe("ask the books", () => {
 
     const due = askBooks(household, "what bills are due?", "2026-08-21");
     expect(due.sentence).toMatch(/Hydro|repeating/);
+    expect(due.sentence).toMatch(/\$90\.00/);
+    expect(due.rows[0]).toMatchObject({ label: "Total due", value: "$90.00" });
     expect(due.rows.some((row) => /Hydro/.test(row.label))).toBe(true);
+
+    const exactComplaint = askBooks(household, "how much are my bills", "2026-08-21");
+    expect(exactComplaint.kind).toBe("answer");
+    expect(exactComplaint.sentence).toMatch(/\$90\.00/);
+    expect(exactComplaint.sentence).not.toMatch(/Ask a number/i);
 
     const chequing = askBooks(household, "how much is in chequing?", "2026-08-21");
     expect(chequing.kind).toBe("answer");

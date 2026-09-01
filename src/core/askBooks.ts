@@ -268,22 +268,28 @@ export function askBooks(
     };
   }
 
-  if (/\b(bill|due|upcoming|rent|hydro|phone)\b/.test(q) && !/\b(spent|spend|grocer|owed|claim)\b/.test(q)) {
+  if (/\b(bills?|due|upcoming|rent|hydro|phone)\b/.test(q) && !/\b(spent|spend|grocer|owed|claim)\b/.test(q)) {
     const horizon = addDays(today, 14);
     const due = household.recurrences
-      .filter((item) => item.active && item.nextDate <= horizon)
+      .filter((item) => item.active && item.type === "expense" && item.nextDate <= horizon)
       .sort((left, right) => left.nextDate.localeCompare(right.nextDate));
     if (!due.length) {
       return { kind: "answer", sentence: "Nothing repeating is due in the next two weeks.", rows: [] };
     }
+    const totalCents = due.reduce((sum, item) => sum + item.amountCents, 0);
+    const calendarSource = source(context, "calendar", "Open scheduled bills", { surface: "calendar", from: today, to: horizon });
     return {
       kind: "answer",
-      sentence: `${due.length} repeating ${due.length === 1 ? "item is" : "items are"} due by ${horizon}. Calendar still does not post money.`,
-      rows: due.map((item) => ({
-        label: `${item.nextDate} · ${item.note || "Recurring"}`,
-        value: formatCad(item.amountCents),
-        source: source(context, "calendar", "Open this repeating item", { surface: "calendar", recurrenceId: item.id, from: item.nextDate, to: item.nextDate }),
-      })),
+      sentence: `${due.length} repeating ${due.length === 1 ? "item is" : "items are"} due by ${horizon}, totaling ${formatCad(totalCents)}. Calendar still does not post money.`,
+      rows: [
+        { label: "Total due", value: formatCad(totalCents), source: calendarSource, basis: "projection" },
+        ...due.map((item) => ({
+          label: `${item.nextDate} · ${item.note || "Recurring"}`,
+          value: formatCad(item.amountCents),
+          source: source(context, "calendar", "Open this repeating item", { surface: "calendar", recurrenceId: item.id, from: item.nextDate, to: item.nextDate }),
+          basis: "projection" as const,
+        })),
+      ],
     };
   }
 
