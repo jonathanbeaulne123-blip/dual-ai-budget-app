@@ -23,6 +23,7 @@ export * from "./insights.ts";
 export * from "./goals.ts";
 export * from "./goalVault.ts";
 export * from "./householdFund.ts";
+export * from "./charter.ts";
 export * from "./openingTruth.ts";
 export * from "./monthRehearsal.ts";
 export * from "./monthRehearsalPractice.ts";

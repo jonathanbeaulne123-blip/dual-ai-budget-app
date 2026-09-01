@@ -45,6 +45,7 @@ import {
   shapeHouseholdFundSettlementAllocations,
 } from "./householdFund.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts";
+import { shapeHouseholdCharter } from "./charter.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -240,6 +241,8 @@ export function ensureHouseholdShape(household: Household): Household {
   const fallback = household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "";
   const fallbackIso = household.lastCommittedAt || MISSING_ISO;
   const progress = shapeGoalProgress(household.goals, household.goalContributions, fallbackIso, fallback);
+  const members = shapeMembers(household.members, fallbackIso);
+  const householdFund = shapeHouseholdFundConfig(household.householdFund);
   return {
     ...household,
     householdId: household.householdId || randomHouseholdId(),
@@ -258,7 +261,7 @@ export function ensureHouseholdShape(household: Household): Household {
     calendar: shapeCalendar(household.calendar),
     kitchen: shapeKitchen(household.kitchen),
     google: shapeGoogle(household.google),
-    members: shapeMembers(household.members, fallbackIso),
+    members,
     accounts: shapeAccounts(household.accounts, fallbackIso),
     categories: shapeCategories(household.categories, fallbackIso),
     budgetPlans: shapeBudgetPlans(household.budgetPlans, fallbackIso),
@@ -269,7 +272,8 @@ export function ensureHouseholdShape(household: Household): Household {
     goals: progress.goals,
     goalContributions: progress.goalContributions,
     goalPurchases: shapeGoalPurchases(household.goalPurchases, fallbackIso, fallback),
-    householdFund: shapeHouseholdFundConfig(household.householdFund),
+    charter: shapeHouseholdCharter(household.charter, { members, householdFund }),
+    householdFund,
     fundMonthPlans: shapeHouseholdFundMonthPlans(household.fundMonthPlans),
     fundEvents: shapeHouseholdFundEvents(household.fundEvents),
     fundSettlementAllocations: shapeHouseholdFundSettlementAllocations(household.fundSettlementAllocations),
@@ -403,6 +407,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     goals: sharedGoals,
     goalContributions: shaped.goalContributions.filter((row) => sharedGoalIds.has(row.goalId)),
     goalPurchases: shaped.goalPurchases.filter((row) => sharedGoalIds.has(row.goalId)),
+    charter: shaped.charter ?? null,
     householdFund: shaped.householdFund ?? null,
     fundMonthPlans: shaped.fundMonthPlans ?? [],
     fundEvents: shaped.fundEvents ?? [],
@@ -660,6 +665,7 @@ export function assembleHousehold(
     goals: [...shared.goals, ...personalGoals],
     goalContributions: [...(shared.goalContributions ?? []), ...personalGoalContributions],
     goalPurchases: [...(shared.goalPurchases ?? []), ...personalGoalPurchases],
+    charter: shared.charter ?? null,
     householdFund: shared.householdFund ?? null,
     fundMonthPlans: shared.fundMonthPlans ?? [],
     fundEvents: shared.fundEvents ?? [],
@@ -698,6 +704,21 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
   const goalContributions = mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones);
   const goalPurchases = mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones);
   const goals = applyGoalSavings(mergeRecords(server.goals, client.goals, tombstones), goalContributions);
+  const members = mergeRecords(server.members, client.members, []);
+  const householdFund = (() => {
+    const left = shapeHouseholdFundConfig(server.householdFund);
+    const right = shapeHouseholdFundConfig(client.householdFund);
+    if (!left) return right;
+    if (!right) return left;
+    return right.updatedAt >= left.updatedAt ? right : left;
+  })();
+  const leftCharter = shapeHouseholdCharter(server.charter, { members, householdFund });
+  const rightCharter = shapeHouseholdCharter(client.charter, { members, householdFund });
+  const charter = !leftCharter
+    ? rightCharter
+    : !rightCharter
+      ? leftCharter
+      : rightCharter.updatedAt >= leftCharter.updatedAt ? rightCharter : leftCharter;
   return {
     kind: "shared",
     revision: Math.max(server.revision ?? 0, client.revision ?? 0) + 1,
@@ -708,7 +729,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     timezone: newer.timezone,
     currency: newer.currency,
     environment: newer.environment,
-    members: mergeRecords(server.members, client.members, []),
+    members,
     accounts: mergeRecords(server.accounts, client.accounts, []),
     categories: mergeRecords(server.categories, client.categories, []),
     recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
@@ -721,13 +742,8 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     goals,
     goalContributions,
     goalPurchases,
-    householdFund: (() => {
-      const left = shapeHouseholdFundConfig(server.householdFund);
-      const right = shapeHouseholdFundConfig(client.householdFund);
-      if (!left) return right;
-      if (!right) return left;
-      return right.updatedAt >= left.updatedAt ? right : left;
-    })(),
+    charter,
+    householdFund,
     fundMonthPlans: mergeRecords(server.fundMonthPlans ?? [], client.fundMonthPlans ?? [], tombstones),
     fundEvents: mergeRecords(server.fundEvents ?? [], client.fundEvents ?? [], tombstones),
     fundSettlementAllocations: mergeRecords(server.fundSettlementAllocations ?? [], client.fundSettlementAllocations ?? [], tombstones),
