@@ -1,17 +1,17 @@
 # Hearth worksession — Charter integrity repair
 
-- **Status:** READY FOR REVIEW — LOCAL VERIFIED; PUSH PENDING
+- **Status:** CLOSED — MERGED #274; DEVELOPMENT KITCHEN PUBLISHED
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/charter-2-integrity-repair`
 - **Baseline SHA:** `f9958758547e8d2c99733a2f0f44294c003346d5`
-- **Head SHA:** pending
-- **PR or issue:** follow-up to [#269](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/269)
-- **Risk:** High
+- **Head SHA:** code `56ee6b498201f6d87f921be616642b00d73338df`; merge `450be34b6bc84f5bf5e203154c864cccba198eb5`
+- **PR or issue:** [#274](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/274), follow-up to [#269](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/269)
+- **Risk:** Release
 - **Decision owner:** Jonathan
-- **Environment impact:** none
+- **Environment impact:** Development kitchen code published; no hosted household rows, schema, secrets, or Production continuity changed
 
 ## Household outcome
 
@@ -46,7 +46,7 @@ The household Charter survives later Fund setup and independent device edits wit
 
 ### Out of scope
 
-- Charter Slice 3, 4, or 5 UI; new notifications; hosted schema/data; Supabase; Production; deployment; real household data; secrets.
+- Charter Slice 3, 4, or 5 UI; new notifications; hosted schema/data; Supabase; Production continuity; real household data; secrets.
 
 ## Acceptance evidence
 
@@ -64,7 +64,7 @@ The household Charter survives later Fund setup and independent device edits wit
 - [x] Implement the smallest coherent record/command/merge repair.
 - [x] Add adversarial command and two-device regression tests.
 - [x] Run focused proof, independent read-only audits, then the complete Windows gate.
-- [ ] With Jonathan's confirmation, push and open one repair PR; stop without merge or deployment.
+- [x] With Jonathan's confirmation, push, review, merge, publish the Development kitchen, and verify the exact live bundle.
 
 ## Evidence log
 
@@ -74,6 +74,9 @@ The household Charter survives later Fund setup and independent device edits wit
 - Independent books/continuity final audit: no P0–P3 findings; focused `55/55` and TypeScript passed.
 - Independent trust/concurrency final audit: no P0–P3 findings; focused `46/46` passed.
 - Regression proof includes self/outsider-confirm fail-closed behavior, invalid custodian targets, paired ceiling replay, forged collision-alias retention, merge symmetry, and Charter-level idempotence.
+- PR [#274](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/274) exact-head CI [`33477214483`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33477214483) and Cloudflare preview [`33477214530`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33477214530) passed; automated code review completed with no findings.
+- Merged as `main@450be34b6bc84f5bf5e203154c864cccba198eb5`. Main CI [`33478168942`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33478168942) and Cloudflare Workers [`33478168914`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33478168914) passed.
+- Worker version `ae1df573-e6f9-43a2-af78-c67c03d0318e`. Live HTML returned `200` with `Cache-Control: no-store`; `index-ClRSFCAQ.js` contained `termsUpdatedAt`, `ceilingKind`, `custodianMemberId`, `amendments`, and `signatures`.
 
 ## Decisions
 
@@ -87,4 +90,4 @@ The household Charter survives later Fund setup and independent device edits wit
 
 ## Handoff
 
-Local repair is verified and ready to push as one prerequisite PR after Jonathan confirms. Nothing is pushed, merged, deployed, or applied to hosted or household data.
+Repair is merged and published to the Development kitchen. No hosted household row, schema, secret, Production-continuity setting, or real household data changed. The later Charter UI slices may build from `main@450be34` while retaining the live two-device Charter canary as a separate evidence gate.

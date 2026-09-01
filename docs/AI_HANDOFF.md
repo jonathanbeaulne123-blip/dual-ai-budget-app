@@ -2,7 +2,7 @@
 
 ## D-189 Charter integrity repair (2026-09-01)
 
-**Status:** Local High-risk repair verified on `codex/charter-2-integrity-repair` from clean `origin/main@f9958758547e8d2c99733a2f0f44294c003346d5`. Push/PR approval remains pending. No merge, deploy, hosted row, schema, secret, Production, or household-data action.
+**Status:** Merged through [#274](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/274) as `main@450be34b6bc84f5bf5e203154c864cccba198eb5` and published to the Development kitchen. Main CI `33478168942` and Cloudflare Workers `33478168914` passed; Worker version `ae1df573-e6f9-43a2-af78-c67c03d0318e` is live. No hosted row, schema, secret, Production-continuity, or household-data action.
 
 **Household outcome:** The Charter refuses a later Fund setup with a different custodian, retains independently created signatures/permissions/amendments across device convergence, and changes ceiling units only through one amendment carrying its typed value.
 
@@ -12,9 +12,9 @@
 
 **Implementation:** `HouseholdCharter.termsUpdatedAt` separates scalar-term authority from routine record activity. `mergeHouseholdCharters` merges member signatures and stable-id subrecords, replays resolved amendments deterministically, and applies Fund custody as the final invariant. `proposeCharterCeilingAmendment` carries kind plus integer cents/tenths atomically. `configureHouseholdFund` checks an existing Charter before mutation.
 
-**Verification:** Current-main focused Charter/commands/materialization/outbox/CAS plus new-neighbour proof passed `100/100`. The exact-worktree Windows gate passed: AI-surface verification, `218` test files passed / `2` skipped, `1,499` tests passed / `3` skipped, TypeScript, Vite production build, and Hercules Pro UI build. Two independent final exact-diff audits found no P0–P3. Diff/secret hygiene and local release seal are recorded in the worksession.
+**Verification:** Current-main focused Charter/commands/materialization/outbox/CAS plus new-neighbour proof passed `100/100`. The exact-worktree Windows gate passed: AI-surface verification, `218` test files passed / `2` skipped, `1,499` tests passed / `3` skipped, TypeScript, Vite production build, and Hercules Pro UI build. Two independent final exact-diff audits and the PR code review found no P0–P3. PR CI `33477214483`, preview deploy `33477214530`, main CI `33478168942`, and production Worker publish `33478168914` passed. Live HTML returned `200` with `no-store`, and the served bundle contained the Charter integrity markers.
 
-**Boundaries:** No money command or accounting formula changed. No UI, Supabase, migration, hosted data, provider, Production flag, secret, merge, or deployment is in scope.
+**Boundaries:** No money command or accounting formula changed. No UI, Supabase, migration, hosted data, provider, Production flag, or secret changed. The only environment action was publishing the reviewed client/Worker bundle to the Development kitchen under D-041.
 
 ## D-189 interrupted local PGlite recovery (2026-08-31)
 
