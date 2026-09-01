@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
@@ -267,8 +268,8 @@ describe("clerk citations", () => {
     expect(view.host.querySelector("[role='dialog']")).toBeNull();
     view.unmount();
 
-    const component = readFileSync(new URL("../src/ClerkReading.tsx", import.meta.url), "utf8");
-    const styles = readFileSync(new URL("../src/clerk-reading.css", import.meta.url), "utf8");
+    const component = readFileSync(join(process.cwd(), "src/ClerkReading.tsx"), "utf8");
+    const styles = readFileSync(join(process.cwd(), "src/clerk-reading.css"), "utf8");
     expect(component).not.toMatch(/from ["'].*commands/);
     expect(component).not.toMatch(/core\/index/);
     for (const forbidden of [
