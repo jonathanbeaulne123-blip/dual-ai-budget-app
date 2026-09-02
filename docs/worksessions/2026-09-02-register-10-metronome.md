@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/register-10-metronome-115c`
 - **Baseline SHA:** `7101dced3d592f9c70d445ec4b901cc3ff8946b3`
-- **Head SHA:** confirm `git rev-parse HEAD` on `cursor/register-10-metronome-115c`
+- **Head SHA:** fetch `origin/cursor/register-10-metronome-115c`. Product Chip-above-axis: `b1f66f0cac67172d45f11bda3c4cd2fd9e25b0a0`. Verify `git rev-parse HEAD` after fetch.
 - **PR or issue:** draft [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294)
 - **Risk:** High
 - **Decision owner:** Jonathan

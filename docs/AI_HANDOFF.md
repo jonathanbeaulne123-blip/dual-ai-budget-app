@@ -2,7 +2,7 @@
 
 ## Register slice 10 — the metronome (2026-09-02)
 
-**Status:** Implemented on `cursor/register-10-metronome-115c`; draft PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Baseline `origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3`.
+**Status:** Implemented on `cursor/register-10-metronome-115c`; draft PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Baseline `origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3`. Product Chip-above-axis `b1f66f0cac67172d45f11bda3c4cd2fd9e25b0a0`; fetch the branch HEAD for review.
 
 **Household outcome:** Bianca's projected paydays appear as regular felt ticks below the Course axis. Ticks carry no amount. Jonathan's confirmed contributions keep their existing marks. The contrast is the information.
 

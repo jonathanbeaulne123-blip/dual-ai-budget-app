@@ -50,7 +50,7 @@ Hearth is Dual Course: family-office books weigh 5; Hercules and interactables w
 
 - Repo: jonathanbeaulne123-blip/dual-ai-budget-app (private)
 - Branch: cursor/register-10-metronome-115c
-- Review SHA: confirm `git rev-parse HEAD` on `cursor/register-10-metronome-115c` after fetching (first product commit was `d00b9dace28fae58d4b71f6986cdd8e79bb38e20`; Chip-above-axis label is a follow-up on the same branch)
+- Review SHA: fetch `origin/cursor/register-10-metronome-115c` and use that HEAD. Product: `d00b9dace28fae58d4b71f6986cdd8e79bb38e20` (ticks) then `b1f66f0cac67172d45f11bda3c4cd2fd9e25b0a0` (Chip above the axis). Do not review a SHA that lacks the Chip-above-axis label.
 - Baseline: origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3 (Merge #292)
 - Fetch origin/main before merge. Do not merge onto a stale main if main has moved; rebase only if the conflict is docs and Course geometry is untouched.
 - Draft PR https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294 — not kitchen-live until merged
