@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/register-10-metronome-115c`
 - **Baseline SHA:** `7101dced3d592f9c70d445ec4b901cc3ff8946b3`
-- **Head SHA:** _pending_
-- **PR or issue:** _pending draft_
+- **Head SHA:** confirm `git rev-parse HEAD` on `cursor/register-10-metronome-115c`
+- **PR or issue:** draft [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -53,30 +53,36 @@ Inference:
 
 ## Acceptance evidence
 
-- [ ] Ticks land on projected cadence dates
-- [ ] No tick carries an amount
-- [ ] Existing month-spread conservation suite still passes
-- [ ] `courseScale` / `courseTop` / `courseBottom` source unchanged
-- [ ] Focused tests plus `tsc --noEmit` and a broader local gate
-- [ ] Visual proof at 320 / 390 / 720 / ~1100
+- [x] Ticks land on projected cadence dates
+- [x] No tick carries an amount
+- [x] Existing month-spread conservation suite still passes
+- [x] `courseScale` / `courseTop` / `courseBottom` source unchanged
+- [x] Focused tests plus `tsc --noEmit` and `pnpm test:fast`
+- [x] Visual proof at 320 / 390 / 720 / ~1100
 
 ## Plan
 
 - [x] Pin `origin/main` and inspect Course + payday helpers
 - [x] Implement `paydayTicks` and axis ticks
 - [x] Add focused tests
-- [ ] Independent audits, visual proof, ChatGPT review/merge packet
+- [x] Independent audits, visual proof, ChatGPT review/merge packet
 
 ## Evidence log
 
 - Baseline: `git checkout -B cursor/register-10-metronome-115c origin/main` → `7101dced3d592f9c70d445ec4b901cc3ff8946b3`
 - Focused `pnpm exec vitest run test/month-spread.test.ts`: **39 passed** (existing conservation cases untouched plus six metronome cases)
+- Bianca Month: **10 passed**. `tsc --noEmit` passed. `pnpm test:fast`: **1,511 passed / 2 skipped**. `pnpm ai:verify` passed.
+- First-head GitHub `pnpm check` CI `33595112394` success at `d00b9dac` before the Chip-above-axis label repair.
+- Independent books PASS WITH NOTES. Privacy PASS WITH NOTES. UX PASS WITH NOTES (label collision/clip) then Chip above the axis. Verifier PASS WITH NOTES.
+- Component harness screenshots at 320 / 390 / 720 / 1100 plus empty, night, reduced-motion. Fictional Development copy. Not kitchen.
+- Draft PR #294. Not merged, not deployed, not live.
 
 ## Decisions
 
 - Ticks use `nextWorkScheduleDate` on each active custodian `paySchedule`, unioned across jobs. Tip schedules are not paydays.
 - `--ms-tick: var(--felt)` honors the manual's `--felt` and the UX packet's `--tick` without a new hex.
 - Passing `booksHousehold` into `MonthSpread` is a justified host wire: the Course is already the Shared Home stage.
+- The `payday` word sits in an existing Chip **above** the axis. Ticks remain below the axis. Near the right edge the Chip uses `anchorEnd`.
 
 ## Remaining uncertainty
 
@@ -84,4 +90,4 @@ Demo kitchen Bianca and Jonathan share the same biweekly demo job, so ticks and 
 
 ## Handoff
 
-Local + branch. Draft PR pending. Not merged, not kitchen-published, not live. Next owner: GPT-5 Pro independent review, then Jonathan's merge decision via the ChatGPT packet. Do not stack #285. Do not touch Production.
+Local + branch + draft PR #294. Not merged, not kitchen-published, not live. ChatGPT independent review-and-merge packet: `docs/briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md`. Next owner: GPT-5 Pro, then merge only if named gates pass. Do not stack #285. Do not touch Production.
