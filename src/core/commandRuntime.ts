@@ -2,6 +2,7 @@ import { booksEquation, compileHousehold, trialBalance, type CompiledBooks } fro
 import { ensureHouseholdShape } from "./sync.ts";
 import {
   commandIdentityHash,
+  commandMaterializationFacts,
   financialAuditHash,
   financialAuditHashForScope,
   findReceipt,
@@ -192,8 +193,12 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       auditHash: "",
       commandKind: input.commandKind ?? "commit",
       materializationHash: input.commandKind === "updateMonthRehearsal"
-        ? await sha256Hex(accepted.monthRehearsals ?? [])
-        : undefined,
+        ? await sha256Hex(commandMaterializationFacts({ monthRehearsals: accepted.monthRehearsals ?? [] }))
+        : input.commandKind === "moveAskGoalClaimToNextMonth"
+          ? await sha256Hex(commandMaterializationFacts({
+            recurrences: accepted.recurrences.filter((row) => postedIds.includes(row.id)),
+          }))
+          : undefined,
       postedIds,
       revision,
       acceptedAt,

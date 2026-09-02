@@ -1,7 +1,13 @@
-import { financialAuditHash, financialAuditHashForScope, sha256Hex } from "../core/commandIdentity.ts";
+import {
+  commandMaterializationFacts,
+  financialAuditHash,
+  financialAuditHashForScope,
+  sha256Hex,
+} from "../core/commandIdentity.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { shapeHouseholdCharter } from "../core/charter.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
+import { advanceCadence } from "../core/recurrence.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
   Claim,
@@ -16,6 +22,7 @@ import type {
   HouseholdFundMonthPlan,
   HouseholdFundSettlementAllocation,
   MonthRehearsal,
+  Recurrence,
   Shift,
   SitDownSession,
   Tombstone,
@@ -41,6 +48,7 @@ export type ContinuityCommandEvent = {
 };
 
 export type ContinuityMaterializationFacts = {
+  recurrences?: Recurrence[];
   transactions?: Transaction[];
   shifts?: Shift[];
   claims?: Claim[];
@@ -162,6 +170,48 @@ function eventDeclaresMonthRehearsalUpdate(event: ContinuityCommandEvent): boole
     ) === true;
 }
 
+function eventDeclaresAskGoalMove(event: ContinuityCommandEvent): boolean {
+  if (event.payload_json.commandKind !== event.command_type) return false;
+  return event.command_type === "moveAskGoalClaimToNextMonth"
+    || event.payload_json.compactedCommands?.some(
+      (row) => row.commandKind === "moveAskGoalClaimToNextMonth" && row.ledgerScope === "shared",
+    ) === true;
+}
+
+function actorMayApplyAskGoalRecurrences(
+  local: Household,
+  event: ContinuityCommandEvent,
+  incoming: Recurrence[],
+): boolean {
+  if (event.ledger_scope !== "shared" || !eventDeclaresAskGoalMove(event)) return false;
+  const actor = local.members.find((row) => row.id === event.member_id && row.active);
+  if (!actor || local.householdFund?.custodianMemberId === actor.id) return false;
+  const posted = new Set([
+    ...event.payload_json.postedIds,
+    ...(event.payload_json.compactedCommands ?? [])
+      .filter((row) => row.commandKind === "moveAskGoalClaimToNextMonth" && row.ledgerScope === "shared")
+      .flatMap((row) => row.postedIds),
+  ]);
+  for (const recurrence of incoming) {
+    const existing = local.recurrences.find((row) => row.id === recurrence.id);
+    const goal = local.goals.find((row) => row.id === recurrence.goalId);
+    if (!posted.has(recurrence.id)
+      || !existing
+      || !goal?.shared
+      || goal.status === "retired"
+      || Boolean(goal.retiredAt)
+      || !existing.active
+      || existing.type !== "transfer"
+      || existing.cadence !== "monthly"
+      || existing.goalId !== goal.id
+      || recurrence.nextDate !== advanceCadence(existing.nextDate, existing.cadence)) return false;
+    const { nextDate: _existingDate, updatedAt: _existingUpdatedAt, ...existingMeaning } = existing;
+    const { nextDate: _incomingDate, updatedAt: _incomingUpdatedAt, ...incomingMeaning } = recurrence;
+    if (JSON.stringify(existingMeaning) !== JSON.stringify(incomingMeaning)) return false;
+  }
+  return true;
+}
+
 function actorMayApplyMonthRehearsals(
   local: Household,
   event: ContinuityCommandEvent,
@@ -239,6 +289,7 @@ function filterFactsForScope(
     scoped.goalPurchases = facts.goalPurchases.filter((row) => scopeAllowsRow(event, row));
   }
   if (event.ledger_scope === "shared") {
+    if (facts.recurrences?.length) scoped.recurrences = facts.recurrences;
     if (facts.charter) scoped.charter = facts.charter;
     if (facts.householdFund) scoped.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) scoped.fundMonthPlans = facts.fundMonthPlans;
@@ -278,6 +329,10 @@ export function extractMaterializationFacts(
     return false;
   };
   const facts: ContinuityMaterializationFacts = {};
+  if (scope !== "personal" && options?.commandKind === "moveAskGoalClaimToNextMonth") {
+    const recurrences = household.recurrences.filter((row) => posted.has(row.id));
+    if (recurrences.length) facts.recurrences = recurrences;
+  }
   const transactions = household.transactions.filter((row) => posted.has(row.id) && allows(row));
   if (transactions.length) facts.transactions = transactions;
   const shifts = household.shifts.filter((row) => posted.has(row.id) && allows(row));
@@ -342,6 +397,7 @@ async function applyEvent(
   const sitDownSessions = applyMoneyCollection(snapshot.sitDownSessions ?? [], facts.sitDownSessions, mergedTombstones);
   const goalContributions = applyAppendOnlyCollection(snapshot.goalContributions ?? [], facts.goalContributions, mergedTombstones);
   const goalPurchases = applyAppendOnlyCollection(snapshot.goalPurchases ?? [], facts.goalPurchases, mergedTombstones);
+  const recurrences = applyMoneyCollection(snapshot.recurrences, facts.recurrences, mergedTombstones);
   const fundEvents = applyAppendOnlyCollection(snapshot.fundEvents ?? [], facts.fundEvents, mergedTombstones);
   const fundSettlementAllocations = applyAppendOnlyCollection(snapshot.fundSettlementAllocations ?? [], facts.fundSettlementAllocations, mergedTombstones);
   const fundKittyAllocations = applyAppendOnlyCollection(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations, mergedTombstones);
@@ -363,6 +419,7 @@ async function applyEvent(
     sitDownSessions: sitDownSessions.filter((row) => !dead.has(row.id)),
     goalContributions: goalContributions.filter((row) => !dead.has(row.id)),
     goalPurchases: goalPurchases.filter((row) => !dead.has(row.id)),
+    recurrences: recurrences.filter((row) => !dead.has(row.id)),
     charter,
     householdFund,
     fundMonthPlans: [...planMap.values()],
@@ -533,12 +590,27 @@ export async function applyCommandEventLocally(input: {
   const incomingRehearsals = shapeMonthRehearsals(
     event.payload_json.materializationFacts.monthRehearsals,
   );
+  const incomingRecurrences = event.payload_json.materializationFacts.recurrences ?? [];
   if (incomingRehearsals.length) {
     if (!actorMayApplyMonthRehearsals(local, event, incomingRehearsals)) {
       return { ok: false, reason: "month-rehearsal-authority-mismatch", fallback: true };
     }
+  }
+  if (incomingRecurrences.length
+    && !actorMayApplyAskGoalRecurrences(local, event, incomingRecurrences)) {
+    return { ok: false, reason: "ask-goal-move-authority-mismatch", fallback: true };
+  }
+  if (incomingRehearsals.length || incomingRecurrences.length) {
+    const expected = await sha256Hex(commandMaterializationFacts({
+      monthRehearsals: incomingRehearsals,
+      recurrences: incomingRecurrences,
+    }));
+    const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
+      ? await sha256Hex(incomingRehearsals)
+      : null;
     if (!event.payload_json.materializationHash
-      || await sha256Hex(incomingRehearsals) !== event.payload_json.materializationHash) {
+      || (event.payload_json.materializationHash !== expected
+        && event.payload_json.materializationHash !== legacyRehearsalHash)) {
       return { ok: false, reason: "materialization-hash-mismatch", fallback: true };
     }
   }

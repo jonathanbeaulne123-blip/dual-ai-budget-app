@@ -1,4 +1,4 @@
-import type { CommandReceipt, Household, HouseholdFundEvent, Transaction } from "./types.ts";
+import type { CommandReceipt, Household, HouseholdFundEvent, MonthRehearsal, Recurrence, Transaction } from "./types.ts";
 
 function byId<T extends { id: string }>(rows: T[] | undefined): T[] {
   return [...(rows ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -14,6 +14,17 @@ function stable(value: unknown): unknown {
     );
   }
   return value;
+}
+
+/** Bounded non-financial command facts that must survive command-event replay exactly. */
+export function commandMaterializationFacts(input: {
+  recurrences?: Recurrence[];
+  monthRehearsals?: MonthRehearsal[];
+}): unknown {
+  return stable({
+    ...(input.recurrences?.length ? { recurrences: byId(input.recurrences) } : {}),
+    ...(input.monthRehearsals?.length ? { monthRehearsals: byId(input.monthRehearsals) } : {}),
+  });
 }
 
 /** Durable Fund provenance that does not alter the accepted-books financial identity. */
@@ -174,6 +185,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     || Boolean(row.correctedByShiftId && posted.has(row.correctedByShiftId))
     || Boolean(row.correctionOfShiftId && posted.has(row.correctionOfShiftId)));
   const contributions = (next.goalContributions ?? []).filter((row) => posted.has(row.id));
+  const recurrences = next.recurrences.filter((row) => posted.has(row.id));
   const fundEvents = (next.fundEvents ?? [])
     .filter((row) => posted.has(row.id))
     .map(({ purpose, ...event }) => purpose ? { ...event, purpose } : event);
@@ -227,6 +239,25 @@ export function commandIdentityFacts(previous: Household | null, next: Household
       amountCents: row.amountCents,
       date: row.date,
       transferId: row.transferId ?? null,
+    })),
+    recurrences: recurrences.map((row) => ({
+      id: row.id,
+      cadence: row.cadence,
+      nextDate: row.nextDate,
+      type: row.type,
+      amountCents: row.amountCents,
+      accountId: row.accountId,
+      transferToAccountId: row.transferToAccountId,
+      goalId: row.goalId,
+      subcategoryId: row.subcategoryId,
+      note: row.note,
+      splits: [...row.splits].sort((left, right) => left.party.localeCompare(right.party) || left.amountCents - right.amountCents),
+      active: row.active,
+      autoPost: row.autoPost,
+      kind: row.kind,
+      origin: row.origin,
+      reminderHoursBefore: row.reminderHoursBefore,
+      fundingDefault: row.fundingDefault ?? null,
     })),
     householdFund: fundConfigPosted ? next.householdFund : null,
     fundMonthPlans,

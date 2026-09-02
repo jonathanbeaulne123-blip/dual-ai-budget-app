@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Register slice 9 Ask confirmation candidate (2026-09-02)
+
+**Status:** Local High-risk candidate on `codex/register-9-confirm`, isolated from `origin/main@6918d29fdc9e5976b09e94705015c79837b2e988`. Full Windows verification and fictional rendered proof pass; independent exact-candidate review is next. No push, PR mutation, merge, deployment, hosted row, schema, secret, or Production mutation has occurred.
+
+**Household outcome:** Jonathan's wide Shared Home shows the existing Fund Ask and other door. `Raise it` opens a small, focused confirmation whose canonical action says `Move Halifax to next month`. Confirming advances only the exact Halifax shared monthly standing-order date from September 30 to October 30, so September's Ask changes from `$340.00` to `$40.00`; no cash, journal row, Fund event, contribution, balance, or saved amount moves. Bianca's default custodian surface does not receive the panel or command.
+
+**Dual Course:** Budget `+3`; Engagement `+2`. Books won: the UI carries the exact recurrence id and claim date from the existing obligation/register fold; the command reprojects the current Ask and refuses stale, mismatched, retired, non-monthly, non-goal, inactive, or custodian requests before mutation. A repeated receipt cannot advance twice.
+
+**Continuity:** `moveAskGoalClaimToNextMonth` is a non-financial planning command with a bounded recurrence materialization hash. Normal shared command-event replay validates actor, goal, unchanged recurrence meaning, one monthly cadence, and hash before applying the date on another device. The accepted-books financial hash is intentionally unchanged for stored-receipt compatibility. Full-snapshot sync already carries recurrences.
+
+**Verification:** Focused Ask/core/continuity proof passed 31 tests; the serial Ask/PGlite file passed 6. `pnpm check:windows` passed AI-surface verification, 1,496 fast-lane tests / 2 skipped, 146 serial books tests / 1 skipped, TypeScript, Vite production build, Hercules Pro UI build, and redirect guard: 1,642 passed / 3 intentionally skipped total. A temporary fictional component harness at 320, 390, 720, and 1100 px proved exact wording, automatic Confirm focus, controls at least 44 px, no horizontal page overflow, visible `$340.00` → `$40.00`, door removal after success, and no browser warnings/errors; the harness was removed.
+
+**Boundaries:** The rendered proof was a fictional component harness, not a signed-in kitchen walkthrough, because the local browser household's Fund was not open. The two-device proof is deterministic command-event replay, not the wider authenticated 100-sample or 14-day continuity acceptance gate. No money authority, allocator, Fund custody, Till, OfficePhone, schema, provider, secret, hosted data, or Production continuity changed.
+
+**Next owner:** Independent books/trust and UX/privacy auditors review the exact local candidate, followed by `hearth-release-review`. After PASS, Codex asks Jonathan for action-time approval before push, merge, and Development deployment.
+
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 
 **Status:** Corrected combined candidate on `codex/clerk-2-3-release`, integrated with current `origin/main@e7d98389be1a4ad831d4d83204061a68955df232` at `008310113e392827718e9013f92d3c4c499b5e15`; this evidence record follows. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects, repaired at `4624c31`; exact-head PR review then found a third P2 for long unbroken imported labels, repaired with `overflow-wrap: anywhere` and a regression fixture. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.

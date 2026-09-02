@@ -647,7 +647,7 @@ async function flushItem(
           continuityMemberId: item.memberId,
           expectedRevision: item.expectedRevision,
           commandRef: primary,
-          commandPayload: compactedCommandPayload(
+          commandPayload: await compactedCommandPayload(
             { confirmationIds: item.confirmationIds, commandRefs: item.commandRefs! },
             primary,
             household,
