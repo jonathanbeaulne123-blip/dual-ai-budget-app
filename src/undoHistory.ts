@@ -14,6 +14,11 @@ export function undoHistoryKey(
 
 type StoredUndoToken = Omit<UndoToken, "snapshot">;
 
+function hasCurrentFundFact(token: UndoToken, current: Household): boolean {
+  const currentFundEventIds = new Set((current.fundEvents ?? []).map((event) => event.id));
+  return token.postedIds.some((id) => currentFundEventIds.has(id));
+}
+
 function parseTokens(raw: string | null, current: Household): UndoToken[] {
   if (!raw) return [];
   try {
@@ -40,6 +45,9 @@ export function loadUndoHistory(
   if (typeof localStorage === "undefined") return [];
   return parseTokens(localStorage.getItem(undoHistoryKey(environment, householdId, memberId)), current)
     .filter((token) => isLedgerWrite(token))
+    // Older compact history rows did not keep command identity. Do not advertise
+    // a funded Undo that cannot select its append-only correction path safely.
+    .filter((token) => Boolean(token.commandKind) || !hasCurrentFundFact(token, current))
     .slice(-MAX);
 }
 
@@ -51,10 +59,11 @@ export function saveUndoHistory(
 ): void {
   if (typeof localStorage === "undefined") return;
   const trimmed = history.filter((token) => isLedgerWrite(token)).slice(-MAX);
-  const compact: StoredUndoToken[] = trimmed.map(({ id, label, postedIds, actorMemberId }) => ({
+  const compact: StoredUndoToken[] = trimmed.map(({ id, label, postedIds, commandKind, actorMemberId }) => ({
     id,
     label,
     postedIds,
+    ...(commandKind ? { commandKind } : {}),
     ...(actorMemberId ? { actorMemberId } : {}),
   }));
   const key = undoHistoryKey(environment, householdId, memberId);

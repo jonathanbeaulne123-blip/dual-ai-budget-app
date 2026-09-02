@@ -38,6 +38,10 @@ import {
   postDueRecurrences,
   postEntry,
   postOneRecurrence,
+  resolveSwipeCardAccount,
+  swipeBelongsOnSharedHome,
+  SWIPE_COPY,
+  SWIPE_UNDO_MS,
   addRecurrence,
   updateRecurrence,
   postShift,
@@ -86,6 +90,7 @@ import {
   touchGoogleConfirmation,
   touchVisitSpark,
   undoLedgerConfirm,
+  fundedMoneyUndoTarget,
   assertLatestMemberLedgerUndo,
   appendRestorePoint,
   applyRestorePoint,
@@ -347,6 +352,8 @@ import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
+import { Swipe } from "./Swipe.tsx";
+import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { playClink } from "./clink.ts";
@@ -491,6 +498,9 @@ export function App() {
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [swipeOpen, setSwipeOpen] = useState(false);
+  const [swipeError, setSwipeError] = useState("");
+  const [swipeStrip, setSwipeStrip] = useState<{ token: UndoToken } | null>(null);
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
@@ -513,6 +523,14 @@ export function App() {
     setLocationBusy(false);
   };
   const addSheetRef = useDialog(adding, closeAdd);
+  useEffect(() => {
+    if (!swipeStrip) return;
+    const timer = window.setTimeout(() => setSwipeStrip(null), SWIPE_UNDO_MS);
+    return () => window.clearTimeout(timer);
+  }, [swipeStrip]);
+  useEffect(() => {
+    if (tab !== "home") setSwipeOpen(false);
+  }, [tab]);
 
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
@@ -2712,11 +2730,13 @@ export function App() {
     next: Household,
     token?: UndoToken,
     actorId?: string,
-    options?: { forceFlush?: boolean; confirmationId?: string },
+    options?: { forceFlush?: boolean; confirmationId?: string; onRejected?: (message: string) => void },
   ): Promise<CommandOutcome | null> {
     const previous = householdRef.current;
     if (previous && !booksGateRef.current.ready) {
-      setError(booksGateRef.current.reason || "The local journal must finish validating before anything can change.");
+      const message = booksGateRef.current.reason || "The local journal must finish validating before anything can change.";
+      if (options?.onRejected) options.onRejected(message);
+      else setError(message);
       return null;
     }
     setBusy(true);
@@ -2995,7 +3015,8 @@ export function App() {
         setToast(null);
       }
       if (!outcome.ok && outcome.userMessage) {
-        setError(outcome.userMessage);
+        if (options?.onRejected) options.onRejected(outcome.userMessage);
+        else setError(outcome.userMessage);
       } else if (outcome.ok && outcome.kind !== "conflict-needs-attention") {
         setError("");
       }
@@ -3031,7 +3052,9 @@ export function App() {
     } catch (caught) {
       if (shareCapable && ledgerWrite) setCommandProgressPhase("failed");
       if (caught instanceof NeedsConfirmationError) throw caught;
-      setError(classifyCommandError(caught).userMessage);
+      const message = classifyCommandError(caught).userMessage;
+      if (options?.onRejected) options.onRejected(message);
+      else setError(message);
       return null;
     } finally {
       setBusy(false);
@@ -3119,7 +3142,10 @@ export function App() {
       if (!current || !who) return;
       try {
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
-        const result = undoLedgerConfirm(current, token);
+        const fundedTransactionId = fundedMoneyUndoTarget(current, token);
+        const result = fundedTransactionId
+          ? reversePostedMoney(current, fundedTransactionId, { createdBy: who })
+          : undoLedgerConfirm(current, token);
         lastAmountLabelRef.current = null;
         const outcome = await commitHousehold(result.household, {
           ...result.undo,
@@ -3128,6 +3154,7 @@ export function App() {
         if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
         rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
+        setSwipeStrip((item) => (item?.token.id === token.id ? null : item));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
       }
@@ -3159,7 +3186,12 @@ export function App() {
     }
   }
 
-  function run(fn: (current: Household) => CommitResult) {
+  function run(fn: (current: Household) => CommitResult, options?: {
+    closeAdd?: boolean;
+    onAccepted?: (result: CommitResult) => void;
+    onConfirm?: (error: NeedsConfirmationError) => boolean;
+    onError?: (message: string) => void;
+  }) {
     if (postingRef.current) return Promise.resolve();
     postingRef.current = true;
     return enqueueWrite(async () => {
@@ -3178,11 +3210,21 @@ export function App() {
             lastAmountLabelRef.current = null;
           }
         }
-        const outcome = await commitHousehold(result.household, result.undo);
+        const outcome = await commitHousehold(
+          result.household,
+          result.undo,
+          undefined,
+          options?.onError ? { onRejected: options.onError } : undefined,
+        );
         const accepted =
           outcome?.postedExactlyOnce === true &&
           (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
         if (!accepted) return;
+        if (options?.closeAdd === false) {
+          options.onAccepted?.(result);
+          if (result.warnings.length) setError(result.warnings.join(" "));
+          return;
+        }
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
@@ -3215,6 +3257,7 @@ export function App() {
         }
       } catch (caught) {
         if (caught instanceof NeedsConfirmationError) {
+          if (options?.onConfirm?.(caught)) return;
           const plan = resolveDuplicateRetry({
             pendingWorkShift: workShiftInputRef.current?.input ?? null,
             confirmCode: caught.code,
@@ -3230,7 +3273,11 @@ export function App() {
           }
           setConfirm(caught);
           if (plan.openAdd) setAdding(true);
-        } else setError(caught instanceof Error ? caught.message : String(caught));
+        } else {
+          const message = caught instanceof Error ? caught.message : String(caught);
+          if (options?.onError) options.onError(message);
+          else setError(message);
+        }
       } finally {
         postingRef.current = false;
       }
@@ -4047,6 +4094,73 @@ export function App() {
     };
   };
 
+  const showSwipeAction = view === "household"
+    && swipeBelongsOnSharedHome(actorId, household.householdFund?.custodianMemberId);
+
+  const openSwipeIntoAdd = (amount: string, extra?: { subcategoryId?: string; confirm?: NeedsConfirmationError }) => {
+    const scopedBooks = experience && experience.ok ? experience.scopedHousehold : household;
+    const card = resolveSwipeCardAccount(scopedBooks, actorId);
+    const accountId = card.kind === "ready" ? card.accountId : focusedAccountId;
+    setSwipeOpen(false);
+    setSwipeError("");
+    setMode("expense");
+    setAdding(true);
+    setAddSlide(0);
+    setError("");
+    setForm(formForAccount(accountId, {
+      amount,
+      subcategoryId: extra?.subcategoryId ?? defaultSubcategoryForMode("expense"),
+      useHouseholdFund: Boolean(household.householdFund),
+      fundedAmount: amount,
+      fundDestinationAccountId: card.kind === "ready" ? card.accountId : "",
+      visibility: "household",
+      note: "",
+      place: "",
+    }));
+    if (extra?.confirm) setConfirm(extra.confirm);
+    else setConfirm(null);
+  };
+
+  const submitSwipePurchase = (amount: string, subcategoryId: string) => {
+    setSwipeError("");
+    const scopedBooks = experience && experience.ok ? experience.scopedHousehold : household;
+    const card = resolveSwipeCardAccount(scopedBooks, actorId);
+    if (card.kind !== "ready") {
+      openSwipeIntoAdd(amount, { subcategoryId });
+      return;
+    }
+    const fund = household.householdFund;
+    lastAmountLabelRef.current = formatCad(parseAmount(amount));
+    void run((current) => postEntry(current, {
+      date: today,
+      type: "expense",
+      amount,
+      accountId: card.accountId,
+      subcategoryId,
+      createdBy: actorId,
+      visibility: "household",
+      splits: jointSplit(parseAmount(amount)),
+      funding: fund
+        ? { fundId: fund.id, fundedCents: parseAmount(amount), destinationAccountId: card.accountId }
+        : undefined,
+    }), {
+      closeAdd: false,
+      onAccepted: (result) => {
+        setSwipeError("");
+        setSwipeOpen(false);
+        if (result.undo) setSwipeStrip({ token: result.undo });
+      },
+      onConfirm: (error) => {
+        openSwipeIntoAdd(amount, { subcategoryId, confirm: error });
+        return true;
+      },
+      onError: (message) => {
+        setError("");
+        setSwipeError(message);
+      },
+    });
+  };
+
   const clearLocationStamp = () => {
     setDraftLocation(undefined);
     setForm((current) => ({ ...current, occurredAt: "" }));
@@ -4487,7 +4601,7 @@ export function App() {
           )}
         </div>
       )}
-      {error && !adding ? (
+      {error && !adding && !swipeOpen ? (
         <KitchenNotice
           message={error}
           onGoMore={() => goTab("more")}
@@ -4582,6 +4696,28 @@ export function App() {
 
       {tab === "home" && dashboard && (
         <>
+        {tab === "home" && swipeStrip ? (
+          <div className="swipe-strip" role="status">
+            <span>{SWIPE_COPY.success}</span>
+            <button
+              type="button"
+              className="swipe-strip-undo"
+              onClick={() => void applyUndo(swipeStrip.token)}
+            >
+              {SWIPE_COPY.undo}
+            </button>
+          </div>
+        ) : null}
+        {showSwipeAction ? (
+          <button
+            type="button"
+            className="swipe-open"
+            disabled={busy}
+            onClick={() => { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); }}
+          >
+            {SWIPE_COPY.action}
+          </button>
+        ) : null}
         {view === "household" && household.householdFund && (() => {
           const fund = projectHouseholdFund(household, today);
           return (
@@ -4620,7 +4756,7 @@ export function App() {
           integrityFindings={experience && experience.ok ? experience.integrityFindings : []}
           busy={busy}
           clinkOn={clinkOn}
-          adding={adding}
+          adding={adding || swipeOpen}
           form={form}
           mode={mode}
           error={error}
@@ -5328,6 +5464,19 @@ export function App() {
         </>
       )}
 
+      {swipeOpen && experience && experience.ok ? (
+        <Swipe
+          household={experience.scopedHousehold}
+          memberId={actorId}
+          today={today}
+          busy={busy}
+          error={swipeError}
+          onClose={() => { setSwipeError(""); setSwipeOpen(false); }}
+          onPostCategory={({ amount, subcategoryId }) => submitSwipePurchase(amount, subcategoryId)}
+          onMore={(amount) => openSwipeIntoAdd(amount)}
+        />
+      ) : null}
+
       {adding && (
         <AddSlideshow
           sheetRef={addSheetRef}
@@ -5921,10 +6070,10 @@ export function App() {
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
         tab={tab}
-        adding={adding}
+        adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || confirm || guard || commandOpen)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}
         memberId={session.memberId}
         view={view}
         onGo={(next) => {
