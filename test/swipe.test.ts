@@ -301,5 +301,8 @@ describe("swipe posting contract", () => {
     expect(appSource).toContain("SWIPE_COPY.success");
     expect(swipeMount).toContain("<Swipe");
     expect(swipeMount).not.toMatch(/camera|ocr|file input|image/i);
+    expect(appSource).toContain("adding={adding || swipeOpen}");
+    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}");
+    expect(readFileSync(resolve(process.cwd(), "src/swipe.css"), "utf8")).toContain("z-index: 32");
   });
 });

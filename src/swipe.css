@@ -57,7 +57,7 @@
 .swipe-sheet {
   position: fixed;
   inset: 0;
-  z-index: 24;
+  z-index: 32;
   background: color-mix(in srgb, var(--ink) 28%, transparent);
   display: flex;
   align-items: flex-end;

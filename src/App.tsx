@@ -4729,7 +4729,7 @@ export function App() {
           integrityFindings={experience && experience.ok ? experience.integrityFindings : []}
           busy={busy}
           clinkOn={clinkOn}
-          adding={adding}
+          adding={adding || swipeOpen}
           form={form}
           mode={mode}
           error={error}
@@ -6042,10 +6042,10 @@ export function App() {
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
         tab={tab}
-        adding={adding}
+        adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || confirm || guard || commandOpen)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}
         memberId={session.memberId}
         view={view}
         onGo={(next) => {
