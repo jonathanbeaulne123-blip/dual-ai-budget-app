@@ -92,7 +92,7 @@ function canonicalHousehold(): Household {
     accountId: "ACC-VISA",
     subcategoryId: "SUB-HOUSING-ELECTRIC",
     note: posted.note,
-    createdBy: JONATHAN,
+    createdBy: BIANCA,
     visibility: "household",
     confirmDuplicate: true,
     funding: {

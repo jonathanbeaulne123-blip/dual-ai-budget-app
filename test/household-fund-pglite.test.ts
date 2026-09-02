@@ -36,7 +36,7 @@ describe("Household Fund PGlite projection", () => {
     household = confirmHouseholdFundContribution(household, { memberId: "MEM-001", proposalEventId: proposal.postedIds[0]! }).household;
     household = postEntry(household, {
       date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES",
-      createdBy: "MEM-002", visibility: "household", confirmDuplicate: true,
+      createdBy: "MEM-001", visibility: "household", confirmDuplicate: true,
       funding: { fundId: "FUND-HOUSEHOLD", fundedCents: 4000, destinationAccountId: "ACC-VISA" },
     }).household;
     household = addAccount(household, { name: "Private savings", kind: "savings", scope: "personal", ownerMemberId: "MEM-001" }).household;

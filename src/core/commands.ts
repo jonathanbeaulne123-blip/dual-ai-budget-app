@@ -388,6 +388,21 @@ export function postEntry(household: Household, input: {
   );
   const splits = catalogValidateOwned(input.splits ?? jointSplit(amountCents), amountCents, household);
   const funding = resolveHouseholdFundFunding(household, input.type, amountCents, input.funding, input.refundOfId);
+  const reversedFundDirection = input.reversalOfId
+    ? -signedHouseholdFundDirection(household, input.reversalOfId)
+    : 0;
+  const fundingEventKind = funding
+    ? reversedFundDirection > 0 || (!input.reversalOfId && input.type !== "refund")
+      ? "purchase-funded"
+      : "refund-funded"
+    : null;
+  if (fundingEventKind === "purchase-funded") {
+    requireFundCustodian(
+      household,
+      actor.createdBy,
+      "Only the person holding the card can post a household purchase.",
+    );
+  }
   if (input.type === "refund" && input.refundOfId) {
     const original = household.transactions.find((tx) => tx.id === input.refundOfId);
     if (!original) throw new ValidationError("The original expense for this refund no longer exists.");
@@ -438,10 +453,7 @@ export function postEntry(household: Household, input: {
     const events = shapeHouseholdFundEvents(next.fundEvents);
     const fundEventAt = nextFundEventAt(next);
     const eventId = nextFundEventId(next);
-    const reversedDirection = input.reversalOfId ? -signedHouseholdFundDirection(household, input.reversalOfId) : 0;
-    const fundingEventKind = reversedDirection > 0 || (!input.reversalOfId && input.type !== "refund")
-      ? "purchase-funded"
-      : "refund-funded";
+    if (!fundingEventKind) throw new ValidationError("Household Fund event kind is unavailable.");
     const relatedTransactionId = input.refundOfId ?? input.reversalOfId ?? null;
     const relatedTransaction = relatedTransactionId
       ? household.transactions.find((transaction) => transaction.id === relatedTransactionId)
@@ -5401,10 +5413,14 @@ function requireHouseholdFund(household: Household) {
   return fund;
 }
 
-function requireFundCustodian(household: Household, memberId: string) {
+function requireFundCustodian(
+  household: Household,
+  memberId: string,
+  refusal = "Only the Household Fund custodian can confirm that action.",
+) {
   const fund = requireHouseholdFund(household);
   requireMember(household, memberId);
-  if (memberId !== fund.custodianMemberId) throw new ValidationError("Only the Household Fund custodian can confirm that action.");
+  if (memberId !== fund.custodianMemberId) throw new ValidationError(refusal);
   return fund;
 }
 

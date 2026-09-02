@@ -33,7 +33,7 @@ function postFundExpense(
     amount: input.dollars,
     accountId: "ACC-VISA",
     subcategoryId: input.subcategoryId ?? "SUB-FOOD-GROCERIES",
-    createdBy: JONATHAN,
+    createdBy: BIANCA,
     visibility: input.visibility ?? "household",
     confirmDuplicate: true,
     funding: {

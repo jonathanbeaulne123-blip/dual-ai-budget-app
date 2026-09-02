@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Till Slice 1 custody fence and Cursor Slices 2/3 packet (2026-09-02)
+
+**Status:** Slice 1 is a verified release candidate on `codex/till-1-custody-fence-release`; implementation seal `e426a4592dcd72870feb85642f3d0ab894e6dee8` is based on `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`. Jonathan authorized push, merge, and Development kitchen deployment on 2026-09-02; remote exact-head checks and release receipts remain required. Cursor's complete sequential contract is [`briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md`](briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md). Risk: **High**.
+
+**Household outcome:** only the configured Household Fund custodian can create a `purchase-funded` household purchase. The refusal happens before any household clone or mutation with exact copy `Only the person holding the card can post a household purchase.` Non-custodians retain contribution proposals, shift posting, refund-funded corrections, reads, annotations, and motions.
+
+**Dual Course:** Budget `+5`; Engagement `0`. Books won: the immutable Fund event kind determines authority. Ordinary refunds and funded-purchase reversals remain `refund-funded`; reversing a refund restores `purchase-funded` and crosses the custody fence again. No UI was added in Slice 1.
+
+**Implementation:** D-197 classifies Fund direction once in `postEntry`, calls the existing custodian guard before clone/mutation for `purchase-funded`, and preserves the helper's generic copy for all existing operations. The synthetic seed and only affected Fund-backed purchase fixtures now use the configured custodian; money amounts and expected accounting figures are unchanged, while deterministic hashes were re-frozen for truthful actor attribution.
+
+**Verification:** the focused custody suite passed **1 file / 6 tests**. The exact current-main candidate then passed `pnpm check:windows`: AI-surface verification; **223 fast files / 1 skipped, 1,525 tests / 2 skipped**; **18 serial books files / 1 skipped, 146 tests / 1 skipped**; **1,671 tests passed / 3 intentionally skipped total**; TypeScript; a **410-module** production build; Hercules Pro UI build; and redirect guard. Earlier focused Fund/continuity/PGlite/rehearsal proof and independent books/trust audit found no P0-P2 defect. Final diff, secret/path, and remote exact-head checks remain the push gate.
+
+**Boundaries:** local source, fictional catalog/Development fixtures, and documentation only. No real household/workbook/chat data, hosted row, schema, Supabase/Auth/RLS, secret, provider, Worker, bank connection, Production action, deployment, or network write. Gemini CLI was unavailable; independent read-only books/trust and packet audits were used instead.
+
+**Next owner:** Codex completes the authorized release only after a normal same-root `pnpm check:windows` rerun and exact-head review. Cursor may begin only Till Slice 2 from the sealed Slice 1 ancestor, must stop after returning its exact head, and may begin Slice 3 only from the separately accepted Slice 2 lineage.
+
 ## Clerk Slice 4 weekly document (2026-09-02)
 
 **Status:** Merged via [#293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293) onto `main` as `97e1ae9df92f5af04ef6717b48c580829756656c` (2026-09-02T06:12:12Z). Main CI [`33597829546`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33597829546) success. D-041 Cloudflare Workers [`33597829535`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33597829535) success (`VITE_PRODUCTION_CONTINUITY=0`). Worker `hearth-books` version `b9b79e02-143d-4c06-ae08-72bb14d36ce0`. Live kitchen HTTP verified. **Not Production. Not called shipped for Production.** Risk: **High**.
