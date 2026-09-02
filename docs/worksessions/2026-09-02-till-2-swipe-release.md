@@ -1,14 +1,14 @@
 # Hearth worksession — Till Slice 2 repair and Development release
 
-- **Status:** OPEN — POST-MERGE FORWARD REPAIR; FIRST DEPLOYMENT RELEASE-BLOCKED; CURSOR BLOCKED
+- **Status:** CLOSED — FORWARD REPAIR MERGED; DEVELOPMENT KITCHEN PUBLISHED; LIVE HTTP VERIFIED
 - **Opened:** 2026-09-02 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex (single writer); independent reviewers required
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/till-2-postmerge-repair`
 - **Baseline SHA:** `02692d7791869057d0fc422d231751cef18ab0c6` (`origin/main`, after Register Slice 8 release)
-- **Head SHA:** pending final exact-head review seal
-- **PR or issue:** PR #298 merged the first pass; forward-repair PR #302 open; stale PR #295 and premature release-record PR #300 closed
+- **Head SHA:** application candidate `70f1245569da1abad53bf8690027f6eca215707d`; merged application `777dbcd1196670dbe7c2576fff8b0526cad27093`
+- **PR or issue:** PR #302 merged the forward repair; PR #298 is the failed first release; stale PR #295 and premature release-record PR #300 are closed
 - **Risk:** Release (High money/UI repair plus authorized Development merge/deploy)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development kitchen code only
@@ -27,7 +27,7 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 
 ## Verified baseline
 
-- Current remote `main` is exactly `02692d7791869057d0fc422d231751cef18ab0c6`; the repair was rebased cleanly after the Register Slice 8 application and release-record merges.
+- The repair was rebased cleanly from `origin/main@02692d7791869057d0fc422d231751cef18ab0c6` after the Register Slice 8 application and release-record merges, then merged as application `main@777dbcd1196670dbe7c2576fff8b0526cad27093`.
 - Historical `main@2b9f77051b4abfdddce2fd2f580e41a36a6c8772` is the PR #298 first Slice 2 merge over deployed D-197 custody and the original forward-repair base.
 - PR #298's CI and Development deployment passed, but its late public review found four release blockers that green CI did not cover: reversal rows doubled reported spend; the ten-second strip was not ledger-scoped; a funded correction advertised an unusable second Undo; and document Enter overrode a focused Close button.
 - The first merge remains in history and is repaired forward. It is not safe for Cursor Slice 3 and no real household write is used to test the repair.
@@ -67,18 +67,18 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - [x] 320 / 390 / 720 / ~1100, keyboard/focus, reduced-motion, error, and offline evidence recorded
 - [x] Forward-repair focused regressions and TypeScript pass
 - [x] Forward-repair exact-head full Windows gates pass
-- [ ] Independent High/Release reviews pass with no P0/P1/P2 release blocker
-- [ ] Exact pushed head passes required PR checks and merge preconditions
-- [ ] Post-merge main CI and Cloudflare deploy pass; live HTTP 200, `Cache-Control: no-store`, and Slice 2 asset markers verified
+- [x] Independent High/Release reviews pass with no P0/P1/P2 release blocker
+- [x] Exact pushed head passes required PR checks and merge preconditions
+- [x] Post-merge main CI and Cloudflare deploy pass; live HTTP 200, `Cache-Control: no-store`, and Slice 2 asset markers verified
 
 ## Plan
 
 - [x] Create isolated forward-repair branch from exact first-merge `origin/main`
 - [x] Reproduce and repair all four late P1/P2 findings with focused tests
 - [x] Reopen D-198 release evidence honestly; keep the first deployment release-blocked
-- [ ] Run full/visual checks and independent exact-head reviews
-- [ ] Push forward-repair PR, wait for all CI and public review, guarded merge, deploy, and live-check
-- [ ] Close worksession and name the exact Slice 3 start SHA
+- [x] Run full/visual checks and independent exact-head reviews
+- [x] Push forward-repair PR, wait for required CI and bounded review, guarded merge, deploy, and live-check
+- [x] Close worksession and name the deployed Slice 2 application ancestor for Slice 3
 
 ## Evidence log
 
@@ -97,6 +97,9 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - 2026-09-02: both exact-head PR CI runs, Pages, and the Worker preview passed for `643a786`, but its public review found another P1 before merge: endpoint-only duplicate checks missed a duplicate intermediate reversal, so a later reversal-of-that-reversal could count beside the original. Merge stayed locked. `projectedCountable` now traverses every resolved ancestor and each resolved transfer-pair leg, cycle-bounded like the direction fold; regressions cover intermediate expense and transfer-pair duplicates. The expanded six-file gate passed 61/61. The fresh full Windows gate passed AI surface; 226 fast files passed / 1 skipped with 1,565 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 151 tests passed / 1 skipped; 1,716 passed / 3 skipped total; TypeScript; 416-module production build; Hercules Pro UI; and redirect guard. Fresh exact-head review and PR CI remain required.
 - 2026-09-02: exact `02bf62c` then passed both PR CI runs, Pages, and the Worker preview, but public review correctly kept merge locked on a P1: v7 could rebuild from an altered cache before comparing its accepted receipt, plus a P2 stale subsequent-events count. The receipt check now precedes any incomplete-migration ingest and blocks a mismatch with zero write. Bounded numeric-projection sweeps also found and repaired card payment/reward, cash-runway, and CRA-medical P1 output plus Ask Books, Hercules summaries/cook-off, member year review, and subsequent-event P2 figures. Raw transaction searches remain append-only history. The repaired ten-file focused set passes 129/129, including intermediate duplicates and cross-member correction authorship. Fresh full Windows and exact-head reviews remain required.
 - 2026-09-02: the complete repaired tree passed `pnpm check:windows`: AI surface; 226 fast files passed / 1 skipped with 1,571 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 154 tests passed / 1 skipped; 1,725 passed / 3 intentional skips total; TypeScript; 416-module production build; Hercules Pro UI; and redirect guard. Exact-head independent reviews and new PR CI remain required.
+- 2026-09-02: exact candidate `70f1245569da1abad53bf8690027f6eca215707d` received three independent exact-SHA reviews with no P0-P2 release blocker. The requested public GitHub review did not return during the bounded final wait and is recorded as unavailable, not approval.
+- 2026-09-02: exact-head PR CI runs `33676032472` and `33676028686`, Cloudflare preview `33676032581`, and Pages passed. PR #302 merged the candidate as `main@777dbcd1196670dbe7c2576fff8b0526cad27093` at 2026-09-02 20:21:43Z.
+- 2026-09-02: post-merge main CI `33678815287` and Cloudflare Workers `33678815283` passed. Worker version `b8d934ef-b4a5-424f-aa2e-c657854c7488` serves HTTP 200 with `Cache-Control: no-store`; `/assets/index-C6pIYlu1.js` contains `What did you just spend?`, the exact custody refusal, and `Nothing was posted.`. A transient DNS lookup failure cleared on the next bounded retry and did not recur.
 
 ## Decisions
 
@@ -106,9 +109,9 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 
 ## Remaining uncertainty
 
-- Forward-repair PR number, merge SHA, deployment run, Worker version, and live asset remain pending.
-- Signed-in real-household posting is not required and will not be performed; test and visual evidence use synthetic/local Development state only.
+- The public GitHub review service did not return during the bounded final wait; three independent exact-SHA reviews found no P0-P2 release blocker.
+- Signed-in real-household posting was not required and was not performed; test and visual evidence use synthetic/local Development state only.
 
 ## Handoff
 
-Cursor must not start Slice 3 until this record is CLOSED and names the exact deployed `origin/main` SHA. Slice 3 must start from that SHA in a fresh clean branch, not from PR #295 or the stale Cursor head.
+This record is CLOSED. The exact deployed Slice 2 application ancestor is `777dbcd1196670dbe7c2576fff8b0526cad27093`. Cursor may start Slice 3 only after this release record is merged: fetch a clean current `origin/main`, prove `777dbcd1196670dbe7c2576fff8b0526cad27093` is its ancestor, create a fresh `till/3-surface` branch, and stop before any Slice 4 preference/default work. Never start from PR #295 or the stale Cursor head.

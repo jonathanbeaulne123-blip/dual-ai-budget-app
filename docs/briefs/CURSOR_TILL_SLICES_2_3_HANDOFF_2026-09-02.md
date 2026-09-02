@@ -4,31 +4,35 @@ This is the complete contract for one Cursor writer. The downloaded build manual
 
 ## Verdict and sequencing
 
-**Slice 2 is ready to begin from the sealed Slice 1 commit below. Slice 3 is not a parallel task.** Implement Slice 2, verify it, return its exact head, and stop. Only after Jonathan/Codex accepts that head may Cursor create a fresh Slice 3 branch from the accepted Slice 2 lineage, verify it, return it, and stop.
+**Slice 2 is accepted, merged, and live in Development. Slice 3 may begin only from the clean release-sealed `origin/main` lineage described below.** Implement Slice 3, verify it, return its exact head, and stop before Slice 4.
 
 - **Target AI:** Cursor, single writer.
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Required Slice 2 ancestor:** `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09` (the D-197-integrated Slice 1 release-candidate base)
-- **Required implementation ancestor:** `e426a4592dcd72870feb85642f3d0ab894e6dee8` (the Till Slice 1 command/test seal; prove it is an ancestor of the required base)
+- **Accepted Slice 2 application ancestor:** `777dbcd1196670dbe7c2576fff8b0526cad27093` (PR #302 merge; deployed and live-verified)
+- **Historical Slice 2 ancestor:** `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09` (the D-197-integrated Slice 1 release-candidate base; evidence only)
+- **Required implementation ancestor:** `e426a4592dcd72870feb85642f3d0ab894e6dee8` (the Till Slice 1 command/test seal; prove it is an ancestor of the accepted Slice 2 application)
 - **Slice 1 branch:** `codex/till-1-custody-fence-release`
 - **Slice 1 parent:** `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
-- **Required Slice 2 branch:** `till/2-swipe`
-- **Required Slice 3 branch:** `till/3-surface`, created only from the accepted Slice 2 head
-- **Suggested PR titles:** `feat(till): post a swipe in two taps`; then `feat(till): add the custodian surface`
-- **Risk:** High for each slice. Slice 2 presents a financial command; Slice 3 presents contribution Confirm/Hold beside that writer.
+- **Historical Slice 2 branch:** `till/2-swipe` (complete; do not reopen)
+- **Required Slice 3 branch:** `till/3-surface`, created from current clean `origin/main` only after proving the accepted Slice 2 application is an ancestor
+- **Suggested Slice 3 PR title:** `feat(till): add the custodian surface`
+- **Risk:** High. Slice 3 presents contribution Confirm/Hold beside the accepted Swipe writer.
 - **Decision owner:** Jonathan.
 - **Release authority:** none. Do not push, open a PR, merge, deploy, change hosted data, or touch Production without Jonathan's fresh action-time approval.
 
-Start from a clean isolated worktree. Never use Jonathan's dirty `codex/roadmap-site` checkout. If the sealed commit is unavailable, stop and ask Jonathan/Codex to provide or push it; do not reconstruct Slice 1 from prose.
+Start from a clean isolated worktree. Never use Jonathan's dirty `codex/roadmap-site` checkout. Fetch current `origin/main` after this release record lands and prove the deployed Slice 2 application is in its ancestry. If that proof fails, stop and ask Jonathan/Codex; do not reconstruct Slice 1 or Slice 2 from prose.
 
 ```text
-git switch -c till/2-swipe b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09
+git fetch origin
+git switch --detach origin/main
 git status --short
-git merge-base --is-ancestor b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09 HEAD
-git merge-base --is-ancestor e426a4592dcd72870feb85642f3d0ab894e6dee8 HEAD
+git merge-base --is-ancestor 777dbcd1196670dbe7c2576fff8b0526cad27093 HEAD
+git merge-base --is-ancestor a2a55c6c95e2f5ae84d9fc523ee5072b47a9efc9 HEAD
+git rev-parse HEAD
+git switch -c till/3-surface
 ```
 
-After Slice 2 is accepted, record its exact SHA, fetch current `origin/main`, reconcile any advance, create `till/3-surface` from the accepted lineage, and prove ancestry again. Do not combine both slices in one diff or PR.
+Record the exact fetched `origin/main` SHA as the Slice 3 base. Do not combine Slice 2 repairs with Slice 3 and do not reuse a stale Cursor branch.
 
 ## Sealed Slice 1 prerequisite
 
@@ -63,9 +67,11 @@ Cursor must preserve `test/custody-fence.test.ts` and may not move this authorit
 7. No ratio, member ranking, share, second Fund balance, or copied financial arithmetic.
 8. No schema, Supabase/RLS/Auth, Worker, provider/model, bank connection, secret, or Production work.
 
-# Slice 2 — the swipe
+# SEALED REFERENCE — Slice 2 swipe (do not implement or modify)
 
-## Household outcome and Dual Course
+Everything in this Slice 2 section is historical acceptance context only. Do not execute its imperative wording, edit its listed files, or reopen its proof. Slice 3 may reuse the accepted component only through the current `main` interfaces.
+
+## SEALED REFERENCE — household outcome and Dual Course
 
 The cardholder can record an ordinary Household Fund purchase while standing at a counter: amount, then an observed category. Accepted local books update immediately and sync later. The strip says the record was posted while money itself did not move.
 
@@ -73,7 +79,7 @@ The cardholder can record an ordinary Household Fund purchase while standing at 
 - **Engagement delta (3): `+3`.** The normal non-duplicate path is one-handed and two-step, with no receipt or setup ceremony.
 - If speed conflicts with books integrity, custody, duplicate safety, or continuity, the books win.
 
-## Slice 2 implementation scope
+## SEALED REFERENCE — implementation scope (already complete)
 
 Expected files:
 
@@ -86,7 +92,7 @@ Expected files:
 
 Do not edit `src/core/commands.ts`, Fund arithmetic, PGlite schema, continuity protocol, or `src/core/types.ts`. If one appears necessary, stop and return a conflict packet.
 
-### Pure observed-category projection
+### SEALED REFERENCE — observed-category projection
 
 Create one pure selector rather than ranking inside React. Feed it the current `projectLedgerExperience(...).scopedHousehold`, never the unscoped household. For the current Toronto month and current member:
 
@@ -99,7 +105,7 @@ Create one pure selector rather than ranking inside React. Feed it the current `
 
 The pure test must cover ordering, ties, reversals/refunds/duplicates, fewer than six, zero history, inactive categories, and privacy scope.
 
-### Safe card-account resolution
+### SEALED REFERENCE — card-account resolution
 
 The Fund config does not store a card account id, so never hard-code `ACC-VISA` and never choose an arbitrary account from array order.
 
@@ -111,7 +117,7 @@ Resolve the fast-path account as follows:
 
 No account setup or picker belongs in Swipe. Test zero, one, multiple, stale, non-CAD, and partner-Personal candidates.
 
-### Two-step flow
+### SEALED REFERENCE — two-step flow
 
 1. Open the existing `CadPad` focused in a phone-height sheet with title `What did you just spend?`.
 2. Enter advances to a 2x3 grid of up to six observed categories plus `More`. Category cells are 72px high. `More` opens the ordinary Add expense flow with the amount carried forward and no automatic post.
@@ -132,7 +138,7 @@ For the normal category path App calls `postEntry` with:
 
 The App integration must share the existing serialized accepted-command/`commitHousehold` path. It may factor a small reusable accepted-result callback from `run`, but may not duplicate commit, persistence, outbox, Auth, or transport logic. Close the sheet and show success only when the outcome is exactly-once accepted local, pending transport, or synchronized.
 
-### Posted strip and Undo
+### SEALED REFERENCE — posted strip and Undo
 
 - Exact strip copy: `Posted. Nothing moved.` and `Undo`.
 - It appears inline at the top of the current surface for 10 seconds only after accepted posting.
@@ -143,11 +149,11 @@ The App integration must share the existing serialized accepted-command/`commitH
 
 Do not create a new reversal command, snapshot restore, delayed write, timer-backed financial state, or custom outbox event.
 
-### Slice 2 placement
+### SEALED REFERENCE — Slice 2 placement
 
 Until Slice 3 exists, add only one reachable `I spent something` action in the existing Shared Home action area for the configured custodian. It opens Swipe; it does not create a new Till route, landing preference, nav model, or alternate desk. Remove/move that temporary placement coherently when Slice 3 integrates the same component.
 
-## Slice 2 exact copy and exclusions
+## SEALED REFERENCE — exact copy and exclusions
 
 - Button/action: `I spent something`
 - Title: `What did you just spend?`
@@ -157,7 +163,7 @@ Until Slice 3 exists, add only one reachable `I spent something` action in the e
 
 No camera, receipt image, OCR, file input, attachment, note field, search, category setup/editing, account setup, analytics, suggestion model, celebration, third happy-path confirmation, or Slice 3 surface.
 
-## Slice 2 proof
+## SEALED REFERENCE — completed proof
 
 Use fictional Development/catalog fixtures only. At minimum prove:
 
@@ -176,13 +182,13 @@ Use fictional Development/catalog fixtures only. At minimum prove:
 
 Run focused tests plus `pnpm ai:verify`, `pnpm check:windows`, and `git diff --check <base>..HEAD`. If the test-lane guard enumerates direct engine imports, keep new UI/pure tests out of the serial lane unless they directly import the engine.
 
-Return the exact Slice 2 base/head and stop. Do not start Slice 3 in the same turn.
+End of sealed Slice 2 reference. Slice 2 is accepted at application merge `777dbcd1196670dbe7c2576fff8b0526cad27093`; do not reopen it inside Slice 3.
 
 # Slice 3 — the Till surface
 
 ## Start gate
 
-Do not start this section until Jonathan/Codex accepts Slice 2. Create a clean `till/3-surface` branch from that exact accepted head, record it in a new worksession, and re-read current canon because `main`, navigation, or decision ids may have advanced.
+Begin only after this release record is present on current `origin/main` and the ancestry proof above passes. Record that exact fetched `origin/main` SHA in a new worksession and re-read current canon because navigation or decision ids may have advanced.
 
 ## Household outcome and Dual Course
 
