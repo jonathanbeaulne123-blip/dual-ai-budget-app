@@ -20,6 +20,7 @@ import {
   postTransfer,
   recordReconciliation,
   reopenBooksMonth,
+  reversePostedMoney,
   seedDemoHousehold,
   statementOfChangesInEquity,
   subsequentEvents,
@@ -89,6 +90,27 @@ describe("Audit Office", () => {
     expect(cash.operatingInCents).toBe(10000);
     expect(cash.debtPaydownCents).toBe(4000);
     expect(cash.netCashCents).toBe(6000);
+  });
+
+  it("nets transfer reversals and reinstatements in cash flow", () => {
+    const transfer = postTransfer(catalogHousehold(), {
+      date: today,
+      amount: "40",
+      fromAccountId: "ACC-CHEQUING",
+      toAccountId: "ACC-VISA",
+      confirmDuplicate: true,
+    });
+    const reversed = reversePostedMoney(transfer.household, transfer.postedIds[0]!, {
+      reversalDate: today,
+    });
+    expect(cashFlowStatement(reversed.household, "2026-08").debtPaydownCents).toBe(0);
+
+    const reversalId = reversed.household.transactions.find((tx) => (
+      tx.reversalOfId === transfer.postedIds[0]
+    ))?.id;
+    if (!reversalId) throw new Error("Missing transfer reversal");
+    const reinstated = reversePostedMoney(reversed.household, reversalId, { reversalDate: today });
+    expect(cashFlowStatement(reinstated.household, "2026-08").debtPaydownCents).toBe(4000);
   });
 
   it("records a bank rec without posting money and unlocks audit spectacles when it ties", () => {

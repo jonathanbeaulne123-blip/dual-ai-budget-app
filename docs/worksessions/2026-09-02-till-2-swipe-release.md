@@ -1,14 +1,14 @@
 # Hearth worksession — Till Slice 2 repair and Development release
 
-- **Status:** OPEN — LOCAL REPAIR; NOT PUSHED; NOT MERGED; NOT KITCHEN-PUBLISHED
+- **Status:** OPEN — POST-MERGE FORWARD REPAIR; FIRST DEPLOYMENT RELEASE-BLOCKED; CURSOR BLOCKED
 - **Opened:** 2026-09-02 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex (single writer); independent reviewers required
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Branch:** `codex/till-2-swipe-repair`
-- **Baseline SHA:** `813e2b418f0a847122b669b96268b2390f559c9d` (`origin/main`)
+- **Branch:** `codex/till-2-postmerge-repair`
+- **Baseline SHA:** `02692d7791869057d0fc422d231751cef18ab0c6` (`origin/main`, after Register Slice 8 release)
 - **Head SHA:** pending final exact-head review seal
-- **PR or issue:** supersedes draft PR #295; new PR pending
+- **PR or issue:** PR #298 merged the first pass; forward-repair PR pending; stale PR #295 closed
 - **Risk:** Release (High money/UI repair plus authorized Development merge/deploy)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development kitchen code only
@@ -27,10 +27,11 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 
 ## Verified baseline
 
-- Current remote `main` is exactly `813e2b418f0a847122b669b96268b2390f559c9d` and already contains the deployed D-197 custody fence.
-- Cursor candidate `25ef99ef053abd56afe87dab363b873bf35f9dfd` is on stale ancestry and PR #295 is draft/dirty; it is evidence and source material, not an integration base.
-- Only Cursor's Slice 2 application commits were replayed onto current `main`; its duplicated Slice 1 and stale decision/release records were not replayed.
-- Review found four repair gates: in-sheet rejected-post recovery; effective background inerting; one accessible amount label; and command-kind-bounded funded Undo semantics.
+- Current remote `main` is exactly `02692d7791869057d0fc422d231751cef18ab0c6`; the repair was rebased cleanly after the Register Slice 8 application and release-record merges.
+- Historical `main@2b9f77051b4abfdddce2fd2f580e41a36a6c8772` is the PR #298 first Slice 2 merge over deployed D-197 custody and the original forward-repair base.
+- PR #298's CI and Development deployment passed, but its late public review found four release blockers that green CI did not cover: reversal rows doubled reported spend; the ten-second strip was not ledger-scoped; a funded correction advertised an unusable second Undo; and document Enter overrode a focused Close button.
+- The first merge remains in history and is repaired forward. It is not safe for Cursor Slice 3 and no real household write is used to test the repair.
+- Cursor candidate `25ef99ef053abd56afe87dab363b873bf35f9dfd`, repaired pre-merge candidate `3ca2f5b301735a97f364a08134c81b021b258c45`, and first merge `2b9f770` are evidence only, not Slice 3 baselines.
 
 ## Scope
 
@@ -54,21 +55,25 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - [x] Background application controls become inert while Swipe is open and restore on close
 - [x] Swipe has one dialog title and an `Amount` pad label
 - [x] Funded Undo routing is explicit by supported command kind, never inferred from a `FUND-EVT-` id alone; command identity persists across reload
+- [x] Expense, refund, income, transfer, and reversal-of-reversal projections agree with append-only journal direction
+- [x] The ten-second strip is environment/household/member scoped, hidden outside Shared, and cleared before ledger/session/environment switches
+- [x] A funded correction is accepted and persisted without advertising an unsupported second Undo
+- [x] Enter on a focused Close control remains native Close activation and does not advance the CAD pad
 - [x] Custody, duplicates, offline local acceptance/outbox order, operating-balance invariants, and direct-debit semantics stay green
 - [x] 320 / 390 / 720 / ~1100, keyboard/focus, reduced-motion, error, and offline evidence recorded
-- [x] Exact-head focused and full Windows gates pass
+- [x] Forward-repair focused regressions and TypeScript pass
+- [x] Forward-repair exact-head full Windows gates pass
 - [ ] Independent High/Release reviews pass with no P0/P1/P2 release blocker
 - [ ] Exact pushed head passes required PR checks and merge preconditions
 - [ ] Post-merge main CI and Cloudflare deploy pass; live HTTP 200, `Cache-Control: no-store`, and Slice 2 asset markers verified
 
 ## Plan
 
-- [x] Create isolated repair branch from exact current `origin/main`
-- [x] Replay only the Slice 2 application commits
-- [x] Apply P1/P2 repairs and tests
-- [x] Update D-198 canon and handoff evidence
-- [ ] Run focused/full/visual checks and independent reviews
-- [ ] Push, open PR, verify, guarded merge, deploy, and live-check
+- [x] Create isolated forward-repair branch from exact first-merge `origin/main`
+- [x] Reproduce and repair all four late P1/P2 findings with focused tests
+- [x] Reopen D-198 release evidence honestly; keep the first deployment release-blocked
+- [ ] Run full/visual checks and independent exact-head reviews
+- [ ] Push forward-repair PR, wait for all CI and public review, guarded merge, deploy, and live-check
 - [ ] Close worksession and name the exact Slice 3 start SHA
 
 ## Evidence log
@@ -78,16 +83,20 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - 2026-09-02: first repair head `eed2789` passed focused Swipe/custody, TypeScript, and responsive local-browser proof at 320/390/720/1100. Background inerting was 9/9 siblings; Escape restored focus; controls stayed at least 44 px.
 - 2026-09-02: independent privacy/continuity review passed `eed2789`. Books and UX reviews found two non-corrupting P2s before push: compact history dropped funded command identity after reload, and recoverable errors used destructive danger colour. Both were repaired with persistence/legacy suppression tests and warning treatment; exact-head re-review remains required.
 - 2026-09-02: repaired candidate focused Swipe/custody/history proof passed 24/24. Exact `pnpm check:windows` then passed AI surface; fast lane 224 files passed / 1 skipped and 1,547 tests passed / 2 skipped; serial books lane 18 files passed / 1 skipped and 146 tests passed / 1 skipped; 1,693 tests passed / 3 skipped total; TypeScript; 413-module production build; Hercules Pro UI; and redirect guard.
+- 2026-09-02: PR #298 merged as `main@2b9f770`; main CI `33658014100` and Cloudflare deploy `33658014103` passed, and Development served Worker version `1afe500c-647b-4d3b-917f-0c39a95d2f0b`. A late public review then reproduced the four release blockers above, so this evidence is recorded as a failed first release, not acceptance.
+- 2026-09-02: forward repair makes all reporting projections resolve append-only reversal lineage; scopes and switch-closes the Swipe strip; suppresses the unsupported follow-up funded Undo; and preserves focused Close Enter. Focused Swipe/statements/accounts/opening/custody/history proof passed 47/47; TypeScript passed.
+- 2026-09-02: forward-repair `pnpm check:windows` passed AI surface; 224 fast files passed / 1 skipped with 1,551 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 146 tests passed / 1 skipped; 1,697 passed / 3 skipped total; TypeScript; 413-module production build; Hercules Pro UI; and redirect guard.
+- 2026-09-02: anti-stale fetch found Register Slice 8 had advanced `origin/main` to `02692d7`. The repair rebased without conflict. Cross-slice focused proof passed 60/60, then the exact rebased candidate passed `pnpm check:windows`: 226 fast files passed / 1 skipped with 1,564 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 146 tests passed / 1 skipped; 1,710 passed / 3 skipped total; TypeScript; 416-module build; Hercules Pro UI; and redirect guard.
 
 ## Decisions
 
-- D-197 remains the current-main custody prerequisite. Slice 2 uses the next free D-198.
+- D-197 remains the current-main custody prerequisite. D-198 stays the Slice 2 decision and now explicitly includes the four forward-repair invariants; no new product behavior or decision id is introduced.
 - PR #295 will not be merged as-is because it duplicates current-main Slice 1 and is not mergeable.
 - One writer owns the repair checkout. Reviewers are read-only and receive an exact immutable head.
 
 ## Remaining uncertainty
 
-- Exact PR number, merge SHA, deployment run, Worker version, and live asset remain pending.
+- Forward-repair PR number, merge SHA, deployment run, Worker version, and live asset remain pending.
 - Signed-in real-household posting is not required and will not be performed; test and visual evidence use synthetic/local Development state only.
 
 ## Handoff

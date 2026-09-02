@@ -6,23 +6,83 @@ export function countable(tx: Transaction): boolean {
   return !tx.isDuplicate;
 }
 
-export function signedAmount(tx: Transaction): number {
+export type TransactionProjection = {
+  root: Transaction;
+  multiplier: 1 | -1;
+};
+
+/**
+ * Follow append-only reversal lineage so projections agree with the journal.
+ * A reversal negates the row it names; reversing that reversal reinstates it.
+ */
+export function transactionProjection(
+  tx: Transaction,
+  transactionById: ReadonlyMap<string, Transaction>,
+): TransactionProjection {
+  let root = tx;
+  let multiplier: 1 | -1 = 1;
+  const seen = new Set<string>([tx.id]);
+  while (root.reversalOfId) {
+    multiplier = multiplier === 1 ? -1 : 1;
+    if (seen.has(root.reversalOfId)) break;
+    seen.add(root.reversalOfId);
+    const original = transactionById.get(root.reversalOfId);
+    if (!original) break;
+    root = original;
+  }
+  return { root, multiplier };
+}
+
+function directReversalMultiplier(tx: Transaction): 1 | -1 {
+  return tx.reversalOfId ? -1 : 1;
+}
+
+function baseSignedAmount(tx: Transaction): number {
   if (tx.type === "income") return tx.amountCents;
   if (tx.type === "expense") return -tx.amountCents;
   if (tx.type === "refund") return tx.amountCents;
   return 0;
 }
 
-export function expenseEffect(tx: Transaction): number {
+function baseExpenseEffect(tx: Transaction): number {
   if (!countable(tx)) return 0;
   if (tx.type === "expense") return tx.amountCents;
   if (tx.type === "refund") return -tx.amountCents;
   return 0;
 }
 
-export function incomeEffect(tx: Transaction): number {
+function baseIncomeEffect(tx: Transaction): number {
   if (!countable(tx) || tx.type !== "income") return 0;
   return tx.amountCents;
+}
+
+export function signedAmount(tx: Transaction): number {
+  return baseSignedAmount(tx) * directReversalMultiplier(tx);
+}
+
+export function expenseEffect(tx: Transaction): number {
+  return baseExpenseEffect(tx) * directReversalMultiplier(tx);
+}
+
+export function incomeEffect(tx: Transaction): number {
+  return baseIncomeEffect(tx) * directReversalMultiplier(tx);
+}
+
+export function projectedSignedAmount(tx: Transaction, transactionById: ReadonlyMap<string, Transaction>): number {
+  const projection = transactionProjection(tx, transactionById);
+  return baseSignedAmount(projection.root) * projection.multiplier;
+}
+
+export function projectedExpenseEffect(tx: Transaction, transactionById: ReadonlyMap<string, Transaction>): number {
+  if (!countable(tx)) return 0;
+  const projection = transactionProjection(tx, transactionById);
+  return baseExpenseEffect(projection.root) * projection.multiplier;
+}
+
+export function projectedIncomeEffect(tx: Transaction, transactionById: ReadonlyMap<string, Transaction>): number {
+  if (!countable(tx)) return 0;
+  const projection = transactionProjection(tx, transactionById);
+  return baseIncomeEffect(projection.root) * projection.multiplier;
 }
 
 export type CategoryActual = {
@@ -59,6 +119,7 @@ export function monthSummary(household: Household, monthKey: MonthKey): MonthSum
   const end = monthEndKey(monthKey);
   const inMonth = (tx: Transaction) => inInclusiveRange(tx.date, start, end);
   const plans = household.budgetPlans.filter((plan) => plan.active && plan.monthKey === monthKey);
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   const categories: CategoryActual[] = household.categories
     .filter((category) => category.recordType === "category" && category.active)
     .map((category) => {
@@ -68,8 +129,8 @@ export function monthSummary(household: Household, monthKey: MonthKey): MonthSum
       );
       const actualCents = household.transactions.filter(inMonth).reduce((total, tx) => {
         if (tx.subcategoryId !== category.id) return total;
-        if (category.transactionType === "expense") return total + expenseEffect(tx);
-        return total + incomeEffect(tx);
+        if (category.transactionType === "expense") return total + projectedExpenseEffect(tx, transactionById);
+        return total + projectedIncomeEffect(tx, transactionById);
       }, 0);
       return {
         subcategoryId: category.id,
@@ -139,10 +200,11 @@ export function weekSummary(household: Household, today: DateKey): WeekSummary {
   const weekTx = household.transactions.filter((tx) => inInclusiveRange(tx.date, week.start, week.end));
   const lastTx = household.transactions.filter((tx) => inInclusiveRange(tx.date, last.start, last.end));
   const fourWeekStart = offsetDays(week.start, -28);
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
 
-  const expenseCents = sumCents(weekTx.map(expenseEffect));
-  const incomeCents = sumCents(weekTx.map(incomeEffect));
-  const lastWeekExpenseCents = sumCents(lastTx.map(expenseEffect));
+  const expenseCents = sumCents(weekTx.map((tx) => projectedExpenseEffect(tx, transactionById)));
+  const incomeCents = sumCents(weekTx.map((tx) => projectedIncomeEffect(tx, transactionById)));
+  const lastWeekExpenseCents = sumCents(lastTx.map((tx) => projectedExpenseEffect(tx, transactionById)));
 
   const catById = new Map(household.categories.map((category) => [category.id, category]));
   let essentialCents = 0;
@@ -150,7 +212,7 @@ export function weekSummary(household: Household, today: DateKey): WeekSummary {
   const weekBySub = new Map<string, number>();
   const trailingBySub = new Map<string, number>();
   for (const tx of weekTx) {
-    const amount = expenseEffect(tx);
+    const amount = projectedExpenseEffect(tx, transactionById);
     if (!amount || !tx.subcategoryId) continue;
     weekBySub.set(tx.subcategoryId, (weekBySub.get(tx.subcategoryId) ?? 0) + amount);
     const category = catById.get(tx.subcategoryId);
@@ -159,17 +221,18 @@ export function weekSummary(household: Household, today: DateKey): WeekSummary {
   }
   for (const tx of household.transactions) {
     if (tx.date < fourWeekStart || tx.date >= week.start) continue;
-    const amount = expenseEffect(tx);
+    const amount = projectedExpenseEffect(tx, transactionById);
     if (!amount || !tx.subcategoryId) continue;
     trailingBySub.set(tx.subcategoryId, (trailingBySub.get(tx.subcategoryId) ?? 0) + amount);
   }
 
   const partyTotals = new Map<string, number>();
   for (const tx of weekTx) {
-    const amount = expenseEffect(tx);
+    const amount = projectedExpenseEffect(tx, transactionById);
     if (!amount) continue;
+    const direction = amount < 0 ? -1 : 1;
     for (const split of tx.splits) {
-      partyTotals.set(split.party, (partyTotals.get(split.party) ?? 0) + split.amountCents);
+      partyTotals.set(split.party, (partyTotals.get(split.party) ?? 0) + (split.amountCents * direction));
     }
   }
 
@@ -191,8 +254,8 @@ export function weekSummary(household: Household, today: DateKey): WeekSummary {
 
   let biggest: WeekSummary["biggest"] = null;
   for (const tx of weekTx) {
-    const amount = expenseEffect(tx);
-    if (!amount) continue;
+    const amount = projectedExpenseEffect(tx, transactionById);
+    if (amount <= 0) continue;
     if (!biggest || amount > biggest.amountCents) {
       biggest = {
         id: tx.id,
@@ -217,7 +280,7 @@ export function weekSummary(household: Household, today: DateKey): WeekSummary {
   const pace = fluctuatingEssentials.map((row) => {
     const mtdCents = household.transactions
       .filter((tx) => tx.subcategoryId === row.subcategoryId && inInclusiveRange(tx.date, mtdStart, mtdEnd))
-      .reduce((total, tx) => total + expenseEffect(tx), 0);
+      .reduce((total, tx) => total + projectedExpenseEffect(tx, transactionById), 0);
     const projectedCents = daysElapsed > 0 ? Math.round((mtdCents / daysElapsed) * days) : mtdCents;
     return {
       name: row.name,
@@ -238,6 +301,7 @@ export function weekSummary(household: Household, today: DateKey): WeekSummary {
     discretionaryCents,
     byParty: [...partyTotals.entries()]
       .map(([party, amountCents]) => ({ party, name: memberName(party), amountCents }))
+      .filter((row) => row.amountCents !== 0)
       .sort((a, b) => b.amountCents - a.amountCents),
     movers,
     biggest,

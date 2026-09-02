@@ -1,5 +1,11 @@
 import { calendarDaysBetween, monthEndKey, monthStartKey, shiftMonthKey, addDays, type DateKey, type MonthKey } from "./calendar.ts";
-import { expenseEffect, incomeEffect, monthSummary, type CategoryActual } from "./budget.ts";
+import {
+  monthSummary,
+  projectedExpenseEffect,
+  projectedIncomeEffect,
+  transactionProjection,
+  type CategoryActual,
+} from "./budget.ts";
 import { isCashLikeKind, isCreditKind, isInvestmentKind, isReceivableKind } from "./accountKinds.ts";
 import { runHealthCheck } from "./health.ts";
 import {
@@ -256,6 +262,7 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
   const start = `${monthKey}-01`;
   const end = monthEndKey(monthKey);
   const byId = new Map(household.accounts.map((account) => [account.id, account]));
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   let operatingInCents = 0;
   let operatingOutCents = 0;
   let cardSpendCents = 0;
@@ -267,39 +274,40 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
   for (const tx of household.transactions) {
     if (tx.isDuplicate) continue;
     if (tx.date < start || tx.date > end) continue;
-    const account = byId.get(tx.accountId);
+    const { root, multiplier } = transactionProjection(tx, transactionById);
+    const account = byId.get(root.accountId);
     if (!account) continue;
-    if (tx.type === "income") {
-      if (isCashLikeKind(account.kind)) operatingInCents += tx.amountCents;
+    if (root.type === "income") {
+      if (isCashLikeKind(account.kind)) operatingInCents += root.amountCents * multiplier;
       continue;
     }
-    if (tx.type === "expense") {
-      if (isCashLikeKind(account.kind)) operatingOutCents += tx.amountCents;
-      else if (isCreditKind(account.kind)) cardSpendCents += tx.amountCents;
+    if (root.type === "expense") {
+      if (isCashLikeKind(account.kind)) operatingOutCents += root.amountCents * multiplier;
+      else if (isCreditKind(account.kind)) cardSpendCents += root.amountCents * multiplier;
       continue;
     }
-    if (tx.type === "refund") {
-      if (isCashLikeKind(account.kind)) operatingInCents += tx.amountCents;
-      else if (isCreditKind(account.kind)) cardSpendCents -= tx.amountCents;
+    if (root.type === "refund") {
+      if (isCashLikeKind(account.kind)) operatingInCents += root.amountCents * multiplier;
+      else if (isCreditKind(account.kind)) cardSpendCents -= root.amountCents * multiplier;
       continue;
     }
-    if (tx.type === "transfer") {
+    if (root.type === "transfer") {
       const pairId = tx.transferPairId || tx.id;
       if (seen.has(pairId) || seen.has(tx.id)) continue;
       seen.add(tx.id);
       if (tx.transferPairId) seen.add(tx.transferPairId);
-      const from = byId.get(tx.transferFromAccountId || tx.accountId);
-      const to = byId.get(tx.transferToAccountId || "");
+      const from = byId.get(root.transferFromAccountId || root.accountId);
+      const to = byId.get(root.transferToAccountId || "");
       if (from && to && isCashLikeKind(from.kind) && isCreditKind(to.kind)) {
-        debtPaydownCents += tx.amountCents;
+        debtPaydownCents += root.amountCents * multiplier;
       } else if (from && to && isCashLikeKind(from.kind) && isInvestmentKind(to.kind)) {
-        investingOutCents += tx.amountCents;
+        investingOutCents += root.amountCents * multiplier;
       } else if (from && to && isInvestmentKind(from.kind) && isCashLikeKind(to.kind)) {
-        investingInCents += tx.amountCents;
+        investingInCents += root.amountCents * multiplier;
       } else if (from && to && isReceivableKind(from.kind) && isCashLikeKind(to.kind)) {
-        operatingInCents += tx.amountCents;
+        operatingInCents += root.amountCents * multiplier;
       } else if (from && to && isCashLikeKind(from.kind) && isReceivableKind(to.kind)) {
-        operatingOutCents += tx.amountCents;
+        operatingOutCents += root.amountCents * multiplier;
       }
     }
   }
@@ -357,9 +365,10 @@ export function agedPayables(household: Household, today: DateKey): AgedPayable[
 
 function recognizedNetThrough(household: Household, asOf: DateKey | null): number {
   let net = 0;
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   for (const tx of household.transactions) {
     if (asOf && tx.date > asOf) continue;
-    net += incomeEffect(tx) - expenseEffect(tx);
+    net += projectedIncomeEffect(tx, transactionById) - projectedExpenseEffect(tx, transactionById);
   }
   return net;
 }
@@ -435,12 +444,13 @@ export function liquidityWatch(household: Household, today: DateKey): LiquidityW
 export function subsequentEvents(household: Household, monthKey: MonthKey, today: DateKey): SubsequentEvents {
   const end = monthEndKey(monthKey);
   const rows = household.transactions.filter((tx) => !tx.isDuplicate && tx.date > end && tx.date <= today);
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   const count = rows.length;
   return {
     monthKey,
     count,
-    incomeCents: sumCents(rows.map(incomeEffect)),
-    expenseCents: sumCents(rows.map(expenseEffect)),
+    incomeCents: sumCents(rows.map((tx) => projectedIncomeEffect(tx, transactionById))),
+    expenseCents: sumCents(rows.map((tx) => projectedExpenseEffect(tx, transactionById))),
     hercules: count
       ? `${count} row${count === 1 ? "" : "s"} after ${monthKey}. Subsequent events. I don't hide them.`
       : `No subsequent events after ${monthKey}.`,

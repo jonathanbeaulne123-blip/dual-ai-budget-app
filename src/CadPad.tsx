@@ -48,7 +48,7 @@ export function CadPad({
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Enter" || event.repeat) return;
       const target = event.target;
-      if (target instanceof HTMLTextAreaElement || (target instanceof HTMLInputElement && target.type !== "button")) return;
+      if (target instanceof Element && target.closest("button, a, input, textarea, select, [role='button'], [contenteditable='true']")) return;
       if (enterDisabled) return;
       event.preventDefault();
       submit();

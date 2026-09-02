@@ -10,10 +10,13 @@ import {
   SWIPE_COPY,
   addAccount,
   archiveAccount,
+  cashFlowStatement,
   catalogHousehold,
   confirmHouseholdFundContribution,
   configureHouseholdFund,
   fundedMoneyUndoTarget,
+  incomeStatement,
+  monthSummary,
   observedSwipeCategories,
   postEntry,
   postHouseholdFundDirectDebit,
@@ -25,6 +28,8 @@ import {
   undoLedgerConfirm,
   swipeBelongsOnSharedHome,
   swipeCategoryAccessibleName,
+  swipeUndoScopeMatches,
+  weekSummary,
   type Account,
   type Household,
 } from "../src/core/index.ts";
@@ -267,6 +272,22 @@ describe("swipe sheet", () => {
     expect(closes).toEqual([1]);
   });
 
+  it("lets a focused Close button own Enter instead of advancing the pad", () => {
+    const closes: number[] = [];
+    renderSwipe(configuredFund(), { onClose: () => closes.push(1) });
+    tapPad("5", "Add 00");
+    const close = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Close") as HTMLButtonElement | undefined;
+    if (!close) throw new Error("Missing Close");
+    close.focus();
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    act(() => { close.dispatchEvent(enter); });
+    expect(enter.defaultPrevented).toBe(false);
+    expect(container.querySelector(".swipe-grid")).toBeNull();
+    act(() => { close.click(); });
+    expect(closes).toEqual([1]);
+  });
+
   it("keeps a rejected post visible and announced inside the active sheet", () => {
     renderSwipe(archiveAccount(configuredFund(), "ACC-MC").household, {
       error: "The local journal must finish validating before anything can change.",
@@ -353,9 +374,89 @@ describe("swipe posting contract", () => {
 
     const target = fundedMoneyUndoTarget(posted.household, posted.undo);
     expect(target).toMatch(/^TXN-/);
-    const reversed = reversePostedMoney(posted.household, target!, { createdBy: BIANCA });
+    const reversed = reversePostedMoney(posted.household, target!, { createdBy: BIANCA, reversalDate: TODAY });
     expect(projectHouseholdFund(reversed.household, TODAY).transferDueCents).toBe(before.transferDueCents);
     expect(reversed.household.fundEvents?.at(-1)?.kind).toBe("refund-funded");
+    expect(monthSummary(reversed.household, "2026-09").expenseActualCents).toBe(0);
+    expect(monthSummary(reversed.household, "2026-09").categories
+      .find((row) => row.subcategoryId === "SUB-FOOD-GROCERIES")?.actualCents).toBe(0);
+    expect(incomeStatement(reversed.household, "2026-09")).toMatchObject({
+      expenseCents: 0,
+      netCents: 0,
+    });
+    expect(cashFlowStatement(reversed.household, "2026-09").cardSpendCents).toBe(0);
+    expect(weekSummary(reversed.household, TODAY)).toMatchObject({
+      expenseCents: 0,
+      byParty: [],
+    });
+
+    const reversalId = reversed.household.transactions.find((tx) => tx.reversalOfId === target)?.id;
+    if (!reversalId) throw new Error("Missing funded reversal row");
+    const reinstated = reversePostedMoney(reversed.household, reversalId, { createdBy: BIANCA, reversalDate: TODAY });
+    expect(monthSummary(reinstated.household, "2026-09").expenseActualCents).toBe(8420);
+    expect(cashFlowStatement(reinstated.household, "2026-09").cardSpendCents).toBe(8420);
+  });
+
+  it("nets refund and income reversals in reports and cash flow", () => {
+    let household = archiveAccount(configuredFund(), "ACC-MC").household;
+    const refund = postEntry(household, {
+      date: TODAY,
+      type: "refund",
+      amount: "12.34",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      createdBy: BIANCA,
+      visibility: "household",
+      confirmDuplicate: true,
+    });
+    const refundId = refund.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!refundId) throw new Error("Missing refund row");
+    household = reversePostedMoney(refund.household, refundId, { createdBy: BIANCA }).household;
+
+    const income = postEntry(household, {
+      date: TODAY,
+      type: "income",
+      amount: "50",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-INCOME-WAGES",
+      createdBy: BIANCA,
+      visibility: "household",
+      confirmDuplicate: true,
+    });
+    const incomeId = income.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!incomeId) throw new Error("Missing income row");
+    household = reversePostedMoney(income.household, incomeId, { createdBy: BIANCA }).household;
+
+    expect(monthSummary(household, "2026-09")).toMatchObject({
+      expenseActualCents: 0,
+      incomeActualCents: 0,
+      netActualCents: 0,
+    });
+    expect(cashFlowStatement(household, "2026-09")).toMatchObject({
+      cardSpendCents: 0,
+      operatingInCents: 0,
+      netCashCents: 0,
+    });
+  });
+
+  it("binds the ten-second Undo strip to one environment, household, and member", () => {
+    const household = configuredFund();
+    const strip = {
+      token: {
+        id: "ACT-swipe",
+        label: "Swipe",
+        snapshot: household,
+        postedIds: ["TXN-swipe"],
+        commandKind: "postEntry",
+      },
+      environment: "development" as const,
+      householdId: household.householdId,
+      memberId: BIANCA,
+    };
+    expect(swipeUndoScopeMatches(strip, "development", household.householdId, BIANCA)).toBe(true);
+    expect(swipeUndoScopeMatches(strip, "production", household.householdId, BIANCA)).toBe(false);
+    expect(swipeUndoScopeMatches(strip, "development", "HH-other", BIANCA)).toBe(false);
+    expect(swipeUndoScopeMatches(strip, "development", household.householdId, JONATHAN)).toBe(false);
   });
 
   it("bounds funded Undo by command kind and preserves the explicit direct-debit route", () => {
@@ -422,6 +523,9 @@ describe("swipe posting contract", () => {
     const applyUndo = appSource.slice(appSource.indexOf("function applyUndo"), appSource.indexOf("async function runRestorePoint"));
     expect(applyUndo).toContain("fundedMoneyUndoTarget");
     expect(applyUndo).toContain("reversePostedMoney");
+    expect(applyUndo).toContain("suppressUndo: Boolean(fundedTransactionId)");
+    expect(applyUndo).toContain("swipeUndoScopeMatches");
+    expect(appSource).toContain("!options?.suppressUndo");
     expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}");
     expect(readFileSync(resolve(process.cwd(), "src/swipe.css"), "utf8")).toContain("z-index: 32");
   });

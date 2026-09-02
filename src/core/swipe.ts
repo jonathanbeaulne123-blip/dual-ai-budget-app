@@ -3,7 +3,7 @@ import { CURRENCY } from "./money.ts";
 import { monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import { activeAccounts, activeCategories } from "./catalog.ts";
 import { shapeHouseholdFundEvents } from "./householdFund.ts";
-import type { Account, Household, Transaction } from "./types.ts";
+import type { Account, Environment, Household, Transaction, UndoToken } from "./types.ts";
 
 export const SWIPE_COPY = {
   action: "I spent something",
@@ -29,6 +29,24 @@ export type ObservedSwipeCategory = {
 export type SwipeCardResolution =
   | { kind: "ready"; accountId: string }
   | { kind: "ambiguous" };
+
+export type SwipeUndoStrip = {
+  token: UndoToken;
+  environment: Environment;
+  householdId: string;
+  memberId: string;
+};
+
+export function swipeUndoScopeMatches(
+  strip: SwipeUndoStrip,
+  environment: Environment,
+  householdId: string,
+  memberId: string,
+): boolean {
+  return strip.environment === environment
+    && strip.householdId === householdId
+    && strip.memberId === memberId;
+}
 
 function purchaseFundedTransactionIds(household: Household): Set<string> {
   const ids = new Set<string>();
