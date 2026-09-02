@@ -5973,6 +5973,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     fundSettlementAllocations: [],
     fundKittyAllocations: [],
     fundPrivate: { bankBindings: [], reconciliations: [] },
+    weeklyDocumentStamps: [],
     budgetPlans: [],
     sitDownSessions: [],
     activity: [],
