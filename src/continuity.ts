@@ -354,6 +354,21 @@ function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): bool
   return left.email.trim().toLowerCase() === right.email.trim().toLowerCase();
 }
 
+function assertWeeklyStampTransportBindings(
+  snapshot: Household,
+  memberId: string,
+  confirmationIds: readonly string[],
+): void {
+  const confirmations = new Set(confirmationIds);
+  for (const receipt of snapshot.commandReceipts.filter((row) => confirmations.has(row.confirmationId))) {
+    if (receipt.commandKind !== "stampWeeklyDocument") continue;
+    const stamps = (snapshot.weeklyDocumentStamps ?? []).filter((row) => receipt.postedIds.includes(row.id));
+    if (receipt.postedIds.length !== 1 || stamps.length !== 1 || stamps[0]!.memberId !== memberId) {
+      throw new Error("This Google member can share only their own weekly stamp.");
+    }
+  }
+}
+
 export function setContinuityStore(store: ContinuityStore | null): void {
   storeOverride = store;
   memoryOutbox.clear();
@@ -508,6 +523,7 @@ export function enqueueContinuitySnapshot(input: {
     blockedByConflict: false,
     nextAttemptAt: null,
   };
+  assertWeeklyStampTransportBindings(snapshot, memberId, item.confirmationIds);
   assertOutboxItemBinding({ ...item, snapshot, identity: item.identity });
   write(snapshot.environment, [...items.filter((row) => row.id !== id), item]);
   return item;
@@ -639,6 +655,7 @@ async function flushItem(
     }
     const household = await resolveOutboxHousehold(item, liveHousehold);
     assertOutboxItemBinding({ ...item, snapshot: household, identity: item.identity });
+    assertWeeklyStampTransportBindings(household, item.memberId, item.confirmationIds);
 
     const pushed = shouldUseCommandLogFlush(item, config)
       ? await (async () => {

@@ -8,6 +8,7 @@ import { rememberReceipt } from "../core/commandIdentity.ts";
 import { shapeHouseholdCharter } from "../core/charter.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { advanceCadence } from "../core/recurrence.ts";
+import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
   Claim,
@@ -27,6 +28,7 @@ import type {
   SitDownSession,
   Tombstone,
   Transaction,
+  WeeklyDocumentStamp,
 } from "../core/types.ts";
 import type { ContinuityCommandRef } from "./continuityCommandLog.ts";
 
@@ -62,6 +64,7 @@ export type ContinuityMaterializationFacts = {
   fundSettlementAllocations?: HouseholdFundSettlementAllocation[];
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   monthRehearsals?: MonthRehearsal[];
+  weeklyDocumentStamps?: WeeklyDocumentStamp[];
   tombstones?: Tombstone[];
 };
 
@@ -73,6 +76,7 @@ export type ContinuityCommandEventPayload = ContinuityCommandRef["commandPayload
     commandKind: string;
     postedIds: string[];
     ledgerScope: "shared" | "personal";
+    materializationHash?: string;
   }>;
 };
 
@@ -241,6 +245,44 @@ function actorMayApplyMonthRehearsals(
   return true;
 }
 
+function stampCommands(event: ContinuityCommandEvent): Array<{
+  postedIds: string[];
+  materializationHash?: string;
+}> {
+  if (event.payload_json.commandKind !== event.command_type) return [];
+  const compacted = event.payload_json.compactedCommands?.filter(
+    (row) => row.commandKind === "stampWeeklyDocument" && row.ledgerScope === "shared",
+  ) ?? [];
+  if (compacted.length) return compacted;
+  if (event.command_type !== "stampWeeklyDocument") return [];
+  return [{
+    postedIds: event.payload_json.postedIds,
+    materializationHash: event.payload_json.materializationHash,
+  }];
+}
+
+async function actorMayApplyWeeklyDocumentStamps(
+  local: Household,
+  event: ContinuityCommandEvent,
+  incoming: WeeklyDocumentStamp[],
+): Promise<boolean> {
+  if (event.ledger_scope !== "shared") return false;
+  const actor = local.members.find((member) => member.id === event.member_id);
+  if (!actor || (!actor.active && event.created_at >= actor.updatedAt)) return false;
+  const commands = stampCommands(event);
+  if (!commands.length || incoming.some((stamp) => stamp.memberId !== event.member_id)) return false;
+  const incomingIds = new Set(incoming.map((stamp) => stamp.id));
+  const declaredIds = new Set(commands.flatMap((command) => command.postedIds));
+  if ([...incomingIds].some((id) => !declaredIds.has(id))) return false;
+  for (const command of commands) {
+    const commandStamps = incoming.filter((stamp) => command.postedIds.includes(stamp.id));
+    if (!commandStamps.length
+      || !command.materializationHash
+      || await sha256Hex(commandStamps) !== command.materializationHash) return false;
+  }
+  return true;
+}
+
 function alreadyApplied(snapshot: Household, event: ContinuityCommandEvent): boolean {
   return (snapshot.commandReceipts ?? []).some(
     (row) => row.confirmationId === event.confirmation_id && row.identityHash === event.identity_hash,
@@ -297,6 +339,9 @@ function filterFactsForScope(
     if (facts.fundSettlementAllocations?.length) scoped.fundSettlementAllocations = facts.fundSettlementAllocations;
     if (facts.fundKittyAllocations?.length) scoped.fundKittyAllocations = facts.fundKittyAllocations;
     if (facts.monthRehearsals?.length) scoped.monthRehearsals = shapeMonthRehearsals(facts.monthRehearsals);
+    if (facts.weeklyDocumentStamps?.length) {
+      scoped.weeklyDocumentStamps = shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps);
+    }
   }
   if (facts.tombstones?.length) {
     scoped.tombstones = facts.tombstones;
@@ -361,6 +406,11 @@ export function extractMaterializationFacts(
     if (options?.commandKind === "updateMonthRehearsal") {
       facts.monthRehearsals = shapeMonthRehearsals(household.monthRehearsals);
     }
+    const weeklyDocumentStamps = shapeWeeklyDocumentStamps(
+      household.weeklyDocumentStamps,
+      household.members,
+    ).filter((row) => posted.has(row.id));
+    if (weeklyDocumentStamps.length) facts.weeklyDocumentStamps = weeklyDocumentStamps;
   }
   let tombstones = (household.tombstones ?? []).filter((row) => posted.has(row.id));
   if (!tombstones.length && !posted.size) {
@@ -401,6 +451,11 @@ async function applyEvent(
   const fundEvents = applyAppendOnlyCollection(snapshot.fundEvents ?? [], facts.fundEvents, mergedTombstones);
   const fundSettlementAllocations = applyAppendOnlyCollection(snapshot.fundSettlementAllocations ?? [], facts.fundSettlementAllocations, mergedTombstones);
   const fundKittyAllocations = applyAppendOnlyCollection(snapshot.fundKittyAllocations ?? [], facts.fundKittyAllocations, mergedTombstones);
+  const weeklyDocumentStamps = applyAppendOnlyCollection(
+    shapeWeeklyDocumentStamps(snapshot.weeklyDocumentStamps, snapshot.members),
+    shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps),
+    mergedTombstones,
+  );
   const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
   for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
   const householdFund = facts.householdFund ?? snapshot.householdFund;
@@ -429,6 +484,11 @@ async function applyEvent(
     monthRehearsals: mergeMonthRehearsals(
       shapeMonthRehearsals(snapshot.monthRehearsals),
       shapeMonthRehearsals(facts.monthRehearsals),
+    ),
+    weeklyDocumentStamps: mergeWeeklyDocumentStamps(
+      snapshot.weeklyDocumentStamps,
+      weeklyDocumentStamps,
+      snapshot.members,
     ),
     tombstones: mergedTombstones,
   };
@@ -460,6 +520,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     fundEvents: [],
     fundSettlementAllocations: [],
     fundKittyAllocations: [],
+    weeklyDocumentStamps: [],
     tombstones: [],
     commandReceipts: [],
     conflicts: [],
@@ -613,6 +674,14 @@ export async function applyCommandEventLocally(input: {
         && event.payload_json.materializationHash !== legacyRehearsalHash)) {
       return { ok: false, reason: "materialization-hash-mismatch", fallback: true };
     }
+  }
+  const rawIncomingStamps = event.payload_json.materializationFacts.weeklyDocumentStamps ?? [];
+  const incomingStamps = shapeWeeklyDocumentStamps(rawIncomingStamps);
+  if (rawIncomingStamps.length !== incomingStamps.length) {
+    return { ok: false, reason: "weekly-stamp-invalid", fallback: true };
+  }
+  if (incomingStamps.length && !await actorMayApplyWeeklyDocumentStamps(local, event, incomingStamps)) {
+    return { ok: false, reason: "weekly-stamp-authority-or-hash-mismatch", fallback: true };
   }
 
   let candidate: Household;

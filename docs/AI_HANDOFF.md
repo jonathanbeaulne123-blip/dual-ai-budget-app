@@ -2,7 +2,7 @@
 
 ## Register slice 9 Ask confirmation candidate (2026-09-02)
 
-**Status:** Local High-risk candidate on `codex/register-9-confirm`, isolated from `origin/main@6918d29fdc9e5976b09e94705015c79837b2e988`. Full Windows verification and fictional rendered proof pass. First independent review found two bounded proof gaps—cancelled-confirmation focus and compacted-event replay—and both corrections pass 15 focused tests plus TypeScript; exact-head full gate and re-review are next. No push, PR mutation, merge, deployment, hosted row, schema, secret, or Production mutation has occurred.
+**Status:** PR [#292](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/292) passed exact-head GitHub checks at `d894734f59af06b340ca344d5b084e40117e3d5c`. Jonathan authorized push, merge, and Development deployment on 2026-09-02. Current-main integration over `c162d135f6e1741cabeaf398259aa1a8ce6ad74e` is in verification because PR #291 advanced `main` after those checks. No merge, Development deployment, hosted row, schema, secret, or Production mutation has occurred.
 
 **Household outcome:** Jonathan's wide Shared Home shows the existing Fund Ask and other door. `Raise it` opens a small, focused confirmation whose canonical action says `Move Halifax to next month`. Confirming advances only the exact Halifax shared monthly standing-order date from September 30 to October 30, so September's Ask changes from `$340.00` to `$40.00`; no cash, journal row, Fund event, contribution, balance, or saved amount moves. Bianca's default custodian surface does not receive the panel or command.
 
@@ -14,7 +14,17 @@
 
 **Boundaries:** The rendered proof was a fictional component harness, not a signed-in kitchen walkthrough, because the local browser household's Fund was not open. The two-device proof is deterministic command-event replay, not the wider authenticated 100-sample or 14-day continuity acceptance gate. No money authority, allocator, Fund custody, Till, OfficePhone, schema, provider, secret, hosted data, or Production continuity changed.
 
-**Next owner:** Independent books/trust and UX/privacy auditors re-review the corrected exact local candidate, followed by `hearth-release-review`. After PASS, Codex asks Jonathan for action-time approval before push, merge, and Development deployment.
+**Next owner:** Codex verifies the current-main integration, updates PR #292, waits for exact-head checks again, then merges and verifies main CI, Development deployment, and the live no-store client separately.
+
+## Cursor Clerk Slice 4 weekly document (2026-09-02)
+
+**Status:** Ready to implement locally from sealed core `9f74cb780fed8a1a595a2dd791f510545a85570d` on `codex/clerk-4-durable-stamp`; not pushed, merged, deployed, or live. Complete packet: [`briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md`](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md). Risk: **High**.
+
+**Household outcome:** either active member can add only their own durable weekly acknowledgement; one stamp completes the document while the other line stays blank and quiet. The weekly composes Clerk, register, Ask, read-only alternative, and real motion truth without creating money or a new motion.
+
+**Core seal:** separate append-only `WSTAMP-` Shared facts; exact Toronto date/week; one-record-only acceptance transition; Google-member binding at client enqueue/flush; direct and compacted replay; immutable merge; Personal/Hercules/financial-audit exclusion. Independent books/sync and privacy reviews found no blocking issue for the supported signed-in client path. The hosted RPC does not inspect stamp JSON and is not claimed as adversarial server enforcement.
+
+**Dual Course:** core Budget `+2` / Engagement `+2`; target Slice 4 Budget `+3` / Engagement `+3`. Full core gate: **1,635 passed / 3 skipped tests**, all books/PGlite lanes, AI verification, TypeScript, and 401-module build. Cursor must rerun proof on its own exact head. No push/PR/release authority is included.
 
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 

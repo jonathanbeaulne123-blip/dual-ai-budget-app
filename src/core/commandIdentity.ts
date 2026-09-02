@@ -198,6 +198,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => posted.has(row.id));
   const shiftEnvelopes = (next.shiftEnvelopes ?? []).filter((row) => posted.has(row.id));
   const shiftBibles = (next.shiftBibles ?? []).filter((row) => posted.has(row.id));
+  const weeklyDocumentStamps = (next.weeklyDocumentStamps ?? []).filter((row) => posted.has(row.id));
   const tombstones = (next.tombstones ?? []).filter((row) => posted.has(row.id));
   const charterPosted = postedIds.some((id) => id.startsWith("CHARTER-"));
   return stable({
@@ -269,6 +270,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     coworkerSchedules: coworkerSchedules.map(({ sourceScheduleKey: _sourceScheduleKey, ...row }) => row),
     shiftEnvelopes,
     shiftBibles,
+    weeklyDocumentStamps,
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.

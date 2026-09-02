@@ -1169,6 +1169,21 @@ export type SyntheticFixtureProvenance = {
   fixtureHashSha256: string;
 };
 
+/**
+ * A member-owned acknowledgement on one Toronto weekly document.
+ *
+ * Stamps are append-only shared ritual facts. They are not signatures,
+ * approvals, motion actions, journal rows, or money authority.
+ */
+export type WeeklyDocumentStamp = {
+  id: string;
+  weekStart: DateKey;
+  memberId: string;
+  stampedAt: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Household = {
   version: 1;
   householdId: string;
@@ -1220,6 +1235,8 @@ export type Household = {
   fundPrivate?: HouseholdFundPrivateState;
   /** D-183 Development-only shared ritual metadata. Never journal or model context. */
   monthRehearsals?: MonthRehearsal[];
+  /** Member-owned, append-only weekly acknowledgements. Never money or model context. */
+  weeklyDocumentStamps?: WeeklyDocumentStamp[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
@@ -1279,6 +1296,8 @@ export type SharedEnvelope = {
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   /** D-183 shared ritual metadata; omitted from financial hashes and Personal envelopes. */
   monthRehearsals?: MonthRehearsal[];
+  /** Shared append-only weekly acknowledgements; omitted from financial hashes and Personal envelopes. */
+  weeklyDocumentStamps?: WeeklyDocumentStamp[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   activity: Activity[];
