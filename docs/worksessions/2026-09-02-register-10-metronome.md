@@ -109,3 +109,4 @@ Local + branch + draft PR #294. Not merged, not kitchen-published, not live. Cha
 - Cross-slice focused proof covering Month Spread, Ask layout, custody, month obligations, and the weekly document: **6 files / 75 tests passed**.
 - Official `pnpm check:windows` rerun on the integrated code: **exit 0**; AI surface, **1,532 fast tests / 2 skipped**, **146 serial books tests / 1 skipped**, TypeScript, production build, Hercules Pro UI, and redirect guard passed.
 - The integrated PR head must receive fresh exact-head GitHub checks before merge. Still no hosted row, schema, secret, provider, household-data, or Production mutation.
+- After those checks passed, `origin/main` advanced again to `5828d9f156ef3cefe9a9a46a9341e0627651c22a` through the docs-only Till release record. Integrated it without source/test changes, kept the newer Till ownership wording, and required fresh exact-head CI on the resulting PR head.
