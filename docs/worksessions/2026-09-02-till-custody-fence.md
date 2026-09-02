@@ -1,17 +1,17 @@
 # Hearth worksession — Till Slice 1 custody fence
 
-- **Status:** CLOSED — verified release candidate; remote release receipts pending
+- **Status:** CLOSED — merged and published to the Development kitchen
 - **Opened:** 2026-09-02 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/till-1-custody-fence-release`
 - **Baseline SHA:** `1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
-- **Head SHA:** D-197-integrated Slice 2 base `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09`; implementation ancestor `e426a4592dcd72870feb85642f3d0ab894e6dee8`; final packet correction follows
-- **PR or issue:** pending; Jonathan authorized push, merge, and Development kitchen deployment on 2026-09-02
+- **Head SHA:** main merge `9c49e6fd1998e9687820c8eedea4f6a7b062805a`; D-197-integrated Slice 2 base `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09`; implementation ancestor `e426a4592dcd72870feb85642f3d0ab894e6dee8`
+- **PR or issue:** [#296](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/296), merged 2026-09-02T07:17:36Z
 - **Risk:** High
 - **Decision owner:** Jonathan
-- **Environment impact:** none (local code and fictional tests only)
+- **Environment impact:** Development Worker assets published; no hosted data or Production change
 
 ## Household outcome
 
@@ -88,6 +88,9 @@ Only the configured Household Fund custodian can record a new purchase against t
 - Broad fast candidate run — 216 files / 1,485 tests passed with two intentional skips. Direct complete-dependency reruns passed API, browser evidence collector, and five-of-five checks; the remaining live Flinks and cross-root native-esbuild failures reproduce outside the Slice 1 diff.
 - Independent books/trust audit — no P0-P2 defect in authority, correction lineage, projection alignment, fixtures, or scope.
 - Current-main same-root release candidate — focused custody **6/6**; `pnpm check:windows` passed AI surface, **1,525 fast + 146 serial = 1,671 tests**, three intentional skips, TypeScript, 410-module production build, Hercules Pro UI, and redirect guard.
+- Exact PR head `097b7dd12bf57100ac251cb797810ff69ec56363` — both CI runs, GitHub Cloudflare workflow, and Worker build passed before merge.
+- Merge and main — PR #296 merged as `9c49e6fd1998e9687820c8eedea4f6a7b062805a`; main CI `33602847175` and Cloudflare Workers `33602847156` passed; Worker version `3f8852fe-2949-487d-923b-a80da37a0068`.
+- Live kitchen — HTTP 200, `Cache-Control: no-store`; immutable `/assets/index-Ds-S26uS.js` contains the exact custody refusal.
 
 ## Decisions
 
@@ -96,9 +99,8 @@ Only the configured Household Fund custodian can record a new purchase against t
 
 ## Remaining uncertainty
 
-- Remote exact-head CI, merge receipt, main CI, Cloudflare deployment, and live no-store bundle verification remain separate release evidence.
 - Cursor must re-check current `origin/main` and decision ids before each later slice. Slice 3 may start only from an accepted Slice 2 exact head.
 
 ## Handoff
 
-Codex owns the sealed Slice 1 implementation and authorized Development release. Cursor is the next implementation owner only for the sequentially bounded Slice 2 and Slice 3 packet. This worksession authorizes no later Slice 2 or Slice 3 push, merge, deploy, or Production action.
+Till Slice 1 is merged, verified, and published to the Development kitchen. Cursor is the next implementation owner only for the sequentially bounded Slice 2 and Slice 3 packet. This worksession authorizes no later Slice 2 or Slice 3 push, merge, deploy, hosted-data write, or Production action.
