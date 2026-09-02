@@ -35,7 +35,7 @@ Related: [AI_HANDOFF.md](../AI_HANDOFF.md) · [worksession](../worksessions/2026
 - Repo: `jonathanbeaulne123-blip/dual-ai-budget-app`
 - Branch: `cursor/till-2-swipe-0c3a`
 - Base: `origin/main` @ `1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
-- Review against branch tip of draft PR #295 after the canon/docs commit
+- Review SHA: branch tip of draft PR #295 after the proof/docs commit (code+Hercules pause `938cb33401ed5313a615ece4ac6259f8f7ec0d9a`)
 - Draft PR #295 — **not merged, not deployed, not live, not shipped**
 - Risk: **High**
 - Decision owner: Jonathan
@@ -63,7 +63,7 @@ Hearth is Dual Course: family-office books weigh 5; Hercules and interactables w
 - Repo: jonathanbeaulne123-blip/dual-ai-budget-app (private)
 - Branch: cursor/till-2-swipe-0c3a
 - Base: origin/main @ 1c03cbedc10ca5f14ca51bf4067db5ba142a91c5
-- Review SHA: branch tip of draft PR #295
+- Review SHA: branch tip of draft PR #295 (code+Hercules pause 938cb33401ed5313a615ece4ac6259f8f7ec0d9a plus this packet/docs commit)
 - Draft PR #295 — not merged, not deployed, not the live kitchen
 - Do not rebase onto later main unless Jonathan asks
 
@@ -79,12 +79,14 @@ The packet wanted sealed Slice 1 SHA 7a023c75 on codex/till-1-custody-fence-v2. 
 
 ## What Cursor already claims as proven (treat as claims)
 
-- Focused custody-fence + swipe: 17 tests passed.
-- Fund/Clerk/startup/rehearsal packet including PGlite Fund and Bianca app-startup-p1 passed; golden month hashes were frozen after changing Fund-backed purchase actors to the custodian. Money amounts were not changed.
+- Focused custody-fence + swipe on 938cb33: 17 tests passed.
+- Exact pnpm check on 938cb33 passed: ai:verify 41 files / 2 Clerk fences; fast 224 files / 1536 tests; serial books 18 files / 146 tests; tsc; Vite 413 modules; Hercules Pro UI.
+- Fund/Clerk/startup/rehearsal packet including PGlite Fund and Bianca app-startup-p1 passed earlier; golden month hashes were frozen after changing Fund-backed purchase actors to the custodian. Money amounts were not changed.
 - Swipe.tsx does not import postEntry, commitHousehold, outbox, PGlite, or IndexedDB.
 - postEntry requires the Fund custodian before cloneHousehold for purchase-funded.
 - Exact refusal: “Only the person holding the card can post a household purchase.”
-- Independent auditor verdicts and exact pnpm check belong to the canon head; if missing, mark unproven.
+- Playwright fictional Development demo as Bianca (Toronto 2026-09-12): I spent something → CadPad What did you just spend? → Groceries → Posted. Nothing moved. Operating stayed $3260.00. Hercules pill hidden while the sheet is open. 320/390/720/1100 overflowX 0.
+- Independent UX auditor failed to launch. Books/privacy/verifier were launched; if their written verdicts are missing from the handoff, mark those reviews unproven.
 
 ## Named gates — return PASS / CONDITIONAL / FAIL each
 

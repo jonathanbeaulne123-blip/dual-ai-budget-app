@@ -2,25 +2,28 @@
 
 ## Till Slice 2 two-tap swipe (2026-09-02)
 
-**Status:** Draft PR [#295](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/295) on `cursor/till-2-swipe-0c3a` over `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`. Fence `8ee3f23`; swipe `c474dca`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High**.
+**Status:** Draft PR [#295](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/295) on `cursor/till-2-swipe-0c3a` over `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`. Code+Hercules pause `938cb33401ed5313a615ece4ac6259f8f7ec0d9a`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High**.
 
 **Household outcome:** Bianca, as Household Fund custodian, records an ordinary card purchase from Shared Home in two taps: amount, then an observed category. Local books update immediately. The strip says `Posted. Nothing moved.` Money does not move. Jonathan cannot create a `purchase-funded` claim.
 
-**Dual Course:** Budget `+3`; Engagement `+3`. Books won: swipe has no React money authority; App `postEntry` is the writer; duplicates are not auto-confirmed; Fund operating balance is unchanged; camera/OCR stayed out.
+**Dual Course:** Budget `+3`; Engagement `+3`. Books won: swipe has no React money authority; App `postEntry` is the writer; duplicates are not auto-confirmed; Fund operating balance is unchanged; camera/OCR stayed out; Hercules pauses like Add so CadPad stays tappable.
 
-**Justified expansion:** the packet's Slice 1 SHA `7a023c75` was never on remote. Slice 2 cannot post truthfully without the custody fence, so Slice 1 was reconstructed on current `main`. D-196 is occupied by the weekly document, so custody is **D-197** and swipe is **D-198**.
+**Justified expansion:** the packet's Slice 1 SHA `7a023c75` was never on remote. Slice 2 cannot post truthfully without the custody fence, so Slice 1 was reconstructed on current `main`. D-196 is occupied by the weekly document, so custody is **D-197** and swipe is **D-198**. Cloud git policy used `cursor/till-2-swipe-0c3a` instead of `till/2-swipe`.
 
-**Architecture:** `householdFundEventKindForPost` classifies funded `postEntry` before clone. `purchase-funded` requires the Fund custodian with `HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL`. `observedSwipeCategories` / `resolveSwipeCardAccount` are pure selectors. `Swipe` is a CadPad dialog; `submitSwipePurchase` posts through existing `run` / `commitHousehold`. More and an ambiguous card open Add. Undo is `undoLedgerConfirm` for 10s. Worksession: [`worksessions/2026-09-02-till-2-swipe.md`](worksessions/2026-09-02-till-2-swipe.md). GPT review: [`briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md`](briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md).
+**Architecture:** `householdFundEventKindForPost` classifies funded `postEntry` before clone. `purchase-funded` requires the Fund custodian with `HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL`. `observedSwipeCategories` / `resolveSwipeCardAccount` are pure selectors. `Swipe` is a CadPad dialog; `submitSwipePurchase` posts through existing `run` / `commitHousehold`. More and an ambiguous card open Add. Undo is `undoLedgerConfirm` for 10s. While the sheet is open, App passes `adding || swipeOpen` so Hercules pauses like Add, and `.swipe-sheet` stacks at z-index 32. Worksession: [`worksessions/2026-09-02-till-2-swipe.md`](worksessions/2026-09-02-till-2-swipe.md). GPT review: [`briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md`](briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md).
 
 **Verification:**
-- Focused `pnpm exec vitest run test/custody-fence.test.ts test/swipe.test.ts --maxWorkers=1` — **2 files / 17 tests passed**
-- Fund/Clerk/startup/rehearsal packet: **17 files / 131 tests passed**, then golden hashes frozen for the custodian actor
-- `test/household-fund-pglite.test.ts` — **4 passed**; `test/app-startup-p1.test.ts` — **9 passed**; `test/month-rehearsal-mainline.test.ts` — **1 passed**
-- Exact `pnpm check` and independent auditor verdicts are recorded on the canon commit of this section
+- Focused `pnpm exec vitest run test/custody-fence.test.ts test/swipe.test.ts --maxWorkers=1` on `938cb33` — **2 files / 17 tests passed**
+- `pnpm exec tsc --noEmit` on `938cb33` — passed
+- Exact `pnpm check` on `938cb33` — **passed** (`exit_code: 0`, 391s): `ai:verify` 41 required files / 2 Clerk fences; fast lane **224 files / 1536 tests passed, 2 skipped**; serial books **18 files / 146 tests passed, 1 skipped**; Vite production **413 modules**; `build:hercules-pro-ui` green
+- Playwright, fictional Development demo kitchen as Bianca, clock frozen to Toronto `2026-09-12`: home action `I spent something` (96px); CadPad titled `What did you just spend?`; Hercules pill hidden while the sheet is open; key `0` unobstructed; Groceries then strip `Posted. Nothing moved.`; Fund operating stayed `$3260.00`; Close/Undo ≥44px; overflowX `0` at 320/390/720/1100; Escape closes
+- Independent books, privacy, and verifier agents were launched on `938cb33`. The UX auditor failed to launch (monthly spend limit). Treat missing written verdicts as unproven for that reviewer.
 
 **Boundaries:** No hosted schema/row, secret, provider, or Production mutation. Slice 3 is blocked until Jonathan accepts this exact head.
 
-**Next owner:** Jonathan. Paste the GPT-5 Pro packet. Do not merge, deploy, or start Slice 3 from this draft.
+**Known P2 from visual proof (not blocking this packet):** CadPad repeats the dialog title; the ordinary Confirm toast also offers Undo beside the swipe strip; a Hercules preset bubble can overlap the home action on wide Home.
+
+**Next owner:** Jonathan. Paste [`briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md`](briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md) into a new GPT-5 Pro chat. Do not merge, deploy, or start Slice 3 from this draft.
 
 ## Clerk Slice 4 weekly document (2026-09-02)
 
