@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Till Slice 4 member-owned landing preference (2026-09-02)
+
+**Status:** **CLOSED; LOCAL VERIFIED; NOT PUSHED.** Implementation commit `d031c6c877d15185333ec9a93d1f3943a9d4c91c` on `codex/till-4-preference` from exact `origin/main@08e3a4b306533518405cdb866f13e71550447624`. No push, PR, merge, deployment, hosted mutation, or Production action. D-200.
+
+**Household outcome:** the configured Fund custodian calmly defaults to Till and everyone else to the full desk, but each person can explicitly choose and reverse only their own default. The choice is Personal, never an assignment or permission tier. `see everything` stays a permanent non-writing peek back to the desk.
+
+**Dual Course:** Budget `+1`; Engagement `+2`. No amount, Fund event, journal row, command authority, or accepted-books rule changes.
+
+**What changed:** `LandingSurface`; member and Personal-envelope shape; default resolver; self-owned `setLandingSurface`; Personal split/overlay/assembly/merge; focused command, continuity, source-fence, and Till-door tests. `src/core/sync.ts` is a correctness-required expansion beyond the packet's file list because current canon puts member-Personal state in `PersonalEnvelope` rather than Shared `members`.
+
+**Verification:** final focused Slice 4/continuity/Till/visibility proof **39/39**; expanded core/continuity/storage proof **99/99**; TypeScript and diff hygiene passed. The final Windows-native full gate passed AI surface verification, **1,745 tests** with three intentional skips, and a **418-module** production build. Independent complete-diff re-verification passed after its actor-bypass and equal-clock convergence findings were fixed.
+
+**Boundaries:** local source/docs and fictional catalog/Development tests only. No settings UI, automatic startup route, Till/Swipe/Ask/Fund arithmetic, PGlite or hosted schema, hosted row, Auth/RLS, secret, provider, bank, deployment, real household data, or Production change.
+
+**Next owner:** Jonathan decides whether to authorize a push and PR. No remote action is authorized yet.
+
 ## Till Slice 3 custodian surface (2026-09-02)
 
 **Status:** **CLOSED; MERGED #304; DEVELOPMENT KITCHEN PUBLISHED; LIVE HTTP VERIFIED.** Exact head `300235628885d9f21b1680089174301aa3665141` merged as `main@300235628885d9f21b1680089174301aa3665141` from sealed `origin/main@6f5dd56516d31c3f1892f4833a7e71ff31857142`. Ancestry: PR #302 `777dbcd`, Slice 1 `e426a45`, and `a2a55c6` are ancestors. Risk: **High**. D-199. Jonathan authorized merge and Development kitchen publish when finished. Not Production. Stop before Slice 4.
