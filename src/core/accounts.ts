@@ -1,5 +1,6 @@
 import { addDays, calendarDaysBetween, daysInMonthKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { ACCOUNT_KIND_LABEL, isCashLikeKind, isCreditKind, isInvestmentKind, isLiabilityKind, isReceivableKind } from "./accountKinds.ts";
+import { projectedCountable, projectedExpenseEffect, transactionProjection } from "./budget.ts";
 import { accountRegister, compileHousehold } from "./journal.ts";
 import { formatCad, sumCents } from "./money.ts";
 import type { Account, AccountKind, Household, Transaction } from "./types.ts";
@@ -47,24 +48,19 @@ export function nextStatementDate(today: DateKey, statementDay: number): DateKey
 
 function transfersTo(household: Household, accountId: string, start: DateKey, end: DateKey): number {
   const seen = new Set<string>();
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   let total = 0;
   for (const tx of household.transactions) {
-    if (tx.isDuplicate || tx.type !== "transfer") continue;
+    if (tx.type !== "transfer" || !projectedCountable(tx, transactionById)) continue;
     if (tx.date < start || tx.date > end) continue;
     const pairId = tx.transferPairId || tx.id;
     if (seen.has(pairId) || seen.has(tx.id)) continue;
     seen.add(tx.id);
     if (tx.transferPairId) seen.add(tx.transferPairId);
-    if (tx.transferToAccountId === accountId) total += tx.amountCents;
+    const { root, multiplier } = transactionProjection(tx, transactionById);
+    if (root.transferToAccountId === accountId) total += root.amountCents * multiplier;
   }
   return total;
-}
-
-function countableSpend(tx: Transaction): number {
-  if (tx.isDuplicate) return 0;
-  if (tx.type === "expense") return tx.amountCents;
-  if (tx.type === "refund") return -tx.amountCents;
-  return 0;
 }
 
 export type CreditCardView = {
@@ -118,19 +114,21 @@ export function creditCardView(household: Household, account: Account, today: Da
     : Math.round(afterMin * monthlyRate);
   const cycleStart = addDays(statementDate, 1);
   const cycleEnd = nextStatementDate(today, statementDay);
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   let cashbackCycleCents = 0;
   let cashbackPostedCents = 0;
   for (const tx of household.transactions) {
-    if (tx.accountId !== account.id || tx.isDuplicate) continue;
+    if (tx.accountId !== account.id || !projectedCountable(tx, transactionById)) continue;
+    const { root, multiplier } = transactionProjection(tx, transactionById);
     if (tx.date >= cycleStart && tx.date <= cycleEnd) {
-      const spend = countableSpend(tx);
-      if (spend > 0) cashbackCycleCents += Math.round(spend * cashbackBpsFor(account, tx.subcategoryId) / 10000);
+      const spend = projectedExpenseEffect(tx, transactionById);
+      if (spend) cashbackCycleCents += Math.round(spend * cashbackBpsFor(account, root.subcategoryId) / 10000);
     }
-    if ((tx.type === "refund" || tx.type === "income") && (
-      /cashback|reward/i.test(`${tx.note} ${tx.place}`)
-      || (desk?.rewardsName && tx.note.toLowerCase().includes(desk.rewardsName.toLowerCase()))
+    if ((root.type === "refund" || root.type === "income") && (
+      /cashback|reward/i.test(`${root.note} ${root.place}`)
+      || (desk?.rewardsName && root.note.toLowerCase().includes(desk.rewardsName.toLowerCase()))
     )) {
-      cashbackPostedCents += tx.amountCents;
+      cashbackPostedCents += root.amountCents * multiplier;
     }
   }
   const rewardsName = desk?.rewardsName ?? "Cashback";

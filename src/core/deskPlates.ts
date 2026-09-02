@@ -11,7 +11,7 @@ import { addDays, calendarDaysBetween, formatDateLabel, monthKeyFromDateKey, mon
 import { formatCad } from "./money.ts";
 import { creditCardView, householdWallet, isCreditKind } from "./accounts.ts";
 import { appointmentPublicTitle, claimPublicLabel, claimRemainingCents, outstandingClaims } from "./appointments.ts";
-import { expenseEffect, incomeEffect } from "./budget.ts";
+import { projectedExpenseEffect, projectedIncomeEffect } from "./budget.ts";
 import { openGoals } from "./goalVault.ts";
 import { runHealthCheck, type Finding } from "./health.ts";
 import type { Dashboard } from "./insights.ts";
@@ -102,13 +102,14 @@ function monthRunningNet(household: Household, today: DateKey): number[] {
   const start = monthStartKey(monthKey);
   const lastDay = Number(today.slice(8, 10)) || 1;
   const inMonth = household.transactions.filter((tx) => tx.date >= start && tx.date <= today);
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   const points: number[] = [];
   let running = 0;
   for (let day = 1; day <= lastDay; day += 1) {
     const date = `${monthKey}-${String(day).padStart(2, "0")}` as DateKey;
     for (const tx of inMonth) {
       if (tx.date !== date) continue;
-      running += incomeEffect(tx) - expenseEffect(tx);
+      running += projectedIncomeEffect(tx, transactionById) - projectedExpenseEffect(tx, transactionById);
     }
     points.push(running);
   }

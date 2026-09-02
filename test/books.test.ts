@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { catalogHousehold, postEntry, postTransfer, postShift, markDuplicate } from "../src/core/index.ts";
+import { cashFlowStatement, catalogHousehold, postEntry, postTransfer, postShift, markDuplicate, monthSummary, reversePostedMoney } from "../src/core/index.ts";
 import {
   booksEquation,
   compileHousehold,
@@ -7,7 +7,7 @@ import {
   trialBalance,
 } from "../src/core/journal.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, openMemoryBooks, resetBrowserBooksForTests } from "../src/ledger/engine.ts";
+import { getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, migrateBooks, openMemoryBooks, resetBrowserBooksForTests } from "../src/ledger/engine.ts";
 import { assertReadOnlySelect } from "../src/ledger/queryGuard.ts";
 import { booksSqlDump } from "../src/ledger/export.ts";
 
@@ -156,6 +156,121 @@ describe("double-entry books", () => {
     const equation = booksEquation(compileHousehold(household));
     expect(equation.expenseCents).toBe(0);
     expect(snapshotPnL(household).expenseCents).toBe(0);
+  });
+
+  it("keeps the compiled journal aligned when reversing a reversal", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Milk",
+      confirmDuplicate: true,
+    });
+    const transactionId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!transactionId) throw new Error("Missing expense row");
+    const reversed = reversePostedMoney(posted.household, transactionId, {
+      reversalDate: "2026-08-18",
+    });
+    const reversalId = reversed.household.transactions.find((row) => row.reversalOfId === transactionId)?.id;
+    if (!reversalId) throw new Error("Missing reversal row");
+    const reinstated = reversePostedMoney(reversed.household, reversalId, {
+      reversalDate: "2026-08-18",
+    }).household;
+
+    const books = compileHousehold(reinstated);
+    const equation = booksEquation(books);
+    expect(trialBalance(books).inBalance).toBe(true);
+    expect(equation.expenseCents).toBe(1250);
+    expect(equation.liabilityCents).toBe(1250);
+    expect(snapshotPnL(reinstated).expenseCents).toBe(1250);
+    expect(monthSummary(reinstated, "2026-08").expenseActualCents).toBe(1250);
+    const reinstatement = books.entries.find((entry) => entry.originTransactionIds.includes(
+      reinstated.transactions.find((row) => row.reversalOfId === reversalId)?.id ?? "",
+    ));
+    expect(reinstatement?.lines.find((line) => line.accountId === "PL-SUB-FOOD-GROCERIES")?.debitCents).toBe(1250);
+  });
+
+  it("excludes a reinstatement when an intermediate reversal is marked duplicate", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Milk",
+      confirmDuplicate: true,
+    });
+    const transactionId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!transactionId) throw new Error("Missing expense row");
+    const reversed = reversePostedMoney(posted.household, transactionId, {
+      reversalDate: "2026-08-18",
+    });
+    const reversalId = reversed.household.transactions.find((row) => row.reversalOfId === transactionId)?.id;
+    if (!reversalId) throw new Error("Missing reversal row");
+    const excluded = markDuplicate(reversed.household, reversalId, true).household;
+    const reinstated = reversePostedMoney(excluded, reversalId, {
+      reversalDate: "2026-08-18",
+    }).household;
+
+    const books = compileHousehold(reinstated);
+    const equation = booksEquation(books);
+    expect(books.entries.filter((entry) => entry.recognized).map((entry) => entry.originTransactionIds))
+      .toEqual([[transactionId]]);
+    expect(trialBalance(books).inBalance).toBe(true);
+    expect(equation.expenseCents).toBe(1250);
+    expect(equation.liabilityCents).toBe(1250);
+    expect(snapshotPnL(reinstated).expenseCents).toBe(1250);
+    expect(monthSummary(reinstated, "2026-08").expenseActualCents).toBe(1250);
+    expect(cashFlowStatement(reinstated, "2026-08").cardSpendCents).toBe(1250);
+  });
+
+  it("excludes a reversed transfer when either original leg is marked duplicate", () => {
+    const transfer = postTransfer(catalogHousehold(), {
+      date: "2026-08-18",
+      amount: "40.00",
+      fromAccountId: "ACC-CHEQUING",
+      toAccountId: "ACC-VISA",
+      confirmDuplicate: true,
+    });
+    const reversed = reversePostedMoney(transfer.household, transfer.postedIds[0]!, {
+      reversalDate: "2026-08-18",
+    });
+    const excluded = markDuplicate(reversed.household, transfer.postedIds[0]!, true).household;
+    const books = compileHousehold(excluded);
+
+    expect(books.entries.filter((entry) => entry.recognized)).toEqual([]);
+    expect(booksEquation(books)).toMatchObject({
+      assetCents: 0,
+      liabilityCents: 0,
+      netWorthCents: 0,
+    });
+    expect(cashFlowStatement(excluded, "2026-08").debtPaydownCents).toBe(0);
+  });
+
+  it("excludes a transfer reinstatement when an intermediate reversal pair leg is duplicate", () => {
+    const transfer = postTransfer(catalogHousehold(), {
+      date: "2026-08-18",
+      amount: "40.00",
+      fromAccountId: "ACC-CHEQUING",
+      toAccountId: "ACC-VISA",
+      confirmDuplicate: true,
+    });
+    const reversed = reversePostedMoney(transfer.household, transfer.postedIds[0]!, {
+      reversalDate: "2026-08-18",
+    });
+    const reversal = reversed.household.transactions.find((row) => row.reversalOfId === transfer.postedIds[0]);
+    if (!reversal?.transferPairId) throw new Error("Missing transfer reversal pair");
+    const excluded = markDuplicate(reversed.household, reversal.transferPairId, true).household;
+    const reinstated = reversePostedMoney(excluded, reversal.id, {
+      reversalDate: "2026-08-18",
+    }).household;
+    const books = compileHousehold(reinstated);
+
+    expect(books.entries.filter((entry) => entry.recognized)).toHaveLength(1);
+    expect(trialBalance(books).inBalance).toBe(true);
+    expect(cashFlowStatement(reinstated, "2026-08").debtPaydownCents).toBe(4000);
   });
 });
 
@@ -605,6 +720,60 @@ describe("Postgres books engine", () => {
       expect(status.writeMode).toBe("full");
       expect(status.compactionReason).toBe("untrusted-previous");
       expect((await db.query<{ projection_hash: string }>("SELECT projection_hash FROM audit_revisions")).rows[0]?.projection_hash).toMatch(/^[a-f0-9]{32}$/);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("re-anchors a pre-v7 reversal projection from the accepted snapshot", async () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      confirmDuplicate: true,
+    });
+    const transactionId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!transactionId) throw new Error("Missing expense row");
+    const reversed = reversePostedMoney(posted.household, transactionId, { reversalDate: "2026-08-18" });
+    const reversalId = reversed.household.transactions.find((row) => row.reversalOfId === transactionId)?.id;
+    if (!reversalId) throw new Error("Missing reversal row");
+    const reinstatedDraft = reversePostedMoney(reversed.household, reversalId, {
+      reversalDate: "2026-08-18",
+    }).household;
+    const reinstated = {
+      ...reinstatedDraft,
+      booksAcceptedHash: await hashBooksSnapshot(reinstatedDraft),
+    };
+    const reinstatementId = reinstated.transactions.find((row) => row.reversalOfId === reversalId)?.id;
+    if (!reinstatementId) throw new Error("Missing reinstatement row");
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, reinstated);
+      await db.query(
+        "UPDATE journal_lines SET debit_cents = credit_cents, credit_cents = debit_cents WHERE entry_id = $1",
+        [`JE-${reinstatementId}`],
+      );
+      await db.query("DELETE FROM schema_migrations WHERE id = 7");
+
+      await migrateBooks(db);
+      expect((await db.query<{ projection_hash: string | null }>(
+        "SELECT projection_hash FROM audit_revisions ORDER BY revision DESC LIMIT 1",
+      )).rows).toEqual([{ projection_hash: null }]);
+
+      const status = await ingestBooks(db, reinstated, compileHousehold(reinstated), {
+        previous: reinstated,
+        incremental: true,
+        auditHash: reinstated.booksAcceptedHash!,
+      });
+      expect(status.writeMode).toBe("full");
+      expect(status.compactionReason).toBe("untrusted-previous");
+      expect((await db.query<{ debit_cents: number; credit_cents: number }>(
+        "SELECT debit_cents, credit_cents FROM journal_lines WHERE entry_id = $1 AND account_id = $2",
+        [`JE-${reinstatementId}`, "PL-SUB-FOOD-GROCERIES"],
+      )).rows).toEqual([{ debit_cents: 1250, credit_cents: 0 }]);
+      expect((await db.query("SELECT id FROM schema_migrations WHERE id = 7")).rows).toEqual([{ id: 7 }]);
     } finally {
       await db.close();
     }

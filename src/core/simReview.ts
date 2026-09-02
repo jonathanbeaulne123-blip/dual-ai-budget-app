@@ -13,7 +13,7 @@ import {
 } from "./calendar.ts";
 import { accountBookBalance, creditCardView } from "./accounts.ts";
 import { isCashLikeKind } from "./accountKinds.ts";
-import { monthSummary } from "./budget.ts";
+import { monthSummary, projectedExpenseEffect, projectedIncomeEffect, transactionProjection } from "./budget.ts";
 import { budgetVariance } from "./statements.ts";
 import { formatCad, sumCents } from "./money.ts";
 import { projectCadence } from "./recurrence.ts";
@@ -114,11 +114,7 @@ function weeklyWageEstimate(household: Household, memberId?: string): number {
   return Math.round(wages / weeks);
 }
 
-function transactionWasReversed(household: Household, transactionId: string): boolean {
-  return household.transactions.some((row) => row.reversalOfId === transactionId);
-}
-
-/** Month income/spend from non-reversed posted rows; optional member creator filter. */
+/** Month income/spend on full correction lineage; optional original-member filter. */
 function monthPostedActuals(
   household: Household,
   month: MonthKey,
@@ -130,15 +126,14 @@ function monthPostedActuals(
   }
   const start = monthStartKey(month);
   const end = addDays(monthStartKey(shiftMonthKey(month, 1)), -1);
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   let incomeCents = 0;
   let spendCents = 0;
   for (const tx of household.transactions) {
-    if (tx.isDuplicate || tx.reversalOfId) continue;
-    if (transactionWasReversed(household, tx.id)) continue;
     if (tx.date < start || tx.date > end) continue;
-    if (tx.createdBy !== memberId) continue;
-    if (tx.type === "income") incomeCents += tx.amountCents;
-    if (tx.type === "expense") spendCents += tx.amountCents;
+    if (transactionProjection(tx, transactionById).root.createdBy !== memberId) continue;
+    incomeCents += projectedIncomeEffect(tx, transactionById);
+    spendCents += projectedExpenseEffect(tx, transactionById);
   }
   return { incomeCents, spendCents };
 }
@@ -314,7 +309,7 @@ export function runYearReview(
     assumptions: [
       "Tips and shift counts use confirmed non-reversed shifts only.",
       options?.memberId
-        ? "Income and spend are non-reversed posted rows created by that member (reversals excluded)."
+        ? "Income and spend use full correction lineage attributed to that original member."
         : "Income and spend use the same month category actuals as the budget tools (monthSummary).",
       "Budget misses count categories over plan; budgets remain projections.",
     ],

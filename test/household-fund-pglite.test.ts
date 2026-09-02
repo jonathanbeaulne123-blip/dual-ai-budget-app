@@ -56,7 +56,7 @@ describe("Household Fund PGlite projection", () => {
       ]);
       expect((await db.query("SELECT id FROM chart_accounts WHERE id = 'FUND-HOUSEHOLD'")).rows).toEqual([]);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE bank_account_id = $1", [privateSavings.id])).rows).toEqual([{ scope: "personal" }]);
-      expect((await db.query("SELECT id FROM schema_migrations WHERE id >= 3 ORDER BY id")).rows).toEqual([{ id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
+      expect((await db.query("SELECT id FROM schema_migrations WHERE id >= 3 ORDER BY id")).rows).toEqual([{ id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }]);
 
       const previous = { ...household, booksAcceptedHash: await hashBooksSnapshot(household) };
       const proposed = proposeHouseholdFundContribution(previous, {
@@ -111,7 +111,7 @@ describe("Household Fund PGlite projection", () => {
       `);
       await migrateBooks(db);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE id = 'CA-OLD'")).rows).toEqual([{ scope: "shared" }]);
-      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
+      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }]);
       expect((await db.query<{ table_name: string }>("SELECT table_name FROM information_schema.tables WHERE table_name IN ('household_funds','fund_events','fund_settlement_allocations','fund_private_reconciliations') ORDER BY table_name")).rows.map((row) => row.table_name)).toEqual([
         "fund_events", "fund_private_reconciliations", "fund_settlement_allocations", "household_funds",
       ]);
@@ -164,7 +164,7 @@ describe("Household Fund PGlite projection", () => {
       expect((await db.query("SELECT id, kind, note FROM fund_events WHERE id = 'FUND-EVT-HOLD'")).rows)
         .toEqual([{ id: "FUND-EVT-HOLD", kind: "contribution-held", note: "Check the rent total first." }]);
       expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows)
-        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
+        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }]);
     } finally {
       await db.close();
     }
@@ -234,7 +234,7 @@ describe("Household Fund PGlite projection", () => {
         equity_cents: Number(row.equity_cents),
       }))).toEqual([{ net_worth_cents: 12345, net_income_cents: 0, equity_cents: 12345 }]);
       expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows)
-        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }]);
+        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }]);
     } finally {
       await db.close();
     }

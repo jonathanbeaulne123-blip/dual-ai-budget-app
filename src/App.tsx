@@ -40,6 +40,7 @@ import {
   postOneRecurrence,
   resolveSwipeCardAccount,
   swipeBelongsOnSharedHome,
+  swipeUndoScopeMatches,
   SWIPE_COPY,
   SWIPE_UNDO_MS,
   addRecurrence,
@@ -128,6 +129,7 @@ import {
   type MonthKey,
   type MonthRehearsalTaskId,
   type Split,
+  type SwipeUndoStrip,
   type UndoToken,
   type Visibility,
   type Account,
@@ -398,6 +400,12 @@ import {
 type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
+type CommitHouseholdOptions = {
+  forceFlush?: boolean;
+  confirmationId?: string;
+  onRejected?: (message: string) => void;
+  suppressUndo?: boolean;
+};
 const WELCOME_GOOGLE_INTENT_KEY = "hearth:welcome-google-intent:v1";
 
 function rememberWelcomeGoogleIntent(intent: WelcomeGoogleIntent | null): void {
@@ -500,7 +508,7 @@ export function App() {
   const [adding, setAdding] = useState(false);
   const [swipeOpen, setSwipeOpen] = useState(false);
   const [swipeError, setSwipeError] = useState("");
-  const [swipeStrip, setSwipeStrip] = useState<{ token: UndoToken } | null>(null);
+  const [swipeStrip, setSwipeStrip] = useState<SwipeUndoStrip | null>(null);
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
@@ -531,7 +539,6 @@ export function App() {
   useEffect(() => {
     if (tab !== "home") setSwipeOpen(false);
   }, [tab]);
-
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
@@ -555,6 +562,11 @@ export function App() {
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
+  useEffect(() => {
+    setSwipeOpen(false);
+    setSwipeError("");
+    setSwipeStrip(null);
+  }, [environment, household?.householdId, session?.memberId, session?.view]);
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
@@ -1188,23 +1200,24 @@ export function App() {
         let inspection = await inspectBrowserBooks(candidate);
         if (!stillCurrent(candidate)) return;
         const schemaRebuild = inspection.issue === "missing-schema" || inspection.issue === "incomplete-migration";
-        let interruptedAuditHash: string | undefined;
-        if (inspection.issue === "interrupted-transaction") {
+        const receiptGatedRebuild = inspection.issue === "incomplete-migration" || inspection.issue === "interrupted-transaction";
+        let rebuildAuditHash: string | undefined;
+        if (receiptGatedRebuild) {
           const trusted = await acceptedSnapshotRebuildCheck(candidate);
           if (!stillCurrent(candidate)) return;
           if (!trusted.ok) {
             publishBlocked(candidate, trusted.message, inspection.entryCount, inspection.issue);
             return;
           }
-          interruptedAuditHash = trusted.auditHash;
+          rebuildAuditHash = trusted.auditHash;
         }
-        if (schemaRebuild || interruptedAuditHash) {
-          await ingestHouseholdBooks(candidate, interruptedAuditHash
-            ? { auditHash: interruptedAuditHash, incremental: false }
+        if (schemaRebuild || rebuildAuditHash) {
+          await ingestHouseholdBooks(candidate, rebuildAuditHash
+            ? { auditHash: rebuildAuditHash, incremental: false }
             : undefined);
           if (!stillCurrent(candidate)) return;
-          inspection = await inspectBrowserBooks(candidate, interruptedAuditHash
-            ? { expectedAuditHash: interruptedAuditHash }
+          inspection = await inspectBrowserBooks(candidate, rebuildAuditHash
+            ? { expectedAuditHash: rebuildAuditHash }
             : undefined);
         }
         if (!inspection.ok) {
@@ -2297,7 +2310,16 @@ export function App() {
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
     const previous = sessionRef.current;
-    if (previous?.memberId !== remembered.memberId || previous?.householdId !== remembered.householdId) closeAdd();
+    if (
+      previous?.memberId !== remembered.memberId
+      || previous?.householdId !== remembered.householdId
+      || previous?.view !== remembered.view
+    ) {
+      closeAdd();
+      setSwipeOpen(false);
+      setSwipeError("");
+      setSwipeStrip(null);
+    }
     sessionRef.current = remembered;
     setSession(remembered);
     saveSession(environment, remembered);
@@ -2307,6 +2329,9 @@ export function App() {
     if (!householdId || householdId === householdRef.current?.householdId) return;
     if (openingHouseholdRef.current) return;
     openingHouseholdRef.current = householdId;
+    setSwipeOpen(false);
+    setSwipeError("");
+    setSwipeStrip(null);
     setBusy(true);
     setError("");
     try {
@@ -2731,7 +2756,7 @@ export function App() {
     next: Household,
     token?: UndoToken,
     actorId?: string,
-    options?: { forceFlush?: boolean; confirmationId?: string; onRejected?: (message: string) => void },
+    options?: CommitHouseholdOptions,
   ): Promise<CommandOutcome | null> {
     const previous = householdRef.current;
     if (previous && !booksGateRef.current.ready) {
@@ -3002,6 +3027,7 @@ export function App() {
         outcome.ok &&
         token &&
         ledgerWrite &&
+        !options?.suppressUndo &&
         chrome.toast?.showUndo !== false &&
         outcome.kind !== "conflict-needs-attention"
       ) {
@@ -3136,12 +3162,20 @@ export function App() {
     }
   }
 
-  function applyUndo(token: UndoToken) {
+  function applyUndo(token: UndoToken, swipeScope?: SwipeUndoStrip) {
     return enqueueWrite(async () => {
       const current = householdRef.current;
       const who = session?.memberId;
       if (!current || !who) return;
       try {
+        if (swipeScope && openingHouseholdRef.current) {
+          setSwipeStrip(null);
+          throw new ValidationError("That Swipe Undo closed while another ledger was opening. Nothing changed.");
+        }
+        if (swipeScope && !swipeUndoScopeMatches(swipeScope, environment, current.householdId, who)) {
+          setSwipeStrip(null);
+          throw new ValidationError("That Swipe Undo belongs to another ledger. Nothing changed.");
+        }
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
         const fundedTransactionId = fundedMoneyUndoTarget(current, token);
         const result = fundedTransactionId
@@ -3151,7 +3185,7 @@ export function App() {
         const outcome = await commitHousehold(result.household, {
           ...result.undo,
           actorMemberId: who,
-        });
+        }, who, { suppressUndo: Boolean(fundedTransactionId) });
         if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
         rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
@@ -4149,7 +4183,12 @@ export function App() {
       onAccepted: (result) => {
         setSwipeError("");
         setSwipeOpen(false);
-        if (result.undo) setSwipeStrip({ token: result.undo });
+        if (result.undo) setSwipeStrip({
+          token: result.undo,
+          environment,
+          householdId: result.household.householdId,
+          memberId: actorId,
+        });
       },
       onConfirm: (error) => {
         openSwipeIntoAdd(amount, { subcategoryId, confirm: error });
@@ -4697,13 +4736,15 @@ export function App() {
 
       {tab === "home" && dashboard && (
         <>
-        {tab === "home" && swipeStrip ? (
+        {tab === "home" && view === "household" && swipeStrip
+          && swipeUndoScopeMatches(swipeStrip, environment, household.householdId, actorId) ? (
           <div className="swipe-strip" role="status">
             <span>{SWIPE_COPY.success}</span>
             <button
               type="button"
               className="swipe-strip-undo"
-              onClick={() => void applyUndo(swipeStrip.token)}
+              disabled={busy}
+              onClick={() => void applyUndo(swipeStrip.token, swipeStrip)}
             >
               {SWIPE_COPY.undo}
             </button>
@@ -5682,6 +5723,9 @@ export function App() {
                 setEnvironment(next);
                 setHistory([]);
                 setToast(null);
+                setSwipeOpen(false);
+                setSwipeError("");
+                setSwipeStrip(null);
                 setGuard(null);
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));

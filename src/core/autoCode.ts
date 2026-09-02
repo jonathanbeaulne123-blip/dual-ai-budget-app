@@ -1,6 +1,6 @@
 import { monthEndKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { contextTokens } from "./duplicate.ts";
-import { expenseEffect } from "./budget.ts";
+import { projectedExpenseEffect } from "./budget.ts";
 import { formatCad, sumCents } from "./money.ts";
 import type { Household, Split, Transaction } from "./types.ts";
 
@@ -146,13 +146,14 @@ export function monthExpenseByCategory(household: Household, monthKey: MonthKey)
   const start = `${monthKey}-01`;
   const end = monthEndKey(monthKey);
   const map = new Map<string, { cents: number; ids: string[] }>();
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   for (const tx of household.transactions) {
     if (tx.date < start || tx.date > end || !countableExpense(tx) || !tx.subcategoryId) continue;
-    const cents = expenseEffect(tx);
+    const cents = projectedExpenseEffect(tx, transactionById);
     if (!cents) continue;
     const row = map.get(tx.subcategoryId) ?? { cents: 0, ids: [] };
     row.cents += cents;
-    if (tx.type === "expense") row.ids.push(tx.id);
+    if (cents > 0) row.ids.push(tx.id);
     map.set(tx.subcategoryId, row);
   }
   return map;

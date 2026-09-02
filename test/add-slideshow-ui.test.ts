@@ -169,6 +169,26 @@ describe("Add slideshow UI", () => {
     host.remove();
   });
 
+  it("lets the focused Switch kind disclosure own Enter", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    act(() => {
+      root.render(createElement(Harness, { mode: "expense", onPost: () => undefined }));
+    });
+    const amountKey = [...host.querySelectorAll(".cad-pad-keys button")]
+      .find((button) => button.getAttribute("aria-label") === "1") as HTMLButtonElement;
+    act(() => { amountKey.click(); });
+    const disclosure = host.querySelector(".add-slideshow-switch > summary") as HTMLElement;
+    disclosure.focus();
+    const enter = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+    act(() => { disclosure.dispatchEvent(enter); });
+    expect(enter.defaultPrevented).toBe(false);
+    expect(host.querySelector("[data-add-slide]")?.getAttribute("data-add-slide")).toBe("amount");
+    act(() => root.unmount());
+    host.remove();
+  });
+
   it("uses unique first prompts for income, transfer, and shift", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
