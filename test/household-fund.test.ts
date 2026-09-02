@@ -56,7 +56,7 @@ function fundedScenario() {
     amount: "100",
     accountId: "ACC-VISA",
     subcategoryId: "SUB-FOOD-GROCERIES",
-    createdBy: JONATHAN,
+    createdBy: BIANCA,
     visibility: "household",
     confirmDuplicate: true,
     funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 10000, destinationAccountId: "ACC-VISA" },
@@ -131,7 +131,7 @@ describe("Hearth Household Fund", () => {
       amount: "40",
       accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES",
-      createdBy: JONATHAN,
+      createdBy: BIANCA,
       visibility: "household",
       confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" },
@@ -293,7 +293,7 @@ describe("Hearth Household Fund", () => {
     let household = configuredFund();
     const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "200", date: DATE });
     household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
-    household = postEntry(household, { date: "2026-09-02", type: "expense", amount: "60", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: JONATHAN, visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 6000, destinationAccountId: "ACC-VISA" } }).household;
+    household = postEntry(household, { date: "2026-09-02", type: "expense", amount: "60", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 6000, destinationAccountId: "ACC-VISA" } }).household;
     const first = confirmHouseholdFundSettlement(household, { memberId: BIANCA, amount: "30", destinationAccountId: "ACC-VISA", date: "2026-09-03" });
     const second = confirmHouseholdFundSettlement(first.household, { memberId: BIANCA, amount: "30", destinationAccountId: "ACC-VISA", date: "2026-09-03" });
     const match = matchHouseholdFundBankEvidence({
@@ -340,7 +340,7 @@ describe("Hearth Household Fund", () => {
     household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     household = postEntry(household, {
       date: "2026-09-02", type: "expense", amount: "80", accountId: "ACC-VISA",
-      subcategoryId: "SUB-FOOD-GROCERIES", createdBy: JONATHAN, visibility: "personal", confirmDuplicate: true,
+      subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, visibility: "personal", confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 3000, destinationAccountId: "ACC-VISA" },
     }).household;
     household = postEntry(household, {
@@ -374,7 +374,7 @@ describe("Hearth Household Fund", () => {
 
     household = postEntry(household, {
       date: "2026-09-10", type: "expense", amount: "150", accountId: "ACC-VISA",
-      subcategoryId: "SUB-FOOD-GROCERIES", createdBy: JONATHAN, visibility: "household", confirmDuplicate: true,
+      subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 15000, destinationAccountId: "ACC-VISA" },
     }).household;
     expect(projectHouseholdFund(household, "2026-09-10").topUpNeededCents).toBe(7500);
@@ -421,7 +421,7 @@ describe("Hearth Household Fund", () => {
     household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     const purchase = postEntry(household, {
       date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA",
-      subcategoryId: "SUB-FOOD-GROCERIES", createdBy: JONATHAN, visibility: "household", confirmDuplicate: true,
+      subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" },
     });
     const reversed = reversePostedMoney(purchase.household, purchase.postedIds[0]!, { createdBy: JONATHAN, visibility: "household" });

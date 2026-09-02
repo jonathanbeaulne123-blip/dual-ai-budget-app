@@ -258,6 +258,17 @@ function signedHouseholdFundDirection(household: Household, transactionId: strin
   return transaction.type === "refund" ? -1 : transaction.type === "expense" ? 1 : 0;
 }
 
+/** Resulting immutable Fund event kind for a funded `postEntry`, before any clone or mutation. */
+function householdFundEventKindForPost(
+  household: Household,
+  input: { type: "expense" | "income" | "refund"; reversalOfId?: string },
+): "purchase-funded" | "refund-funded" {
+  const reversedDirection = input.reversalOfId ? -signedHouseholdFundDirection(household, input.reversalOfId) : 0;
+  return reversedDirection > 0 || (!input.reversalOfId && input.type !== "refund")
+    ? "purchase-funded"
+    : "refund-funded";
+}
+
 function commit(previous: Household, next: Household, action: string, summary: string, postedIds: string[], warnings: string[] = [], commandKind?: string): CommitResult {
   requireTimezone(next);
   if (isLedgerWrite({ postedIds })) {
@@ -393,6 +404,10 @@ export function postEntry(household: Household, input: {
     if (!original) throw new ValidationError("The original expense for this refund no longer exists.");
     if (original.type !== "expense") throw new ValidationError("Refunds can only reverse an expense.");
   }
+  const fundingEventKind = funding ? householdFundEventKindForPost(household, input) : null;
+  if (fundingEventKind === "purchase-funded") {
+    requireFundCustodian(household, actor.createdBy, HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL);
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const createdAt = nowIso();
@@ -438,10 +453,7 @@ export function postEntry(household: Household, input: {
     const events = shapeHouseholdFundEvents(next.fundEvents);
     const fundEventAt = nextFundEventAt(next);
     const eventId = nextFundEventId(next);
-    const reversedDirection = input.reversalOfId ? -signedHouseholdFundDirection(household, input.reversalOfId) : 0;
-    const fundingEventKind = reversedDirection > 0 || (!input.reversalOfId && input.type !== "refund")
-      ? "purchase-funded"
-      : "refund-funded";
+    const fundingEventKind = householdFundEventKindForPost(household, input);
     const relatedTransactionId = input.refundOfId ?? input.reversalOfId ?? null;
     const relatedTransaction = relatedTransactionId
       ? household.transactions.find((transaction) => transaction.id === relatedTransactionId)
@@ -5401,10 +5413,13 @@ function requireHouseholdFund(household: Household) {
   return fund;
 }
 
-function requireFundCustodian(household: Household, memberId: string) {
+export const HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL = "Only the person holding the card can post a household purchase.";
+const FUND_CUSTODIAN_REFUSAL = "Only the Household Fund custodian can confirm that action.";
+
+function requireFundCustodian(household: Household, memberId: string, message = FUND_CUSTODIAN_REFUSAL) {
   const fund = requireHouseholdFund(household);
   requireMember(household, memberId);
-  if (memberId !== fund.custodianMemberId) throw new ValidationError("Only the Household Fund custodian can confirm that action.");
+  if (memberId !== fund.custodianMemberId) throw new ValidationError(message);
   return fund;
 }
 

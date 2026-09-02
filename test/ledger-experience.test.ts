@@ -448,7 +448,7 @@ describe("Fund-funded personal visibility stays out of Shared presentation", () 
       amount: "80",
       accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES",
-      createdBy: JONATHAN,
+      createdBy: BIANCA,
       visibility: "personal",
       confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 3000, destinationAccountId: "ACC-VISA" },

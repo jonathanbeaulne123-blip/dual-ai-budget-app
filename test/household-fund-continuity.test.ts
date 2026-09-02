@@ -65,7 +65,7 @@ describe("Household Fund command-log continuity", () => {
     const proposalId = proposed.postedIds[0]!;
     await accept("proposeHouseholdFundContribution", proposed, "fund-2");
     await accept("confirmHouseholdFundContribution", confirmHouseholdFundContribution(current, { memberId: "MEM-001", proposalEventId: proposalId }), "fund-3");
-    await accept("postEntry", postEntry(current, { date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: "MEM-002", visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" } }), "fund-4");
+    await accept("postEntry", postEntry(current, { date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" } }), "fund-4");
     await accept("confirmHouseholdFundSettlement", confirmHouseholdFundSettlement(current, { memberId: "MEM-001", amount: "20", destinationAccountId: "ACC-VISA", date: "2026-09-03" }), "fund-5");
 
     const materialized = await buildSnapshotFromEvents(events, catalogBaseFromSnapshot(current));

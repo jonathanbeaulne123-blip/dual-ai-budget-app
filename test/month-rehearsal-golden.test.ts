@@ -189,7 +189,7 @@ describe("fictional September 2026 golden month", () => {
     household = finishLinkedTask(household, { rehearsalId, taskId: "fund-contribution", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-05", now: "2026-09-05T12:02:00Z", kind: "fund-event", receiptId: contributionEventId });
 
     task = beginTask(household, rehearsalId, "shared-fund-purchase", JONATHAN, "2026-09-06", "2026-09-06T12:00:00Z"); household = task.household;
-    const purchase = postEntry(household, { date: "2026-09-06", type: "expense", amount: 100, accountId: "ACC-VISA", subcategoryId: "SUB-GROCERIES", createdBy: JONATHAN, visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 100_00, destinationAccountId: "ACC-VISA" } });
+    const purchase = postEntry(household, { date: "2026-09-06", type: "expense", amount: 100, accountId: "ACC-VISA", subcategoryId: "SUB-GROCERIES", createdBy: BIANCA, visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 100_00, destinationAccountId: "ACC-VISA" } });
     household = await accept(household, purchase, "C-FUND-PURCHASE", "postEntry");
     const purchaseTransactionId = purchase.postedIds.find((id) => id.startsWith("TXN-"))!;
     const purchaseEventId = purchase.postedIds.find((id) => id.startsWith("FUND-EVT-"))!;

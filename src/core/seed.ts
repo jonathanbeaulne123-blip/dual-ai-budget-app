@@ -773,7 +773,7 @@ function seedHouseholdFund(input: Household, today: DateKey): Household {
       accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES",
       note,
-      createdBy: JONATHAN,
+      createdBy: BIANCA,
       visibility: "household",
       confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: Math.round(amount * 100), destinationAccountId: "ACC-VISA" },
