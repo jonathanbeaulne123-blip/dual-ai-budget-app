@@ -316,6 +316,8 @@ describe("Ask placement and copy fences", () => {
     expect(viewSource).not.toMatch(/postEntry/);
     expect(cssSource).not.toMatch(/#[0-9a-fA-F]{3,8}/);
     expect(cssSource).toContain("--ask-figure: var(--copper)");
+    expect(cssSource).toContain(".office-wide-stage:has(.ask) > .month-spread");
+    expect(cssSource).toContain("flex-shrink: 0");
     expect(householdAsk(halifaxAskHousehold(), "2026-09-12").askCents).toBe(34_000);
   });
 });

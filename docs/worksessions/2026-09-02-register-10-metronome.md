@@ -88,6 +88,16 @@ Inference:
 
 Demo kitchen Bianca and Jonathan share the same biweekly demo job, so ticks and contribution marks can land on related days. Distinct-cadence proof is in the focused tests, not the demo seed.
 
+## GPT release integration repair — 2026-09-02
+
+- Integrated the slice with current `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5` while preserving the merged Clerk weekly document and both living-doc histories.
+- Normalized CRLF to LF inside the exact-source conservation fence so the focused suite is cross-platform; Course geometry is unchanged.
+- Prevented the existing Ask flex host from shrinking and clipping Month Spread. The existing wide stage scroll now exposes the complete Course and Docket at 720px and 1100px.
+- Focused integration: `test/month-spread.test.ts`, `test/ask-panel.test.ts`, `test/weekly-document.test.ts`, and `test/weekly-document-ui.test.ts` — **63 passed**.
+- Final local `pnpm check:windows`: AI surface green; fast lane **1,526 passed / 2 skipped**; serial books lane **146 passed / 1 skipped**; TypeScript and both production builds green.
+- Rendered fictional Development verification: 320px and 390px keep `OfficePhone` with no Month Spread or horizontal overflow; 720px and 1100px show three 3px × 8px felt ticks, one `payday` label, timing-only aria copy, and a scroll-reachable complete Course.
+- No hosted row, schema, secret, provider, household-data, or Production mutation.
+
 ## Handoff
 
 Local + branch + draft PR #294. Not merged, not kitchen-published, not live. ChatGPT independent review-and-merge packet: `docs/briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md`. Next owner: GPT-5 Pro, then merge only if named gates pass. Do not stack #285. Do not touch Production.
