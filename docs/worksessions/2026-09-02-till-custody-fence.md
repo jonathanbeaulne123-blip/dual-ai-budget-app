@@ -1,14 +1,14 @@
 # Hearth worksession — Till Slice 1 custody fence
 
-- **Status:** CLOSED — local implementation and handoff complete; push gate remains external
+- **Status:** CLOSED — verified release candidate; remote release receipts pending
 - **Opened:** 2026-09-02 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Branch:** `codex/till-1-custody-fence-v2`
-- **Baseline SHA:** `7101dced3d592f9c70d445ec4b901cc3ff8946b3`
-- **Head SHA:** implementation seal `7a023c75174f9f327266e18b76ec18934125e6f8`; documentation handoff follows locally
-- **PR or issue:** none; no push authorized
+- **Branch:** `codex/till-1-custody-fence-release`
+- **Baseline SHA:** `1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
+- **Head SHA:** implementation seal `e426a4592dcd72870feb85642f3d0ab894e6dee8`; release documentation follows
+- **PR or issue:** pending; Jonathan authorized push, merge, and Development kitchen deployment on 2026-09-02
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none (local code and fictional tests only)
@@ -32,7 +32,7 @@ Only the configured Household Fund custodian can record a new purchase against t
 - Clean baseline `pnpm check:windows` passed AI verification, 1,505 fast tests / 2 skipped, 146 serial books tests / 1 skipped, TypeScript, Vite production build, Hercules Pro UI build, and redirect guard.
 - `postEntry` resolves optional Household Fund funding and appends either `purchase-funded` or `refund-funded`.
 - `requireFundCustodian` exists but is not called by `postEntry`.
-- The downloaded build manual's D-182 is stale; current canon already uses D-182. D-190 is also occupied. The next available decision id at this baseline is D-196.
+- The downloaded build manual's D-182 is stale; current canon already uses D-182. D-190 and D-196 are also occupied. The next available decision id at this baseline is D-197.
 
 ## Scope
 
@@ -44,7 +44,7 @@ Only the configured Household Fund custodian can record a new purchase against t
 - Preserve refund-funded corrections, contribution proposals, shifts, and other existing non-purchase rights.
 - Add focused behavior, non-mutation, correction-lineage, and source-fence tests.
 - Repair only synthetic fixtures that attempt a Fund-backed purchase as the non-custodian.
-- Record current decision D-196 and return a full local handoff.
+- Record current decision D-197 and return a full local handoff.
 
 ### Out of scope
 
@@ -63,16 +63,16 @@ Only the configured Household Fund custodian can record a new purchase against t
 - [x] Focused, complete serial-books, AI-surface, TypeScript, Vite build, diff, and secret/path checks pass.
 - [x] Independent books/trust and packet audits found no implementation defect.
 - [x] Durable Cursor packet for Till Slices 2 and 3 names the exact sealed ancestor and contains no hidden chat dependency.
-- [ ] A normal same-root dependency checkout reruns the full `pnpm check:windows` and Hercules UI build before push.
+- [x] A normal same-root dependency checkout reruns the full `pnpm check:windows` and Hercules UI build before push.
 
 ## Plan
 
 - [x] Run the clean exact-baseline gate.
 - [x] Implement the narrow command guard and focused tests.
 - [x] Run focused proof and repair only necessary synthetic actors.
-- [x] Record D-196 and the complete evidence-backed handoff.
+- [x] Record D-197 and the complete evidence-backed handoff.
 - [x] Create the Cursor packet for Slices 2 and 3 without implementing either UI slice.
-- [ ] Before push, rerun the wrapper in a checkout whose dependencies live under the same accessible root.
+- [x] Before push, rerun the wrapper in a checkout whose dependencies live under the same accessible root.
 
 ## Evidence log
 
@@ -86,18 +86,18 @@ Only the configured Household Fund custodian can record a new purchase against t
 - Candidate static/build proof — AI surface passed; TypeScript passed; Vite production build transformed 404 modules; diff and staged secret/path scans passed.
 - Broad fast candidate run — 216 files / 1,485 tests passed with two intentional skips. Direct complete-dependency reruns passed API, browser evidence collector, and five-of-five checks; the remaining live Flinks and cross-root native-esbuild failures reproduce outside the Slice 1 diff.
 - Independent books/trust audit — no P0-P2 defect in authority, correction lineage, projection alignment, fixtures, or scope.
+- Current-main same-root release candidate — focused custody **6/6**; `pnpm check:windows` passed AI surface, **1,525 fast + 146 serial = 1,671 tests**, three intentional skips, TypeScript, 410-module production build, Hercules Pro UI, and redirect guard.
 
 ## Decisions
 
-- The downloaded manual is requirement input, not canon. Its exact custody behavior is retained; its occupied D-182 identifier is not.
+- The downloaded manual is requirement input, not canon. Its exact custody behavior is retained; its occupied D-182 identifier is not. D-197 replaces the now-occupied local proposal D-196 after current-main reconciliation.
 - Purchase versus correction authority follows the resulting immutable Fund event kind, not merely the input transaction type.
 
 ## Remaining uncertainty
 
-- The sealed candidate still needs a normal same-root full Windows wrapper/Hercules UI rerun before push because pnpm refuses the sandbox's dependency junction and native esbuild cannot cross the sandbox root.
-- The Flinks invalid-token test depends on a live Supabase response and currently receives HTTP 400 rather than 401 on the unchanged baseline; it is unrelated to Till but must be classified in the next normal full gate.
+- Remote exact-head CI, merge receipt, main CI, Cloudflare deployment, and live no-store bundle verification remain separate release evidence.
 - Cursor must re-check current `origin/main` and decision ids before each later slice. Slice 3 may start only from an accepted Slice 2 exact head.
 
 ## Handoff
 
-Codex owns the sealed local Slice 1 implementation and evidence record. Jonathan retains push/PR/merge/deploy authority. Cursor is the next implementation owner only for the sequentially bounded Slice 2 and Slice 3 packet. No push is authorized by this worksession.
+Codex owns the sealed Slice 1 implementation and authorized Development release. Cursor is the next implementation owner only for the sequentially bounded Slice 2 and Slice 3 packet. This worksession authorizes no later Slice 2 or Slice 3 push, merge, deploy, or Production action.

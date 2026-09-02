@@ -8,10 +8,9 @@ This is the complete contract for one Cursor writer. The downloaded build manual
 
 - **Target AI:** Cursor, single writer.
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Local source tree:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App\tmp\hearth-till-1-custody-fence-current`
-- **Required Slice 2 ancestor:** `7a023c75174f9f327266e18b76ec18934125e6f8`
-- **Slice 1 branch:** `codex/till-1-custody-fence-v2`
-- **Slice 1 parent:** `origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3`
+- **Required Slice 2 ancestor:** `e426a4592dcd72870feb85642f3d0ab894e6dee8` (the Till Slice 1 implementation seal)
+- **Slice 1 branch:** `codex/till-1-custody-fence-release`
+- **Slice 1 parent:** `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
 - **Required Slice 2 branch:** `till/2-swipe`
 - **Required Slice 3 branch:** `till/3-surface`, created only from the accepted Slice 2 head
 - **Suggested PR titles:** `feat(till): post a swipe in two taps`; then `feat(till): add the custodian surface`
@@ -22,16 +21,16 @@ This is the complete contract for one Cursor writer. The downloaded build manual
 Start from a clean isolated worktree. Never use Jonathan's dirty `codex/roadmap-site` checkout. If the sealed commit is unavailable, stop and ask Jonathan/Codex to provide or push it; do not reconstruct Slice 1 from prose.
 
 ```text
-git switch -c till/2-swipe 7a023c75174f9f327266e18b76ec18934125e6f8
+git switch -c till/2-swipe e426a4592dcd72870feb85642f3d0ab894e6dee8
 git status --short
-git merge-base --is-ancestor 7a023c75174f9f327266e18b76ec18934125e6f8 HEAD
+git merge-base --is-ancestor e426a4592dcd72870feb85642f3d0ab894e6dee8 HEAD
 ```
 
 After Slice 2 is accepted, record its exact SHA, fetch current `origin/main`, reconcile any advance, create `till/3-surface` from the accepted lineage, and prove ancestry again. Do not combine both slices in one diff or PR.
 
 ## Sealed Slice 1 prerequisite
 
-D-196 is implemented at the command boundary:
+D-197 is implemented at the command boundary:
 
 1. `postEntry` resolves the resulting Fund event kind before any household clone or mutation.
 2. Every path that would append `purchase-funded` calls the configured custodian guard.
@@ -48,7 +47,7 @@ Cursor must preserve `test/custody-fence.test.ts` and may not move this authorit
 - `src/core/confirmationUndo.ts` removes only the current Confirm's posted IDs from the current books and preserves partner/later rows. Use `undoLedgerConfirm` through the existing App `applyUndo` path; never restore a whole old household snapshot.
 - `householdFundContributionMotions` is the only UI-facing contribution-motion fold. Hold/release do not change Fund arithmetic; only Confirm raises the operating balance.
 - `CadPad` already owns amount keyboard behavior, blank/zero refusal, cents digits, Enter, and its accessible live amount. Reuse it.
-- D-182 and D-190 are occupied in current canon. Slice 1 is D-196. At each later slice, inspect current `docs/DECISIONS.md` and use the next free identifier; do not reserve one from this packet.
+- D-182, D-190, and D-196 are occupied in current canon. Slice 1 is D-197. At each later slice, inspect current `docs/DECISIONS.md` and use the next free identifier; do not reserve one from this packet.
 - Slice 4 owns member-personal landing preference. Slice 3 must be reachable but must not silently implement a default takeover or preference field.
 
 ## Shared invariant laws
@@ -57,7 +56,7 @@ Cursor must preserve `test/custody-fence.test.ts` and may not move this authorit
 2. Duplicate safety wins over the two-tap target. First call `postEntry` without `confirmDuplicate`. If current core requests duplicate confirmation, do not auto-confirm and do not mutate; surface the existing duplicate-confirm route or ordinary Add flow.
 3. A Fund-backed purchase is a claim against the one Fund. It appends `purchase-funded` but does not itself change `projectHouseholdFund(...).operatingBalanceCents` and does not settle or move money.
 4. React never writes household state directly and never adds another persistence, outbox, or network writer.
-5. Never bypass accepted-books readiness, PGlite validation, confirmation identity, command/outbox replay, or the D-196 custody fence.
+5. Never bypass accepted-books readiness, PGlite validation, confirmation identity, command/outbox replay, or the D-197 custody fence.
 6. Partner-Personal data is not widened for category suggestions, month spend, motion display, or convenience.
 7. No ratio, member ranking, share, second Fund balance, or copied financial arithmetic.
 8. No schema, Supabase/RLS/Auth, Worker, provider/model, bank connection, secret, or Production work.
@@ -68,7 +67,7 @@ Cursor must preserve `test/custody-fence.test.ts` and may not move this authorit
 
 The cardholder can record an ordinary Household Fund purchase while standing at a counter: amount, then an observed category. Accepted local books update immediately and sync later. The strip says the record was posted while money itself did not move.
 
-- **Budget delta (5): `+3`.** The fast path still uses the real balanced `postEntry` command, the one Fund claim, D-196 custody, duplicate safety, PGlite acceptance, and command-aware Undo.
+- **Budget delta (5): `+3`.** The fast path still uses the real balanced `postEntry` command, the one Fund claim, D-197 custody, duplicate safety, PGlite acceptance, and command-aware Undo.
 - **Engagement delta (3): `+3`.** The normal non-duplicate path is one-handed and two-step, with no receipt or setup ceremony.
 - If speed conflicts with books integrity, custody, duplicate safety, or continuity, the books win.
 
@@ -161,7 +160,7 @@ No camera, receipt image, OCR, file input, attachment, note field, search, categ
 Use fictional Development/catalog fixtures only. At minimum prove:
 
 1. custodian category activation reaches `postEntry` once with the exact Fund funding and returns `purchase-funded`;
-2. non-custodian is refused with the exact D-196 copy and no mutation;
+2. non-custodian is refused with the exact D-197 copy and no mutation;
 3. Fund operating balance is identical before/after the purchase claim while the transaction/journal/Fund event is accepted;
 4. accepted local and pending-transport outcomes close and show the strip; network failure never blocks the accepted local result;
 5. duplicate detection does not auto-confirm, mutate, or create a third silent post;
