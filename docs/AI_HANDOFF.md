@@ -2,7 +2,7 @@
 
 ## Till Slice 3 custodian surface (2026-09-02)
 
-**Status:** **PR #304; FULL LOCAL GATE GREEN; VISUAL PROVED; NOT MERGED; NOT KITCHEN-PUBLISHED; NOT LIVE.** Branch `cursor/till-3-surface-0c3a` from sealed `origin/main@6f5dd56516d31c3f1892f4833a7e71ff31857142`. Application head at proof: `5567f30f8f7304a3adccd790f4dbd84ec29fafb8` (later proof-doc commit may follow). Ancestry: PR #302 `777dbcd`, Slice 1 `e426a45`, and `a2a55c6` are ancestors. Risk: **High**. D-199. Jonathan authorized merge and Development kitchen publish when finished.
+**Status:** **CLOSED; MERGED #304; DEVELOPMENT KITCHEN PUBLISHED; LIVE HTTP VERIFIED.** Exact head `300235628885d9f21b1680089174301aa3665141` merged as `main@300235628885d9f21b1680089174301aa3665141` from sealed `origin/main@6f5dd56516d31c3f1892f4833a7e71ff31857142`. Ancestry: PR #302 `777dbcd`, Slice 1 `e426a45`, and `a2a55c6` are ancestors. Risk: **High**. D-199. Jonathan authorized merge and Development kitchen publish when finished. Not Production. Stop before Slice 4.
 
 **Household outcome:** the Till is a reachable Shared presentation: Swipe first, real contribution conversation next when the current actor can act, `Nothing has moved.`, one current-month spend sentence from `monthSummary`, and a real `see everything` door back to Shared Home. Shared Home stays the initial surface. The Till cannot grant or remove a command right.
 
@@ -13,18 +13,22 @@
 **Justified expansions:** Cloud Agent branch `cursor/till-3-surface-0c3a` instead of packet `till/3-surface`. Hercules tab mapping rather than expanding `HearthTab`.
 
 **Verification:**
-- Focused `pnpm exec vitest run test/till.test.ts test/swipe.test.ts test/ledger-experience.test.ts --maxWorkers=1`: **3 files / 45 passed**
+- Focused `pnpm exec vitest run test/till.test.ts test/swipe.test.ts test/ledger-experience.test.ts --maxWorkers=1`: **3 files / 45 passed** at application SHA `5567f30`; `3002356` added Confirm-click and scoped-spend proofs
 - Bianca Month `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **12 passed**
 - `pnpm check` on `5567f30`: AI surface 41 required files; fast lane **227 passed / 1 skipped files, 1,582 passed / 2 skipped tests**; serial books **18 passed / 1 skipped files, 154 passed / 1 skipped tests**; **1,736 passed / 3 intentional skips total**; TypeScript; Vite **418-module** production build; Hercules Pro UI; no `dist/_redirects`; `git diff --check` clean
 - Playwright against local Vite, fictional Development demo as Bianca, reduced motion: 320 / 390 / 720 / ~1100, no body overflow, `see everything` is a focused `#home` link, Swipe sheet opens from Till and Escape returns, door back to Shared Home. Artifacts: `/opt/cursor/artifacts/till-surface-320.png`, `till-surface-390.png`, `till-surface-720.png`, `till-surface-1100.png`, `till-home-390.png`, `till-swipe-sheet-390.png`, `till-slice-3-walkthrough.mp4`
 - Independent books audit: **PASS WITH NOTES** (no P0–P2; P3 route-contract omitted release/withdraw — repaired; P3 Confirm click-through — added)
 - Independent privacy audit: **PASS WITH NOTES** (no P0–P2; P3 Till trusts the caller clone — App already passes `experience.scopedHousehold`; added scoped spend test)
-- Independent verifier at `5567f30`: surface claims proven; it read the pre-proof handoff. Parent later recorded `pnpm check`, visual 320/390/720/~1100, and this audit follow-up
+- Independent verifier at `5567f30`: surface claims proven; parent later recorded `pnpm check`, visual 320/390/720/~1100, and the audit follow-up
 - UX auditor unavailable (model spend limit). Parent visual proof stands.
+- Exact-head PR CI [`33687055693`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33687055693) and [`33687059654`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33687059654) passed
+- Post-merge Cloudflare Workers [`33689372692`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33689372692) passed; Worker version `a52acc66-b218-4c73-8d9a-2142b4a5a680`
+- Live `GET https://hearth-books.jonathan-beaulne123.workers.dev/` → **HTTP/2 200**, `cache-control: no-store`; `/assets/index-Bfi0OGDI.js` contains `I spent something`, `Waiting on you`, `Nothing has moved.`, `The house has spent`, `see everything`, `data-till`; `/assets/index-N-WQUmzo.css` contains `.till`
+- Post-merge main CI [`33689372691`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33689372691) started at merge
 
 **Boundaries:** fictional Development/demo fixtures only. No hosted row, schema, secret, provider, bank, Production data, or Production-continuity change.
 
-**Next owner:** Cursor marks #304 ready, merges to `main`, and verifies D-041 Development kitchen HTTP 200 `Cache-Control: no-store` plus Till markers in the served bundle. Stop before Slice 4. Not Production. Not shipped until live HTTP is verified.
+**Next owner:** Stop before Slice 4. Hard-refresh the Development kitchen. Not Production.
 
 ## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
 
