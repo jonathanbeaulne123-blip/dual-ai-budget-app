@@ -39,7 +39,7 @@ function canonicalMonth() {
     amount: "120",
     accountId: "ACC-VISA",
     subcategoryId: "SUB-FOOD-GROCERIES",
-    createdBy: JONATHAN,
+    createdBy: BIANCA,
     visibility: "household",
     confirmDuplicate: true,
     funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 12000, destinationAccountId: "ACC-VISA" },
