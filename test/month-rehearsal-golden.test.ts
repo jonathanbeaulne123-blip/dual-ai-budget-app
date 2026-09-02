@@ -188,12 +188,12 @@ describe("fictional September 2026 golden month", () => {
     const contributionEventId = fundCommand.postedIds[0]!;
     household = finishLinkedTask(household, { rehearsalId, taskId: "fund-contribution", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-05", now: "2026-09-05T12:02:00Z", kind: "fund-event", receiptId: contributionEventId });
 
-    task = beginTask(household, rehearsalId, "shared-fund-purchase", JONATHAN, "2026-09-06", "2026-09-06T12:00:00Z"); household = task.household;
+    task = beginTask(household, rehearsalId, "shared-fund-purchase", BIANCA, "2026-09-06", "2026-09-06T12:00:00Z"); household = task.household;
     const purchase = postEntry(household, { date: "2026-09-06", type: "expense", amount: 100, accountId: "ACC-VISA", subcategoryId: "SUB-GROCERIES", createdBy: BIANCA, visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 100_00, destinationAccountId: "ACC-VISA" } });
     household = await accept(household, purchase, "C-FUND-PURCHASE", "postEntry");
     const purchaseTransactionId = purchase.postedIds.find((id) => id.startsWith("TXN-"))!;
     const purchaseEventId = purchase.postedIds.find((id) => id.startsWith("FUND-EVT-"))!;
-    household = finishLinkedTask(household, { rehearsalId, taskId: "shared-fund-purchase", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-06", now: "2026-09-06T12:01:00Z", kind: "fund-event", receiptId: purchaseEventId });
+    household = finishLinkedTask(household, { rehearsalId, taskId: "shared-fund-purchase", attemptId: task.attemptId, memberId: BIANCA, today: "2026-09-06", now: "2026-09-06T12:01:00Z", kind: "fund-event", receiptId: purchaseEventId });
 
     household = await greenWeek(household, rehearsalId, 1, "2026-09-07", "2026-09-07T20:00:00Z");
     let checkpoint = household.monthRehearsals![0]!.weeks[0]!.checkpoint!;
@@ -307,16 +307,16 @@ describe("fictional September 2026 golden month", () => {
     const checkpointHashes = household.monthRehearsals![0]!.weeks.map((week) => week.checkpoint!.financialAuditHash);
     const receiptIdentities = household.monthRehearsals![0]!.weeks.map((week) => week.checkpoint!.linkedReceiptIds);
     expect(checkpointHashes).toEqual([
-      "b00e980663d611c21f329b9f89161372d22a5da2efb7d8a16e4243fac6ed1f52",
-      "77cc62e2415f745f6fcf6f044734cfa83cc47adb4874973d7afe5b77a24eb81f",
-      "47301fd25fca8516855feb6dfbddbfa6c62c49cacc0d224a1597a8a3af232311",
-      "f0a5c80a4f4d68ec79ffc8ee562db1b61abbd370ffdf38a50aa32cc8e8cc5c73",
+      "376e95bdfff1e561eb51b7be274be78c37b2a79e94001cd7c6584debff57b91c",
+      "c3467090dc3ac09bdcfdf0c3bf32ed4b4ca45e7a68068ea9545352d2d0cfd9e5",
+      "469269a7660c8c4156617b8597f6b1036d046213bf26a0fa388c666a7e55b601",
+      "92846407622195b89597f9ffccc2e50034e638fe5ab062798d8dfff94babe9c4",
     ]);
     expect(weeklyFinancialHashes).toEqual([
-      "209aef186df6aac92d25bbd804ee098748c911f81a10f0c1112134e152d8607b",
-      "8a4422e12d44d726be23adba196542c2de5c6f926d334d553fa7ea58ee4b5239",
-      "308beca9acf4d323faedbbe2866dfba953dd9bcad2c5d7ba9a17d17f9869f2c2",
-      "3101c983285b819031dd2ffaa66071c9d4bda25adfaded998f98469f7f34e097",
+      "732c795dc4c12e07e5e55d2dc06c9f82861490de9b45de0124d984786899e765",
+      "4e149805257da9678563711ce29d86f2711ca2d1065e316123d3b0be2557b88b",
+      "274228db71069d343d5c905b0d9d838dfaa9a9ce745cf643bccc08efbc7d5358",
+      "6758c42a15533fd66b6a3c9f3b26888916f21a486e095d7b19ffb07c198264da",
     ]);
     expect(receiptIdentities).toEqual([
       ["C-FUND-SETUP", "C-GROCERIES", "C-INCOME", "C-OPENING", "FUND-EVT-53708daac7", "FUND-EVT-cae704213e", "FUND-HOUSEHOLD", "TXN-EX-7693b0cdea", "TXN-IN-102d4a6784", "TXN-OP-88a5c2dffc", "TXN-OP-99b6d3f00d", "TXN-OP-aac7e4011e"],

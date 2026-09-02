@@ -28,6 +28,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [DECISIONS.md](DECISIONS.md) | Living decision log |
 | [AI_OPERATING_MODEL.md](AI_OPERATING_MODEL.md) | Codex, Cursor, and Claude roles, routing, evidence, authority, and context budget |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and Dual Course handoffs |
+| [briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md](briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md) | **GPT-5 Pro review packet** for Till Slice 2 draft PR #295; D-197/D-198; not merged |
 | [briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md) | **Consumed and kitchen-published:** Cursor Clerk Slice 4 merged via #293 as `main@97e1ae9`; live HTTP verified; D-196 |
 | [evidence-gates/FIVE_OF_FIVE.md](evidence-gates/FIVE_OF_FIVE.md) | P0-03 equal-dimension feature gate, browser journey manifest, and dated same-SHA evidence contract |
 | [AI_SETUP_FOR_JONATHAN.md](AI_SETUP_FOR_JONATHAN.md) | Click-by-click activation and verification for the repository AI configuration |

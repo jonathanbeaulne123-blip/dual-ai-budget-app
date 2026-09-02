@@ -1,5 +1,27 @@
 # AI Task and Handoff Standard
 
+## Till Slice 2 two-tap swipe (2026-09-02)
+
+**Status:** Draft PR [#295](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/295) on `cursor/till-2-swipe-0c3a` over `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`. Fence `8ee3f23`; swipe `c474dca`. **Not merged, not kitchen-published, not live, not shipped.** Risk: **High**.
+
+**Household outcome:** Bianca, as Household Fund custodian, records an ordinary card purchase from Shared Home in two taps: amount, then an observed category. Local books update immediately. The strip says `Posted. Nothing moved.` Money does not move. Jonathan cannot create a `purchase-funded` claim.
+
+**Dual Course:** Budget `+3`; Engagement `+3`. Books won: swipe has no React money authority; App `postEntry` is the writer; duplicates are not auto-confirmed; Fund operating balance is unchanged; camera/OCR stayed out.
+
+**Justified expansion:** the packet's Slice 1 SHA `7a023c75` was never on remote. Slice 2 cannot post truthfully without the custody fence, so Slice 1 was reconstructed on current `main`. D-196 is occupied by the weekly document, so custody is **D-197** and swipe is **D-198**.
+
+**Architecture:** `householdFundEventKindForPost` classifies funded `postEntry` before clone. `purchase-funded` requires the Fund custodian with `HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL`. `observedSwipeCategories` / `resolveSwipeCardAccount` are pure selectors. `Swipe` is a CadPad dialog; `submitSwipePurchase` posts through existing `run` / `commitHousehold`. More and an ambiguous card open Add. Undo is `undoLedgerConfirm` for 10s. Worksession: [`worksessions/2026-09-02-till-2-swipe.md`](worksessions/2026-09-02-till-2-swipe.md). GPT review: [`briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md`](briefs/CHATGPT_TILL_SLICE_2_REVIEW_2026-09-02.md).
+
+**Verification:**
+- Focused `pnpm exec vitest run test/custody-fence.test.ts test/swipe.test.ts --maxWorkers=1` — **2 files / 17 tests passed**
+- Fund/Clerk/startup/rehearsal packet: **17 files / 131 tests passed**, then golden hashes frozen for the custodian actor
+- `test/household-fund-pglite.test.ts` — **4 passed**; `test/app-startup-p1.test.ts` — **9 passed**; `test/month-rehearsal-mainline.test.ts` — **1 passed**
+- Exact `pnpm check` and independent auditor verdicts are recorded on the canon commit of this section
+
+**Boundaries:** No hosted schema/row, secret, provider, or Production mutation. Slice 3 is blocked until Jonathan accepts this exact head.
+
+**Next owner:** Jonathan. Paste the GPT-5 Pro packet. Do not merge, deploy, or start Slice 3 from this draft.
+
 ## Clerk Slice 4 weekly document (2026-09-02)
 
 **Status:** Merged via [#293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293) onto `main` as `97e1ae9df92f5af04ef6717b48c580829756656c` (2026-09-02T06:12:12Z). Main CI [`33597829546`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33597829546) success. D-041 Cloudflare Workers [`33597829535`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33597829535) success (`VITE_PRODUCTION_CONTINUITY=0`). Worker `hearth-books` version `b9b79e02-143d-4c06-ae08-72bb14d36ce0`. Live kitchen HTTP verified. **Not Production. Not called shipped for Production.** Risk: **High**.
