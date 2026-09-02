@@ -271,6 +271,18 @@ describe("Ask panel states", () => {
       recurrenceId: expect.any(String),
     });
     expect(container.querySelector("[data-ask-confirm]")).toBeNull();
+    expect(document.activeElement).toBe(container.querySelector(".ask"));
+  });
+
+  it("returns focus to Raise it when the confirmation is cancelled", () => {
+    renderAsk(halifaxAskHousehold());
+    const raise = container.querySelector("[data-ask-raise]") as HTMLButtonElement;
+    act(() => raise.click());
+    const cancel = container.querySelector("[data-ask-confirm-cancel]") as HTMLButtonElement;
+    act(() => cancel.click());
+
+    expect(container.querySelector("[data-ask-confirm]")).toBeNull();
+    expect(document.activeElement).toBe(raise);
   });
 });
 

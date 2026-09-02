@@ -24,21 +24,37 @@ export function Ask({ household, today, memberId, busy, onMove }: AskProps) {
     [household, today, memberId],
   );
   const [pendingRecurrenceId, setPendingRecurrenceId] = useState<string | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const raiseRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<"raise" | "section" | null>(null);
+
+  function closeConfirmation(returnFocus: "raise" | "section") {
+    returnFocusRef.current = returnFocus;
+    setPendingRecurrenceId(null);
+  }
 
   useEffect(() => {
     if (pendingRecurrenceId
       && !view.alternatives.some((row) => row.recurrenceId === pendingRecurrenceId)) {
+      returnFocusRef.current = "section";
       setPendingRecurrenceId(null);
     }
   }, [pendingRecurrenceId, view.alternatives]);
 
   useEffect(() => {
-    if (pendingRecurrenceId) confirmRef.current?.focus();
+    if (pendingRecurrenceId) {
+      confirmRef.current?.focus();
+      return;
+    }
+    const returnFocus = returnFocusRef.current;
+    returnFocusRef.current = null;
+    if (returnFocus === "raise") raiseRef.current?.focus();
+    if (returnFocus === "section") sectionRef.current?.focus();
   }, [pendingRecurrenceId]);
 
   return (
-    <section className="ask" aria-label="The ask">
+    <section ref={sectionRef} className="ask" aria-label="The ask" tabIndex={-1}>
       <p
         className={`ask-figure${view.covered ? " is-covered" : ""}`}
         data-ask-figure=""
@@ -65,12 +81,23 @@ export function Ask({ household, today, memberId, busy, onMove }: AskProps) {
                 aria-expanded={pending}
                 aria-controls={confirmId}
                 disabled={busy}
-                onClick={() => setPendingRecurrenceId(pending ? null : alternative.recurrenceId)}
+                onClick={(event) => {
+                  raiseRef.current = event.currentTarget;
+                  if (pending) closeConfirmation("raise");
+                  else setPendingRecurrenceId(alternative.recurrenceId);
+                }}
               >
                 Raise it
               </button>
               {pending ? (
-                <div className="ask-confirm" id={confirmId} data-ask-confirm="">
+                <div
+                  className="ask-confirm"
+                  id={confirmId}
+                  data-ask-confirm=""
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") closeConfirmation("raise");
+                  }}
+                >
                   <p>Move the date only. No money moves.</p>
                   <div className="ask-confirm-actions">
                     <button
@@ -80,7 +107,7 @@ export function Ask({ household, today, memberId, busy, onMove }: AskProps) {
                       data-ask-confirm-move=""
                       disabled={busy}
                       onClick={() => {
-                        setPendingRecurrenceId(null);
+                        closeConfirmation("section");
                         onMove(alternative);
                       }}
                     >
@@ -91,7 +118,7 @@ export function Ask({ household, today, memberId, busy, onMove }: AskProps) {
                       className="ask-confirm-cancel"
                       data-ask-confirm-cancel=""
                       disabled={busy}
-                      onClick={() => setPendingRecurrenceId(null)}
+                      onClick={() => closeConfirmation("raise")}
                     >
                       Keep this month
                     </button>

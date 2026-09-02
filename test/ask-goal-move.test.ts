@@ -9,14 +9,20 @@ import {
   configureHouseholdFund,
   householdAsk,
   moveAskGoalClaimToNextMonth,
+  postEntry,
   type Household,
 } from "../src/core/index.ts";
+import type { DateKey } from "../src/core/calendar.ts";
 import { financialAuditHashForScope } from "../src/core/commandIdentity.ts";
-import { receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
+import {
+  compactedCommandPayload,
+  primaryCommandRef,
+  receiptToCommandRef,
+} from "../src/ledger/continuityCommandLog.ts";
 import {
   applyCommandEventLocally,
-  extractMaterializationFacts,
   type ContinuityCommandEvent,
+  type ContinuityCommandEventPayload,
 } from "../src/ledger/materializeSnapshotFromEvents.ts";
 
 const BIANCA = "MEM-001";
@@ -63,11 +69,11 @@ function halifaxHousehold(): Household {
   }).household;
 }
 
-function currentHalifaxMove(household: Household) {
-  const alternative = askAlternatives(householdAsk(household, TODAY))[0];
+function currentHalifaxMove(household: Household, today: DateKey = TODAY) {
+  const alternative = askAlternatives(householdAsk(household, today))[0];
   if (!alternative) throw new Error("Expected Halifax alternative");
   return {
-    today: TODAY,
+    today,
     memberId: JONATHAN,
     goalId: alternative.goalId,
     recurrenceId: alternative.recurrenceId,
@@ -166,12 +172,13 @@ describe("The Ask shared-goal move", () => {
 
     const receipt = accepted.household.commandReceipts.find((row) => row.confirmationId === confirmationId)!;
     const ref = receiptToCommandRef({ household: accepted.household, receipt, baseRevision: previous.revision });
-    const facts = extractMaterializationFacts(accepted.household, receipt.postedIds, {
-      ledgerScope: ref.ledgerScope,
-      memberId: JONATHAN,
-      commandKind: ref.commandType,
-    });
-    expect(facts.recurrences).toEqual([
+    const payload = await compactedCommandPayload(
+      { confirmationIds: [confirmationId], commandRefs: [ref] },
+      ref,
+      accepted.household,
+      JONATHAN,
+    ) as ContinuityCommandEventPayload;
+    expect(payload.materializationFacts?.recurrences).toEqual([
       expect.objectContaining({ id: move.recurrenceId, nextDate: "2026-10-30" }),
     ]);
     const event: ContinuityCommandEvent = {
@@ -186,7 +193,7 @@ describe("The Ask shared-goal move", () => {
       result_revision: accepted.household.revision,
       ledger_scope: ref.ledgerScope,
       command_type: ref.commandType,
-      payload_json: { ...ref.commandPayload, materializationFacts: facts },
+      payload_json: payload,
       created_at: "2026-09-12T12:00:00.000Z",
     };
     const remote = await applyCommandEventLocally({ local: previous, event, memberId: "MEM-002" });
@@ -195,6 +202,133 @@ describe("The Ask shared-goal move", () => {
     expect(remote.household.recurrences.find((row) => row.id === move.recurrenceId)?.nextDate).toBe("2026-10-30");
     expect(await financialAuditHashForScope(remote.household, "shared", JONATHAN))
       .toBe(await financialAuditHashForScope(accepted.household, "shared", JONATHAN));
+  });
+
+  it("replays one compacted Ask move behind another shared command", async () => {
+    const previous = halifaxHousehold();
+    const move = currentHalifaxMove(previous);
+    const moved = moveAskGoalClaimToNextMonth(previous, move);
+    const first = await acceptHouseholdWrite({
+      previous,
+      candidate: moved.household,
+      confirmationId: "confirm-halifax-compacted",
+      postedIds: moved.postedIds,
+      commandKind: moved.undo.commandKind,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    const shared = postEntry(first.household, {
+      date: TODAY,
+      type: "expense",
+      amount: "1",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-HOUSING-ELECTRIC",
+      note: "Compacted shared expense",
+      createdBy: JONATHAN,
+      visibility: "household",
+    });
+    const second = await acceptHouseholdWrite({
+      previous: first.household,
+      candidate: shared.household,
+      confirmationId: "confirm-shared-after-halifax",
+      postedIds: shared.postedIds,
+      commandKind: shared.undo.commandKind,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    const refs = [
+      receiptToCommandRef({ household: second.household, receipt: first.household.commandReceipts.at(-1)!, baseRevision: previous.revision }),
+      receiptToCommandRef({ household: second.household, receipt: second.household.commandReceipts.at(-1)!, baseRevision: first.household.revision }),
+    ];
+    const primary = primaryCommandRef(refs);
+    const payload = await compactedCommandPayload(
+      { confirmationIds: refs.map((row) => row.confirmationId), commandRefs: refs },
+      primary,
+      second.household,
+      JONATHAN,
+    ) as ContinuityCommandEventPayload;
+    const remote = await applyCommandEventLocally({
+      local: previous,
+      event: {
+        id: "evt-halifax-compacted",
+        environment: previous.environment,
+        household_id: previous.householdId,
+        member_id: JONATHAN,
+        idempotency_key: primary.idempotencyKey,
+        confirmation_id: primary.confirmationId,
+        identity_hash: primary.identityHash,
+        base_revision: previous.revision,
+        result_revision: second.household.revision,
+        ledger_scope: "shared",
+        command_type: primary.commandType,
+        payload_json: payload,
+        created_at: primary.commandPayload.acceptedAt,
+      },
+      memberId: JONATHAN,
+    });
+
+    expect(remote.ok).toBe(true);
+    if (!remote.ok) throw new Error(remote.reason);
+    expect(remote.household.recurrences.find((row) => row.id === move.recurrenceId)?.nextDate).toBe("2026-10-30");
+  });
+
+  it("fails closed when compaction contains two moves of the same recurrence", async () => {
+    const previous = halifaxHousehold();
+    const move = currentHalifaxMove(previous);
+    const firstMove = moveAskGoalClaimToNextMonth(previous, move);
+    const first = await acceptHouseholdWrite({
+      previous,
+      candidate: firstMove.household,
+      confirmationId: "confirm-halifax-october",
+      postedIds: firstMove.postedIds,
+      commandKind: firstMove.undo.commandKind,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    const octoberMove = currentHalifaxMove(first.household, "2026-10-12");
+    const secondMove = moveAskGoalClaimToNextMonth(first.household, octoberMove);
+    const second = await acceptHouseholdWrite({
+      previous: first.household,
+      candidate: secondMove.household,
+      confirmationId: "confirm-halifax-november",
+      postedIds: secondMove.postedIds,
+      commandKind: secondMove.undo.commandKind,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    const refs = [
+      receiptToCommandRef({ household: second.household, receipt: first.household.commandReceipts.at(-1)!, baseRevision: previous.revision }),
+      receiptToCommandRef({ household: second.household, receipt: second.household.commandReceipts.at(-1)!, baseRevision: first.household.revision }),
+    ];
+    const primary = primaryCommandRef(refs);
+    const payload = await compactedCommandPayload(
+      { confirmationIds: refs.map((row) => row.confirmationId), commandRefs: refs },
+      primary,
+      second.household,
+      JONATHAN,
+    ) as ContinuityCommandEventPayload;
+    const remote = await applyCommandEventLocally({
+      local: previous,
+      event: {
+        id: "evt-halifax-double-compacted",
+        environment: previous.environment,
+        household_id: previous.householdId,
+        member_id: JONATHAN,
+        idempotency_key: primary.idempotencyKey,
+        confirmation_id: primary.confirmationId,
+        identity_hash: primary.identityHash,
+        base_revision: previous.revision,
+        result_revision: second.household.revision,
+        ledger_scope: "shared",
+        command_type: primary.commandType,
+        payload_json: payload,
+        created_at: primary.commandPayload.acceptedAt,
+      },
+      memberId: JONATHAN,
+    });
+
+    expect(remote).toMatchObject({
+      ok: false,
+      reason: "ask-goal-move-authority-mismatch",
+      fallback: true,
+    });
+    expect(previous.recurrences.find((row) => row.id === move.recurrenceId)?.nextDate).toBe("2026-09-30");
   });
 
 });

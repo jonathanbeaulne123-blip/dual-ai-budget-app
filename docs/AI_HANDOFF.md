@@ -2,19 +2,19 @@
 
 ## Register slice 9 Ask confirmation candidate (2026-09-02)
 
-**Status:** Local High-risk candidate on `codex/register-9-confirm`, isolated from `origin/main@6918d29fdc9e5976b09e94705015c79837b2e988`. Full Windows verification and fictional rendered proof pass; independent exact-candidate review is next. No push, PR mutation, merge, deployment, hosted row, schema, secret, or Production mutation has occurred.
+**Status:** Local High-risk candidate on `codex/register-9-confirm`, isolated from `origin/main@6918d29fdc9e5976b09e94705015c79837b2e988`. Full Windows verification and fictional rendered proof pass. First independent review found two bounded proof gaps—cancelled-confirmation focus and compacted-event replay—and both corrections pass 15 focused tests plus TypeScript; exact-head full gate and re-review are next. No push, PR mutation, merge, deployment, hosted row, schema, secret, or Production mutation has occurred.
 
 **Household outcome:** Jonathan's wide Shared Home shows the existing Fund Ask and other door. `Raise it` opens a small, focused confirmation whose canonical action says `Move Halifax to next month`. Confirming advances only the exact Halifax shared monthly standing-order date from September 30 to October 30, so September's Ask changes from `$340.00` to `$40.00`; no cash, journal row, Fund event, contribution, balance, or saved amount moves. Bianca's default custodian surface does not receive the panel or command.
 
 **Dual Course:** Budget `+3`; Engagement `+2`. Books won: the UI carries the exact recurrence id and claim date from the existing obligation/register fold; the command reprojects the current Ask and refuses stale, mismatched, retired, non-monthly, non-goal, inactive, or custodian requests before mutation. A repeated receipt cannot advance twice.
 
-**Continuity:** `moveAskGoalClaimToNextMonth` is a non-financial planning command with a bounded recurrence materialization hash. Normal shared command-event replay validates actor, goal, unchanged recurrence meaning, one monthly cadence, and hash before applying the date on another device. The accepted-books financial hash is intentionally unchanged for stored-receipt compatibility. Full-snapshot sync already carries recurrences.
+**Continuity:** `moveAskGoalClaimToNextMonth` is a non-financial planning command with a bounded recurrence materialization hash. Normal shared command-event replay validates actor, goal, unchanged recurrence meaning, one monthly cadence, and hash before applying the date on another device. The production compacted payload path is covered for one Ask move followed by another shared command; two compacted moves of the same recurrence refuse and request full-snapshot recovery. The accepted-books financial hash is intentionally unchanged for stored-receipt compatibility. Full-snapshot sync already carries recurrences.
 
 **Verification:** Focused Ask/core/continuity proof passed 31 tests; the serial Ask/PGlite file passed 6. `pnpm check:windows` passed AI-surface verification, 1,496 fast-lane tests / 2 skipped, 146 serial books tests / 1 skipped, TypeScript, Vite production build, Hercules Pro UI build, and redirect guard: 1,642 passed / 3 intentionally skipped total. A temporary fictional component harness at 320, 390, 720, and 1100 px proved exact wording, automatic Confirm focus, controls at least 44 px, no horizontal page overflow, visible `$340.00` → `$40.00`, door removal after success, and no browser warnings/errors; the harness was removed.
 
 **Boundaries:** The rendered proof was a fictional component harness, not a signed-in kitchen walkthrough, because the local browser household's Fund was not open. The two-device proof is deterministic command-event replay, not the wider authenticated 100-sample or 14-day continuity acceptance gate. No money authority, allocator, Fund custody, Till, OfficePhone, schema, provider, secret, hosted data, or Production continuity changed.
 
-**Next owner:** Independent books/trust and UX/privacy auditors review the exact local candidate, followed by `hearth-release-review`. After PASS, Codex asks Jonathan for action-time approval before push, merge, and Development deployment.
+**Next owner:** Independent books/trust and UX/privacy auditors re-review the corrected exact local candidate, followed by `hearth-release-review`. After PASS, Codex asks Jonathan for action-time approval before push, merge, and Development deployment.
 
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 

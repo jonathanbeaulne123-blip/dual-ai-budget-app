@@ -1,6 +1,6 @@
 # Hearth worksession — Register slice 9 Ask panel
 
-- **Status:** LOCAL FULL GATE PASS; INDEPENDENT REVIEW OPEN
+- **Status:** REVIEW CORRECTIONS VERIFIED; EXACT-HEAD RE-REVIEW OPEN
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -72,6 +72,8 @@ Inference:
 - [x] Focused tests and `pnpm exec tsc --noEmit`
 - [x] Full Windows check and rendered viewport/accessibility proof
 - [x] Visual proof at 320 / 390 / 720 / ~1100
+- [x] Cancel returns keyboard focus to `Raise it`; success and stale removal return focus to the Ask panel
+- [x] Real compacted payload replays one Ask move behind another shared command; two same-recurrence moves fail closed to snapshot recovery
 - [ ] Independent audits and release review
 
 ## Plan
@@ -90,6 +92,7 @@ Inference:
 - Canonical goal move proof includes September 30 → October 30, Ask `$340.00` → `$40.00`, no money rows, one-receipt replay, second-device apply, and PGlite recurrence persistence.
 - `pnpm check:windows` — PASS: AI surface verified; fast lane 1,496 passed / 2 skipped; serial books lane 146 passed / 1 skipped; TypeScript, Vite production bundle, Hercules Pro UI build, and redirect guard passed. Total: 1,642 passed / 3 intentionally skipped.
 - Temporary fictional component harness at 320 / 390 / 720 / 1100 — exact Confirm wording, automatic focus, minimum 44px controls, no page overflow, `$340.00` → `$40.00`, door removed after success, and no browser warnings/errors. Harness files were removed after proof.
+- First independent reviews found two bounded proof gaps: cancelled confirmation focus and the production compacted-event path. Both are repaired. Focused Ask UI/core tests now pass 15/15 with TypeScript; exact-head full gate and re-review follow.
 
 ## Decisions
 
@@ -97,7 +100,7 @@ Placement and the command both require an active non-custodian member because Ti
 
 ## Remaining uncertainty
 
-Independent exact-candidate audits and release review remain open. The viewport proof used a fictional component harness rather than the signed-in kitchen because the local browser's household had no open Fund. Real authenticated two-phone timing remains part of the wider continuity pilot, not a claim of this local command-event test.
+Independent exact-head re-review and release review remain open. The viewport proof used a fictional component harness rather than the signed-in kitchen because the local browser's household had no open Fund. Real authenticated two-phone timing remains part of the wider continuity pilot, not a claim of this local command-event test.
 
 ## Handoff
 
