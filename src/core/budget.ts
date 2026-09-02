@@ -33,6 +33,19 @@ export function transactionProjection(
   return { root, multiplier };
 }
 
+export function projectedCountable(
+  tx: Transaction,
+  transactionById: ReadonlyMap<string, Transaction>,
+): boolean {
+  if (!countable(tx)) return false;
+  const { root } = transactionProjection(tx, transactionById);
+  if (!countable(root)) return false;
+  const currentPair = tx.transferPairId ? transactionById.get(tx.transferPairId) : undefined;
+  if (currentPair && !countable(currentPair)) return false;
+  const rootPair = root.transferPairId ? transactionById.get(root.transferPairId) : undefined;
+  return !rootPair || countable(rootPair);
+}
+
 function directReversalMultiplier(tx: Transaction): 1 | -1 {
   return tx.reversalOfId ? -1 : 1;
 }
@@ -74,13 +87,13 @@ export function projectedSignedAmount(tx: Transaction, transactionById: Readonly
 }
 
 export function projectedExpenseEffect(tx: Transaction, transactionById: ReadonlyMap<string, Transaction>): number {
-  if (!countable(tx)) return 0;
+  if (!projectedCountable(tx, transactionById)) return 0;
   const projection = transactionProjection(tx, transactionById);
   return baseExpenseEffect(projection.root) * projection.multiplier;
 }
 
 export function projectedIncomeEffect(tx: Transaction, transactionById: ReadonlyMap<string, Transaction>): number {
-  if (!countable(tx)) return 0;
+  if (!projectedCountable(tx, transactionById)) return 0;
   const projection = transactionProjection(tx, transactionById);
   return baseIncomeEffect(projection.root) * projection.multiplier;
 }

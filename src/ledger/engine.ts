@@ -282,6 +282,14 @@ export async function migrateBooks(db: Queryable): Promise<void> {
         CHECK (kind IN ('contribution-proposed','contribution-held','contribution-hold-released','contribution-withdrawn','contribution-confirmed','purchase-funded','refund-funded','settlement-confirmed','kitty-allocated','kitty-released','reconciliation-recorded','bank-verified','reversal'));
     `);
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [6, new Date().toISOString()]);
+    have.add(6);
+  }
+  if (!have.has(7)) {
+    // D-198: reversal-lineage compilation changed the meaning of historical
+    // journal rows. Invalidate only the derived local projection proof so the
+    // accepted JSON snapshot performs one transactional full rebuild.
+    await db.query("UPDATE audit_revisions SET projection_hash = NULL");
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [7, new Date().toISOString()]);
   }
 }
 

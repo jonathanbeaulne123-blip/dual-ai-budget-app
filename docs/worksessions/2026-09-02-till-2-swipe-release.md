@@ -39,6 +39,7 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 
 - Rebase/replay Till Slice 2 onto exact current `main`
 - Repair all recorded P1/P2 findings and add focused regressions
+- Version and transactionally re-anchor the derived local PGlite projection
 - D-198 canon and truthful Release handoff evidence
 - Independent books/trust, privacy/continuity, UX/accessibility, and final release review
 - User-authorized push, guarded merge, Development deployment, post-merge CI, and live no-store/asset verification
@@ -46,7 +47,7 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 ### Out of scope
 
 - Till Slice 3 implementation, Till navigation/surface, camera, receipt, or OCR
-- Schema, migration, hosted household-row mutation, secrets, provider settings, bank connection, or Production continuity/data
+- Hosted schema/migration, hosted household-row mutation, secrets, provider settings, bank connection, or Production continuity/data
 - New financial formula, second Fund fold, second writer, or money movement
 
 ## Acceptance evidence
@@ -56,6 +57,8 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - [x] Swipe has one dialog title and an `Amount` pad label
 - [x] Funded Undo routing is explicit by supported command kind, never inferred from a `FUND-EVT-` id alone; command identity persists across reload
 - [x] Expense, refund, income, transfer, and reversal-of-reversal projections agree with the compiled journal and append-only direction
+- [x] Transfer-pair duplicate state follows its root lineage in compiled books and cash flow
+- [x] PGlite projection version 7 invalidates the pre-fix proof and performs one full rebuild from the accepted snapshot
 - [x] The ten-second strip is environment/household/member scoped, hidden outside Shared, and cleared before ledger/session/environment switches
 - [x] A funded correction is accepted and persisted without advertising an unsupported second Undo
 - [x] Enter on focused Close and `Switch kind` disclosure controls remains native and does not advance the CAD pad
@@ -89,10 +92,11 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - 2026-09-02: anti-stale fetch found Register Slice 8 had advanced `origin/main` to `02692d7`. The repair rebased without conflict. Cross-slice focused proof passed 60/60, then the exact rebased candidate passed `pnpm check:windows`: 226 fast files passed / 1 skipped with 1,564 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 146 tests passed / 1 skipped; 1,710 passed / 3 skipped total; TypeScript; 416-module build; Hercules Pro UI; and redirect guard.
 - 2026-09-02: PR #302 first head `6430f43` was cleanly based on `origin/main@02692d7`; both CI runs, Pages, and the Worker preview passed. The public code review nevertheless found one P1 before merge: a reversal-of-reversal was reinstated by reporting projections but negated twice by `compileDocument`; it also found one P2: the global CAD-pad Enter shortcut omitted the focusable `summary` used by Add's `Switch kind`. Merge stayed locked.
 - 2026-09-02: the P1 repair makes compiled document/opening rows and snapshot P&L use the same root-and-parity reversal lineage as budget and statement projections; a regression checks trial balance, equation, snapshot, month summary, and the reinstatement journal line. The P2 repair yields Enter to focused `summary` elements and tests that `Switch kind` remains on the amount slide. Focused books/PGlite/statements/Swipe/Add proof passed 51/51. The full Windows gate then passed AI surface; 226 fast files passed / 1 skipped with 1,565 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 147 tests passed / 1 skipped; 1,712 passed / 3 skipped total; TypeScript; 416-module production build; Hercules Pro UI; and redirect guard. Fresh exact-head reviews and PR CI remain required before merge.
+- 2026-09-02: the next independent books review stopped the push on two P1s: transfer reversals did not inherit a duplicate flag from either original pair leg, and an accepted pre-fix PGlite projection had no versioned re-anchor. `projectedCountable` now follows both the current and root transfer pair; compiler and cash flow share it. Local PGlite migration 7 nulls only the old derived projection proof, forcing the existing transactional full writer to rebuild from the accepted JSON snapshot before incremental mode resumes. The expanded six-file books/PGlite/statements/Swipe/Add gate passed 59/59. The fresh full Windows gate passed AI surface; 226 fast files passed / 1 skipped with 1,565 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 149 tests passed / 1 skipped; 1,714 passed / 3 skipped total; TypeScript; 416-module production build; Hercules Pro UI; and redirect guard. Fresh exact-head reviews remain required.
 
 ## Decisions
 
-- D-197 remains the current-main custody prerequisite. D-198 stays the Slice 2 decision and now explicitly includes all forward-repair invariants, including compiled-journal parity and native disclosure-key ownership; no new decision id is introduced.
+- D-197 remains the current-main custody prerequisite. D-198 stays the Slice 2 decision and now explicitly includes all forward-repair invariants, including compiled-journal/duplicate parity, the local projection re-anchor, and native disclosure-key ownership; no new decision id is introduced.
 - PR #295 will not be merged as-is because it duplicates current-main Slice 1 and is not mergeable.
 - One writer owns the repair checkout. Reviewers are read-only and receive an exact immutable head.
 

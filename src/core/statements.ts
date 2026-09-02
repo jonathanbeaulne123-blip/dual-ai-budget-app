@@ -3,6 +3,7 @@ import {
   monthSummary,
   projectedExpenseEffect,
   projectedIncomeEffect,
+  projectedCountable,
   transactionProjection,
   type CategoryActual,
 } from "./budget.ts";
@@ -272,7 +273,7 @@ export function cashFlowStatement(household: Household, monthKey: MonthKey): Cas
   const seen = new Set<string>();
 
   for (const tx of household.transactions) {
-    if (tx.isDuplicate) continue;
+    if (!projectedCountable(tx, transactionById)) continue;
     if (tx.date < start || tx.date > end) continue;
     const { root, multiplier } = transactionProjection(tx, transactionById);
     const account = byId.get(root.accountId);

@@ -1,6 +1,7 @@
 import {
   projectedExpenseEffect,
   projectedIncomeEffect,
+  projectedCountable,
   transactionProjection,
 } from "./budget.ts";
 import { sumCents } from "./money.ts";
@@ -217,7 +218,12 @@ function accountName(household: Household, accountId: string | undefined): strin
   return household.accounts.find((account) => account.id === accountId)?.name ?? accountId ?? "account";
 }
 
-function compileTransfer(household: Household, tx: Transaction, pair: Transaction | undefined): JournalEntry | null {
+function compileTransfer(
+  household: Household,
+  tx: Transaction,
+  pair: Transaction | undefined,
+  transactionById: ReadonlyMap<string, Transaction>,
+): JournalEntry | null {
   const fromId = tx.transferFromAccountId || pair?.transferFromAccountId || tx.accountId;
   const toId = tx.transferToAccountId || pair?.transferToAccountId || pair?.accountId;
   if (!fromId || !toId || fromId === toId) {
@@ -238,7 +244,7 @@ function compileTransfer(household: Household, tx: Transaction, pair: Transactio
     originTransactionIds: origin,
     visibility: tx.visibility,
     createdBy: tx.createdBy,
-    recognized: !(tx.isDuplicate || pair?.isDuplicate),
+    recognized: projectedCountable(tx, transactionById),
     duplicateKey: tx.duplicateKey,
     lines,
   });
@@ -271,7 +277,7 @@ function compileOpening(
     originTransactionIds: [tx.id],
     visibility: tx.visibility,
     createdBy: tx.createdBy,
-    recognized: !(tx.isDuplicate || root.isDuplicate),
+    recognized: projectedCountable(tx, transactionById),
     duplicateKey: tx.duplicateKey,
     lines,
   });
@@ -314,7 +320,7 @@ function compileDocument(
     originTransactionIds: [tx.id],
     visibility: tx.visibility,
     createdBy: tx.createdBy,
-    recognized: !(tx.isDuplicate || root.isDuplicate),
+    recognized: projectedCountable(tx, transactionById),
     duplicateKey: tx.duplicateKey,
     lines,
   });
@@ -339,7 +345,7 @@ export function compileHousehold(household: Household): CompiledBooks {
         : undefined;
       if (pair) seen.add(pair.id);
       seen.add(tx.id);
-      entry = compileTransfer(household, tx, pair);
+      entry = compileTransfer(household, tx, pair, transactionsById);
     } else {
       seen.add(tx.id);
       entry = compileDocument(tx, transactionsById);
