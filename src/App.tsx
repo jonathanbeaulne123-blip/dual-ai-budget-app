@@ -38,6 +38,10 @@ import {
   postDueRecurrences,
   postEntry,
   postOneRecurrence,
+  resolveSwipeCardAccount,
+  swipeBelongsOnSharedHome,
+  SWIPE_COPY,
+  SWIPE_UNDO_MS,
   addRecurrence,
   updateRecurrence,
   postShift,
@@ -347,6 +351,8 @@ import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
+import { Swipe } from "./Swipe.tsx";
+import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { playClink } from "./clink.ts";
@@ -491,6 +497,8 @@ export function App() {
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [swipeOpen, setSwipeOpen] = useState(false);
+  const [swipeStrip, setSwipeStrip] = useState<{ token: UndoToken } | null>(null);
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
@@ -513,6 +521,14 @@ export function App() {
     setLocationBusy(false);
   };
   const addSheetRef = useDialog(adding, closeAdd);
+  useEffect(() => {
+    if (!swipeStrip) return;
+    const timer = window.setTimeout(() => setSwipeStrip(null), SWIPE_UNDO_MS);
+    return () => window.clearTimeout(timer);
+  }, [swipeStrip]);
+  useEffect(() => {
+    if (tab !== "home") setSwipeOpen(false);
+  }, [tab]);
 
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
@@ -3128,6 +3144,7 @@ export function App() {
         if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
         rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
+        setSwipeStrip((item) => (item?.token.id === token.id ? null : item));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
       }
@@ -3159,7 +3176,11 @@ export function App() {
     }
   }
 
-  function run(fn: (current: Household) => CommitResult) {
+  function run(fn: (current: Household) => CommitResult, options?: {
+    closeAdd?: boolean;
+    onAccepted?: (result: CommitResult) => void;
+    onConfirm?: (error: NeedsConfirmationError) => boolean;
+  }) {
     if (postingRef.current) return Promise.resolve();
     postingRef.current = true;
     return enqueueWrite(async () => {
@@ -3183,6 +3204,11 @@ export function App() {
           outcome?.postedExactlyOnce === true &&
           (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
         if (!accepted) return;
+        if (options?.closeAdd === false) {
+          options.onAccepted?.(result);
+          if (result.warnings.length) setError(result.warnings.join(" "));
+          return;
+        }
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
@@ -3215,6 +3241,7 @@ export function App() {
         }
       } catch (caught) {
         if (caught instanceof NeedsConfirmationError) {
+          if (options?.onConfirm?.(caught)) return;
           const plan = resolveDuplicateRetry({
             pendingWorkShift: workShiftInputRef.current?.input ?? null,
             confirmCode: caught.code,
@@ -4047,6 +4074,66 @@ export function App() {
     };
   };
 
+  const showSwipeAction = view === "household"
+    && swipeBelongsOnSharedHome(actorId, household.householdFund?.custodianMemberId);
+
+  const openSwipeIntoAdd = (amount: string, extra?: { subcategoryId?: string; confirm?: NeedsConfirmationError }) => {
+    const scopedBooks = experience && experience.ok ? experience.scopedHousehold : household;
+    const card = resolveSwipeCardAccount(scopedBooks, actorId);
+    const accountId = card.kind === "ready" ? card.accountId : focusedAccountId;
+    setSwipeOpen(false);
+    setMode("expense");
+    setAdding(true);
+    setAddSlide(0);
+    setError("");
+    setForm(formForAccount(accountId, {
+      amount,
+      subcategoryId: extra?.subcategoryId ?? defaultSubcategoryForMode("expense"),
+      useHouseholdFund: Boolean(household.householdFund),
+      fundedAmount: amount,
+      fundDestinationAccountId: card.kind === "ready" ? card.accountId : "",
+      visibility: "household",
+      note: "",
+      place: "",
+    }));
+    if (extra?.confirm) setConfirm(extra.confirm);
+    else setConfirm(null);
+  };
+
+  const submitSwipePurchase = (amount: string, subcategoryId: string) => {
+    const scopedBooks = experience && experience.ok ? experience.scopedHousehold : household;
+    const card = resolveSwipeCardAccount(scopedBooks, actorId);
+    if (card.kind !== "ready") {
+      openSwipeIntoAdd(amount, { subcategoryId });
+      return;
+    }
+    const fund = household.householdFund;
+    lastAmountLabelRef.current = formatCad(parseAmount(amount));
+    void run((current) => postEntry(current, {
+      date: today,
+      type: "expense",
+      amount,
+      accountId: card.accountId,
+      subcategoryId,
+      createdBy: actorId,
+      visibility: "household",
+      splits: jointSplit(parseAmount(amount)),
+      funding: fund
+        ? { fundId: fund.id, fundedCents: parseAmount(amount), destinationAccountId: card.accountId }
+        : undefined,
+    }), {
+      closeAdd: false,
+      onAccepted: (result) => {
+        setSwipeOpen(false);
+        if (result.undo) setSwipeStrip({ token: result.undo });
+      },
+      onConfirm: (error) => {
+        openSwipeIntoAdd(amount, { subcategoryId, confirm: error });
+        return true;
+      },
+    });
+  };
+
   const clearLocationStamp = () => {
     setDraftLocation(undefined);
     setForm((current) => ({ ...current, occurredAt: "" }));
@@ -4582,6 +4669,28 @@ export function App() {
 
       {tab === "home" && dashboard && (
         <>
+        {tab === "home" && swipeStrip ? (
+          <div className="swipe-strip" role="status">
+            <span>{SWIPE_COPY.success}</span>
+            <button
+              type="button"
+              className="swipe-strip-undo"
+              onClick={() => void applyUndo(swipeStrip.token)}
+            >
+              {SWIPE_COPY.undo}
+            </button>
+          </div>
+        ) : null}
+        {showSwipeAction ? (
+          <button
+            type="button"
+            className="swipe-open"
+            disabled={busy}
+            onClick={() => { setAdding(false); setSwipeOpen(true); }}
+          >
+            {SWIPE_COPY.action}
+          </button>
+        ) : null}
         {view === "household" && household.householdFund && (() => {
           const fund = projectHouseholdFund(household, today);
           return (
@@ -5327,6 +5436,18 @@ export function App() {
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
         </>
       )}
+
+      {swipeOpen && experience && experience.ok ? (
+        <Swipe
+          household={experience.scopedHousehold}
+          memberId={actorId}
+          today={today}
+          busy={busy}
+          onClose={() => setSwipeOpen(false)}
+          onPostCategory={({ amount, subcategoryId }) => submitSwipePurchase(amount, subcategoryId)}
+          onMore={(amount) => openSwipeIntoAdd(amount)}
+        />
+      ) : null}
 
       {adding && (
         <AddSlideshow

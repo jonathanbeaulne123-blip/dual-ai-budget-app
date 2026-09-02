@@ -38,6 +38,7 @@ export type {
 export * from "./ask.ts";
 export * from "./askRoutes.ts";
 export * from "./askView.ts";
+export * from "./swipe.ts";
 export * from "./openingTruth.ts";
 export * from "./monthRehearsal.ts";
 export * from "./weeklyDocumentStamp.ts";
