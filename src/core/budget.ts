@@ -37,13 +37,18 @@ export function projectedCountable(
   tx: Transaction,
   transactionById: ReadonlyMap<string, Transaction>,
 ): boolean {
-  if (!countable(tx)) return false;
-  const { root } = transactionProjection(tx, transactionById);
-  if (!countable(root)) return false;
-  const currentPair = tx.transferPairId ? transactionById.get(tx.transferPairId) : undefined;
-  if (currentPair && !countable(currentPair)) return false;
-  const rootPair = root.transferPairId ? transactionById.get(root.transferPairId) : undefined;
-  return !rootPair || countable(rootPair);
+  let current = tx;
+  const seen = new Set<string>([tx.id]);
+  while (true) {
+    if (!countable(current)) return false;
+    const pair = current.transferPairId ? transactionById.get(current.transferPairId) : undefined;
+    if (pair && !countable(pair)) return false;
+    if (!current.reversalOfId || seen.has(current.reversalOfId)) return true;
+    seen.add(current.reversalOfId);
+    const original = transactionById.get(current.reversalOfId);
+    if (!original) return true;
+    current = original;
+  }
 }
 
 function directReversalMultiplier(tx: Transaction): 1 | -1 {

@@ -192,6 +192,40 @@ describe("double-entry books", () => {
     expect(reinstatement?.lines.find((line) => line.accountId === "PL-SUB-FOOD-GROCERIES")?.debitCents).toBe(1250);
   });
 
+  it("excludes a reinstatement when an intermediate reversal is marked duplicate", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Milk",
+      confirmDuplicate: true,
+    });
+    const transactionId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!transactionId) throw new Error("Missing expense row");
+    const reversed = reversePostedMoney(posted.household, transactionId, {
+      reversalDate: "2026-08-18",
+    });
+    const reversalId = reversed.household.transactions.find((row) => row.reversalOfId === transactionId)?.id;
+    if (!reversalId) throw new Error("Missing reversal row");
+    const excluded = markDuplicate(reversed.household, reversalId, true).household;
+    const reinstated = reversePostedMoney(excluded, reversalId, {
+      reversalDate: "2026-08-18",
+    }).household;
+
+    const books = compileHousehold(reinstated);
+    const equation = booksEquation(books);
+    expect(books.entries.filter((entry) => entry.recognized).map((entry) => entry.originTransactionIds))
+      .toEqual([[transactionId]]);
+    expect(trialBalance(books).inBalance).toBe(true);
+    expect(equation.expenseCents).toBe(1250);
+    expect(equation.liabilityCents).toBe(1250);
+    expect(snapshotPnL(reinstated).expenseCents).toBe(1250);
+    expect(monthSummary(reinstated, "2026-08").expenseActualCents).toBe(1250);
+    expect(cashFlowStatement(reinstated, "2026-08").cardSpendCents).toBe(1250);
+  });
+
   it("excludes a reversed transfer when either original leg is marked duplicate", () => {
     const transfer = postTransfer(catalogHousehold(), {
       date: "2026-08-18",
@@ -213,6 +247,30 @@ describe("double-entry books", () => {
       netWorthCents: 0,
     });
     expect(cashFlowStatement(excluded, "2026-08").debtPaydownCents).toBe(0);
+  });
+
+  it("excludes a transfer reinstatement when an intermediate reversal pair leg is duplicate", () => {
+    const transfer = postTransfer(catalogHousehold(), {
+      date: "2026-08-18",
+      amount: "40.00",
+      fromAccountId: "ACC-CHEQUING",
+      toAccountId: "ACC-VISA",
+      confirmDuplicate: true,
+    });
+    const reversed = reversePostedMoney(transfer.household, transfer.postedIds[0]!, {
+      reversalDate: "2026-08-18",
+    });
+    const reversal = reversed.household.transactions.find((row) => row.reversalOfId === transfer.postedIds[0]);
+    if (!reversal?.transferPairId) throw new Error("Missing transfer reversal pair");
+    const excluded = markDuplicate(reversed.household, reversal.transferPairId, true).household;
+    const reinstated = reversePostedMoney(excluded, reversal.id, {
+      reversalDate: "2026-08-18",
+    }).household;
+    const books = compileHousehold(reinstated);
+
+    expect(books.entries.filter((entry) => entry.recognized)).toHaveLength(1);
+    expect(trialBalance(books).inBalance).toBe(true);
+    expect(cashFlowStatement(reinstated, "2026-08").debtPaydownCents).toBe(4000);
   });
 });
 
