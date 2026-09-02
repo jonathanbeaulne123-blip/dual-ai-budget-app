@@ -21,6 +21,7 @@ import {
   reversePostedMoney,
   swipeBelongsOnSharedHome,
   swipeCategoryAccessibleName,
+  type Account,
   type Household,
 } from "../src/core/index.ts";
 
@@ -186,7 +187,9 @@ describe("swipe selectors", () => {
     }).household;
     household = {
       ...household,
-      accounts: household.accounts.map((account) => account.id === "ACC-MC" ? { ...account, currency: "USD" } : account),
+      accounts: household.accounts.map((account) => (
+        account.id === "ACC-MC" ? { ...account, currency: "USD" as Account["currency"] } : account
+      )),
     };
     expect(resolveSwipeCardAccount(scoped(household, BIANCA), BIANCA)).toEqual({ kind: "ready", accountId: "ACC-VISA" });
     expect(swipeBelongsOnSharedHome(BIANCA, BIANCA)).toBe(true);
@@ -231,7 +234,9 @@ describe("swipe sheet", () => {
     const labels = Array.from(container.querySelectorAll(".swipe-cat")).map((button) => button.textContent);
     expect(labels).toEqual([SWIPE_COPY.more]);
     act(() => {
-      Array.from(container.querySelectorAll(".swipe-cat")).find((button) => button.textContent === SWIPE_COPY.more)?.click();
+      const more = Array.from(container.querySelectorAll(".swipe-cat"))
+        .find((button) => button.textContent === SWIPE_COPY.more) as HTMLButtonElement | undefined;
+      more?.click();
     });
     expect(moreCalls[0]).toBe("5.00");
   });
