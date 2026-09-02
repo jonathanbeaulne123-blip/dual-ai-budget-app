@@ -29,6 +29,8 @@ export type HouseholdAsk = {
 
 export type AskAlternative = {
   goalId: string;
+  recurrenceId: string;
+  claimDate: DateKey;
   label: string;
   claimCents: number;
   askIfDeferredCents: number;
@@ -58,11 +60,16 @@ export function askAlternatives(ask: HouseholdAsk): AskAlternative[] {
   return ask.register.rows
     .flatMap((row): AskAlternative[] => {
       const goalId = goalClaimIdentity(row.obligationId, row.date);
-      if (!goalId || row.unfundedCents <= 0) return [];
+      if (!goalId
+        || !row.recurrenceId
+        || row.goalId !== goalId
+        || row.unfundedCents <= 0) return [];
       const label = goalClaimLabel(row.label);
       const askIfDeferredCents = Math.max(0, registerAskCents - row.amountCents);
       return [{
         goalId,
+        recurrenceId: row.recurrenceId,
+        claimDate: row.date,
         label,
         claimCents: row.amountCents,
         askIfDeferredCents,
@@ -103,7 +110,7 @@ function askCopy(
   monthKey: string,
 ): string {
   const month = monthName(monthKey);
-  const caveat = ` — though I've only watched ${weeksWatched} weeks of this house.`;
+  const caveat = ` — though I've only watched ${weeksWatched} ${weeksWatched === 1 ? "week" : "weeks"} of this house.`;
   if (horizon === "payday") {
     const secondary = `${formatCad(askCents)} of that lands before the ${ordinal(parseDateKey(throughDate).day)}`;
     return confidence === "watching" ? `${secondary}${caveat}` : `${secondary}.`;

@@ -312,7 +312,7 @@ describe("weekly document durable stamps", () => {
       baseRevision: first.household.revision,
       memberId: BIANCA,
     });
-    const payload = compactedCommandPayload(
+    const payload = await compactedCommandPayload(
       { confirmationIds: refs.map((row) => row.confirmationId), commandRefs: refs },
       primary,
       second.household,

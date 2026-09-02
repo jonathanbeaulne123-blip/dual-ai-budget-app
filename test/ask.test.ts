@@ -253,7 +253,7 @@ describe("household Ask", () => {
 
     expect(ask.askCents).toBe(10000);
     expect(ask.confidence).toBe("watching");
-    expect(ask.copy).toBe("September still needs $100.00 — though I've only watched 1 weeks of this house.");
+    expect(ask.copy).toBe("September still needs $100.00 — though I've only watched 1 week of this house.");
   });
 
   it("does not fabricate a payday when the custodian has no active pay schedule", () => {

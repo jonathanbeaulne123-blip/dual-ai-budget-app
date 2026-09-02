@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Register slice 9 Ask confirmation candidate (2026-09-02)
+
+**Status:** PR [#292](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/292) passed exact-head GitHub checks at `d894734f59af06b340ca344d5b084e40117e3d5c`. Jonathan authorized push, merge, and Development deployment on 2026-09-02. Current-main integration over `c162d135f6e1741cabeaf398259aa1a8ce6ad74e` is in verification because PR #291 advanced `main` after those checks. No merge, Development deployment, hosted row, schema, secret, or Production mutation has occurred.
+
+**Household outcome:** Jonathan's wide Shared Home shows the existing Fund Ask and other door. `Raise it` opens a small, focused confirmation whose canonical action says `Move Halifax to next month`. Confirming advances only the exact Halifax shared monthly standing-order date from September 30 to October 30, so September's Ask changes from `$340.00` to `$40.00`; no cash, journal row, Fund event, contribution, balance, or saved amount moves. Bianca's default custodian surface does not receive the panel or command.
+
+**Dual Course:** Budget `+3`; Engagement `+2`. Books won: the UI carries the exact recurrence id and claim date from the existing obligation/register fold; the command reprojects the current Ask and refuses stale, mismatched, retired, non-monthly, non-goal, inactive, or custodian requests before mutation. A repeated receipt cannot advance twice.
+
+**Continuity:** `moveAskGoalClaimToNextMonth` is a non-financial planning command with a bounded recurrence materialization hash. Normal shared command-event replay validates actor, goal, unchanged recurrence meaning, one monthly cadence, and hash before applying the date on another device. The production compacted payload path is covered for one Ask move followed by another shared command; two compacted moves of the same recurrence refuse and request full-snapshot recovery. The accepted-books financial hash is intentionally unchanged for stored-receipt compatibility. Full-snapshot sync already carries recurrences.
+
+**Verification:** Focused Ask/core/continuity proof passed 31 tests; the serial Ask/PGlite file passed 6. `pnpm check:windows` passed AI-surface verification, 1,496 fast-lane tests / 2 skipped, 146 serial books tests / 1 skipped, TypeScript, Vite production build, Hercules Pro UI build, and redirect guard: 1,642 passed / 3 intentionally skipped total. A temporary fictional component harness at 320, 390, 720, and 1100 px proved exact wording, automatic Confirm focus, controls at least 44 px, no horizontal page overflow, visible `$340.00` → `$40.00`, door removal after success, and no browser warnings/errors; the harness was removed.
+
+**Boundaries:** The rendered proof was a fictional component harness, not a signed-in kitchen walkthrough, because the local browser household's Fund was not open. The two-device proof is deterministic command-event replay, not the wider authenticated 100-sample or 14-day continuity acceptance gate. No money authority, allocator, Fund custody, Till, OfficePhone, schema, provider, secret, hosted data, or Production continuity changed.
+
+**Next owner:** Codex verifies the current-main integration, updates PR #292, waits for exact-head checks again, then merges and verifies main CI, Development deployment, and the live no-store client separately.
+
 ## Cursor Clerk Slice 4 weekly document (2026-09-02)
 
 **Status:** Ready to implement locally from sealed core `9f74cb780fed8a1a595a2dd791f510545a85570d` on `codex/clerk-4-durable-stamp`; not pushed, merged, deployed, or live. Complete packet: [`briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md`](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md). Risk: **High**.

@@ -27,6 +27,8 @@ export type RegisterSegment = {
 
 export type RegisterRow = {
   obligationId: string;
+  recurrenceId: string | null;
+  goalId: string | null;
   label: string;
   date: DateKey;
   amountCents: number;
@@ -48,6 +50,8 @@ export type ContributionRegister = {
 function unfundedRows(obligations: MonthObligations): Pick<ContributionRegister, "rows" | "owedCents" | "unfundedCents"> {
   const rows = obligations.rows.map((row) => ({
     obligationId: row.id,
+    recurrenceId: row.recurrenceId,
+    goalId: row.goalId,
     label: row.label,
     date: row.date,
     amountCents: row.amountCents,
@@ -142,6 +146,8 @@ export function contributionRegisterThrough(
     }
     return {
       obligationId: obligation.id,
+      recurrenceId: obligation.recurrenceId,
+      goalId: obligation.goalId,
       label: obligation.label,
       date: obligation.date,
       amountCents: obligation.amountCents,

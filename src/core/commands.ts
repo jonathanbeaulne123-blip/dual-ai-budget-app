@@ -155,6 +155,7 @@ import {
   type HouseholdFundBankEvidence,
 } from "./householdFund.ts";
 import { charterCeilingLabel, shapeHouseholdCharter } from "./charter.ts";
+import { askAlternatives, householdAsk } from "./ask.ts";
 import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
@@ -3011,6 +3012,59 @@ export function skipOccurrence(household: Household, recurrenceId: string): Comm
   item.nextDate = advanceCadence(item.nextDate, item.cadence);
   item.updatedAt = nowIso();
   return commit(previous, next, "Calendar", `Skipped ${item.note || "recurring"} · next ${item.nextDate}`, [item.id]);
+}
+
+/**
+ * Move the exact shared monthly goal claim currently offered by The Ask.
+ * This changes planning time only: no transfer, contribution, or journal row is posted.
+ */
+export function moveAskGoalClaimToNextMonth(household: Household, input: {
+  today: DateKey;
+  memberId: string;
+  goalId: string;
+  recurrenceId: string;
+  claimDate: DateKey;
+}): CommitResult {
+  const actor = household.members.find((row) => row.id === input.memberId && row.active);
+  const fund = shapeHouseholdFundConfig(household.householdFund);
+  if (!actor || !fund || fund.custodianMemberId === actor.id) {
+    throw new ValidationError("This Ask belongs to the household member doing the work.");
+  }
+  const alternative = askAlternatives(householdAsk(household, input.today, "month"))
+    .find((row) => row.goalId === input.goalId
+      && row.recurrenceId === input.recurrenceId
+      && row.claimDate === input.claimDate);
+  if (!alternative) {
+    throw new ValidationError("That goal move is out of date. Check this month's Ask again.");
+  }
+  const goal = household.goals.find((row) => row.id === input.goalId);
+  const recurrence = household.recurrences.find((row) => row.id === input.recurrenceId);
+  if (!goal
+    || !goal.shared
+    || goal.status === "retired"
+    || Boolean(goal.retiredAt)
+    || !recurrence
+    || !recurrence.active
+    || recurrence.type !== "transfer"
+    || recurrence.cadence !== "monthly"
+    || recurrence.goalId !== goal.id
+    || recurrence.nextDate !== input.claimDate) {
+    throw new ValidationError("That shared monthly goal is no longer ready to move.");
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const item = next.recurrences.find((row) => row.id === recurrence.id)!;
+  item.nextDate = advanceCadence(item.nextDate, item.cadence);
+  item.updatedAt = nowIso();
+  return commit(
+    previous,
+    next,
+    "Calendar",
+    `Moved ${goal.name} to next month`,
+    [item.id],
+    [],
+    "moveAskGoalClaimToNextMonth",
+  );
 }
 
 export function postOneRecurrence(

@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { addRecurrence, askBooks, catalogHousehold, postEntry, seedDemoHousehold } from "../src/core/index.ts";
-import { booksIdbName } from "../src/ledger/engine.ts";
+import {
+  HOUSEHOLD_FUND_ID,
+  acceptHouseholdWrite,
+  addGoal,
+  addRecurrence,
+  askAlternatives,
+  askBooks,
+  catalogHousehold,
+  configureHouseholdFund,
+  householdAsk,
+  moveAskGoalClaimToNextMonth,
+  postEntry,
+  seedDemoHousehold,
+} from "../src/core/index.ts";
+import { booksIdbName, ingestBooks, openMemoryBooks } from "../src/ledger/engine.ts";
 
 describe("ask the books", () => {
   it("answers groceries, balance, and due bills without requiring SQL", () => {
@@ -82,4 +95,75 @@ describe("books storage names", () => {
     expect(booksIdbName("development")).toBe("idb://hearth-books-development");
     expect(booksIdbName("production")).toBe("idb://hearth-books-production");
   });
+
+  it("persists an Ask goal date move with no transaction or journal entry", async () => {
+    const fund = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: "MEM-001",
+      openedOn: "2026-09-01",
+      createdBy: "MEM-001",
+    });
+    const bill = addRecurrence(fund.household, {
+      cadence: "monthly",
+      nextDate: "2026-09-20",
+      type: "expense",
+      amount: "40",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-HOUSING-ELECTRIC",
+      note: "Phone",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    });
+    const goal = addGoal(bill.household, {
+      name: "Halifax",
+      target: "300",
+      shared: true,
+      ownerMemberId: "MEM-001",
+    });
+    const standing = addRecurrence(goal.household, {
+      cadence: "monthly",
+      nextDate: "2026-09-30",
+      type: "transfer",
+      amount: "300",
+      accountId: "ACC-CHEQUING",
+      transferToAccountId: "ACC-GOALS",
+      goalId: goal.postedIds[0]!,
+      note: "Standing · jar · Halifax",
+    });
+    const previous = standing.household;
+    const alternative = askAlternatives(householdAsk(previous, "2026-09-12"))[0]!;
+    const committed = moveAskGoalClaimToNextMonth(previous, {
+      today: "2026-09-12",
+      memberId: "MEM-002",
+      goalId: alternative.goalId,
+      recurrenceId: alternative.recurrenceId,
+      claimDate: alternative.claimDate,
+    });
+    const db = await openMemoryBooks();
+    let persisted = false;
+    try {
+      const accepted = await acceptHouseholdWrite({
+        previous,
+        candidate: committed.household,
+        confirmationId: "confirm-halifax-pglite",
+        postedIds: committed.postedIds,
+        commandKind: committed.undo.commandKind,
+        adapters: {
+          ingest: (household, artifact) => {
+            if (!artifact) throw new Error("Expected accepted books artifact");
+            return ingestBooks(db, household, artifact.compiled, { previous: artifact.previous });
+          },
+          persist: async () => { persisted = true; },
+        },
+      });
+      expect(accepted.ok).toBe(true);
+      expect(persisted).toBe(true);
+      expect((await db.query<{ id: string; next_date: string }>(
+        "SELECT id, next_date FROM recurrences WHERE id = $1",
+        [alternative.recurrenceId],
+      )).rows).toEqual([{ id: alternative.recurrenceId, next_date: "2026-10-30" }]);
+      expect((await db.query("SELECT id FROM source_transactions")).rows).toEqual([]);
+      expect((await db.query("SELECT id FROM journal_entries")).rows).toEqual([]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
 });

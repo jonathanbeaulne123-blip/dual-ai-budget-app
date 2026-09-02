@@ -1,4 +1,5 @@
 import type { CommandReceipt, Household } from "../core/types.ts";
+import { commandMaterializationFacts, sha256Hex } from "../core/commandIdentity.ts";
 import {
   extractMaterializationFacts,
   type ContinuityMaterializationFacts,
@@ -110,16 +111,13 @@ export function primaryCommandRef(refs: ContinuityCommandRef[]): ContinuityComma
   ))[0]!;
 }
 
-export function compactedCommandPayload(
+export async function compactedCommandPayload(
   item: { confirmationIds: string[]; commandRefs: ContinuityCommandRef[] },
   primary: ContinuityCommandRef,
   household: Household,
   memberId?: string,
-): Record<string, unknown> {
+): Promise<Record<string, unknown>> {
   const mergedFacts = mergeMaterializationFacts(item.commandRefs, household, primary.ledgerScope, memberId);
-  const latestRehearsalRef = [...item.commandRefs]
-    .filter((ref) => ref.ledgerScope === "shared" && ref.commandType === "updateMonthRehearsal")
-    .sort((left, right) => right.resultRevision - left.resultRevision)[0];
   const charterPostedIds = mergedFacts?.charter
     ? [...new Set(item.commandRefs
       .filter((ref) => ref.ledgerScope === "shared")
@@ -127,6 +125,7 @@ export function compactedCommandPayload(
       .filter((id) => id.startsWith("CHARTER-")))]
     : [];
   const scopedPostedIds = [
+    ...(mergedFacts?.recurrences ?? []).map((row) => row.id),
     ...(mergedFacts?.transactions ?? []).map((row) => row.id),
     ...(mergedFacts?.shifts ?? []).map((row) => row.id),
     ...(mergedFacts?.claims ?? []).map((row) => row.id),
@@ -144,8 +143,11 @@ export function compactedCommandPayload(
   ].sort();
   return {
     ...primary.commandPayload,
-    materializationHash: mergedFacts?.monthRehearsals?.length
-      ? latestRehearsalRef?.commandPayload.materializationHash
+    materializationHash: mergedFacts?.monthRehearsals?.length || mergedFacts?.recurrences?.length
+      ? await sha256Hex(commandMaterializationFacts({
+        monthRehearsals: mergedFacts.monthRehearsals,
+        recurrences: mergedFacts.recurrences,
+      }))
       : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
       const tx = household.transactions.find((row) => row.id === id);
@@ -184,6 +186,9 @@ function mergeMaterializationFacts(
       memberId,
       commandKind: ref.commandType,
     });
+    if (facts.recurrences?.length) {
+      merged.recurrences = [...(merged.recurrences ?? []), ...facts.recurrences];
+    }
     if (facts.transactions?.length) {
       merged.transactions = [...(merged.transactions ?? []), ...facts.transactions];
     }
