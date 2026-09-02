@@ -12,7 +12,7 @@ import {
 import { accountBookBalance, creditCardView, householdWallet } from "./accounts.ts";
 import { activeAccounts } from "./catalog.ts";
 import { claimPublicLabel, outstandingClaims } from "./appointments.ts";
-import { monthSummary } from "./budget.ts";
+import { monthSummary, projectedCountable, projectedExpenseEffect, projectedIncomeEffect, transactionProjection } from "./budget.ts";
 import { duplicateContrastPairs } from "./duplicate.ts";
 import { runHealthCheck } from "./health.ts";
 import { formatCad } from "./money.ts";
@@ -673,16 +673,18 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   }
 
   if (call.name === "spending_summary" || call.name === "income_summary") {
-    const query = matchingTransactionsAt(household, call.args, context, today);
+    const query = matchingProjectedTransactionsAt(household, call.args, context, today);
     if (query.filters.missing.length) return empty(call, `I cannot match ${query.filters.missing.join(" or ")} in this ledger.`);
-    const rows = query.rows.filter((tx) => call.name === "income_summary"
-      ? tx.type === "income"
-      : tx.type === "expense" || tx.type === "refund");
+    const rows = query.rows.filter((tx) => {
+      const root = transactionProjection(tx, query.transactionById).root;
+      return call.name === "income_summary"
+        ? root.type === "income"
+        : root.type === "expense" || root.type === "refund";
+    });
     const cents = rows.reduce((sum, tx) => {
-      if (call.name === "income_summary") return sum + (tx.type === "income" ? tx.amountCents : 0);
-      if (tx.type === "expense") return sum + tx.amountCents;
-      if (tx.type === "refund") return sum - tx.amountCents;
-      return sum;
+      return sum + (call.name === "income_summary"
+        ? projectedIncomeEffect(tx, query.transactionById)
+        : projectedExpenseEffect(tx, query.transactionById));
     }, 0);
     const label = call.name === "income_summary" ? `Income · ${query.range.label}` : `Spending · ${query.range.label}`;
     const source = toolSource(context, `Open ${label.toLowerCase()} rows`, {
@@ -699,12 +701,13 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "compare_spending") {
     const currentPeriod = cleanPeriod(call.args.currentPeriod, "this_month");
     const comparisonPeriod = cleanPeriod(call.args.comparisonPeriod, "last_month");
-    const current = matchingTransactionsAt(household, { ...call.args, period: currentPeriod }, context, today);
-    const comparison = matchingTransactionsAt(household, { ...call.args, period: comparisonPeriod }, context, today);
+    const current = matchingProjectedTransactionsAt(household, { ...call.args, period: currentPeriod }, context, today);
+    const comparison = matchingProjectedTransactionsAt(household, { ...call.args, period: comparisonPeriod }, context, today);
     if (current.filters.missing.length) return empty(call, `I cannot match ${current.filters.missing.join(" or ")} in this ledger.`);
-    const total = (rows: Transaction[]) => rows.reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : tx.type === "refund" ? -tx.amountCents : 0), 0);
-    const currentCents = total(current.rows);
-    const comparisonCents = total(comparison.rows);
+    const total = (rows: Transaction[], transactionById: ReadonlyMap<string, Transaction>) => rows
+      .reduce((sum, tx) => sum + projectedExpenseEffect(tx, transactionById), 0);
+    const currentCents = total(current.rows, current.transactionById);
+    const comparisonCents = total(comparison.rows, comparison.transactionById);
     const delta = currentCents - comparisonCents;
     const detail = { categoryId: current.filters.category?.id, memberId: current.filters.member?.id, transactionTypes: ["expense", "refund"] as Transaction["type"][] };
     const facts = [
@@ -1188,8 +1191,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   }
 
   if (call.name === "cash_runway") {
-    const query = matchingTransactionsAt(household, { period: call.args.period ?? "last_30_days" }, context, today);
-    const spending = query.rows.reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : tx.type === "refund" ? -tx.amountCents : 0), 0);
+    const query = matchingProjectedTransactionsAt(household, { period: call.args.period ?? "last_30_days" }, context, today);
+    const spending = query.rows.reduce((sum, tx) => sum + projectedExpenseEffect(tx, query.transactionById), 0);
     const days = Math.max(1, calendarDaysBetween(query.range.start, query.range.end) + 1);
     const daily = Math.max(0, Math.round(spending / days));
     const cash = herculesAccounts(household).filter((account) => account.kind === "chequing" || account.kind === "savings").reduce((sum, account) => sum + Math.max(0, accountBookBalance(household, account.id, today)), 0);
@@ -1794,6 +1797,27 @@ function matchingTransactionsAt(household: Household, args: Record<string, unkno
     return true;
   });
   return { rows, range, filters };
+}
+
+function matchingProjectedTransactionsAt(household: Household, args: Record<string, unknown>, context: HerculesAskContext, today: DateKey) {
+  const range = periodRange(today, cleanPeriod(args.period), args);
+  const filters = resolveFilters(household, args, context);
+  const merchant = normalize(filters.merchant ?? "");
+  const minimumAmountCents = cleanCents(args.minimumAmountCents);
+  const maximumAmountCents = cleanCents(args.maximumAmountCents);
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
+  const rows = household.transactions.filter((tx) => {
+    if (tx.date < range.start || tx.date > range.end || !projectedCountable(tx, transactionById)) return false;
+    const { root } = transactionProjection(tx, transactionById);
+    if (filters.account && root.accountId !== filters.account.id) return false;
+    if (filters.category && root.subcategoryId !== filters.category.id) return false;
+    if (filters.member && root.createdBy !== filters.member.id) return false;
+    if (merchant && !normalize(`${root.place} ${root.note}`).includes(merchant)) return false;
+    if (minimumAmountCents !== undefined && root.amountCents < minimumAmountCents) return false;
+    if (maximumAmountCents !== undefined && root.amountCents > maximumAmountCents) return false;
+    return true;
+  });
+  return { rows, range, filters, transactionById };
 }
 
 function clipSentence(value: string, max = 260): string {

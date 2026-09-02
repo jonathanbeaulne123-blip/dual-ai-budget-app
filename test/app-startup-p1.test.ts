@@ -413,6 +413,53 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
   });
 
+  it("re-anchors an incomplete migration only from its accepted snapshot receipt", async () => {
+    const accepted = { ...seedDemoHousehold(), linked: true };
+    startup.cached = { ...accepted, booksAcceptedHash: await financialAuditHash(accepted) };
+    startup.inspections.push(
+      Promise.resolve({
+        ok: false,
+        issue: "incomplete-migration",
+        message: "PGlite needs one verified full rebuild before fast local updates can resume.",
+        entryCount: startup.cached.transactions.length,
+      }),
+      Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: startup.cached.transactions.length }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(1);
+    expect(startup.inspectCalls).toBe(2);
+    expect(startup.ingestOptions).toEqual([{ auditHash: startup.cached.booksAcceptedHash, incremental: false }]);
+    expect(startup.inspectOptions[1]).toEqual({ expectedAuditHash: startup.cached.booksAcceptedHash });
+  });
+
+  it("keeps an incomplete migration blocked when the cached snapshot receipt does not match", async () => {
+    startup.cached = { ...seedDemoHousehold(), linked: true, booksAcceptedHash: "changed-receipt" };
+    startup.inspections.push(Promise.resolve({
+      ok: false,
+      issue: "incomplete-migration",
+      message: "PGlite needs one verified full rebuild before fast local updates can resume.",
+      entryCount: startup.cached.transactions.length,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(0);
+    expect(startup.inspectCalls).toBe(1);
+    expect(container.textContent).toContain("receipt-covered money facts changed after acceptance");
+  });
+
   it("rebuilds an interrupted local projection only from its accepted snapshot receipt", async () => {
     const accepted = { ...seedDemoHousehold(), linked: true };
     startup.cached = { ...accepted, booksAcceptedHash: await financialAuditHash(accepted) };

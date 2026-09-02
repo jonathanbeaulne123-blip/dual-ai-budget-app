@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   executeHerculesReadToolPlan,
+  catalogHousehold,
+  markDuplicate,
+  postEntry,
+  reversePostedMoney,
   runCashCinema,
   runTipOracle,
   runWhatIfDesk,
@@ -65,6 +69,27 @@ describe("Hercules Sim + Review packs (D-142)", () => {
     const scoped = runYearReview(household, today, { months: 6, memberId: member });
     expect(scoped.memberScoped).toBe(true);
     expect(scoped.totalTipsCents).toBeLessThanOrEqual(review.totalTipsCents);
+  });
+
+  it("keeps member year-review actuals on the full correction lineage", () => {
+    const expense = postEntry(catalogHousehold(), {
+      date: today,
+      type: "expense",
+      amount: 25,
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const reversed = reversePostedMoney(expense.household, expense.postedIds[0]!, { reversalDate: today, createdBy: "MEM-002" });
+    const reversalId = reversed.household.transactions.find((tx) => tx.reversalOfId === expense.postedIds[0])?.id;
+    if (!reversalId) throw new Error("Missing expense reversal");
+    const excluded = markDuplicate(reversed.household, reversalId, true).household;
+    const household = reversePostedMoney(excluded, reversalId, { reversalDate: today, createdBy: "MEM-002" }).household;
+
+    const review = runYearReview(household, today, { months: 3, memberId: "MEM-001" });
+    expect(review.totalSpendCents).toBe(2_500);
+    expect(review.assumptions).toContain("Income and spend use full correction lineage attributed to that original member.");
   });
 
   it("exposes the three packs through Hercules read tools as projections", () => {

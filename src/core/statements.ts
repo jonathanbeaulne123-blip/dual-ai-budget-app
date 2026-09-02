@@ -444,8 +444,10 @@ export function liquidityWatch(household: Household, today: DateKey): LiquidityW
 
 export function subsequentEvents(household: Household, monthKey: MonthKey, today: DateKey): SubsequentEvents {
   const end = monthEndKey(monthKey);
-  const rows = household.transactions.filter((tx) => !tx.isDuplicate && tx.date > end && tx.date <= today);
   const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
+  const rows = household.transactions.filter((tx) => (
+    tx.date > end && tx.date <= today && projectedCountable(tx, transactionById)
+  ));
   const count = rows.length;
   return {
     monthKey,

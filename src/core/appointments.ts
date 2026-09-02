@@ -1,4 +1,5 @@
 import { addDays, calendarDaysBetween, dateKeyInZone, daysInMonth, formatMonthLabel, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
+import { projectedExpenseEffect, transactionProjection } from "./budget.ts";
 import { formatCad, roundToCents } from "./money.ts";
 import { COMPANION, JOINT, ValidationError, type Appointment, type AppointmentCadence, type AppointmentCoverage, type AppointmentKind, type AppointmentSensitivity, type BillLine, type Claim, type ClaimKind, type ClaimStatus, type Household } from "./types.ts";
 
@@ -509,10 +510,22 @@ export function craMedicalLog(household: Household, asOf: DateKey): CraMedicalLo
   const rows: CraMedicalLogRow[] = [];
   const omitted: CraOmittedRow[] = [];
   const seenExpenseIds = new Set<string>();
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
+  const projectedExpenseByRootId = new Map<string, number>();
+  for (const tx of household.transactions) {
+    if (tx.date > end) continue;
+    const rootId = transactionProjection(tx, transactionById).root.id;
+    projectedExpenseByRootId.set(
+      rootId,
+      (projectedExpenseByRootId.get(rootId) ?? 0) + projectedExpenseEffect(tx, transactionById),
+    );
+  }
   for (const claim of household.claims ?? []) {
     const expense = household.transactions.find((tx) => tx.id === claim.expenseTransactionId);
     if (!expense || expense.date < start || expense.date > end) continue;
     seenExpenseIds.add(expense.id);
+    const expenseCents = Math.max(0, projectedExpenseByRootId.get(expense.id) ?? 0);
+    if (!expenseCents) continue;
     const appointment = claim.appointmentId
       ? household.appointments.find((item) => item.id === claim.appointmentId)
       : undefined;
@@ -521,23 +534,24 @@ export function craMedicalLog(household: Household, asOf: DateKey): CraMedicalLo
         omitted.push({
           date: expense.date,
           label: claimPublicLabel(household, claim, "card"),
-          expenseCents: expense.amountCents,
+          expenseCents,
           reason: "Vet bills are not METC.",
         });
       }
       continue;
     }
-    const remaining = claimRemainingCents(claim);
+    const received = Math.min(claim.receivedCents, expenseCents);
+    const remaining = Math.min(claimRemainingCents(claim), Math.max(0, expenseCents - received));
     // Net of reimbursements received *and* still expected — do not count a pending Sun Life cheque as METC.
-    const eligible = Math.max(0, expense.amountCents - claim.receivedCents - remaining);
+    const eligible = Math.max(0, expenseCents - received - remaining);
     eligibleCents += eligible;
-    reimbursedCents += claim.receivedCents;
+    reimbursedCents += received;
     outstandingCents += remaining;
     rows.push({
       date: expense.date,
       label: claimPublicLabel(household, claim, "card"),
-      expenseCents: expense.amountCents,
-      receivedCents: claim.receivedCents,
+      expenseCents,
+      receivedCents: received,
       remainingCents: remaining,
       eligibleCents: eligible,
       lines: claim.lines,
@@ -549,25 +563,27 @@ export function craMedicalLog(household: Household, asOf: DateKey): CraMedicalLo
     if (tx.type !== "expense" || tx.source !== "visit") continue;
     if (tx.date < start || tx.date > end) continue;
     if (seenExpenseIds.has(tx.id)) continue;
+    const expenseCents = Math.max(0, projectedExpenseByRootId.get(tx.id) ?? 0);
+    if (!expenseCents) continue;
     const appointment = household.appointments.find((item) => item.id === tx.sourceId);
     if (appointment?.kind === "vet") {
       omitted.push({
         date: tx.date,
         label: appointmentPublicTitle(appointment, "card"),
-        expenseCents: tx.amountCents,
+        expenseCents,
         reason: "Vet bills are not METC.",
       });
       continue;
     }
     if (!appointment || !defaultCraEligible(appointment.kind)) continue;
-    eligibleCents += tx.amountCents;
+    eligibleCents += expenseCents;
     rows.push({
       date: tx.date,
       label: appointmentPublicTitle(appointment, "card"),
-      expenseCents: tx.amountCents,
+      expenseCents,
       receivedCents: 0,
       remainingCents: 0,
-      eligibleCents: tx.amountCents,
+      eligibleCents: expenseCents,
       lines: [],
       claimId: null,
       appointmentId: appointment.id,

@@ -9,8 +9,10 @@ import {
   catalogHousehold,
   configureHouseholdFund,
   householdAsk,
+  markDuplicate,
   moveAskGoalClaimToNextMonth,
   postEntry,
+  reversePostedMoney,
   seedDemoHousehold,
 } from "../src/core/index.ts";
 import { booksIdbName, ingestBooks, openMemoryBooks } from "../src/ledger/engine.ts";
@@ -65,6 +67,96 @@ describe("ask the books", () => {
 
     const week = askBooks(household, "this week vs last week", "2026-08-21");
     expect(week.rows.map((row) => row.label)).toEqual(["This week", "Last week"]);
+  });
+
+  it("answers category, place, member, and income figures from full reversal lineage", () => {
+    const expense = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Milk",
+      place: "No Frills",
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    });
+    const expenseId = expense.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!expenseId) throw new Error("Missing expense row");
+    const reversed = reversePostedMoney(expense.household, expenseId, {
+      reversalDate: "2026-08-19",
+      createdBy: "MEM-001",
+    });
+    const reversalId = reversed.household.transactions.find((row) => row.reversalOfId === expenseId)?.id;
+    if (!reversalId) throw new Error("Missing reversal row");
+    const excluded = markDuplicate(reversed.household, reversalId, true).household;
+    let household = reversePostedMoney(excluded, reversalId, {
+      reversalDate: "2026-08-20",
+      createdBy: "MEM-002",
+    }).household;
+
+    const correctedByOtherMember = postEntry(household, {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "5",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-COFFEE",
+      note: "Coffee",
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    });
+    household = reversePostedMoney(correctedByOtherMember.household, correctedByOtherMember.postedIds[0]!, {
+      reversalDate: "2026-08-19",
+      createdBy: "MEM-002",
+    }).household;
+
+    expect(askBooks(household, "how much did we spend on groceries this month?", "2026-08-21").sentence)
+      .toMatch(/\$12\.50/);
+    expect(askBooks(household, "how much did we spend at No Frills this month?", "2026-08-21").sentence)
+      .toMatch(/\$12\.50/);
+    expect(askBooks(household, "what did Bianca spend this week?", "2026-08-21").sentence)
+      .toMatch(/\$12\.50/);
+
+    const income = postEntry(household, {
+      date: "2026-08-18",
+      type: "income",
+      amount: "100",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-INCOME-WAGES",
+      note: "Pay",
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    });
+    const incomeId = income.postedIds.find((id) => id.startsWith("TXN-IN-"));
+    if (!incomeId) throw new Error("Missing income row");
+    const incomeReversal = reversePostedMoney(income.household, incomeId, {
+      reversalDate: "2026-08-19",
+      createdBy: "MEM-001",
+    });
+    const incomeReversalId = incomeReversal.household.transactions.find((row) => row.reversalOfId === incomeId)?.id;
+    if (!incomeReversalId) throw new Error("Missing income reversal");
+    const excludedIncome = markDuplicate(incomeReversal.household, incomeReversalId, true).household;
+    household = reversePostedMoney(excludedIncome, incomeReversalId, {
+      reversalDate: "2026-08-20",
+      createdBy: "MEM-002",
+    }).household;
+
+    const correctedIncome = postEntry(household, {
+      date: "2026-08-18",
+      type: "income",
+      amount: "25",
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-INCOME-WAGES",
+      note: "Correction test",
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    });
+    household = reversePostedMoney(correctedIncome.household, correctedIncome.postedIds[0]!, {
+      reversalDate: "2026-08-19",
+      createdBy: "MEM-002",
+    }).household;
+
+    expect(askBooks(household, "income this week", "2026-08-21").sentence).toMatch(/\$100\.00/);
   });
 
   it("offers help instead of inventing a write", () => {

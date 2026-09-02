@@ -25,7 +25,7 @@ export type AcceptedSnapshotRebuildCheck =
   | { ok: false; message: string };
 
 /**
- * An interrupted local projection may be rebuilt only from a snapshot that
+ * A receipt-gated local projection recovery may rebuild only from a snapshot that
  * still proves the canonical posted-money facts covered by the accepted receipt.
  * This never inspects cloud state and never weakens the normal PGlite gate.
  */

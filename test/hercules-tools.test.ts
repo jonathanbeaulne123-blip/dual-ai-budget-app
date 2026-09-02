@@ -7,11 +7,13 @@ import {
   bookBalanceAsOf,
   herculesLedgerSourcePane,
   catalogHousehold,
+  markDuplicate,
   nameHouseholdLedgers,
   parseHerculesReadToolPlan,
   planHerculesReadTools,
   postEntry,
   recordReconciliation,
+  reversePostedMoney,
   seedDemoHousehold,
   shouldPlanHerculesTools,
   transactionsForHerculesSource,
@@ -391,6 +393,54 @@ describe("Hercules read-only tool brain", () => {
       args: { period: "this_week", merchant: "pay", minimumAmountCents: 5_000 },
     }] }, today, { memberId: "MEM-001", view: "household" });
     expect(amountSearch.results[0]?.facts.map((row) => row.value)).toEqual(["$100.00"]);
+  });
+
+  it("keeps numeric tool summaries on the full correction lineage", () => {
+    const expense = postEntry(catalogHousehold("development"), {
+      date: today,
+      type: "expense",
+      amount: 25,
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "groceries",
+      createdBy: "MEM-001",
+      visibility: "household",
+      confirmDuplicate: true,
+    });
+    const reversedExpense = reversePostedMoney(expense.household, expense.postedIds[0]!, { reversalDate: today, createdBy: "MEM-002" });
+    const expenseReversalId = reversedExpense.household.transactions.find((tx) => tx.reversalOfId === expense.postedIds[0])?.id;
+    if (!expenseReversalId) throw new Error("Missing expense reversal");
+    const excludedExpense = markDuplicate(reversedExpense.household, expenseReversalId, true).household;
+    let household = reversePostedMoney(excludedExpense, expenseReversalId, { reversalDate: today, createdBy: "MEM-002" }).household;
+
+    const income = postEntry(household, {
+      date: today,
+      type: "income",
+      amount: 100,
+      accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-INCOME-WAGES",
+      note: "pay",
+      createdBy: "MEM-001",
+      visibility: "household",
+      confirmDuplicate: true,
+    });
+    const reversedIncome = reversePostedMoney(income.household, income.postedIds[0]!, { reversalDate: today, createdBy: "MEM-002" });
+    const incomeReversalId = reversedIncome.household.transactions.find((tx) => tx.reversalOfId === income.postedIds[0])?.id;
+    if (!incomeReversalId) throw new Error("Missing income reversal");
+    const excludedIncome = markDuplicate(reversedIncome.household, incomeReversalId, true).household;
+    household = reversePostedMoney(excludedIncome, incomeReversalId, { reversalDate: today, createdBy: "MEM-002" }).household;
+
+    const run = executeHerculesReadToolPlan(household, { calls: [
+      { name: "spending_summary", args: { period: "this_week", member: "Bianca" } },
+      { name: "income_summary", args: { period: "this_week", member: "Bianca" } },
+      { name: "compare_spending", args: { currentPeriod: "this_month", comparisonPeriod: "last_month", category: "groceries" } },
+      { name: "cash_runway", args: { period: "last_30_days" } },
+    ] }, today, { memberId: "MEM-001", view: "household" });
+
+    expect(run.results[0]?.sentence).toMatch(/\$25\.00 from 1 posted row/);
+    expect(run.results[1]?.sentence).toMatch(/\$100\.00 from 1 posted row/);
+    expect(run.results[2]?.sentence).toMatch(/\$25\.00 above/);
+    expect(run.results[3]?.facts.find((fact) => fact.label === "Observed daily spending")?.value).toBe("$0.83");
   });
 
   it("uses the planner only for financial reads and refuses write-shaped prompts before fetch", async () => {

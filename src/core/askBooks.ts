@@ -1,5 +1,5 @@
 import { addDays, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
-import { monthSummary, weekSummary } from "./budget.ts";
+import { monthSummary, projectedExpenseEffect, projectedIncomeEffect, transactionProjection, weekSummary } from "./budget.ts";
 import { runHealthCheck } from "./health.ts";
 import { formatCad } from "./money.ts";
 import { accountRegister, compileHousehold } from "./journal.ts";
@@ -68,13 +68,11 @@ function looksLikeWeek(question: string): boolean {
 }
 
 function categorySpend(household: Household, subcategoryId: string, start: DateKey, end: DateKey): number {
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   return household.transactions.reduce((sum, tx) => {
-    if (tx.subcategoryId !== subcategoryId) return sum;
+    if (transactionProjection(tx, transactionById).root.subcategoryId !== subcategoryId) return sum;
     if (tx.date < start || tx.date > end) return sum;
-    if (tx.isDuplicate) return sum;
-    if (tx.type === "expense") return sum + tx.amountCents;
-    if (tx.type === "refund") return sum - tx.amountCents;
-    return sum;
+    return sum + projectedExpenseEffect(tx, transactionById);
   }, 0);
 }
 
@@ -156,20 +154,20 @@ export function askBooks(
 
   const namedMember = memberNamedIn(household, q);
   if ((/\b(overspend|overspent|over spent|spending habit|spent this week|spend this week)\b/.test(q) || (/\bdid\b/.test(q) && /\bspend/.test(q))) && namedMember) {
-    const currentRows = household.transactions.filter((tx) => (
-      tx.createdBy === namedMember.id
-      && tx.date >= week.start && tx.date <= week.end
-      && !tx.isDuplicate
-      && (tx.type === "expense" || tx.type === "refund")
-    ));
-    const current = currentRows.reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : -tx.amountCents), 0);
+    const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
+    const currentRows = household.transactions.filter((tx) => tx.date >= week.start && tx.date <= week.end);
+    const current = currentRows.reduce((sum, tx) => (
+      transactionProjection(tx, transactionById).root.createdBy === namedMember.id
+        ? sum + projectedExpenseEffect(tx, transactionById)
+        : sum
+    ), 0);
     const priorStart = addDays(week.start, -28);
-    const prior = household.transactions.filter((tx) => (
-      tx.createdBy === namedMember.id
-      && tx.date >= priorStart && tx.date < week.start
-      && !tx.isDuplicate
-      && (tx.type === "expense" || tx.type === "refund")
-    )).reduce((sum, tx) => sum + (tx.type === "expense" ? tx.amountCents : -tx.amountCents), 0);
+    const prior = household.transactions.filter((tx) => tx.date >= priorStart && tx.date < week.start)
+      .reduce((sum, tx) => (
+        transactionProjection(tx, transactionById).root.createdBy === namedMember.id
+          ? sum + projectedExpenseEffect(tx, transactionById)
+          : sum
+      ), 0);
     const average = Math.round(prior / 4);
     const delta = current - average;
     const spendSource = source(context, "ledger", `Open ${namedMember.name}'s shared posts`, {
@@ -193,14 +191,19 @@ export function askBooks(
   }
 
   if (/\b(shift|hours worked|wages|tips|income|earned|make this week)\b/.test(q) && /\b(this week|week)\b/.test(q)) {
+    const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
     const target = namedMember?.id ?? (context.view === "personal" ? context.memberId : null);
     const shifts = household.shifts.filter((shift) => (
       shift.date >= week.start && shift.date <= week.end && (!target || shift.memberId === target)
     ));
     const shiftIncome = shifts.reduce((sum, shift) => sum + shift.wagesCents + shift.netTipsCents + (shift.paidBreakIncomeCents ?? 0), 0);
-    const postedIncome = household.transactions.filter((tx) => (
-      tx.type === "income" && tx.date >= week.start && tx.date <= week.end && (!target || tx.createdBy === target)
-    )).reduce((sum, tx) => sum + tx.amountCents, 0);
+    const postedIncome = household.transactions.filter((tx) => tx.date >= week.start && tx.date <= week.end)
+      .reduce((sum, tx) => {
+        const root = transactionProjection(tx, transactionById).root;
+        return !target || root.createdBy === target
+          ? sum + projectedIncomeEffect(tx, transactionById)
+          : sum;
+      }, 0);
     const hours = shifts.reduce((sum, shift) => sum + shift.hours, 0);
     const shiftSource = source(context, "home", "Open the timesheet", {
       surface: "timesheet",
@@ -511,12 +514,12 @@ export function askBooks(
 
   const placeHit = household.transactions.find((tx) => tx.place && q.includes(tx.place.toLowerCase()));
   if (placeHit?.place) {
+    const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
     const cents = household.transactions.reduce((sum, tx) => {
-      if (tx.place.toLowerCase() !== placeHit.place.toLowerCase()) return sum;
-      if (tx.date < rangeStart || tx.date > today || tx.isDuplicate) return sum;
-      if (tx.type === "expense") return sum + tx.amountCents;
-      if (tx.type === "refund") return sum - tx.amountCents;
-      return sum;
+      const root = transactionProjection(tx, transactionById).root;
+      if (root.place.toLowerCase() !== placeHit.place.toLowerCase()) return sum;
+      if (tx.date < rangeStart || tx.date > today) return sum;
+      return sum + projectedExpenseEffect(tx, transactionById);
     }, 0);
     return {
       kind: "answer",

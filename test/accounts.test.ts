@@ -12,6 +12,7 @@ import {
   householdWallet,
   householdTableStory,
   isCosmeticUnlocked,
+  markDuplicate,
   markInvestmentValue,
   normalizeAccountKind,
   postCardInterest,
@@ -19,6 +20,7 @@ import {
   postEntry,
   postSavingsInterest,
   postTransfer,
+  reversePostedMoney,
   runHealthCheck,
   seedDemoHousehold,
   shapeAccount,
@@ -106,6 +108,63 @@ describe("The Accounts Floor", () => {
     const books = compileHousehold(household);
     expect(trialBalance(books).inBalance).toBe(true);
     expect(booksEquation(books).holds).toBe(true);
+  });
+
+  it("keeps card payments and rewards on the full reversal lineage", () => {
+    const expense = postEntry(catalogHousehold(), {
+      date: "2026-08-10",
+      type: "expense",
+      amount: "100",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      confirmDuplicate: true,
+    });
+    const expenseId = expense.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!expenseId) throw new Error("Missing expense row");
+    const expenseReversal = reversePostedMoney(expense.household, expenseId, { reversalDate: "2026-08-11" });
+    const expenseReversalId = expenseReversal.household.transactions.find((row) => row.reversalOfId === expenseId)?.id;
+    if (!expenseReversalId) throw new Error("Missing expense reversal");
+    const excludedExpense = markDuplicate(expenseReversal.household, expenseReversalId, true).household;
+    let household = reversePostedMoney(excludedExpense, expenseReversalId, { reversalDate: "2026-08-12" }).household;
+    const visa = household.accounts.find((account) => account.id === "ACC-VISA")!;
+    expect(creditCardView(household, visa, "2026-08-15").cashbackCycleCents).toBe(300);
+
+    const reward = postEntry(household, {
+      date: "2026-08-15",
+      type: "refund",
+      amount: "3",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Cashback reward",
+      confirmDuplicate: true,
+    });
+    const rewardId = reward.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!rewardId) throw new Error("Missing reward row");
+    const rewardReversal = reversePostedMoney(reward.household, rewardId, { reversalDate: "2026-08-16" });
+    const rewardReversalId = rewardReversal.household.transactions.find((row) => row.reversalOfId === rewardId)?.id;
+    if (!rewardReversalId) throw new Error("Missing reward reversal");
+    const excludedReward = markDuplicate(rewardReversal.household, rewardReversalId, true).household;
+    household = reversePostedMoney(excludedReward, rewardReversalId, { reversalDate: "2026-08-17" }).household;
+    expect(creditCardView(household, visa, "2026-08-17").cashbackPostedCents).toBe(300);
+
+    const payment = postTransfer(household, {
+      date: "2026-08-25",
+      amount: "50",
+      fromAccountId: "ACC-CHEQUING",
+      toAccountId: "ACC-VISA",
+      confirmDuplicate: true,
+    });
+    const paymentReversal = reversePostedMoney(payment.household, payment.postedIds[0]!, { reversalDate: "2026-08-26" });
+    const paymentReversalRow = paymentReversal.household.transactions.find((row) => row.reversalOfId === payment.postedIds[0]);
+    if (!paymentReversalRow?.transferPairId) throw new Error("Missing payment reversal pair");
+    const excludedPayment = markDuplicate(paymentReversal.household, paymentReversalRow.transferPairId, true).household;
+    household = reversePostedMoney(excludedPayment, paymentReversalRow.id, { reversalDate: "2026-08-27" }).household;
+
+    const view = creditCardView(household, visa, "2026-09-15");
+    expect(view.statementBalanceCents).toBe(9700);
+    expect(view.paidSinceStatementCents).toBe(5000);
+    expect(view.paidInFull).toBe(false);
+    expect(view.estimatedInterestCents).toBeGreaterThan(0);
   });
 
   it("posts card interest onto the card and keeps paydown as a transfer", () => {

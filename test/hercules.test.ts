@@ -18,6 +18,7 @@ import {
   hourInToronto,
   isCosmeticUnlocked,
   localHerculesChat,
+  markDuplicate,
   memoryLabelForModel,
   memoryLabelsForModel,
   memoriesForModel,
@@ -25,6 +26,7 @@ import {
   postEntry,
   postTransfer,
   recordHerculesTalk,
+  reversePostedMoney,
   sanitizeGroundedNumerals,
   sanitizeHerculesReply,
   scribbleChalk,
@@ -195,6 +197,26 @@ describe("The Hercules Update", () => {
     expect(cook.sentence).not.toMatch(/Bianca|Jonathan/);
     const asked = askHercules(household, "Cook-off", today);
     expect(asked.sentence).toMatch(/kitchen is winning/i);
+  });
+
+  it("keeps the cook-off total on the full correction lineage", () => {
+    const expense = postEntry(catalogHousehold(), {
+      date: today,
+      type: "expense",
+      amount: "40",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    });
+    const reversed = reversePostedMoney(expense.household, expense.postedIds[0]!, { reversalDate: today });
+    const reversalId = reversed.postedIds[0]!;
+    const excluded = markDuplicate(reversed.household, reversalId, true).household;
+    const reinstated = reversePostedMoney(excluded, reversalId, { reversalDate: today }).household;
+
+    const cook = cookOffScore(reinstated, today);
+    expect(cook.groceryCents).toBe(4_000);
+    expect(cook.winner).toBe("kitchen");
   });
 
   it("prints a sit-down postcard and never treats forecast as a post", () => {

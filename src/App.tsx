@@ -1200,23 +1200,24 @@ export function App() {
         let inspection = await inspectBrowserBooks(candidate);
         if (!stillCurrent(candidate)) return;
         const schemaRebuild = inspection.issue === "missing-schema" || inspection.issue === "incomplete-migration";
-        let interruptedAuditHash: string | undefined;
-        if (inspection.issue === "interrupted-transaction") {
+        const receiptGatedRebuild = inspection.issue === "incomplete-migration" || inspection.issue === "interrupted-transaction";
+        let rebuildAuditHash: string | undefined;
+        if (receiptGatedRebuild) {
           const trusted = await acceptedSnapshotRebuildCheck(candidate);
           if (!stillCurrent(candidate)) return;
           if (!trusted.ok) {
             publishBlocked(candidate, trusted.message, inspection.entryCount, inspection.issue);
             return;
           }
-          interruptedAuditHash = trusted.auditHash;
+          rebuildAuditHash = trusted.auditHash;
         }
-        if (schemaRebuild || interruptedAuditHash) {
-          await ingestHouseholdBooks(candidate, interruptedAuditHash
-            ? { auditHash: interruptedAuditHash, incremental: false }
+        if (schemaRebuild || rebuildAuditHash) {
+          await ingestHouseholdBooks(candidate, rebuildAuditHash
+            ? { auditHash: rebuildAuditHash, incremental: false }
             : undefined);
           if (!stillCurrent(candidate)) return;
-          inspection = await inspectBrowserBooks(candidate, interruptedAuditHash
-            ? { expectedAuditHash: interruptedAuditHash }
+          inspection = await inspectBrowserBooks(candidate, rebuildAuditHash
+            ? { expectedAuditHash: rebuildAuditHash }
             : undefined);
         }
         if (!inspection.ok) {

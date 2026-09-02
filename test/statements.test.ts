@@ -14,6 +14,7 @@ import {
   isCosmeticUnlocked,
   isMonthClosed,
   liquidityWatch,
+  markDuplicate,
   mergeKitchen,
   notesToFinancialStatements,
   postEntry,
@@ -111,6 +112,31 @@ describe("Audit Office", () => {
     if (!reversalId) throw new Error("Missing transfer reversal");
     const reinstated = reversePostedMoney(reversed.household, reversalId, { reversalDate: today });
     expect(cashFlowStatement(reinstated.household, "2026-08").debtPaydownCents).toBe(4000);
+  });
+
+  it("counts only projected reversal lineage in subsequent events", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-07-15",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      confirmDuplicate: true,
+    });
+    const transactionId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!transactionId) throw new Error("Missing expense row");
+    const reversed = reversePostedMoney(posted.household, transactionId, { reversalDate: today });
+    const reversalId = reversed.household.transactions.find((row) => row.reversalOfId === transactionId)?.id;
+    if (!reversalId) throw new Error("Missing reversal row");
+    const excluded = markDuplicate(reversed.household, reversalId, true).household;
+    const reinstated = reversePostedMoney(excluded, reversalId, { reversalDate: today }).household;
+
+    expect(subsequentEvents(reinstated, "2026-07", today)).toMatchObject({
+      count: 0,
+      incomeCents: 0,
+      expenseCents: 0,
+      hercules: "No subsequent events after 2026-07.",
+    });
   });
 
   it("records a bank rec without posting money and unlocks audit spectacles when it ties", () => {

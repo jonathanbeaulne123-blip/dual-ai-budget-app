@@ -1,5 +1,5 @@
 import { addDays, hourInToronto, monthKeyFromDateKey, weekBounds, weekdaySunday0, type DateKey } from "./calendar.ts";
-import { monthSummary, weekSummary } from "./budget.ts";
+import { monthSummary, projectedExpenseEffect, transactionProjection, weekSummary } from "./budget.ts";
 import { askBooks, type BooksAsk, type HerculesAskContext } from "./askBooks.ts";
 import { companionMood, describeCompanion } from "./companion.ts";
 import { formatCad } from "./money.ts";
@@ -37,13 +37,11 @@ export function groceryHighFive(household: Household, today: DateKey): { yes: bo
 }
 
 function categorySpend(household: Household, subcategoryId: string, start: DateKey, end: DateKey): number {
+  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
   return household.transactions.reduce((sum, tx) => {
-    if (tx.subcategoryId !== subcategoryId) return sum;
+    if (transactionProjection(tx, transactionById).root.subcategoryId !== subcategoryId) return sum;
     if (tx.date < start || tx.date > end) return sum;
-    if (tx.isDuplicate) return sum;
-    if (tx.type === "expense") return sum + tx.amountCents;
-    if (tx.type === "refund") return sum - tx.amountCents;
-    return sum;
+    return sum + projectedExpenseEffect(tx, transactionById);
   }, 0);
 }
 

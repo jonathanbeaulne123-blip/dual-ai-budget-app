@@ -18,6 +18,7 @@ import {
   isLiabilityKind,
   isReceivableKind,
   learnedVisitIntervalDays,
+  markDuplicate,
   mergeShared,
   normalizeAccountKind,
   openClaim,
@@ -27,6 +28,7 @@ import {
   projectAppointmentDates,
   proposeVisitGoal,
   runHealthCheck,
+  reversePostedMoney,
   seedDemoHousehold,
   settleClaim,
   splitForSync,
@@ -459,6 +461,53 @@ describe("appointment tracker projections", () => {
     const log = craMedicalLog(household, today);
     expect(log.eligibleCents).toBe(9000);
     expect(log.rows[0]!.lines).toHaveLength(2);
+  });
+
+  it("keeps CRA medical totals on the full correction lineage", () => {
+    let household = addAppointment(catalog(), {
+      title: "Physio",
+      kind: "physio",
+      nextDate: today,
+      cadence: { kind: "once" },
+      typicalCost: 90,
+      subcategoryId: "SUB-HEALTH-CARE",
+      accountId: "ACC-VISA",
+    }).household;
+    const appointmentId = household.appointments[0]!.id;
+    const visit = postVisit(household, {
+      date: today,
+      amount: 90,
+      appointmentId,
+      expectedRecovery: 20,
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    });
+    const expenseId = visit.household.claims[0]!.expenseTransactionId;
+    expect(craMedicalLog(visit.household, today).eligibleCents).toBe(7_000);
+
+    const reversed = reversePostedMoney(visit.household, expenseId, { reversalDate: today, createdBy: "MEM-002" });
+    expect(craMedicalLog(reversed.household, today).eligibleCents).toBe(0);
+    const reversalId = reversed.household.transactions.find((tx) => tx.reversalOfId === expenseId)?.id;
+    if (!reversalId) throw new Error("Missing visit reversal");
+    const reinstated = reversePostedMoney(reversed.household, reversalId, { reversalDate: today, createdBy: "MEM-002" });
+    expect(craMedicalLog(reinstated.household, today).eligibleCents).toBe(7_000);
+
+    const excludedIntermediate = markDuplicate(reversed.household, reversalId, true).household;
+    const excludedReinstatement = reversePostedMoney(excludedIntermediate, reversalId, { reversalDate: today, createdBy: "MEM-002" });
+    expect(craMedicalLog(excludedReinstatement.household, today).eligibleCents).toBe(7_000);
+
+    household = postVisit(household, {
+      date: today,
+      amount: 40,
+      appointmentId,
+      expectedRecovery: 0,
+      confirmDuplicate: true,
+      createdBy: "MEM-001",
+    }).household;
+    const unclaimedId = household.transactions.find((tx) => tx.source === "visit" && tx.amountCents === 4_000)!.id;
+    expect(craMedicalLog(household, today).eligibleCents).toBe(4_000);
+    household = reversePostedMoney(household, unclaimedId, { reversalDate: today, createdBy: "MEM-002" }).household;
+    expect(craMedicalLog(household, today).eligibleCents).toBe(0);
   });
 
   it("lets edit change coverage, kind, and member without touching the books", () => {
