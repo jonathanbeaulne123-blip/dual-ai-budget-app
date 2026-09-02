@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, createElement } from "react";
+import { Fragment, act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -7,18 +7,22 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { Swipe } from "../src/Swipe.tsx";
 import {
   HOUSEHOLD_FUND_ID,
-  HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL,
   SWIPE_COPY,
   addAccount,
   archiveAccount,
   catalogHousehold,
+  confirmHouseholdFundContribution,
   configureHouseholdFund,
+  fundedMoneyUndoTarget,
   observedSwipeCategories,
   postEntry,
+  postHouseholdFundDirectDebit,
+  proposeHouseholdFundContribution,
   projectHouseholdFund,
   projectLedgerExperience,
   resolveSwipeCardAccount,
   reversePostedMoney,
+  undoLedgerConfirm,
   swipeBelongsOnSharedHome,
   swipeCategoryAccessibleName,
   type Account,
@@ -76,13 +80,16 @@ function renderSwipe(household: Household, handlers: {
   onPostCategory?: (input: { amount: string; subcategoryId: string }) => void;
   onMore?: (amount: string) => void;
   onClose?: () => void;
+  error?: string;
+  busy?: boolean;
 } = {}) {
   act(() => {
     root.render(createElement(Swipe, {
       household: scoped(household),
       memberId: BIANCA,
       today: TODAY,
-      busy: false,
+      busy: handlers.busy ?? false,
+      error: handlers.error ?? "",
       onClose: handlers.onClose ?? (() => undefined),
       onPostCategory: handlers.onPostCategory ?? (() => undefined),
       onMore: handlers.onMore ?? (() => undefined),
@@ -259,6 +266,43 @@ describe("swipe sheet", () => {
     });
     expect(closes).toEqual([1]);
   });
+
+  it("keeps a rejected post visible and announced inside the active sheet", () => {
+    renderSwipe(archiveAccount(configuredFund(), "ACC-MC").household, {
+      error: "The local journal must finish validating before anything can change.",
+    });
+    const alert = container.querySelector<HTMLElement>("[role='alert']");
+    expect(alert?.textContent).toContain("Nothing was posted.");
+    expect(alert?.textContent).toContain("local journal");
+    expect(alert?.textContent).toContain("try the category again");
+    expect(container.querySelector(".cad-pad-label")?.textContent).toBe("Amount");
+    expect([...container.querySelectorAll("h2, .cad-pad-label")]
+      .filter((node) => node.textContent === SWIPE_COPY.title)).toHaveLength(1);
+    expect(document.activeElement?.closest(".swipe-sheet")).not.toBeNull();
+  });
+
+  it("makes the background inert while open and restores it on close", () => {
+    const props = {
+      household: scoped(configuredFund()),
+      memberId: BIANCA,
+      today: TODAY as typeof TODAY,
+      busy: false,
+      onClose: () => undefined,
+      onPostCategory: () => undefined,
+      onMore: () => undefined,
+    };
+    act(() => {
+      root.render(createElement(Fragment, null,
+        createElement("button", { key: "behind", "data-behind": "true" }, "Behind"),
+        createElement(Swipe, { key: "swipe", ...props }),
+      ));
+    });
+    expect(container.querySelector("[data-behind]")?.hasAttribute("inert")).toBe(true);
+    act(() => {
+      root.render(createElement("button", { key: "behind", "data-behind": "true" }, "Behind"));
+    });
+    expect(container.querySelector("[data-behind]")?.hasAttribute("inert")).toBe(false);
+  });
 });
 
 describe("swipe posting contract", () => {
@@ -286,7 +330,78 @@ describe("swipe posting contract", () => {
       createdBy: JONATHAN,
       visibility: "household",
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 8420, destinationAccountId: "ACC-VISA" },
-    })).toThrow(HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL);
+    })).toThrow(SWIPE_COPY.refusal);
+  });
+
+  it("reverses a funded post instead of deleting its append-only Fund claim", () => {
+    const household = archiveAccount(configuredFund(), "ACC-MC").household;
+    const before = projectHouseholdFund(household, TODAY);
+    const posted = postEntry(household, {
+      date: TODAY,
+      type: "expense",
+      amount: "84.20",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      createdBy: BIANCA,
+      visibility: "household",
+      funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 8420, destinationAccountId: "ACC-VISA" },
+    });
+    const afterPost = projectHouseholdFund(posted.household, TODAY);
+    expect(afterPost.transferDueCents).toBe(before.transferDueCents + 8420);
+    expect(projectHouseholdFund(undoLedgerConfirm(posted.household, posted.undo).household, TODAY).transferDueCents)
+      .toBe(afterPost.transferDueCents);
+
+    const target = fundedMoneyUndoTarget(posted.household, posted.undo);
+    expect(target).toMatch(/^TXN-/);
+    const reversed = reversePostedMoney(posted.household, target!, { createdBy: BIANCA });
+    expect(projectHouseholdFund(reversed.household, TODAY).transferDueCents).toBe(before.transferDueCents);
+    expect(reversed.household.fundEvents?.at(-1)?.kind).toBe("refund-funded");
+  });
+
+  it("bounds funded Undo by command kind and preserves the explicit direct-debit route", () => {
+    let household = configuredFund();
+    const proposal = proposeHouseholdFundContribution(household, {
+      memberId: BIANCA,
+      contributorMemberId: BIANCA,
+      amount: "100",
+      date: TODAY,
+    });
+    household = confirmHouseholdFundContribution(proposal.household, {
+      memberId: BIANCA,
+      proposalEventId: proposal.postedIds[0]!,
+    }).household;
+    household = addAccount(household, {
+      name: "Bianca debit savings",
+      kind: "savings",
+      scope: "personal",
+      ownerMemberId: BIANCA,
+    }).household;
+    const source = household.accounts.find((account) => account.name === "Bianca debit savings")!;
+    const direct = postHouseholdFundDirectDebit(household, {
+      memberId: BIANCA,
+      date: TODAY,
+      amount: "25",
+      accountId: source.id,
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      confirmDuplicate: true,
+    });
+    const target = fundedMoneyUndoTarget(direct.household, direct.undo);
+    expect(target).toMatch(/^TXN-/);
+    const reversed = reversePostedMoney(direct.household, target!, { createdBy: BIANCA });
+    expect(reversed.household.fundEvents?.at(-1)?.kind).toBe("refund-funded");
+    expect(projectHouseholdFund(reversed.household, TODAY).transferCreditCents).toBe(2500);
+
+    expect(() => fundedMoneyUndoTarget(direct.household, {
+      ...direct.undo,
+      commandKind: "futureFundCommand",
+    })).toThrow("needs its recorded correction path");
+    expect(fundedMoneyUndoTarget(household, {
+      id: "ordinary",
+      label: "ordinary",
+      snapshot: household,
+      postedIds: [],
+      commandKind: "postEntry",
+    })).toBeNull();
   });
 
   it("fences camera, files, OCR, writers, and a second Fund fold", () => {
@@ -300,6 +415,14 @@ describe("swipe posting contract", () => {
     expect(appSource).toContain("submitSwipePurchase");
     expect(appSource).toContain("SWIPE_COPY.success");
     expect(swipeMount).toContain("<Swipe");
+    expect(swipeMount).toContain("error={swipeError}");
+    expect(appSource).toContain("onError: (message)");
     expect(swipeMount).not.toMatch(/camera|ocr|file input|image/i);
+    expect(appSource).toContain("adding={adding || swipeOpen}");
+    const applyUndo = appSource.slice(appSource.indexOf("function applyUndo"), appSource.indexOf("async function runRestorePoint"));
+    expect(applyUndo).toContain("fundedMoneyUndoTarget");
+    expect(applyUndo).toContain("reversePostedMoney");
+    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}");
+    expect(readFileSync(resolve(process.cwd(), "src/swipe.css"), "utf8")).toContain("z-index: 32");
   });
 });

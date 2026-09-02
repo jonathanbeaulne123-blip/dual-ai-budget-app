@@ -90,6 +90,7 @@ import {
   touchGoogleConfirmation,
   touchVisitSpark,
   undoLedgerConfirm,
+  fundedMoneyUndoTarget,
   assertLatestMemberLedgerUndo,
   appendRestorePoint,
   applyRestorePoint,
@@ -498,6 +499,7 @@ export function App() {
   const [charterPageOpen, setCharterPageOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [swipeOpen, setSwipeOpen] = useState(false);
+  const [swipeError, setSwipeError] = useState("");
   const [swipeStrip, setSwipeStrip] = useState<{ token: UndoToken } | null>(null);
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
@@ -2728,11 +2730,13 @@ export function App() {
     next: Household,
     token?: UndoToken,
     actorId?: string,
-    options?: { forceFlush?: boolean; confirmationId?: string },
+    options?: { forceFlush?: boolean; confirmationId?: string; onRejected?: (message: string) => void },
   ): Promise<CommandOutcome | null> {
     const previous = householdRef.current;
     if (previous && !booksGateRef.current.ready) {
-      setError(booksGateRef.current.reason || "The local journal must finish validating before anything can change.");
+      const message = booksGateRef.current.reason || "The local journal must finish validating before anything can change.";
+      if (options?.onRejected) options.onRejected(message);
+      else setError(message);
       return null;
     }
     setBusy(true);
@@ -3011,7 +3015,8 @@ export function App() {
         setToast(null);
       }
       if (!outcome.ok && outcome.userMessage) {
-        setError(outcome.userMessage);
+        if (options?.onRejected) options.onRejected(outcome.userMessage);
+        else setError(outcome.userMessage);
       } else if (outcome.ok && outcome.kind !== "conflict-needs-attention") {
         setError("");
       }
@@ -3047,7 +3052,9 @@ export function App() {
     } catch (caught) {
       if (shareCapable && ledgerWrite) setCommandProgressPhase("failed");
       if (caught instanceof NeedsConfirmationError) throw caught;
-      setError(classifyCommandError(caught).userMessage);
+      const message = classifyCommandError(caught).userMessage;
+      if (options?.onRejected) options.onRejected(message);
+      else setError(message);
       return null;
     } finally {
       setBusy(false);
@@ -3135,7 +3142,10 @@ export function App() {
       if (!current || !who) return;
       try {
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
-        const result = undoLedgerConfirm(current, token);
+        const fundedTransactionId = fundedMoneyUndoTarget(current, token);
+        const result = fundedTransactionId
+          ? reversePostedMoney(current, fundedTransactionId, { createdBy: who })
+          : undoLedgerConfirm(current, token);
         lastAmountLabelRef.current = null;
         const outcome = await commitHousehold(result.household, {
           ...result.undo,
@@ -3180,6 +3190,7 @@ export function App() {
     closeAdd?: boolean;
     onAccepted?: (result: CommitResult) => void;
     onConfirm?: (error: NeedsConfirmationError) => boolean;
+    onError?: (message: string) => void;
   }) {
     if (postingRef.current) return Promise.resolve();
     postingRef.current = true;
@@ -3199,7 +3210,12 @@ export function App() {
             lastAmountLabelRef.current = null;
           }
         }
-        const outcome = await commitHousehold(result.household, result.undo);
+        const outcome = await commitHousehold(
+          result.household,
+          result.undo,
+          undefined,
+          options?.onError ? { onRejected: options.onError } : undefined,
+        );
         const accepted =
           outcome?.postedExactlyOnce === true &&
           (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
@@ -3257,7 +3273,11 @@ export function App() {
           }
           setConfirm(caught);
           if (plan.openAdd) setAdding(true);
-        } else setError(caught instanceof Error ? caught.message : String(caught));
+        } else {
+          const message = caught instanceof Error ? caught.message : String(caught);
+          if (options?.onError) options.onError(message);
+          else setError(message);
+        }
       } finally {
         postingRef.current = false;
       }
@@ -4082,6 +4102,7 @@ export function App() {
     const card = resolveSwipeCardAccount(scopedBooks, actorId);
     const accountId = card.kind === "ready" ? card.accountId : focusedAccountId;
     setSwipeOpen(false);
+    setSwipeError("");
     setMode("expense");
     setAdding(true);
     setAddSlide(0);
@@ -4101,6 +4122,7 @@ export function App() {
   };
 
   const submitSwipePurchase = (amount: string, subcategoryId: string) => {
+    setSwipeError("");
     const scopedBooks = experience && experience.ok ? experience.scopedHousehold : household;
     const card = resolveSwipeCardAccount(scopedBooks, actorId);
     if (card.kind !== "ready") {
@@ -4124,12 +4146,17 @@ export function App() {
     }), {
       closeAdd: false,
       onAccepted: (result) => {
+        setSwipeError("");
         setSwipeOpen(false);
         if (result.undo) setSwipeStrip({ token: result.undo });
       },
       onConfirm: (error) => {
         openSwipeIntoAdd(amount, { subcategoryId, confirm: error });
         return true;
+      },
+      onError: (message) => {
+        setError("");
+        setSwipeError(message);
       },
     });
   };
@@ -4574,7 +4601,7 @@ export function App() {
           )}
         </div>
       )}
-      {error && !adding ? (
+      {error && !adding && !swipeOpen ? (
         <KitchenNotice
           message={error}
           onGoMore={() => goTab("more")}
@@ -4686,7 +4713,7 @@ export function App() {
             type="button"
             className="swipe-open"
             disabled={busy}
-            onClick={() => { setAdding(false); setSwipeOpen(true); }}
+            onClick={() => { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); }}
           >
             {SWIPE_COPY.action}
           </button>
@@ -4729,7 +4756,7 @@ export function App() {
           integrityFindings={experience && experience.ok ? experience.integrityFindings : []}
           busy={busy}
           clinkOn={clinkOn}
-          adding={adding}
+          adding={adding || swipeOpen}
           form={form}
           mode={mode}
           error={error}
@@ -5443,7 +5470,8 @@ export function App() {
           memberId={actorId}
           today={today}
           busy={busy}
-          onClose={() => setSwipeOpen(false)}
+          error={swipeError}
+          onClose={() => { setSwipeError(""); setSwipeOpen(false); }}
           onPostCategory={({ amount, subcategoryId }) => submitSwipePurchase(amount, subcategoryId)}
           onMore={(amount) => openSwipeIntoAdd(amount)}
         />
@@ -6042,10 +6070,10 @@ export function App() {
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
         tab={tab}
-        adding={adding}
+        adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || confirm || guard || commandOpen)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}
         memberId={session.memberId}
         view={view}
         onGo={(next) => {

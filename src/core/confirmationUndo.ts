@@ -154,3 +154,34 @@ export function assertLatestMemberLedgerUndo(
     throw new ValidationError("Undo your latest money change first so the books stay in order.");
   }
 }
+
+const FUNDED_MONEY_REVERSAL_COMMANDS = new Set([
+  "postEntry",
+  "postHouseholdFundDirectDebit",
+]);
+
+/**
+ * Return the one current money row that a supported funded Confirm must reverse.
+ *
+ * Funded facts are append-only, so confirmation-scoped deletion is not a safe
+ * correction. Keep this decision command-kind-bound: a future command cannot
+ * inherit reversal semantics merely by returning an id with a familiar prefix.
+ */
+export function fundedMoneyUndoTarget(current: Household, token: UndoToken): string | null {
+  const postedIds = [...new Set((token.postedIds ?? []).filter(Boolean))];
+  const currentFundEventIds = new Set((current.fundEvents ?? []).map((event) => event.id));
+  const carriesFundFact = postedIds.some((id) => currentFundEventIds.has(id));
+  if (!carriesFundFact) return null;
+
+  if (!token.commandKind || !FUNDED_MONEY_REVERSAL_COMMANDS.has(token.commandKind)) {
+    throw new ValidationError("That funded change needs its recorded correction path before it can be undone.");
+  }
+
+  const currentTransactionIds = postedIds.filter((id) => (
+    current.transactions.some((transaction) => transaction.id === id)
+  ));
+  if (currentTransactionIds.length !== 1) {
+    throw new ValidationError("That funded change does not identify exactly one current money row to reverse.");
+  }
+  return currentTransactionIds[0]!;
+}

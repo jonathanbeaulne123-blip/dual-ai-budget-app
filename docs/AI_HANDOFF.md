@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
+
+**Status:** Local Release candidate on `codex/till-2-swipe-repair` from exact `origin/main@813e2b418f0a847122b669b96268b2390f559c9d`. It supersedes stale draft PR #295 and does not replay that branch's duplicate Slice 1 or stale decision records. **Not pushed, not merged, not kitchen-published, and not a Slice 3 baseline yet.** Risk: **Release**.
+
+**Household outcome:** the configured Fund custodian records an ordinary shared-card purchase with amount then an observed category. A rejected command remains visibly and accessibly recoverable inside the active sheet. The modal removes the background from interaction, and the ten-second correction preserves append-only Fund history.
+
+**Dual Course:** Budget `+3`; Engagement `+3`. The fast path remains App presentation over ordinary `postEntry`, D-197 custody, PGlite validation, durable device persistence/outbox, and later transport. It adds no account, balance, formula, money movement, or posting authority.
+
+**Repair gates closed in source:** rejected posts use a Swipe-scoped `role=alert` with retry/More guidance; the modal ref moved to the outer overlay so `useDialog` can inert App siblings; the duplicate CAD-pad title is now `Amount`; Hercules pauses and the overlay sits above its pill; funded Undo is bounded to explicit `postEntry` and `postHouseholdFundDirectDebit` command kinds with one current transaction and a current Fund fact. Unknown funded command shapes refuse rather than guessing from `FUND-EVT-`.
+
+**Verification:** focused Swipe plus D-197 custody is currently **20/20 passed** and TypeScript is green. Full Windows, responsive/browser, independent books/trust, privacy/continuity, UX/accessibility, PR, post-merge CI, deployment, and live no-store/asset gates remain pending. Worksession: [`worksessions/2026-09-02-till-2-swipe-release.md`](worksessions/2026-09-02-till-2-swipe-release.md).
+
+**Boundaries:** source, tests, canon, fictional/local Development visual fixtures, and authorized Development Worker assets only. No schema, hosted household row, secret, provider, bank connection, Production data, or Production-continuity setting.
+
+**Next owner:** Codex completes independent Release review and the user-authorized guarded merge/deploy. Cursor may start Slice 3 only from the exact deployed `origin/main` SHA named by the CLOSED worksession; never from PR #295 or `25ef99e`.
+
 ## Register slice 10 — the metronome (2026-09-02)
 
 **Status:** Release candidate on `cursor/register-10-metronome-115c`; ready PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Current `origin/main@5828d9f156ef3cefe9a9a46a9341e0627651c22a` is integrated; fetch the PR head for the exact candidate.

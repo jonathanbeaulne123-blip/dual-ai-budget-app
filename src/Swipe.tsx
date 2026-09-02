@@ -19,6 +19,7 @@ export function Swipe({
   memberId,
   today,
   busy,
+  error,
   onClose,
   onPostCategory,
   onMore,
@@ -27,6 +28,7 @@ export function Swipe({
   memberId: string;
   today: DateKey;
   busy: boolean;
+  error?: string;
   onClose: () => void;
   onPostCategory: (input: { amount: string; subcategoryId: string }) => void;
   onMore: (amount: string) => void;
@@ -55,9 +57,8 @@ export function Swipe({
   }, [step, sheetRef]);
 
   return (
-    <div className="swipe-sheet" role="presentation">
+    <div ref={sheetRef} className="swipe-sheet" role="presentation">
       <div
-        ref={sheetRef}
         className="swipe-sheet-inner"
         role="dialog"
         aria-modal="true"
@@ -67,12 +68,19 @@ export function Swipe({
           Close
         </button>
         <h2 id="swipe-title" className="swipe-title">{SWIPE_COPY.title}</h2>
+        {error ? (
+          <div className="swipe-error" role="alert">
+            <strong>Nothing was posted.</strong>
+            <span>{error}</span>
+            <span>Correct the amount, try the category again, or choose More to review it in Add.</span>
+          </div>
+        ) : null}
         {step === "amount" ? (
           <div>
             <CadPad
               digits={digits}
               onDigits={setDigits}
-              label={SWIPE_COPY.title}
+              label="Amount"
               giant
               onEnter={() => { if (amountReady) setStep("category"); }}
               enterLabel="Enter"

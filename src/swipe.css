@@ -57,7 +57,7 @@
 .swipe-sheet {
   position: fixed;
   inset: 0;
-  z-index: 24;
+  z-index: 32;
   background: color-mix(in srgb, var(--ink) 28%, transparent);
   display: flex;
   align-items: flex-end;
@@ -80,6 +80,20 @@
   letter-spacing: -0.012em;
   margin: 0 0 4px;
   text-wrap: balance;
+}
+.swipe-error {
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--card));
+  margin: 14px 0 4px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.swipe-error strong {
+  font-family: var(--display);
+  font-weight: 600;
 }
 .swipe-amount {
   font-family: var(--display);
