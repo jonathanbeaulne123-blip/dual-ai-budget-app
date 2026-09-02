@@ -15,6 +15,7 @@ import {
   closedMonthKeys,
   comparativeIncome,
   compileHousehold,
+  contributionRegister,
   formatCad,
   householdWallet,
   householdTableStory,
@@ -43,6 +44,7 @@ import {
   type Account,
   type CommitResult,
   type HerculesNumberSource,
+  type RegisterMemberView,
 } from "./core/index.ts";
 import { LedgerPage } from "./Ledger.tsx";
 import { PaneSeals, PaperTile, StoryStrip, CollapsibleCard } from "./theme/PaperTheme.tsx";
@@ -52,12 +54,14 @@ import type { BooksStatus } from "./ledger/engine.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { DeferredSurface } from "./deferredSurfaces.tsx";
+import { Register } from "./Register.tsx";
 
 const DeferredBatchImportCard = lazy(() => import("./BatchImport.tsx").then((module) => ({ default: module.BatchImportCard })));
 
 const PANES = [
   { id: "wallet", label: "Wallet", blurb: "Household cash, Goals savings, cards, and investments. Touch a tile to open the room." },
   { id: "fund", label: "Household Fund", blurb: "A shared operating subledger backed by Bianca’s savings. It is not a bank account and Hearth cannot move money." },
+  { id: "fund-register", label: "Register", blurb: "What this month owes, and which confirmed Fund dollars cover each obligation." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
   { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
   { id: "journal", label: "Journal", blurb: "Debit and credit lines compiled from the snapshot. The books engine." },
@@ -69,7 +73,7 @@ const PANES = [
   { id: "query", label: "Ask", blurb: "Ask the books. Hercules answers from the journal visible on this floor." },
 ] as const;
 
-const TABLE_PANE_IDS = ["fund", "wallet", "register", "import"] as const;
+const TABLE_PANE_IDS = ["fund", "fund-register", "wallet", "register", "import"] as const;
 const AUDIT_PANE_IDS = ["journal", "trial", "statements", "rec", "close", "accounts", "query"] as const;
 
 type Pane = (typeof PANES)[number]["id"];
@@ -90,6 +94,8 @@ export function BooksPage({
   onAddToAccount,
   onCommand,
   onGoMore,
+  requestedPane,
+  onConsumeRequestedPane,
 }: {
   household: Household;
   booksHousehold: Household;
@@ -106,6 +112,8 @@ export function BooksPage({
   onAddToAccount: (account: Account) => void;
   onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
+  requestedPane?: "fund-register" | null;
+  onConsumeRequestedPane?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
   const sharedTable = view === "household";
@@ -134,11 +142,26 @@ export function BooksPage({
   const tablePanes = PANES.filter((item) => (
     (TABLE_PANE_IDS as readonly string[]).includes(item.id)
     && (item.id !== "fund" || showFundPane)
+    && (item.id !== "fund-register" || sharedTable)
   ));
   const auditPanes = PANES.filter((item) => (AUDIT_PANE_IDS as readonly string[]).includes(item.id));
   const fundConfigured = Boolean(booksHousehold.householdFund);
   const sharedLeadCents = fundConfigured ? fundProjection.operatingBalanceCents : wallet.cashCents;
   const monthKey = monthKeyFromDateKey(today);
+  const fundRegister = useMemo(
+    () => contributionRegister(booksHousehold, monthKey, today),
+    [booksHousehold, monthKey, today],
+  );
+  const registerMembers = useMemo<RegisterMemberView[]>(() => {
+    const custodianMemberId = booksHousehold.householdFund?.custodianMemberId ?? null;
+    return booksHousehold.members
+      .filter((member) => member.active)
+      .map((member) => ({
+        memberId: member.id,
+        displayName: member.name,
+        tone: member.id === custodianMemberId ? "hers" : "his",
+      }));
+  }, [booksHousehold.householdFund?.custodianMemberId, booksHousehold.members]);
   const packMonth = closedMonthKeys(auditHousehold).at(-1) ?? monthKey;
   const [accountId, setAccountId] = useState(
     focusedAccountId && auditHousehold.accounts.some((account) => account.id === focusedAccountId)
@@ -180,6 +203,12 @@ export function BooksPage({
     setPane(view === "personal" ? "wallet" : "fund");
     setAuditOpen(view !== "household");
   }, [view, focusedAccountId, sourceFocus]);
+
+  useEffect(() => {
+    if (requestedPane !== "fund-register" || !sharedTable) return;
+    setPane("fund-register");
+    onConsumeRequestedPane?.();
+  }, [onConsumeRequestedPane, requestedPane, sharedTable]);
 
   useEffect(() => {
     if (!trial.inBalance || isAuditPane) setAuditOpen(true);
@@ -253,6 +282,7 @@ export function BooksPage({
         items={sharedTable
           ? [
               ...(showFundPane ? [{ id: "fund" as const, label: "Fund" }] : []),
+              { id: "fund-register", label: "Register" },
               { id: "wallet", label: "Wallet" },
               { id: "register", label: "Activity" },
             ]
@@ -308,6 +338,9 @@ export function BooksPage({
       )}
       {pane === "fund" && (
         <HouseholdFundPanel household={booksHousehold} memberId={memberId} view={view} onCommand={onCommand} />
+      )}
+      {pane === "fund-register" && sharedTable && (
+        <Register register={fundRegister} members={registerMembers} />
       )}
       {pane === "register" && (
         <LedgerPage

@@ -535,6 +535,7 @@ export function App() {
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
+  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund-register" | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
@@ -4793,6 +4794,10 @@ export function App() {
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onSitDown={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+          onOpenRegister={() => {
+            setBooksPaneRequest("fund-register");
+            goTab("ledger");
+          }}
           onGo={(next) => {
             if (next === "add") {
               openAddFor(null);
@@ -4969,6 +4974,8 @@ export function App() {
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onGoMore={() => goTab("more")}
+          requestedPane={booksPaneRequest}
+          onConsumeRequestedPane={() => setBooksPaneRequest(null)}
           onRemove={(transaction) => {
             const dollars = formatCad(transaction.amountCents);
             const summary = transaction.source === "shift"

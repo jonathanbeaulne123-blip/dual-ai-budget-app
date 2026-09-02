@@ -16,6 +16,18 @@
 
 **Next owner:** Codex completes independent Release review and the user-authorized guarded merge/deploy. Cursor may start Slice 3 only from the exact deployed `origin/main` SHA named by the CLOSED worksession; never from PR #295 or `25ef99e`.
 
+## Register slice 8 integrated release (2026-09-02)
+
+**Status:** Release candidate on `codex/register-8-release`, authorized for merge and Development kitchen publication through [#299](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/299). Supersedes unmounted draft [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285). Integrated onto current `origin/main@2b9f770` after the Till Slice 2 release. Risk **High**. Not Production.
+
+**Household outcome:** the Household table now has a Register room, and the wide Month Spread says `Open the register`. It renders only the conserved `contributionRegister` projection: monthly obligations, confirmed Fund-source order, carried cents, and honest unfunded tails. Personal Books does not offer or mount it.
+
+**Dual Course:** Budget `+3`; Engagement `+2`. Books win: no allocator, writer, Fund event, balance, contribution, recurrence, schema, or hosted row changes. Forced-colors mode distinguishes carried/hers/his/unfunded without color alone. The drawing remains pointer-scrollable on narrow screens, while the complete semantic fact list is the keyboard and screen-reader path; the drawing creates no misleading or quiet tab stop.
+
+**Verification so far:** Register/contribution 26/26; combined Month Spread/privacy/placement work exposed and repaired a one-shot navigation effect-order defect; focused placement/view rerun 13/13. Three independent feature-head reviews passed with no P0/P1/P2 after repairing legend spacing and a misleading keyboard scroll target. After rebasing onto the Till Slice 2 release, the canonical Windows gate passed **1,706 tests with three intentional skips**, TypeScript, Vite's **416-module** build, Hercules Pro UI, and redirect guard. Local browser proof at 320/390/720/1100 px found one Shared Register, no body overflow, an exact working Month Spread route, honest fail-closed copy for an unconfigured Fund, and no console errors. Remote PR/main CI, deployment, and live asset proof remain release gates. Worksession: [`worksessions/2026-09-02-register-8-release.md`](worksessions/2026-09-02-register-8-release.md).
+
+**Boundaries:** source, tests, docs, and Development assets only. No Supabase/schema/Auth/RLS, hosted household row, secret, provider, Production data, or Production-continuity change.
+
 ## Register slice 10 — the metronome (2026-09-02)
 
 **Status:** Release candidate on `cursor/register-10-metronome-115c`; ready PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Current `origin/main@5828d9f156ef3cefe9a9a46a9341e0627651c22a` is integrated; fetch the PR head for the exact candidate.

@@ -307,6 +307,9 @@ describe("Month Spread fences", () => {
   it("prints the custody disclosure in full and keeps a way through to the table", () => {
     expect(spread).toContain("story.trust.custodyDisclosure");
     expect(spread).toContain("story.trust.auditLabel");
+    expect(spread).toContain("Open the register");
+    expect(spread).toContain("onClick={onOpenRegister}");
+    expect(officeWide).toContain("onOpenRegister={onOpenRegister}");
   });
 
   it("keeps every figure on tabular numerals and every sign on more than colour", () => {
