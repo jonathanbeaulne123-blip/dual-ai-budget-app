@@ -23,6 +23,11 @@
   align-content: start;
 }
 
+/* Keep the complete Course in the stage's existing scroll area. */
+.office-wide-stage:has(.ask) > .month-spread {
+  flex-shrink: 0;
+}
+
 .ask-figure {
   margin: 0;
   font-family: var(--display);

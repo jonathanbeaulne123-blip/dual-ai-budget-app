@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   COURSE_AXIS_DAYS,
   COURSE_VIEW,
+  PAYDAY_TICK_VIEW,
   claimTickHeight,
   courseBottom,
   courseTop,
@@ -9,7 +10,11 @@ import {
   coursePaths,
   dayOfDateKey,
   formatCad,
+  paydayTickAria,
+  paydayTicks,
   type CoursePoint,
+  type Household,
+  type PaydayTick,
   type SharedLedgerStory as SharedLedgerStoryModel,
   type SharedMonthCourse,
 } from "./core/index.ts";
@@ -123,7 +128,7 @@ function eventSentence(point: CoursePoint, nameOf: (memberId: string | null | un
   };
 }
 
-function courseAria(course: SharedMonthCourse, monthLabel: string): string {
+function courseAria(course: SharedMonthCourse, monthLabel: string, ticks: PaydayTick[]): string {
   if (!course.configured) {
     return `${monthLabel}. The Household Fund is not open yet, so there is nothing drawn. The first confirmed contribution draws the first step.`;
   }
@@ -143,12 +148,14 @@ function courseAria(course: SharedMonthCourse, monthLabel: string): string {
     `It stands at ${formatCad(course.operatingCents)} today,`,
     course.upcomingReserveCents ? `with ${formatCad(course.upcomingReserveCents)} reserved for a Fund-backed bill still to come,` : "",
     `and ${formatCad(course.freeToSpendCents)} free to commit.`,
+    paydayTickAria(ticks),
   ].filter(Boolean).join(" ");
 }
 
 export function MonthSpread({
   story,
   course,
+  household,
   nameOf,
   custodianName,
   onOpenFund,
@@ -156,6 +163,7 @@ export function MonthSpread({
 }: {
   story: SharedLedgerStoryModel;
   course: SharedMonthCourse;
+  household?: Household;
   nameOf: (memberId: string | null | undefined) => string;
   custodianName: string;
   onOpenFund: () => void;
@@ -165,6 +173,10 @@ export function MonthSpread({
   const opening = story.opening;
   const monthLabel = `${monthName(course.monthKey)} ${course.monthKey.slice(0, 4)}`;
   const paths = useMemo(() => coursePaths(course), [course]);
+  const ticks = useMemo(
+    () => (household ? paydayTicks(household, course.monthKey) : []),
+    [household, course.monthKey],
+  );
   const drawable = course.configured && course.tiesToProjection && paths.scale > 0;
   const shortfall = opening.topUpNeededCents > 0;
   const lead = story.queue[0] ?? null;
@@ -279,7 +291,7 @@ export function MonthSpread({
               className="ms-course-svg"
               viewBox={`0 0 ${COURSE_VIEW.width} ${drawable ? COURSE_VIEW.height : 132}`}
               role="figure"
-              aria-label={courseAria(course, monthLabel)}
+              aria-label={courseAria(course, monthLabel, ticks)}
             >
               <defs>
                 <pattern id="ms-hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
@@ -464,6 +476,29 @@ export function MonthSpread({
                 x1={COURSE_VIEW.left} y1={drawable ? COURSE_VIEW.axisRule : 86}
                 x2={COURSE_VIEW.right} y2={drawable ? COURSE_VIEW.axisRule : 86}
               />
+              {ticks.map((tick, index) => {
+                const axisY = drawable ? COURSE_VIEW.axisRule : 86;
+                const x = courseX(dayOfDateKey(tick.date), days);
+                const labelEnd = x >= COURSE_VIEW.right - 70;
+                return (
+                  <g key={tick.date} className="ms-payday" aria-hidden="true">
+                    <line
+                      className="ms-payday-tick"
+                      x1={x} y1={axisY}
+                      x2={x} y2={axisY + PAYDAY_TICK_VIEW.length}
+                    />
+                    {index === 0 ? (
+                      <Chip
+                        x={labelEnd ? x - 8 : x + 8}
+                        y={axisY - 6}
+                        text="payday"
+                        tone="ms-axis"
+                        anchorEnd={labelEnd}
+                      />
+                    ) : null}
+                  </g>
+                );
+              })}
               {[...COURSE_AXIS_DAYS, days].map((day) => (
                 <text key={day} className="ms-axis" x={courseX(day, days)} y={drawable ? COURSE_VIEW.axisLabel : 102} textAnchor="middle">{day}</text>
               ))}
@@ -487,6 +522,7 @@ export function MonthSpread({
           <span><i className="ms-swatch is-kitty" /> Kitty, below the line</span>
           <span><i className="ms-swatch is-claim" /> Claims waiting to clear</span>
           <span><i className="ms-swatch is-future" /> Not posted yet</span>
+          <span><i className="ms-swatch is-payday" /> Payday</span>
         </p>
         <p className="ms-readout" aria-live="polite">
           {shown.when ? <b>{shown.when}. </b> : null}{shown.body}

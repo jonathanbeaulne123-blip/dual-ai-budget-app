@@ -482,6 +482,7 @@ export function OfficeWide({
               <MonthSpread
                 story={sharedStory}
                 course={course}
+                household={booksHousehold}
                 nameOf={nameOf}
                 custodianName={custodianName}
                 onOpenFund={() => onGo("ledger")}

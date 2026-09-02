@@ -1,5 +1,27 @@
 # AI Task and Handoff Standard
 
+## Register slice 10 — the metronome (2026-09-02)
+
+**Status:** Release candidate on `cursor/register-10-metronome-115c`; ready PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Current `origin/main@5828d9f156ef3cefe9a9a46a9341e0627651c22a` is integrated; fetch the PR head for the exact candidate.
+
+**Household outcome:** Bianca's projected paydays appear as regular felt ticks below the Course axis. Ticks carry no amount. Jonathan's confirmed contributions keep their existing marks. The contrast is the information.
+
+**Budget delta (5):** `+3`. **Engagement delta (3):** `+2`. Books win: no assumed paycheck CAD, no Course scale change, ticks from the custodian's `paySchedule` only.
+
+**What changed:** `paydayTicks` + `PaydayTick` (date only) in `monthSpread.ts`; Course axis ticks in `MonthSpread.tsx`; `--ms-tick: var(--felt)` in `month-spread.css`; `OfficeWide` passes `booksHousehold` (justified host wire). First `payday` label sits in a Chip **above** the axis so it does not collide with day numbers or clip the viewBox. Focused tests in `test/month-spread.test.ts`. Worksession: [`worksessions/2026-09-02-register-10-metronome.md`](worksessions/2026-09-02-register-10-metronome.md). ChatGPT packet: [`briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md`](briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md).
+
+**Verification:**
+- Focused `pnpm exec vitest run test/month-spread.test.ts`: **40 passed** (includes divergent `tipSchedule` exclusion)
+- Bianca Month `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **10 passed**
+- Local `pnpm check` on `843a21e`: **exit 0**. `ai:verify` 41 files; fast lane **220 passed / 1 skipped files, 1,511 passed / 2 skipped tests**; books lane **18 passed / 1 skipped files, 146 passed / 1 skipped tests**; Vite production build 404 modules + Hercules Pro UI
+- GitHub `test` on exact head `843a21eff4b25d295d96a5305aafd64d2247760c`: push run `33597093965` success; PR run `33597098018` success. Workers preview is not the kitchen URL
+- Release integration after Till Slice 1: focused cross-slice suite **75 passed**; `pnpm check:windows` **exit 0** with AI surface, fast lane **1,532 passed / 2 skipped**, serial books lane **146 passed / 1 skipped**, TypeScript, production build, Hercules Pro UI, and redirect guard green. Remote checks on the new PR head remain the merge gate.
+- Independent books at `843a21e`: **PASS WITH NOTES** (no P0/P1; P2 tipSchedule fence was missing, now added). Privacy: **PASS WITH NOTES** (`household?: Household` is a future leak, not a current disclosure). Verifier: **PASS WITH NOTES** (claims match source; draft #294 isolated from #285). UX auditor could not run (third-party usage limit); parent visual proof at 320 / 390 / 720 / ~1100, empty, night, reduced-motion, Course crops.
+
+**Data/environment:** Local fictional Development only. No hosted row, schema, secret, Production, or deploy.
+
+**Next owner:** Codex completes the authorized push, exact-head review, merge, Development kitchen deployment, and live verification. Do not stack #285. Do not touch Production data.
+
 ## Till Slice 1 custody fence and Cursor Slices 2/3 packet (2026-09-02)
 
 **Status:** Merged via [#296](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/296) onto `main` as `9c49e6fd1998e9687820c8eedea4f6a7b062805a` (2026-09-02T07:17:36Z). Main CI [`33602847175`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33602847175) and D-041 Cloudflare Workers [`33602847156`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33602847156) passed with `VITE_PRODUCTION_CONTINUITY=0`. Worker `hearth-books` version `3f8852fe-2949-487d-923b-a80da37a0068` serves the verified no-store bundle. **Development kitchen only; not Production.** Cursor's complete sequential contract is [`briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md`](briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md). Risk: **High**.
