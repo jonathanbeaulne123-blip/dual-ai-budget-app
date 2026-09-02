@@ -1,5 +1,6 @@
 import { SitDownGuide } from "../SitDownGuide.tsx";
-import { POSTCARD_EMPTY, postcardEmpty } from "../core/index.ts";
+import { WeeklyDocument } from "../WeeklyDocument.tsx";
+import { POSTCARD_EMPTY, hourInToronto, postcardEmpty, todayKey, weeklyDocument } from "../core/index.ts";
 import type { Household, LedgerView, UndoToken } from "../core/index.ts";
 import type { Dashboard } from "../core/insights.ts";
 import type { SitDownPostcard } from "../core/hercules.ts";
@@ -26,17 +27,39 @@ export function PostcardBody({
   card: SitDownPostcard;
   onApply: (next: Household, token?: UndoToken) => void;
 }) {
-  if (postcardEmpty(card)) {
-    return <p className="muted">{POSTCARD_EMPTY}</p>;
-  }
-  return (
-    <SitDownGuide
+  const today = todayKey();
+  const hour = hourInToronto();
+  const weeklyOffered = Boolean(
+    memberId && weeklyDocument(household, { viewerMemberId: memberId, today, hour }).offered,
+  );
+  const weekly = weeklyOffered && memberId ? (
+    <WeeklyDocument
       household={household}
-      displayHousehold={displayHousehold ?? household}
-      dashboard={dashboard}
-      view={view}
-      memberId={memberId}
+      viewerMemberId={memberId}
+      today={today}
+      hour={hour}
       onApply={onApply}
     />
+  ) : null;
+  if (postcardEmpty(card)) {
+    return (
+      <>
+        {weekly}
+        {weeklyOffered ? null : <p className="muted">{POSTCARD_EMPTY}</p>}
+      </>
+    );
+  }
+  return (
+    <>
+      {weekly}
+      <SitDownGuide
+        household={household}
+        displayHousehold={displayHousehold ?? household}
+        dashboard={dashboard}
+        view={view}
+        memberId={memberId}
+        onApply={onApply}
+      />
+    </>
   );
 }

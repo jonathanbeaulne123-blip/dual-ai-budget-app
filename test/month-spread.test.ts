@@ -483,7 +483,8 @@ describe("F-5 · demo seeding cannot silently break a neighbour", () => {
 });
 
 describe("the metronome — custodian paydays as timing ticks", () => {
-  const monthSpreadCore = readFileSync(new URL("../src/core/monthSpread.ts", import.meta.url), "utf8");
+  const monthSpreadCore = readFileSync(new URL("../src/core/monthSpread.ts", import.meta.url), "utf8")
+    .replace(/\r\n/g, "\n");
 
   it("lands ticks on the custodian's projected cadence dates", () => {
     let household = configureHouseholdFund(catalogHousehold(), {

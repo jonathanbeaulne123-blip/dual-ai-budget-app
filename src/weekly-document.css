@@ -1,0 +1,215 @@
+.weekly-document {
+  --reg-hers: var(--pine);
+  --reg-his: var(--copper);
+  --reg-carried: color-mix(in srgb, var(--felt) 40%, var(--line));
+  --reg-unfunded: var(--copper);
+  --ask-figure: var(--copper);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.weekly-document > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.weekly-document h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 21px;
+  line-height: 1.25;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.weekly-status {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.62;
+  max-width: 64ch;
+}
+
+.weekly-register,
+.weekly-ask,
+.weekly-motions,
+.weekly-stamps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.weekly-attribution,
+.weekly-register-rows,
+.weekly-route-list,
+.weekly-motions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weekly-attribution {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.weekly-register-row,
+.weekly-motion,
+.weekly-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 44px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.weekly-register-label,
+.weekly-motion-label {
+  flex: 1 1 12rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.weekly-register-date,
+.weekly-motion-status,
+.weekly-route-hours {
+  color: var(--muted);
+}
+
+.weekly-register-amount,
+.weekly-ask-figure {
+  margin-left: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.weekly-ask-figure {
+  font-family: var(--display);
+  font-size: clamp(28px, 11vw, 44px);
+  line-height: 0.94;
+  letter-spacing: -0.028em;
+  color: var(--ask-figure);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.weekly-ask-copy {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.62;
+  max-width: 64ch;
+}
+
+.weekly-unfunded {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px dashed var(--reg-unfunded);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.weekly-other-door {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.weekly-other-door-copy,
+.weekly-other-door-note,
+.weekly-routes-header {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.weekly-other-door-note,
+.weekly-routes-header {
+  color: var(--muted);
+}
+
+.weekly-stamps {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.weekly-stamp {
+  min-height: 44px;
+}
+
+.weekly-stamp-rule {
+  width: 260px;
+  max-width: 100%;
+  height: 1px;
+  background: var(--line);
+  margin-bottom: 10px;
+}
+
+.weekly-stamp-who {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.weekly-stamp-when {
+  color: var(--muted);
+}
+
+.weekly-stamp-link {
+  margin-left: 12px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pine);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.weekly-stamp-link:focus {
+  outline: none;
+}
+
+.weekly-stamp-link:focus-visible,
+.weekly-document .chip:focus-visible,
+.weekly-document .primary:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.weekly-document .chips {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.weekly-document .chip,
+.weekly-document .primary {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weekly-document,
+  .weekly-document * {
+    transition: none;
+    animation: none;
+  }
+}

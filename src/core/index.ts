@@ -41,6 +41,7 @@ export * from "./askView.ts";
 export * from "./openingTruth.ts";
 export * from "./monthRehearsal.ts";
 export * from "./weeklyDocumentStamp.ts";
+export * from "./weeklyDocument.ts";
 export * from "./monthRehearsalPractice.ts";
 export * from "./helpDesk.ts";
 export * from "./deskSync.ts";
