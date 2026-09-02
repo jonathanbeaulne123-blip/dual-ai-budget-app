@@ -24,7 +24,7 @@ One session: review first, merge only after named gates pass. Do not implement a
    - `test/month-spread.test.ts`
    - `docs/worksessions/2026-09-02-register-10-metronome.md`
    - `docs/AI_HANDOFF.md` (top Register slice 10 section only)
-4. Optional: the draft PR named in the git facts below.
+4. Optional: draft PR https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294
 5. Do **not** paste `.env`, Worker secrets, Google tokens, workbook exports, or real household rows.
 
 Sister drafts that must **not** be merged in this chat: Register slice 8 drawing [#285](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/285).
@@ -50,10 +50,10 @@ Hearth is Dual Course: family-office books weigh 5; Hercules and interactables w
 
 - Repo: jonathanbeaulne123-blip/dual-ai-budget-app (private)
 - Branch: cursor/register-10-metronome-115c
-- Review SHA: REPLACE_HEAD_SHA
+- Review SHA: confirm `git rev-parse HEAD` on `cursor/register-10-metronome-115c` after fetching (first product commit was `d00b9dace28fae58d4b71f6986cdd8e79bb38e20`; Chip-above-axis label is a follow-up on the same branch)
 - Baseline: origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3 (Merge #292)
 - Fetch origin/main before merge. Do not merge onto a stale main if main has moved; rebase only if the conflict is docs and Course geometry is untouched.
-- Draft PR REPLACE_PR_URL — not kitchen-live until merged
+- Draft PR https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294 — not kitchen-live until merged
 - Dual Course claimed: Budget +3, Engagement +2
 - Do not merge draft #285 (register drawing) in this chat. Do not stack this PR on #285.
 
@@ -65,7 +65,10 @@ On Shared Home's Month Spread Course, the Fund custodian's projected paydays app
 
 - Focused test/month-spread.test.ts: 39 passed, including cadence-date landing, inactive/non-custodian exclusion, no-amount fence, exact courseScale/courseTop/courseBottom source, and axis drawing fences.
 - Existing conservation, posted-vs-future, and Standing-bar cases were not rewritten.
-- Broader pnpm check / visual proof: see the PR and docs/AI_HANDOFF.md on that SHA. Do not copy numbers from another branch.
+- pnpm test:fast: 1,511 passed / 2 skipped. tsc --noEmit passed. Bianca Month 10 passed. pnpm ai:verify passed.
+- GitHub pnpm check succeeded on first head d00b9dac (CI 33595112394) before the Chip-above-axis follow-up; re-check HEAD.
+- Independent Cursor books: PASS WITH NOTES. Privacy: PASS WITH NOTES. UX: PASS WITH NOTES then Chip above the axis. Verifier: PASS WITH NOTES.
+- Component harness screenshots at 320 / 390 / 720 / ~1100, empty staff, night, reduced-motion. Fictional Development. Not kitchen.
 
 ## Open findings Cursor did not close (verify; do not rubber-stamp)
 
@@ -73,7 +76,7 @@ Label each as still true, false at this SHA, or unproven.
 
 1. Demo kitchen Bianca and Jonathan share the same biweekly Demo Bistro job, so ticks and contribution marks can land on related days in the seed. Distinct-cadence proof is in tests.
 2. OfficeWide household={booksHousehold} was a justified expansion (packet listed four files). Confirm no other host gained ticks.
-3. Visual 320 / 390 / 720 / ~1100 is unproven unless you can see current-SHA screenshots.
+3. Visual 320 / 390 / 720 / ~1100 exist as a fictional component harness at this packet; mark kitchen-unproven.
 4. Ticks appear on the empty staff as well as the drawn Course. Decide if that is honest timing or clutter.
 5. Do not merge #285 with this PR.
 
