@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/till-1-custody-fence-release`
 - **Baseline SHA:** `1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
-- **Head SHA:** implementation seal `e426a4592dcd72870feb85642f3d0ab894e6dee8`; release documentation follows
+- **Head SHA:** D-197-integrated Slice 2 base `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09`; implementation ancestor `e426a4592dcd72870feb85642f3d0ab894e6dee8`; final packet correction follows
 - **PR or issue:** pending; Jonathan authorized push, merge, and Development kitchen deployment on 2026-09-02
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -25,14 +25,15 @@ Only the configured Household Fund custodian can record a new purchase against t
 
 `0` — this slice deliberately adds no Till UI. It is the books-first prerequisite for the later two-tap swipe and Till surface.
 
-## Verified baseline
+## Verified initial baseline and current-main reconciliation
 
-- Exact remote `origin/main` and local baseline are `7101dced3d592f9c70d445ec4b901cc3ff8946b3`.
+- At worksession opening, exact remote `origin/main` and the initial local baseline were `7101dced3d592f9c70d445ec4b901cc3ff8946b3`.
+- Before release, current `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5` was integrated in a clean same-root checkout; it already owned D-196, so Till moved to D-197.
 - The isolated baseline is clean and the active dirty `codex/roadmap-site` checkout is untouched.
 - Clean baseline `pnpm check:windows` passed AI verification, 1,505 fast tests / 2 skipped, 146 serial books tests / 1 skipped, TypeScript, Vite production build, Hercules Pro UI build, and redirect guard.
 - `postEntry` resolves optional Household Fund funding and appends either `purchase-funded` or `refund-funded`.
 - `requireFundCustodian` exists but is not called by `postEntry`.
-- The downloaded build manual's D-182 is stale; current canon already uses D-182. D-190 and D-196 are also occupied. The next available decision id at this baseline is D-197.
+- The downloaded build manual's D-182 was stale and D-190 was occupied. D-196 was free on the initial baseline but became the Clerk weekly decision on current main; D-197 is Till Slice 1's reconciled identifier.
 
 ## Scope
 
@@ -76,8 +77,8 @@ Only the configured Household Fund custodian can record a new purchase against t
 
 ## Evidence log
 
-- `git status --short --branch` — clean `codex/till-1-custody-fence-v2` at open.
-- `git ls-remote origin refs/heads/main` — `7101dced3d592f9c70d445ec4b901cc3ff8946b3` at baseline selection.
+- Historical opening evidence: `git status --short --branch` was clean on `codex/till-1-custody-fence-v2`.
+- Historical opening evidence: `git ls-remote origin refs/heads/main` returned `7101dced3d592f9c70d445ec4b901cc3ff8946b3` at initial baseline selection.
 - Baseline `pnpm check:windows` — passed; 1,651 tests / 3 intentionally skipped, AI surface, TypeScript, 404-module Vite build, Hercules Pro UI, redirect guard.
 - Code inspection: `postEntry` funding/classification in `src/core/commands.ts`; existing helper `requireFundCustodian` remains generic for other Fund commands.
 - Focused candidate proof — 12 files / 114 tests passed, including custody, Fund, PGlite continuity, rehearsal, and month projections.

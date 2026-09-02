@@ -8,7 +8,8 @@ This is the complete contract for one Cursor writer. The downloaded build manual
 
 - **Target AI:** Cursor, single writer.
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Required Slice 2 ancestor:** `e426a4592dcd72870feb85642f3d0ab894e6dee8` (the Till Slice 1 implementation seal)
+- **Required Slice 2 ancestor:** `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09` (the D-197-integrated Slice 1 release-candidate base)
+- **Required implementation ancestor:** `e426a4592dcd72870feb85642f3d0ab894e6dee8` (the Till Slice 1 command/test seal; prove it is an ancestor of the required base)
 - **Slice 1 branch:** `codex/till-1-custody-fence-release`
 - **Slice 1 parent:** `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
 - **Required Slice 2 branch:** `till/2-swipe`
@@ -21,8 +22,9 @@ This is the complete contract for one Cursor writer. The downloaded build manual
 Start from a clean isolated worktree. Never use Jonathan's dirty `codex/roadmap-site` checkout. If the sealed commit is unavailable, stop and ask Jonathan/Codex to provide or push it; do not reconstruct Slice 1 from prose.
 
 ```text
-git switch -c till/2-swipe e426a4592dcd72870feb85642f3d0ab894e6dee8
+git switch -c till/2-swipe b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09
 git status --short
+git merge-base --is-ancestor b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09 HEAD
 git merge-base --is-ancestor e426a4592dcd72870feb85642f3d0ab894e6dee8 HEAD
 ```
 
@@ -30,7 +32,7 @@ After Slice 2 is accepted, record its exact SHA, fetch current `origin/main`, re
 
 ## Sealed Slice 1 prerequisite
 
-D-197 is implemented at the command boundary:
+D-197 is implemented at the command boundary. The required Slice 2 base includes both this command seal and the current-main D-197 collision reconciliation:
 
 1. `postEntry` resolves the resulting Fund event kind before any household clone or mutation.
 2. Every path that would append `purchase-funded` calls the configured custodian guard.
