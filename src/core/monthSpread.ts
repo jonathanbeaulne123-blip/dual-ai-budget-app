@@ -8,7 +8,11 @@
  * be assertable by a test, not trusted to a render.
  */
 
+import { addDays, monthEndKey, monthStartKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { shapeHouseholdFundConfig } from "./householdFund.ts";
 import type { CoursePoint, SharedMonthCourse } from "./sharedLedgerStory.ts";
+import type { Household } from "./types.ts";
+import { nextWorkScheduleDate } from "./workSettlement.ts";
 
 export const COURSE_VIEW = {
   width: 760,
@@ -133,3 +137,56 @@ export function claimTickHeight(amountCents: number): number {
 }
 
 export const COURSE_AXIS_DAYS = [1, 5, 10, 15, 20, 25] as const;
+
+/**
+ * Payday metronome geometry. Length is pixels below the axis, never cents.
+ * Do not add an amount, height-for-value, or scale field here.
+ */
+export const PAYDAY_TICK_VIEW = {
+  length: 8,
+} as const;
+
+/** Timing-only Course mark. The custodian's projected pay date, with no amount. */
+export type PaydayTick = {
+  date: DateKey;
+};
+
+function paydayOrdinal(day: number): string {
+  const lastTwo = day % 100;
+  if (lastTwo >= 11 && lastTwo <= 13) return `${day}th`;
+  const suffix = day % 10 === 1 ? "st" : day % 10 === 2 ? "nd" : day % 10 === 3 ? "rd" : "th";
+  return `${day}${suffix}`;
+}
+
+/**
+ * Custodian pay dates in the month, from the same `nextWorkScheduleDate`
+ * primitive `nextPaydayDate` uses. Union of active jobs; no assumed CAD.
+ */
+export function paydayTicks(household: Household, monthKey: MonthKey): PaydayTick[] {
+  const fund = shapeHouseholdFundConfig(household.householdFund);
+  if (!fund) return [];
+  const start = monthStartKey(monthKey);
+  const end = monthEndKey(monthKey);
+  const dates = new Set<DateKey>();
+  for (const job of household.workJobs ?? []) {
+    if (!job.active || job.memberId !== fund.custodianMemberId) continue;
+    let cursor = nextWorkScheduleDate(job.paySchedule, start);
+    while (cursor && cursor <= end) {
+      dates.add(cursor);
+      cursor = nextWorkScheduleDate(job.paySchedule, addDays(cursor, 1));
+    }
+  }
+  return [...dates].sort().map((date) => ({ date }));
+}
+
+/** Figure copy for the metronome: days only, never CAD. */
+export function paydayTickAria(ticks: PaydayTick[]): string {
+  if (!ticks.length) return "";
+  const days = ticks.map((tick) => paydayOrdinal(Number(tick.date.slice(8, 10))));
+  const listed = days.length === 1
+    ? days[0]!
+    : days.length === 2
+      ? `${days[0]} and ${days[1]}`
+      : `${days.slice(0, -1).join(", ")}, and ${days[days.length - 1]}`;
+  return `Payday ticks on the ${listed}. Timing only, no amount.`;
+}

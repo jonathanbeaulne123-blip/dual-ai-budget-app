@@ -7,6 +7,7 @@
   --ms-river-fill: color-mix(in srgb, var(--pine) 16%, transparent);
   --ms-kitty: color-mix(in srgb, var(--felt) 62%, var(--brass) 38%);
   --ms-kitty-fill: color-mix(in srgb, var(--felt) 18%, transparent);
+  --ms-tick: var(--felt);
 
   position: relative;
   display: grid;
@@ -229,6 +230,13 @@
 .ms-label-kitty { font: 500 12px var(--font); fill: var(--ms-kitty); }
 .ms-empty-staff { font: 500 13px var(--font); fill: var(--muted); }
 
+.ms-payday-tick { stroke: var(--ms-tick); stroke-width: 3; stroke-linecap: square; }
+.ms-payday-label {
+  font: 400 11px var(--font);
+  fill: var(--muted);
+  letter-spacing: 0.06em;
+}
+
 .ms-rule { stroke: var(--line); stroke-width: 1; }
 .ms-baseline { stroke: color-mix(in srgb, var(--ink) 34%, transparent); stroke-width: 1; }
 .ms-week-band { fill: var(--brass); opacity: 0.08; }
@@ -280,6 +288,7 @@
 .ms-swatch.is-kitty { background: color-mix(in srgb, var(--felt) 62%, var(--brass) 38%); }
 .ms-swatch.is-claim { background: var(--copper); }
 .ms-swatch.is-future { background: var(--muted); }
+.ms-swatch.is-payday { width: 3px; height: 10px; background: var(--ms-tick); }
 
 .ms-readout {
   margin: 9px 0 0;

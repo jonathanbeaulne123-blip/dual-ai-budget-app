@@ -16,13 +16,20 @@ import {
   coursePaths,
   dayOfDateKey,
   fundRolloverByGoal,
+  paydayTickAria,
+  paydayTicks,
+  PAYDAY_TICK_VIEW,
   projectHouseholdFund,
   projectLedgerExperience,
   proposeHouseholdFundContribution,
   recordHouseholdFundReconciliation,
   seedDemoHousehold,
+  shapeWorkJob,
   sharedActionQueue,
   sharedMonthCourse,
+  type Household,
+  type WorkJob,
+  type WorkPaySchedule,
 } from "../src/core/index.ts";
 
 const TODAY = "2026-08-27";
@@ -38,6 +45,48 @@ const kitty = readFileSync(new URL("../src/KittyBanks.tsx", import.meta.url), "u
 
 function demo(today = TODAY) {
   return seedDemoHousehold({ environment: "development", today });
+}
+
+function payJob(memberId: string, paySchedule: WorkPaySchedule, id = "JOB-PAY"): WorkJob {
+  return shapeWorkJob({
+    id,
+    memberId,
+    name: "Pay timing",
+    color: "#31594a",
+    active: true,
+    timezone: "America/Toronto",
+    locationName: "Toronto",
+    gpsEnabled: false,
+    roles: [],
+    paidBreakRate: "role",
+    paidBreakHourlyRateCents: 0,
+    overtimeEnabled: false,
+    overtimeWeeklyThresholdHours: 44,
+    overtimeMultiplier: 1.5,
+    tipOutRules: [],
+    salesFields: [],
+    paySchedule,
+    tipSchedule: paySchedule,
+    tipWeekStartsOn: 1,
+    defaults: {
+      wagesVisibility: "personal",
+      cashTipsVisibility: "personal",
+      cardTipsVisibility: "personal",
+      tipOutVisibility: "personal",
+      wagesDepositAccountId: "ACC-CHEQUING",
+      cashTipsAccountId: "ACC-CASH",
+      cardTipsDepositAccountId: "ACC-CHEQUING",
+    },
+    wagesReceivableAccountId: "",
+    cardTipsReceivableAccountId: "",
+    note: "",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  });
+}
+
+function withJobs(household: Household, jobs: WorkJob[]): Household {
+  return { ...household, workJobs: jobs };
 }
 
 describe("sharedMonthCourse ties to the Fund projection", () => {
@@ -237,7 +286,7 @@ describe("Month Spread fences", () => {
   it("is the Shared Home centre and yields the mosaic to desk plates", () => {
     expect(officeWide).toContain("<MonthSpread");
     expect(officeWide).toContain("<DeskPlate");
-    expect(officeWide).toContain("sharedMonthCourse(booksHousehold, today)");
+    expect(officeWide).toContain("household={booksHousehold}");
     expect(officeWide).not.toContain("sharedMonthCourse(household, today)");
     expect(main).toContain('import "./month-spread.css";');
   });
@@ -265,7 +314,7 @@ describe("Month Spread fences", () => {
   });
 
   it("gives the drawing a prose alternative and a keyboard path", () => {
-    expect(spread).toContain("courseAria(course, monthLabel)");
+    expect(spread).toContain("courseAria(course, monthLabel, ticks)");
     expect(spread).toContain('role="figure"');
     expect(spread).toContain('role="button"');
     expect(spread).toContain("tabIndex={0}");
@@ -428,5 +477,138 @@ describe("F-5 · demo seeding cannot silently break a neighbour", () => {
     // subsystems away, which is exactly how this broke the first time.
     const posted = household.transactions.filter((tx) => tx.subcategoryId === bill!.subcategoryId);
     expect(posted).toHaveLength(0);
+  });
+});
+
+describe("the metronome — custodian paydays as timing ticks", () => {
+  const monthSpreadCore = readFileSync(new URL("../src/core/monthSpread.ts", import.meta.url), "utf8");
+
+  it("lands ticks on the custodian's projected cadence dates", () => {
+    let household = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: BIANCA,
+      openedOn: "2026-09-01",
+      createdBy: BIANCA,
+    }).household;
+    household = withJobs(household, [
+      payJob(JONATHAN, {
+        cadence: "weekly",
+        anchorDate: "2026-09-01",
+        weekday: 2,
+        monthDays: [1],
+        customDates: [],
+        reminderTime: "09:00",
+      }, "JOB-JONATHAN"),
+      payJob(BIANCA, {
+        cadence: "biweekly",
+        anchorDate: "2026-09-04",
+        weekday: 5,
+        monthDays: [15, 30],
+        customDates: [],
+        reminderTime: "09:00",
+      }),
+    ]);
+
+    const ticks = paydayTicks(household, "2026-09");
+    expect(ticks.map((tick) => tick.date)).toEqual(["2026-09-04", "2026-09-18"]);
+  });
+
+  it("unions two active custodian jobs and ignores an inactive one", () => {
+    let household = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: BIANCA,
+      openedOn: "2026-09-01",
+      createdBy: BIANCA,
+    }).household;
+    const extra = payJob(BIANCA, {
+      cadence: "twice-monthly",
+      anchorDate: "2026-09-01",
+      weekday: 1,
+      monthDays: [15, 30],
+      customDates: [],
+      reminderTime: "09:00",
+    }, "JOB-SECOND");
+    const retired = { ...payJob(BIANCA, {
+      cadence: "weekly",
+      anchorDate: "2026-09-01",
+      weekday: 1,
+      monthDays: [1],
+      customDates: [],
+      reminderTime: "09:00",
+    }, "JOB-OLD"), active: false };
+    household = withJobs(household, [
+      payJob(BIANCA, {
+        cadence: "biweekly",
+        anchorDate: "2026-09-04",
+        weekday: 5,
+        monthDays: [15, 30],
+        customDates: [],
+        reminderTime: "09:00",
+      }),
+      extra,
+      retired,
+    ]);
+
+    expect(paydayTicks(household, "2026-09").map((tick) => tick.date)).toEqual([
+      "2026-09-04",
+      "2026-09-15",
+      "2026-09-18",
+      "2026-09-30",
+    ]);
+  });
+
+  it("returns nothing when the Fund is closed or the custodian has no pay cadence", () => {
+    expect(paydayTicks(catalogHousehold(), "2026-09")).toEqual([]);
+    const open = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: BIANCA,
+      openedOn: "2026-09-01",
+      createdBy: BIANCA,
+    }).household;
+    expect(paydayTicks(open, "2026-09")).toEqual([]);
+  });
+
+  it("carries no amount, height, or value on a tick", () => {
+    const household = demo();
+    const ticks = paydayTicks(household, "2026-08");
+    expect(ticks.length).toBeGreaterThan(0);
+    for (const tick of ticks) {
+      expect(Object.keys(tick)).toEqual(["date"]);
+      expect(tick).not.toHaveProperty("amountCents");
+      expect(tick).not.toHaveProperty("cents");
+      expect(JSON.stringify(tick)).not.toMatch(/amount|cents|\$|cad/i);
+    }
+    expect(paydayTickAria(ticks)).toMatch(/Timing only, no amount/);
+    expect(paydayTickAria(ticks)).not.toMatch(/\$|CAD|cents/i);
+    expect(PAYDAY_TICK_VIEW).toEqual({ length: 8 });
+    expect(PAYDAY_TICK_VIEW).not.toHaveProperty("amountCents");
+  });
+
+  it("does not change courseScale, courseTop, or courseBottom", () => {
+    expect(monthSpreadCore).toContain(`export function courseScale(peakOperatingCents: number, peakKittyCents: number): number {
+  const top = peakOperatingCents > 0 ? COURSE_VIEW.topRoom / peakOperatingCents : Number.POSITIVE_INFINITY;
+  const bottom = peakKittyCents > 0 ? COURSE_VIEW.bottomRoom / peakKittyCents : Number.POSITIVE_INFINITY;
+  const scale = Math.min(top, bottom);
+  return Number.isFinite(scale) ? scale : 0;
+}`);
+    expect(monthSpreadCore).toContain(`export function courseTop(cents: number, scale: number): number {
+  return COURSE_VIEW.baseline - Math.max(0, cents) * scale;
+}`);
+    expect(monthSpreadCore).toContain(`export function courseBottom(cents: number, scale: number): number {
+  return COURSE_VIEW.baseline + Math.max(0, cents) * scale;
+}`);
+    const scale = courseScale(500_000, 100_000);
+    expect(courseTop(100_00, scale)).toBe(COURSE_VIEW.baseline - 100_00 * scale);
+    expect(courseBottom(100_00, scale)).toBe(COURSE_VIEW.baseline + 100_00 * scale);
+  });
+
+  it("draws ticks as felt rules below the axis, labelled payday once, never as CAD", () => {
+    expect(spread).toContain("paydayTicks(household, course.monthKey)");
+    expect(spread).toContain('className="ms-payday-tick"');
+    expect(spread).toContain(">payday</text>");
+    expect(spread).toContain("index === 0");
+    expect(spread).toContain("PAYDAY_TICK_VIEW.length");
+    expect(spread).not.toMatch(/ticks\.map[\s\S]{0,400}formatCad/);
+    expect(css).toContain("--ms-tick: var(--felt)");
+    expect(css).toContain("stroke-width: 3");
+    expect(css).toContain(".ms-payday-tick");
+    expect(officeWide).toContain("household={booksHousehold}");
   });
 });

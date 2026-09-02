@@ -1,5 +1,22 @@
 # AI Task and Handoff Standard
 
+## Register slice 10 — the metronome (2026-09-02)
+
+**Status:** Implemented on `cursor/register-10-metronome-115c`; draft PR pending. **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Baseline `origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3`.
+
+**Household outcome:** Bianca's projected paydays appear as regular felt ticks below the Course axis. Ticks carry no amount. Jonathan's confirmed contributions keep their existing marks. The contrast is the information.
+
+**Budget delta (5):** `+3`. **Engagement delta (3):** `+2`. Books win: no assumed paycheck CAD, no Course scale change, ticks from the custodian's `paySchedule` only.
+
+**What changed:** `paydayTicks` + `PaydayTick` (date only) in `monthSpread.ts`; Course axis ticks in `MonthSpread.tsx`; `--ms-tick: var(--felt)` in `month-spread.css`; `OfficeWide` passes `booksHousehold` (justified host wire). Focused tests in `test/month-spread.test.ts`. Worksession: [`worksessions/2026-09-02-register-10-metronome.md`](worksessions/2026-09-02-register-10-metronome.md). ChatGPT packet: [`briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md`](briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md).
+
+**Verification:** Focused `test/month-spread.test.ts` **39 passed**. Broader gate and visual proof pending on this head.
+
+**Data/environment:** Local fictional Development only. No hosted row, schema, secret, Production, or deploy.
+
+**Next owner:** GPT-5 Pro review-then-merge packet. Do not stack #285. Do not touch Production.
+
+
 ## Register slice 9 Ask confirmation candidate (2026-09-02)
 
 **Status:** PR [#292](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/292) passed exact-head GitHub checks at `d894734f59af06b340ca344d5b084e40117e3d5c`. Jonathan authorized push, merge, and Development deployment on 2026-09-02. Current-main integration over `c162d135f6e1741cabeaf398259aa1a8ce6ad74e` is in verification because PR #291 advanced `main` after those checks. No merge, Development deployment, hosted row, schema, secret, or Production mutation has occurred.
