@@ -1,14 +1,14 @@
 # Hearth worksession — Clerk Slice 4 weekly document
 
-- **Status:** OPEN
+- **Status:** LOCAL PROOF COMPLETE; DRAFT PR #293; NOT MERGED
 - **Opened:** 2026-09-02 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Cursor
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/clerk-4-weekly-49a4`
 - **Baseline SHA:** `9f74cb780fed8a1a595a2dd791f510545a85570d`
-- **Head SHA:** pending
-- **PR or issue:** pending draft
+- **Head SHA:** `c02232d85f343a66e408cef8b386a1ed9876ee6a`
+- **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -27,8 +27,8 @@ Jonathan and Bianca can open one calm weekly household document at different tim
 
 ## Verified baseline
 
-- Facts: `origin/main@6918d29`; sealed stamp core `9f74cb7` on `origin/codex/clerk-4-durable-stamp`; Gate A exports exist; `askAlternatives` lives in `src/core/ask.ts`; App `commitHousehold` does not yet pass `actingMemberId`.
-- Inferences: Cloud Agent git policy uses `cursor/clerk-4-weekly-49a4` instead of the packet's `clerk/4-weekly`. Jonathan ordered Slice 4 on this agent after that default was stated.
+- Facts: sealed stamp core `9f74cb7`; Gate A exports exist; `askAlternatives` lives in `src/core/ask.ts`; `commitHousehold` now passes `actingMemberId`.
+- Inferences: Cloud Agent git policy used `cursor/clerk-4-weekly-49a4` instead of the packet's `clerk/4-weekly`. Jonathan ordered Slice 4 on this agent after that default was stated.
 
 ## Scope
 
@@ -48,33 +48,38 @@ Jonathan and Bianca can open one calm weekly household document at different tim
 
 ## Acceptance evidence
 
-- [ ] One viewer stamps; document completes with the other line blank
-- [ ] Partner stamp control absent; command boundary rejects wrong actor
-- [ ] Non-owner projection/DOM has no route or hours data
-- [ ] Ask owner sees optional routes/refusal plus read-only other door
-- [ ] `cadence: "none"` renders no offer; weekday governs weekly eligibility
-- [ ] Clerk ready/integrity/withheld/empty preserved
-- [ ] Register has no ratio/ranking
-- [ ] Act 3 uses exact motion ids/statuses; stamp changes none
-- [ ] Offline/loading/error/untied/not-enough-data/empty-motion usable
-- [ ] Monthly sit-down tests still green
-- [ ] Keyboard 320px focus; reduced motion preserves state
-- [ ] Screens at 320/390/720/~1100
+- [x] One viewer stamps; document completes with the other line blank
+- [x] Partner stamp control absent; command boundary rejects wrong actor
+- [x] Non-owner projection/DOM has no route or hours data
+- [x] Ask owner sees optional routes/refusal plus read-only other door
+- [x] `cadence: "none"` renders no offer; weekday governs weekly eligibility
+- [x] Clerk ready/integrity/withheld/empty preserved
+- [x] Register has no ratio/ranking
+- [x] Act 3 uses exact motion ids/statuses; stamp changes none
+- [x] Offline/loading/error/untied/not-enough-data/empty-motion usable
+- [x] Monthly sit-down tests still green
+- [x] Keyboard 320px focus; reduced motion preserves state
+- [x] Screens at 320/390/720/~1100
 
 ## Plan
 
 - [x] Branch from sealed SHA
-- [ ] Projection + tests
-- [ ] Renderer + stamp wiring
-- [ ] Proof + handoff
+- [x] Projection + tests
+- [x] Renderer + stamp wiring
+- [x] Proof + handoff
 
 ## Evidence log
 
-Record exact commands, results, visual widths, links, and current SHAs.
+- `pnpm exec vitest run test/weekly-document.test.ts test/weekly-document-ui.test.ts --maxWorkers=1` → 2 files, 14 tests passed
+- Packet regression + `test/app-startup-p1.test.ts` → 13 files, 101 tests passed
+- `pnpm check` tests lanes green; first `tsc` failure repaired at `89dc36e`; later `tsc`, Vite build, `pnpm ai:verify`, and `git diff --check 9f74cb7` green
+- Keyboard focus: `outline: rgb(44, 106, 78) solid 2px`, `outline-offset: 2px`, `:focus-visible`
+- Independent books PASS; privacy PASS; UX P1 live-region/figure clamp repaired at `c02232d`
+- Visual artifacts under `/opt/cursor/artifacts/weekly_document_*.png` and `weekly_document_walkthrough.mp4`
 
 ## Decisions
 
-Follow the Cursor packet over the dated build manual and UX packet. Other door is read-only. No new D-number collision: D-196 records the weekly document presentation.
+Follow the Cursor packet over the dated build manual and UX packet. Other door is read-only. Stamp copy stays `stamp`, like Charter `sign`. No extra Confirm on acknowledgement. D-196 records the weekly document presentation.
 
 ## Remaining uncertainty
 
@@ -82,4 +87,4 @@ Hosted RPC still does not inspect stamp JSON.
 
 ## Handoff
 
-Local implementation in progress. Not merged, not deployed, not live.
+Local proof is on draft PR #293. Not merged, not deployed, not live. Next owner: Jonathan, for review and an explicit merge/deploy decision.

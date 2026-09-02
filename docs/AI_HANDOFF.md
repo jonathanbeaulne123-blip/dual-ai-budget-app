@@ -1,5 +1,30 @@
 # AI Task and Handoff Standard
 
+## Clerk Slice 4 weekly document (2026-09-02)
+
+**Status:** Local implementation on `cursor/clerk-4-weekly-49a4` at `c02232d85f343a66e408cef8b386a1ed9876ee6a` over sealed stamp core `9f74cb780fed8a1a595a2dd791f510545a85570d`. Draft [PR #293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293). **Not merged, not deployed, not live.** Risk: **High**.
+
+**Household outcome:** Jonathan and Bianca can open one calm weekly household document at different times. It reads the cited Clerk record, shows the conserved month register, puts the household Ask beside a read-only other door, and lists existing motions. Either person may stamp only their own line; one stamp completes the weekly and the other line remains blank without a reminder. Routes stay with the unique active non-custodian.
+
+**Dual Course:** Budget `+3`; Engagement `+3`. Books won: monthly `SitDownSession.act` is unchanged, the other door has no `place` control, stamps are acknowledgement-only `WSTAMP-` facts, and partner-work routes never enter the non-owner projection.
+
+**Architecture:** `weeklyDocument` is a viewer projection over sealed Clerk, register, Ask, alternatives, routes, Fund/Charter motions, and Gate A stamps. `WeeklyDocument` is a sibling of `SitDownGuide` on the Office postcard with local act state `0|1|2|3`. `cadence: "none"` offers nothing; weekly follows `cadenceWeekday`; biweekly/monthly withhold. `askRoutes` runs only for the unique active non-custodian. `commitHousehold` passes `actingMemberId`. D-196. Worksession: [`worksessions/2026-09-02-clerk-weekly-document.md`](worksessions/2026-09-02-clerk-weekly-document.md).
+
+**Verification:**
+- Focused weekly: `pnpm exec vitest run test/weekly-document.test.ts test/weekly-document-ui.test.ts --maxWorkers=1` — **2 files / 14 tests passed**
+- Packet regression including Bianca startup: `pnpm exec vitest run test/weekly-document-stamp.test.ts test/clerk-reading.test.ts test/clerk-citations.test.ts test/clerk-fences.test.ts test/contribution-register.test.ts test/ask.test.ts test/ask-alternatives.test.ts test/ask-routes.test.ts test/charter-record.test.ts test/held.test.ts test/sitdown.test.ts test/month-rehearsal-mainline.test.ts test/app-startup-p1.test.ts --maxWorkers=1` — **13 files / 101 tests passed**
+- First `pnpm check`: AI-surface **41 files / 2 Clerk fences**; fast lane **220 passed / 1 skipped files, 1,504 passed / 2 skipped tests**; books lane **18 passed / 1 skipped files, 145 passed / 1 skipped tests**; `tsc` failed on an empty-string comparison in the UI test, repaired at `89dc36e`
+- After the TypeScript repair: `pnpm ai:verify` passed; `pnpm exec tsc --noEmit` passed; Vite production build **407 modules**; Hercules Pro UI build passed; `git diff --check 9f74cb7` passed
+- After a11y follow-up at `c02232d`: focused weekly **14/14**; `tsc --noEmit` passed; Vite production build passed
+- Independent read-only books audit: **PASS** (no P0–P3)
+- Independent read-only privacy audit: **PASS** (no P0–P3)
+- Independent UX audit: two P1 live-region/landmark gaps repaired at `c02232d`; stamp remains a quiet Charter-like `stamp` control (no extra Confirm) because the packet forbids nags
+- Visual proof (fictional Development catalog): 320/390/720/1100, both viewers, keyboard focus `2px solid rgb(44, 106, 78)` offset `2px`, reduced motion `transition: none`, loading/error/offline, cadence none, one stamp completes with the partner line blank
+
+**Boundaries:** Local fictional/catalog fixtures only. No hosted schema/row, secret, provider, Production, merge, or deploy. Hosted RPC still does not inspect stamp JSON.
+
+**Next owner:** Jonathan reviews draft PR #293 and the independent High-risk books/privacy/UX notes, then decides whether to merge or deploy. Do not infer live from this local proof.
+
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 
 **Status:** Corrected combined candidate on `codex/clerk-2-3-release`, integrated with current `origin/main@e7d98389be1a4ad831d4d83204061a68955df232` at `008310113e392827718e9013f92d3c4c499b5e15`; this evidence record follows. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects, repaired at `4624c31`; exact-head PR review then found a third P2 for long unbroken imported labels, repaired with `overflow-wrap: anywhere` and a regression fixture. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
