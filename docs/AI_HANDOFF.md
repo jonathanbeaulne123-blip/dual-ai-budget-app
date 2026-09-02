@@ -11,12 +11,11 @@
 **What changed:** `paydayTicks` + `PaydayTick` (date only) in `monthSpread.ts`; Course axis ticks in `MonthSpread.tsx`; `--ms-tick: var(--felt)` in `month-spread.css`; `OfficeWide` passes `booksHousehold` (justified host wire). First `payday` label sits in a Chip **above** the axis so it does not collide with day numbers or clip the viewBox. Focused tests in `test/month-spread.test.ts`. Worksession: [`worksessions/2026-09-02-register-10-metronome.md`](worksessions/2026-09-02-register-10-metronome.md). ChatGPT packet: [`briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md`](briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md).
 
 **Verification:**
-- Focused `pnpm exec vitest run test/month-spread.test.ts`: **39 passed**
+- Focused `pnpm exec vitest run test/month-spread.test.ts`: **40 passed** (includes divergent `tipSchedule` exclusion)
 - Bianca Month `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **10 passed**
 - Local `pnpm check` on `843a21e`: **exit 0**. `ai:verify` 41 files; fast lane **220 passed / 1 skipped files, 1,511 passed / 2 skipped tests**; books lane **18 passed / 1 skipped files, 146 passed / 1 skipped tests**; Vite production build 404 modules + Hercules Pro UI
 - GitHub `test` on exact head `843a21eff4b25d295d96a5305aafd64d2247760c`: push run `33597093965` success; PR run `33597098018` success. Workers preview is not the kitchen URL
-- Independent books: PASS WITH NOTES. Privacy: PASS WITH NOTES. UX: PASS WITH NOTES then Chip-above-axis repair. Verifier: PASS WITH NOTES
-- Component harness screenshots at 320 / 390 / 720 / ~1100, empty staff, night, reduced-motion, plus Course crops. Fictional Development copy. Not a kitchen walkthrough.
+- Independent books at `843a21e`: **PASS WITH NOTES** (no P0/P1; P2 tipSchedule fence was missing, now added). Privacy: **PASS WITH NOTES** (`household?: Household` is a future leak, not a current disclosure). Verifier: **PASS WITH NOTES** (claims match source; draft #294 isolated from #285). UX auditor could not run (third-party usage limit); parent visual proof at 320 / 390 / 720 / ~1100, empty, night, reduced-motion, Course crops.
 
 **Data/environment:** Local fictional Development only. No hosted row, schema, secret, Production, or deploy.
 

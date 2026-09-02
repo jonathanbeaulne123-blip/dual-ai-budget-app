@@ -63,11 +63,11 @@ On Shared Home's Month Spread Course, the Fund custodian's projected paydays app
 
 ## What Cursor already claims as proven (treat as claims)
 
-- Focused test/month-spread.test.ts: 39 passed, including cadence-date landing, inactive/non-custodian exclusion, no-amount fence, exact courseScale/courseTop/courseBottom source, and axis drawing fences.
+- Focused test/month-spread.test.ts: 40 passed, including cadence-date landing, inactive/non-custodian exclusion, divergent tipSchedule exclusion, no-amount fence, exact courseScale/courseTop/courseBottom source, and axis drawing fences.
 - Existing conservation, posted-vs-future, and Standing-bar cases were not rewritten.
 - pnpm test:fast: 1,511 passed / 2 skipped. Bianca Month 10 passed. Local pnpm check on 843a21e: exit 0 (books lane 146 passed / 1 skipped; Vite 404 modules). pnpm ai:verify passed.
 - GitHub test succeeded on exact head 843a21eff4b25d295d96a5305aafd64d2247760c (push 33597093965, PR 33597098018). A Workers preview is not the kitchen URL.
-- Independent Cursor books: PASS WITH NOTES. Privacy: PASS WITH NOTES. UX: PASS WITH NOTES then Chip above the axis. Verifier: PASS WITH NOTES.
+- Independent books at 843a21e: PASS WITH NOTES (no P0/P1; tipSchedule exclusion is now tested). Privacy: PASS WITH NOTES (full Household on MonthSpread is a future leak, not a current disclosure). Verifier: PASS WITH NOTES. UX auditor could not complete (usage limit); Chip-above-axis is in source and in the component harness.
 - Component harness screenshots at 320 / 390 / 720 / ~1100, empty staff, night, reduced-motion. Fictional Development. Not kitchen.
 
 ## Open findings Cursor did not close (verify; do not rubber-stamp)
@@ -75,7 +75,7 @@ On Shared Home's Month Spread Course, the Fund custodian's projected paydays app
 Label each as still true, false at this SHA, or unproven.
 
 1. Demo kitchen Bianca and Jonathan share the same biweekly Demo Bistro job, so ticks and contribution marks can land on related days in the seed. Distinct-cadence proof is in tests.
-2. OfficeWide household={booksHousehold} was a justified expansion (packet listed four files). Confirm no other host gained ticks.
+2. OfficeWide household={booksHousehold} was a justified expansion (packet listed four files). Confirm no other host gained ticks. Privacy: the full Household prop is unused beyond paydayTicks and is a future leak; narrowing to PaydayTick[] is a later packet unless you treat it as a merge nit.
 3. Visual 320 / 390 / 720 / ~1100 exist as a fictional component harness at this packet; mark kitchen-unproven.
 4. Ticks appear on the empty staff as well as the drawn Course. Decide if that is honest timing or clutter.
 5. Do not merge #285 with this PR.
