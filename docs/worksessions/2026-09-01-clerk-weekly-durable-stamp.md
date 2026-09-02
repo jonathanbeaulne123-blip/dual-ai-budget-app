@@ -1,13 +1,13 @@
 # Hearth worksession — Clerk weekly durable stamp
 
-- **Status:** OPEN
+- **Status:** CLOSED — locally verified and handed off
 - **Opened:** 2026-09-01 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `C:\Users\jonat\OneDrive\Documents\ChatGPT\Budget App`
 - **Branch:** `codex/clerk-4-durable-stamp`
 - **Baseline SHA:** `6918d29fdc9e5976b09e94705015c79837b2e988`
-- **Head SHA:** local working tree
+- **Head SHA:** core `9f74cb780fed8a1a595a2dd791f510545a85570d`; handoff documentation follows locally
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -48,24 +48,28 @@ Each active household member can place their own calm weekly sticker. It survive
 
 ## Acceptance evidence
 
-- [ ] Two devices independently stamp and convergence retains both facts.
-- [ ] Only the acting active member can create their own stamp; duplicate self-stamps are refused.
-- [ ] One stamp completes the week while other active-member lines remain blank.
-- [ ] Shared and command-log continuity retain stamps; Personal and Hercules projections omit them.
-- [ ] Tampered actor, command kind, content hash, and immutable same-id rows fail closed.
-- [ ] A stamp changes no financial facts or financial audit hash.
-- [ ] Focused tests, `pnpm check`, independent audits, and exact diff review pass.
+- [x] Two devices independently stamp and convergence retains both facts.
+- [x] Only the acting active member can create their own stamp; duplicate self-stamps are refused.
+- [x] One stamp completes the week while other active-member lines remain blank.
+- [x] Shared and command-log continuity retain stamps; Personal and Hercules projections omit them.
+- [x] Tampered actor, command kind, content hash, and immutable same-id rows fail closed.
+- [x] A stamp changes no financial facts or financial audit hash.
+- [x] Focused tests, `pnpm check`, independent audits, and exact diff review pass.
 
 ## Plan
 
 - [x] Verify exact clean baseline and conflicting monthly record.
-- [ ] Implement and test the append-only stamp core.
-- [ ] Run independent books/privacy audits and verification.
-- [ ] Seal a local core commit and rebuild the Cursor handoff against it.
+- [x] Implement and test the append-only stamp core.
+- [x] Run independent books/privacy audits and verification.
+- [x] Seal a local core commit and rebuild the Cursor handoff against it.
 
 ## Evidence log
 
 - 2026-09-01: `origin/main` resolved to `6918d29fdc9e5976b09e94705015c79837b2e988`; isolated branch created from that exact commit.
+- 2026-09-02: focused stamp/continuity/outbox/monthly regressions passed; the final stamp file contains 6 tests.
+- 2026-09-02: `pnpm check:windows` passed: fast lane 218 passed / 1 skipped files and 1,490 passed / 2 skipped tests; serial lane 18 passed / 1 skipped files and 145 passed / 1 skipped tests; total 1,635 passed / 3 skipped. AI verification, TypeScript, all PGlite/books lanes, and the 401-module build passed.
+- 2026-09-02: independent books/sync and privacy reviews raised actor/delta/duplicate-history findings; exact-delta acceptance, Google-member enqueue/flush binding, strict duplicate failure, Toronto date binding, and historical inactive-member replay closed them. Final reviews found no supported-client blocker.
+- 2026-09-02: `git diff --check` passed with line-ending notices only; changed-path sensitive-file scan passed.
 
 ## Decisions
 
@@ -77,8 +81,10 @@ Each active household member can place their own calm weekly sticker. It survive
 
 ## Remaining uncertainty
 
-- Clerk Slice 4's proposed goal-deferral “place” action still lacks a command-backed motion contract. The revised packet will recommend a read-only other door.
+- Clerk Slice 4's goal-deferral “place” action still lacks a command-backed motion contract. The revised packet makes the other door read-only.
+- The hosted RPC authenticates membership but does not inspect stamp JSON; a deliberately forged direct authenticated RPC remains outside the supported-client proof and needs a separate server-hardening packet before that stronger claim.
+- Live hosted two-device use remains release evidence; no network or Production mutation was performed here.
 
 ## Handoff
 
-Codex is the current writer. No PR, push, merge, deployment, hosted data, or Production change is authorized by this worksession.
+Cursor may implement only the bounded packet in `docs/briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md` from core `9f74cb780fed8a1a595a2dd791f510545a85570d`. The core and packet remain local. No PR, push, merge, deployment, hosted data, or Production change was performed.

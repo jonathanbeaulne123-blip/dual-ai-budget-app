@@ -266,7 +266,7 @@ describe("Held contribution motions", () => {
 
     const tip = current;
     const primary = primaryCommandRef(refs);
-    const payload = compactedCommandPayload(
+    const payload = await compactedCommandPayload(
       { confirmationIds: refs.map((ref) => ref.confirmationId), commandRefs: refs },
       primary,
       tip,

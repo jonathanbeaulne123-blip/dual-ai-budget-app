@@ -186,5 +186,6 @@ describe("weekly document viewer projection", () => {
     expect(source).not.toMatch(/\bpercent\b|\bratio\b|\bshare\b/i);
     expect(source).not.toContain("SitDownSession");
     expect(source).not.toContain("saveSitDownSession");
+    expect(source).not.toContain("moveAskGoalClaimToNextMonth");
   });
 });

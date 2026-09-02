@@ -116,7 +116,7 @@ describe("Bianca Month mainline contract", () => {
 
     const refs: ContinuityCommandRef[] = [startRef, incomeRef];
     const primary = primaryCommandRef(refs);
-    const compactedPayload = compactedCommandPayload(
+    const compactedPayload = await compactedCommandPayload(
       { confirmationIds: refs.map((row) => row.confirmationId), commandRefs: refs },
       primary,
       acceptedIncome.household,

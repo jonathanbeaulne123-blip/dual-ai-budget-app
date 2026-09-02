@@ -72,8 +72,11 @@ describe("Ask alternatives", () => {
     const ask = householdAsk(household, "2026-09-12");
 
     expect(ask.askCents).toBe(34000);
+    const expectedRecurrence = household.recurrences.find((row) => row.note.includes("Halifax"))!;
     expect(askAlternatives(ask)).toEqual([{
-      goalId: expect.any(String),
+      goalId: expectedRecurrence.goalId,
+      recurrenceId: expectedRecurrence.id,
+      claimDate: "2026-09-30",
       label: "Halifax",
       claimCents: 30000,
       askIfDeferredCents: 4000,
@@ -128,11 +131,12 @@ describe("Ask alternatives", () => {
     expect(ask).toEqual(before);
   });
 
-  it("uses only canonical goal-claim rows and imports no bill-source projector", () => {
+  it("uses only canonical goal-claim rows with their exact recurrence identity", () => {
     const source = readFileSync(new URL("../src/core/ask.ts", import.meta.url), "utf8");
 
     expect(source).toContain('const GOAL_CLAIM_PREFIX = "goal-claim:"');
-    expect(source).not.toContain('"recurrence"');
+    expect(source).toContain("row.recurrenceId");
+    expect(source).toContain("row.goalId !== goalId");
     expect(source).not.toContain('"posted"');
     expect(source).not.toContain("monthObligations");
   });

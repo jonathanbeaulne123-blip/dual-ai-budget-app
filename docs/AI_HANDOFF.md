@@ -2,28 +2,36 @@
 
 ## Clerk Slice 4 weekly document (2026-09-02)
 
-**Status:** Local implementation on `cursor/clerk-4-weekly-49a4` over sealed stamp core `9f74cb780fed8a1a595a2dd791f510545a85570d`. Draft [PR #293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293). **Not merged, not deployed, not live.** Risk: **High**. Implementation code through `c02232d`; this handoff/worksession refresh follows. After this commit, the branch head is the docs SHA on `cursor/clerk-4-weekly-49a4`.
+**Status:** Integrated with current `origin/main@7101dce` (Ask confirm #292 + stamp core #291) on `cursor/clerk-4-weekly-49a4`. Draft [PR #293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293). Jonathan authorized merge and Development kitchen deployment on 2026-09-02. **Merge/deploy in progress; not yet live-verified.** Risk: **High**.
 
-**Household outcome:** Jonathan and Bianca can open one calm weekly household document at different times. It reads the cited Clerk record, shows the conserved month register, puts the household Ask beside a read-only other door, and lists existing motions. Either person may stamp only their own line; one stamp completes the weekly and the other line remains blank without a reminder. Routes stay with the unique active non-custodian.
+**Household outcome:** Jonathan and Bianca can open one calm weekly household document at different times. It reads the cited Clerk record, shows the conserved month register, puts the household Ask beside a read-only other door, and lists existing motions. Either person may stamp only their own line; one stamp completes the weekly and the other line remains blank without a reminder. Routes stay with the unique active non-custodian. The desk Ask `Raise it` Confirm from #292 remains on wide Shared Home only; the weekly page does not gain a `place` or goal-move control.
 
-**Dual Course:** Budget `+3`; Engagement `+3`. Books won: monthly `SitDownSession.act` is unchanged, the other door has no `place` control, stamps are acknowledgement-only `WSTAMP-` facts, and partner-work routes never enter the non-owner projection.
+**Dual Course:** Budget `+3`; Engagement `+3`. Books won: monthly `SitDownSession.act` is unchanged, the weekly other door has no `place` control, stamps are acknowledgement-only `WSTAMP-` facts, and partner-work routes never enter the non-owner projection.
 
 **Architecture:** `weeklyDocument` is a viewer projection over sealed Clerk, register, Ask, alternatives, routes, Fund/Charter motions, and Gate A stamps. `WeeklyDocument` is a sibling of `SitDownGuide` on the Office postcard with local act state `0|1|2|3`. `cadence: "none"` offers nothing; weekly follows `cadenceWeekday`; biweekly/monthly withhold. `askRoutes` runs only for the unique active non-custodian. `commitHousehold` passes `actingMemberId`. D-196. Worksession: [`worksessions/2026-09-02-clerk-weekly-document.md`](worksessions/2026-09-02-clerk-weekly-document.md).
 
 **Verification:**
-- Focused weekly: `pnpm exec vitest run test/weekly-document.test.ts test/weekly-document-ui.test.ts --maxWorkers=1` — **2 files / 14 tests passed**
-- Packet regression including Bianca startup: `pnpm exec vitest run test/weekly-document-stamp.test.ts test/clerk-reading.test.ts test/clerk-citations.test.ts test/clerk-fences.test.ts test/contribution-register.test.ts test/ask.test.ts test/ask-alternatives.test.ts test/ask-routes.test.ts test/charter-record.test.ts test/held.test.ts test/sitdown.test.ts test/month-rehearsal-mainline.test.ts test/app-startup-p1.test.ts --maxWorkers=1` — **13 files / 101 tests passed**
-- First `pnpm check`: AI-surface **41 files / 2 Clerk fences**; fast lane **220 passed / 1 skipped files, 1,504 passed / 2 skipped tests**; books lane **18 passed / 1 skipped files, 145 passed / 1 skipped tests**; `tsc` failed on an empty-string comparison in the UI test, repaired at `89dc36e`
-- After the TypeScript repair: `pnpm ai:verify` passed; `pnpm exec tsc --noEmit` passed; Vite production build **407 modules**; Hercules Pro UI build passed; `git diff --check 9f74cb7` passed
-- After a11y follow-up at `c02232d`: focused weekly **14/14**; `tsc --noEmit` passed; Vite production build passed
-- Independent read-only books audit: **PASS** (no P0–P3)
-- Independent read-only privacy audit: **PASS** (no P0–P3)
-- Independent UX audit: two P1 live-region/landmark gaps repaired at `c02232d`; stamp remains a quiet Charter-like `stamp` control (no extra Confirm) because the packet forbids nags
-- Visual proof (fictional Development catalog): 320/390/720/1100, both viewers, keyboard focus `2px solid rgb(44, 106, 78)` offset `2px`, reduced motion `transition: none`, loading/error/offline, cadence none, one stamp completes with the partner line blank
+- Focused weekly: `pnpm exec vitest run test/weekly-document.test.ts test/weekly-document-ui.test.ts --maxWorkers=1` — **2 files / 14 tests passed** on pre-integration head
+- Packet regression including Bianca startup: **13 files / 101 tests passed** on pre-integration head
+- Independent read-only books audit: **PASS**; privacy audit: **PASS**; UX P1 live-region/figure clamp repaired at `c02232d`
+- Visual proof (fictional Development catalog): 320/390/720/1100, both viewers, keyboard focus, reduced motion, loading/error/offline, cadence none
+- Current-main integration and live D-041 kitchen HTTP are recorded after merge
 
-**Boundaries:** Local fictional/catalog fixtures only. No hosted schema/row, secret, provider, Production, merge, or deploy. Hosted RPC still does not inspect stamp JSON. `origin/main` moved to `7101dce` after this branch started (stamp core merged as #291, Register slice 9 Ask confirm as #292). This packet stayed on exact baseline `9f74cb7`; rebase onto current main is Jonathan's merge-prep decision.
+**Boundaries:** No hosted schema/row, secret, provider, or Production mutation. Hosted RPC still does not inspect stamp JSON. Kitchen postcard does not pass loading/error/offline; those surfaces exist on the component.
 
-**Next owner:** Jonathan reviews draft PR #293 and the independent High-risk books/privacy/UX notes, then decides whether to rebase onto current `main`, merge, or deploy. Do not infer live from this local proof.
+**Next owner:** Cursor completes authorized merge to `main`, waits for D-041, and records live HTTP separately from merge.
+
+## Register slice 9 Ask confirmation (2026-09-02)
+
+**Status:** Merged via [#292](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/292) onto `main` as `7101dce`. Kitchen live for that merge is a separate D-041 evidence step. Risk: **High**.
+
+**Household outcome:** Jonathan's wide Shared Home shows the existing Fund Ask and other door. `Raise it` opens a small, focused confirmation whose canonical action says `Move Halifax to next month`. Confirming advances only the exact Halifax shared monthly standing-order date; no cash, journal row, Fund event, contribution, balance, or saved amount moves. Bianca's default custodian surface does not receive the panel or command.
+
+**Dual Course:** Budget `+3`; Engagement `+2`. Books won: the UI carries the exact recurrence id and claim date from the existing obligation/register fold; the command reprojects the current Ask and refuses stale, mismatched, retired, non-monthly, non-goal, inactive, or custodian requests before mutation.
+
+## Cursor Clerk Slice 4 weekly packet (consumed) (2026-09-02)
+
+**Status:** Consumed by the Slice 4 implementation on `cursor/clerk-4-weekly-49a4`. Packet: [`briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md`](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md). Core seal remains the #291 stamp merge.
 
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 

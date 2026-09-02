@@ -482,7 +482,7 @@ describe("T2-S3 materialized snapshot builder", () => {
       .toBe(await financialAuditHashForScope(tip, "shared", "MEM-001"));
 
     const primary = primaryCommandRef(refs);
-    const compactedPayload = compactedCommandPayload(
+    const compactedPayload = await compactedCommandPayload(
       { confirmationIds: refs.map((ref) => ref.confirmationId), commandRefs: refs },
       primary,
       tip,

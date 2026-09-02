@@ -21,6 +21,8 @@ import {
   cookOffScore,
   sitDownPostcard,
   sharedMonthCourse,
+  askBelongsOnDesk,
+  moveAskGoalClaimToNextMonth,
   type DeskPlateId,
   type PersonalLedgerStory as PersonalLedgerStoryModel,
   type SharedLedgerStory as SharedLedgerStoryModel,
@@ -48,6 +50,7 @@ import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
 import { NotebookBody, PaperBars, PaperSpark, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { MonthSpread } from "./MonthSpread.tsx";
+import { Ask } from "./Ask.tsx";
 import { DeskPlate } from "./DeskPlates.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
@@ -415,6 +418,8 @@ export function OfficeWide({
   const openSpec = openId ? specs[openId] : null;
   /** Shared Home's default centre is the Month Spread. Left plates grow in the mosaic. */
   const spreadIsStage = view === "household" && !openSpec && !monthList;
+  const showAsk = spreadIsStage
+    && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
   const panelId = monthList
     ? `wide-notebook-month-${monthList}`
     : `wide-notebook-${openId ?? "blotter"}`;
@@ -473,14 +478,31 @@ export function OfficeWide({
         </div>
         <div ref={heroRef} className={`office-wide-stage ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}>
           {spreadIsStage && sharedStory ? (
-            <MonthSpread
-              story={sharedStory}
-              course={course}
-              nameOf={nameOf}
-              custodianName={custodianName}
-              onOpenFund={() => onGo("ledger")}
-              onOpenHealth={() => onGo("more")}
-            />
+            <>
+              <MonthSpread
+                story={sharedStory}
+                course={course}
+                nameOf={nameOf}
+                custodianName={custodianName}
+                onOpenFund={() => onGo("ledger")}
+                onOpenHealth={() => onGo("more")}
+              />
+              {showAsk ? (
+                <Ask
+                  household={booksHousehold}
+                  today={today}
+                  memberId={memberId}
+                  busy={busy}
+                  onMove={(alternative) => onKitchen((current) => moveAskGoalClaimToNextMonth(current, {
+                    today,
+                    memberId,
+                    goalId: alternative.goalId,
+                    recurrenceId: alternative.recurrenceId,
+                    claimDate: alternative.claimDate,
+                  }))}
+                />
+              ) : null}
+            </>
           ) : (
           <NotebookBody
             title={

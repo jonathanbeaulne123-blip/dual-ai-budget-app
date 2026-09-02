@@ -296,6 +296,7 @@ describe("weekly document presentation", () => {
     expect(weeklySource).not.toContain("SitDownSession");
     expect(weeklySource).toContain("memberId: viewerMemberId");
     expect(weeklySource).not.toContain("place");
+    expect(weeklySource).not.toContain("moveAskGoalClaimToNextMonth");
     expect(appSource).toContain("actingMemberId: memberId");
     window.matchMedia = ((query: string) => ({
       matches: String(query).includes("prefers-reduced-motion"),
