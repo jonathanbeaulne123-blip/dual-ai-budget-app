@@ -8,7 +8,7 @@
 - **Branch:** `codex/till-2-postmerge-repair`
 - **Baseline SHA:** `02692d7791869057d0fc422d231751cef18ab0c6` (`origin/main`, after Register Slice 8 release)
 - **Head SHA:** pending final exact-head review seal
-- **PR or issue:** PR #298 merged the first pass; forward-repair PR pending; stale PR #295 closed
+- **PR or issue:** PR #298 merged the first pass; forward-repair PR #302 open; stale PR #295 and premature release-record PR #300 closed
 - **Risk:** Release (High money/UI repair plus authorized Development merge/deploy)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development kitchen code only
@@ -55,10 +55,10 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - [x] Background application controls become inert while Swipe is open and restore on close
 - [x] Swipe has one dialog title and an `Amount` pad label
 - [x] Funded Undo routing is explicit by supported command kind, never inferred from a `FUND-EVT-` id alone; command identity persists across reload
-- [x] Expense, refund, income, transfer, and reversal-of-reversal projections agree with append-only journal direction
+- [x] Expense, refund, income, transfer, and reversal-of-reversal projections agree with the compiled journal and append-only direction
 - [x] The ten-second strip is environment/household/member scoped, hidden outside Shared, and cleared before ledger/session/environment switches
 - [x] A funded correction is accepted and persisted without advertising an unsupported second Undo
-- [x] Enter on a focused Close control remains native Close activation and does not advance the CAD pad
+- [x] Enter on focused Close and `Switch kind` disclosure controls remains native and does not advance the CAD pad
 - [x] Custody, duplicates, offline local acceptance/outbox order, operating-balance invariants, and direct-debit semantics stay green
 - [x] 320 / 390 / 720 / ~1100, keyboard/focus, reduced-motion, error, and offline evidence recorded
 - [x] Forward-repair focused regressions and TypeScript pass
@@ -87,10 +87,12 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 - 2026-09-02: forward repair makes all reporting projections resolve append-only reversal lineage; scopes and switch-closes the Swipe strip; suppresses the unsupported follow-up funded Undo; and preserves focused Close Enter. Focused Swipe/statements/accounts/opening/custody/history proof passed 47/47; TypeScript passed.
 - 2026-09-02: forward-repair `pnpm check:windows` passed AI surface; 224 fast files passed / 1 skipped with 1,551 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 146 tests passed / 1 skipped; 1,697 passed / 3 skipped total; TypeScript; 413-module production build; Hercules Pro UI; and redirect guard.
 - 2026-09-02: anti-stale fetch found Register Slice 8 had advanced `origin/main` to `02692d7`. The repair rebased without conflict. Cross-slice focused proof passed 60/60, then the exact rebased candidate passed `pnpm check:windows`: 226 fast files passed / 1 skipped with 1,564 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 146 tests passed / 1 skipped; 1,710 passed / 3 skipped total; TypeScript; 416-module build; Hercules Pro UI; and redirect guard.
+- 2026-09-02: PR #302 first head `6430f43` was cleanly based on `origin/main@02692d7`; both CI runs, Pages, and the Worker preview passed. The public code review nevertheless found one P1 before merge: a reversal-of-reversal was reinstated by reporting projections but negated twice by `compileDocument`; it also found one P2: the global CAD-pad Enter shortcut omitted the focusable `summary` used by Add's `Switch kind`. Merge stayed locked.
+- 2026-09-02: the P1 repair makes compiled document/opening rows and snapshot P&L use the same root-and-parity reversal lineage as budget and statement projections; a regression checks trial balance, equation, snapshot, month summary, and the reinstatement journal line. The P2 repair yields Enter to focused `summary` elements and tests that `Switch kind` remains on the amount slide. Focused books/PGlite/statements/Swipe/Add proof passed 51/51. The full Windows gate then passed AI surface; 226 fast files passed / 1 skipped with 1,565 tests passed / 2 skipped; 18 serial books files passed / 1 skipped with 147 tests passed / 1 skipped; 1,712 passed / 3 skipped total; TypeScript; 416-module production build; Hercules Pro UI; and redirect guard. Fresh exact-head reviews and PR CI remain required before merge.
 
 ## Decisions
 
-- D-197 remains the current-main custody prerequisite. D-198 stays the Slice 2 decision and now explicitly includes the four forward-repair invariants; no new product behavior or decision id is introduced.
+- D-197 remains the current-main custody prerequisite. D-198 stays the Slice 2 decision and now explicitly includes all forward-repair invariants, including compiled-journal parity and native disclosure-key ownership; no new decision id is introduced.
 - PR #295 will not be merged as-is because it duplicates current-main Slice 1 and is not mergeable.
 - One writer owns the repair checkout. Reviewers are read-only and receive an exact immutable head.
 

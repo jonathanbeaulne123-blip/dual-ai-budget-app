@@ -1,4 +1,8 @@
-import { expenseEffect, incomeEffect } from "./budget.ts";
+import {
+  projectedExpenseEffect,
+  projectedIncomeEffect,
+  transactionProjection,
+} from "./budget.ts";
 import { sumCents } from "./money.ts";
 import { isLiabilityKind, normalizeAccountKind } from "./accountKinds.ts";
 import { JOINT, ValidationError, type Account, type Environment, type Household, type Member, type Transaction, type Visibility } from "./types.ts";
@@ -240,17 +244,23 @@ function compileTransfer(household: Household, tx: Transaction, pair: Transactio
   });
 }
 
-function compileOpening(household: Household, tx: Transaction): JournalEntry | null {
-  if (tx.type !== "opening") throw new ValidationError(`${tx.id} is not an opening row.`);
-  if (tx.amountCents <= 0) return null;
-  const bank = household.accounts.find((account) => account.id === tx.accountId);
+function compileOpening(
+  household: Household,
+  tx: Transaction,
+  transactionById: ReadonlyMap<string, Transaction>,
+): JournalEntry | null {
+  const projection = transactionProjection(tx, transactionById);
+  const root = projection.root;
+  if (root.type !== "opening") throw new ValidationError(`${tx.id} is not an opening row.`);
+  if (root.amountCents <= 0) return null;
+  const bank = household.accounts.find((account) => account.id === root.accountId);
   if (!bank) throw new ValidationError(`${tx.id} points at a missing opening account.`);
   const liability = isLiabilityKind(normalizeAccountKind(bank.kind));
-  const direction = tx.reversalOfId ? -1 : 1;
-  const party = tx.splits[0]?.party || JOINT;
+  const direction = projection.multiplier;
+  const party = root.splits[0]?.party || JOINT;
   const lines: Omit<JournalLine, "id" | "lineNo">[] = [];
-  pushSigned(lines, bank.id, (liability ? -1 : 1) * tx.amountCents * direction, party, "");
-  pushSigned(lines, "EQ-OPENING", (liability ? 1 : -1) * tx.amountCents * direction, party, "");
+  pushSigned(lines, bank.id, (liability ? -1 : 1) * root.amountCents * direction, party, "");
+  pushSigned(lines, "EQ-OPENING", (liability ? 1 : -1) * root.amountCents * direction, party, "");
   return finishEntry({
     id: `JE-${tx.id}`,
     date: tx.date,
@@ -261,36 +271,39 @@ function compileOpening(household: Household, tx: Transaction): JournalEntry | n
     originTransactionIds: [tx.id],
     visibility: tx.visibility,
     createdBy: tx.createdBy,
-    recognized: !tx.isDuplicate,
+    recognized: !(tx.isDuplicate || root.isDuplicate),
     duplicateKey: tx.duplicateKey,
     lines,
   });
 }
 
-function compileDocument(tx: Transaction): JournalEntry | null {
-  const pl = tx.subcategoryId ? plAccountId(tx.subcategoryId) : "";
+function compileDocument(
+  tx: Transaction,
+  transactionById: ReadonlyMap<string, Transaction>,
+): JournalEntry | null {
+  const projection = transactionProjection(tx, transactionById);
+  const root = projection.root;
+  const pl = root.subcategoryId ? plAccountId(root.subcategoryId) : "";
   if (!pl) throw new ValidationError(`${tx.id} cannot post to the books: it has no category.`);
   let plSign = 0;
   let bankSign = 0;
-  if (tx.type === "expense") {
+  if (root.type === "expense") {
     plSign = 1;
     bankSign = -1;
-  } else if (tx.type === "income" || tx.type === "refund") {
+  } else if (root.type === "income" || root.type === "refund") {
     plSign = -1;
     bankSign = 1;
   } else {
     throw new ValidationError(`${tx.id} cannot post to the books.`);
   }
-  if (tx.reversalOfId) {
-    plSign *= -1;
-    bankSign *= -1;
-  }
-  const splits = tx.splits.length ? tx.splits : [{ party: JOINT, amountCents: tx.amountCents }];
+  plSign *= projection.multiplier;
+  bankSign *= projection.multiplier;
+  const splits = root.splits.length ? root.splits : [{ party: JOINT, amountCents: root.amountCents }];
   const lines: Omit<JournalLine, "id" | "lineNo">[] = [];
   for (const split of splits) {
     pushSigned(lines, pl, split.amountCents * plSign, split.party, "");
   }
-  pushSigned(lines, tx.accountId, tx.amountCents * bankSign, JOINT, "");
+  pushSigned(lines, root.accountId, root.amountCents * bankSign, JOINT, "");
   return finishEntry({
     id: `JE-${tx.id}`,
     date: tx.date,
@@ -301,7 +314,7 @@ function compileDocument(tx: Transaction): JournalEntry | null {
     originTransactionIds: [tx.id],
     visibility: tx.visibility,
     createdBy: tx.createdBy,
-    recognized: !tx.isDuplicate,
+    recognized: !(tx.isDuplicate || root.isDuplicate),
     duplicateKey: tx.duplicateKey,
     lines,
   });
@@ -319,7 +332,7 @@ export function compileHousehold(household: Household): CompiledBooks {
     let entry: JournalEntry | null = null;
     if (tx.type === "opening") {
       seen.add(tx.id);
-      entry = compileOpening(household, tx);
+      entry = compileOpening(household, tx, transactionsById);
     } else if (tx.type === "transfer") {
       const pair = tx.transferPairId
         ? transactionsById.get(tx.transferPairId)
@@ -329,7 +342,7 @@ export function compileHousehold(household: Household): CompiledBooks {
       entry = compileTransfer(household, tx, pair);
     } else {
       seen.add(tx.id);
-      entry = compileDocument(tx);
+      entry = compileDocument(tx, transactionsById);
     }
     if (!entry) continue;
     for (const line of entry.lines) {
@@ -428,9 +441,10 @@ export function booksEquation(books: CompiledBooks): BooksEquation {
 }
 
 export function snapshotPnL(household: Household): { incomeCents: number; expenseCents: number } {
+  const transactionById = new Map(household.transactions.map((transaction) => [transaction.id, transaction]));
   return {
-    incomeCents: sumCents(household.transactions.map(incomeEffect)),
-    expenseCents: sumCents(household.transactions.map(expenseEffect)),
+    incomeCents: sumCents(household.transactions.map((transaction) => projectedIncomeEffect(transaction, transactionById))),
+    expenseCents: sumCents(household.transactions.map((transaction) => projectedExpenseEffect(transaction, transactionById))),
   };
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { catalogHousehold, postEntry, postTransfer, postShift, markDuplicate } from "../src/core/index.ts";
+import { catalogHousehold, postEntry, postTransfer, postShift, markDuplicate, monthSummary, reversePostedMoney } from "../src/core/index.ts";
 import {
   booksEquation,
   compileHousehold,
@@ -156,6 +156,40 @@ describe("double-entry books", () => {
     const equation = booksEquation(compileHousehold(household));
     expect(equation.expenseCents).toBe(0);
     expect(snapshotPnL(household).expenseCents).toBe(0);
+  });
+
+  it("keeps the compiled journal aligned when reversing a reversal", () => {
+    const posted = postEntry(catalogHousehold(), {
+      date: "2026-08-18",
+      type: "expense",
+      amount: "12.50",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Milk",
+      confirmDuplicate: true,
+    });
+    const transactionId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+    if (!transactionId) throw new Error("Missing expense row");
+    const reversed = reversePostedMoney(posted.household, transactionId, {
+      reversalDate: "2026-08-18",
+    });
+    const reversalId = reversed.household.transactions.find((row) => row.reversalOfId === transactionId)?.id;
+    if (!reversalId) throw new Error("Missing reversal row");
+    const reinstated = reversePostedMoney(reversed.household, reversalId, {
+      reversalDate: "2026-08-18",
+    }).household;
+
+    const books = compileHousehold(reinstated);
+    const equation = booksEquation(books);
+    expect(trialBalance(books).inBalance).toBe(true);
+    expect(equation.expenseCents).toBe(1250);
+    expect(equation.liabilityCents).toBe(1250);
+    expect(snapshotPnL(reinstated).expenseCents).toBe(1250);
+    expect(monthSummary(reinstated, "2026-08").expenseActualCents).toBe(1250);
+    const reinstatement = books.entries.find((entry) => entry.originTransactionIds.includes(
+      reinstated.transactions.find((row) => row.reversalOfId === reversalId)?.id ?? "",
+    ));
+    expect(reinstatement?.lines.find((line) => line.accountId === "PL-SUB-FOOD-GROCERIES")?.debitCents).toBe(1250);
   });
 });
 
