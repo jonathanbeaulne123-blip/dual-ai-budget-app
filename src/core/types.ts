@@ -11,6 +11,7 @@ export const JOINT = "joint" as const;
 export const COMPANION = "companion" as const;
 export type Visibility = "household" | "personal" | "both";
 export type LedgerView = "household" | "personal";
+export type LandingSurface = "desk" | "till";
 export type Tombstone = { id: string; deletedAt: string };
 
 export type Member = {
@@ -19,6 +20,10 @@ export type Member = {
   color: string;
   active: boolean;
   updatedAt: string;
+  /** Member-owned default. Shared sync strips it into that member's Personal envelope. */
+  landingSurface?: LandingSurface;
+  /** Record-specific Personal convergence clock; never enters Shared. */
+  landingSurfaceUpdatedAt?: string;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
@@ -1321,6 +1326,9 @@ export type SharedEnvelope = {
 export type PersonalEnvelope = {
   kind: "personal";
   memberId: string;
+  /** Member-owned default surface. Legacy envelopes omit it and derive the calm default. */
+  landingSurface?: LandingSurface;
+  landingSurfaceUpdatedAt?: string;
   /** Member-owned account metadata. Legacy envelopes omit this collection. */
   accounts?: Account[];
   lastCommittedAt: string | null;

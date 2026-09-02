@@ -5,6 +5,7 @@ export * from "./locationPrefs.ts";
 export * from "./transactionLocation.ts";
 export { CURRENCY, formatCad, parseWholeCents, centsToDollars, dollarsToCents } from "./money.ts";
 export * from "./types.ts";
+export * from "./household.ts";
 export * from "./evidence.ts";
 export * from "./sevenShiftsCalendar.ts";
 export * from "./sevenShiftsAutomation.ts";

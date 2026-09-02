@@ -1,4 +1,8 @@
-import { cloneHousehold } from "./household.ts";
+import {
+  cloneHousehold,
+  isLandingSurface,
+  memberWithoutLandingSurface,
+} from "./household.ts";
 import { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
 import { shapeSharing } from "./sharing.ts";
 import { mergeGoogle, shapeGoogle } from "./google.ts";
@@ -183,10 +187,21 @@ function laterEnvelope<T extends { lastCommittedAt: string | null }>(server: T, 
 }
 
 function shapeMembers(list: Member[] | undefined, fallbackIso: string): Member[] {
-  return (list ?? []).map((member) => ({
-    ...member,
-    updatedAt: member.updatedAt || fallbackIso,
-  }));
+  return (list ?? []).map((member) => {
+    const shared = memberWithoutLandingSurface(member);
+    return {
+      ...shared,
+      ...(isLandingSurface(member.landingSurface)
+        ? {
+            landingSurface: member.landingSurface,
+            ...(typeof member.landingSurfaceUpdatedAt === "string" && member.landingSurfaceUpdatedAt
+              ? { landingSurfaceUpdatedAt: member.landingSurfaceUpdatedAt }
+              : {}),
+          }
+        : {}),
+      updatedAt: member.updatedAt || fallbackIso,
+    };
+  });
 }
 
 function shapeCategories(list: Category[] | undefined, fallbackIso: string): Category[] {
@@ -396,7 +411,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     timezone: shaped.timezone,
     currency: shaped.currency,
     environment: shaped.environment,
-    members: shaped.members,
+    members: shaped.members.map(memberWithoutLandingSurface),
     accounts: sharedAccounts,
     categories: shaped.categories,
     recurrences: shaped.recurrences,
@@ -431,9 +446,18 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     restorePoints: shaped.restorePoints ?? [],
     syntheticFixture: shaped.syntheticFixture ?? null,
   };
+  const personalMember = shaped.members.find((member) => member.id === memberId);
   const personal: PersonalEnvelope = {
     kind: "personal",
     memberId,
+    ...(isLandingSurface(personalMember?.landingSurface)
+      ? {
+          landingSurface: personalMember.landingSurface,
+          ...(personalMember.landingSurfaceUpdatedAt
+            ? { landingSurfaceUpdatedAt: personalMember.landingSurfaceUpdatedAt }
+            : {}),
+        }
+      : {}),
     accounts: personalAccounts,
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: personalTx,
@@ -495,6 +519,14 @@ export function personalEnvelopeFromPayload(
     .filter((item) => item.scope === "personal" && item.ownerMemberId === memberId);
   return {
     ...row,
+    ...(isLandingSurface(row.landingSurface)
+      ? {
+          landingSurface: row.landingSurface,
+          ...(typeof row.landingSurfaceUpdatedAt === "string" && row.landingSurfaceUpdatedAt
+            ? { landingSurfaceUpdatedAt: row.landingSurfaceUpdatedAt }
+            : { landingSurfaceUpdatedAt: undefined }),
+        }
+      : { landingSurface: undefined, landingSurfaceUpdatedAt: undefined }),
     accounts,
     transactions: Array.isArray(row.transactions)
       ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
@@ -549,6 +581,15 @@ export function overlayPersonalReplica(
   ], memberBibles, memberId);
   return ensureHouseholdShape({
     ...household,
+    members: household.members.map((member) => (
+      member.id === memberId && isLandingSurface(personal.landingSurface)
+        ? {
+            ...memberWithoutLandingSurface(member),
+            landingSurface: personal.landingSurface,
+            ...(personal.landingSurfaceUpdatedAt ? { landingSurfaceUpdatedAt: personal.landingSurfaceUpdatedAt } : {}),
+          }
+        : memberWithoutLandingSurface(member)
+    )),
     transactions: [
       ...household.transactions.filter((item) => !(
         (item.visibility === "personal" && item.createdBy === memberId) || personalTransactionIds.has(item.id)
@@ -655,7 +696,15 @@ export function assembleHousehold(
     timezone: shared.timezone,
     currency: shared.currency,
     environment: shared.environment,
-    members: shared.members,
+    members: shared.members.map((member) => (
+      member.id === personal?.memberId && isLandingSurface(personal.landingSurface)
+        ? {
+            ...memberWithoutLandingSurface(member),
+            landingSurface: personal.landingSurface,
+            ...(personal.landingSurfaceUpdatedAt ? { landingSurfaceUpdatedAt: personal.landingSurfaceUpdatedAt } : {}),
+          }
+        : memberWithoutLandingSurface(member)
+    )),
     accounts: [...shared.accounts, ...personalAccounts],
     categories: shared.categories,
     recurrences: shared.recurrences,
@@ -708,7 +757,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
   const goalContributions = mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones);
   const goalPurchases = mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones);
   const goals = applyGoalSavings(mergeRecords(server.goals, client.goals, tombstones), goalContributions);
-  const members = mergeRecords(server.members, client.members, []);
+  const members = mergeRecords(server.members, client.members, []).map(memberWithoutLandingSurface);
   const householdFund = (() => {
     const left = shapeHouseholdFundConfig(server.householdFund);
     const right = shapeHouseholdFundConfig(client.householdFund);
@@ -787,9 +836,33 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     : newer === client
       ? server.sevenShiftsSchedules
       : client.sevenShiftsSchedules;
+  const serverLandingClock = isLandingSurface(server.landingSurface)
+    ? server.landingSurfaceUpdatedAt || server.lastCommittedAt || ""
+    : "";
+  const clientLandingClock = isLandingSurface(client.landingSurface)
+    ? client.landingSurfaceUpdatedAt || client.lastCommittedAt || ""
+    : "";
+  const serverLandingSurface = isLandingSurface(server.landingSurface) ? server.landingSurface : "";
+  const clientLandingSurface = isLandingSurface(client.landingSurface) ? client.landingSurface : "";
+  const landingSource = clientLandingClock > serverLandingClock
+    ? client
+    : serverLandingClock > clientLandingClock
+      ? server
+      : clientLandingSurface > serverLandingSurface
+        ? client
+        : server;
+  const landingSurface = isLandingSurface(landingSource.landingSurface) ? landingSource.landingSurface : undefined;
   return {
     kind: "personal",
     memberId: client.memberId || server.memberId,
+    ...(landingSurface
+      ? {
+          landingSurface,
+          ...((landingSource.landingSurfaceUpdatedAt || landingSource.lastCommittedAt)
+            ? { landingSurfaceUpdatedAt: landingSource.landingSurfaceUpdatedAt || landingSource.lastCommittedAt || undefined }
+            : {}),
+        }
+      : {}),
     lastCommittedAt: newer.lastCommittedAt,
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     accounts: mergeRecords(server.accounts ?? [], client.accounts ?? [], tombstones),

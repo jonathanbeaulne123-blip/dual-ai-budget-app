@@ -3,7 +3,7 @@ import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRec
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
-import { cloneHousehold } from "./household.ts";
+import { cloneHousehold, requireLandingSurface } from "./household.ts";
 import { isLedgerWrite } from "./writeKind.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
@@ -185,6 +185,37 @@ function resolveActor(household: Household, input?: ActorInput, fallbackMemberId
   if (!createdBy) throw new ValidationError("Add a household member before posting.");
   requireMember(household, createdBy);
   return { createdBy, visibility };
+}
+
+/**
+ * Change only the acting member's default landing surface.
+ * The caller must supply the trusted acting member separately from the target.
+ */
+export function setLandingSurface(household: Household, input: {
+  memberId: string;
+  surface: "desk" | "till";
+  createdBy: string;
+}): CommitResult {
+  if (!input.createdBy) throw new ValidationError("Only you can choose where you land.");
+  const member = requireMember(household, input.memberId);
+  const actor = resolveActor(household, { createdBy: input.createdBy });
+  if (actor.createdBy !== member.id) throw new ValidationError("Only you can choose where you land.");
+  const surface = requireLandingSurface(input.surface);
+  if (member.landingSurface === surface) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      undo: { id: `landing-${member.id}-${surface}`, label: "Landing surface unchanged", snapshot: household, postedIds: [] },
+    };
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const updatedAt = nowIso();
+  next.members = next.members.map((row) => row.id === member.id
+    ? { ...row, landingSurface: surface, landingSurfaceUpdatedAt: updatedAt }
+    : row);
+  return commit(previous, next, "Landing surface", `${member.name} chose where Hearth opens`, []);
 }
 
 function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {
