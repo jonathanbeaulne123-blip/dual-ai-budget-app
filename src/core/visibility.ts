@@ -155,6 +155,7 @@ export function householdForHerculesContext(
     shiftEnvelopes: [],
     shiftBibles: [],
     monthRehearsals: [],
+    weeklyDocumentStamps: [],
     accounts: scoped.accounts.filter((account) => account.scope !== "personal"),
     fundPrivate: { bankBindings: [], reconciliations: [] },
     shifts: scoped.shifts.map(shiftForHercules),

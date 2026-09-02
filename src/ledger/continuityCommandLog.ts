@@ -139,6 +139,7 @@ export function compactedCommandPayload(
     ...(mergedFacts?.fundEvents ?? []).map((row) => row.id),
     ...(mergedFacts?.fundSettlementAllocations ?? []).map((row) => row.id),
     ...(mergedFacts?.fundKittyAllocations ?? []).map((row) => row.id),
+    ...(mergedFacts?.weeklyDocumentStamps ?? []).map((row) => row.id),
     ...(mergedFacts?.tombstones ?? []).map((row) => row.id),
   ].sort();
   return {
@@ -163,6 +164,7 @@ export function compactedCommandPayload(
         commandKind: ref.commandType,
         postedIds: ref.commandPayload.postedIds,
         ledgerScope: ref.ledgerScope,
+        materializationHash: ref.commandPayload.materializationHash,
       })),
   };
 }
@@ -207,6 +209,12 @@ function mergeMaterializationFacts(
     if (facts.fundSettlementAllocations?.length) merged.fundSettlementAllocations = [...(merged.fundSettlementAllocations ?? []), ...facts.fundSettlementAllocations];
     if (facts.fundKittyAllocations?.length) merged.fundKittyAllocations = [...(merged.fundKittyAllocations ?? []), ...facts.fundKittyAllocations];
     if (facts.monthRehearsals?.length) merged.monthRehearsals = facts.monthRehearsals;
+    if (facts.weeklyDocumentStamps?.length) {
+      merged.weeklyDocumentStamps = [
+        ...(merged.weeklyDocumentStamps ?? []),
+        ...facts.weeklyDocumentStamps,
+      ];
+    }
     if (facts.tombstones?.length) {
       merged.tombstones = [...(merged.tombstones ?? []), ...facts.tombstones];
     }

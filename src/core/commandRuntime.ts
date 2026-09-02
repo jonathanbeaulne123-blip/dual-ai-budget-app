@@ -23,6 +23,7 @@ import {
 } from "./sharing.ts";
 import { autoResolveSharedConflict, unresolvedConflicts } from "./conflict.ts";
 import { assertHouseholdFundTransition } from "./householdFund.ts";
+import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import type { CommandReceipt, Household } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
@@ -53,6 +54,8 @@ export type AcceptWriteInput = {
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
+  /** Authenticated/local active member performing this command. Required for member-owned weekly stamps. */
+  actingMemberId?: string;
   /** Explicit continuity transport request (App sets this for membership-matched Google continuity). `linked` alone never enables transport (D-147). */
   transportRequested?: boolean;
   adapters: WriteAdapters;
@@ -146,6 +149,35 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       throw new BooksRejectedError("Development and Production stay on separate books. Nothing was posted.", "validation-rejected");
     }
     const postedIds = input.postedIds ?? [];
+    if (input.commandKind === "stampWeeklyDocument") {
+      if (!previous) {
+        throw new BooksRejectedError("Open accepted household books before stamping. Nothing changed.", "validation-rejected");
+      }
+      const previousStamps = shapeWeeklyDocumentStamps(previous.weeklyDocumentStamps, previous.members);
+      const candidateStamps = shapeWeeklyDocumentStamps(candidate.weeklyDocumentStamps, candidate.members);
+      const previousById = new Map(previousStamps.map((stamp) => [stamp.id, stamp]));
+      const newStamps = candidateStamps.filter((stamp) => !previousById.has(stamp.id));
+      const existingUnchanged = previousStamps.every((stamp) => {
+        const retained = candidateStamps.find((candidateStamp) => candidateStamp.id === stamp.id);
+        return retained && JSON.stringify(retained) === JSON.stringify(stamp);
+      });
+      const otherwiseUnchanged = JSON.stringify({
+        ...candidate,
+        weeklyDocumentStamps: previousStamps,
+        lastCommittedAt: previous.lastCommittedAt,
+      }) === JSON.stringify(previous);
+      if (!input.actingMemberId
+        || !candidate.members.some((member) => member.active && member.id === input.actingMemberId)
+        || postedIds.length !== 1
+        || newStamps.length !== 1
+        || candidateStamps.length !== previousStamps.length + 1
+        || newStamps[0]!.id !== postedIds[0]
+        || newStamps[0]!.memberId !== input.actingMemberId
+        || !existingUnchanged
+        || !otherwiseUnchanged) {
+        throw new BooksRejectedError("You can stamp only your own weekly line. Nothing changed.", "validation-rejected");
+      }
+    }
     const sameHousehold = Boolean(previous && previous.householdId === candidate.householdId);
     const identityHash = await commandIdentityHash(sameHousehold ? previous : null, candidate, postedIds);
     const existing = sameHousehold && previous ? findReceipt(previous, confirmationId) : undefined;
@@ -193,6 +225,11 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       commandKind: input.commandKind ?? "commit",
       materializationHash: input.commandKind === "updateMonthRehearsal"
         ? await sha256Hex(accepted.monthRehearsals ?? [])
+        : input.commandKind === "stampWeeklyDocument"
+          ? await sha256Hex(shapeWeeklyDocumentStamps(
+              accepted.weeklyDocumentStamps,
+              accepted.members,
+            ).filter((row) => postedIds.includes(row.id)))
         : undefined,
       postedIds,
       revision,
@@ -204,6 +241,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       ...accepted.transactions.filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
       ...accepted.shifts.filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
       ...(accepted.fundEvents ?? []).filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
+      ...(accepted.weeklyDocumentStamps ?? []).filter((row) => postedIds.includes(row.id)).map((row) => row.memberId),
     ].find(Boolean) ?? accepted.members.find((member) => member.active)?.id ?? accepted.members[0]?.id ?? "MEM-001";
     accepted = rememberReceipt(accepted, {
       ...receipt,

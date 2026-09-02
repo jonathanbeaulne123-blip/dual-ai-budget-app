@@ -28,6 +28,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [DECISIONS.md](DECISIONS.md) | Living decision log |
 | [AI_OPERATING_MODEL.md](AI_OPERATING_MODEL.md) | Codex, Cursor, and Claude roles, routing, evidence, authority, and context budget |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and Dual Course handoffs |
+| [briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md) | **Ready local packet:** Cursor Clerk Slice 4 from sealed durable-stamp core `9f74cb7`; read-only other door, High-risk privacy and release gates |
 | [evidence-gates/FIVE_OF_FIVE.md](evidence-gates/FIVE_OF_FIVE.md) | P0-03 equal-dimension feature gate, browser journey manifest, and dated same-SHA evidence contract |
 | [AI_SETUP_FOR_JONATHAN.md](AI_SETUP_FOR_JONATHAN.md) | Click-by-click activation and verification for the repository AI configuration |
 | [GOOGLE.md](GOOGLE.md) | Household Google bridge: identity, Calendar, opt-in suite; never posts money |

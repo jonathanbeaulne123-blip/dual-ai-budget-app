@@ -45,6 +45,7 @@ import {
   shapeHouseholdFundSettlementAllocations,
 } from "./householdFund.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts";
+import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import { mergeHouseholdCharters, shapeHouseholdCharter } from "./charter.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
@@ -280,6 +281,7 @@ export function ensureHouseholdShape(household: Household): Household {
     fundKittyAllocations: shapeHouseholdFundKittyAllocations(household.fundKittyAllocations),
     fundPrivate: shapeHouseholdFundPrivate(household.fundPrivate),
     monthRehearsals: shapeMonthRehearsals(household.monthRehearsals),
+    weeklyDocumentStamps: shapeWeeklyDocumentStamps(household.weeklyDocumentStamps, members),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -414,6 +416,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     fundSettlementAllocations: shaped.fundSettlementAllocations ?? [],
     fundKittyAllocations: shaped.fundKittyAllocations ?? [],
     monthRehearsals: shaped.monthRehearsals ?? [],
+    weeklyDocumentStamps: shaped.weeklyDocumentStamps ?? [],
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
     activity: sharedActivity,
@@ -672,6 +675,7 @@ export function assembleHousehold(
     fundSettlementAllocations: shared.fundSettlementAllocations ?? [],
     fundKittyAllocations: shared.fundKittyAllocations ?? [],
     monthRehearsals: shapeMonthRehearsals(shared.monthRehearsals),
+    weeklyDocumentStamps: shapeWeeklyDocumentStamps(shared.weeklyDocumentStamps, shared.members),
     fundPrivate: shapeHouseholdFundPrivate(personal?.fundPrivate, personal?.memberId),
     budgetPlans: shared.budgetPlans,
     sitDownSessions: shared.sitDownSessions ?? [],
@@ -745,6 +749,11 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     monthRehearsals: mergeMonthRehearsals(
       shapeMonthRehearsals(server.monthRehearsals),
       shapeMonthRehearsals(client.monthRehearsals),
+    ),
+    weeklyDocumentStamps: mergeWeeklyDocumentStamps(
+      server.weeklyDocumentStamps,
+      client.weeklyDocumentStamps,
+      members,
     ),
     budgetPlans: mergeRecords(server.budgetPlans, client.budgetPlans, tombstones),
     sitDownSessions: mergeRecords(shapeSitDownSessions(server.sitDownSessions), shapeSitDownSessions(client.sitDownSessions), tombstones),
