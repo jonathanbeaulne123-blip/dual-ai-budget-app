@@ -2,7 +2,7 @@
 
 ## Register slice 10 — the metronome (2026-09-02)
 
-**Status:** Implemented on `cursor/register-10-metronome-115c`; draft PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Baseline `origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3`. Exact-head CI green at `843a21eff4b25d295d96a5305aafd64d2247760c`. Fetch the branch HEAD for review.
+**Status:** Release candidate on `cursor/register-10-metronome-115c`; ready PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Current `origin/main@9c49e6fd1998e9687820c8eedea4f6a7b062805a` is integrated; fetch the PR head for the exact candidate.
 
 **Household outcome:** Bianca's projected paydays appear as regular felt ticks below the Course axis. Ticks carry no amount. Jonathan's confirmed contributions keep their existing marks. The contrast is the information.
 
@@ -15,11 +15,13 @@
 - Bianca Month `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **10 passed**
 - Local `pnpm check` on `843a21e`: **exit 0**. `ai:verify` 41 files; fast lane **220 passed / 1 skipped files, 1,511 passed / 2 skipped tests**; books lane **18 passed / 1 skipped files, 146 passed / 1 skipped tests**; Vite production build 404 modules + Hercules Pro UI
 - GitHub `test` on exact head `843a21eff4b25d295d96a5305aafd64d2247760c`: push run `33597093965` success; PR run `33597098018` success. Workers preview is not the kitchen URL
+- Release integration after Till Slice 1: focused cross-slice suite **75 passed**; `pnpm check:windows` **exit 0** with AI surface, fast lane **1,532 passed / 2 skipped**, serial books lane **146 passed / 1 skipped**, TypeScript, production build, Hercules Pro UI, and redirect guard green. Remote checks on the new PR head remain the merge gate.
 - Independent books at `843a21e`: **PASS WITH NOTES** (no P0/P1; P2 tipSchedule fence was missing, now added). Privacy: **PASS WITH NOTES** (`household?: Household` is a future leak, not a current disclosure). Verifier: **PASS WITH NOTES** (claims match source; draft #294 isolated from #285). UX auditor could not run (third-party usage limit); parent visual proof at 320 / 390 / 720 / ~1100, empty, night, reduced-motion, Course crops.
 
 **Data/environment:** Local fictional Development only. No hosted row, schema, secret, Production, or deploy.
 
-**Next owner:** GPT-5 Pro review-then-merge via the paste-ready brief. Do not stack #285. Do not touch Production.
+**Next owner:** Codex completes the authorized push, exact-head review, merge, Development kitchen deployment, and live verification. Do not stack #285. Do not touch Production data.
+
 ## Till Slice 1 custody fence and Cursor Slices 2/3 packet (2026-09-02)
 
 **Status:** Slice 1 is a verified release candidate on `codex/till-1-custody-fence-release`; implementation seal `e426a4592dcd72870feb85642f3d0ab894e6dee8` is based on `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`. Jonathan authorized push, merge, and Development kitchen deployment on 2026-09-02; remote exact-head checks and release receipts remain required. Cursor's complete sequential contract is [`briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md`](briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md). Risk: **High**.

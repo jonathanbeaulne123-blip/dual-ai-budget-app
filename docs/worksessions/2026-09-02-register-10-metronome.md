@@ -101,3 +101,11 @@ Demo kitchen Bianca and Jonathan share the same biweekly demo job, so ticks and 
 ## Handoff
 
 Local + branch + draft PR #294. Not merged, not kitchen-published, not live. ChatGPT independent review-and-merge packet: `docs/briefs/CHATGPT_REGISTER_SLICE_10_METRONOME_REVIEW_MERGE_2026-09-02.md`. Next owner: GPT-5 Pro, then merge only if named gates pass. Do not stack #285. Do not touch Production.
+
+## Current-main release reconciliation — 2026-09-02
+
+- `origin/main` advanced to `9c49e6fd1998e9687820c8eedea4f6a7b062805a` through Till Slice 1 while the first exact-head checks ran.
+- Integrated that main tip with a merge commit. The only conflict was the first release-summary position in `docs/AI_HANDOFF.md`; both Register and Till summaries were preserved. Source and tests merged automatically.
+- Cross-slice focused proof covering Month Spread, Ask layout, custody, month obligations, and the weekly document: **6 files / 75 tests passed**.
+- Official `pnpm check:windows` rerun on the integrated code: **exit 0**; AI surface, **1,532 fast tests / 2 skipped**, **146 serial books tests / 1 skipped**, TypeScript, production build, Hercules Pro UI, and redirect guard passed.
+- The integrated PR head must receive fresh exact-head GitHub checks before merge. Still no hosted row, schema, secret, provider, household-data, or Production mutation.
