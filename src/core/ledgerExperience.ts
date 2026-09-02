@@ -13,7 +13,7 @@ export const LEDGER_CUSTODY_DISCLOSURE =
   "The money remains in Bianca’s savings. Hearth cannot move it.";
 
 export type LedgerExperienceMode = LedgerView;
-export type LedgerTab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
+export type LedgerTab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
 
 export type LedgerRouteContract = {
   tab: LedgerTab;
@@ -136,6 +136,21 @@ export function ledgerRouteContract(tab: LedgerTab, view: LedgerView): LedgerRou
       projector: "member-specific",
       memberSpecific: true,
       commandsExposed: ["postWorkShift"],
+    };
+  }
+  if (tab === "till") {
+    return {
+      tab,
+      view,
+      heading: shared ? "Till" : "Till stays on Shared",
+      purpose: shared
+        ? "Record a household purchase and the current contribution conversation. This is a presentation, not a smaller permission tier."
+        : "The Till is a Shared household surface. Personal books stay on this Personal ledger.",
+      projector: shared ? "shared" : "personal",
+      memberSpecific: false,
+      commandsExposed: shared
+        ? ["postEntry", "confirmHouseholdFundContribution", "holdHouseholdFundContribution"]
+        : [],
     };
   }
   return {

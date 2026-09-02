@@ -511,10 +511,12 @@ describe("swipe posting contract", () => {
     expect(swipeSource).toContain("CadPad");
     expect(commandsSource).toContain("requireFundCustodian");
     const appSource = readFileSync(resolve(process.cwd(), "src/App.tsx"), "utf8");
+    const tillSource = readFileSync(resolve(process.cwd(), "src/Till.tsx"), "utf8");
     const swipeMount = appSource.slice(appSource.indexOf("{swipeOpen"), appSource.indexOf("{adding &&"));
-    expect(appSource).toContain("SWIPE_COPY.action");
+    expect(tillSource).toContain("SWIPE_COPY.action");
     expect(appSource).toContain("submitSwipePurchase");
     expect(appSource).toContain("SWIPE_COPY.success");
+    expect(appSource).toContain("<Till");
     expect(swipeMount).toContain("<Swipe");
     expect(swipeMount).toContain("error={swipeError}");
     expect(appSource).toContain("onError: (message)");

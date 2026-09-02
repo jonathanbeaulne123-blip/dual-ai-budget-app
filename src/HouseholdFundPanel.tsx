@@ -11,6 +11,7 @@ import {
   holdHouseholdFundContribution,
   HOUSEHOLD_FUND_HOLD_COPY,
   householdFundContributionMotions,
+  householdFundMotionActorActions,
   LEDGER_CUSTODY_DISCLOSURE,
   monthKeyFromDateKey,
   projectHouseholdFund,
@@ -47,7 +48,7 @@ function memberName(household: Household, memberId: string | null | undefined): 
   return household.members.find((row) => row.id === memberId)?.name ?? "Member";
 }
 
-function FundContributionMotionCard({
+export function FundContributionMotionCard({
   motion,
   household,
   memberId,
@@ -66,11 +67,11 @@ function FundContributionMotionCard({
   const holdNoteInputRef = useRef<HTMLInputElement>(null);
   const proposerId = motion.proposal.createdBy;
   const proposerName = memberName(household, motion.proposal.contributorMemberId ?? proposerId);
-  const isProposer = memberId === proposerId;
-  const canHold = isCustodian && !isProposer && motion.status === "open";
-  const canConfirm = isCustodian && (motion.status === "open" || motion.status === "held");
-  const canRelease = Boolean(motion.status === "held" && motion.activeHold && motion.activeHold.createdBy === memberId);
-  const canWithdraw = isProposer && (motion.status === "open" || motion.status === "held");
+  const { canHold, canConfirm, canRelease, canWithdraw } = householdFundMotionActorActions(
+    motion,
+    memberId,
+    isCustodian,
+  );
   const showHoldComposer = canHold && composingHold;
   const noteFieldId = `fund-hold-note-${motion.proposal.id}`;
   const composerId = `fund-hold-composer-${motion.proposal.id}`;

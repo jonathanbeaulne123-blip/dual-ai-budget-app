@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Till Slice 3 custodian surface (2026-09-02)
+
+**Status:** **OPEN ON BRANCH; NOT MERGED; NOT KITCHEN-PUBLISHED; NOT LIVE.** Branch `cursor/till-3-surface-0c3a` from sealed `origin/main@6f5dd56516d31c3f1892f4833a7e71ff31857142`. Ancestry proof: PR #302 `777dbcd`, Slice 1 `e426a45`, and `a2a55c6` are ancestors. Risk: **High**. D-199.
+
+**Household outcome:** the Till is a reachable Shared presentation: Swipe first, real contribution conversation next, `Nothing has moved.`, one current-month spend sentence, and a real `see everything` door back to Shared Home. Shared Home stays the initial surface. The Till cannot grant or remove a command right.
+
+**Dual Course:** Budget `+2`; Engagement `+3`. Truth wins over brevity. Confirm remains the only contribution balance change; Hold stays record-only.
+
+**What changed:** `src/Till.tsx` + `src/till.css`; `tillActionableMotions` over the existing motion fold; `FundContributionMotionCard` shared from the Fund panel; LedgerTab `till` with `#till`/`#home` fallback; the temporary Home `I spent something` control moved onto Till; quiet Home door `Till`. Hercules presence maps Till → Home. No `landingSurface`. No command/Fund arithmetic, schema, Auth, Worker, or Production change.
+
+**Verification:** focused Till/Swipe/ledger-experience suite **45 passed** before the full gate. Full `pnpm check`, visual 320/390/720/~1100, and independent audits follow this commit.
+
+**Boundaries:** fictional Development/catalog fixtures only. No hosted row, schema, secret, provider, bank, Production data, or Production-continuity change.
+
+**Next owner:** Cursor completes `pnpm check`, visual proof, audits, then merge and Development kitchen publish per Jonathan's 2026-09-02 instruction. Stop before Slice 4.
+
 ## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
 
 **Status:** **CLOSED; MERGED #302; DEVELOPMENT KITCHEN PUBLISHED; LIVE HTTP VERIFIED.** Exact repaired application `70f1245569da1abad53bf8690027f6eca215707d` merged as `main@777dbcd1196670dbe7c2576fff8b0526cad27093`. Historical `main@2b9f77051b4abfdddce2fd2f580e41a36a6c8772` is PR #298's failed first release and is not a Slice 3 baseline. PR #302's successive reviews found and stopped journal parity, disclosure-key ownership, transfer duplicate lineage, local PGlite re-anchoring, intermediate-lineage counting, receipt-gated migration recovery, and stale numeric-view defects before the accepted merge. Risk: **Release**.

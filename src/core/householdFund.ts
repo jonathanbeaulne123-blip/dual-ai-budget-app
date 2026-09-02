@@ -295,6 +295,45 @@ export function householdFundContributionMotions(
     ));
 }
 
+export type HouseholdFundMotionActorActions = {
+  canConfirm: boolean;
+  canHold: boolean;
+  canRelease: boolean;
+  canWithdraw: boolean;
+};
+
+/** Actor rights already encoded on the motion card; Till cannot grant extra commands. */
+export function householdFundMotionActorActions(
+  motion: HouseholdFundContributionMotion,
+  memberId: string,
+  isCustodian: boolean,
+): HouseholdFundMotionActorActions {
+  const proposerId = motion.proposal.createdBy;
+  const isProposer = memberId === proposerId;
+  return {
+    canHold: isCustodian && !isProposer && motion.status === "open",
+    canConfirm: isCustodian && (motion.status === "open" || motion.status === "held"),
+    canRelease: Boolean(motion.status === "held" && motion.activeHold && motion.activeHold.createdBy === memberId),
+    canWithdraw: isProposer && (motion.status === "open" || motion.status === "held"),
+  };
+}
+
+export function motionHasActorAction(actions: HouseholdFundMotionActorActions): boolean {
+  return actions.canConfirm || actions.canHold || actions.canRelease || actions.canWithdraw;
+}
+
+/** Motions the current actor can Confirm, Hold, release, or withdraw. Empty means omit the Till section. */
+export function tillActionableMotions(
+  household: Pick<Household, "fundEvents" | "householdFund">,
+  memberId: string,
+  fundId = HOUSEHOLD_FUND_ID,
+): HouseholdFundContributionMotion[] {
+  const isCustodian = household.householdFund?.custodianMemberId === memberId;
+  return householdFundContributionMotions(household, fundId).filter((motion) => (
+    motionHasActorAction(householdFundMotionActorActions(motion, memberId, Boolean(isCustodian)))
+  ));
+}
+
 function householdFundOperatingDelta(event: HouseholdFundEvent): number {
   if (event.kind === "contribution-confirmed" || event.kind === "kitty-released") return event.amountCents;
   if (event.kind === "settlement-confirmed" || event.kind === "kitty-allocated") return -event.amountCents;

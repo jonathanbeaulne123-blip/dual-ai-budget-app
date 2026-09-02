@@ -355,6 +355,7 @@ import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
 import { Swipe } from "./Swipe.tsx";
+import { Till, TILL_COPY, TILL_DESK_HASH, TILL_HOME_HASH } from "./Till.tsx";
 import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
@@ -397,7 +398,11 @@ import {
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
 
-type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more";
+type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
+
+function presenceTab(tab: Tab): Exclude<Tab, "till"> {
+  return tab === "till" ? "home" : tab;
+}
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
 type CommitHouseholdOptions = {
@@ -537,8 +542,21 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [swipeStrip]);
   useEffect(() => {
-    if (tab !== "home") setSwipeOpen(false);
+    if (tab !== "till") {
+      setSwipeOpen(false);
+      setSwipeStrip(null);
+    }
   }, [tab]);
+  useEffect(() => {
+    const applyHash = () => {
+      const hash = window.location.hash.replace(/^#/, "");
+      if (hash === "till") setTab("till");
+      else if (hash === "home") setTab((current) => (current === "till" ? "home" : current));
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
@@ -2162,6 +2180,9 @@ export function App() {
   const googleEntryAvailable = googleConfigured() || supabaseAuthEnabled();
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
   const view: LedgerView = session?.view ?? "household";
+  useEffect(() => {
+    if (tab === "till" && view !== "household") setTab("home");
+  }, [tab, view]);
   useEffect(() => {
     if (!household || view !== "household") return;
     if (householdNeedsCharterFounding(household)) setCharterFoundingOpen(true);
@@ -4333,6 +4354,15 @@ export function App() {
     leaveDesk();
     setTab(next);
     closeAdd();
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (next === "till") url.hash = TILL_HOME_HASH.slice(1);
+    else if (url.hash === TILL_HOME_HASH || url.hash === TILL_DESK_HASH) {
+      url.hash = next === "home" ? TILL_DESK_HASH.slice(1) : "";
+    }
+    const rendered = `${url.pathname}${url.search}${url.hash}`;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (rendered !== current) window.history.replaceState({}, "", rendered);
   }
 
   function beginSignOut() {
@@ -4723,6 +4753,7 @@ export function App() {
             aria-selected={view === item}
             onClick={() => {
               if (item === "household" && tab === "shift") goTab("home");
+              if (item !== "household" && tab === "till") goTab("home");
               rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId });
             }}
           >
@@ -4734,31 +4765,49 @@ export function App() {
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
 
+      {tab === "till" && view === "household" && experience && experience.ok ? (
+        <Till
+          household={experience.scopedHousehold}
+          memberId={actorId}
+          today={today}
+          busy={busy}
+          showSwipe={showSwipeAction}
+          offlinePending={offline && (household.sharing?.mode === "pending-transport" || Boolean(swipeStrip))}
+          homeHref={TILL_DESK_HASH}
+          strip={swipeStrip && swipeUndoScopeMatches(swipeStrip, environment, household.householdId, actorId) ? (
+            <div className="swipe-strip" role="status">
+              <span>{SWIPE_COPY.success}</span>
+              <button
+                type="button"
+                className="swipe-strip-undo"
+                disabled={busy}
+                onClick={() => void applyUndo(swipeStrip.token, swipeStrip)}
+              >
+                {SWIPE_COPY.undo}
+              </button>
+            </div>
+          ) : null}
+          onOpenSwipe={() => { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); }}
+          onSeeEverything={() => goTab("home")}
+          onCommand={(command) => { void run(command); }}
+        />
+      ) : null}
+
       {tab === "home" && dashboard && (
         <>
-        {tab === "home" && view === "household" && swipeStrip
-          && swipeUndoScopeMatches(swipeStrip, environment, household.householdId, actorId) ? (
-          <div className="swipe-strip" role="status">
-            <span>{SWIPE_COPY.success}</span>
-            <button
-              type="button"
-              className="swipe-strip-undo"
-              disabled={busy}
-              onClick={() => void applyUndo(swipeStrip.token, swipeStrip)}
+        {view === "household" ? (
+          <p className="till-home-door">
+            <a
+              href={TILL_HOME_HASH}
+              data-till-home-door="true"
+              onClick={(event) => {
+                event.preventDefault();
+                goTab("till");
+              }}
             >
-              {SWIPE_COPY.undo}
-            </button>
-          </div>
-        ) : null}
-        {showSwipeAction ? (
-          <button
-            type="button"
-            className="swipe-open"
-            disabled={busy}
-            onClick={() => { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); }}
-          >
-            {SWIPE_COPY.action}
-          </button>
+              {TILL_COPY.homeDoor}
+            </a>
+          </p>
         ) : null}
         {view === "household" && household.householdFund && (() => {
           const fund = projectHouseholdFund(household, today);
@@ -6098,6 +6147,7 @@ export function App() {
               { label: "Calendar", run: () => goTab("calendar") },
               { label: "Shift", run: () => goTab("shift") },
               { label: "Plan", run: () => goTab("plan") },
+              ...(view === "household" ? [{ label: "Till", run: () => goTab("till") }] : []),
               { label: view === "household" ? "Household table" : "My books", run: () => goTab("ledger") },
               { label: "Health", run: () => goTab("more") },
               { label: "Google household bridge", run: () => goTab("more") },
@@ -6120,7 +6170,7 @@ export function App() {
       <HerculesPresence
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
-        tab={tab}
+        tab={presenceTab(tab)}
         adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}

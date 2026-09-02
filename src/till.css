@@ -1,0 +1,152 @@
+.till {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 8px 0 24px;
+}
+
+.till-waiting {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.till-waiting h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.till-custody,
+.till-spend,
+.till-empty,
+.till-offline {
+  margin: 0;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.till-custody {
+  color: var(--muted);
+  font-size: 14.5px;
+}
+
+.till-spend {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.till-empty,
+.till-offline {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+.till-see-everything,
+.till-home-door a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  color: var(--pine);
+  text-underline-offset: 3px;
+}
+
+.till-see-everything {
+  align-self: center;
+  margin-top: auto;
+  padding: 8px 10px;
+}
+
+.till-see-everything:focus-visible,
+.till-home-door a:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.till-home-door {
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.till .fund-motion-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.till .fund-motion-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.till .fund-motion-status {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.till .fund-motion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.till .fund-motion-actions button {
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  width: auto;
+  margin-top: 0;
+  flex: 1 1 9rem;
+  max-width: 100%;
+}
+
+.till .fund-motion-actions .primary {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: var(--paper);
+}
+
+.till .fund-motion-actions .ghost {
+  background: transparent;
+  border-color: var(--pine);
+  color: var(--ink);
+}
+
+.till .fund-motion-actions button:focus,
+.till .fund-motion-actions button:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .till,
+  .till-waiting,
+  .till-custody,
+  .till-spend,
+  .till-empty,
+  .till-offline,
+  .till-see-everything,
+  .till-home-door a,
+  .till .fund-motion-card,
+  .till .fund-motion-status,
+  .till .fund-motion-actions {
+    animation: none;
+    transition: none;
+  }
+}

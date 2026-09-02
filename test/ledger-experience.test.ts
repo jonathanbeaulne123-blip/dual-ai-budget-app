@@ -412,7 +412,7 @@ describe("projectLedgerExperience", () => {
 
 describe("ledgerRouteContract", () => {
   it("names a distinct purpose for every tab and refuses silent mode ignore", () => {
-    const tabs = ["home", "plan", "calendar", "shift", "ledger", "more"] as const;
+    const tabs = ["home", "plan", "calendar", "shift", "ledger", "more", "till"] as const;
     for (const tab of tabs) {
       const shared = ledgerRouteContract(tab, "household");
       const personal = ledgerRouteContract(tab, "personal");
@@ -426,6 +426,9 @@ describe("ledgerRouteContract", () => {
     expect(ledgerRouteContract("ledger", "household").heading).toMatch(/Household table/i);
     expect(kitchenPrimaryNav("household")).toEqual(["home", "calendar", "plan", "more"]);
     expect(kitchenPrimaryNav("personal")).toEqual(["home", "calendar", "shift", "ledger", "plan", "more"]);
+    expect(kitchenPrimaryNav("household")).not.toContain("till");
+    expect(ledgerRouteContract("till", "household").heading).toBe("Till");
+    expect(ledgerRouteContract("till", "household").commandsExposed).toContain("postEntry");
   });
 });
 
