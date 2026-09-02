@@ -2,7 +2,7 @@
 
 ## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
 
-**Status:** Application merged in [PR #298](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/298) as `main@2b9f77051b4abfdddce2fd2f580e41a36a6c8772` and published to the Development kitchen. Stale draft PR #295 is closed. The Slice 3 handoff becomes active only after the release-seal PR containing this record merges; its exact merge SHA is the required current-`origin/main` base and must contain `2b9f770` as an ancestor. Risk: **Release**.
+**Status:** Application merged in [PR #298](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/298) as `main@2b9f77051b4abfdddce2fd2f580e41a36a6c8772` and published to the Development kitchen. Stale draft PR #295 is closed. The Slice 3 handoff becomes active only after release-seal [PR #300](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/300) merges; its exact merge SHA is the required current-`origin/main` base and must contain `2b9f770` as an ancestor. Risk: **Release**.
 
 **Household outcome:** the configured Fund custodian records an ordinary shared-card purchase with amount then an observed category. A rejected command remains visibly and accessibly recoverable inside the active sheet. The modal removes the background from interaction, and the ten-second correction preserves append-only Fund history.
 
@@ -14,7 +14,7 @@
 
 **Boundaries:** source, tests, canon, fictional/local Development visual fixtures, and authorized Development Worker assets only. No schema, hosted household row, secret, provider, bank connection, Production data, or Production-continuity setting.
 
-**Next owner:** Cursor may start only Till Slice 3 after this release-seal PR merges, from its exact current `origin/main` merge SHA in a fresh branch. That SHA must contain application merge `2b9f770` as an ancestor. Never start from PR #295, `25ef99e`, or the pre-seal application SHA alone.
+**Next owner:** Cursor may start only Till Slice 3 after release-seal PR #300 merges, from its exact current `origin/main` merge SHA in a fresh branch. That SHA must contain application merge `2b9f770` as an ancestor. Never start from PR #295, `25ef99e`, or the pre-seal application SHA alone.
 
 ## Register slice 10 — the metronome (2026-09-02)
 

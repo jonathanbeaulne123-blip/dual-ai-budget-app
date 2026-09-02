@@ -8,7 +8,7 @@
 - **Branch:** `codex/till-2-swipe-repair`; release record `codex/till-2-release-seal`
 - **Baseline SHA:** `813e2b418f0a847122b669b96268b2390f559c9d` (`origin/main`)
 - **Head SHA:** reviewed application `3ca2f5b301735a97f364a08134c81b021b258c45`; application merge `2b9f77051b4abfdddce2fd2f580e41a36a6c8772`
-- **PR or issue:** [#298](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/298); supersedes closed draft #295; release-seal PR pending
+- **PR or issue:** application [#298](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/298); release seal [#300](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/300); supersedes closed draft #295
 - **Risk:** Release (High money/UI repair plus authorized Development merge/deploy)
 - **Decision owner:** Jonathan
 - **Environment impact:** Development kitchen code only
@@ -94,4 +94,4 @@ The Household Fund custodian can record an ordinary shared-card purchase with am
 
 ## Handoff
 
-Cursor may begin only Till Slice 3 after the release-seal PR containing this CLOSED record merges. Start from the exact current `origin/main` merge SHA reported by the coordinator in a fresh clean branch, and assert application merge `2b9f77051b4abfdddce2fd2f580e41a36a6c8772` is its ancestor. Do not start from PR #295, `25ef99e`, or `2b9f770` alone.
+Cursor may begin only Till Slice 3 after release-seal PR #300 containing this CLOSED record merges. Start from the exact current `origin/main` merge SHA reported by the coordinator in a fresh clean branch, and assert application merge `2b9f77051b4abfdddce2fd2f580e41a36a6c8772` is its ancestor. Do not start from PR #295, `25ef99e`, or `2b9f770` alone.
