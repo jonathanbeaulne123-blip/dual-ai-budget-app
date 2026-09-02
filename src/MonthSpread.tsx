@@ -479,6 +479,7 @@ export function MonthSpread({
               {ticks.map((tick, index) => {
                 const axisY = drawable ? COURSE_VIEW.axisRule : 86;
                 const x = courseX(dayOfDateKey(tick.date), days);
+                const labelEnd = x >= COURSE_VIEW.right - 70;
                 return (
                   <g key={tick.date} className="ms-payday" aria-hidden="true">
                     <line
@@ -487,7 +488,13 @@ export function MonthSpread({
                       x2={x} y2={axisY + PAYDAY_TICK_VIEW.length}
                     />
                     {index === 0 ? (
-                      <text className="ms-payday-label" x={x + 6} y={axisY + 7}>payday</text>
+                      <Chip
+                        x={labelEnd ? x - 8 : x + 8}
+                        y={axisY - 6}
+                        text="payday"
+                        tone="ms-axis"
+                        anchorEnd={labelEnd}
+                      />
                     ) : null}
                   </g>
                 );

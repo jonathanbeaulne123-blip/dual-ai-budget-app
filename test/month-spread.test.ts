@@ -39,6 +39,7 @@ const RESERVE_DATE = "2026-09-01";
 
 const spread = readFileSync(new URL("../src/MonthSpread.tsx", import.meta.url), "utf8");
 const officeWide = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
+const officePhone = readFileSync(new URL("../src/OfficePhone.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/month-spread.css", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.tsx", import.meta.url), "utf8");
 const kitty = readFileSync(new URL("../src/KittyBanks.tsx", import.meta.url), "utf8");
@@ -602,13 +603,17 @@ describe("the metronome — custodian paydays as timing ticks", () => {
   it("draws ticks as felt rules below the axis, labelled payday once, never as CAD", () => {
     expect(spread).toContain("paydayTicks(household, course.monthKey)");
     expect(spread).toContain('className="ms-payday-tick"');
-    expect(spread).toContain(">payday</text>");
+    expect(spread).toContain('text="payday"');
     expect(spread).toContain("index === 0");
     expect(spread).toContain("PAYDAY_TICK_VIEW.length");
-    expect(spread).not.toMatch(/ticks\.map[\s\S]{0,400}formatCad/);
+    expect(spread).toContain("axisY - 6");
+    expect(spread).not.toMatch(/ticks\.map[\s\S]{0,800}formatCad/);
     expect(css).toContain("--ms-tick: var(--felt)");
     expect(css).toContain("stroke-width: 3");
     expect(css).toContain(".ms-payday-tick");
     expect(officeWide).toContain("household={booksHousehold}");
+    expect(officePhone).not.toContain("MonthSpread");
+    expect(officePhone).not.toContain("paydayTicks");
+    expect(spread).not.toMatch(/fundPrivate|job\.name|locationName/);
   });
 });

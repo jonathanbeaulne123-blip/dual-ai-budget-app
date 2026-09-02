@@ -231,11 +231,6 @@
 .ms-empty-staff { font: 500 13px var(--font); fill: var(--muted); }
 
 .ms-payday-tick { stroke: var(--ms-tick); stroke-width: 3; stroke-linecap: square; }
-.ms-payday-label {
-  font: 400 11px var(--font);
-  fill: var(--muted);
-  letter-spacing: 0.06em;
-}
 
 .ms-rule { stroke: var(--line); stroke-width: 1; }
 .ms-baseline { stroke: color-mix(in srgb, var(--ink) 34%, transparent); stroke-width: 1; }
