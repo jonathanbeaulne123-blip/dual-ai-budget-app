@@ -2769,6 +2769,7 @@ export function App() {
         confirmationId,
         commandKind: token?.commandKind ?? token?.label ?? "commit",
         postedIds: token?.postedIds ?? [],
+        actingMemberId: memberId,
         transportRequested,
         adapters: makeBooksAdapters({
           environment,
