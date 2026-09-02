@@ -86,7 +86,7 @@ The packet wanted sealed Slice 1 SHA 7a023c75 on codex/till-1-custody-fence-v2. 
 - postEntry requires the Fund custodian before cloneHousehold for purchase-funded.
 - Exact refusal: “Only the person holding the card can post a household purchase.”
 - Playwright fictional Development demo as Bianca (Toronto 2026-09-12): I spent something → CadPad What did you just spend? → Groceries → Posted. Nothing moved. Operating stayed $3260.00. Hercules pill hidden while the sheet is open. 320/390/720/1100 overflowX 0.
-- Independent UX auditor failed to launch. Books/privacy/verifier were launched; if their written verdicts are missing from the handoff, mark those reviews unproven.
+- Independent books audit PASS WITH NOTES; P1 funded Undo was repaired by reversePostedMoney in App applyUndo. Privacy PASS WITH NOTES (P3). UX auditor failed to launch. Verifiers on earlier SHAs were CONDITIONAL before check/visual were recorded.
 
 ## Named gates — return PASS / CONDITIONAL / FAIL each
 

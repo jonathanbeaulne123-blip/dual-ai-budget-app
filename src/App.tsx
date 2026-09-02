@@ -3135,7 +3135,11 @@ export function App() {
       if (!current || !who) return;
       try {
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
-        const result = undoLedgerConfirm(current, token);
+        const fundEventId = (token.postedIds ?? []).find((id) => id.startsWith("FUND-EVT-"));
+        const postedTransactionId = (token.postedIds ?? []).find((id) => current.transactions.some((row) => row.id === id));
+        const result = fundEventId
+          ? reversePostedMoney(current, postedTransactionId ?? "", { createdBy: who })
+          : undoLedgerConfirm(current, token);
         lastAmountLabelRef.current = null;
         const outcome = await commitHousehold(result.household, {
           ...result.undo,

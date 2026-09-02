@@ -19,6 +19,7 @@ import {
   projectLedgerExperience,
   resolveSwipeCardAccount,
   reversePostedMoney,
+  undoLedgerConfirm,
   swipeBelongsOnSharedHome,
   swipeCategoryAccessibleName,
   type Account,
@@ -289,6 +290,35 @@ describe("swipe posting contract", () => {
     })).toThrow(HOUSEHOLD_PURCHASE_CUSTODY_REFUSAL);
   });
 
+  it("reverses a funded swipe so transfer-due does not outlive the journal row", () => {
+    let household = archiveAccount(configuredFund(), "ACC-MC").household;
+    const before = projectHouseholdFund(household, TODAY);
+    const posted = postEntry(household, {
+      date: TODAY,
+      type: "expense",
+      amount: "84.20",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      createdBy: BIANCA,
+      visibility: "household",
+      funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 8420, destinationAccountId: "ACC-VISA" },
+    });
+    const afterPost = projectHouseholdFund(posted.household, TODAY);
+    expect(afterPost.operatingBalanceCents).toBe(before.operatingBalanceCents);
+    expect(afterPost.transferDueCents).toBe(before.transferDueCents + 8420);
+
+    const deleted = undoLedgerConfirm(posted.household, posted.undo);
+    expect(projectHouseholdFund(deleted.household, TODAY).transferDueCents).toBe(afterPost.transferDueCents);
+
+    const txId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+    expect(txId).toBeTruthy();
+    const reversed = reversePostedMoney(posted.household, txId!, { createdBy: BIANCA });
+    const afterReverse = projectHouseholdFund(reversed.household, TODAY);
+    expect(afterReverse.operatingBalanceCents).toBe(before.operatingBalanceCents);
+    expect(afterReverse.transferDueCents).toBe(before.transferDueCents);
+    expect(reversed.household.fundEvents?.at(-1)?.kind).toBe("refund-funded");
+  });
+
   it("fences camera, files, OCR, writers, and a second Fund fold", () => {
     expect(swipeSource).not.toMatch(/camera|ocr|postEntry|commitHousehold|outbox|pglite|indexedDB/i);
     expect(swipeCore).not.toMatch(/\b(percent|ratio|share|camera|ocr)\b/i);
@@ -302,6 +332,9 @@ describe("swipe posting contract", () => {
     expect(swipeMount).toContain("<Swipe");
     expect(swipeMount).not.toMatch(/camera|ocr|file input|image/i);
     expect(appSource).toContain("adding={adding || swipeOpen}");
+    const applyUndo = appSource.slice(appSource.indexOf("function applyUndo"), appSource.indexOf("async function runRestorePoint"));
+    expect(applyUndo).toContain("FUND-EVT-");
+    expect(applyUndo).toContain("reversePostedMoney");
     expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}");
     expect(readFileSync(resolve(process.cwd(), "src/swipe.css"), "utf8")).toContain("z-index: 32");
   });
