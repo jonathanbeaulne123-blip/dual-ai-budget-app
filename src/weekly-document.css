@@ -96,11 +96,12 @@
 
 .weekly-ask-figure {
   font-family: var(--display);
-  font-size: 44px;
+  font-size: clamp(28px, 11vw, 44px);
   line-height: 0.94;
   letter-spacing: -0.028em;
   color: var(--ask-figure);
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .weekly-ask-copy {

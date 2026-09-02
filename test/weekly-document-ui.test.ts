@@ -275,11 +275,11 @@ describe("weekly document presentation", () => {
     });
     expect(container.querySelector("[data-weekly-motions='empty']")?.textContent).toBe(WEEKLY_DOCUMENT_COPY.emptyMotions);
     renderWeekly(weeklyHousehold(), JONATHAN, undefined, "loading");
-    expect(container.textContent).toContain(WEEKLY_DOCUMENT_COPY.loading);
+    expect(container.querySelector("[role='status']")?.textContent).toBe(WEEKLY_DOCUMENT_COPY.loading);
     renderWeekly(weeklyHousehold(), JONATHAN, undefined, "error");
-    expect(container.textContent).toContain(WEEKLY_DOCUMENT_COPY.error);
+    expect(container.querySelector("[role='status']")?.textContent).toBe(WEEKLY_DOCUMENT_COPY.error);
     renderWeekly(weeklyHousehold(), JONATHAN, undefined, "offline");
-    expect(container.textContent).toContain(WEEKLY_DOCUMENT_COPY.offline);
+    expect(container.querySelector("[role='status']")?.textContent).toBe(WEEKLY_DOCUMENT_COPY.offline);
     expect(container.querySelector("[data-weekly-stamp-line]")).toBeTruthy();
   });
 

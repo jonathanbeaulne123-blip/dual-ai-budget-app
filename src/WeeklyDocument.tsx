@@ -87,8 +87,8 @@ function AskPanel({ document }: { document: WeeklyDocumentView }) {
         document.routes.kind === "not-enough-data" ? (
           <p className="weekly-status" data-weekly-routes="not-enough-data">{document.routes.copy}</p>
         ) : (
-          <div className="weekly-routes" data-weekly-routes="owner" role="img" aria-label={`${ask.copy} ${document.routes.routes[0] ? weeklyRouteCaption(document.routes.routes[0], document.routes.askCents) : ""}`.trim()}>
-            <p className="weekly-routes-header">{ASK_ROUTES_HEADER_COPY}</p>
+          <div className="weekly-routes" data-weekly-routes="owner" aria-labelledby="weekly-routes-header">
+            <p className="weekly-routes-header" id="weekly-routes-header">{ASK_ROUTES_HEADER_COPY}</p>
             {document.routes.routes.length === 0 ? (
               <p className="weekly-status">No optional routes on this Ask.</p>
             ) : (
@@ -194,27 +194,30 @@ export function WeeklyDocument({
   return (
     <section
       className="card weekly-document"
+      aria-labelledby="weekly-document-title"
       data-weekly-offered="true"
       data-weekly-complete={document.complete ? "true" : "false"}
       data-weekly-act={act}
       data-weekly-surface={surface}
     >
       <header>
-        <h2>{WEEKLY_DOCUMENT_COPY.title}</h2>
-        <span className="muted">
+        <h2 id="weekly-document-title">{WEEKLY_DOCUMENT_COPY.title}</h2>
+        <p className="muted" id="weekly-document-act">
           {act === 0 ? WEEKLY_DOCUMENT_COPY.act0
             : act === 1 ? WEEKLY_DOCUMENT_COPY.act1
               : act === 2 ? WEEKLY_DOCUMENT_COPY.act2
                 : WEEKLY_DOCUMENT_COPY.act3}
-        </span>
+        </p>
       </header>
-      {surface === "loading" ? <p className="weekly-status">{WEEKLY_DOCUMENT_COPY.loading}</p> : null}
+      {surface === "loading" ? <p className="weekly-status" role="status">{WEEKLY_DOCUMENT_COPY.loading}</p> : null}
       {surface === "error" ? <p className="weekly-status" role="status">{WEEKLY_DOCUMENT_COPY.error}</p> : null}
-      {surface === "offline" ? <p className="weekly-status">{WEEKLY_DOCUMENT_COPY.offline}</p> : null}
-      {act === 0 ? <ClerkReading reading={document.reading} household={household} /> : null}
-      {act === 1 ? <RegisterList document={document} household={household} /> : null}
-      {act === 2 ? <AskPanel document={document} /> : null}
-      {act === 3 ? <MotionList document={document} /> : null}
+      {surface === "offline" ? <p className="weekly-status" role="status">{WEEKLY_DOCUMENT_COPY.offline}</p> : null}
+      <div className="weekly-act-body" aria-live="polite" aria-labelledby="weekly-document-act">
+        {act === 0 ? <ClerkReading reading={document.reading} household={household} /> : null}
+        {act === 1 ? <RegisterList document={document} household={household} /> : null}
+        {act === 2 ? <AskPanel document={document} /> : null}
+        {act === 3 ? <MotionList document={document} /> : null}
+      </div>
       <StampLines document={document} busy={busy} onStamp={stampOwnLine} />
       <div className="chips">
         {act > 0 ? (
