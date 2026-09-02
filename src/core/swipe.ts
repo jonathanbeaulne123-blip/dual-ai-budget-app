@@ -111,9 +111,10 @@ export function resolveSwipeCardAccount(household: Household, memberId: string):
     .sort((left, right) => (
       right.createdAt.localeCompare(left.createdAt) || right.id.localeCompare(left.id)
     ));
-  const remembered = recent.find((event) => visibleIds.has(event.destinationAccountId));
-  if (remembered && isEligibleSwipeCard(visible.find((account) => account.id === remembered.destinationAccountId))) {
-    return { kind: "ready", accountId: remembered.destinationAccountId };
+  const remembered = recent.find((event) => Boolean(event.destinationAccountId && visibleIds.has(event.destinationAccountId)));
+  const rememberedId = remembered?.destinationAccountId;
+  if (rememberedId && isEligibleSwipeCard(visible.find((account) => account.id === rememberedId))) {
+    return { kind: "ready", accountId: rememberedId };
   }
   if (visible.length === 1) return { kind: "ready", accountId: visible[0]!.id };
   return { kind: "ambiguous" };
