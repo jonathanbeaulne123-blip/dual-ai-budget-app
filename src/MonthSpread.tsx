@@ -159,6 +159,7 @@ export function MonthSpread({
   nameOf,
   custodianName,
   onOpenFund,
+  onOpenRegister,
   onOpenHealth,
 }: {
   story: SharedLedgerStoryModel;
@@ -167,6 +168,7 @@ export function MonthSpread({
   nameOf: (memberId: string | null | undefined) => string;
   custodianName: string;
   onOpenFund: () => void;
+  onOpenRegister: () => void;
   onOpenHealth: () => void;
 }) {
   const [readout, setReadout] = useState<{ when: string; body: string } | null>(null);
@@ -576,6 +578,7 @@ export function MonthSpread({
             : "no open proposals"}
         </span>
         <span className="ms-fact">{story.trust.environment}</span>
+        <button type="button" className="ms-audit" onClick={onOpenRegister}>Open the register</button>
         <button type="button" className="ms-audit" onClick={onOpenFund}>{story.trust.auditLabel}</button>
       </footer>
     </article>

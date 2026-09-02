@@ -110,7 +110,7 @@ export function OfficeWide({
   sharedStory = null,
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
-  onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onGo, onClinkOn,
+  onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onOpenRegister, onGo, onClinkOn,
 }: {
   household: Household;
   booksHousehold: Household;
@@ -148,6 +148,7 @@ export function OfficeWide({
   onAskSettle: (claimId: string, summary: string) => void;
   onAskStartJar: (appointmentId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
+  onOpenRegister: () => void;
   onGo: (tab: HearthTab) => void;
   onClinkOn: (on: boolean) => void;
   integrityFindings?: Finding[];
@@ -486,6 +487,7 @@ export function OfficeWide({
                 nameOf={nameOf}
                 custodianName={custodianName}
                 onOpenFund={() => onGo("ledger")}
+                onOpenRegister={onOpenRegister}
                 onOpenHealth={() => onGo("more")}
               />
               {showAsk ? (

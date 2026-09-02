@@ -35,6 +35,7 @@ export type {
   RegisterSource,
   RegisterRow as ContributionRegisterRow,
 } from "./contributionRegister.ts";
+export * from "./registerView.ts";
 export * from "./ask.ts";
 export * from "./askRoutes.ts";
 export * from "./askView.ts";

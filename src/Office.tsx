@@ -150,6 +150,7 @@ export function Office({
   onAskSettle,
   onAskStartJar,
   onSitDown,
+  onOpenRegister,
   onGo,
   integrityFindingCount = 0,
   integrityFindings = [],
@@ -191,6 +192,7 @@ export function Office({
   onAskSettle: (claimId: string, summary: string) => void;
   onAskStartJar: (appointmentId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
+  onOpenRegister: () => void;
   onGo: (tab: HearthTab) => void;
 }) {
   const breakpoint = useBreakpoint();
@@ -906,6 +908,7 @@ export function Office({
           onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
           onKitchen={onKitchen} onMarkPaid={onMarkPaid}
           onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
+          onOpenRegister={onOpenRegister}
           onGo={onGo} onClinkOn={onClinkOn}
         />
       ) : (
