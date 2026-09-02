@@ -1,5 +1,15 @@
 # AI Task and Handoff Standard
 
+## Cursor Clerk Slice 4 weekly document (2026-09-02)
+
+**Status:** Ready to implement locally from sealed core `9f74cb780fed8a1a595a2dd791f510545a85570d` on `codex/clerk-4-durable-stamp`; not pushed, merged, deployed, or live. Complete packet: [`briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md`](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md). Risk: **High**.
+
+**Household outcome:** either active member can add only their own durable weekly acknowledgement; one stamp completes the document while the other line stays blank and quiet. The weekly composes Clerk, register, Ask, read-only alternative, and real motion truth without creating money or a new motion.
+
+**Core seal:** separate append-only `WSTAMP-` Shared facts; exact Toronto date/week; one-record-only acceptance transition; Google-member binding at client enqueue/flush; direct and compacted replay; immutable merge; Personal/Hercules/financial-audit exclusion. Independent books/sync and privacy reviews found no blocking issue for the supported signed-in client path. The hosted RPC does not inspect stamp JSON and is not claimed as adversarial server enforcement.
+
+**Dual Course:** core Budget `+2` / Engagement `+2`; target Slice 4 Budget `+3` / Engagement `+3`. Full core gate: **1,635 passed / 3 skipped tests**, all books/PGlite lanes, AI verification, TypeScript, and 401-module build. Cursor must rerun proof on its own exact head. No push/PR/release authority is included.
+
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 
 **Status:** Corrected combined candidate on `codex/clerk-2-3-release`, integrated with current `origin/main@e7d98389be1a4ad831d4d83204061a68955df232` at `008310113e392827718e9013f92d3c4c499b5e15`; this evidence record follows. Source Slice 2 [PR #287](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/287) is integrated. Independent review found two P2 defects, repaired at `4624c31`; exact-head PR review then found a third P2 for long unbroken imported labels, repaired with `overflow-wrap: anywhere` and a regression fixture. Jonathan authorized push, merge, and Development kitchen deployment after exact-candidate verification. Risk: **Medium**.
