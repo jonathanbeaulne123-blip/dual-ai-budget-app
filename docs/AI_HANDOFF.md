@@ -2,7 +2,7 @@
 
 ## Clerk Slice 4 weekly document (2026-09-02)
 
-**Status:** Integrated with current `origin/main@7101dce` (Ask confirm #292 + stamp core #291) on `cursor/clerk-4-weekly-49a4`. Draft [PR #293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293). Jonathan authorized merge and Development kitchen deployment on 2026-09-02. **Merge/deploy in progress; not yet live-verified.** Risk: **High**.
+**Status:** Merged via [#293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293) onto `main` as `97e1ae9df92f5af04ef6717b48c580829756656c` (2026-09-02T06:12:12Z). Main CI [`33597829546`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33597829546) success. D-041 Cloudflare Workers [`33597829535`](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33597829535) success (`VITE_PRODUCTION_CONTINUITY=0`). Worker `hearth-books` version `b9b79e02-143d-4c06-ae08-72bb14d36ce0`. Live kitchen HTTP verified. **Not Production. Not called shipped for Production.** Risk: **High**.
 
 **Household outcome:** Jonathan and Bianca can open one calm weekly household document at different times. It reads the cited Clerk record, shows the conserved month register, puts the household Ask beside a read-only other door, and lists existing motions. Either person may stamp only their own line; one stamp completes the weekly and the other line remains blank without a reminder. Routes stay with the unique active non-custodian. The desk Ask `Raise it` Confirm from #292 remains on wide Shared Home only; the weekly page does not gain a `place` or goal-move control.
 
@@ -11,15 +11,21 @@
 **Architecture:** `weeklyDocument` is a viewer projection over sealed Clerk, register, Ask, alternatives, routes, Fund/Charter motions, and Gate A stamps. `WeeklyDocument` is a sibling of `SitDownGuide` on the Office postcard with local act state `0|1|2|3`. `cadence: "none"` offers nothing; weekly follows `cadenceWeekday`; biweekly/monthly withhold. `askRoutes` runs only for the unique active non-custodian. `commitHousehold` passes `actingMemberId`. D-196. Worksession: [`worksessions/2026-09-02-clerk-weekly-document.md`](worksessions/2026-09-02-clerk-weekly-document.md).
 
 **Verification:**
-- Focused weekly: `pnpm exec vitest run test/weekly-document.test.ts test/weekly-document-ui.test.ts --maxWorkers=1` — **2 files / 14 tests passed** on pre-integration head
-- Packet regression including Bianca startup: **13 files / 101 tests passed** on pre-integration head
+- Focused weekly on the implementation branch: `pnpm exec vitest run test/weekly-document.test.ts test/weekly-document-ui.test.ts --maxWorkers=1` — **2 files / 14 tests passed**
+- Packet regression including Bianca startup before merge: **13 files / 101 tests passed**
 - Independent read-only books audit: **PASS**; privacy audit: **PASS**; UX P1 live-region/figure clamp repaired at `c02232d`
-- Visual proof (fictional Development catalog): 320/390/720/1100, both viewers, keyboard focus, reduced motion, loading/error/offline, cadence none
-- Current-main integration and live D-041 kitchen HTTP are recorded after merge
+- Visual proof (fictional Development catalog, branch): 320/390/720/1100, both viewers, keyboard focus, reduced motion, loading/error/offline, cadence none
+- Merge: fast-forward `origin/main` `7101dce` → `97e1ae9`; PR #293 MERGED
+- Main CI `33597829546` / job `test` `100144792101`: **success** (completed 2026-09-02T06:20:41Z)
+- D-041 `33597829535` / job `pages` `100144792093`: **success**; uploaded `hearth-books`; Current Version ID `b9b79e02-143d-4c06-ae08-72bb14d36ce0`
+- Live `GET https://hearth-books.jonathan-beaulne123.workers.dev/` → **HTTP/2 200**, `cache-control: no-store`
+- Live `/assets/index-B6_CDc3Y.js` (1,432,591 bytes) contains `weeklyDocument` and `stampWeeklyDocument`
+- Live `/assets/Office-P5Sguoc5.js` (140,724 bytes) contains `This week's page`, `This is another way the month could look`, `does not move a goal`, `weekly-document`, `weekly-stamp-link`
+- Live `/assets/Office-C3dOKSHl.css` (8,363 bytes) contains `.weekly-document`, `.weekly-stamp-link`, `outline:2px solid var(--pine)`, `outline-offset:2px`, and reduced-motion `transition:none`
 
-**Boundaries:** No hosted schema/row, secret, provider, or Production mutation. Hosted RPC still does not inspect stamp JSON. Kitchen postcard does not pass loading/error/offline; those surfaces exist on the component.
+**Boundaries:** No hosted schema/row, secret, provider, or Production mutation. Hosted RPC still does not inspect stamp JSON. Kitchen postcard does not pass loading/error/offline; those surfaces exist on the component. Signed-in live Office interaction was not exercised against hosted household data.
 
-**Next owner:** Cursor completes authorized merge to `main`, waits for D-041, and records live HTTP separately from merge.
+**Next owner:** Jonathan, to open the Development kitchen on the Charter weekly weekday. Hosted RPC stamp-JSON inspection remains a later packet. Production continuity stays off.
 
 ## Register slice 9 Ask confirmation (2026-09-02)
 
@@ -31,7 +37,7 @@
 
 ## Cursor Clerk Slice 4 weekly packet (consumed) (2026-09-02)
 
-**Status:** Consumed by the Slice 4 implementation on `cursor/clerk-4-weekly-49a4`. Packet: [`briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md`](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md). Core seal remains the #291 stamp merge.
+**Status:** Consumed by Slice 4; merged via [#293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293) as `main@97e1ae9`. Packet: [`briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md`](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md). Core seal remains the #291 stamp merge.
 
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 
