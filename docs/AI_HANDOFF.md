@@ -2,7 +2,7 @@
 
 ## Clerk Slice 4 weekly document (2026-09-02)
 
-**Status:** Local implementation on `cursor/clerk-4-weekly-49a4` at `c02232d85f343a66e408cef8b386a1ed9876ee6a` over sealed stamp core `9f74cb780fed8a1a595a2dd791f510545a85570d`. Draft [PR #293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293). **Not merged, not deployed, not live.** Risk: **High**.
+**Status:** Local implementation on `cursor/clerk-4-weekly-49a4` over sealed stamp core `9f74cb780fed8a1a595a2dd791f510545a85570d`. Draft [PR #293](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293). **Not merged, not deployed, not live.** Risk: **High**. Implementation code through `c02232d`; this handoff/worksession refresh follows. After this commit, the branch head is the docs SHA on `cursor/clerk-4-weekly-49a4`.
 
 **Household outcome:** Jonathan and Bianca can open one calm weekly household document at different times. It reads the cited Clerk record, shows the conserved month register, puts the household Ask beside a read-only other door, and lists existing motions. Either person may stamp only their own line; one stamp completes the weekly and the other line remains blank without a reminder. Routes stay with the unique active non-custodian.
 
@@ -21,9 +21,9 @@
 - Independent UX audit: two P1 live-region/landmark gaps repaired at `c02232d`; stamp remains a quiet Charter-like `stamp` control (no extra Confirm) because the packet forbids nags
 - Visual proof (fictional Development catalog): 320/390/720/1100, both viewers, keyboard focus `2px solid rgb(44, 106, 78)` offset `2px`, reduced motion `transition: none`, loading/error/offline, cadence none, one stamp completes with the partner line blank
 
-**Boundaries:** Local fictional/catalog fixtures only. No hosted schema/row, secret, provider, Production, merge, or deploy. Hosted RPC still does not inspect stamp JSON.
+**Boundaries:** Local fictional/catalog fixtures only. No hosted schema/row, secret, provider, Production, merge, or deploy. Hosted RPC still does not inspect stamp JSON. `origin/main` moved to `7101dce` after this branch started (stamp core merged as #291, Register slice 9 Ask confirm as #292). This packet stayed on exact baseline `9f74cb7`; rebase onto current main is Jonathan's merge-prep decision.
 
-**Next owner:** Jonathan reviews draft PR #293 and the independent High-risk books/privacy/UX notes, then decides whether to merge or deploy. Do not infer live from this local proof.
+**Next owner:** Jonathan reviews draft PR #293 and the independent High-risk books/privacy/UX notes, then decides whether to rebase onto current `main`, merge, or deploy. Do not infer live from this local proof.
 
 ## Clerk Slices 2 + 3 corrected release candidate (2026-09-01)
 

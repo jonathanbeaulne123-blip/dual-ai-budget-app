@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/clerk-4-weekly-49a4`
 - **Baseline SHA:** `9f74cb780fed8a1a595a2dd791f510545a85570d`
-- **Head SHA:** `c02232d85f343a66e408cef8b386a1ed9876ee6a`
+- **Head SHA:** `c02232d85f343a66e408cef8b386a1ed9876ee6a` (implementation); docs refresh on the same branch
 - **PR or issue:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/293
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -83,7 +83,7 @@ Follow the Cursor packet over the dated build manual and UX packet. Other door i
 
 ## Remaining uncertainty
 
-Hosted RPC still does not inspect stamp JSON.
+Hosted RPC still does not inspect stamp JSON. `origin/main@7101dce` now contains merged stamp core (#291) and Register slice 9 Ask confirm (#292). This branch stayed on exact baseline `9f74cb7`. Kitchen `PostcardBody` does not yet pass loading/error/offline; those surfaces are proven on the component.
 
 ## Handoff
 
