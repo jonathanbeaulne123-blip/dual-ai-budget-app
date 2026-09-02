@@ -288,6 +288,7 @@ describe("Month Spread fences", () => {
     expect(officeWide).toContain("<MonthSpread");
     expect(officeWide).toContain("<DeskPlate");
     expect(officeWide).toContain("household={booksHousehold}");
+    expect(officeWide).toContain("sharedMonthCourse(booksHousehold, today)");
     expect(officeWide).not.toContain("sharedMonthCourse(household, today)");
     expect(main).toContain('import "./month-spread.css";');
   });
@@ -511,6 +512,37 @@ describe("the metronome — custodian paydays as timing ticks", () => {
 
     const ticks = paydayTicks(household, "2026-09");
     expect(ticks.map((tick) => tick.date)).toEqual(["2026-09-04", "2026-09-18"]);
+  });
+
+  it("ignores a divergent tipSchedule on the same custodian job", () => {
+    let household = configureHouseholdFund(catalogHousehold(), {
+      custodianMemberId: BIANCA,
+      openedOn: "2026-09-01",
+      createdBy: BIANCA,
+    }).household;
+    const job = payJob(BIANCA, {
+      cadence: "biweekly",
+      anchorDate: "2026-09-04",
+      weekday: 5,
+      monthDays: [15, 30],
+      customDates: [],
+      reminderTime: "09:00",
+    });
+    household = withJobs(household, [{
+      ...job,
+      tipSchedule: {
+        cadence: "weekly",
+        anchorDate: "2026-09-01",
+        weekday: 1,
+        monthDays: [1],
+        customDates: [],
+        reminderTime: "09:00",
+      },
+    }]);
+
+    const dates = paydayTicks(household, "2026-09").map((tick) => tick.date);
+    expect(dates).toEqual(["2026-09-04", "2026-09-18"]);
+    expect(dates).not.toEqual(expect.arrayContaining(["2026-09-01", "2026-09-08", "2026-09-15", "2026-09-22", "2026-09-29"]));
   });
 
   it("unions two active custodian jobs and ignores an inactive one", () => {
