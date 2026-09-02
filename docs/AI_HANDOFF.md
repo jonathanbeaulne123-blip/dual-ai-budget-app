@@ -2,19 +2,28 @@
 
 ## Till Slice 3 custodian surface (2026-09-02)
 
-**Status:** **OPEN ON BRANCH; NOT MERGED; NOT KITCHEN-PUBLISHED; NOT LIVE.** Branch `cursor/till-3-surface-0c3a` from sealed `origin/main@6f5dd56516d31c3f1892f4833a7e71ff31857142`. Ancestry proof: PR #302 `777dbcd`, Slice 1 `e426a45`, and `a2a55c6` are ancestors. Risk: **High**. D-199.
+**Status:** **PR #304; FULL LOCAL GATE GREEN; VISUAL PROVED; NOT MERGED; NOT KITCHEN-PUBLISHED; NOT LIVE.** Branch `cursor/till-3-surface-0c3a` from sealed `origin/main@6f5dd56516d31c3f1892f4833a7e71ff31857142`. Application head at proof: `5567f30f8f7304a3adccd790f4dbd84ec29fafb8` (later proof-doc commit may follow). Ancestry: PR #302 `777dbcd`, Slice 1 `e426a45`, and `a2a55c6` are ancestors. Risk: **High**. D-199. Jonathan authorized merge and Development kitchen publish when finished.
 
-**Household outcome:** the Till is a reachable Shared presentation: Swipe first, real contribution conversation next, `Nothing has moved.`, one current-month spend sentence, and a real `see everything` door back to Shared Home. Shared Home stays the initial surface. The Till cannot grant or remove a command right.
+**Household outcome:** the Till is a reachable Shared presentation: Swipe first, real contribution conversation next when the current actor can act, `Nothing has moved.`, one current-month spend sentence from `monthSummary`, and a real `see everything` door back to Shared Home. Shared Home stays the initial surface. The Till cannot grant or remove a command right.
 
 **Dual Course:** Budget `+2`; Engagement `+3`. Truth wins over brevity. Confirm remains the only contribution balance change; Hold stays record-only.
 
-**What changed:** `src/Till.tsx` + `src/till.css`; `tillActionableMotions` over the existing motion fold; `FundContributionMotionCard` shared from the Fund panel; LedgerTab `till` with `#till`/`#home` fallback; the temporary Home `I spent something` control moved onto Till; quiet Home door `Till`. Hercules presence maps Till → Home. No `landingSurface`. No command/Fund arithmetic, schema, Auth, Worker, or Production change.
+**What changed:** `src/Till.tsx` + `src/till.css`; `tillActionableMotions` over the existing motion fold; `FundContributionMotionCard` shared from the Fund panel; LedgerTab `till` with `#till`/`#home` fallback; the temporary Home `I spent something` control moved onto Till; quiet Home door `Till`. Hercules presence maps Till → Home so Slice 3 does not invent companion copy. No `landingSurface`. No command/Fund arithmetic, schema, Auth, Worker, or Production change.
 
-**Verification:** focused Till/Swipe/ledger-experience suite **45 passed** before the full gate. Full `pnpm check`, visual 320/390/720/~1100, and independent audits follow this commit.
+**Justified expansions:** Cloud Agent branch `cursor/till-3-surface-0c3a` instead of packet `till/3-surface`. Hercules tab mapping rather than expanding `HearthTab`.
 
-**Boundaries:** fictional Development/catalog fixtures only. No hosted row, schema, secret, provider, bank, Production data, or Production-continuity change.
+**Verification:**
+- Focused `pnpm exec vitest run test/till.test.ts test/swipe.test.ts test/ledger-experience.test.ts --maxWorkers=1`: **3 files / 45 passed**
+- Bianca Month `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **12 passed**
+- `pnpm check` on `5567f30`: AI surface 41 required files; fast lane **227 passed / 1 skipped files, 1,582 passed / 2 skipped tests**; serial books **18 passed / 1 skipped files, 154 passed / 1 skipped tests**; **1,736 passed / 3 intentional skips total**; TypeScript; Vite **418-module** production build; Hercules Pro UI; no `dist/_redirects`; `git diff --check` clean
+- Playwright against local Vite, fictional Development demo as Bianca, reduced motion: 320 / 390 / 720 / ~1100, no body overflow, `see everything` is a focused `#home` link, Swipe sheet opens from Till and Escape returns, door back to Shared Home. Artifacts: `/opt/cursor/artifacts/till-surface-320.png`, `till-surface-390.png`, `till-surface-720.png`, `till-surface-1100.png`, `till-home-390.png`, `till-swipe-sheet-390.png`, `till-slice-3-walkthrough.mp4`
+- Independent books/privacy/verifier subagents were launched on this SHA. UX auditor was unavailable (model spend limit). Parent visual proof stands.
 
-**Next owner:** Cursor completes `pnpm check`, visual proof, audits, then merge and Development kitchen publish per Jonathan's 2026-09-02 instruction. Stop before Slice 4.
+**Boundaries:** fictional Development/demo fixtures only. No hosted row, schema, secret, provider, bank, Production data, or Production-continuity change.
+
+**Next owner:** Cursor marks #304 ready, merges to `main`, and verifies D-041 Development kitchen HTTP 200 `Cache-Control: no-store` plus Till markers in the served bundle. Stop before Slice 4. Not Production. Not shipped until live HTTP is verified.
+
+## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
 
 ## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
 

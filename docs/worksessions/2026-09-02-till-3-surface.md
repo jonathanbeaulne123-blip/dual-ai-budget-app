@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/till-3-surface-0c3a` (Cloud Agent git policy; packet asked for `till/3-surface`)
 - **Baseline SHA:** `6f5dd56516d31c3f1892f4833a7e71ff31857142` (`origin/main` Slice 2 release seal)
-- **Head SHA:** (implementation in progress)
-- **PR or issue:** not opened yet
+- **Head SHA:** `5567f30f8f7304a3adccd790f4dbd84ec29fafb8` (proof-doc commit may follow)
+- **PR or issue:** [#304](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/304)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development (D-041 kitchen publish after merge). Not Production.
@@ -54,27 +54,28 @@ The Till is a reachable Shared presentation: Swipe first, real contribution conv
 
 ## Acceptance evidence
 
-- [ ] Exact DOM order and required copy
-- [ ] Swipe and 10-second strip on Till
-- [ ] Empty motions omit the section
-- [ ] Confirm vs Hold Fund projection inherited
-- [ ] `monthSummary` spend line
-- [ ] Empty and offline copy
-- [ ] Real `see everything` link
-- [ ] Source fences; no landing preference
-- [ ] Focused tests + `pnpm check`
-- [ ] Visual 320 / 390 / 720 / ~1100
+- [x] Exact DOM order and required copy
+- [x] Swipe and 10-second strip on Till
+- [x] Empty motions omit the section
+- [x] Confirm vs Hold Fund projection inherited
+- [x] `monthSummary` spend line
+- [x] Empty and offline copy
+- [x] Real `see everything` link
+- [x] Source fences; no landing preference
+- [x] Focused tests + `pnpm check` (1,736 passed / 3 skipped)
+- [x] Visual 320 / 390 / 720 / ~1100
 
 ## Plan
 
 - [x] Prove Slice 2 ancestry from clean `origin/main`
-- [ ] Implement Till + route + tests
-- [ ] Independent audits
-- [ ] Push / PR / merge / Development kitchen verify when proof is green
+- [x] Implement Till + route + tests
+- [x] `pnpm check` and visual proof
+- [ ] Independent audits recorded; merge / Development kitchen verify
 
 ## Evidence log
 
 - 2026-09-02: ancestry proof passed on `6f5dd56`. Branch created from detached `origin/main` as `cursor/till-3-surface-0c3a` (justified Cloud Agent prefix/suffix; not a reuse of `cursor/till-2-swipe-0c3a`).
+- 2026-09-02: focused 45 + Bianca 12; `pnpm check` 1,736 passed / 3 skipped; Playwright 320/390/720/1100 with no overflow; Swipe sheet from Till; `#home` door. PR #304.
 
 ## Decisions
 
