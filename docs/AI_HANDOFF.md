@@ -2,7 +2,7 @@
 
 ## Register slice 10 — the metronome (2026-09-02)
 
-**Status:** Implemented on `cursor/register-10-metronome-115c`; draft PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Baseline `origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3`. Product Chip-above-axis `b1f66f0cac67172d45f11bda3c4cd2fd9e25b0a0`; fetch the branch HEAD for review.
+**Status:** Implemented on `cursor/register-10-metronome-115c`; draft PR [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294). **Not merged, not kitchen-published, not live.** Risk **High** (Fund-month drawing on Shared Home). Isolated from Register slice 8 (#285). Baseline `origin/main@7101dced3d592f9c70d445ec4b901cc3ff8946b3`. Exact-head CI green at `843a21eff4b25d295d96a5305aafd64d2247760c`. Fetch the branch HEAD for review.
 
 **Household outcome:** Bianca's projected paydays appear as regular felt ticks below the Course axis. Ticks carry no amount. Jonathan's confirmed contributions keep their existing marks. The contrast is the information.
 
@@ -13,12 +13,10 @@
 **Verification:**
 - Focused `pnpm exec vitest run test/month-spread.test.ts`: **39 passed**
 - Bianca Month `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **10 passed**
-- `pnpm exec tsc --noEmit` passed
-- `pnpm test:fast`: **220 files passed / 1 skipped**, **1,511 tests passed / 2 skipped**
-- `pnpm ai:verify` passed (41 required files)
-- GitHub `pnpm check` on first head `d00b9dac`: CI `33595112394` success (pre-Chip-label follow-up)
+- Local `pnpm check` on `843a21e`: **exit 0**. `ai:verify` 41 files; fast lane **220 passed / 1 skipped files, 1,511 passed / 2 skipped tests**; books lane **18 passed / 1 skipped files, 146 passed / 1 skipped tests**; Vite production build 404 modules + Hercules Pro UI
+- GitHub `test` on exact head `843a21eff4b25d295d96a5305aafd64d2247760c`: push run `33597093965` success; PR run `33597098018` success. Workers preview is not the kitchen URL
 - Independent books: PASS WITH NOTES. Privacy: PASS WITH NOTES. UX: PASS WITH NOTES then Chip-above-axis repair. Verifier: PASS WITH NOTES
-- Component harness screenshots at 320 / 390 / 720 / ~1100, empty staff, night, reduced-motion. Fictional Development copy. Not a kitchen walkthrough.
+- Component harness screenshots at 320 / 390 / 720 / ~1100, empty staff, night, reduced-motion, plus Course crops. Fictional Development copy. Not a kitchen walkthrough.
 
 **Data/environment:** Local fictional Development only. No hosted row, schema, secret, Production, or deploy.
 

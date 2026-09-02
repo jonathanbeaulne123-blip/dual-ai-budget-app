@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `cursor/register-10-metronome-115c`
 - **Baseline SHA:** `7101dced3d592f9c70d445ec4b901cc3ff8946b3`
-- **Head SHA:** fetch `origin/cursor/register-10-metronome-115c`. Product Chip-above-axis: `b1f66f0cac67172d45f11bda3c4cd2fd9e25b0a0`. Verify `git rev-parse HEAD` after fetch.
+- **Head SHA:** fetch `origin/cursor/register-10-metronome-115c`. Exact-head CI: `843a21eff4b25d295d96a5305aafd64d2247760c`. Product Chip-above-axis: `b1f66f0cac67172d45f11bda3c4cd2fd9e25b0a0`. Verify `git rev-parse HEAD` after fetch.
 - **PR or issue:** draft [#294](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/294)
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -71,8 +71,8 @@ Inference:
 
 - Baseline: `git checkout -B cursor/register-10-metronome-115c origin/main` → `7101dced3d592f9c70d445ec4b901cc3ff8946b3`
 - Focused `pnpm exec vitest run test/month-spread.test.ts`: **39 passed** (existing conservation cases untouched plus six metronome cases)
-- Bianca Month: **10 passed**. `tsc --noEmit` passed. `pnpm test:fast`: **1,511 passed / 2 skipped**. `pnpm ai:verify` passed.
-- First-head GitHub `pnpm check` CI `33595112394` success at `d00b9dac` before the Chip-above-axis label repair.
+- Bianca Month: **10 passed**. Local `pnpm check` on `843a21e` exit 0 (fast 1,511/2 skipped; books 146/1 skipped; Vite 404 modules).
+- GitHub `test` exact-head `843a21e`: push `33597093965` success; PR `33597098018` success.
 - Independent books PASS WITH NOTES. Privacy PASS WITH NOTES. UX PASS WITH NOTES (label collision/clip) then Chip above the axis. Verifier PASS WITH NOTES.
 - Component harness screenshots at 320 / 390 / 720 / 1100 plus empty, night, reduced-motion. Fictional Development copy. Not kitchen.
 - Draft PR #294. Not merged, not deployed, not live.
