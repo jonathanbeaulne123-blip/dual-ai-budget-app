@@ -24,9 +24,12 @@ Start from a clean isolated worktree. Never use Jonathan's dirty `codex/roadmap-
 
 ```text
 git fetch origin
-git switch -c till/3-surface origin/main
+git switch --detach origin/main
 git status --short
 git merge-base --is-ancestor 777dbcd1196670dbe7c2576fff8b0526cad27093 HEAD
+git merge-base --is-ancestor a2a55c6c95e2f5ae84d9fc523ee5072b47a9efc9 HEAD
+git rev-parse HEAD
+git switch -c till/3-surface
 ```
 
 Record the exact fetched `origin/main` SHA as the Slice 3 base. Do not combine Slice 2 repairs with Slice 3 and do not reuse a stale Cursor branch.
@@ -64,9 +67,11 @@ Cursor must preserve `test/custody-fence.test.ts` and may not move this authorit
 7. No ratio, member ranking, share, second Fund balance, or copied financial arithmetic.
 8. No schema, Supabase/RLS/Auth, Worker, provider/model, bank connection, secret, or Production work.
 
-# Slice 2 — the swipe
+# SEALED REFERENCE — Slice 2 swipe (do not implement or modify)
 
-## Household outcome and Dual Course
+Everything in this Slice 2 section is historical acceptance context only. Do not execute its imperative wording, edit its listed files, or reopen its proof. Slice 3 may reuse the accepted component only through the current `main` interfaces.
+
+## SEALED REFERENCE — household outcome and Dual Course
 
 The cardholder can record an ordinary Household Fund purchase while standing at a counter: amount, then an observed category. Accepted local books update immediately and sync later. The strip says the record was posted while money itself did not move.
 
@@ -74,7 +79,7 @@ The cardholder can record an ordinary Household Fund purchase while standing at 
 - **Engagement delta (3): `+3`.** The normal non-duplicate path is one-handed and two-step, with no receipt or setup ceremony.
 - If speed conflicts with books integrity, custody, duplicate safety, or continuity, the books win.
 
-## Slice 2 implementation scope
+## SEALED REFERENCE — implementation scope (already complete)
 
 Expected files:
 
@@ -87,7 +92,7 @@ Expected files:
 
 Do not edit `src/core/commands.ts`, Fund arithmetic, PGlite schema, continuity protocol, or `src/core/types.ts`. If one appears necessary, stop and return a conflict packet.
 
-### Pure observed-category projection
+### SEALED REFERENCE — observed-category projection
 
 Create one pure selector rather than ranking inside React. Feed it the current `projectLedgerExperience(...).scopedHousehold`, never the unscoped household. For the current Toronto month and current member:
 
@@ -100,7 +105,7 @@ Create one pure selector rather than ranking inside React. Feed it the current `
 
 The pure test must cover ordering, ties, reversals/refunds/duplicates, fewer than six, zero history, inactive categories, and privacy scope.
 
-### Safe card-account resolution
+### SEALED REFERENCE — card-account resolution
 
 The Fund config does not store a card account id, so never hard-code `ACC-VISA` and never choose an arbitrary account from array order.
 
@@ -112,7 +117,7 @@ Resolve the fast-path account as follows:
 
 No account setup or picker belongs in Swipe. Test zero, one, multiple, stale, non-CAD, and partner-Personal candidates.
 
-### Two-step flow
+### SEALED REFERENCE — two-step flow
 
 1. Open the existing `CadPad` focused in a phone-height sheet with title `What did you just spend?`.
 2. Enter advances to a 2x3 grid of up to six observed categories plus `More`. Category cells are 72px high. `More` opens the ordinary Add expense flow with the amount carried forward and no automatic post.
@@ -133,7 +138,7 @@ For the normal category path App calls `postEntry` with:
 
 The App integration must share the existing serialized accepted-command/`commitHousehold` path. It may factor a small reusable accepted-result callback from `run`, but may not duplicate commit, persistence, outbox, Auth, or transport logic. Close the sheet and show success only when the outcome is exactly-once accepted local, pending transport, or synchronized.
 
-### Posted strip and Undo
+### SEALED REFERENCE — posted strip and Undo
 
 - Exact strip copy: `Posted. Nothing moved.` and `Undo`.
 - It appears inline at the top of the current surface for 10 seconds only after accepted posting.
@@ -144,11 +149,11 @@ The App integration must share the existing serialized accepted-command/`commitH
 
 Do not create a new reversal command, snapshot restore, delayed write, timer-backed financial state, or custom outbox event.
 
-### Slice 2 placement
+### SEALED REFERENCE — Slice 2 placement
 
 Until Slice 3 exists, add only one reachable `I spent something` action in the existing Shared Home action area for the configured custodian. It opens Swipe; it does not create a new Till route, landing preference, nav model, or alternate desk. Remove/move that temporary placement coherently when Slice 3 integrates the same component.
 
-## Slice 2 exact copy and exclusions
+## SEALED REFERENCE — exact copy and exclusions
 
 - Button/action: `I spent something`
 - Title: `What did you just spend?`
@@ -158,7 +163,7 @@ Until Slice 3 exists, add only one reachable `I spent something` action in the e
 
 No camera, receipt image, OCR, file input, attachment, note field, search, category setup/editing, account setup, analytics, suggestion model, celebration, third happy-path confirmation, or Slice 3 surface.
 
-## Slice 2 proof
+## SEALED REFERENCE — completed proof
 
 Use fictional Development/catalog fixtures only. At minimum prove:
 
@@ -177,7 +182,7 @@ Use fictional Development/catalog fixtures only. At minimum prove:
 
 Run focused tests plus `pnpm ai:verify`, `pnpm check:windows`, and `git diff --check <base>..HEAD`. If the test-lane guard enumerates direct engine imports, keep new UI/pure tests out of the serial lane unless they directly import the engine.
 
-Slice 2 is sealed at application merge `777dbcd1196670dbe7c2576fff8b0526cad27093`. Do not reopen it inside Slice 3.
+End of sealed Slice 2 reference. Slice 2 is accepted at application merge `777dbcd1196670dbe7c2576fff8b0526cad27093`; do not reopen it inside Slice 3.
 
 # Slice 3 — the Till surface
 
