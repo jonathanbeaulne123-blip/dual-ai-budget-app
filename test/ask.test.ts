@@ -111,7 +111,7 @@ describe("household Ask", () => {
       accountId: "ACC-VISA",
       subcategoryId: "SUB-HOUSING-ELECTRIC",
       note: posted.note,
-      createdBy: JONATHAN,
+      createdBy: BIANCA,
       visibility: "household",
       confirmDuplicate: true,
       funding: {
@@ -175,7 +175,7 @@ describe("household Ask", () => {
       accountId: "ACC-VISA",
       subcategoryId: "SUB-HOUSING-ELECTRIC",
       note: "Hydro",
-      createdBy: JONATHAN,
+      createdBy: BIANCA,
       visibility: "household",
       confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 10000, destinationAccountId: "ACC-VISA" },

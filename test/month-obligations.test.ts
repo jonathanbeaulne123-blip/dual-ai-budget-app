@@ -82,7 +82,7 @@ describe("month obligations", () => {
       accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES",
       note: "Groceries",
-      createdBy: JONATHAN,
+      createdBy: BIANCA,
       visibility: "household",
       confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" },
