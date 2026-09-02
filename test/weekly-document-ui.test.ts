@@ -244,7 +244,7 @@ describe("weekly document presentation", () => {
       (container.querySelector(".primary") as HTMLButtonElement).click();
     });
     expect(container.querySelector("[data-weekly-motion-status='open']")).toBeTruthy();
-    expect(container.textContent).toContain(WEEKLY_DOCUMENT_COPY.emptyMotions === "" ? "" : "open");
+    expect(container.textContent).toContain("open");
   });
 
   it("keeps empty-motion, loading, error, offline, and untied states readable", () => {
