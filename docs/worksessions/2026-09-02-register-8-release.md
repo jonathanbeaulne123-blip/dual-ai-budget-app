@@ -1,14 +1,14 @@
 # Hearth worksession — Register slice 8 release
 
-- **Status:** RELEASE CANDIDATE; AUTHORIZED FOR DEVELOPMENT RELEASE
+- **Status:** CLOSED; MERGED; KITCHEN PUBLISHED; LIVE HTTP VERIFIED
 - **Opened:** 2026-09-02 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/register-8-release`
 - **Current integration baseline SHA:** `2b9f77051b4abfdddce2fd2f580e41a36a6c8772`
-- **Head SHA:** release branch tip; exact SHA recorded in the PR
-- **PR or issue:** supersedes draft #285
+- **Merged main SHA:** `347e4ff0ce31cd5959e5a24b511c14fd1d34a791`
+- **PR or issue:** #299; supersedes draft #285
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development
@@ -62,7 +62,7 @@ Inference:
 - [x] Current-main full repository test and production build: 1,706 passed, 3 intentional skips; 416 modules built
 - [x] Browser widths: 320/390/720/1100 px, no body overflow, working route, honest refusal, no console errors
 - [x] Independent feature-head review: three PASS verdicts, no P0/P1/P2
-- [ ] GitHub main CI, Cloudflare deployment, live HTTP and asset markers
+- [x] GitHub main CI, Cloudflare deployment, live HTTP and asset markers
 
 ## Plan
 
@@ -70,7 +70,7 @@ Inference:
 - [x] Repair accessibility and mount the Register
 - [x] Add integration and privacy proof
 - [x] Run local full release gates
-- [ ] Push, merge, deploy, and verify Development live
+- [x] Push, merge, deploy, and verify Development live
 
 ## Evidence log
 
@@ -83,6 +83,9 @@ Inference:
 - Local browser at 320/390/720/1100 px: one Shared Register at every width, no document overflow, exact Month Spread-to-Register navigation, honest refusal when the local Development household has no configured Fund, and no console errors. At 1100 px the four legend extents were separately remeasured after the overlap repair.
 - Exact-candidate keyboard review found that a named scroll tab stop did not move with ArrowRight or End at 320 px. The misleading focus target was removed; the complete semantic fact list remains the keyboard and screen-reader path, while touch/pointer users can still pan the drawing.
 - `origin/main` advanced to the released Till Slice 2 while PR #299 opened. Register rebased cleanly except for preserving both release records in this shared handoff file. The post-rebase `pnpm check:windows` passed 226 fast files plus 18 serial books files: 1,706 tests passed, 3 intentionally skipped, followed by TypeScript, Vite's 416-module production build, Hercules Pro UI, and redirect guard.
+- Exact-head PR CI `33659646340` and Cloudflare preview `33659646250` passed before merge. #299 merged as `347e4ff0ce31cd5959e5a24b511c14fd1d34a791`.
+- Post-merge main CI `33660752312` passed. D-041 Cloudflare run `33660752817` passed with `VITE_PRODUCTION_CONTINUITY=0` and published Worker version `87b740c9-3af7-4ee7-96e1-f41f76efa9ee`.
+- Live `GET https://hearth-books.jonathan-beaulne123.workers.dev/` returned HTTP 200 with `Cache-Control: no-store`. Live assets `/assets/Books-zKkvo2sl.js`, `/assets/Books-Dkup-FAr.css`, and `/assets/Office-hcpC2ocS.js` contain the Shared Register pane, exact `Open the register` route, and honest untied-state copy.
 
 ## Decisions
 
@@ -90,8 +93,8 @@ The host maps the configured Fund custodian to the existing `hers` paper tone an
 
 ## Remaining uncertainty
 
-Remote PR/main CI, deployment, and live markers remain open at this checkpoint. The authenticated ready-state was not seeded into local household data; its conserved projection and DOM are covered by focused tests, while the live local household correctly exercised the fail-closed state.
+The authenticated ready-state was not seeded into local household data; its conserved projection and DOM are covered by focused tests, while the local household correctly exercised the fail-closed state. Physical forced-colors emulation was unavailable; source patterns and focused selectors were independently reviewed. Neither uncertainty changes books, privacy, writer, or release integrity.
 
 ## Handoff
 
-Codex owns the authorized release through merged `main`, Development kitchen publication, and live verification. No further push permission is required. Production and hosted household data remain out of scope.
+Register Slice 8 is closed on merged `main` and the verified Development kitchen. The old unmounted #285 is superseded. Production and hosted household data remain out of scope.
