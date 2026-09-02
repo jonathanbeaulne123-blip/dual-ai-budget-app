@@ -82,8 +82,8 @@
   text-wrap: balance;
 }
 .swipe-error {
-  border-left: 3px solid var(--danger);
-  background: color-mix(in srgb, var(--danger) 8%, var(--card));
+  border-left: 3px solid #e6c84a;
+  background: color-mix(in srgb, #e6c84a 18%, var(--card));
   margin: 14px 0 4px;
   padding: 10px 12px;
   display: grid;

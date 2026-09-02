@@ -37,6 +37,30 @@ function token(id: string): UndoToken {
   };
 }
 
+function currentWithFundEvent(eventId: string) {
+  const current = catalogHousehold();
+  current.fundEvents = [{
+    id: eventId,
+    fundId: current.householdFund?.id ?? "FUND-HOUSEHOLD",
+    kind: "purchase-funded",
+    amountCents: 1234,
+    date: "2026-09-02",
+    createdBy: "MEM-001",
+    confirmedByMemberId: "MEM-001",
+    contributorMemberId: null,
+    destinationAccountId: "ACC-CARD",
+    relatedEventId: null,
+    relatedTransactionIds: ["TXN-funded"],
+    evidenceDigests: [],
+    reconciliationTied: null,
+    purpose: "Household purchase",
+    note: "",
+    createdAt: "2026-09-02T12:00:00.000Z",
+    updatedAt: "2026-09-02T12:00:00.000Z",
+  }];
+  return current;
+}
+
 describe("undoHistory persistence", () => {
   it("stores a scoped key and trims to 20 ledger tokens", () => {
     const current = catalogHousehold();
@@ -59,6 +83,40 @@ describe("undoHistory persistence", () => {
     clearUndoHistory("development", "HH-test", "MEM-001");
     expect(loadUndoHistory("development", "HH-test", "MEM-001", current)).toEqual([]);
     expect(loadUndoHistory("development", "HH-test", "MEM-002", current)).toHaveLength(1);
+  });
+
+  it("keeps funded correction identity across reload and hides legacy funded rows that cannot be corrected", () => {
+    const current = currentWithFundEvent("FUND-EVT-funded");
+    const funded = {
+      ...token("ACT-funded"),
+      postedIds: ["TXN-funded", "FUND-EVT-funded"],
+      commandKind: "postEntry",
+    };
+    const directDebit = {
+      ...token("ACT-direct-debit"),
+      postedIds: ["TXN-direct-debit", "FUND-EVT-direct-debit"],
+      commandKind: "postHouseholdFundDirectDebit",
+    };
+
+    saveUndoHistory("development", "HH-test", "MEM-001", [funded, directDebit]);
+    expect(loadUndoHistory("development", "HH-test", "MEM-001", current)[0]).toMatchObject({
+      id: "ACT-funded",
+      commandKind: "postEntry",
+      postedIds: ["TXN-funded", "FUND-EVT-funded"],
+    });
+    expect(loadUndoHistory("development", "HH-test", "MEM-001", current)[1]).toMatchObject({
+      id: "ACT-direct-debit",
+      commandKind: "postHouseholdFundDirectDebit",
+      postedIds: ["TXN-direct-debit", "FUND-EVT-direct-debit"],
+    });
+
+    localStorage.setItem(undoHistoryKey("development", "HH-test", "MEM-001"), JSON.stringify([{
+      id: "ACT-legacy-funded",
+      label: "Legacy funded purchase",
+      postedIds: ["TXN-funded", "FUND-EVT-funded"],
+      actorMemberId: "MEM-001",
+    }]));
+    expect(loadUndoHistory("development", "HH-test", "MEM-001", current)).toEqual([]);
   });
 
   it("never turns an accepted write into a failure when the optional undo backup is out of space", () => {
