@@ -4,31 +4,32 @@ This is the complete contract for one Cursor writer. The downloaded build manual
 
 ## Verdict and sequencing
 
-**Slice 2 is ready to begin from the sealed Slice 1 commit below. Slice 3 is not a parallel task.** Implement Slice 2, verify it, return its exact head, and stop. Only after Jonathan/Codex accepts that head may Cursor create a fresh Slice 3 branch from the accepted Slice 2 lineage, verify it, return it, and stop.
+**Slice 2 is accepted, merged, and live in Development. Slice 3 may begin only from the clean release-sealed `origin/main` lineage described below.** Implement Slice 3, verify it, return its exact head, and stop before Slice 4.
 
 - **Target AI:** Cursor, single writer.
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Required Slice 2 ancestor:** `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09` (the D-197-integrated Slice 1 release-candidate base)
-- **Required implementation ancestor:** `e426a4592dcd72870feb85642f3d0ab894e6dee8` (the Till Slice 1 command/test seal; prove it is an ancestor of the required base)
+- **Accepted Slice 2 application ancestor:** `777dbcd1196670dbe7c2576fff8b0526cad27093` (PR #302 merge; deployed and live-verified)
+- **Historical Slice 2 ancestor:** `b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09` (the D-197-integrated Slice 1 release-candidate base; evidence only)
+- **Required implementation ancestor:** `e426a4592dcd72870feb85642f3d0ab894e6dee8` (the Till Slice 1 command/test seal; prove it is an ancestor of the accepted Slice 2 application)
 - **Slice 1 branch:** `codex/till-1-custody-fence-release`
 - **Slice 1 parent:** `origin/main@1c03cbedc10ca5f14ca51bf4067db5ba142a91c5`
-- **Required Slice 2 branch:** `till/2-swipe`
-- **Required Slice 3 branch:** `till/3-surface`, created only from the accepted Slice 2 head
-- **Suggested PR titles:** `feat(till): post a swipe in two taps`; then `feat(till): add the custodian surface`
-- **Risk:** High for each slice. Slice 2 presents a financial command; Slice 3 presents contribution Confirm/Hold beside that writer.
+- **Historical Slice 2 branch:** `till/2-swipe` (complete; do not reopen)
+- **Required Slice 3 branch:** `till/3-surface`, created from current clean `origin/main` only after proving the accepted Slice 2 application is an ancestor
+- **Suggested Slice 3 PR title:** `feat(till): add the custodian surface`
+- **Risk:** High. Slice 3 presents contribution Confirm/Hold beside the accepted Swipe writer.
 - **Decision owner:** Jonathan.
 - **Release authority:** none. Do not push, open a PR, merge, deploy, change hosted data, or touch Production without Jonathan's fresh action-time approval.
 
-Start from a clean isolated worktree. Never use Jonathan's dirty `codex/roadmap-site` checkout. If the sealed commit is unavailable, stop and ask Jonathan/Codex to provide or push it; do not reconstruct Slice 1 from prose.
+Start from a clean isolated worktree. Never use Jonathan's dirty `codex/roadmap-site` checkout. Fetch current `origin/main` after this release record lands and prove the deployed Slice 2 application is in its ancestry. If that proof fails, stop and ask Jonathan/Codex; do not reconstruct Slice 1 or Slice 2 from prose.
 
 ```text
-git switch -c till/2-swipe b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09
+git fetch origin
+git switch -c till/3-surface origin/main
 git status --short
-git merge-base --is-ancestor b520ff954cd2fafb4a15f6ee6f6d1bb26cf9be09 HEAD
-git merge-base --is-ancestor e426a4592dcd72870feb85642f3d0ab894e6dee8 HEAD
+git merge-base --is-ancestor 777dbcd1196670dbe7c2576fff8b0526cad27093 HEAD
 ```
 
-After Slice 2 is accepted, record its exact SHA, fetch current `origin/main`, reconcile any advance, create `till/3-surface` from the accepted lineage, and prove ancestry again. Do not combine both slices in one diff or PR.
+Record the exact fetched `origin/main` SHA as the Slice 3 base. Do not combine Slice 2 repairs with Slice 3 and do not reuse a stale Cursor branch.
 
 ## Sealed Slice 1 prerequisite
 
@@ -176,13 +177,13 @@ Use fictional Development/catalog fixtures only. At minimum prove:
 
 Run focused tests plus `pnpm ai:verify`, `pnpm check:windows`, and `git diff --check <base>..HEAD`. If the test-lane guard enumerates direct engine imports, keep new UI/pure tests out of the serial lane unless they directly import the engine.
 
-Return the exact Slice 2 base/head and stop. Do not start Slice 3 in the same turn.
+Slice 2 is sealed at application merge `777dbcd1196670dbe7c2576fff8b0526cad27093`. Do not reopen it inside Slice 3.
 
 # Slice 3 — the Till surface
 
 ## Start gate
 
-Do not start this section until Jonathan/Codex accepts Slice 2. Create a clean `till/3-surface` branch from that exact accepted head, record it in a new worksession, and re-read current canon because `main`, navigation, or decision ids may have advanced.
+Begin only after this release record is present on current `origin/main` and the ancestry proof above passes. Record that exact fetched `origin/main` SHA in a new worksession and re-read current canon because navigation or decision ids may have advanced.
 
 ## Household outcome and Dual Course
 
