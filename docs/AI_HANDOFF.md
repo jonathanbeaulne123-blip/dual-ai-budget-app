@@ -17,13 +17,14 @@
 - Bianca Month `test/app-startup-p1.test.ts` + `test/month-rehearsal-mainline.test.ts`: **12 passed**
 - `pnpm check` on `5567f30`: AI surface 41 required files; fast lane **227 passed / 1 skipped files, 1,582 passed / 2 skipped tests**; serial books **18 passed / 1 skipped files, 154 passed / 1 skipped tests**; **1,736 passed / 3 intentional skips total**; TypeScript; Vite **418-module** production build; Hercules Pro UI; no `dist/_redirects`; `git diff --check` clean
 - Playwright against local Vite, fictional Development demo as Bianca, reduced motion: 320 / 390 / 720 / ~1100, no body overflow, `see everything` is a focused `#home` link, Swipe sheet opens from Till and Escape returns, door back to Shared Home. Artifacts: `/opt/cursor/artifacts/till-surface-320.png`, `till-surface-390.png`, `till-surface-720.png`, `till-surface-1100.png`, `till-home-390.png`, `till-swipe-sheet-390.png`, `till-slice-3-walkthrough.mp4`
-- Independent books/privacy/verifier subagents were launched on this SHA. UX auditor was unavailable (model spend limit). Parent visual proof stands.
+- Independent books audit: **PASS WITH NOTES** (no P0–P2; P3 route-contract omitted release/withdraw — repaired; P3 Confirm click-through — added)
+- Independent privacy audit: **PASS WITH NOTES** (no P0–P2; P3 Till trusts the caller clone — App already passes `experience.scopedHousehold`; added scoped spend test)
+- Independent verifier at `5567f30`: surface claims proven; it read the pre-proof handoff. Parent later recorded `pnpm check`, visual 320/390/720/~1100, and this audit follow-up
+- UX auditor unavailable (model spend limit). Parent visual proof stands.
 
 **Boundaries:** fictional Development/demo fixtures only. No hosted row, schema, secret, provider, bank, Production data, or Production-continuity change.
 
 **Next owner:** Cursor marks #304 ready, merges to `main`, and verifies D-041 Development kitchen HTTP 200 `Cache-Control: no-store` plus Till markers in the served bundle. Stop before Slice 4. Not Production. Not shipped until live HTTP is verified.
-
-## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
 
 ## Till Slice 2 two-tap Swipe repair and Development release (2026-09-02)
 

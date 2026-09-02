@@ -149,7 +149,13 @@ export function ledgerRouteContract(tab: LedgerTab, view: LedgerView): LedgerRou
       projector: shared ? "shared" : "personal",
       memberSpecific: false,
       commandsExposed: shared
-        ? ["postEntry", "confirmHouseholdFundContribution", "holdHouseholdFundContribution"]
+        ? [
+            "postEntry",
+            "confirmHouseholdFundContribution",
+            "holdHouseholdFundContribution",
+            "releaseHouseholdFundHold",
+            "withdrawHouseholdFundContribution",
+          ]
         : [],
     };
   }

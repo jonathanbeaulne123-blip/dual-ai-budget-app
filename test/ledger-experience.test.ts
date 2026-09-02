@@ -428,7 +428,13 @@ describe("ledgerRouteContract", () => {
     expect(kitchenPrimaryNav("personal")).toEqual(["home", "calendar", "shift", "ledger", "plan", "more"]);
     expect(kitchenPrimaryNav("household")).not.toContain("till");
     expect(ledgerRouteContract("till", "household").heading).toBe("Till");
-    expect(ledgerRouteContract("till", "household").commandsExposed).toContain("postEntry");
+    expect(ledgerRouteContract("till", "household").commandsExposed).toEqual([
+      "postEntry",
+      "confirmHouseholdFundContribution",
+      "holdHouseholdFundContribution",
+      "releaseHouseholdFundHold",
+      "withdrawHouseholdFundContribution",
+    ]);
   });
 });
 

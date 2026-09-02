@@ -8,6 +8,7 @@ import { Till, TILL_COPY, TILL_DESK_HASH } from "../src/Till.tsx";
 import {
   HOUSEHOLD_FUND_HOLD_COPY,
   SWIPE_COPY,
+  addAccount,
   catalogHousehold,
   configureHouseholdFund,
   confirmHouseholdFundContribution,
@@ -90,6 +91,7 @@ function renderTill(
     offlinePending?: boolean;
     onOpenSwipe?: () => void;
     onSeeEverything?: () => void;
+    onCommand?: (command: (current: Household) => { household: Household }) => void;
     strip?: ReturnType<typeof createElement>;
   } = {},
 ) {
@@ -105,7 +107,7 @@ function renderTill(
       strip: options.strip,
       onOpenSwipe: options.onOpenSwipe ?? (() => undefined),
       onSeeEverything: options.onSeeEverything ?? (() => undefined),
-      onCommand: () => undefined,
+      onCommand: options.onCommand ?? (() => undefined),
     }));
   });
 }
@@ -251,6 +253,21 @@ describe("Till slice 3 surface", () => {
     expect(projectHouseholdFund(household, TODAY).operatingBalanceCents).toBe(before + 10000);
   });
 
+  it("sends Confirm received through the inherited command callback", () => {
+    const household = proposeFromJonathan(configuredFund());
+    const before = projectHouseholdFund(household, TODAY).operatingBalanceCents;
+    let next = household;
+    renderTill(household, {
+      onCommand: (command) => { next = command(household).household; },
+    });
+    const confirm = Array.from(container.querySelectorAll("button"))
+      .find((button) => button.textContent === "Confirm received") as HTMLButtonElement | undefined;
+    if (!confirm) throw new Error("Missing Confirm received");
+    act(() => confirm.click());
+    expect(projectHouseholdFund(next, TODAY).operatingBalanceCents).toBe(before + 10000);
+    expect(projectHouseholdFund(household, TODAY).operatingBalanceCents).toBe(before);
+  });
+
   it("quotes monthSummary expense actuals including refunds and duplicates", () => {
     let household = buy(configuredFund(), "20.00");
     household = postEntry(household, {
@@ -274,6 +291,33 @@ describe("Till slice 3 surface", () => {
     expect(container.querySelector("[data-till='empty']")).toBeNull();
     expect(tillSource).not.toMatch(/projectHouseholdFund|expenseActualCents\s*\+/);
     expect(container.querySelector("svg")).toBeNull();
+  });
+
+  it("quotes scoped Shared spend and leaves partner-Personal expenses out", () => {
+    let household = buy(configuredFund(), "20.00");
+    household = addAccount(household, {
+      name: "Jonathan pocket",
+      kind: "other",
+      ownerMemberId: JONATHAN,
+      scope: "personal",
+    }).household;
+    const pocket = household.accounts.find((account) => account.name === "Jonathan pocket")!.id;
+    household = postEntry(household, {
+      date: TODAY,
+      type: "expense",
+      amount: "40.00",
+      accountId: pocket,
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      createdBy: JONATHAN,
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const scopedSpend = monthSummary(scoped(household), monthKeyFromDateKey(TODAY)).expenseActualCents;
+    const fullSpend = monthSummary(household, monthKeyFromDateKey(TODAY)).expenseActualCents;
+    expect(fullSpend).toBeGreaterThan(scopedSpend);
+    renderTill(household);
+    expect(container.querySelector("[data-till='spend']")?.textContent).toBe(TILL_COPY.spent(formatCad(scopedSpend)));
+    expect(container.querySelector("[data-till='spend']")?.textContent).not.toBe(TILL_COPY.spent(formatCad(fullSpend)));
   });
 
   it("uses the empty and offline lines without blocking the swipe control", () => {
