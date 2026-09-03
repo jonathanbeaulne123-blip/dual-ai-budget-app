@@ -97,6 +97,7 @@ describe("weekly document durable stamps", () => {
     expect(() => stampWeeklyDocument(accepted.household, {
       memberId: BIANCA,
       today: "2026-09-02",
+      now: "2026-09-02T14:01:00.000Z",
     })).toThrow("You already stamped this weekly page.");
     expect(() => stampWeeklyDocument(household, {
       memberId: "MEM-NOT-HERE",

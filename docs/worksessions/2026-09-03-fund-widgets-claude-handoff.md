@@ -64,6 +64,7 @@ When the Household Fund is configured, Shared Home shows one coherent eight-plat
 - `pnpm ai:verify` → passed (41 required files, 2 Clerk fences).
 - `pnpm test` → serial books lane passed 18 files / 154 tests with one benchmark skip; fast lane passed 230 files / 1,622 tests with two pre-existing failures.
 - The same two failures reproduce on untouched `origin/main@7dd1f96`: `test/api.test.ts` cannot spawn `bash` in this Windows environment, and `test/weekly-document-stamp.test.ts` compares a fixed 2026-09-02 date against the current Toronto date.
+- Release-gate repair: the duplicate-stamp assertion now supplies the same explicit Toronto-day timestamp as its fixture instead of consulting the wall clock. This changes test determinism only; the product's same-day stamp fence is unchanged.
 - Independent books, privacy, and UX reviews blocked `a2bdf14`: open/Held proposals could cover the month before Confirm; the shortfall tie was fixture-only; projected and actual spark marks were visually identical; Shared admitted viewer-Personal accounts and counted Personal shifts; and the safety verdict was neither rendered nor announced. The integration repair addresses each issue without adding a command or changing the desk grammar.
 - Independent books/trust, privacy, and UX/vibe/accessibility re-reviews all passed on exact code SHA `85c95c0b7f2bbe9d677c325419b84af9f328dfc1`.
 
