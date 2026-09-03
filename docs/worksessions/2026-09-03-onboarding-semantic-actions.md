@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/4-actions`
 - **Baseline SHA:** `48514441731e7cf2c53b152fe6867b3cfaa39058`
-- **Head SHA:** pending
+- **Head SHA:** implementation `4e7a716efae8856046ebc3edda25a1e34954c22a`; worksession closure follows
 - **PR or issue:** pending
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -53,7 +53,7 @@ Short affirmative replies may advance or resume onboarding without ever becoming
 - [x] Replay is deterministic and mutation-free.
 - [x] Classifier imports no command and makes no network call.
 - [x] Every registry `continue` retains a button outcome.
-- [ ] Exact High quick gate passes.
+- [x] Exact High quick gate passes; its TypeScript phase exceeded the five-minute soft budget and is not claimed within SLA.
 
 ## Plan
 
@@ -61,13 +61,15 @@ Short affirmative replies may advance or resume onboarding without ever becoming
 - [x] Implement the narrow classifier and pure resolver.
 - [x] Add focused contract/fence tests and D-206.
 - [x] Run focused tests and the authorized High quick gate.
-- [ ] Inspect the diff, push, open the slice PR, and stop before merge/deploy.
+- [x] Inspect the implementation diff.
+- [ ] Push, open the slice PR, and stop before merge/deploy.
 
 ## Evidence log
 
 - `git status --short --branch` was clean on `onboarding/4-actions` before the worksession was created.
 - Final focused contract run -> **89/89 passed** across `test/onboarding-actions.test.ts` and `test/onboarding-affirmative.test.ts`; TypeScript and diff hygiene passed.
-- Pre-cleanup High quick gate -> AI surface, TypeScript, diff hygiene, **112 fast + 7 serial tests passed** in **73.662s** with no five-minute breach. A final exact-diff quick gate follows after worksession closure.
+- Pre-cleanup High quick gate -> AI surface, TypeScript, diff hygiene, **112 fast + 7 serial tests passed** in **73.662s** with no five-minute breach; this was superseded by the exact implementation-head run below.
+- Clean exact-implementation-head High quick gate at `4e7a716efae8856046ebc3edda25a1e34954c22a` -> AI surface, TypeScript, diff hygiene, **111 fast + 7 serial tests passed** in **632.273s**; the TypeScript phase took **543.493s**, so the five-minute soft budget was breached; fingerprint `f8dd0b27b4dd8d9508555090422b563ed33478c5d0e1c8b0346d064f6ceacd8b`.
 - `pnpm build` -> **passed**; existing PGlite browser-external/eval and large-chunk warnings only.
 - `pnpm ai:verify` -> **passed**; 48 required files and two Clerk fences.
 - `pnpm check:windows` -> **unavailable on this macOS host** because `pwsh` is not installed. No Windows test failure was observed.
