@@ -35,8 +35,11 @@ const serialFixtureTests = [
 
 describe("Vitest lanes", () => {
   it("keeps every direct PGlite runtime test in the serial books lane", () => {
-    expect(packageJson.scripts?.test).toBe("node scripts/run-test-lanes.mjs");
+    expect(packageJson.scripts?.["test:full:lanes"]).toBeUndefined();
+    expect(packageJson.scripts?.test).toBe("node scripts/run-quick-gate.mjs");
+    expect(packageJson.scripts?.check).toBe("node scripts/run-quick-gate.mjs");
     expect(laneRunner).toContain('const lanes = ["test:fast", "test:books"]');
+    expect(laneRunner).toContain("has no direct command");
     const booksLane = packageJson.scripts?.["test:books"] ?? "";
     const fastLane = packageJson.scripts?.["test:fast"] ?? "";
     const runtimeTests = directPGliteRuntimeTests();

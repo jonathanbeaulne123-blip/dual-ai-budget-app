@@ -288,7 +288,7 @@ Do not open Flinks, Interac APIs, issued cards, receipt images in Postgres, or a
 1. Read this file, [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md), [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md).
 2. Name both deltas in the PR. If they conflict, cut Course B.
 3. Do not change an important feature in the laws table. Smaller edits need a why-note in the decision log.
-4. Commands remain the trust boundary. Tests: `pnpm test`.
+4. Commands remain the trust boundary. Routine proof uses the five-minute change-focused `pnpm test` gate. The exhaustive `pnpm test:full` / `pnpm check:full` gate runs only after Jonathan explicitly requests it for an exact clean High/Release-risk SHA and that request has a recorded reference (D-202).
 5. Handoff: [AI_HANDOFF.md](AI_HANDOFF.md) — include budget delta, engagement delta, verification, uncertainty, next action.
 
 Kill criterion for the whole company: if Bianca will not add a grocery because Hercules is in the way, shrink the kitchen. If a statement disagrees with the journal, the journal wins. If a rec, cosmetic, or model posts money, roll it back.

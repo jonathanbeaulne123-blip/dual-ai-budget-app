@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Five-minute verification gate (D-202) (2026-09-03)
+
+**Status:** Local implementation on `codex/five-minute-verification`, refreshed onto clean current `origin/main@7dd1f96729fc9ec4fe6bb74a1daeacbf413b700a`; not pushed, merged, deployed, or released. Risk: **Medium** because verification reliability protects every later trust boundary without changing runtime behavior.
+
+**Household outcome:** Routine Medium, Medium-High, and High-risk work receives current, change-focused evidence in a five-minute target instead of waiting about thirty minutes for unrelated exhaustive coverage. Full-suite evidence remains available only after Jonathan explicitly requests it for an exact High/Release-risk SHA.
+
+**Dual Course:** Budget `+1` assurance / `0` runtime; Engagement `0`.
+
+**Implementation:** `pnpm test` and `pnpm check` now run the quick coordinator; D-170's complete lane coordinator is callable only inside guarded `test:full` / `check:full`, with no raw package entry. The selector fingerprints the complete change, runs but does not over-credit changed tests, accepts related tests, checked-in mappings, explicit reasoned focus, and command/privacy canaries, bounds broad transitive graphs, preserves four-worker ordinary tests and serial selected PGlite tests, emits structured pass/failure timing, and keeps browser proof explicit. Automatic CI is quick-only. The separate manual workflow binds the repository owner, approval environment, exact clean SHA, High/Release risk, reason, and an owner-authored same-repository record whose body names full verification and that SHA. Canon, skills, and an always-applied Cursor rule use the same boundary.
+
+**Verification:** Focused policy/lane contracts **19/19**; TypeScript, AI-surface, and diff hygiene passed. Medium **19.722s**; Medium-High **19.078s**; High with a real protected serial books canary **22.965s**. All were `quick-gate-passed`, below the 300s SLA, with TypeScript the slowest phase. Missing authorization and the direct coordinator refused before exhaustive work. Independent review drove and then cleared enforcement repairs; no exhaustive suite or build ran because this Medium-risk slice has no authorization for them.
+
+**Data/environment:** Repository tooling, tests, CI configuration, and documentation only. No household data, hosted row, schema, secret, provider, Production, push, merge, deploy, or runtime behavior is in scope.
+
+**Residual/rollback:** Configure Jonathan as required reviewer for the GitHub `full-verification` environment before the first authorized remote full run. The workflow also enforces owner authorship and record content in code. Revert the one local commit to roll back; there is no runtime or hosted recovery.
+
 ## Till Slice 4 member-owned landing preference (2026-09-02)
 
 **Status:** **CLOSED; MERGED #306; DEVELOPMENT KITCHEN PUBLISHED; LIVE VERIFIED.** Exact reviewed head `4992a0caa02a6e3ce725229b0d0a42ef69deada9` fast-forwarded to `main` from `origin/main@08e3a4b306533518405cdb866f13e71550447624`. PR CI `33698007625`, push CI `33697952990`, PR Cloudflare `33698007768`, post-merge main CI `33698860263`, and production-path Cloudflare Workers `33698859862` passed. D-200. Development kitchen only; not Production continuity.
@@ -1676,6 +1692,7 @@ Cloud-continuity canon is [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md): Google sig
 |---|---|---|
 | Low | Copy, styling, docs | One implementer |
 | Medium | Dialog, pure calculation, cosmetics that cannot post | Implementer plus a targeted review |
+| Medium-High | Cross-layer financial evidence/proposals or privacy-sensitive shaping that cannot itself post | Implementer plus targeted domain review |
 | High | Financial math, migrations, splits, account kinds, statement figures | Implementer plus independent review |
 | Release | Switching daily use, hosted schema, auth/RLS | All reviewers, Jonathan approves |
 
