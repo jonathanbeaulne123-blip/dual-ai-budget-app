@@ -90,6 +90,10 @@ function containsEveryActiveMember(memberIds: readonly string[], members: readon
   return required.length >= 2 && required.every((memberId) => present.has(memberId));
 }
 
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+  return uniqueIds(left).join("|") === uniqueIds(right).join("|");
+}
+
 export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Partial<HouseholdOnboarding> & { state?: unknown };
@@ -140,7 +144,9 @@ export function acceptedHouseholdOnboarding(household: Pick<Household, "environm
 
 export function onboardingIsActive(household: Household): boolean {
   const row = acceptedHouseholdOnboarding(household);
-  return row?.state === "active" && !row.forcedUnlock;
+  return row?.state === "active"
+    && !row.forcedUnlock
+    && containsEveryActiveMember(row.confirmedByMemberIds, household.members);
 }
 
 export function ordinaryHerculesAvailable(household: Household): boolean {
@@ -158,6 +164,57 @@ export function handshakeExpired(row: HouseholdOnboarding, nowIso: string): bool
 
 export function onboardingRecordId(household: Pick<Household, "environment" | "householdId">): string {
   return `ONBOARDING-${household.environment}-${household.householdId}`;
+}
+
+export function actorMayApplyHouseholdOnboardingTransition(input: {
+  household: Household;
+  incoming: HouseholdOnboarding;
+  commandKind: string;
+  actingMemberId: string;
+}): boolean {
+  const { household, incoming, commandKind, actingMemberId } = input;
+  if (incoming.householdId !== household.householdId
+    || incoming.environment !== household.environment
+    || incoming.registryVersion !== ONBOARDING_REGISTRY_VERSION
+    || incoming.completedAt
+    || incoming.completionDigest) return false;
+  const actor = household.members.find((member) => member.id === actingMemberId && member.active);
+  if (!actor) return false;
+  const prior = acceptedHouseholdOnboarding(household);
+  const allActive = (ids: readonly string[]) => containsEveryActiveMember(ids, household.members);
+
+  if (commandKind === "offerHouseholdOnboarding") {
+    return (!prior || prior.state === "inactive")
+      && incoming.state === "offered"
+      && incoming.proposedByMemberId === null
+      && incoming.confirmedByMemberIds.length === 0;
+  }
+  if (commandKind === "proposeHouseholdOnboarding" || commandKind === "resumeHouseholdOnboarding") {
+    if (commandKind === "resumeHouseholdOnboarding" && prior?.state !== "stopped-incomplete") return false;
+    return incoming.state === "handshake-pending"
+      && incoming.proposedByMemberId === actor.id
+      && sameIds(incoming.confirmedByMemberIds, [actor.id])
+      && !handshakeExpired(incoming, incoming.updatedAt);
+  }
+  if (commandKind === "confirmHouseholdOnboarding") {
+    if (!prior || prior.state !== "handshake-pending"
+      || incoming.proposedAt !== prior.proposedAt
+      || incoming.handshakeExpiresAt !== prior.handshakeExpiresAt
+      || incoming.proposedByMemberId !== prior.proposedByMemberId
+      || handshakeExpired(prior, incoming.updatedAt)) return false;
+    const expectedIds = uniqueIds([...prior.confirmedByMemberIds, actor.id]);
+    return sameIds(incoming.confirmedByMemberIds, expectedIds)
+      && incoming.state === (allActive(expectedIds) ? "active" : "handshake-pending");
+  }
+  if (commandKind === "stopHouseholdOnboarding") {
+    if (!prior || !["active", "paused-safe", "waiting-member", "blocked", "adopting"].includes(prior.state)) return false;
+    const expectedIds = uniqueIds([...prior.stoppedByMemberIds, actor.id]);
+    const stopped = incoming.stoppedSolo || allActive(expectedIds);
+    return sameIds(incoming.confirmedByMemberIds, prior.confirmedByMemberIds)
+      && sameIds(incoming.stoppedByMemberIds, expectedIds)
+      && incoming.state === (stopped ? "stopped-incomplete" : "waiting-member");
+  }
+  return false;
 }
 
 type OnboardingMergeContext = Pick<Household, "environment" | "householdId"> & { members: readonly Member[] };

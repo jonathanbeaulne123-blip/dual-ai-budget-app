@@ -7,8 +7,7 @@ import {
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { shapeHouseholdCharter } from "../core/charter.ts";
 import {
-  acceptedHouseholdOnboarding,
-  handshakeExpired,
+  actorMayApplyHouseholdOnboardingTransition,
   mergeHouseholdOnboarding,
   shapeHouseholdOnboarding,
   type HouseholdOnboarding,
@@ -254,10 +253,6 @@ function actorMayApplyMonthRehearsals(
   return true;
 }
 
-function sameIds(left: readonly string[], right: readonly string[]): boolean {
-  return [...new Set(left)].sort().join("|") === [...new Set(right)].sort().join("|");
-}
-
 function actorMayApplyHouseholdOnboarding(
   local: Household,
   event: ContinuityCommandEvent,
@@ -266,50 +261,19 @@ function actorMayApplyHouseholdOnboarding(
   if (event.ledger_scope !== "shared"
     || event.payload_json.commandKind !== event.command_type
     || !event.payload_json.postedIds.includes(incoming.id)
-    || incoming.householdId !== local.householdId
-    || incoming.environment !== local.environment
-    || incoming.registryVersion !== ONBOARDING_REGISTRY_VERSION
-    || incoming.completedAt
-    || incoming.completionDigest) return false;
-  const actor = local.members.find((member) => member.id === event.member_id && member.active);
-  if (!actor) return false;
-  const prior = acceptedHouseholdOnboarding(local);
-  const activeMemberIds = local.members.filter((member) => member.active).map((member) => member.id);
-  const allActive = (ids: readonly string[]) => activeMemberIds.length >= 2
-    && activeMemberIds.every((memberId) => ids.includes(memberId));
-
-  if (event.command_type === "offerHouseholdOnboarding") {
-    return (!prior || prior.state === "inactive")
-      && incoming.state === "offered"
-      && incoming.proposedByMemberId === null
-      && incoming.confirmedByMemberIds.length === 0;
-  }
-  if (event.command_type === "proposeHouseholdOnboarding" || event.command_type === "resumeHouseholdOnboarding") {
-    if (event.command_type === "resumeHouseholdOnboarding" && prior?.state !== "stopped-incomplete") return false;
-    return incoming.state === "handshake-pending"
-      && incoming.proposedByMemberId === actor.id
-      && sameIds(incoming.confirmedByMemberIds, [actor.id])
-      && !handshakeExpired(incoming, incoming.updatedAt);
-  }
-  if (event.command_type === "confirmHouseholdOnboarding") {
-    if (!prior || prior.state !== "handshake-pending"
-      || incoming.proposedAt !== prior.proposedAt
-      || incoming.handshakeExpiresAt !== prior.handshakeExpiresAt
-      || incoming.proposedByMemberId !== prior.proposedByMemberId
-      || handshakeExpired(prior, incoming.updatedAt)) return false;
-    const expectedIds = [...new Set([...prior.confirmedByMemberIds, actor.id])].sort();
-    return sameIds(incoming.confirmedByMemberIds, expectedIds)
-      && incoming.state === (allActive(expectedIds) ? "active" : "handshake-pending");
-  }
-  if (event.command_type === "stopHouseholdOnboarding") {
-    if (!prior || !["active", "paused-safe", "waiting-member", "blocked", "adopting"].includes(prior.state)) return false;
-    const expectedIds = [...new Set([...prior.stoppedByMemberIds, actor.id])].sort();
-    const stopped = incoming.stoppedSolo || allActive(expectedIds);
-    return sameIds(incoming.confirmedByMemberIds, prior.confirmedByMemberIds)
-      && sameIds(incoming.stoppedByMemberIds, expectedIds)
-      && incoming.state === (stopped ? "stopped-incomplete" : "waiting-member");
-  }
-  return false;
+    || incoming.registryVersion !== ONBOARDING_REGISTRY_VERSION) return false;
+  const commandKinds = [
+    event.command_type,
+    ...(event.payload_json.compactedCommands ?? [])
+      .filter((row) => row.ledgerScope === "shared" && row.postedIds.includes(incoming.id))
+      .map((row) => row.commandKind),
+  ];
+  return commandKinds.some((commandKind) => actorMayApplyHouseholdOnboardingTransition({
+    household: local,
+    incoming,
+    commandKind,
+    actingMemberId: event.member_id,
+  }));
 }
 
 function stampCommands(event: ContinuityCommandEvent): Array<{

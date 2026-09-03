@@ -23,11 +23,18 @@ import {
   type CommitResult,
 } from "../src/core/index.ts";
 import {
+  applyCommandEventLocally,
   appendHostedCommandEvent,
   buildCommandEventFromReceipt,
   catchUpClientFromCommandLog,
   createMemoryCommandLogStore,
 } from "../src/ledger/index.ts";
+import {
+  compactedCommandPayload,
+  primaryCommandRef,
+  receiptToCommandRef,
+} from "../src/ledger/continuityCommandLog.ts";
+import type { ContinuityCommandEventPayload } from "../src/ledger/materializeSnapshotFromEvents.ts";
 
 const BIANCA = "MEM-001";
 const JONATHAN = "MEM-002";
@@ -101,6 +108,49 @@ describe("onboarding household mode", () => {
       startedAt: "2026-09-03T14:02:00.000Z",
     });
     expect(onboardingIsActive(partnerConfirmation)).toBe(true);
+  });
+
+  it("revalidates active mode when the active household roster changes", () => {
+    const household = active();
+    household.members.push({
+      ...household.members[0]!,
+      id: "MEM-003",
+      name: "Third member",
+    });
+    expect(household.householdOnboarding?.state).toBe("active");
+    expect(onboardingIsActive(household)).toBe(false);
+  });
+
+  it("rejects onboarding consent attributed to anyone but the signed-in actor", async () => {
+    const base = catalogHousehold("development");
+    const proposal = proposeHouseholdOnboarding(base, { memberId: BIANCA, at: PROPOSED_AT });
+    const forgedProposal = await acceptHouseholdWrite({
+      previous: base,
+      candidate: proposal.household,
+      confirmationId: "forged-onboarding-proposal",
+      commandKind: proposal.undo.commandKind,
+      postedIds: proposal.postedIds,
+      actingMemberId: JONATHAN,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    expect(forgedProposal).toMatchObject({ ok: false, postedNothing: true });
+
+    const acceptedProposal = await acceptCommand(base, proposal, "accepted-onboarding-proposal", BIANCA);
+    const confirmation = confirmHouseholdOnboarding(acceptedProposal, {
+      memberId: JONATHAN,
+      at: "2026-09-03T14:02:00.000Z",
+    });
+    const forgedConfirmation = await acceptHouseholdWrite({
+      previous: acceptedProposal,
+      candidate: confirmation.household,
+      confirmationId: "forged-onboarding-confirmation",
+      commandKind: confirmation.undo.commandKind,
+      postedIds: confirmation.postedIds,
+      actingMemberId: BIANCA,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    expect(forgedConfirmation).toMatchObject({ ok: false, postedNothing: true });
+    expect(forgedConfirmation.household.householdOnboarding?.state).toBe("handshake-pending");
   });
 
   it.each([
@@ -296,6 +346,39 @@ describe("onboarding household mode", () => {
       state: "active",
       confirmedByMemberIds: [BIANCA, JONATHAN],
     });
+  });
+
+  it("preserves the shared onboarding fact and identity through outbox compaction", async () => {
+    const base = catalogHousehold("development");
+    const proposal = proposeHouseholdOnboarding(base, { memberId: BIANCA, at: PROPOSED_AT });
+    const accepted = await acceptCommand(base, proposal, "compacted-onboarding-proposal", BIANCA);
+    const receipt = accepted.commandReceipts.find((row) => row.confirmationId === "compacted-onboarding-proposal")!;
+    const ref = receiptToCommandRef({ household: accepted, receipt, baseRevision: base.revision });
+    const primary = primaryCommandRef([ref]);
+    const payload = await compactedCommandPayload({
+      confirmationIds: [ref.confirmationId],
+      commandRefs: [ref],
+    }, primary, accepted, BIANCA) as ContinuityCommandEventPayload;
+    expect(payload.postedIds).toContain(accepted.householdOnboarding!.id);
+    expect(payload.materializationFacts?.householdOnboarding).toEqual(accepted.householdOnboarding);
+    expect(payload.materializationHash).toBe(receipt.materializationHash);
+
+    const replayed = await applyCommandEventLocally({
+      local: base,
+      memberId: JONATHAN,
+      event: {
+        ...buildCommandEventFromReceipt({
+          household: accepted,
+          confirmationId: receipt.confirmationId,
+          baseRevision: base.revision,
+          memberId: BIANCA,
+        }),
+        payload_json: payload,
+      },
+    });
+    expect(replayed.ok).toBe(true);
+    if (!replayed.ok) throw new Error(replayed.reason);
+    expect(replayed.household.householdOnboarding).toEqual(accepted.householdOnboarding);
   });
 
   it("keeps the required handshake copy byte-exact", () => {

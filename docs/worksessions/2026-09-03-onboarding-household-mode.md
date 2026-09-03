@@ -7,11 +7,11 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/2-household-mode`
 - **Baseline SHA:** `27b1c0345fcb3fa28e76883dc575166fdc298cde`
-- **Head SHA:** implementation `c2f2bb57b3fca50c47c32a342b6009a255d8e8c9`; this documentation-only close follows
+- **Head SHA:** implementation `c2f2bb57b3fca50c47c32a342b6009a255d8e8c9`; documentation close `2b4304f98518ba936ea14370a73471daf4f54e73`; corrective review commit follows
 - **PR or issue:** [#318](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/318)
 - **Risk:** High
 - **Decision owner:** Jonathan
-- **Environment impact:** none until merged and deployed
+- **Environment impact:** Development Worker deployment authorized on merge; Production continuity remains off
 
 ## Household outcome
 
@@ -57,6 +57,7 @@ The household remains in free roam until two active members consent on their own
 - [x] `pnpm ai:verify` passes.
 - [x] `pnpm check:windows` was attempted and the exact local limitation is recorded.
 - [x] PR is open and unmerged at the exact implementation head.
+- [x] Automated review findings are covered by wrong-actor, roster-change, and compacted-replay regression proofs.
 
 ## Plan
 
@@ -82,6 +83,10 @@ The household remains in free roam until two active members consent on their own
 - `pnpm test:full` was not run; exhaustive proof requires Jonathan's explicit authorization for the exact clean SHA.
 - Changed files: `docs/DECISIONS.md`; this worksession; `src/core/onboarding/mode.ts`; `src/core/types.ts`; `src/core/commands.ts`; `src/core/index.ts`; `src/core/sync.ts`; `src/core/commandIdentity.ts`; `src/core/commandRuntime.ts`; `src/ledger/materializeSnapshotFromEvents.ts`; `test/onboarding-mode.test.ts`.
 - PR [#318](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/318) opened against `main` at exact implementation head `c2f2bb57b3fca50c47c32a342b6009a255d8e8c9`; unmerged and undeployed.
+- GitHub Codex review identified two P1 findings and one P2 finding on `c2f2bb5`: actor identity was not enforced at acceptance, compaction omitted onboarding facts, and active mode trusted a stale roster.
+- Corrective proof: `pnpm exec vitest run test/onboarding-mode.test.ts` -> **19/19 passed** and `pnpm exec tsc -b --pretty false` -> **passed**.
+- Broader corrective proof: onboarding, materialization, realtime, interleaving, command-runtime, held-fund, and weekly-stamp suites -> **70/70 passed**.
+- Corrective `pnpm build` -> **passed**; existing PGlite browser-external/eval and large-chunk warnings only. Corrective `pnpm ai:verify` -> **passed**.
 
 ## Decisions
 
@@ -91,9 +96,9 @@ The household remains in free roam until two active members consent on their own
 
 ## Remaining uncertainty
 
-- The manual requires independent trust review before this High-risk slice is accepted; that review and GitHub CI are pending on PR #318.
+- The automated review findings are resolved locally; the corrective PR head still requires exact-head GitHub CI before merge.
 - The macOS host cannot supply native PowerShell/Windows evidence.
 
 ## Handoff
 
-Local implementation is committed at `c2f2bb5`, pushed on `onboarding/2-household-mode`, and open in PR #318. It is not merged, deployed, or live. An independent trust reviewer is the next technical owner; Jonathan remains the decision owner for merge or deployment. No UI was built, so no manual live verification applies.
+Jonathan explicitly authorized merge and Development deployment. The corrected head must be pushed and pass exact-head GitHub checks before merge; post-merge `main` CI, Cloudflare deployment, and live no-store asset verification remain required. No UI was built, so live verification is bundle-level rather than interaction-level.

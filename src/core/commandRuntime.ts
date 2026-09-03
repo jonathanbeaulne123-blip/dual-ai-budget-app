@@ -24,6 +24,10 @@ import {
 } from "./sharing.ts";
 import { autoResolveSharedConflict, unresolvedConflicts } from "./conflict.ts";
 import { assertHouseholdFundTransition } from "./householdFund.ts";
+import {
+  actorMayApplyHouseholdOnboardingTransition,
+  acceptedHouseholdOnboarding,
+} from "./onboarding/mode.ts";
 import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import type { CommandReceipt, Household } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
@@ -150,6 +154,25 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       throw new BooksRejectedError("Development and Production stay on separate books. Nothing was posted.", "validation-rejected");
     }
     const postedIds = input.postedIds ?? [];
+    if (input.commandKind?.endsWith("HouseholdOnboarding")) {
+      const incoming = acceptedHouseholdOnboarding(candidate);
+      if (!previous
+        || !input.actingMemberId
+        || !incoming
+        || postedIds.length !== 1
+        || postedIds[0] !== incoming.id
+        || !actorMayApplyHouseholdOnboardingTransition({
+          household: previous,
+          incoming,
+          commandKind: input.commandKind,
+          actingMemberId: input.actingMemberId,
+        })) {
+        throw new BooksRejectedError(
+          "Household setup can record only the signed-in member's action. Nothing changed.",
+          "validation-rejected",
+        );
+      }
+    }
     if (input.commandKind === "stampWeeklyDocument") {
       if (!previous) {
         throw new BooksRejectedError("Open accepted household books before stamping. Nothing changed.", "validation-rejected");
