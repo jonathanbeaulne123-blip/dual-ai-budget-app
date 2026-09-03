@@ -136,6 +136,8 @@ export * from "./onboarding/types.ts";
 export * from "./onboarding/registry.ts";
 export * from "./onboarding/mode.ts";
 export * from "./onboarding/progress.ts";
+export * from "./onboarding/affirmative.ts";
+export * from "./onboarding/actions.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
 export {
