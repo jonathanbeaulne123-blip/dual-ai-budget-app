@@ -61,6 +61,116 @@
   width: min(100%, 540px);
 }
 
+.next-out-stage {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+}
+.next-out-table-kicker {
+  margin-top: 12px;
+}
+.next-out-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.next-out-bar-fill {
+  height: 100%;
+  background: var(--pine);
+  border-radius: inherit;
+}
+.next-out-bar-fill.is-over {
+  background: var(--copper);
+}
+.next-out-table-wrap {
+  overflow-x: auto;
+}
+.next-out-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.next-out-table th {
+  padding: 6px 10px 6px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.next-out-table td {
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.next-out-table th:last-child,
+.next-out-table td:last-child {
+  text-align: right;
+  padding-right: 0;
+}
+.next-out-table tr.is-copper td {
+  color: var(--copper);
+}
+.next-out-break {
+  margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .next-out-bar-fill {
+    transition: none;
+  }
+}
+
+.waiting-stage {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+}
+.waiting-stage-kicker {
+  margin-top: 12px;
+}
+.waiting-stage-row {
+  display: grid;
+  gap: 6px;
+}
+.waiting-consequence {
+  color: var(--muted);
+}
+.waiting-decisions {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.waiting-decision {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
 .fund-rail-arrange {
   display: block;
   width: 100%;
