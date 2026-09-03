@@ -6,10 +6,11 @@
  * posts, settles, or moves a cent, and nothing computes a second balance.
  */
 
-import { addDays, calendarDaysBetween, formatDateLabel, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
+import { addDays, calendarDaysBetween, formatDateLabel, monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { formatCad } from "./money.ts";
 import { creditCardView, isCreditKind } from "./accounts.ts";
 import { claimRemainingCents, outstandingClaims } from "./appointments.ts";
+import { categoryShape } from "./categoryShape.ts";
 import { fundWalk, fundWeekMovements, type FundWalk, type WalkPoint } from "./fundWalk.ts";
 import {
   householdFundContributionMotions,
@@ -23,7 +24,7 @@ import type { Goal } from "./types.ts";
 import type { Household } from "./types.ts";
 
 export const FUND_PLATE_IDS = [
-  "fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving",
+  "fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving", "shape",
 ] as const;
 export type FundPlateId = (typeof FUND_PLATE_IDS)[number];
 
@@ -341,7 +342,42 @@ function shelfPlate(household: Household): DeskPlateModel {
   };
 }
 
-/** The eight Fund plates, in default custodian order. */
+/** Six sparklines is a desktop idea — the plate only ever names the worst one. */
+function shapePlate(household: Household, monthKey: MonthKey, today: DateKey): DeskPlateModel {
+  const rows = categoryShape(household, monthKey, today);
+  const over = rows.filter((row) => row.verdict === "above");
+  const comparable = rows.filter((row) => (
+    row.verdict === "above" || row.verdict === "in-shape" || row.verdict === "quiet"
+  ));
+  const worst = over[0] ?? null;
+  return {
+    id: "shape",
+    kicker: "The shape",
+    glance: worst ? `${worst.label} ${formatCad(worst.deltaCents)} above` : comparable.length ? "Nothing over shape" : "Not enough yet",
+    verdict: worst
+      ? `${worst.label} has run ${formatCad(worst.deltaCents)} over its own trailing shape.`
+      : comparable.length
+        ? "No category with enough history is above its own trailing shape."
+        : "Not enough history yet to draw a shape for anything.",
+    footing: over.length > 1
+      ? `${over.length} categories are running over their own shape this month.`
+      : "Each category against its own trailing three months. Never a household total.",
+    edge: worst ? "attention" : "clear",
+    copperVerdict: Boolean(worst),
+    figure: worst
+      ? { primitive: "spark", points: [worst.bandLowCents, worst.bandHighCents, worst.monthToDateCents], room: TRACK_ROOM }
+      : { primitive: "spark", points: [], room: TRACK_ROOM },
+    empty: rows.length ? null : "Not enough history yet to draw a shape for anything.",
+    // No office instrument is a real match for "a category against its own
+    // history" — the blotter is the household's own income/expense read,
+    // the nearest existing thing to it, and spokenForPlate already opens
+    // the same drawer, so this isn't a new pairing to learn.
+    cabinet: "blotter",
+    cabinetName: "The shape",
+  };
+}
+
+/** The nine Fund plates, in default custodian order. */
 export function fundPlates(input: {
   household: Household;
   today: DateKey;
@@ -350,7 +386,8 @@ export function fundPlates(input: {
   const { household, today } = input;
   const findings = input.findings ?? [];
   if (!shapeHouseholdFundConfig(household.householdFund)) return [];
-  const walk = fundWalk(household, monthKeyFromDateKey(today), today);
+  const monthKey = monthKeyFromDateKey(today);
+  const walk = fundWalk(household, monthKey, today);
   return [
     levelPlate(walk, findings),
     waitingPlate(household),
@@ -360,5 +397,6 @@ export function fundPlates(input: {
     accountsPlate(household, today),
     weekPlate(household, today),
     shelfPlate(household),
+    shapePlate(household, monthKey, today),
   ];
 }

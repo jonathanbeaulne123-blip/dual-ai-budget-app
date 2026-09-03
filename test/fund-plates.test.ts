@@ -50,7 +50,7 @@ function board(household: Household) {
 }
 
 describe("the Fund's plates", () => {
-  it("puts the eight Fund widgets on the shared floor, the Level first", () => {
+  it("puts the nine Fund widgets on the shared floor, the Level first", () => {
     let household = fund();
     household = contribute(household, BIANCA, "980", "2026-09-02");
     const plates = board(household);
@@ -221,6 +221,34 @@ describe("the Fund's plates", () => {
       expect(level.figure.actualCount).toBe(12);
       expect(level.figure.actualCount).toBeLessThan(level.figure.points.length);
     }
+  });
+
+  it("does not call unknown-only category history in shape", () => {
+    let household = fund();
+    household = postEntry(household, {
+      date: "2026-09-10", type: "expense", amount: "45",
+      accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", note: "Shop",
+      createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
+    }).household;
+
+    const shape = board(household).find((plate) => plate.id === "shape")!;
+    expect(shape.glance).toBe("Not enough yet");
+    expect(shape.verdict).toBe("Not enough history yet to draw a shape for anything.");
+  });
+
+  it("describes an all-quiet month without calling it inside the band", () => {
+    let household = fund();
+    for (const month of ["06", "07", "08"]) {
+      household = postEntry(household, {
+        date: `2026-${month}-10`, type: "expense", amount: "100",
+        accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", note: "Shop",
+        createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
+      }).household;
+    }
+
+    const shape = board(household).find((plate) => plate.id === "shape")!;
+    expect(shape.glance).toBe("Nothing over shape");
+    expect(shape.verdict).toBe("No category with enough history is above its own trailing shape.");
   });
 
   it("carries the shared week across month-end", () => {

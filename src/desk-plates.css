@@ -126,6 +126,74 @@
   margin-top: 4px;
 }
 
+.shape-stage {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+}
+.shape-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.shape-card {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+}
+.shape-card-name {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+.shape-card-verdict {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.shape-card-verdict.is-above {
+  color: var(--copper);
+}
+.shape-card-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 6px;
+}
+.shape-band {
+  fill: color-mix(in srgb, var(--paper-2) 80%, transparent);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.shape-dot.is-over {
+  fill: var(--copper);
+}
+.shape-dot.is-in {
+  fill: var(--pine);
+}
+.shape-dot.is-unread {
+  fill: var(--muted);
+  opacity: 0.7;
+}
+
+@media (max-width: 640px) {
+  .shape-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .week-stage {
   display: grid;
   align-content: start;

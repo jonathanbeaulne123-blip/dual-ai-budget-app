@@ -28,8 +28,10 @@ import {
   moveAskGoalClaimToNextMonth,
   fundWalk,
   fundWeek,
+  categoryShape,
   monthKeyFromDateKey,
   shapeHouseholdFundConfig,
+  type CategoryShape,
   type DeskPlateId,
   type DeskPlateModel,
   type FundWidgetId,
@@ -66,6 +68,7 @@ import { Level } from "./Level.tsx";
 import { NextOutStage } from "./NextOutStage.tsx";
 import { WeekStage } from "./WeekStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
+import { ShapeStage } from "./ShapeStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -245,6 +248,11 @@ export function OfficeWide({
     fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
       ? fundWeek(booksHousehold, today)
       : null
+  ), [fundConfigured, booksHousehold, today]);
+  const categoryShapeToday: CategoryShape[] = useMemo(() => (
+    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? categoryShape(booksHousehold, monthKeyFromDateKey(today), today)
+      : []
   ), [fundConfigured, booksHousehold, today]);
   const selectedFundPlate = useMemo(() => (
     plates.find((plate) => fundWidgetIdForPlateId(plate.id) === selectedFundWidget)
@@ -636,6 +644,8 @@ export function OfficeWide({
               onKitchen={onKitchen}
               headingRef={fundStageHeadingRef}
             />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "shape" ? (
+            <ShapeStage rows={categoryShapeToday} headingRef={fundStageHeadingRef} />
           ) : spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
             <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
               <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>
