@@ -1,6 +1,6 @@
 # Hearth worksession — onboarding privacy-scoped evidence
 
-- **Status:** READY FOR PR
+- **Status:** PR OPEN
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,7 +8,7 @@
 - **Branch:** `onboarding/5-evidence`
 - **Baseline SHA:** `200dfd1ccfb79428f8d8f60f8616654622404e24`
 - **Head SHA:** `29553eb9fb71dd2dad7b20ccb7fec87aa84b865f` (pre-publication proof)
-- **PR or issue:** pending
+- **PR or issue:** [#322](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/322)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -61,7 +61,7 @@ Onboarding evidence cites accepted rows without exposing one member's Personal f
 - [x] Implement the pure evidence projector over current canonical facts.
 - [x] Add the twelve-chapter privacy matrix, negative states, and D-207.
 - [x] Run focused proof, build, AI verification, and the High quick gate.
-- [ ] Inspect, push, open the slice PR, and stop before merge/deploy.
+- [x] Inspect, push, open the slice PR, and stop before merge/deploy.
 
 ## Evidence log
 
@@ -73,7 +73,7 @@ Onboarding evidence cites accepted rows without exposing one member's Personal f
 - `pnpm ai:verify`: passed (`48` required files and `2` Clerk fences).
 - `pnpm check:windows`: unavailable on this Mac because `pwsh` is not installed; no Windows result is claimed.
 - `pnpm test:full` was not run because this High slice authorizes the risk-focused quick gate, not an exhaustive full gate.
-- Exact PR-head hosted CI remains pending until the PR exists.
+- Exact final PR-head hosted CI is pending.
 
 ## Decisions
 
