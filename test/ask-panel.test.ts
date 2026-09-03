@@ -149,7 +149,7 @@ describe("Ask route geometry", () => {
       barLeft: 250,
       barRight: 810,
       valueRight: 890,
-      rowHeight: 60,
+      rowHeight: 72,
       barHeight: 16,
       barY: 4,
       header: 36,

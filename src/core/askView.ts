@@ -17,10 +17,13 @@ import {
   type HouseholdAsk,
 } from "./ask.ts";
 import {
+  ASK_EVERY_ROUTE_OVER_CEILING_COPY,
   ASK_ROUTES_HEADER_COPY,
   ROUTE_MAX_DAYS,
   askRouteCopy,
   askRoutes,
+  ceilingVerdictCopy,
+  everyRouteOverCeiling,
   type AskRoute,
   type AskRoutesResult,
   type RouteShift,
@@ -34,7 +37,7 @@ export const ROUTE_VIEW = {
   barLeft: 250,
   barRight: 810,
   valueRight: 890,
-  rowHeight: 60,
+  rowHeight: 72,
   barHeight: 16,
   barY: 4,
   header: 36,
@@ -58,6 +61,7 @@ export type AskRouteRowView = {
   name: string;
   hoursCopy: string;
   status: string;
+  ceilingCopy: string | null;
   clears: boolean;
   segments: AskRouteSegmentView[];
   whisker: { x1: number; x2: number } | null;
@@ -88,6 +92,7 @@ export type AskPanelView = {
   showRoutes: boolean;
   showDoor: boolean;
   drawing: AskRoutesDrawing | null;
+  ceilingCopy: string | null;
 };
 
 /** One scale for the ask mark, safe bars, and expected whiskers. */
@@ -174,13 +179,15 @@ export function askRouteName(route: AskRoute): string {
 }
 
 export function askRoutesAriaLabel(askCents: number, routes: AskRoute[]): string {
-  const top = routes[0];
-  if (!top) return `The ask is ${formatCad(askCents)}.`;
-  const name = askRouteName(top);
-  const outcome = top.clearsAtSafe
-    ? "clears it at the safe number"
-    : `is short ${formatCad(top.shortfallCents)}`;
-  return `Routes toward ${formatCad(askCents)}; ${name} ${outcome}.`;
+  if (!routes.length) return `The ask is ${formatCad(askCents)}.`;
+  const summaries = routes.map((route) => {
+    const outcome = route.clearsAtSafe
+      ? "clears it at the safe number"
+      : `is short ${formatCad(route.shortfallCents)}`;
+    const ceiling = ceilingVerdictCopy(route.ceiling);
+    return `${askRouteName(route)} ${outcome}.${ceiling ? ` ${ceiling}` : ""}`;
+  });
+  return `Routes toward ${formatCad(askCents)}; ${summaries.join(" ")}`;
 }
 
 export function buildAskRoutesDrawing(askCents: number, routes: AskRoute[]): AskRoutesDrawing {
@@ -206,6 +213,7 @@ export function buildAskRoutesDrawing(askCents: number, routes: AskRoute[]): Ask
         name: askRouteName(route),
         hoursCopy: askRouteHoursCopy(route),
         status: askRouteCopy(route, askCents),
+        ceilingCopy: ceilingVerdictCopy(route.ceiling),
         clears: route.clearsAtSafe,
         segments: routeSegmentLayout(route.shifts, scale),
         whisker: hasWhisker ? { x1: safeEnd, x2: expectedEnd } : null,
@@ -231,7 +239,8 @@ export function askPanelView(household: Household, today: DateKey, memberId: str
       to: window.to,
     })
     : null;
-  const drawing = routes?.kind === "routes" && routes.routes.length > 0
+  const allRoutesOver = everyRouteOverCeiling(routes);
+  const drawing = !allRoutesOver && routes?.kind === "routes" && routes.routes.length > 0
     ? buildAskRoutesDrawing(monthAsk.askCents, routes.routes)
     : null;
 
@@ -245,8 +254,9 @@ export function askPanelView(household: Household, today: DateKey, memberId: str
     caveat: askCaveatLine(monthAsk.confidence, runRate.weeksWatched),
     alternatives,
     routes,
-    showRoutes: !covered,
+    showRoutes: !covered && !allRoutesOver,
     showDoor: !covered && alternatives.length > 0,
     drawing,
+    ceilingCopy: allRoutesOver ? ASK_EVERY_ROUTE_OVER_CEILING_COPY : null,
   };
 }

@@ -107,6 +107,7 @@ describe("Ask routes", () => {
       expectedCents: 52_000,
       clearsAtSafe: true,
       shortfallCents: 0,
+      ceiling: { kind: "none" as const },
     };
     const short = { ...clear, safeCents: 31_000, clearsAtSafe: false, shortfallCents: 3_000 };
 

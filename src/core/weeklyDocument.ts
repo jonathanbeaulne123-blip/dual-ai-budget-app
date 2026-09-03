@@ -1,6 +1,13 @@
 import { lastWeekBounds, monthKeyFromDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
 import { askAlternatives, householdAsk, type AskAlternative, type HouseholdAsk } from "./ask.ts";
-import { ASK_ROUTES_HEADER_COPY, askRouteCopy, askRoutes, type AskRoutesResult } from "./askRoutes.ts";
+import {
+  ASK_EVERY_ROUTE_OVER_CEILING_COPY,
+  ASK_ROUTES_HEADER_COPY,
+  askRouteCopy,
+  askRoutes,
+  everyRouteOverCeiling,
+  type AskRoutesResult,
+} from "./askRoutes.ts";
 import { clerkReading, type ClerkReading } from "./clerkReading.ts";
 import { contributionRegister, type ContributionRegister } from "./contributionRegister.ts";
 import { kettlePhase } from "./hercules.ts";
@@ -64,6 +71,7 @@ export type WeeklyDocumentView = {
   otherDoors: AskAlternative[];
   motions: WeeklyDocumentMotion[];
   routes?: AskRoutesResult;
+  ceilingCopy?: string;
 };
 
 export type WeeklyDocumentInput = {
@@ -239,7 +247,10 @@ export function weeklyDocument(household: Household, input: WeeklyDocumentInput)
   };
   if (askOwnerMemberId && viewerMemberId === askOwnerMemberId) {
     const routes = ownerRoutes(household, ask, askOwnerMemberId, today);
-    if (routes) view.routes = routes;
+    if (routes) {
+      view.routes = routes;
+      if (everyRouteOverCeiling(routes)) view.ceilingCopy = ASK_EVERY_ROUTE_OVER_CEILING_COPY;
+    }
   }
   return view;
 }

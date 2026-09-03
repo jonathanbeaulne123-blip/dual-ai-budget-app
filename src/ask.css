@@ -51,7 +51,8 @@
 
 .ask-payday,
 .ask-caveat,
-.ask-refusal {
+.ask-refusal,
+.ask-ceiling {
   margin: 4px 0 0;
   font-size: 13px;
   line-height: 1.4;
@@ -62,6 +63,12 @@
 .ask-refusal {
   margin-top: 16px;
   max-width: 42em;
+}
+
+.ask-ceiling {
+  margin-top: 16px;
+  max-width: 48em;
+  color: var(--ink);
 }
 
 .ask-routes-scroll {
@@ -110,6 +117,12 @@
   font-size: 12px;
   font-family: var(--font);
   font-variant-numeric: tabular-nums lining-nums;
+}
+
+.ask-route-ceiling {
+  fill: var(--copper);
+  font-family: var(--font);
+  font-size: 10.5px;
 }
 
 .ask-route-status-clear {
