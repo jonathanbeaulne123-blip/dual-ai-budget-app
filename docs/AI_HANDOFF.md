@@ -1,5 +1,15 @@
 # AI Task and Handoff Standard
 
+## Single-run pull-request CI (D-202 why-note) (2026-09-03)
+
+**Status:** Local implementation on `codex/ci-single-pr-run` from clean `origin/main@f5a3cab8746d60131568768801d8145cd17f9a9b`; not pushed, merged, deployed, or released. Risk: **Medium** because CI verification scheduling changes without runtime behavior.
+
+**Outcome:** A pull request runs the five-minute quick gate through `pull_request`; pushing the same agent branch no longer launches a duplicate copy. Accepted work still gets an independent `main` push gate. Budget `+1` assurance throughput / `0` runtime; Engagement `0`.
+
+**Verification:** Focused policy contracts passed **18/18**. The Medium quick gate selected the policy and lane contracts and passed **19/19** plus TypeScript, AI-surface verification, and diff hygiene in **21.322s** with no SLA breach. No full suite or build ran.
+
+**Boundary:** Workflow configuration, policy contracts, validator, and canon only. Test selection, financial/privacy canaries, manual full-suite authority, household data, hosted state, secrets, Production, and runtime behavior are unchanged.
+
 ## Five-minute verification gate (D-202) (2026-09-03)
 
 **Status:** Local implementation on `codex/five-minute-verification`, refreshed onto clean current `origin/main@7dd1f96729fc9ec4fe6bb74a1daeacbf413b700a`; not pushed, merged, deployed, or released. Risk: **Medium** because verification reliability protects every later trust boundary without changing runtime behavior.

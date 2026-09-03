@@ -44,6 +44,9 @@ describe("five-minute verification policy", () => {
   it("keeps automatic CI on the quick gate and exposes full verification only by manual dispatch", () => {
     expect(automaticWorkflow).toContain("pnpm check");
     expect(automaticWorkflow).not.toMatch(/(?:test|check):full/);
+    expect(automaticWorkflow).toMatch(/push:\s*\n\s+branches: \[main\]/);
+    expect(automaticWorkflow).toContain("pull_request:");
+    expect(automaticWorkflow).not.toMatch(/(?:codex|cursor|claude)\/\*\*/);
     expect(fullWorkflow).toContain("workflow_dispatch:");
     expect(fullWorkflow).not.toMatch(/^\s{2}(?:push|pull_request):/m);
     expect(fullWorkflow).toContain("pnpm check:full");
