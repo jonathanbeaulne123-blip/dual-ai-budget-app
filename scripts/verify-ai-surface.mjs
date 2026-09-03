@@ -246,6 +246,9 @@ for (const command of ["pnpm install --frozen-lockfile", "pnpm check"]) {
   assert(ci.includes(command), `CI is missing ${command}`);
 }
 assert(!/(?:test|check):full/.test(ci), "automatic CI must not invoke full verification");
+assert(/push:\s*\n\s+branches: \[main\]/.test(ci), "automatic CI push verification must be main-only");
+assert(ci.includes("pull_request:"), "automatic CI must verify pull requests");
+assert(!/(?:codex|cursor|claude)\/\*\*/.test(ci), "automatic CI must not duplicate pull-request verification on agent branch pushes");
 const fullVerification = read(".github/workflows/full-verification.yml");
 assert(fullVerification.includes("workflow_dispatch:"), "full verification must be manual dispatch");
 assert(!/^  (?:push|pull_request):/m.test(fullVerification), "full verification must not have automatic triggers");
