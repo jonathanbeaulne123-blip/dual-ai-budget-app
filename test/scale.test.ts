@@ -7,7 +7,7 @@ import { buildDashboard } from "../src/core/insights.ts";
 import { applySitDown } from "../src/core/commands.ts";
 
 describe("demo household and scale", () => {
-  it("seeds a fictional six-month household that stays health-clean", () => {
+  it("seeds a fictional four-month household that stays health-clean", () => {
     const household = seedDemoHousehold({ today: "2026-08-21" });
     expect(household.transactions.length).toBeGreaterThan(80);
     expect(household.shifts.length).toBeGreaterThan(15);

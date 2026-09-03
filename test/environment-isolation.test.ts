@@ -98,7 +98,7 @@ describe("environment isolation adversarial boundaries", () => {
   });
 
   it("rejects persist when operatingEnvironment disagrees with the snapshot", async () => {
-    const household = seedDemoHousehold({ today: "2026-08-24", environment: "production" });
+    const household = catalogHousehold("production");
     await expect(saveHousehold(household, { operatingEnvironment: "development", memberId: "MEM-001" })).rejects.toThrow(
       /different environment and was not saved/,
     );

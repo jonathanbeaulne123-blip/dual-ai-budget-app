@@ -9,6 +9,7 @@ import {
   buildSharedLedgerStory,
   catalogHousehold,
   configureHouseholdFund,
+  confirmHouseholdFundContribution,
   courseBottom,
   courseScale,
   courseTop,
@@ -220,7 +221,26 @@ describe("nothing right of today is drawn as posted", () => {
   });
 
   it("puts the reserve notch after today, never behind it", () => {
-    const household = demo();
+    const proposed = proposeHouseholdFundContribution(demo(), {
+      memberId: JONATHAN,
+      contributorMemberId: JONATHAN,
+      amount: 500,
+      date: TODAY,
+    });
+    const funded = confirmHouseholdFundContribution(proposed.household, {
+      memberId: BIANCA,
+      proposalEventId: proposed.postedIds[0]!,
+    }).household;
+    const household = addRecurrence(funded, {
+      cadence: "monthly",
+      nextDate: "2026-08-28",
+      type: "expense",
+      amount: 25,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-HEALTH-CARE",
+      note: "Future reserve proof",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }).household;
     const course = sharedMonthCourse(household, TODAY);
     const paths = coursePaths(course);
     expect(course.upcomingReserveCents).toBeGreaterThan(0);
@@ -418,7 +438,7 @@ describe("F-3 · a monthly target is measured against this month", () => {
   it("counts only contributions confirmed in the month, not every one ever made", () => {
     const household = demo();
     const projection = projectHouseholdFund(household, TODAY);
-    const monthConfirmed = 160000 + 90000 + 76000; // Aug 1, 8 and 22 on the demo kitchen
+    const monthConfirmed = 196000 + 53500; // canonical Bianca and Jonathan September-pattern sources
     expect(projection.confirmedContributionsCents).toBeGreaterThan(monthConfirmed);
     expect(projection.targetProgressCents).toBe(monthConfirmed);
     expect(projection.targetProgressCents).toBeLessThanOrEqual(projection.monthlyTargetCents);
@@ -433,27 +453,27 @@ describe("Standing contribution bars name each person's confirmed month", () => 
     const bianca = course.contributionsByMember.find((row) => row.memberId === BIANCA);
     const jonathan = course.contributionsByMember.find((row) => row.memberId === JONATHAN);
     expect(course.contributionsByMember).toHaveLength(2);
-    expect(bianca?.cents).toBe(160_000);
-    expect(jonathan?.cents).toBe(90_000 + 76_000);
+    expect(bianca?.cents).toBe(196_000);
+    expect(jonathan?.cents).toBe(53_500);
     expect((bianca?.cents ?? 0) + (jonathan?.cents ?? 0)).toBe(projection.targetProgressCents);
-    expect((bianca?.cents ?? 0) + (jonathan?.cents ?? 0)).toBe(326_000);
+    expect((bianca?.cents ?? 0) + (jonathan?.cents ?? 0)).toBe(249_500);
   });
 
   it("leaves last month's contributions and an unconfirmed proposal off the bars", () => {
     const household = demo();
     const course = sharedMonthCourse(household, TODAY);
     const jonathan = course.contributionsByMember.find((row) => row.memberId === JONATHAN);
-    // Last month Jonathan put in $1,065; this month $900 + $760. A $340 proposal waits.
-    expect(jonathan?.cents).toBe(166_000);
-    expect(jonathan?.cents).not.toBe(166_000 + 106_500);
-    expect(jonathan?.cents).not.toBe(166_000 + 34_000);
+    // Prior-month confirmed cents and the held discovery-month proposal stay off this month's bar.
+    expect(jonathan?.cents).toBe(53_500);
+    expect(jonathan?.cents).not.toBe(53_500 + 27_000);
+    expect(jonathan?.cents).not.toBe(53_500 + 27_500);
     const pending = proposeHouseholdFundContribution(household, {
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: 50,
       date: TODAY,
     }).household;
-    expect(sharedMonthCourse(pending, TODAY).contributionsByMember.find((row) => row.memberId === JONATHAN)?.cents).toBe(166_000);
+    expect(sharedMonthCourse(pending, TODAY).contributionsByMember.find((row) => row.memberId === JONATHAN)?.cents).toBe(53_500);
   });
 
   it("hides the bars until the Fund is open, and draws them from names plus CAD", () => {

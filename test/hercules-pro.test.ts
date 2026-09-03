@@ -15,7 +15,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("Hercules Pro OAuth and MCP bridge", () => {
   it("refuses to label any Production snapshot as a synthetic fixture", () => {
-    const household = seedDemoHousehold({ today: "2026-08-25", environment: "production" });
+    const household = catalogHousehold("production");
     household.syntheticFixture = {
       kind: "hearth-demo-suite", version: "2.0.0", seed: 17,
       generatedForDate: "2026-08-25", generatedAt: "2026-08-25T12:00:00.000Z",
