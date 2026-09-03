@@ -26,6 +26,9 @@ import {
   isFundWidgetId,
   railFor,
   moveAskGoalClaimToNextMonth,
+  fundWalk,
+  monthKeyFromDateKey,
+  shapeHouseholdFundConfig,
   type DeskPlateId,
   type DeskPlateModel,
   type FundWidgetId,
@@ -58,6 +61,7 @@ import { MonthSpread } from "./MonthSpread.tsx";
 import { Ask } from "./Ask.tsx";
 import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
+import { NextOutStage } from "./NextOutStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -228,6 +232,11 @@ export function OfficeWide({
       return id ? byWidget.has(id) : false;
     })];
   }, [fundConfigured, unarrangedPlates, household, memberId]);
+  const fundWalkToday = useMemo(() => (
+    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? fundWalk(booksHousehold, monthKeyFromDateKey(today), today)
+      : null
+  ), [fundConfigured, booksHousehold, today]);
   const selectedFundPlate = useMemo(() => (
     plates.find((plate) => fundWidgetIdForPlateId(plate.id) === selectedFundWidget)
     ?? plates.find((plate) => fundWidgetIdForPlateId(plate.id) === "level")
@@ -584,6 +593,9 @@ export function OfficeWide({
               onKitchen={onKitchen}
               onClose={() => setFundDrawerOpen(false)}
             />
+          ) : spreadIsStage && fundConfigured && fundWalkToday
+            && (selectedFundWidget === "next-out" || selectedFundWidget === "spoken-for") ? (
+            <NextOutStage walk={fundWalkToday} today={today} headingRef={fundStageHeadingRef} />
           ) : spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
             <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
               <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>
