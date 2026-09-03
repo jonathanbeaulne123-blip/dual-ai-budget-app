@@ -91,6 +91,7 @@ const required = [
   ".cursor/hooks/hearth-guard.mjs",
   ".cursor/BUGBOT.md",
   ".cursor/rules/00-operating-model.mdc",
+  ".cursor/rules/45-verification-budget.mdc",
   ".cursor/agents/books-auditor.md",
   ".cursor/agents/privacy-auditor.md",
   ".cursor/agents/verifier.md",
@@ -106,6 +107,12 @@ const required = [
   ".claude/agents/hearth-ux-auditor.md",
   ".claude/agents/hearth-trust-auditor.md",
   ".claude/output-styles/hearth-design-lead.md",
+  ".github/workflows/full-verification.yml",
+  "docs/VERIFICATION.md",
+  "scripts/run-full-gate.mjs",
+  "scripts/run-quick-gate.mjs",
+  "scripts/verification-policy.mjs",
+  "test/verification-focus-map.json",
 ];
 
 required.forEach(requirePath);
@@ -228,12 +235,24 @@ assert(/alwaysApply:\s*true/.test(cursorRule), "Cursor operating model must alwa
 
 const packageJson = json["package.json"];
 assert(packageJson?.scripts?.["ai:verify"] === "node scripts/verify-ai-surface.mjs", "package.json must expose ai:verify");
-assert(packageJson?.scripts?.check === "pnpm ai:verify && pnpm test && pnpm build", "package.json must expose the complete proof gate");
+assert(packageJson?.scripts?.test === "node scripts/run-quick-gate.mjs", "package.json must make test the quick gate");
+assert(packageJson?.scripts?.check === "node scripts/run-quick-gate.mjs", "package.json must make check the quick gate");
+assert(packageJson?.scripts?.["test:full"] === "node scripts/run-full-gate.mjs test", "package.json must guard the full test gate");
+assert(packageJson?.scripts?.["check:full"] === "node scripts/run-full-gate.mjs check", "package.json must guard the full proof gate");
+assert(!packageJson?.scripts?.["test:full:lanes"], "package.json must not expose the exhaustive coordinator directly");
 
 const ci = read(".github/workflows/ci.yml");
 for (const command of ["pnpm install --frozen-lockfile", "pnpm check"]) {
   assert(ci.includes(command), `CI is missing ${command}`);
 }
+assert(!/(?:test|check):full/.test(ci), "automatic CI must not invoke full verification");
+const fullVerification = read(".github/workflows/full-verification.yml");
+assert(fullVerification.includes("workflow_dispatch:"), "full verification must be manual dispatch");
+assert(!/^  (?:push|pull_request):/m.test(fullVerification), "full verification must not have automatic triggers");
+assert(fullVerification.includes("github.actor == 'jonathanbeaulne123-blip'"), "full verification must bind dispatch to the repository owner");
+assert(fullVerification.includes("environment: full-verification"), "full verification must target its approval environment");
+assert(fullVerification.includes("inputs.authorization_reference"), "full verification must record an authorization reference");
+assert(fullVerification.includes("HEARTH_FULL_GITHUB_TOKEN: ${{ github.token }}"), "full verification must verify the authorization record through GitHub");
 
 const secretName = /(?:^|\/)(?:\.env(?:\.(?!example$|sample$|template$)[^/]*)?|\.dev\.vars|credentials?[^/]*\.json|secrets?[^/]*\.json|[^/]+\.(?:pem|key))$/i;
 try {

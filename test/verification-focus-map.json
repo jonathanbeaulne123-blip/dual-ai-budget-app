@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "mappings": [
+    {
+      "sources": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/full-verification.yml",
+        "package.json",
+        "scripts/run-full-gate.mjs",
+        "scripts/run-quick-gate.mjs",
+        "scripts/run-test-lanes.mjs",
+        "scripts/verification-policy.mjs",
+        "scripts/verify-ai-surface.mjs"
+      ],
+      "tests": [
+        "test/verification-policy.test.ts",
+        "test/test-lanes.test.ts"
+      ],
+      "reason": "Verification command, coordinator, and CI policy contracts"
+    }
+  ]
+}

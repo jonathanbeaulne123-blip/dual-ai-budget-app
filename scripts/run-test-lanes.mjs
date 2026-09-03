@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 const pnpmEntrypoint = process.env.npm_execpath;
 const lanes = ["test:fast", "test:books"];
-
-if (!pnpmEntrypoint) throw new Error("The test-lane coordinator must run through pnpm.");
 
 function runLane(lane) {
   return new Promise((resolve) => {
@@ -16,11 +16,19 @@ function runLane(lane) {
   });
 }
 
-const results = [];
-for (const lane of lanes) results.push([lane, await runLane(lane)]);
+export async function runFullTestLanes() {
+  if (!pnpmEntrypoint) throw new Error("The test-lane coordinator must run through pnpm.");
+  const results = [];
+  for (const lane of lanes) results.push([lane, await runLane(lane)]);
 
-const failed = results.filter(([, code]) => code !== 0);
-if (failed.length > 0) {
-  console.error(`Test lanes failed: ${failed.map(([lane]) => lane).join(", ")}`);
+  const failed = results.filter(([, code]) => code !== 0);
+  if (failed.length > 0) {
+    throw new Error(`Test lanes failed: ${failed.map(([lane]) => lane).join(", ")}.`);
+  }
+  return results;
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  console.error("The exhaustive lane coordinator has no direct command. Use the authorized pnpm test:full or pnpm check:full gate.");
   process.exitCode = 1;
 }

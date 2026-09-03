@@ -1,0 +1,14 @@
+---
+description: Hearth quick versus explicitly authorized full verification policy
+alwaysApply: true
+---
+
+# Verification budget
+
+- For Medium, Medium-High, and High-risk work, run the change-focused quick gate: `pnpm test -- --risk=<risk> --focus=<test file> --focus-reason="<why this proves the change>"`.
+- Keep focused tests current. A broad related graph must name focus evidence; never replace it with an automatic full-suite run.
+- Report exact base/head SHAs, the change fingerprint and clean/dirty state, selected tests, phase timings, and structured `time-budget-breached` evidence when the five-minute soft SLA is missed.
+- UI changes still need relevant viewport, keyboard, and accessibility proof outside the quick unit gate.
+- Never run `pnpm test:full`, `pnpm check:full`, `test:full:lanes`, both exhaustive lanes, or an equivalent command unless Jonathan explicitly requested full verification for the exact High/Release-risk SHA.
+- Without same-SHA authorized full evidence, say **quick-gate verified**, never **fully verified** or release-ready.
+- Follow `docs/VERIFICATION.md`; do not weaken money, privacy, environment, or Confirm boundaries to meet the time target.

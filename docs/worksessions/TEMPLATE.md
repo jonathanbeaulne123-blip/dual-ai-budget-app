@@ -9,7 +9,7 @@
 - **Baseline SHA:**
 - **Head SHA:**
 - **PR or issue:**
-- **Risk:** Low | Medium | High | Release
+- **Risk:** Low | Medium | Medium-High | High | Release
 - **Decision owner:**
 - **Environment impact:** Development | Production | none
 

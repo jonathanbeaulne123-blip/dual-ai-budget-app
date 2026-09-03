@@ -7,7 +7,7 @@ Hearth uses one product constitution and three soft specialties. The constitutio
 | AI | Default role | Best use | Default return |
 |---|---|---|---|
 | Codex | Project Mastermind and integrator | Verify the baseline, choose the next coherent outcome, sequence work, write briefs and worksessions, coordinate independent audits, reconcile evidence, and manage the GitHub branch or draft PR when authorized. | A bounded packet or an evidence-backed integrated change. |
-| Cursor | Chief implementer | Trace current code, implement a bounded packet, add focused tests, run the full local proof gate, and return exact changed behavior. | A reviewable branch or PR handoff. |
+| Cursor | Chief implementer | Trace current code, implement a bounded packet, add focused tests, run the five-minute quick gate, and return exact changed behavior. | A reviewable branch or PR handoff. |
 | Claude | UX, Hercules, accessibility, quality-of-life, and responsible-retention lead | Shape and implement the phone and office experience, Hercules behavior, visual systems, accessibility, and honest engagement. | A household-outcome proposal or implementation with visual proof. |
 
 These are starting positions, not fences. Any AI may inspect, challenge, review, or implement another layer. When it expands beyond its starting assignment, it must explain why the expansion was required and preserve the same acceptance evidence.
@@ -40,10 +40,10 @@ Use a subagent for a bounded, independent, read-heavy audit. Keep one writer per
 
 1. **Verify the baseline.** Record repository, branch, base SHA, head SHA, PR, environment, and working-tree state.
 2. **Name the outcome.** Describe the household result, not only files.
-3. **Route the risk.** Assign Low, Medium, High, or Release and name the Budget delta (5) and Engagement delta (3).
+3. **Route the risk.** Assign Low, Medium, Medium-High, High, or Release and name the Budget delta (5) and Engagement delta (3).
 4. **Bound the packet.** State scope, non-scope, invariants, acceptance criteria, evidence, and decision owner.
 5. **Implement once.** One AI writes. Read-only specialists audit in parallel only when the work is independent.
-6. **Prove current behavior.** Run focused tests, `pnpm test`, and relevant visual or trust proof. Never copy stale results from another branch.
+6. **Prove current behavior.** Run focused tests through the change-focused `pnpm test` quick gate and add relevant visual or trust proof. Never copy stale results from another branch. Do not run the exhaustive gate unless Jonathan explicitly requests it for the exact High/Release-risk SHA.
 7. **Hand off without hidden context.** Use `docs/AI_HANDOFF.md`. Name what is local, on a branch, in a PR, merged, deployed, or manually verified.
 
 ## Context budget
@@ -70,3 +70,10 @@ Use a subagent for a bounded, independent, read-heavy audit. Keep one writer per
 - Claude uses planning strength for design decisions, an efficient read-only UX reviewer, and a stronger trust reviewer only for High-risk boundaries.
 
 The goal is not maximum token use. The goal is the smallest context and model strength that can produce trustworthy evidence.
+
+## Verification budget
+
+- `pnpm test` and `pnpm check` are the ordinary quick gate. They record base/head SHAs, changed and focused tests, protected serial PGlite tests, domain canaries, phase timings, and whether the five-minute SLA was met.
+- A five-minute overrun is a visible `time-budget-breached` result. The soft limit lets the active phase finish but cannot be reported as meeting the SLA.
+- `pnpm test:full` and `pnpm check:full` require Jonathan's recorded request and reference, High/Release risk, a reason, an exact SHA matching `HEAD`, and a clean worktree.
+- Quick-gate success is not full verification and cannot by itself establish release readiness. Canon and command examples: [`VERIFICATION.md`](VERIFICATION.md).

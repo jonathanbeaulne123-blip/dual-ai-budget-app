@@ -13,6 +13,6 @@ Work on: $ARGUMENTS
 5. Implement the smallest coherent version that creates the household outcome. Explain justified expansion.
 6. Use fictional Development/demo data.
 7. Verify relevant states at 320px, 390px, 720px, and approximately 1100px, including keyboard, focus, contrast, reduced motion, and Add/Confirm clearance.
-8. Run focused tests, then `pnpm check`.
+8. Run focused tests through the change-focused quick gate and record its timing. Do not run the full lanes unless Jonathan explicitly requested exact-SHA, clean-worktree High/Release proof and the request has a recorded reference.
 9. Delegate a final read-only review to `hearth-ux-auditor`.
 10. Return the complete `docs/AI_HANDOFF.md` contract and literal delivery state.

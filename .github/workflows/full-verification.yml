@@ -1,0 +1,61 @@
+name: Full verification (Jonathan request only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: Exact 40-character High/Release-risk commit SHA to verify
+        required: true
+        type: string
+      risk:
+        description: Risk classification
+        required: true
+        type: choice
+        options:
+          - high
+          - release
+      reason:
+        description: Why Jonathan requested the exhaustive gate
+        required: true
+        type: string
+      authorization:
+        description: Confirm the owner request
+        required: true
+        type: choice
+        options:
+          - Jonathan explicitly requested this full gate
+      authorization_reference:
+        description: GitHub issue or PR URL containing Jonathan's request and the target SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  full-verification:
+    if: ${{ github.actor == 'jonathanbeaulne123-blip' && inputs.authorization == 'Jonathan explicitly requested this full gate' }}
+    environment: full-verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.target_sha }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run explicitly authorized exhaustive gate
+        run: pnpm check:full
+        env:
+          HEARTH_FULL_AUTHORIZATION_REF: ${{ inputs.authorization_reference }}
+          HEARTH_FULL_AUTHORIZED_BY: ${{ inputs.authorization }}
+          HEARTH_FULL_GITHUB_TOKEN: ${{ github.token }}
+          HEARTH_FULL_REASON: ${{ inputs.reason }}
+          HEARTH_FULL_RISK: ${{ inputs.risk }}
+          HEARTH_FULL_SHA: ${{ inputs.target_sha }}

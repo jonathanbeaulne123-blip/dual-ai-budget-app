@@ -6,7 +6,7 @@ Phase 0 requires: protected `main`, required checks, and production-environment 
 
 - Repository rulesets: **none** (`GET /repos/.../rulesets` → `[]`)
 - GitHub Environments: **none**
-- CI workflow: `.github/workflows/ci.yml` runs `pnpm check` on `push`/`pull_request` for `main` and agent branches
+- CI workflow: `.github/workflows/ci.yml` runs the five-minute `pnpm check` quick gate on `push`/`pull_request` for `main` and agent branches. `.github/workflows/full-verification.yml` is manual, exact-SHA, High/Release only.
 - Deploy: Cloudflare Worker from `main` via Actions / `wrangler deploy` (D-041)
 
 ## Jonathan apply checklist
@@ -27,6 +27,8 @@ Phase 0 requires: protected `main`, required checks, and production-environment 
 
 ### 2. Production environment approval (deploy)
 
+First create a separate `full-verification` environment and make Jonathan its required reviewer. The manual exhaustive workflow already names this environment and separately refuses any dispatcher other than the repository-owner account. Its authorization reference must point to a same-repository issue or PR recording Jonathan's request and exact SHA.
+
 1. **Settings → Environments → New environment** named `production` (or `kitchen` if that matches the Worker deploy workflow).
 2. Enable **Required reviewers** → Jonathan.
 3. Point the deploy workflow’s `environment:` key at that environment so `wrangler deploy` / Cloudflare publish cannot run from an unreviewed branch.
@@ -43,7 +45,7 @@ gh api repos/jonathanbeaulne123-blip/dual-ai-budget-app/environments
 # expect production (or kitchen) with protection rules
 ```
 
-Open a throwaway draft PR that fails `pnpm check` and confirm merge is blocked. Open a green PR and confirm merge is allowed only after checks (and reviewer, if configured).
+Open a throwaway draft PR that fails the quick `pnpm check` and confirm merge is blocked. Open a green PR and confirm merge is allowed only after that check (and reviewer, if configured). Do not make the manual full-verification workflow an automatic required check.
 
 ## Agent / PR policy
 

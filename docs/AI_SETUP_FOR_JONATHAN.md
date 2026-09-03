@@ -13,7 +13,7 @@ The repository now contains:
 - read-only reviewers;
 - safety checks for dangerous shell and MCP actions;
 - documentation-only Supabase access;
-- one command, `pnpm check`, for the full proof gate;
+- one command, `pnpm check`, for the five-minute change-focused gate, plus owner-requested `pnpm check:full` for exact High/Release-risk proof;
 - CI checks for every pull request.
 
 Nothing in this setup deployed Hearth, changed the books, changed Supabase rows, applied schema, read secrets, or touched Production.
