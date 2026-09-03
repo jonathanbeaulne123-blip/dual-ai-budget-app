@@ -352,10 +352,9 @@ export function resumeHouseholdOnboarding(household: Household, input: {
 
 const OWN_PROGRESS_COPY = "Only you can record your own progress.";
 
-function requireOnboardingProgressActor(household: Household, memberId: string, createdBy?: string) {
+function requireOnboardingProgressActor(household: Household, memberId: string, createdBy: string) {
   const member = requireMember(household, memberId);
-  const actorId = createdBy ?? memberId;
-  const actor = household.members.find((candidate) => candidate.id === actorId && candidate.active);
+  const actor = household.members.find((candidate) => candidate.id === createdBy && candidate.active);
   if (!actor || actor.id !== member.id) throw new ValidationError(OWN_PROGRESS_COPY);
   return member;
 }
@@ -385,7 +384,7 @@ function commitOnboardingProgress(
 
 function updateMemberProgress(
   household: Household,
-  input: { memberId: string; createdBy?: string; at?: string },
+  input: { memberId: string; createdBy: string; at?: string },
   label: string,
   update: (progress: ReturnType<typeof memberProgress>, at: string) => ReturnType<typeof memberProgress>,
 ): CommitResult {
@@ -405,7 +404,7 @@ function updateMemberProgress(
 export function recordChapterAcknowledgement(household: Household, input: {
   memberId: string;
   chapterId: string;
-  createdBy?: string;
+  createdBy: string;
   at?: string;
 }): CommitResult {
   const chapter = chapterById(input.chapterId);
@@ -427,7 +426,7 @@ export function recordChapterAcknowledgement(household: Household, input: {
 export function skipPersonalStep(household: Household, input: {
   memberId: string;
   chapterId: string;
-  createdBy?: string;
+  createdBy: string;
   at?: string;
 }): CommitResult {
   const chapter = chapterById(input.chapterId);
@@ -447,12 +446,13 @@ export function skipPersonalStep(household: Household, input: {
 export function setOnboardingOffersMuted(household: Household, input: {
   memberId: string;
   muted: boolean;
-  createdBy?: string;
+  createdBy: string;
   at?: string;
 }): CommitResult {
   return updateMemberProgress(household, input, "Personal onboarding offers changed", (progress, at) => ({
     ...progress,
     offersMuted: input.muted,
+    offersMutedUpdatedAt: at,
     updatedAt: at,
   }));
 }
@@ -460,7 +460,7 @@ export function setOnboardingOffersMuted(household: Household, input: {
 /** Development escape hatch. This stops setup without claiming any chapter or finale completion. */
 export function forceUnlockOnboarding(household: Household, input: {
   memberId: string;
-  createdBy?: string;
+  createdBy: string;
   at?: string;
 }): CommitResult {
   if (household.environment !== "development") throw new ValidationError("Not available in this environment.");

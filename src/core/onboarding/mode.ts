@@ -107,12 +107,15 @@ export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | 
   const rawState = MODE_STATES.has(row.state as OnboardingModeState)
     ? row.state as OnboardingModeState
     : "blocked";
-  const forcedUnlock = row.forcedUnlock === true;
+  const productionForceMarker = row.environment === "production" && row.forcedUnlock === true;
+  const forcedUnlock = row.environment === "development" && row.forcedUnlock === true;
   const state = registryVersion !== ONBOARDING_REGISTRY_VERSION
     ? "repair"
-    : forcedUnlock
-      ? "stopped-incomplete"
-      : rawState;
+    : productionForceMarker
+      ? "blocked"
+      : forcedUnlock
+        ? "stopped-incomplete"
+        : rawState;
   const createdAt = isoOrNull(row.createdAt) ?? "1970-01-01T00:00:00.000Z";
 
   return {
@@ -132,8 +135,8 @@ export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | 
     stoppedByMemberIds: uniqueIds(row.stoppedByMemberIds),
     stoppedSolo: row.stoppedSolo === true,
     forcedUnlock,
-    completedAt: forcedUnlock ? null : isoOrNull(row.completedAt),
-    completionDigest: !forcedUnlock && typeof row.completionDigest === "string" && row.completionDigest.trim()
+    completedAt: forcedUnlock || productionForceMarker ? null : isoOrNull(row.completedAt),
+    completionDigest: !forcedUnlock && !productionForceMarker && typeof row.completionDigest === "string" && row.completionDigest.trim()
       ? row.completionDigest.trim()
       : null,
     createdAt,
