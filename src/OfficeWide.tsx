@@ -27,11 +27,16 @@ import {
   railFor,
   moveAskGoalClaimToNextMonth,
   fundWalk,
+  fundWeek,
+  categoryShape,
+  twoStreams,
   monthKeyFromDateKey,
   shapeHouseholdFundConfig,
+  type CategoryShape,
   type DeskPlateId,
   type DeskPlateModel,
   type FundWidgetId,
+  type MemberStream,
   type PersonalLedgerStory as PersonalLedgerStoryModel,
   type SharedLedgerStory as SharedLedgerStoryModel,
 } from "./core/index.ts";
@@ -63,8 +68,12 @@ import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
 import { Level } from "./Level.tsx";
 import { NextOutStage } from "./NextOutStage.tsx";
+import { WeekStage } from "./WeekStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
 import { SettleStage } from "./SettleStage.tsx";
+import { ShapeStage } from "./ShapeStage.tsx";
+import { StreamsStage } from "./StreamsStage.tsx";
+import { AccountsStage } from "./AccountsStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -213,7 +222,7 @@ export function OfficeWide({
   const lampLit = findings.length > 0;
   const unarrangedPlates = useMemo(
     () => view === "household"
-      ? sharedPlates({ household: booksHousehold, dashboard, today, findings })
+      ? sharedPlates({ household: booksHousehold, memberId, dashboard, today, findings })
       : personalPlates({ household, dashboard, today, memberId, streak }),
     [view, booksHousehold, household, dashboard, today, findings, memberId, streak],
   );
@@ -239,6 +248,21 @@ export function OfficeWide({
     fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
       ? fundWalk(booksHousehold, monthKeyFromDateKey(today), today)
       : null
+  ), [fundConfigured, booksHousehold, today]);
+  const fundWeekToday = useMemo(() => (
+    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? fundWeek(booksHousehold, today)
+      : null
+  ), [fundConfigured, booksHousehold, today]);
+  const categoryShapeToday: CategoryShape[] = useMemo(() => (
+    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? categoryShape(booksHousehold, monthKeyFromDateKey(today), today)
+      : []
+  ), [fundConfigured, booksHousehold, today]);
+  const twoStreamsToday: MemberStream[] = useMemo(() => (
+    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? twoStreams(booksHousehold, today)
+      : []
   ), [fundConfigured, booksHousehold, today]);
   const selectedFundPlate = useMemo(() => (
     plates.find((plate) => fundWidgetIdForPlateId(plate.id) === selectedFundWidget)
@@ -620,6 +644,8 @@ export function OfficeWide({
           ) : spreadIsStage && fundConfigured && fundWalkToday
             && (activeFundWidget === "next-out" || activeFundWidget === "spoken-for") ? (
             <NextOutStage walk={fundWalkToday} today={today} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && fundWeekToday && activeFundWidget === "week" ? (
+            <WeekStage week={fundWeekToday} nameOf={nameOf} headingRef={fundStageHeadingRef} />
           ) : spreadIsStage && fundConfigured && activeFundWidget === "waiting" ? (
             <WaitingStage
               household={booksHousehold}
@@ -634,6 +660,19 @@ export function OfficeWide({
               memberId={memberId}
               today={today}
               busy={busy}
+              onKitchen={onKitchen}
+              headingRef={fundStageHeadingRef}
+            />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "shape" ? (
+            <ShapeStage rows={categoryShapeToday} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "streams" ? (
+            <StreamsStage streams={twoStreamsToday} today={today} nameOf={nameOf} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "accounts" ? (
+            <AccountsStage
+              household={booksHousehold}
+              memberId={memberId}
+              today={today}
+              onOpenAccount={onOpenAccount}
               onKitchen={onKitchen}
               headingRef={fundStageHeadingRef}
             />

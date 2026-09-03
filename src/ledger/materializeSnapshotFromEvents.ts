@@ -6,6 +6,13 @@ import {
 } from "../core/commandIdentity.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { shapeHouseholdCharter } from "../core/charter.ts";
+import {
+  actorMayApplyHouseholdOnboardingTransition,
+  mergeHouseholdOnboarding,
+  shapeHouseholdOnboarding,
+  type HouseholdOnboarding,
+} from "../core/onboarding/mode.ts";
+import { ONBOARDING_REGISTRY_VERSION } from "../core/onboarding/registry.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { advanceCadence } from "../core/recurrence.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
@@ -57,6 +64,7 @@ export type ContinuityMaterializationFacts = {
   sitDownSessions?: SitDownSession[];
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
+  householdOnboarding?: Household["householdOnboarding"];
   charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -245,6 +253,29 @@ function actorMayApplyMonthRehearsals(
   return true;
 }
 
+function actorMayApplyHouseholdOnboarding(
+  local: Household,
+  event: ContinuityCommandEvent,
+  incoming: HouseholdOnboarding,
+): boolean {
+  if (event.ledger_scope !== "shared"
+    || event.payload_json.commandKind !== event.command_type
+    || !event.payload_json.postedIds.includes(incoming.id)
+    || incoming.registryVersion !== ONBOARDING_REGISTRY_VERSION) return false;
+  const commandKinds = [
+    event.command_type,
+    ...(event.payload_json.compactedCommands ?? [])
+      .filter((row) => row.ledgerScope === "shared" && row.postedIds.includes(incoming.id))
+      .map((row) => row.commandKind),
+  ];
+  return commandKinds.some((commandKind) => actorMayApplyHouseholdOnboardingTransition({
+    household: local,
+    incoming,
+    commandKind,
+    actingMemberId: event.member_id,
+  }));
+}
+
 function stampCommands(event: ContinuityCommandEvent): Array<{
   postedIds: string[];
   materializationHash?: string;
@@ -332,6 +363,7 @@ function filterFactsForScope(
   }
   if (event.ledger_scope === "shared") {
     if (facts.recurrences?.length) scoped.recurrences = facts.recurrences;
+    if (facts.householdOnboarding) scoped.householdOnboarding = facts.householdOnboarding;
     if (facts.charter) scoped.charter = facts.charter;
     if (facts.householdFund) scoped.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) scoped.fundMonthPlans = facts.fundMonthPlans;
@@ -391,6 +423,9 @@ export function extractMaterializationFacts(
   const goalPurchases = (household.goalPurchases ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (goalPurchases.length) facts.goalPurchases = goalPurchases;
   if (scope !== "personal") {
+    if (household.householdOnboarding && posted.has(household.householdOnboarding.id)) {
+      facts.householdOnboarding = household.householdOnboarding;
+    }
     if (household.charter && postedIds.some((id) => id.startsWith("CHARTER-"))) {
       facts.charter = household.charter;
     }
@@ -459,6 +494,11 @@ async function applyEvent(
   const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
   for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
   const householdFund = facts.householdFund ?? snapshot.householdFund;
+  const householdOnboarding = mergeHouseholdOnboarding(snapshot.householdOnboarding, facts.householdOnboarding, {
+    householdId: snapshot.householdId,
+    environment: snapshot.environment,
+    members: snapshot.members,
+  });
   const charter = facts.charter
     ? shapeHouseholdCharter(facts.charter, { members: snapshot.members, householdFund })
     : snapshot.charter;
@@ -475,6 +515,7 @@ async function applyEvent(
     goalContributions: goalContributions.filter((row) => !dead.has(row.id)),
     goalPurchases: goalPurchases.filter((row) => !dead.has(row.id)),
     recurrences: recurrences.filter((row) => !dead.has(row.id)),
+    householdOnboarding,
     charter,
     householdFund,
     fundMonthPlans: [...planMap.values()],
@@ -514,6 +555,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     sitDownSessions: [],
     goalContributions: [],
     goalPurchases: [],
+    householdOnboarding: null,
     charter: null,
     householdFund: null,
     fundMonthPlans: [],
@@ -652,6 +694,11 @@ export async function applyCommandEventLocally(input: {
     event.payload_json.materializationFacts.monthRehearsals,
   );
   const incomingRecurrences = event.payload_json.materializationFacts.recurrences ?? [];
+  const rawIncomingOnboarding = event.payload_json.materializationFacts.householdOnboarding;
+  const incomingOnboarding = shapeHouseholdOnboarding(rawIncomingOnboarding);
+  if (rawIncomingOnboarding && !incomingOnboarding) {
+    return { ok: false, reason: "onboarding-mode-invalid", fallback: true };
+  }
   if (incomingRehearsals.length) {
     if (!actorMayApplyMonthRehearsals(local, event, incomingRehearsals)) {
       return { ok: false, reason: "month-rehearsal-authority-mismatch", fallback: true };
@@ -661,10 +708,11 @@ export async function applyCommandEventLocally(input: {
     && !actorMayApplyAskGoalRecurrences(local, event, incomingRecurrences)) {
     return { ok: false, reason: "ask-goal-move-authority-mismatch", fallback: true };
   }
-  if (incomingRehearsals.length || incomingRecurrences.length) {
+  if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding) {
     const expected = await sha256Hex(commandMaterializationFacts({
       monthRehearsals: incomingRehearsals,
       recurrences: incomingRecurrences,
+      householdOnboarding: incomingOnboarding,
     }));
     const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
       ? await sha256Hex(incomingRehearsals)
@@ -674,6 +722,9 @@ export async function applyCommandEventLocally(input: {
         && event.payload_json.materializationHash !== legacyRehearsalHash)) {
       return { ok: false, reason: "materialization-hash-mismatch", fallback: true };
     }
+  }
+  if (incomingOnboarding && !actorMayApplyHouseholdOnboarding(local, event, incomingOnboarding)) {
+    return { ok: false, reason: "onboarding-mode-authority-mismatch", fallback: true };
   }
   const rawIncomingStamps = event.payload_json.materializationFacts.weeklyDocumentStamps ?? [];
   const incomingStamps = shapeWeeklyDocumentStamps(rawIncomingStamps);

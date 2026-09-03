@@ -11,7 +11,9 @@ import {
   fundPlates,
   openClaim,
   postEntry,
+  postTransfer,
   proposeHouseholdFundContribution,
+  setGlanceAccount,
   setHouseholdFundMonthPlan,
   sharedPlates,
   type Household,
@@ -21,6 +23,7 @@ const BIANCA = "MEM-001";
 const JONATHAN = "MEM-002";
 const TODAY = "2026-09-12";
 const source = readFileSync(new URL("../src/core/fundPlates.ts", import.meta.url), "utf8");
+const accountsWidgetSource = readFileSync(new URL("../src/core/accountsWidget.ts", import.meta.url), "utf8");
 
 function fund(): Household {
   return configureHouseholdFund(catalogHousehold(), {
@@ -45,12 +48,12 @@ function bill(household: Household, amount: string, date: string, note: string):
   }).household;
 }
 
-function board(household: Household) {
-  return fundPlates({ household, today: TODAY, findings: [] });
+function board(household: Household, memberId = BIANCA) {
+  return fundPlates({ household, memberId, today: TODAY, findings: [] });
 }
 
 describe("the Fund's plates", () => {
-  it("puts the eight Fund widgets on the shared floor, the Level first", () => {
+  it("puts the ten Fund widgets on the shared floor, the Level first", () => {
     let household = fund();
     household = contribute(household, BIANCA, "980", "2026-09-02");
     const plates = board(household);
@@ -187,10 +190,15 @@ describe("the Fund's plates", () => {
     expect(JSON.stringify(settle)).not.toContain("47.00");
   });
 
-  it("shows the highest-utilization shared card regardless of account order", () => {
+  it("shows the member's chosen card's own utilization, regardless of account order — Fund slice 10 replaced the old auto-pick-the-hottest-card default with a member choice", () => {
     let household = fund();
     const visa = household.accounts.find((account) => account.id === "ACC-VISA")!;
-    household.accounts.push({ ...structuredClone(visa), id: "ACC-HOT", name: "Hot card" });
+    household.accounts.push({
+      ...structuredClone(visa),
+      id: "ACC-HOT",
+      name: "Hot card",
+      credit: { ...visa.credit!, creditLimitCents: 100_000 },
+    });
     household = postEntry(household, {
       date: "2026-09-08", type: "expense", amount: "10",
       accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Visa item",
@@ -201,10 +209,63 @@ describe("the Fund's plates", () => {
       accountId: "ACC-HOT", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Hot item",
       createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
     }).household;
+    household = setGlanceAccount(household, { memberId: BIANCA, accountId: "ACC-HOT", createdBy: BIANCA }).household;
 
     const accounts = board(household).find((plate) => plate.id === "accounts")!;
-    expect(accounts.verdict).toContain("Hot card is carrying $800.00");
+    expect(accounts.verdict).toContain("Hot card owes $800.00");
     expect(accounts.figure).toMatchObject({ primitive: "gauge", label: "Hot card" });
+    expect(accounts.edge).toBe("attention");
+    expect(accounts.copperVerdict).toBe(true);
+  });
+
+  it("shows an overpaid card as zero owed instead of a negative liability", () => {
+    let household = fund();
+    household = postTransfer(household, {
+      date: TODAY,
+      amount: "25",
+      fromAccountId: "ACC-CHEQUING",
+      toAccountId: "ACC-VISA",
+      note: "Card overpayment",
+      createdBy: BIANCA,
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+    household = setGlanceAccount(household, {
+      memberId: BIANCA,
+      accountId: "ACC-VISA",
+      createdBy: BIANCA,
+    }).household;
+
+    const accounts = board(household).find((plate) => plate.id === "accounts")!;
+    expect(accounts.glance).toContain("$0.00");
+    expect(accounts.verdict).toBe("Visa owes $0.00.");
+    expect(accounts.glance).not.toContain("-$");
+  });
+
+  it("uses one honest account mark for a non-credit glance instead of a fabricated full savings well", () => {
+    let household = fund();
+    household = setGlanceAccount(household, {
+      memberId: BIANCA,
+      accountId: "ACC-CHEQUING",
+      createdBy: BIANCA,
+    }).household;
+
+    const accounts = board(household).find((plate) => plate.id === "accounts")!;
+    expect(accounts.figure).toEqual({ primitive: "tally", count: 1 });
+    expect(accounts.glance).toContain("book balance");
+  });
+
+  it("labels an investment as cost basis instead of implying a current market value", () => {
+    let household = fund();
+    household = setGlanceAccount(household, {
+      memberId: BIANCA,
+      accountId: "ACC-TFSA",
+      createdBy: BIANCA,
+    }).household;
+
+    const accounts = board(household).find((plate) => plate.id === "accounts")!;
+    expect(accounts.glance).toContain("cost basis");
+    expect(accounts.verdict).toContain("of cost basis");
   });
 
   it("keeps a projected tail after more than 24 actual Fund movements", () => {
@@ -223,12 +284,40 @@ describe("the Fund's plates", () => {
     }
   });
 
+  it("does not call unknown-only category history in shape", () => {
+    let household = fund();
+    household = postEntry(household, {
+      date: "2026-09-10", type: "expense", amount: "45",
+      accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", note: "Shop",
+      createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
+    }).household;
+
+    const shape = board(household).find((plate) => plate.id === "shape")!;
+    expect(shape.glance).toBe("Not enough yet");
+    expect(shape.verdict).toBe("Not enough history yet to draw a shape for anything.");
+  });
+
+  it("describes an all-quiet month without calling it inside the band", () => {
+    let household = fund();
+    for (const month of ["06", "07", "08"]) {
+      household = postEntry(household, {
+        date: `2026-${month}-10`, type: "expense", amount: "100",
+        accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", note: "Shop",
+        createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
+      }).household;
+    }
+
+    const shape = board(household).find((plate) => plate.id === "shape")!;
+    expect(shape.glance).toBe("Nothing over shape");
+    expect(shape.verdict).toBe("No category with enough history is above its own trailing shape.");
+  });
+
   it("carries the shared week across month-end", () => {
     let household = fund();
     household = contribute(household, BIANCA, "980", "2026-09-02");
     household = bill(household, "125", "2026-10-01", "Hydro");
 
-    const week = fundPlates({ household, today: "2026-09-28", findings: [] })
+    const week = fundPlates({ household, memberId: BIANCA, today: "2026-09-28", findings: [] })
       .find((plate) => plate.id === "week")!;
     expect(week.glance).toBe("−$125.00");
     expect(week.verdict).toBe("This week $125.00 leaves the Fund.");
@@ -239,9 +328,13 @@ describe("the Fund's plates", () => {
     });
   });
 
-  it("keeps every personal account off the Shared board", () => {
-    expect(source).toContain('account.scope !== "personal"');
+  it("keeps all Personal accounts off the Shared board through accountsWidget", () => {
+    // Fund slice 10 keeps the scope rule in one selector instead of
+    // duplicating an account filter in the plate projection.
+    expect(source).not.toContain('account.scope !== "personal"');
     expect(source).not.toContain("account.ownerMemberId === memberId");
+    expect(accountsWidgetSource).toContain('account.scope !== "personal"');
+    expect(accountsWidgetSource).not.toContain('account.ownerMemberId === memberId');
   });
 
   it("cannot post, settle, or move a cent", () => {
@@ -252,7 +345,7 @@ describe("the Fund's plates", () => {
   it("leaves the original board alone until a Fund exists", () => {
     const household = catalogHousehold();
     const dashboard = buildDashboard(household, TODAY, new Date(`${TODAY}T16:00:00Z`));
-    expect(fundPlates({ household, today: TODAY, findings: [] })).toEqual([]);
-    expect(sharedPlates({ household, dashboard, today: TODAY, findings: [] }).length).toBe(6);
+    expect(fundPlates({ household, memberId: BIANCA, today: TODAY, findings: [] })).toEqual([]);
+    expect(sharedPlates({ household, memberId: BIANCA, dashboard, today: TODAY, findings: [] }).length).toBe(6);
   });
 });
