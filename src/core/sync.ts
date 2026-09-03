@@ -53,6 +53,10 @@ import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts"
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import { mergeHouseholdCharters, shapeHouseholdCharter } from "./charter.ts";
 import { mergeHouseholdOnboarding, shapeHouseholdOnboarding } from "./onboarding/mode.ts";
+import {
+  mergeMemberProgress,
+  shapeMemberOnboardingProgress,
+} from "./onboarding/progress.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -188,10 +192,18 @@ function laterEnvelope<T extends { lastCommittedAt: string | null }>(server: T, 
   return client.lastCommittedAt >= server.lastCommittedAt ? client : server;
 }
 
-function shapeMembers(list: Member[] | undefined, fallbackIso: string): Member[] {
+function shapeMembers(
+  list: Member[] | undefined,
+  fallbackIso: string,
+  context: Pick<Household, "environment" | "householdId">,
+): Member[] {
   return (list ?? []).map((member) => {
     const shared = memberWithoutLandingSurface(member);
     const fundRail = shapeMemberRail(member.fundRail, member.id);
+    const onboardingProgress = shapeMemberOnboardingProgress(member.onboardingProgress, {
+      ...context,
+      memberId: member.id,
+    });
     return {
       ...shared,
       ...(isLandingSurface(member.landingSurface)
@@ -203,6 +215,7 @@ function shapeMembers(list: Member[] | undefined, fallbackIso: string): Member[]
           }
         : {}),
       ...(fundRail ? { fundRail } : {}),
+      ...(onboardingProgress ? { onboardingProgress } : {}),
       updatedAt: member.updatedAt || fallbackIso,
     };
   });
@@ -261,7 +274,7 @@ export function ensureHouseholdShape(household: Household): Household {
   const fallback = household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "";
   const fallbackIso = household.lastCommittedAt || MISSING_ISO;
   const progress = shapeGoalProgress(household.goals, household.goalContributions, fallbackIso, fallback);
-  const members = shapeMembers(household.members, fallbackIso);
+  const members = shapeMembers(household.members, fallbackIso, household);
   const householdFund = shapeHouseholdFundConfig(household.householdFund);
   return {
     ...household,
@@ -453,6 +466,11 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     syntheticFixture: shaped.syntheticFixture ?? null,
   };
   const personalMember = shaped.members.find((member) => member.id === memberId);
+  const onboardingProgress = shapeMemberOnboardingProgress(personalMember?.onboardingProgress, {
+    environment: shaped.environment,
+    householdId: shaped.householdId,
+    memberId,
+  });
   const personal: PersonalEnvelope = {
     kind: "personal",
     memberId,
@@ -467,6 +485,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     ...(shapeMemberRail(personalMember?.fundRail, memberId)
       ? { fundRail: shapeMemberRail(personalMember?.fundRail, memberId)! }
       : {}),
+    ...(onboardingProgress ? { onboardingProgress } : {}),
     accounts: personalAccounts,
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: personalTx,
@@ -537,6 +556,7 @@ export function personalEnvelopeFromPayload(
         }
       : { landingSurface: undefined, landingSurfaceUpdatedAt: undefined }),
     fundRail: shapeMemberRail(row.fundRail, memberId) ?? undefined,
+    onboardingProgress: shapeMemberOnboardingProgress(row.onboardingProgress, { memberId }) ?? undefined,
     accounts,
     transactions: Array.isArray(row.transactions)
       ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
@@ -594,6 +614,11 @@ export function overlayPersonalReplica(
     members: household.members.map((member) => {
       if (member.id !== memberId) return memberWithoutLandingSurface(member);
       const fundRail = shapeMemberRail(personal.fundRail, memberId);
+      const onboardingProgress = shapeMemberOnboardingProgress(personal.onboardingProgress, {
+        environment: household.environment,
+        householdId: household.householdId,
+        memberId,
+      });
       return {
         ...memberWithoutLandingSurface(member),
         ...(isLandingSurface(personal.landingSurface)
@@ -603,6 +628,7 @@ export function overlayPersonalReplica(
             }
           : {}),
         ...(fundRail ? { fundRail } : {}),
+        ...(onboardingProgress ? { onboardingProgress } : {}),
       };
     }),
     transactions: [
@@ -714,6 +740,11 @@ export function assembleHousehold(
     members: shared.members.map((member) => {
       if (member.id !== personal?.memberId) return memberWithoutLandingSurface(member);
       const fundRail = shapeMemberRail(personal?.fundRail, member.id);
+      const onboardingProgress = shapeMemberOnboardingProgress(personal?.onboardingProgress, {
+        environment: shared.environment,
+        householdId: shared.householdId,
+        memberId: member.id,
+      });
       return {
         ...memberWithoutLandingSurface(member),
         ...(isLandingSurface(personal?.landingSurface)
@@ -723,6 +754,7 @@ export function assembleHousehold(
             }
           : {}),
         ...(fundRail ? { fundRail } : {}),
+        ...(onboardingProgress ? { onboardingProgress } : {}),
       };
     }),
     accounts: [...shared.accounts, ...personalAccounts],
@@ -853,6 +885,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
 export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope): PersonalEnvelope {
   const tombstones = mergeTombstones(server.tombstones, client.tombstones);
   const newer = laterEnvelope(server, client);
+  const memberId = client.memberId || server.memberId;
   const serverPermissionAt = server.herculesProPermissions?.updatedAt ?? "";
   const clientPermissionAt = client.herculesProPermissions?.updatedAt ?? "";
   const herculesProPermissions = clientPermissionAt >= serverPermissionAt
@@ -886,9 +919,14 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
       : clientFundRail.updatedAt > serverFundRail.updatedAt ? clientFundRail
         : serverFundRail.updatedAt > clientFundRail.updatedAt ? serverFundRail
           : JSON.stringify(clientFundRail.slots) > JSON.stringify(serverFundRail.slots) ? clientFundRail : serverFundRail;
+  const serverOnboarding = shapeMemberOnboardingProgress(server.onboardingProgress, { memberId });
+  const clientOnboarding = shapeMemberOnboardingProgress(client.onboardingProgress, { memberId });
+  const onboardingProgress = serverOnboarding && clientOnboarding
+    ? mergeMemberProgress(serverOnboarding, clientOnboarding)
+    : serverOnboarding ?? clientOnboarding;
   return {
     kind: "personal",
-    memberId: client.memberId || server.memberId,
+    memberId,
     ...(landingSurface
       ? {
           landingSurface,
@@ -898,6 +936,7 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
         }
       : {}),
     ...(fundRail ? { fundRail } : {}),
+    ...(onboardingProgress ? { onboardingProgress } : {}),
     lastCommittedAt: newer.lastCommittedAt,
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     accounts: mergeRecords(server.accounts ?? [], client.accounts ?? [], tombstones),

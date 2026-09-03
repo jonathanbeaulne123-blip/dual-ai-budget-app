@@ -30,6 +30,8 @@ export type Member = {
   landingSurfaceUpdatedAt?: string;
   /** Member-owned Fund board arrangement. Shared sync strips it into Personal. */
   fundRail?: MemberRail;
+  /** Member-owned onboarding state. Shared sync strips it into Personal. */
+  onboardingProgress?: import("./onboarding/progress.ts").MemberOnboardingProgress;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
@@ -1340,6 +1342,8 @@ export type PersonalEnvelope = {
   landingSurface?: LandingSurface;
   landingSurfaceUpdatedAt?: string;
   fundRail?: MemberRail;
+  /** Member-owned onboarding progress. Never enters the Shared envelope. */
+  onboardingProgress?: import("./onboarding/progress.ts").MemberOnboardingProgress;
   /** Member-owned account metadata. Legacy envelopes omit this collection. */
   accounts?: Account[];
   lastCommittedAt: string | null;
