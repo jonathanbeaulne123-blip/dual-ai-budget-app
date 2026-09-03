@@ -66,6 +66,9 @@ export function Ask({ household, today, memberId, busy, onMove }: AskProps) {
         <p className="ask-payday" data-ask-payday="">{view.paydayLine}</p>
       ) : null}
       {view.showRoutes ? <RoutesSlot view={view} /> : null}
+      {view.ceilingCopy ? (
+        <p className="ask-ceiling" data-ask-ceiling="">{view.ceilingCopy}</p>
+      ) : null}
       {view.showDoor ? (
         <ul className="ask-doors">
           {view.alternatives.map((alternative) => {
@@ -227,6 +230,11 @@ function RoutesDrawing({ drawing }: { drawing: AskRoutesDrawing }) {
               >
                 {row.status}
               </text>
+              {row.ceilingCopy ? (
+                <text className="ask-route-ceiling" x={ROUTE_VIEW.labelLeft} y="48">
+                  {row.ceilingCopy}
+                </text>
+              ) : null}
             </g>
           );
         })}

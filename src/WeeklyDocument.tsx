@@ -83,7 +83,9 @@ function AskPanel({ document }: { document: WeeklyDocumentView }) {
         ))}
         <p className="weekly-other-door-note">{WEEKLY_DOCUMENT_COPY.otherDoorNote}</p>
       </div>
-      {document.routes ? (
+      {document.ceilingCopy ? (
+        <p className="weekly-status" data-weekly-routes="ceiling">{document.ceilingCopy}</p>
+      ) : document.routes ? (
         document.routes.kind === "not-enough-data" ? (
           <p className="weekly-status" data-weekly-routes="not-enough-data">{document.routes.copy}</p>
         ) : (
