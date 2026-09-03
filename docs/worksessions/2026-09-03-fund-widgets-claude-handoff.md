@@ -67,6 +67,7 @@ When the Household Fund is configured, Shared Home shows one coherent eight-plat
 - Release-gate repair: the duplicate-stamp assertion now supplies the same explicit Toronto-day timestamp as its fixture instead of consulting the wall clock. This changes test determinism only; the product's same-day stamp fence is unchanged.
 - Independent books, privacy, and UX reviews blocked `a2bdf14`: open/Held proposals could cover the month before Confirm; the shortfall tie was fixture-only; projected and actual spark marks were visually identical; Shared admitted viewer-Personal accounts and counted Personal shifts; and the safety verdict was neither rendered nor announced. The integration repair addresses each issue without adding a command or changing the desk grammar.
 - Independent books/trust, privacy, and UX/vibe/accessibility re-reviews all passed on exact code SHA `85c95c0b7f2bbe9d677c325419b84af9f328dfc1`.
+- Hosted review on PR #311 found six missing adversarial cases: cross-month week bills, elapsed buffer days, ambiguous multiple-job pay clocks, highest-risk Shared card selection, incoming-claim glance truth, and projected spark-tail retention. All six are repaired with focused deterministic coverage; the exact repaired release SHA must repeat every release gate.
 
 ## Remaining uncertainty
 

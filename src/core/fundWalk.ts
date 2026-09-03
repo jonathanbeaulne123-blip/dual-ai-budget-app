@@ -104,14 +104,29 @@ function lowerMedian(values: readonly number[]): number {
 }
 
 function memberPayDates(household: Household, memberId: string, from: DateKey, to: DateKey): DateKey[] {
-  const job = (household.workJobs ?? []).find((row) => row.memberId === memberId && row.active !== false);
-  const schedule = job?.paySchedule;
-  if (!schedule?.anchorDate) return [];
+  const schedules = (household.workJobs ?? [])
+    .filter((row) => row.memberId === memberId && row.active !== false && row.paySchedule?.anchorDate)
+    .map((row) => row.paySchedule)
+    .sort((left, right) => `${left.anchorDate}:${left.cadence}`.localeCompare(`${right.anchorDate}:${right.cadence}`));
+  const unique = new Map(schedules.map((schedule) => [`${schedule.anchorDate}:${schedule.cadence}`, schedule]));
+  // Multiple employers can publish different pay clocks. Withhold the estimate
+  // instead of letting workJobs array order choose one.
+  if (unique.size !== 1) return [];
+  const schedule = [...unique.values()][0]!;
   const cadence = schedule.cadence === "weekly" ? "weekly" : "biweekly";
   return projectCadence(schedule.anchorDate, cadence, from, to);
 }
 
 type ProjectedInflow = { date: DateKey; amountCents: number; memberId: string | null; estimated: boolean; sourceId: string | null; label: string };
+type ProjectedOutflow = { date: DateKey; amountCents: number; label: string; sourceId: string };
+
+export type FundWeekMovement = {
+  date: DateKey;
+  kind: "contribution" | "obligation";
+  label: string;
+  deltaCents: number;
+  estimated: boolean;
+};
 
 /**
  * Inflows are found, never assumed. A pay cadence supplies a date; it never
@@ -162,6 +177,34 @@ function projectedInflows(
   return inflows;
 }
 
+function projectedObligations(
+  household: Household,
+  monthKey: MonthKey,
+  anchor: DateKey,
+): { obligations: ReturnType<typeof monthObligations>; rows: ProjectedOutflow[] } {
+  const obligations = monthObligations(household, monthKey, anchor);
+  const projection = projectHouseholdFund(household, anchor);
+  const outstandingByTransaction = new Map(
+    projection.transactionPositions.map((position) => [position.transactionId, position.outstandingCents]),
+  );
+  const rows = obligations.rows.flatMap((row: MonthObligation) => {
+    // A posted purchase leaves the pool when it is settled, not when it is swiped.
+    // Whatever has already been settled must never be charged to the future again.
+    const amountCents = row.source === "posted" && row.transactionId
+      ? outstandingByTransaction.get(row.transactionId) ?? 0
+      : row.amountCents;
+    if (amountCents <= 0) return [];
+    return [{
+      // A claim already made is owed now; a future bill lands on its own day.
+      date: row.date < anchor ? anchor : row.date,
+      amountCents,
+      label: row.label,
+      sourceId: row.id,
+    }];
+  });
+  return { obligations, rows };
+}
+
 function foldWalk(
   household: Household,
   monthKey: MonthKey,
@@ -205,26 +248,7 @@ function foldWalk(
     });
   }
   const canonicalTodayBalanceCents = balance;
-  const obligations = monthObligations(household, monthKey, anchor);
-  const projection = projectHouseholdFund(household, anchor);
-  const outstandingByTransaction = new Map(
-    projection.transactionPositions.map((position) => [position.transactionId, position.outstandingCents]),
-  );
-  const allOutflows = obligations.rows.flatMap((row: MonthObligation) => {
-      // A posted purchase leaves the pool when it is settled, not when it is swiped.
-      // Whatever has already been settled must never be charged to the future again.
-      const amountCents = row.source === "posted" && row.transactionId
-        ? outstandingByTransaction.get(row.transactionId) ?? 0
-        : row.amountCents;
-      if (amountCents <= 0) return [];
-      return [{
-        // A claim already made is owed now; a future bill lands on its own day.
-        date: row.date < anchor ? anchor : row.date,
-        amountCents,
-        label: row.label,
-        sourceId: row.id,
-      }];
-    });
+  const { obligations, rows: allOutflows } = projectedObligations(household, monthKey, anchor);
   const outflows = allOutflows.filter((row) => !deferred.has(row.sourceId));
 
   const canonicalInflows = projectedInflows(household, events, anchor, end);
@@ -299,20 +323,28 @@ function foldWalk(
   const belowBufferRuns: BelowBufferRun[] = [];
   if (bufferCents > 0) {
     let run: BelowBufferRun | null = null;
+    const byDate = new Map<DateKey, WalkPoint[]>();
     for (const point of points) {
-      if (point.kind === "opening") continue;
-      if (point.balanceCents < bufferCents) {
-        if (!run) run = { fromDate: point.date, toDate: point.date, days: 1, lowCents: point.balanceCents };
-        else {
-          run.toDate = point.date;
-          run.lowCents = Math.min(run.lowCents, point.balanceCents);
-        }
+      const rows = byDate.get(point.date) ?? [];
+      rows.push(point);
+      byDate.set(point.date, rows);
+    }
+    for (const [date, rows] of [...byDate.entries()].sort((left, right) => left[0].localeCompare(right[0]))) {
+      const closing = rows.at(-1)!;
+      if (closing.balanceCents < bufferCents) {
+        const lowCents = Math.min(...rows.map((point) => point.balanceCents));
+        if (!run) run = { fromDate: date, toDate: date, days: 1, lowCents };
+        else run.lowCents = Math.min(run.lowCents, lowCents);
       } else if (run) {
+        run.toDate = addDays(date, -1);
         belowBufferRuns.push(run);
         run = null;
       }
     }
-    if (run) belowBufferRuns.push(run);
+    if (run) {
+      run.toDate = end;
+      belowBufferRuns.push(run);
+    }
     for (const item of belowBufferRuns) {
       item.days = Math.max(1, Math.round(
         (Date.parse(`${item.toDate}T00:00:00Z`) - Date.parse(`${item.fromDate}T00:00:00Z`)) / 86400000,
@@ -377,6 +409,37 @@ export function fundWalkWith(
   hypothetical: WalkHypothetical,
 ): FundWalk {
   return foldWalk(household, monthKey, today, hypothetical);
+}
+
+/** Seven-day Shared preview. It may cross a month boundary, but never posts money. */
+export function fundWeekMovements(
+  household: Household,
+  today: DateKey,
+  through: DateKey = addDays(today, 6),
+): FundWeekMovement[] {
+  const config = shapeHouseholdFundConfig(household.householdFund);
+  if (!config || through < today) return [];
+  const events = activeHouseholdFundEvents(household, config.id || HOUSEHOLD_FUND_ID);
+  const monthKeys = [...new Set([monthKeyFromDateKey(today), monthKeyFromDateKey(through)])];
+  const outflows = monthKeys.flatMap((monthKey) => projectedObligations(household, monthKey, today).rows)
+    .filter((row) => row.date >= today && row.date <= through)
+    .map((row) => ({
+      date: row.date,
+      kind: "obligation" as const,
+      label: row.label,
+      deltaCents: -row.amountCents,
+      estimated: false,
+    }));
+  const inflows = projectedInflows(household, events, today, through).map((row) => ({
+    date: row.date,
+    kind: "contribution" as const,
+    label: row.label,
+    deltaCents: row.amountCents,
+    estimated: row.estimated,
+  }));
+  return [...inflows, ...outflows].sort((left, right) => left.date.localeCompare(right.date)
+    || Math.sign(right.deltaCents) - Math.sign(left.deltaCents)
+    || left.label.localeCompare(right.label));
 }
 
 /** The month a walk should default to for a civil date. */

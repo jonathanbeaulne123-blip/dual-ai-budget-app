@@ -6,11 +6,11 @@
  * posts, settles, or moves a cent, and nothing computes a second balance.
  */
 
-import { formatDateLabel, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
+import { addDays, calendarDaysBetween, formatDateLabel, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import { formatCad } from "./money.ts";
 import { creditCardView, isCreditKind } from "./accounts.ts";
 import { claimRemainingCents, outstandingClaims } from "./appointments.ts";
-import { fundWalk, type FundWalk, type WalkPoint } from "./fundWalk.ts";
+import { fundWalk, fundWeekMovements, type FundWalk, type WalkPoint } from "./fundWalk.ts";
 import {
   householdFundContributionMotions,
   projectHouseholdFund,
@@ -62,7 +62,15 @@ function futureInflows(walk: FundWalk): WalkPoint[] {
 }
 
 function levelSpark(walk: FundWalk): { points: number[]; actualCount: number } {
-  const rows = walk.points.filter((point) => point.kind !== "opening").slice(0, 24);
+  const allRows = walk.points.filter((point) => point.kind !== "opening");
+  const actualRows = allRows.filter((point) => point.actual);
+  const projectedRows = allRows.filter((point) => !point.actual);
+  const rows = allRows.length <= 24 || projectedRows.length === 0
+    ? allRows.slice(0, 24)
+    : [
+        ...actualRows.slice(-Math.min(12, actualRows.length)),
+        ...projectedRows.slice(0, 24 - Math.min(12, actualRows.length)),
+      ];
   const projectedAt = rows.findIndex((point) => !point.actual);
   return {
     points: rows.map((point) => point.balanceCents),
@@ -208,7 +216,9 @@ function settlePlate(household: Household, today: DateKey): DeskPlateModel {
   return {
     id: "settle",
     kicker: "To settle",
-    glance: projection.transferDueCents > 0 ? formatCad(projection.transferDueCents) : "Settled",
+    glance: projection.transferDueCents > 0
+      ? formatCad(projection.transferDueCents)
+      : inCents > 0 ? `House owed ${formatCad(inCents)}` : "Settled",
     verdict: top
       ? `The Fund owes ${topName} ${formatCad(top.dueCents)}.`
       : inCents > 0
@@ -230,8 +240,13 @@ function accountsPlate(household: Household, today: DateKey): DeskPlateModel {
     account.active && account.scope !== "personal"
   ));
   const cards = visible.filter((account) => isCreditKind(account.kind));
-  const chosen = cards[0] ?? visible[0] ?? null;
-  const view = chosen && isCreditKind(chosen.kind) ? creditCardView(household, chosen, today) : null;
+  const cardViews = cards.map((account) => creditCardView(household, account, today));
+  const hottest = [...cardViews].sort((left, right) => (
+    (right.utilization ?? 0) - (left.utilization ?? 0)
+    || left.account.id.localeCompare(right.account.id)
+  ))[0] ?? null;
+  const chosen = hottest?.account ?? visible[0] ?? null;
+  const view = hottest;
   const wells: FillWell[] = chosen
     ? [{ savedCents: Math.max(0, view?.owedCents ?? 0), targetCents: Math.max(1, view?.limitCents ?? 1), name: chosen.name }]
     : [];
@@ -259,24 +274,21 @@ function accountsPlate(household: Household, today: DateKey): DeskPlateModel {
 }
 
 /** What leaves and lands this week. Nothing here is tickable. */
-function weekPlate(walk: FundWalk, today: DateKey): DeskPlateModel {
+function weekPlate(household: Household, today: DateKey): DeskPlateModel {
   const start = today;
-  const days: DateKey[] = [];
-  for (let i = 0; i < WEEK_DAYS; i += 1) {
-    const date = new Date(`${start}T00:00:00Z`);
-    date.setUTCDate(date.getUTCDate() + i);
-    days.push(date.toISOString().slice(0, 10));
-  }
-  const last = days[days.length - 1]!;
-  const out = futureOutflows(walk).filter((point) => point.date >= start && point.date <= last);
-  const inflow = futureInflows(walk).filter((point) => point.date >= start && point.date <= last);
+  const last = addDays(start, WEEK_DAYS - 1);
+  const movements = fundWeekMovements(household, start, last);
+  const out = movements.filter((point) => point.kind === "obligation");
+  const inflow = movements.filter((point) => point.kind === "contribution");
   const outCents = out.reduce((sum, point) => sum + Math.abs(point.deltaCents), 0);
   const confirmedInCents = inflow.filter((point) => !point.estimated)
     .reduce((sum, point) => sum + point.deltaCents, 0);
   const observedInCents = inflow.filter((point) => point.estimated)
     .reduce((sum, point) => sum + point.deltaCents, 0);
   const marks: TrackMark[] = out.slice(0, WEEK_DAYS).map((point) => ({
-    day: dayOf(point.date), cents: Math.abs(point.deltaCents), label: point.label,
+    day: calendarDaysBetween(start, point.date) + 1,
+    cents: Math.abs(point.deltaCents),
+    label: point.label,
   }));
   return {
     id: "week",
@@ -292,7 +304,7 @@ function weekPlate(walk: FundWalk, today: DateKey): DeskPlateModel {
     footing: "What the shared week contains. Nothing here is a task.",
     edge: outCents > 0 ? "live" : "clear",
     copperVerdict: false,
-    figure: { primitive: "track", days: 31, marks, room: TRACK_ROOM },
+    figure: { primitive: "track", days: WEEK_DAYS, marks, room: TRACK_ROOM },
     empty: outCents === 0 && confirmedInCents === 0 && observedInCents === 0 ? "A quiet week." : null,
     cabinet: "calendar",
     cabinetName: "This week",
@@ -340,7 +352,7 @@ export function fundPlates(input: {
     spokenForPlate(walk),
     settlePlate(household, today),
     accountsPlate(household, today),
-    weekPlate(walk, today),
+    weekPlate(household, today),
     shelfPlate(household),
   ];
 }

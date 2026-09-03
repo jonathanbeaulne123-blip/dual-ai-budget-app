@@ -15,7 +15,10 @@ import {
   postEntry,
   proposeHouseholdFundContribution,
   setHouseholdFundMonthPlan,
+  shapeWorkJob,
   type Household,
+  type WorkJob,
+  type WorkPaySchedule,
 } from "../src/core/index.ts";
 
 const BIANCA = "MEM-001";
@@ -66,6 +69,44 @@ function settle(household: Household, amount: string, date: string): Household {
   return confirmHouseholdFundSettlement(household, {
     memberId: BIANCA, amount, destinationAccountId: "ACC-VISA", date,
   }).household;
+}
+
+function payJob(memberId: string, paySchedule: WorkPaySchedule, id: string): WorkJob {
+  return shapeWorkJob({
+    id,
+    memberId,
+    name: id,
+    color: "#31594a",
+    active: true,
+    timezone: "America/Toronto",
+    locationName: "Toronto",
+    gpsEnabled: false,
+    roles: [],
+    paidBreakRate: "role",
+    paidBreakHourlyRateCents: 0,
+    overtimeEnabled: false,
+    overtimeWeeklyThresholdHours: 44,
+    overtimeMultiplier: 1.5,
+    tipOutRules: [],
+    salesFields: [],
+    paySchedule,
+    tipSchedule: paySchedule,
+    tipWeekStartsOn: 1,
+    defaults: {
+      wagesVisibility: "personal",
+      cashTipsVisibility: "personal",
+      cardTipsVisibility: "personal",
+      tipOutVisibility: "personal",
+      wagesDepositAccountId: "ACC-CHEQUING",
+      cashTipsAccountId: "ACC-CASH",
+      cardTipsDepositAccountId: "ACC-CHEQUING",
+    },
+    wagesReceivableAccountId: "",
+    cardTipsReceivableAccountId: "",
+    note: "",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  });
 }
 
 function bill(household: Household, amount: string, date: string, note: string): Household {
@@ -153,7 +194,7 @@ describe("the Fund's balance walk", () => {
     expect(walk.bufferCents).toBe(40000);
     expect(walk.hasConfirmedContribution).toBe(true);
     expect(walk.belowBufferRuns.length).toBeGreaterThanOrEqual(1);
-    expect(walk.belowBufferRuns[0]).toMatchObject({ lowCents: 17700 });
+    expect(walk.belowBufferRuns.some((run) => run.lowCents === 17700)).toBe(true);
     expect(walk.shortfallCents).toBe(register.unfundedCents);
   });
 
@@ -212,6 +253,51 @@ describe("the Fund's balance walk", () => {
     expect(after.points.find((point) => point.sourceId === raised.eventId)?.actual).toBe(false);
     // And nothing was actually confirmed.
     expect(fundWalk(household, MONTH, TODAY).todayBalanceCents).toBe(before.todayBalanceCents);
+  });
+
+  it("measures a sparse below-buffer run through the day before recovery", () => {
+    let household = configuredFund();
+    household = contribute(household, BIANCA, "500", "2026-08-31").household;
+    household = fundedPurchase(household, "200", "2026-09-13", "Hydro");
+    household = settle(household, "200", "2026-09-13");
+    household = contribute(household, BIANCA, "200", "2026-09-20").household;
+    household = setHouseholdFundMonthPlan(household, {
+      memberId: BIANCA, monthKey: MONTH, target: "500", buffer: "400",
+    }).household;
+
+    const walk = fundWalk(household, MONTH, "2026-09-20");
+    expect(walk.belowBufferRuns).toContainEqual({
+      fromDate: "2026-09-13",
+      toDate: "2026-09-19",
+      days: 7,
+      lowCents: 30000,
+    });
+  });
+
+  it("withholds an observed contribution when multiple employer pay clocks disagree", () => {
+    let household = configuredFund();
+    household = contribute(household, BIANCA, "100", "2026-08-01").household;
+    household = contribute(household, BIANCA, "100", "2026-08-15").household;
+    household = contribute(household, BIANCA, "100", "2026-08-29").household;
+    const weekly: WorkPaySchedule = {
+      cadence: "weekly", anchorDate: "2026-09-13", weekday: 0,
+      monthDays: [15, 30], customDates: [], reminderTime: "09:00",
+    };
+    const biweekly: WorkPaySchedule = {
+      ...weekly, cadence: "biweekly", anchorDate: "2026-09-14",
+    };
+    const first = payJob(BIANCA, weekly, "JOB-A");
+    const second = payJob(BIANCA, biweekly, "JOB-B");
+
+    household.workJobs = [first, second];
+    const forward = fundWalk(household, MONTH, TODAY);
+    household.workJobs = [second, first];
+    const reversed = fundWalk(household, MONTH, TODAY);
+    expect(forward.points.some((point) => point.estimated)).toBe(false);
+    expect(reversed.points).toEqual(forward.points);
+
+    household.workJobs = [first, { ...first, id: "JOB-C" }];
+    expect(fundWalk(household, MONTH, TODAY).points.some((point) => point.estimated)).toBe(true);
   });
 
   it("re-runs the sealed shortfall when one obligation is hypothetically deferred", () => {

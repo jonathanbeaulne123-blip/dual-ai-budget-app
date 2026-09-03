@@ -9,6 +9,7 @@ import {
   configureHouseholdFund,
   confirmHouseholdFundContribution,
   fundPlates,
+  openClaim,
   postEntry,
   proposeHouseholdFundContribution,
   setHouseholdFundMonthPlan,
@@ -142,6 +143,78 @@ describe("the Fund's plates", () => {
   it("keeps Personal shift facts off the Shared week", () => {
     expect(source).not.toContain("postedShiftDates");
     expect(source).not.toMatch(/whose shift|shifts? posted/i);
+  });
+
+  it("keeps an incoming claim visible in the collapsed settlement glance", () => {
+    let household = fund();
+    household = postEntry(household, {
+      date: "2026-09-10", type: "expense", amount: "47",
+      accountId: "ACC-VISA", subcategoryId: "SUB-TRANSPORT-TRANSIT", note: "Client Uber",
+      createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
+    }).household;
+    household = openClaim(household, {
+      expenseTransactionId: household.transactions.at(-1)!.id,
+      expectedRecovery: 47,
+      claimKind: "employer",
+      claimLabel: "Work expense",
+      createdBy: BIANCA,
+    }).household;
+
+    const settle = board(household).find((plate) => plate.id === "settle")!;
+    expect(settle.glance).toBe("House owed $47.00");
+    expect(settle.glance).not.toBe("Settled");
+  });
+
+  it("shows the highest-utilization shared card regardless of account order", () => {
+    let household = fund();
+    const visa = household.accounts.find((account) => account.id === "ACC-VISA")!;
+    household.accounts.push({ ...structuredClone(visa), id: "ACC-HOT", name: "Hot card" });
+    household = postEntry(household, {
+      date: "2026-09-08", type: "expense", amount: "10",
+      accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Visa item",
+      createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
+    }).household;
+    household = postEntry(household, {
+      date: "2026-09-09", type: "expense", amount: "800",
+      accountId: "ACC-HOT", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Hot item",
+      createdBy: BIANCA, visibility: "household", confirmDuplicate: true,
+    }).household;
+
+    const accounts = board(household).find((plate) => plate.id === "accounts")!;
+    expect(accounts.verdict).toContain("Hot card is carrying $800.00");
+    expect(accounts.figure).toMatchObject({ primitive: "gauge", label: "Hot card" });
+  });
+
+  it("keeps a projected tail after more than 24 actual Fund movements", () => {
+    let household = fund();
+    for (let index = 0; index < 25; index += 1) {
+      household = contribute(household, BIANCA, "10", "2026-09-02");
+    }
+    household = bill(household, "20", "2026-09-20", "Hydro");
+
+    const level = board(household).find((plate) => plate.id === "fund-level")!;
+    expect(level.figure.primitive).toBe("spark");
+    if (level.figure.primitive === "spark") {
+      expect(level.figure.points).toHaveLength(13);
+      expect(level.figure.actualCount).toBe(12);
+      expect(level.figure.actualCount).toBeLessThan(level.figure.points.length);
+    }
+  });
+
+  it("carries the shared week across month-end", () => {
+    let household = fund();
+    household = contribute(household, BIANCA, "980", "2026-09-02");
+    household = bill(household, "125", "2026-10-01", "Hydro");
+
+    const week = fundPlates({ household, today: "2026-09-28", findings: [] })
+      .find((plate) => plate.id === "week")!;
+    expect(week.glance).toBe("−$125.00");
+    expect(week.verdict).toBe("This week $125.00 leaves the Fund.");
+    expect(week.figure).toMatchObject({
+      primitive: "track",
+      days: 7,
+      marks: [expect.objectContaining({ day: 4, label: "Hydro" })],
+    });
   });
 
   it("keeps every personal account off the Shared board", () => {
