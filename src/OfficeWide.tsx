@@ -243,6 +243,9 @@ export function OfficeWide({
     ?? plates.find((plate) => fundWidgetIdForPlateId(plate.id) === "level")
     ?? null
   ), [plates, selectedFundWidget]);
+  const activeFundWidget = selectedFundPlate
+    ? fundWidgetIdForPlateId(selectedFundPlate.id)
+    : null;
   const mosaicInstrumentIds = [...new Set(plates.map((plate) => plate.cabinet))];
   const drawer = wideDrawerIds(mosaicInstrumentIds, { includeHero: false });
 
@@ -257,6 +260,19 @@ export function OfficeWide({
   useEffect(() => {
     setSelectedFundWidget(storedFundStage(environment, household.householdId, memberId, today));
   }, [environment, household.householdId, memberId, today]);
+
+  useEffect(() => {
+    if (!fundConfigured || !activeFundWidget || selectedFundWidget === activeFundWidget) return;
+    setSelectedFundWidget(activeFundWidget);
+    try {
+      sessionStorage.setItem(
+        fundStageStorageKey(environment, household.householdId, memberId, today),
+        activeFundWidget,
+      );
+    } catch {
+      // A blocked storage surface still gets the corrected React state.
+    }
+  }, [fundConfigured, activeFundWidget, selectedFundWidget, environment, household.householdId, memberId, today]);
 
   function togglePlate(id: DeskPlateId) {
     setOpenPlateIds((current) => {
@@ -293,6 +309,11 @@ export function OfficeWide({
     setMonthList(null);
     if (layout.expanded && layout.expanded !== "window") onLayout({ ...layout, expanded: null });
     setFundDrawerOpen(true);
+    queueMicrotask(() => fundStageHeadingRef.current?.focus());
+  }
+
+  function closeFundDrawer() {
+    setFundDrawerOpen(false);
     queueMicrotask(() => fundStageHeadingRef.current?.focus());
   }
 
@@ -592,12 +613,12 @@ export function OfficeWide({
               memberId={memberId}
               busy={busy}
               onKitchen={onKitchen}
-              onClose={() => setFundDrawerOpen(false)}
+              onClose={closeFundDrawer}
             />
           ) : spreadIsStage && fundConfigured && fundWalkToday
-            && (selectedFundWidget === "next-out" || selectedFundWidget === "spoken-for") ? (
+            && (activeFundWidget === "next-out" || activeFundWidget === "spoken-for") ? (
             <NextOutStage walk={fundWalkToday} today={today} headingRef={fundStageHeadingRef} />
-          ) : spreadIsStage && fundConfigured && selectedFundWidget === "waiting" ? (
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "waiting" ? (
             <WaitingStage
               household={booksHousehold}
               memberId={memberId}

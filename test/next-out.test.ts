@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   HOUSEHOLD_FUND_ID,
+  addAccount,
   addGoal,
   addRecurrence,
   catalogHousehold,
@@ -127,6 +128,7 @@ describe("spokenFor", () => {
 
     expect(result).toEqual({
       poolCents: 180000, claimedCents: 0, freeCents: 180000, overCents: 0, throughDate: "2026-09-18",
+      throughConfidence: "confirmed",
     });
   });
 
@@ -139,6 +141,7 @@ describe("spokenFor", () => {
 
     expect(spokenFor(walk, "2026-09-05")).toEqual({
       poolCents: 10000, claimedCents: 15000, freeCents: 0, overCents: 5000, throughDate: "2026-09-20",
+      throughConfidence: "confirmed",
     });
   });
 
@@ -150,7 +153,21 @@ describe("spokenFor", () => {
 
     expect(spokenFor(walk, "2026-09-05")).toEqual({
       poolCents: 10000, claimedCents: 5000, freeCents: 5000, overCents: 0, throughDate: "2026-09-30",
+      throughConfidence: "month-end",
     });
+  });
+
+  it("keeps an observed contribution explicit instead of presenting it as confirmed", () => {
+    const walk = fundWalk(canonicalMonth(), "2026-09", "2026-09-12");
+    const observedWalk = {
+      ...walk,
+      points: walk.points.map((point) => (
+        !point.actual && point.deltaCents > 0 ? { ...point, estimated: true } : point
+      )),
+    };
+
+    expect(spokenFor(observedWalk, "2026-09-12").throughConfidence).toBe("observed");
+    expect(stageSource).toContain("before an observed contribution; it is not confirmed");
   });
 
   it("never carries a balance below zero into the pool", () => {
@@ -173,5 +190,31 @@ describe("the nextOut fences", () => {
   it("computes no balance of its own", () => {
     expect(nextOutSource).not.toContain("projectHouseholdFund");
     expect(stageSource).not.toContain("projectHouseholdFund");
+  });
+
+  it("reserves a personal-account recurrence without exposing its label", () => {
+    let household = configuredFund("2026-09-01");
+    household = contribute(household, BIANCA, "100", "2026-09-01");
+    const personal = addAccount(household, {
+      name: "Bianca private card",
+      kind: "credit",
+      ownerMemberId: BIANCA,
+      scope: "personal",
+    });
+    household = addRecurrence(personal.household, {
+      cadence: "monthly",
+      nextDate: "2026-09-20",
+      type: "expense",
+      amount: "50",
+      accountId: personal.postedIds[0]!,
+      subcategoryId: "SUB-LIFE-FUN",
+      note: "Bianca private therapy",
+      fundingDefault: { fundId: HOUSEHOLD_FUND_ID, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }).household;
+
+    const table = nextOut(fundWalk(household, "2026-09", "2026-09-05"));
+    expect(table.rows).toHaveLength(1);
+    expect(table.rows[0]).toMatchObject({ label: "Household obligation", amountCents: 5000 });
+    expect(JSON.stringify(table)).not.toContain("Bianca private therapy");
   });
 });

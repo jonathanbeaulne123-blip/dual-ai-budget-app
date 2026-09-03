@@ -252,7 +252,7 @@ function foldWalk(
   const outflows = allOutflows.filter((row) => !deferred.has(row.sourceId));
 
   const canonicalInflows = projectedInflows(household, events, anchor, end);
-  const inflows = [...canonicalInflows];
+  let inflows = [...canonicalInflows];
   const actionableMotions = new Map(householdFundContributionMotions(household, fundId)
     .filter((motion) => motion.status === "open" || motion.status === "held")
     .map((motion) => [motion.proposal.id, motion.proposal]));
@@ -273,6 +273,14 @@ function foldWalk(
       });
       continue;
     }
+    // A real confirmation suppresses the observed estimate for this member's
+    // pay date. The what-if must do the same or it counts one contribution
+    // twice and can falsely claim that the month clears.
+    inflows = inflows.filter((row) => !(
+      row.estimated
+      && row.memberId === proposal.contributorMemberId
+      && row.date === contributionDate
+    ));
     inflows.push({
       date: contributionDate, amountCents: proposal.amountCents,
       memberId: proposal.contributorMemberId, estimated: false,

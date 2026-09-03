@@ -12,15 +12,19 @@ import {
   configureHouseholdFund,
   confirmHouseholdFundContribution,
   confirmHouseholdFundSettlement,
+  fundWalk,
   holdHouseholdFundContribution,
   HOUSEHOLD_FUND_ID,
   motionConsequence,
   postEntry,
   proposeHouseholdFundContribution,
   setHouseholdFundMonthPlan,
+  shapeWorkJob,
   withdrawHouseholdFundContribution,
   type CommitResult,
   type Household,
+  type WorkJob,
+  type WorkPaySchedule,
 } from "../src/core/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -68,6 +72,44 @@ function halifaxClaim(household: Household): Household {
     accountId: "ACC-CHEQUING", transferToAccountId: "ACC-GOALS",
     goalId: goal.postedIds[0]!, note: "Standing · jar · Halifax",
   }).household;
+}
+
+function payJob(memberId: string, paySchedule: WorkPaySchedule): WorkJob {
+  return shapeWorkJob({
+    id: "JOB-OBSERVED",
+    memberId,
+    name: "Observed pay clock",
+    color: "#31594a",
+    active: true,
+    timezone: "America/Toronto",
+    locationName: "Toronto",
+    gpsEnabled: false,
+    roles: [],
+    paidBreakRate: "role",
+    paidBreakHourlyRateCents: 0,
+    overtimeEnabled: false,
+    overtimeWeeklyThresholdHours: 44,
+    overtimeMultiplier: 1.5,
+    tipOutRules: [],
+    salesFields: [],
+    paySchedule,
+    tipSchedule: paySchedule,
+    tipWeekStartsOn: 1,
+    defaults: {
+      wagesVisibility: "personal",
+      cashTipsVisibility: "personal",
+      cardTipsVisibility: "personal",
+      tipOutVisibility: "personal",
+      wagesDepositAccountId: "ACC-CHEQUING",
+      cashTipsAccountId: "ACC-CASH",
+      cardTipsDepositAccountId: "ACC-CHEQUING",
+    },
+    wagesReceivableAccountId: "",
+    cardTipsReceivableAccountId: "",
+    note: "",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  });
 }
 
 /** The already-shipped canonical month from `fund-walk.test.ts` — the settled scenario. */
@@ -162,6 +204,37 @@ describe("motionConsequence", () => {
     expect(result?.copy).toContain("clears the month");
   });
 
+  it("replaces a matching observed pay-date estimate instead of counting it twice", () => {
+    let household = configuredFund();
+    household = contribute(household, JONATHAN, "100", "2026-08-01").household;
+    household = contribute(household, JONATHAN, "100", "2026-08-15").household;
+    household = contribute(household, JONATHAN, "100", "2026-08-29").household;
+    const schedule: WorkPaySchedule = {
+      cadence: "biweekly",
+      anchorDate: "2026-09-26",
+      weekday: 6,
+      monthDays: [15, 30],
+      customDates: [],
+      reminderTime: "09:00",
+    };
+    household.workJobs = [payJob(JONATHAN, schedule)];
+    household = bill(household, "450", "2026-09-30", "Month end bill");
+    const raised = propose(household, JONATHAN, "100", "2026-09-26");
+    household = raised.household;
+
+    const preview = motionConsequence(household, "2026-09", "2026-09-12", raised.eventId);
+    const confirmed = confirmHouseholdFundContribution(household, {
+      memberId: BIANCA,
+      proposalEventId: raised.eventId,
+    }).household;
+    const actual = fundWalk(confirmed, "2026-09", "2026-09-12");
+
+    expect(preview?.dryDateAfter).toBe(actual.dryDate);
+    expect(preview?.shortfallAfterCents).toBe(actual.shortfallCents);
+    expect(preview?.balanceAfterCents).toBe(actual.todayBalanceCents);
+    expect(preview?.copy).not.toContain("clears the month");
+  });
+
   it("returns null for a confirmed motion, a withdrawn motion, and an unknown id", () => {
     const confirmed = contribute(configuredFund(), BIANCA, "50", "2026-09-01");
     expect(motionConsequence(confirmed.household, "2026-09", "2026-09-01", confirmed.eventId)).toBeNull();
@@ -211,6 +284,7 @@ describe("WaitingStage", () => {
 
     render(household, JONATHAN);
     expect(container.querySelector(".waiting-consequence")).toBeNull();
+    expect(container.querySelector(".fund-stage-heading")?.textContent).toBe("Contribution motions");
     // The raiser still sees their own card, just without the preview.
     expect(container.querySelector(".fund-motion-card")).not.toBeNull();
   });

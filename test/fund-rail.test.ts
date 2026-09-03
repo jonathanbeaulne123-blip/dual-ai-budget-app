@@ -233,6 +233,8 @@ describe("Fund slice 3 member rail", () => {
     expect(office).toContain("sessionStorage.setItem(fundStageStorageKey(environment, household.householdId, memberId, today), widgetId)");
     expect(office).toContain('role={spreadIsStage && fundConfigured ? "tabpanel" : undefined}');
     expect(office).toContain('role={fundConfigured && spreadIsStage ? "tablist" : undefined}');
+    expect(office).toContain("onClose={closeFundDrawer}");
+    expect(office).toMatch(/function closeFundDrawer\(\)[\s\S]*setFundDrawerOpen\(false\)[\s\S]*fundStageHeadingRef\.current\?\.focus\(\)/);
     expect(office).not.toContain("setFundRailSlot");
     expect(office).not.toMatch(/postEntry|confirmHouseholdFundContribution/);
     expect(plates).toContain('role={tab ? "tab" : undefined}');

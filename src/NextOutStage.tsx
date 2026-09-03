@@ -39,7 +39,11 @@ export function NextOutStage({
         {claim.overCents > 0
           ? `Claims of ${formatCad(claim.claimedCents)} sit against ${formatCad(claim.poolCents)} in the pool.`
           : `${formatCad(claim.claimedCents)} of ${formatCad(claim.poolCents)} is already claimed.`}
-        {" "}Through the {ordinal(claim.throughDate)}.
+        {" "}{claim.throughConfidence === "observed"
+          ? `Through the ${ordinal(claim.throughDate)}, before an observed contribution; it is not confirmed.`
+          : claim.throughConfidence === "confirmed"
+            ? `Through the ${ordinal(claim.throughDate)}, before the next confirmed money in.`
+            : `Through the ${ordinal(claim.throughDate)}, at month end.`}
       </p>
       <div className="next-out-bar" role="img" aria-label={`${formatCad(claim.claimedCents)} claimed of ${formatCad(claim.poolCents)} in the pool`}>
         <div

@@ -35,6 +35,8 @@ export type SpokenFor = {
   overCents: number;
   /** The next projected inflow of any kind, or the month's last day. */
   throughDate: DateKey;
+  /** Whether that horizon is confirmed, observed-but-unconfirmed, or month end. */
+  throughConfidence: "confirmed" | "observed" | "month-end";
 };
 
 function obligationSource(sourceId: string | null): ObligationSource | null {
@@ -76,11 +78,14 @@ export function spokenFor(walk: FundWalk, today: DateKey): SpokenFor {
   const monthEnd = monthEndKey(walk.monthKey);
   const nextInflow = walk.points.find((point) => !point.actual && point.deltaCents > 0) ?? null;
   const throughDate = nextInflow?.date ?? (today > monthEnd ? today : monthEnd);
+  const throughConfidence = nextInflow
+    ? nextInflow.estimated ? "observed" : "confirmed"
+    : "month-end";
   const poolCents = Math.max(0, walk.todayBalanceCents);
   const claimedCents = walk.points
     .filter((point) => !point.actual && point.kind === "obligation" && point.date <= throughDate)
     .reduce((sum, point) => sum + Math.abs(point.deltaCents), 0);
   const freeCents = Math.max(0, poolCents - claimedCents);
   const overCents = Math.max(0, claimedCents - poolCents);
-  return { poolCents, claimedCents, freeCents, overCents, throughDate };
+  return { poolCents, claimedCents, freeCents, overCents, throughDate, throughConfidence };
 }

@@ -124,9 +124,14 @@ export function monthObligations(household: Household, monthKey: string, today: 
     if (postedRecurrenceOccurrences.has(`${occurrence.recurrenceId}:${occurrence.date}`)) return [];
     const recurrence = recurrenceById.get(occurrence.recurrenceId);
     if (!recurrence) return [];
+    const sourceAccount = household.accounts.find((row) => row.id === recurrence.accountId);
     return [{
       id: `recurrence:${recurrence.id}:${occurrence.date}`,
-      label: labelForRecurrence(household, recurrence),
+      // The shared Fund must reserve the cents without exposing a member's
+      // personal account note or category to their partner.
+      label: sourceAccount?.scope === "personal"
+        ? "Household obligation"
+        : labelForRecurrence(household, recurrence),
       date: occurrence.date,
       amountCents: occurrence.amountCents,
       source: "recurrence",

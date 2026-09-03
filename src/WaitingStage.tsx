@@ -75,7 +75,9 @@ export function WaitingStage({
 
   return (
     <section className="waiting-stage" aria-labelledby={headingId}>
-      <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading">Waiting on you</h2>
+      <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading">
+        {isCustodian ? "Waiting on you" : "Contribution motions"}
+      </h2>
       {open.length === 0 && held.length === 0 ? (
         <p className="desk-plate-empty">Nothing has moved.</p>
       ) : (
