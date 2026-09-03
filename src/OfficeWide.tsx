@@ -72,6 +72,7 @@ import { WeekStage } from "./WeekStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
 import { ShapeStage } from "./ShapeStage.tsx";
 import { StreamsStage } from "./StreamsStage.tsx";
+import { AccountsStage } from "./AccountsStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -220,7 +221,7 @@ export function OfficeWide({
   const lampLit = findings.length > 0;
   const unarrangedPlates = useMemo(
     () => view === "household"
-      ? sharedPlates({ household: booksHousehold, dashboard, today, findings })
+      ? sharedPlates({ household: booksHousehold, memberId, dashboard, today, findings })
       : personalPlates({ household, dashboard, today, memberId, streak }),
     [view, booksHousehold, household, dashboard, today, findings, memberId, streak],
   );
@@ -656,6 +657,15 @@ export function OfficeWide({
             <ShapeStage rows={categoryShapeToday} headingRef={fundStageHeadingRef} />
           ) : spreadIsStage && fundConfigured && activeFundWidget === "streams" ? (
             <StreamsStage streams={twoStreamsToday} today={today} nameOf={nameOf} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "accounts" ? (
+            <AccountsStage
+              household={booksHousehold}
+              memberId={memberId}
+              today={today}
+              onOpenAccount={onOpenAccount}
+              onKitchen={onKitchen}
+              headingRef={fundStageHeadingRef}
+            />
           ) : spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
             <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
               <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>

@@ -32,7 +32,7 @@ const TODAY = "2026-08-27";
 const MEMBER = "MEM-002";
 
 const platesSource = readFileSync(new URL("../src/core/plates.ts", import.meta.url), "utf8");
-const fundModels = readFileSync(new URL("../src/core/fundPlates.ts", import.meta.url), "utf8");
+const accountsWidgetSource = readFileSync(new URL("../src/core/accountsWidget.ts", import.meta.url), "utf8");
 const models = readFileSync(new URL("../src/core/deskPlates.ts", import.meta.url), "utf8");
 const component = readFileSync(new URL("../src/DeskPlates.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/desk-plates.css", import.meta.url), "utf8");
@@ -49,7 +49,7 @@ function demoPlates(today = TODAY) {
   const household = demo(today);
   const dashboard = buildDashboard(household, today, new Date(`${today}T16:00:00Z`));
   const findings = runHealthCheck(household);
-  const shared = sharedPlates({ household, dashboard, today, findings });
+  const shared = sharedPlates({ household, memberId: MEMBER, dashboard, today, findings });
   const personal = personalPlates({
     household,
     dashboard,
@@ -182,7 +182,7 @@ describe("Shared and Personal desk plates", () => {
   it("writes empty states as prose, never a blank tile", () => {
     const empty = catalogHousehold();
     const dashboard = buildDashboard(empty, "2026-09-01", new Date("2026-09-01T16:00:00Z"));
-    const shared = sharedPlates({ household: empty, dashboard, today: "2026-09-01", findings: [] });
+    const shared = sharedPlates({ household: empty, memberId: MEMBER, dashboard, today: "2026-09-01", findings: [] });
     const personal = personalPlates({
       household: empty,
       dashboard,
@@ -284,9 +284,14 @@ describe("plate interaction and materials", () => {
 });
 
 describe("shared plates stay on the household projection", () => {
-  it("never names any Personal card on Shared Home, even from unscoped books", () => {
+  it("keeps every Personal card off the Shared accounts plate for either viewer", () => {
+    // As of Fund slice 10 ("the accounts"), the accounts plate is member-scoped
+    // by design: a viewer's own personal accounts are meant to appear (the
+    // whole point of the slice), so this test's job narrows to what must never
+    // change — a partner's personal account never appears, for either viewer.
     const BIANCA = "MEM-001";
     const CANARY = "Bianca private Amex";
+    const OWN_CARD = "Jonathan private Mastercard";
     let household = demo();
     household = addAccount(household, {
       name: CANARY,
@@ -296,7 +301,7 @@ describe("shared plates stay on the household projection", () => {
       creditLimit: "1000",
     }).household;
     household = addAccount(household, {
-      name: "Jonathan private Mastercard",
+      name: OWN_CARD,
       kind: "credit",
       ownerMemberId: MEMBER,
       scope: "personal",
@@ -315,16 +320,21 @@ describe("shared plates stay on the household projection", () => {
       visibility: "personal",
     }).household;
     const dashboard = buildDashboard(household, TODAY, new Date(`${TODAY}T16:00:00Z`));
-    const shared = sharedPlates({ household, dashboard, today: TODAY, findings: [] });
-    const accounts = shared.find((plate) => plate.id === "accounts")!;
-    const blob = `${accounts.glance} ${accounts.verdict} ${accounts.footing} ${accounts.empty ?? ""} ${accounts.figure.primitive === "gauge" ? accounts.figure.label : ""}`;
-    expect(blob).not.toContain(CANARY);
-    expect(blob).not.toContain("Amex");
-    expect(blob).not.toContain("Jonathan private Mastercard");
-    expect(blob).not.toContain(amex.id);
-    expect(accounts.verdict).toContain("Visa");
-    expect(fundModels).toContain('account.scope !== "personal"');
-    expect(fundModels).not.toContain('account.ownerMemberId === memberId');
+
+    const asJonathan = sharedPlates({ household, memberId: MEMBER, dashboard, today: TODAY, findings: [] });
+    const jonathanAccounts = asJonathan.find((plate) => plate.id === "accounts")!;
+    const jonathanBlob = JSON.stringify(jonathanAccounts);
+    expect(jonathanBlob).not.toContain(CANARY);
+    expect(jonathanBlob).not.toContain("Amex");
+    expect(jonathanBlob).not.toContain(amex.id);
+
+    const asBianca = sharedPlates({ household, memberId: BIANCA, dashboard, today: TODAY, findings: [] });
+    const biancaAccounts = asBianca.find((plate) => plate.id === "accounts")!;
+    const biancaBlob = JSON.stringify(biancaAccounts);
+    expect(biancaBlob).not.toContain(OWN_CARD);
+    expect(biancaBlob).not.toContain(CANARY);
+
+    expect(accountsWidgetSource).toContain('account.scope !== "personal"');
   });
 });
 

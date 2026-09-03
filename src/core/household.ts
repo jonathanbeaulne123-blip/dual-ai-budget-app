@@ -17,6 +17,8 @@ export function memberWithoutLandingSurface(member: Member): Member {
     landingSurfaceUpdatedAt: _personalUpdatedAt,
     fundRail: _personalFundRail,
     onboardingProgress: _personalOnboardingProgress,
+    glanceAccountId: _personalGlanceAccountId,
+    glanceAccountUpdatedAt: _personalGlanceAccountUpdatedAt,
     ...sharedMember
   } = member;
   return sharedMember;

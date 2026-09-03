@@ -121,15 +121,16 @@ function monthRunningNet(household: Household, today: DateKey): number[] {
 
 export function sharedPlates(input: {
   household: Household;
+  memberId: string;
   dashboard: Dashboard;
   today: DateKey;
   findings?: Finding[];
 }): DeskPlateModel[] {
-  const { household, dashboard, today } = input;
+  const { household, memberId, dashboard, today } = input;
   const findings = input.findings ?? runHealthCheck(household);
   // A household with a Fund gets the Fund library. Without one there is no walk
   // to draw, so the original board stands until the Fund is configured.
-  const fund = fundPlates({ household, today, findings });
+  const fund = fundPlates({ household, memberId, today, findings });
   if (fund.length) return fund;
   const dueItems = dashboard.upcoming.filter((item) => item.direction === "out" && inWindow(item.date, today, 29));
   const nextDue = dueItems[0] ?? null;

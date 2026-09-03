@@ -32,6 +32,10 @@ export type Member = {
   fundRail?: MemberRail;
   /** Member-owned onboarding state. Shared sync strips it into Personal. */
   onboardingProgress?: import("./onboarding/progress.ts").MemberOnboardingProgress;
+  /** Member-owned glance account choice for the accounts widget. A starting point, never a lock. */
+  glanceAccountId?: string | null;
+  /** Record-specific Personal convergence clock; never enters Shared. */
+  glanceAccountUpdatedAt?: string;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
@@ -1344,6 +1348,9 @@ export type PersonalEnvelope = {
   fundRail?: MemberRail;
   /** Member-owned onboarding progress. Never enters the Shared envelope. */
   onboardingProgress?: import("./onboarding/progress.ts").MemberOnboardingProgress;
+  /** Member-owned Accounts glance preference. Never enters the Shared envelope. */
+  glanceAccountId?: string | null;
+  glanceAccountUpdatedAt?: string;
   /** Member-owned account metadata. Legacy envelopes omit this collection. */
   accounts?: Account[];
   lastCommittedAt: string | null;

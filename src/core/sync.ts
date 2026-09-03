@@ -135,6 +135,10 @@ export function shapeHerculesProPermissions(value: unknown): HerculesProPermissi
 /** Missing catalog timestamps must be stable across two split() calls, not `new Date()`. */
 const MISSING_ISO = "1970-01-01T00:00:00.000Z";
 
+function shapeGlanceAccountId(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
 export function recency(item: { updatedAt: string; createdAt?: string }): string {
   return item.updatedAt || item.createdAt || "";
 }
@@ -204,6 +208,7 @@ function shapeMembers(
       ...context,
       memberId: member.id,
     });
+    const glanceAccountId = shapeGlanceAccountId(member.glanceAccountId);
     return {
       ...shared,
       ...(isLandingSurface(member.landingSurface)
@@ -216,6 +221,14 @@ function shapeMembers(
         : {}),
       ...(fundRail ? { fundRail } : {}),
       ...(onboardingProgress ? { onboardingProgress } : {}),
+      ...(glanceAccountId
+        ? {
+            glanceAccountId,
+            ...(typeof member.glanceAccountUpdatedAt === "string" && member.glanceAccountUpdatedAt
+              ? { glanceAccountUpdatedAt: member.glanceAccountUpdatedAt }
+              : {}),
+          }
+        : {}),
       updatedAt: member.updatedAt || fallbackIso,
     };
   });
@@ -486,6 +499,14 @@ export function splitForSync(household: Household, memberId: string): { shared: 
       ? { fundRail: shapeMemberRail(personalMember?.fundRail, memberId)! }
       : {}),
     ...(onboardingProgress ? { onboardingProgress } : {}),
+    ...(shapeGlanceAccountId(personalMember?.glanceAccountId)
+      ? {
+          glanceAccountId: shapeGlanceAccountId(personalMember?.glanceAccountId),
+          ...(personalMember?.glanceAccountUpdatedAt
+            ? { glanceAccountUpdatedAt: personalMember.glanceAccountUpdatedAt }
+            : {}),
+        }
+      : {}),
     accounts: personalAccounts,
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: personalTx,
@@ -557,6 +578,12 @@ export function personalEnvelopeFromPayload(
       : { landingSurface: undefined, landingSurfaceUpdatedAt: undefined }),
     fundRail: shapeMemberRail(row.fundRail, memberId) ?? undefined,
     onboardingProgress: shapeMemberOnboardingProgress(row.onboardingProgress, { memberId }) ?? undefined,
+    glanceAccountId: shapeGlanceAccountId(row.glanceAccountId),
+    glanceAccountUpdatedAt: shapeGlanceAccountId(row.glanceAccountId)
+      && typeof row.glanceAccountUpdatedAt === "string"
+      && row.glanceAccountUpdatedAt
+      ? row.glanceAccountUpdatedAt
+      : undefined,
     accounts,
     transactions: Array.isArray(row.transactions)
       ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
@@ -619,6 +646,7 @@ export function overlayPersonalReplica(
         householdId: household.householdId,
         memberId,
       });
+      const glanceAccountId = shapeGlanceAccountId(personal.glanceAccountId);
       return {
         ...memberWithoutLandingSurface(member),
         ...(isLandingSurface(personal.landingSurface)
@@ -629,6 +657,14 @@ export function overlayPersonalReplica(
           : {}),
         ...(fundRail ? { fundRail } : {}),
         ...(onboardingProgress ? { onboardingProgress } : {}),
+        ...(glanceAccountId
+          ? {
+              glanceAccountId,
+              ...(personal.glanceAccountUpdatedAt
+                ? { glanceAccountUpdatedAt: personal.glanceAccountUpdatedAt }
+                : {}),
+            }
+          : {}),
       };
     }),
     transactions: [
@@ -745,6 +781,7 @@ export function assembleHousehold(
         householdId: shared.householdId,
         memberId: member.id,
       });
+      const glanceAccountId = shapeGlanceAccountId(personal?.glanceAccountId);
       return {
         ...memberWithoutLandingSurface(member),
         ...(isLandingSurface(personal?.landingSurface)
@@ -755,6 +792,14 @@ export function assembleHousehold(
           : {}),
         ...(fundRail ? { fundRail } : {}),
         ...(onboardingProgress ? { onboardingProgress } : {}),
+        ...(glanceAccountId
+          ? {
+              glanceAccountId,
+              ...(personal?.glanceAccountUpdatedAt
+                ? { glanceAccountUpdatedAt: personal.glanceAccountUpdatedAt }
+                : {}),
+            }
+          : {}),
       };
     }),
     accounts: [...shared.accounts, ...personalAccounts],
@@ -924,6 +969,16 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
   const onboardingProgress = serverOnboarding && clientOnboarding
     ? mergeMemberProgress(serverOnboarding, clientOnboarding)
     : serverOnboarding ?? clientOnboarding;
+  const serverGlanceAccountId = shapeGlanceAccountId(server.glanceAccountId);
+  const clientGlanceAccountId = shapeGlanceAccountId(client.glanceAccountId);
+  const serverGlanceClock = server.glanceAccountUpdatedAt || server.lastCommittedAt || "";
+  const clientGlanceClock = client.glanceAccountUpdatedAt || client.lastCommittedAt || "";
+  const glanceSource = !serverGlanceAccountId ? client
+    : !clientGlanceAccountId ? server
+      : clientGlanceClock > serverGlanceClock ? client
+        : serverGlanceClock > clientGlanceClock ? server
+          : clientGlanceAccountId > serverGlanceAccountId ? client : server;
+  const glanceAccountId = shapeGlanceAccountId(glanceSource.glanceAccountId);
   return {
     kind: "personal",
     memberId,
@@ -937,6 +992,14 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
       : {}),
     ...(fundRail ? { fundRail } : {}),
     ...(onboardingProgress ? { onboardingProgress } : {}),
+    ...(glanceAccountId
+      ? {
+          glanceAccountId,
+          ...((glanceSource.glanceAccountUpdatedAt || glanceSource.lastCommittedAt)
+            ? { glanceAccountUpdatedAt: glanceSource.glanceAccountUpdatedAt || glanceSource.lastCommittedAt || undefined }
+            : {}),
+        }
+      : {}),
     lastCommittedAt: newer.lastCommittedAt,
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     accounts: mergeRecords(server.accounts ?? [], client.accounts ?? [], tombstones),

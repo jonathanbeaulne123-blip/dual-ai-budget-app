@@ -8,7 +8,8 @@
 
 import { addDays, calendarDaysBetween, formatDateLabel, monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { formatCad } from "./money.ts";
-import { creditCardView, isCreditKind } from "./accounts.ts";
+import { isCreditKind } from "./accounts.ts";
+import { accountRows, chosenAccount } from "./accountsWidget.ts";
 import { claimRemainingCents, outstandingClaims } from "./appointments.ts";
 import { categoryShape } from "./categoryShape.ts";
 import { fundWalk, fundWeekMovements, type FundWalk, type WalkPoint } from "./fundWalk.ts";
@@ -242,40 +243,37 @@ function settlePlate(household: Household, today: DateKey): DeskPlateModel {
   };
 }
 
-/** Shared accounts only. Personal accounts stay on the Personal Books floor. */
-function accountsPlate(household: Household, today: DateKey): DeskPlateModel {
-  const visible = household.accounts.filter((account) => (
-    account.active && account.scope !== "personal"
-  ));
-  const cards = visible.filter((account) => isCreditKind(account.kind));
-  const cardViews = cards.map((account) => creditCardView(household, account, today));
-  const hottest = [...cardViews].sort((left, right) => (
-    (right.utilization ?? 0) - (left.utilization ?? 0)
-    || left.account.id.localeCompare(right.account.id)
-  ))[0] ?? null;
-  const chosen = hottest?.account ?? visible[0] ?? null;
-  const view = hottest;
-  const wells: FillWell[] = chosen
-    ? [{ savedCents: Math.max(0, view?.owedCents ?? 0), targetCents: Math.max(1, view?.limitCents ?? 1), name: chosen.name }]
-    : [];
+/**
+ * One Shared account the member chose, or a starting point. Personal
+ * account rooms stay on Personal Books and nothing aggregates scopes.
+ */
+function accountsPlate(household: Household, memberId: string, today: DateKey): DeskPlateModel {
+  const chosen = chosenAccount(household, memberId, today);
+  const visibleCount = accountRows(household, memberId, today).length;
   return {
     id: "accounts",
     kicker: "The accounts",
     glance: chosen
-      ? view ? formatCad(view.owedCents) : `${visible.length} accounts`
+      ? `${chosen.name} · ${formatCad(chosen.balanceCents)}${isCreditKind(chosen.kind) ? "" : ` ${chosen.balanceLabel}`}`
       : "None yet",
     verdict: chosen
-      ? view
-        ? `${chosen.name} is carrying ${formatCad(view.owedCents)}.`
-        : `There are ${visible.length} accounts on this floor.`
-      : "No shared accounts yet.",
-    footing: "Shared accounts only. Personal accounts stay on the Personal Books floor.",
-    edge: "clear",
-    copperVerdict: false,
-    figure: view && view.utilization !== null
-      ? { primitive: "gauge", pct: view.utilization, threshold: 0.3, label: chosen?.name ?? "" }
-      : { primitive: "fill", wells },
-    empty: visible.length ? null : "No accounts on this floor yet.",
+      ? isCreditKind(chosen.kind)
+        ? `${chosen.name} owes ${formatCad(chosen.balanceCents)}.`
+        : chosen.kind === "investment"
+          ? `${chosen.name} has ${formatCad(chosen.balanceCents)} of cost basis.`
+          : `${chosen.name} has a ${formatCad(chosen.balanceCents)} book balance.`
+      : "No accounts on this floor yet.",
+    footing: visibleCount > 1
+      ? `${visibleCount} accounts you can see. Pick which one shows here.`
+      : "Shared accounts only. Personal rooms stay on Personal Books.",
+    edge: chosen && ((chosen.utilization ?? 0) > 0.3 || (!isCreditKind(chosen.kind) && chosen.balanceCents < 0))
+      ? "attention"
+      : "clear",
+    copperVerdict: Boolean(chosen && ((chosen.utilization ?? 0) > 0.3 || (!isCreditKind(chosen.kind) && chosen.balanceCents < 0))),
+    figure: chosen && chosen.utilization !== null
+      ? { primitive: "gauge", pct: chosen.utilization, threshold: 0.3, label: chosen.name }
+      : { primitive: "tally", count: chosen ? 1 : 0 },
+    empty: chosen ? null : "No accounts on this floor yet.",
     cabinet: "accounts",
     cabinetName: "The accounts",
   };
@@ -400,13 +398,17 @@ function streamsPlate(household: Household, today: DateKey): DeskPlateModel {
   };
 }
 
-/** The ten Fund plates, in default custodian order. */
+/**
+ * The ten Fund plates, in default custodian order. memberId is the viewer —
+ * only the accounts plate reads it, for their own chosen glance account.
+ */
 export function fundPlates(input: {
   household: Household;
+  memberId: string;
   today: DateKey;
   findings?: readonly Finding[];
 }): DeskPlateModel[] {
-  const { household, today } = input;
+  const { household, memberId, today } = input;
   const findings = input.findings ?? [];
   if (!shapeHouseholdFundConfig(household.householdFund)) return [];
   const monthKey = monthKeyFromDateKey(today);
@@ -417,7 +419,7 @@ export function fundPlates(input: {
     nextOutPlate(walk),
     spokenForPlate(walk),
     settlePlate(household, today),
-    accountsPlate(household, today),
+    accountsPlate(household, memberId, today),
     weekPlate(household, today),
     shelfPlate(household),
     shapePlate(household, monthKey, today),

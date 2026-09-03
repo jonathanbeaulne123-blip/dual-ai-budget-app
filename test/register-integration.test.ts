@@ -30,6 +30,33 @@ function householdWithFund() {
 }
 
 describe("Register kitchen placement", () => {
+  it("opens a focused Shared account in its Chart register", () => {
+    const household = householdWithFund();
+    act(() => {
+      root.render(createElement(BooksPage, {
+        household,
+        booksHousehold: household,
+        memberId: "MEM-001",
+        view: "household",
+        booksStatus: null,
+        focusedAccountId: "ACC-CHEQUING",
+        sourceFocus: null,
+        onFocusAccount: () => undefined,
+        onClearSource: () => undefined,
+        onChange: () => undefined,
+        onRemove: () => undefined,
+        onPayAccount: () => undefined,
+        onAddToAccount: () => undefined,
+        onCommand: () => undefined,
+      }));
+    });
+
+    expect(host.textContent).toContain("Account register");
+    const account = host.querySelector("select") as HTMLSelectElement | null;
+    expect(account?.value).toBe("ACC-CHEQUING");
+    expect(account?.selectedOptions[0]?.textContent).toContain("Everyday chequing");
+  });
+
   it("opens the shared Register room from the Month Spread request", () => {
     const household = householdWithFund();
     const onConsumeRequestedPane = vi.fn();

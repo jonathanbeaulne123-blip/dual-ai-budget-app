@@ -26,6 +26,7 @@ import {
 import { shapeTransactionLocation } from "./transactionLocation.ts";
 import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
+import { accountVisibleTo } from "./accountsWidget.ts";
 import { sitDownPreview } from "./insights.ts";
 import { leftoverProjection, leftoverSourceAccountId, jarParkingAccountId, plannedAllocation, shapeSitDownSessions, openSitDownSession } from "./sitDown.ts";
 import { goalsVaultAccount, vaultSpendableCents } from "./goalVault.ts";
@@ -639,6 +640,41 @@ export function resetFundRail(household: Household, input: {
     ? { ...row, fundRail: { memberId: member.id, slots, updatedAt } }
     : row);
   return commitFundRailPreference(previous, next, member.id, "Fund board reset", updatedAt);
+}
+
+/**
+ * Change only the acting member's own glance account. Stored per member,
+ * self-owned — the same custody rule as setLandingSurface, and the same
+ * ordinary accepted-household path. Sync projection strips the preference
+ * from Shared and carries it only in this member's Personal envelope.
+ */
+export function setGlanceAccount(household: Household, input: {
+  memberId: string;
+  accountId: string;
+  createdBy: string;
+}): CommitResult {
+  if (!input.createdBy) throw new ValidationError("Only you can choose what your board shows.");
+  const member = requireMember(household, input.memberId);
+  const actor = resolveActor(household, { createdBy: input.createdBy });
+  if (actor.createdBy !== member.id) throw new ValidationError("Only you can choose what your board shows.");
+  if (!accountVisibleTo(household, member.id, input.accountId)) {
+    throw new ValidationError("Choose an account you can see.");
+  }
+  if (member.glanceAccountId === input.accountId) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      undo: { id: `glance-account-${member.id}-unchanged`, label: "Glance account unchanged", snapshot: household, postedIds: [] },
+    };
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const updatedAt = nowIso();
+  next.members = next.members.map((row) => row.id === member.id
+    ? { ...row, glanceAccountId: input.accountId, glanceAccountUpdatedAt: updatedAt }
+    : row);
+  return commit(previous, next, "Glance account", `${member.name} chose what their board shows`, []);
 }
 
 function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {

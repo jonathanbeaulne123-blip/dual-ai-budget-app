@@ -44,6 +44,7 @@ export * from "./fundWeek.ts";
 export * from "./categoryShape.ts";
 export * from "./twoStreams.ts";
 export * from "./motionConsequence.ts";
+export * from "./accountsWidget.ts";
 export * from "./fundPlates.ts";
 export * from "./fundRail.ts";
 export * from "./ask.ts";
