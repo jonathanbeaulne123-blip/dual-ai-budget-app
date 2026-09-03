@@ -184,18 +184,31 @@ export function DeskPlate({
   plate,
   active = false,
   open = false,
+  tab = false,
   onSelect,
   onOpenCabinet,
 }: {
   plate: DeskPlateModel;
   active?: boolean;
   open?: boolean;
+  tab?: boolean;
   onSelect: () => void;
   onOpenCabinet: () => void;
 }) {
   const rootRef = useRef<HTMLElement>(null);
 
   function handleKey(event: KeyboardEvent<HTMLElement>) {
+    if (tab && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+      event.preventDefault();
+      const tabs = Array.from(rootRef.current?.parentElement?.querySelectorAll<HTMLElement>("[role='tab']") ?? []);
+      const current = tabs.indexOf(rootRef.current!);
+      if (current < 0 || tabs.length === 0) return;
+      const next = event.key === "Home" ? 0
+        : event.key === "End" ? tabs.length - 1
+          : (current + (event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1) + tabs.length) % tabs.length;
+      tabs[next]?.focus();
+      return;
+    }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onSelect();
@@ -212,13 +225,18 @@ export function DeskPlate({
     <article
       ref={rootRef}
       className={`desk-plate edge-${plate.edge}${open ? " is-open" : ""}${active ? " is-active" : ""}${plate.copperVerdict ? " is-copper" : ""}`}
-      tabIndex={0}
+      tabIndex={tab ? (active ? 0 : -1) : 0}
+      role={tab ? "tab" : undefined}
+      id={tab ? `fund-rail-tab-${plate.id}` : undefined}
       data-plate-id={plate.id}
       data-plate-primitive={plate.figure.primitive}
       aria-label={`${plate.kicker}. ${plate.glance}. ${plate.verdict}`}
-      aria-expanded={open}
+      aria-expanded={tab ? undefined : open}
+      aria-selected={tab ? active : undefined}
+      aria-current={tab && active ? "true" : undefined}
+      aria-controls={tab ? "fund-stage-panel" : undefined}
       onClick={onSelect}
-      onDoubleClick={onOpenCabinet}
+      onDoubleClick={tab ? undefined : onOpenCabinet}
       onKeyDown={handleKey}
     >
       <p className="desk-plate-kicker">{plate.kicker}</p>

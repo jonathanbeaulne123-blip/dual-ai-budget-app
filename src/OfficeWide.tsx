@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { useMemo, useState, useEffect, useRef, type ReactNode } from "react";
 import {
   auditOpinion,
   categorySpendBars,
@@ -22,8 +22,13 @@ import {
   sitDownPostcard,
   sharedMonthCourse,
   askBelongsOnDesk,
+  fundWidgetIdForPlateId,
+  isFundWidgetId,
+  railFor,
   moveAskGoalClaimToNextMonth,
   type DeskPlateId,
+  type DeskPlateModel,
+  type FundWidgetId,
   type PersonalLedgerStory as PersonalLedgerStoryModel,
   type SharedLedgerStory as SharedLedgerStoryModel,
 } from "./core/index.ts";
@@ -51,12 +56,25 @@ import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./wi
 import { NotebookBody, PaperBars, PaperSpark, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { MonthSpread } from "./MonthSpread.tsx";
 import { Ask } from "./Ask.tsx";
-import { DeskPlate } from "./DeskPlates.tsx";
+import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 type MonthListKind = "income" | "expenses";
+
+function fundStageStorageKey(environment: Environment, householdId: string, memberId: string, today: string): string {
+  return `hearth:fund-stage:${environment}:${householdId}:${memberId}:${today}`;
+}
+
+function storedFundStage(environment: Environment, householdId: string, memberId: string, today: string): FundWidgetId {
+  try {
+    const stored = sessionStorage.getItem(fundStageStorageKey(environment, householdId, memberId, today));
+    return isFundWidgetId(stored) ? stored : "level";
+  } catch {
+    return "level";
+  }
+}
 
 function MonthPostedList({
   household,
@@ -161,6 +179,10 @@ export function OfficeWide({
   const noteRef = useFurniture("wide-notebook", "pad", true, false);
   const [openPlateIds, setOpenPlateIds] = useState<Set<DeskPlateId>>(() => new Set());
   const [monthList, setMonthList] = useState<MonthListKind | null>(null);
+  const [selectedFundWidget, setSelectedFundWidget] = useState<FundWidgetId>(() => (
+    storedFundStage(environment, household.householdId, memberId, today)
+  ));
+  const fundStageHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const findings = integrityFindings;
@@ -180,12 +202,35 @@ export function OfficeWide({
   const walletIsWarn = walletWarn(wallet);
   const claimsWarn = claimsOverdue(household);
   const lampLit = findings.length > 0;
-  const plates = useMemo(
+  const unarrangedPlates = useMemo(
     () => view === "household"
       ? sharedPlates({ household: booksHousehold, dashboard, today, findings })
       : personalPlates({ household, dashboard, today, memberId, streak }),
     [view, booksHousehold, household, dashboard, today, findings, memberId, streak],
   );
+  const fundConfigured = view === "household" && unarrangedPlates.some((plate) => plate.id === "fund-level");
+  const plates = useMemo(() => {
+    if (!fundConfigured) return unarrangedPlates;
+    const byWidget = new Map(unarrangedPlates.flatMap((plate) => {
+      const id = fundWidgetIdForPlateId(plate.id);
+      return id ? [[id, plate] as const] : [];
+    }));
+    const arranged = railFor(household, memberId).flatMap((id) => {
+      const plate = byWidget.get(id);
+      if (!plate) return [];
+      byWidget.delete(id);
+      return [plate];
+    });
+    return [...arranged, ...unarrangedPlates.filter((plate) => {
+      const id = fundWidgetIdForPlateId(plate.id);
+      return id ? byWidget.has(id) : false;
+    })];
+  }, [fundConfigured, unarrangedPlates, household, memberId]);
+  const selectedFundPlate = useMemo(() => (
+    plates.find((plate) => fundWidgetIdForPlateId(plate.id) === selectedFundWidget)
+    ?? plates.find((plate) => fundWidgetIdForPlateId(plate.id) === "level")
+    ?? null
+  ), [plates, selectedFundWidget]);
   const mosaicInstrumentIds = [...new Set(plates.map((plate) => plate.cabinet))];
   const drawer = wideDrawerIds(mosaicInstrumentIds, { includeHero: false });
 
@@ -196,6 +241,10 @@ export function OfficeWide({
     setMonthList(null);
   }, [view]);
 
+  useEffect(() => {
+    setSelectedFundWidget(storedFundStage(environment, household.householdId, memberId, today));
+  }, [environment, household.householdId, memberId, today]);
+
   function togglePlate(id: DeskPlateId) {
     setOpenPlateIds((current) => {
       const next = new Set(current);
@@ -203,6 +252,20 @@ export function OfficeWide({
       else next.add(id);
       return next;
     });
+  }
+
+  function stageFundPlate(plate: DeskPlateModel) {
+    const widgetId = fundWidgetIdForPlateId(plate.id);
+    if (!widgetId) return;
+    setMonthList(null);
+    if (layout.expanded && layout.expanded !== "window") onLayout({ ...layout, expanded: null });
+    setSelectedFundWidget(widgetId);
+    try {
+      sessionStorage.setItem(fundStageStorageKey(environment, household.householdId, memberId, today), widgetId);
+    } catch {
+      // A blocked storage surface still gets a correct in-session React state.
+    }
+    queueMicrotask(() => fundStageHeadingRef.current?.focus());
   }
 
   function openPlateCabinet(id: DeskPlateId) {
@@ -420,6 +483,7 @@ export function OfficeWide({
   /** Shared Home's default centre is the Month Spread. Left plates grow in the mosaic. */
   const spreadIsStage = view === "household" && !openSpec && !monthList;
   const showAsk = spreadIsStage
+    && (!fundConfigured || fundWidgetIdForPlateId(selectedFundPlate?.id ?? "") === "level")
     && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
   const panelId = monthList
     ? `wide-notebook-month-${monthList}`
@@ -466,20 +530,51 @@ export function OfficeWide({
         </div>
         <div ref={mosaicRef} className="office-wide-mosaic-wrap">
           <StoryStrip heading="Today's stories" className="office-wide-mosaic office-wide-plates">
-            {plates.map((plate) => (
-              <DeskPlate
-                key={plate.id}
-                plate={plate}
-                open={openPlateIds.has(plate.id)}
-                onSelect={() => togglePlate(plate.id)}
-                onOpenCabinet={() => openPlateCabinet(plate.id)}
-              />
-            ))}
+            <div className="fund-rail-list" role={fundConfigured && spreadIsStage ? "tablist" : undefined} aria-label={fundConfigured && spreadIsStage ? "Your Fund board" : undefined}>
+              {plates.map((plate) => {
+                const active = fundConfigured && spreadIsStage && selectedFundPlate?.id === plate.id;
+                return (
+                  <DeskPlate
+                    key={plate.id}
+                    plate={plate}
+                    active={active}
+                    tab={fundConfigured && spreadIsStage}
+                    open={!fundConfigured && openPlateIds.has(plate.id)}
+                    onSelect={() => fundConfigured ? stageFundPlate(plate) : togglePlate(plate.id)}
+                    onOpenCabinet={() => openPlateCabinet(plate.id)}
+                  />
+                );
+              })}
+            </div>
           </StoryStrip>
         </div>
-        <div ref={heroRef} className={`office-wide-stage ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}>
-          {spreadIsStage && sharedStory ? (
+        <div
+          ref={heroRef}
+          className={`office-wide-stage ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}
+          role={spreadIsStage && fundConfigured ? "tabpanel" : undefined}
+          id={spreadIsStage && fundConfigured ? "fund-stage-panel" : undefined}
+          aria-labelledby={spreadIsStage && fundConfigured && selectedFundPlate ? `fund-rail-tab-${selectedFundPlate.id}` : undefined}
+        >
+          {spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
+            <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
+              <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>
+              <h2 ref={fundStageHeadingRef} tabIndex={-1} className="fund-stage-heading">{selectedFundPlate.glance}</h2>
+              <p className={`desk-plate-detail${selectedFundPlate.copperVerdict ? " is-copper" : ""}`}>{selectedFundPlate.verdict}</p>
+              {selectedFundPlate.empty ? (
+                <p className="desk-plate-empty">{selectedFundPlate.empty}</p>
+              ) : (
+                <div className="fund-stage-figure"><PlateFigureView figure={selectedFundPlate.figure} /></div>
+              )}
+              <p className="desk-plate-foot">{selectedFundPlate.footing}</p>
+              <button type="button" className="desk-plate-handle" onClick={() => openPlateCabinet(selectedFundPlate.id)}>
+                Open {selectedFundPlate.cabinetName}
+              </button>
+            </section>
+          ) : spreadIsStage && sharedStory ? (
             <>
+              {fundConfigured ? (
+                <h2 ref={fundStageHeadingRef} tabIndex={-1} className="fund-stage-heading">The Household Fund</h2>
+              ) : null}
               <MonthSpread
                 story={sharedStory}
                 course={course}

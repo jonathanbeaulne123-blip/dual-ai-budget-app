@@ -22,13 +22,43 @@
 .desk-plate.edge-live { border-left-color: var(--gold); }
 .desk-plate.edge-quiet { border-left-color: var(--line); }
 .desk-plate.is-active {
-  box-shadow: var(--lift-2);
-  outline: 2px solid color-mix(in srgb, var(--pine) 55%, transparent);
-  outline-offset: 2px;
+  box-shadow: inset 0 0 0 3px var(--pine), var(--lift-2);
+}
+.fund-rail-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
 }
 .desk-plate.is-open {
   min-height: 220px;
   padding: 18px 20px 14px;
+}
+
+.fund-plate-stage {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+}
+.fund-stage-heading {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.fund-stage-heading:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 3px;
+}
+.fund-stage-figure {
+  width: min(100%, 540px);
 }
 .desk-plate:hover {
   transform: translateY(-1px);
@@ -70,6 +100,7 @@
 .desk-plate.is-copper .desk-plate-detail {
   color: var(--copper);
 }
+.desk-plate-detail.is-copper { color: var(--copper); }
 .desk-plate-figure {
   min-height: 44px;
 }
@@ -171,6 +202,7 @@
 }
 
 @media (max-width: 899px) {
+  .fund-rail-list { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
   .office-wide-mosaic.office-wide-plates .hearth-story-grid,
   .office-wide.is-shared-home .office-wide-mosaic.office-wide-plates .hearth-story-grid {
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -186,6 +218,7 @@
 }
 
 @media (forced-colors: active) {
+  .desk-plate.is-active { box-shadow: inset 0 0 0 3px CanvasText; }
   .desk-plate {
     border: 2px solid CanvasText;
   }
