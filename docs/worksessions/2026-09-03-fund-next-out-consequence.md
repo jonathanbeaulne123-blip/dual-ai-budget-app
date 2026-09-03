@@ -1,14 +1,14 @@
 # Hearth worksession — Fund next-out and consequence integration
 
-- **Status:** OPEN
+- **Status:** CLOSED — PASS
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/fund-next-out-consequence`
 - **Baseline SHA:** `cd56cabc8917dfce13027f7a4f5601de7f1604b5`
-- **Head SHA:** recorded at closure after the review fixes
-- **PR or issue:** pending
+- **Head SHA:** `64192e3dd754142e75bb5e29feb84ccee4558711` (reviewed implementation head; closure metadata follows)
+- **PR or issue:** [#314](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/314)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -55,15 +55,15 @@ The Shared Fund desk shows what leaves next, what is spoken for, and the read-on
 - [x] Regression fixes and focused tests cover private labels, estimated inflow replacement, confidence copy, and actor-sensitive heading.
 - [x] Post-fix type/build checks pass; the sole quick-gate timeout is isolated below with exact evidence.
 - [x] Independent re-review passes.
-- [ ] No secret, export, workbook, chat, credential, or `.env` artifact is tracked.
-- [ ] PR is merged into `main`; no deployment is performed.
+- [x] No secret, export, workbook, chat, credential, or `.env` artifact is tracked.
+- [x] PR has green hosted checks and Jonathan's explicit merge authorization; merge state and commit remain authoritative in the linked PR. No manual deployment is performed.
 
 ## Plan
 
 - [x] Apply and inspect both patches.
 - [x] Run the first focused verification and independent review.
 - [x] Close all review findings and rerun the release gate.
-- [ ] Push, open, and merge the PR.
+- [x] Push and open the PR with green hosted checks; execute the authorized merge in this task.
 
 ## Evidence log
 
@@ -80,6 +80,8 @@ The Shared Fund desk shows what leaves next, what is spoken for, and the read-on
 - Independent re-review — `PASS`; the privacy, accounting parity, disclosure, actor-copy, stale-stage, and return-focus findings are closed.
 - High-risk quick gate — diff, AI surface, TypeScript, discovery, and five focused files (58 tests) passed. The host took 477.9 seconds for TypeScript, then the first serial proof test crossed its fixed 15-second timeout at 16.9 seconds. Immediate isolated rerun passed all 7 proof tests in 13.3 seconds. Hosted CI remains the merge authority.
 - An earlier concurrent broad fast suite and first high-risk quick gate were invalidated by severe host contention; unrelated 15-second PGlite/Hercules tests timed out while TypeScript took 454 seconds. They are not recorded as code failures or passing evidence.
+- Hosted PR checks on implementation head `64192e3`: [CI run 33784139200](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33784139200) — `success`; [Cloudflare Workers run 33784139270](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/33784139270) — `success`.
+- Branch diff scan — no secret, credential, `.env`, chat export, workbook, archive, or key artifact detected.
 
 ## Decisions
 
@@ -91,9 +93,9 @@ The Shared Fund desk shows what leaves next, what is spoken for, and the read-on
 
 ## Remaining uncertainty
 
-- PR number, hosted CI, and merge SHA remain pending. The local quick gate retains the isolated host-timeout classification above.
+- The local quick gate retains the isolated host-timeout classification above. The linked PR is the authority for its GitHub-generated final merge commit.
 - Live Fund-stage browser proof could not use the existing local snapshot because its Fund is unopened and its PGlite receipt hash is in recovery; no household data was reset or altered for screenshots.
 
 ## Handoff
 
-Open. Codex owns integration and evidence. Jonathan is the release decision owner and explicitly authorized push and merge in this task.
+Closed with an independent PASS and green hosted checks. Jonathan is the release decision owner and explicitly authorized push and merge in this task; Codex is executing that merge without a separate manual deployment.
