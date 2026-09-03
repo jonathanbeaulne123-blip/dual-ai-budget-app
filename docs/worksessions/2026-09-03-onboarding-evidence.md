@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/5-evidence`
-- **Baseline SHA:** `5bd5da2025c5c34ad19bebdde66dd66f09666980`
-- **Head SHA:** pending
+- **Baseline SHA:** `200dfd1ccfb79428f8d8f60f8616654622404e24`
+- **Head SHA:** `29553eb9fb71dd2dad7b20ccb7fec87aa84b865f` (pre-publication proof)
 - **PR or issue:** pending
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -27,7 +27,7 @@ Onboarding evidence cites accepted rows without exposing one member's Personal f
 
 ## Verified baseline
 
-- The clean branch begins at `origin/main@5bd5da2025c5c34ad19bebdde66dd66f09666980`, the merge of onboarding slice 4.
+- The branch was rebased before publication onto `origin/main@200dfd1ccfb79428f8d8f60f8616654622404e24`, which includes onboarding slice 4 and the concurrently landed Fund settlement work.
 - Shared continuity excludes Personal account/transaction state, while an assembled local household may contain the signed-in member's Personal overlay.
 - Current typed canonical facts support evidence for the handshake, household identity, Charter, accounts, opening truth, Fund, recurrences, cadence, an eventual adoption receipt, and a Ready transaction.
 - Category and estimate submissions are later typed contracts, so their chapters must remain honestly empty until those records exist.
@@ -53,7 +53,7 @@ Onboarding evidence cites accepted rows without exposing one member's Personal f
 - [x] Witness evidence is household-only and never widens.
 - [x] Every ineligible reason is reachable and remains distinct from empty.
 - [x] Source fence contains no DOM, browser global, component, or command-module import.
-- [x] High quick gate passes against the complete working diff; an exact committed-head rerun is pending.
+- [x] Exact implementation-head High quick gate passes.
 
 ## Plan
 
@@ -68,12 +68,12 @@ Onboarding evidence cites accepted rows without exposing one member's Personal f
 - `git status --short --branch` was clean before this worksession was created.
 - `pnpm vitest run test/onboarding-evidence.test.ts`: 19/19 passed after final review.
 - `pnpm exec tsc --noEmit`: passed after final review.
-- `pnpm test -- --risk=high --focus=test/onboarding-evidence.test.ts --focus-reason="Onboarding slice 5 changes the pure evidence projector and its privacy/integrity contract"`: passed against the complete working diff (`40` selected fast tests and `7` serial proof-matrix tests; `141.372s`; fingerprint `71327353a5980a0b48815e5a90fe5f7f243b89810321140307a77635ce961393`; no budget breach).
+- After rebasing onto current `main`, `pnpm test -- --risk=high --focus=test/onboarding-evidence.test.ts --focus-reason="Onboarding slice 5 changes the pure evidence projector and its privacy/integrity contract"` passed at clean pre-publication head `29553eb9fb71dd2dad7b20ccb7fec87aa84b865f` (`41` selected fast tests and `7` serial proof-matrix tests; `56.381s`; fingerprint `0c19d0b4f26882e336f0038e7d84707e04072ea516a58018db895efdf7176dae`; no budget breach).
 - `pnpm build`: passed (`444` modules); existing PGlite browser-external/eval and large-chunk warnings remained warnings.
 - `pnpm ai:verify`: passed (`48` required files and `2` Clerk fences).
 - `pnpm check:windows`: unavailable on this Mac because `pwsh` is not installed; no Windows result is claimed.
 - `pnpm test:full` was not run because this High slice authorizes the risk-focused quick gate, not an exhaustive full gate.
-- Exact committed-head quick-gate and PR evidence pending.
+- Exact PR-head hosted CI remains pending until the PR exists.
 
 ## Decisions
 
