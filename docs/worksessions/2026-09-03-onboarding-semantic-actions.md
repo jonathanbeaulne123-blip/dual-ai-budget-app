@@ -1,6 +1,6 @@
 # Hearth worksession — onboarding semantic actions
 
-- **Status:** READY FOR PR
+- **Status:** PR OPEN
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,7 +8,7 @@
 - **Branch:** `onboarding/4-actions`
 - **Baseline SHA:** `48514441731e7cf2c53b152fe6867b3cfaa39058`
 - **Head SHA:** implementation `4e7a716efae8856046ebc3edda25a1e34954c22a`; worksession closure follows
-- **PR or issue:** pending
+- **PR or issue:** [#321](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/321)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -62,7 +62,7 @@ Short affirmative replies may advance or resume onboarding without ever becoming
 - [x] Add focused contract/fence tests and D-206.
 - [x] Run focused tests and the authorized High quick gate.
 - [x] Inspect the implementation diff.
-- [ ] Push, open the slice PR, and stop before merge/deploy.
+- [x] Push and open the slice PR; stop before merge/deploy.
 
 ## Evidence log
 
@@ -74,7 +74,7 @@ Short affirmative replies may advance or resume onboarding without ever becoming
 - `pnpm ai:verify` -> **passed**; 48 required files and two Clerk fences.
 - `pnpm check:windows` -> **unavailable on this macOS host** because `pwsh` is not installed. No Windows test failure was observed.
 - `pnpm test:full` was not run; exhaustive proof requires Jonathan's explicit authorization for an exact clean High/Release-risk SHA.
-- PR evidence pending.
+- PR [#321](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/321) opened from `onboarding/4-actions` into `main`; exact PR-head CI follows after this worksession closure commit.
 
 ## Decisions
 
@@ -84,7 +84,7 @@ Short affirmative replies may advance or resume onboarding without ever becoming
 ## Remaining uncertainty
 
 - UI wiring and accepted probe execution belong to later slices.
-- Exact-head CI and automated review remain pending until the PR exists.
+- Exact-head CI remains pending after the worksession closure commit.
 
 ## Handoff
 
