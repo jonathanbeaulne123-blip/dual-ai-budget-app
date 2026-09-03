@@ -142,8 +142,11 @@ describe("the Fund's balance walk", () => {
   });
 
   it("walks the settled month to the dry date the drawing shows", () => {
-    const walk = fundWalk(settledScenario(), MONTH, TODAY);
+    const household = settledScenario();
+    const walk = fundWalk(household, MONTH, TODAY);
+    const register = contributionRegister(household, MONTH, TODAY);
 
+    expect(walk.tiesToProjection).toBe(true);
     expect(walk.todayBalanceCents).toBe(17700);
     expect(walk.dryDate).toBe("2026-09-26");
     expect(walk.endBalanceCents).toBe(-34000);
@@ -151,6 +154,7 @@ describe("the Fund's balance walk", () => {
     expect(walk.hasConfirmedContribution).toBe(true);
     expect(walk.belowBufferRuns.length).toBeGreaterThanOrEqual(1);
     expect(walk.belowBufferRuns[0]).toMatchObject({ lowCents: 17700 });
+    expect(walk.shortfallCents).toBe(register.unfundedCents);
   });
 
   it("never lets a claim move the line", () => {
@@ -167,6 +171,8 @@ describe("the Fund's balance walk", () => {
     expect(walk.hasConfirmedContribution).toBe(false);
     expect(walk.dryDate).toBeNull();
     expect(walk.inflowConfidence).toBe("none");
+    expect(walk.tiesToProjection).toBe(true);
+    expect(walk.shortfallCents).toBe(contributionRegister(household, MONTH, TODAY).unfundedCents);
     expect(walk.points.every((point) => point.kind === "opening" || !point.actual)).toBe(true);
   });
 
@@ -198,10 +204,27 @@ describe("the Fund's balance walk", () => {
     // Confirming turns a raised amount into money in the pool today.
     expect(before.todayBalanceCents).toBe(17700);
     expect(after.todayBalanceCents).toBe(48700);
-    // The month already expected it, so month end does not move.
-    expect(after.endBalanceCents).toBe(before.endBalanceCents);
+    // A raised amount stays record-only until this deliberate what-if includes it.
+    expect(before.points.some((point) => point.sourceId === raised.eventId)).toBe(false);
+    expect(after.endBalanceCents).toBe(before.endBalanceCents + 31000);
+    expect(before.shortfallCents).toBe(34000);
+    expect(after.shortfallCents).toBe(3000);
+    expect(after.points.find((point) => point.sourceId === raised.eventId)?.actual).toBe(false);
     // And nothing was actually confirmed.
     expect(fundWalk(household, MONTH, TODAY).todayBalanceCents).toBe(before.todayBalanceCents);
+  });
+
+  it("re-runs the sealed shortfall when one obligation is hypothetically deferred", () => {
+    const household = settledScenario();
+    const before = fundWalk(household, MONTH, TODAY);
+    const deferred = before.points.find((point) => !point.actual && point.kind === "obligation");
+    if (!deferred?.sourceId) throw new Error("expected a projected obligation");
+
+    const after = fundWalkWith(household, MONTH, TODAY, { deferObligationIds: [deferred.sourceId] });
+
+    expect(after.endBalanceCents).toBe(before.endBalanceCents + Math.abs(deferred.deltaCents));
+    expect(after.shortfallCents).toBe(Math.max(0, before.shortfallCents - Math.abs(deferred.deltaCents)));
+    expect(fundWalk(household, MONTH, TODAY)).toEqual(before);
   });
 
   it("keeps its fences", () => {

@@ -17,6 +17,7 @@ import {
   shapeHouseholdFundMonthPlans,
 } from "./householdFund.ts";
 import { monthObligations, type MonthObligation } from "./monthObligations.ts";
+import { contributionRegister } from "./contributionRegister.ts";
 import { projectCadence } from "./recurrence.ts";
 import type { Household, HouseholdFundEvent } from "./types.ts";
 
@@ -118,11 +119,9 @@ type ProjectedInflow = { date: DateKey; amountCents: number; memberId: string | 
  */
 function projectedInflows(
   household: Household,
-  fundId: string,
   events: readonly HouseholdFundEvent[],
   from: DateKey,
   to: DateKey,
-  confirmEventIds: ReadonlySet<string>,
 ): ProjectedInflow[] {
   const inflows: ProjectedInflow[] = [];
 
@@ -134,18 +133,6 @@ function projectedInflows(
         estimated: false, sourceId: event.id, label: "Contribution",
       });
     }
-  }
-
-  const motions = householdFundContributionMotions(household, fundId);
-  for (const motion of motions) {
-    if (motion.status !== "open" && motion.status !== "held") continue;
-    if (confirmEventIds.has(motion.proposal.id)) continue;
-    const date = motion.proposal.date > from ? motion.proposal.date : from;
-    if (date > to) continue;
-    inflows.push({
-      date, amountCents: motion.proposal.amountCents, memberId: motion.proposal.contributorMemberId,
-      estimated: false, sourceId: motion.proposal.id, label: "Raised contribution",
-    });
   }
 
   const window = addDays(from, -WALK_OBSERVATION_DAYS);
@@ -217,14 +204,13 @@ function foldWalk(
       memberId: event.contributorMemberId, sourceId: event.id,
     });
   }
+  const canonicalTodayBalanceCents = balance;
   const obligations = monthObligations(household, monthKey, anchor);
   const projection = projectHouseholdFund(household, anchor);
   const outstandingByTransaction = new Map(
     projection.transactionPositions.map((position) => [position.transactionId, position.outstandingCents]),
   );
-  const outflows = obligations.rows
-    .filter((row) => !deferred.has(row.id))
-    .flatMap((row: MonthObligation) => {
+  const allOutflows = obligations.rows.flatMap((row: MonthObligation) => {
       // A posted purchase leaves the pool when it is settled, not when it is swiped.
       // Whatever has already been settled must never be charged to the future again.
       const amountCents = row.source === "posted" && row.transactionId
@@ -239,25 +225,34 @@ function foldWalk(
         sourceId: row.id,
       }];
     });
+  const outflows = allOutflows.filter((row) => !deferred.has(row.sourceId));
 
-  const inflows = projectedInflows(household, fundId, events, anchor, end, confirmEventIds);
+  const canonicalInflows = projectedInflows(household, events, anchor, end);
+  const inflows = [...canonicalInflows];
+  const actionableMotions = new Map(householdFundContributionMotions(household, fundId)
+    .filter((motion) => motion.status === "open" || motion.status === "held")
+    .map((motion) => [motion.proposal.id, motion.proposal]));
+  let hypotheticalContributionCents = 0;
   for (const id of confirmEventIds) {
-    const proposal = events.find((event) => event.id === id && event.kind === "contribution-proposed");
+    const proposal = actionableMotions.get(id);
     if (!proposal) continue;
+    const contributionDate = proposal.date <= anchor ? anchor : proposal.date;
+    if (contributionDate > end) continue;
+    hypotheticalContributionCents += proposal.amountCents;
     if (proposal.date <= anchor) {
-      // Confirming turns a raised amount into money that is actually in the pool.
+      // This explicit what-if shows the balance that a later Confirm would create.
       balance += proposal.amountCents;
       points.push({
-        date: proposal.date, kind: "contribution", label: "Contribution",
-        deltaCents: proposal.amountCents, balanceCents: balance, actual: true, estimated: false,
+        date: anchor, kind: "contribution", label: "Hypothetical contribution",
+        deltaCents: proposal.amountCents, balanceCents: balance, actual: false, estimated: false,
         memberId: proposal.contributorMemberId, sourceId: proposal.id,
       });
       continue;
     }
     inflows.push({
-      date: proposal.date, amountCents: proposal.amountCents,
+      date: contributionDate, amountCents: proposal.amountCents,
       memberId: proposal.contributorMemberId, estimated: false,
-      sourceId: proposal.id, label: "Contribution",
+      sourceId: proposal.id, label: "Hypothetical contribution",
     });
   }
 
@@ -329,9 +324,26 @@ function foldWalk(
     ? "none"
     : inflows.some((row) => row.estimated) ? "observed" : "found";
 
-  const allEventsFold = events.reduce((sum, event) => sum + householdFundOperatingDelta(event), 0);
-  const tiesToProjection = allEventsFold === projection.operatingBalanceCents
-    && obligations.tiesToProjection;
+  const register = contributionRegister(household, monthKey, anchor);
+  const canonicalEndBalanceCents = canonicalTodayBalanceCents
+    + canonicalInflows.filter((row) => !row.estimated).reduce((sum, row) => sum + row.amountCents, 0)
+    - allOutflows.reduce((sum, row) => sum + row.amountCents, 0);
+  const sameDateOperatingCents = projectHouseholdFundOperatingBalanceBefore(
+    household,
+    addDays(anchor, 1),
+    fundId,
+  );
+  const deferredCents = allOutflows
+    .filter((row) => deferred.has(row.sourceId))
+    .reduce((sum, row) => sum + row.amountCents, 0);
+  const shortfallCents = Math.max(
+    0,
+    register.unfundedCents - hypotheticalContributionCents - deferredCents,
+  );
+  const tiesToProjection = obligations.tiesToProjection
+    && register.tiesToProjection
+    && canonicalTodayBalanceCents === sameDateOperatingCents
+    && Math.max(0, -canonicalEndBalanceCents) === register.unfundedCents;
 
   const endBalanceCents = balance;
   return {
@@ -345,7 +357,7 @@ function foldWalk(
     bufferCrossDate: crossPoint?.date ?? null,
     dryDate: dryPoint?.date ?? null,
     endBalanceCents,
-    shortfallCents: Math.max(0, -endBalanceCents),
+    shortfallCents,
     inflowConfidence,
     hasConfirmedContribution,
     tiesToProjection,

@@ -49,7 +49,7 @@ function demoPlates(today = TODAY) {
   const household = demo(today);
   const dashboard = buildDashboard(household, today, new Date(`${today}T16:00:00Z`));
   const findings = runHealthCheck(household);
-  const shared = sharedPlates({ household, dashboard, today, memberId: MEMBER, findings });
+  const shared = sharedPlates({ household, dashboard, today, findings });
   const personal = personalPlates({
     household,
     dashboard,
@@ -112,8 +112,8 @@ describe("plate primitives", () => {
   });
 });
 
-describe("twelve desk plates", () => {
-  it("puts six unique plates on each floor", () => {
+describe("Shared and Personal desk plates", () => {
+  it("puts eight unique Fund plates on Shared and six unique plates on Personal", () => {
     const { shared, personal } = demoPlates();
     expect(shared.map((plate) => plate.id)).toEqual([...SHARED_PLATE_IDS]);
     expect(personal.map((plate) => plate.id)).toEqual([...PERSONAL_PLATE_IDS]);
@@ -263,7 +263,7 @@ describe("plate interaction and materials", () => {
     expect(main).toContain('import "./desk-plates.css"');
   });
 
-  it("moves only the shared-home columns and keeps a 2×3 plate grid", () => {
+  it("moves only the shared-home columns and keeps a two-column plate grid", () => {
     expect(officeCss).toContain("minmax(0, 460px) minmax(0, 1fr)");
     expect(officeCss).toContain("minmax(0, 1.15fr) minmax(0, 1.75fr) minmax(0, 0.72fr)");
     expect(css).toContain("repeat(2, minmax(0, 1fr))");
@@ -284,7 +284,7 @@ describe("plate interaction and materials", () => {
 });
 
 describe("shared plates stay on the household projection", () => {
-  it("never names a partner-personal card on Shared Home, even from unscoped books", () => {
+  it("never names any Personal card on Shared Home, even from unscoped books", () => {
     const BIANCA = "MEM-001";
     const CANARY = "Bianca private Amex";
     let household = demo();
@@ -294,6 +294,13 @@ describe("shared plates stay on the household projection", () => {
       ownerMemberId: BIANCA,
       scope: "personal",
       creditLimit: "1000",
+    }).household;
+    household = addAccount(household, {
+      name: "Jonathan private Mastercard",
+      kind: "credit",
+      ownerMemberId: MEMBER,
+      scope: "personal",
+      creditLimit: "1200",
     }).household;
     const amex = household.accounts.find((account) => account.name === CANARY);
     if (!amex) throw new Error("expected personal card");
@@ -313,10 +320,11 @@ describe("shared plates stay on the household projection", () => {
     const blob = `${accounts.glance} ${accounts.verdict} ${accounts.footing} ${accounts.empty ?? ""} ${accounts.figure.primitive === "gauge" ? accounts.figure.label : ""}`;
     expect(blob).not.toContain(CANARY);
     expect(blob).not.toContain("Amex");
+    expect(blob).not.toContain("Jonathan private Mastercard");
     expect(blob).not.toContain(amex.id);
     expect(accounts.verdict).toContain("Visa");
-    expect(fundModels).toContain('account.ownerMemberId === memberId');
     expect(fundModels).toContain('account.scope !== "personal"');
+    expect(fundModels).not.toContain('account.ownerMemberId === memberId');
   });
 });
 

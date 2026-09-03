@@ -182,7 +182,7 @@ export function OfficeWide({
   const lampLit = findings.length > 0;
   const plates = useMemo(
     () => view === "household"
-      ? sharedPlates({ household: booksHousehold, dashboard, today, memberId, findings })
+      ? sharedPlates({ household: booksHousehold, dashboard, today, findings })
       : personalPlates({ household, dashboard, today, memberId, streak }),
     [view, booksHousehold, household, dashboard, today, findings, memberId, streak],
   );

@@ -14,7 +14,7 @@
 
 ## Household outcome
 
-When the Household Fund is configured, Shared Home shows one coherent eight-plate Fund library. Every balance question reads the same month walk, settlements become visible, and the accounts plate excludes a partner's Personal account. A household without a Fund keeps the existing six-plate board.
+When the Household Fund is configured, Shared Home shows one coherent eight-plate Fund library. Every balance question reads the same month walk, settlements become visible, and Personal accounts and shift facts stay off Shared. A household without a Fund keeps the existing six-plate board.
 
 ## Dual Course deltas
 
@@ -41,20 +41,23 @@ When the Household Fund is configured, Shared Home shows one coherent eight-plat
 - [x] Claude's two commits applied in order; newer main work preserved.
 - [x] `fundWalk.shortfallCents` ties to the contribution register in focused proof.
 - [x] A configured Fund gets eight unique plates; an unconfigured household keeps the legacy board.
-- [x] Partner-personal account canary remains absent from Shared Home.
+- [x] All Personal accounts and shift facts remain absent from Shared Home.
 - [x] Fund plate sources contain no money command call.
 - [x] Focused Fund/desk tests, TypeScript, and AI-surface verification pass.
 - [x] Serial books lane passes.
-- [ ] Independent books, privacy, and UX reviews pass on the exact candidate.
+- [x] First independent review blockers repaired: sealed shortfall/tie, record-only motions, projected-mark semantics, Shared-only accounts, no Shared shift count, and rendered/announced verdicts.
+- [ ] Independent books, privacy, and UX re-reviews pass on the repaired exact candidate.
 - [ ] Branch pushed and remote SHA verified.
 
 ## Evidence log
 
 - `pnpm exec vitest run test/fund-plates.test.ts test/fund-walk.test.ts test/desk-plates.test.ts` → 3 files, 42 tests passed.
+- Post-review focused Fund/register/privacy/DOM proof → 9 files, 89 tests passed; the Fund walk now has 9 focused cases including hypothetical deferral.
 - `pnpm exec tsc --noEmit` → passed.
 - `pnpm ai:verify` → passed (41 required files, 2 Clerk fences).
 - `pnpm test` → serial books lane passed 18 files / 154 tests with one benchmark skip; fast lane passed 230 files / 1619 tests with two pre-existing failures.
 - The same two failures reproduce on untouched `origin/main@7dd1f96`: `test/api.test.ts` cannot spawn `bash` in this Windows environment, and `test/weekly-document-stamp.test.ts` compares a fixed 2026-09-02 date against the current Toronto date.
+- Independent books, privacy, and UX reviews blocked `a2bdf14`: open/Held proposals could cover the month before Confirm; the shortfall tie was fixture-only; projected and actual spark marks were visually identical; Shared admitted viewer-Personal accounts and counted Personal shifts; and the safety verdict was neither rendered nor announced. The integration repair addresses each issue without adding a command or changing the desk grammar.
 
 ## Remaining uncertainty
 

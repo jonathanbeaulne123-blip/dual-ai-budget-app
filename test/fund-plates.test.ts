@@ -45,7 +45,7 @@ function bill(household: Household, amount: string, date: string, note: string):
 }
 
 function board(household: Household) {
-  return fundPlates({ household, today: TODAY, memberId: BIANCA, findings: [] });
+  return fundPlates({ household, today: TODAY, findings: [] });
 }
 
 describe("the Fund's plates", () => {
@@ -71,6 +71,10 @@ describe("the Fund's plates", () => {
     expect(level.verdict).toMatch(/runs dry on the 20th/);
     expect(level.copperVerdict).toBe(true);
     expect(level.figure.primitive).toBe("spark");
+    if (level.figure.primitive === "spark") {
+      expect(level.figure.actualCount).toBeGreaterThan(0);
+      expect(level.figure.actualCount).toBeLessThan(level.figure.points.length);
+    }
   });
 
   it("never says the Fund runs dry before a contribution has landed", () => {
@@ -106,6 +110,19 @@ describe("the Fund's plates", () => {
     expect(waiting.figure).toMatchObject({ primitive: "tally", count: 1 });
   });
 
+  it("never lets an open proposal make the Level say the month is covered", () => {
+    let household = fund();
+    household = contribute(household, BIANCA, "100", "2026-09-02");
+    household = bill(household, "200", "2026-09-20", "Hydro");
+    household = proposeHouseholdFundContribution(household, {
+      memberId: JONATHAN, contributorMemberId: JONATHAN, amount: "200", date: TODAY,
+    }).household;
+
+    const level = board(household).find((plate) => plate.id === "fund-level")!;
+    expect(level.verdict).toMatch(/runs dry/);
+    expect(level.verdict).not.toBe("This month is covered.");
+  });
+
   it("says the Fund owes an account, and never that a person owes", () => {
     let household = fund();
     household = contribute(household, BIANCA, "980", "2026-09-02");
@@ -122,16 +139,14 @@ describe("the Fund's plates", () => {
     expect(settle.footing).toMatch(/custody act/);
   });
 
-  it("never puts an amount on a posted shift", () => {
-    let household = fund();
-    household = contribute(household, BIANCA, "980", "2026-09-02");
-    const week = board(household).find((plate) => plate.id === "week")!;
-    expect(week.footing).not.toMatch(/\$/);
+  it("keeps Personal shift facts off the Shared week", () => {
+    expect(source).not.toContain("postedShiftDates");
+    expect(source).not.toMatch(/whose shift|shifts? posted/i);
   });
 
-  it("keeps a partner's personal account off the board", () => {
-    expect(source).toContain('account.ownerMemberId === memberId');
+  it("keeps every personal account off the Shared board", () => {
     expect(source).toContain('account.scope !== "personal"');
+    expect(source).not.toContain("account.ownerMemberId === memberId");
   });
 
   it("cannot post, settle, or move a cent", () => {
@@ -142,7 +157,7 @@ describe("the Fund's plates", () => {
   it("leaves the original board alone until a Fund exists", () => {
     const household = catalogHousehold();
     const dashboard = buildDashboard(household, TODAY, new Date(`${TODAY}T16:00:00Z`));
-    expect(fundPlates({ household, today: TODAY, memberId: BIANCA, findings: [] })).toEqual([]);
-    expect(sharedPlates({ household, dashboard, today: TODAY, memberId: BIANCA, findings: [] }).length).toBe(6);
+    expect(fundPlates({ household, today: TODAY, findings: [] })).toEqual([]);
+    expect(sharedPlates({ household, dashboard, today: TODAY, findings: [] }).length).toBe(6);
   });
 });

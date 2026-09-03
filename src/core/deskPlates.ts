@@ -1,5 +1,5 @@
 /**
- * Twelve desk plates — six Shared, six Personal — over existing selectors.
+ * Shared desk plates — the legacy six or the Fund eight — plus six Personal.
  *
  * Presentation only. Every figure is one of the six primitives in plates.ts.
  * Kickers are household questions. Glance is the closed-strip line. Verdicts
@@ -42,7 +42,7 @@ export type PlateFigure =
   | { primitive: "track"; days: number; marks: TrackMark[]; room: number }
   | { primitive: "pair"; upCents: number; downCents: number; upLabel: string; downLabel: string; room: number }
   | { primitive: "fill"; wells: FillWell[] }
-  | { primitive: "spark"; points: number[]; room: number }
+  | { primitive: "spark"; points: number[]; room: number; actualCount?: number }
   | { primitive: "tally"; count: number }
   | { primitive: "gauge"; pct: number; threshold: number; label: string };
 
@@ -123,14 +123,13 @@ export function sharedPlates(input: {
   household: Household;
   dashboard: Dashboard;
   today: DateKey;
-  memberId?: string;
   findings?: Finding[];
 }): DeskPlateModel[] {
   const { household, dashboard, today } = input;
   const findings = input.findings ?? runHealthCheck(household);
   // A household with a Fund gets the Fund library. Without one there is no walk
   // to draw, so the original board stands until the Fund is configured.
-  const fund = fundPlates({ household, today, memberId: input.memberId ?? "", findings });
+  const fund = fundPlates({ household, today, findings });
   if (fund.length) return fund;
   const dueItems = dashboard.upcoming.filter((item) => item.direction === "out" && inWindow(item.date, today, 29));
   const nextDue = dueItems[0] ?? null;

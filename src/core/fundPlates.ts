@@ -17,7 +17,6 @@ import {
   shapeHouseholdFundConfig,
 } from "./householdFund.ts";
 import { openGoals } from "./goalVault.ts";
-import { postedShiftDates } from "./shiftGlance.ts";
 import type { Finding } from "./health.ts";
 import type { DeskPlateModel, FillWell, PlateEdge, TrackMark } from "./deskPlates.ts";
 import type { Goal } from "./types.ts";
@@ -62,15 +61,13 @@ function futureInflows(walk: FundWalk): WalkPoint[] {
   return walk.points.filter((point) => !point.actual && point.deltaCents > 0);
 }
 
-/** The next inflow of any kind, which is when the pool is next replenished. */
-function nextInflowDate(walk: FundWalk): DateKey | null {
-  return futureInflows(walk)[0]?.date ?? null;
-}
-
-function levelSpark(walk: FundWalk): number[] {
-  const points = walk.points.filter((point) => point.kind !== "opening");
-  if (!points.length) return [];
-  return points.slice(0, 24).map((point) => point.balanceCents);
+function levelSpark(walk: FundWalk): { points: number[]; actualCount: number } {
+  const rows = walk.points.filter((point) => point.kind !== "opening").slice(0, 24);
+  const projectedAt = rows.findIndex((point) => !point.actual);
+  return {
+    points: rows.map((point) => point.balanceCents),
+    actualCount: projectedAt < 0 ? rows.length : projectedAt,
+  };
 }
 
 /** Highest true statement wins. The covered case never manufactures a worry. */
@@ -85,12 +82,15 @@ export function levelHeadline(walk: FundWalk, findings: readonly Finding[]): str
   if (!walk.hasConfirmedContribution) {
     return "This is only the bills you've told me about. Nothing has actually happened yet.";
   }
+  if (walk.inflowConfidence === "observed" && walk.shortfallCents > 0) {
+    return `The register is still short ${formatCad(walk.shortfallCents)}. The dashed contribution is observed, not confirmed.`;
+  }
   if (findings.length) return "The books are current. There are findings to read.";
   return "This month is covered.";
 }
 
 function levelPlate(walk: FundWalk, findings: readonly Finding[]): DeskPlateModel {
-  const edge: PlateEdge = !walk.tiesToProjection || walk.dryDate ? "attention"
+  const edge: PlateEdge = !walk.tiesToProjection || walk.dryDate || walk.shortfallCents > 0 ? "attention"
     : findings.length ? "quiet" : "clear";
   return {
     id: "fund-level",
@@ -101,8 +101,8 @@ function levelPlate(walk: FundWalk, findings: readonly Finding[]): DeskPlateMode
       ? `Solid to today, dashed after. Buffer ${formatCad(walk.bufferCents)}.`
       : "Solid to today, dashed after. No buffer agreed yet.",
     edge,
-    copperVerdict: Boolean(walk.dryDate) || !walk.tiesToProjection,
-    figure: { primitive: "spark", points: levelSpark(walk), room: TRACK_ROOM },
+    copperVerdict: Boolean(walk.dryDate) || walk.shortfallCents > 0 || !walk.tiesToProjection,
+    figure: { primitive: "spark", ...levelSpark(walk), room: TRACK_ROOM },
     empty: walk.points.length <= 1 ? "Nothing has moved through the Fund yet." : null,
     cabinet: "blotter",
     cabinetName: "The month",
@@ -163,7 +163,8 @@ function nextOutPlate(walk: FundWalk): DeskPlateModel {
 }
 
 function spokenForPlate(walk: FundWalk): DeskPlateModel {
-  const through = nextInflowDate(walk);
+  const nextInflow = futureInflows(walk)[0] ?? null;
+  const through = nextInflow?.date ?? null;
   const claimed = futureOutflows(walk)
     .filter((point) => !through || point.date <= through)
     .reduce((sum, point) => sum + Math.abs(point.deltaCents), 0);
@@ -177,7 +178,9 @@ function spokenForPlate(walk: FundWalk): DeskPlateModel {
       ? `Claims of ${formatCad(claimed)} sit against ${formatCad(pool)} in the pool.`
       : `That leaves ${formatCad(Math.max(0, pool - claimed))} free of ${formatCad(pool)}.`,
     footing: through
-      ? `Claimed before the next money in on the ${ordinal(dayOf(through))}.`
+      ? nextInflow?.estimated
+        ? `Claimed before the observed contribution on the ${ordinal(dayOf(through))}; it is not confirmed.`
+        : `Claimed before the next confirmed money in on the ${ordinal(dayOf(through))}.`
       : "Claimed before the end of the month.",
     edge: claimed > pool ? "attention" : "clear",
     copperVerdict: claimed > pool,
@@ -221,10 +224,10 @@ function settlePlate(household: Household, today: DateKey): DeskPlateModel {
   };
 }
 
-/** Shared accounts and the viewer's own. A partner's personal account never appears. */
-function accountsPlate(household: Household, memberId: string, today: DateKey): DeskPlateModel {
+/** Shared accounts only. Personal accounts stay on the Personal Books floor. */
+function accountsPlate(household: Household, today: DateKey): DeskPlateModel {
   const visible = household.accounts.filter((account) => (
-    account.active && (account.scope !== "personal" || account.ownerMemberId === memberId)
+    account.active && account.scope !== "personal"
   ));
   const cards = visible.filter((account) => isCreditKind(account.kind));
   const chosen = cards[0] ?? visible[0] ?? null;
@@ -243,7 +246,7 @@ function accountsPlate(household: Household, memberId: string, today: DateKey): 
         ? `${chosen.name} is carrying ${formatCad(view.owedCents)}.`
         : `There are ${visible.length} accounts on this floor.`
       : "No shared accounts yet.",
-    footing: "Shared accounts and your own. A partner's personal accounts stay theirs.",
+    footing: "Shared accounts only. Personal accounts stay on the Personal Books floor.",
     edge: "clear",
     copperVerdict: false,
     figure: view && view.utilization !== null
@@ -255,8 +258,8 @@ function accountsPlate(household: Household, memberId: string, today: DateKey): 
   };
 }
 
-/** What the week contains — due, posted, whose turn. Nothing here is tickable. */
-function weekPlate(household: Household, walk: FundWalk, today: DateKey): DeskPlateModel {
+/** What leaves and lands this week. Nothing here is tickable. */
+function weekPlate(walk: FundWalk, today: DateKey): DeskPlateModel {
   const start = today;
   const days: DateKey[] = [];
   for (let i = 0; i < WEEK_DAYS; i += 1) {
@@ -267,9 +270,11 @@ function weekPlate(household: Household, walk: FundWalk, today: DateKey): DeskPl
   const last = days[days.length - 1]!;
   const out = futureOutflows(walk).filter((point) => point.date >= start && point.date <= last);
   const inflow = futureInflows(walk).filter((point) => point.date >= start && point.date <= last);
-  const shifts = postedShiftDates(household).filter((date) => date >= start && date <= last);
   const outCents = out.reduce((sum, point) => sum + Math.abs(point.deltaCents), 0);
-  const inCents = inflow.reduce((sum, point) => sum + point.deltaCents, 0);
+  const confirmedInCents = inflow.filter((point) => !point.estimated)
+    .reduce((sum, point) => sum + point.deltaCents, 0);
+  const observedInCents = inflow.filter((point) => point.estimated)
+    .reduce((sum, point) => sum + point.deltaCents, 0);
   const marks: TrackMark[] = out.slice(0, WEEK_DAYS).map((point) => ({
     day: dayOf(point.date), cents: Math.abs(point.deltaCents), label: point.label,
   }));
@@ -277,16 +282,18 @@ function weekPlate(household: Household, walk: FundWalk, today: DateKey): DeskPl
     id: "week",
     kicker: "This week",
     glance: outCents > 0 ? `−${formatCad(outCents)}` : "Quiet",
-    verdict: inCents > 0
-      ? `This week ${formatCad(outCents)} leaves and ${formatCad(inCents)} lands.`
-      : outCents > 0 ? `This week ${formatCad(outCents)} leaves the Fund.` : "Nothing due this week.",
-    footing: shifts.length
-      ? `${shifts.length} shift${shifts.length === 1 ? "" : "s"} posted. Whose shift, never what it earned.`
-      : "What the week contains. Nothing here is a task.",
+    verdict: confirmedInCents > 0 && observedInCents > 0
+      ? `This week ${formatCad(outCents)} leaves, ${formatCad(confirmedInCents)} is confirmed to land, and ${formatCad(observedInCents)} is observed.`
+      : confirmedInCents > 0
+        ? `This week ${formatCad(outCents)} leaves and ${formatCad(confirmedInCents)} is confirmed to land.`
+        : observedInCents > 0
+          ? `This week ${formatCad(outCents)} leaves; ${formatCad(observedInCents)} is observed, not confirmed.`
+          : outCents > 0 ? `This week ${formatCad(outCents)} leaves the Fund.` : "Nothing due this week.",
+    footing: "What the shared week contains. Nothing here is a task.",
     edge: outCents > 0 ? "live" : "clear",
     copperVerdict: false,
     figure: { primitive: "track", days: 31, marks, room: TRACK_ROOM },
-    empty: outCents === 0 && inCents === 0 && shifts.length === 0 ? "A quiet week." : null,
+    empty: outCents === 0 && confirmedInCents === 0 && observedInCents === 0 ? "A quiet week." : null,
     cabinet: "calendar",
     cabinetName: "This week",
   };
@@ -320,10 +327,9 @@ function shelfPlate(household: Household): DeskPlateModel {
 export function fundPlates(input: {
   household: Household;
   today: DateKey;
-  memberId: string;
   findings?: readonly Finding[];
 }): DeskPlateModel[] {
-  const { household, today, memberId } = input;
+  const { household, today } = input;
   const findings = input.findings ?? [];
   if (!shapeHouseholdFundConfig(household.householdFund)) return [];
   const walk = fundWalk(household, monthKeyFromDateKey(today), today);
@@ -333,8 +339,8 @@ export function fundPlates(input: {
     nextOutPlate(walk),
     spokenForPlate(walk),
     settlePlate(household, today),
-    accountsPlate(household, memberId, today),
-    weekPlate(household, walk, today),
+    accountsPlate(household, today),
+    weekPlate(walk, today),
     shelfPlate(household),
   ];
 }
