@@ -1,5 +1,5 @@
 /**
- * Shared desk plates — the legacy six or the Fund nine — plus six Personal.
+ * Shared desk plates — the legacy six or the Fund ten — plus six Personal.
  *
  * Presentation only. Every figure is one of the six primitives in plates.ts.
  * Kickers are household questions. Glance is the closed-strip line. Verdicts
@@ -24,7 +24,7 @@ import { workOwedFacts } from "./workSettlement.ts";
 import type { PlatePrimitive } from "./plates.ts";
 import { fundPlates } from "./fundPlates.ts";
 
-export const SHARED_PLATE_IDS = ["fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving", "shape"] as const;
+export const SHARED_PLATE_IDS = ["fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving", "shape", "streams"] as const;
 /** The plates the Fund library retired, and what answers each question now. */
 export const LEGACY_SHARED_PLATE_IDS = ["due", "cards", "owed", "coming", "trust"] as const;
 export const PERSONAL_PLATE_IDS = ["clock", "tips", "pay", "wallet", "mine-saving", "month"] as const;

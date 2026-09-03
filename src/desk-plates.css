@@ -194,6 +194,66 @@
   }
 }
 
+.streams-stage {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+}
+.streams-svg {
+  width: min(100%, 540px);
+  height: auto;
+}
+.streams-baseline {
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.streams-mark {
+  fill: var(--felt);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.streams-mark-count {
+  fill: var(--ink);
+  font-size: 10px;
+  text-anchor: middle;
+}
+.streams-lane-label {
+  fill: var(--ink);
+  font-size: 9px;
+}
+.streams-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+.streams-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.streams-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--felt);
+  border: 1px solid var(--ink);
+}
+
+@media (max-width: 640px) {
+  .streams-legend {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
 .week-stage {
   display: grid;
   align-content: start;
@@ -718,5 +778,22 @@
   .desk-plate-spark.is-projected {
     fill: Canvas;
     stroke: CanvasText;
+  }
+  .streams-baseline {
+    stroke: CanvasText;
+  }
+  .streams-mark {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+  .streams-mark-count {
+    fill: CanvasText;
+  }
+  .streams-lane-label {
+    fill: CanvasText;
+  }
+  .streams-swatch {
+    background: Canvas;
+    border: 2px solid CanvasText;
   }
 }

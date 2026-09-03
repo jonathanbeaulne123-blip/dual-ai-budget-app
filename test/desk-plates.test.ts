@@ -113,11 +113,11 @@ describe("plate primitives", () => {
 });
 
 describe("Shared and Personal desk plates", () => {
-  it("puts nine unique Fund plates on Shared and six unique plates on Personal", () => {
+  it("puts ten unique Fund plates on Shared and six unique plates on Personal", () => {
     const { shared, personal } = demoPlates();
     expect(shared.map((plate) => plate.id)).toEqual([...SHARED_PLATE_IDS]);
     expect(personal.map((plate) => plate.id)).toEqual([...PERSONAL_PLATE_IDS]);
-    expect(new Set(shared.map((plate) => plate.id)).size).toBe(9);
+    expect(new Set(shared.map((plate) => plate.id)).size).toBe(10);
     expect(new Set(personal.map((plate) => plate.id)).size).toBe(6);
     // The fold: no retired id survives on the shared floor.
     for (const retired of LEGACY_SHARED_PLATE_IDS) {

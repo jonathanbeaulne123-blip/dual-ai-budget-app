@@ -29,12 +29,14 @@ import {
   fundWalk,
   fundWeek,
   categoryShape,
+  twoStreams,
   monthKeyFromDateKey,
   shapeHouseholdFundConfig,
   type CategoryShape,
   type DeskPlateId,
   type DeskPlateModel,
   type FundWidgetId,
+  type MemberStream,
   type PersonalLedgerStory as PersonalLedgerStoryModel,
   type SharedLedgerStory as SharedLedgerStoryModel,
 } from "./core/index.ts";
@@ -69,6 +71,7 @@ import { NextOutStage } from "./NextOutStage.tsx";
 import { WeekStage } from "./WeekStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
 import { ShapeStage } from "./ShapeStage.tsx";
+import { StreamsStage } from "./StreamsStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -252,6 +255,11 @@ export function OfficeWide({
   const categoryShapeToday: CategoryShape[] = useMemo(() => (
     fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
       ? categoryShape(booksHousehold, monthKeyFromDateKey(today), today)
+      : []
+  ), [fundConfigured, booksHousehold, today]);
+  const twoStreamsToday: MemberStream[] = useMemo(() => (
+    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? twoStreams(booksHousehold, today)
       : []
   ), [fundConfigured, booksHousehold, today]);
   const selectedFundPlate = useMemo(() => (
@@ -646,6 +654,8 @@ export function OfficeWide({
             />
           ) : spreadIsStage && fundConfigured && activeFundWidget === "shape" ? (
             <ShapeStage rows={categoryShapeToday} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "streams" ? (
+            <StreamsStage streams={twoStreamsToday} today={today} nameOf={nameOf} headingRef={fundStageHeadingRef} />
           ) : spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
             <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
               <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>

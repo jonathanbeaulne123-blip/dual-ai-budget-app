@@ -50,7 +50,7 @@ function board(household: Household) {
 }
 
 describe("the Fund's plates", () => {
-  it("puts the nine Fund widgets on the shared floor, the Level first", () => {
+  it("puts the ten Fund widgets on the shared floor, the Level first", () => {
     let household = fund();
     household = contribute(household, BIANCA, "980", "2026-09-02");
     const plates = board(household);

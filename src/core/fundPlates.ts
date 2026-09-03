@@ -18,13 +18,14 @@ import {
   shapeHouseholdFundConfig,
 } from "./householdFund.ts";
 import { openGoals } from "./goalVault.ts";
+import { twoStreams } from "./twoStreams.ts";
 import type { Finding } from "./health.ts";
 import type { DeskPlateModel, FillWell, PlateEdge, TrackMark } from "./deskPlates.ts";
 import type { Goal } from "./types.ts";
 import type { Household } from "./types.ts";
 
 export const FUND_PLATE_IDS = [
-  "fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving", "shape",
+  "fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving", "shape", "streams",
 ] as const;
 export type FundPlateId = (typeof FUND_PLATE_IDS)[number];
 
@@ -377,7 +378,29 @@ function shapePlate(household: Household, monthKey: MonthKey, today: DateKey): D
   };
 }
 
-/** The nine Fund plates, in default custodian order. */
+/** Two separate timing facts; never a combined amount or member comparison. */
+function streamsPlate(household: Household, today: DateKey): DeskPlateModel {
+  const streams = twoStreams(household, today);
+  const nameOf = (memberId: string) => household.members.find((member) => member.id === memberId)?.name ?? "A member";
+  const first = streams[0];
+  return {
+    id: "streams",
+    kicker: "The two streams",
+    glance: streams.length > 1 ? `${streams.length} contribution streams` : first ? `${nameOf(first.memberId)} · ${first.cadenceLabel}` : "Not enough yet",
+    verdict: streams.length
+      ? `${streams.map((stream) => `${nameOf(stream.memberId)} gives ${stream.cadenceLabel}`).join("; ")}.`
+      : "Not enough confirmed contributions yet to draw either stream.",
+    footing: "Six months of confirmed contributions. Never combined, never compared.",
+    edge: "clear",
+    copperVerdict: false,
+    figure: { primitive: "tally", count: streams.length },
+    empty: streams.length ? null : "Not enough confirmed contributions yet to draw either stream.",
+    cabinet: "blotter",
+    cabinetName: "The two streams",
+  };
+}
+
+/** The ten Fund plates, in default custodian order. */
 export function fundPlates(input: {
   household: Household;
   today: DateKey;
@@ -398,5 +421,6 @@ export function fundPlates(input: {
     weekPlate(household, today),
     shelfPlate(household),
     shapePlate(household, monthKey, today),
+    streamsPlate(household, today),
   ];
 }
