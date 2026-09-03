@@ -29,6 +29,7 @@ import {
   linkGoogleIdentity,
   assembleHousehold,
   splitForSync,
+  fundRailPreferenceUpdateAllowed,
   householdWallet,
   jointSplit,
   memberNeedsGoogleStepUp,
@@ -149,6 +150,7 @@ import {
   loadPersonalReplica,
   peekHousehold,
   saveHousehold,
+  savePersonalReplicaOnly,
   selectHouseholdReplica,
   type HouseholdReplicaSummary,
 } from "./storage.ts";
@@ -702,6 +704,26 @@ export function App() {
       });
       return adoptKnownMetadataHousehold(next, current.revision) ? next : null;
     });
+  }
+
+  async function persistMemberPersonalPreferenceNow(current: Household, result: CommitResult): Promise<void> {
+    const who = session?.memberId;
+    if (
+      result.persistenceScope !== "member-personal"
+      || !who
+      || result.personalMemberId !== who
+    ) {
+      throw new ValidationError("Only you can arrange your own board.");
+    }
+    if (result.household === current) return;
+    if (!fundRailPreferenceUpdateAllowed(current, result.household, who)) {
+      throw new ValidationError("Only you can arrange your own board.");
+    }
+    const personal = await savePersonalReplicaOnly(result.household, who, environment);
+    if (!adoptKnownMetadataHousehold(result.household, current.revision)) {
+      throw new ValidationError("Hearth did not save that Personal board change.");
+    }
+    setPersonalReplica(personal);
   }
 
   useEffect(() => {
@@ -3263,6 +3285,11 @@ export function App() {
       setError("");
       try {
         const result = fn(current);
+        if (result.persistenceScope === "member-personal") {
+          await persistMemberPersonalPreferenceNow(current, result);
+          options?.onAccepted?.(result);
+          return;
+        }
         if (result.postedIds.length && form.amount) {
           try {
             lastAmountLabelRef.current = formatCad(parseAmount(form.amount));
@@ -3350,6 +3377,10 @@ export function App() {
       if (!current) return;
       try {
         const result = fn(current);
+        if (result.persistenceScope === "member-personal") {
+          await persistMemberPersonalPreferenceNow(current, result);
+          return;
+        }
         await commitHousehold(result.household, result.undo);
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));

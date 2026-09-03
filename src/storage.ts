@@ -193,6 +193,39 @@ export async function loadPersonalReplica(environment: Environment, householdId:
   }
 }
 
+/** Persist one acting member's Personal envelope without touching the accepted household replica. */
+export async function savePersonalReplicaOnly(
+  household: Household,
+  memberId: string,
+  operatingEnvironment: Environment = household.environment,
+): Promise<PersonalEnvelope> {
+  const shaped = ensureHouseholdShape(household);
+  assertEnvironmentMatch(shaped.environment, { environment: operatingEnvironment }, "persist", {
+    requirePresent: true,
+  });
+  if (!shaped.members.some((member) => member.id === memberId && member.active)) {
+    throw new Error("Only an active member can save their Personal preferences.");
+  }
+  const personal = personalReplicaForMember(shaped, memberId);
+  const key = personalKey(shaped.environment, shaped.householdId, memberId);
+  let localSaved = false;
+  try {
+    localStorage.setItem(key, JSON.stringify(personal));
+    localSaved = true;
+  } catch {
+    // IndexedDB remains an independent local persistence path.
+  }
+  let indexedDbSaved = false;
+  try {
+    await idbSetMany([[key, personal]]);
+    indexedDbSaved = true;
+  } catch {
+    // localStorage may already hold the Personal envelope.
+  }
+  if (!localSaved && !indexedDbSaved) throw new Error("Could not save this member's Personal preferences on this device.");
+  return personal;
+}
+
 export async function loadHousehold(environment: Environment, householdId?: string | null, memberId?: string): Promise<Household | null> {
   const selectedId = householdId ?? activeHouseholdId(environment);
   let chosen: Household | null = null;

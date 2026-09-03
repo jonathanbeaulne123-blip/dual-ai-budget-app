@@ -12,6 +12,10 @@ export const COMPANION = "companion" as const;
 export type Visibility = "household" | "personal" | "both";
 export type LedgerView = "household" | "personal";
 export type LandingSurface = "desk" | "till";
+export type FundWidgetId =
+  | "level" | "swipe" | "contribute" | "waiting" | "next-out" | "spoken-for" | "week" | "shape"
+  | "streams" | "seven-days" | "shelf" | "record" | "minutes" | "ask" | "accounts" | "settle";
+export type MemberRail = { memberId: string; slots: FundWidgetId[]; updatedAt: string };
 export type Tombstone = { id: string; deletedAt: string };
 
 export type Member = {
@@ -24,6 +28,8 @@ export type Member = {
   landingSurface?: LandingSurface;
   /** Record-specific Personal convergence clock; never enters Shared. */
   landingSurfaceUpdatedAt?: string;
+  /** Member-owned Fund board arrangement. Shared sync strips it into Personal. */
+  fundRail?: MemberRail;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
@@ -1329,6 +1335,7 @@ export type PersonalEnvelope = {
   /** Member-owned default surface. Legacy envelopes omit it and derive the calm default. */
   landingSurface?: LandingSurface;
   landingSurfaceUpdatedAt?: string;
+  fundRail?: MemberRail;
   /** Member-owned account metadata. Legacy envelopes omit this collection. */
   accounts?: Account[];
   lastCommittedAt: string | null;
@@ -1386,4 +1393,7 @@ export type CommitResult = {
   warnings: string[];
   undo: UndoToken;
   postedIds: string[];
+  /** Member preferences bypass accepted-books/PGlite and persist only their Personal replica. */
+  persistenceScope?: "member-personal";
+  personalMemberId?: string;
 };

@@ -4,6 +4,7 @@ import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
 import { nextId, nowIso, randomHouseholdId, randomInviteCode, slug, uniquePrefixedId } from "./ids.ts";
 import { cloneHousehold, requireLandingSurface } from "./household.ts";
+import { defaultRailFor, isFundWidgetId, railFor, requireFundRail, widgetAllowedFor } from "./fundRail.ts";
 import { isLedgerWrite } from "./writeKind.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
@@ -113,6 +114,7 @@ import type {
   ChalkInk,
   CreditRewardRule,
   Household,
+  FundWidgetId,
   HouseholdFundFundingDefault,
   HouseholdFundTransactionFunding,
   HerculesMemoryKind,
@@ -216,6 +218,107 @@ export function setLandingSurface(household: Household, input: {
     ? { ...row, landingSurface: surface, landingSurfaceUpdatedAt: updatedAt }
     : row);
   return commit(previous, next, "Landing surface", `${member.name} chose where Hearth opens`, []);
+}
+
+function requireFundRailActor(household: Household, memberId: string, createdBy: string) {
+  if (!createdBy) throw new ValidationError("Only you can arrange your own board.");
+  const member = requireMember(household, memberId);
+  const actor = resolveActor(household, { createdBy });
+  if (actor.createdBy !== member.id) throw new ValidationError("Only you can arrange your own board.");
+  return member;
+}
+
+function commitFundRailPreference(previous: Household, next: Household, memberId: string, label: string, updatedAt: string): CommitResult {
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    persistenceScope: "member-personal",
+    personalMemberId: memberId,
+    undo: {
+      id: `fund-rail-${memberId}-${updatedAt}`,
+      label,
+      snapshot: previous,
+      postedIds: [],
+      commandKind: "fund-rail-personal",
+    },
+  };
+}
+
+/** Arrange one member-owned board slot. Slot numbers are the visible one-based places. */
+export function setFundRailSlot(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  slot: number;
+  widgetId: FundWidgetId;
+}): CommitResult {
+  const member = requireFundRailActor(household, input.memberId, input.createdBy);
+  if (!Number.isInteger(input.slot) || input.slot < 1 || input.slot > 8) {
+    throw new ValidationError("The Fund board has exactly eight places.");
+  }
+  if (!isFundWidgetId(input.widgetId)) throw new ValidationError("Choose a widget from the Fund library.");
+  if ((input.slot === 1) !== (input.widgetId === "level")) {
+    throw new ValidationError("The Fund stays at the top of the board.");
+  }
+  if (!widgetAllowedFor(input.widgetId, household, member.id)) {
+    throw new ValidationError("That one only belongs on your own desk.");
+  }
+
+  const current = railFor(household, member.id);
+  const index = input.slot - 1;
+  const from = current.indexOf(input.widgetId);
+  const nextSlots = [...current];
+  if (from >= 0) {
+    [nextSlots[index], nextSlots[from]] = [nextSlots[from]!, nextSlots[index]!];
+  } else {
+    nextSlots[index] = input.widgetId;
+  }
+  const slots = requireFundRail(nextSlots, household, member.id);
+  if (slots.every((id, place) => id === current[place])) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      persistenceScope: "member-personal",
+      personalMemberId: member.id,
+      undo: { id: `fund-rail-${member.id}-${input.slot}`, label: "Fund board unchanged", snapshot: household, postedIds: [] },
+    };
+  }
+
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const updatedAt = nowIso();
+  next.members = next.members.map((row) => row.id === member.id
+    ? { ...row, fundRail: { memberId: member.id, slots, updatedAt } }
+    : row);
+  return commitFundRailPreference(previous, next, member.id, "Fund board arranged", updatedAt);
+}
+
+/** Return only the acting member's board to the role-derived calm default. */
+export function resetFundRail(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+}): CommitResult {
+  const member = requireFundRailActor(household, input.memberId, input.createdBy);
+  const slots = defaultRailFor(household, member.id);
+  const current = railFor(household, member.id);
+  if (slots.every((id, place) => id === current[place]) && !member.fundRail) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      persistenceScope: "member-personal",
+      personalMemberId: member.id,
+      undo: { id: `fund-rail-${member.id}-reset`, label: "Fund board already at default", snapshot: household, postedIds: [] },
+    };
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const updatedAt = nowIso();
+  next.members = next.members.map((row) => row.id === member.id
+    ? { ...row, fundRail: { memberId: member.id, slots, updatedAt } }
+    : row);
+  return commitFundRailPreference(previous, next, member.id, "Fund board reset", updatedAt);
 }
 
 function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {

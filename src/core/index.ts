@@ -39,6 +39,7 @@ export type {
 export * from "./registerView.ts";
 export * from "./fundWalk.ts";
 export * from "./fundPlates.ts";
+export * from "./fundRail.ts";
 export * from "./ask.ts";
 export * from "./askRoutes.ts";
 export * from "./askView.ts";

@@ -211,27 +211,27 @@ describe("Shared and Personal desk plates", () => {
 });
 
 describe("plate interaction and materials", () => {
-  it("grows the plate in the mosaic on a single click and opens the cabinet on double-click and the handle", () => {
-    expect(officeWide).toContain("onSelect={() => togglePlate(plate.id)}");
-    expect(officeWide).toContain("open={openPlateIds.has(plate.id)}");
+  it("stages a Fund plate on a single click while legacy and Personal plates still grow in place", () => {
+    expect(officeWide).toContain("onSelect={() => fundConfigured ? stageFundPlate(plate) : togglePlate(plate.id)}");
+    expect(officeWide).toContain("open={!fundConfigured && openPlateIds.has(plate.id)}");
     expect(officeWide).toContain("onOpenCabinet={() => openPlateCabinet(plate.id)}");
     expect(officeWide).toContain("spreadIsStage");
     expect(officeWide).toContain("<DeskPlate");
     expect(officeWide).toContain("<MonthSpread");
-    expect(officeWide).not.toContain("selectPlate");
-    expect(officeWide).not.toContain("activePlateId");
+    expect(officeWide).toContain("selectedFundWidget");
+    expect(officeWide).toContain("fundStageStorageKey(environment, household.householdId, memberId, today)");
     expect(officeWide).not.toContain("enlarged");
     expect(component).toContain("onClick={onSelect}");
-    expect(component).toContain("onDoubleClick={onOpenCabinet}");
-    expect(component).toContain("aria-expanded={open}");
+    expect(component).toContain("onDoubleClick={tab ? undefined : onOpenCabinet}");
+    expect(component).toContain("aria-expanded={tab ? undefined : open}");
     expect(component).toContain("{plate.glance}");
     expect(component).toContain("event.stopPropagation()");
-    expect(component).not.toContain("aria-current");
+    expect(component).toContain('aria-current={tab && active ? "true" : undefined}');
   });
 
   it("keeps the cabinet handle as the keyboard and touch path", () => {
     expect(component).toContain("Open the ${plate.cabinetName} cabinet");
-    expect(component).toContain('tabIndex={0}');
+    expect(component).toContain('tabIndex={tab ? (active ? 0 : -1) : 0}');
     expect(component).toContain('event.key === "Enter"');
     expect(css).toContain(".desk-plate-handle");
     expect(css).toContain("min-height: 44px");
@@ -275,7 +275,7 @@ describe("plate interaction and materials", () => {
     expect(officeWide).toContain("closeStage");
     expect(officeWide).toContain("setMonthList(null)");
     expect(officeWide).not.toContain("setActivePlateId");
-    expect(officeWide).toContain("open={openPlateIds.has(plate.id)}");
+    expect(officeWide).toContain("open={!fundConfigured && openPlateIds.has(plate.id)}");
     expect(officeCss).toContain("--stories-open-height: calc(3 * 220px + 2 * 10px + 2.2rem)");
     expect(css).toContain(".desk-plate.is-open");
     expect(css).toContain("min-height: 80px");
