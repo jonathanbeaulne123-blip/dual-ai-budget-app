@@ -1,14 +1,14 @@
 # Hearth worksession — onboarding member progress
 
-- **Status:** ACTIVE
+- **Status:** COMPLETE
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/3-progress`
 - **Baseline SHA:** `150210765b9eb171b37219966a8023d57c5da731`
-- **Head SHA:** pending
-- **PR or issue:** pending
+- **Head SHA:** implementation `c4f0b2abb948f10319fa61f79eff77b69301618c`; documentation close follows
+- **PR or issue:** [#319](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/319)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development-only force unlock; no deployment authorized in this slice
@@ -49,26 +49,33 @@ Each signed-in member gets durable, resumable onboarding progress on any device 
 
 ## Acceptance evidence
 
-- [ ] One focused test per slice-3 rule.
-- [ ] Merge is order-independent and preserves every monotonic field.
-- [ ] Progress core imports no component and contains no `document`.
-- [ ] Personal split/assembly/merge keeps one member's state out of Shared and out of another member's Personal envelope.
-- [ ] Development force unlock is accepted as Shared mode state; Production refuses exact copy.
-- [ ] The exact High quick gate passes with no new failing set.
-- [ ] Production build and AI-surface verification pass.
+- [x] One focused test per slice-3 rule.
+- [x] Merge is order-independent and preserves every monotonic field.
+- [x] Progress core imports no component and contains no `document`.
+- [x] Personal split/assembly/merge keeps one member's state out of Shared and out of another member's Personal envelope.
+- [x] Development force unlock is accepted as Shared mode state; Production refuses exact copy.
+- [x] The exact High quick gate passes with no new failing set.
+- [x] Production build and AI-surface verification pass.
 
 ## Plan
 
-- [ ] Implement progress model, selectors, and deterministic merge.
-- [ ] Integrate progress with the Personal continuity envelope.
-- [ ] Add self-owned commands and the Development-only Shared escape hatch.
-- [ ] Add focused tests and D-205.
-- [ ] Run the authorized quick gate, inspect the diff, push, and open the slice PR.
+- [x] Implement progress model, selectors, and deterministic merge.
+- [x] Integrate progress with the Personal continuity envelope.
+- [x] Add self-owned commands and the Development-only Shared escape hatch.
+- [x] Add focused tests and D-205.
+- [x] Run the authorized quick gate, inspect the diff, push, and open the slice PR.
 
 ## Evidence log
 
 - `git fetch origin --prune`; branch baseline verified at `150210765b9eb171b37219966a8023d57c5da731`.
 - `git status --short --branch` was clean before this worksession was created.
+- Focused onboarding, mode, sync-integrity, and Fund-rail regression set -> **44/44 passed**.
+- Clean implementation quick gate at `c4f0b2abb948f10319fa61f79eff77b69301618c` -> TypeScript, AI-surface verification, diff hygiene, **50 fast + 7 serial tests passed** in **84.268s**; no five-minute breach; fingerprint `eca4c60d4bff3012ad003b633584d1ccaea1d3fff3893e6dca2e23f5e8fe1b29`.
+- `pnpm build` -> **passed**; existing PGlite browser-external/eval and large-chunk warnings only.
+- `pnpm ai:verify` -> **passed**; 48 required files and two Clerk fences.
+- `pnpm test:full` was not run; exhaustive proof remains reserved for an explicitly authorized exact clean High/Release-risk SHA.
+- Changed files: `docs/DECISIONS.md`; this worksession; `src/core/onboarding/progress.ts`; `src/core/onboarding/mode.ts`; `src/core/types.ts`; `src/core/commands.ts`; `src/core/household.ts`; `src/core/index.ts`; `src/core/sync.ts`; `test/onboarding-progress.test.ts`.
+- PR [#319](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/319) opened against `main`; unmerged and undeployed.
 
 ## Decisions
 
@@ -80,7 +87,9 @@ Each signed-in member gets durable, resumable onboarding progress on any device 
 
 - Probe adapters and their trusted acceptance path belong to later slices.
 - No personal registry modules exist yet, so skip/mute infrastructure is present before its eventual offer UI.
+- Exact-head GitHub CI remains pending after the documentation close commit.
+- No browser evidence was required because this slice renders nothing.
 
 ## Handoff
 
-Pending implementation and verification.
+Slice 3 is implemented and PR #319 is open. Wait for exact-head GitHub checks and review before any merge. Merge and Development deployment require Jonathan's separate instruction.
