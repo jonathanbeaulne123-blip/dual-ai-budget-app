@@ -28,7 +28,7 @@ Details: [ENVIRONMENTS.md](ENVIRONMENTS.md), [GOOGLE.md](GOOGLE.md), D-041.
 
 The canonical remote is `https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app`. Default branch is `main`.
 
-Normal path: branch, one coherent change, `pnpm test`, pull request, Jonathan merges.
+Normal path: branch, one coherent change, the five-minute `pnpm test -- --risk=<risk> --focus=<test> --focus-reason="<why>"` quick gate, pull request, Jonathan merges. Automatic CI also runs only the quick gate. The exhaustive `pnpm check:full` workflow is manual and valid only when Jonathan explicitly requests it for an exact clean High/Release-risk SHA with a recorded same-repository authorization reference; see [`VERIFICATION.md`](VERIFICATION.md).
 
 Apps Script is not on the working tree; recover it from tag `sheets-v0.0.31`.
 

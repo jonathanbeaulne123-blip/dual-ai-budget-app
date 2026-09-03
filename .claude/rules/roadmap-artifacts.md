@@ -12,4 +12,4 @@ paths:
 - Museum folders are not planning inputs unless Jonathan explicitly requests historical research.
 - A generated artifact is evidence only after its source baseline and current repository state are checked.
 - Record local, branch, PR, merged, deployed, and live-verified state literally.
-- Use a worksession for multi-step or Medium/High/Release work and the complete AI handoff for transfers.
+- Use a worksession for multi-step or Medium/Medium-High/High/Release work and the complete AI handoff for transfers.

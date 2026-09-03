@@ -53,7 +53,7 @@ Help Jonathan and Bianca run a dependable household budget **and** a companion k
 2. Inspect current code rather than trusting a summary or a nostalgia/reference file.
 3. Assign a risk level using `docs/AI_HANDOFF.md`. Name a **budget delta (5)** and an **engagement delta (3)**.
 4. Make the smallest coherent change that preserves financial meaning. Do not change important features; smaller edits need a why-note in the decision log.
-5. Run `pnpm test`.
+5. Run the change-focused quick gate with `pnpm test -- --risk=<medium|medium-high|high> --focus=<test file> --focus-reason="<why it proves the change>"`. It targets five minutes and must name any time-budget breach. `pnpm test:full` and `pnpm check:full` are reserved for an exact clean High/Release-risk SHA after Jonathan explicitly requests the exhaustive gate and that request has a recorded reference.
 6. Update the living decision log when behavior or architecture changes.
 7. Return a structured handoff with both Dual Course deltas, verification, uncertainty, and the next recommended action.
 
@@ -62,5 +62,6 @@ Help Jonathan and Bianca run a dependable household budget **and** a companion k
 - `AGENTS.md` is the one shared constitution. Tool-specific files adapt roles and procedures; they do not redefine Hearth law.
 - Codex is the default coordinator and integrator. Cursor is the default implementation specialist. Claude is the default UX, Hercules, accessibility, and responsible-retention specialist. These are soft specialties, not exclusive ownership.
 - Use subagents for bounded, independent, read-heavy investigation, review, and verification. Keep one writer per checkout.
-- For multi-step or Medium/High/Release work, use `hearth-worksession`. For a durable handoff, use `hearth-implementation-packet`. Before release consideration, use `hearth-release-review`.
+- For multi-step or Medium/Medium-High/High/Release work, use `hearth-worksession`. For a durable handoff, use `hearth-implementation-packet`. Before release consideration, use `hearth-release-review`.
+- Quick-gate evidence is not full-suite or release evidence. Automatic local and GitHub verification must not invoke the exhaustive lanes; see [docs/VERIFICATION.md](docs/VERIFICATION.md).
 - Follow [docs/AI_OPERATING_MODEL.md](docs/AI_OPERATING_MODEL.md) for routing, context budget, authority, and evidence. The living plan is [docs/HEARTH_ROADMAP.md](docs/HEARTH_ROADMAP.md). The docs index is [docs/README.md](docs/README.md).
