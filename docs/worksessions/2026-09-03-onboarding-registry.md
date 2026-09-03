@@ -1,14 +1,14 @@
 # Hearth worksession — onboarding chapter registry
 
-- **Status:** OPEN
+- **Status:** COMPLETE
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/1-registry`
 - **Baseline SHA:** `64740b34a714d0fcb325dd76a10bc4e056e669cd`
-- **Head SHA:** local working tree
-- **PR or issue:** pending
+- **Head SHA:** implementation `fd28478bb0d39aa0ff884d3700afdfc5b6a28f43`; this documentation-only close follows
+- **PR or issue:** [#317](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/317)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** none
@@ -50,33 +50,43 @@ Every onboarding chapter has one deterministic, versioned record that later slic
 
 ## Acceptance evidence
 
-- [ ] Shipped registry validates with no problems.
-- [ ] One malformed fixture proves every required problem code.
-- [ ] Household registry returns exactly twelve chapters in canonical order.
-- [ ] Registry source imports no command module and contains no TSX dependency.
-- [ ] Focused test and authorized quick gate pass without a time-budget breach.
-- [ ] Build and AI-surface verification pass.
-- [ ] Windows gate is run where available or its host limitation is recorded.
+- [x] Shipped registry validates with no problems.
+- [x] One malformed fixture proves every required problem code.
+- [x] Household registry returns exactly twelve chapters in canonical order.
+- [x] Registry source imports no command module and contains no TSX dependency.
+- [x] Focused test and authorized quick gate pass without a time-budget breach.
+- [x] Build and AI-surface verification pass.
+- [x] Windows gate was attempted and its missing-host-tool limitation is recorded.
 
 ## Plan
 
 - [x] Reverify branch point, dependency state, and current canon.
-- [ ] Implement types, registry, validator, exports, tests, and decision.
-- [ ] Run focused and repository gates.
-- [ ] Close the worksession, commit, push, and open the unmerged PR.
+- [x] Implement types, registry, validator, exports, tests, and decision.
+- [x] Run focused and repository gates.
+- [x] Close the worksession, commit, push, and open the unmerged PR.
 
 ## Evidence log
 
 - `git fetch origin main onboarding/0-verify`: `origin/main` remained `64740b3`; slice 0 commit `b60c7e3` was not an ancestor of main.
+- `pnpm vitest run test/onboarding-registry.test.ts`: **16/16 passed**.
+- `pnpm test -- --risk=medium --focus=test/onboarding-registry.test.ts --focus-reason="The registry suite exercises every required invariant and the exact twelve-row contract."`: **passed** 45 selected tests, TypeScript, AI-surface verification, and diff hygiene in **70.191s**; no five-minute breach.
+- Exact PR-candidate rerun with the closed handoff present: **passed** the same 45 selected tests and gates in **113.094s**; no five-minute breach, change fingerprint `5bf85bc1`.
+- `pnpm build`: **passed**; existing PGlite browser-external/eval and bundle-size warnings only.
+- `pnpm ai:verify`: **passed**; 48 required files and two Clerk fences.
+- `pnpm check:windows`: **unavailable on this macOS host** because `pwsh` is not installed. No Windows test failure was observed.
+- `pnpm test:full`: not run; exhaustive proof was neither required nor authorized for this Medium slice.
+- PR [#317](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/317) opened against `main`; unmerged, not deployed, and not live.
 
 ## Decisions
 
 - The registry is pure metadata. It imports only onboarding types, while the types import the canonical `HearthTab` type.
+- **D-203 proposed:** onboarding chapters are validated registry records, not code paths.
 
 ## Remaining uncertainty
 
 - `docs/DECISIONS.md` already contains two D-202 assignments. This slice will not silently rewrite either historical record.
+- GitHub CI and review remain pending. The local macOS host cannot supply the required PowerShell/Windows evidence.
 
 ## Handoff
 
-Pending implementation and verification. Jonathan remains the merge and release owner.
+Local implementation is committed at `fd28478`, pushed on `onboarding/1-registry`, and open in PR #317. It is not merged, deployed, or live. Jonathan is the next owner for review and the merge decision; onboarding slice 2 remains a separate request.
