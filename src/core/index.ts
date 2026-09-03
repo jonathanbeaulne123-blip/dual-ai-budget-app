@@ -41,6 +41,7 @@ export * from "./fundWalk.ts";
 export * from "./levelView.ts";
 export * from "./nextOut.ts";
 export * from "./motionConsequence.ts";
+export * from "./settleWidget.ts";
 export * from "./fundPlates.ts";
 export * from "./fundRail.ts";
 export * from "./ask.ts";

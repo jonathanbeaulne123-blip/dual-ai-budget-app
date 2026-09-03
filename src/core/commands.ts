@@ -145,6 +145,7 @@ import {
   HOUSEHOLD_FUND_ID,
   HOUSEHOLD_FUND_DIRECT_DESTINATION,
   HOUSEHOLD_FUND_NAME,
+  activeHouseholdFundEvents,
   householdFundContributionMotions,
   matchHouseholdFundBankEvidence,
   projectHouseholdFund,
@@ -5863,11 +5864,27 @@ export function confirmHouseholdFundSettlement(household: Household, input: {
   const amountCents = parseAmount(input.amount);
   const projection = projectHouseholdFund(household, parseDate(input.date));
   if (amountCents > projection.operatingBalanceCents) throw new ValidationError("That transfer exceeds the confirmed Household Fund balance.");
+  const destinationDueCents = projection.destinationPositions
+    .find((row) => row.destinationAccountId === destinationId)?.dueCents ?? 0;
+  // Recheck the net destination obligation against the current household. A
+  // stale screen must not turn an intervening refund into an overpayment.
+  if (amountCents > destinationDueCents) {
+    throw new ValidationError("That transfer exceeds the current amount due for this destination.");
+  }
+  const positionDate = (positionId: string): string => {
+    const transaction = household.transactions
+      .filter((row) => row.type === "expense" && (row.id === positionId || row.funding?.positionId === positionId))
+      .sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id))[0];
+    const purchaseEvent = activeHouseholdFundEvents(household, fund.id)
+      .filter((event) => event.kind === "purchase-funded" && event.relatedTransactionIds.includes(positionId))
+      .sort((left, right) => left.date.localeCompare(right.date) || left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))[0];
+    return transaction?.date ?? purchaseEvent?.date ?? "";
+  };
   const eligible = projection.transactionPositions
     .filter((row) => row.destinationAccountId === destinationId && row.outstandingCents > 0)
     .sort((left, right) => {
-      const leftDate = household.transactions.find((tx) => tx.id === left.transactionId)?.date ?? "";
-      const rightDate = household.transactions.find((tx) => tx.id === right.transactionId)?.date ?? "";
+      const leftDate = positionDate(left.transactionId);
+      const rightDate = positionDate(right.transactionId);
       return leftDate.localeCompare(rightDate) || left.transactionId.localeCompare(right.transactionId);
     });
   if (amountCents > eligible.reduce((sum, row) => sum + row.outstandingCents, 0)) {

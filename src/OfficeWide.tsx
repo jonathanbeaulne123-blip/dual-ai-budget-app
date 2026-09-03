@@ -64,6 +64,7 @@ import { FundDrawer } from "./FundDrawer.tsx";
 import { Level } from "./Level.tsx";
 import { NextOutStage } from "./NextOutStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
+import { SettleStage } from "./SettleStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -624,6 +625,15 @@ export function OfficeWide({
               household={booksHousehold}
               memberId={memberId}
               today={today}
+              onKitchen={onKitchen}
+              headingRef={fundStageHeadingRef}
+            />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "settle" ? (
+            <SettleStage
+              household={booksHousehold}
+              memberId={memberId}
+              today={today}
+              busy={busy}
               onKitchen={onKitchen}
               headingRef={fundStageHeadingRef}
             />
