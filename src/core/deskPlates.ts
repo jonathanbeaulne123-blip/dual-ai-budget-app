@@ -1,5 +1,5 @@
 /**
- * Shared desk plates — the legacy six or the Fund eight — plus six Personal.
+ * Shared desk plates — the legacy six or the Fund ten — plus six Personal.
  *
  * Presentation only. Every figure is one of the six primitives in plates.ts.
  * Kickers are household questions. Glance is the closed-strip line. Verdicts
@@ -24,7 +24,7 @@ import { workOwedFacts } from "./workSettlement.ts";
 import type { PlatePrimitive } from "./plates.ts";
 import { fundPlates } from "./fundPlates.ts";
 
-export const SHARED_PLATE_IDS = ["fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving"] as const;
+export const SHARED_PLATE_IDS = ["fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving", "shape", "streams"] as const;
 /** The plates the Fund library retired, and what answers each question now. */
 export const LEGACY_SHARED_PLATE_IDS = ["due", "cards", "owed", "coming", "trust"] as const;
 export const PERSONAL_PLATE_IDS = ["clock", "tips", "pay", "wallet", "mine-saving", "month"] as const;
@@ -121,15 +121,16 @@ function monthRunningNet(household: Household, today: DateKey): number[] {
 
 export function sharedPlates(input: {
   household: Household;
+  memberId: string;
   dashboard: Dashboard;
   today: DateKey;
   findings?: Finding[];
 }): DeskPlateModel[] {
-  const { household, dashboard, today } = input;
+  const { household, memberId, dashboard, today } = input;
   const findings = input.findings ?? runHealthCheck(household);
   // A household with a Fund gets the Fund library. Without one there is no walk
   // to draw, so the original board stands until the Fund is configured.
-  const fund = fundPlates({ household, today, findings });
+  const fund = fundPlates({ household, memberId, today, findings });
   if (fund.length) return fund;
   const dueItems = dashboard.upcoming.filter((item) => item.direction === "out" && inWindow(item.date, today, 29));
   const nextDue = dueItems[0] ?? null;

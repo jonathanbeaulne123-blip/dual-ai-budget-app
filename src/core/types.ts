@@ -30,6 +30,12 @@ export type Member = {
   landingSurfaceUpdatedAt?: string;
   /** Member-owned Fund board arrangement. Shared sync strips it into Personal. */
   fundRail?: MemberRail;
+  /** Member-owned onboarding state. Shared sync strips it into Personal. */
+  onboardingProgress?: import("./onboarding/progress.ts").MemberOnboardingProgress;
+  /** Member-owned glance account choice for the accounts widget. A starting point, never a lock. */
+  glanceAccountId?: string | null;
+  /** Record-specific Personal convergence clock; never enters Shared. */
+  glanceAccountUpdatedAt?: string;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
@@ -1236,6 +1242,8 @@ export type Household = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   goalPurchases: GoalPurchase[];
+  /** Shared setup-mode authority. Free roam is represented by no record or a non-locking state. */
+  householdOnboarding?: import("./onboarding/mode.ts").HouseholdOnboarding | null;
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -1299,6 +1307,8 @@ export type SharedEnvelope = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   goalPurchases: GoalPurchase[];
+  /** Shared setup-mode authority; never copied into a Personal envelope. */
+  householdOnboarding?: import("./onboarding/mode.ts").HouseholdOnboarding | null;
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -1336,6 +1346,11 @@ export type PersonalEnvelope = {
   landingSurface?: LandingSurface;
   landingSurfaceUpdatedAt?: string;
   fundRail?: MemberRail;
+  /** Member-owned onboarding progress. Never enters the Shared envelope. */
+  onboardingProgress?: import("./onboarding/progress.ts").MemberOnboardingProgress;
+  /** Member-owned Accounts glance preference. Never enters the Shared envelope. */
+  glanceAccountId?: string | null;
+  glanceAccountUpdatedAt?: string;
   /** Member-owned account metadata. Legacy envelopes omit this collection. */
   accounts?: Account[];
   lastCommittedAt: string | null;

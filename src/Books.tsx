@@ -178,7 +178,8 @@ export function BooksPage({
     if (!focusedAccountId) return;
     if (!auditHousehold.accounts.some((account) => account.id === focusedAccountId)) return;
     setAccountId(focusedAccountId);
-    setPane(view === "household" ? "register" : "wallet");
+    setPane(view === "household" ? "accounts" : "wallet");
+    if (view === "household") setAuditOpen(true);
   }, [auditHousehold, focusedAccountId, view]);
 
   useEffect(() => {

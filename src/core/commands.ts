@@ -26,6 +26,7 @@ import {
 import { shapeTransactionLocation } from "./transactionLocation.ts";
 import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
+import { accountVisibleTo } from "./accountsWidget.ts";
 import { sitDownPreview } from "./insights.ts";
 import { leftoverProjection, leftoverSourceAccountId, jarParkingAccountId, plannedAllocation, shapeSitDownSessions, openSitDownSession } from "./sitDown.ts";
 import { goalsVaultAccount, vaultSpendableCents } from "./goalVault.ts";
@@ -145,6 +146,7 @@ import {
   HOUSEHOLD_FUND_ID,
   HOUSEHOLD_FUND_DIRECT_DESTINATION,
   HOUSEHOLD_FUND_NAME,
+  activeHouseholdFundEvents,
   householdFundContributionMotions,
   matchHouseholdFundBankEvidence,
   projectHouseholdFund,
@@ -159,6 +161,16 @@ import {
 import { charterCeilingLabel, shapeHouseholdCharter } from "./charter.ts";
 import { askAlternatives, householdAsk } from "./ask.ts";
 import {
+  HANDSHAKE_WINDOW_MINUTES,
+  ONBOARDING_MODE_COPY,
+  acceptedHouseholdOnboarding,
+  handshakeExpired,
+  onboardingRecordId,
+  type HouseholdOnboarding,
+} from "./onboarding/mode.ts";
+import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.ts";
+import { memberProgress } from "./onboarding/progress.ts";
+import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
   hasPostedOpeningTruth,
@@ -172,6 +184,316 @@ export type ActorInput = {
   createdBy?: string;
   visibility?: Visibility;
 };
+
+function onboardingCommandAt(value?: string): string {
+  if (value === undefined) return nowIso();
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) throw new ValidationError(ONBOARDING_MODE_COPY["invite.expired"]);
+  return new Date(parsed).toISOString();
+}
+
+function activeOnboardingMemberIds(household: Household): string[] {
+  return [...new Set(household.members.filter((member) => member.active).map((member) => member.id))].sort();
+}
+
+function allActiveOnboardingMembersConfirmed(household: Household, memberIds: readonly string[]): boolean {
+  const activeMemberIds = activeOnboardingMemberIds(household);
+  const confirmed = new Set(memberIds);
+  return activeMemberIds.length >= 2 && activeMemberIds.every((memberId) => confirmed.has(memberId));
+}
+
+function onboardingProposal(
+  household: Household,
+  memberId: string,
+  at: string,
+  prior: HouseholdOnboarding | null,
+): HouseholdOnboarding {
+  const expiresAt = new Date(Date.parse(at) + HANDSHAKE_WINDOW_MINUTES * 60_000).toISOString();
+  return {
+    id: onboardingRecordId(household),
+    environment: household.environment,
+    householdId: household.householdId,
+    registryVersion: ONBOARDING_REGISTRY_VERSION,
+    state: "handshake-pending",
+    proposedByMemberId: memberId,
+    proposedAt: at,
+    handshakeExpiresAt: expiresAt,
+    confirmedByMemberIds: [memberId],
+    startedAt: prior?.startedAt ?? null,
+    stoppedAt: null,
+    stoppedByMemberIds: [],
+    stoppedSolo: false,
+    forcedUnlock: prior?.forcedUnlock ?? false,
+    completedAt: null,
+    completionDigest: null,
+    createdAt: prior?.createdAt ?? at,
+    updatedAt: at,
+  };
+}
+
+export function offerHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  at?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const id = prior?.id ?? onboardingRecordId(household);
+  next.householdOnboarding = prior && prior.state !== "inactive"
+    ? prior
+    : {
+        id,
+        environment: household.environment,
+        householdId: household.householdId,
+        registryVersion: ONBOARDING_REGISTRY_VERSION,
+        state: "offered",
+        proposedByMemberId: null,
+        proposedAt: null,
+        handshakeExpiresAt: null,
+        confirmedByMemberIds: [],
+        startedAt: null,
+        stoppedAt: null,
+        stoppedByMemberIds: [],
+        stoppedSolo: false,
+        forcedUnlock: false,
+        completedAt: null,
+        completionDigest: null,
+        createdAt: prior?.createdAt ?? at,
+        updatedAt: at,
+      };
+  return commit(previous, next, "Onboarding", "Offered household setup", [id], [], "offerHouseholdOnboarding");
+}
+
+export function proposeHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  at?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (prior && ["active", "paused-safe", "waiting-member", "blocked", "adopting", "repair", "complete"].includes(prior.state)) {
+    throw new ValidationError(ONBOARDING_MODE_COPY["invite.explain"]);
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const proposal = onboardingProposal(household, input.memberId, at, prior);
+  next.householdOnboarding = proposal;
+  return commit(previous, next, "Onboarding", "Proposed household setup", [proposal.id], [], "proposeHouseholdOnboarding");
+}
+
+export function confirmHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  at?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (!prior || prior.state !== "handshake-pending" || handshakeExpired(prior, at)) {
+    throw new ValidationError(ONBOARDING_MODE_COPY["invite.expired"]);
+  }
+  const confirmedByMemberIds = [...new Set([...prior.confirmedByMemberIds, input.memberId])].sort();
+  const activates = allActiveOnboardingMembersConfirmed(household, confirmedByMemberIds);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.householdOnboarding = {
+    ...prior,
+    state: activates ? "active" : "handshake-pending",
+    confirmedByMemberIds,
+    startedAt: activates ? prior.startedAt ?? at : prior.startedAt,
+    updatedAt: at,
+  };
+  return commit(previous, next, "Onboarding", activates ? "Started household setup" : "Confirmed household setup", [prior.id], [], "confirmHouseholdOnboarding");
+}
+
+export function stopHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  soloReason?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (!prior || !["active", "paused-safe", "waiting-member", "blocked", "adopting"].includes(prior.state)) {
+    throw new ValidationError(ONBOARDING_MODE_COPY["stop.recorded"]);
+  }
+  const at = nowIso();
+  const soloReason = input.soloReason?.trim() ?? "";
+  const stoppedByMemberIds = [...new Set([...prior.stoppedByMemberIds, input.memberId])].sort();
+  const stoppedTogether = allActiveOnboardingMembersConfirmed(household, stoppedByMemberIds);
+  const stopped = Boolean(soloReason) || stoppedTogether;
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.householdOnboarding = {
+    ...prior,
+    state: stopped ? "stopped-incomplete" : "waiting-member",
+    stoppedAt: stopped ? at : null,
+    stoppedByMemberIds,
+    stoppedSolo: Boolean(soloReason),
+    completedAt: null,
+    completionDigest: null,
+    updatedAt: at,
+  };
+  return commit(previous, next, "Onboarding", stopped ? ONBOARDING_MODE_COPY["stop.recorded"] : "Requested to stop household setup", [prior.id], [], "stopHouseholdOnboarding");
+}
+
+export function resumeHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (!prior || prior.state !== "stopped-incomplete") {
+    throw new ValidationError(ONBOARDING_MODE_COPY["stop.recorded"]);
+  }
+  const at = nowIso();
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const proposal = onboardingProposal(household, input.memberId, at, prior);
+  next.householdOnboarding = proposal;
+  return commit(previous, next, "Onboarding", "Proposed resuming household setup", [proposal.id], [], "resumeHouseholdOnboarding");
+}
+
+const OWN_PROGRESS_COPY = "Only you can record your own progress.";
+
+function requireOnboardingProgressActor(household: Household, memberId: string, createdBy: string) {
+  const member = requireMember(household, memberId);
+  const actor = household.members.find((candidate) => candidate.id === createdBy && candidate.active);
+  if (!actor || actor.id !== member.id) throw new ValidationError(OWN_PROGRESS_COPY);
+  return member;
+}
+
+function commitOnboardingProgress(
+  previous: Household,
+  next: Household,
+  memberId: string,
+  label: string,
+  at: string,
+): CommitResult {
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    persistenceScope: "member-personal",
+    personalMemberId: memberId,
+    undo: {
+      id: `onboarding-progress-${memberId}-${at}`,
+      label,
+      snapshot: previous,
+      postedIds: [],
+      commandKind: "onboarding-progress-personal",
+    },
+  };
+}
+
+function updateMemberProgress(
+  household: Household,
+  input: { memberId: string; createdBy: string; at?: string },
+  label: string,
+  update: (progress: ReturnType<typeof memberProgress>, at: string) => ReturnType<typeof memberProgress>,
+): CommitResult {
+  requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+  const at = onboardingCommandAt(input.at);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const current = memberProgress(next, input.memberId);
+  const progress = update(current, at);
+  next.members = next.members.map((member) => member.id === input.memberId
+    ? { ...member, onboardingProgress: progress }
+    : member);
+  return commitOnboardingProgress(previous, next, input.memberId, label, at);
+}
+
+/** Record only the acting member's acknowledgement; accepted probes own observed completion. */
+export function recordChapterAcknowledgement(household: Household, input: {
+  memberId: string;
+  chapterId: string;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  const chapter = chapterById(input.chapterId);
+  if (!chapter) throw new ValidationError("Choose a current onboarding chapter.");
+  return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
+    ...progress,
+    rows: progress.rows.map((row) => row.chapterId === chapter.id
+      ? {
+          ...row,
+          acknowledgedAt: row.acknowledgedAt ?? at,
+          lastSafeResumePoint: chapter.id,
+        }
+      : row),
+    updatedAt: at,
+  }));
+}
+
+/** Skip only a personal module whose registry policy explicitly permits it. */
+export function skipPersonalStep(household: Household, input: {
+  memberId: string;
+  chapterId: string;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  const chapter = chapterById(input.chapterId);
+  if (!chapter || chapter.track !== "personal" || chapter.skip !== "member-skippable") {
+    throw new ValidationError("That setup chapter cannot be skipped.");
+  }
+  return updateMemberProgress(household, input, "Personal onboarding module skipped", (progress, at) => ({
+    ...progress,
+    rows: progress.rows.map((row) => row.chapterId === chapter.id
+      ? { ...row, skippedAt: row.skippedAt ?? at, lastSafeResumePoint: chapter.id }
+      : row),
+    updatedAt: at,
+  }));
+}
+
+/** Mute or restore only the acting member's future personal-module offers. */
+export function setOnboardingOffersMuted(household: Household, input: {
+  memberId: string;
+  muted: boolean;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  return updateMemberProgress(household, input, "Personal onboarding offers changed", (progress, at) => ({
+    ...progress,
+    offersMuted: input.muted,
+    offersMutedUpdatedAt: at,
+    updatedAt: at,
+  }));
+}
+
+/** Development escape hatch. This stops setup without claiming any chapter or finale completion. */
+export function forceUnlockOnboarding(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  if (household.environment !== "development") throw new ValidationError("Not available in this environment.");
+  requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const id = prior?.id ?? onboardingRecordId(household);
+  next.householdOnboarding = {
+    id,
+    environment: household.environment,
+    householdId: household.householdId,
+    registryVersion: ONBOARDING_REGISTRY_VERSION,
+    state: "stopped-incomplete",
+    proposedByMemberId: prior?.proposedByMemberId ?? null,
+    proposedAt: prior?.proposedAt ?? null,
+    handshakeExpiresAt: prior?.handshakeExpiresAt ?? null,
+    confirmedByMemberIds: prior?.confirmedByMemberIds ?? [],
+    startedAt: prior?.startedAt ?? null,
+    stoppedAt: at,
+    stoppedByMemberIds: [...new Set([...(prior?.stoppedByMemberIds ?? []), input.memberId])].sort(),
+    stoppedSolo: prior?.stoppedSolo ?? false,
+    forcedUnlock: true,
+    completedAt: null,
+    completionDigest: null,
+    createdAt: prior?.createdAt ?? at,
+    updatedAt: at,
+  };
+  return commit(previous, next, "Onboarding", "Stopped incomplete with the Development unlock", [id], [], "forceUnlockHouseholdOnboarding");
+}
 
 function requireOpenPeriod(household: Household, date: DateKey): void {
   const monthKey = monthKeyFromDateKey(date);
@@ -319,6 +641,41 @@ export function resetFundRail(household: Household, input: {
     ? { ...row, fundRail: { memberId: member.id, slots, updatedAt } }
     : row);
   return commitFundRailPreference(previous, next, member.id, "Fund board reset", updatedAt);
+}
+
+/**
+ * Change only the acting member's own glance account. Stored per member,
+ * self-owned — the same custody rule as setLandingSurface, and the same
+ * ordinary accepted-household path. Sync projection strips the preference
+ * from Shared and carries it only in this member's Personal envelope.
+ */
+export function setGlanceAccount(household: Household, input: {
+  memberId: string;
+  accountId: string;
+  createdBy: string;
+}): CommitResult {
+  if (!input.createdBy) throw new ValidationError("Only you can choose what your board shows.");
+  const member = requireMember(household, input.memberId);
+  const actor = resolveActor(household, { createdBy: input.createdBy });
+  if (actor.createdBy !== member.id) throw new ValidationError("Only you can choose what your board shows.");
+  if (!accountVisibleTo(household, member.id, input.accountId)) {
+    throw new ValidationError("Choose an account you can see.");
+  }
+  if (member.glanceAccountId === input.accountId) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      undo: { id: `glance-account-${member.id}-unchanged`, label: "Glance account unchanged", snapshot: household, postedIds: [] },
+    };
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const updatedAt = nowIso();
+  next.members = next.members.map((row) => row.id === member.id
+    ? { ...row, glanceAccountId: input.accountId, glanceAccountUpdatedAt: updatedAt }
+    : row);
+  return commit(previous, next, "Glance account", `${member.name} chose what their board shows`, []);
 }
 
 function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {
@@ -5863,11 +6220,27 @@ export function confirmHouseholdFundSettlement(household: Household, input: {
   const amountCents = parseAmount(input.amount);
   const projection = projectHouseholdFund(household, parseDate(input.date));
   if (amountCents > projection.operatingBalanceCents) throw new ValidationError("That transfer exceeds the confirmed Household Fund balance.");
+  const destinationDueCents = projection.destinationPositions
+    .find((row) => row.destinationAccountId === destinationId)?.dueCents ?? 0;
+  // Recheck the net destination obligation against the current household. A
+  // stale screen must not turn an intervening refund into an overpayment.
+  if (amountCents > destinationDueCents) {
+    throw new ValidationError("That transfer exceeds the current amount due for this destination.");
+  }
+  const positionDate = (positionId: string): string => {
+    const transaction = household.transactions
+      .filter((row) => row.type === "expense" && (row.id === positionId || row.funding?.positionId === positionId))
+      .sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id))[0];
+    const purchaseEvent = activeHouseholdFundEvents(household, fund.id)
+      .filter((event) => event.kind === "purchase-funded" && event.relatedTransactionIds.includes(positionId))
+      .sort((left, right) => left.date.localeCompare(right.date) || left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))[0];
+    return transaction?.date ?? purchaseEvent?.date ?? "";
+  };
   const eligible = projection.transactionPositions
     .filter((row) => row.destinationAccountId === destinationId && row.outstandingCents > 0)
     .sort((left, right) => {
-      const leftDate = household.transactions.find((tx) => tx.id === left.transactionId)?.date ?? "";
-      const rightDate = household.transactions.find((tx) => tx.id === right.transactionId)?.date ?? "";
+      const leftDate = positionDate(left.transactionId);
+      const rightDate = positionDate(right.transactionId);
       return leftDate.localeCompare(rightDate) || left.transactionId.localeCompare(right.transactionId);
     });
   if (amountCents > eligible.reduce((sum, row) => sum + row.outstandingCents, 0)) {
