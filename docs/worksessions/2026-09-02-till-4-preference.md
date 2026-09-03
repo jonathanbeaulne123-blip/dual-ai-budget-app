@@ -1,6 +1,6 @@
 # Hearth worksession — Till Slice 4 landing preference
 
-- **Status:** CLOSED; LOCAL VERIFIED; NOT PUSHED
+- **Status:** CLOSED; MERGED #306; DEVELOPMENT KITCHEN PUBLISHED; LIVE VERIFIED
 - **Opened:** 2026-09-02 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,10 +8,10 @@
 - **Branch:** `codex/till-4-preference`
 - **Baseline SHA:** `08e3a4b306533518405cdb866f13e71550447624`
 - **Implementation SHA:** `d031c6c877d15185333ec9a93d1f3943a9d4c91c`
-- **PR or issue:** none
+- **PR or issue:** [#306](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/306)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
-- **Environment impact:** local code and fictional Development tests only
+- **Environment impact:** Development kitchen code only; Production continuity remains off
 
 ## Household outcome
 
@@ -73,6 +73,8 @@ Each member owns their default Hearth landing surface. The configured Fund custo
 - Expanded: 8 core/continuity/storage files -> 99 tests passed; TypeScript passed.
 - Final post-fix `pnpm check:windows`: AI surface 41 required files; 1,745 tests passed and three intentionally skipped; TypeScript and a production build of 418 transformed modules passed.
 - Independent verifier initially found an optional-actor bypass and order-dependent equal-clock merge. Both were fixed with regressions; read-only re-verification passed 39/39 with no remaining findings.
+- Exact-head PR/push CI and Cloudflare checks passed; `main@4992a0c` post-merge CI `33698860263` and Cloudflare `33698859862` passed.
+- Worker `558f1e53-a269-4db1-8d0e-2c8062dbc6c3` serves live HTTP 200, `Cache-Control: no-store`, and `/assets/index-JsW2hVnK.js` contains `landingSurface` plus `landingSurfaceUpdatedAt`.
 
 ## Decisions
 
@@ -87,4 +89,4 @@ Each member owns their default Hearth landing surface. The configured Fund custo
 
 ## Handoff
 
-Slice 4 is complete and locally verified at implementation commit `d031c6c877d15185333ec9a93d1f3943a9d4c91c`. The preference is self-owned, Personal-only, deterministic under convergence, and nonfinancial. Local branch only; no push, PR, merge, deployment, hosted mutation, or Production action. Jonathan owns any later remote authorization.
+Slice 4 is complete, merged through #306 as `main@4992a0caa02a6e3ce725229b0d0a42ef69deada9`, and verified live in the Development kitchen. The preference is self-owned, Personal-only, deterministic under convergence, and nonfinancial. No hosted mutation or Production action occurred.

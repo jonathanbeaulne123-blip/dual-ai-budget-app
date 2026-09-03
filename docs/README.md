@@ -28,7 +28,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [DECISIONS.md](DECISIONS.md) | Living decision log |
 | [AI_OPERATING_MODEL.md](AI_OPERATING_MODEL.md) | Codex, Cursor, and Claude roles, routing, evidence, authority, and context budget |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | Risk routing and Dual Course handoffs |
-| [worksessions/2026-09-02-till-4-preference.md](worksessions/2026-09-02-till-4-preference.md) | **Local verified:** D-200 member-owned desk/Till landing preference; Personal envelope only; implementation `d031c6c`; no UI takeover, push, deploy, or Production |
+| [worksessions/2026-09-02-till-4-preference.md](worksessions/2026-09-02-till-4-preference.md) | **Merged and Development-published:** D-200 member-owned desk/Till landing preference; Personal envelope only; `main@4992a0c`; no UI takeover, schema, hosted data, or Production |
 | [briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md](briefs/CURSOR_CLERK_SLICE_4_WEEKLY_HANDOFF_2026-09-02.md) | **Consumed and kitchen-published:** Cursor Clerk Slice 4 merged via #293 as `main@97e1ae9`; live HTTP verified; D-196 |
 | [briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md](briefs/CURSOR_TILL_SLICES_2_3_HANDOFF_2026-09-02.md) | Slice 2 sealed on `main@6f5dd56`. Slice 3 (D-199) merged #304 as `main@3002356`; Development kitchen published and live HTTP verified; stop before Slice 4 landing preference |
 | [evidence-gates/FIVE_OF_FIVE.md](evidence-gates/FIVE_OF_FIVE.md) | P0-03 equal-dimension feature gate, browser journey manifest, and dated same-SHA evidence contract |

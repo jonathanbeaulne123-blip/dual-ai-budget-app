@@ -2,7 +2,7 @@
 
 ## Till Slice 4 member-owned landing preference (2026-09-02)
 
-**Status:** **CLOSED; LOCAL VERIFIED; NOT PUSHED.** Implementation commit `d031c6c877d15185333ec9a93d1f3943a9d4c91c` on `codex/till-4-preference` from exact `origin/main@08e3a4b306533518405cdb866f13e71550447624`. No push, PR, merge, deployment, hosted mutation, or Production action. D-200.
+**Status:** **CLOSED; MERGED #306; DEVELOPMENT KITCHEN PUBLISHED; LIVE VERIFIED.** Exact reviewed head `4992a0caa02a6e3ce725229b0d0a42ef69deada9` fast-forwarded to `main` from `origin/main@08e3a4b306533518405cdb866f13e71550447624`. PR CI `33698007625`, push CI `33697952990`, PR Cloudflare `33698007768`, post-merge main CI `33698860263`, and production-path Cloudflare Workers `33698859862` passed. D-200. Development kitchen only; not Production continuity.
 
 **Household outcome:** the configured Fund custodian calmly defaults to Till and everyone else to the full desk, but each person can explicitly choose and reverse only their own default. The choice is Personal, never an assignment or permission tier. `see everything` stays a permanent non-writing peek back to the desk.
 
@@ -12,9 +12,11 @@
 
 **Verification:** final focused Slice 4/continuity/Till/visibility proof **39/39**; expanded core/continuity/storage proof **99/99**; TypeScript and diff hygiene passed. The final Windows-native full gate passed AI surface verification, **1,745 tests** with three intentional skips, and a **418-module** production build. Independent complete-diff re-verification passed after its actor-bypass and equal-clock convergence findings were fixed.
 
+**Release proof:** Worker version `558f1e53-a269-4db1-8d0e-2c8062dbc6c3`; live `GET https://hearth-books.jonathan-beaulne123.workers.dev/` returned HTTP 200 with `Cache-Control: no-store`; served `/assets/index-JsW2hVnK.js` contains `landingSurface`, `landingSurfaceUpdatedAt`, `desk`, `till`, and the existing `see everything` door. The workflow pins `VITE_PRODUCTION_CONTINUITY: "0"`.
+
 **Boundaries:** local source/docs and fictional catalog/Development tests only. No settings UI, automatic startup route, Till/Swipe/Ask/Fund arithmetic, PGlite or hosted schema, hosted row, Auth/RLS, secret, provider, bank, deployment, real household data, or Production change.
 
-**Next owner:** Jonathan decides whether to authorize a push and PR. No remote action is authorized yet.
+**Next owner:** Jonathan may hard-refresh the Development kitchen. No hosted household row, schema, secret, provider, bank connection, or Production data changed.
 
 ## Till Slice 3 custodian surface (2026-09-02)
 
