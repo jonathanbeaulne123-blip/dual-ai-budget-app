@@ -4,6 +4,7 @@ import {
   FORBIDDEN_SHARED_PLATE_IDS,
   PERSONAL_PLATE_IDS,
   PLATE_VIEW,
+  LEGACY_SHARED_PLATE_IDS,
   SHARED_PLATE_IDS,
   addAccount,
   buildDashboard,
@@ -31,6 +32,7 @@ const TODAY = "2026-08-27";
 const MEMBER = "MEM-002";
 
 const platesSource = readFileSync(new URL("../src/core/plates.ts", import.meta.url), "utf8");
+const fundModels = readFileSync(new URL("../src/core/fundPlates.ts", import.meta.url), "utf8");
 const models = readFileSync(new URL("../src/core/deskPlates.ts", import.meta.url), "utf8");
 const component = readFileSync(new URL("../src/DeskPlates.tsx", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/desk-plates.css", import.meta.url), "utf8");
@@ -47,7 +49,7 @@ function demoPlates(today = TODAY) {
   const household = demo(today);
   const dashboard = buildDashboard(household, today, new Date(`${today}T16:00:00Z`));
   const findings = runHealthCheck(household);
-  const shared = sharedPlates({ household, dashboard, today, findings });
+  const shared = sharedPlates({ household, dashboard, today, memberId: MEMBER, findings });
   const personal = personalPlates({
     household,
     dashboard,
@@ -115,8 +117,12 @@ describe("twelve desk plates", () => {
     const { shared, personal } = demoPlates();
     expect(shared.map((plate) => plate.id)).toEqual([...SHARED_PLATE_IDS]);
     expect(personal.map((plate) => plate.id)).toEqual([...PERSONAL_PLATE_IDS]);
-    expect(new Set(shared.map((plate) => plate.id)).size).toBe(6);
+    expect(new Set(shared.map((plate) => plate.id)).size).toBe(8);
     expect(new Set(personal.map((plate) => plate.id)).size).toBe(6);
+    // The fold: no retired id survives on the shared floor.
+    for (const retired of LEGACY_SHARED_PLATE_IDS) {
+      expect(shared.map((plate) => plate.id)).not.toContain(retired);
+    }
   });
 
   it("never reintroduces now, attention, or change on Shared, and never says kitty or free-to-spend", () => {
@@ -158,12 +164,13 @@ describe("twelve desk plates", () => {
     for (const plate of [...shared, ...personal]) {
       expect(allowed.has(plate.figure.primitive)).toBe(true);
     }
-    expect(shared.find((plate) => plate.id === "due")?.figure.primitive).toBe("track");
-    expect(shared.find((plate) => plate.id === "cards")?.figure.primitive).toBe("gauge");
-    expect(shared.find((plate) => plate.id === "owed")?.figure.primitive).toBe("tally");
+    expect(shared.find((plate) => plate.id === "fund-level")?.figure.primitive).toBe("spark");
+    expect(shared.find((plate) => plate.id === "waiting")?.figure.primitive).toBe("tally");
+    expect(shared.find((plate) => plate.id === "next-out")?.figure.primitive).toBe("track");
+    expect(shared.find((plate) => plate.id === "spoken-for")?.figure.primitive).toBe("gauge");
+    expect(shared.find((plate) => plate.id === "settle")?.figure.primitive).toBe("tally");
     expect(shared.find((plate) => plate.id === "saving")?.figure.primitive).toBe("fill");
-    expect(shared.find((plate) => plate.id === "coming")?.figure.primitive).toBe("track");
-    expect(shared.find((plate) => plate.id === "trust")?.figure.primitive).toBe("tally");
+    expect(shared.find((plate) => plate.id === "week")?.figure.primitive).toBe("track");
     expect(personal.find((plate) => plate.id === "clock")?.figure.primitive).toBe("tally");
     expect(personal.find((plate) => plate.id === "tips")?.figure.primitive).toBe("spark");
     expect(personal.find((plate) => plate.id === "pay")?.figure.primitive).toBe("track");
@@ -302,38 +309,38 @@ describe("shared plates stay on the household projection", () => {
     }).household;
     const dashboard = buildDashboard(household, TODAY, new Date(`${TODAY}T16:00:00Z`));
     const shared = sharedPlates({ household, dashboard, today: TODAY, findings: [] });
-    const cards = shared.find((plate) => plate.id === "cards")!;
-    const blob = `${cards.glance} ${cards.verdict} ${cards.footing} ${cards.empty ?? ""} ${cards.figure.primitive === "gauge" ? cards.figure.label : ""}`;
+    const accounts = shared.find((plate) => plate.id === "accounts")!;
+    const blob = `${accounts.glance} ${accounts.verdict} ${accounts.footing} ${accounts.empty ?? ""} ${accounts.figure.primitive === "gauge" ? accounts.figure.label : ""}`;
     expect(blob).not.toContain(CANARY);
     expect(blob).not.toContain("Amex");
     expect(blob).not.toContain(amex.id);
-    expect(cards.verdict).toMatch(/Visa is at \d+% of its limit/);
-    expect(models).toContain('account.scope !== "personal"');
+    expect(accounts.verdict).toContain("Visa");
+    expect(fundModels).toContain('account.ownerMemberId === memberId');
+    expect(fundModels).toContain('account.scope !== "personal"');
   });
 });
 
 describe("demo figures stay honest", () => {
   it("reads due items, cards, claims, banks, visits, and findings from existing selectors", () => {
     const { shared, household } = demoPlates();
-    const due = shared.find((plate) => plate.id === "due")!;
-    const cards = shared.find((plate) => plate.id === "cards")!;
-    const owed = shared.find((plate) => plate.id === "owed")!;
+    const level = shared.find((plate) => plate.id === "fund-level")!;
+    const waiting = shared.find((plate) => plate.id === "waiting")!;
+    const nextOut = shared.find((plate) => plate.id === "next-out")!;
+    const spokenFor = shared.find((plate) => plate.id === "spoken-for")!;
+    const settle = shared.find((plate) => plate.id === "settle")!;
     const saving = shared.find((plate) => plate.id === "saving")!;
-    const coming = shared.find((plate) => plate.id === "coming")!;
-    const trust = shared.find((plate) => plate.id === "trust")!;
-    expect(due.figure.primitive).toBe("track");
-    if (due.figure.primitive === "track") expect(due.figure.days).toBe(30);
-    expect(cards.figure.primitive).toBe("gauge");
-    if (cards.figure.primitive === "gauge") expect(cards.figure.threshold).toBe(0.3);
+    expect(level.figure.primitive).toBe("spark");
+    expect(level.cabinet).toBe("blotter");
+    expect(waiting.figure.primitive).toBe("tally");
+    expect(nextOut.figure.primitive).toBe("track");
+    expect(spokenFor.figure.primitive).toBe("gauge");
+    if (spokenFor.figure.primitive === "gauge") expect(spokenFor.figure.threshold).toBe(1);
     expect(household.claims.length).toBeGreaterThanOrEqual(0);
-    expect(owed.verdict).toMatch(/owes|owe|Nobody/);
+    // The Fund owes an account. A person never owes.
+    expect(settle.verdict).not.toMatch(/\byou owe\b|\bowes you\b/i);
     expect(saving.figure.primitive).toBe("fill");
     if (saving.figure.primitive === "fill") expect(saving.figure.wells.length).toBeLessThanOrEqual(3);
-    expect(coming.figure.primitive).toBe("track");
-    if (coming.figure.primitive === "track") expect(coming.figure.days).toBe(90);
-    expect(trust.cabinet).toBe("lamp");
-    expect(due.glance).toMatch(/ · /);
-    expect(due.glance.endsWith(".")).toBe(false);
+    expect(level.glance.endsWith(".")).toBe(false);
   });
 });
 

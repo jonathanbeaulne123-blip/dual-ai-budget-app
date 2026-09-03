@@ -38,6 +38,7 @@ export type {
 } from "./contributionRegister.ts";
 export * from "./registerView.ts";
 export * from "./fundWalk.ts";
+export * from "./fundPlates.ts";
 export * from "./ask.ts";
 export * from "./askRoutes.ts";
 export * from "./askView.ts";
