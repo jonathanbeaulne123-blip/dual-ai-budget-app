@@ -1,6 +1,6 @@
 # Hearth worksession — Claude Fund walk and widgets handoff
 
-- **Status:** OPEN — integrated and locally verified; push pending
+- **Status:** CLOSED — verified feature branch pushed; merge not requested
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Claude implementation; Codex integration writer
@@ -8,6 +8,7 @@
 - **Branch:** `codex/fund-widgets-claude`
 - **Claude baseline SHA:** `6f5dd56`
 - **Integration baseline SHA:** `7dd1f96729fc9ec4fe6bb74a1daeacbf413b700a`
+- **Independently reviewed code SHA:** `85c95c0b7f2bbe9d677c325419b84af9f328dfc1`
 - **Risk:** High — Fund projection and Shared Home money presentation
 - **Decision owner:** Jonathan
 - **Environment impact:** source, tests, and documentation only; no schema, hosted data, secrets, Production data, merge, or deployment
@@ -46,8 +47,8 @@ When the Household Fund is configured, Shared Home shows one coherent eight-plat
 - [x] Focused Fund/desk tests, TypeScript, and AI-surface verification pass.
 - [x] Serial books lane passes.
 - [x] First independent review blockers repaired: sealed shortfall/tie, record-only motions, projected-mark semantics, Shared-only accounts, no Shared shift count, and rendered/announced verdicts.
-- [ ] Independent books, privacy, and UX re-reviews pass on the repaired exact candidate.
-- [ ] Branch pushed and remote SHA verified.
+- [x] Independent books, privacy, and UX re-reviews pass on the repaired exact candidate.
+- [x] Branch pushed; remote SHA verification is recorded in the final handoff.
 
 ## Evidence log
 
@@ -55,14 +56,15 @@ When the Household Fund is configured, Shared Home shows one coherent eight-plat
 - Post-review focused Fund/register/privacy/DOM proof → 9 files, 89 tests passed; the Fund walk now has 9 focused cases including hypothetical deferral.
 - `pnpm exec tsc --noEmit` → passed.
 - `pnpm ai:verify` → passed (41 required files, 2 Clerk fences).
-- `pnpm test` → serial books lane passed 18 files / 154 tests with one benchmark skip; fast lane passed 230 files / 1619 tests with two pre-existing failures.
+- `pnpm test` → serial books lane passed 18 files / 154 tests with one benchmark skip; fast lane passed 230 files / 1,622 tests with two pre-existing failures.
 - The same two failures reproduce on untouched `origin/main@7dd1f96`: `test/api.test.ts` cannot spawn `bash` in this Windows environment, and `test/weekly-document-stamp.test.ts` compares a fixed 2026-09-02 date against the current Toronto date.
 - Independent books, privacy, and UX reviews blocked `a2bdf14`: open/Held proposals could cover the month before Confirm; the shortfall tie was fixture-only; projected and actual spark marks were visually identical; Shared admitted viewer-Personal accounts and counted Personal shifts; and the safety verdict was neither rendered nor announced. The integration repair addresses each issue without adding a command or changing the desk grammar.
+- Independent books/trust, privacy, and UX/vibe/accessibility re-reviews all passed on exact code SHA `85c95c0b7f2bbe9d677c325419b84af9f328dfc1`.
 
 ## Remaining uncertainty
 
-The full local gate is not wholly green because of the two reproduced baseline failures. Hosted CI may have `bash`, but the weekly-stamp test remains date-sensitive on 2026-09-03. No browser visual pass, PR check, merge, or live deployment is included in this push request.
+The full local gate is not wholly green because of the two reproduced baseline failures. Hosted CI may have `bash`, but the weekly-stamp test remains date-sensitive on 2026-09-03. Phone behavior is intentionally unchanged because these Fund widgets are desktop/tablet scope. No browser visual pass, PR check, merge, or live deployment is included in this push request.
 
 ## Handoff
 
-Codex owns the integration and push. Jonathan retains the merge and release decisions.
+Codex completed the integration and branch publication. Jonathan retains the PR, merge, and release decisions.
