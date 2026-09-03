@@ -27,6 +27,7 @@ import {
   railFor,
   moveAskGoalClaimToNextMonth,
   fundWalk,
+  fundWeek,
   monthKeyFromDateKey,
   shapeHouseholdFundConfig,
   type DeskPlateId,
@@ -63,6 +64,7 @@ import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
 import { Level } from "./Level.tsx";
 import { NextOutStage } from "./NextOutStage.tsx";
+import { WeekStage } from "./WeekStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
@@ -237,6 +239,11 @@ export function OfficeWide({
   const fundWalkToday = useMemo(() => (
     fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
       ? fundWalk(booksHousehold, monthKeyFromDateKey(today), today)
+      : null
+  ), [fundConfigured, booksHousehold, today]);
+  const fundWeekToday = useMemo(() => (
+    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? fundWeek(booksHousehold, today)
       : null
   ), [fundConfigured, booksHousehold, today]);
   const selectedFundPlate = useMemo(() => (
@@ -619,6 +626,8 @@ export function OfficeWide({
           ) : spreadIsStage && fundConfigured && fundWalkToday
             && (activeFundWidget === "next-out" || activeFundWidget === "spoken-for") ? (
             <NextOutStage walk={fundWalkToday} today={today} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && fundWeekToday && activeFundWidget === "week" ? (
+            <WeekStage week={fundWeekToday} nameOf={nameOf} headingRef={fundStageHeadingRef} />
           ) : spreadIsStage && fundConfigured && activeFundWidget === "waiting" ? (
             <WaitingStage
               household={booksHousehold}
