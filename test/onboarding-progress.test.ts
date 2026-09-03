@@ -79,6 +79,18 @@ describe("onboarding member progress", () => {
       }),
     ];
     for (const attempt of attempts) expect(attempt).toThrow("Only you can record your own progress.");
+    const missingActorAttempts = [
+      () => Reflect.apply(recordChapterAcknowledgement, null, [household, {
+        memberId: BIANCA, chapterId: "ch-01-meet", at: AT_1,
+      }]),
+      () => Reflect.apply(setOnboardingOffersMuted, null, [household, {
+        memberId: BIANCA, muted: true, at: AT_1,
+      }]),
+      () => Reflect.apply(forceUnlockOnboarding, null, [household, {
+        memberId: BIANCA, at: AT_1,
+      }]),
+    ];
+    for (const attempt of missingActorAttempts) expect(attempt).toThrow("Only you can record your own progress.");
     expect(household.members.every((member) => member.onboardingProgress === undefined)).toBe(true);
   });
 
@@ -117,6 +129,7 @@ describe("onboarding member progress", () => {
           }
         : row),
       offersMuted: false,
+      offersMutedUpdatedAt: null,
       declineCountByModule: { "pm-01": 1 },
       updatedAt: "2026-09-03T16:00:00.000Z",
     };
@@ -133,6 +146,7 @@ describe("onboarding member progress", () => {
           }
         : row),
       offersMuted: true,
+      offersMutedUpdatedAt: "2026-09-03T16:30:00.000Z",
       declineCountByModule: { "pm-01": 2, "pm-02": 1 },
       updatedAt: "2026-09-03T17:00:00.000Z",
     };
@@ -148,9 +162,23 @@ describe("onboarding member progress", () => {
     });
     expect(left).toMatchObject({
       offersMuted: true,
+      offersMutedUpdatedAt: "2026-09-03T16:30:00.000Z",
       declineCountByModule: { "pm-01": 2, "pm-02": 1 },
       updatedAt: "2026-09-03T17:00:00.000Z",
     });
+
+    const laterAcknowledgement = {
+      ...server,
+      updatedAt: "2026-09-03T18:00:00.000Z",
+    };
+    expect(mergeMemberProgress(client, laterAcknowledgement)).toMatchObject({
+      offersMuted: true,
+      offersMutedUpdatedAt: "2026-09-03T16:30:00.000Z",
+      updatedAt: "2026-09-03T18:00:00.000Z",
+    });
+    expect(mergeMemberProgress(laterAcknowledgement, client)).toEqual(
+      mergeMemberProgress(client, laterAcknowledgement),
+    );
 
     const personalChapter: OnboardingChapter = {
       id: "pm-merge-test",
@@ -222,6 +250,14 @@ describe("onboarding member progress", () => {
     };
     (ONBOARDING_REGISTRY as OnboardingChapter[]).push(personalChapter);
     try {
+      expect(() => Reflect.apply(skipPersonalStep, null, [activeOnboarding(), {
+        memberId: BIANCA, chapterId: "pm-test", at: "2026-09-03T17:58:00.000Z",
+      }])).toThrow("Only you can record your own progress.");
+      const forcedBeforeHouseholdProgress = forceUnlockOnboarding(activeOnboarding(), {
+        memberId: BIANCA, createdBy: BIANCA, at: "2026-09-03T17:59:00.000Z",
+      }).household;
+      expect(nextChapterFor(forcedBeforeHouseholdProgress, BIANCA, "2026-09-03")?.id).toBe("pm-test");
+
       let running = activeOnboarding();
       running = acknowledgeEveryHouseholdChapter(running, BIANCA);
       expect(nextChapterFor(running, BIANCA, "2026-09-03")).toBeNull();
@@ -254,6 +290,11 @@ describe("onboarding member progress", () => {
     expect(householdGatesOutstanding(catalogHousehold("development"))).toEqual(
       ONBOARDING_REGISTRY.filter((chapter) => chapter.track === "household").map((chapter) => chapter.id),
     );
+
+    const onlySignedInMember = acknowledgeEveryHouseholdChapter(catalogHousehold("development"), BIANCA);
+    const biancaReplica = splitForSync(onlySignedInMember, BIANCA);
+    expect(biancaReplica.shared.members.every((member) => member.onboardingProgress === undefined)).toBe(true);
+    expect(householdGatesOutstanding(assembleHousehold(biancaReplica.shared, biancaReplica.personal))).toEqual([]);
   });
 
   it("keeps the Development force unlock stopped-incomplete forever and refuses Production", async () => {
@@ -302,6 +343,15 @@ describe("onboarding member progress", () => {
     expect(shapeHouseholdOnboarding(forgedComplete)).toMatchObject({
       state: "stopped-incomplete",
       forcedUnlock: true,
+      completedAt: null,
+      completionDigest: null,
+    });
+    expect(shapeHouseholdOnboarding({
+      ...forgedComplete,
+      environment: "production",
+    })).toMatchObject({
+      state: "blocked",
+      forcedUnlock: false,
       completedAt: null,
       completionDigest: null,
     });

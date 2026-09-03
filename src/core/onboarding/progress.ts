@@ -7,7 +7,7 @@ import {
   householdChapters,
   personalModules,
 } from "./registry.ts";
-import { onboardingIsActive } from "./mode.ts";
+import { acceptedHouseholdOnboarding, onboardingIsActive } from "./mode.ts";
 import type { ChapterId, OnboardingChapter } from "./types.ts";
 
 const MISSING_ISO = "1970-01-01T00:00:00.000Z";
@@ -30,6 +30,8 @@ export type MemberOnboardingProgress = {
   registryVersion: number;
   rows: MemberChapterProgress[];
   offersMuted: boolean;
+  /** Field-specific clock so an unrelated later acknowledgement cannot undo this preference. */
+  offersMutedUpdatedAt: string | null;
   declineCountByModule: Record<ChapterId, number>;
   updatedAt: string;
 };
@@ -105,6 +107,7 @@ export function emptyMemberOnboardingProgress(context: ProgressContext): MemberO
     registryVersion: ONBOARDING_REGISTRY_VERSION,
     rows: ONBOARDING_REGISTRY.map((chapter) => emptyChapter(chapter.id)),
     offersMuted: false,
+    offersMutedUpdatedAt: null,
     declineCountByModule: {},
     updatedAt: MISSING_ISO,
   };
@@ -154,6 +157,7 @@ export function shapeMemberOnboardingProgress(
     registryVersion: ONBOARDING_REGISTRY_VERSION,
     rows,
     offersMuted: row.offersMuted === true,
+    offersMutedUpdatedAt: isoOrNull(row.offersMutedUpdatedAt),
     declineCountByModule,
     updatedAt: isoOrNull(row.updatedAt) ?? MISSING_ISO,
   };
@@ -186,6 +190,9 @@ function nextEligible(
 export function nextChapterFor(household: Household, memberId: string, today: DateKey): OnboardingChapter | null {
   void today;
   const progress = memberProgress(household, memberId);
+  if (acceptedHouseholdOnboarding(household)?.forcedUnlock) {
+    return nextEligible(personalModules(), progress);
+  }
   const householdChapter = nextEligible(householdChapters(), progress);
   if (householdChapter) return householdChapter;
   if (onboardingIsActive(household)) return null;
@@ -194,10 +201,15 @@ export function nextChapterFor(household: Household, memberId: string, today: Da
 
 /** The finale's fail-closed source of truth for household-track requirements. */
 export function householdGatesOutstanding(household: Household): ChapterId[] {
-  const members = household.members.filter((member) => member.active);
+  const representedMembers = household.members.filter((member) => member.active
+    && shapeMemberOnboardingProgress(member.onboardingProgress, {
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId: member.id,
+    }));
   return householdChapters()
     .filter((chapter) => chapter.contributesToFinalGate)
-    .filter((chapter) => members.length === 0 || members.some((member) => {
+    .filter((chapter) => representedMembers.length === 0 || representedMembers.some((member) => {
       const row = memberProgress(household, member.id).rows.find((candidate) => candidate.chapterId === chapter.id);
       return !chapterSatisfied(row);
     }))
@@ -255,15 +267,19 @@ export function mergeMemberProgress(
     Math.max(server.declineCountByModule[chapterId] ?? 0, client.declineCountByModule[chapterId] ?? 0),
   ]));
   const updatedAt = later(server.updatedAt, client.updatedAt) ?? MISSING_ISO;
-  const offersMuted = client.updatedAt > server.updatedAt
+  const serverOfferAt = server.offersMutedUpdatedAt ?? "";
+  const clientOfferAt = client.offersMutedUpdatedAt ?? "";
+  const offersMuted = clientOfferAt > serverOfferAt
     ? client.offersMuted
-    : server.updatedAt > client.updatedAt
+    : serverOfferAt > clientOfferAt
       ? server.offersMuted
       : server.offersMuted || client.offersMuted;
+  const offersMutedUpdatedAt = later(server.offersMutedUpdatedAt, client.offersMutedUpdatedAt);
   return {
     ...server,
     rows,
     offersMuted,
+    offersMutedUpdatedAt,
     declineCountByModule,
     updatedAt,
   };

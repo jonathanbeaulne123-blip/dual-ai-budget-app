@@ -1,17 +1,17 @@
 # Hearth worksession — onboarding member progress
 
-- **Status:** COMPLETE
+- **Status:** CORRECTIVE RELEASE IN PROGRESS
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Branch:** `onboarding/3-progress`
+- **Branch:** `onboarding/3-progress-review-fixes` (correction after `onboarding/3-progress`)
 - **Baseline SHA:** `150210765b9eb171b37219966a8023d57c5da731`
-- **Head SHA:** implementation `c4f0b2abb948f10319fa61f79eff77b69301618c`; documentation close follows
-- **PR or issue:** [#319](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/319)
+- **Head SHA:** initial release `main@cb680c6dc8c65da300c25ed42cfeeba43d7de699`; corrective head follows
+- **PR or issue:** initial [#319](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/319); corrective PR follows
 - **Risk:** High
 - **Decision owner:** Jonathan
-- **Environment impact:** Development-only force unlock; no deployment authorized in this slice
+- **Environment impact:** Development-only force unlock; Jonathan authorized merge and Development deployment
 
 ## Household outcome
 
@@ -45,7 +45,7 @@ Each signed-in member gets durable, resumable onboarding progress on any device 
 
 ### Out of scope
 
-- UI, `src/App.tsx`, probe implementations, any command that writes `observedCompleteAt`, personal-module registry entries, analytics, model/provider calls, money behavior, schema, hosted data, Production, merge, and deployment.
+- UI, `src/App.tsx`, probe implementations, any command that writes `observedCompleteAt`, personal-module registry entries, analytics, model/provider calls, money behavior, schema, hosted data, and Production continuity.
 
 ## Acceptance evidence
 
@@ -75,21 +75,29 @@ Each signed-in member gets durable, resumable onboarding progress on any device 
 - `pnpm ai:verify` -> **passed**; 48 required files and two Clerk fences.
 - `pnpm test:full` was not run; exhaustive proof remains reserved for an explicitly authorized exact clean High/Release-risk SHA.
 - Changed files: `docs/DECISIONS.md`; this worksession; `src/core/onboarding/progress.ts`; `src/core/onboarding/mode.ts`; `src/core/types.ts`; `src/core/commands.ts`; `src/core/household.ts`; `src/core/index.ts`; `src/core/sync.ts`; `test/onboarding-progress.test.ts`.
-- PR [#319](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/319) opened against `main`; unmerged and undeployed.
+- PR [#319](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/319) was opened against `main` from exact slice head `8fcb003b3e1bb60d4cf28ffc497969d833fefd13`.
+- Jonathan authorized merge and deployment. PR #319 merged as `main@cb680c6dc8c65da300c25ed42cfeeba43d7de699`; exact-main CI `33806857891` and Cloudflare workflow `33806857747` passed.
+- The initial Development deployment published Worker version `9a4607c6-df9f-49b8-9ceb-1a82af6cae3e`; `/` and `index-wOop2Pzr.js` returned HTTP 200 with no-store HTML and the slice-3 markers.
+- A late automated review then reported five release-blocking gaps: absent actor defaulting, hidden partner Personal progress blocking local gates, early force unlock still selecting household chapters, an envelope clock undoing mute, and a corrupt Production force marker surviving shaping.
+- Corrective focused regressions -> **44/44 passed**; TypeScript -> **passed**.
+- Corrective High quick gate at dirty base `cb680c6dc8c65da300c25ed42cfeeba43d7de699` -> AI-surface, TypeScript, diff hygiene, **29 fast + 7 serial tests passed** in **32.432s**; no five-minute breach; fingerprint `0163b48de0057f778ed93373ff4e95f2f095d89a107c5a354a80bb3ddd86c407`.
+- Corrective `pnpm build` -> **passed**; existing PGlite browser-external/eval and large-chunk warnings only.
+- Corrective exact-head GitHub CI remains pending.
 
 ## Decisions
 
 - Progress is member-owned Personal continuity state. It is not part of Shared, financial audit facts, or command receipts.
-- `householdGatesOutstanding` fails closed for each active member represented in the assembled household; missing member progress remains outstanding.
+- `householdGatesOutstanding` checks each active member whose Personal progress is represented in the assembled household; a normal single-member assembly does not infer failure from the partner's intentionally absent Personal envelope, while no represented progress still fails closed.
 - No slice-3 command may set `observedCompleteAt`; later accepted typed probes are its only writer.
+- Progress commands require an explicit self-owned actor. Mute uses its own field clock. Development force unlock bypasses unfinished household chapters without claiming them complete, and a Production force marker shapes to blocked with no completion.
 
 ## Remaining uncertainty
 
 - Probe adapters and their trusted acceptance path belong to later slices.
 - No personal registry modules exist yet, so skip/mute infrastructure is present before its eventual offer UI.
-- Exact-head GitHub CI remains pending after the documentation close commit.
+- Corrective exact-head GitHub CI and Development publication remain pending.
 - No browser evidence was required because this slice renders nothing.
 
 ## Handoff
 
-Slice 3 is implemented and PR #319 is open. Wait for exact-head GitHub checks and review before any merge. Merge and Development deployment require Jonathan's separate instruction.
+The initial slice-3 release is live, but a corrective release is required for the late review findings. Merge only after the exact corrective High quick gate, exact-head GitHub checks, and review are clear; then smoke the Development Worker again.
