@@ -132,6 +132,7 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.sitDownSessions ?? []).map((row) => row.id),
     ...(mergedFacts?.goalContributions ?? []).map((row) => row.id),
     ...(mergedFacts?.goalPurchases ?? []).map((row) => row.id),
+    ...(mergedFacts?.householdOnboarding ? [mergedFacts.householdOnboarding.id] : []),
     ...charterPostedIds,
     ...(mergedFacts?.householdFund ? [mergedFacts.householdFund.id] : []),
     ...(mergedFacts?.fundMonthPlans ?? []).map((row) => row.id),
@@ -143,10 +144,13 @@ export async function compactedCommandPayload(
   ].sort();
   return {
     ...primary.commandPayload,
-    materializationHash: mergedFacts?.monthRehearsals?.length || mergedFacts?.recurrences?.length
+    materializationHash: mergedFacts?.monthRehearsals?.length
+      || mergedFacts?.recurrences?.length
+      || mergedFacts?.householdOnboarding
       ? await sha256Hex(commandMaterializationFacts({
         monthRehearsals: mergedFacts.monthRehearsals,
         recurrences: mergedFacts.recurrences,
+        householdOnboarding: mergedFacts.householdOnboarding,
       }))
       : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
@@ -208,6 +212,7 @@ function mergeMaterializationFacts(
       merged.goalPurchases = [...(merged.goalPurchases ?? []), ...facts.goalPurchases];
     }
     if (facts.charter) merged.charter = facts.charter;
+    if (facts.householdOnboarding) merged.householdOnboarding = facts.householdOnboarding;
     if (facts.householdFund) merged.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) merged.fundMonthPlans = [...(merged.fundMonthPlans ?? []), ...facts.fundMonthPlans];
     if (facts.fundEvents?.length) merged.fundEvents = [...(merged.fundEvents ?? []), ...facts.fundEvents];
