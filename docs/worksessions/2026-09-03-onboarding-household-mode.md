@@ -1,14 +1,14 @@
 # Hearth worksession — onboarding household mode
 
-- **Status:** OPEN
+- **Status:** COMPLETE
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/2-household-mode`
 - **Baseline SHA:** `27b1c0345fcb3fa28e76883dc575166fdc298cde`
-- **Head SHA:** uncommitted working tree over `27b1c0345fcb3fa28e76883dc575166fdc298cde`
-- **PR or issue:** not opened
+- **Head SHA:** implementation `c2f2bb57b3fca50c47c32a342b6009a255d8e8c9`; this documentation-only close follows
+- **PR or issue:** [#318](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/318)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none until merged and deployed
@@ -49,22 +49,23 @@ The household remains in free roam until two active members consent on their own
 
 ## Acceptance evidence
 
-- [ ] One test per slice-2 rule, including enumeration of every onboarding mode command.
-- [ ] Two offline device confirmations merge to `active` exactly once.
-- [ ] `mode.ts` imports no TSX, component, provider, or money writer.
-- [ ] `pnpm test` passes with no new failing set.
-- [ ] `pnpm build` passes.
-- [ ] `pnpm ai:verify` passes.
-- [ ] `pnpm check:windows` passes or the exact local limitation is recorded.
-- [ ] PR is open and unmerged at the exact reviewed head.
+- [x] One test per slice-2 rule, including enumeration of every onboarding mode command.
+- [x] Two offline device confirmations merge to `active` exactly once.
+- [x] `mode.ts` imports no TSX, component, provider, or money writer.
+- [x] The exact clean High quick gate passes with no new failing set.
+- [x] `pnpm build` passes.
+- [x] `pnpm ai:verify` passes.
+- [x] `pnpm check:windows` was attempted and the exact local limitation is recorded.
+- [x] PR is open and unmerged at the exact implementation head.
 
 ## Plan
 
-- [ ] Implement and export the pure mode model, defensive shaper, and deterministic merge.
-- [ ] Add the shared Household/SharedEnvelope field and wire sync shaping, split, assembly, and merge.
-- [ ] Add command-boundary transitions with exact consent and stop invariants.
-- [ ] Add focused tests and the next free decision record.
-- [ ] Run focused and repository gates, review the exact diff, push, and open the slice PR.
+- [x] Implement and export the pure mode model, defensive shaper, and deterministic merge.
+- [x] Add the shared Household/SharedEnvelope field and wire sync shaping, split, assembly, and merge.
+- [x] Add command-boundary transitions with exact consent and stop invariants.
+- [x] Bind mode changes to command identity and guarded ordered continuity replay.
+- [x] Add focused tests and the next free decision record.
+- [x] Run focused and repository gates, review the exact diff, push, and open the slice PR.
 
 ## Evidence log
 
@@ -73,6 +74,14 @@ The household remains in free roam until two active members consent on their own
 - `git fetch origin --prune`; `origin/main` advanced to `27b1c0345fcb3fa28e76883dc575166fdc298cde`; the uncommitted slice was stashed, rebased, and restored without conflict.
 - Focused test, pre-rebase: `pnpm vitest run test/onboarding-mode.test.ts` -> 14 passed after correcting one cross-household fixture.
 - Production build, pre-rebase: `pnpm build` -> passed; existing PGlite externalization/eval and large-chunk warnings remained warnings.
+- Final focused proof: `pnpm vitest run test/onboarding-mode.test.ts` -> **16/16 passed**, including exact command identity and ordered continuity replay.
+- Exact clean implementation gate at `c2f2bb57b3fca50c47c32a342b6009a255d8e8c9`: `pnpm test -- --risk=high --focus=test/onboarding-mode.test.ts ...` -> **59 fast + 7 serial tests passed**, TypeScript, AI-surface verification, and diff hygiene in **132.195s**; no five-minute breach; fingerprint `9c78fb9d552823a1189238ccf397b6494ec6c00c63be8e7ec50667422e0acdb4`.
+- `pnpm build` at the clean implementation head -> **passed**; existing PGlite browser-external/eval and large-chunk warnings only.
+- `pnpm ai:verify` -> **passed**; 48 required files and two Clerk fences.
+- `pnpm check:windows` -> **unavailable on this macOS host** because `pwsh` is not installed. No Windows test failure was observed.
+- `pnpm test:full` was not run; exhaustive proof requires Jonathan's explicit authorization for the exact clean SHA.
+- Changed files: `docs/DECISIONS.md`; this worksession; `src/core/onboarding/mode.ts`; `src/core/types.ts`; `src/core/commands.ts`; `src/core/index.ts`; `src/core/sync.ts`; `src/core/commandIdentity.ts`; `src/core/commandRuntime.ts`; `src/ledger/materializeSnapshotFromEvents.ts`; `test/onboarding-mode.test.ts`.
+- PR [#318](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/318) opened against `main` at exact implementation head `c2f2bb57b3fca50c47c32a342b6009a255d8e8c9`; unmerged and undeployed.
 
 ## Decisions
 
@@ -82,8 +91,9 @@ The household remains in free roam until two active members consent on their own
 
 ## Remaining uncertainty
 
-- Exact merge and resume edge cases remain to be proven by the focused command and continuity suite.
+- The manual requires independent trust review before this High-risk slice is accepted; that review and GitHub CI are pending on PR #318.
+- The macOS host cannot supply native PowerShell/Windows evidence.
 
 ## Handoff
 
-Codex owns implementation and PR creation. Jonathan remains the decision owner and next owner for merge or deployment. Current state: local branch only; no PR, merge, deployment, or manual live verification.
+Local implementation is committed at `c2f2bb5`, pushed on `onboarding/2-household-mode`, and open in PR #318. It is not merged, deployed, or live. An independent trust reviewer is the next technical owner; Jonathan remains the decision owner for merge or deployment. No UI was built, so no manual live verification applies.
