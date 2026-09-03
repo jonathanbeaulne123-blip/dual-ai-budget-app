@@ -9,7 +9,7 @@
 
 **Written to be executed by a mid-capability model.** Every slice names the files to read first, the files to create, the exact signatures, the exact copy, the exact test file and lane, and a literal acceptance command. If something is not written here, it is not in scope — ask, do not invent.
 
-**Companions.** `HEARTH_BUILD_MANUAL.md` planned the structural build (v1) — **which has now largely shipped; see §0.5.** `HEARTH_UX_PACKET.md` **§13** and `hearth-ux-plates.html` **plates 9–14** carry the visual system for every onboarding surface — the invitation, the handshake, the conductor shell, the witness screen, the return bar, and a dimensioned anatomy drawing. **Read §13 and look at plates 9–14 before slice 7.** This manual is v2: the layer that walks two people through those surfaces. **It builds no new ledger surface of its own.**
+**Companions.** `HEARTH_BUILD_MANUAL.md` planned the structural build (v1) — **which has now largely shipped; see §0.5.** `HEARTH_UX_PACKET.md` **§13** and `hearth-ux-plates.html` **plates 9–14** carry the visual system for every onboarding surface — the invitation, the handshake, the conductor shell, the witness screen, the return bar, and a dimensioned anatomy drawing. Those three companion artifacts are **not committed in the repository at this baseline**. Slice 7 and every dependent visual slice must stop until the exact reviewed companions are committed; a local Downloads copy is not a repository prerequisite and may not be silently substituted. This manual is v2: the layer that walks two people through those surfaces. **It builds no new ledger surface of its own.**
 
 ---
 
@@ -43,7 +43,7 @@ Both share the registry shape, the probe discipline, the evidence projector, the
 
 ## 0.4 Verified baseline
 
-**Verified against `origin/main` @ `64740b3`** ("feat(fund): this week", 2026-09-03 14:51 -0400). **332 commits ahead of the `ba752c2` baseline the earlier drafts used.** Both SHAs quoted in the original assignment prompt (`7101dce`, `1c03cbe`) and the previous verification SHA (`6f5dd56`) are stale. `main` moves several times a day — **slice 0 re-verifies.**
+**Verified against `origin/main` @ `200dfd1`** (Fund slice 11 integrated, 2026-09-03). This baseline contains Fund slices 0–11 and onboarding slices 1–4. Both SHAs quoted in the original assignment prompt (`7101dce`, `1c03cbe`) and the previous verification SHAs (`6f5dd56`, `64740b3`) are stale. `main` moves several times a day — every later slice re-verifies.
 
 Labels: **[verified]** read in code on this SHA · **[locked]** Jonathan's instruction · **[proposed]** this manual's design · **[open]** unresolved, a slice may not pass it.
 
@@ -53,14 +53,14 @@ Labels: **[verified]** read in code on this SHA · **[locked]** Jonathan's instr
 | `test:fast` and `test:books` remain explicit full-gate lanes; `test:books` is serial (`--maxWorkers=1`) and names every heavy test | **[verified]** | `package.json`. A new heavy test must still be **added to that list by name**. The exhaustive path is `pnpm test:full` and requires the authorization described by **D-202**. |
 | `pnpm check:windows` = `pwsh -NoProfile -File scripts/verify-windows.ps1` | **[verified]** | `package.json`. The command could not run on this macOS host because `pwsh` is not installed; that is a local tooling gap, not a failing Hearth test. |
 | `pnpm ai:verify` = `node scripts/verify-ai-surface.mjs`, and it enforces the Clerk fences | **[verified]** | `scripts/verify-ai-surface.mjs:51–64`; the standalone verification passed with 48 required files and two Clerk-owned files. |
-| Baseline failing-test set | **[verified]** | **None under the authorized quick gate.** On an unchanged tree, `pnpm test` passed AI verification and TypeScript, selecting zero targeted tests. `pnpm build` also passed. This is not a claim that the exhaustive suite ran. |
-| Highest decision number in use | **[verified]** | **D-202** |
+| Baseline failing-test set | **[verified]** | **None under the authorized quick gate.** Fund slice 11's exact clean head over this baseline passed AI verification, TypeScript, 45 selected tests, and `pnpm build`. This is not a claim that the exhaustive suite ran. |
+| Highest decision number in use | **[verified]** | **D-206** |
 | Decision-number integrity | **[open]** | `docs/DECISIONS.md` assigns **D-202** both to the accepted quick-gate decision and to the later demo-seed why-note. The next decision cannot safely be numbered until this canonical collision is reconciled; it does not block the onboarding foundation. |
 | `HearthTab = "home" \| "plan" \| "calendar" \| "shift" \| "ledger" \| "more" \| "add"` | **[verified]** | `src/core/hercules.ts:13` — the registry's nav vocabulary |
 | `HerculesPresence(...)` with an `onGo` prop | **[verified]** | `src/Hercules.tsx:201`; wired in `src/App.tsx:4926` and `src/App.tsx:6215` |
-| `src/core/index.ts` is the barrel every component imports from | **[verified]** | 226 lines; a new core module must be re-exported here |
-| `src/App.tsx` is 6,432 lines; `commands.ts` 6,201; `types.ts` 1,399; `Hercules.tsx` 1,591 | **[verified]** | collision map, §D.2 |
-| `src/core/onboarding/` | **[verified absent]** | no engine of any kind exists |
+| `src/core/index.ts` is the barrel every component imports from | **[verified]** | 236 lines; a new core module must be re-exported here |
+| `src/App.tsx` is 6,432 lines; `commands.ts` 6,574; `types.ts` 1,414; `Hercules.tsx` 1,591 | **[verified]** | collision map, §D.2 |
+| `src/core/onboarding/` | **[verified present]** | slices 1–4 are merged: registry, household mode, member progress, semantic actions, and the local affirmative classifier |
 | Ordinary Hercules chat provider stack | **[verified]** | **D-184** — Gemini → Groq → opted-in OpenAI → Workers AI. Onboarding v1 still makes **zero** model calls |
 
 ## 0.5 The audit — what the structural build actually shipped
@@ -95,6 +95,10 @@ The structural build and its formerly outstanding follow-ups are merged on the v
 | Clerk 4 · the weekly | `src/core/weeklyDocument.ts`, `weeklyDocumentStamp.ts`, `src/WeeklyDocument.tsx` | **D-196** the weekly is an asynchronous household document |
 | Demo 1 · four-month demo seed | `seedDemoHousehold()`, `test/demo-seed.test.ts` | merged in PR **#309** (`7dd1f96`): command-authored four-month history, real Hold, deferred goal claim, and unsigned Charter line. |
 | Demo 2 · guided walk | `docs/DEMO_WALK.md` | merged in PR **#308** (`3bef5a3`). Its embedded pre-merge readiness note is historical; the seed and ceiling are now on `main`. |
+| Onboarding 1 · registry | `src/core/onboarding/registry.ts`, `types.ts` | **D-203**, merged in PR **#317**; pure validated registry, no runtime behavior. |
+| Onboarding 2 · household mode | `src/core/onboarding/mode.ts`, Shared continuity and command replay | **D-204**, merged in PR **#318**; two-device handshake facts survive split, assembly, merge, and replay. |
+| Onboarding 3 · member progress | `src/core/onboarding/progress.ts`, Personal continuity and actor-gated commands | **D-205**, merged in PRs **#319–320** after trust corrections. |
+| Onboarding 4 · semantic actions | `src/core/onboarding/actions.ts`, `affirmative.ts` | **D-206**, merged in PR **#321**; typed text may continue, pause, or reopen, never approve or submit. |
 
 **The previous ceiling regression is resolved.** `ceilingKind` and `ceilingValue` now flow through `askRoutes.ts`, `askView.ts`, and `Ask.tsx`, with behavior asserted in `test/ask-ceiling.test.ts`. Chapter 3 can rely on that answer affecting the later Ask route instrument.
 
@@ -127,21 +131,22 @@ This is **exactly the D-129 "automatic start after Home renders" pattern that th
 
 **Slice 10 owns this conflict and must resolve it, not work around it.** The auto-open becomes the *invitation*: on an empty household Hercules offers the household track, and Charter founding is reached through Chapter 3 like every other surface. Do not delete `householdNeedsCharterFounding` — it is the right predicate; only its consumer changes.
 
-## 0.6 Hard prerequisites — all satisfied
+## 0.6 Hard prerequisites and explicit blockers
 
-| Slice | Requires | Status on `64740b3` |
+| Slice | Requires | Status on `200dfd1` |
 |---|---|---|
 | 2, 26 | member-owned landing preference precedent | **satisfied** — `landingSurface` is personal-envelope state, **D-200** |
 | 12 (Ch 3) | charter record + commands | **satisfied** — `charter.ts`, D-189, D-193 |
 | 12 (Ch 3) | the standalone founding flow | **satisfied** — `src/CharterFounding.tsx`; **slice 12 navigates to it** |
 | 13, 15 (Ch 4, 6) | the custody fence | **satisfied** — D-197 |
-| 14 (Ch 5) | `openingTruth.ts` | **satisfied** — reconcile with **D-183**'s one-reversible-opening-batch clause. D-183 is the *Month One rehearsal* decision; it is not named for opening truth |
+| 14 (Ch 5) | `openingTruth.ts` | **satisfied for Development only** — `postOpeningBalances` remains a Development rehearsal. Production invitation/activation is blocked until a separately accepted Production-capable opening-truth path exists; never let a Production household enter a track that cannot finish. |
 | 18–24 (Ch 9–11) | obligations + register | **satisfied** — Register 1 and 2 merged |
 | 21 (formula) | `houseRunRate` | **satisfied**, and still empty on a first run — §0.10 |
 | 24 (Ch 11) | Charter ceiling behavior | **satisfied** — Register 11, **D-201**, PR #307 |
 | 27 (demo lifecycle) | four-month Development demo and walk | **satisfied** — Demo 1 and 2, PRs #309 and #308; reconcile the duplicate D-202 label before assigning another decision |
+| 7–10 and later UI | `HEARTH_BUILD_MANUAL.md`, `HEARTH_UX_PACKET.md`, `hearth-ux-plates.html` committed in the repository | **[open blocker]** — absent at this baseline. Do not implement visual slices from local-only copies or memory. |
 
-**Nothing in the household track is blocked today.** Fund slices after the already-merged rail are parallel leaves and do not block the onboarding foundation.
+**Foundation slices 1–6 are not blocked.** The member-facing household track remains Development-only until Production opening truth exists, and visual slices 7 onward remain blocked until the exact UX companions are committed. Fund slices 0–11 are present and do not block the onboarding foundation.
 
 ## 0.7 Risk, Dual Course, review routing
 
@@ -159,6 +164,8 @@ CAD integer cents · `America/Toronto` civil dates · one kernel, two shells (ph
 ## 0.9 Entry, lock, and the release valve
 
 **Free roam first.** A new household is **not** in setup mode. Setup is never entered at first launch. (This is the change §0.5 flags in `App.tsx`.)
+
+**Development release boundary.** The first household track is offered and activated only in Development. The stored mode shape remains environment-bound and fail-closed in Production, but no Production household may enter the track until a separately accepted Production-capable opening-truth command makes Chapter 5 finishable.
 
 **The invitation.** Offered once, quietly, resumable, never modal, never repeated.
 
@@ -308,10 +315,12 @@ describe("the thing", () => {
 
 ### F. Test lanes — where a new test goes
 
-`pnpm test` runs `test:fast`, then `test:books`.
+`pnpm test` runs `scripts/run-quick-gate.mjs`: it fingerprints the exact change, verifies AI surfaces and TypeScript, then selects changed, mapped, and invariant tests. It does **not** run both exhaustive lanes.
 
-- **Default: `test:fast`.** Nothing to configure — a new `test/*.test.ts` is picked up automatically.
+- **Default test placement: `test:fast`.** Nothing to configure — a new `test/*.test.ts` is picked up automatically when the exhaustive lane is authorized, and the quick gate selects it when the change graph or explicit focus requires it.
 - **Only if the test is heavy** (pglite, scale, stress, a full app boot, >5s), add it **by name** to *both* the `--exclude` list in `test:fast` and the file list in `test:books` in `package.json`. Getting this wrong makes the fast lane slow for everyone.
+
+`pnpm test:full` is the guarded exhaustive path that runs `test:fast` and then serial `test:books`; use it only with the exact owner authorization required by D-202.
 
 Every onboarding test in this manual belongs in `test:fast` unless its slice says otherwise.
 
@@ -361,9 +370,9 @@ Every slice ships:
 **Do:**
 1. Fetch `origin/main`; record the SHA; clean worktree **outside OneDrive**.
 2. Re-check every row of §0.4 and §0.5. Set each label.
-3. Confirm `pnpm test` still runs `scripts/run-test-lanes.mjs` and `check:windows` still runs `scripts/verify-windows.ps1`.
-4. Record the highest D-number (D-198 at `6f5dd56`) and re-read D-128, D-129, D-183, D-184, D-196, D-197, D-198.
-5. Confirm `src/core/onboarding/` still does not exist.
+3. Confirm `pnpm test` still runs `scripts/run-quick-gate.mjs`, `pnpm test:full` remains the guarded exhaustive path, and `check:windows` still runs `scripts/verify-windows.ps1`.
+4. Record the highest D-number at the fetched SHA and re-read D-128, D-129, D-183, D-184, D-196 through D-206.
+5. Record which `src/core/onboarding/` slices are already merged; do not require the folder to remain absent after slice 1.
 6. **Confirm the `App.tsx` auto-open conflict in §0.5 is still present** and record its current line numbers.
 7. Record the failing-test set at this SHA so later slices can prove they added none.
 
@@ -483,7 +492,7 @@ export function personalModules(): OnboardingChapter[];
 **Read first:** `src/core/commands.ts` — `proposeHouseholdFundContribution` and `confirmHouseholdFundContribution` (the exact shape to copy); `src/core/householdFund.ts` — `shapeHouseholdFundConfig` (the defensive shaping style); `src/core/types.ts`.
 
 **Create:** `src/core/onboarding/mode.ts`, `test/onboarding-mode.test.ts`
-**Modify:** `src/core/types.ts` (add `householdOnboarding?: HouseholdOnboarding | null` to `Household`), `src/core/commands.ts`, `src/core/index.ts`
+**Modify:** `src/core/types.ts` (add `householdOnboarding?: HouseholdOnboarding | null` to `Household`), `src/core/commands.ts`, `src/core/index.ts`, `src/core/sync.ts`, `src/core/household.ts`, `src/core/commandIdentity.ts`, `src/core/commandRuntime.ts`, `src/ledger/continuityCommandLog.ts`, `src/ledger/materializeSnapshotFromEvents.ts`
 
 ```ts
 export const HANDSHAKE_WINDOW_MINUTES = 15;
@@ -539,6 +548,7 @@ resumeHouseholdOnboarding(household, { memberId }): CommitResult
 6. `ordinaryHerculesAvailable()` derives from the accepted record only. **A fence asserts `mode.ts` imports nothing from `src/*.tsx`.**
 7. An unknown `state` value shapes to `"blocked"`, never `"complete"`.
 8. `registryVersion` newer than `ONBOARDING_REGISTRY_VERSION` shapes to `"repair"`, never `"active"`.
+9. `householdOnboarding` is a Shared record: split, shape, assembly, deterministic merge, accepted-command validation, and compacted replay all preserve it. Two offline confirmations union without either device overwriting the other.
 
 **Copy** — from Appendix E, verbatim: `invite.explain`, `invite.waiting`, `invite.expired`, `stop.recorded`.
 
@@ -557,7 +567,7 @@ resumeHouseholdOnboarding(household, { memberId }): CommitResult
 **Read first:** `src/core/onboarding/mode.ts`, `src/core/householdFund.ts` (`shapeHouseholdFundPrivate` — the member-scoped shaping precedent at line 196).
 
 **Create:** `src/core/onboarding/progress.ts`, `test/onboarding-progress.test.ts`
-**Modify:** `src/core/types.ts`, `src/core/commands.ts`, `src/core/index.ts`
+**Modify:** `src/core/types.ts`, `src/core/commands.ts`, `src/core/index.ts`, `src/core/household.ts`, `src/core/sync.ts`
 
 ```ts
 export type MemberChapterProgress = {
@@ -585,14 +595,14 @@ export function mergeMemberProgress(server, client): MemberOnboardingProgress;
 ```
 
 ```ts
-recordChapterAcknowledgement(household, { memberId, chapterId }): CommitResult
-skipPersonalStep(household, { memberId, chapterId }): CommitResult
-setOnboardingOffersMuted(household, { memberId, muted }): CommitResult
-forceUnlockOnboarding(household, { memberId }): CommitResult   // Development only
+recordChapterAcknowledgement(household, { memberId, chapterId, createdBy }): CommitResult
+skipPersonalStep(household, { memberId, chapterId, createdBy }): CommitResult
+setOnboardingOffersMuted(household, { memberId, muted, createdBy }): CommitResult
+forceUnlockOnboarding(household, { memberId, createdBy }): CommitResult   // Development only
 ```
 
 **Rules:**
-1. **Self-owned.** Writing member B's progress from member A throws `"Only you can record your own progress."`
+1. **Self-owned.** `createdBy` is the trusted acting member and must equal the target `memberId`; writing member B's progress from member A throws `"Only you can record your own progress."` An omitted actor also refuses.
 2. `observedCompleteAt` is set **only** from a probe result. Fence: `progress.ts` imports no component and contains no `document`.
 3. **Merge law** (`mergeMemberProgress`): per chapter, earliest non-null `observedCompleteAt`; latest `lastSafeResumePoint`; a skip never un-skips; `declineCountByModule` takes the max. Order-independent and lossless.
 4. `nextChapterFor` never returns a chapter with unmet `dependsOn`, and never returns a personal chapter while the household track is active.
@@ -738,7 +748,9 @@ export function flavorFor(chapterId: ChapterId, householdId: string): string;
 
 **Branch:** `onboarding/7-conductor-mobile` · **PR:** `feat(onboarding): the conductor shell in Hercules focus` · **Owner:** Cursor · **Depends on:** 1–6
 
-**Read first:** `src/Hercules.tsx` (the focus surface), `src/Charter.tsx` (component pattern, focus trap, `onCommit`), **`HEARTH_UX_PACKET.md` §13 in full**, and **`hearth-ux-plates.html` plates 11 and 14** — plate 11 draws all three states of this screen, plate 14 dimensions it.
+**Blocking prerequisite:** the reviewed `HEARTH_BUILD_MANUAL.md`, `HEARTH_UX_PACKET.md`, and `hearth-ux-plates.html` must exist at committed repository paths. They are absent at the slice-0 baseline. Stop instead of using a local Downloads copy, memory, or improvised geometry.
+
+**Read first after that prerequisite lands:** `src/Hercules.tsx` (the focus surface), `src/Charter.tsx` (component pattern, focus trap, `onCommit`), the committed **`HEARTH_UX_PACKET.md` §13 in full**, and committed **`hearth-ux-plates.html` plates 11 and 14** — plate 11 draws all three states of this screen, plate 14 dimensions it.
 
 **Create:** `src/core/onboarding/shellView.ts`, `src/OnboardingChat.tsx`, `src/onboarding.css`, `test/onboarding-conductor.test.ts`
 **Modify:** `src/Hercules.tsx` (render the shell inside the existing focus surface — **do not add a route or a tab**), `src/core/index.ts`
@@ -779,7 +791,7 @@ export const SHELL_VIEW = {
 
 **Branch:** `onboarding/8-witness` · **PR:** `feat(onboarding): the witness surface and the noticed status` · **Owner:** Cursor · **Depends on:** 7
 
-**Read first:** `HEARTH_UX_PACKET.md` §13.4 and §13.6, **plate 12**.
+**Read first:** the committed `HEARTH_UX_PACKET.md` §13.4 and §13.6, and committed **plate 12**. If slice 7's companion-artifact prerequisite is still open, stop.
 
 **Create:** `src/OnboardingWitness.tsx`, `test/onboarding-witness.test.ts`
 **Modify:** `src/OnboardingChat.tsx`, `src/onboarding.css`
@@ -801,7 +813,7 @@ export const SHELL_VIEW = {
 
 **Read first:** `src/Hercules.tsx:192` (`HerculesPresence` props), `src/App.tsx:5143` (how it is wired), `src/App.tsx:2165–2168` (**the auto-open conflict — do not change it here; slice 10 owns it**).
 
-**Also read:** `HEARTH_UX_PACKET.md` §13.5, **plate 13** — the return bar is 44px furniture pinned above the nav, not a toast, with no dismiss.
+**Also read:** the committed `HEARTH_UX_PACKET.md` §13.5 and committed **plate 13** — the return bar is 44px furniture pinned above the nav, not a toast, with no dismiss. If slice 7's companion-artifact prerequisite is still open, stop.
 
 **Create:** `src/core/onboarding/returnMessage.ts`, `test/onboarding-return.test.ts`
 **Modify:** `src/Hercules.tsx`, `src/App.tsx` — **`onGo` wiring only, nothing else**
@@ -845,6 +857,8 @@ An empty household is dropped straight into Charter founding with no invitation,
 
 **Change the consumer, not the predicate.** `householdNeedsCharterFounding` stays exactly as it is. The effect now offers the household track (`offerHouseholdOnboarding`) instead of opening founding. Charter founding is reached through Chapter 3, like every other surface.
 
+**Release gate:** this invitation and the transition into active household setup are Development-only until a Production-capable opening-truth path is accepted. In Production, keep free roam and do not offer or activate this track; the mode record remains shaped only so malformed or future data fails closed.
+
 **Probe:** `state === "active"` with **both** member ids in `confirmedByMemberIds`. Nothing else counts.
 
 **Choreography:** Hercules explains his role, the setup lock on **both** members, pause and resume, the Confirm boundary, the privacy boundary, and what finishing accomplishes. He names the three sittings and their honest lengths. One control: **Start together**. The partner's device shows the same explanation and **Yes, let's start**. Neither activates alone. One line introduces the personal track as available later and never required.
@@ -853,7 +867,7 @@ An empty household is dropped straight into Charter founding with no invitation,
 
 **Skip/approval:** household-required, no skip; the handshake is the approval.
 
-**Tests:** an empty household **does not** open Charter founding and **does** show the invitation; the invitation renders at most once per household until dismissed or accepted; activation is impossible from one device; expiry copy at the right moment; keyboard path through both sides; **a fence that `App.tsx` no longer calls `setCharterFoundingOpen` from the `householdNeedsCharterFounding` effect.**
+**Tests:** an empty Development household **does not** open Charter founding and **does** show the invitation; a Production household gets neither the takeover nor an onboarding invitation; the invitation renders at most once per household until dismissed or accepted; activation is impossible from one device; expiry copy at the right moment; keyboard path through both sides; **a fence that `App.tsx` no longer calls `setCharterFoundingOpen` from the `householdNeedsCharterFounding` effect.**
 
 **Do not:** delete `householdNeedsCharterFounding`. Do not touch any other part of `App.tsx`.
 
@@ -893,7 +907,7 @@ An empty household is dropped straight into Charter founding with no invitation,
 
 **Skip/approval:** household-required, joint, **cannot be skipped**. One member may not sign for the other. Chat text is never a signature.
 
-**On the ceiling:** founding collects `ceilingKind` and `ceilingValue`, and the evidence card shows `charterCeilingLabel()`. **Until `HEARTH_BUILD_MANUAL.md` Register slice 11 lands, that answer changes nothing about what the Ask offers.** Do not paper over it in copy — Hercules states what was agreed, and says nothing about it being enforced.
+**On the ceiling:** founding collects `ceilingKind` and `ceilingValue`, and the evidence card shows `charterCeilingLabel()`. Register slice 11 is merged under D-201, so the accepted ceiling already constrains Ask route presentation; reuse that behavior and do not reimplement it in onboarding.
 
 **Tests:** a one-signature household reads pending; two signatures on different revisions read stale; the chapter completes only from the typed record — **a test that visits the founding route without signing and asserts the chapter is still pending.**
 
@@ -931,17 +945,17 @@ An empty household is dropped straight into Charter founding with no invitation,
 
 **Reuse, do not rebuild.** `openingEligibleAccounts`, `buildOpeningTruthDraft`, `openingTruthReviewSummary`, `householdHasAcceptedMoney`, `hasPostedOpeningTruth`, `hasOnlyOpeningCorrectionHistory`, `openingBatchRows` all exist.
 
-**Probe:** `hasPostedOpeningTruth(household)` is true **and** the accepted batch covers the shared accounts identified in Chapter 4.
+**Probe:** Development only: `hasPostedOpeningTruth(household)` is true **and** the accepted batch covers every shared account from Chapter 4 that has a non-zero opening amount. A legitimate zero-balance account is outside the required opening-line set and cannot keep the chapter pending; do not fabricate a zero-value journal row to mark coverage.
 
 **Evidence:** household-scoped — the accepted receipt, the accounts covered, the civil date, the balanced Opening equity line.
 
 **The state that matters most.** `householdHasAcceptedMoney(household) === true` **and** `hasPostedOpeningTruth(household) === false` **and** `hasOnlyOpeningCorrectionHistory(household) === false` → ordinary money exists but the books are not demonstrably current. **Fail closed.** Render `blocked.stale` naming the conflict and offer the correction path the command already supports. **Never weaken `openingTruth.ts` to let onboarding pass.**
 
-Also: partial coverage (some accounts opened, some not) reads pending, not complete.
+Also: partial coverage of the non-zero opening-line set reads pending, not complete. Production is blocked before setup activation until its own accepted opening-truth path exists; Chapter 5 must never become an unavoidable Production dead end.
 
 **Skip/approval:** household-required, no skip.
 
-**Tests:** partial coverage reads pending; the ineligible-with-ordinary-money case blocks and is copied honestly; **a fence that this slice's diff does not modify `src/core/openingTruth.ts`**; Toronto civil-date and balanced-equity invariants unchanged.
+**Tests:** partial non-zero coverage reads pending; a zero-balance shared account needs no fabricated opening row and does not block; the ineligible-with-ordinary-money case blocks and is copied honestly; Production cannot enter the track; **a fence that this slice's diff does not modify `src/core/openingTruth.ts`**; Toronto civil-date and balanced-equity invariants unchanged.
 
 **Do not:** reconstruct history, fabricate income, double-open the books, or relax any boundary the command enforces.
 
@@ -954,9 +968,26 @@ Also: partial coverage (some accounts opened, some not) reads pending, not compl
 
 **Read first:** `src/core/householdFund.ts`, `configureHouseholdFund` in `commands.ts`, `test/custody-fence.test.ts`.
 
-**Probe:** a Fund configuration exists **and** both members approved the same configuration revision.
+**Create:** `src/core/onboarding/fundApproval.ts`, `test/onboarding-fund-approval.test.ts`
+**Modify:** `src/core/types.ts`, `src/core/commands.ts`, `src/core/index.ts`, `src/core/household.ts`, `src/core/sync.ts`, and accepted-command replay/identity files required by the Shared record.
 
-**Evidence:** household-scoped — custodian, backing account, operating accounts, rules, approval dates.
+```ts
+export type OnboardingFundApproval = {
+  id: string; householdId: string; memberId: string;
+  publicConfigDigest: string;
+  approvedAt: string;
+};
+
+export function fundConfigApprovalDigest(household: Household): string | null;
+export function bothApprovedFundConfig(household: Household, digest: string): boolean;
+approveOnboardingFundConfig(household, { memberId, createdBy, publicConfigDigest }): CommitResult
+```
+
+The digest covers only Shared-visible meaning: configured status, custodian, and public operating rules. It never contains the Personal backing-account id, institution, or other private metadata. A private backing-account change is the custodian's responsibility and does not ask the partner to approve a fact they cannot inspect.
+
+**Probe:** a Fund configuration exists **and** both members approved its current `publicConfigDigest`.
+
+**Evidence:** household-scoped — configured status, custodian, public operating rules, and approval dates. The backing account's id, name, institution, and metadata are self-personal to the custodian and never enter witness evidence.
 
 **Choreography:** conductor configures on the Fund surface; witness sees it land, then gets their own approval control. **Approval is a button and a reviewed command — never a chat reply.**
 
@@ -964,7 +995,7 @@ Also: partial coverage (some accounts opened, some not) reads pending, not compl
 
 **Skip/approval:** household-required, joint, cannot be skipped.
 
-**Tests:** one approval reads pending; mismatched revisions read stale; **`projectHouseholdFund` is byte-identical before and after this chapter** — configuration is not a journal post.
+**Tests:** one approval reads pending; mismatched revisions read stale; a cross-member or omitted `createdBy` refuses; offline approvals merge without loss; witness evidence and the Shared approval digest contain no backing-account id or institution; **`projectHouseholdFund` is byte-identical before and after this chapter** — approval is not a journal post.
 
 **Do not:** move money, imply money moved, or post a journal row.
 
@@ -996,6 +1027,8 @@ Also: partial coverage (some accounts opened, some not) reads pending, not compl
 
 **Read first:** `src/core/work.ts` (`defaultWorkSchedule`, `WorkPaySchedule`), `src/core/recurrence.ts` (`projectCadence`), `src/core/ask.ts` (`nextPaydayDate` — already consumes the cadence).
 
+**Modify:** `src/core/types.ts`, `src/core/work.ts`, the existing schedule command in `src/core/commands.ts`, `src/core/sync.ts`, and the schedule tests. Extend `WorkPayCadence` with `"irregular"`; shaping must preserve it, while timing projections such as `nextPaydayDate` and `paydayTicks` return no invented regular date or amount for it.
+
 | | Scope | Required? |
 |---|---|---|
 | **Cadence** — when this member is paid, by what rhythm | household | **required** |
@@ -1011,7 +1044,7 @@ The household plan needs both members' cadence: one member's regular pay is the 
 
 **Skip/approval:** cadence **member-required**; detail **member-skippable**, and a skip is explicit progress — not fabricated income.
 
-**Tests:** a skip records a skip and no income row; one member's detail never reaches the other's evidence; `"irregular"` satisfies the probe.
+**Tests:** a skip records a skip and no income row; one member's detail never reaches the other's evidence; `"irregular"` survives shaping and continuity, satisfies the probe, and produces no invented payday date, tick, or amount.
 
 **Do not:** ask for or store an assumed contribution amount. That is the discovery month's job.
 
@@ -1045,12 +1078,12 @@ export function mergeSubmissions(server, client): OnboardingSubmission[];
 ```
 
 ```ts
-submitOnboardingCategories(household, { memberId, categoryIds }): CommitResult
-submitOnboardingEstimates(household, { memberId, estimates }): CommitResult
+submitOnboardingCategories(household, { memberId, createdBy, categoryIds }): CommitResult
+submitOnboardingEstimates(household, { memberId, createdBy, estimates }): CommitResult
 ```
 
 **Rules — each a test:**
-1. **Self-owned.** Writing another member's submission throws `"Only you can submit your own."`
+1. **Self-owned.** Trusted `createdBy` must equal the target `memberId`; writing another member's submission or omitting the actor throws `"Only you can submit your own."`
 2. Shared **only** at the explicit Submit. Drafts are private to their author.
 3. Sharing covers **only** the selected category ids and estimate cents. No partner-Personal source fact is disclosed.
 4. **No ownership, no ratio, no ranking, no "his versus hers", no journal entry.** Fence: `submissions.ts` contains no `/ratio|share|percent|ranking|owner/i` and no `/ total`.
@@ -1136,6 +1169,7 @@ export type BudgetProposal = {
   rows: ProposalRow[];                    // ordered by subcategoryId, ascending
   totalCents: number;
   capacityCents: number | null;
+  capacitySourceRevision: string | null;    // stable revision/digest of the accepted capacity fact
   sourceDigest: string;
 };
 
@@ -1151,11 +1185,11 @@ export function proposalDigest(proposal: Omit<BudgetProposal, "sourceDigest">): 
 
 > **On a first run step 3 never fires.** `RUN_RATE_MIN_WEEKS` is 3 and a founding household has watched zero, so `runRate.eligible` is `false` with reason `"insufficient-weeks"`. **This is the expected path and the default test fixture.** Copy key `runrate.absent`.
 
-**The digest** covers, normalized and deterministic: `monthKey`, `formulaVersion`, both submission ids and revisions, the merged category id list, every `recurrenceFloorCents`, run-rate eligibility and value, and every row's `subcategoryId` + `proposedCents`. **Same meaning in, same digest out, regardless of input ordering.**
+**The digest** covers, normalized and deterministic: `monthKey`, `formulaVersion`, both submission ids and revisions, the merged category id list, every `recurrenceFloorCents`, run-rate eligibility and value, `capacityCents`, `capacitySourceRevision`, and every row's `subcategoryId` + `proposedCents`. Any accepted capacity edit changes its source revision and therefore invalidates earlier approvals. **Same meaning in, same digest out, regardless of input ordering.**
 
 **Rules:** deterministic and order-independent · integer cents only, **no float in a stored value** · **no ratio, no ranking, no silent trim** — fence: `proposal.ts` contains no `/percent|ratio|rank|trim/i` · absent, zero, conflicting, stale and newly-added categories each have defined, tested behavior · **no model call, ever.**
 
-**Tests:** shuffled inputs produce an identical digest (run 20 permutations); the floor is never breached; **the run-rate-absent path is the primary fixture**; a category added after submission yields `"single-estimate"` or `"recurrence-floor"` and never throws; the fence.
+**Tests:** shuffled inputs produce an identical digest (run 20 permutations); changing either capacity cents or its accepted source revision changes the digest and invalidates prior approvals; the floor is never breached; **the run-rate-absent path is the primary fixture**; a category added after submission yields `"single-estimate"` or `"recurrence-floor"` and never throws; the fence.
 
 **Decision to log: the first plan is deterministic and floor-respecting.**
 
@@ -1171,7 +1205,7 @@ export function proposalDigest(proposal: Omit<BudgetProposal, "sourceDigest">): 
 ```ts
 export type OnboardingApproval = {
   id: string; householdId: string; memberId: string;
-  scope: "proposal" | "ready" | "fund-config";
+  scope: "proposal" | "ready";             // fund-config approval is owned by slice 15
   digest: string;
   approvedAt: string;
 };
@@ -1179,11 +1213,11 @@ export type OnboardingApproval = {
 export function approvalsFor(household, scope, digest): OnboardingApproval[];
 export function bothApproved(household, scope, digest): boolean;
 
-approveOnboardingProposal(household, { memberId, digest }): CommitResult
-approveOnboardingReady(household, { memberId, digest }): CommitResult
+approveOnboardingProposal(household, { memberId, createdBy, digest }): CommitResult
+approveOnboardingReady(household, { memberId, createdBy, digest }): CommitResult
 ```
 
-**Rules:** append-only, self-owned, keyed to the exact digest · **one member cannot approve, replace, or revoke another's** — throws `"Only you can approve for yourself."` · any meaning-bearing edit produces a new digest, and approvals against the old digest **remain auditable but cannot authorize adoption** · concurrent offline approvals for the same digest merge without loss · **a chat reply never creates an approval** — enforced at the action layer (slice 4) and asserted here.
+**Rules:** append-only, self-owned, keyed to the exact digest · trusted `createdBy` must equal `memberId` · **one member cannot approve, replace, or revoke another's** — throws `"Only you can approve for yourself."` · any meaning-bearing edit produces a new digest, and approvals against the old digest **remain auditable but cannot authorize adoption** · concurrent offline approvals for the same digest merge without loss · **a chat reply never creates an approval** — enforced at the action layer (slice 4) and asserted here. Fund-configuration approval is already defined, persisted, and merged in slice 15; this slice must not create a second record for it.
 
 **Tests:** cross-member approval throws; an edit invalidates authorization while preserving the old record; two-device concurrent approval merges; a stale-digest approval never authorizes.
 
@@ -1196,7 +1230,7 @@ approveOnboardingReady(household, { memberId, digest }): CommitResult
 **Read first:** `setBudget` in `src/core/commands.ts:1488` and `seedBudgetPlan` at `:1473` — this command batches over that exact behavior.
 
 ```ts
-adoptFirstBudget(household, { memberId: string; monthKey: MonthKey; proposalDigest: string }): CommitResult
+adoptFirstBudget(household, { memberId: string; createdBy: string; monthKey: MonthKey; proposalDigest: string }): CommitResult
 ```
 
 **Preconditions, all validated before anything is written:** valid identity and membership · household mode `"active"` · proposal revision and digest still current · **both members' approvals present against this exact digest** · month matches · category set matches · every amount an exact integer cent · this adoption identity **not already applied**.
@@ -1339,7 +1373,7 @@ adoptFirstBudget(household, { memberId: string; monthKey: MonthKey; proposalDige
 
 # APPENDIX B — DECISION RECONCILIATION AND PROPOSED TEXT
 
-**Claim numbers at write time. Never reserve a range.** Highest in use on `6f5dd56` is **D-198**. An earlier draft of the structural manual pre-assigned D-174 through D-184 on the belief that D-173 was highest; canon was already past D-189, and those slices landed as **D-189, D-193, D-196, D-197, D-198** instead. Read `docs/DECISIONS.md` at write time.
+**Claim numbers at write time. Never reserve a range.** Highest in use on `200dfd1` is **D-206**. An earlier draft of the structural manual pre-assigned D-174 through D-184 on the belief that D-173 was highest; canon was already past D-189, and those slices landed under current numbers instead. Read `docs/DECISIONS.md` at write time.
 
 | Slice | Decision to record | Number |
 |---|---|---|
@@ -1571,4 +1605,4 @@ Three to five per chapter, seeded by `householdId + chapterId`, versioned with t
 
 ---
 
-*Companion to `HEARTH_BUILD_MANUAL.md` (structural v1 — largely shipped, see §0.5), `HEARTH_UX_PACKET.md`, and `hearth-ux-plates.html`. Audited and verified against `origin/main` @ `6f5dd56` on 2026-09-02, 876 commits past the earlier drafts' baseline. **Slice 0 re-verifies before slice 1.** Every figure and example is synthetic.*
+*Companion to `HEARTH_BUILD_MANUAL.md` (structural v1 — largely shipped, see §0.5), `HEARTH_UX_PACKET.md`, and `hearth-ux-plates.html`. Audited and verified against `origin/main` @ `200dfd1` on 2026-09-03. The companion artifacts remain an explicit repository blocker until committed. Every figure and example is synthetic.*
