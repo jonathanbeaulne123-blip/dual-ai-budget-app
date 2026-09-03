@@ -1,0 +1,171 @@
+/* The Level — the Fund's face. House tokens only. No hex literals. */
+
+.level {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.level-figure {
+  margin: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.level-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.level-svg {
+  display: block;
+  width: 100%;
+  max-width: 700px;
+  height: auto;
+}
+
+.level-zero,
+.level-axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.level-buffer {
+  stroke: var(--copper);
+  stroke-width: 1;
+  stroke-dasharray: 5 3;
+}
+
+.level-band {
+  fill: var(--copper);
+  opacity: 0.07;
+}
+
+.level-actual {
+  fill: none;
+  stroke: var(--pine);
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+}
+
+.level-projected {
+  fill: none;
+  stroke: var(--pine);
+  stroke-width: 1.75;
+  stroke-dasharray: 5 4;
+  stroke-linejoin: round;
+  opacity: 0.72;
+}
+
+.level-today-line {
+  stroke: var(--ink);
+  stroke-width: 1;
+  opacity: 0.32;
+}
+
+.level-today-dot {
+  fill: var(--pine);
+}
+
+.level-mark {
+  fill: var(--pine);
+  stroke: none;
+}
+
+.level-mark.is-estimated {
+  fill: var(--paper);
+  stroke: var(--pine);
+  stroke-width: 1.25;
+}
+
+.level-dry-mark {
+  fill: none;
+  stroke: var(--copper);
+  stroke-width: 1.75;
+}
+
+.level-payday-tick {
+  stroke: var(--felt);
+  stroke-width: 3;
+}
+
+.level-skeleton {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.level-label {
+  font-size: 18px;
+  fill: var(--muted);
+  font-family: var(--font);
+}
+
+.level-buffer-label {
+  fill: var(--copper);
+}
+
+.level-dry-label {
+  fill: var(--copper);
+}
+
+.level-headline,
+.level-secondary {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.level-secondary {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.level-status {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level,
+  .level * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .level {
+    border: 2px solid CanvasText;
+  }
+  .level-actual,
+  .level-today-dot,
+  .level-mark {
+    stroke: CanvasText;
+    fill: CanvasText;
+  }
+  .level-projected {
+    stroke: CanvasText;
+  }
+  .level-band {
+    fill: Canvas;
+  }
+  .level-buffer,
+  .level-dry-mark,
+  .level-payday-tick {
+    stroke: CanvasText;
+  }
+}

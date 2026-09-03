@@ -61,6 +61,7 @@ import { MonthSpread } from "./MonthSpread.tsx";
 import { Ask } from "./Ask.tsx";
 import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
+import { Level } from "./Level.tsx";
 import { NextOutStage } from "./NextOutStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
@@ -641,11 +642,27 @@ export function OfficeWide({
                 Open {selectedFundPlate.cabinetName}
               </button>
             </section>
+          ) : spreadIsStage && fundConfigured && fundWalkToday && activeFundWidget === "level" ? (
+            <>
+              <Level walk={fundWalkToday} household={booksHousehold} headingRef={fundStageHeadingRef} />
+              {showAsk ? (
+                <Ask
+                  household={booksHousehold}
+                  today={today}
+                  memberId={memberId}
+                  busy={busy}
+                  onMove={(alternative) => onKitchen((current) => moveAskGoalClaimToNextMonth(current, {
+                    today,
+                    memberId,
+                    goalId: alternative.goalId,
+                    recurrenceId: alternative.recurrenceId,
+                    claimDate: alternative.claimDate,
+                  }))}
+                />
+              ) : null}
+            </>
           ) : spreadIsStage && sharedStory ? (
             <>
-              {fundConfigured ? (
-                <h2 ref={fundStageHeadingRef} tabIndex={-1} className="fund-stage-heading">The Household Fund</h2>
-              ) : null}
               <MonthSpread
                 story={sharedStory}
                 course={course}
