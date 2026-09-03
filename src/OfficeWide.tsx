@@ -62,6 +62,7 @@ import { Ask } from "./Ask.tsx";
 import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
 import { NextOutStage } from "./NextOutStage.tsx";
+import { WaitingStage } from "./WaitingStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -596,6 +597,14 @@ export function OfficeWide({
           ) : spreadIsStage && fundConfigured && fundWalkToday
             && (selectedFundWidget === "next-out" || selectedFundWidget === "spoken-for") ? (
             <NextOutStage walk={fundWalkToday} today={today} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && selectedFundWidget === "waiting" ? (
+            <WaitingStage
+              household={booksHousehold}
+              memberId={memberId}
+              today={today}
+              onKitchen={onKitchen}
+              headingRef={fundStageHeadingRef}
+            />
           ) : spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
             <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
               <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>
