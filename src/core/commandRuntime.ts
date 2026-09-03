@@ -235,6 +235,8 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
               accepted.weeklyDocumentStamps,
               accepted.members,
             ).filter((row) => postedIds.includes(row.id)))
+            : input.commandKind?.endsWith("HouseholdOnboarding") && accepted.householdOnboarding
+              ? await sha256Hex(commandMaterializationFacts({ householdOnboarding: accepted.householdOnboarding }))
             : undefined,
       postedIds,
       revision,

@@ -52,6 +52,7 @@ import {
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import { mergeHouseholdCharters, shapeHouseholdCharter } from "./charter.ts";
+import { mergeHouseholdOnboarding, shapeHouseholdOnboarding } from "./onboarding/mode.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -291,6 +292,7 @@ export function ensureHouseholdShape(household: Household): Household {
     goals: progress.goals,
     goalContributions: progress.goalContributions,
     goalPurchases: shapeGoalPurchases(household.goalPurchases, fallbackIso, fallback),
+    householdOnboarding: shapeHouseholdOnboarding(household.householdOnboarding),
     charter: shapeHouseholdCharter(household.charter, { members, householdFund }),
     householdFund,
     fundMonthPlans: shapeHouseholdFundMonthPlans(household.fundMonthPlans),
@@ -427,6 +429,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     goals: sharedGoals,
     goalContributions: shaped.goalContributions.filter((row) => sharedGoalIds.has(row.goalId)),
     goalPurchases: shaped.goalPurchases.filter((row) => sharedGoalIds.has(row.goalId)),
+    householdOnboarding: shaped.householdOnboarding ?? null,
     charter: shaped.charter ?? null,
     householdFund: shaped.householdFund ?? null,
     fundMonthPlans: shaped.fundMonthPlans ?? [],
@@ -734,6 +737,7 @@ export function assembleHousehold(
     goals: [...shared.goals, ...personalGoals],
     goalContributions: [...(shared.goalContributions ?? []), ...personalGoalContributions],
     goalPurchases: [...(shared.goalPurchases ?? []), ...personalGoalPurchases],
+    householdOnboarding: shared.householdOnboarding ?? null,
     charter: shared.charter ?? null,
     householdFund: shared.householdFund ?? null,
     fundMonthPlans: shared.fundMonthPlans ?? [],
@@ -782,6 +786,11 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     if (!right) return left;
     return right.updatedAt >= left.updatedAt ? right : left;
   })();
+  const householdOnboarding = mergeHouseholdOnboarding(server.householdOnboarding, client.householdOnboarding, {
+    householdId: server.householdId || client.householdId,
+    environment: newer.environment,
+    members,
+  });
   const charter = mergeHouseholdCharters(server.charter, client.charter, { members, householdFund });
   return {
     kind: "shared",
@@ -806,6 +815,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     goals,
     goalContributions,
     goalPurchases,
+    householdOnboarding,
     charter,
     householdFund,
     fundMonthPlans: mergeRecords(server.fundMonthPlans ?? [], client.fundMonthPlans ?? [], tombstones),

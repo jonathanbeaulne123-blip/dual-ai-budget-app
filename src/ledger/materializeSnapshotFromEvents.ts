@@ -6,6 +6,14 @@ import {
 } from "../core/commandIdentity.ts";
 import { rememberReceipt } from "../core/commandIdentity.ts";
 import { shapeHouseholdCharter } from "../core/charter.ts";
+import {
+  acceptedHouseholdOnboarding,
+  handshakeExpired,
+  mergeHouseholdOnboarding,
+  shapeHouseholdOnboarding,
+  type HouseholdOnboarding,
+} from "../core/onboarding/mode.ts";
+import { ONBOARDING_REGISTRY_VERSION } from "../core/onboarding/registry.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { advanceCadence } from "../core/recurrence.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
@@ -57,6 +65,7 @@ export type ContinuityMaterializationFacts = {
   sitDownSessions?: SitDownSession[];
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
+  householdOnboarding?: Household["householdOnboarding"];
   charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -245,6 +254,64 @@ function actorMayApplyMonthRehearsals(
   return true;
 }
 
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+  return [...new Set(left)].sort().join("|") === [...new Set(right)].sort().join("|");
+}
+
+function actorMayApplyHouseholdOnboarding(
+  local: Household,
+  event: ContinuityCommandEvent,
+  incoming: HouseholdOnboarding,
+): boolean {
+  if (event.ledger_scope !== "shared"
+    || event.payload_json.commandKind !== event.command_type
+    || !event.payload_json.postedIds.includes(incoming.id)
+    || incoming.householdId !== local.householdId
+    || incoming.environment !== local.environment
+    || incoming.registryVersion !== ONBOARDING_REGISTRY_VERSION
+    || incoming.completedAt
+    || incoming.completionDigest) return false;
+  const actor = local.members.find((member) => member.id === event.member_id && member.active);
+  if (!actor) return false;
+  const prior = acceptedHouseholdOnboarding(local);
+  const activeMemberIds = local.members.filter((member) => member.active).map((member) => member.id);
+  const allActive = (ids: readonly string[]) => activeMemberIds.length >= 2
+    && activeMemberIds.every((memberId) => ids.includes(memberId));
+
+  if (event.command_type === "offerHouseholdOnboarding") {
+    return (!prior || prior.state === "inactive")
+      && incoming.state === "offered"
+      && incoming.proposedByMemberId === null
+      && incoming.confirmedByMemberIds.length === 0;
+  }
+  if (event.command_type === "proposeHouseholdOnboarding" || event.command_type === "resumeHouseholdOnboarding") {
+    if (event.command_type === "resumeHouseholdOnboarding" && prior?.state !== "stopped-incomplete") return false;
+    return incoming.state === "handshake-pending"
+      && incoming.proposedByMemberId === actor.id
+      && sameIds(incoming.confirmedByMemberIds, [actor.id])
+      && !handshakeExpired(incoming, incoming.updatedAt);
+  }
+  if (event.command_type === "confirmHouseholdOnboarding") {
+    if (!prior || prior.state !== "handshake-pending"
+      || incoming.proposedAt !== prior.proposedAt
+      || incoming.handshakeExpiresAt !== prior.handshakeExpiresAt
+      || incoming.proposedByMemberId !== prior.proposedByMemberId
+      || handshakeExpired(prior, incoming.updatedAt)) return false;
+    const expectedIds = [...new Set([...prior.confirmedByMemberIds, actor.id])].sort();
+    return sameIds(incoming.confirmedByMemberIds, expectedIds)
+      && incoming.state === (allActive(expectedIds) ? "active" : "handshake-pending");
+  }
+  if (event.command_type === "stopHouseholdOnboarding") {
+    if (!prior || !["active", "paused-safe", "waiting-member", "blocked", "adopting"].includes(prior.state)) return false;
+    const expectedIds = [...new Set([...prior.stoppedByMemberIds, actor.id])].sort();
+    const stopped = incoming.stoppedSolo || allActive(expectedIds);
+    return sameIds(incoming.confirmedByMemberIds, prior.confirmedByMemberIds)
+      && sameIds(incoming.stoppedByMemberIds, expectedIds)
+      && incoming.state === (stopped ? "stopped-incomplete" : "waiting-member");
+  }
+  return false;
+}
+
 function stampCommands(event: ContinuityCommandEvent): Array<{
   postedIds: string[];
   materializationHash?: string;
@@ -332,6 +399,7 @@ function filterFactsForScope(
   }
   if (event.ledger_scope === "shared") {
     if (facts.recurrences?.length) scoped.recurrences = facts.recurrences;
+    if (facts.householdOnboarding) scoped.householdOnboarding = facts.householdOnboarding;
     if (facts.charter) scoped.charter = facts.charter;
     if (facts.householdFund) scoped.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) scoped.fundMonthPlans = facts.fundMonthPlans;
@@ -391,6 +459,9 @@ export function extractMaterializationFacts(
   const goalPurchases = (household.goalPurchases ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (goalPurchases.length) facts.goalPurchases = goalPurchases;
   if (scope !== "personal") {
+    if (household.householdOnboarding && posted.has(household.householdOnboarding.id)) {
+      facts.householdOnboarding = household.householdOnboarding;
+    }
     if (household.charter && postedIds.some((id) => id.startsWith("CHARTER-"))) {
       facts.charter = household.charter;
     }
@@ -459,6 +530,11 @@ async function applyEvent(
   const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
   for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
   const householdFund = facts.householdFund ?? snapshot.householdFund;
+  const householdOnboarding = mergeHouseholdOnboarding(snapshot.householdOnboarding, facts.householdOnboarding, {
+    householdId: snapshot.householdId,
+    environment: snapshot.environment,
+    members: snapshot.members,
+  });
   const charter = facts.charter
     ? shapeHouseholdCharter(facts.charter, { members: snapshot.members, householdFund })
     : snapshot.charter;
@@ -475,6 +551,7 @@ async function applyEvent(
     goalContributions: goalContributions.filter((row) => !dead.has(row.id)),
     goalPurchases: goalPurchases.filter((row) => !dead.has(row.id)),
     recurrences: recurrences.filter((row) => !dead.has(row.id)),
+    householdOnboarding,
     charter,
     householdFund,
     fundMonthPlans: [...planMap.values()],
@@ -514,6 +591,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     sitDownSessions: [],
     goalContributions: [],
     goalPurchases: [],
+    householdOnboarding: null,
     charter: null,
     householdFund: null,
     fundMonthPlans: [],
@@ -652,6 +730,11 @@ export async function applyCommandEventLocally(input: {
     event.payload_json.materializationFacts.monthRehearsals,
   );
   const incomingRecurrences = event.payload_json.materializationFacts.recurrences ?? [];
+  const rawIncomingOnboarding = event.payload_json.materializationFacts.householdOnboarding;
+  const incomingOnboarding = shapeHouseholdOnboarding(rawIncomingOnboarding);
+  if (rawIncomingOnboarding && !incomingOnboarding) {
+    return { ok: false, reason: "onboarding-mode-invalid", fallback: true };
+  }
   if (incomingRehearsals.length) {
     if (!actorMayApplyMonthRehearsals(local, event, incomingRehearsals)) {
       return { ok: false, reason: "month-rehearsal-authority-mismatch", fallback: true };
@@ -661,10 +744,11 @@ export async function applyCommandEventLocally(input: {
     && !actorMayApplyAskGoalRecurrences(local, event, incomingRecurrences)) {
     return { ok: false, reason: "ask-goal-move-authority-mismatch", fallback: true };
   }
-  if (incomingRehearsals.length || incomingRecurrences.length) {
+  if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding) {
     const expected = await sha256Hex(commandMaterializationFacts({
       monthRehearsals: incomingRehearsals,
       recurrences: incomingRecurrences,
+      householdOnboarding: incomingOnboarding,
     }));
     const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
       ? await sha256Hex(incomingRehearsals)
@@ -674,6 +758,9 @@ export async function applyCommandEventLocally(input: {
         && event.payload_json.materializationHash !== legacyRehearsalHash)) {
       return { ok: false, reason: "materialization-hash-mismatch", fallback: true };
     }
+  }
+  if (incomingOnboarding && !actorMayApplyHouseholdOnboarding(local, event, incomingOnboarding)) {
+    return { ok: false, reason: "onboarding-mode-authority-mismatch", fallback: true };
   }
   const rawIncomingStamps = event.payload_json.materializationFacts.weeklyDocumentStamps ?? [];
   const incomingStamps = shapeWeeklyDocumentStamps(rawIncomingStamps);

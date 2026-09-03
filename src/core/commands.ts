@@ -159,6 +159,15 @@ import {
 import { charterCeilingLabel, shapeHouseholdCharter } from "./charter.ts";
 import { askAlternatives, householdAsk } from "./ask.ts";
 import {
+  HANDSHAKE_WINDOW_MINUTES,
+  ONBOARDING_MODE_COPY,
+  acceptedHouseholdOnboarding,
+  handshakeExpired,
+  onboardingRecordId,
+  type HouseholdOnboarding,
+} from "./onboarding/mode.ts";
+import { ONBOARDING_REGISTRY_VERSION } from "./onboarding/registry.ts";
+import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
   hasPostedOpeningTruth,
@@ -172,6 +181,173 @@ export type ActorInput = {
   createdBy?: string;
   visibility?: Visibility;
 };
+
+function onboardingCommandAt(value?: string): string {
+  if (value === undefined) return nowIso();
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) throw new ValidationError(ONBOARDING_MODE_COPY["invite.expired"]);
+  return new Date(parsed).toISOString();
+}
+
+function activeOnboardingMemberIds(household: Household): string[] {
+  return [...new Set(household.members.filter((member) => member.active).map((member) => member.id))].sort();
+}
+
+function allActiveOnboardingMembersConfirmed(household: Household, memberIds: readonly string[]): boolean {
+  const activeMemberIds = activeOnboardingMemberIds(household);
+  const confirmed = new Set(memberIds);
+  return activeMemberIds.length >= 2 && activeMemberIds.every((memberId) => confirmed.has(memberId));
+}
+
+function onboardingProposal(
+  household: Household,
+  memberId: string,
+  at: string,
+  prior: HouseholdOnboarding | null,
+): HouseholdOnboarding {
+  const expiresAt = new Date(Date.parse(at) + HANDSHAKE_WINDOW_MINUTES * 60_000).toISOString();
+  return {
+    id: onboardingRecordId(household),
+    environment: household.environment,
+    householdId: household.householdId,
+    registryVersion: ONBOARDING_REGISTRY_VERSION,
+    state: "handshake-pending",
+    proposedByMemberId: memberId,
+    proposedAt: at,
+    handshakeExpiresAt: expiresAt,
+    confirmedByMemberIds: [memberId],
+    startedAt: prior?.startedAt ?? null,
+    stoppedAt: null,
+    stoppedByMemberIds: [],
+    stoppedSolo: false,
+    forcedUnlock: prior?.forcedUnlock ?? false,
+    completedAt: null,
+    completionDigest: null,
+    createdAt: prior?.createdAt ?? at,
+    updatedAt: at,
+  };
+}
+
+export function offerHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  at?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const id = prior?.id ?? onboardingRecordId(household);
+  next.householdOnboarding = prior && prior.state !== "inactive"
+    ? prior
+    : {
+        id,
+        environment: household.environment,
+        householdId: household.householdId,
+        registryVersion: ONBOARDING_REGISTRY_VERSION,
+        state: "offered",
+        proposedByMemberId: null,
+        proposedAt: null,
+        handshakeExpiresAt: null,
+        confirmedByMemberIds: [],
+        startedAt: null,
+        stoppedAt: null,
+        stoppedByMemberIds: [],
+        stoppedSolo: false,
+        forcedUnlock: false,
+        completedAt: null,
+        completionDigest: null,
+        createdAt: prior?.createdAt ?? at,
+        updatedAt: at,
+      };
+  return commit(previous, next, "Onboarding", "Offered household setup", [id], [], "offerHouseholdOnboarding");
+}
+
+export function proposeHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  at?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (prior && ["active", "paused-safe", "waiting-member", "blocked", "adopting", "repair", "complete"].includes(prior.state)) {
+    throw new ValidationError(ONBOARDING_MODE_COPY["invite.explain"]);
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const proposal = onboardingProposal(household, input.memberId, at, prior);
+  next.householdOnboarding = proposal;
+  return commit(previous, next, "Onboarding", "Proposed household setup", [proposal.id], [], "proposeHouseholdOnboarding");
+}
+
+export function confirmHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  at?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (!prior || prior.state !== "handshake-pending" || handshakeExpired(prior, at)) {
+    throw new ValidationError(ONBOARDING_MODE_COPY["invite.expired"]);
+  }
+  const confirmedByMemberIds = [...new Set([...prior.confirmedByMemberIds, input.memberId])].sort();
+  const activates = allActiveOnboardingMembersConfirmed(household, confirmedByMemberIds);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.householdOnboarding = {
+    ...prior,
+    state: activates ? "active" : "handshake-pending",
+    confirmedByMemberIds,
+    startedAt: activates ? prior.startedAt ?? at : prior.startedAt,
+    updatedAt: at,
+  };
+  return commit(previous, next, "Onboarding", activates ? "Started household setup" : "Confirmed household setup", [prior.id], [], "confirmHouseholdOnboarding");
+}
+
+export function stopHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+  soloReason?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (!prior || !["active", "paused-safe", "waiting-member", "blocked", "adopting"].includes(prior.state)) {
+    throw new ValidationError(ONBOARDING_MODE_COPY["stop.recorded"]);
+  }
+  const at = nowIso();
+  const soloReason = input.soloReason?.trim() ?? "";
+  const stoppedByMemberIds = [...new Set([...prior.stoppedByMemberIds, input.memberId])].sort();
+  const stoppedTogether = allActiveOnboardingMembersConfirmed(household, stoppedByMemberIds);
+  const stopped = Boolean(soloReason) || stoppedTogether;
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.householdOnboarding = {
+    ...prior,
+    state: stopped ? "stopped-incomplete" : "waiting-member",
+    stoppedAt: stopped ? at : null,
+    stoppedByMemberIds,
+    stoppedSolo: Boolean(soloReason),
+    completedAt: null,
+    completionDigest: null,
+    updatedAt: at,
+  };
+  return commit(previous, next, "Onboarding", stopped ? ONBOARDING_MODE_COPY["stop.recorded"] : "Requested to stop household setup", [prior.id], [], "stopHouseholdOnboarding");
+}
+
+export function resumeHouseholdOnboarding(household: Household, input: {
+  memberId: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  const prior = acceptedHouseholdOnboarding(household);
+  if (!prior || prior.state !== "stopped-incomplete") {
+    throw new ValidationError(ONBOARDING_MODE_COPY["stop.recorded"]);
+  }
+  const at = nowIso();
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const proposal = onboardingProposal(household, input.memberId, at, prior);
+  next.householdOnboarding = proposal;
+  return commit(previous, next, "Onboarding", "Proposed resuming household setup", [proposal.id], [], "resumeHouseholdOnboarding");
+}
 
 function requireOpenPeriod(household: Household, date: DateKey): void {
   const monthKey = monthKeyFromDateKey(date);
