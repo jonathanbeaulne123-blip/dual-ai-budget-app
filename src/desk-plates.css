@@ -60,6 +60,213 @@
 .fund-stage-figure {
   width: min(100%, 540px);
 }
+
+.fund-rail-arrange {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: center;
+}
+.fund-rail-arrange:hover {
+  color: var(--pine);
+  border-color: var(--pine);
+}
+.fund-rail-arrange:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+.fund-rail-arrange[aria-current="true"] {
+  color: var(--pine);
+  border-color: var(--pine);
+  background: color-mix(in srgb, var(--pine) 8%, transparent);
+}
+
+.fund-drawer {
+  display: grid;
+  gap: 14px;
+  min-height: 100%;
+  padding: clamp(18px, 3vw, 34px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  box-shadow: var(--lift-1);
+}
+.fund-drawer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.fund-drawer-back {
+  min-height: 44px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--pine);
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.fund-drawer-back:hover {
+  border-color: var(--pine);
+}
+.fund-drawer-back:focus-visible,
+.fund-drawer-card:focus-visible,
+.fund-drawer-slot:focus-visible,
+.fund-drawer-slots-cancel:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+.fund-drawer-intro {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.fund-drawer-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fund-drawer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 82px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.fund-drawer-card.is-on-rail {
+  border-color: color-mix(in srgb, var(--pine) 50%, var(--line));
+  background: color-mix(in srgb, var(--pine) 7%, var(--card));
+}
+.fund-drawer-card-name {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.fund-drawer-card-line {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.fund-drawer-card-tag {
+  margin-top: auto;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.fund-drawer-card.is-on-rail .fund-drawer-card-tag {
+  color: var(--pine);
+}
+.fund-drawer-card-tag.is-scope {
+  color: var(--copper);
+}
+.fund-drawer-slots {
+  display: grid;
+  gap: 10px;
+}
+.fund-drawer-slots-lede {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.fund-drawer-slot-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fund-drawer-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.fund-drawer-slot:hover {
+  border-color: var(--pine);
+}
+.fund-drawer-slot-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper-2);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+.fund-drawer-slot-name {
+  font-size: 0.8rem;
+}
+.fund-drawer-slot-pinned {
+  color: var(--muted);
+}
+.fund-drawer-slots-cancel {
+  justify-self: start;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--pine);
+  font-family: inherit;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+@media (max-width: 899px) {
+  .fund-drawer-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fund-drawer-slot-list { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fund-drawer-card,
+  .fund-drawer-slot {
+    transition: none;
+  }
+}
+
 .desk-plate:hover {
   transform: translateY(-1px);
 }

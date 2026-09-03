@@ -57,6 +57,7 @@ import { NotebookBody, PaperBars, PaperSpark, StoryStrip, WaxSeal } from "./them
 import { MonthSpread } from "./MonthSpread.tsx";
 import { Ask } from "./Ask.tsx";
 import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
+import { FundDrawer } from "./FundDrawer.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -182,6 +183,7 @@ export function OfficeWide({
   const [selectedFundWidget, setSelectedFundWidget] = useState<FundWidgetId>(() => (
     storedFundStage(environment, household.householdId, memberId, today)
   ));
+  const [fundDrawerOpen, setFundDrawerOpen] = useState(false);
   const fundStageHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const opinion = useMemo(() => auditOpinion(household), [household]);
@@ -239,6 +241,7 @@ export function OfficeWide({
   useEffect(() => {
     setOpenPlateIds(new Set());
     setMonthList(null);
+    setFundDrawerOpen(false);
   }, [view]);
 
   useEffect(() => {
@@ -258,6 +261,7 @@ export function OfficeWide({
     const widgetId = fundWidgetIdForPlateId(plate.id);
     if (!widgetId) return;
     setMonthList(null);
+    setFundDrawerOpen(false);
     if (layout.expanded && layout.expanded !== "window") onLayout({ ...layout, expanded: null });
     setSelectedFundWidget(widgetId);
     try {
@@ -273,6 +277,13 @@ export function OfficeWide({
     if (!plate) return;
     setMonthList(null);
     onLayout({ ...layout, expanded: plate.cabinet });
+  }
+
+  function openFundDrawer() {
+    setMonthList(null);
+    if (layout.expanded && layout.expanded !== "window") onLayout({ ...layout, expanded: null });
+    setFundDrawerOpen(true);
+    queueMicrotask(() => fundStageHeadingRef.current?.focus());
   }
 
   const spend = categorySpendBars(dashboard.month.categories);
@@ -546,6 +557,16 @@ export function OfficeWide({
                 );
               })}
             </div>
+            {fundConfigured && spreadIsStage ? (
+              <button
+                type="button"
+                className="fund-rail-arrange"
+                aria-current={fundDrawerOpen ? "true" : undefined}
+                onClick={openFundDrawer}
+              >
+                Arrange
+              </button>
+            ) : null}
           </StoryStrip>
         </div>
         <div
@@ -553,9 +574,17 @@ export function OfficeWide({
           className={`office-wide-stage ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}
           role={spreadIsStage && fundConfigured ? "tabpanel" : undefined}
           id={spreadIsStage && fundConfigured ? "fund-stage-panel" : undefined}
-          aria-labelledby={spreadIsStage && fundConfigured && selectedFundPlate ? `fund-rail-tab-${selectedFundPlate.id}` : undefined}
+          aria-labelledby={spreadIsStage && fundConfigured && !fundDrawerOpen && selectedFundPlate ? `fund-rail-tab-${selectedFundPlate.id}` : undefined}
         >
-          {spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
+          {spreadIsStage && fundConfigured && fundDrawerOpen ? (
+            <FundDrawer
+              household={household}
+              memberId={memberId}
+              busy={busy}
+              onKitchen={onKitchen}
+              onClose={() => setFundDrawerOpen(false)}
+            />
+          ) : spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
             <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
               <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>
               <h2 ref={fundStageHeadingRef} tabIndex={-1} className="fund-stage-heading">{selectedFundPlate.glance}</h2>
