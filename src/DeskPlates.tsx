@@ -116,7 +116,9 @@ function SparkFigure({ figure }: { figure: Extract<PlateFigure, { primitive: "sp
         return (
           <rect
             key={index}
-            className={signed < 0 ? "desk-plate-spark is-down" : "desk-plate-spark"}
+            className={`desk-plate-spark${signed < 0 ? " is-down" : ""}${
+              index >= (figure.actualCount ?? figure.points.length) ? " is-projected" : ""
+            }`}
             x={x - 2}
             y={y}
             width={4}
@@ -213,7 +215,7 @@ export function DeskPlate({
       tabIndex={0}
       data-plate-id={plate.id}
       data-plate-primitive={plate.figure.primitive}
-      aria-label={`${plate.kicker}. ${plate.glance}`}
+      aria-label={`${plate.kicker}. ${plate.glance}. ${plate.verdict}`}
       aria-expanded={open}
       onClick={onSelect}
       onDoubleClick={onOpenCabinet}
@@ -223,6 +225,7 @@ export function DeskPlate({
       <p className={`desk-plate-verdict${plate.copperVerdict ? " is-copper" : ""}`}>{plate.glance}</p>
       {open ? (
         <>
+          <p className="desk-plate-detail">{plate.verdict}</p>
           {plate.empty ? null : (
             <div className="desk-plate-figure">
               <PlateFigureView figure={plate.figure} />

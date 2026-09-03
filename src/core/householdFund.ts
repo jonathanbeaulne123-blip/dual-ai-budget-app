@@ -334,7 +334,8 @@ export function tillActionableMotions(
   ));
 }
 
-function householdFundOperatingDelta(event: HouseholdFundEvent): number {
+/** The only definition of what moves the Fund's operating balance. Claims never do. */
+export function householdFundOperatingDelta(event: HouseholdFundEvent): number {
   if (event.kind === "contribution-confirmed" || event.kind === "kitty-released") return event.amountCents;
   if (event.kind === "settlement-confirmed" || event.kind === "kitty-allocated") return -event.amountCents;
   return 0;

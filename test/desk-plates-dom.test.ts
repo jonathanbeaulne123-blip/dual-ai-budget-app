@@ -39,6 +39,7 @@ describe("desk plate DOM", () => {
     const article = host.querySelector("[data-plate-id='due']") as HTMLElement;
     expect(article).toBeTruthy();
     expect(article.getAttribute("aria-expanded")).toBe("false");
+    expect(article.getAttribute("aria-label")).toContain("Rent, tomorrow.");
     expect(article.textContent).toContain("Rent · tomorrow");
     expect(article.textContent).not.toContain("Rent, tomorrow.");
     expect(host.querySelector(".desk-plate-handle")).toBeNull();
@@ -53,6 +54,7 @@ describe("desk plate DOM", () => {
     });
     const handle = host.querySelector(".desk-plate-handle") as HTMLButtonElement;
     expect(article.getAttribute("aria-expanded")).toBe("true");
+    expect(article.textContent).toContain("Rent, tomorrow.");
     expect(handle).toBeTruthy();
     expect(handle.getAttribute("aria-label")).toBe("Open the next bill cabinet");
     expect(handle.tabIndex).not.toBe(-1);
@@ -60,6 +62,32 @@ describe("desk plate DOM", () => {
     act(() => article.dispatchEvent(new MouseEvent("dblclick", { bubbles: true })));
     expect(seen).toEqual(["select", "cabinet", "cabinet"]);
     expect(article.getAttribute("aria-current")).toBeNull();
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("draws future spark marks as projected instead of posted", () => {
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const sparkPlate: DeskPlateModel = {
+      ...plate,
+      id: "fund-level",
+      figure: { primitive: "spark", points: [1000, 500, -500], actualCount: 1, room: 28 },
+    };
+    act(() => {
+      root.render(createElement(DeskPlate, {
+        plate: sparkPlate,
+        open: true,
+        onSelect: () => undefined,
+        onOpenCabinet: () => undefined,
+      }));
+    });
+    const marks = [...host.querySelectorAll(".desk-plate-spark")];
+    expect(marks).toHaveLength(3);
+    expect(marks[0]!.classList.contains("is-projected")).toBe(false);
+    expect(marks[1]!.classList.contains("is-projected")).toBe(true);
+    expect(marks[2]!.classList.contains("is-projected")).toBe(true);
     act(() => root.unmount());
     host.remove();
   });

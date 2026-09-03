@@ -61,6 +61,15 @@
 .desk-plate.is-copper .desk-plate-verdict {
   color: var(--copper);
 }
+.desk-plate-detail {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.desk-plate.is-copper .desk-plate-detail {
+  color: var(--copper);
+}
 .desk-plate-figure {
   min-height: 44px;
 }
@@ -94,6 +103,12 @@
 .desk-plate-spark.is-down,
 .desk-plate-fill.is-over {
   fill: var(--copper);
+}
+.desk-plate-spark.is-projected {
+  fill: color-mix(in srgb, var(--paper-2) 80%, transparent);
+  stroke: var(--pine);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
 }
 .desk-plate-well {
   fill: color-mix(in srgb, var(--paper-2) 80%, transparent);
@@ -182,5 +197,9 @@
   .desk-plate-pair-up,
   .desk-plate-spark {
     fill: CanvasText;
+  }
+  .desk-plate-spark.is-projected {
+    fill: Canvas;
+    stroke: CanvasText;
   }
 }

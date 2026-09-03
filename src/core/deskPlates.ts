@@ -1,5 +1,5 @@
 /**
- * Twelve desk plates — six Shared, six Personal — over existing selectors.
+ * Shared desk plates — the legacy six or the Fund eight — plus six Personal.
  *
  * Presentation only. Every figure is one of the six primitives in plates.ts.
  * Kickers are household questions. Glance is the closed-strip line. Verdicts
@@ -22,12 +22,15 @@ import type { Goal, Household } from "./types.ts";
 import { goalVisibleInView } from "./visibility.ts";
 import { workOwedFacts } from "./workSettlement.ts";
 import type { PlatePrimitive } from "./plates.ts";
+import { fundPlates } from "./fundPlates.ts";
 
-export const SHARED_PLATE_IDS = ["due", "cards", "owed", "saving", "coming", "trust"] as const;
+export const SHARED_PLATE_IDS = ["fund-level", "waiting", "next-out", "spoken-for", "settle", "accounts", "week", "saving"] as const;
+/** The plates the Fund library retired, and what answers each question now. */
+export const LEGACY_SHARED_PLATE_IDS = ["due", "cards", "owed", "coming", "trust"] as const;
 export const PERSONAL_PLATE_IDS = ["clock", "tips", "pay", "wallet", "mine-saving", "month"] as const;
 export const FORBIDDEN_SHARED_PLATE_IDS = ["now", "attention", "change"] as const;
 
-export type SharedPlateId = (typeof SHARED_PLATE_IDS)[number];
+export type SharedPlateId = (typeof SHARED_PLATE_IDS)[number] | (typeof LEGACY_SHARED_PLATE_IDS)[number];
 export type PersonalPlateId = (typeof PERSONAL_PLATE_IDS)[number];
 export type DeskPlateId = SharedPlateId | PersonalPlateId;
 export type PlateEdge = "clear" | "attention" | "live" | "quiet";
@@ -39,7 +42,7 @@ export type PlateFigure =
   | { primitive: "track"; days: number; marks: TrackMark[]; room: number }
   | { primitive: "pair"; upCents: number; downCents: number; upLabel: string; downLabel: string; room: number }
   | { primitive: "fill"; wells: FillWell[] }
-  | { primitive: "spark"; points: number[]; room: number }
+  | { primitive: "spark"; points: number[]; room: number; actualCount?: number }
   | { primitive: "tally"; count: number }
   | { primitive: "gauge"; pct: number; threshold: number; label: string };
 
@@ -124,6 +127,10 @@ export function sharedPlates(input: {
 }): DeskPlateModel[] {
   const { household, dashboard, today } = input;
   const findings = input.findings ?? runHealthCheck(household);
+  // A household with a Fund gets the Fund library. Without one there is no walk
+  // to draw, so the original board stands until the Fund is configured.
+  const fund = fundPlates({ household, today, findings });
+  if (fund.length) return fund;
   const dueItems = dashboard.upcoming.filter((item) => item.direction === "out" && inWindow(item.date, today, 29));
   const nextDue = dueItems[0] ?? null;
   const cards = household.accounts.filter((account) => (
