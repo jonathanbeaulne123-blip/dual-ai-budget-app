@@ -107,7 +107,12 @@ export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | 
   const rawState = MODE_STATES.has(row.state as OnboardingModeState)
     ? row.state as OnboardingModeState
     : "blocked";
-  const state = registryVersion === ONBOARDING_REGISTRY_VERSION ? rawState : "repair";
+  const forcedUnlock = row.forcedUnlock === true;
+  const state = registryVersion !== ONBOARDING_REGISTRY_VERSION
+    ? "repair"
+    : forcedUnlock
+      ? "stopped-incomplete"
+      : rawState;
   const createdAt = isoOrNull(row.createdAt) ?? "1970-01-01T00:00:00.000Z";
 
   return {
@@ -126,9 +131,9 @@ export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | 
     stoppedAt: isoOrNull(row.stoppedAt),
     stoppedByMemberIds: uniqueIds(row.stoppedByMemberIds),
     stoppedSolo: row.stoppedSolo === true,
-    forcedUnlock: row.forcedUnlock === true,
-    completedAt: isoOrNull(row.completedAt),
-    completionDigest: typeof row.completionDigest === "string" && row.completionDigest.trim()
+    forcedUnlock,
+    completedAt: forcedUnlock ? null : isoOrNull(row.completedAt),
+    completionDigest: !forcedUnlock && typeof row.completionDigest === "string" && row.completionDigest.trim()
       ? row.completionDigest.trim()
       : null,
     createdAt,
@@ -214,6 +219,23 @@ export function actorMayApplyHouseholdOnboardingTransition(input: {
       && sameIds(incoming.stoppedByMemberIds, expectedIds)
       && incoming.state === (stopped ? "stopped-incomplete" : "waiting-member");
   }
+  if (commandKind === "forceUnlockHouseholdOnboarding") {
+    const expectedStoppedBy = uniqueIds([...(prior?.stoppedByMemberIds ?? []), actor.id]);
+    return household.environment === "development"
+      && incoming.state === "stopped-incomplete"
+      && incoming.forcedUnlock
+      && sameIds(incoming.stoppedByMemberIds, expectedStoppedBy)
+      && sameIds(incoming.confirmedByMemberIds, prior?.confirmedByMemberIds ?? [])
+      && incoming.proposedByMemberId === (prior?.proposedByMemberId ?? null)
+      && incoming.proposedAt === (prior?.proposedAt ?? null)
+      && incoming.handshakeExpiresAt === (prior?.handshakeExpiresAt ?? null)
+      && incoming.startedAt === (prior?.startedAt ?? null)
+      && incoming.stoppedAt === incoming.updatedAt
+      && incoming.stoppedSolo === (prior?.stoppedSolo ?? false)
+      && incoming.createdAt === (prior?.createdAt ?? incoming.updatedAt)
+      && incoming.completedAt === null
+      && incoming.completionDigest === null;
+  }
   return false;
 }
 
@@ -238,6 +260,25 @@ export function mergeHouseholdOnboarding(
   const client = rowForContext(clientValue, context);
   if (!server) return client;
   if (!client) return server;
+  if (server.forcedUnlock || client.forcedUnlock) {
+    const forced = [server, client]
+      .filter((row) => row.forcedUnlock)
+      .sort((left, right) => left.updatedAt.localeCompare(right.updatedAt) || left.id.localeCompare(right.id))
+      .at(-1)!;
+    return {
+      ...forced,
+      state: forced.state === "repair" ? "repair" : "stopped-incomplete",
+      confirmedByMemberIds: uniqueIds([...server.confirmedByMemberIds, ...client.confirmedByMemberIds]),
+      stoppedAt: laterIso(server.stoppedAt, client.stoppedAt),
+      stoppedByMemberIds: uniqueIds([...server.stoppedByMemberIds, ...client.stoppedByMemberIds]),
+      stoppedSolo: server.stoppedSolo || client.stoppedSolo,
+      forcedUnlock: true,
+      completedAt: null,
+      completionDigest: null,
+      createdAt: earlierIso(server.createdAt, client.createdAt) ?? forced.createdAt,
+      updatedAt: laterIso(server.updatedAt, client.updatedAt) ?? forced.updatedAt,
+    };
+  }
   if (server.id !== client.id || proposalKey(server) !== proposalKey(client)) {
     const serverKey = `${server.proposedAt ?? ""}|${server.updatedAt}|${server.id}`;
     const clientKey = `${client.proposedAt ?? ""}|${client.updatedAt}|${client.id}`;
@@ -252,7 +293,7 @@ export function mergeHouseholdOnboarding(
   const stoppedAt = laterIso(server.stoppedAt, client.stoppedAt);
   const updatedAt = laterIso(server.updatedAt, client.updatedAt) ?? newer.updatedAt;
   const completed = (server.state === "complete" || client.state === "complete") && Boolean(completedAt && completionDigest);
-  const forcedUnlock = server.forcedUnlock || client.forcedUnlock;
+  const forcedUnlock = false;
   const stoppedSolo = server.stoppedSolo || client.stoppedSolo;
   const stoppedTogether = containsEveryActiveMember(stoppedByMemberIds, context.members);
   const confirmedTogether = containsEveryActiveMember(confirmedByMemberIds, context.members);
@@ -261,8 +302,8 @@ export function mergeHouseholdOnboarding(
   let state: OnboardingModeState = newer.state;
   let startedAt = existingStartedAt;
   if (server.state === "repair" || client.state === "repair") state = "repair";
-  else if (completed) state = "complete";
   else if (forcedUnlock || stoppedSolo || stoppedTogether) state = "stopped-incomplete";
+  else if (completed) state = "complete";
   else if (stoppedByMemberIds.length > 0) state = "waiting-member";
   else if (confirmedTogether) {
     state = "active";
@@ -280,8 +321,8 @@ export function mergeHouseholdOnboarding(
     stoppedByMemberIds,
     stoppedSolo,
     forcedUnlock,
-    completedAt: completed ? completedAt : null,
-    completionDigest: completed ? completionDigest : null,
+    completedAt: completed && !forcedUnlock ? completedAt : null,
+    completionDigest: completed && !forcedUnlock ? completionDigest : null,
     createdAt: earlierIso(server.createdAt, client.createdAt) ?? newer.createdAt,
     updatedAt,
   };

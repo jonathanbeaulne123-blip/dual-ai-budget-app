@@ -166,7 +166,8 @@ import {
   onboardingRecordId,
   type HouseholdOnboarding,
 } from "./onboarding/mode.ts";
-import { ONBOARDING_REGISTRY_VERSION } from "./onboarding/registry.ts";
+import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.ts";
+import { memberProgress } from "./onboarding/progress.ts";
 import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
@@ -347,6 +348,149 @@ export function resumeHouseholdOnboarding(household: Household, input: {
   const proposal = onboardingProposal(household, input.memberId, at, prior);
   next.householdOnboarding = proposal;
   return commit(previous, next, "Onboarding", "Proposed resuming household setup", [proposal.id], [], "resumeHouseholdOnboarding");
+}
+
+const OWN_PROGRESS_COPY = "Only you can record your own progress.";
+
+function requireOnboardingProgressActor(household: Household, memberId: string, createdBy?: string) {
+  const member = requireMember(household, memberId);
+  const actorId = createdBy ?? memberId;
+  const actor = household.members.find((candidate) => candidate.id === actorId && candidate.active);
+  if (!actor || actor.id !== member.id) throw new ValidationError(OWN_PROGRESS_COPY);
+  return member;
+}
+
+function commitOnboardingProgress(
+  previous: Household,
+  next: Household,
+  memberId: string,
+  label: string,
+  at: string,
+): CommitResult {
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    persistenceScope: "member-personal",
+    personalMemberId: memberId,
+    undo: {
+      id: `onboarding-progress-${memberId}-${at}`,
+      label,
+      snapshot: previous,
+      postedIds: [],
+      commandKind: "onboarding-progress-personal",
+    },
+  };
+}
+
+function updateMemberProgress(
+  household: Household,
+  input: { memberId: string; createdBy?: string; at?: string },
+  label: string,
+  update: (progress: ReturnType<typeof memberProgress>, at: string) => ReturnType<typeof memberProgress>,
+): CommitResult {
+  requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+  const at = onboardingCommandAt(input.at);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const current = memberProgress(next, input.memberId);
+  const progress = update(current, at);
+  next.members = next.members.map((member) => member.id === input.memberId
+    ? { ...member, onboardingProgress: progress }
+    : member);
+  return commitOnboardingProgress(previous, next, input.memberId, label, at);
+}
+
+/** Record only the acting member's acknowledgement; accepted probes own observed completion. */
+export function recordChapterAcknowledgement(household: Household, input: {
+  memberId: string;
+  chapterId: string;
+  createdBy?: string;
+  at?: string;
+}): CommitResult {
+  const chapter = chapterById(input.chapterId);
+  if (!chapter) throw new ValidationError("Choose a current onboarding chapter.");
+  return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
+    ...progress,
+    rows: progress.rows.map((row) => row.chapterId === chapter.id
+      ? {
+          ...row,
+          acknowledgedAt: row.acknowledgedAt ?? at,
+          lastSafeResumePoint: chapter.id,
+        }
+      : row),
+    updatedAt: at,
+  }));
+}
+
+/** Skip only a personal module whose registry policy explicitly permits it. */
+export function skipPersonalStep(household: Household, input: {
+  memberId: string;
+  chapterId: string;
+  createdBy?: string;
+  at?: string;
+}): CommitResult {
+  const chapter = chapterById(input.chapterId);
+  if (!chapter || chapter.track !== "personal" || chapter.skip !== "member-skippable") {
+    throw new ValidationError("That setup chapter cannot be skipped.");
+  }
+  return updateMemberProgress(household, input, "Personal onboarding module skipped", (progress, at) => ({
+    ...progress,
+    rows: progress.rows.map((row) => row.chapterId === chapter.id
+      ? { ...row, skippedAt: row.skippedAt ?? at, lastSafeResumePoint: chapter.id }
+      : row),
+    updatedAt: at,
+  }));
+}
+
+/** Mute or restore only the acting member's future personal-module offers. */
+export function setOnboardingOffersMuted(household: Household, input: {
+  memberId: string;
+  muted: boolean;
+  createdBy?: string;
+  at?: string;
+}): CommitResult {
+  return updateMemberProgress(household, input, "Personal onboarding offers changed", (progress, at) => ({
+    ...progress,
+    offersMuted: input.muted,
+    updatedAt: at,
+  }));
+}
+
+/** Development escape hatch. This stops setup without claiming any chapter or finale completion. */
+export function forceUnlockOnboarding(household: Household, input: {
+  memberId: string;
+  createdBy?: string;
+  at?: string;
+}): CommitResult {
+  if (household.environment !== "development") throw new ValidationError("Not available in this environment.");
+  requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+  const at = onboardingCommandAt(input.at);
+  const prior = acceptedHouseholdOnboarding(household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const id = prior?.id ?? onboardingRecordId(household);
+  next.householdOnboarding = {
+    id,
+    environment: household.environment,
+    householdId: household.householdId,
+    registryVersion: ONBOARDING_REGISTRY_VERSION,
+    state: "stopped-incomplete",
+    proposedByMemberId: prior?.proposedByMemberId ?? null,
+    proposedAt: prior?.proposedAt ?? null,
+    handshakeExpiresAt: prior?.handshakeExpiresAt ?? null,
+    confirmedByMemberIds: prior?.confirmedByMemberIds ?? [],
+    startedAt: prior?.startedAt ?? null,
+    stoppedAt: at,
+    stoppedByMemberIds: [...new Set([...(prior?.stoppedByMemberIds ?? []), input.memberId])].sort(),
+    stoppedSolo: prior?.stoppedSolo ?? false,
+    forcedUnlock: true,
+    completedAt: null,
+    completionDigest: null,
+    createdAt: prior?.createdAt ?? at,
+    updatedAt: at,
+  };
+  return commit(previous, next, "Onboarding", "Stopped incomplete with the Development unlock", [id], [], "forceUnlockHouseholdOnboarding");
 }
 
 function requireOpenPeriod(household: Household, date: DateKey): void {
