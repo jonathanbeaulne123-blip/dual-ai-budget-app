@@ -3140,6 +3140,10 @@ export function App() {
 
   function openDemoTable(): void {
     if (pendingDemoAcceptanceRef.current) return;
+    if (environment !== "development") {
+      setError("The demo kitchen is Development-only.");
+      return;
+    }
     setError("");
     setPendingDemo(catalogHousehold(environment));
     setPendingDemoMemberId(null);
@@ -4021,7 +4025,7 @@ export function App() {
                 </section>
               )}
               <KitchenNotice message={error} onDismiss={() => setError("")} />
-              {!welcomeSignedIn && (
+              {!welcomeSignedIn && environment === "development" && (
                 <button className="ghost welcome-demo" onClick={openDemoTable}>
                   Open the demo kitchen table
                 </button>

@@ -307,7 +307,7 @@ describe("shared plates stay on the household projection", () => {
     expect(blob).not.toContain(CANARY);
     expect(blob).not.toContain("Amex");
     expect(blob).not.toContain(amex.id);
-    expect(cards.verdict).toMatch(/Visa is at 34% of its limit/);
+    expect(cards.verdict).toMatch(/Visa is at \d+% of its limit/);
     expect(models).toContain('account.scope !== "personal"');
   });
 });

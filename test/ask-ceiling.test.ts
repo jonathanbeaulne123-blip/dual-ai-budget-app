@@ -33,7 +33,7 @@ function charter(
   ceilingValue?: string,
   cadenceWeekday = 3,
 ): Household {
-  return foundHouseholdCharter(household, {
+  return foundHouseholdCharter({ ...household, charter: null }, {
     memberId: JONATHAN,
     custodianMemberId: BIANCA,
     purpose: "Keep the household steady without overwork.",
@@ -65,7 +65,7 @@ function verdictRoute(shifts: RouteShift[], safeCents = 1_000): Pick<AskRoute, "
 function halifaxWithShifts(): Household {
   const household = seedDemoHousehold({ today: "2026-09-12", environment: "development" });
   const goal = addGoal(household, { name: "Halifax", target: "10000", shared: true, ownerMemberId: BIANCA });
-  return addRecurrence(goal.household, {
+  const result = addRecurrence(goal.household, {
     cadence: "monthly",
     nextDate: "2026-09-30",
     type: "transfer",
@@ -75,6 +75,7 @@ function halifaxWithShifts(): Household {
     goalId: goal.postedIds[0]!,
     note: "Standing · jar · Halifax",
   }).household;
+  return { ...result, charter: null };
 }
 
 describe("Ask Charter ceiling", () => {

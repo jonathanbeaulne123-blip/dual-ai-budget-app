@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   aiDisclosurePayloadLeaks,
+  catalogHousehold,
   collectAllowedFigures,
   composeHerculesChatRequest,
   formatCad,
@@ -213,7 +214,7 @@ describe("member-scoped AI disclosure (D-115)", () => {
     expect(request.fullSyntheticContext).toMatch(/gym drop-in|haircut/i);
     expect(request.fullSyntheticContext).not.toMatch(/inviteCode|sourceIdentityKey|s7subject_|password|authorization|commandReceipts/i);
 
-    const production = seedDemoHousehold({ today, environment: "production" });
+    const production = catalogHousehold("production");
     const productionRequest = composeHerculesChatRequest(
       production,
       "explain our books",
