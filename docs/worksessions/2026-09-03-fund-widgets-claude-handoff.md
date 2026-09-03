@@ -1,6 +1,6 @@
 # Hearth worksession — Claude Fund walk and widgets handoff
 
-- **Status:** CLOSED — verified feature branch pushed; merge not requested
+- **Status:** OPEN — PR #311 release gate in progress
 - **Opened:** 2026-09-03 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Claude implementation; Codex integration writer
@@ -8,7 +8,10 @@
 - **Branch:** `codex/fund-widgets-claude`
 - **Claude baseline SHA:** `6f5dd56`
 - **Integration baseline SHA:** `7dd1f96729fc9ec4fe6bb74a1daeacbf413b700a`
+- **Release baseline SHA:** `4d5cfb26df7e5ed156b51de38730b2e9f6a9227a`
 - **Independently reviewed code SHA:** `85c95c0b7f2bbe9d677c325419b84af9f328dfc1`
+- **Pull request:** `#311`
+- **Full-gate authorization:** Jonathan's 2026-09-03 request to push, merge, and deploy this High-risk candidate (`user-request:2026-09-03-push-merge-deploy`)
 - **Risk:** High — Fund projection and Shared Home money presentation
 - **Decision owner:** Jonathan
 - **Environment impact:** source, tests, and documentation only; no schema, hosted data, secrets, Production data, merge, or deployment
@@ -49,6 +52,9 @@ When the Household Fund is configured, Shared Home shows one coherent eight-plat
 - [x] First independent review blockers repaired: sealed shortfall/tie, record-only motions, projected-mark semantics, Shared-only accounts, no Shared shift count, and rendered/announced verdicts.
 - [x] Independent books, privacy, and UX re-reviews pass on the repaired exact candidate.
 - [x] Branch pushed; remote SHA verification is recorded in the final handoff.
+- [x] Newer `main@4d5cfb2` preserved with a normal merge commit and no conflict.
+- [ ] Exact final release SHA passes the D-202 quick and authorized full gates.
+- [ ] PR checks, merge, post-merge checks, deployment, and live smoke pass.
 
 ## Evidence log
 
@@ -63,8 +69,8 @@ When the Household Fund is configured, Shared Home shows one coherent eight-plat
 
 ## Remaining uncertainty
 
-The full local gate is not wholly green because of the two reproduced baseline failures. Hosted CI may have `bash`, but the weekly-stamp test remains date-sensitive on 2026-09-03. Phone behavior is intentionally unchanged because these Fund widgets are desktop/tablet scope. No browser visual pass, PR check, merge, or live deployment is included in this push request.
+The earlier full local gate was not wholly green because of two reproduced baseline failures. The D-202 gates must now run on the exact candidate after current-main integration. Phone behavior is intentionally unchanged because these Fund widgets are desktop/tablet scope. PR checks, merge, post-merge checks, deployment, and live smoke remain open.
 
 ## Handoff
 
-Codex completed the integration and branch publication. Jonathan retains the PR, merge, and release decisions.
+Codex owns the authorized PR, merge, deployment, and live-verification chain. Jonathan remains the release decision owner.
