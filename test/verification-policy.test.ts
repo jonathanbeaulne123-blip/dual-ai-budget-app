@@ -294,6 +294,9 @@ describe("five-minute verification policy", () => {
       encoding: "utf8",
       env: {
         ...process.env,
+        GITHUB_ACTIONS: "",
+        GITHUB_ACTOR: "",
+        GITHUB_REPOSITORY: "",
         HEARTH_FULL_AUTHORIZED_BY: "",
         HEARTH_FULL_AUTHORIZATION_REF: "",
         HEARTH_FULL_REASON: "",
