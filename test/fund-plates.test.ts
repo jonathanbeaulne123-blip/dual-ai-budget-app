@@ -165,6 +165,28 @@ describe("the Fund's plates", () => {
     expect(settle.glance).not.toBe("Settled");
   });
 
+  it("keeps claims sourced from Personal expenses off the Shared settlement plate", () => {
+    let household = fund();
+    household = postEntry(household, {
+      date: "2026-09-10", type: "expense", amount: "47",
+      accountId: "ACC-VISA", subcategoryId: "SUB-TRANSPORT-TRANSIT", note: "Private ride",
+      createdBy: BIANCA, visibility: "personal", confirmDuplicate: true,
+    }).household;
+    household = openClaim(household, {
+      expenseTransactionId: household.transactions.at(-1)!.id,
+      expectedRecovery: 47,
+      claimKind: "employer",
+      claimLabel: "Private work expense",
+      createdBy: BIANCA,
+    }).household;
+
+    const settle = board(household).find((plate) => plate.id === "settle")!;
+    expect(settle.glance).toBe("Settled");
+    expect(settle.verdict).toBe("The Fund owes nothing right now.");
+    expect(settle.empty).toBe("Nothing outstanding either way.");
+    expect(JSON.stringify(settle)).not.toContain("47.00");
+  });
+
   it("shows the highest-utilization shared card regardless of account order", () => {
     let household = fund();
     const visa = household.accounts.find((account) => account.id === "ACC-VISA")!;

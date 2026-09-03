@@ -210,7 +210,13 @@ function settlePlate(household: Household, today: DateKey): DeskPlateModel {
   const topName = top
     ? household.accounts.find((account) => account.id === top.destinationAccountId)?.name ?? "an account"
     : "";
-  const claimsIn = outstandingClaims(household);
+  const sharedExpenseIds = new Set(
+    household.transactions
+      .filter((transaction) => transaction.visibility !== "personal")
+      .map((transaction) => transaction.id),
+  );
+  const claimsIn = outstandingClaims(household)
+    .filter((claim) => sharedExpenseIds.has(claim.expenseTransactionId));
   const inCents = claimsIn.reduce((sum, claim) => sum + claimRemainingCents(claim), 0);
   const countable = owing.length >= 1 && owing.length <= 31;
   return {
