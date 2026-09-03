@@ -129,6 +129,8 @@ export * from "./kittyBanks.ts";
 export * from "./stressSeed.ts";
 export * from "./demoSuite.ts";
 export * from "./demoRandom.ts";
+export * from "./onboarding/types.ts";
+export * from "./onboarding/registry.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
 export {
