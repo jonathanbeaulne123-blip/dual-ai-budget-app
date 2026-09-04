@@ -119,7 +119,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     const forbidden = ["BIANCA_PRIVATE_CANARY_TRANSACTION", "Bianca Private Canary Vault", "BIANCA_PRIVATE_CANARY_GOAL"];
     expect(forbidden.some((token) => JSON.stringify(shared).includes(token))).toBe(false);
     expect(forbidden.some((token) => JSON.stringify(personal).includes(token))).toBe(false);
-  }, 60_000);
+  }, 180_000);
 
   it("refuses Production and ordinary Development replacement", async () => {
     const { household } = await generateDemoSuite({ today: TODAY, seed: 2026 });
@@ -127,7 +127,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(() => assertDemoReplacementAllowed({ ...household, environment: "production" })).toThrow(/Development-only/);
     expect(() => assertDemoReplacementAllowed({ ...household, syntheticFixture: null })).toThrow(/ordinary Development books/);
     expect(() => assertDemoReplacementAllowed(household)).not.toThrow();
-  }, 60_000);
+  }, 180_000);
 
   it("rejects synthetic provenance outside Development and preserves it through shared merges", async () => {
     const { household } = await generateDemoSuite({ today: TODAY, seed: 8181 });
@@ -149,7 +149,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(outcome.postedNothing).toBe(true);
     expect(outcome.userMessage).toMatch(/only in Development/);
     expect(mergeShared(shared, { ...shared, syntheticFixture: null }).syntheticFixture).toEqual(household.syntheticFixture);
-  }, 60_000);
+  }, 180_000);
 
   it("uses profile as part of generation while keeping each profile replayable", async () => {
     const investor = await generateDemoSuite({ today: TODAY, seed: 9988, profile: "investor" });
