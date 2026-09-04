@@ -213,6 +213,7 @@ import {
 import { createAccountFlowGate } from "./auth/accountFlow.ts";
 import {
   cancelContinuityConflictGeneration,
+  awaitContinuityOutboxDurable,
   clearContinuityOutboxConflictBlocks,
   clearContinuityOutboxForHousehold,
   continuityMemberId,
@@ -3787,7 +3788,11 @@ export function App() {
   }
 
   function persist(next: Household, token?: UndoToken, actorId?: string, options?: CommitHouseholdOptions) {
-    return enqueueWrite(() => commitHousehold(next, token, actorId, options));
+    const expectedScopeGeneration = replicaScopeGenerationRef.current;
+    return enqueueWrite(() => {
+      if (replicaScopeGenerationRef.current !== expectedScopeGeneration) return Promise.resolve(null);
+      return commitHousehold(next, token, actorId, options);
+    });
   }
 
   function scheduleDemoAcceptance(): Promise<CommandOutcome | null> {
@@ -4066,18 +4071,21 @@ export function App() {
     cancelAccountFlow();
     const who = sessionRef.current?.memberId;
     const hid = current.householdId;
-    if (who) clearUndoHistory(environment, hid, who);
     clearGoogleSessions(environment);
     clearSupabaseSession(environment);
     clearSession(environment);
     clearPendingAuthInvite();
-    clearSyncAnchor(environment, hid);
-    clearContinuityOutboxForHousehold(environment, hid);
     setBusy(true);
     try {
       await enqueueWrite(async () => {
+        if (who) clearUndoHistory(environment, hid, who);
+        clearSyncAnchor(environment, hid);
+        clearContinuityOutboxForHousehold(environment, hid);
+        await awaitContinuityOutboxDurable(environment);
         await clearStagedHouseholdBooks(environment, hid);
         await clearHousehold(environment, hid, { activateRemaining: false });
+        householdRef.current = null;
+        sessionRef.current = null;
       });
     } catch {
       setError("Signed out. This phone could not finish removing its offline copy; sign in again before using the books.");
@@ -4276,22 +4284,27 @@ export function App() {
         throw new Error("Continue with Google before deleting a household.");
       }
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-      const result = input.mode === "leave"
-        ? await leaveHousehold({ environment, householdId: input.householdId, config: cloudConfig })
-        : await leaveOrDeleteHousehold({
-          environment,
-          householdId: input.householdId,
-          role: input.role,
-          config: cloudConfig,
-        });
-      if (!result.ok) {
-        throw new Error(inviteReasonMessage(result.reason));
-      }
       await enqueueWrite(async () => {
+        const result = input.mode === "leave"
+          ? await leaveHousehold({ environment, householdId: input.householdId, config: cloudConfig })
+          : await leaveOrDeleteHousehold({
+            environment,
+            householdId: input.householdId,
+            role: input.role,
+            config: cloudConfig,
+          });
+        if (!result.ok) {
+          throw new Error(inviteReasonMessage(result.reason));
+        }
         clearSyncAnchor(environment, input.householdId);
         clearContinuityOutboxForHousehold(environment, input.householdId);
+        await awaitContinuityOutboxDurable(environment);
         await clearStagedHouseholdBooks(environment, input.householdId);
         await clearHousehold(environment, input.householdId);
+        if (householdRef.current?.householdId === input.householdId) {
+          householdRef.current = null;
+          sessionRef.current = null;
+        }
       });
       disconnectGoogle(environment, input.memberId, input.householdId);
       if (session?.memberId && session.memberId !== input.memberId) {
@@ -4358,16 +4371,20 @@ export function App() {
       if (household && session) {
         await remember(household.householdId, session.memberId);
       }
-      const result = await resetDevelopmentHouseholds({
-        environment,
-        identity,
-        known,
-        config: cloudConfig,
+      await enqueueWrite(async () => {
+        const result = await resetDevelopmentHouseholds({
+          environment,
+          identity,
+          known,
+          config: cloudConfig,
+        });
+        if (!result.ok) {
+          throw new Error(inviteReasonMessage(result.reason));
+        }
+        await wipeLocalDevelopmentCopies(environment);
+        householdRef.current = null;
+        sessionRef.current = null;
       });
-      if (!result.ok) {
-        throw new Error(inviteReasonMessage(result.reason));
-      }
-      await enqueueWrite(() => wipeLocalDevelopmentCopies(environment));
       setHistory([]);
       setToast(null);
       setPersonalReplica(null);

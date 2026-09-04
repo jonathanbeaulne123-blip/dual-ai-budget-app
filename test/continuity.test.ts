@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  awaitContinuityOutboxDurable,
   cancelContinuityConflictGeneration,
   createMemoryContinuityStore,
   clearContinuityOutboxForHousehold,
@@ -17,7 +18,7 @@ import {
   stagedHouseholdMatchesContinuityGeneration,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
-import { catalogHousehold, financialAuditHash, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
+import { catalogHousehold, createWriteQueue, financialAuditHash, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
 import { householdCloudProjection } from "../src/ledger/supabase.ts";
 import type { Household } from "../src/core/types.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
@@ -985,6 +986,35 @@ describe("Sign out continuity wipe", () => {
     const left = listContinuityOutbox("development");
     expect(left).toHaveLength(1);
     expect(left[0]?.householdId).toBe(keep.householdId);
+  });
+
+  it("removes a marker created by a Confirm that was already running when clear began", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const enqueue = createWriteQueue();
+    const household = { ...googleHousehold(), householdId: "HH-CLEAR-RACE" };
+    let releaseConfirm!: () => void;
+    const confirmPaused = new Promise<void>((resolve) => {
+      releaseConfirm = resolve;
+    });
+
+    const confirm = enqueue(async () => {
+      await confirmPaused;
+      enqueueContinuitySnapshot({
+        identity,
+        household,
+        expectedRevision: 0,
+        confirmationId: "clear-race-confirm",
+      });
+      await awaitContinuityOutboxDurable("development");
+    });
+    const clear = enqueue(async () => {
+      clearContinuityOutboxForHousehold("development", household.householdId);
+      await awaitContinuityOutboxDurable("development");
+    });
+
+    releaseConfirm();
+    await Promise.all([confirm, clear]);
+    expect(listContinuityOutbox("development")).toEqual([]);
   });
 });
 
