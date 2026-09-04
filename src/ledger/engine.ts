@@ -15,8 +15,10 @@ import { hostedTransportAllowed } from "../core/sharing.ts";
 import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
 import { measureHearth } from "../performanceMetrics.ts";
 import {
+  BrowserBooksOperationTimeoutError,
   BrowserBooksOpenTimeoutError,
   withBrowserBooksOpenDeadline,
+  withBrowserBooksOperationDeadline,
 } from "./booksOpenDeadline.ts";
 import {
   shapeHouseholdFundConfig,
@@ -442,6 +444,11 @@ async function reopenBrowserBooks(environment: Environment): Promise<BooksDataba
   return getBrowserBooks(environment);
 }
 
+function retireBrowserBooksConnection(environment: Environment, db: BooksDatabase): void {
+  if (browserDbs.get(environment) === db) browserDbs.delete(environment);
+  void db.close().catch(() => undefined);
+}
+
 function isLeaderChangedError(caught: unknown): boolean {
   return caught instanceof Error
     && (caught.name === "LeaderChangedError" || /leader changed/i.test(caught.message));
@@ -694,7 +701,8 @@ async function inspectBrowserBooksAttempt(
 ): Promise<BooksInspection> {
   try {
     const db = await getBrowserBooks(household.environment);
-    return await measureHearth("hearth:books:inspect", () => db.transaction(async (tx) => {
+    return await withBrowserBooksOperationDeadline(
+      measureHearth("hearth:books:inspect", () => db.transaction(async (tx) => {
     const status = await tx.query<{
       schema_initialized: boolean;
       schema_current: boolean;
@@ -793,10 +801,14 @@ async function inspectBrowserBooksAttempt(
         entryCount,
       };
     }
-    return { ok: true, message: "PGlite agrees with the household snapshot.", entryCount };
-    }));
+      return { ok: true, message: "PGlite agrees with the household snapshot.", entryCount };
+      })),
+      { onTimeout: () => retireBrowserBooksConnection(household.environment, db) },
+    );
   } catch (caught) {
-    if (retryLeaderChange && isLeaderChangedError(caught)) {
+    if (retryLeaderChange && (
+      isLeaderChangedError(caught) || caught instanceof BrowserBooksOperationTimeoutError
+    )) {
       try {
         await reopenBrowserBooks(household.environment);
         return inspectBrowserBooksAttempt(household, false, options);
@@ -806,6 +818,7 @@ async function inspectBrowserBooksAttempt(
     }
     const message = caught instanceof Error ? caught.message : "The books engine could not be inspected.";
     const issue: BooksRecoveryIssue = caught instanceof BrowserBooksOpenTimeoutError
+      || caught instanceof BrowserBooksOperationTimeoutError
       ? "local-engine-busy"
       : /migration/i.test(message)
       ? "incomplete-migration"
@@ -1034,13 +1047,25 @@ export async function ingestHouseholdBooks(
     ...options,
     incremental: options.incremental ?? incrementalBooksEnabled(household.environment),
   };
-  try {
+  const attempt = async (retryTimeout: boolean): Promise<{ compiled: CompiledBooks; status: BooksStatus }> => {
     const db = await getBrowserBooks(household.environment);
-    const status = await measureHearth(
-      "hearth:books:ingest",
-      () => ingestBooks(db, household, compiled, ingestOptions),
-    );
-    return { compiled, status };
+    try {
+      const status = await withBrowserBooksOperationDeadline(
+        measureHearth(
+          "hearth:books:ingest",
+          () => ingestBooks(db, household, compiled, ingestOptions),
+        ),
+        { onTimeout: () => retireBrowserBooksConnection(household.environment, db) },
+      );
+      return { compiled, status };
+    } catch (caught) {
+      if (!(caught instanceof BrowserBooksOperationTimeoutError) || !retryTimeout) throw caught;
+      retireBrowserBooksConnection(household.environment, db);
+      return attempt(false);
+    }
+  };
+  try {
+    return await attempt(true);
   } catch (caught) {
     if (!isLeaderChangedError(caught)) throw caught;
     await reopenBrowserBooks(household.environment);
@@ -1187,6 +1212,32 @@ export async function repairAcceptedHouseholdBooks(
   options: { compiled?: CompiledBooks; auditHash?: string } = {},
 ): Promise<BooksStatus> {
   await wipeBrowserBooks(household.environment);
+  const { status } = await ingestHouseholdBooks(household, {
+    compiled: options.compiled,
+    auditHash: options.auditHash,
+    incremental: false,
+  });
+  const inspection = await inspectBrowserBooks(household, {
+    compiled: options.compiled,
+    expectedAuditHash: options.auditHash,
+  });
+  if (!inspection.ok) throw new Error(inspection.message);
+  return status;
+}
+
+/**
+ * Install an authoritative cloud snapshot without deleting the shared browser
+ * database. Routine cross-device catch-up must remain safe while another tab
+ * has the same PGlite IDB open: deleting that IDB waits for every tab to close
+ * and can leave a newer cloud revision queued behind the blocked delete.
+ *
+ * The full projection replacement is already atomic inside ingestBooks. Keep
+ * the destructive wipe-and-rebuild path above for explicit local repair only.
+ */
+export async function replaceAcceptedHouseholdBooks(
+  household: Household,
+  options: { compiled?: CompiledBooks; auditHash?: string } = {},
+): Promise<BooksStatus> {
   const { status } = await ingestHouseholdBooks(household, {
     compiled: options.compiled,
     auditHash: options.auditHash,

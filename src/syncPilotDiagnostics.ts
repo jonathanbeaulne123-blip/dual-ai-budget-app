@@ -37,6 +37,7 @@ export type SyncPilotTraceInput = {
   pendingCount?: number | null;
   transport?: SyncPilotTransport | null;
   sourceAcceptedAt?: string | null;
+  fallbackReason?: string | null;
 };
 
 export type SyncPilotTraceRecord = {
@@ -51,6 +52,7 @@ export type SyncPilotTraceRecord = {
   pendingCount: number | null;
   transport: SyncPilotTransport | null;
   latencyMs: number | null;
+  fallbackReason: string | null;
 };
 
 export type SyncPilotDiagnosticState = {
@@ -118,6 +120,21 @@ const TRACE_TRANSPORTS = new Set<SyncPilotTransport>([
   "outbox",
   "local",
 ]);
+const FALLBACK_REASONS = new Set([
+  "household-mismatch",
+  "environment-mismatch",
+  "revision-gap",
+  "missing-materialization-facts",
+  "onboarding-mode-invalid",
+  "month-rehearsal-authority-mismatch",
+  "ask-goal-move-authority-mismatch",
+  "materialization-hash-mismatch",
+  "onboarding-mode-authority-mismatch",
+  "weekly-stamp-invalid",
+  "weekly-stamp-authority-or-hash-mismatch",
+  "immutable-row-divergence",
+  "audit-hash-mismatch",
+]);
 const TRACE_FIELDS = new Set([
   "version",
   "recordedAt",
@@ -130,6 +147,7 @@ const TRACE_FIELDS = new Set([
   "pendingCount",
   "transport",
   "latencyMs",
+  "fallbackReason",
 ]);
 const HASH16 = /^[a-f0-9]{16}$/;
 
@@ -172,6 +190,12 @@ function projectTrace(value: unknown): SyncPilotTraceRecord | null {
   const latencyMs = nullableCount(row.latencyMs);
   if (revision === undefined || pendingCount === undefined || latencyMs === undefined || (latencyMs !== null && latencyMs > MAX_LATENCY_MS)) return null;
   if (!(row.transport === null || (typeof row.transport === "string" && TRACE_TRANSPORTS.has(row.transport as SyncPilotTransport)))) return null;
+  const fallbackReason = row.fallbackReason === undefined || row.fallbackReason === null
+    ? null
+    : typeof row.fallbackReason === "string" && FALLBACK_REASONS.has(row.fallbackReason)
+      ? row.fallbackReason
+      : undefined;
+  if (fallbackReason === undefined) return null;
   return {
     version: 1,
     recordedAt: row.recordedAt,
@@ -184,6 +208,7 @@ function projectTrace(value: unknown): SyncPilotTraceRecord | null {
     pendingCount,
     transport: row.transport as SyncPilotTransport | null,
     latencyMs,
+    fallbackReason,
   };
 }
 
@@ -239,6 +264,9 @@ export async function recordSyncPilotTrace(
     pendingCount: safeCount(input.pendingCount),
     transport: input.transport ?? null,
     latencyMs: safeLatency(recordedAt, input.sourceAcceptedAt),
+    fallbackReason: input.fallbackReason && FALLBACK_REASONS.has(input.fallbackReason)
+      ? input.fallbackReason
+      : null,
   };
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify([...readTrace(storage), record].slice(-MAX_RECORDS)));
