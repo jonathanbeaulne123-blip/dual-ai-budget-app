@@ -87,6 +87,8 @@ type Props = {
   onOpenOpeningBalances?: (mode: "entry" | "correction") => void;
   /** Chapter 6 opens the existing Fund surface; approval never happens in chat. */
   onOpenHouseholdFund?: () => void;
+  /** Chapter 7 opens the existing Calendar repeating-items surface. */
+  onOpenRecurrences?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -168,6 +170,7 @@ export function OnboardingChat({
   onOpenAccounts,
   onOpenOpeningBalances,
   onOpenHouseholdFund,
+  onOpenRecurrences,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -401,13 +404,19 @@ export function OnboardingChat({
   const fundApprovalActor = chapterId === "ch-06-fund"
     && baseRole === "witness"
     && Boolean(fundApprovalState);
-  const role = fundApprovalActor ? "conductor" : baseRole;
-  const conductorName = role === "witness"
+  // Chapter 7's named witness may add a standing fact and must acknowledge
+  // the shared evidence on their own device. This makes them an actor without
+  // pretending they are leading the chapter.
+  const recurrenceContributor = chapterId === "ch-07-recurrences" && baseRole === "witness";
+  const role = fundApprovalActor || recurrenceContributor ? "conductor" : baseRole;
+  const conductorName = baseRole === "witness"
     ? household.members.find((member) => member.id === custodianMemberId)?.name ?? "your partner"
     : null;
-  const turnLine = role === "conductor"
-    ? copy("chapter.turn.conductor")
-    : copy("chapter.turn.witness", { name: conductorName ?? "your partner" });
+  const turnLine = recurrenceContributor
+    ? copy("recurrences.witness-add", { name: conductorName ?? "your partner" })
+    : role === "conductor"
+      ? copy("chapter.turn.conductor")
+      : copy("chapter.turn.witness", { name: conductorName ?? "your partner" });
   const evidence = role === "conductor"
     ? evidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation })
     : witnessEvidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation });
@@ -495,6 +504,8 @@ export function OnboardingChat({
     && !fundWaitingForPartner
     && !(evidence.kind === "ineligible" && evidence.reason === "custody")
     && evidence.kind !== "accepted";
+  const recurrenceNeedsNavigation = chapterId === "ch-07-recurrences"
+    && evidence.kind !== "accepted";
 
   const showAction = role === "conductor"
     && !blockedCopyKey
@@ -502,6 +513,7 @@ export function OnboardingChat({
     && !accountsNeedNavigation
     && !openingNeedsNavigation
     && !fundNeedsNavigation
+    && !recurrenceNeedsNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
@@ -510,7 +522,13 @@ export function OnboardingChat({
   const showPersonalSkipAction = showAccountsAction && personalAccountChoicePending;
   const showOpeningAction = role === "conductor" && openingNeedsNavigation && Boolean(onOpenOpeningBalances);
   const showFundAction = role === "conductor" && fundNeedsNavigation && Boolean(onOpenHouseholdFund);
-  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction
+  const showRecurrenceAction = role === "conductor"
+    && chapterId === "ch-07-recurrences"
+    && !blockedCopyKey
+    && Boolean(onOpenRecurrences);
+  const showRecurrencePrimaryAction = showRecurrenceAction && recurrenceNeedsNavigation;
+  const showRecurrenceOptionalAction = showRecurrenceAction && evidence.kind === "accepted";
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrenceAction
     ? SHELL_VIEW.cardToAction
     : 0;
 
@@ -609,7 +627,7 @@ export function OnboardingChat({
           )}
         </>
       )}
-      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction ? (
+      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrencePrimaryAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
@@ -625,6 +643,8 @@ export function OnboardingChat({
                     ? () => onOpenOpeningBalances?.(openingNeedsCorrection ? "correction" : "entry")
                     : showFundAction
                       ? onOpenHouseholdFund
+                    : showRecurrencePrimaryAction
+                      ? onOpenRecurrences
                   : acknowledge}
           >
             {copy(showRetryAction
@@ -637,6 +657,8 @@ export function OnboardingChat({
                     ? openingNeedsCorrection ? "opening.review" : "opening.open"
                     : showFundAction
                       ? "fund.open"
+                    : showRecurrencePrimaryAction
+                      ? "recurrences.open"
                   : "continue.next")}
           </button>
           {showPersonalSkipAction ? (
@@ -647,6 +669,16 @@ export function OnboardingChat({
               onClick={skipPersonalAccounts}
             >
               {copy("skip.personal")}
+            </button>
+          ) : null}
+          {showRecurrenceOptionalAction ? (
+            <button
+              type="button"
+              disabled={busy}
+              style={{ minHeight: SHELL_VIEW.navButtonHeight }}
+              onClick={onOpenRecurrences}
+            >
+              {copy("recurrences.add-another")}
             </button>
           ) : null}
         </div>

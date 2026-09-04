@@ -265,6 +265,78 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "Custody moves through the Fund, not the charter.", slots: [],
   }),
   entry({
+    key: "onboarding.household.ch-07-recurrences", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Put the household's rent or equivalent and one other regular item on the calendar as standing facts.", slots: [],
+  }),
+  entry({
+    key: "recurrences.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open regular money", slots: [],
+  }),
+  entry({
+    key: "recurrences.title", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Regular money", slots: [],
+  }),
+  entry({
+    key: "recurrences.count", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "{count} standing", slots: ["count"],
+  }),
+  entry({
+    key: "recurrences.add-another", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Add another regular item", slots: [],
+  }),
+  entry({
+    key: "recurrences.add", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Add a standing fact", slots: [],
+  }),
+  entry({
+    key: "recurrences.witness-add", speaker: "hercules", surface: "presence", scope: "none", announce: "none",
+    text: "{name} is leading this one. You can add a regular item too, if there's one you know.", slots: ["name"],
+  }),
+  entry({
+    key: "recurrences.guide", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "A reminder helps you remember. A standing fact anchors the plan. An actual posted occurrence changes the books. We only need the standing fact here.", slots: [],
+  }),
+  entry({
+    key: "recurrences.minimum", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Add rent or its equivalent, plus one other regular item.", slots: [],
+  }),
+  entry({
+    key: "recurrences.empty", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Add rent or its equivalent first. This list holds standing facts for the plan; nothing here posts an occurrence.", slots: [],
+  }),
+  entry({
+    key: "recurrences.ready", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "The two anchors are here. Add more if it helps, or return to Hercules.", slots: [],
+  }),
+  entry({
+    key: "recurrences.pause", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Three are plenty for one pass. Good place to pause or carry on.", slots: [],
+  }),
+  entry({
+    key: "recurrences.standing", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Standing fact, not a post", slots: [],
+  }),
+  entry({
+    key: "recurrences.form-explain", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "This anchors the plan. It doesn't post an occurrence or move money.", slots: [],
+  }),
+  entry({
+    key: "recurrences.form-add", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Add regular money", slots: [],
+  }),
+  entry({
+    key: "recurrences.form-edit", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Edit regular money", slots: [],
+  }),
+  entry({
+    key: "recurrences.adopt-explain", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Adopt saves a standing fact from accepted history. Marking it paid is a separate step later.", slots: [],
+  }),
+  entry({
+    key: "recurrences.save", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Save standing fact", slots: [],
+  }),
+  entry({
     key: "charter.write", speaker: "system", surface: "button", scope: "none", announce: "none",
     text: "Write the Charter", slots: [],
   }),

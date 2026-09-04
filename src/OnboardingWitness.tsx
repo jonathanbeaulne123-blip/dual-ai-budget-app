@@ -147,7 +147,7 @@ export function OnboardingWitness({
           {statusRows.map((row) => (
             <p className="onboarding-card-row" key={row.id}>
               <span className="onboarding-card-row-label">{row.label}</span>
-              <span className="onboarding-card-row-value">{row.status}</span>
+              <span className="onboarding-card-row-value">{row.detail ?? row.status}</span>
             </p>
           ))}
           <p className="onboarding-card-provenance">{witnessChapterScopeLabel(chapter.id)}</p>

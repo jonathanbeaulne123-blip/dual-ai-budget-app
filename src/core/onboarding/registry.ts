@@ -45,7 +45,7 @@ export const ONBOARDING_REGISTRY: readonly OnboardingChapter[] = [
   }),
   householdChapter({
     id: "ch-07-recurrences", order: 7, sitting: 2, target: { tab: "calendar" }, conductor: "partner", approval: "none",
-    skip: "household-required", timeBudgetSeconds: 300, pausePoints: [], actions: ["navigate", "submit", "continue"], dependsOn: ["ch-06-fund"],
+    skip: "household-required", timeBudgetSeconds: 360, pausePoints: ["every-third-recurrence"], actions: ["navigate", "submit", "continue"], dependsOn: ["ch-06-fund"],
   }),
   householdChapter({
     id: "ch-08-cadence", order: 8, sitting: 2, target: { tab: "shift" }, conductor: "self", approval: "member",

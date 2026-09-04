@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   accountOptionLabel,
+  copy,
   formatCad,
   inferRecurrenceKind,
   type Household,
@@ -120,11 +121,17 @@ export function draftFromRecurrence(item: Recurrence): RepeatingDraft {
   };
 }
 
-export function repeatingConfirmSummary(draft: RepeatingDraft): string {
+export function repeatingConfirmSummary(
+  draft: RepeatingDraft,
+  options: { standingFactOnly?: boolean } = {},
+): string {
   const label = draft.note.trim() || "Repeating item";
   const amount = draft.amount.trim() ? formatCad(Math.round(Number(draft.amount) * 100) || 0) : "an amount";
   const verb = draft.id ? "Update" : "Add";
   const fund = draft.useHouseholdFund ? " Household Fund reserve included; this still creates no money." : "";
+  if (options.standingFactOnly) {
+    return `${verb} ${label}: ${amount} ${draft.cadence}, next ${draft.nextDate}. This saves a standing fact for the plan. It does not post an occurrence or move money.${fund}`;
+  }
   return `${verb} ${label}: ${amount} ${draft.cadence}, next ${draft.nextDate}. This saves a reminder; Mark paid still posts unless you choose to post below.${fund}`;
 }
 
@@ -133,6 +140,7 @@ export function RepeatingForm(props: {
   today: string;
   initial: RepeatingDraft;
   busy: boolean;
+  standingFactOnly?: boolean;
   onCancel: () => void;
   onSubmit: (draft: RepeatingDraft) => void;
 }) {
@@ -190,10 +198,14 @@ export function RepeatingForm(props: {
   return (
     <section className="card repeating-form">
       <header>
-        <h2>{draft.id ? "Edit repeating" : "Add repeating"}</h2>
-        <span className="muted">Reminder until Mark paid</span>
+        <h2>{props.standingFactOnly
+          ? copy(draft.id ? "recurrences.form-edit" : "recurrences.form-add")
+          : draft.id ? "Edit repeating" : "Add repeating"}</h2>
+        <span className="muted">{props.standingFactOnly ? copy("recurrences.standing") : "Reminder until Mark paid"}</span>
       </header>
-      <p className="muted">Calendar and OCR may prefill this. Confirm still posts money.</p>
+      <p className="muted">{props.standingFactOnly
+        ? copy("recurrences.form-explain")
+        : "Calendar and OCR may prefill this. Confirm still posts money."}</p>
 
       <label>Type</label>
       <div className="chips">
@@ -406,7 +418,7 @@ export function RepeatingForm(props: {
             props.onSubmit(draft);
           }}
         >
-          Save
+          {props.standingFactOnly ? copy("recurrences.save") : "Save"}
         </button>
         <button type="button" className="chip" disabled={props.busy} onClick={props.onCancel}>
           Cancel
