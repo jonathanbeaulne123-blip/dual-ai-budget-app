@@ -39,7 +39,7 @@ That instruction does not authorize Production, schema changes, secrets, provide
 
 - [ ] Record the exact 40-character deployed SHA. Do not use a branch name or unmerged commit.
 - [ ] Record the successful deployment completion time; every retained sample and recovery row must occur after it.
-- [ ] Confirm an existing authenticated Development cloud clock can provide millisecond offset calibration without adding a new endpoint or copying a token. If it cannot, stop: wall-clock p95 cannot be claimed.
+- [ ] On each signed-in device, open **More → Pairing → Advanced recovery** and press **Copy proof clock calibration**. Paste the copied allowlisted row into the operator ledger outside the repository. The action calls the authenticated Development-only `/sync/clock` route; no token, raw id, or ledger fact is copied. If the action reports uncertainty above 50 ms, retry on a stable connection. If it still cannot produce a row, stop: wall-clock p95 cannot be claimed.
 - [ ] Confirm the build is Development with Google Auth, Realtime, command log, online-required Shared writes, and pilot diagnostics enabled; Production continuity remains off.
 - [ ] Confirm the required existing migrations and Realtime publication through read-only inspection only. Do not apply or change them.
 - [ ] Use two different authorized Google accounts and two different supported devices/browsers in the same disposable Development household.
@@ -51,7 +51,7 @@ That instruction does not authorize Production, schema changes, secrets, provide
 
 Collect at least 100 fresh Realtime Shared command samples after the exact release SHA is deployed: at least 50 from participant one to participant two and at least 50 in the reverse direction. The bounded poll sample is separate recovery evidence and may bring the total above 100.
 
-Immediately before the first sample and after the last sample, measure each device clock against the same authenticated Development cloud clock. Retain exactly two rows per device. Each measurement must have uncertainty at or below 50 ms, the two measurements must bracket every timestamp from that device, and observed offset drift must be at or below 100 ms. Never estimate an offset after the fact. The evaluator interpolates the offset and adds both endpoint uncertainties to each latency, so the reported p95 is a conservative upper bound.
+Immediately before the first sample and after the last sample, press **Copy proof clock calibration** on each device. Retain exactly two rows per device. Each measurement uses five authenticated NTP-style probes and keeps the lowest-uncertainty result after subtracting Worker-side Auth processing time. Uncertainty must be at or below 50 ms, the two measurements must bracket every timestamp from that device, and observed offset drift must be at or below 100 ms. Never estimate an offset after the fact. The evaluator interpolates the offset and adds both endpoint uncertainties to each latency, so the reported p95 is a conservative upper bound.
 
 For every command:
 

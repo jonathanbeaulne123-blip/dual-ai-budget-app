@@ -609,6 +609,7 @@ export function PairingCard({
   onLeaveHousehold,
   onCurrentDeviceRevoked,
   onCopySyncDiagnostic,
+  onCopySyncClockCalibration,
 }: {
   household: Household;
   memberId: string;
@@ -622,6 +623,7 @@ export function PairingCard({
   onLeaveHousehold?: () => Promise<void>;
   onCurrentDeviceRevoked?: () => void;
   onCopySyncDiagnostic?: () => Promise<string>;
+  onCopySyncClockCalibration?: () => Promise<string>;
   onInviteInput: (value: string) => void;
   onHousehold: (household: Household) => Promise<void>;
   onError: (value: string) => void;
@@ -759,6 +761,26 @@ export function PairingCard({
             </button>
             <p className="muted" role="status" aria-live="polite">
               {diagnosticStatus || "Development only. Copies hashed identifiers, revisions, queue state, and timing — never ledger facts or credentials."}
+            </p>
+          </>
+        )}
+        {onCopySyncClockCalibration && (
+          <>
+            <button
+              type="button"
+              className="ghost"
+              style={{ width: "100%", marginTop: 8 }}
+              onClick={() => {
+                setDiagnosticStatus("");
+                void onCopySyncClockCalibration()
+                  .then(setDiagnosticStatus)
+                  .catch((caught) => setDiagnosticStatus(caught instanceof Error ? caught.message : String(caught)));
+              }}
+            >
+              Copy proof clock calibration
+            </button>
+            <p className="muted">
+              Development only. Verifies this signed-in household member and copies one hashed-device clock row for the readiness proof.
             </p>
           </>
         )}

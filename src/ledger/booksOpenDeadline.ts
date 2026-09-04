@@ -1,0 +1,48 @@
+export const BROWSER_BOOKS_OPEN_TIMEOUT_MS = 12_000;
+
+export class BrowserBooksOpenTimeoutError extends Error {
+  readonly code = "BROWSER_BOOKS_OPEN_TIMEOUT";
+
+  constructor() {
+    super("The local books did not finish opening. Close other Hearth tabs, then retry validation. Nothing was cleared or overwritten.");
+    this.name = "BrowserBooksOpenTimeoutError";
+  }
+}
+
+type DeadlineOptions = {
+  timeoutMs?: number;
+  onTimeout?: () => void;
+  setTimer?: typeof setTimeout;
+  clearTimer?: typeof clearTimeout;
+};
+
+/**
+ * Bound browser database startup without pretending the underlying storage was
+ * corrupted. The caller retires any worker; a late database handle is closed
+ * by the opening-generation check in engine.ts.
+ */
+export function withBrowserBooksOpenDeadline<T>(
+  opening: Promise<T>,
+  options: DeadlineOptions = {},
+): Promise<T> {
+  const timeoutMs = options.timeoutMs ?? BROWSER_BOOKS_OPEN_TIMEOUT_MS;
+  const setTimer = options.setTimer ?? setTimeout;
+  const clearTimer = options.clearTimer ?? clearTimeout;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimer(() => {
+      try {
+        options.onTimeout?.();
+      } catch {
+        // A failed worker retirement must not recreate the infinite wait this
+        // deadline exists to prevent.
+      }
+      reject(new BrowserBooksOpenTimeoutError());
+    }, timeoutMs);
+  });
+
+  return Promise.race([opening, timeout]).finally(() => {
+    if (timer !== undefined) clearTimer(timer);
+  });
+}
