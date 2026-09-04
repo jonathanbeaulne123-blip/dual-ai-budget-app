@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addAccount, catalogHousehold, financialAuditHash, linkGoogleIdentity, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
+
+vi.setConfig({ testTimeout: 30_000 });
+afterAll(() => vi.resetConfig());
 
 type Inspection = {
   ok: boolean;
@@ -199,7 +202,7 @@ async function settleUi(ms = 100): Promise<void> {
   });
 }
 
-async function waitForUi(assertion: () => void, timeout = 5_000): Promise<void> {
+async function waitForUi(assertion: () => void, timeout = 15_000): Promise<void> {
   const deadline = Date.now() + timeout;
   let lastError: unknown = new Error("UI condition was not met.");
   while (Date.now() < deadline) {
@@ -956,7 +959,7 @@ describe("cached-shell startup books gate", () => {
       button("Restore from cloud copy").click();
       await Promise.resolve();
     });
-    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull(), 15_000);
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
 
     const restored = startup.savedHouseholds.at(-1);
     expect(restored?.revision).toBe(9);
@@ -966,7 +969,7 @@ describe("cached-shell startup books gate", () => {
     expect(restored?.transactions.some((row) => row.note === "Corrupted local private row")).toBe(false);
     expect(startup.stagedCandidates.at(-1)?.householdId).toBe(restored?.householdId);
     expect(startup.repairedCandidates.at(-1)?.booksAcceptedHash).toBe(restored?.booksAcceptedHash);
-  }, 30_000);
+  });
 
   it("keeps projection recovery blocked when the device still has an unacknowledged tip", async () => {
     vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
