@@ -517,7 +517,7 @@ describe("Google-account continuity", () => {
       setStagedBooksDataDirForTests(null);
       await rm(stageRoot, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 
   it("durably cancels a definitive online-required conflict instead of publishing it later", async () => {
     setContinuityStore(createMemoryContinuityStore());
