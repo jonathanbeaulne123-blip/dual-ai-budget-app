@@ -40,7 +40,7 @@ export const ONBOARDING_REGISTRY: readonly OnboardingChapter[] = [
     skip: "household-required", timeBudgetSeconds: 360, pausePoints: ["between-accounts"], actions: ["navigate", "submit", "continue"], dependsOn: ["ch-04-accounts"],
   }),
   householdChapter({
-    id: "ch-06-fund", order: 6, sitting: 2, target: { tab: "plan" }, conductor: "partner", approval: "joint",
+    id: "ch-06-fund", order: 6, sitting: 2, target: { tab: "ledger" }, conductor: "partner", approval: "joint",
     skip: "household-required", timeBudgetSeconds: 300, pausePoints: [], actions: ["navigate", "submit", "approve", "continue"], dependsOn: ["ch-05-opening"],
   }),
   householdChapter({

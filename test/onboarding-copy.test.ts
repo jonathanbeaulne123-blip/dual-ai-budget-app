@@ -118,6 +118,19 @@ const SLICE_14_OPENING_COPY: Record<string, { text: string; announce: CopyEntry[
   },
 };
 
+const SLICE_15_FUND_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-06-fund": {
+    text: "Set up the Household Fund at $0.00, then each of you reviews and approves the same setup.", announce: "none",
+  },
+  "fund.open": { text: "Open the Household Fund", announce: "none" },
+  "fund.configure": { text: "Set up the Fund at $0.00", announce: "none" },
+  "fund.approve": { text: "I approve this Fund setup", announce: "none" },
+  "fund.approval.explain": { text: "This records your agreement with the setup. It doesn't move money.", announce: "none" },
+  "fund.approval.current": { text: "You're approved on this version.", announce: "polite" },
+  "fund.backing.private": { text: "The backing account stays in the custodian's Personal books.", announce: "none" },
+  "fund.custody-mismatch": { text: "Custody moves through the Fund, not the charter.", announce: "polite" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -130,12 +143,13 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
       ...SLICE_13_ACCOUNTS_COPY,
       ...SLICE_14_OPENING_COPY,
+      ...SLICE_15_FUND_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

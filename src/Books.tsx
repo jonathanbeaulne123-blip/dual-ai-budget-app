@@ -113,7 +113,7 @@ export function BooksPage({
   onAddToAccount: (account: Account) => void;
   onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
-  requestedPane?: "fund-register" | "wallet" | "opening" | "register" | null;
+  requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | null;
   onConsumeRequestedPane?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
@@ -207,6 +207,12 @@ export function BooksPage({
     setPane(view === "personal" ? "wallet" : "fund");
     setAuditOpen(view !== "household");
   }, [view, focusedAccountId, sourceFocus]);
+
+  useEffect(() => {
+    if (requestedPane !== "fund" || !showFundPane) return;
+    setPane("fund");
+    onConsumeRequestedPane?.();
+  }, [onConsumeRequestedPane, requestedPane, showFundPane]);
 
   useEffect(() => {
     if (requestedPane !== "fund-register" || !sharedTable) return;
