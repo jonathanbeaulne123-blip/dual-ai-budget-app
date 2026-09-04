@@ -162,6 +162,22 @@ const SLICE_16_RECURRENCES_COPY: Record<string, { text: string; announce: CopyEn
   "recurrences.save": { text: "Save standing fact", announce: "none" },
 };
 
+const SLICE_17_CADENCE_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-08-cadence": {
+    text: "Show Hearth when you are usually paid. This is timing only — never an assumed pay or contribution amount.", announce: "none",
+  },
+  "cadence.open": { text: "Set my earning rhythm", announce: "none" },
+  "cadence.title": { text: "Your earning rhythm", announce: "none" },
+  "cadence.guide": {
+    text: "Pick the rhythm, not a number. Hearth follows the pattern when there is one, and leaves paydays open when there isn't. It never guesses what you earn.", announce: "none",
+  },
+  "cadence.detail-later": {
+    text: "Job, rate, deduction, tip, and landing-account details stay for your Personal setup later.", announce: "none",
+  },
+  "cadence.save": { text: "Save my earning rhythm", announce: "none" },
+  "cadence.saved": { text: "Timing saved. No income or contribution was added.", announce: "polite" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -174,7 +190,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -182,6 +198,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_14_OPENING_COPY,
       ...SLICE_15_FUND_COPY,
       ...SLICE_16_RECURRENCES_COPY,
+      ...SLICE_17_CADENCE_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

@@ -13,6 +13,7 @@ import { shapeHouseholdFundConfig } from "./householdFund.ts";
 import type { CoursePoint, SharedMonthCourse } from "./sharedLedgerStory.ts";
 import type { Household } from "./types.ts";
 import { nextWorkScheduleDate } from "./workSettlement.ts";
+import { memberEarningSchedule } from "./work.ts";
 
 export const COURSE_VIEW = {
   width: 760,
@@ -168,12 +169,17 @@ export function paydayTicks(household: Household, monthKey: MonthKey): PaydayTic
   const start = monthStartKey(monthKey);
   const end = monthEndKey(monthKey);
   const dates = new Set<DateKey>();
-  for (const job of household.workJobs ?? []) {
-    if (!job.active || job.memberId !== fund.custodianMemberId) continue;
-    let cursor = nextWorkScheduleDate(job.paySchedule, start);
+  const explicit = memberEarningSchedule(household, fund.custodianMemberId);
+  const schedules = explicit
+    ? [explicit]
+    : (household.workJobs ?? [])
+      .filter((job) => job.active && job.memberId === fund.custodianMemberId)
+      .map((job) => job.paySchedule);
+  for (const schedule of schedules) {
+    let cursor = nextWorkScheduleDate(schedule, start);
     while (cursor && cursor <= end) {
       dates.add(cursor);
-      cursor = nextWorkScheduleDate(job.paySchedule, addDays(cursor, 1));
+      cursor = nextWorkScheduleDate(schedule, addDays(cursor, 1));
     }
   }
   return [...dates].sort().map((date) => ({ date }));

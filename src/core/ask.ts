@@ -15,6 +15,7 @@ import { shapeHouseholdFundConfig } from "./householdFund.ts";
 import { formatCad } from "./money.ts";
 import type { Household } from "./types.ts";
 import { nextWorkScheduleDate } from "./workSettlement.ts";
+import { memberEarningSchedule } from "./work.ts";
 
 export type AskHorizon = "month" | "payday";
 
@@ -83,6 +84,8 @@ export function askAlternatives(ask: HouseholdAsk): AskAlternative[] {
 
 /** Earliest active-work payday for a member, projected from timing only. */
 export function nextPaydayDate(household: Household, memberId: string, today: DateKey): DateKey | null {
+  const explicit = memberEarningSchedule(household, memberId);
+  if (explicit) return nextWorkScheduleDate(explicit, today);
   return (household.workJobs ?? [])
     .filter((job) => job.active && job.memberId === memberId)
     .map((job) => ({ id: job.id, date: nextWorkScheduleDate(job.paySchedule, today) }))

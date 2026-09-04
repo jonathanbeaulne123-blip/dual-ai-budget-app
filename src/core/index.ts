@@ -143,6 +143,7 @@ export * from "./onboarding/affirmative.ts";
 export * from "./onboarding/actions.ts";
 export * from "./onboarding/evidence.ts";
 export * from "./onboarding/recurrences.ts";
+export * from "./onboarding/cadence.ts";
 export * from "./onboarding/copy.ts";
 export * from "./onboarding/flavor.ts";
 export * from "./onboarding/shellView.ts";

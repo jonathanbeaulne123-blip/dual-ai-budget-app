@@ -11,6 +11,7 @@ import {
   postOpeningBalances,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
+  recordEarningCadence,
   recordObservedChapterCompletion,
   signHouseholdCharter,
   setFundCardAccount,
@@ -220,6 +221,21 @@ describe("onboardingNavigationTarget", () => {
             origin: "manual",
           }).household;
         }
+      }
+      if (chapterId === "ch-08-cadence") {
+        household = recordEarningCadence(household, {
+          memberId: BIANCA,
+          createdBy: BIANCA,
+          paySchedule: {
+            cadence: "irregular",
+            anchorDate: TODAY,
+            weekday: 0,
+            monthDays: [15, 30],
+            customDates: [],
+            reminderTime: "09:00",
+          },
+          detailAction: "skip",
+        }).household;
       }
       household = chapterId === "ch-02-household"
         ? recordObservedChapterCompletion(household, {

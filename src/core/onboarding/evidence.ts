@@ -27,6 +27,7 @@ import type { Account, Household, Transaction } from "../types.ts";
 import { acceptedHouseholdOnboarding, onboardingIsActive, shapeHouseholdOnboarding } from "./mode.ts";
 import { chapterById } from "./registry.ts";
 import { onboardingRecurrenceCadenceLabel, onboardingRecurrenceProbe } from "./recurrences.ts";
+import { onboardingCadenceProbe, onboardingCadenceSentence } from "./cadence.ts";
 import {
   validateHouseholdScopeObservation,
   type HouseholdScopeFailure,
@@ -435,35 +436,19 @@ function recurrenceEvidence(household: Household, chapterId: ChapterId): Project
   };
 }
 
-function cadenceLabel(cadence: string): string | null {
-  if (cadence === "weekly") return "weekly";
-  if (cadence === "biweekly") return "every second week";
-  if (cadence === "twice-monthly") return "twice a month";
-  if (cadence === "custom") return "on a custom schedule";
-  if (cadence === "irregular") return "irregular";
-  return null;
-}
-
-function cadenceEvidence(household: Household, chapterId: ChapterId): Projection {
-  const activeMemberIds = new Set(household.members.filter((member) => member.active).map((member) => member.id));
-  const rows = household.workJobs
-    .filter((job) => job.active && activeMemberIds.has(job.memberId))
-    .sort((left, right) => left.memberId.localeCompare(right.memberId) || left.id.localeCompare(right.id));
-  if (!rows.length) return EMPTY;
-  const cadences = rows.map((row) => ({ row, label: cadenceLabel(row.paySchedule.cadence) }));
-  if (cadences.some(({ row, label }) => !row.id || !label)) return { ...EMPTY, ineligible: "malformed" };
+function cadenceEvidence(household: Household, chapterId: ChapterId, viewerMemberId: string): Projection {
+  const probe = onboardingCadenceProbe(household, viewerMemberId);
+  if (!probe.complete || !probe.schedule || !probe.sourceId || !probe.observedAt) return EMPTY;
+  const name = memberName(household, viewerMemberId);
   return {
     ...EMPTY,
     household: {
       chapterId,
       scope: "household",
       kind: "configuration",
-      sourceIds: rows.map((row) => row.id),
-      lines: cadences.map(({ row, label }) => ({
-        label: `${memberName(household, row.memberId)} cadence`,
-        value: label!,
-      })),
-      observedAt: latestIso(rows.map((row) => row.updatedAt)) ?? "",
+      sourceIds: [probe.sourceId],
+      lines: [{ label: "Earning rhythm", value: onboardingCadenceSentence(name, probe.schedule) }],
+      observedAt: probe.observedAt,
     },
   };
 }
@@ -541,7 +526,7 @@ function project(
     case "ch-05-opening": return openingEvidence(household, chapterId);
     case "ch-06-fund": return fundEvidence(household, chapterId);
     case "ch-07-recurrences": return recurrenceEvidence(household, chapterId);
-    case "ch-08-cadence": return cadenceEvidence(household, chapterId);
+    case "ch-08-cadence": return cadenceEvidence(household, chapterId, viewerMemberId);
     case "ch-09-categories":
     case "ch-10-estimates": return EMPTY;
     case "ch-11-plan": return planEvidence(household, chapterId);

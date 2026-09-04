@@ -46,8 +46,8 @@ export function defaultWorkSchedule(anchorDate: DateKey = EPOCH_DATE): WorkPaySc
   };
 }
 
-function shapeSchedule(input: Partial<WorkPaySchedule> | null | undefined, fallbackDate: DateKey): WorkPaySchedule {
-  const cadence = input?.cadence === "weekly" || input?.cadence === "twice-monthly" || input?.cadence === "custom"
+export function shapeWorkSchedule(input: Partial<WorkPaySchedule> | null | undefined, fallbackDate: DateKey): WorkPaySchedule {
+  const cadence = input?.cadence === "weekly" || input?.cadence === "twice-monthly" || input?.cadence === "custom" || input?.cadence === "irregular"
     ? input.cadence
     : "biweekly";
   const anchorDate = input?.anchorDate && isValidDateKey(input.anchorDate) ? input.anchorDate : fallbackDate;
@@ -64,6 +64,31 @@ function shapeSchedule(input: Partial<WorkPaySchedule> | null | undefined, fallb
     customDates,
     reminderTime: reminderTime || "09:00",
   };
+}
+
+/** A schedule can be a truthful household timing fact without any pay amount or job detail. */
+export function workPayScheduleIsValid(schedule: unknown): schedule is WorkPaySchedule {
+  if (!schedule || typeof schedule !== "object") return false;
+  const row = schedule as Partial<WorkPaySchedule>;
+  if (row.cadence === "irregular") return true;
+  if (typeof row.anchorDate !== "string" || !isValidDateKey(row.anchorDate)) return false;
+  if (row.cadence === "weekly" || row.cadence === "biweekly") {
+    return Number.isInteger(row.weekday) && Number(row.weekday) >= 0 && Number(row.weekday) <= 6;
+  }
+  if (row.cadence === "twice-monthly") {
+    return Array.isArray(row.monthDays) && row.monthDays.length > 0
+      && row.monthDays.every((day) => Number.isInteger(day) && day >= 1 && day <= 31);
+  }
+  return row.cadence === "custom" && Array.isArray(row.customDates)
+    && row.customDates.length > 0 && row.customDates.every(isValidDateKey);
+}
+
+/** Explicit Chapter 8 household timing, when present and valid. */
+export function memberEarningSchedule(household: Household, memberId: string): WorkPaySchedule | null {
+  const member = household.members.find((row) => row.active && row.id === memberId);
+  if (!workPayScheduleIsValid(member?.earningCadence)) return null;
+  const shaped = shapeWorkSchedule(member.earningCadence, member.earningCadence.anchorDate);
+  return shaped;
 }
 
 function shapeDeductions(list: WorkDeductionRule[] | null | undefined): WorkDeductionRule[] {
@@ -190,8 +215,8 @@ export function shapeWorkJob(input: WorkJob, fallbackIso = EPOCH_ISO): WorkJob {
     overtimeMultiplier: Math.min(5, Math.max(1, finite(input?.overtimeMultiplier, 1.5))),
     tipOutRules: shapeTipOutRules(input?.tipOutRules, fallbackIso),
     salesFields: shapeSalesFields(input?.salesFields, fallbackIso),
-    paySchedule: shapeSchedule(input?.paySchedule, anchor),
-    tipSchedule: shapeSchedule(input?.tipSchedule, anchor),
+    paySchedule: shapeWorkSchedule(input?.paySchedule, anchor),
+    tipSchedule: shapeWorkSchedule(input?.tipSchedule, anchor),
     tipWeekStartsOn: Math.min(6, Math.max(0, Math.round(finite(input?.tipWeekStartsOn, 1)))),
     defaults: {
       wagesVisibility: visibility(input?.defaults?.wagesVisibility, "personal"),

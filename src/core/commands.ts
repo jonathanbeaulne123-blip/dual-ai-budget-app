@@ -9,7 +9,7 @@ import { isLedgerWrite } from "./writeKind.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
 import { calcShiftAmounts, parseShiftInput, shiftSettingsFingerprint, DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { calculateWorkShift, previousWorkWeekHours, shapeWorkJob, workJobFingerprint, workShiftIsReversed } from "./work.ts";
+import { calculateWorkShift, previousWorkWeekHours, shapeWorkJob, shapeWorkSchedule, workJobFingerprint, workPayScheduleIsValid, workShiftIsReversed } from "./work.ts";
 import {
   incomeSubcategory,
   parseAmount,
@@ -134,6 +134,7 @@ import type {
   UndoToken,
   Visibility,
   WorkJob,
+  WorkPaySchedule,
   AccountScope,
   CharterCeilingChange,
   CharterCeilingKind,
@@ -449,6 +450,13 @@ export function recordChapterAcknowledgement(household: Household, input: {
     const projected = evidenceFor(household, chapter.id, input.memberId);
     if (projected.kind !== "accepted" || projected.card.scope !== "household") {
       throw new ValidationError("Add rent or its equivalent and one other valid Shared recurrence before continuing.");
+    }
+  }
+  if (chapter.id === "ch-08-cadence") {
+    requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+    const projected = evidenceFor(household, chapter.id, input.memberId);
+    if (projected.kind !== "accepted" || projected.card.scope !== "household") {
+      throw new ValidationError("Record your own earning rhythm before continuing.");
     }
   }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
@@ -3941,6 +3949,41 @@ export function updateShiftSettings(household: Household, settings: Household["s
   next.shiftSettings = settings;
   shiftSettingsFingerprint(settings);
   return commit(previous, next, "Shift Settings", "Updated tip-out and wage rules", []);
+}
+
+/** Record one member's household-visible timing while explicitly leaving private job detail for later. */
+export function recordEarningCadence(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  paySchedule: WorkPaySchedule;
+  detailAction: "skip";
+  at?: string;
+}): CommitResult {
+  const member = requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+  if (input.detailAction !== "skip") throw new ValidationError("Choose whether to leave job details for later.");
+  if (!workPayScheduleIsValid(input.paySchedule)) throw new ValidationError("Choose a complete earning rhythm.");
+  const shaped = shapeWorkSchedule(input.paySchedule, input.paySchedule.anchorDate);
+  const at = onboardingCommandAt(input.at);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.members = next.members.map((row) => row.id === member.id
+    ? {
+        ...row,
+        earningCadence: shaped,
+        earningCadenceUpdatedAt: at,
+        earningDetailSkippedAt: at,
+        updatedAt: at,
+      }
+    : row);
+  return commit(
+    previous,
+    next,
+    "Earning cadence",
+    `${member.name} recorded pay timing; private job details stay for later`,
+    [],
+    [],
+    "recordEarningCadence",
+  );
 }
 
 function workReceivableAccount(household: Household, id: string, name: string, memberId: string, at: string) {

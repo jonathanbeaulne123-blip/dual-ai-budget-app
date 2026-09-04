@@ -1,5 +1,48 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 17 — Chapter 8 earning cadence (D-217) (2026-09-04)
+
+**Status:** Local implementation, production build, and live UX pass complete on
+`onboarding/17-ch8-cadence` from
+`origin/main@bf19a85341d6135b36c27349d64207706eaad603`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **Medium**.
+
+**Outcome:** Each active member supplies only their own earning timing. Weekly,
+biweekly, twice-monthly, monthly, and no-fixed-rhythm answers are all valid.
+One member's record cannot satisfy another's probe, and an irregular answer
+never becomes a guessed payday or contribution.
+
+**Implementation:** A small member-owned Shared cadence fact is shaped and
+merged through existing continuity. Hercules routes Chapter 8 to the existing
+Shift surface for one five-choice question, conditional timing details, a
+plain-language preview, and explicit save. Acknowledgement re-projects current
+self evidence. Contract:
+[`briefs/ONBOARDING_SLICE_17_CH8_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_17_CH8_CONTRACT_2026-09-04.md).
+
+**Privacy and money boundary:** Employer, role, rate, deductions, landing
+account, shift details, and amounts remain Personal and deferred. Detail skip
+does not create a job, income row, account, transaction, journal entry, or
+assumed contribution. Evidence contains only the member name and cadence. The
+current cloud-ledger authority boundary is unchanged.
+
+**UX and accessibility:** Live actual-component proof covered pending, busy,
+saved, selected, and irregular states at 320, 390, 720, and 1100 px in day and
+night themes. There was no horizontal overflow; controls were at least 49 px;
+keyboard focus was visible; Enter saved; reduced motion removed transitions;
+and the browser console stayed clean. The pass clarified that irregular leaves
+paydays open instead of implying Hearth would place one. Temporary QA files
+were removed.
+
+**Verification:** The final focused and adjacent suite passed **237/237**. The
+final Medium quick gate passed **104 fast + 7 serial tests** with TypeScript,
+AI-surface, and diff hygiene. The production build passed Vite (**462 modules**)
+and Hercules Pro UI; only the existing PGlite browser-external/eval and chunk
+warnings appeared. The optional Windows script could not run because this macOS
+host has no `pwsh`; no Windows result is claimed.
+
+**Next owner:** Review this local branch, then Jonathan may separately authorize
+push/PR/merge. Hosted two-device continuity remains release evidence.
+
 ## Onboarding Slice 16 — Chapter 7 regular money (D-216) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete

@@ -18,7 +18,8 @@ import {
 } from "./householdFund.ts";
 import { monthObligations, type MonthObligation } from "./monthObligations.ts";
 import { contributionRegister } from "./contributionRegister.ts";
-import { projectCadence } from "./recurrence.ts";
+import { memberEarningSchedule } from "./work.ts";
+import { nextWorkScheduleDate } from "./workSettlement.ts";
 import type { Household, HouseholdFundEvent } from "./types.ts";
 
 /** A member needs this many confirmed contributions before we will estimate another. */
@@ -104,7 +105,8 @@ function lowerMedian(values: readonly number[]): number {
 }
 
 function memberPayDates(household: Household, memberId: string, from: DateKey, to: DateKey): DateKey[] {
-  const schedules = (household.workJobs ?? [])
+  const explicit = memberEarningSchedule(household, memberId);
+  const schedules = explicit ? [explicit] : (household.workJobs ?? [])
     .filter((row) => row.memberId === memberId && row.active !== false && row.paySchedule?.anchorDate)
     .map((row) => row.paySchedule)
     .sort((left, right) => `${left.anchorDate}:${left.cadence}`.localeCompare(`${right.anchorDate}:${right.cadence}`));
@@ -113,8 +115,13 @@ function memberPayDates(household: Household, memberId: string, from: DateKey, t
   // instead of letting workJobs array order choose one.
   if (unique.size !== 1) return [];
   const schedule = [...unique.values()][0]!;
-  const cadence = schedule.cadence === "weekly" ? "weekly" : "biweekly";
-  return projectCadence(schedule.anchorDate, cadence, from, to);
+  const dates: DateKey[] = [];
+  let cursor = nextWorkScheduleDate(schedule, from);
+  while (cursor && cursor <= to) {
+    dates.push(cursor);
+    cursor = nextWorkScheduleDate(schedule, addDays(cursor, 1));
+  }
+  return dates;
 }
 
 type ProjectedInflow = { date: DateKey; amountCents: number; memberId: string | null; estimated: boolean; sourceId: string | null; label: string };
