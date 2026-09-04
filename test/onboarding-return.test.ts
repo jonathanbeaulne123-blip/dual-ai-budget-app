@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  addRecurrence,
   approveHouseholdFundConfiguration,
   catalogHousehold,
   configureHouseholdFund,
@@ -202,6 +203,23 @@ describe("onboardingNavigationTarget", () => {
           revision,
           at: "2026-09-03T16:06:00.000Z",
         }).household;
+      }
+      if (chapterId === "ch-07-recurrences") {
+        for (const recurrence of [
+          { note: "Rent", amount: "1850", subcategoryId: "SUB-HOUSING-RENT" },
+          { note: "Phone", amount: "95", subcategoryId: "SUB-LIFE-PHONE" },
+        ]) {
+          household = addRecurrence(household, {
+            cadence: "monthly",
+            nextDate: TODAY,
+            type: "expense",
+            amount: recurrence.amount,
+            accountId: "ACC-CHEQUING",
+            subcategoryId: recurrence.subcategoryId,
+            note: recurrence.note,
+            origin: "manual",
+          }).household;
+        }
       }
       household = chapterId === "ch-02-household"
         ? recordObservedChapterCompletion(household, {

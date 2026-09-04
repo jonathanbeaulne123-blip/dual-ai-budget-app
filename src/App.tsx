@@ -23,6 +23,8 @@ import {
   householdNeedsCharterFounding,
   offerHouseholdOnboarding,
   acceptedHouseholdOnboarding,
+  copy,
+  nextChapterFor,
   showsLedgerPurposeBanner,
   projectLedgerExperience,
   restoreAcceptedSnapshot,
@@ -2886,6 +2888,11 @@ export function App() {
     && (onboardingInviteRecord.state === "offered" || onboardingInviteRecord.state === "handshake-pending")
     && onboardingInviteDismissedState !== onboardingInviteRecord.state,
   );
+  const onboardingStandingFactOnly = Boolean(
+    household
+    && memberId
+    && nextChapterFor(household, memberId, today)?.id === "ch-07-recurrences",
+  );
   const personalSource = useMemo(() => {
     return household && memberId && personalReplica?.memberId === memberId
       && personalReplica.lastCommittedAt === household.lastCommittedAt
@@ -3009,12 +3016,17 @@ export function App() {
   }, [commandProgressPhase]);
 
   useEffect(() => {
+    if (onboardingStandingFactOnly && guard?.kind === "duePreview") setGuard(null);
+  }, [guard, onboardingStandingFactOnly]);
+
+  useEffect(() => {
     setLastReconcile(null);
     setRealtimeStatus(null);
   }, [household?.householdId]);
 
   useEffect(() => {
     if (booting || !household || !activeBooksGate.ready || adding || guard) return;
+    if (onboardingStandingFactOnly) return;
     if (unresolvedConflicts(household).length > 0) return;
 
     const previewKey = `${environment}:${household.householdId}:${today}`;
@@ -3026,7 +3038,7 @@ export function App() {
     if (!rows.length) return;
     duePreviewOffered.current = previewKey;
     setGuard({ kind: "duePreview", rows });
-  }, [adding, booting, environment, experience, guard, household, today, activeBooksGate.ready]);
+  }, [adding, booting, environment, experience, guard, household, onboardingStandingFactOnly, today, activeBooksGate.ready]);
 
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
@@ -5867,6 +5879,7 @@ export function App() {
           environment={environment}
           memberId={session.memberId}
           busy={busy}
+          onboardingStandingFactOnly={onboardingStandingFactOnly}
           onCommand={(fn) => { void run(fn); }}
           onAskPost={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskPostDue={(recurrenceIds, summary) => setGuard({ kind: "postDueAll", summary, recurrenceIds })}
@@ -6839,12 +6852,18 @@ export function App() {
       )}
       {guard?.kind === "saveRepeating" && (
         <ConfirmSheet
-          title={guard.draft.id ? "Save repeating changes?" : "Save repeating item?"}
+          title={onboardingStandingFactOnly
+            ? guard.draft.id ? "Save standing-fact changes?" : "Save this standing fact?"
+            : guard.draft.id ? "Save repeating changes?" : "Save repeating item?"}
           body={guard.summary}
-          extra="Unchecked = reminder only. Checked = also post this occurrence into the books, then advance the next date."
-          confirmLabel={saveRepeatingPostFirst ? "Save and post" : "Save reminder"}
+          extra={onboardingStandingFactOnly
+            ? copy("recurrences.form-explain")
+            : "Unchecked = reminder only. Checked = also post this occurrence into the books, then advance the next date."}
+          confirmLabel={onboardingStandingFactOnly
+            ? copy("recurrences.save")
+            : saveRepeatingPostFirst ? "Save and post" : "Save reminder"}
           busy={busy}
-          option={{
+          option={onboardingStandingFactOnly ? undefined : {
             id: "post-first",
             label: `Also post ${guard.draft.amount ? `$${guard.draft.amount}` : "this amount"} on ${guard.draft.nextDate} now`,
             checked: saveRepeatingPostFirst,
@@ -6856,7 +6875,7 @@ export function App() {
           }}
           onConfirm={() => {
             const draft = guard.draft;
-            const postFirst = saveRepeatingPostFirst;
+            const postFirst = onboardingStandingFactOnly ? false : saveRepeatingPostFirst;
             setGuard(null);
             setSaveRepeatingPostFirst(false);
             void run((current) => {
@@ -7153,6 +7172,11 @@ export function App() {
           setFocusedAccountId(null);
           setBooksPaneRequest("fund");
           goTab("ledger");
+        }}
+        onOpenRecurrences={() => {
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+          requestCalendarPane("bills", localStorage);
+          goTab("calendar");
         }}
         onOpenSource={(source: HerculesNumberSource) => {
           setHerculesSourceFocus(source);

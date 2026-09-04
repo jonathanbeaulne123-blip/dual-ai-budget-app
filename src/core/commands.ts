@@ -444,6 +444,13 @@ export function recordChapterAcknowledgement(household: Household, input: {
       throw new ValidationError("Both people need to approve the current Household Fund setup before continuing.");
     }
   }
+  if (chapter.id === "ch-07-recurrences") {
+    requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+    const projected = evidenceFor(household, chapter.id, input.memberId);
+    if (projected.kind !== "accepted" || projected.card.scope !== "household") {
+      throw new ValidationError("Add rent or its equivalent and one other valid Shared recurrence before continuing.");
+    }
+  }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id

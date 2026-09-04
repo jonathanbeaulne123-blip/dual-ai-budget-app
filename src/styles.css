@@ -406,6 +406,25 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 .pill.warn { background: #f4d7d0; color: var(--danger); }
 .pill.good { background: #dceadf; color: var(--pine-2); }
 
+.calendar-stage[data-onboarding-standing-fact="true"] button,
+.calendar-stage[data-onboarding-standing-fact="true"] input,
+.calendar-stage[data-onboarding-standing-fact="true"] select {
+  min-height: 44px;
+}
+
+.card.onboarding-recurrence-guide {
+  border-left: 4px solid var(--copper);
+  background: linear-gradient(135deg, rgba(196, 92, 38, 0.08), rgba(255, 255, 255, 0.42));
+  box-shadow: 0 8px 24px rgba(55, 43, 32, 0.06);
+}
+
+@media (forced-colors: active) {
+  .onboarding-recurrence-guide {
+    border-left-color: CanvasText;
+    box-shadow: none;
+  }
+}
+
 .hero {
   background: var(--card);
   border: 1px solid var(--line);

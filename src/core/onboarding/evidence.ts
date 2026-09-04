@@ -26,6 +26,7 @@ import { resolveSwipeCardAccount } from "../swipe.ts";
 import type { Account, Household, Transaction } from "../types.ts";
 import { acceptedHouseholdOnboarding, onboardingIsActive, shapeHouseholdOnboarding } from "./mode.ts";
 import { chapterById } from "./registry.ts";
+import { onboardingRecurrenceCadenceLabel, onboardingRecurrenceProbe } from "./recurrences.ts";
 import {
   validateHouseholdScopeObservation,
   type HouseholdScopeFailure,
@@ -416,29 +417,20 @@ function fundEvidence(household: Household, chapterId: ChapterId): Projection {
 }
 
 function recurrenceEvidence(household: Household, chapterId: ChapterId): Projection {
-  const sharedAccountIds = new Set(household.accounts
-    .filter((account) => account.active && account.scope !== "personal")
-    .map((account) => account.id));
-  const rows = household.recurrences
-    .filter((recurrence) => recurrence.active && sharedAccountIds.has(recurrence.accountId))
-    .sort((left, right) => left.nextDate.localeCompare(right.nextDate) || left.id.localeCompare(right.id));
-  if (!rows.length) return EMPTY;
-  if (rows.some((row) => !row.id || !Number.isInteger(row.amountCents) || row.amountCents < 0
-    || !/^\d{4}-\d{2}-\d{2}$/.test(row.nextDate))) {
-    return { ...EMPTY, ineligible: "malformed" };
-  }
+  const probe = onboardingRecurrenceProbe(household);
+  if (!probe.complete) return EMPTY;
   return {
     ...EMPTY,
     household: {
       chapterId,
       scope: "household",
       kind: "recurrence",
-      sourceIds: rows.map((row) => row.id),
-      lines: rows.map((row) => ({
-        label: row.note || "Regular money",
-        value: `${row.cadence} · ${formatCad(row.amountCents)} · next ${row.nextDate}`,
+      sourceIds: probe.rows.map((row) => row.id),
+      lines: probe.rows.map((row) => ({
+        label: row.note || household.categories.find((category) => category.id === row.subcategoryId)?.name || "Regular money",
+        value: `${onboardingRecurrenceCadenceLabel(row.cadence)} · ${formatCad(row.amountCents)} · next ${row.nextDate}`,
       })),
-      observedAt: latestIso(rows.map((row) => row.updatedAt)) ?? "",
+      observedAt: latestIso(probe.rows.map((row) => row.updatedAt)) ?? "",
     },
   };
 }
