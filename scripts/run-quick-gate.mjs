@@ -120,7 +120,9 @@ async function runSerialTests(testPaths) {
     await runPnpm("exec", "vitest", "run", ...batched, "--maxWorkers=1", "--testTimeout=30000");
   }
   for (const path of testPaths) {
-    if (rpcIsolatedSerialTests.has(path)) {
+    if (path === "test/demo-suite.test.ts") {
+      await run(process.execPath, ["scripts/run-demo-suite-tests.mjs", path]);
+    } else if (rpcIsolatedSerialTests.has(path)) {
       await runPnpm("exec", "vitest", "run", path, "--maxWorkers=1");
     }
   }

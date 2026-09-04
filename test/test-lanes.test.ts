@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const TEST_DIRECTORY = new URL(".", import.meta.url);
 const testDirectoryPath = fileURLToPath(TEST_DIRECTORY);
 const laneRunner = readFileSync(new URL("../scripts/run-test-lanes.mjs", import.meta.url), "utf8");
+const demoSuiteRunner = readFileSync(new URL("../scripts/run-demo-suite-tests.mjs", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
   scripts?: Record<string, string>;
 };
@@ -37,7 +38,6 @@ const serialFixtureTests = [
 const serialTimingTests = ["continuity-two-browser-proof.test.ts"];
 
 const rpcIsolatedFixtureTests = [
-  "demo-suite.test.ts",
   "demo-shift-statistics.test.ts",
   "stress-seed.test.ts",
 ];
@@ -81,6 +81,9 @@ describe("Vitest lanes", () => {
     for (const fileName of rpcIsolatedFixtureTests) {
       expect(booksLane).toContain(`&& vitest run test/${fileName} --maxWorkers=1`);
     }
+    expect(booksLane).toContain("&& node scripts/run-demo-suite-tests.mjs test/demo-suite.test.ts");
+    expect(demoSuiteRunner.match(/^[ ]{2}".+",$/gm)).toHaveLength(8);
+    expect(demoSuiteRunner).toContain('[pnpmEntrypoint, "exec", "vitest", "run", testPath, "--maxWorkers=1", "-t", title]');
     expect(booksLane).toContain("--maxWorkers=1");
     expect(booksLane).toContain("--testTimeout=30000");
     expect(readFileSync(new URL("../scripts/run-quick-gate.mjs", import.meta.url), "utf8"))
