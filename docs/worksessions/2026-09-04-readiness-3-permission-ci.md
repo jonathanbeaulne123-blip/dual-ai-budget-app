@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `readiness/3-permission-ci`
 - **Baseline SHA:** `e055a71fe704df5195ce2c6c177d1a7aa7855e64`
-- **Head SHA:** working tree
-- **PR or issue:** none yet
+- **Head SHA:** tracked by draft PR #327
+- **PR or issue:** [#327](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/327)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none; local synthetic PostgreSQL only
@@ -65,7 +65,7 @@ Authorization regressions become reproducible failures before they can expose an
 - [x] Implement the synthetic PostgreSQL permission harness and manifest.
 - [x] Update verification mapping and living test decision.
 - [x] Run focused and High-risk verification, then independent review.
-- [ ] Push a draft PR and stop before remote settings or schema.
+- [x] Push a draft PR and stop before remote settings or schema.
 
 ## Evidence log
 
@@ -75,6 +75,8 @@ Authorization regressions become reproducible failures before they can expose an
 - The lane self-test exposed a current-main omission: `test/continuity.test.ts` directly imports the PGlite engine but was absent from both explicit lane boundaries. Readiness 3 repairs that verification-only drift while adding its own serial fixture.
 - Initial review rejected the hand-written fixture because it contradicted server-side Production Create, did not bind migration/runtime sources into focus selection, conflated missing membership with environment isolation, and omitted Personal writes and several revoked lifecycle paths. The repaired gate models the 008-before-006 effective policy order, asserts source parity across migrations 006/008/012/013/014/017/018 and runtime authority, uses the same auth identity with distinct environment sessions, and adds the missing write/revocation cases.
 - Independent re-review returned PASS with no P0-P2 findings and independently ran 16/16 focused tests.
+- The final High-risk quick gate passed 34/34 selected tests in 74.5 seconds with change fingerprint `fa484a4d0d3205090419513a7e9c8e5d4a994abba8cd0b514fa54edd9f9c5cde` before the PR-record-only documentation follow-up.
+- Draft PR #327 was opened from `readiness/3-permission-ci`; it was not marked ready or merged.
 
 ## Decisions
 
@@ -88,4 +90,4 @@ Authorization regressions become reproducible failures before they can expose an
 
 ## Handoff
 
-Codex owns the branch implementation and review. Jonathan remains the merge and any future remote-setting/schema decision owner.
+Draft PR #327 contains the implementation and evidence for Jonathan's review. Jonathan remains the merge and any future remote-setting/schema decision owner.
