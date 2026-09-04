@@ -300,6 +300,18 @@ function projectClockCalibrations(
 
 type CorrectedInstant = { milliseconds: number; uncertaintyMs: number };
 
+function definitelyAtOrBefore(left: CorrectedInstant, right: CorrectedInstant): boolean {
+  return left.milliseconds + left.uncertaintyMs <= right.milliseconds - right.uncertaintyMs;
+}
+
+function definitelyWithin(
+  instant: CorrectedInstant,
+  window: { releaseDeployedAt: number; collectedAt: number },
+): boolean {
+  return instant.milliseconds - instant.uncertaintyMs >= window.releaseDeployedAt
+    && instant.milliseconds + instant.uncertaintyMs <= window.collectedAt;
+}
+
 function correctInstant(
   deviceId: string,
   instant: string,
@@ -326,7 +338,7 @@ function sampleLatency(sample: ScopedSyncSample, calibrations: SyncClockCalibrat
   const cloud = correctInstant(sample.senderDeviceId, sample.cloudAckAt, calibrations);
   const visible = correctInstant(sample.receiverDeviceId, sample.receiverVisibleAt, calibrations);
   if (!sender || !cloud || !visible) return null;
-  if (sender.milliseconds > cloud.milliseconds || cloud.milliseconds > visible.milliseconds) return null;
+  if (sender.milliseconds > cloud.milliseconds || !definitelyAtOrBefore(cloud, visible)) return null;
   // Use the conservative upper bound so clock uncertainty can never make a
   // transfer look faster than the evidence supports.
   const latency = visible.milliseconds - sender.milliseconds + sender.uncertaintyMs + visible.uncertaintyMs;
@@ -527,7 +539,7 @@ function recoverySummary(
   const pollSample = pollRecovery ? sampleByCommand.get(pollRecovery.commandId) : undefined;
   const relaunchSample = relaunch ? sampleByCommand.get(relaunch.commandId) : undefined;
 
-  const corrected = (deviceId: string, instant: string) => correctInstant(deviceId, instant, calibrations)?.milliseconds;
+  const corrected = (deviceId: string, instant: string) => correctInstant(deviceId, instant, calibrations);
   const reconnectClosed = reconnect && reconnectSample ? corrected(reconnectSample.receiverDeviceId, reconnect.closedAt) : undefined;
   const reconnectAuthenticated = reconnect && reconnectSample
     ? corrected(reconnectSample.receiverDeviceId, reconnect.authenticatedAt)
@@ -543,14 +555,14 @@ function recoverySummary(
     && reconnectCaughtUp != null
     && reconnectSent != null
     && reconnectCloudAck != null
-    && reconnectClosed <= reconnectAuthenticated
-    && reconnectClosed <= reconnectSent
-    && reconnectCloudAck <= reconnectAuthenticated
-    && reconnectAuthenticated <= reconnectCaughtUp
+    && reconnectClosed.milliseconds <= reconnectAuthenticated.milliseconds
+    && definitelyAtOrBefore(reconnectClosed, reconnectSent)
+    && definitelyAtOrBefore(reconnectCloudAck, reconnectAuthenticated)
+    && reconnectAuthenticated.milliseconds <= reconnectCaughtUp.milliseconds
     && Date.parse(reconnect.caughtUpAt) === Date.parse(reconnectSample.receiverVisibleAt)
     && window
-    && reconnectClosed >= window.releaseDeployedAt
-    && reconnectCaughtUp <= window.collectedAt);
+    && definitelyWithin(reconnectClosed, window)
+    && definitelyWithin(reconnectCaughtUp, window));
   const pollRefused = pollRecovery && pollSample ? corrected(pollSample.receiverDeviceId, pollRecovery.realtimeRefusedAt) : undefined;
   const pollAccepted = pollRecovery && pollSample ? corrected(pollSample.receiverDeviceId, pollRecovery.pollAcceptedAt) : undefined;
   const pollRecovered = pollRecovery && pollSample ? corrected(pollSample.receiverDeviceId, pollRecovery.realtimeRecoveredAt) : undefined;
@@ -561,14 +573,14 @@ function recoverySummary(
     && pollAccepted != null
     && pollRecovered != null
     && pollSent != null
-    && pollRefused <= pollAccepted
-    && pollRefused <= pollSent
-    && pollAccepted - pollRefused <= SYNC_DAILY_PROOF_POLL_TARGET_MS
+    && pollRefused.milliseconds <= pollAccepted.milliseconds
+    && definitelyAtOrBefore(pollRefused, pollSent)
+    && pollAccepted.milliseconds - pollRefused.milliseconds <= SYNC_DAILY_PROOF_POLL_TARGET_MS
     && Date.parse(pollRecovery.pollAcceptedAt) === Date.parse(pollSample.receiverVisibleAt)
-    && pollAccepted <= pollRecovered
+    && pollAccepted.milliseconds <= pollRecovered.milliseconds
     && window
-    && pollRefused >= window.releaseDeployedAt
-    && pollRecovered <= window.collectedAt
+    && definitelyWithin(pollRefused, window)
+    && definitelyWithin(pollRecovered, window)
     && pollRecovery.duplicateCount === 0);
   const relaunchSent = relaunchSample ? corrected(relaunchSample.senderDeviceId, relaunchSample.senderAcceptedAt) : undefined;
   const relaunchEnqueued = relaunch && relaunchSample ? corrected(relaunchSample.senderDeviceId, relaunch.enqueuedAt) : undefined;
@@ -582,14 +594,14 @@ function recoverySummary(
     && relaunched != null
     && relaunchCloudAck != null
     && relaunchAccepted != null
-    && relaunchSent <= relaunchEnqueued
-    && relaunchEnqueued <= relaunched
-    && relaunched < relaunchCloudAck
-    && relaunched <= relaunchAccepted
+    && relaunchSent.milliseconds <= relaunchEnqueued.milliseconds
+    && relaunchEnqueued.milliseconds <= relaunched.milliseconds
+    && relaunched.milliseconds < relaunchCloudAck.milliseconds
+    && definitelyAtOrBefore(relaunched, relaunchAccepted)
     && Date.parse(relaunch.acceptedAt) === Date.parse(relaunchSample.receiverVisibleAt)
     && window
-    && relaunchEnqueued >= window.releaseDeployedAt
-    && relaunchAccepted <= window.collectedAt
+    && definitelyWithin(relaunchEnqueued, window)
+    && definitelyWithin(relaunchAccepted, window)
     && relaunch.receiverAcceptanceCount === 1
     && relaunch.duplicateCount === 0);
 
@@ -678,12 +690,11 @@ export function evaluateSyncDailyProof(
     }
   }
   if (window && clockCalibrations) {
-    const outsideWindow = samples.filter((sample) => (
-      (correctInstant(sample.senderDeviceId, sample.senderAcceptedAt, clockCalibrations)?.milliseconds ?? Number.NEGATIVE_INFINITY)
-        < window.releaseDeployedAt
-      || (correctInstant(sample.receiverDeviceId, sample.receiverVisibleAt, clockCalibrations)?.milliseconds ?? Number.POSITIVE_INFINITY)
-        > window.collectedAt
-    )).length;
+    const outsideWindow = samples.filter((sample) => {
+      const sender = correctInstant(sample.senderDeviceId, sample.senderAcceptedAt, clockCalibrations);
+      const visible = correctInstant(sample.receiverDeviceId, sample.receiverVisibleAt, clockCalibrations);
+      return !sender || !visible || !definitelyWithin(sender, window) || !definitelyWithin(visible, window);
+    }).length;
     if (outsideWindow > 0) {
       invalidSamples += outsideWindow;
       issues.push("SYNC-SAMPLE-EVIDENCE-WINDOW");

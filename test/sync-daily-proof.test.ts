@@ -259,6 +259,35 @@ describe("Readiness 4 daily sync proof", () => {
     const postAuthResult = evaluateSyncDailyProof(postAuthAck, RELEASE_SHA);
     expect(postAuthResult.recovery.reconnectPass).toBe(false);
 
+    const uncertainPreAuthAck = proofInput();
+    uncertainPreAuthAck.clockCalibrations = uncertainPreAuthAck.clockCalibrations.map((calibration) => ({
+      ...calibration,
+      uncertaintyMs: 50,
+    }));
+    uncertainPreAuthAck.samples = uncertainPreAuthAck.samples.map((row) => row.transport === "poll"
+      ? {
+        ...row,
+        senderAcceptedAt: "2026-09-04T14:16:50.200Z",
+        cloudAckAt: "2026-09-04T14:16:50.250Z",
+        receiverVisibleAt: "2026-09-04T14:16:53.500Z",
+      }
+      : row.commandId === uncertainPreAuthAck.recovery.reconnect.commandId
+        ? row
+        : {
+          ...row,
+          cloudAckAt: instant(Date.parse(row.senderAcceptedAt) + 50),
+          receiverVisibleAt: instant(Date.parse(row.senderAcceptedAt) + 300),
+        });
+    uncertainPreAuthAck.samples[0] = {
+      ...uncertainPreAuthAck.samples[0]!,
+      cloudAckAt: "2026-09-04T14:00:09.449Z",
+    };
+    uncertainPreAuthAck.recovery.reconnect.authenticatedAt = "2026-09-04T14:00:09.450Z";
+    const uncertainPreAuthResult = evaluateSyncDailyProof(uncertainPreAuthAck, RELEASE_SHA);
+    expect(uncertainPreAuthResult.summary.pass).toBe(true);
+    expect(uncertainPreAuthResult.recovery.reconnectPass).toBe(false);
+    expect(uncertainPreAuthResult.contractPass).toBe(false);
+
     const postAckRelaunch = proofInput();
     postAckRelaunch.recovery.relaunch.relaunchedAt = "2026-09-04T14:16:30.250Z";
     const postAckResult = evaluateSyncDailyProof(postAckRelaunch, RELEASE_SHA);
