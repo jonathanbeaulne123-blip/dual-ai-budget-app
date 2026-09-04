@@ -32,7 +32,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_CONTINUITY_REALTIME: "1"
           VITE_CONTINUITY_COMMAND_LOG: "1"
-          VITE_SHARED_ONLINE_REQUIRED: "1"
+          VITE_CLOUD_LEDGER_ONLINE_REQUIRED: "1"
           VITE_PGLITE_INCREMENTAL_DEV: "1"
           VITE_PRODUCTION_CONTINUITY: "0"
           VITE_SYNC_PILOT_DIAGNOSTICS: "1"
@@ -44,11 +44,11 @@ jobs:
           test "$VITE_SUPABASE_AUTH_ENABLED" = "1"
           test "$VITE_CONTINUITY_REALTIME" = "1"
           test "$VITE_CONTINUITY_COMMAND_LOG" = "1"
-          test "$VITE_SHARED_ONLINE_REQUIRED" = "1"
+          test "$VITE_CLOUD_LEDGER_ONLINE_REQUIRED" = "1"
           test "$VITE_PGLITE_INCREMENTAL_DEV" = "1"
           test "$VITE_PRODUCTION_CONTINUITY" = "0"
           test "$VITE_SYNC_PILOT_DIAGNOSTICS" = "1"
-          echo "Development pilot boundary verified: Auth, Realtime, command log, online-required shared writes, incremental PGlite, and privacy-safe diagnostics ON; Production continuity OFF."
+          echo "Development pilot boundary verified: Auth, Realtime, command log, online-required cloud-backed Personal and Shared writes, incremental PGlite, and privacy-safe diagnostics ON; Production continuity OFF."
           if [ "$VITE_CONTINUITY_COMMAND_LOG" = "1" ]; then
             echo "Tier 2 command-log transport is ON for this kitchen build (VITE_CONTINUITY_COMMAND_LOG=1; requires Migration 013)."
           fi
