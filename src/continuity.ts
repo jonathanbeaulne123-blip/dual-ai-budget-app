@@ -103,6 +103,8 @@ let nowOverride: (() => number) | null = null;
 const memoryOutbox = new Map<Environment, ContinuityOutboxItem[]>();
 const durableWriteTails = new Map<Environment, Promise<void>>();
 const hydrationFlights = new Map<Environment, Promise<number>>();
+const outboxMutationEpochs = new Map<Environment, number>();
+let idbReadOverrideForTests: ((environment: Environment) => Promise<ContinuityOutboxItem[] | null>) | null = null;
 
 function browserStore(): ContinuityStore | null {
   if (storeOverride) return storeOverride;
@@ -173,7 +175,11 @@ export function toDurableOutboxItems(items: ContinuityOutboxItem[]): ContinuityO
   });
 }
 
-async function idbReadOutbox(environment: Environment): Promise<ContinuityOutboxItem[] | null> {
+async function idbReadOutbox(
+  environment: Environment,
+  strict = false,
+): Promise<ContinuityOutboxItem[] | null> {
+  if (idbReadOverrideForTests) return idbReadOverrideForTests(environment);
   try {
     const db = await openOutboxDb();
     const raw = await new Promise<unknown>((resolve, reject) => {
@@ -183,7 +189,10 @@ async function idbReadOutbox(environment: Environment): Promise<ContinuityOutbox
     });
     if (!Array.isArray(raw)) return null;
     return raw.filter(isOutboxItem).map(normalizeOutboxItem);
-  } catch {
+  } catch (caught) {
+    if (strict) {
+      throw caught instanceof Error ? caught : new Error("Could not read the continuity outbox.");
+    }
     return null;
   }
 }
@@ -330,6 +339,7 @@ function write(
   items: ContinuityOutboxItem[],
   options: { requireEveryAvailableStore?: boolean } = {},
 ): void {
+  outboxMutationEpochs.set(environment, (outboxMutationEpochs.get(environment) ?? 0) + 1);
   memoryOutbox.set(environment, items);
   const durable = toDurableOutboxItems(items);
   if (storeOverride) {
@@ -367,7 +377,11 @@ async function hydrateContinuityOutboxNow(environment: Environment): Promise<num
     memoryOutbox.set(environment, local);
     return local.length;
   }
+  const startingEpoch = outboxMutationEpochs.get(environment) ?? 0;
   const fromIdb = await idbReadOutbox(environment);
+  if ((outboxMutationEpochs.get(environment) ?? 0) !== startingEpoch) {
+    return read(environment).length;
+  }
   if (fromIdb?.length) {
     memoryOutbox.set(environment, fromIdb);
     return fromIdb.length;
@@ -412,6 +426,15 @@ export function setContinuityStore(store: ContinuityStore | null): void {
   memoryOutbox.clear();
   durableWriteTails.clear();
   hydrationFlights.clear();
+  for (const environment of ["development", "production"] as const) {
+    outboxMutationEpochs.set(environment, (outboxMutationEpochs.get(environment) ?? 0) + 1);
+  }
+}
+
+export function setContinuityIdbReadForTests(
+  reader: ((environment: Environment) => Promise<ContinuityOutboxItem[] | null>) | null,
+): void {
+  idbReadOverrideForTests = reader;
 }
 
 export function setContinuityNow(now: (() => number) | null): void {
@@ -680,8 +703,11 @@ export function clearContinuityOutboxForHousehold(
 
 async function allDurableOutboxItems(environment: Environment): Promise<ContinuityOutboxItem[]> {
   await hydrateContinuityOutbox(environment);
+  const indexed = idbReadOverrideForTests || typeof indexedDB !== "undefined"
+    ? await idbReadOutbox(environment, true) ?? []
+    : [];
   const sources = [
-    ...(await idbReadOutbox(environment) ?? []),
+    ...indexed,
     ...readFromLocal(environment),
     ...(memoryOutbox.get(environment) ?? []),
   ];

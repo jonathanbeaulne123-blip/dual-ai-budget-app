@@ -12,10 +12,12 @@ import {
   enqueueContinuitySnapshot,
   flushContinuityOutbox,
   humanizeContinuityError,
+  hydrateContinuityOutbox,
   isStorageQuotaError,
   listContinuityOutbox,
   resolveOutboxHousehold,
   setContinuityStore,
+  setContinuityIdbReadForTests,
   stagedHouseholdMatchesContinuityGeneration,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
@@ -85,6 +87,7 @@ function continuityCasFetch(options?: { remote?: Household; track?: Array<{ url:
 
 
 afterEach(() => {
+  setContinuityIdbReadForTests(null);
   setContinuityStore(null);
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -966,6 +969,68 @@ describe("Google-account continuity", () => {
 });
 
 describe("Sign out continuity wipe", () => {
+  it("does not let delayed hydration replace a newer Confirm generation", async () => {
+    const seedStore = createMemoryContinuityStore();
+    setContinuityStore(seedStore);
+    const staleHousehold = { ...googleHousehold(), householdId: "HH-HYDRATE-RACE", revision: 1 };
+    enqueueContinuitySnapshot({ identity, household: staleHousehold, expectedRevision: 0, confirmationId: "stale" });
+    const stale = listContinuityOutbox("development")[0]!;
+
+    const liveStore = createMemoryContinuityStore();
+    setContinuityStore(liveStore);
+    let hydrationStarted!: () => void;
+    let releaseHydration!: () => void;
+    const started = new Promise<void>((resolve) => { hydrationStarted = resolve; });
+    const paused = new Promise<void>((resolve) => { releaseHydration = resolve; });
+    setContinuityIdbReadForTests(async () => {
+      hydrationStarted();
+      await paused;
+      return [stale];
+    });
+
+    const hydrating = hydrateContinuityOutbox("development");
+    await started;
+    const newerHousehold = { ...staleHousehold, revision: 2, baseRevision: 1 };
+    enqueueContinuitySnapshot({ identity, household: newerHousehold, expectedRevision: 1, confirmationId: "newer" });
+    releaseHydration();
+    await hydrating;
+
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      tipRevision: 2,
+      confirmationIds: ["newer"],
+    }]);
+    expect(Object.values(liveStore.snapshot()).join(" ")).toContain('"tipRevision":2');
+  });
+
+  it("orders destructive clear after delayed hydration", async () => {
+    const seedStore = createMemoryContinuityStore();
+    setContinuityStore(seedStore);
+    const household = { ...googleHousehold(), householdId: "HH-HYDRATE-CLEAR" };
+    enqueueContinuitySnapshot({ identity, household, expectedRevision: 0, confirmationId: "clear-after-hydrate" });
+    const stale = listContinuityOutbox("development")[0]!;
+
+    const liveStore = createMemoryContinuityStore();
+    setContinuityStore(liveStore);
+    let hydrationStarted!: () => void;
+    let releaseHydration!: () => void;
+    const started = new Promise<void>((resolve) => { hydrationStarted = resolve; });
+    const paused = new Promise<void>((resolve) => { releaseHydration = resolve; });
+    setContinuityIdbReadForTests(async () => {
+      hydrationStarted();
+      await paused;
+      return [stale];
+    });
+
+    const hydrating = hydrateContinuityOutbox("development");
+    await started;
+    const clearing = clearContinuityOutboxForHouseholdDurably("development", household.householdId);
+    releaseHydration();
+    await Promise.all([hydrating, clearing]);
+
+    expect(listContinuityOutbox("development")).toEqual([]);
+    expect(liveStore.snapshot()).toEqual({});
+  });
+
   it("drops only the cleared household from the outbox", () => {
     setContinuityStore(createMemoryContinuityStore());
     const keep = googleHousehold();
