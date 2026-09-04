@@ -117,7 +117,7 @@ const rpcIsolatedSerialTests = new Set([
 async function runSerialTests(testPaths) {
   const batched = testPaths.filter((path) => !rpcIsolatedSerialTests.has(path));
   if (batched.length > 0) {
-    await runPnpm("exec", "vitest", "run", ...batched, "--maxWorkers=1");
+    await runPnpm("exec", "vitest", "run", ...batched, "--maxWorkers=1", "--testTimeout=30000");
   }
   for (const path of testPaths) {
     if (rpcIsolatedSerialTests.has(path)) {

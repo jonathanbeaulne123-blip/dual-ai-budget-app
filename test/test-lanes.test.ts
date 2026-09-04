@@ -82,6 +82,9 @@ describe("Vitest lanes", () => {
       expect(booksLane).toContain(`&& vitest run test/${fileName} --maxWorkers=1`);
     }
     expect(booksLane).toContain("--maxWorkers=1");
+    expect(booksLane).toContain("--testTimeout=30000");
+    expect(readFileSync(new URL("../scripts/run-quick-gate.mjs", import.meta.url), "utf8"))
+      .toContain('...batched, "--maxWorkers=1", "--testTimeout=30000"');
     expect(fastLane).toContain("--maxWorkers=4");
   });
 });
