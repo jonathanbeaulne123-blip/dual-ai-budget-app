@@ -304,3 +304,26 @@ export async function copySyncPilotDiagnostic(
   await writeText(JSON.stringify(bundle, null, 2));
   return bundle;
 }
+
+// The daily proof evaluator is deliberately separate from trace collection:
+// local traces help assemble evidence, while only an operator-produced,
+// exact-release Development ledger can earn a live result.
+export {
+  evaluateSyncDailyProof,
+  summarizeSyncSamples,
+  SYNC_DAILY_PROOF_MAX_CLOCK_DRIFT_MS,
+  SYNC_DAILY_PROOF_MAX_CLOCK_UNCERTAINTY_MS,
+  SYNC_DAILY_PROOF_MIN_REALTIME_SAMPLES,
+  SYNC_DAILY_PROOF_MIN_SAMPLES,
+  SYNC_DAILY_PROOF_POLL_TARGET_MS,
+  SYNC_DAILY_PROOF_REALTIME_TARGET_MS,
+} from "./syncDailyProof.ts";
+export type {
+  ScopedSyncSample,
+  SyncClockCalibration,
+  SyncDailyProofInput,
+  SyncDailyProofResult,
+  SyncRecoveryProofs,
+  SyncSample,
+  SyncSampleSummary,
+} from "./syncDailyProof.ts";
