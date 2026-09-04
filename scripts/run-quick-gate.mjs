@@ -108,6 +108,24 @@ function serialTests(packageJson) {
   return [...command.matchAll(/test\/[\w./-]+\.test\.(?:ts|tsx|js|mjs)/g)].map((match) => match[0]);
 }
 
+const rpcIsolatedSerialTests = new Set([
+  "test/demo-suite.test.ts",
+  "test/demo-shift-statistics.test.ts",
+  "test/stress-seed.test.ts",
+]);
+
+async function runSerialTests(testPaths) {
+  const batched = testPaths.filter((path) => !rpcIsolatedSerialTests.has(path));
+  if (batched.length > 0) {
+    await runPnpm("exec", "vitest", "run", ...batched, "--maxWorkers=1");
+  }
+  for (const path of testPaths) {
+    if (rpcIsolatedSerialTests.has(path)) {
+      await runPnpm("exec", "vitest", "run", path, "--maxWorkers=1");
+    }
+  }
+}
+
 async function runPnpm(...args) {
   if (!pnpmEntrypoint) throw new Error("The quick gate must run through pnpm.");
   return run(process.execPath, [pnpmEntrypoint, ...args]);
@@ -222,9 +240,7 @@ export async function main(argv = process.argv.slice(2)) {
       );
     }
     if (plan.serialTests.length > 0) {
-      await phase("vitest-serial", () =>
-        runPnpm("exec", "vitest", "run", ...plan.serialTests, "--maxWorkers=1"),
-      );
+      await phase("vitest-serial", () => runSerialTests(plan.serialTests));
     }
 
     const timing = timingEvidence();

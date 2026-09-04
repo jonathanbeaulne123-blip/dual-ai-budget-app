@@ -34,6 +34,12 @@ const serialFixtureTests = [
   "stress-seed.test.ts",
 ];
 
+const rpcIsolatedFixtureTests = [
+  "demo-suite.test.ts",
+  "demo-shift-statistics.test.ts",
+  "stress-seed.test.ts",
+];
+
 describe("Vitest lanes", () => {
   it("keeps every direct PGlite runtime test in the serial books lane", () => {
     expect(packageJson.scripts?.["test:full:lanes"]).toBeUndefined();
@@ -70,6 +76,9 @@ describe("Vitest lanes", () => {
     }
     expect([...fastLane.matchAll(/--exclude=test\/([^\s]+)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
     expect([...booksLane.matchAll(/test\/([^\s]+\.test\.ts)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
+    for (const fileName of rpcIsolatedFixtureTests) {
+      expect(booksLane).toContain(`&& vitest run test/${fileName} --maxWorkers=1`);
+    }
     expect(booksLane).toContain("--maxWorkers=1");
     expect(fastLane).toContain("--maxWorkers=4");
   });

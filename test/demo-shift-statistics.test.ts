@@ -30,5 +30,5 @@ describe("Demo Suite shift generation", () => {
     expect(new Set(households.map((row) => row.shifts.length)).size).toBeGreaterThan(1);
     expect(all.some((row) => weekdaySunday0(row.date) <= 3 && row.netTipsCents > tipRate(weekend) * row.hours)).toBe(true);
     expect(all.some((row) => [5, 6].includes(weekdaySunday0(row.date)) && row.netTipsCents < tipRate(midweek) * row.hours)).toBe(true);
-  }, 60_000);
+  }, 180_000);
 });

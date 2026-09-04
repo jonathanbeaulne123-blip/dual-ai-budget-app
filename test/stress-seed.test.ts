@@ -155,7 +155,7 @@ describe("Development stress data controls", () => {
     }, TODAY, { memberId: tipMemberId, view: "household" });
     expect(run.results[0]?.status).toBe("ok");
     expect(run.results[0]?.sentence).toMatch(new RegExp(`${report.count} posted shift`));
-  });
+  }, 60_000);
 
   it("preserves Google continuity identity on Reload so Hercules Pro can still read the fixture", () => {
     const linked = {

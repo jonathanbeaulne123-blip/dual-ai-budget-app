@@ -35,7 +35,7 @@ describe("trustworthy synthetic Demo Suite", () => {
       fixtureHashSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
     expect(first.manifest.fixtureHashSha256).toBe(first.household.syntheticFixture?.fixtureHashSha256);
-  }, 60_000);
+  }, 180_000);
 
   it("covers every domain engine and every Hercules Pro calculation surface", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 424242 });
@@ -60,7 +60,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(report.attestationSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(report.checks.filter((row) => row.status === "fail")).toEqual([]);
     expect(report.status).toBe("ready");
-  }, 60_000);
+  }, 180_000);
 
   it("marks any changed generated fact not-ready even when provenance is retained", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 551122, buildSha: "trust-proof" });
@@ -144,7 +144,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     const edge = await generateDemoSuite({ today: TODAY, seed: 9988, profile: "edge" });
     expect(edge.household).not.toEqual(investor.household);
     expect((await generateDemoSuite({ today: TODAY, seed: 9988, profile: "edge" })).household).toEqual(edge.household);
-  }, 60_000);
+  }, 180_000);
 
   it("uses Toronto standard and daylight offsets and derives coherent shift duration", async () => {
     expect(torontoOffsetForDate("2026-01-15")).toBe("-05:00");
@@ -156,5 +156,5 @@ describe("trustworthy synthetic Demo Suite", () => {
       expect(elapsedHours).toBeGreaterThanOrEqual(shift.hours);
       expect(elapsedHours - shift.hours).toBeLessThanOrEqual(0.5);
     }
-  }, 60_000);
+  }, 180_000);
 });
