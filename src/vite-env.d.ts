@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_AUTH_ENABLED?: string;
   readonly VITE_CONTINUITY_REALTIME?: string;
   readonly VITE_CONTINUITY_COMMAND_LOG?: string;
+  readonly VITE_CLOUD_LEDGER_ONLINE_REQUIRED?: string;
+  /** Temporary compatibility fallback for older local Development env files. */
   readonly VITE_SHARED_ONLINE_REQUIRED?: string;
   readonly VITE_PRODUCTION_CONTINUITY?: string;
   readonly VITE_SYNC_PILOT_DIAGNOSTICS?: string;

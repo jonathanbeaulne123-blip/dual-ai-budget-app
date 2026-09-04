@@ -1,40 +1,55 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { catalogHousehold } from "../src/core/index.ts";
 import {
   canRepairProjectionFromAcknowledgedCache,
   canRepairProjectionWithBoundOutbox,
   onlineRequiredReplicaKey,
-  onlineRequiredSharedSyncEnabled,
-  onlineRequiredWriteGate,
+  cloudLedgerOnlineRequiredEnabled,
+  cloudLedgerWriteGate,
+  pairedCloudRevisionGate,
   replicaAdoptionScopeMatches,
   revisionDedupeMaySkipPairedAdoption,
 } from "../src/onlineRequiredSync.ts";
 
-describe("online-required shared sync policy", () => {
-  it("is an explicit Development-only launch policy", () => {
-    expect(onlineRequiredSharedSyncEnabled("development", "1")).toBe(true);
-    expect(onlineRequiredSharedSyncEnabled("development", "0")).toBe(false);
-    expect(onlineRequiredSharedSyncEnabled("production", "1")).toBe(false);
+describe("online-required cloud ledger policy", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
-  it("keeps linked shared books read-only offline or without matching Auth", () => {
+  it("is an explicit Development-only launch policy", () => {
+    expect(cloudLedgerOnlineRequiredEnabled("development", "1")).toBe(true);
+    expect(cloudLedgerOnlineRequiredEnabled("development", "0")).toBe(false);
+    expect(cloudLedgerOnlineRequiredEnabled("production", "1")).toBe(false);
+  });
+
+  it("prefers the cloud-ledger flag and uses the old shared name only as a local compatibility fallback", () => {
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "0");
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    expect(cloudLedgerOnlineRequiredEnabled("development")).toBe(false);
+
+    vi.unstubAllEnvs();
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    expect(cloudLedgerOnlineRequiredEnabled("development")).toBe(true);
+  });
+
+  it("keeps all cloud-backed Personal and Shared books read-only offline or without matching Auth", () => {
     const base = {
       environment: "development" as const,
-      sharedScope: true,
+      cloudBackedHousehold: true,
       online: true,
       authEnabled: true,
       authSessionPresent: true,
       membershipMatches: true,
       configured: "1",
     };
-    expect(onlineRequiredWriteGate(base)).toEqual({ required: true, allowed: true, reason: null });
-    expect(onlineRequiredWriteGate({ ...base, online: false })).toMatchObject({ required: true, allowed: false });
-    expect(onlineRequiredWriteGate({ ...base, authSessionPresent: false })).toMatchObject({ required: true, allowed: false });
-    expect(onlineRequiredWriteGate({ ...base, membershipMatches: false })).toMatchObject({ required: true, allowed: false });
-    expect(onlineRequiredWriteGate({ ...base, completeReplicaReady: false })).toMatchObject({ required: true, allowed: false });
-    expect(onlineRequiredWriteGate({ ...base, pendingOutboxCount: 1 })).toMatchObject({ required: true, allowed: false });
-    expect(onlineRequiredWriteGate({ ...base, hasUnacknowledgedSnapshot: true })).toMatchObject({ required: true, allowed: false });
-    expect(onlineRequiredWriteGate({ ...base, sharedScope: false })).toEqual({ required: false, allowed: true, reason: null });
+    expect(cloudLedgerWriteGate(base)).toEqual({ required: true, allowed: true, reason: null });
+    expect(cloudLedgerWriteGate({ ...base, online: false })).toMatchObject({ required: true, allowed: false });
+    expect(cloudLedgerWriteGate({ ...base, authSessionPresent: false })).toMatchObject({ required: true, allowed: false });
+    expect(cloudLedgerWriteGate({ ...base, membershipMatches: false })).toMatchObject({ required: true, allowed: false });
+    expect(cloudLedgerWriteGate({ ...base, completeReplicaReady: false })).toMatchObject({ required: true, allowed: false });
+    expect(cloudLedgerWriteGate({ ...base, pendingOutboxCount: 1 })).toMatchObject({ required: true, allowed: false });
+    expect(cloudLedgerWriteGate({ ...base, hasUnacknowledgedSnapshot: true })).toMatchObject({ required: true, allowed: false });
+    expect(cloudLedgerWriteGate({ ...base, cloudBackedHousehold: false })).toEqual({ required: false, allowed: true, reason: null });
   });
 
   it("binds complete cloud-read readiness to the exact household, member, and revision", () => {
@@ -66,6 +81,19 @@ describe("online-required shared sync policy", () => {
     expect(revisionDedupeMaySkipPairedAdoption(true, true)).toBe(false);
     expect(revisionDedupeMaySkipPairedAdoption(true, false)).toBe(false);
     expect(revisionDedupeMaySkipPairedAdoption(false, true)).toBe(true);
+  });
+
+  it("refuses a lower paired generation and restores readiness only when cloud catches up", () => {
+    expect(pairedCloudRevisionGate({
+      remoteRevision: 12,
+      localRevision: 13,
+      localBaseRevision: 13,
+    })).toEqual({ mayAdopt: false, readinessRevision: null });
+    expect(pairedCloudRevisionGate({
+      remoteRevision: 13,
+      localRevision: 13,
+      localBaseRevision: 13,
+    })).toEqual({ mayAdopt: true, readinessRevision: 13 });
   });
 
   it("repairs only from the same revision-anchored cloud books with no local work", () => {

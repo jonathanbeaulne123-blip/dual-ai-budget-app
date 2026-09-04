@@ -43,17 +43,14 @@ async function requestPermissions(input: {
   environment: Environment;
   householdId: string;
   memberId: string;
-  next?: Pick<HerculesProPermissions, "personalWrite" | "householdWrite">;
 }): Promise<HerculesProPermissions> {
   const cloud = await ensureSupabaseSession(input.environment);
   if (!cloud) throw new Error("Continue with Google before changing Hercules Pro permissions.");
   const response = await fetch(permissionsPath(input.environment, input.householdId, input.memberId), {
-    method: input.next ? "PUT" : "GET",
+    method: "GET",
     headers: {
       Authorization: `Bearer ${cloud.accessToken}`,
-      ...(input.next ? { "Content-Type": "application/json" } : {}),
     },
-    ...(input.next ? { body: JSON.stringify(input.next) } : {}),
   });
   const body = await response.json() as { ok?: boolean; permissions?: HerculesProPermissions; error?: string };
   if (!response.ok || !body.ok || !body.permissions) throw new Error(body.error || "Hercules Pro permissions could not be saved.");
@@ -64,13 +61,15 @@ export function HerculesProPermissionsCard({
   environment,
   household,
   session,
-  onChanged,
+  onChangeRequested,
   disabled = false,
 }: {
   environment: Environment;
   household: Household;
   session: Session;
-  onChanged?: (permissions: HerculesProPermissions) => void;
+  onChangeRequested?: (
+    permissions: Pick<HerculesProPermissions, "personalWrite" | "householdWrite">,
+  ) => Promise<HerculesProPermissions>;
   disabled?: boolean;
 }) {
   const [permissions, setPermissions] = useState<HerculesProPermissions>(
@@ -96,7 +95,6 @@ export function HerculesProPermissionsCard({
     }).then((next) => {
       if (!live) return;
       setPermissions(next);
-      onChanged?.(next);
     }).catch((caught) => {
       if (live) setError(caught instanceof Error ? caught.message : String(caught));
     }).finally(() => {
@@ -109,14 +107,9 @@ export function HerculesProPermissionsCard({
     setSaving(true);
     setError("");
     try {
-      const saved = await requestPermissions({
-        environment,
-        householdId: household.householdId,
-        memberId: session.memberId,
-        next,
-      });
+      if (!onChangeRequested) throw new Error("Permission changes are unavailable in this view.");
+      const saved = await onChangeRequested(next);
       setPermissions(saved);
-      onChanged?.(saved);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught));
     } finally {
@@ -148,7 +141,7 @@ export function HerculesProPermissionsCard({
           <input
             type="checkbox"
             checked={permissions.personalWrite}
-            disabled={disabled || loading || saving || environment === "production"}
+            disabled={disabled || loading || saving || !onChangeRequested || environment === "production"}
             onChange={(event) => choose("personal", event.target.checked)}
           />
           {" "}Allow {memberName} to post to their Personal ledger from ChatGPT
@@ -157,7 +150,7 @@ export function HerculesProPermissionsCard({
           <input
             type="checkbox"
             checked={permissions.householdWrite}
-            disabled={disabled || loading || saving || environment === "production"}
+            disabled={disabled || loading || saving || !onChangeRequested || environment === "production"}
             onChange={(event) => choose("household", event.target.checked)}
           />
           {" "}Allow {memberName} to post to the shared Household ledger from ChatGPT

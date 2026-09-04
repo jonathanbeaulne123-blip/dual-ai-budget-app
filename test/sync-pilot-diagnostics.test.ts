@@ -3,6 +3,7 @@ import {
   buildSyncPilotDiagnosticBundle,
   copySyncPilotDiagnostic,
   recordSyncPilotTrace,
+  startSyncPilotLatencyRun,
   syncPilotDiagnosticsEnabled,
 } from "../src/syncPilotDiagnostics.ts";
 
@@ -21,6 +22,19 @@ const identity = {
   deviceId: "raw-device-secret",
 };
 
+async function startRun(
+  storage: ReturnType<typeof memoryStorage>,
+  at = "2026-08-31T11:59:59.000Z",
+  seed = "test-run",
+) {
+  return startSyncPilotLatencyRun("development", {
+    flag: "1",
+    storage,
+    now: () => new Date(at),
+    randomId: () => seed,
+  });
+}
+
 describe("Development sync pilot diagnostics", () => {
   it("fails closed outside Development or without the explicit build flag", async () => {
     const storage = memoryStorage();
@@ -33,6 +47,7 @@ describe("Development sync pilot diagnostics", () => {
   it("copies hashes and timing without raw identifiers or ledger facts", async () => {
     const storage = memoryStorage();
     const now = () => new Date("2026-08-31T12:00:00.400Z");
+    await startRun(storage);
     await recordSyncPilotTrace({
       ...identity,
       phase: "remote-accepted",
@@ -40,7 +55,11 @@ describe("Development sync pilot diagnostics", () => {
       revision: 12,
       pendingCount: 0,
       transport: "command-realtime",
+      ledgerScope: "shared",
+      painted: true,
       sourceAcceptedAt: "2026-08-31T12:00:00.000Z",
+      cloudAcceptedAt: "2026-08-31T12:00:00.100Z",
+      receiverApplyMs: 75,
     }, { flag: "1", storage, now });
     let copied = "";
     const bundle = await copySyncPilotDiagnostic({
@@ -57,7 +76,18 @@ describe("Development sync pilot diagnostics", () => {
       now,
       writeText: async (value) => { copied = value; },
     });
-    expect(bundle?.latency).toEqual({ sampleCount: 1, p50Ms: 400, p95Ms: 400, maxMs: 400 });
+    expect(bundle?.latency).toEqual({ sampleCount: 1, invalidClockSampleCount: 0, p50Ms: 400, p95Ms: 400, maxMs: 400 });
+    expect(bundle?.cloudToPaintLatency).toEqual({ sampleCount: 1, p50Ms: 300, p95Ms: 300, maxMs: 300 });
+    expect(bundle?.receiverApplyLatency).toEqual({ sampleCount: 1, p50Ms: 75, p95Ms: 75, maxMs: 75 });
+    expect(bundle?.measurement).toMatchObject({
+      candidateEventCount: 1,
+      qualifyingEventCount: 1,
+      unpaintedEventCount: 0,
+      painted: true,
+      paintWitness: "double animation frame; hidden-tab fallback excluded",
+      endToEndClockSkewWitnessRequired: true,
+    });
+    expect(bundle?.activeRun?.runHash).toHaveLength(16);
     expect(bundle?.traces[0]?.householdHash).toHaveLength(16);
     expect(copied).not.toContain(identity.householdId);
     expect(copied).not.toContain(identity.deviceId);
@@ -109,11 +139,15 @@ describe("Development sync pilot diagnostics", () => {
 
   it("reports nearest-rank p95 across a 100-event receiving sample", async () => {
     const storage = memoryStorage();
+    await startRun(storage);
     for (let index = 1; index <= 100; index += 1) {
       await recordSyncPilotTrace({
         ...identity,
         phase: "remote-accepted",
         confirmationId: `confirmation-${index}`,
+        transport: "command-realtime",
+        ledgerScope: "shared",
+        painted: true,
         sourceAcceptedAt: "2026-08-31T12:00:00.000Z",
       }, {
         flag: "1",
@@ -131,13 +165,90 @@ describe("Development sync pilot diagnostics", () => {
       freshnessMode: "live",
     }, { flag: "1", storage, now: () => new Date("2026-08-31T12:05:00.000Z") });
     expect(bundle?.latency.sampleCount).toBe(100);
+    expect(bundle?.latency.invalidClockSampleCount).toBe(0);
+    expect(bundle?.measurement.candidateEventCount).toBe(100);
+    expect(bundle?.measurement.qualifyingEventCount).toBe(100);
+    expect(bundle?.measurement.unpaintedEventCount).toBe(0);
     expect(bundle?.latency.p50Ms).toBe(50);
     expect(bundle?.latency.p95Ms).toBe(95);
     expect(bundle?.latency.maxMs).toBe(100);
   });
 
+  it("excludes other households, Personal events, conflicts, and fallback transport from the Shared latency cohort", async () => {
+    const storage = memoryStorage();
+    await startRun(storage);
+    const sample = {
+      ...identity,
+      confirmationId: "qualifying",
+      transport: "command-realtime" as const,
+      ledgerScope: "shared" as const,
+      painted: true,
+      sourceAcceptedAt: "2026-08-31T12:00:00.000Z",
+    };
+    await recordSyncPilotTrace({ ...sample, phase: "remote-accepted" }, {
+      flag: "1", storage, now: () => new Date("2026-08-31T12:00:00.100Z"),
+    });
+    await recordSyncPilotTrace({ ...sample, phase: "remote-accepted", ledgerScope: "personal" }, {
+      flag: "1", storage, now: () => new Date("2026-08-31T12:00:00.900Z"),
+    });
+    await recordSyncPilotTrace({ ...sample, phase: "conflict" }, {
+      flag: "1", storage, now: () => new Date("2026-08-31T12:00:00.800Z"),
+    });
+    await recordSyncPilotTrace({ ...sample, phase: "remote-accepted", transport: "poll" }, {
+      flag: "1", storage, now: () => new Date("2026-08-31T12:00:00.700Z"),
+    });
+    await recordSyncPilotTrace({ ...sample, phase: "remote-accepted", householdId: "different-household" }, {
+      flag: "1", storage, now: () => new Date("2026-08-31T12:00:00.600Z"),
+    });
+    const bundle = await buildSyncPilotDiagnosticBundle({
+      ...identity,
+      revision: 1,
+      pendingCount: 0,
+      syncState: "synced",
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      freshnessMode: "live",
+    }, { flag: "1", storage });
+    expect(bundle?.latency).toEqual({ sampleCount: 1, invalidClockSampleCount: 0, p50Ms: 100, p95Ms: 100, maxMs: 100 });
+    expect(bundle?.traces).toHaveLength(4);
+    expect(bundle?.traces.every((row) => row.householdHash === bundle.state.householdHash)).toBe(true);
+  });
+
+  it("excludes hidden-tab fallback completion from the painted latency cohort", async () => {
+    const storage = memoryStorage();
+    await startRun(storage);
+    await recordSyncPilotTrace({
+      ...identity,
+      phase: "remote-accepted",
+      confirmationId: "fallback-not-painted",
+      transport: "command-realtime",
+      ledgerScope: "shared",
+      painted: false,
+      paintStatus: "hidden-fallback",
+      sourceAcceptedAt: "2026-08-31T12:00:00.000Z",
+    }, {
+      flag: "1",
+      storage,
+      now: () => new Date("2026-08-31T12:00:00.100Z"),
+    });
+    const bundle = await buildSyncPilotDiagnosticBundle({
+      ...identity,
+      revision: 1,
+      pendingCount: 0,
+      syncState: "synced",
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      freshnessMode: "live",
+    }, { flag: "1", storage });
+    expect(bundle?.traces).toHaveLength(1);
+    expect(bundle?.measurement.candidateEventCount).toBe(1);
+    expect(bundle?.measurement.unpaintedEventCount).toBe(1);
+    expect(bundle?.latency.sampleCount).toBe(0);
+  });
+
   it("retains only the newest 500 local trace records", async () => {
     const storage = memoryStorage();
+    await startRun(storage);
     for (let index = 1; index <= 505; index += 1) {
       await recordSyncPilotTrace({
         ...identity,
@@ -167,6 +278,7 @@ describe("Development sync pilot diagnostics", () => {
 
   it("retains privacy-safe Realtime lifecycle evidence", async () => {
     const storage = memoryStorage();
+    await startRun(storage);
     for (const phase of ["realtime-disconnected", "realtime-reconnect", "realtime-subscribed"] as const) {
       await recordSyncPilotTrace({
         ...identity,
@@ -189,5 +301,91 @@ describe("Development sync pilot diagnostics", () => {
       "realtime-reconnect",
       "realtime-subscribed",
     ]);
+  });
+
+  it("starts a clean run and excludes earlier qualifying rows from every percentile", async () => {
+    const storage = memoryStorage();
+    await recordSyncPilotTrace({
+      ...identity,
+      phase: "remote-accepted",
+      confirmationId: "old-run",
+      transport: "command-realtime",
+      ledgerScope: "shared",
+      painted: true,
+      sourceAcceptedAt: "2026-08-31T12:00:00.000Z",
+    }, {
+      flag: "1",
+      storage,
+      now: () => new Date("2026-08-31T12:00:00.900Z"),
+    });
+    const run = await startRun(storage, "2026-08-31T12:01:00.000Z", "fresh-run");
+    await recordSyncPilotTrace({
+      ...identity,
+      phase: "remote-accepted",
+      confirmationId: "fresh-run",
+      transport: "command-realtime",
+      ledgerScope: "shared",
+      painted: true,
+      sourceAcceptedAt: "2026-08-31T12:01:00.000Z",
+    }, {
+      flag: "1",
+      storage,
+      now: () => new Date("2026-08-31T12:01:00.100Z"),
+    });
+    const bundle = await buildSyncPilotDiagnosticBundle({
+      ...identity,
+      revision: 2,
+      pendingCount: 0,
+      syncState: "synced",
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      freshnessMode: "live",
+    }, { flag: "1", storage });
+    expect(bundle?.activeRun).toEqual(run);
+    expect(bundle?.traces).toHaveLength(1);
+    expect(bundle?.latency).toEqual({
+      sampleCount: 1,
+      invalidClockSampleCount: 0,
+      p50Ms: 100,
+      p95Ms: 100,
+      maxMs: 100,
+    });
+  });
+
+  it("counts negative cross-phone clock samples instead of silently dropping them", async () => {
+    const storage = memoryStorage();
+    await startRun(storage);
+    await recordSyncPilotTrace({
+      ...identity,
+      phase: "remote-accepted",
+      confirmationId: "negative-skew",
+      transport: "command-realtime",
+      ledgerScope: "shared",
+      painted: true,
+      sourceAcceptedAt: "2026-08-31T12:00:01.000Z",
+    }, {
+      flag: "1",
+      storage,
+      now: () => new Date("2026-08-31T12:00:00.900Z"),
+    });
+    const bundle = await buildSyncPilotDiagnosticBundle({
+      ...identity,
+      revision: 1,
+      pendingCount: 0,
+      syncState: "synced",
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      freshnessMode: "live",
+    }, { flag: "1", storage });
+    expect(bundle?.measurement.qualifyingEventCount).toBe(1);
+    expect(bundle?.measurement.candidateEventCount).toBe(1);
+    expect(bundle?.measurement.unpaintedEventCount).toBe(0);
+    expect(bundle?.latency).toEqual({
+      sampleCount: 0,
+      invalidClockSampleCount: 1,
+      p50Ms: null,
+      p95Ms: null,
+      maxMs: null,
+    });
   });
 });

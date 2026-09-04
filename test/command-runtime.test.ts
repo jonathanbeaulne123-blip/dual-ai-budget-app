@@ -533,6 +533,38 @@ describe("atomic household writes", () => {
     expect(store.ingested()).toBeNull();
   });
 
+  it("reports definitive cloud refusal without waiting for slow isolated-stage deletion", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const posted = postEntry(previous, grocery("Slow stage cleanup"));
+    let releaseCleanup!: () => void;
+    const cleanupPaused = new Promise<void>((resolve) => { releaseCleanup = resolve; });
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "disconnected",
+        message: "Cloud refused before delivery.",
+      }),
+    });
+    store.adapters.clearCandidate = async () => cleanupPaused;
+    const started = performance.now();
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-slow-stage-cleanup",
+      postedIds: posted.postedIds,
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: store.adapters,
+    });
+    const elapsed = performance.now() - started;
+    releaseCleanup();
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.errorClass).toBe("disconnected");
+    expect(outcome.userMessage).toBe("Cloud refused before delivery.");
+    expect(elapsed).toBeLessThan(500);
+  });
+
   it("adopts a newer authoritative remote after exact ambiguous receipt reconciliation", async () => {
     const withPersonal = postEntry(catalogHousehold(), {
       ...grocery("Private breakfast"),

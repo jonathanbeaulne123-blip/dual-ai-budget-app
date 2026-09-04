@@ -80,6 +80,30 @@ describe("write queue", () => {
     });
   });
 
+  it("refuses a precomputed money candidate after an earlier paired install changes the live books", async () => {
+    const enqueue = createWriteQueue();
+    let releasePair!: () => void;
+    const pairPaused = new Promise<void>((resolve) => { releasePair = resolve; });
+    let live = { revision: 12, facts: ["accepted-before"] };
+    const expectedHousehold = live;
+    const staleCandidate = { revision: 12, facts: ["accepted-before", "queued-confirm"] };
+
+    const pairedInstall = enqueue(async () => {
+      await pairPaused;
+      live = { revision: 13, facts: ["accepted-before", "paired-cloud-fact"] };
+    });
+    const queuedConfirm = enqueue(async () => {
+      if (live !== expectedHousehold) return false;
+      live = { ...staleCandidate, revision: live.revision + 1 };
+      return true;
+    });
+
+    releasePair();
+    await pairedInstall;
+    await expect(queuedConfirm).resolves.toBe(false);
+    expect(live).toEqual({ revision: 13, facts: ["accepted-before", "paired-cloud-fact"] });
+  });
+
   it("finishes a deferred replica save before clearing the device copy", async () => {
     const enqueue = createWriteQueue();
     let scopeGeneration = 4;

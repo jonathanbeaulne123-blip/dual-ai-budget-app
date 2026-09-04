@@ -128,6 +128,7 @@ export * from "./allocate.ts";
 export * from "./autoCode.ts";
 export * from "./importInbox/index.ts";
 export * from "./sitDown.ts";
+export * from "./memberPersonalPreferences.ts";
 export * from "./sitDownInfographics.ts";
 export * from "./kittyBanks.ts";
 export * from "./stressSeed.ts";

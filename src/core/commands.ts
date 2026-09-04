@@ -554,6 +554,30 @@ function resolveActor(household: Household, input?: ActorInput, fallbackMemberId
   return { createdBy, visibility };
 }
 
+function commitMemberPersonalPreference(
+  previous: Household,
+  next: Household,
+  memberId: string,
+  label: string,
+  commandKind: "landing-surface-personal" | "glance-account-personal" | "hercules-permissions-personal",
+  updatedAt: string,
+): CommitResult {
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    persistenceScope: "member-personal",
+    personalMemberId: memberId,
+    undo: {
+      id: `${commandKind}-${memberId}-${updatedAt}`,
+      label,
+      snapshot: previous,
+      postedIds: [],
+      commandKind,
+    },
+  };
+}
+
 /**
  * Change only the acting member's default landing surface.
  * The caller must supply the trusted acting member separately from the target.
@@ -573,7 +597,15 @@ export function setLandingSurface(household: Household, input: {
       household,
       warnings: [],
       postedIds: [],
-      undo: { id: `landing-${member.id}-${surface}`, label: "Landing surface unchanged", snapshot: household, postedIds: [] },
+      persistenceScope: "member-personal",
+      personalMemberId: member.id,
+      undo: {
+        id: `landing-${member.id}-${surface}`,
+        label: "Landing surface unchanged",
+        snapshot: household,
+        postedIds: [],
+        commandKind: "landing-surface-personal",
+      },
     };
   }
   const previous = cloneHousehold(household);
@@ -582,7 +614,14 @@ export function setLandingSurface(household: Household, input: {
   next.members = next.members.map((row) => row.id === member.id
     ? { ...row, landingSurface: surface, landingSurfaceUpdatedAt: updatedAt }
     : row);
-  return commit(previous, next, "Landing surface", `${member.name} chose where Hearth opens`, []);
+  return commitMemberPersonalPreference(
+    previous,
+    next,
+    member.id,
+    `${member.name} chose where Hearth opens`,
+    "landing-surface-personal",
+    updatedAt,
+  );
 }
 
 function requireFundRailActor(household: Household, memberId: string, createdBy: string) {
@@ -688,9 +727,9 @@ export function resetFundRail(household: Household, input: {
 
 /**
  * Change only the acting member's own glance account. Stored per member,
- * self-owned — the same custody rule as setLandingSurface, and the same
- * ordinary accepted-household path. Sync projection strips the preference
- * from Shared and carries it only in this member's Personal envelope.
+ * self-owned — the same custody rule as setLandingSurface and the same
+ * cloud-acknowledged member-Personal path. Sync projection strips the
+ * preference from Shared and carries it only in this member's Personal envelope.
  */
 export function setGlanceAccount(household: Household, input: {
   memberId: string;
@@ -709,7 +748,15 @@ export function setGlanceAccount(household: Household, input: {
       household,
       warnings: [],
       postedIds: [],
-      undo: { id: `glance-account-${member.id}-unchanged`, label: "Glance account unchanged", snapshot: household, postedIds: [] },
+      persistenceScope: "member-personal",
+      personalMemberId: member.id,
+      undo: {
+        id: `glance-account-${member.id}-unchanged`,
+        label: "Glance account unchanged",
+        snapshot: household,
+        postedIds: [],
+        commandKind: "glance-account-personal",
+      },
     };
   }
   const previous = cloneHousehold(household);
@@ -718,7 +765,67 @@ export function setGlanceAccount(household: Household, input: {
   next.members = next.members.map((row) => row.id === member.id
     ? { ...row, glanceAccountId: input.accountId, glanceAccountUpdatedAt: updatedAt }
     : row);
-  return commit(previous, next, "Glance account", `${member.name} chose what their board shows`, []);
+  return commitMemberPersonalPreference(
+    previous,
+    next,
+    member.id,
+    `${member.name} chose what their board shows`,
+    "glance-account-personal",
+    updatedAt,
+  );
+}
+
+export function setHerculesProPermissions(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  personalWrite: boolean;
+  householdWrite: boolean;
+}): CommitResult {
+  if (!input.createdBy) throw new ValidationError("Only you can change your Hercules Pro permissions.");
+  const member = requireMember(household, input.memberId);
+  const actor = resolveActor(household, { createdBy: input.createdBy });
+  if (actor.createdBy !== member.id) {
+    throw new ValidationError("Only you can change your Hercules Pro permissions.");
+  }
+  if (typeof input.personalWrite !== "boolean" || typeof input.householdWrite !== "boolean") {
+    throw new ValidationError("Both Personal and Household write choices are required.");
+  }
+  const existing = household.herculesProPermissions;
+  if (
+    existing?.personalWrite === input.personalWrite
+    && existing.householdWrite === input.householdWrite
+  ) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      persistenceScope: "member-personal",
+      personalMemberId: member.id,
+      undo: {
+        id: `hercules-permissions-${member.id}-unchanged`,
+        label: "Hercules Pro permissions unchanged",
+        snapshot: household,
+        postedIds: [],
+        commandKind: "hercules-permissions-personal",
+      },
+    };
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const updatedAt = nowIso();
+  next.herculesProPermissions = {
+    personalWrite: input.personalWrite,
+    householdWrite: input.householdWrite,
+    updatedAt,
+  };
+  return commitMemberPersonalPreference(
+    previous,
+    next,
+    member.id,
+    "Hercules Pro permissions changed",
+    "hercules-permissions-personal",
+    updatedAt,
+  );
 }
 
 function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {

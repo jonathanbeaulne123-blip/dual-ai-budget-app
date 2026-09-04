@@ -1,25 +1,31 @@
 import type { Environment, Household } from "./core/types.ts";
 
-export const ONLINE_REQUIRED_OFFLINE_MESSAGE =
-  "Shared books are read-only while this device is offline. Reconnect, then Confirm again.";
-export const ONLINE_REQUIRED_AUTH_MESSAGE =
-  "Continue with Google before changing the shared books. Nothing was posted.";
-export const ONLINE_REQUIRED_CLOUD_MESSAGE =
-  "The shared cloud did not accept that change. The previous books are still live; retry with the same Confirm.";
-export const ONLINE_REQUIRED_PENDING_MESSAGE =
-  "Hearth is finishing an earlier shared change. Wait for Up to date, then Confirm.";
-export const ONLINE_REQUIRED_REFRESH_MESSAGE =
-  "Hearth is refreshing both shared and Personal books. Wait for Up to date, then Confirm.";
+export const CLOUD_LEDGER_OFFLINE_MESSAGE =
+  "Cloud-backed books are read-only while this device is offline. Reconnect, then Confirm again.";
+export const CLOUD_LEDGER_AUTH_MESSAGE =
+  "Continue with Google before changing these cloud-backed books. Nothing was posted.";
+export const CLOUD_LEDGER_CLOUD_MESSAGE =
+  "The cloud did not accept that change. The previous books are still live; retry with the same Confirm.";
+export const CLOUD_LEDGER_PENDING_MESSAGE =
+  "Hearth is finishing an earlier cloud-backed change. Wait for Up to date, then Confirm.";
+export const CLOUD_LEDGER_REFRESH_MESSAGE =
+  "Hearth is refreshing both Shared and Personal books. Wait for Up to date, then Confirm.";
 
 /**
  * Launch safety mode. It is intentionally Development-only until the separate
  * Production continuity gate is authorized and proven.
  */
-export function onlineRequiredSharedSyncEnabled(
+export function cloudLedgerOnlineRequiredEnabled(
   environment: Environment,
-  configured = String(import.meta.env.VITE_SHARED_ONLINE_REQUIRED ?? ""),
+  configured?: string,
 ): boolean {
-  return environment === "development" && configured === "1";
+  const resolved = configured
+    ?? String(
+      import.meta.env.VITE_CLOUD_LEDGER_ONLINE_REQUIRED
+      ?? import.meta.env.VITE_SHARED_ONLINE_REQUIRED
+      ?? "",
+    );
+  return environment === "development" && resolved === "1";
 }
 
 /** Exact authority tuple proven by the last complete Shared + Personal cloud read. */
@@ -58,10 +64,27 @@ export function revisionDedupeMaySkipPairedAdoption(
   return !pairedFactsDiffer && revisionDuplicate;
 }
 
-export type OnlineRequiredWriteGateInput = {
+/** A lagging paired read may block readiness, but it can never replace newer accepted books. */
+export function pairedCloudRevisionGate(input: {
+  remoteRevision: number;
+  localRevision: number;
+  localBaseRevision: number;
+}): { mayAdopt: boolean; readinessRevision: number | null } {
+  const mayAdopt = input.remoteRevision >= input.localBaseRevision;
+  return {
+    mayAdopt,
+    readinessRevision: mayAdopt
+      && input.remoteRevision === input.localRevision
+      && input.remoteRevision === input.localBaseRevision
+      ? input.remoteRevision
+      : null,
+  };
+}
+
+export type CloudLedgerWriteGateInput = {
   environment: Environment;
-  /** True for a membership-scoped shared write, including first household creation. */
-  sharedScope: boolean;
+  /** True when this household has cloud authority for either Personal or Shared books. */
+  cloudBackedHousehold: boolean;
   online: boolean;
   authEnabled: boolean;
   authSessionPresent: boolean;
@@ -72,23 +95,23 @@ export type OnlineRequiredWriteGateInput = {
   configured?: string;
 };
 
-export function onlineRequiredWriteGate(input: OnlineRequiredWriteGateInput): {
+export function cloudLedgerWriteGate(input: CloudLedgerWriteGateInput): {
   required: boolean;
   allowed: boolean;
   reason: string | null;
 } {
-  const required = input.sharedScope
-    && onlineRequiredSharedSyncEnabled(input.environment, input.configured);
+  const required = input.cloudBackedHousehold
+    && cloudLedgerOnlineRequiredEnabled(input.environment, input.configured);
   if (!required) return { required: false, allowed: true, reason: null };
-  if (!input.online) return { required, allowed: false, reason: ONLINE_REQUIRED_OFFLINE_MESSAGE };
+  if (!input.online) return { required, allowed: false, reason: CLOUD_LEDGER_OFFLINE_MESSAGE };
   if ((input.pendingOutboxCount ?? 0) > 0 || input.hasUnacknowledgedSnapshot) {
-    return { required, allowed: false, reason: ONLINE_REQUIRED_PENDING_MESSAGE };
+    return { required, allowed: false, reason: CLOUD_LEDGER_PENDING_MESSAGE };
   }
   if (!input.authEnabled || !input.authSessionPresent || !input.membershipMatches) {
-    return { required, allowed: false, reason: ONLINE_REQUIRED_AUTH_MESSAGE };
+    return { required, allowed: false, reason: CLOUD_LEDGER_AUTH_MESSAGE };
   }
   if (input.completeReplicaReady === false) {
-    return { required, allowed: false, reason: ONLINE_REQUIRED_REFRESH_MESSAGE };
+    return { required, allowed: false, reason: CLOUD_LEDGER_REFRESH_MESSAGE };
   }
   return { required, allowed: true, reason: null };
 }

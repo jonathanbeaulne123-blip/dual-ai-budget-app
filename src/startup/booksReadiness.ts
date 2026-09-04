@@ -58,6 +58,7 @@ export function knownMetadataUpdateAllowed(
     current.environment !== next.environment
     || current.householdId !== next.householdId
     || current.revision !== expectedCurrentRevision
+    || JSON.stringify(current.herculesProPermissions) !== JSON.stringify(next.herculesProPermissions)
   ) return false;
   return JSON.stringify(financialAuditFacts(current)) === JSON.stringify(financialAuditFacts(next));
 }

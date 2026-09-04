@@ -8,6 +8,7 @@ import {
   FUND_WIDGETS,
   RAIL_SLOTS_DESK,
   RAIL_SLOTS_PHONE,
+  acceptHouseholdWrite,
   assembleHousehold,
   catalogHousehold,
   configureHouseholdFund,
@@ -24,6 +25,7 @@ import {
   type Household,
   type PersonalEnvelope,
 } from "../src/core/index.ts";
+import { buildCommandRef } from "../src/ledger/continuityCommandLog.ts";
 import { loadPersonalReplica, savePersonalReplicaOnly } from "../src/storage.ts";
 
 const BIANCA = "MEM-001";
@@ -192,6 +194,42 @@ describe("Fund slice 3 member rail", () => {
       memberId: JONATHAN,
       fundRail: { slots: expect.arrayContaining(["accounts"]) },
     });
+  });
+
+  it("cloud-acknowledges a rail change as a revisioned Personal command before active persistence", async () => {
+    const previous = configuredFund();
+    const result = setFundRailSlot(previous, {
+      memberId: JONATHAN,
+      createdBy: JONATHAN,
+      slot: 2,
+      widgetId: "accounts",
+    });
+    const sequence: string[] = [];
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: result.household,
+      confirmationId: "rail-cloud-ack",
+      commandKind: result.undo.commandKind,
+      postedIds: [],
+      actingMemberId: JONATHAN,
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: {
+        validateCandidate: async () => { sequence.push("staged"); return { ok: true }; },
+        transport: async () => { sequence.push("cloud-ack"); return { ok: true }; },
+        ingest: async () => { sequence.push("active-pglite"); return { ok: true }; },
+        persist: async () => { sequence.push("durable-device"); },
+      },
+    });
+    expect(outcome.kind).toBe("synchronized");
+    expect(sequence).toEqual(["staged", "cloud-ack", "active-pglite", "durable-device"]);
+    const ref = buildCommandRef({
+      household: outcome.household,
+      confirmationId: "rail-cloud-ack",
+      baseRevision: previous.revision,
+    });
+    expect(ref?.ledgerScope).toBe("personal");
+    expect(ref?.commandType).toBe("fund-rail-personal");
   });
 
   it("resets only the acting member to the role-derived default", () => {

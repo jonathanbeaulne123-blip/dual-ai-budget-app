@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { catalogHousehold } from "../src/core/seed.ts";
-import { addGoal, postEntry, postShift, undo } from "../src/core/commands.ts";
+import { addAccount, addGoal, postEntry, postShift, undo } from "../src/core/commands.ts";
+import { compileHousehold } from "../src/core/journal.ts";
 import {
   assembleHousehold,
   emptyPersonal,
@@ -174,6 +175,31 @@ describe("household and personal visibility", () => {
     expect(serialized).not.toContain("sevenShiftsPunchDigest");
     expect(serialized).not.toContain("raw-private-hash");
     expect(projected.shifts).toHaveLength(1);
+  });
+
+  it("keeps the requesting member's Personal account with Personal journal rows in Hercules context", () => {
+    let household = addAccount(catalogHousehold(), {
+      name: "Jonathan private chequing",
+      kind: "chequing",
+      scope: "personal",
+      ownerMemberId: "MEM-002",
+    }).household;
+    household = addAccount(household, {
+      name: "Bianca private chequing",
+      kind: "chequing",
+      scope: "personal",
+      ownerMemberId: "MEM-001",
+    }).household;
+    household = postEntry(household, {
+      ...grocery("MEM-002", "personal", "Jonathan private groceries"),
+      accountId: "ACC-JONATHAN-PRIVATE-CHEQUING",
+    }).household;
+
+    const projected = householdForHerculesContext(household, "MEM-002", "personal");
+    expect(projected.accounts.map((account) => account.id)).toContain("ACC-JONATHAN-PRIVATE-CHEQUING");
+    expect(projected.accounts.map((account) => account.id)).not.toContain("ACC-BIANCA-PRIVATE-CHEQUING");
+    expect(projected.transactions.map((transaction) => transaction.note)).toContain("Jonathan private groceries");
+    expect(() => compileHousehold(projected)).not.toThrow();
   });
 
   it("reduces published schedule rows before Hercules so source identity never reaches a model or tool", () => {

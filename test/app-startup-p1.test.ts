@@ -2,7 +2,7 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catalogHousehold, financialAuditHash, linkGoogleIdentity, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, type Household, type PersonalEnvelope } from "../src/core/index.ts";
+import { addAccount, catalogHousehold, financialAuditHash, linkGoogleIdentity, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 
@@ -29,7 +29,23 @@ const startup = vi.hoisted(() => ({
   consistentPullCalls: 0,
   stagedCandidates: [] as Household[],
   repairedCandidates: [] as Household[],
+  transportCalls: [] as Household[],
+  lifecycle: [] as string[],
+  transportResult: null as null | { ok: true; remoteRevision?: number } | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; message: string },
 }));
+
+vi.mock("../src/continuity.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/continuity.ts")>();
+  return {
+    ...actual,
+    transportHouseholdWithOutbox: vi.fn(async (input: Parameters<typeof actual.transportHouseholdWithOutbox>[0]) => {
+      startup.transportCalls.push(input.household);
+      startup.lifecycle.push(`transport:${input.household.transactions.length}`);
+      if (startup.transportResult) return startup.transportResult;
+      return actual.transportHouseholdWithOutbox(input);
+    }),
+  };
+});
 
 vi.mock("../src/storage.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/storage.ts")>();
@@ -42,6 +58,7 @@ vi.mock("../src/storage.ts", async (importOriginal) => {
     saveHousehold: vi.fn(async (household: Household) => {
       startup.saveCalls += 1;
       startup.savedHouseholds.push(household);
+      startup.lifecycle.push(`save:${household.transactions.length}`);
     }),
   };
 });
@@ -64,6 +81,7 @@ vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
     ingestHouseholdBooks: vi.fn(async (household: Household, options: { auditHash?: string; incremental?: boolean } = {}) => {
       startup.ingestCalls += 1;
       startup.ingestOptions.push(options);
+      startup.lifecycle.push(`ingest:${household.transactions.length}`);
       return {
         compiled: {} as never,
         status: {
@@ -77,6 +95,7 @@ vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
     }),
     validateHouseholdBooksStaged: vi.fn(async (household: Household) => {
       startup.stagedCandidates.push(household);
+      startup.lifecycle.push(`stage:${household.transactions.length}`);
       return { ok: true, engine: "pglite" as const, entryCount: household.transactions.length, inBalance: true, equationHolds: true };
     }),
     repairAcceptedHouseholdBooks: vi.fn(async (household: Household) => {
@@ -149,7 +168,7 @@ function openExpenseSlideshow(): void {
   act(() => button("Add expense").click());
 }
 
-function walkExpenseToConfirm(container: HTMLElement): HTMLButtonElement {
+function walkExpenseToConfirm(container: HTMLElement, accountName = "Visa"): HTMLButtonElement {
   tapPad(container, "1");
   const enter = [...container.querySelectorAll("button")].find((item) => item.textContent === "Enter") as HTMLButtonElement | undefined;
   if (!enter) throw new Error("Missing Enter");
@@ -157,9 +176,9 @@ function walkExpenseToConfirm(container: HTMLElement): HTMLButtonElement {
   const groceries = [...container.querySelectorAll("button.chip")].find((item) => item.textContent === "Groceries") as HTMLButtonElement | undefined;
   if (!groceries) throw new Error("Missing Groceries");
   act(() => { groceries.click(); });
-  const visa = [...container.querySelectorAll(".wallet-tile")].find((item) => item.textContent?.includes("Visa")) as HTMLButtonElement | undefined;
-  if (!visa) throw new Error("Missing Visa tile");
-  act(() => { visa.click(); });
+  const account = [...container.querySelectorAll(".wallet-tile")].find((item) => item.textContent?.includes(accountName)) as HTMLButtonElement | undefined;
+  if (!account) throw new Error(`Missing ${accountName} tile`);
+  act(() => { account.click(); });
   const skip = [...container.querySelectorAll("button")].find((item) => item.textContent === "Skip") as HTMLButtonElement | undefined;
   if (!skip) throw new Error("Missing Skip");
   act(() => { skip.click(); });
@@ -197,6 +216,36 @@ async function waitForUi(assertion: () => void, timeout = 5_000): Promise<void> 
   throw lastError;
 }
 
+function cloudBackedPersonalBooks() {
+  const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
+  const withAccount = addAccount(catalogHousehold(), {
+    name: "Private chequing",
+    kind: "chequing",
+    scope: "personal",
+    ownerMemberId: "MEM-002",
+  }).household;
+  const household = linkGoogleIdentity(withAccount, {
+    memberId: "MEM-002",
+    ...identity,
+    displayName: "Jonathan",
+    grantedScopes: ["openid", "email"],
+  }).household;
+  return { identity, household: markSynchronized({ ...household, linked: true, revision: 12, baseRevision: 12 }) };
+}
+
+function storeAuthSession(identity: { email: string; subject: string }, expiresAt = Date.now() + 3_600_000): void {
+  localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+    accessToken: "valid-access",
+    refreshToken: "valid-refresh",
+    userId: "auth-user-jonathan",
+    sessionId: "11111111-1111-4111-8111-111111111111",
+    email: identity.email,
+    googleSubject: identity.subject,
+    displayName: "Jonathan",
+    expiresAt,
+  }));
+}
+
 describe("cached-shell startup books gate", () => {
   let root: Root;
   let container: HTMLDivElement;
@@ -221,6 +270,9 @@ describe("cached-shell startup books gate", () => {
     startup.consistentPullCalls = 0;
     startup.stagedCandidates = [];
     startup.repairedCandidates = [];
+    startup.transportCalls = [];
+    startup.lifecycle = [];
+    startup.transportResult = null;
     localStorage.setItem("hearth:session:v1:development", JSON.stringify({
       memberId: "MEM-002",
       view: "household",
@@ -412,9 +464,22 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull();
   });
 
-  it("keeps shared Confirm uncommitted while the launch-mode device is offline", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
-    startup.cached = markSynchronized({ ...catalogHousehold(), linked: true, revision: 12, baseRevision: 12 });
+  it.each(["household", "personal"] as const)("keeps %s Confirm uncommitted before staging while a cloud-backed device is offline", async (view) => {
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
+    const books = view === "personal"
+      ? addAccount(catalogHousehold(), {
+        name: "Private chequing",
+        kind: "chequing",
+        scope: "personal",
+        ownerMemberId: "MEM-002",
+      }).household
+      : catalogHousehold();
+    startup.cached = markSynchronized({ ...books, linked: true, revision: 12, baseRevision: 12 });
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({
+      memberId: "MEM-002",
+      view,
+      householdId: startup.cached.householdId,
+    }));
     startup.inspections.push(Promise.resolve({
       ok: true,
       message: "PGlite agrees.",
@@ -430,18 +495,159 @@ describe("cached-shell startup books gate", () => {
     await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
 
     openExpenseSlideshow();
-    const confirm = walkExpenseToConfirm(container);
+    const confirm = walkExpenseToConfirm(container, view === "personal" ? "Private chequing" : "Visa");
     const savesBefore = startup.saveCalls;
     act(() => { confirm.click(); });
     await settleUi();
 
     expect(startup.saveCalls).toBe(savesBefore);
-    expect(container.textContent).toContain("Shared books are read-only while this device is offline");
+    expect(startup.stagedCandidates).toHaveLength(0);
+    expect(container.textContent).toContain("Cloud-backed books are read-only while this device is offline");
+    expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
+  });
+
+  it("refuses Auth-enabled offline Personal Confirm before refreshing an expired session", async () => {
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const { identity, household } = cloudBackedPersonalBooks();
+    startup.cached = household;
+    startup.cloudRemote = Promise.resolve(household);
+    startup.cloudPersonal = Promise.resolve(splitForSync(household, "MEM-002").personal);
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({
+      memberId: "MEM-002",
+      view: "personal",
+      householdId: household.householdId,
+    }));
+    storeAuthSession(identity);
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    storeAuthSession(identity, 1);
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false });
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const stagesBefore = startup.stagedCandidates.length;
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container, "Private chequing");
+    const savesBefore = startup.saveCalls;
+    act(() => { confirm.click(); });
+    await settleUi();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(startup.stagedCandidates).toHaveLength(stagesBefore);
+    expect(startup.transportCalls).toHaveLength(0);
+    expect(startup.saveCalls).toBe(savesBefore);
+    expect(container.textContent).toContain("Cloud-backed books are read-only while this device is offline");
+  });
+
+  it("commits an online Personal Confirm only after staged acceptance and cloud acknowledgement", async () => {
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const { identity, household } = cloudBackedPersonalBooks();
+    startup.cached = household;
+    startup.cloudRemote = Promise.resolve(household);
+    startup.cloudPersonal = Promise.resolve(splitForSync(household, "MEM-002").personal);
+    startup.transportResult = { ok: true, remoteRevision: 13 };
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({
+      memberId: "MEM-002",
+      view: "personal",
+      householdId: household.householdId,
+    }));
+    storeAuthSession(identity);
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(startup.consistentPullCalls).toBeGreaterThan(0));
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    const savesBefore = startup.saveCalls;
+    const ingestsBefore = startup.ingestCalls;
+    const lifecycleBefore = startup.lifecycle.length;
+    const commandTransactionCount = household.transactions.length + 1;
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container, "Private chequing");
+    act(() => { confirm.click(); });
+    await waitForUi(() => expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull());
+
+    expect(startup.transportCalls).toHaveLength(1);
+    expect(startup.ingestCalls).toBe(ingestsBefore + 1);
+    expect(startup.saveCalls).toBeGreaterThanOrEqual(savesBefore + 1);
+    expect(startup.savedHouseholds.some((saved) => (
+      saved.transactions.length === commandTransactionCount
+      && saved.transactions.some((row) => row.visibility === "personal" && row.amountCents === 1)
+    ))).toBe(true);
+    const lifecycle = startup.lifecycle.slice(lifecycleBefore);
+    const stageIndex = lifecycle.indexOf(`stage:${commandTransactionCount}`);
+    const transportIndex = lifecycle.indexOf(`transport:${commandTransactionCount}`);
+    const ingestIndex = lifecycle.indexOf(`ingest:${commandTransactionCount}`);
+    const saveIndex = lifecycle.indexOf(`save:${commandTransactionCount}`);
+    expect(stageIndex).toBeGreaterThanOrEqual(0);
+    expect(transportIndex).toBeGreaterThan(stageIndex);
+    expect(ingestIndex).toBeGreaterThan(transportIndex);
+    expect(saveIndex).toBeGreaterThan(transportIndex);
+  });
+
+  it("keeps an online Personal cloud refusal out of active and durable books", async () => {
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const { identity, household } = cloudBackedPersonalBooks();
+    startup.cached = household;
+    startup.cloudRemote = Promise.resolve(household);
+    startup.cloudPersonal = Promise.resolve(splitForSync(household, "MEM-002").personal);
+    startup.transportResult = { ok: false, errorClass: "disconnected", message: "Cloud refused the Personal change." };
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({
+      memberId: "MEM-002",
+      view: "personal",
+      householdId: household.householdId,
+    }));
+    storeAuthSession(identity);
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(startup.consistentPullCalls).toBeGreaterThan(0));
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    const savesBefore = startup.saveCalls;
+    const ingestsBefore = startup.ingestCalls;
+    const lifecycleBefore = startup.lifecycle.length;
+    const commandTransactionCount = household.transactions.length + 1;
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container, "Private chequing");
+    act(() => { confirm.click(); });
+    await waitForUi(
+      () => expect(container.textContent).toContain("Cloud refused the Personal change"),
+      10_000,
+    );
+
+    expect(startup.transportCalls).toHaveLength(1);
+    expect(startup.ingestCalls).toBe(ingestsBefore);
+    expect(startup.savedHouseholds.slice(savesBefore).some((saved) => (
+      saved.transactions.length === commandTransactionCount
+      && saved.transactions.some((row) => row.visibility === "personal" && row.amountCents === 1)
+    ))).toBe(false);
+    const lifecycle = startup.lifecycle.slice(lifecycleBefore);
+    const stageIndex = lifecycle.indexOf(`stage:${commandTransactionCount}`);
+    const transportIndex = lifecycle.indexOf(`transport:${commandTransactionCount}`);
+    expect(stageIndex).toBeGreaterThanOrEqual(0);
+    expect(transportIndex).toBeGreaterThan(stageIndex);
+    expect(lifecycle).not.toContain(`ingest:${commandTransactionCount}`);
+    expect(lifecycle).not.toContain(`save:${commandTransactionCount}`);
+    expect(container.textContent).toContain("Cloud refused the Personal change");
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
   });
 
   it("refuses shared Confirm before staging when Auth belongs to a different household member", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
     const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
     const linked = linkGoogleIdentity(catalogHousehold(), {
@@ -487,12 +693,12 @@ describe("cached-shell startup books gate", () => {
     expect(startup.stagedCandidates).toHaveLength(0);
     expect(startup.ingestCalls).toBe(ingestsBefore);
     expect(startup.saveCalls).toBe(savesBefore);
-    expect(container.textContent).toMatch(/Google sign-in does not match the selected household member|Continue with Google before changing the shared books/);
+    expect(container.textContent).toMatch(/Google sign-in does not match the selected household member|Continue with Google before changing these cloud-backed books/);
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
   });
 
   it("keeps writes blocked when a complete shared and Personal cloud generation is unavailable", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
     const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
     const linked = linkGoogleIdentity(catalogHousehold(), {
@@ -540,11 +746,11 @@ describe("cached-shell startup books gate", () => {
     expect(startup.stagedCandidates).toHaveLength(0);
     expect(startup.ingestCalls).toBe(ingestsBefore);
     expect(startup.saveCalls).toBe(savesBefore);
-    expect(container.textContent).toContain("refreshing both shared and Personal books");
+    expect(container.textContent).toContain("refreshing both Shared and Personal books");
   });
 
   it("adopts same-member Personal with its stable newer Shared startup generation", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
     const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
     const linked = linkGoogleIdentity(catalogHousehold(), {
@@ -646,7 +852,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("keeps an arbitrary projection mismatch blocked until an authenticated cloud refresh", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     const accepted = { ...seedDemoHousehold(), linked: true, revision: 8, baseRevision: 8 };
     accepted.booksAcceptedHash = await financialAuditHash(accepted);
     startup.cached = markSynchronized(accepted);
@@ -668,11 +874,11 @@ describe("cached-shell startup books gate", () => {
 
     expect(startup.ingestCalls).toBe(0);
     expect(container.textContent).toContain("Books need attention");
-    expect(button("Restore from shared copy")).not.toBeNull();
+    expect(button("Restore from cloud copy")).not.toBeNull();
   });
 
   it("restores a blocked projection from authenticated shared and personal cloud copies", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
     vi.stubEnv("VITE_SUPABASE_URL", "https://continuity.example.supabase.co");
     vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
@@ -747,7 +953,7 @@ describe("cached-shell startup books gate", () => {
     await startValidation();
     await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
     await act(async () => {
-      button("Restore from shared copy").click();
+      button("Restore from cloud copy").click();
       await Promise.resolve();
     });
     await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
@@ -763,7 +969,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("keeps projection recovery blocked when the device still has an unacknowledged tip", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     const accepted = { ...seedDemoHousehold(), linked: true, revision: 8, baseRevision: 7 };
     accepted.booksAcceptedHash = await financialAuditHash(accepted);
     startup.cached = { ...accepted, sharing: { ...markSynchronized(accepted).sharing, mode: "pending-transport", pending: true } };
@@ -787,7 +993,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("opens the exact pre-launch pending tip after its receipt and durable outbox binding agree", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
     const linked = linkGoogleIdentity(seedDemoHousehold(), {
       memberId: "MEM-002",
@@ -845,7 +1051,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("repairs the pre-launch crash window after reload without treating the staged tip as active books", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
     const linked = linkGoogleIdentity(seedDemoHousehold(), {
       memberId: "MEM-002",
@@ -946,7 +1152,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("keeps the receipt-gated v8 rebuild for a local-only Development household", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     const accepted = { ...seedDemoHousehold(), linked: false };
     startup.cached = { ...accepted, booksAcceptedHash: await financialAuditHash(accepted) };
     startup.inspections.push(
@@ -992,7 +1198,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("does not bypass the online-required gate for a pending pre-v8 snapshot without a durable tip", async () => {
-    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     const accepted = { ...seedDemoHousehold(), linked: true, revision: 8, baseRevision: 7 };
     accepted.booksAcceptedHash = await financialAuditHash(accepted);
     startup.cached = {

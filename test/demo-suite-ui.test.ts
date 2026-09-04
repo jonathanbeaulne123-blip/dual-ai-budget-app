@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { catalogHousehold, createWriteQueue, linkGoogleIdentity } from "../src/core/index.ts";
+import { requireDemoSuiteContinuityIdentity } from "../src/demoSuiteIdentity.ts";
 
 describe("Demo Suite paper-room placement", () => {
   const app = readFileSync(join(process.cwd(), "src/App.tsx"), "utf8");
@@ -35,7 +37,68 @@ describe("Demo Suite paper-room placement", () => {
     const createStart = app.indexOf("async function createOrReplayDemoSuite");
     const createEnd = app.indexOf("async function openDiscoveredLedger", createStart);
     const createFlow = app.slice(createStart, createEnd);
+    expect(createFlow).toContain("persist(candidate");
+    expect(createFlow).not.toContain("commitHousehold(candidate");
+    expect(createFlow).not.toContain("acceptHouseholdWrite({");
+    expect(createFlow).not.toContain("cloud copy is still pending");
     expect(createFlow).toContain("adoptAcceptedHousehold(accepted, status)");
     expect(createFlow).toContain("rememberSession({ memberId, view: \"household\", householdId: accepted.householdId })");
+  });
+
+  it("refuses to bind a new Demo Suite to a cached Auth identity for another member", () => {
+    const current = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      email: "bianca@example.test",
+      subject: "google-bianca",
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email", "profile"],
+    }).household;
+    expect(() => requireDemoSuiteContinuityIdentity({
+      household: current,
+      memberId: "MEM-002",
+      authRequired: true,
+      authIdentity: { email: "bianca@example.test", subject: "google-bianca" },
+      fallbackIdentity: null,
+    })).toThrow(/does not match the selected household member/i);
+  });
+
+  it("keeps first-time Demo acceptance behind an in-flight paired install", async () => {
+    const enqueueWrite = createWriteQueue();
+    const order: string[] = [];
+    let releasePair!: () => void;
+    const pairPaused = new Promise<void>((resolve) => { releasePair = resolve; });
+    const pairedInstall = enqueueWrite(async () => {
+      order.push("pair-start");
+      await pairPaused;
+      order.push("pair-installed");
+    });
+    const demoPersist = enqueueWrite(async () => {
+      order.push("demo-staged");
+      order.push("demo-cloud-ack");
+      order.push("demo-active");
+      return "synchronized";
+    });
+
+    await Promise.resolve();
+    expect(order).toEqual(["pair-start"]);
+    releasePair();
+    await expect(Promise.all([pairedInstall, demoPersist])).resolves.toEqual([undefined, "synchronized"]);
+    expect(order).toEqual([
+      "pair-start",
+      "pair-installed",
+      "demo-staged",
+      "demo-cloud-ack",
+      "demo-active",
+    ]);
+  });
+
+  it("routes member-Personal commands through the same commit boundary", () => {
+    const runStart = app.indexOf("function run(fn:");
+    const runEnd = app.indexOf("function requestClearThisPhone", runStart);
+    const commandFlows = app.slice(runStart, runEnd);
+    expect(commandFlows).not.toContain("savePersonalReplicaOnly");
+    expect(commandFlows).not.toContain("persistMemberPersonalPreferenceNow");
+    expect(commandFlows).toContain("assertMemberPersonalUpdate(current, result)");
+    expect(commandFlows.match(/commitHousehold\(/g)).toHaveLength(2);
   });
 });
