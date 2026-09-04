@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogHousehold, financialAuditHash, linkGoogleIdentity, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
-import { createMemoryContinuityStore, enqueueContinuitySnapshot, setContinuityStore } from "../src/continuity.ts";
+import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 
 type Inspection = {
   ok: boolean;
@@ -289,7 +289,7 @@ describe("cached-shell startup books gate", () => {
       userId: "auth-user",
       sessionId: "11111111-1111-4111-8111-111111111111",
       email: "jonathan@example.com",
-      expiresAt: Date.now() + 60_000,
+      expiresAt: Date.now() + 3_600_000,
     });
     localStorage.setItem(sessionKey, restoredSession);
     await act(async () => {
@@ -440,6 +440,187 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
   });
 
+  it("refuses shared Confirm before staging when Auth belongs to a different household member", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    startup.cached = markSynchronized({ ...linked, linked: true, revision: 12, baseRevision: 12 });
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "valid-access",
+      refreshToken: "valid-refresh",
+      userId: "auth-user-bianca",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: identity.email,
+      googleSubject: identity.subject,
+      displayName: "Bianca",
+      expiresAt: Date.now() + 3_600_000,
+    }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container);
+    const savesBefore = startup.saveCalls;
+    const ingestsBefore = startup.ingestCalls;
+    act(() => { confirm.click(); });
+    await settleUi();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(listContinuityOutbox("development")).toHaveLength(0);
+    expect(startup.stagedCandidates).toHaveLength(0);
+    expect(startup.ingestCalls).toBe(ingestsBefore);
+    expect(startup.saveCalls).toBe(savesBefore);
+    expect(container.textContent).toContain("Google sign-in does not match the selected household member");
+    expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
+  });
+
+  it("keeps writes blocked when a complete shared and Personal cloud generation is unavailable", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    startup.cached = markSynchronized({ ...linked, linked: true, revision: 12, baseRevision: 12 });
+    startup.cloudRemote = Promise.resolve(markSynchronized({ ...linked, linked: true, revision: 13, baseRevision: 13 }));
+    startup.cloudPersonal = Promise.resolve(null);
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "valid-access",
+      refreshToken: "valid-refresh",
+      userId: "auth-user-bianca",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: identity.email,
+      googleSubject: identity.subject,
+      displayName: "Bianca",
+      expiresAt: Date.now() + 3_600_000,
+    }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(startup.consistentPullCalls).toBeGreaterThan(0));
+    await settleUi();
+
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container);
+    const savesBefore = startup.saveCalls;
+    const ingestsBefore = startup.ingestCalls;
+    act(() => { confirm.click(); });
+    await settleUi();
+
+    expect(listContinuityOutbox("development")).toHaveLength(0);
+    expect(startup.stagedCandidates).toHaveLength(0);
+    expect(startup.ingestCalls).toBe(ingestsBefore);
+    expect(startup.saveCalls).toBe(savesBefore);
+    expect(container.textContent).toContain("refreshing both shared and Personal books");
+  });
+
+  it("adopts same-member Personal with its stable newer Shared startup generation", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const localWithOldPersonal = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "91.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Old local Personal",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const cloudSharedHousehold = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Partner shared row",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const cloudPersonalHousehold = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "8.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Newest cloud Personal",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    startup.cached = markSynchronized({ ...localWithOldPersonal, linked: true, revision: 12, baseRevision: 12 });
+    startup.cloudRemote = Promise.resolve(markSynchronized({ ...cloudSharedHousehold, linked: true, revision: 13, baseRevision: 13 }));
+    startup.cloudPersonal = Promise.resolve(splitForSync(cloudPersonalHousehold, "MEM-002").personal);
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "valid-access",
+      refreshToken: "valid-refresh",
+      userId: "auth-user-bianca",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: identity.email,
+      googleSubject: identity.subject,
+      displayName: "Bianca",
+      expiresAt: Date.now() + 3_600_000,
+    }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(startup.savedHouseholds.some((saved) => (
+      saved.revision === 13
+      && saved.transactions.some((row) => row.note === "Newest cloud Personal")
+    ))).toBe(true));
+
+    const adopted = startup.savedHouseholds.filter((saved) => saved.revision === 13).at(-1);
+    expect(adopted?.transactions.some((row) => row.note === "Partner shared row")).toBe(true);
+    expect(adopted?.transactions.some((row) => row.note === "Newest cloud Personal")).toBe(true);
+    expect(adopted?.transactions.some((row) => row.note === "Old local Personal")).toBe(false);
+  });
+
   it("fails closed on a projection mismatch and offers retry without rebuilding", async () => {
     startup.inspections.push(Promise.resolve({
       ok: false,
@@ -575,7 +756,7 @@ describe("cached-shell startup books gate", () => {
     expect(restored?.revision).toBe(9);
     expect(restored?.transactions.some((row) => row.note === "Shared cloud row")).toBe(true);
     expect(restored?.transactions.some((row) => row.note === "Personal cloud row")).toBe(true);
-    expect(startup.consistentPullCalls).toBe(1);
+    expect(startup.consistentPullCalls).toBeGreaterThanOrEqual(1);
     expect(restored?.transactions.some((row) => row.note === "Corrupted local private row")).toBe(false);
     expect(startup.stagedCandidates.at(-1)?.householdId).toBe(restored?.householdId);
     expect(startup.repairedCandidates.at(-1)?.booksAcceptedHash).toBe(restored?.booksAcceptedHash);

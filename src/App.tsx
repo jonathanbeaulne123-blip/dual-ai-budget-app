@@ -161,7 +161,7 @@ import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots }
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
-import { readSupabaseConfig, pullConsistentMemberReplicaById, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
+import { readSupabaseConfig, pullConsistentMemberReplicaById, pullHouseholdSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
@@ -230,6 +230,7 @@ import { afterNextPaint } from "./nextPaint.ts";
 import {
   canRepairProjectionFromAcknowledgedCache,
   canRepairProjectionWithBoundOutbox,
+  onlineRequiredReplicaKey,
   onlineRequiredSharedSyncEnabled,
   onlineRequiredWriteGate,
 } from "./onlineRequiredSync.ts";
@@ -626,6 +627,12 @@ export function App() {
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [, setCloudReplicaReadyKeyState] = useState<string | null>(null);
+  const cloudReplicaReadyKeyRef = useRef<string | null>(null);
+  const setCloudReplicaReadyKey = (key: string | null) => {
+    cloudReplicaReadyKeyRef.current = key;
+    setCloudReplicaReadyKeyState(key);
+  };
   const [realtimeStatus, setRealtimeStatus] = useState<ContinuityRealtimeStatus | null>(null);
   const [lastReconcile, setLastReconcile] = useState<{
     at: string;
@@ -1147,6 +1154,12 @@ export function App() {
     void (async () => {
       const authSession = await ensureSupabaseSession(environment);
       if (!authSession || cancelled) return;
+      const identity = { email: authSession.email, subject: authSession.googleSubject };
+      if (continuityMemberId(household, identity) !== session.memberId) {
+        setSyncState("error");
+        setError("Google sign-in does not match the selected household member.");
+        return;
+      }
       const config = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
       const registered = await registerCurrentHouseholdDevice({
         environment,
@@ -1230,6 +1243,7 @@ export function App() {
     const fastCandidate = fastStored && loadedSession?.memberId
       ? resolveStoredConflictsLastEntryWins(fastStored, loadedSession.memberId)
       : fastStored;
+    setCloudReplicaReadyKey(null);
     if (fastCandidate) {
       householdRef.current = fastCandidate;
       setHousehold(fastCandidate);
@@ -1300,16 +1314,46 @@ export function App() {
     const reconcileAfterValidation = (candidate: Household) => {
       if (!candidate.linked || !loadedSession?.memberId || !stillCurrent(candidate)) return;
       performance.mark?.("hearth:startup-reconcile-start");
-      void pullSharedHousehold(candidate.inviteCode, loadedSession.memberId, candidate.environment)
-        .then((remote) => enqueueWrite(async () => {
+      const pullStartupHousehold = async (): Promise<{ remote: Household; personal: PersonalEnvelope | null }> => {
+        if (!onlineRequiredSharedSyncEnabled(candidate.environment)) {
+          return {
+            remote: await pullSharedHousehold(candidate.inviteCode, loadedSession.memberId, candidate.environment),
+            personal: null,
+          };
+        }
+        if (!supabaseAuthEnabled()) {
+          throw new Error("Google sign-in is required before Hearth can refresh shared books.");
+        }
+        const authSession = await ensureSupabaseSession(candidate.environment);
+        if (!authSession) throw new Error("Google sign-in is required before Hearth can refresh shared books.");
+        const identity = { email: authSession.email, subject: authSession.googleSubject };
+        if (continuityMemberId(candidate, identity) !== loadedSession.memberId) {
+          throw new Error("Google sign-in does not match the selected household member.");
+        }
+        const replica = await pullConsistentMemberReplicaById({
+          householdId: candidate.householdId,
+          memberId: loadedSession.memberId,
+          environment: candidate.environment,
+          config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
+          identity,
+        });
+        if (!replica) throw new Error("Hearth could not read a complete shared and Personal cloud generation.");
+        return { remote: replica.shared, personal: replica.personal };
+      };
+      void pullStartupHousehold()
+        .then(({ remote, personal }) => enqueueWrite(async () => {
           if (!live || startupGenerationRef.current !== generation) return;
           const current = householdRef.current;
           if (
             !current
             || current.environment !== candidate.environment
             || current.householdId !== candidate.householdId
+            || current.revision !== candidate.revision
           ) return;
-          const reconciled = await reconcileHouseholdSnapshots(current, remote, loadedSession.memberId);
+          const currentWithCanonicalPersonal = personal
+            ? assembleHousehold(splitForSync(current, loadedSession.memberId).shared, personal, { linked: current.linked })
+            : current;
+          const reconciled = await reconcileHouseholdSnapshots(currentWithCanonicalPersonal, remote, loadedSession.memberId);
           const accepted = await acceptHouseholdWrite({
             previous: current,
             candidate: reconciled,
@@ -1334,9 +1378,18 @@ export function App() {
           };
           setBooksStatus(status);
           publishReadiness(readinessForHousehold("ready", generation, accepted.household, { status }), accepted.household);
+          if (personal) {
+            setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+              environment: accepted.household.environment,
+              householdId: accepted.household.householdId,
+              memberId: loadedSession.memberId,
+              revision: accepted.household.revision,
+            }));
+          }
           performance.mark?.("hearth:startup-reconcile-end");
         }))
         .catch(() => {
+          if (onlineRequiredSharedSyncEnabled(candidate.environment)) setCloudReplicaReadyKey(null);
           if (
             live
             && startupGenerationRef.current === generation
@@ -1625,6 +1678,7 @@ export function App() {
 
     const replayWork = async (source: ContinuitySyncSource) => {
       if (live) setSyncState("syncing");
+      if (onlineRequiredSharedSyncEnabled(environment)) setCloudReplicaReadyKey(null);
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
         const expectedIdentity: ContinuityIdentity | null = storedAuthSession
@@ -1643,6 +1697,14 @@ export function App() {
           : continuityIdentityFromGoogle(googleSession);
         if (!identity || (!identity.email && !identity.subject)) {
           if (live) setSyncState("idle");
+          return;
+        }
+        const identityHousehold = householdRef.current;
+        if (identityHousehold && continuityMemberId(identityHousehold, identity) !== memberId) {
+          if (live) {
+            setSyncState("error");
+            setError("Google sign-in does not match the selected household member.");
+          }
           return;
         }
         const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
@@ -1785,10 +1847,24 @@ export function App() {
         }
 
         current = householdRef.current;
-        let remoteHousehold = current
-          ? await pullHouseholdSnapshotById(current.householdId, environment, cloudConfig, identity)
+        const pairRequired = Boolean(current && onlineRequiredSharedSyncEnabled(environment));
+        const remoteReplica = current && pairRequired
+          ? await pullConsistentMemberReplicaById({
+              householdId: current.householdId,
+              memberId,
+              environment,
+              config: cloudConfig,
+              identity,
+            })
           : null;
-        if (!remoteHousehold) {
+        if (pairRequired && !remoteReplica) {
+          throw new Error("Hearth could not read a complete shared and Personal cloud generation.");
+        }
+        let remoteHousehold = remoteReplica?.shared ?? null;
+        if (!pairRequired && current) {
+          remoteHousehold = await pullHouseholdSnapshotById(current.householdId, environment, cloudConfig, identity);
+        }
+        if (!remoteHousehold && !pairRequired) {
           const memberships = await discoverContinuityMemberships(identity, environment, cloudConfig);
           if (!live) return;
           current = householdRef.current;
@@ -1801,25 +1877,6 @@ export function App() {
         if (remoteHousehold) {
           await acknowledgeContinuityOutboxFromRemote(remoteHousehold);
           if (!live) return;
-        }
-        if (current && memberId) {
-          try {
-            const remotePersonal = await pullPersonalSnapshotById(
-              current.householdId,
-              memberId,
-              environment,
-              cloudConfig,
-            );
-            if (remotePersonal && live) {
-              setPersonalReplica((previous) => {
-                const prevAt = previous?.lastCommittedAt ?? "";
-                const nextAt = remotePersonal.lastCommittedAt ?? "";
-                return nextAt >= prevAt ? remotePersonal : previous;
-              });
-            }
-          } catch {
-            /* personal pull is best-effort; shared pull continues */
-          }
         }
         if (current && remoteHousehold) {
           const remoteRevision = remoteHousehold.revision ?? 0;
@@ -1839,7 +1896,10 @@ export function App() {
           ) {
           coordinator.recordPull(current.householdId, remoteRevision);
           if (!coordinator.shouldSkipAccept(current.householdId, remoteRevision)) {
-          const reconciled = await reconcileHouseholdSnapshots(current, remoteHousehold, memberId);
+          const currentWithCanonicalPersonal = remoteReplica
+            ? assembleHousehold(splitForSync(current, memberId).shared, remoteReplica.personal, { linked: current.linked })
+            : current;
+          const reconciled = await reconcileHouseholdSnapshots(currentWithCanonicalPersonal, remoteHousehold, memberId);
           const accepted = await acceptReplayCandidate(
             reconciled,
             `continuity-pull-${current.householdId}-${remoteHousehold.revision}`,
@@ -1904,6 +1964,15 @@ export function App() {
         if (live) {
           const open = householdRef.current ? unresolvedConflicts(householdRef.current) : [];
           const pending = householdRef.current?.sharing?.mode === "pending-transport";
+          const readyHousehold = householdRef.current;
+          if (remoteReplica && readyHousehold && open.length === 0 && !pending) {
+            setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+              environment: readyHousehold.environment,
+              householdId: readyHousehold.householdId,
+              memberId,
+              revision: readyHousehold.revision,
+            }));
+          }
           setSyncState(open.length > 0 ? "error" : pending ? "syncing" : "synced");
         }
       } catch (caught) {
@@ -3008,10 +3077,7 @@ export function App() {
       const automaticContinuity = Boolean(
         continuityIdentity &&
         memberId &&
-        (
-          (authSession && next.members.some((member) => member.id === memberId && member.active))
-          || continuityMemberId(next, continuityIdentity) === memberId
-        ),
+        continuityMemberId(next, continuityIdentity) === memberId,
       );
       const transportRequested = hostedContinuityAllowed(environment) && automaticContinuity;
       const onlineGate = onlineRequiredWriteGate({
@@ -3021,6 +3087,15 @@ export function App() {
         authEnabled: authRequired,
         authSessionPresent: Boolean(authSession),
         membershipMatches: automaticContinuity,
+        completeReplicaReady: !previous?.linked || Boolean(
+          memberId
+          && cloudReplicaReadyKeyRef.current === onlineRequiredReplicaKey({
+            environment,
+            householdId: previous.householdId,
+            memberId,
+            revision: previous.revision,
+          }),
+        ),
         pendingOutboxCount: listContinuityOutbox(environment)
           .filter((item) => item.householdId === (previous?.householdId ?? next.householdId)).length,
         hasUnacknowledgedSnapshot: previous?.sharing?.mode === "pending-transport",
@@ -3272,8 +3347,17 @@ export function App() {
       } else if (outcome.ok && outcome.kind !== "conflict-needs-attention") {
         setError("");
       }
-      if (outcome.kind === "synchronized") setSyncState("synced");
-      else if (outcome.kind === "pending-transport") setSyncState("syncing");
+      if (outcome.kind === "synchronized") {
+        setSyncState("synced");
+        if (onlineGate.required && memberId) {
+          setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+            environment: outcome.household.environment,
+            householdId: outcome.household.householdId,
+            memberId,
+            revision: outcome.household.revision,
+          }));
+        }
+      } else if (outcome.kind === "pending-transport") setSyncState("syncing");
       else if (outcome.kind === "conflict-needs-attention") setSyncState("error");
       else if (outcome.ok) setSyncState("idle");
       if (outcome.ok && !(outcome.recoveryAvailable && outcome.errorClass === "books-unavailable")) {

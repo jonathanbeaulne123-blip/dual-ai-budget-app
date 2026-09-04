@@ -3,6 +3,7 @@ import { catalogHousehold } from "../src/core/index.ts";
 import {
   canRepairProjectionFromAcknowledgedCache,
   canRepairProjectionWithBoundOutbox,
+  onlineRequiredReplicaKey,
   onlineRequiredSharedSyncEnabled,
   onlineRequiredWriteGate,
 } from "../src/onlineRequiredSync.ts";
@@ -28,9 +29,22 @@ describe("online-required shared sync policy", () => {
     expect(onlineRequiredWriteGate({ ...base, online: false })).toMatchObject({ required: true, allowed: false });
     expect(onlineRequiredWriteGate({ ...base, authSessionPresent: false })).toMatchObject({ required: true, allowed: false });
     expect(onlineRequiredWriteGate({ ...base, membershipMatches: false })).toMatchObject({ required: true, allowed: false });
+    expect(onlineRequiredWriteGate({ ...base, completeReplicaReady: false })).toMatchObject({ required: true, allowed: false });
     expect(onlineRequiredWriteGate({ ...base, pendingOutboxCount: 1 })).toMatchObject({ required: true, allowed: false });
     expect(onlineRequiredWriteGate({ ...base, hasUnacknowledgedSnapshot: true })).toMatchObject({ required: true, allowed: false });
     expect(onlineRequiredWriteGate({ ...base, sharedScope: false })).toEqual({ required: false, allowed: true, reason: null });
+  });
+
+  it("binds complete cloud-read readiness to the exact household, member, and revision", () => {
+    const ready = onlineRequiredReplicaKey({
+      environment: "development",
+      householdId: "HH-ONE",
+      memberId: "MEM-001",
+      revision: 12,
+    });
+    expect(ready).not.toBe(onlineRequiredReplicaKey({ environment: "development", householdId: "HH-TWO", memberId: "MEM-001", revision: 12 }));
+    expect(ready).not.toBe(onlineRequiredReplicaKey({ environment: "development", householdId: "HH-ONE", memberId: "MEM-002", revision: 12 }));
+    expect(ready).not.toBe(onlineRequiredReplicaKey({ environment: "development", householdId: "HH-ONE", memberId: "MEM-001", revision: 13 }));
   });
 
   it("repairs only from the same revision-anchored cloud books with no local work", () => {

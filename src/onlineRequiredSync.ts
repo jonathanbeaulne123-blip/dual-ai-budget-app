@@ -8,6 +8,8 @@ export const ONLINE_REQUIRED_CLOUD_MESSAGE =
   "The shared cloud did not accept that change. The previous books are still live; retry with the same Confirm.";
 export const ONLINE_REQUIRED_PENDING_MESSAGE =
   "Hearth is finishing an earlier shared change. Wait for Up to date, then Confirm.";
+export const ONLINE_REQUIRED_REFRESH_MESSAGE =
+  "Hearth is refreshing both shared and Personal books. Wait for Up to date, then Confirm.";
 
 /**
  * Launch safety mode. It is intentionally Development-only until the separate
@@ -20,6 +22,16 @@ export function onlineRequiredSharedSyncEnabled(
   return environment === "development" && configured === "1";
 }
 
+/** Exact authority tuple proven by the last complete Shared + Personal cloud read. */
+export function onlineRequiredReplicaKey(input: {
+  environment: Environment;
+  householdId: string;
+  memberId: string;
+  revision: number;
+}): string {
+  return [input.environment, input.householdId, input.memberId, input.revision].join(":");
+}
+
 export type OnlineRequiredWriteGateInput = {
   environment: Environment;
   /** True for a membership-scoped shared write, including first household creation. */
@@ -28,6 +40,7 @@ export type OnlineRequiredWriteGateInput = {
   authEnabled: boolean;
   authSessionPresent: boolean;
   membershipMatches: boolean;
+  completeReplicaReady?: boolean;
   pendingOutboxCount?: number;
   hasUnacknowledgedSnapshot?: boolean;
   configured?: string;
@@ -47,6 +60,9 @@ export function onlineRequiredWriteGate(input: OnlineRequiredWriteGateInput): {
   }
   if (!input.authEnabled || !input.authSessionPresent || !input.membershipMatches) {
     return { required, allowed: false, reason: ONLINE_REQUIRED_AUTH_MESSAGE };
+  }
+  if (input.completeReplicaReady === false) {
+    return { required, allowed: false, reason: ONLINE_REQUIRED_REFRESH_MESSAGE };
   }
   return { required, allowed: true, reason: null };
 }
