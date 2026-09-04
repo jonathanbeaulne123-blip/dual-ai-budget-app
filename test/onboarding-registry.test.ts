@@ -71,7 +71,7 @@ describe("onboarding registry", () => {
       { id: "ch-03-charter", sitting: 1, conductor: "either", approval: "joint", skip: "household-required", target: "more" },
       { id: "ch-04-accounts", sitting: 2, conductor: "partner", approval: "none", skip: "household-required", target: "ledger" },
       { id: "ch-05-opening", sitting: 2, conductor: "partner", approval: "none", skip: "household-required", target: "ledger" },
-      { id: "ch-06-fund", sitting: 2, conductor: "partner", approval: "joint", skip: "household-required", target: "plan" },
+      { id: "ch-06-fund", sitting: 2, conductor: "partner", approval: "joint", skip: "household-required", target: "ledger" },
       { id: "ch-07-recurrences", sitting: 2, conductor: "partner", approval: "none", skip: "household-required", target: "calendar" },
       { id: "ch-08-cadence", sitting: 2, conductor: "self", approval: "member", skip: "member-required", target: "shift" },
       { id: "ch-09-categories", sitting: 3, conductor: "both", approval: "member", skip: "household-required", target: "plan" },

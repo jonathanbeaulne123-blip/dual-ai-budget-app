@@ -14,6 +14,7 @@ import {
   flavorFor,
   handshakeExpired,
   hasPostedOpeningTruth,
+  householdFundConfigurationApprovalState,
   isSittingFinalChapter,
   isSittingFirstChapter,
   memberProgress,
@@ -84,6 +85,8 @@ type Props = {
   onOpenAccounts?: () => void;
   /** Chapter 5 opens the existing opening card, or the existing activity correction path. */
   onOpenOpeningBalances?: (mode: "entry" | "correction") => void;
+  /** Chapter 6 opens the existing Fund surface; approval never happens in chat. */
+  onOpenHouseholdFund?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -126,6 +129,7 @@ export function onboardingBlockedPresentation(
     };
     case "revoked": return { copyKey: "blocked.revoked", retryable: false };
     case "retry": return { copyKey: "retry.honest", retryable: true };
+    case "custody": return { copyKey: "fund.custody-mismatch", retryable: false };
     default: return { copyKey: "blocked.stale", retryable: false };
   }
 }
@@ -163,6 +167,7 @@ export function OnboardingChat({
   onOpenCharter,
   onOpenAccounts,
   onOpenOpeningBalances,
+  onOpenHouseholdFund,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -381,8 +386,22 @@ export function OnboardingChat({
 
   if (!chapter) return null;
 
+  const chapterId = chapter.id;
   const custodianMemberId = household.charter?.custodianMemberId ?? household.householdFund?.custodianMemberId ?? null;
-  const role = chapterRoleFor(chapter, memberId, custodianMemberId);
+  const baseRole = chapterRoleFor(chapter, memberId, custodianMemberId);
+  const fundApprovalState = chapterId === "ch-06-fund"
+    ? householdFundConfigurationApprovalState(household)
+    : null;
+  const viewerHasCurrentFundApproval = Boolean(fundApprovalState?.approvals.some((approval) => (
+    approval.memberId === memberId && approval.revision === fundApprovalState.revision
+  )));
+  // Once the Fund exists, the non-custodian stops being a passive witness
+  // through their own review, approval, and final acknowledgement. The
+  // approval itself remains on the Fund surface.
+  const fundApprovalActor = chapterId === "ch-06-fund"
+    && baseRole === "witness"
+    && Boolean(fundApprovalState);
+  const role = fundApprovalActor ? "conductor" : baseRole;
   const conductorName = role === "witness"
     ? household.members.find((member) => member.id === custodianMemberId)?.name ?? "your partner"
     : null;
@@ -413,7 +432,6 @@ export function OnboardingChat({
       : flavorFor(chapter.id, household.householdId);
 
   const railIndex = sittingRailIndex(chapter.sitting);
-  const chapterId = chapter.id;
   const progress = memberProgress(household, memberId);
   const chapterProgress = progress.rows.find((row) => row.chapterId === chapterId);
   const probeEvidenceKey = chapterProgress?.probeEvidenceKey ?? null;
@@ -449,9 +467,21 @@ export function OnboardingChat({
   const blocked = openingStaleConflict
     ? { copyKey: "opening.stale", retryable: false }
     : baseBlocked;
-  const waitingForPartner = charterPresentation.kind === "waiting";
-  const blockedCopyKey = waitingForPartner ? charterPresentation.copyKey : blocked?.copyKey ?? null;
-  const blockedCopySlots = waitingForPartner ? charterPresentation.slots : blocked?.slots;
+  const fundWaitingForPartner = chapterId === "ch-06-fund"
+    && Boolean(fundApprovalState)
+    && viewerHasCurrentFundApproval
+    && fundApprovalState?.kind !== "complete";
+  const waitingForPartner = charterPresentation.kind === "waiting" || fundWaitingForPartner;
+  const blockedCopyKey = charterPresentation.kind === "waiting"
+    ? charterPresentation.copyKey
+    : fundWaitingForPartner
+      ? "waiting.partner"
+      : blocked?.copyKey ?? null;
+  const blockedCopySlots = charterPresentation.kind === "waiting"
+    ? charterPresentation.slots
+    : fundWaitingForPartner
+      ? { name: otherName }
+      : blocked?.slots;
   const autoCompletable = chapter.skip === "auto-completable";
   const charterNeedsNavigation = charterPresentation.kind === "write"
     || charterPresentation.kind === "open"
@@ -461,12 +491,17 @@ export function OnboardingChat({
     && (evidence.kind !== "accepted" || personalAccountChoicePending);
   const openingNeedsNavigation = chapterId === "ch-05-opening"
     && (evidence.kind === "empty" || openingStaleConflict);
+  const fundNeedsNavigation = chapterId === "ch-06-fund"
+    && !fundWaitingForPartner
+    && !(evidence.kind === "ineligible" && evidence.reason === "custody")
+    && evidence.kind !== "accepted";
 
   const showAction = role === "conductor"
     && !blockedCopyKey
     && !charterNeedsNavigation
     && !accountsNeedNavigation
     && !openingNeedsNavigation
+    && !fundNeedsNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
@@ -474,7 +509,8 @@ export function OnboardingChat({
   const showAccountsAction = role === "conductor" && accountsNeedNavigation && Boolean(onOpenAccounts);
   const showPersonalSkipAction = showAccountsAction && personalAccountChoicePending;
   const showOpeningAction = role === "conductor" && openingNeedsNavigation && Boolean(onOpenOpeningBalances);
-  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction
+  const showFundAction = role === "conductor" && fundNeedsNavigation && Boolean(onOpenHouseholdFund);
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction
     ? SHELL_VIEW.cardToAction
     : 0;
 
@@ -573,7 +609,7 @@ export function OnboardingChat({
           )}
         </>
       )}
-      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction ? (
+      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
@@ -587,6 +623,8 @@ export function OnboardingChat({
                   ? onOpenAccounts
                   : showOpeningAction
                     ? () => onOpenOpeningBalances?.(openingNeedsCorrection ? "correction" : "entry")
+                    : showFundAction
+                      ? onOpenHouseholdFund
                   : acknowledge}
           >
             {copy(showRetryAction
@@ -597,6 +635,8 @@ export function OnboardingChat({
                   ? "accounts.open"
                   : showOpeningAction
                     ? openingNeedsCorrection ? "opening.review" : "opening.open"
+                    : showFundAction
+                      ? "fund.open"
                   : "continue.next")}
           </button>
           {showPersonalSkipAction ? (

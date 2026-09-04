@@ -148,6 +148,7 @@ import {
   HOUSEHOLD_FUND_NAME,
   activeHouseholdFundEvents,
   householdFundContributionMotions,
+  householdFundConfigurationApprovalState,
   matchHouseholdFundBankEvidence,
   projectHouseholdFund,
   shapeHouseholdFundConfig,
@@ -434,6 +435,13 @@ export function recordChapterAcknowledgement(household: Household, input: {
     const projected = evidenceFor(household, chapter.id, input.memberId);
     if (projected.kind !== "accepted" || projected.card.scope !== "household") {
       throw new ValidationError("Confirm one complete opening batch for every Shared account before continuing.");
+    }
+  }
+  if (chapter.id === "ch-06-fund") {
+    requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+    const projected = evidenceFor(household, chapter.id, input.memberId);
+    if (projected.kind !== "accepted" || projected.card.scope !== "household") {
+      throw new ValidationError("Both people need to approve the current Household Fund setup before continuing.");
     }
   }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
@@ -6171,6 +6179,7 @@ export function configureHouseholdFund(household: Household, input: {
   openedOn: string;
   createdBy: string;
   name?: string;
+  at?: string;
 }): CommitResult {
   requireTimezone(household);
   if (shapeHouseholdFundConfig(household.householdFund)) throw new ValidationError("The Hearth Household Fund is already configured.");
@@ -6184,13 +6193,19 @@ export function configureHouseholdFund(household: Household, input: {
   }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
-  const at = nowIso();
+  const at = input.at === undefined ? nowIso() : (() => {
+    const parsed = Date.parse(input.at);
+    if (!Number.isFinite(parsed)) throw new ValidationError("Choose a valid Household Fund configuration time.");
+    return new Date(parsed).toISOString();
+  })();
   next.householdFund = {
     id: HOUSEHOLD_FUND_ID,
     name: input.name?.trim().slice(0, 60) || HOUSEHOLD_FUND_NAME,
     custodianMemberId: input.custodianMemberId,
     mode: "practice",
     openedOn: parseDate(input.openedOn),
+    configurationRevision: at,
+    approvals: [{ memberId: input.custodianMemberId, revision: at, approvedAt: at }],
     createdAt: at,
     updatedAt: at,
   };
@@ -6200,6 +6215,39 @@ export function configureHouseholdFund(household: Household, input: {
   next.fundKittyAllocations = [];
   next.fundPrivate = { bankBindings: [], reconciliations: [] };
   return commit(previous, next, "Household Fund", `Opened ${next.householdFund.name} at $0.00`, [next.householdFund.id], [], "configureHouseholdFund");
+}
+
+/** Record only the acting member's approval of the exact Fund setup they reviewed. */
+export function approveHouseholdFundConfiguration(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  revision: string;
+  at?: string;
+}): CommitResult {
+  requireMember(household, input.memberId);
+  requireMember(household, input.createdBy);
+  if (input.memberId !== input.createdBy) throw new ValidationError("Only you can approve your own Fund setup.");
+  const fund = requireHouseholdFund(household);
+  const approvalState = householdFundConfigurationApprovalState(household);
+  if (!approvalState || input.revision !== approvalState.revision) {
+    throw new ValidationError("That Fund setup changed. Review the current version before approving it.");
+  }
+  const at = input.at === undefined ? nowIso() : (() => {
+    const parsed = Date.parse(input.at);
+    if (!Number.isFinite(parsed)) throw new ValidationError("Choose a valid Household Fund approval time.");
+    return new Date(parsed).toISOString();
+  })();
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const shaped = shapeHouseholdFundConfig(next.householdFund)!;
+  next.householdFund = {
+    ...shaped,
+    approvals: [
+      ...shaped.approvals.filter((row) => row.memberId !== input.memberId),
+      { memberId: input.memberId, revision: shaped.configurationRevision, approvedAt: at },
+    ].sort((left, right) => left.memberId.localeCompare(right.memberId)),
+  };
+  return commit(previous, next, "Household Fund", "Approved the current Household Fund setup", [fund.id], [], "approveHouseholdFundConfiguration");
 }
 
 export function bindHouseholdFundBackingAccount(household: Household, input: {

@@ -233,6 +233,38 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "There are already posted entries in the books, but no accepted opening balance. Review those entries before continuing.", slots: [],
   }),
   entry({
+    key: "onboarding.household.ch-06-fund", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Set up the Household Fund at $0.00, then each of you reviews and approves the same setup.", slots: [],
+  }),
+  entry({
+    key: "fund.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open the Household Fund", slots: [],
+  }),
+  entry({
+    key: "fund.configure", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Set up the Fund at $0.00", slots: [],
+  }),
+  entry({
+    key: "fund.approve", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "I approve this Fund setup", slots: [],
+  }),
+  entry({
+    key: "fund.approval.explain", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "This records your agreement with the setup. It doesn't move money.", slots: [],
+  }),
+  entry({
+    key: "fund.approval.current", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "You're approved on this version.", slots: [],
+  }),
+  entry({
+    key: "fund.backing.private", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "The backing account stays in the custodian's Personal books.", slots: [],
+  }),
+  entry({
+    key: "fund.custody-mismatch", speaker: "hercules", surface: "card", scope: "none", announce: "polite",
+    text: "Custody moves through the Fund, not the charter.", slots: [],
+  }),
+  entry({
     key: "charter.write", speaker: "system", surface: "button", scope: "none", announce: "none",
     text: "Write the Charter", slots: [],
   }),

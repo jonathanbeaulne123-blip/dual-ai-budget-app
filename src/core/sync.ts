@@ -43,6 +43,7 @@ import type { ShiftBible } from "./shiftEnvelope.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
 import {
   shapeHouseholdFundConfig,
+  mergeHouseholdFundConfigs,
   shapeHouseholdFundEvents,
   shapeHouseholdFundKittyAllocations,
   shapeHouseholdFundMonthPlans,
@@ -897,13 +898,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
   const goalPurchases = mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones);
   const goals = applyGoalSavings(mergeRecords(server.goals, client.goals, tombstones), goalContributions);
   const members = mergeRecords(server.members, client.members, []).map(memberWithoutLandingSurface);
-  const householdFund = (() => {
-    const left = shapeHouseholdFundConfig(server.householdFund);
-    const right = shapeHouseholdFundConfig(client.householdFund);
-    if (!left) return right;
-    if (!right) return left;
-    return right.updatedAt >= left.updatedAt ? right : left;
-  })();
+  const householdFund = mergeHouseholdFundConfigs(server.householdFund, client.householdFund);
   const householdOnboarding = mergeHouseholdOnboarding(server.householdOnboarding, client.householdOnboarding, {
     householdId: server.householdId || client.householdId,
     environment: newer.environment,
