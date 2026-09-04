@@ -32,6 +32,32 @@ export function onlineRequiredReplicaKey(input: {
   return [input.environment, input.householdId, input.memberId, input.revision].join(":");
 }
 
+export type ReplicaAdoptionScope = {
+  generation: number;
+  environment: Environment;
+  householdId: string | null;
+  memberId: string | null;
+};
+
+/** Prevent an awaited cloud projection install from crossing a ledger/member/environment switch. */
+export function replicaAdoptionScopeMatches(
+  expected: ReplicaAdoptionScope,
+  current: ReplicaAdoptionScope,
+): boolean {
+  return expected.generation === current.generation
+    && expected.environment === current.environment
+    && expected.householdId === current.householdId
+    && expected.memberId === current.memberId;
+}
+
+/** Revision-only dedupe is unsafe when the paired Shared or Personal facts differ. */
+export function revisionDedupeMaySkipPairedAdoption(
+  pairedFactsDiffer: boolean,
+  revisionDuplicate: boolean,
+): boolean {
+  return !pairedFactsDiffer && revisionDuplicate;
+}
+
 export type OnlineRequiredWriteGateInput = {
   environment: Environment;
   /** True for a membership-scoped shared write, including first household creation. */

@@ -554,6 +554,9 @@ describe("Google-account continuity", () => {
         memberId: personal.memberId,
       },
     });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+    if (conflict.ok || !conflict.finalizeConflict) throw new Error("Expected a deferred exact conflict finalizer.");
+    await expect(conflict.finalizeConflict()).resolves.toBe(true);
     expect(listContinuityOutbox("development")).toEqual([]);
     expect(await flushContinuityOutbox({ environment: "development", identity, config, force: true }))
       .toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });

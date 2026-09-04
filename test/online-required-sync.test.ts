@@ -6,6 +6,8 @@ import {
   onlineRequiredReplicaKey,
   onlineRequiredSharedSyncEnabled,
   onlineRequiredWriteGate,
+  replicaAdoptionScopeMatches,
+  revisionDedupeMaySkipPairedAdoption,
 } from "../src/onlineRequiredSync.ts";
 
 describe("online-required shared sync policy", () => {
@@ -45,6 +47,25 @@ describe("online-required shared sync policy", () => {
     expect(ready).not.toBe(onlineRequiredReplicaKey({ environment: "development", householdId: "HH-TWO", memberId: "MEM-001", revision: 12 }));
     expect(ready).not.toBe(onlineRequiredReplicaKey({ environment: "development", householdId: "HH-ONE", memberId: "MEM-002", revision: 12 }));
     expect(ready).not.toBe(onlineRequiredReplicaKey({ environment: "development", householdId: "HH-ONE", memberId: "MEM-001", revision: 13 }));
+  });
+
+  it("invalidates a deferred canonical adoption across household, member, or environment switches", () => {
+    const expected = {
+      generation: 4,
+      environment: "development" as const,
+      householdId: "HH-A",
+      memberId: "MEM-001",
+    };
+    expect(replicaAdoptionScopeMatches(expected, expected)).toBe(true);
+    expect(replicaAdoptionScopeMatches(expected, { ...expected, generation: 5, householdId: "HH-B" })).toBe(false);
+    expect(replicaAdoptionScopeMatches(expected, { ...expected, generation: 5, environment: "production" })).toBe(false);
+    expect(replicaAdoptionScopeMatches(expected, { ...expected, generation: 5, memberId: "MEM-002" })).toBe(false);
+  });
+
+  it("never lets revision-only Realtime dedupe skip a differing paired replica", () => {
+    expect(revisionDedupeMaySkipPairedAdoption(true, true)).toBe(false);
+    expect(revisionDedupeMaySkipPairedAdoption(true, false)).toBe(false);
+    expect(revisionDedupeMaySkipPairedAdoption(false, true)).toBe(true);
   });
 
   it("repairs only from the same revision-anchored cloud books with no local work", () => {

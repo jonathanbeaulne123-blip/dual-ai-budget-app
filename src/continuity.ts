@@ -794,7 +794,14 @@ export async function transportHouseholdWithOutbox(input: {
   reconcileAmbiguous?: boolean;
 }): Promise<
   | { ok: true; remoteRevision?: number; remote?: Household; remotePersonal?: PersonalEnvelope }
-  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; remotePersonal?: PersonalEnvelope; message: string }
+  | {
+      ok: false;
+      errorClass: "pending-transport" | "conflict-detected" | "disconnected";
+      remote?: Household;
+      remotePersonal?: PersonalEnvelope;
+      finalizeConflict?: () => Promise<boolean>;
+      message: string;
+    }
 > {
   const priorItems = read(input.household.environment);
   let item: ContinuityOutboxItem;
@@ -845,18 +852,12 @@ export async function transportHouseholdWithOutbox(input: {
             message: "Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this Confirm.",
           };
         }
-        if (!await cancelContinuityConflictGeneration(item)) {
-          return {
-            ok: false,
-            errorClass: "pending-transport",
-            message: "Another device saved first, but the queued or staged generation changed before Hearth could cancel it.",
-          };
-        }
         return {
           ok: false,
           errorClass: "conflict-detected",
           remote: consistent.shared,
           remotePersonal: consistent.personal,
+          finalizeConflict: () => cancelContinuityConflictGeneration(item),
           message: result.message,
         };
       } catch {

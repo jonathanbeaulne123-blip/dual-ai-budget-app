@@ -603,6 +603,7 @@ describe("atomic household writes", () => {
     };
     const remotePair = splitForSync(remote, "MEM-001");
     let transportCalls = 0;
+    let finalized = 0;
     const store = memoryAdapters({
       transport: async () => {
         transportCalls += 1;
@@ -611,6 +612,11 @@ describe("atomic household writes", () => {
           errorClass: "conflict-detected",
           remote,
           remotePersonal: remotePair.personal,
+          finalizeConflict: async () => {
+            expect(store.persisted()?.revision).toBe(remote.revision);
+            finalized += 1;
+            return true;
+          },
           message: "Another device saved first.",
         };
       },
@@ -638,6 +644,59 @@ describe("atomic household writes", () => {
     expect(store.persisted()).toEqual(result.household);
     expect(store.ingested()).toEqual(result.household);
     expect(transportCalls).toBe(1);
+    expect(finalized).toBe(1);
+  });
+
+  it("keeps definitive-conflict recovery durable when canonical local repair throws", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const local = postEntry(previous, grocery("Rejected local repair"));
+    const remote = {
+      ...postEntry(previous, { ...grocery("Cloud winner"), createdBy: "MEM-002" }).household,
+      linked: true,
+      revision: 8,
+      baseRevision: 8,
+    };
+    const remotePersonal = splitForSync(remote, "MEM-001").personal;
+    let finalized = 0;
+    let cleared = 0;
+    let persisted = 0;
+
+    const result = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...local.household, linked: true },
+      confirmationId: "confirm-repair-throws",
+      postedIds: local.postedIds,
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: {
+        validateCandidate: async () => ({ ok: true }),
+        transport: async () => ({
+          ok: false,
+          errorClass: "conflict-detected",
+          remote,
+          remotePersonal,
+          finalizeConflict: async () => {
+            finalized += 1;
+            return true;
+          },
+          message: "Another device saved first.",
+        }),
+        repairIngest: async () => { throw new Error("projection unavailable"); },
+        ingest: async () => ({ ok: true }),
+        persist: async () => { persisted += 1; },
+        clearCandidate: async () => { cleared += 1; },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.kind).not.toBe("pending-transport");
+    expect(result.errorClass).toBe("books-unavailable");
+    expect(result.postedNothing).toBe(true);
+    expect(result.userMessage).toContain("kept the exact retry blocked");
+    expect(finalized).toBe(0);
+    expect(cleared).toBe(0);
+    expect(persisted).toBe(0);
   });
 
   it("rebuilds the disposable active projection immediately after cloud acceptance", async () => {
