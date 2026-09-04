@@ -23,6 +23,7 @@ This is a living planning document, not an authority to deploy, mutate productio
 - Google sign-in is the seamless entry and recovery identity. A signed-in person must be able to open their personal ledger and every household ledger they belong to from any device without another device remaining online.
 - The cloud is the durable cross-device continuity layer. PGlite is each device's accounting engine and offline replica/cache; it cannot be the only copy required for a different device to operate.
 - Through 2026-09-30, hosted Development data is disposable fixtures while Auth smoke and Production hardening finish. Deny-by-default RLS **006 is applied** (anon household REST revoked). Security must be October-ready before meaningful household data, not a reason to postpone cloud continuity.
+- The executable go/no-go roll-up is [`OCTOBER_READINESS_MATRIX.md`](OCTOBER_READINESS_MATRIX.md); it requires exact-environment proof and grants no authority to apply, mutate, deploy, or enable Production.
 - Bank feeds, Interac, card issuing, and other money rails remain on the roadmap and still require the late-September Auth/RLS foundation plus their own legal/security gates.
 - Do not revive Google Sheets or clasp. Existing Google integrations may supply read-only context or draft proposals; Sheets is neither runtime, ledger, canon, nor sync transport.
 

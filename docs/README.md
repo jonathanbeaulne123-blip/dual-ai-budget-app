@@ -10,6 +10,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [../CLAUDE.md](../CLAUDE.md) | Claude entry: includes `AGENTS.md`, then Claude’s UX/Hercules posture |
 | [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md) | Living phased roadmap, Updates history, rival matrix, AI workflow, Dual Course deltas, gates, risks, and proofs |
 | [CLOUD_CONTINUITY.md](CLOUD_CONTINUITY.md) | Google-account access from any device, cloud/PGlite roles, the disposable-data window, and the late-September security milestone |
+| [OCTOBER_READINESS_MATRIX.md](OCTOBER_READINESS_MATRIX.md) | Executable security and identity go/no-go matrix for meaningful October household data; Development evidence never proves Production |
 | [SYNC_ARCHITECTURE.md](SYNC_ARCHITECTURE.md) | **Tiered sync plan (D-149):** 100–500 ms Realtime push, atomic SQL, command-log, slice prompts under [`briefs/sync/`](briefs/sync/README.md) |
 | [SYNC_REALTIME_SMOKE.md](SYNC_REALTIME_SMOKE.md) | **Two-phone Realtime latency smoke** (D-149 T1 G4); Jonathan pass 2026-08-27 |
 | [SYNC_PILOT.md](SYNC_PILOT.md) | **D-180 Development-only ledger-native pilot:** exact build boundary, live two-account matrix, 100-event latency gate, fourteen-day rehearsal, and stop/rollback rules |
