@@ -7,11 +7,109 @@ import {
   trialBalance,
 } from "../src/core/journal.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, migrateBooks, openMemoryBooks, resetBrowserBooksForTests } from "../src/ledger/engine.ts";
+import { clearStagedHouseholdBooks, getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, ingestHouseholdBooks, inspectBrowserBooks, loadStagedHouseholdBooks, migrateBooks, openMemoryBooks, prewarmStagedHouseholdBooks, resetBrowserBooksForTests, validateHouseholdBooksStaged, wipeStagedBooksForEnvironment } from "../src/ledger/engine.ts";
 import { assertReadOnlySelect } from "../src/ledger/queryGuard.ts";
 import { booksSqlDump } from "../src/ledger/export.ts";
 
 describe("double-entry books", () => {
+  it("does not let an in-flight staged open reappear after an environment wipe", async () => {
+    await resetBrowserBooksForTests();
+    const household = catalogHousehold();
+    household.booksAcceptedHash = await hashBooksSnapshot(household);
+    const validating = validateHouseholdBooksStaged(household, { auditHash: household.booksAcceptedHash });
+    await wipeStagedBooksForEnvironment(household.environment, [household.householdId]);
+    await Promise.allSettled([validating]);
+
+    expect(await loadStagedHouseholdBooks(household.environment, household.householdId)).toBeNull();
+    await clearStagedHouseholdBooks(household.environment, household.householdId);
+    await resetBrowserBooksForTests();
+  }, 30_000);
+
+  it("does not prewarm an older accepted household over a newer ambiguous stage", async () => {
+    await resetBrowserBooksForTests();
+    const previous = catalogHousehold();
+    previous.booksAcceptedHash = await hashBooksSnapshot(previous);
+    const posted = postEntry(previous, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Ambiguous stage",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const candidate = { ...posted.household, revision: previous.revision + 1 };
+    candidate.booksAcceptedHash = await hashBooksSnapshot(candidate);
+    await validateHouseholdBooksStaged(candidate, { auditHash: candidate.booksAcceptedHash });
+
+    await prewarmStagedHouseholdBooks(previous);
+
+    expect((await loadStagedHouseholdBooks(previous.environment, previous.householdId))?.revision)
+      .toBe(candidate.revision);
+    await clearStagedHouseholdBooks(previous.environment, previous.householdId);
+    await resetBrowserBooksForTests();
+  }, 30_000);
+
+  it("serializes a starting prewarm ahead of a newer candidate validation", async () => {
+    await resetBrowserBooksForTests();
+    const previous = catalogHousehold();
+    previous.booksAcceptedHash = await hashBooksSnapshot(previous);
+    const posted = postEntry(previous, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "5.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Queued after prewarm",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const candidate = { ...posted.household, revision: previous.revision + 1 };
+    candidate.booksAcceptedHash = await hashBooksSnapshot(candidate);
+
+    const prewarming = prewarmStagedHouseholdBooks(previous);
+    const validating = validateHouseholdBooksStaged(candidate, {
+      previous,
+      auditHash: candidate.booksAcceptedHash,
+    });
+    await Promise.all([prewarming, validating]);
+
+    expect((await loadStagedHouseholdBooks(previous.environment, previous.householdId))?.revision)
+      .toBe(candidate.revision);
+    await clearStagedHouseholdBooks(previous.environment, previous.householdId);
+    await resetBrowserBooksForTests();
+  }, 30_000);
+
+  it("validates an online candidate in isolated PGlite without advancing the active replica", async () => {
+    await resetBrowserBooksForTests();
+    const previous = catalogHousehold();
+    previous.booksAcceptedHash = await hashBooksSnapshot(previous);
+    await ingestHouseholdBooks(previous, { auditHash: previous.booksAcceptedHash });
+    const posted = postEntry(previous, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "4.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Staged only",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const candidate = posted.household;
+    candidate.booksAcceptedHash = await hashBooksSnapshot(candidate);
+
+    const staged = await validateHouseholdBooksStaged(candidate, {
+      previous,
+      auditHash: candidate.booksAcceptedHash,
+      incremental: true,
+    });
+
+    expect(staged.ok).toBe(true);
+    expect((await inspectBrowserBooks(previous, { expectedAuditHash: previous.booksAcceptedHash })).ok).toBe(true);
+    expect((await inspectBrowserBooks(candidate, { expectedAuditHash: candidate.booksAcceptedHash })).issue).toBe("projection-mismatch");
+    await resetBrowserBooksForTests();
+  }, 30_000);
   it("keeps the incremental canary default-off and permanently off in Production", () => {
     vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "");
     expect(incrementalBooksEnabled("development")).toBe(false);
@@ -774,6 +872,33 @@ describe("Postgres books engine", () => {
         [`JE-${reinstatementId}`, "PL-SUB-FOOD-GROCERIES"],
       )).rows).toEqual([{ debit_cents: 1250, credit_cents: 0 }]);
       expect((await db.query("SELECT id FROM schema_migrations WHERE id = 7")).rows).toEqual([{ id: 7 }]);
+    } finally {
+      await db.close();
+    }
+  }, 30_000);
+
+  it("invalidates a pre-v8 derived projection without deleting the accepted snapshot", async () => {
+    const household = catalogHousehold();
+    const accepted = { ...household, booksAcceptedHash: await hashBooksSnapshot(household) };
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, accepted);
+      const snapshotBefore = (await db.query<{ payload: string }>(
+        "SELECT payload FROM household_snapshots WHERE household_id = $1",
+        [accepted.householdId],
+      )).rows[0]?.payload;
+      await db.query("DELETE FROM schema_migrations WHERE id = 8");
+
+      await migrateBooks(db);
+
+      expect((await db.query<{ projection_hash: string | null }>(
+        "SELECT projection_hash FROM audit_revisions ORDER BY revision DESC LIMIT 1",
+      )).rows).toEqual([{ projection_hash: null }]);
+      expect((await db.query<{ payload: string }>(
+        "SELECT payload FROM household_snapshots WHERE household_id = $1",
+        [accepted.householdId],
+      )).rows[0]?.payload).toBe(snapshotBefore);
+      expect((await db.query("SELECT id FROM schema_migrations WHERE id = 8")).rows).toEqual([{ id: 8 }]);
     } finally {
       await db.close();
     }

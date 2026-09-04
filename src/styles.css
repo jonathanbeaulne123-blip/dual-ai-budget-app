@@ -1159,6 +1159,7 @@ input, select, textarea {
 }
 .command-banner--warning { background: #fff8e6; border-left: 4px solid #e6c84a; }
 .command-banner--danger { background: #fdeeee; border-left: 4px solid var(--danger); }
+.command-banner__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .command-banner__action { min-height: 44px; min-width: 44px; }
 .conflict-cards {
   display: grid;

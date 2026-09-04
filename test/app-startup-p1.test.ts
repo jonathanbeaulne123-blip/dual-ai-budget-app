@@ -2,8 +2,9 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catalogHousehold, financialAuditHash, seedDemoHousehold, startMonthRehearsal, type Household } from "../src/core/index.ts";
+import { catalogHousehold, financialAuditHash, linkGoogleIdentity, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
+import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 
 type Inspection = {
   ok: boolean;
@@ -20,8 +21,14 @@ const startup = vi.hoisted(() => ({
   ingestOptions: [] as Array<{ auditHash?: string; incremental?: boolean }>,
   ingestCalls: 0,
   saveCalls: 0,
+  savedHouseholds: [] as Household[],
   reconcileCalls: 0,
   remote: new Promise<Household>(() => {}),
+  cloudRemote: new Promise<Household | null>(() => {}),
+  cloudPersonal: new Promise<PersonalEnvelope | null>(() => {}),
+  consistentPullCalls: 0,
+  stagedCandidates: [] as Household[],
+  repairedCandidates: [] as Household[],
 }));
 
 vi.mock("../src/storage.ts", async (importOriginal) => {
@@ -32,7 +39,10 @@ vi.mock("../src/storage.ts", async (importOriginal) => {
     loadHousehold: vi.fn(async () => startup.cached),
     listHouseholdReplicas: vi.fn(async () => []),
     loadPersonalReplica: vi.fn(async () => null),
-    saveHousehold: vi.fn(async () => { startup.saveCalls += 1; }),
+    saveHousehold: vi.fn(async (household: Household) => {
+      startup.saveCalls += 1;
+      startup.savedHouseholds.push(household);
+    }),
   };
 });
 
@@ -64,6 +74,28 @@ vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
           equationHolds: true,
         },
       };
+    }),
+    validateHouseholdBooksStaged: vi.fn(async (household: Household) => {
+      startup.stagedCandidates.push(household);
+      return { ok: true, engine: "pglite" as const, entryCount: household.transactions.length, inBalance: true, equationHolds: true };
+    }),
+    repairAcceptedHouseholdBooks: vi.fn(async (household: Household) => {
+      startup.repairedCandidates.push(household);
+      return { ok: true, engine: "pglite" as const, entryCount: household.transactions.length, inBalance: true, equationHolds: true };
+    }),
+  };
+});
+
+vi.mock("../src/ledger/supabase.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/ledger/supabase.ts")>();
+  return {
+    ...actual,
+    pullHouseholdSnapshotById: vi.fn(() => startup.cloudRemote),
+    pullPersonalSnapshotById: vi.fn(() => startup.cloudPersonal),
+    pullConsistentMemberReplicaById: vi.fn(async () => {
+      startup.consistentPullCalls += 1;
+      const [shared, personal] = await Promise.all([startup.cloudRemote, startup.cloudPersonal]);
+      return shared && personal ? { shared, personal, revision: shared.revision } : null;
     }),
   };
 });
@@ -170,8 +202,10 @@ describe("cached-shell startup books gate", () => {
   let container: HTMLDivElement;
 
   beforeEach(async () => {
+    setContinuityStore(createMemoryContinuityStore());
     localStorage.clear();
     sessionStorage.clear();
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
     startup.cached = { ...catalogHousehold(), linked: true };
     startup.inspections = [];
     startup.inspectOptions = [];
@@ -179,8 +213,14 @@ describe("cached-shell startup books gate", () => {
     startup.ingestOptions = [];
     startup.ingestCalls = 0;
     startup.saveCalls = 0;
+    startup.savedHouseholds = [];
     startup.reconcileCalls = 0;
     startup.remote = new Promise<Household>(() => {});
+    startup.cloudRemote = new Promise<Household | null>(() => {});
+    startup.cloudPersonal = new Promise<PersonalEnvelope | null>(() => {});
+    startup.consistentPullCalls = 0;
+    startup.stagedCandidates = [];
+    startup.repairedCandidates = [];
     localStorage.setItem("hearth:session:v1:development", JSON.stringify({
       memberId: "MEM-002",
       view: "household",
@@ -214,6 +254,7 @@ describe("cached-shell startup books gate", () => {
     container.remove();
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+    setContinuityStore(null);
   });
 
   it("names a missing secure cloud session and offers Google reconnect", async () => {
@@ -248,7 +289,7 @@ describe("cached-shell startup books gate", () => {
       userId: "auth-user",
       sessionId: "11111111-1111-4111-8111-111111111111",
       email: "jonathan@example.com",
-      expiresAt: Date.now() + 60_000,
+      expiresAt: Date.now() + 3_600_000,
     });
     localStorage.setItem(sessionKey, restoredSession);
     await act(async () => {
@@ -371,6 +412,215 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull();
   });
 
+  it("keeps shared Confirm uncommitted while the launch-mode device is offline", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    startup.cached = markSynchronized({ ...catalogHousehold(), linked: true, revision: 12, baseRevision: 12 });
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false });
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container);
+    const savesBefore = startup.saveCalls;
+    act(() => { confirm.click(); });
+    await settleUi();
+
+    expect(startup.saveCalls).toBe(savesBefore);
+    expect(container.textContent).toContain("Shared books are read-only while this device is offline");
+    expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
+  });
+
+  it("refuses shared Confirm before staging when Auth belongs to a different household member", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    startup.cached = markSynchronized({ ...linked, linked: true, revision: 12, baseRevision: 12 });
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "valid-access",
+      refreshToken: "valid-refresh",
+      userId: "auth-user-bianca",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: identity.email,
+      googleSubject: identity.subject,
+      displayName: "Bianca",
+      expiresAt: Date.now() + 3_600_000,
+    }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container);
+    const savesBefore = startup.saveCalls;
+    const ingestsBefore = startup.ingestCalls;
+    act(() => { confirm.click(); });
+    await settleUi();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(listContinuityOutbox("development")).toHaveLength(0);
+    expect(startup.stagedCandidates).toHaveLength(0);
+    expect(startup.ingestCalls).toBe(ingestsBefore);
+    expect(startup.saveCalls).toBe(savesBefore);
+    expect(container.textContent).toMatch(/Google sign-in does not match the selected household member|Continue with Google before changing the shared books/);
+    expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
+  });
+
+  it("keeps writes blocked when a complete shared and Personal cloud generation is unavailable", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    startup.cached = markSynchronized({ ...linked, linked: true, revision: 12, baseRevision: 12 });
+    startup.cloudRemote = Promise.resolve(markSynchronized({ ...linked, linked: true, revision: 13, baseRevision: 13 }));
+    startup.cloudPersonal = Promise.resolve(null);
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "valid-access",
+      refreshToken: "valid-refresh",
+      userId: "auth-user-bianca",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: identity.email,
+      googleSubject: identity.subject,
+      displayName: "Bianca",
+      expiresAt: Date.now() + 3_600_000,
+    }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(startup.consistentPullCalls).toBeGreaterThan(0));
+    await settleUi();
+
+    openExpenseSlideshow();
+    const confirm = walkExpenseToConfirm(container);
+    const savesBefore = startup.saveCalls;
+    const ingestsBefore = startup.ingestCalls;
+    act(() => { confirm.click(); });
+    await settleUi();
+
+    expect(listContinuityOutbox("development")).toHaveLength(0);
+    expect(startup.stagedCandidates).toHaveLength(0);
+    expect(startup.ingestCalls).toBe(ingestsBefore);
+    expect(startup.saveCalls).toBe(savesBefore);
+    expect(container.textContent).toContain("refreshing both shared and Personal books");
+  });
+
+  it("adopts same-member Personal with its stable newer Shared startup generation", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const localWithOldPersonal = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "91.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Old local Personal",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const cloudSharedHousehold = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Partner shared row",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const cloudPersonalHousehold = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "8.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Newest cloud Personal",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    startup.cached = markSynchronized({ ...localWithOldPersonal, linked: true, revision: 12, baseRevision: 12 });
+    startup.cloudRemote = Promise.resolve(markSynchronized({ ...cloudSharedHousehold, linked: true, revision: 13, baseRevision: 13 }));
+    startup.cloudPersonal = Promise.resolve(splitForSync(cloudPersonalHousehold, "MEM-002").personal);
+    startup.inspections.push(Promise.resolve({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: startup.cached.transactions.length,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "valid-access",
+      refreshToken: "valid-refresh",
+      userId: "auth-user-bianca",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: identity.email,
+      googleSubject: identity.subject,
+      displayName: "Bianca",
+      expiresAt: Date.now() + 3_600_000,
+    }));
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(startup.savedHouseholds.some((saved) => (
+      saved.revision === 13
+      && saved.transactions.some((row) => row.note === "Newest cloud Personal")
+    ))).toBe(true));
+
+    const adopted = startup.savedHouseholds.filter((saved) => saved.revision === 13).at(-1);
+    expect(adopted?.transactions.some((row) => row.note === "Partner shared row")).toBe(true);
+    expect(adopted?.transactions.some((row) => row.note === "Newest cloud Personal")).toBe(true);
+    expect(adopted?.transactions.some((row) => row.note === "Old local Personal")).toBe(false);
+  }, 30_000);
+
   it("fails closed on a projection mismatch and offers retry without rebuilding", async () => {
     startup.inspections.push(Promise.resolve({
       ok: false,
@@ -393,6 +643,262 @@ describe("cached-shell startup books gate", () => {
     expect(startup.reconcileCalls).toBe(0);
     openExpenseSlideshow();
     expect(walkExpenseToConfirm(container).disabled).toBe(true);
+  });
+
+  it("keeps an arbitrary projection mismatch blocked until an authenticated cloud refresh", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    const accepted = { ...seedDemoHousehold(), linked: true, revision: 8, baseRevision: 8 };
+    accepted.booksAcceptedHash = await financialAuditHash(accepted);
+    startup.cached = markSynchronized(accepted);
+    startup.inspections.push(
+      Promise.resolve({
+        ok: false,
+        issue: "projection-mismatch",
+        message: "The cached projection belongs to an older compiler.",
+        entryCount: 0,
+      }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(0);
+    expect(container.textContent).toContain("Books need attention");
+    expect(button("Restore from shared copy")).not.toBeNull();
+  });
+
+  it("restores a blocked projection from authenticated shared and personal cloud copies", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    vi.stubEnv("VITE_SUPABASE_URL", "https://continuity.example.supabase.co");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(seedDemoHousehold(), {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const localPrivate = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "999.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Corrupted local private row",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    startup.cached = markSynchronized({ ...localPrivate, revision: 8, baseRevision: 8 });
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({
+      memberId: "MEM-002",
+      view: "household",
+      householdId: startup.cached.householdId,
+    }));
+    localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      userId: "auth-user",
+      sessionId: "11111111-1111-4111-8111-111111111111",
+      email: identity.email,
+      googleSubject: identity.subject,
+      displayName: "Bianca",
+      expiresAt: Date.now() + 3_600_000,
+    }));
+    const cloudShared = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "12.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Shared cloud row",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    }).household;
+    const cloudPersonalHousehold = postEntry(linked, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "8.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Personal cloud row",
+      createdBy: "MEM-002",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    startup.cloudRemote = Promise.resolve(markSynchronized({ ...cloudShared, revision: 9, baseRevision: 9 }));
+    startup.cloudPersonal = Promise.resolve(splitForSync(cloudPersonalHousehold, "MEM-002").personal);
+    startup.inspections.push(Promise.resolve({
+      ok: false,
+      issue: "projection-mismatch",
+      message: "The cached projection is not authoritative.",
+      entryCount: 0,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
+    await act(async () => {
+      button("Restore from shared copy").click();
+      await Promise.resolve();
+    });
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    const restored = startup.savedHouseholds.at(-1);
+    expect(restored?.revision).toBe(9);
+    expect(restored?.transactions.some((row) => row.note === "Shared cloud row")).toBe(true);
+    expect(restored?.transactions.some((row) => row.note === "Personal cloud row")).toBe(true);
+    expect(startup.consistentPullCalls).toBeGreaterThanOrEqual(1);
+    expect(restored?.transactions.some((row) => row.note === "Corrupted local private row")).toBe(false);
+    expect(startup.stagedCandidates.at(-1)?.householdId).toBe(restored?.householdId);
+    expect(startup.repairedCandidates.at(-1)?.booksAcceptedHash).toBe(restored?.booksAcceptedHash);
+  });
+
+  it("keeps projection recovery blocked when the device still has an unacknowledged tip", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    const accepted = { ...seedDemoHousehold(), linked: true, revision: 8, baseRevision: 7 };
+    accepted.booksAcceptedHash = await financialAuditHash(accepted);
+    startup.cached = { ...accepted, sharing: { ...markSynchronized(accepted).sharing, mode: "pending-transport", pending: true } };
+    startup.inspections.push(Promise.resolve({
+      ok: false,
+      issue: "projection-mismatch",
+      message: "The cached snapshot and accepted journal do not agree.",
+      entryCount: 0,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(0);
+    expect(container.textContent).toContain("Books need attention");
+    expect(container.textContent).toContain("Local books repair needed");
+  });
+
+  it("opens the exact pre-launch pending tip after its receipt and durable outbox binding agree", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(seedDemoHousehold(), {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const accepted = {
+      ...linked,
+      linked: true,
+      revision: 8,
+      baseRevision: 7,
+      commandReceipts: [{
+        confirmationId: "confirm-legacy-tip",
+        identityHash: "legacy-identity",
+        auditHash: "",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 8,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    accepted.booksAcceptedHash = await financialAuditHash(accepted);
+    accepted.commandReceipts[0]!.auditHash = accepted.booksAcceptedHash;
+    startup.cached = {
+      ...accepted,
+      sharing: { ...markSynchronized(accepted).sharing, mode: "pending-transport", pending: true },
+    };
+    enqueueContinuitySnapshot({
+      household: startup.cached,
+      identity,
+      expectedRevision: 7,
+      confirmationId: "confirm-legacy-tip",
+    });
+    startup.inspections.push(
+      Promise.resolve({
+        ok: false,
+        issue: "projection-mismatch",
+        message: "The cached snapshot and accepted journal do not agree.",
+        entryCount: 0,
+      }),
+      Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: startup.cached.transactions.length }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(1);
+    expect(startup.ingestOptions).toEqual([{ auditHash: startup.cached.booksAcceptedHash, incremental: false }]);
+    expect(container.textContent).not.toContain("Books need attention");
+  });
+
+  it("repairs the pre-launch crash window after reload without treating the staged tip as active books", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const linked = linkGoogleIdentity(seedDemoHousehold(), {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const previous = { ...linked, linked: true, revision: 7, baseRevision: 7 };
+    previous.booksAcceptedHash = await financialAuditHash(previous);
+    startup.cached = markSynchronized(previous);
+    const candidate = {
+      ...previous,
+      revision: 8,
+      baseRevision: 7,
+      commandReceipts: [{
+        confirmationId: "confirm-staged-crash",
+        identityHash: "staged-identity",
+        auditHash: "staged-audit",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 8,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    const durable = createMemoryContinuityStore();
+    setContinuityStore(durable);
+    enqueueContinuitySnapshot({
+      household: candidate,
+      identity,
+      expectedRevision: 7,
+      confirmationId: "confirm-staged-crash",
+    });
+    // Simulate a new process: durable metadata survives; the memory-only candidate does not.
+    setContinuityStore(durable);
+    startup.inspections.push(
+      Promise.resolve({
+        ok: false,
+        issue: "projection-mismatch",
+        message: "PGlite advanced before the device snapshot.",
+        entryCount: 0,
+      }),
+      Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: startup.cached.transactions.length }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(1);
+    expect(startup.ingestOptions).toEqual([{ auditHash: startup.cached.booksAcceptedHash, incremental: false }]);
   });
 
   it("repairs only a missing schema and opens after the repaired projection validates", async () => {
@@ -439,6 +945,31 @@ describe("cached-shell startup books gate", () => {
     expect(startup.inspectOptions[1]).toEqual({ expectedAuditHash: startup.cached.booksAcceptedHash });
   });
 
+  it("keeps the receipt-gated v8 rebuild for a local-only Development household", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    const accepted = { ...seedDemoHousehold(), linked: false };
+    startup.cached = { ...accepted, booksAcceptedHash: await financialAuditHash(accepted) };
+    startup.inspections.push(
+      Promise.resolve({
+        ok: false,
+        issue: "incomplete-migration",
+        message: "PGlite needs one verified full rebuild before fast local updates can resume.",
+        entryCount: startup.cached.transactions.length,
+      }),
+      Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: startup.cached.transactions.length }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(1);
+    expect(startup.ingestOptions).toEqual([{ auditHash: startup.cached.booksAcceptedHash, incremental: false }]);
+  });
+
   it("keeps an incomplete migration blocked when the cached snapshot receipt does not match", async () => {
     startup.cached = { ...seedDemoHousehold(), linked: true, booksAcceptedHash: "changed-receipt" };
     startup.inspections.push(Promise.resolve({
@@ -458,6 +989,32 @@ describe("cached-shell startup books gate", () => {
     expect(startup.ingestCalls).toBe(0);
     expect(startup.inspectCalls).toBe(1);
     expect(container.textContent).toContain("receipt-covered money facts changed after acceptance");
+  });
+
+  it("does not bypass the online-required gate for a pending pre-v8 snapshot without a durable tip", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    const accepted = { ...seedDemoHousehold(), linked: true, revision: 8, baseRevision: 7 };
+    accepted.booksAcceptedHash = await financialAuditHash(accepted);
+    startup.cached = {
+      ...accepted,
+      sharing: { ...markSynchronized(accepted).sharing, mode: "pending-transport", pending: true },
+    };
+    startup.inspections.push(Promise.resolve({
+      ok: false,
+      issue: "incomplete-migration",
+      message: "PGlite needs one verified full rebuild before fast local updates can resume.",
+      entryCount: startup.cached.transactions.length,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(0);
+    expect(container.textContent).toContain("Books need attention");
   });
 
   it("rebuilds an interrupted local projection only from its accepted snapshot receipt", async () => {

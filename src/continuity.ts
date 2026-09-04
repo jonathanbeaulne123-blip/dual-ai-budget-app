@@ -4,7 +4,7 @@ import {
 } from "./core/google.ts";
 import { ensureHouseholdShape } from "./core/sync.ts";
 import { assertOutboxItemBinding } from "./core/environmentIsolation.ts";
-import type { Environment, Household } from "./core/types.ts";
+import type { Environment, Household, PersonalEnvelope } from "./core/types.ts";
 import { hostedContinuityAllowed } from "./ledger/continuityPolicy.ts";
 import {
   buildCommandRef,
@@ -16,11 +16,14 @@ import {
 import {
   appendContinuityCommand,
   discoverSupabaseHouseholdsByGoogleIdentity,
+  pullConsistentMemberReplicaById,
+  pullHouseholdSnapshotById,
   pushSupabaseHousehold,
   type DiscoveredHousehold,
   type SupabaseConfig,
 } from "./ledger/supabase.ts";
 import { loadHousehold } from "./storage.ts";
+import { clearStagedHouseholdBooks, loadStagedHouseholdBooks } from "./ledger/engine.ts";
 
 export {
   hostedContinuityAllowed,
@@ -99,6 +102,9 @@ let nowOverride: (() => number) | null = null;
 /** Survives localStorage quota failures so Retry can still flush this session. */
 const memoryOutbox = new Map<Environment, ContinuityOutboxItem[]>();
 const durableWriteTails = new Map<Environment, Promise<void>>();
+const hydrationFlights = new Map<Environment, Promise<number>>();
+const outboxMutationEpochs = new Map<Environment, number>();
+let idbReadOverrideForTests: ((environment: Environment) => Promise<ContinuityOutboxItem[] | null>) | null = null;
 
 function browserStore(): ContinuityStore | null {
   if (storeOverride) return storeOverride;
@@ -169,7 +175,11 @@ export function toDurableOutboxItems(items: ContinuityOutboxItem[]): ContinuityO
   });
 }
 
-async function idbReadOutbox(environment: Environment): Promise<ContinuityOutboxItem[] | null> {
+async function idbReadOutbox(
+  environment: Environment,
+  strict = false,
+): Promise<ContinuityOutboxItem[] | null> {
+  if (idbReadOverrideForTests) return idbReadOverrideForTests(environment);
   try {
     const db = await openOutboxDb();
     const raw = await new Promise<unknown>((resolve, reject) => {
@@ -179,7 +189,10 @@ async function idbReadOutbox(environment: Environment): Promise<ContinuityOutbox
     });
     if (!Array.isArray(raw)) return null;
     return raw.filter(isOutboxItem).map(normalizeOutboxItem);
-  } catch {
+  } catch (caught) {
+    if (strict) {
+      throw caught instanceof Error ? caught : new Error("Could not read the continuity outbox.");
+    }
     return null;
   }
 }
@@ -235,7 +248,7 @@ function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
   return Number.isFinite(item.tipRevision) || Number.isFinite(item.expectedRevision);
 }
 
-function readFromLocal(environment: Environment): ContinuityOutboxItem[] {
+function readFromLocal(environment: Environment, strict = false): ContinuityOutboxItem[] {
   const store = browserStore();
   if (!store) return [];
   try {
@@ -244,7 +257,10 @@ function readFromLocal(environment: Environment): ContinuityOutboxItem[] {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isOutboxItem).map(normalizeOutboxItem);
-  } catch {
+  } catch (caught) {
+    if (strict) {
+      throw caught instanceof Error ? caught : new Error("Could not read the continuity outbox from local storage.");
+    }
     return [];
   }
 }
@@ -276,6 +292,41 @@ function read(environment: Environment): ContinuityOutboxItem[] {
   return mem;
 }
 
+function mergeOutboxSources(sources: ContinuityOutboxItem[]): ContinuityOutboxItem[] {
+  const byId = new Map<string, ContinuityOutboxItem>();
+  for (const item of sources) {
+    const existing = byId.get(item.id);
+    if (!existing || compareOutboxFreshness(item, existing) > 0) {
+      const snapshot = item.snapshot
+        ?? (existing && sameOutboxGeneration(existing, item) ? existing.snapshot : undefined);
+      byId.set(item.id, snapshot ? { ...item, snapshot } : item);
+    } else if (
+      item.updatedAt === existing.updatedAt
+      && sameOutboxGeneration(existing, item)
+      && item.snapshot
+      && !existing.snapshot
+    ) {
+      byId.set(item.id, { ...existing, snapshot: item.snapshot });
+    }
+  }
+  return [...byId.values()];
+}
+
+function compareOutboxFreshness(left: ContinuityOutboxItem, right: ContinuityOutboxItem): number {
+  if (left.tipRevision !== right.tipRevision) return left.tipRevision - right.tipRevision;
+  const leftConfirmations = new Set(left.confirmationIds);
+  const rightConfirmations = new Set(right.confirmationIds);
+  const leftDominates = [...rightConfirmations].every((id) => leftConfirmations.has(id));
+  const rightDominates = [...leftConfirmations].every((id) => rightConfirmations.has(id));
+  if (leftDominates !== rightDominates) return leftDominates ? 1 : -1;
+  if (left.confirmationIds.length !== right.confirmationIds.length) {
+    return left.confirmationIds.length - right.confirmationIds.length;
+  }
+  const timeOrder = left.updatedAt.localeCompare(right.updatedAt);
+  if (timeOrder !== 0) return timeOrder;
+  return (left.generation ?? "").localeCompare(right.generation ?? "");
+}
+
 function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDurable[]): boolean {
   const store = browserStore();
   if (!store) return false;
@@ -290,36 +341,61 @@ function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDu
 }
 
 /** IDB-first durable persist; LS holds the same slim metadata when space allows. */
-async function persistDurableOutbox(environment: Environment, durable: ContinuityOutboxDurable[]): Promise<void> {
+async function persistDurableOutbox(
+  environment: Environment,
+  durable: ContinuityOutboxDurable[],
+  requireEveryAvailableStore = false,
+): Promise<void> {
   let persisted = false;
+  const idbAvailable = typeof indexedDB !== "undefined";
+  let idbPersisted = !idbAvailable;
   try {
     await idbWriteOutbox(environment, durable);
     persisted = true;
+    idbPersisted = true;
   } catch {
     /* IndexedDB may be unavailable in private mode; LS + memory still hold the tip pointer. */
   }
+  const localAvailable = Boolean(browserStore());
+  let localPersisted = !localAvailable;
   try {
-    persisted = writeLocalDurable(environment, durable) || persisted;
+    localPersisted = writeLocalDurable(environment, durable);
+    persisted = localPersisted || persisted;
   } catch {
     /* Quota on slim metadata is rare; memory + IDB remain authoritative. */
+  }
+  if (requireEveryAvailableStore && (!idbPersisted || !localPersisted)) {
+    throw new Error("This phone could not durably clear its shared retry metadata.");
   }
   if (durable.length && !persisted) {
     throw new Error(STORAGE_QUOTA_MESSAGE);
   }
 }
 
-function write(environment: Environment, items: ContinuityOutboxItem[]): void {
+function write(
+  environment: Environment,
+  items: ContinuityOutboxItem[],
+  options: { requireEveryAvailableStore?: boolean } = {},
+): void {
+  outboxMutationEpochs.set(environment, (outboxMutationEpochs.get(environment) ?? 0) + 1);
   memoryOutbox.set(environment, items);
   const durable = toDurableOutboxItems(items);
   if (storeOverride) {
     // Tests inject a sync store and read it immediately — write slim LS first.
     writeLocalDurable(environment, durable);
-    void idbWriteOutbox(environment, durable).catch(() => undefined);
-    durableWriteTails.set(environment, Promise.resolve());
+    const idbPersist = typeof indexedDB === "undefined"
+      ? Promise.resolve()
+      : idbWriteOutbox(environment, durable);
+    const settled = options.requireEveryAvailableStore ? idbPersist : idbPersist.catch(() => undefined);
+    durableWriteTails.set(environment, settled);
     return;
   }
   const previous = durableWriteTails.get(environment) ?? Promise.resolve();
-  const next = previous.catch(() => undefined).then(() => persistDurableOutbox(environment, durable));
+  const next = previous.catch(() => undefined).then(() => persistDurableOutbox(
+    environment,
+    durable,
+    options.requireEveryAvailableStore,
+  ));
   void next.catch(() => undefined);
   durableWriteTails.set(environment, next);
 }
@@ -330,21 +406,30 @@ export async function awaitContinuityOutboxDurable(environment: Environment): Pr
 }
 
 /** Load a durable IndexedDB outbox when localStorage was emptied by quota. */
-export async function hydrateContinuityOutbox(environment: Environment): Promise<number> {
-  if (memoryOutbox.has(environment) && (memoryOutbox.get(environment)?.length ?? 0) > 0) {
-    return memoryOutbox.get(environment)?.length ?? 0;
-  }
+async function hydrateContinuityOutboxNow(environment: Environment): Promise<number> {
+  const startingEpoch = outboxMutationEpochs.get(environment) ?? 0;
   const local = readFromLocal(environment);
-  if (local.length) {
-    memoryOutbox.set(environment, local);
-    return local.length;
-  }
   const fromIdb = await idbReadOutbox(environment);
-  if (fromIdb?.length) {
-    memoryOutbox.set(environment, fromIdb);
-    return fromIdb.length;
+  if ((outboxMutationEpochs.get(environment) ?? 0) !== startingEpoch) {
+    return read(environment).length;
   }
-  return 0;
+  const merged = mergeOutboxSources([
+    ...(fromIdb ?? []),
+    ...local,
+    ...(memoryOutbox.get(environment) ?? []),
+  ]);
+  memoryOutbox.set(environment, merged);
+  return merged.length;
+}
+
+export function hydrateContinuityOutbox(environment: Environment): Promise<number> {
+  const existing = hydrationFlights.get(environment);
+  if (existing) return existing;
+  const flight = hydrateContinuityOutboxNow(environment).finally(() => {
+    if (hydrationFlights.get(environment) === flight) hydrationFlights.delete(environment);
+  });
+  hydrationFlights.set(environment, flight);
+  return flight;
 }
 
 function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): boolean {
@@ -373,6 +458,16 @@ export function setContinuityStore(store: ContinuityStore | null): void {
   storeOverride = store;
   memoryOutbox.clear();
   durableWriteTails.clear();
+  hydrationFlights.clear();
+  for (const environment of ["development", "production"] as const) {
+    outboxMutationEpochs.set(environment, (outboxMutationEpochs.get(environment) ?? 0) + 1);
+  }
+}
+
+export function setContinuityIdbReadForTests(
+  reader: ((environment: Environment) => Promise<ContinuityOutboxItem[] | null>) | null,
+): void {
+  idbReadOverrideForTests = reader;
 }
 
 export function setContinuityNow(now: (() => number) | null): void {
@@ -439,6 +534,12 @@ export async function resolveOutboxHousehold(
     loaded = null;
   }
   if (loaded) candidates.push(ensureHouseholdShape(loaded));
+  try {
+    const staged = await loadStagedHouseholdBooks(item.environment, item.householdId);
+    if (staged) candidates.push(ensureHouseholdShape(staged));
+  } catch {
+    // A missing isolated stage leaves the durable marker for cloud reconciliation.
+  }
 
   const eligible = candidates.filter((household) => {
     try {
@@ -550,6 +651,94 @@ export function acknowledgeContinuityOutboxItem(item: ContinuityOutboxItem): voi
   );
 }
 
+/** Compare-and-remove an outbox generation and wait until its durable deletion settles. */
+export async function acknowledgeContinuityOutboxItemDurably(item: ContinuityOutboxItem): Promise<void> {
+  const items = read(item.environment);
+  if (!items.some((row) => sameOutboxGeneration(row, item))) return;
+  write(
+    item.environment,
+    items.filter((row) => !sameOutboxGeneration(row, item)),
+    { requireEveryAvailableStore: true },
+  );
+  const removalEpoch = outboxMutationEpochs.get(item.environment) ?? 0;
+  try {
+    await awaitContinuityOutboxDurable(item.environment);
+  } catch (caught) {
+    // Cloud accepted the command, but this device must retain the exact marker
+    // until every durable store can forget it or authenticated pull proves it.
+    if ((outboxMutationEpochs.get(item.environment) ?? 0) === removalEpoch) {
+      write(item.environment, items);
+      await awaitContinuityOutboxDurable(item.environment).catch(() => undefined);
+    }
+    throw caught;
+  }
+}
+
+export function stagedHouseholdMatchesContinuityGeneration(
+  staged: Household,
+  item: ContinuityOutboxItem,
+): boolean {
+  try {
+    assertOutboxItemBinding({ ...item, snapshot: staged, identity: item.identity });
+  } catch {
+    return false;
+  }
+  const receipts = new Set((staged.commandReceipts ?? []).map((row) => row.confirmationId));
+  return staged.revision === item.tipRevision
+    && item.confirmationIds.every((id) => receipts.has(id));
+}
+
+/**
+ * Cancel one definitive-conflict generation after a stable cloud pair is known.
+ * A newer/replaced queue or stage is never removed by an older in-flight result.
+ */
+export async function cancelContinuityConflictGeneration(item: ContinuityOutboxItem): Promise<boolean> {
+  const current = read(item.environment).find((row) => row.id === item.id);
+  if (!current || !sameOutboxGeneration(current, item)) return false;
+  let staged: Household | null = null;
+  try {
+    staged = await loadStagedHouseholdBooks(item.environment, item.householdId);
+  } catch {
+    return false;
+  }
+  if (staged) {
+    if (!stagedHouseholdMatchesContinuityGeneration(staged, item)) return false;
+    await clearStagedHouseholdBooks(item.environment, item.householdId);
+  }
+  await acknowledgeContinuityOutboxItemDurably(item);
+  return true;
+}
+
+function remoteAcknowledgesOutbox(remote: Household, item: ContinuityOutboxItem): boolean {
+  if (
+    remote.environment !== item.environment
+    || remote.householdId !== item.householdId
+    || remote.revision < item.tipRevision
+  ) return false;
+  const refs = item.commandRefs ?? [];
+  if (!refs.length || refs.length !== item.confirmationIds.length) return false;
+  return refs.every((ref) => {
+    const receipt = remote.commandReceipts.find((row) => row.confirmationId === ref.confirmationId);
+    if (!receipt) return false;
+    const receiptAuditHash = receipt.scopedAuditHashes?.[ref.ledgerScope] ?? receipt.auditHash;
+    return receipt.identityHash === ref.identityHash
+      && receipt.commandKind === ref.commandType
+      && receipt.revision === ref.resultRevision
+      && receiptAuditHash === ref.commandPayload.auditHash
+      && JSON.stringify([...receipt.postedIds].sort()) === JSON.stringify([...ref.commandPayload.postedIds].sort());
+  });
+}
+
+/** Resolve delivery ambiguity from an authenticated canonical pull. */
+export async function acknowledgeContinuityOutboxFromRemote(remote: Household): Promise<number> {
+  const accepted = listContinuityOutbox(remote.environment)
+    .filter((item) => remoteAcknowledgesOutbox(remote, item));
+  for (const item of accepted) {
+    await acknowledgeContinuityOutboxItemDurably(item);
+  }
+  return accepted.length;
+}
+
 /** Drop queued snapshots for one household (Sign out / clear this phone). */
 export function clearContinuityOutboxForHousehold(
   environment: Environment,
@@ -562,10 +751,44 @@ export function clearContinuityOutboxForHousehold(
   return removed;
 }
 
+async function allDurableOutboxItems(environment: Environment): Promise<ContinuityOutboxItem[]> {
+  await hydrateContinuityOutbox(environment);
+  const indexed = idbReadOverrideForTests || typeof indexedDB !== "undefined"
+    ? await idbReadOutbox(environment, true) ?? []
+    : [];
+  const sources = [
+    ...indexed,
+    ...readFromLocal(environment, true),
+    ...(memoryOutbox.get(environment) ?? []),
+  ];
+  return mergeOutboxSources(sources);
+}
+
+/** Wait for startup hydration, then erase one household's retry metadata durably. */
+export async function clearContinuityOutboxForHouseholdDurably(
+  environment: Environment,
+  householdId: string,
+): Promise<number> {
+  const items = await allDurableOutboxItems(environment);
+  const next = items.filter((item) => item.householdId !== householdId);
+  const removed = items.length - next.length;
+  write(environment, next, { requireEveryAvailableStore: true });
+  await awaitContinuityOutboxDurable(environment);
+  return removed;
+}
+
 /** Drop every queued snapshot for one environment. */
 export function clearContinuityOutbox(environment: Environment): number {
   const removed = read(environment).length;
   write(environment, []);
+  return removed;
+}
+
+/** Wait for startup hydration, then erase every retry marker in one environment. */
+export async function clearContinuityOutboxDurably(environment: Environment): Promise<number> {
+  const removed = (await allDurableOutboxItems(environment)).length;
+  write(environment, [], { requireEveryAvailableStore: true });
+  await awaitContinuityOutboxDurable(environment);
   return removed;
 }
 
@@ -689,7 +912,7 @@ async function flushItem(
     }
     // Successful CAS (including idempotent duplicate delivery) acknowledges the outbox entry.
     // Local books are never cleared here — only the transport queue item.
-    acknowledgeContinuityOutboxItem(item);
+    await acknowledgeContinuityOutboxItemDurably(item);
     return { kind: "synchronized", revision: household.revision };
   } catch (caught) {
     const message = humanizeContinuityError(caught);
@@ -710,19 +933,39 @@ export async function transportHouseholdWithOutbox(input: {
    * Default true: flush immediately after enqueue (ledger writes).
    */
   flush?: boolean;
+  /** On an ambiguous response, verify the same confirmation receipt by authenticated pull. */
+  reconcileAmbiguous?: boolean;
 }): Promise<
-  | { ok: true; remoteRevision?: number }
-  | { ok: false; errorClass: "pending-transport" | "conflict-detected"; remote?: Household; message: string }
+  | { ok: true; remoteRevision?: number; remote?: Household; remotePersonal?: PersonalEnvelope }
+  | {
+      ok: false;
+      errorClass: "pending-transport" | "conflict-detected" | "disconnected";
+      remote?: Household;
+      remotePersonal?: PersonalEnvelope;
+      finalizeConflict?: () => Promise<boolean>;
+      message: string;
+    }
 > {
+  const priorItems = read(input.household.environment);
   let item: ContinuityOutboxItem;
   try {
     item = enqueueContinuitySnapshot(input);
     await awaitContinuityOutboxDurable(item.environment);
   } catch (caught) {
+    // No network request has started. Restore the exact prior queue in memory
+    // and best-effort durable storage so this failed Confirm cannot masquerade
+    // as an ambiguously delivered cloud write.
+    try {
+      write(input.household.environment, priorItems);
+      await awaitContinuityOutboxDurable(input.household.environment);
+    } catch {
+      // The browser stores already refused this write; memory still reflects
+      // the pre-Confirm queue and remains the safest state for this session.
+    }
     return {
       ok: false,
-      errorClass: "pending-transport",
-      message: humanizeContinuityError(caught),
+      errorClass: "disconnected",
+      message: `Hearth could not safely queue this Confirm before contacting the cloud. Nothing was posted. ${humanizeContinuityError(caught)}`,
     };
   }
   if (input.flush === false) {
@@ -735,12 +978,81 @@ export async function transportHouseholdWithOutbox(input: {
   const result = await flushItem(item, input.identity, input.config, input.household);
   if (result.kind === "synchronized") return { ok: true, remoteRevision: result.revision };
   if (result.kind === "conflict") {
+    if (input.reconcileAmbiguous && input.config) {
+      try {
+        const consistent = await pullConsistentMemberReplicaById({
+          householdId: item.householdId,
+          memberId: item.memberId,
+          environment: item.environment,
+          config: input.config,
+          identity: input.identity,
+          initialShared: result.remote,
+        });
+        if (!consistent) {
+          return {
+            ok: false,
+            errorClass: "pending-transport",
+            message: "Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this Confirm.",
+          };
+        }
+        return {
+          ok: false,
+          errorClass: "conflict-detected",
+          remote: consistent.shared,
+          remotePersonal: consistent.personal,
+          finalizeConflict: () => cancelContinuityConflictGeneration(item),
+          message: result.message,
+        };
+      } catch {
+        return {
+          ok: false,
+          errorClass: "pending-transport",
+          message: "Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this Confirm.",
+        };
+      }
+    }
     return {
       ok: false,
       errorClass: "conflict-detected",
       remote: result.remote,
       message: result.message,
     };
+  }
+  if (input.reconcileAmbiguous && input.config) {
+    try {
+      const remote = await pullHouseholdSnapshotById(
+        input.household.householdId,
+        input.household.environment,
+        input.config,
+        input.identity,
+      );
+      if (remote && remoteAcknowledgesOutbox(remote, item)) {
+        if (remote.revision > input.household.revision) {
+          const consistent = await pullConsistentMemberReplicaById({
+            householdId: input.household.householdId,
+            memberId: item.memberId,
+            environment: input.household.environment,
+            config: input.config,
+            identity: input.identity,
+            initialShared: remote,
+          });
+          if (!consistent || !remoteAcknowledgesOutbox(consistent.shared, item)) {
+            throw new Error("The newer shared household could not be paired with the signed-in member's Personal copy.");
+          }
+          await acknowledgeContinuityOutboxItemDurably(item);
+          return {
+            ok: true,
+            remoteRevision: consistent.revision,
+            remote: consistent.shared,
+            remotePersonal: consistent.personal,
+          };
+        }
+        await acknowledgeContinuityOutboxItemDurably(item);
+        return { ok: true, remoteRevision: remote.revision, remote };
+      }
+    } catch {
+      // The explicit in-flight marker remains until a later authenticated pull.
+    }
   }
   return { ok: false, errorClass: "pending-transport", message: result.message };
 }

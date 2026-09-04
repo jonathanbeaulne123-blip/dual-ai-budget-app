@@ -7,6 +7,8 @@ import {
   type CompiledBooks,
 } from "../core/journal.ts";
 import type { Household, Environment } from "../core/types.ts";
+import { ensureHouseholdShape } from "../core/sync.ts";
+import { createWriteQueue } from "../core/writeQueue.ts";
 import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
@@ -203,7 +205,35 @@ async function deleteRows(
 
 let browserDbs = new Map<string, BooksDatabase>();
 let browserDbOpenings = new Map<string, Promise<BooksDatabase>>();
+let stagedDbs = new Map<string, BooksDatabase>();
+let stagedDbOpenings = new Map<string, Promise<BooksDatabase>>();
+const stagedGenerations = new Map<string, number>();
+const stagedWriteQueues = new Map<string, ReturnType<typeof createWriteQueue>>();
 const compiledBooksCache = new Map<string, CompiledBooks>();
+const stagedHouseholdMemory = new Map<string, Household>();
+let stagedBooksDataDirForTests: ((environment: Environment, householdId: string) => string) | null = null;
+
+export function setStagedBooksDataDirForTests(
+  factory: ((environment: Environment, householdId: string) => string) | null,
+): void {
+  stagedBooksDataDirForTests = factory;
+}
+
+function stagedHouseholdKey(environment: Environment, householdId: string): string {
+  return `${environment}:${householdId}`;
+}
+
+function stagedGeneration(cacheKey: string): number {
+  return stagedGenerations.get(cacheKey) ?? 0;
+}
+
+function stagedWriteQueue(cacheKey: string): ReturnType<typeof createWriteQueue> {
+  const existing = stagedWriteQueues.get(cacheKey);
+  if (existing) return existing;
+  const created = createWriteQueue();
+  stagedWriteQueues.set(cacheKey, created);
+  return created;
+}
 
 function compiledCacheKey(household: Household): string | null {
   return household.booksAcceptedHash
@@ -229,6 +259,11 @@ function recalledCompiledBooks(household: Household): CompiledBooks | undefined 
 
 export function booksIdbName(environment: Environment): string {
   return `idb://hearth-books-${environment}`;
+}
+
+export function stagedBooksIdbName(environment: Environment, householdId: string): string {
+  const safeHouseholdId = householdId.replace(/[^a-zA-Z0-9_-]/g, "-");
+  return `idb://hearth-books-staged-${environment}-${safeHouseholdId}`;
 }
 
 export function incrementalBooksEnabled(environment: Environment): boolean {
@@ -290,6 +325,14 @@ export async function migrateBooks(db: Queryable): Promise<void> {
     // accepted JSON snapshot performs one transactional full rebuild.
     await db.query("UPDATE audit_revisions SET projection_hash = NULL");
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [7, new Date().toISOString()]);
+    have.add(7);
+  }
+  if (!have.has(8)) {
+    // Online-required launch contract: a compiler/deployment boundary must not
+    // reuse an older derived projection receipt. The accepted snapshot remains
+    // untouched and startup rebuilds this disposable cache transactionally.
+    await db.query("UPDATE audit_revisions SET projection_hash = NULL");
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [8, new Date().toISOString()]);
   }
 }
 
@@ -298,6 +341,34 @@ export async function openMemoryBooks(): Promise<PGlite> {
   const db = await PGlite.create();
   await migrateBooks(db);
   return db;
+}
+
+async function getStagedBooks(environment: Environment, householdId: string): Promise<BooksDatabase> {
+  const cacheKey = stagedHouseholdKey(environment, householdId);
+  const existing = stagedDbs.get(cacheKey);
+  if (existing) return existing;
+  const opening = stagedDbOpenings.get(cacheKey);
+  if (opening) return opening;
+  const generation = stagedGeneration(cacheKey);
+  const nextOpening = (async () => {
+    const { PGlite } = await import("@electric-sql/pglite");
+    const dataDir = stagedBooksDataDirForTests?.(environment, householdId)
+      ?? (typeof indexedDB !== "undefined" ? stagedBooksIdbName(environment, householdId) : null);
+    const db = dataDir ? await PGlite.create(dataDir) : await PGlite.create();
+    await migrateBooks(db);
+    if (stagedGeneration(cacheKey) !== generation) {
+      await db.close().catch(() => undefined);
+      throw new Error("The isolated books stage was cleared before it finished opening.");
+    }
+    stagedDbs.set(cacheKey, db);
+    return db;
+  })();
+  stagedDbOpenings.set(cacheKey, nextOpening);
+  try {
+    return await nextOpening;
+  } finally {
+    if (stagedDbOpenings.get(cacheKey) === nextOpening) stagedDbOpenings.delete(cacheKey);
+  }
 }
 
 export async function getBrowserBooks(environment: Environment = "development"): Promise<BooksDatabase> {
@@ -551,16 +622,31 @@ export async function resetBrowserBooksForTests(): Promise<void> {
     }
   }
   browserDbs = new Map();
+  await closeStagedBooksHandlesForTests();
   compiledBooksCache.clear();
+}
+
+/** Simulate a page reload without deleting the durable staged candidate. */
+export async function closeStagedBooksHandlesForTests(): Promise<void> {
+  const stagedOpenings = [...stagedDbOpenings.values()];
+  await Promise.allSettled(stagedOpenings);
+  stagedDbOpenings = new Map();
+  for (const db of stagedDbs.values()) {
+    try { await db.close(); } catch { /* test isolation */ }
+  }
+  stagedDbs = new Map();
+  stagedHouseholdMemory.clear();
 }
 
 function deleteIndexedDatabase(name: string): Promise<void> {
   if (typeof indexedDB === "undefined") return Promise.resolve();
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const request = indexedDB.deleteDatabase(name);
     request.onsuccess = () => resolve();
-    request.onerror = () => resolve();
-    request.onblocked = () => resolve();
+    request.onerror = () => reject(request.error ?? new Error(`Could not delete ${name}.`));
+    // Do not report completion while another tab still has the database open.
+    // IndexedDB will fire success after the blocking connection closes.
+    request.onblocked = () => undefined;
   });
 }
 
@@ -961,6 +1047,118 @@ export async function ingestHouseholdBooks(
   }
 }
 
+/**
+ * Validate a shared-write candidate through the real Postgres schema without
+ * touching the durable active replica. Online-required commits use this before
+ * cloud transport, then ingest the active replica only after acknowledgement.
+ */
+export async function validateHouseholdBooksStaged(
+  household: Household,
+  options: BooksIngestOptions & { compiled?: CompiledBooks } = {},
+): Promise<BooksStatus> {
+  const cacheKey = stagedHouseholdKey(household.environment, household.householdId);
+  return stagedWriteQueue(cacheKey)(() => validateHouseholdBooksStagedUnlocked(household, options));
+}
+
+async function validateHouseholdBooksStagedUnlocked(
+  household: Household,
+  options: BooksIngestOptions & { compiled?: CompiledBooks } = {},
+): Promise<BooksStatus> {
+  const cacheKey = stagedHouseholdKey(household.environment, household.householdId);
+  const generation = stagedGeneration(cacheKey);
+  const db = await getStagedBooks(household.environment, household.householdId);
+  const status = await ingestBooks(
+    db,
+    household,
+    options.compiled ?? compileHousehold(household),
+    { ...options, incremental: options.incremental ?? true },
+  );
+  if (stagedGeneration(cacheKey) !== generation) {
+    throw new Error("The isolated books stage was cleared while validation was running.");
+  }
+  stagedHouseholdMemory.set(cacheKey, household);
+  return status;
+}
+
+export async function loadStagedHouseholdBooks(
+  environment: Environment,
+  householdId: string,
+): Promise<Household | null> {
+  const remembered = stagedHouseholdMemory.get(stagedHouseholdKey(environment, householdId));
+  if (remembered) return remembered;
+  if (typeof indexedDB === "undefined" && !stagedBooksDataDirForTests) return null;
+  const db = await getStagedBooks(environment, householdId);
+  const result = await db.query<{ payload: string }>(
+    "SELECT payload FROM household_snapshots WHERE household_id = $1 LIMIT 1",
+    [householdId],
+  );
+  const raw = result.rows[0]?.payload;
+  if (!raw) return null;
+  const household = ensureHouseholdShape(JSON.parse(raw) as Household);
+  if (household.environment !== environment || household.householdId !== householdId) return null;
+  return household;
+}
+
+export async function prewarmStagedHouseholdBooks(household: Household): Promise<void> {
+  const cacheKey = stagedHouseholdKey(household.environment, household.householdId);
+  await stagedWriteQueue(cacheKey)(async () => {
+    const staged = await loadStagedHouseholdBooks(household.environment, household.householdId);
+    // A higher stage may be the only replayable copy of an ambiguously delivered
+    // Confirm. Recheck only after acquiring the same lane used by validation.
+    if (staged && staged.revision > household.revision) return;
+    if (
+      staged
+      && staged.revision === household.revision
+      && staged.booksAcceptedHash === household.booksAcceptedHash
+    ) return;
+    await validateHouseholdBooksStagedUnlocked(household, {
+      previous: staged,
+      auditHash: household.booksAcceptedHash ?? undefined,
+      incremental: Boolean(staged),
+    });
+  });
+}
+
+export async function clearStagedHouseholdBooks(environment: Environment, householdId: string): Promise<void> {
+  const cacheKey = stagedHouseholdKey(environment, householdId);
+  stagedGenerations.set(cacheKey, stagedGeneration(cacheKey) + 1);
+  await stagedWriteQueue(cacheKey)(async () => {
+    stagedHouseholdMemory.delete(cacheKey);
+    const opening = stagedDbOpenings.get(cacheKey);
+    stagedDbOpenings.delete(cacheKey);
+    if (opening) await opening.catch(() => undefined);
+    const db = stagedDbs.get(cacheKey);
+    stagedDbs.delete(cacheKey);
+    if (db) await db.close().catch(() => undefined);
+    if (typeof indexedDB === "undefined") return;
+    const name = stagedBooksIdbName(environment, householdId).replace(/^idb:\/\//, "");
+    await deleteIndexedDatabase(name);
+  });
+}
+
+export async function wipeStagedBooksForEnvironment(
+  environment: Environment,
+  knownHouseholdIds: string[] = [],
+): Promise<void> {
+  const cachePrefix = `${environment}:`;
+  const keys = new Set([
+    ...knownHouseholdIds.map((householdId) => stagedHouseholdKey(environment, householdId)),
+    ...stagedHouseholdMemory.keys(),
+    ...stagedDbOpenings.keys(),
+    ...stagedDbs.keys(),
+    ...stagedWriteQueues.keys(),
+  ].filter((cacheKey) => cacheKey.startsWith(cachePrefix)));
+  await Promise.all([...keys].map((cacheKey) => (
+    clearStagedHouseholdBooks(environment, cacheKey.slice(cachePrefix.length))
+  )));
+  if (typeof indexedDB === "undefined" || typeof indexedDB.databases !== "function") return;
+  const prefix = `hearth-books-staged-${environment}-`;
+  const databases = await indexedDB.databases().catch(() => []);
+  for (const database of databases) {
+    if (database.name?.startsWith(prefix)) await deleteIndexedDatabase(database.name);
+  }
+}
+
 export async function inspectBrowserBooks(
   household: Household,
   options: { compiled?: CompiledBooks; expectedAuditHash?: string } = {},
@@ -970,6 +1168,24 @@ export async function inspectBrowserBooks(
 
 export async function restoreHouseholdBooks(household: Household): Promise<void> {
   await ingestHouseholdBooks(household);
+}
+
+export async function repairAcceptedHouseholdBooks(
+  household: Household,
+  options: { compiled?: CompiledBooks; auditHash?: string } = {},
+): Promise<BooksStatus> {
+  await wipeBrowserBooks(household.environment);
+  const { status } = await ingestHouseholdBooks(household, {
+    compiled: options.compiled,
+    auditHash: options.auditHash,
+    incremental: false,
+  });
+  const inspection = await inspectBrowserBooks(household, {
+    compiled: options.compiled,
+    expectedAuditHash: options.auditHash,
+  });
+  if (!inspection.ok) throw new Error(inspection.message);
+  return status;
 }
 
 /** Linked snapshot transport only. Unlinked households skip with zero fetch.

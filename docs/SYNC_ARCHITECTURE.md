@@ -2,6 +2,8 @@
 
 > **Accepted direction — D-149 (2026-08-26).** This file is the canonical sync plan. It supersedes snapshot-only Phase 2 wording, the 4-second live-pull target, and Packet 7’s “atomic CAS + outbox” framing as the *end state*. Those pieces remain **Tier 1 foundations**, not the finish line.
 >
+> **Launch policy — D-208 (2026-09-03).** Development shared writes are online-required. A reusable isolated PGlite replica validates the candidate through the real Postgres schema first; the cloud command acknowledgement is the commit and `Saved` boundary, and the active PGlite replica advances afterward. Startup, catch-up, ambiguous acknowledgement, and manual projection restore pair Shared with the signed-in member's revisioned Personal envelope between two equal Shared-revision reads. Both scopes are adopted together and shared Confirm stays blocked until that exact environment/household/member/revision tuple is proven. Cached books remain readable offline; Production continuity remains off.
+>
 > **Household outcome:** when Bianca confirms a grocery on her phone, Jonathan’s open kitchen shows it in **100–500 ms** — as naturally as a text message — without either phone being the host, without silent loss, and without the model or widgets posting money.
 >
 > **Canon order:** Jonathan’s latest instruction → this file → [`CLOUD_CONTINUITY.md`](CLOUD_CONTINUITY.md) → [`DECISIONS.md`](DECISIONS.md) → [`ARCHITECTURE.md`](ARCHITECTURE.md) → [`HEARTH_ROADMAP.md`](HEARTH_ROADMAP.md).
@@ -25,7 +27,7 @@ Imagine the household budget is **two shared notebooks** on a **cloud fridge**:
 
 - Only a person tapping **Confirm** posts money. Hercules, weather, and widgets never write in the notebooks.
 - If two people edit the **same line**, the later accepted entry wins automatically. Distinct lines remain additive, and accepted reversals remain immutable.
-- If the cloud is unreachable, your phone keeps a **to-send pile** (outbox) and shares when it can.
+- In the launch build, if the cloud is unreachable the cached notebook stays readable, but shared writing waits. The outbox is crash-safe in-flight state, not permission to report a local-only shared commit.
 - No phone is the “host.” Turning Jonathan’s phone off does not lock Bianca out.
 
 ---
@@ -50,15 +52,22 @@ Imagine the household budget is **two shared notebooks** on a **cloud fridge**:
 These survive every tier. A slice that violates one is **stop-ship**.
 
 1. **PGlite is the accounting gate.** Every inbound bytes — poll, Realtime, or command — passes the same `acceptHouseholdWrite` / hash / environment / membership checks before display or persistence.
-2. **Cloud is durable continuity; no device is host.** Offline outbox + push/pull are transport; neither replaces the other.
+2. **Cloud is durable continuity; no device is host.** In D-208 launch mode, an authenticated cloud acknowledgement is required before a shared write commits locally; cached reading remains available offline.
 3. **Confirm is the money boundary.** Transport never invents journal rows.
 4. **Fail closed on scope.** Environment, Google subject, member, household, and ledger scope must match at discovery, pull, push, and Realtime subscription boundaries (D-146).
 5. **Atomic hosted writes.** Shared CAS + Personal envelope + membership touchpoints commit in **one SQL transaction** (Migration 012 pattern from 011).
 6. **Honest sync UI.** Never “Saved to cloud” when outbox pending, Personal failed after Shared, or conflict blocked.
 7. **Development first; Production gated.** Disposable Development through 2026-09-30; Production cutover requires Jonathan approval and October-grade Auth/RLS proof.
 8. **Idempotent delivery.** Duplicate Realtime events, duplicate POSTs, and offline replay must not double-post money.
-9. **Reconciliation is automatic and truthful.** Distinct ids remain additive; the later accepted same-id entry wins; reversals cannot be rewritten. Pending or failed transport remains visible without blocking the books.
+9. **Reconciliation is automatic and truthful.** Distinct ids remain additive; the later accepted same-id entry wins; reversals cannot be rewritten. An ambiguous launch-mode response preserves its idempotency marker and says “unconfirmed” until authenticated reconciliation proves the receipt.
 10. **Books win (Dual Course 5:3).** Faster sync serves trustworthy books; it never trades audit trail for speed.
+
+When the disposable active projection itself disagrees with its snapshot and no
+in-flight command exists, the books gate stays read-only. The recovery button
+performs an authenticated, household/member-bound pull of both Shared and the
+signed-in member's Personal scope, validates their assembled snapshot in the
+isolated PGlite stage, and only then replaces the active projection. Pending
+outbox work and unresolved conflicts must be settled first.
 
 ---
 
@@ -83,8 +92,8 @@ Phase 0 (identity, CAS client, outbox, RLS 006) ──► Tier 1 ──► Tier 
 
 | Segment | Budget | Notes |
 |---|---:|---|
-| Confirm → local PGlite accept | 20–80 ms | unchanged |
-| Outbox enqueue | < 10 ms | D-145 slim |
+| Confirm → staged PGlite acceptance | 20–80 ms warm target | isolated reusable Postgres replica; active PGlite is unchanged |
+| Crash-safe in-flight state | < 10 ms marker | slim outbox identity plus staged PGlite candidate survive ambiguity |
 | Shared+Personal atomic RPC | 50–150 ms | one round trip |
 | Realtime propagation | 50–200 ms | Supabase region + websocket |
 | Pull merge + PGlite validate | 20–80 ms | same reconcile path as today |

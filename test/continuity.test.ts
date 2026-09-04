@@ -1,22 +1,33 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
+  acknowledgeContinuityOutboxItemDurably,
+  awaitContinuityOutboxDurable,
+  cancelContinuityConflictGeneration,
   createMemoryContinuityStore,
   clearContinuityOutboxForHousehold,
+  clearContinuityOutboxForHouseholdDurably,
   discoverContinuityMemberships,
   enqueueContinuitySnapshot,
   flushContinuityOutbox,
   humanizeContinuityError,
+  hydrateContinuityOutbox,
   isStorageQuotaError,
   listContinuityOutbox,
   resolveOutboxHousehold,
   setContinuityStore,
+  setContinuityIdbReadForTests,
+  stagedHouseholdMatchesContinuityGeneration,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
-import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
+import { catalogHousehold, createWriteQueue, financialAuditHash, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
 import { householdCloudProjection } from "../src/ledger/supabase.ts";
 import type { Household } from "../src/core/types.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
 import { decodeJsonPayload } from "../src/ledger/snapshotPayload.ts";
+import { closeStagedBooksHandlesForTests, loadStagedHouseholdBooks, setStagedBooksDataDirForTests, validateHouseholdBooksStaged } from "../src/ledger/engine.ts";
 
 const config = { url: "https://continuity.example.supabase.co", key: "sb_publishable_test" };
 const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
@@ -77,6 +88,7 @@ function continuityCasFetch(options?: { remote?: Household; track?: Array<{ url:
 
 
 afterEach(() => {
+  setContinuityIdbReadForTests(null);
   setContinuityStore(null);
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -290,6 +302,340 @@ describe("Google-account continuity", () => {
     const again = await flushContinuityOutbox({ environment: "development", identity, config, force: true });
     expect(again).toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });
     expect(methods.filter((method) => method === "POST").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("retains a failed in-flight marker until its cloud outcome is reconciled", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
+
+    const refused = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-online-required",
+      config,
+    });
+
+    expect(refused).toMatchObject({ ok: false, errorClass: "pending-transport" });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+  });
+
+  it("settles a lost hosted response from the same confirmation receipt", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const base = googleHousehold();
+    const household = {
+      ...base,
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-lost-response",
+        identityHash: "identity-lost-response",
+        auditHash: "accepted",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    let postAttempted = false;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/")) {
+        postAttempted = true;
+        throw new Error("response lost after commit");
+      }
+      if (url.includes("household_snapshots?") && url.includes("select=payload")) {
+        return response([{ payload: JSON.stringify(household) }]);
+      }
+      return response([]);
+    }));
+
+    const reconciled = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-lost-response",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(postAttempted).toBe(true);
+    expect(reconciled).toMatchObject({ ok: true, remoteRevision: 2 });
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
+  it("does not acknowledge a reused confirmation id with different command facts", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const base = googleHousehold();
+    const household = {
+      ...base,
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-reused",
+        identityHash: "expected-identity",
+        auditHash: "expected-audit",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    const differentRemote = {
+      ...household,
+      commandReceipts: [{ ...household.commandReceipts[0]!, identityHash: "different-identity" }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/")) throw new Error("response lost");
+      if (url.includes("household_snapshots?") && url.includes("select=payload")) {
+        return response([{ payload: JSON.stringify(differentRemote) }]);
+      }
+      return response([]);
+    }));
+
+    const result = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-reused",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(result).toMatchObject({ ok: false, errorClass: "pending-transport" });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+  });
+
+  it("pairs a newer ambiguous Shared acknowledgement with canonical same-member Personal", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const base = googleHousehold();
+    const candidate = {
+      ...base,
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-newer-personal",
+        identityHash: "identity-newer-personal",
+        auditHash: "accepted",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    const latest = postEntry(candidate, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "6.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Personal from device B",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const remote = {
+      ...latest,
+      revision: 3,
+      baseRevision: 3,
+      transactions: latest.transactions.filter((row) => row.visibility !== "personal"),
+    };
+    const remotePersonal = personalReplicaForMember(latest, "MEM-001");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/")) throw new Error("response lost after commit");
+      if (url.includes("household_snapshots?")) {
+        return response([{ payload: JSON.stringify(remote) }]);
+      }
+      if (url.includes("continuity_personal_snapshots?")) {
+        return response([{ revision: 3, payload: JSON.stringify(remotePersonal) }]);
+      }
+      return response([]);
+    }));
+
+    const result = await transportHouseholdWithOutbox({
+      household: candidate,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-newer-personal",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    if (!result.ok) throw new Error(result.message);
+    expect(result).toMatchObject({ ok: true, remoteRevision: 3 });
+    expect(result.remotePersonal?.transactions.some((row) => row.note === "Personal from device B")).toBe(true);
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
+  it("replays a never-sent staged candidate after durable outbox reload", async () => {
+    const stageRoot = await mkdtemp(join(tmpdir(), "hearth-stage-reload-"));
+    setStagedBooksDataDirForTests((environment, householdId) => join(stageRoot, `${environment}-${householdId}`));
+    const durable = createMemoryContinuityStore();
+    try {
+      setContinuityStore(durable);
+      const base = googleHousehold();
+      const posted = postEntry(base, {
+        date: "2026-09-03",
+        type: "expense",
+        amount: "4.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Staged retry milk",
+        createdBy: "MEM-001",
+        confirmDuplicate: true,
+      });
+      const candidate = { ...posted.household, revision: 2, baseRevision: 1 };
+      candidate.booksAcceptedHash = await financialAuditHash(candidate);
+      await validateHouseholdBooksStaged(candidate, { auditHash: candidate.booksAcceptedHash });
+      enqueueContinuitySnapshot({
+        household: candidate,
+        identity,
+        expectedRevision: 1,
+        confirmationId: "confirm-never-sent",
+      });
+      await closeStagedBooksHandlesForTests();
+      setContinuityStore(durable);
+      expect((await loadStagedHouseholdBooks(candidate.environment, candidate.householdId))?.revision).toBe(candidate.revision);
+      await closeStagedBooksHandlesForTests();
+      vi.stubGlobal("fetch", continuityCasFetch());
+
+      const replayed = await flushContinuityOutbox({ environment: "development", identity, config, force: true });
+
+      expect(replayed).toEqual({ synchronized: 1, pending: 0, deferred: 0, conflicts: [] });
+      expect(listContinuityOutbox("development")).toEqual([]);
+    } finally {
+      await closeStagedBooksHandlesForTests();
+      setStagedBooksDataDirForTests(null);
+      await rm(stageRoot, { recursive: true, force: true });
+    }
+  }, 30_000);
+
+  it("durably cancels a definitive online-required conflict instead of publishing it later", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    const remote = {
+      ...googleHousehold(),
+      householdId: household.householdId,
+      inviteCode: household.inviteCode,
+      revision: 3,
+      baseRevision: 3,
+    };
+    const personal = personalReplicaForMember(remote, "MEM-001");
+    const conflictFetch = continuityCasFetch({ remote });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(remote) }]);
+      if (url.includes("continuity_personal_snapshots?")) {
+        return response([{ revision: 3, payload: JSON.stringify(personal) }]);
+      }
+      return conflictFetch(input, init);
+    }));
+
+    const conflict = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-definitive-conflict",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(conflict).toMatchObject({
+      ok: false,
+      errorClass: "conflict-detected",
+      remote: {
+        householdId: remote.householdId,
+        revision: remote.revision,
+      },
+      remotePersonal: {
+        memberId: personal.memberId,
+      },
+    });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+    if (conflict.ok || !conflict.finalizeConflict) throw new Error("Expected a deferred exact conflict finalizer.");
+    await expect(conflict.finalizeConflict()).resolves.toBe(true);
+    expect(listContinuityOutbox("development")).toEqual([]);
+    expect(await flushContinuityOutbox({ environment: "development", identity, config, force: true }))
+      .toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });
+  });
+
+  it("retains a definitive conflict when the complete cloud pair is unavailable", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    const remote = { ...googleHousehold(), revision: 3, baseRevision: 3 };
+    vi.stubGlobal("fetch", continuityCasFetch({ remote }));
+
+    const conflict = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-conflict-no-personal",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(conflict).toMatchObject({ ok: false, errorClass: "pending-transport" });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+    expect(listContinuityOutbox("development")[0]?.blockedByConflict).toBe(true);
+  });
+
+  it("cancels only an exact conflicted outbox and staged-books generation", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const candidate = {
+      ...googleHousehold(),
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-cancel-exact",
+        identityHash: "identity-hash",
+        auditHash: "audit-hash",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    const item = enqueueContinuitySnapshot({
+      household: candidate,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-cancel-exact",
+    });
+
+    expect(stagedHouseholdMatchesContinuityGeneration(candidate, item)).toBe(true);
+    expect(stagedHouseholdMatchesContinuityGeneration({ ...candidate, revision: 3 }, item)).toBe(false);
+    await expect(cancelContinuityConflictGeneration(item)).resolves.toBe(true);
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
+  it("does not let an older conflict cancel a replacement queue generation", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const first = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    const oldItem = enqueueContinuitySnapshot({
+      household: first,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-old-conflict",
+    });
+    const replacement = { ...first, revision: 3 };
+    const newItem = enqueueContinuitySnapshot({
+      household: replacement,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-new-generation",
+    });
+
+    await expect(cancelContinuityConflictGeneration(oldItem)).resolves.toBe(false);
+    expect(listContinuityOutbox("development")).toEqual([newItem]);
   });
 
   it("durably enqueues a local Confirm without waiting for cloud transport", async () => {
@@ -624,6 +970,137 @@ describe("Google-account continuity", () => {
 });
 
 describe("Sign out continuity wipe", () => {
+  it("hydrates the newer IndexedDB generation when localStorage is stale", async () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    const previous = { ...googleHousehold(), householdId: "HH-DURABLE-MERGE", revision: 1 };
+    const older = enqueueContinuitySnapshot({
+      identity,
+      household: previous,
+      expectedRevision: 0,
+      confirmationId: "older-local",
+    });
+    const storedKey = Object.keys(store.snapshot())[0]!;
+    const olderLocal = store.snapshot()[storedKey]!;
+    const newerHousehold = { ...previous, revision: 2, baseRevision: 1 };
+    const newer = enqueueContinuitySnapshot({
+      identity,
+      household: newerHousehold,
+      expectedRevision: 1,
+      confirmationId: "newer-idb",
+    });
+    store.setItem(storedKey, olderLocal);
+    setContinuityStore(null);
+    vi.stubGlobal("localStorage", store);
+    setContinuityIdbReadForTests(async () => [{
+      ...newer,
+      generation: "2:newer-idb",
+      confirmationIds: ["newer-idb"],
+      updatedAt: older.updatedAt,
+    }]);
+
+    await hydrateContinuityOutbox("development");
+
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      tipRevision: 2,
+      confirmationIds: ["newer-idb"],
+    }]);
+  });
+
+  it("hydrates a newer localStorage generation over stale IndexedDB at the same time", async () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    const previous = { ...googleHousehold(), householdId: "HH-DURABLE-INVERSE", revision: 1 };
+    const older = enqueueContinuitySnapshot({
+      identity,
+      household: previous,
+      expectedRevision: 0,
+      confirmationId: "older-idb",
+    });
+    const newerHousehold = { ...previous, revision: 2, baseRevision: 1 };
+    const newer = enqueueContinuitySnapshot({
+      identity,
+      household: newerHousehold,
+      expectedRevision: 1,
+      confirmationId: "newer-local",
+    });
+    setContinuityStore(null);
+    vi.stubGlobal("localStorage", store);
+    setContinuityIdbReadForTests(async () => [{
+      ...older,
+      updatedAt: newer.updatedAt,
+    }]);
+
+    await hydrateContinuityOutbox("development");
+
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      tipRevision: 2,
+      confirmationIds: ["older-idb", "newer-local"],
+    }]);
+  });
+
+  it("does not let delayed hydration replace a newer Confirm generation", async () => {
+    const seedStore = createMemoryContinuityStore();
+    setContinuityStore(seedStore);
+    const staleHousehold = { ...googleHousehold(), householdId: "HH-HYDRATE-RACE", revision: 1 };
+    enqueueContinuitySnapshot({ identity, household: staleHousehold, expectedRevision: 0, confirmationId: "stale" });
+    const stale = listContinuityOutbox("development")[0]!;
+
+    const liveStore = createMemoryContinuityStore();
+    setContinuityStore(liveStore);
+    let hydrationStarted!: () => void;
+    let releaseHydration!: () => void;
+    const started = new Promise<void>((resolve) => { hydrationStarted = resolve; });
+    const paused = new Promise<void>((resolve) => { releaseHydration = resolve; });
+    setContinuityIdbReadForTests(async () => {
+      hydrationStarted();
+      await paused;
+      return [stale];
+    });
+
+    const hydrating = hydrateContinuityOutbox("development");
+    await started;
+    const newerHousehold = { ...staleHousehold, revision: 2, baseRevision: 1 };
+    enqueueContinuitySnapshot({ identity, household: newerHousehold, expectedRevision: 1, confirmationId: "newer" });
+    releaseHydration();
+    await hydrating;
+
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      tipRevision: 2,
+      confirmationIds: ["newer"],
+    }]);
+    expect(Object.values(liveStore.snapshot()).join(" ")).toContain('"tipRevision":2');
+  });
+
+  it("orders destructive clear after delayed hydration", async () => {
+    const seedStore = createMemoryContinuityStore();
+    setContinuityStore(seedStore);
+    const household = { ...googleHousehold(), householdId: "HH-HYDRATE-CLEAR" };
+    enqueueContinuitySnapshot({ identity, household, expectedRevision: 0, confirmationId: "clear-after-hydrate" });
+    const stale = listContinuityOutbox("development")[0]!;
+
+    const liveStore = createMemoryContinuityStore();
+    setContinuityStore(liveStore);
+    let hydrationStarted!: () => void;
+    let releaseHydration!: () => void;
+    const started = new Promise<void>((resolve) => { hydrationStarted = resolve; });
+    const paused = new Promise<void>((resolve) => { releaseHydration = resolve; });
+    setContinuityIdbReadForTests(async () => {
+      hydrationStarted();
+      await paused;
+      return [stale];
+    });
+
+    const hydrating = hydrateContinuityOutbox("development");
+    await started;
+    const clearing = clearContinuityOutboxForHouseholdDurably("development", household.householdId);
+    releaseHydration();
+    await Promise.all([hydrating, clearing]);
+
+    expect(listContinuityOutbox("development")).toEqual([]);
+    expect(liveStore.snapshot()).toEqual({});
+  });
+
   it("drops only the cleared household from the outbox", () => {
     setContinuityStore(createMemoryContinuityStore());
     const keep = googleHousehold();
@@ -645,6 +1122,124 @@ describe("Sign out continuity wipe", () => {
     const left = listContinuityOutbox("development");
     expect(left).toHaveLength(1);
     expect(left[0]?.householdId).toBe(keep.householdId);
+  });
+
+  it("removes a marker created by a Confirm that was already running when clear began", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const enqueue = createWriteQueue();
+    const household = { ...googleHousehold(), householdId: "HH-CLEAR-RACE" };
+    let releaseConfirm!: () => void;
+    const confirmPaused = new Promise<void>((resolve) => {
+      releaseConfirm = resolve;
+    });
+
+    const confirm = enqueue(async () => {
+      await confirmPaused;
+      enqueueContinuitySnapshot({
+        identity,
+        household,
+        expectedRevision: 0,
+        confirmationId: "clear-race-confirm",
+      });
+      await awaitContinuityOutboxDurable("development");
+    });
+    const clear = enqueue(async () => {
+      await clearContinuityOutboxForHouseholdDurably("development", household.householdId);
+    });
+
+    releaseConfirm();
+    await Promise.all([confirm, clear]);
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
+  it("reports a localStorage refusal instead of claiming durable clear", async () => {
+    const values = new Map<string, string>();
+    let refuseRemoval = false;
+    setContinuityStore({
+      getItem: (itemKey) => values.get(itemKey) ?? null,
+      setItem: (itemKey, value) => { values.set(itemKey, value); },
+      removeItem: (itemKey) => {
+        if (refuseRemoval) throw new Error("local removal refused");
+        values.delete(itemKey);
+      },
+    });
+    const household = { ...googleHousehold(), householdId: "HH-LOCAL-REFUSE" };
+    enqueueContinuitySnapshot({ identity, household, expectedRevision: 0, confirmationId: "local-refuse" });
+    refuseRemoval = true;
+
+    await expect(clearContinuityOutboxForHouseholdDurably("development", household.householdId))
+      .rejects.toThrow(/local removal refused/i);
+  });
+
+  it("reports an IndexedDB refusal instead of claiming durable clear", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), householdId: "HH-IDB-REFUSE" };
+    enqueueContinuitySnapshot({ identity, household, expectedRevision: 0, confirmationId: "idb-refuse" });
+    vi.stubGlobal("indexedDB", {
+      open: () => {
+        const request: {
+          error: Error;
+          onerror: (() => void) | null;
+        } = { error: new Error("idb removal refused"), onerror: null };
+        queueMicrotask(() => request.onerror?.());
+        return request;
+      },
+    });
+
+    await expect(clearContinuityOutboxForHouseholdDurably("development", household.householdId))
+      .rejects.toThrow(/idb removal refused/i);
+  });
+
+  it("fails closed when localStorage cannot be read before a household clear", async () => {
+    const values = new Map<string, string>();
+    let refuseRead = false;
+    setContinuityStore({
+      getItem: (itemKey) => {
+        if (refuseRead) throw new Error("local read refused");
+        return values.get(itemKey) ?? null;
+      },
+      setItem: (itemKey, value) => { values.set(itemKey, value); },
+      removeItem: (itemKey) => { values.delete(itemKey); },
+    });
+    const first = { ...googleHousehold(), householdId: "HH-CLEAR-A" };
+    const second = { ...googleHousehold(), householdId: "HH-KEEP-B" };
+    enqueueContinuitySnapshot({ identity, household: first, expectedRevision: 0, confirmationId: "clear-a" });
+    enqueueContinuitySnapshot({ identity, household: second, expectedRevision: 0, confirmationId: "keep-b" });
+    refuseRead = true;
+
+    await expect(clearContinuityOutboxForHouseholdDurably("development", first.householdId))
+      .rejects.toThrow(/local read refused/i);
+    refuseRead = false;
+    expect(listContinuityOutbox("development").map((item) => item.householdId).sort())
+      .toEqual([first.householdId, second.householdId].sort());
+  });
+});
+
+describe("durable acknowledgement", () => {
+  it("does not report synchronized when one durable store refuses marker deletion", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 1, baseRevision: 0 };
+    const item = enqueueContinuitySnapshot({
+      identity,
+      household,
+      expectedRevision: 0,
+      confirmationId: "strict-ack-delete",
+    });
+    vi.stubGlobal("indexedDB", {
+      open: () => {
+        const request: { error: Error; onerror: (() => void) | null } = {
+          error: new Error("idb delete refused"),
+          onerror: null,
+        };
+        queueMicrotask(() => request.onerror?.());
+        return request;
+      },
+    });
+
+    await expect(acknowledgeContinuityOutboxItemDurably(item)).rejects.toThrow(/idb delete refused/i);
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      confirmationIds: ["strict-ack-delete"],
+    }]);
   });
 });
 
@@ -718,16 +1313,19 @@ describe("continuity outbox quota resilience", () => {
     setContinuityStore(null);
     vi.stubGlobal("localStorage", store);
     vi.stubGlobal("indexedDB", undefined);
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
     const result = await transportHouseholdWithOutbox({
       household: { ...googleHousehold(), revision: 2, baseRevision: 1 },
       identity,
       expectedRevision: 1,
       confirmationId: "durable-none",
       config,
-      flush: false,
     });
-    expect(result).toMatchObject({ ok: false, errorClass: "pending-transport" });
-    expect(result.ok ? "" : result.message).toMatch(/storage is full/i);
+    expect(result).toMatchObject({ ok: false, errorClass: "disconnected" });
+    expect(result.ok ? "" : result.message).toMatch(/nothing was posted/i);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(listContinuityOutbox("development")).toEqual([]);
   });
 
   it("seeds a live household into the outbox when Retry finds an empty queue", async () => {

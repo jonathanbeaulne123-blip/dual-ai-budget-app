@@ -138,6 +138,7 @@ describe("Cloudflare static host pairing", () => {
     expect(workflow).toContain('VITE_SUPABASE_AUTH_ENABLED: "1"');
     expect(workflow).toContain('VITE_CONTINUITY_REALTIME: "1"');
     expect(workflow).toContain('VITE_CONTINUITY_COMMAND_LOG: "1"');
+    expect(workflow).toContain('VITE_SHARED_ONLINE_REQUIRED: "1"');
     expect(workflow).toContain('VITE_PRODUCTION_CONTINUITY: "0"');
     expect(workflow).toContain('VITE_SYNC_PILOT_DIAGNOSTICS: "1"');
     expect(workflow).toContain("::error::");

@@ -42,6 +42,8 @@ export type SyncFreshnessInput = {
   offline: boolean;
   pendingOutboxCount: number;
   hasOpenConflict: boolean;
+  /** True only after local PGlite validation has failed closed. */
+  booksBlocked?: boolean;
   lastReconcileAt: string | null;
   lastReconcileSource: ContinuitySyncSource | null;
   pollIntervalMs?: number;
@@ -162,7 +164,9 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   const sourceLine = reconcileSourceLabel(input.lastReconcileSource);
 
   const authRequired = Boolean(input.authRequired && !input.offline);
-  const blocksSyncedLabel = authRequired
+  const booksBlocked = input.booksBlocked === true;
+  const blocksSyncedLabel = booksBlocked
+    || authRequired
     || mode === "pending-transport"
     || mode === "conflicted"
     || mode === "disconnected"
@@ -178,7 +182,10 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   let transportPrimary = transport.primary;
   let tone: SyncFreshnessDisplay["tone"] = "neutral";
 
-  if (mode === "conflicted" || input.hasOpenConflict) {
+  if (booksBlocked) {
+    transportPrimary = "Local books repair needed";
+    tone = "danger";
+  } else if (mode === "conflicted" || input.hasOpenConflict) {
     transportPrimary = "Waiting to share";
     tone = "warning";
   } else if (mode === "pending-transport") {
@@ -192,7 +199,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
     transportPrimary = input.offline ? "Offline · will sync when you're back" : "Share paused";
     tone = "warning";
   }
-  if (authRequired) {
+  if (authRequired && !booksBlocked) {
     transportPrimary = "Google sign-in needed";
     tone = "warning";
   }
@@ -208,7 +215,10 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   // Legacy conflict markers are a retry state, never a request to choose a copy.
   let actionLabel: string | null = null;
   let actionKind: SyncFreshnessActionKind | null = null;
-  if (authRequired) {
+  if (booksBlocked) {
+    actionLabel = null;
+    actionKind = null;
+  } else if (authRequired) {
     actionLabel = "Continue with Google";
     actionKind = "reconnect-auth";
   } else if (

@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 7;
+export const BOOKS_SCHEMA_VERSION = 8;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (

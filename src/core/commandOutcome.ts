@@ -68,7 +68,10 @@ export function classifyCommandError(error: unknown): {
     return {
       errorClass: error.errorClass,
       userMessage: error.message,
-      retryable: error.errorClass === "books-unavailable" || error.errorClass === "persist-failed",
+      retryable: error.errorClass === "books-unavailable"
+        || error.errorClass === "persist-failed"
+        || error.errorClass === "disconnected"
+        || error.errorClass === "pending-transport",
       kind:
         error.errorClass === "unbalanced-journal" || error.errorClass === "validation-rejected"
           ? "permanent-validation-failure"

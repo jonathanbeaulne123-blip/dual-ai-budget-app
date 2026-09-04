@@ -7,6 +7,7 @@ import {
   compileHousehold,
   contributeToGoal,
   postEntry,
+  splitForSync,
   type Household,
   type WriteAdapters,
 } from "../src/core/index.ts";
@@ -41,6 +42,11 @@ function memoryAdapters(options?: {
       ingested = household;
       return { ok: true };
     },
+    validateCandidate: async () => (
+      options?.ingestOk === false
+        ? { ok: false, error: "PGlite refused the staged journal." }
+        : { ok: true }
+    ),
     restoreIngest: async (household) => {
       ingested = household;
     },
@@ -418,6 +424,333 @@ describe("atomic household writes", () => {
     });
     expect(continuity.kind).toBe("synchronized");
     expect(transports).toBe(1);
+  });
+
+  it("does not commit a cloud-required write until hosted acceptance", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const posted = postEntry(previous, grocery("Cloud boundary"));
+    const order: string[] = [];
+    const persisted: Household[] = [];
+    const ingested: Household[] = [];
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-cloud-boundary",
+      postedIds: posted.postedIds,
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: {
+        validateCandidate: async () => {
+          order.push("stage");
+          expect(ingested).toEqual([]);
+          return { ok: true };
+        },
+        ingest: async (household) => {
+          order.push("validate");
+          ingested.push(household);
+          return { ok: true };
+        },
+        restoreIngest: async (household) => { ingested.push(household); },
+        transport: async () => {
+          order.push("cloud");
+          expect(persisted).toEqual([]);
+          return { ok: true };
+        },
+        persist: async (household) => {
+          order.push("persist");
+          persisted.push(household);
+        },
+      },
+    });
+
+    expect(outcome.kind).toBe("synchronized");
+    expect(outcome.postedExactlyOnce).toBe(true);
+    expect(order).toEqual(["stage", "cloud", "validate", "persist"]);
+    expect(persisted.at(-1)?.sharing?.mode).toBe("synchronized");
+    expect(ingested.at(-1)?.transactions.some((row) => row.note === "Cloud boundary")).toBe(true);
+  });
+
+  it("leaves the active projection untouched and reports uncertainty when cloud acceptance cannot be confirmed", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const posted = postEntry(previous, grocery("Cloud refused"));
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "pending-transport",
+        message: "network unavailable",
+      }),
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-cloud-refused",
+      postedIds: posted.postedIds,
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: store.adapters,
+    });
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.kind).toBe("recovery-available");
+    expect(outcome.postedNothing).toBe(false);
+    expect(outcome.household).toMatchObject({
+      householdId: previous.householdId,
+      revision: previous.revision,
+      transactions: previous.transactions,
+    });
+    expect(store.persisted()).toBeNull();
+    expect(store.ingested()).toBeNull();
+  });
+
+  it("treats a failed pre-transport enqueue as definitive no-delivery", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const posted = postEntry(previous, grocery("Queue refused"));
+    let cleared = 0;
+    const store = memoryAdapters({
+      transport: async () => ({
+        ok: false,
+        errorClass: "disconnected",
+        message: "Nothing was posted because the durable queue is unavailable.",
+      }),
+    });
+    store.adapters.clearCandidate = async () => { cleared += 1; };
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-queue-refused",
+      postedIds: posted.postedIds,
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: store.adapters,
+    });
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.errorClass).toBe("disconnected");
+    expect(outcome.postedNothing).toBe(true);
+    expect(outcome.retryable).toBe(true);
+    expect(cleared).toBe(1);
+    expect(store.persisted()).toBeNull();
+    expect(store.ingested()).toBeNull();
+  });
+
+  it("adopts a newer authoritative remote after exact ambiguous receipt reconciliation", async () => {
+    const withPersonal = postEntry(catalogHousehold(), {
+      ...grocery("Private breakfast"),
+      visibility: "personal",
+    }).household;
+    const previous = { ...withPersonal, linked: true, revision: 7, baseRevision: 7 };
+    const posted = postEntry(previous, grocery("Shared milk"));
+    const store = memoryAdapters({
+      transport: async (accepted) => {
+        const sameMember = postEntry(accepted, {
+          ...grocery("Private lunch"),
+          visibility: "personal",
+        });
+        const partner = postEntry(sameMember.household, {
+          ...grocery("Partner bread"),
+          createdBy: "MEM-002",
+        });
+        const cloudProjection = {
+          ...partner.household,
+          transactions: partner.household.transactions.filter((row) => row.visibility !== "personal"),
+        };
+        return {
+          ok: true,
+          remoteRevision: accepted.revision + 2,
+          remote: {
+            ...cloudProjection,
+            revision: accepted.revision + 2,
+            baseRevision: accepted.revision + 2,
+          },
+          remotePersonal: splitForSync(partner.household, "MEM-001").personal,
+        };
+      },
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-newer-remote",
+      postedIds: posted.postedIds,
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: store.adapters,
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.kind).toBe("synchronized");
+    expect(outcome.revision).toBe(10);
+    expect(outcome.household.transactions.some((row) => row.note === "Shared milk")).toBe(true);
+    expect(outcome.household.transactions.some((row) => row.note === "Partner bread")).toBe(true);
+    expect(outcome.household.transactions.some((row) => row.note === "Private breakfast")).toBe(true);
+    expect(outcome.household.transactions.some((row) => row.note === "Private lunch")).toBe(true);
+    expect(store.ingested()?.revision).toBe(10);
+    expect(store.persisted()?.revision).toBe(10);
+  });
+
+  it("replaces a rejected online-required candidate with the exact canonical cloud pair", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const local = postEntry(previous, grocery("Rejected local milk"));
+    const partner = postEntry(previous, {
+      ...grocery("Canonical partner bread"),
+      createdBy: "MEM-002",
+    }).household;
+    const remote = {
+      ...partner,
+      linked: true,
+      revision: 8,
+      baseRevision: 8,
+    };
+    const remotePair = splitForSync(remote, "MEM-001");
+    let transportCalls = 0;
+    let finalized = 0;
+    const store = memoryAdapters({
+      transport: async () => {
+        transportCalls += 1;
+        return {
+          ok: false,
+          errorClass: "conflict-detected",
+          remote,
+          remotePersonal: remotePair.personal,
+          finalizeConflict: async () => {
+            expect(store.persisted()?.revision).toBe(remote.revision);
+            finalized += 1;
+            return true;
+          },
+          message: "Another device saved first.",
+        };
+      },
+    });
+
+    const result = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...local.household, linked: true },
+      confirmationId: "confirm-rejected-local",
+      postedIds: local.postedIds,
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: store.adapters,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.errorClass).toBe("conflict-detected");
+    expect(result.postedNothing).toBe(true);
+    expect(result.household.revision).toBe(8);
+    expect(result.household.baseRevision).toBe(8);
+    expect(result.household.sharing?.mode).toBe("synchronized");
+    expect(result.household.transactions.some((row) => row.note === "Canonical partner bread")).toBe(true);
+    expect(result.household.transactions.some((row) => row.note === "Rejected local milk")).toBe(false);
+    expect(store.persisted()).toEqual(result.household);
+    expect(store.ingested()).toEqual(result.household);
+    expect(transportCalls).toBe(1);
+    expect(finalized).toBe(1);
+  });
+
+  it("keeps definitive-conflict recovery durable when canonical local repair throws", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const local = postEntry(previous, grocery("Rejected local repair"));
+    const remote = {
+      ...postEntry(previous, { ...grocery("Cloud winner"), createdBy: "MEM-002" }).household,
+      linked: true,
+      revision: 8,
+      baseRevision: 8,
+    };
+    const remotePersonal = splitForSync(remote, "MEM-001").personal;
+    let finalized = 0;
+    let cleared = 0;
+    let persisted = 0;
+
+    const result = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...local.household, linked: true },
+      confirmationId: "confirm-repair-throws",
+      postedIds: local.postedIds,
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: {
+        validateCandidate: async () => ({ ok: true }),
+        transport: async () => ({
+          ok: false,
+          errorClass: "conflict-detected",
+          remote,
+          remotePersonal,
+          finalizeConflict: async () => {
+            finalized += 1;
+            return true;
+          },
+          message: "Another device saved first.",
+        }),
+        repairIngest: async () => { throw new Error("projection unavailable"); },
+        ingest: async () => ({ ok: true }),
+        persist: async () => { persisted += 1; },
+        clearCandidate: async () => { cleared += 1; },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.kind).not.toBe("pending-transport");
+    expect(result.errorClass).toBe("books-unavailable");
+    expect(result.postedNothing).toBe(true);
+    expect(result.userMessage).toContain("kept the exact retry blocked");
+    expect(finalized).toBe(0);
+    expect(cleared).toBe(0);
+    expect(persisted).toBe(0);
+  });
+
+  it("rebuilds the disposable active projection immediately after cloud acceptance", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const posted = postEntry(previous, grocery("Cloud accepted, local repair"));
+    const persisted: Household[] = [];
+    let repairCalls = 0;
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-cloud-local-repair",
+      postedIds: posted.postedIds,
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: {
+        validateCandidate: async () => ({ ok: true }),
+        transport: async () => ({ ok: true }),
+        ingest: async () => ({ ok: false, error: "projection unavailable" }),
+        repairIngest: async () => {
+          repairCalls += 1;
+          return { ok: true };
+        },
+        persist: async (household) => { persisted.push(household); },
+      },
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.kind).toBe("synchronized");
+    expect(outcome.recoveryAvailable).toBe(false);
+    expect(outcome.postedExactlyOnce).toBe(true);
+    expect(outcome.postedNothing).toBe(false);
+    expect(persisted.at(-1)?.revision).toBe(outcome.revision);
+    expect(persisted.at(-1)?.sharing?.mode).toBe("synchronized");
+    expect(repairCalls).toBe(1);
+  });
+
+  it("refuses a cloud-required write when no authenticated transport is present", async () => {
+    const previous = { ...catalogHousehold(), linked: true };
+    const posted = postEntry(previous, grocery("No transport"));
+    const store = memoryAdapters();
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...posted.household, linked: true },
+      confirmationId: "confirm-no-transport",
+      postedIds: posted.postedIds,
+      transportRequested: false,
+      requireSynchronized: true,
+      adapters: store.adapters,
+    });
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.postedNothing).toBe(true);
+    expect(store.persisted()).toBeNull();
+    expect(store.ingested()).toBeNull();
   });
 
   it("does not publish a rejected command", async () => {

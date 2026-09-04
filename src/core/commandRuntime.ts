@@ -22,6 +22,7 @@ import {
   markSynchronized,
   shapeSharing,
 } from "./sharing.ts";
+import { assembleHousehold, splitForSync } from "./sync.ts";
 import { autoResolveSharedConflict, unresolvedConflicts } from "./conflict.ts";
 import { assertHouseholdFundTransition } from "./householdFund.ts";
 import {
@@ -29,7 +30,7 @@ import {
   acceptedHouseholdOnboarding,
 } from "./onboarding/mode.ts";
 import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
-import type { CommandReceipt, Household } from "./types.ts";
+import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
 
@@ -41,12 +42,26 @@ export type AcceptedBooksArtifact = {
 };
 
 export type TransportResult =
-  | { ok: true; remoteRevision?: number }
-  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; message: string };
+  | { ok: true; remoteRevision?: number; remote?: Household; remotePersonal?: PersonalEnvelope }
+  | {
+      ok: false;
+      errorClass: "pending-transport" | "conflict-detected" | "disconnected";
+      remote?: Household;
+      remotePersonal?: PersonalEnvelope;
+      /** Compare-cancel the exact losing durable generation only after canonical local repair succeeds. */
+      finalizeConflict?: () => Promise<boolean>;
+      message: string;
+    };
 
 export type WriteAdapters = {
   persist: (household: Household) => Promise<void>;
   ingest: (household: Household, artifact?: AcceptedBooksArtifact & { previous: Household | null }) => Promise<BooksAcceptStatus>;
+  /** Isolated PGlite/Postgres validation that must not mutate the active replica. */
+  validateCandidate?: (household: Household, artifact?: AcceptedBooksArtifact & { previous: Household | null }) => Promise<BooksAcceptStatus>;
+  /** Recreates the disposable active replica after cloud ack if its normal ingest fails. */
+  repairIngest?: (household: Household, artifact?: AcceptedBooksArtifact) => Promise<BooksAcceptStatus>;
+  /** Clears the isolated staged candidate after a definitive outcome. */
+  clearCandidate?: (household: Household) => Promise<void>;
   /** Optional post-ingest PGlite/canonical-hash check. Fail closed when provided and not ok. */
   verifyBooks?: (household: Household, artifact?: AcceptedBooksArtifact) => Promise<BooksAcceptStatus>;
   restoreIngest?: (household: Household) => Promise<void>;
@@ -63,6 +78,8 @@ export type AcceptWriteInput = {
   actingMemberId?: string;
   /** Explicit continuity transport request (App sets this for membership-matched Google continuity). `linked` alone never enables transport (D-147). */
   transportRequested?: boolean;
+  /** Launch mode: cloud acknowledgement is the commit boundary; no accepted-local fallback is permitted. */
+  requireSynchronized?: boolean;
   adapters: WriteAdapters;
 };
 
@@ -137,6 +154,31 @@ function uncertainRecoveryOutcome(
     errorClass: classified.errorClass,
     userMessage:
       "The books engine accepted this entry, but this phone could not save the snapshot. Recovery is available. Do not Confirm again with a new id.",
+    retryable: true,
+    recoveryAvailable: true,
+    postedExactlyOnce: false,
+    postedNothing: false,
+    ok: false,
+  });
+}
+
+function transportUncertainOutcome(
+  previous: Household | null,
+  confirmationId: string,
+  message: string,
+): CommandOutcome {
+  const household = previous ?? ({ sharing: shapeSharing({ linked: false }), revision: 0 } as Household);
+  return outcome({
+    kind: "recovery-available",
+    household,
+    previous,
+    postedIds: [],
+    confirmationId,
+    identityHash: null,
+    revision: previous?.revision ?? 0,
+    sharingMode: previous ? deriveSharing(previous).mode : "local",
+    errorClass: "pending-transport",
+    userMessage: message || "Hearth could not confirm the shared result yet. It will check the same Confirm before another change is allowed.",
     retryable: true,
     recoveryAvailable: true,
     postedExactlyOnce: false,
@@ -281,7 +323,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         personal: await financialAuditHashForScope(accepted, "personal", actorMemberId),
       },
     });
-    const acceptedArtifact: AcceptedBooksArtifact = {
+    let acceptedArtifact: AcceptedBooksArtifact = {
       compiled: {
         ...candidateCompiled,
         revision: accepted.revision,
@@ -289,6 +331,168 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       },
       auditHash: accepted.booksAcceptedHash!,
     };
+
+    const transportAllowed = input.transportRequested === true;
+    let cloudAcknowledged = false;
+    const clearCandidate = async () => {
+      try {
+        await input.adapters.clearCandidate?.(accepted);
+      } catch {
+        // A stale isolated stage is never authoritative and cannot open writes.
+      }
+    };
+    if (input.requireSynchronized) {
+      if (!input.adapters.validateCandidate) {
+        return failedOutcome(
+          previous,
+          confirmationId,
+          new BooksRejectedError(
+            "The isolated books validator is unavailable. Nothing was posted.",
+            "books-unavailable",
+          ),
+        );
+      }
+      try {
+        const staged = await measureHearth(
+          "hearth:command:books-stage",
+          () => input.adapters.validateCandidate!(accepted, { ...acceptedArtifact, previous }),
+        );
+        if (!staged.ok) {
+          await clearCandidate();
+          return failedOutcome(
+            previous,
+            confirmationId,
+            new BooksRejectedError(staged.error || "PGlite rejected the staged journal. Nothing was posted.", "books-unavailable"),
+          );
+        }
+      } catch (error) {
+        await clearCandidate();
+        return failedOutcome(
+          previous,
+          confirmationId,
+          new BooksRejectedError(
+            error instanceof Error ? error.message : String(error),
+            "books-unavailable",
+          ),
+        );
+      }
+      if (!transportAllowed || !input.adapters.transport) {
+        await clearCandidate();
+        return failedOutcome(
+          previous,
+          confirmationId,
+          new BooksRejectedError(
+            "Continue with Google before changing the shared books. Nothing was posted.",
+            "disconnected",
+          ),
+        );
+      }
+      const expectedRevision = sameHousehold
+        ? (previous?.baseRevision ?? Math.max(0, (previous?.revision ?? revision) - 1))
+        : (candidate.baseRevision ?? candidate.revision ?? 0);
+      try {
+        const transported = await input.adapters.transport(accepted, expectedRevision);
+        if (!transported.ok) {
+          if (transported.errorClass === "conflict-detected") {
+            if (transported.remote && transported.remotePersonal && input.actingMemberId) {
+              let canonical: Household;
+              try {
+                const remoteShared = splitForSync(transported.remote, input.actingMemberId).shared;
+                canonical = markSynchronized(assembleHousehold(remoteShared, transported.remotePersonal, { linked: true }));
+                canonical.booksAcceptedHash = await financialAuditHash(canonical);
+                const canonicalArtifact: AcceptedBooksArtifact = {
+                  compiled: assertAcceptableBooks(canonical),
+                  auditHash: canonical.booksAcceptedHash,
+                };
+                const ingested = input.adapters.repairIngest
+                  ? await input.adapters.repairIngest(canonical, canonicalArtifact)
+                  : await input.adapters.ingest(canonical, { ...canonicalArtifact, previous });
+                if (!ingested.ok) throw new Error(ingested.error || "The latest cloud books could not replace the local projection.");
+                if (input.adapters.verifyBooks) {
+                  const verified = await input.adapters.verifyBooks(canonical, canonicalArtifact);
+                  if (!verified.ok) throw new Error(verified.error || "The latest cloud books did not match the local projection.");
+                }
+                await input.adapters.persist(canonical);
+                if (transported.finalizeConflict) {
+                  if (!await transported.finalizeConflict()) {
+                    throw new Error("The exact conflicted retry changed before it could be cancelled.");
+                  }
+                } else {
+                  await clearCandidate();
+                }
+              } catch (caught) {
+                return failedOutcome(
+                  previous,
+                  confirmationId,
+                  new BooksRejectedError(
+                    `Another device saved first. Hearth kept the exact retry blocked because the latest cloud books could not finish local repair. ${caught instanceof Error ? caught.message : String(caught)}`,
+                    "books-unavailable",
+                  ),
+                );
+              }
+              return outcome({
+                kind: "rejected-no-write",
+                household: canonical,
+                previous,
+                postedIds: [],
+                confirmationId,
+                identityHash: null,
+                revision: canonical.revision,
+                sharingMode: "synchronized",
+                errorClass: "conflict-detected",
+                userMessage: "Another device saved first. Hearth opened the latest complete books; review them and Confirm your change again.",
+                retryable: false,
+                recoveryAvailable: false,
+                postedExactlyOnce: false,
+                postedNothing: true,
+                ok: false,
+              });
+            }
+            await clearCandidate();
+            return failedOutcome(
+              previous,
+              confirmationId,
+              new BooksRejectedError(
+                "Another device saved first. Hearth is catching up; review the latest books, then Confirm again.",
+                "conflict-detected",
+              ),
+            );
+          }
+          if (transported.errorClass === "disconnected") {
+            await clearCandidate();
+            return failedOutcome(
+              previous,
+              confirmationId,
+              new BooksRejectedError(transported.message, "disconnected"),
+            );
+          }
+          return transportUncertainOutcome(previous, confirmationId, transported.message);
+        }
+        if (transported.remote && transported.remote.revision > accepted.revision) {
+          if (!input.actingMemberId || !transported.remotePersonal) {
+            return transportUncertainOutcome(
+              previous,
+              confirmationId,
+              "The Confirm reached the shared household, which already has a newer change. Hearth is pairing the latest Shared and Personal copies before writes reopen.",
+            );
+          }
+          const remoteShared = splitForSync(transported.remote, input.actingMemberId).shared;
+          accepted = markSynchronized(assembleHousehold(remoteShared, transported.remotePersonal, { linked: true }));
+          accepted.booksAcceptedHash = await financialAuditHash(accepted);
+          acceptedArtifact = {
+            compiled: assertAcceptableBooks(accepted),
+            auditHash: accepted.booksAcceptedHash,
+          };
+        }
+        cloudAcknowledged = true;
+      } catch {
+        return transportUncertainOutcome(
+          previous,
+          confirmationId,
+          "Hearth could not confirm the shared result yet. It will check the same Confirm before another change is allowed.",
+        );
+      }
+    }
 
     try {
       const status = await measureHearth(
@@ -330,6 +534,58 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
             error instanceof Error ? error.message : String(error),
             "books-unavailable",
           );
+      if (cloudAcknowledged) {
+        const synced = markSynchronized(accepted);
+        if (input.adapters.repairIngest) {
+          try {
+            const repaired = await input.adapters.repairIngest(synced, acceptedArtifact);
+            if (repaired.ok) {
+              await measureHearth("hearth:command:persist", () => input.adapters.persist(synced));
+              return outcome({
+                kind: "synchronized",
+                household: synced,
+                previous,
+                postedIds,
+                confirmationId,
+                identityHash,
+                revision: synced.revision,
+                sharingMode: "synchronized",
+                errorClass: null,
+                userMessage: null,
+                retryable: false,
+                recoveryAvailable: false,
+                ok: true,
+                postedExactlyOnce: true,
+                postedNothing: false,
+              });
+            }
+          } catch {
+            // Persist the cloud-accepted snapshot and keep local books blocked below.
+          }
+        }
+        try {
+          await measureHearth("hearth:command:persist", () => input.adapters.persist(synced));
+        } catch {
+          // Cloud remains authoritative even if both disposable local copies need repair.
+        }
+        return outcome({
+          kind: "synchronized",
+          household: synced,
+          previous,
+          postedIds,
+          confirmationId,
+          identityHash,
+          revision: synced.revision,
+          sharingMode: "synchronized",
+          errorClass: "books-unavailable",
+          userMessage: "Saved to the shared household. This device is repairing its local books from that accepted copy.",
+          retryable: false,
+          recoveryAvailable: true,
+          ok: true,
+          postedExactlyOnce: true,
+          postedNothing: false,
+        });
+      }
       if (previous && input.adapters.restoreIngest) {
         try {
           await input.adapters.restoreIngest(previous);
@@ -339,6 +595,45 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         }
       }
       return failedOutcome(previous, confirmationId, booksError);
+    }
+
+    if (input.requireSynchronized) {
+      const synced = markSynchronized(accepted);
+      try {
+        await measureHearth("hearth:command:persist", () => input.adapters.persist(synced));
+      } catch {
+        return outcome({
+          kind: "synchronized",
+          household: synced,
+          previous,
+          postedIds,
+          confirmationId,
+          identityHash,
+          revision: synced.revision,
+          sharingMode: "synchronized",
+          errorClass: "persist-failed",
+          userMessage: "Saved to the shared household. This device could not cache the update, so reload to restore it from the shared copy.",
+          retryable: false,
+          recoveryAvailable: true,
+          ok: true,
+          postedExactlyOnce: true,
+          postedNothing: false,
+        });
+      }
+      return outcome({
+        kind: "synchronized",
+        household: synced,
+        previous,
+        postedIds,
+        confirmationId,
+        identityHash,
+        revision: synced.revision,
+        sharingMode: "synchronized",
+        errorClass: null,
+        userMessage: null,
+        retryable: false,
+        recoveryAvailable: false,
+      });
     }
 
     try {
@@ -379,7 +674,6 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       });
     }
 
-    const transportAllowed = input.transportRequested === true;
     if (!transportAllowed || !input.adapters.transport) {
       return outcome({
         kind: "accepted-local",

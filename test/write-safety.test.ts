@@ -32,6 +32,81 @@ describe("write queue", () => {
     await expect(Promise.all([first, second])).resolves.toEqual([1, 2]);
     expect(order).toEqual([1, 2]);
   });
+
+  it("keeps a stale paired replay from rolling back a cloud-acknowledged Confirm", async () => {
+    const enqueue = createWriteQueue();
+    let releaseConfirm!: () => void;
+    const confirmPaused = new Promise<void>((resolve) => {
+      releaseConfirm = resolve;
+    });
+    let projection = {
+      household: { revision: 12 },
+      storageRevision: 12,
+      pgliteRevision: 12,
+      readinessRevision: 12 as number | null,
+    };
+    const replayStart = projection.household;
+
+    const confirm = enqueue(async () => {
+      projection = { ...projection, readinessRevision: null };
+      await confirmPaused;
+      projection = {
+        household: { revision: 13 },
+        storageRevision: 13,
+        pgliteRevision: 13,
+        readinessRevision: 13,
+      };
+    });
+    const staleReplay = enqueue(async () => {
+      if (projection.household !== replayStart) {
+        throw new Error("The active books changed before the cloud copy could be installed.");
+      }
+      projection = {
+        household: { revision: 12 },
+        storageRevision: 12,
+        pgliteRevision: 12,
+        readinessRevision: 12,
+      };
+    });
+
+    releaseConfirm();
+    await expect(confirm).resolves.toBeUndefined();
+    await expect(staleReplay).rejects.toThrow("active books changed");
+    expect(projection).toEqual({
+      household: { revision: 13 },
+      storageRevision: 13,
+      pgliteRevision: 13,
+      readinessRevision: 13,
+    });
+  });
+
+  it("finishes a deferred replica save before clearing the device copy", async () => {
+    const enqueue = createWriteQueue();
+    let scopeGeneration = 4;
+    let localRevision: number | null = 12;
+    let releaseSave!: () => void;
+    const savePaused = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    const expectedGeneration = scopeGeneration;
+
+    const install = enqueue(async () => {
+      await savePaused;
+      localRevision = 12;
+      if (scopeGeneration !== expectedGeneration) {
+        throw new Error("The active ledger changed while saving cloud books.");
+      }
+    });
+    scopeGeneration += 1;
+    const clear = enqueue(async () => {
+      localRevision = null;
+    });
+
+    releaseSave();
+    await expect(install).rejects.toThrow("active ledger changed");
+    await expect(clear).resolves.toBeUndefined();
+    expect(localRevision).toBeNull();
+  });
 });
 
 describe("reverse and undo", () => {
