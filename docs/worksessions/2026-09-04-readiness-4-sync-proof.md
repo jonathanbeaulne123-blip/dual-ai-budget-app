@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `readiness/4-sync-proof`
-- **Baseline SHA:** `e1097084b914ae4834df54e3ed8497f9df48bb6e`
-- **Head SHA:** local implementation in progress
+- **Baseline SHA:** `0c458c8b1206b7f23ca8988e94c4d99dd8ab1a9a`
+- **Application SHA:** `97d32ae130e3400d5cca53887e9914c1b0b8cee1` (followed only by this evidence-record commit)
 - **PR or issue:** none yet
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -29,7 +29,7 @@ Jonathan and Bianca can collect one privacy-safe, release-bound ledger of two-ac
 
 - Readiness 3 PR #327 passed its exact-head High-risk quick gate at `1f57e2e055fbb27b037b32c6c21a71ff011b96a8`, then merged as `e1097084b914ae4834df54e3ed8497f9df48bb6e`.
 - The Slice 3 head is an ancestor of `origin/main`; main CI, Pages, Workers build, and Supabase main checks passed at the merge SHA.
-- Slice 4 starts from that exact merge with a clean isolated worktree.
+- Slice 4 started from that exact merge with a clean isolated worktree, then rebased cleanly over unrelated merged onboarding PR #328 before final verification.
 - Current main already has Development-only bounded/hashed sync traces, a synthetic two-client harness, online-required shared sync, Realtime reconnect policy, and poll fallback.
 - Existing local 100-sample tests are synthetic. The complete signed-in two-account live matrix, fresh exact-release 100 samples, and fourteen-day rehearsal remain open.
 
@@ -75,6 +75,7 @@ Jonathan and Bianca can collect one privacy-safe, release-bound ledger of two-ac
 - PR #327 merged through GitHub only at the reviewed SHA; merge commit `e1097084b914ae4834df54e3ed8497f9df48bb6e`.
 - No open PR touched the Slice 4 diagnostic, two-client, reconnect, or target test files at branch creation.
 - Focused proof/diagnostic/two-client/reconnect/online-policy plus verification-policy gate: 7 files / 63 tests passed.
+- Pre-rebase exact-head High quick gate passed 110/110 selected tests in 97.386 seconds with fingerprint `310ed002e8862e83480358bd2be94dda77052cc4a8dfe436813e909afd50de1f`; final rebased-head evidence follows after the review correction.
 - `pnpm exec tsc --noEmit` passed. The fresh isolated dependency tree made this run unusually slow (about 140 seconds) but it remained inside the five-minute quick-gate budget.
 - `git diff --check`, JSON parsing, and the pre-push secret/private-artifact scan passed; only the eleven named source/test/doc/package files are changed or new.
 
