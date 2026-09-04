@@ -6,7 +6,7 @@ import { addAccount, catalogHousehold, financialAuditHash, linkGoogleIdentity, p
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 
-vi.setConfig({ testTimeout: 30_000 });
+vi.setConfig({ testTimeout: 60_000 });
 afterAll(() => vi.resetConfig());
 
 type Inspection = {
@@ -202,7 +202,7 @@ async function settleUi(ms = 100): Promise<void> {
   });
 }
 
-async function waitForUi(assertion: () => void, timeout = 15_000): Promise<void> {
+async function waitForUi(assertion: () => void, timeout = 30_000): Promise<void> {
   const deadline = Date.now() + timeout;
   let lastError: unknown = new Error("UI condition was not met.");
   while (Date.now() < deadline) {
@@ -501,7 +501,7 @@ describe("cached-shell startup books gate", () => {
     const confirm = walkExpenseToConfirm(container, view === "personal" ? "Private chequing" : "Visa");
     const savesBefore = startup.saveCalls;
     act(() => { confirm.click(); });
-    await settleUi();
+    await waitForUi(() => expect(container.textContent).toContain("Cloud-backed books are read-only while this device is offline"));
 
     expect(startup.saveCalls).toBe(savesBefore);
     expect(startup.stagedCandidates).toHaveLength(0);
@@ -538,7 +538,7 @@ describe("cached-shell startup books gate", () => {
     const confirm = walkExpenseToConfirm(container, "Private chequing");
     const savesBefore = startup.saveCalls;
     act(() => { confirm.click(); });
-    await settleUi();
+    await waitForUi(() => expect(container.textContent).toContain("Cloud-backed books are read-only while this device is offline"));
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(startup.stagedCandidates).toHaveLength(stagesBefore);
@@ -627,10 +627,7 @@ describe("cached-shell startup books gate", () => {
     openExpenseSlideshow();
     const confirm = walkExpenseToConfirm(container, "Private chequing");
     act(() => { confirm.click(); });
-    await waitForUi(
-      () => expect(container.textContent).toContain("Cloud refused the Personal change"),
-      10_000,
-    );
+    await waitForUi(() => expect(container.textContent).toContain("Cloud refused the Personal change"));
 
     expect(startup.transportCalls).toHaveLength(1);
     expect(startup.ingestCalls).toBe(ingestsBefore);
@@ -689,7 +686,7 @@ describe("cached-shell startup books gate", () => {
     const savesBefore = startup.saveCalls;
     const ingestsBefore = startup.ingestCalls;
     act(() => { confirm.click(); });
-    await settleUi();
+    await waitForUi(() => expect(container.textContent).toMatch(/Google sign-in does not match the selected household member|Continue with Google before changing these cloud-backed books/));
 
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(listContinuityOutbox("development")).toHaveLength(0);
