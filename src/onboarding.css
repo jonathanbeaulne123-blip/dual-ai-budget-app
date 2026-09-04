@@ -33,12 +33,12 @@
 }
 
 .onboarding-noticed {
-  margin: 0 0 12px;
-  padding: 8px 10px;
+  margin: 0 0 14px;
+  padding: 8px 12px;
   font-size: 13px;
   line-height: 1.4;
   color: var(--ink);
-  background: color-mix(in srgb, var(--pine) 10%, var(--paper) 90%);
+  background: color-mix(in srgb, var(--pine) 8%, var(--paper));
   border-left: 3px solid var(--pine);
   border-radius: 0 5px 5px 0;
 }
@@ -70,9 +70,9 @@
 
 .onboarding-card {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 5px;
   background: var(--card);
-  padding: 14px;
+  padding: 16px;
 }
 
 .onboarding-card-label {
@@ -122,6 +122,7 @@
 }
 
 .onboarding-actions button {
+  width: 100%;
   padding: 0 18px;
   border: 1px solid var(--line);
   border-radius: 999px;

@@ -70,17 +70,21 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
       if (event.key !== "Tab") return;
       const shell = shellRef.current;
       if (!shell) return;
-      const focusable = [...shell.querySelectorAll<HTMLElement>(
+      // The existing focus surface owns the dialog and its Close control.
+      // Trap across that whole surface when mounted there so keyboard users
+      // can still reach Close; standalone renders fall back to this shell.
+      const focusScope = shell.closest<HTMLElement>(".hercules-focus-shell") ?? shell;
+      const focusable = [...focusScope.querySelectorAll<HTMLElement>(
         "button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex='-1'])",
       )].filter((node) => node.getClientRects().length > 0);
       if (focusable.length === 0) return;
       const first = focusable[0]!;
       const last = focusable[focusable.length - 1]!;
       const active = document.activeElement as HTMLElement | null;
-      if (event.shiftKey && (active === first || !shell.contains(active))) {
+      if (event.shiftKey && (active === first || !focusScope.contains(active))) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && (active === last || !shell.contains(active))) {
+      } else if (!event.shiftKey && (active === last || !focusScope.contains(active))) {
         event.preventDefault();
         first.focus();
       }
@@ -155,10 +159,9 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
   // would misrepresent a blocked state as an untouched one, so this is
   // checked ahead of the task/evidence-card choice below and also gates the
   // Next button off (there is nothing safe to continue past). Four of the
-  // five IneligibleReason values have a committed Appendix E line to show;
-  // "malformed" — a data-shape problem, not something a member did — does
-  // not, so it still falls through to the plain task card rather than
-  // inventing member-facing copy this slice has no authority to add.
+  // five IneligibleReason values have a committed Appendix E line to show.
+  // "malformed" has no dedicated line, so it uses the deliberately generic
+  // stale refusal rather than presenting invalid evidence as untouched work.
   const blockedCopyKey = evidence.kind !== "ineligible" ? null : evidence.reason === "conflicted"
     ? "blocked.conflict"
     : evidence.reason === "stale"
@@ -167,7 +170,12 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
         ? "blocked.untied"
         : evidence.reason === "privacy"
           ? "blocked.privacy"
-          : null;
+          : "blocked.stale";
+
+  const showAction = role === "conductor"
+    && !blockedCopyKey
+    && chapter.actions.includes("continue");
+  const cardMarginBottom = showAction ? SHELL_VIEW.cardToAction : 0;
 
   function acknowledge() {
     onCommit((current) => recordChapterAcknowledgement(current, {
@@ -212,12 +220,12 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
         {hercLine}
       </p>
       {blockedCopyKey ? (
-        <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
+        <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
           <p className="onboarding-card-label">Held up</p>
           <p className="onboarding-card-task">{copy(blockedCopyKey)}</p>
         </section>
       ) : evidence.kind === "accepted" ? (
-        <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
+        <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
           <p className="onboarding-card-label">{evidenceCardLabel(evidence.card.kind)}</p>
           {evidence.card.lines.map((line) => (
             <p className="onboarding-card-row" key={`${line.label}-${line.value}`}>
@@ -228,7 +236,7 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
           <p className="onboarding-card-provenance">{evidenceProvenanceLabel(evidence.card.kind)}</p>
         </section>
       ) : (
-        <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
+        <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
           <p className="onboarding-card-label">{role === "conductor" ? "This one's yours" : "Waiting"}</p>
           <p className="onboarding-card-task">{copy(chapter.copyKey)}</p>
           {role === "conductor" ? (
@@ -236,7 +244,7 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
           ) : null}
         </section>
       )}
-      {role === "conductor" && !blockedCopyKey && chapter.actions.includes("continue") ? (
+      {showAction ? (
         <div className="onboarding-actions">
           <button
             type="button"

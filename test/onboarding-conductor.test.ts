@@ -263,6 +263,23 @@ describe("the conductor shell — rendering", () => {
     unmount();
   });
 
+  it("fails closed when accepted onboarding evidence is malformed", () => {
+    const base = proposedActive();
+    const household: Household = {
+      ...base,
+      householdOnboarding: {
+        ...base.householdOnboarding!,
+        startedAt: null,
+      },
+    };
+    const { host, unmount } = render({ household, memberId: BIANCA });
+    expect(host.textContent).toContain("Something changed underneath this since it was done. Worth another look.");
+    expect(host.textContent).toContain("Held up");
+    expect([...host.querySelectorAll("button")].map((button) => button.textContent))
+      .toEqual(["Stop setup for now"]);
+    unmount();
+  });
+
   it("advances to the next chapter, and only for the acting member, when Next is pressed", () => {
     let household = throughSittingOne();
     const { host, unmount } = render({
@@ -314,7 +331,7 @@ describe("the conductor shell — rendering", () => {
     jonathanAfter.unmount();
   });
 
-  it("keeps Next reachable by keyboard and traps Tab inside the shell", () => {
+  it("keeps Next and the dialog Close control reachable while trapping Tab inside the focus surface", () => {
     // jsdom never lays anything out, so getClientRects() is always empty —
     // the same visibility check Charter.tsx's own trap uses would otherwise
     // see nothing to trap. Stubbing it to report "on screen" for this one
@@ -325,8 +342,13 @@ describe("the conductor shell — rendering", () => {
     };
     try {
       const { host, unmount } = render({ household: throughChapterTwo(), memberId: BIANCA });
+      host.classList.add("hercules-focus-shell");
+      const close = document.createElement("button");
+      close.type = "button";
+      close.textContent = "Close";
+      host.insertBefore(close, host.firstChild);
       const buttons = [...host.querySelectorAll("button")] as HTMLButtonElement[];
-      expect(buttons.length).toBeGreaterThanOrEqual(2);
+      expect(buttons.length).toBeGreaterThanOrEqual(3);
       for (const button of buttons) {
         expect(button.tabIndex).not.toBe(-1);
         expect(button.disabled).toBe(false);
@@ -339,6 +361,10 @@ describe("the conductor shell — rendering", () => {
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
       });
       expect(document.activeElement).toBe(first);
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true }));
+      });
+      expect(document.activeElement).toBe(last);
       unmount();
     } finally {
       HTMLElement.prototype.getClientRects = originalGetClientRects;
@@ -389,6 +415,15 @@ describe("the conductor shell — fences", () => {
     // app's shared nav chrome — out of this slice's file list. Not consumed here on purpose.
   });
 
+  it("matches plate 11's card, noticed-strip, and action geometry", () => {
+    expect(cssSource).toContain("border-radius: 5px;");
+    expect(cssSource).toContain("padding: 16px;");
+    expect(cssSource).toContain("margin: 0 0 14px;");
+    expect(cssSource).toContain("padding: 8px 12px;");
+    expect(cssSource).toContain("color-mix(in srgb, var(--pine) 8%, var(--paper))");
+    expect(cssSource).toMatch(/\.onboarding-actions button \{[^}]*width: 100%;/s);
+  });
+
   it("never renders a second copy of the sitting rail — always exactly three marks, never one per chapter", () => {
     expect(componentSource).toContain("SITTING_MARK_COUNT");
     expect(componentSource).not.toMatch(/ONBOARDING_REGISTRY\.length/);
@@ -403,14 +438,13 @@ describe("the conductor shell — fences", () => {
     expect(shellViewSource).toMatch(/const exhaustive: never = kind/);
   });
 
-  it("never treats a conflicted, stale, untied, or privacy-blocked evidence read as merely empty", () => {
+  it("never treats an ineligible evidence read as merely empty", () => {
     // resolveEvidence's "ineligible" result is a real blocked state, not
     // "nothing to show yet" — the copy deck already carries a committed line
     // for four of its five IneligibleReason values, so the component must
     // branch on evidence.kind === "ineligible" rather than falling through
     // to the ordinary task card, which would misrepresent the block as
-    // untouched. "malformed" has no committed Appendix E line and is a
-    // disclosed exception — see the code comment above blockedCopyKey.
+    // untouched. "malformed" safely reuses the generic stale refusal.
     expect(componentSource).toMatch(/evidence\.kind !== "ineligible"|evidence\.kind === "ineligible"/);
     expect(componentSource).toContain('"blocked.conflict"');
     expect(componentSource).toContain('"blocked.stale"');
