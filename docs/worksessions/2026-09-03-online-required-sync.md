@@ -7,8 +7,8 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/sync-online-required-launch`
 - **Baseline SHA:** `cd6171d9551126e1576485315be60f7b5123d81c`
-- **Head SHA:** branch head; final SHA recorded in the pull request
-- **PR or issue:** pending
+- **Head SHA:** branch head; exact reviewed SHA recorded in the PR evidence
+- **PR or issue:** [#323](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/323)
 - **Risk:** Release
 - **Decision owner:** Jonathan
 - **Environment impact:** Development launch policy only; Production continuity remains off
@@ -61,7 +61,7 @@ Jonathan and Bianca can use the same shared ledger from two signed-in devices wi
 - [x] Pending local work, invalid receipts, cross-scope snapshots, unresolved conflicts, and offline recovery remain fail-closed.
 - [x] Blocked validation never renders `Sharing...`; diagnostics and authenticated recovery remain available.
 - [ ] High/Release quick gate and relevant independent reviews pass on the complete diff.
-- [ ] PR is opened but remains unmerged and undeployed.
+- [x] PR is opened but remains unmerged and undeployed.
 
 ## Plan
 
@@ -69,13 +69,16 @@ Jonathan and Bianca can use the same shared ledger from two signed-in devices wi
 - [x] Implement the online-required authority and UI honesty policy.
 - [x] Implement versioned receipt-gated local projection repair.
 - [x] Add deterministic two-device, reconnect, upgrade, and failure proofs.
-- [ ] Run the Release-risk quick gate, independent reviews, document decisions, and open an unmerged PR.
+- [ ] Close the exact-head Release-risk quick gate and independent reviews; keep PR #323 unmerged and undeployed.
 
 ## Evidence log
 
 - Baseline branch/status: `codex/sync-online-required-launch`; isolated and rebased to `cd6171d9551126e1576485315be60f7b5123d81c`.
 - Focused verification: TypeScript passed; 106/106 tests passed across books staging/reset, durable outbox/restart, cloud-boundary runtime, and startup recovery UI.
 - A filesystem-backed PGlite test closes every stage handle, reloads the slim durable outbox, and replays the candidate from the persisted stage rather than warm memory.
+- High/Release quick gate on implementation head `a06f87fffe4396b5efcd2044a49a33b0c86a9264`: passed in 69.864s with TypeScript, 123/123 fast tests, and 58/58 serial books tests; no time-budget breach. The final exact-head rerun follows this evidence update.
+- Browser proof on the current implementation: at 1280px and 390×844 the books reached `ready`, there was no horizontal overflow, the full bottom navigation remained present, and the browser reported no warnings or errors.
+- GitHub PR #323 is open. The branch remains unmerged and undeployed; no hosted schema, data, secret, provider, or Production setting changed.
 
 ## Decisions
 
