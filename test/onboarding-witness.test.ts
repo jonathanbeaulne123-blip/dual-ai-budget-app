@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { act, createElement } from "react";
+import { StrictMode, act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
 import { OnboardingChat } from "../src/OnboardingChat.tsx";
@@ -17,6 +17,7 @@ import {
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
   signHouseholdCharter,
+  witnessStatusRows,
   witnessEvidenceFor,
   type EvidenceCard,
   type Household,
@@ -116,15 +117,16 @@ function renderWitness(props: Partial<Parameters<typeof OnboardingWitness>[0]> =
     chapter: chapterById("ch-04-accounts")!,
     evidence: { kind: "empty" as const },
     blockedCopyKey: null,
+    noticeKey: null,
   };
   act(() => {
-    root.render(createElement(OnboardingWitness, { ...base, ...props }));
+    root.render(createElement(StrictMode, null, createElement(OnboardingWitness, { ...base, ...props })));
   });
   return {
     host,
     rerender: (next: Partial<Parameters<typeof OnboardingWitness>[0]>) => {
       act(() => {
-        root.render(createElement(OnboardingWitness, { ...base, ...props, ...next }));
+        root.render(createElement(StrictMode, null, createElement(OnboardingWitness, { ...base, ...props, ...next })));
       });
     },
     unmount: () => {
@@ -155,23 +157,107 @@ describe("noticedEvidenceKey", () => {
   });
 });
 
+describe("witnessStatusRows", () => {
+  it("keeps duplicate account names on distinct stable source identities", () => {
+    const rows = witnessStatusRows("ch-04-accounts", card({
+      sourceIds: ["ACC-A", "ACC-B"],
+      lines: [
+        { label: "Fund card", value: "Savings" },
+        { label: "Savings", value: "chequing" },
+        { label: "Savings", value: "savings" },
+      ],
+    }));
+    expect(rows.map((row) => row.label)).toEqual(["Household card", "Savings", "Savings"]);
+    expect(new Set(rows.map((row) => row.id)).size).toBe(rows.length);
+    expect(rows.map((row) => row.id)).toEqual([
+      "household-card:ACC-A:ACC-B",
+      "account:ACC-A",
+      "account:ACC-B",
+    ]);
+  });
+});
+
 describe("OnboardingWitness — rendering", () => {
   it("names the conductor in the turn line and shows a plain status word, never an action row", () => {
     const { host, unmount } = renderWitness({ turnLine: "Bianca is doing this one — you don't need to type anything." });
     expect(host.textContent).toContain("Bianca is doing this one — you don't need to type anything.");
     expect(host.textContent).toContain("Waiting");
+    expect(host.textContent).toContain("Accountswaiting");
+    expect(host.textContent).toContain("Shared accounts only.");
+    expect(host.textContent).not.toContain("onboarding.household.ch-04-accounts");
     expect(host.querySelector("button")).toBeNull();
     unmount();
   });
 
   it("shows the noticed strip as a polite live region once evidence is accepted, with its provenance", () => {
-    const { host, unmount } = renderWitness({ evidence: { kind: "accepted", card: card() } });
+    const { host, unmount } = renderWitness({
+      evidence: { kind: "accepted", card: card() },
+      noticeKey: "test:accepted-card",
+    });
     const status = host.querySelector('[role="status"]');
     expect(status).not.toBeNull();
     expect(status!.getAttribute("aria-live")).toBe("polite");
     expect(status!.textContent).toBe("Looks like you already handled this.");
-    expect(host.textContent).toContain("From the accounts.");
+    expect(host.textContent).toContain("Household cardopened");
+    expect(host.textContent).toContain("Shared accounts only.");
+    expect(host.textContent).not.toContain("Everyday chequing");
     unmount();
+  });
+
+  it("projects logical status rows and stable scope for every partner-conducted chapter", () => {
+    const scenarios = [
+      {
+        chapterId: "ch-05-opening",
+        evidence: card({
+          chapterId: "ch-05-opening",
+          kind: "receipt",
+          lines: [
+            { label: "Civil date", value: "2026-09-01" },
+            { label: "Opening equity", value: "$1,000.00" },
+          ],
+        }),
+        row: "Opening balancessubmitted",
+        scope: "Shared · opening entries",
+        omitted: "Civil date",
+      },
+      {
+        chapterId: "ch-06-fund",
+        evidence: card({
+          chapterId: "ch-06-fund",
+          kind: "configuration",
+          lines: [
+            { label: "Opened", value: "2026-09-01" },
+            { label: "Custodian", value: "Bianca" },
+          ],
+        }),
+        row: "Household Fundopened",
+        scope: "Shared · Fund setup",
+        omitted: "Custodian",
+      },
+      {
+        chapterId: "ch-07-recurrences",
+        evidence: card({
+          chapterId: "ch-07-recurrences",
+          kind: "recurrence",
+          lines: [{ label: "Rent", value: "monthly · $1,200.00" }],
+        }),
+        row: "Regular moneysubmitted",
+        scope: "Shared · recurring bills",
+        omitted: "Rent",
+      },
+    ] as const;
+
+    for (const scenario of scenarios) {
+      const { host, unmount } = renderWitness({
+        chapter: chapterById(scenario.chapterId)!,
+        evidence: { kind: "accepted", card: scenario.evidence },
+        noticeKey: `test:chapter-status:${scenario.chapterId}`,
+      });
+      expect(host.textContent).toContain(scenario.row);
+      expect(host.textContent).toContain(scenario.scope);
+      expect(host.textContent).not.toContain(scenario.omitted);
+      unmount();
+    }
   });
 
   it("shows the blocked card, not the noticed strip or the plain task, when evidence is ineligible", () => {
@@ -192,32 +278,62 @@ describe("OnboardingWitness — rendering", () => {
     document.body.appendChild(elsewhere);
     elsewhere.focus();
     expect(document.activeElement).toBe(elsewhere);
-    rerender({ evidence: { kind: "accepted", card: card() } });
+    rerender({ evidence: { kind: "accepted", card: card() }, noticeKey: "test:focus-update" });
     expect(document.activeElement).toBe(elsewhere);
     elsewhere.remove();
     unmount();
   });
 
   it("does not re-announce the same accepted event across an unrelated re-render", () => {
-    const { host, rerender, unmount } = renderWitness({ evidence: { kind: "accepted", card: card() } });
+    const { host, rerender, unmount } = renderWitness({
+      evidence: { kind: "accepted", card: card() },
+      noticeKey: "test:same-event",
+    });
     const first = host.querySelector('[role="status"]');
     expect(first).not.toBeNull();
     // Same event, a freshly-built (but content-identical) card object — the
     // kind of re-render an unrelated household re-fetch produces.
-    rerender({ hercLine: "A different flavor line, same chapter.", evidence: { kind: "accepted", card: card() } });
+    rerender({
+      hercLine: "A different flavor line, same chapter.",
+      evidence: { kind: "accepted", card: card() },
+      noticeKey: "test:same-event",
+    });
     const second = host.querySelector('[role="status"]');
     expect(second).toBe(first); // same DOM node — nothing was re-mounted, so nothing re-announces
     unmount();
   });
 
   it("does remount, and so does re-announce, when the accepted event genuinely changes", () => {
-    const { host, rerender, unmount } = renderWitness({ evidence: { kind: "accepted", card: card() } });
+    const { host, rerender, unmount } = renderWitness({
+      evidence: { kind: "accepted", card: card() },
+      noticeKey: "test:first-event",
+    });
     const first = host.querySelector('[role="status"]');
-    rerender({ evidence: { kind: "accepted", card: card({ observedAt: "2026-09-05T00:00:00.000Z" }) } });
+    rerender({
+      evidence: { kind: "accepted", card: card({ observedAt: "2026-09-05T00:00:00.000Z" }) },
+      noticeKey: "test:second-event",
+    });
     const second = host.querySelector('[role="status"]');
     expect(second).not.toBeNull();
     expect(second).not.toBe(first);
     unmount();
+  });
+
+  it("does not re-announce the same probe after the witness surface is closed and reopened", () => {
+    const first = renderWitness({
+      evidence: { kind: "accepted", card: card() },
+      noticeKey: "test:reopen-event",
+    });
+    expect(first.host.querySelector('[role="status"]')).not.toBeNull();
+    first.unmount();
+
+    const reopened = renderWitness({
+      evidence: { kind: "accepted", card: card() },
+      noticeKey: "test:reopen-event",
+    });
+    expect(reopened.host.querySelector('[role="status"]')).toBeNull();
+    expect(reopened.host.textContent).toContain("Shared accounts only.");
+    reopened.unmount();
   });
 });
 
@@ -270,7 +386,9 @@ describe("the witness surface, inside the shell", () => {
     expect(host.textContent).toContain("Looks like you already handled this.");
     expect(host.querySelector('[role="status"][aria-live="polite"]')).not.toBeNull();
     expect(host.textContent).toContain("The accounts");
-    expect(host.textContent).toContain("From the accounts.");
+    expect(host.textContent).toContain("opened");
+    expect(host.textContent).toContain("Shared accounts only.");
+    expect(host.textContent).not.toContain("credit ending 4412");
     unmount();
   });
 });
@@ -296,10 +414,11 @@ describe("the witness surface — fences", () => {
     expect(componentSource).not.toMatch(/onCommit/);
   });
 
-  it("is the polite live region the manual asks for, and dedupes it on the evidence's own content key", () => {
+  it("is the polite live region the manual asks for, and persists a claimed notice across remounts", () => {
     expect(componentSource).toContain('role="status"');
     expect(componentSource).toContain('aria-live="polite"');
-    expect(componentSource).toContain("noticedEvidenceKey(evidence.card)");
+    expect(componentSource).toContain("window.sessionStorage");
+    expect(componentSource).toContain("claimedNoticeKeys");
   });
 
   it("draws its spacing from SHELL_VIEW, never a hard-coded number", () => {
@@ -313,7 +432,9 @@ describe("the witness surface — fences", () => {
     expect(componentSource).not.toMatch(/taskLengthLabel\(/);
   });
 
-  it("the shell reuses the same content-derived key for its own conductor-facing noticed strip", () => {
+  it("the shell prefers probeEvidenceKey and shares the same notice claim for both roles", () => {
+    expect(shellComponentSource).toContain("probeEvidenceKey");
     expect(shellComponentSource).toContain("noticedEvidenceKey(evidence.card)");
+    expect(shellComponentSource).toContain("<OnboardingNotice");
   });
 });

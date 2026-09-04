@@ -300,7 +300,8 @@ describe("the conductor shell — rendering", () => {
 
     // Jonathan's own progress is untouched — he still witnesses ch-04, not ch-05.
     const witnessAfter = render({ household, memberId: JONATHAN });
-    expect(witnessAfter.host.textContent).toContain("ch-04-accounts");
+    expect(witnessAfter.host.textContent).toContain("Accountswaiting");
+    expect(witnessAfter.host.textContent).toContain("Shared accounts only.");
     witnessAfter.unmount();
   });
 

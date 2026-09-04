@@ -1,6 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { EvidenceCard, EvidenceResult, OnboardingChapter } from "./core/index.ts";
-import { SHELL_VIEW, copy, evidenceCardLabel, evidenceProvenanceLabel } from "./core/index.ts";
+import {
+  SHELL_VIEW,
+  copy,
+  evidenceCardLabel,
+  witnessChapterScopeLabel,
+  witnessStatusRows,
+} from "./core/index.ts";
 
 // The witness surface (ONBOARDING_BUILD_MANUAL.md slice 8; HEARTH_UX_PACKET.md
 // §13.6, plate 12). "Same shell. Turn line names the partner. No action row
@@ -30,33 +36,73 @@ type Props = {
   chapter: OnboardingChapter;
   evidence: EvidenceResult;
   blockedCopyKey: string | null;
+  noticeKey: string | null;
 };
 
-/**
- * A stable identity for one accepted evidence event, derived from the card's
- * own content rather than any object reference. Two renders of the *same*
- * event — the household re-fetched, an unrelated prop changed elsewhere in
- * the tree, the other member's device syncing in — produce the identical
- * string, so the noticed strip below keeps the same React key and the same
- * DOM node, and nothing re-announces. A genuinely new event (a different
- * chapter, different sources, a different observed time) produces a
- * different key, so the strip remounts and *does* announce again.
- *
- * The manual (§13.4) names this rule "dedupe on probeEvidenceKey" — the
- * per-member progress field of that exact name (core/onboarding/progress.ts)
- * exists for a future per-chapter probe that isn't built yet (no command in
- * this codebase writes it — see the slice 7 delivery notes). Until that
- * lands, the accepted EvidenceCard is the only signal this shell actually
- * has, so this key is built from the card's own content instead. When the
- * real probeEvidenceKey exists, this function is the one place to fold it
- * in.
- */
-export function noticedEvidenceKey(card: EvidenceCard): string {
-  return `${card.chapterId}:${[...card.sourceIds].sort().join(",")}:${card.observedAt}`;
+const claimedNoticeKeys = new Set<string>();
+const NOTICE_STORAGE_PREFIX = "hearth:onboarding-noticed:v1:";
+
+function noticeStorageKey(key: string): string {
+  let left = 0x811c9dc5;
+  let right = 0x9e3779b9;
+  for (let index = 0; index < key.length; index += 1) {
+    const unit = key.charCodeAt(index);
+    left = Math.imul(left ^ unit, 0x01000193);
+    right = Math.imul(right ^ unit, 0x85ebca6b);
+  }
+  return `${NOTICE_STORAGE_PREFIX}${(left >>> 0).toString(16)}${(right >>> 0).toString(16)}`;
 }
 
-export function OnboardingWitness({ turnLine, hercLine, chapter, evidence, blockedCopyKey }: Props) {
+/** Temporary identity until a chapter's accepted probe writes probeEvidenceKey. */
+export function noticedEvidenceKey(card: EvidenceCard): string {
+  return `evidence:${card.chapterId}:${[...card.sourceIds].sort().join(",")}:${card.observedAt}`;
+}
+
+function noticeWasClaimed(key: string): boolean {
+  if (claimedNoticeKeys.has(key)) return true;
+  try {
+    if (window.sessionStorage.getItem(noticeStorageKey(key)) === "1") {
+      claimedNoticeKeys.add(key);
+      return true;
+    }
+  } catch {
+    // The in-memory claim remains available when storage is unavailable.
+  }
+  return false;
+}
+
+function claimNotice(key: string): void {
+  claimedNoticeKeys.add(key);
+  try {
+    window.sessionStorage.setItem(noticeStorageKey(key), "1");
+  } catch {
+    // The in-memory claim still prevents repeats when storage is unavailable.
+  }
+}
+
+/**
+ * A keyed child claims one persisted probe event before rendering its live
+ * region. The claim survives evidence disappearance and shell remounts in
+ * this tab, so the same probeEvidenceKey cannot announce twice.
+ */
+export function OnboardingNotice({ noticeKey }: { noticeKey: string }) {
+  const announce = useRef<boolean | null>(null);
+  if (announce.current === null) announce.current = !noticeWasClaimed(noticeKey);
+  useEffect(() => {
+    if (announce.current) claimNotice(noticeKey);
+  }, [noticeKey]);
+  if (!announce.current) return null;
+  return (
+    <p className="onboarding-noticed" role="status" aria-live="polite">
+      {copy("probe.already")}
+    </p>
+  );
+}
+
+export function OnboardingWitness({ turnLine, hercLine, chapter, evidence, blockedCopyKey, noticeKey }: Props) {
   const headingRef = useRef<HTMLParagraphElement>(null);
+  const acceptedCard = evidence.kind === "accepted" ? evidence.card : null;
+  const statusRows = witnessStatusRows(chapter.id, acceptedCard);
 
   // Focus lands on the Hercules line once, when the witness screen first
   // mounts — never again on a later re-render of the same screen, so a
@@ -69,16 +115,9 @@ export function OnboardingWitness({ turnLine, hercLine, chapter, evidence, block
 
   return (
     <>
-      {evidence.kind === "accepted" ? (
-        <p
-          key={noticedEvidenceKey(evidence.card)}
-          className="onboarding-noticed"
-          role="status"
-          aria-live="polite"
-        >
-          {copy("probe.already")}
-        </p>
-      ) : null}
+      {evidence.kind === "accepted" && noticeKey
+        ? <OnboardingNotice key={noticeKey} noticeKey={noticeKey} />
+        : null}
       <p className="onboarding-turn" style={{ marginBottom: SHELL_VIEW.turnToHerc }}>{turnLine}</p>
       <p
         className="onboarding-herc"
@@ -96,18 +135,24 @@ export function OnboardingWitness({ turnLine, hercLine, chapter, evidence, block
       ) : evidence.kind === "accepted" ? (
         <section className="onboarding-card">
           <p className="onboarding-card-label">{evidenceCardLabel(evidence.card.kind)}</p>
-          {evidence.card.lines.map((line) => (
-            <p className="onboarding-card-row" key={`${line.label}-${line.value}`}>
-              <span className="onboarding-card-row-label">{line.label}</span>
-              <span className="onboarding-card-row-value">{line.value}</span>
+          {statusRows.map((row) => (
+            <p className="onboarding-card-row" key={row.id}>
+              <span className="onboarding-card-row-label">{row.label}</span>
+              <span className="onboarding-card-row-value">{row.status}</span>
             </p>
           ))}
-          <p className="onboarding-card-provenance">{evidenceProvenanceLabel(evidence.card.kind)}</p>
+          <p className="onboarding-card-provenance">{witnessChapterScopeLabel(chapter.id)}</p>
         </section>
       ) : (
         <section className="onboarding-card">
           <p className="onboarding-card-label">Waiting</p>
-          <p className="onboarding-card-task">{copy(chapter.copyKey)}</p>
+          {statusRows.map((row) => (
+            <p className="onboarding-card-row" key={row.id}>
+              <span className="onboarding-card-row-label">{row.label}</span>
+              <span className="onboarding-card-row-value">{row.status}</span>
+            </p>
+          ))}
+          <p className="onboarding-card-provenance">{witnessChapterScopeLabel(chapter.id)}</p>
         </section>
       )}
     </>

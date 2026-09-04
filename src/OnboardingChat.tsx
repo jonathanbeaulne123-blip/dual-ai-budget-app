@@ -12,6 +12,7 @@ import {
   flavorFor,
   isSittingFinalChapter,
   isSittingFirstChapter,
+  memberProgress,
   nextChapterFor,
   recordChapterAcknowledgement,
   sittingRailIndex,
@@ -19,7 +20,7 @@ import {
   taskLengthLabel,
   witnessEvidenceFor,
 } from "./core/index.ts";
-import { OnboardingWitness, noticedEvidenceKey } from "./OnboardingWitness.tsx";
+import { OnboardingNotice, OnboardingWitness, noticedEvidenceKey } from "./OnboardingWitness.tsx";
 import "./onboarding.css";
 
 // The conductor shell (ONBOARDING_BUILD_MANUAL.md slice 7; HEARTH_UX_PACKET.md
@@ -151,9 +152,13 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
   const evidence = role === "conductor"
     ? evidenceFor(household, chapter.id, memberId)
     : witnessEvidenceFor(household, chapter.id, memberId);
-  const showNoticedStrip = evidence.kind === "accepted";
   const railIndex = sittingRailIndex(chapter.sitting);
   const chapterId = chapter.id;
+  const progress = memberProgress(household, memberId);
+  const probeEvidenceKey = progress.rows.find((row) => row.chapterId === chapterId)?.probeEvidenceKey ?? null;
+  const noticeEventKey = probeEvidenceKey
+    ?? (evidence.kind === "accepted" ? noticedEvidenceKey(evidence.card) : null);
+  const noticeKey = noticeEventKey ? `${progress.id}:${chapterId}:${noticeEventKey}` : null;
 
   // resolveEvidence can come back "ineligible" — a real blocked read, not
   // merely "nothing to show yet". Showing the ordinary task card instead
@@ -213,19 +218,13 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
           chapter={chapter}
           evidence={evidence}
           blockedCopyKey={blockedCopyKey}
+          noticeKey={noticeKey}
         />
       ) : (
         <>
-          {showNoticedStrip && evidence.kind === "accepted" ? (
-            <p
-              key={noticedEvidenceKey(evidence.card)}
-              className="onboarding-noticed"
-              role="status"
-              aria-live="polite"
-            >
-              {copy("probe.already")}
-            </p>
-          ) : null}
+          {evidence.kind === "accepted" && noticeKey
+            ? <OnboardingNotice key={noticeKey} noticeKey={noticeKey} />
+            : null}
           <p className="onboarding-turn" style={{ marginBottom: SHELL_VIEW.turnToHerc }}>{turnLine}</p>
           <p
             className="onboarding-herc"
