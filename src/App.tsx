@@ -618,7 +618,7 @@ export function App() {
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
-  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund-register" | null>(null);
+  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund-register" | "wallet" | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
@@ -6987,6 +6987,12 @@ export function App() {
         onOpenCharter={() => {
           if (household.charter) setCharterPageOpen(true);
           else setCharterFoundingOpen(true);
+        }}
+        onOpenAccounts={() => {
+          rememberSession({ memberId: session.memberId, view: "personal", householdId: household.householdId });
+          setFocusedAccountId(null);
+          setBooksPaneRequest("wallet");
+          goTab("ledger");
         }}
         onOpenSource={(source: HerculesNumberSource) => {
           setHerculesSourceFocus(source);

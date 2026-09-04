@@ -791,6 +791,17 @@ input, select, textarea {
 }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.account-fund-card-choice {
+  margin: 14px 0 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.account-fund-card-choice legend { padding: 0 6px; font-weight: 700; }
+.account-fund-card-choice .chip { min-height: 44px; }
+.add-account-form-fields button,
+.add-account-form-fields input,
+.add-account-form-fields select { min-height: 44px; }
 .preset-chip {
   display: inline-flex;
   align-items: center;

@@ -220,7 +220,10 @@ function accountsEvidence(household: Household, chapterId: ChapterId, viewerMemb
   const own = household.accounts
     .filter((account) => account.active && account.scope === "personal" && account.ownerMemberId === viewerMemberId)
     .sort((left, right) => left.sortOrder - right.sortOrder || left.id.localeCompare(right.id));
-  const cardResolution = resolveSwipeCardAccount(household, viewerMemberId);
+  const fundCardMemberId = household.charter?.custodianMemberId
+    ?? household.householdFund?.custodianMemberId
+    ?? viewerMemberId;
+  const cardResolution = resolveSwipeCardAccount(household, fundCardMemberId);
   const fundCard = cardResolution.kind === "ready"
     ? shared.find((account) => account.id === cardResolution.accountId) ?? null
     : null;
@@ -247,7 +250,21 @@ function accountsEvidence(household: Household, chapterId: ChapterId, viewerMemb
         observedAt: latestIso(own.map((account) => account.updatedAt)) ?? "",
       }
     : null;
-  return { household: householdCard, personal: personalCard };
+  const partnerPersonalCouldMasqueradeAsFundCard = household.accounts.some((account) => (
+    account.active
+    && account.scope === "personal"
+    && account.ownerMemberId !== viewerMemberId
+    && account.currency === "CAD"
+    && account.kind === "credit"
+  ));
+  return {
+    household: householdCard,
+    personal: personalCard,
+    // Never reveal which partner account caused this refusal. Chapter 4 may
+    // only use Shared account facts, even when a private card happens to be
+    // the only shape that would otherwise make the probe look complete.
+    ineligible: !householdCard && partnerPersonalCouldMasqueradeAsFundCard ? "privacy" : undefined,
+  };
 }
 
 function activeOpeningRows(household: Household): Transaction[] {
@@ -497,7 +514,12 @@ function resolveEvidence(
   }
   const projection = project(household, chapterId, viewerMemberId, context);
   if (projection.ineligible) return { kind: "ineligible", reason: projection.ineligible };
-  return cardResult(witnessOnly ? projection.household : projection.household ?? projection.personal);
+  // Chapter 4 is a household gate. A viewer's own Personal accounts remain
+  // separately projectable below, but they can never satisfy this resolver.
+  const card = chapterId === "ch-04-accounts"
+    ? projection.household
+    : witnessOnly ? projection.household : projection.household ?? projection.personal;
+  return cardResult(card);
 }
 
 export function evidenceFor(
@@ -516,6 +538,21 @@ export function witnessEvidenceFor(
   context?: EvidenceContext,
 ): EvidenceResult {
   return resolveEvidence(household, chapterId, viewerMemberId, true, context);
+}
+
+/** Owner-only optional Chapter 4 evidence. It is never a household completion signal. */
+export function selfPersonalAccountsEvidenceFor(
+  household: Household,
+  viewerMemberId: string,
+): EvidenceResult {
+  if (!household.members.some((member) => member.active && member.id === viewerMemberId)) {
+    return { kind: "ineligible", reason: "privacy" };
+  }
+  if (household.conflicts.some((conflict) => !conflict.resolved)) {
+    return { kind: "ineligible", reason: "conflicted" };
+  }
+  const projection = accountsEvidence(household, "ch-04-accounts", viewerMemberId);
+  return cardResult(projection.personal);
 }
 
 export function probeEvidenceKey(card: EvidenceCard): string {

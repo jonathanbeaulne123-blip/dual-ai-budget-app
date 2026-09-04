@@ -226,6 +226,7 @@ export function HerculesPresence({
   onDismissNotice,
   onOpenSource,
   onOpenCharter,
+  onOpenAccounts,
 }: {
   household: Household;
   today: string;
@@ -246,6 +247,7 @@ export function HerculesPresence({
   onDismissNotice?: (key: string) => void;
   onOpenSource: (source: HerculesNumberSource) => void;
   onOpenCharter?: () => void;
+  onOpenAccounts?: () => void;
 }) {
   const contextHousehold = useMemo(
     () => householdForHerculesContext(household, memberId, view),
@@ -825,6 +827,20 @@ export function HerculesPresence({
     onOpenCharter();
   }
 
+  function openOnboardingAccounts() {
+    if (!onOpenAccounts || navTarget?.chapterId !== "ch-04-accounts") return;
+    closeChat();
+    saveReturnMessage({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId,
+      chapterId: navTarget.chapterId,
+      tab: navTarget.target.tab,
+      setAt: new Date().toISOString(),
+    });
+    onOpenAccounts();
+  }
+
   function openMobileFocus() {
     if (adding || phoneShell === false) return;
     setMobileFocus(true);
@@ -1395,6 +1411,7 @@ export function HerculesPresence({
               onCommit={onLedger}
               onDismiss={closeChat}
               onOpenCharter={openOnboardingCharter}
+              onOpenAccounts={openOnboardingAccounts}
             />
           ) : (
             <>
@@ -1556,8 +1573,9 @@ export function HerculesPresence({
                 onCommit={onLedger}
                 onDismiss={closeChat}
                 onOpenCharter={openOnboardingCharter}
+                onOpenAccounts={openOnboardingAccounts}
               />
-              {navTarget && navTarget.chapterId !== "ch-03-charter" && (
+              {navTarget && !["ch-03-charter", "ch-04-accounts"].includes(navTarget.chapterId) && (
                 <button type="button" className="hercules-help" onClick={goToOnboardingTarget}>
                   {copy("nav.go", { surface: navTargetSurfaceLabel(navTarget.target.tab) })}
                 </button>

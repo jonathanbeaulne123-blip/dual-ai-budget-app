@@ -9,6 +9,7 @@ import {
   recordChapterAcknowledgement,
   recordObservedChapterCompletion,
   signHouseholdCharter,
+  setFundCardAccount,
   type Household,
 } from "../src/core/index.ts";
 import {
@@ -68,7 +69,7 @@ function acknowledgeBoth(household: Household, chapterId: string): Household {
   return next;
 }
 
-/** Charter founded and signed, ch-01/02/03 acknowledged by both — lands on ch-04-accounts (target { tab: "more" }, actions include "navigate"), Bianca custodian/conducts, Jonathan witnesses. Matches test/onboarding-conductor.test.ts's own fixture exactly. */
+/** Charter founded and signed, ch-01/02/03 acknowledged by both — lands on ch-04-accounts (target { tab: "ledger" }). */
 function throughSittingOne(): Household {
   let household = proposedActive();
   household = acknowledgeBoth(household, "ch-01-meet");
@@ -87,6 +88,9 @@ function throughSittingOne(): Household {
   household = signHouseholdCharter(household, { memberId: BIANCA }).household;
   household = signHouseholdCharter(household, { memberId: JONATHAN }).household;
   household = acknowledgeBoth(household, "ch-03-charter");
+  household = setFundCardAccount(household, {
+    memberId: BIANCA, accountId: "ACC-VISA", createdBy: BIANCA,
+  }).household;
   return household;
 }
 
@@ -106,7 +110,7 @@ describe("onboardingNavigationTarget", () => {
     const household = throughSittingOne();
     expect(onboardingNavigationTarget(household, BIANCA, TODAY)).toEqual({
       chapterId: "ch-04-accounts",
-      target: { tab: "more" },
+      target: { tab: "ledger" },
     });
   });
 
@@ -149,6 +153,11 @@ describe("onboardingNavigationTarget", () => {
         }).household;
         household = signHouseholdCharter(household, { memberId: BIANCA }).household;
         household = signHouseholdCharter(household, { memberId: JONATHAN }).household;
+      }
+      if (chapterId === "ch-04-accounts") {
+        household = setFundCardAccount(household, {
+          memberId: BIANCA, accountId: "ACC-VISA", createdBy: BIANCA,
+        }).household;
       }
       household = chapterId === "ch-02-household"
         ? recordObservedChapterCompletion(household, {

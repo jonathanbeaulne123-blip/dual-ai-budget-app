@@ -8,6 +8,7 @@ import { OnboardingChat, onboardingBlockedPresentation } from "../src/Onboarding
 import {
   SHELL_VIEW,
   SITTING_MARK_COUNT,
+  addAccount,
   catalogHousehold,
   chapterRoleFor,
   chapterById,
@@ -23,6 +24,7 @@ import {
   shouldShowOnboardingShell,
   signHouseholdCharter,
   sittingRailIndex,
+  setFundCardAccount,
   taskLengthLabel,
   type EvidenceCard,
   type Household,
@@ -100,6 +102,7 @@ function render(props: {
   onCommit?: (fn: (current: Household) => { household: Household }) => void;
   onDismiss?: () => void;
   onOpenCharter?: () => void;
+  onOpenAccounts?: () => void;
 }) {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -112,6 +115,7 @@ function render(props: {
       onCommit: props.onCommit ?? (() => {}),
       onDismiss: props.onDismiss ?? (() => {}),
       onOpenCharter: props.onOpenCharter ?? (() => {}),
+      onOpenAccounts: props.onOpenAccounts ?? (() => {}),
     }));
   });
   return {
@@ -236,14 +240,14 @@ describe("the conductor shell — rendering", () => {
     unmount();
   });
 
-  it("shows the plain task card and the sitting-two heads-up for the conductor, with a single Next button", () => {
+  it("shows the Chapter 4 task and routes the conductor to accounts without offering Next", () => {
     const { host, unmount } = render({ household: throughSittingOne(), memberId: BIANCA });
     expect(host.textContent).not.toContain("Looks like you already handled this.");
     expect(host.textContent).toContain("This is the long one — bills, balances, the fund. Worth a coffee.");
-    expect(host.textContent).toContain("onboarding.household.ch-04-accounts"); // Part 2 hasn't written this chapter's copy yet — the safe fallback from slice 6
-    expect(host.textContent).toContain("About 5 minutes.");
+    expect(host.textContent).toContain("Tell me which accounts the household actually uses.");
+    expect(host.textContent).toContain("About 6 minutes.");
     const buttons = [...host.querySelectorAll("button")];
-    expect(buttons.map((button) => button.textContent)).toEqual(["Next", "Stop setup for now"]);
+    expect(buttons.map((button) => button.textContent)).toEqual(["Open accounts", "Stop setup for now"]);
     unmount();
   });
 
@@ -317,6 +321,12 @@ describe("the conductor shell — rendering", () => {
 
   it("advances to the next chapter, and only for the acting member, when Next is pressed", () => {
     let household = throughSittingOne();
+    household = setFundCardAccount(household, {
+      memberId: BIANCA, accountId: "ACC-VISA", createdBy: BIANCA,
+    }).household;
+    household = addAccount(household, {
+      name: "Bianca's own chequing", kind: "chequing", scope: "personal", ownerMemberId: BIANCA,
+    }).household;
     const { host, unmount } = render({
       household,
       memberId: BIANCA,
@@ -324,7 +334,7 @@ describe("the conductor shell — rendering", () => {
         household = fn(household).household;
       },
     });
-    expect(host.textContent).toContain("ch-04-accounts");
+    expect(host.textContent).toContain("The accounts");
     const next = [...host.querySelectorAll("button")].find((button) => button.textContent === "Next")!;
     act(() => next.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     unmount();
@@ -335,7 +345,7 @@ describe("the conductor shell — rendering", () => {
 
     // Jonathan's own progress is untouched — he still witnesses ch-04, not ch-05.
     const witnessAfter = render({ household, memberId: JONATHAN });
-    expect(witnessAfter.host.textContent).toContain("Accountswaiting");
+    expect(witnessAfter.host.textContent).toContain("Household cardopened");
     expect(witnessAfter.host.textContent).toContain("Shared accounts only.");
     witnessAfter.unmount();
   });
