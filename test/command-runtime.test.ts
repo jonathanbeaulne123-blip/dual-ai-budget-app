@@ -588,6 +588,58 @@ describe("atomic household writes", () => {
     expect(store.persisted()?.revision).toBe(10);
   });
 
+  it("replaces a rejected online-required candidate with the exact canonical cloud pair", async () => {
+    const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
+    const local = postEntry(previous, grocery("Rejected local milk"));
+    const partner = postEntry(previous, {
+      ...grocery("Canonical partner bread"),
+      createdBy: "MEM-002",
+    }).household;
+    const remote = {
+      ...partner,
+      linked: true,
+      revision: 8,
+      baseRevision: 8,
+    };
+    const remotePair = splitForSync(remote, "MEM-001");
+    let transportCalls = 0;
+    const store = memoryAdapters({
+      transport: async () => {
+        transportCalls += 1;
+        return {
+          ok: false,
+          errorClass: "conflict-detected",
+          remote,
+          remotePersonal: remotePair.personal,
+          message: "Another device saved first.",
+        };
+      },
+    });
+
+    const result = await acceptHouseholdWrite({
+      previous,
+      candidate: { ...local.household, linked: true },
+      confirmationId: "confirm-rejected-local",
+      postedIds: local.postedIds,
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters: store.adapters,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.errorClass).toBe("conflict-detected");
+    expect(result.postedNothing).toBe(true);
+    expect(result.household.revision).toBe(8);
+    expect(result.household.baseRevision).toBe(8);
+    expect(result.household.sharing?.mode).toBe("synchronized");
+    expect(result.household.transactions.some((row) => row.note === "Canonical partner bread")).toBe(true);
+    expect(result.household.transactions.some((row) => row.note === "Rejected local milk")).toBe(false);
+    expect(store.persisted()).toEqual(result.household);
+    expect(store.ingested()).toEqual(result.household);
+    expect(transportCalls).toBe(1);
+  });
+
   it("rebuilds the disposable active projection immediately after cloud acceptance", async () => {
     const previous = { ...catalogHousehold(), linked: true, revision: 7, baseRevision: 7 };
     const posted = postEntry(previous, grocery("Cloud accepted, local repair"));

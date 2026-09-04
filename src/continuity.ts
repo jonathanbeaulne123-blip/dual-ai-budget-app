@@ -794,7 +794,7 @@ export async function transportHouseholdWithOutbox(input: {
   reconcileAmbiguous?: boolean;
 }): Promise<
   | { ok: true; remoteRevision?: number; remote?: Household; remotePersonal?: PersonalEnvelope }
-  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; message: string }
+  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; remotePersonal?: PersonalEnvelope; message: string }
 > {
   const priorItems = read(input.household.environment);
   let item: ContinuityOutboxItem;
@@ -856,6 +856,7 @@ export async function transportHouseholdWithOutbox(input: {
           ok: false,
           errorClass: "conflict-detected",
           remote: consistent.shared,
+          remotePersonal: consistent.personal,
           message: result.message,
         };
       } catch {

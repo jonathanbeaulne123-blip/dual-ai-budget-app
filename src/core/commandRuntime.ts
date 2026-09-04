@@ -43,7 +43,7 @@ export type AcceptedBooksArtifact = {
 
 export type TransportResult =
   | { ok: true; remoteRevision?: number; remote?: Household; remotePersonal?: PersonalEnvelope }
-  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; message: string };
+  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; remotePersonal?: PersonalEnvelope; message: string };
 
 export type WriteAdapters = {
   persist: (household: Household) => Promise<void>;
@@ -386,6 +386,65 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         const transported = await input.adapters.transport(accepted, expectedRevision);
         if (!transported.ok) {
           if (transported.errorClass === "conflict-detected") {
+            if (transported.remote && transported.remotePersonal && input.actingMemberId) {
+              const remoteShared = splitForSync(transported.remote, input.actingMemberId).shared;
+              const canonical = markSynchronized(assembleHousehold(remoteShared, transported.remotePersonal, { linked: true }));
+              canonical.booksAcceptedHash = await financialAuditHash(canonical);
+              const canonicalArtifact: AcceptedBooksArtifact = {
+                compiled: assertAcceptableBooks(canonical),
+                auditHash: canonical.booksAcceptedHash,
+              };
+              const staged = await input.adapters.validateCandidate(canonical, { ...canonicalArtifact, previous });
+              if (!staged.ok) {
+                await clearCandidate();
+                return failedOutcome(
+                  previous,
+                  confirmationId,
+                  new BooksRejectedError(staged.error || "The latest cloud books did not pass local validation.", "books-unavailable"),
+                );
+              }
+              const ingested = input.adapters.repairIngest
+                ? await input.adapters.repairIngest(canonical, canonicalArtifact)
+                : await input.adapters.ingest(canonical, { ...canonicalArtifact, previous });
+              if (!ingested.ok) {
+                await clearCandidate();
+                return failedOutcome(
+                  previous,
+                  confirmationId,
+                  new BooksRejectedError(ingested.error || "The latest cloud books could not replace the local projection.", "books-unavailable"),
+                );
+              }
+              if (input.adapters.verifyBooks) {
+                const verified = await input.adapters.verifyBooks(canonical, canonicalArtifact);
+                if (!verified.ok) {
+                  await clearCandidate();
+                  return failedOutcome(
+                    previous,
+                    confirmationId,
+                    new BooksRejectedError(verified.error || "The latest cloud books did not match the local projection.", "books-unavailable"),
+                  );
+                }
+              }
+              await input.adapters.persist(canonical);
+              await clearCandidate();
+              return outcome({
+                kind: "rejected-no-write",
+                household: canonical,
+                previous,
+                postedIds: [],
+                confirmationId,
+                identityHash: null,
+                revision: canonical.revision,
+                sharingMode: "synchronized",
+                errorClass: "conflict-detected",
+                userMessage: "Another device saved first. Hearth opened the latest complete books; review them and Confirm your change again.",
+                retryable: false,
+                recoveryAvailable: false,
+                postedExactlyOnce: false,
+                postedNothing: true,
+                ok: false,
+              });
+            }
             await clearCandidate();
             return failedOutcome(
               previous,

@@ -231,6 +231,7 @@ import { afterNextPaint } from "./nextPaint.ts";
 import {
   canRepairProjectionFromAcknowledgedCache,
   canRepairProjectionWithBoundOutbox,
+  ONLINE_REQUIRED_REFRESH_MESSAGE,
   onlineRequiredReplicaKey,
   onlineRequiredSharedSyncEnabled,
   onlineRequiredWriteGate,
@@ -733,6 +734,33 @@ export function App() {
     return true;
   }
 
+  async function adoptCanonicalCloudReplica(input: {
+    shared: Household;
+    personal: PersonalEnvelope;
+    memberId: string;
+    identity: ContinuityIdentity;
+  }): Promise<Household> {
+    const remoteShared = splitForSync(input.shared, input.memberId).shared;
+    const canonical = markSynchronized(assembleHousehold(remoteShared, input.personal, { linked: true }));
+    canonical.booksAcceptedHash = await financialAuditHash(canonical);
+    const staged = await validateHouseholdBooksStaged(canonical, {
+      auditHash: canonical.booksAcceptedHash,
+      incremental: false,
+    });
+    if (!staged.ok) throw new Error(staged.error || "The latest cloud books did not pass local validation.");
+    const status = await repairAcceptedHouseholdBooks(canonical, {
+      auditHash: canonical.booksAcceptedHash,
+    });
+    await saveHousehold(canonical, {
+      operatingEnvironment: environment,
+      memberId: input.memberId,
+      continuityIdentity: input.identity,
+    });
+    adoptAcceptedHousehold(canonical, status);
+    setBooksStatus(status);
+    return canonical;
+  }
+
   async function persistKnownMetadataHousehold(
     update: (current: Household) => Household | null,
   ): Promise<Household | null> {
@@ -874,6 +902,7 @@ export function App() {
     }
     setBusy(true);
     setError("");
+    if (onlineRequiredSharedSyncEnabled(environment)) setCloudReplicaReadyKey(null);
     try {
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
       const google = loadGoogleSession(environment, who, current.householdId);
@@ -922,42 +951,23 @@ export function App() {
             setError("Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this retry.");
             return;
           }
-          const currentWithCanonicalPersonal = assembleHousehold(
-            splitForSync(current, who).shared,
-            remoteReplica.personal,
-            { linked: current.linked },
-          );
-          const reconciled = await reconcileHouseholdSnapshots(
-            currentWithCanonicalPersonal,
-            remoteReplica.shared,
-            who,
-          );
-          const accepted = await acceptHouseholdWrite({
-            previous: current,
-            candidate: reconciled,
-            confirmationId: `retry-conflict-adopt-${current.householdId}-${remoteReplica.revision}`,
-            commandKind: "continuity-conflict-adopt",
-            postedIds: [],
-            actingMemberId: who,
-            adapters: makeBooksAdapters({ environment, memberId: who, continuityIdentity: identity }),
-          });
-          if (!accepted.ok) {
-            setSyncState("error");
-            setError(accepted.userMessage || retryConflict.message);
-            return;
-          }
           const cancelled = await cancelContinuityConflictGeneration(retryConflict.item);
           if (!cancelled) {
             setSyncState("error");
             setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
             return;
           }
-          adoptAcceptedHousehold(accepted.household);
+          const canonical = await adoptCanonicalCloudReplica({
+            shared: remoteReplica.shared,
+            personal: remoteReplica.personal,
+            memberId: who,
+            identity,
+          });
           setCloudReplicaReadyKey(onlineRequiredReplicaKey({
             environment,
-            householdId: accepted.household.householdId,
+            householdId: canonical.householdId,
             memberId: who,
-            revision: accepted.household.revision,
+            revision: canonical.revision,
           }));
           setSyncState("synced");
           setCommandChrome(null);
@@ -1007,6 +1017,36 @@ export function App() {
         return;
       }
       if (flushed.synchronized > 0) {
+        if (onlineRequiredSharedSyncEnabled(environment)) {
+          const remoteReplica = await pullConsistentMemberReplicaById({
+            householdId: current.householdId,
+            memberId: who,
+            environment,
+            config: cloudConfig,
+            identity,
+          });
+          if (!remoteReplica) {
+            setSyncState("error");
+            setError("Hearth delivered the retry but is still waiting for its complete Shared and Personal cloud copy. Shared writes remain blocked.");
+            return;
+          }
+          const canonical = await adoptCanonicalCloudReplica({
+            shared: remoteReplica.shared,
+            personal: remoteReplica.personal,
+            memberId: who,
+            identity,
+          });
+          setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+            environment,
+            householdId: canonical.householdId,
+            memberId: who,
+            revision: canonical.revision,
+          }));
+          setSyncState("synced");
+          setCommandChrome(null);
+          setError("");
+          return;
+        }
         const synced = markSynchronized(current);
         await saveHousehold(synced, { operatingEnvironment: environment, memberId: who });
         adoptKnownMetadataHousehold(synced);
@@ -1371,12 +1411,21 @@ export function App() {
 
     const reconcileAfterValidation = (candidate: Household) => {
       if (!candidate.linked || !loadedSession?.memberId || !stillCurrent(candidate)) return;
+      if (
+        onlineRequiredSharedSyncEnabled(candidate.environment)
+        && listContinuityOutbox(candidate.environment).some((item) => item.householdId === candidate.householdId)
+      ) return;
       performance.mark?.("hearth:startup-reconcile-start");
-      const pullStartupHousehold = async (): Promise<{ remote: Household; personal: PersonalEnvelope | null }> => {
+      const pullStartupHousehold = async (): Promise<{
+        remote: Household;
+        personal: PersonalEnvelope | null;
+        identity: ContinuityIdentity | null;
+      }> => {
         if (!onlineRequiredSharedSyncEnabled(candidate.environment)) {
           return {
             remote: await pullSharedHousehold(candidate.inviteCode, loadedSession.memberId, candidate.environment),
             personal: null,
+            identity: null,
           };
         }
         if (!supabaseAuthEnabled()) {
@@ -1395,11 +1444,11 @@ export function App() {
           config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
           identity,
         });
-        if (!replica) throw new Error("Hearth could not read a complete shared and Personal cloud generation.");
-        return { remote: replica.shared, personal: replica.personal };
+        if (!replica) throw new Error(ONLINE_REQUIRED_REFRESH_MESSAGE);
+        return { remote: replica.shared, personal: replica.personal, identity };
       };
       void pullStartupHousehold()
-        .then(({ remote, personal }) => enqueueWrite(async () => {
+        .then(({ remote, personal, identity }) => enqueueWrite(async () => {
           if (!live || startupGenerationRef.current !== generation) return;
           const current = householdRef.current;
           if (
@@ -1408,21 +1457,27 @@ export function App() {
             || current.householdId !== candidate.householdId
             || current.revision !== candidate.revision
           ) return;
-          const currentWithCanonicalPersonal = personal
-            ? assembleHousehold(splitForSync(current, loadedSession.memberId).shared, personal, { linked: current.linked })
-            : current;
-          const reconciled = await reconcileHouseholdSnapshots(currentWithCanonicalPersonal, remote, loadedSession.memberId);
-          const accepted = await acceptHouseholdWrite({
-            previous: current,
-            candidate: reconciled,
-            confirmationId: `reconcile-${current.householdId}-${reconciled.revision}`,
-            commandKind: "boot-reconcile",
-            postedIds: [],
-            adapters: makeBooksAdapters({ environment, memberId: loadedSession.memberId }),
-          });
+          const accepted = personal && identity
+            ? {
+                ok: true as const,
+                household: await adoptCanonicalCloudReplica({
+                  shared: remote,
+                  personal,
+                  memberId: loadedSession.memberId,
+                  identity,
+                }),
+              }
+            : await acceptHouseholdWrite({
+                previous: current,
+                candidate: await reconcileHouseholdSnapshots(current, remote, loadedSession.memberId),
+                confirmationId: `reconcile-${current.householdId}-${remote.revision}`,
+                commandKind: "boot-reconcile",
+                postedIds: [],
+                adapters: makeBooksAdapters({ environment, memberId: loadedSession.memberId }),
+              });
           if (!live || startupGenerationRef.current !== generation) return;
           if (!accepted.ok) {
-            if (accepted.userMessage) setError(accepted.userMessage);
+            if ("userMessage" in accepted && accepted.userMessage) setError(accepted.userMessage);
             return;
           }
           householdRef.current = accepted.household;
@@ -1809,27 +1864,6 @@ export function App() {
                 setError("Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this retry.");
                 return;
               }
-              const currentWithCanonicalPersonal = assembleHousehold(
-                splitForSync(current, memberId).shared,
-                remoteReplica.personal,
-                { linked: current.linked },
-              );
-              const reconciled = await reconcileHouseholdSnapshots(
-                currentWithCanonicalPersonal,
-                remoteReplica.shared,
-                memberId,
-              );
-              const accepted = await acceptReplayCandidate(
-                reconciled,
-                `outbox-conflict-adopt-${current.householdId}-${remoteReplica.revision}`,
-                "continuity-conflict-adopt",
-              );
-              if (!live) return;
-              if (!accepted?.ok) {
-                setSyncState("error");
-                setError(accepted?.userMessage || conflict.message);
-                return;
-              }
               const cancelled = await cancelContinuityConflictGeneration(conflict.item);
               if (!live) return;
               if (!cancelled) {
@@ -1837,11 +1871,18 @@ export function App() {
                 setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
                 return;
               }
+              const canonical = await adoptCanonicalCloudReplica({
+                shared: remoteReplica.shared,
+                personal: remoteReplica.personal,
+                memberId,
+                identity,
+              });
+              if (!live) return;
               setCloudReplicaReadyKey(onlineRequiredReplicaKey({
                 environment,
-                householdId: accepted.household.householdId,
+                householdId: canonical.householdId,
                 memberId,
-                revision: accepted.household.revision,
+                revision: canonical.revision,
               }));
               setSyncState("synced");
               setError("Another device saved first. Hearth opened the latest complete books; review them and Confirm your change again.");
@@ -1937,12 +1978,21 @@ export function App() {
         }
         if (flushed.pending > 0) {
           // Healthy background queue is not an error — only surface offline/conflict as red.
-          if (live) setSyncState(typeof navigator !== "undefined" && !navigator.onLine ? "syncing" : "synced");
+          if (live) setSyncState(
+            onlineRequiredSharedSyncEnabled(environment)
+              ? "syncing"
+              : typeof navigator !== "undefined" && !navigator.onLine ? "syncing" : "synced",
+          );
+          if (onlineRequiredSharedSyncEnabled(environment)) return;
           // Still try a live pull below so partner posts appear.
         }
 
         let current = householdRef.current;
-        if (flushed.synchronized > 0 && current) {
+        if (
+          flushed.synchronized > 0
+          && current
+          && !onlineRequiredSharedSyncEnabled(environment)
+        ) {
           current = markSynchronized(current);
           await saveHousehold(current, { operatingEnvironment: environment, memberId });
           traceSyncPilot("cloud-ack", {
@@ -1957,6 +2007,14 @@ export function App() {
         }
 
         current = householdRef.current;
+        if (
+          current
+          && onlineRequiredSharedSyncEnabled(environment)
+          && listContinuityOutbox(environment).some((item) => item.householdId === current?.householdId)
+        ) {
+          setSyncState("syncing");
+          return;
+        }
         const pairRequired = Boolean(current && onlineRequiredSharedSyncEnabled(environment));
         const remoteReplica = current && pairRequired
           ? await pullConsistentMemberReplicaById({
@@ -1968,7 +2026,7 @@ export function App() {
             })
           : null;
         if (pairRequired && !remoteReplica) {
-          throw new Error("Hearth could not read a complete shared and Personal cloud generation.");
+          throw new Error(ONLINE_REQUIRED_REFRESH_MESSAGE);
         }
         let remoteHousehold = remoteReplica?.shared ?? null;
         if (!pairRequired && current) {
@@ -1991,30 +2049,48 @@ export function App() {
         if (current && remoteHousehold) {
           const remoteRevision = remoteHousehold.revision ?? 0;
           const hasOpenConflict = unresolvedConflicts(current).length > 0;
-          const staleSignal = shouldIgnoreInboundSnapshot({
-            remoteRevision,
-            localTipRevision: current.revision ?? 0,
-            hasOpenConflict,
-          });
+          const staleSignal = pairRequired
+            ? false
+            : shouldIgnoreInboundSnapshot({
+                remoteRevision,
+                localTipRevision: current.revision ?? 0,
+                hasOpenConflict,
+              });
           const duplicatePull = !staleSignal
             && remoteRevision > (current.baseRevision ?? 0)
             && coordinator.shouldDedupePull(current.householdId, remoteRevision);
-          if (
-            !staleSignal
-            && !duplicatePull
-            && remoteRevision > (current.baseRevision ?? 0)
-          ) {
+          const currentReplica = remoteReplica ? splitForSync(current, memberId) : null;
+          const remoteSharedReplica = remoteReplica ? splitForSync(remoteReplica.shared, memberId).shared : null;
+          const pairedFactsDiffer = Boolean(
+            currentReplica
+            && remoteSharedReplica
+            && remoteReplica
+            && (
+              JSON.stringify(currentReplica.shared) !== JSON.stringify(remoteSharedReplica)
+              || JSON.stringify(currentReplica.personal) !== JSON.stringify(remoteReplica.personal)
+            )
+          );
+          const shouldAdoptRemote = pairRequired
+            ? pairedFactsDiffer || current.revision !== remoteRevision || current.baseRevision !== remoteRevision
+            : remoteRevision > (current.baseRevision ?? 0);
+          if (!staleSignal && !duplicatePull && shouldAdoptRemote) {
           coordinator.recordPull(current.householdId, remoteRevision);
           if (!coordinator.shouldSkipAccept(current.householdId, remoteRevision)) {
-          const currentWithCanonicalPersonal = remoteReplica
-            ? assembleHousehold(splitForSync(current, memberId).shared, remoteReplica.personal, { linked: current.linked })
-            : current;
-          const reconciled = await reconcileHouseholdSnapshots(currentWithCanonicalPersonal, remoteHousehold, memberId);
-          const accepted = await acceptReplayCandidate(
-            reconciled,
-            `continuity-pull-${current.householdId}-${remoteHousehold.revision}`,
-            "continuity-pull",
-          );
+          const accepted = remoteReplica
+            ? {
+                ok: true as const,
+                household: await adoptCanonicalCloudReplica({
+                  shared: remoteReplica.shared,
+                  personal: remoteReplica.personal,
+                  memberId,
+                  identity,
+                }),
+              }
+            : await acceptReplayCandidate(
+                await reconcileHouseholdSnapshots(current, remoteHousehold, memberId),
+                `continuity-pull-${current.householdId}-${remoteHousehold.revision}`,
+                "continuity-pull",
+              );
           if (!live) return;
           if (!accepted?.ok) {
             setSyncState("error");
@@ -2051,6 +2127,40 @@ export function App() {
               await saveHousehold(synced, { operatingEnvironment: environment, memberId });
               adoptKnownMetadataHousehold(synced);
             } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
+              if (onlineRequiredSharedSyncEnabled(environment)) {
+                const conflictItem = listContinuityOutbox(environment)
+                  .find((item) => item.householdId === ready.householdId);
+                const stable = await pullConsistentMemberReplicaById({
+                  householdId: ready.householdId,
+                  memberId,
+                  environment,
+                  config: cloudConfig,
+                  identity,
+                  initialShared: pushed.remote,
+                });
+                if (!live) return;
+                if (!conflictItem || !stable || !await cancelContinuityConflictGeneration(conflictItem)) {
+                  setSyncState("error");
+                  setError("Another device saved first. Hearth is waiting to safely replace this retry with the complete cloud books.");
+                  return;
+                }
+                const canonical = await adoptCanonicalCloudReplica({
+                  shared: stable.shared,
+                  personal: stable.personal,
+                  memberId,
+                  identity,
+                });
+                if (!live) return;
+                setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+                  environment,
+                  householdId: canonical.householdId,
+                  memberId,
+                  revision: canonical.revision,
+                }));
+                setSyncState("synced");
+                setError("Another device saved first. Hearth opened the latest complete books; review them and Confirm your change again.");
+                return;
+              }
               const resolved = await autoResolveSharedConflict(ready, pushed.remote, memberId, "local");
               const acceptedConflict = await acceptReplayCandidate(
                 resolved,
@@ -2075,7 +2185,15 @@ export function App() {
           const open = householdRef.current ? unresolvedConflicts(householdRef.current) : [];
           const pending = householdRef.current?.sharing?.mode === "pending-transport";
           const readyHousehold = householdRef.current;
-          if (remoteReplica && readyHousehold && open.length === 0 && !pending) {
+          if (
+            remoteReplica
+            && readyHousehold
+            && open.length === 0
+            && !pending
+            && readyHousehold.revision === remoteReplica.revision
+            && readyHousehold.baseRevision === remoteReplica.revision
+            && !listContinuityOutbox(environment).some((item) => item.householdId === readyHousehold.householdId)
+          ) {
             setCloudReplicaReadyKey(onlineRequiredReplicaKey({
               environment: readyHousehold.environment,
               householdId: readyHousehold.householdId,
@@ -3219,6 +3337,7 @@ export function App() {
         hasUnacknowledgedSnapshot: previous?.sharing?.mode === "pending-transport",
       });
       if (!onlineGate.allowed) throw new ValidationError(onlineGate.reason ?? "The shared books are not ready to save.");
+      if (onlineGate.required) setCloudReplicaReadyKey(null);
       // In launch mode the command compiler validates accounting facts first;
       // cloud acknowledgement is the commit boundary, then active PGlite advances.
       const flushTransport = options?.forceFlush === true || onlineGate.required;
@@ -3475,6 +3594,29 @@ export function App() {
             revision: outcome.household.revision,
           }));
         }
+      } else if (
+        onlineGate.required
+        && !outcome.ok
+        && outcome.errorClass === "conflict-detected"
+        && outcome.sharingMode === "synchronized"
+        && memberId
+      ) {
+        const status: BooksStatus = {
+          ok: true,
+          engine: "pglite+supabase",
+          entryCount: outcome.household.transactions.length,
+          inBalance: true,
+          equationHolds: true,
+        };
+        adoptAcceptedHousehold(outcome.household, status);
+        setBooksStatus(status);
+        setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+          environment: outcome.household.environment,
+          householdId: outcome.household.householdId,
+          memberId,
+          revision: outcome.household.revision,
+        }));
+        setSyncState("synced");
       } else if (outcome.kind === "pending-transport") setSyncState("syncing");
       else if (outcome.kind === "conflict-needs-attention") {
         setCloudReplicaReadyKey(null);

@@ -543,7 +543,17 @@ describe("Google-account continuity", () => {
       reconcileAmbiguous: true,
     });
 
-    expect(conflict).toMatchObject({ ok: false, errorClass: "conflict-detected" });
+    expect(conflict).toMatchObject({
+      ok: false,
+      errorClass: "conflict-detected",
+      remote: {
+        householdId: remote.householdId,
+        revision: remote.revision,
+      },
+      remotePersonal: {
+        memberId: personal.memberId,
+      },
+    });
     expect(listContinuityOutbox("development")).toEqual([]);
     expect(await flushContinuityOutbox({ environment: "development", identity, config, force: true }))
       .toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });
