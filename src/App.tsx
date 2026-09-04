@@ -30,6 +30,7 @@ import {
   assembleHousehold,
   splitForSync,
   fundRailPreferenceUpdateAllowed,
+  financialAuditHash,
   householdWallet,
   jointSplit,
   memberNeedsGoogleStepUp,
@@ -159,7 +160,7 @@ import { clearSession, loadSession, saveSession, type Session } from "./session.
 import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
-import { ingestHouseholdBooks, inspectBrowserBooks, restoreHouseholdBooks, type BooksStatus } from "./ledger/engine.ts";
+import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
 import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
@@ -222,9 +223,16 @@ import {
   listContinuityOutbox,
   productionContinuityEnabled,
   transportHouseholdWithOutbox,
+  acknowledgeContinuityOutboxFromRemote,
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { afterNextPaint } from "./nextPaint.ts";
+import {
+  canRepairProjectionFromAcknowledgedCache,
+  canRepairProjectionWithBoundOutbox,
+  onlineRequiredSharedSyncEnabled,
+  onlineRequiredWriteGate,
+} from "./onlineRequiredSync.ts";
 import {
   copySyncPilotDiagnostic,
   recordSyncPilotTrace,
@@ -250,6 +258,33 @@ function makeBooksAdapters(input: {
         const { status } = await ingestHouseholdBooks(household, {
           compiled: artifact?.compiled,
           previous: artifact?.previous,
+          auditHash: artifact?.auditHash,
+        });
+        return { ok: status.ok, error: status.error };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
+    validateCandidate: async (household, artifact) => {
+      try {
+        const status = await validateHouseholdBooksStaged(household, {
+          compiled: artifact?.compiled,
+          previous: artifact?.previous,
+          auditHash: artifact?.auditHash,
+          incremental: true,
+        });
+        return { ok: status.ok, error: status.error };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    },
+    clearCandidate: async (household) => {
+      await clearStagedHouseholdBooks(household.environment, household.householdId);
+    },
+    repairIngest: async (household, artifact) => {
+      try {
+        const status = await repairAcceptedHouseholdBooks(household, {
+          compiled: artifact?.compiled,
           auditHash: artifact?.auditHash,
         });
         return { ok: status.ok, error: status.error };
@@ -395,6 +430,7 @@ import {
   acceptedSnapshotRebuildCheck,
   booksWriteGate,
   knownMetadataUpdateAllowed,
+  readinessMatches,
   readinessForHousehold,
   type BooksReadiness,
   type BooksWriteGate,
@@ -960,6 +996,87 @@ export function App() {
     }
   }
 
+  async function restoreBooksFromSharedCopy() {
+    const current = householdRef.current;
+    const memberId = sessionRef.current?.memberId;
+    if (!current || !memberId) return;
+    if (!onlineRequiredSharedSyncEnabled(environment)) {
+      setValidationAttempt((attempt) => attempt + 1);
+      return;
+    }
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError("Connect to the internet before restoring these books from the shared household.");
+      return;
+    }
+    if (listContinuityOutbox(environment).some((item) => item.householdId === current.householdId)) {
+      setError("Hearth must settle the existing Confirm before it can replace this local projection.");
+      return;
+    }
+    if (unresolvedConflicts(current).length > 0) {
+      setError("Review the preserved books conflict before restoring this local projection.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const authSession = await ensureSupabaseSession(environment);
+      if (!authSession) throw new Error("Continue with Google before restoring the shared books.");
+      const identity: ContinuityIdentity = {
+        email: authSession.email,
+        subject: authSession.googleSubject,
+      };
+      const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
+      const remote = await pullHouseholdSnapshotById(
+        current.householdId,
+        environment,
+        cloudConfig,
+        identity,
+      );
+      if (!remote) throw new Error("The shared household could not be found. Nothing local was replaced.");
+      const remotePersonal = await pullPersonalSnapshotById(
+        current.householdId,
+        memberId,
+        environment,
+        cloudConfig,
+      );
+      if (!remotePersonal) {
+        throw new Error("The signed-in member's shared personal copy could not be found. Nothing local was replaced.");
+      }
+
+      const remoteShared = splitForSync(remote, memberId).shared;
+      const restored = markSynchronized(assembleHousehold(remoteShared, remotePersonal, { linked: true }));
+      restored.booksAcceptedHash = await financialAuditHash(restored);
+      const staged = await validateHouseholdBooksStaged(restored, {
+        auditHash: restored.booksAcceptedHash,
+        incremental: false,
+      });
+      if (!staged.ok) throw new Error(staged.error || "The shared books did not pass local validation.");
+      const status = await repairAcceptedHouseholdBooks(restored, {
+        auditHash: restored.booksAcceptedHash,
+      });
+      await saveHousehold(restored, {
+        operatingEnvironment: environment,
+        memberId,
+        continuityIdentity: identity,
+      });
+      householdRef.current = restored;
+      setHousehold(restored);
+      setBooksStatus(status);
+      const ready = readinessForHousehold("ready", startupGenerationRef.current, restored, { status });
+      booksReadinessRef.current = ready;
+      booksGateRef.current = booksWriteGate(ready, restored);
+      setBooksReadiness(ready);
+      setSyncState("synced");
+      setCommandChrome(null);
+      setError("");
+    } catch (caught) {
+      setSyncState("error");
+      setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function reconnectContinuityAuth() {
     setError("");
     try {
@@ -1048,6 +1165,7 @@ export function App() {
       setError(inviteReasonMessage(registered.reason));
       if (registered.reason === "device-revoked" || registered.reason === "session-not-live") {
         clearContinuityOutboxForHousehold(environment, household.householdId);
+        void clearStagedHouseholdBooks(environment, household.householdId);
         clearSupabaseSession(environment);
       }
     })().catch((caught) => {
@@ -1239,8 +1357,41 @@ export function App() {
       try {
         let inspection = await inspectBrowserBooks(candidate);
         if (!stillCurrent(candidate)) return;
-        const schemaRebuild = inspection.issue === "missing-schema" || inspection.issue === "incomplete-migration";
-        const receiptGatedRebuild = inspection.issue === "incomplete-migration" || inspection.issue === "interrupted-transaction";
+        const launchOnlineRequired = onlineRequiredSharedSyncEnabled(candidate.environment);
+        if (
+          (inspection.issue === "projection-mismatch" || inspection.issue === "incomplete-migration")
+          && launchOnlineRequired
+        ) {
+          await hydrateContinuityOutbox(candidate.environment);
+          if (!stillCurrent(candidate)) return;
+          const householdOutbox = listContinuityOutbox(candidate.environment)
+            .filter((item) => item.householdId === candidate.householdId);
+          const hasOpenConflict = unresolvedConflicts(candidate).length > 0;
+          const repairGate = householdOutbox.length > 0
+            ? canRepairProjectionWithBoundOutbox({ snapshot: candidate, items: householdOutbox, hasOpenConflict })
+            : inspection.issue === "incomplete-migration"
+              ? canRepairProjectionFromAcknowledgedCache({
+                  snapshot: candidate,
+                  pendingOutboxCount: 0,
+                  hasOpenConflict,
+                })
+              : { allowed: false, reason: "A projection mismatch requires an authenticated cloud refresh." };
+          if (repairGate.allowed) {
+            const trusted = await acceptedSnapshotRebuildCheck(candidate);
+            if (!stillCurrent(candidate)) return;
+            if (!trusted.ok) {
+              publishBlocked(candidate, trusted.message, inspection.entryCount, inspection.issue);
+              return;
+            }
+            await ingestHouseholdBooks(candidate, { auditHash: trusted.auditHash, incremental: false });
+            if (!stillCurrent(candidate)) return;
+            inspection = await inspectBrowserBooks(candidate, { expectedAuditHash: trusted.auditHash });
+          }
+        }
+        const schemaRebuild = inspection.issue === "missing-schema"
+          || (inspection.issue === "incomplete-migration" && !launchOnlineRequired);
+        const receiptGatedRebuild = inspection.issue === "interrupted-transaction"
+          || (inspection.issue === "incomplete-migration" && !launchOnlineRequired);
         let rebuildAuditHash: string | undefined;
         if (receiptGatedRebuild) {
           const trusted = await acceptedSnapshotRebuildCheck(candidate);
@@ -1430,6 +1581,12 @@ export function App() {
       setSoftPresenceLive([]);
     };
   }, [environment, household?.householdId, session?.memberId, softPresenceOptOut, activeBooksGate.ready]);
+
+  useEffect(() => {
+    if (!household || !activeBooksGate.ready || !onlineRequiredSharedSyncEnabled(environment)) return;
+    if (listContinuityOutbox(environment).some((item) => item.householdId === household.householdId)) return;
+    void prewarmStagedHouseholdBooks(household).catch(() => undefined);
+  }, [environment, household, activeBooksGate.ready]);
 
   useEffect(() => {
     const memberId = session?.memberId;
@@ -1647,6 +1804,10 @@ export function App() {
         }
         if (!live) return;
         current = householdRef.current;
+        if (remoteHousehold) {
+          await acknowledgeContinuityOutboxFromRemote(remoteHousehold);
+          if (!live) return;
+        }
         if (current && memberId) {
           try {
             const remotePersonal = await pullPersonalSnapshotById(
@@ -2256,6 +2417,7 @@ export function App() {
         offline,
         pendingOutboxCount: 0,
         hasOpenConflict: false,
+        booksBlocked: booksReadiness.phase === "blocked" && readinessMatches(booksReadiness, household),
         lastReconcileAt: null,
         lastReconcileSource: null,
       });
@@ -2270,11 +2432,12 @@ export function App() {
       offline,
       pendingOutboxCount: listContinuityOutbox(environment).filter((item) => item.householdId === household.householdId).length,
       hasOpenConflict: unresolvedConflicts(household).length > 0,
+      booksBlocked: booksReadiness.phase === "blocked" && readinessMatches(booksReadiness, household),
       lastReconcileAt: lastReconcile?.at ?? null,
       lastReconcileSource: lastReconcile?.source ?? null,
       pollIntervalMs: livePullIntervalMs(activeMembers),
     });
-  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent]);
+  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent, booksReadiness]);
   const syncFreshnessLine = useMemo(
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
@@ -2814,7 +2977,7 @@ export function App() {
     if (!explicitConfirmationId) confirmationRef.current = confirmationId;
     const ledgerWrite = isLedgerWrite(token);
     const memberId = actorId ?? session?.memberId;
-    const shareCapable = Boolean(previous?.linked && hostedContinuityAllowed(environment) && memberId);
+    const shareCapable = Boolean((previous?.linked || next.linked) && hostedContinuityAllowed(environment) && memberId);
     if (shareCapable && ledgerWrite) {
       setCommandProgressPhase("confirming");
       setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.saving, {
@@ -2830,7 +2993,16 @@ export function App() {
       const googleSession = memberId ? loadGoogleSession(environment, memberId, next.householdId) : null;
       const authRequired = supabaseAuthEnabled();
       const cachedAuthSession = authRequired ? loadSupabaseSession(environment) : null;
-      const authSession = options?.forceFlush === true && authRequired
+      const cachedContinuityIdentity: ContinuityIdentity | null = cachedAuthSession
+        ? { email: cachedAuthSession.email, subject: cachedAuthSession.googleSubject }
+        : continuityIdentityFromGoogle(googleSession);
+      const sharedScope = Boolean(
+        previous?.linked
+        || next.linked
+        || (memberId && cachedContinuityIdentity && continuityMemberId(next, cachedContinuityIdentity) === memberId),
+      );
+      const onlineRequired = onlineRequiredSharedSyncEnabled(environment) && sharedScope;
+      const authSession = (options?.forceFlush === true || onlineRequired) && authRequired
         ? await ensureSupabaseSession(environment)
         : cachedAuthSession;
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
@@ -2848,10 +3020,21 @@ export function App() {
         ),
       );
       const transportRequested = hostedContinuityAllowed(environment) && automaticContinuity;
-      // Local PGlite + durable device storage + durable outbox are the Confirm boundary.
-      // Cloud acknowledgement follows in the background. Stress Reload may still force
-      // an immediate flush so Hercules Pro can read the new harbour shifts.
-      const flushTransport = options?.forceFlush === true;
+      const onlineGate = onlineRequiredWriteGate({
+        environment,
+        sharedScope,
+        online: !offline && (typeof navigator === "undefined" || navigator.onLine),
+        authEnabled: authRequired,
+        authSessionPresent: Boolean(authSession),
+        membershipMatches: automaticContinuity,
+        pendingOutboxCount: listContinuityOutbox(environment)
+          .filter((item) => item.householdId === (previous?.householdId ?? next.householdId)).length,
+        hasUnacknowledgedSnapshot: previous?.sharing?.mode === "pending-transport",
+      });
+      if (!onlineGate.allowed) throw new ValidationError(onlineGate.reason ?? "The shared books are not ready to save.");
+      // In launch mode the command compiler validates accounting facts first;
+      // cloud acknowledgement is the commit boundary, then active PGlite advances.
+      const flushTransport = options?.forceFlush === true || onlineGate.required;
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -2860,6 +3043,7 @@ export function App() {
         postedIds: token?.postedIds ?? [],
         actingMemberId: memberId,
         transportRequested,
+        requireSynchronized: onlineGate.required,
         adapters: makeBooksAdapters({
           environment,
           memberId,
@@ -2872,6 +3056,7 @@ export function App() {
                 confirmationId,
                 config: cloudConfig,
                 flush: flushTransport,
+                reconcileAmbiguous: onlineGate.required,
               })
             : undefined,
         }),
@@ -2937,7 +3122,7 @@ export function App() {
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
         const who = memberId;
-        if (who) {
+        if (who && !onlineGate.required) {
           void appendRestorePoint(outcome.household, who).then(async (withPoint) => {
             if (withPoint === outcome.household) return;
             // Commit only if the synchronized source is still current. A user
@@ -2970,6 +3155,7 @@ export function App() {
         }
       }
       if (
+        !onlineGate.required &&
         automaticContinuity &&
         continuityIdentity &&
         (outcome.kind === "synchronized" || outcome.kind === "pending-transport" || !flushTransport)
@@ -3087,6 +3273,8 @@ export function App() {
       if (!outcome.ok && outcome.userMessage) {
         if (options?.onRejected) options.onRejected(outcome.userMessage);
         else setError(outcome.userMessage);
+      } else if (outcome.ok && outcome.recoveryAvailable && outcome.userMessage) {
+        setError(outcome.userMessage);
       } else if (outcome.ok && outcome.kind !== "conflict-needs-attention") {
         setError("");
       }
@@ -3094,7 +3282,7 @@ export function App() {
       else if (outcome.kind === "pending-transport") setSyncState("syncing");
       else if (outcome.kind === "conflict-needs-attention") setSyncState("error");
       else if (outcome.ok) setSyncState("idle");
-      if (outcome.ok) {
+      if (outcome.ok && !(outcome.recoveryAvailable && outcome.errorClass === "books-unavailable")) {
         const status: BooksStatus = {
           ok: true,
           engine: outcome.kind === "synchronized" ? "pglite+supabase" : "pglite",
@@ -3108,6 +3296,24 @@ export function App() {
         booksReadinessRef.current = ready;
         booksGateRef.current = booksWriteGate(ready, outcome.household);
         setBooksReadiness(ready);
+      } else if (outcome.ok) {
+        const status: BooksStatus = {
+          ok: false,
+          engine: "pglite",
+          entryCount: previous?.transactions.length ?? 0,
+          inBalance: false,
+          equationHolds: false,
+          error: outcome.userMessage ?? undefined,
+        };
+        setBooksStatus(status);
+        const blocked = readinessForHousehold("blocked", startupGenerationRef.current, outcome.household, {
+          status,
+          issue: "interrupted-transaction",
+          message: outcome.userMessage ?? "The shared write is safe in cloud, but this device must rebuild its local books.",
+        });
+        booksReadinessRef.current = blocked;
+        booksGateRef.current = booksWriteGate(blocked, outcome.household);
+        setBooksReadiness(blocked);
       } else {
         setBooksStatus({
           ok: false,
@@ -3131,7 +3337,7 @@ export function App() {
     }
   }
 
-  function persist(next: Household, token?: UndoToken, actorId?: string, options?: { forceFlush?: boolean }) {
+  function persist(next: Household, token?: UndoToken, actorId?: string, options?: CommitHouseholdOptions) {
     return enqueueWrite(() => commitHousehold(next, token, actorId, options));
   }
 
@@ -3397,7 +3603,7 @@ export function App() {
     openingHouseholdRef.current = null;
   }
 
-  function clearThisPhoneNow() {
+  async function clearThisPhoneNow() {
     if (clearThisPhoneInFlightRef.current) return;
     const current = householdRef.current;
     if (!current) {
@@ -3416,23 +3622,27 @@ export function App() {
     clearPendingAuthInvite();
     clearSyncAnchor(environment, hid);
     clearContinuityOutboxForHousehold(environment, hid);
-    closeAdd();
-    householdRef.current = null;
-    sessionRef.current = null;
-    setHistory([]);
-    setToast(null);
-    setPersonalReplica(null);
-    setHousehold(null);
-    setSession(null);
-    setDiscoveredLedgers([]);
-    setGuard(null);
-    setError("");
-    setWelcomeMode("home");
-    setBusy(false);
-    clearThisPhoneInFlightRef.current = false;
-    void clearHousehold(environment, hid, { activateRemaining: false }).catch(() => {
+    setBusy(true);
+    try {
+      await clearStagedHouseholdBooks(environment, hid);
+      await clearHousehold(environment, hid, { activateRemaining: false });
+    } catch {
       setError("Signed out. This phone could not finish removing its offline copy; sign in again before using the books.");
-    });
+    } finally {
+      closeAdd();
+      householdRef.current = null;
+      sessionRef.current = null;
+      setHistory([]);
+      setToast(null);
+      setPersonalReplica(null);
+      setHousehold(null);
+      setSession(null);
+      setDiscoveredLedgers([]);
+      setGuard(null);
+      setWelcomeMode("home");
+      setBusy(false);
+      clearThisPhoneInFlightRef.current = false;
+    }
   }
 
   async function copyPilotSyncDiagnostic(): Promise<string> {
@@ -3624,6 +3834,7 @@ export function App() {
       }
       clearSyncAnchor(environment, input.householdId);
       clearContinuityOutboxForHousehold(environment, input.householdId);
+      await clearStagedHouseholdBooks(environment, input.householdId);
       disconnectGoogle(environment, input.memberId, input.householdId);
       if (session?.memberId && session.memberId !== input.memberId) {
         disconnectGoogle(environment, session.memberId, input.householdId);
@@ -4696,13 +4907,27 @@ export function App() {
             <p className="muted">{activeBooksGate.reason}</p>
           </div>
           {booksReadiness.phase === "blocked" && (
-            <button
-              type="button"
-              className="ghost command-banner__action"
-              onClick={() => setValidationAttempt((attempt) => attempt + 1)}
-            >
-              Retry validation
-            </button>
+            <div className="command-banner__actions">
+              {onlineRequiredSharedSyncEnabled(environment)
+                && !listContinuityOutbox(environment).some((item) => item.householdId === household.householdId)
+                && unresolvedConflicts(household).length === 0 && (
+                <button
+                  type="button"
+                  className="ghost command-banner__action"
+                  disabled={busyState}
+                  onClick={() => { void restoreBooksFromSharedCopy(); }}
+                >
+                  {busyState ? "Restoring…" : "Restore from shared copy"}
+                </button>
+              )}
+              <button
+                type="button"
+                className="ghost command-banner__action"
+                onClick={() => setValidationAttempt((attempt) => attempt + 1)}
+              >
+                Retry validation
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -5303,6 +5528,7 @@ export function App() {
             onCurrentDeviceRevoked={() => {
               traceSyncPilot("auth-blocked", { household, transport: "outbox" });
               clearContinuityOutboxForHousehold(environment, household.householdId);
+              void clearStagedHouseholdBooks(environment, household.householdId);
               clearSupabaseSession(environment);
               setSyncState("error");
             }}

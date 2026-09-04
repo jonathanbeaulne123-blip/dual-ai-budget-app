@@ -51,6 +51,7 @@ describe("D-143 Auth membership continuity authority", () => {
   it("keeps App commit path free of unprojected linked transport", () => {
     const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
     expect(app).toContain("const transportRequested = hostedContinuityAllowed(environment) && automaticContinuity;");
+    expect(app).toContain("continuityMemberId(next, cachedContinuityIdentity) === memberId");
     expect(app).not.toMatch(/unprojectedHostedTransportAllowed\(environment\) && hostedTransportAllowed/);
   });
 

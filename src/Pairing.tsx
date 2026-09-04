@@ -748,7 +748,6 @@ export function PairingCard({
               type="button"
               className="ghost"
               style={{ width: "100%", marginTop: 8 }}
-              disabled={busy}
               onClick={() => {
                 setDiagnosticStatus("");
                 void onCopySyncDiagnostic()

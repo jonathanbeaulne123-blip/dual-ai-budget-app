@@ -1,6 +1,6 @@
 # Ledger-native “Google Docs feel” Development pilot
 
-> **Status — 2026-08-31:** the D-180 pilot is deployed, while D-186 automatic reconciliation is release-authorized and being reconciled onto current main. The combined behavior is **not yet proven through the live signed-in matrix or fourteen-day rehearsal**.
+> **Status — 2026-09-03:** the deployed D-180/D-186 pilot remains unproven through the complete live signed-in matrix and fourteen-day rehearsal. D-208's online-required launch policy is implemented on a branch but is not merged or deployed.
 
 ## Entry and household-identity repair — Development deployed
 
@@ -18,11 +18,12 @@ The claim earned only after every exit criterion passes is:
 
 ## Immutable pilot boundary
 
-The pilot kitchen build must contain all four exact settings:
+The pilot kitchen build must contain all five exact behavior settings:
 
 - `VITE_SUPABASE_AUTH_ENABLED=1`
 - `VITE_CONTINUITY_REALTIME=1`
 - `VITE_CONTINUITY_COMMAND_LOG=1`
+- effective `VITE_SHARED_ONLINE_REQUIRED=1` (the source defaults Development to `1`; explicit `0` is the rollback switch)
 - `VITE_PRODUCTION_CONTINUITY=0`
 
 `VITE_SYNC_PILOT_DIAGNOSTICS=1` enables the Development-only local diagnostic. Production discovery, transport, Realtime, and diagnostics must remain refused. The Production code path stays in source for a separate approved packet.
@@ -33,7 +34,7 @@ No new API, table, migration, secret, provider setting, or hosted-data mutation 
 
 The normal shared path is:
 
-`Confirm -> balanced PGlite acceptance -> durable device snapshot/outbox -> command append -> Realtime event -> partner PGlite acceptance`
+`Confirm -> isolated staged PGlite acceptance -> durable idempotency marker -> authenticated atomic command append -> cloud acknowledgement -> active PGlite/device commit/Saved -> Realtime event -> partner PGlite acceptance`
 
 Snapshots are reserved for first household creation, initial device catch-up, a revision gap, and integrity repair. They are not the ordinary per-command collaboration path.
 
@@ -45,12 +46,15 @@ Snapshots are reserved for first household creation, initial device catch-up, a 
 - A second-device join or failed pull never silently replaces the last accepted local ledger.
 - Financial command events, receipts, reversals, and tombstones are retained throughout the pilot. No compaction or deletion job is authorized.
 - Confirm remains the only financial writer. Realtime, polling, retry, diagnostics, presence, and Hercules never create money.
+- Cached books remain readable offline. Shared Confirm is read-only until connectivity and matching Google Auth return; no locally accepted shared tip waits to publish later.
+- A failed or response-lost hosted attempt leaves the prior active PGlite projection and visible/durable household unchanged. Its slim marker and isolated staged candidate remain until the same command is replayed or its exact receipt is confirmed, so no ambiguous response is labelled “nothing posted.” A definitive CAS conflict cancels that generation.
+- An incomplete schema-version migration repairs from an exact synchronized, revision-anchored receipt. A pre-launch in-flight tip can bridge the old crash window only when one durable generation exactly binds to the accepted snapshot. An arbitrary projection mismatch remains read-only until the person explicitly restores the authenticated Shared and signed-in Personal cloud scopes through isolated PGlite validation; pending work or unresolved conflicts refuse replacement.
 
 ## Preflight before an approved deployment
 
 1. Use a clean release worktree and record its exact SHA. Keep the original dirty checkout untouched.
 2. Run the automated gate below and receive independent books, trust, verification, and release-review results.
-3. Confirm the workflow artifact was built from that exact SHA and contains the five pilot settings above.
+3. Confirm the workflow artifact was built from that exact SHA and contains the five behavior settings plus Development diagnostics above.
 4. Read the hosted migration inventory without applying anything. Required existing migrations are 001–017, including 012, 013, 014, and 017.
 5. Read the Realtime publication without changing it. Required continuity tables are `continuity_command_events`, `continuity_personal_snapshots`, and `household_snapshots`.
 6. Use only disposable, non-critical Development rehearsal information. Keep an independent record; Hearth cannot be the sole record during this pilot.
@@ -82,10 +86,10 @@ Use Jonathan and Bianca's separate Google accounts on actual supported devices. 
 - Concurrent disjoint Shared posts converge automatically.
 - An intentional same-id divergent edit converges automatically to the later accepted entry on both devices, with no blocking chooser.
 - A delayed same-id edit after an accepted reversal does not rewrite the reversed original; correction remains reversal plus replacement.
-- Both devices work offline, queue accepted work, reconnect, and converge without a duplicate.
+- Both devices keep cached books readable offline, refuse shared mutation, then write and converge without a duplicate after reconnect.
 - Background then foreground; network loss then recovery; Realtime failure displays fallback/polling honestly and later recovers.
 - Duplicate and out-of-order event delivery applies each command once.
-- Browser restart preserves accepted local books and pending outbox work.
+- Browser restart preserves the last cloud-acknowledged books and any crash-safe in-flight command identity.
 - Expired session refresh resumes only after a matching authenticated identity.
 - Invite, voluntary leave, ordinary member revoke, current-device revoke, wrong account, wrong household, and anonymous access all produce the intended allow/deny result.
 - Revoked-device UI states that cloud access is denied and cached offline data cannot be remotely erased.

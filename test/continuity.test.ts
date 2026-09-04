@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   createMemoryContinuityStore,
   clearContinuityOutboxForHousehold,
@@ -12,11 +15,12 @@ import {
   setContinuityStore,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
-import { catalogHousehold, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
+import { catalogHousehold, financialAuditHash, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
 import { householdCloudProjection } from "../src/ledger/supabase.ts";
 import type { Household } from "../src/core/types.ts";
 import { pushSupabaseHousehold } from "../src/ledger/supabase.ts";
 import { decodeJsonPayload } from "../src/ledger/snapshotPayload.ts";
+import { closeStagedBooksHandlesForTests, loadStagedHouseholdBooks, setStagedBooksDataDirForTests, validateHouseholdBooksStaged } from "../src/ledger/engine.ts";
 
 const config = { url: "https://continuity.example.supabase.co", key: "sb_publishable_test" };
 const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
@@ -290,6 +294,178 @@ describe("Google-account continuity", () => {
     const again = await flushContinuityOutbox({ environment: "development", identity, config, force: true });
     expect(again).toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });
     expect(methods.filter((method) => method === "POST").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("retains a failed in-flight marker until its cloud outcome is reconciled", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
+
+    const refused = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-online-required",
+      config,
+    });
+
+    expect(refused).toMatchObject({ ok: false, errorClass: "pending-transport" });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+  });
+
+  it("settles a lost hosted response from the same confirmation receipt", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const base = googleHousehold();
+    const household = {
+      ...base,
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-lost-response",
+        identityHash: "identity-lost-response",
+        auditHash: "accepted",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    let postAttempted = false;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/")) {
+        postAttempted = true;
+        throw new Error("response lost after commit");
+      }
+      if (url.includes("household_snapshots?") && url.includes("select=payload")) {
+        return response([{ payload: JSON.stringify(household) }]);
+      }
+      return response([]);
+    }));
+
+    const reconciled = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-lost-response",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(postAttempted).toBe(true);
+    expect(reconciled).toMatchObject({ ok: true, remoteRevision: 2 });
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
+  it("does not acknowledge a reused confirmation id with different command facts", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const base = googleHousehold();
+    const household = {
+      ...base,
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-reused",
+        identityHash: "expected-identity",
+        auditHash: "expected-audit",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    const differentRemote = {
+      ...household,
+      commandReceipts: [{ ...household.commandReceipts[0]!, identityHash: "different-identity" }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/")) throw new Error("response lost");
+      if (url.includes("household_snapshots?") && url.includes("select=payload")) {
+        return response([{ payload: JSON.stringify(differentRemote) }]);
+      }
+      return response([]);
+    }));
+
+    const result = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-reused",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(result).toMatchObject({ ok: false, errorClass: "pending-transport" });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+  });
+
+  it("replays a never-sent staged candidate after durable outbox reload", async () => {
+    const stageRoot = await mkdtemp(join(tmpdir(), "hearth-stage-reload-"));
+    setStagedBooksDataDirForTests((environment, householdId) => join(stageRoot, `${environment}-${householdId}`));
+    const durable = createMemoryContinuityStore();
+    try {
+      setContinuityStore(durable);
+      const base = googleHousehold();
+      const posted = postEntry(base, {
+        date: "2026-09-03",
+        type: "expense",
+        amount: "4.00",
+        accountId: "ACC-VISA",
+        subcategoryId: "SUB-FOOD-GROCERIES",
+        note: "Staged retry milk",
+        createdBy: "MEM-001",
+        confirmDuplicate: true,
+      });
+      const candidate = { ...posted.household, revision: 2, baseRevision: 1 };
+      candidate.booksAcceptedHash = await financialAuditHash(candidate);
+      await validateHouseholdBooksStaged(candidate, { auditHash: candidate.booksAcceptedHash });
+      enqueueContinuitySnapshot({
+        household: candidate,
+        identity,
+        expectedRevision: 1,
+        confirmationId: "confirm-never-sent",
+      });
+      await closeStagedBooksHandlesForTests();
+      setContinuityStore(durable);
+      expect((await loadStagedHouseholdBooks(candidate.environment, candidate.householdId))?.revision).toBe(candidate.revision);
+      await closeStagedBooksHandlesForTests();
+      vi.stubGlobal("fetch", continuityCasFetch());
+
+      const replayed = await flushContinuityOutbox({ environment: "development", identity, config, force: true });
+
+      expect(replayed).toEqual({ synchronized: 1, pending: 0, deferred: 0, conflicts: [] });
+      expect(listContinuityOutbox("development")).toEqual([]);
+    } finally {
+      await closeStagedBooksHandlesForTests();
+      setStagedBooksDataDirForTests(null);
+      await rm(stageRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("durably cancels a definitive online-required conflict instead of publishing it later", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    const remote = { ...googleHousehold(), revision: 3, baseRevision: 3 };
+    vi.stubGlobal("fetch", continuityCasFetch({ remote }));
+
+    const conflict = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-definitive-conflict",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(conflict).toMatchObject({ ok: false, errorClass: "conflict-detected" });
+    expect(listContinuityOutbox("development")).toEqual([]);
+    expect(await flushContinuityOutbox({ environment: "development", identity, config, force: true }))
+      .toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });
   });
 
   it("durably enqueues a local Confirm without waiting for cloud transport", async () => {
@@ -718,16 +894,19 @@ describe("continuity outbox quota resilience", () => {
     setContinuityStore(null);
     vi.stubGlobal("localStorage", store);
     vi.stubGlobal("indexedDB", undefined);
+    const fetcher = vi.fn();
+    vi.stubGlobal("fetch", fetcher);
     const result = await transportHouseholdWithOutbox({
       household: { ...googleHousehold(), revision: 2, baseRevision: 1 },
       identity,
       expectedRevision: 1,
       confirmationId: "durable-none",
       config,
-      flush: false,
     });
-    expect(result).toMatchObject({ ok: false, errorClass: "pending-transport" });
-    expect(result.ok ? "" : result.message).toMatch(/storage is full/i);
+    expect(result).toMatchObject({ ok: false, errorClass: "disconnected" });
+    expect(result.ok ? "" : result.message).toMatch(/nothing was posted/i);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(listContinuityOutbox("development")).toEqual([]);
   });
 
   it("seeds a live household into the outbox when Retry finds an empty queue", async () => {

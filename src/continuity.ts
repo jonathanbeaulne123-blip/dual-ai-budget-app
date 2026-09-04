@@ -16,11 +16,13 @@ import {
 import {
   appendContinuityCommand,
   discoverSupabaseHouseholdsByGoogleIdentity,
+  pullHouseholdSnapshotById,
   pushSupabaseHousehold,
   type DiscoveredHousehold,
   type SupabaseConfig,
 } from "./ledger/supabase.ts";
 import { loadHousehold } from "./storage.ts";
+import { clearStagedHouseholdBooks, loadStagedHouseholdBooks } from "./ledger/engine.ts";
 
 export {
   hostedContinuityAllowed,
@@ -439,6 +441,12 @@ export async function resolveOutboxHousehold(
     loaded = null;
   }
   if (loaded) candidates.push(ensureHouseholdShape(loaded));
+  try {
+    const staged = await loadStagedHouseholdBooks(item.environment, item.householdId);
+    if (staged) candidates.push(ensureHouseholdShape(staged));
+  } catch {
+    // A missing isolated stage leaves the durable marker for cloud reconciliation.
+  }
 
   const eligible = candidates.filter((household) => {
     try {
@@ -548,6 +556,42 @@ export function acknowledgeContinuityOutboxItem(item: ContinuityOutboxItem): voi
     item.environment,
     read(item.environment).filter((row) => !sameOutboxGeneration(row, item)),
   );
+}
+
+/** Compare-and-remove an outbox generation and wait until its durable deletion settles. */
+export async function acknowledgeContinuityOutboxItemDurably(item: ContinuityOutboxItem): Promise<void> {
+  acknowledgeContinuityOutboxItem(item);
+  await awaitContinuityOutboxDurable(item.environment);
+}
+
+function remoteAcknowledgesOutbox(remote: Household, item: ContinuityOutboxItem): boolean {
+  if (
+    remote.environment !== item.environment
+    || remote.householdId !== item.householdId
+    || remote.revision < item.tipRevision
+  ) return false;
+  const refs = item.commandRefs ?? [];
+  if (!refs.length || refs.length !== item.confirmationIds.length) return false;
+  return refs.every((ref) => {
+    const receipt = remote.commandReceipts.find((row) => row.confirmationId === ref.confirmationId);
+    if (!receipt) return false;
+    const receiptAuditHash = receipt.scopedAuditHashes?.[ref.ledgerScope] ?? receipt.auditHash;
+    return receipt.identityHash === ref.identityHash
+      && receipt.commandKind === ref.commandType
+      && receipt.revision === ref.resultRevision
+      && receiptAuditHash === ref.commandPayload.auditHash
+      && JSON.stringify([...receipt.postedIds].sort()) === JSON.stringify([...ref.commandPayload.postedIds].sort());
+  });
+}
+
+/** Resolve delivery ambiguity from an authenticated canonical pull. */
+export async function acknowledgeContinuityOutboxFromRemote(remote: Household): Promise<number> {
+  const accepted = listContinuityOutbox(remote.environment)
+    .filter((item) => remoteAcknowledgesOutbox(remote, item));
+  for (const item of accepted) {
+    await acknowledgeContinuityOutboxItemDurably(item);
+  }
+  return accepted.length;
 }
 
 /** Drop queued snapshots for one household (Sign out / clear this phone). */
@@ -689,7 +733,7 @@ async function flushItem(
     }
     // Successful CAS (including idempotent duplicate delivery) acknowledges the outbox entry.
     // Local books are never cleared here — only the transport queue item.
-    acknowledgeContinuityOutboxItem(item);
+    await acknowledgeContinuityOutboxItemDurably(item);
     return { kind: "synchronized", revision: household.revision };
   } catch (caught) {
     const message = humanizeContinuityError(caught);
@@ -710,19 +754,32 @@ export async function transportHouseholdWithOutbox(input: {
    * Default true: flush immediately after enqueue (ledger writes).
    */
   flush?: boolean;
+  /** On an ambiguous response, verify the same confirmation receipt by authenticated pull. */
+  reconcileAmbiguous?: boolean;
 }): Promise<
-  | { ok: true; remoteRevision?: number }
-  | { ok: false; errorClass: "pending-transport" | "conflict-detected"; remote?: Household; message: string }
+  | { ok: true; remoteRevision?: number; remote?: Household }
+  | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; message: string }
 > {
+  const priorItems = read(input.household.environment);
   let item: ContinuityOutboxItem;
   try {
     item = enqueueContinuitySnapshot(input);
     await awaitContinuityOutboxDurable(item.environment);
   } catch (caught) {
+    // No network request has started. Restore the exact prior queue in memory
+    // and best-effort durable storage so this failed Confirm cannot masquerade
+    // as an ambiguously delivered cloud write.
+    try {
+      write(input.household.environment, priorItems);
+      await awaitContinuityOutboxDurable(input.household.environment);
+    } catch {
+      // The browser stores already refused this write; memory still reflects
+      // the pre-Confirm queue and remains the safest state for this session.
+    }
     return {
       ok: false,
-      errorClass: "pending-transport",
-      message: humanizeContinuityError(caught),
+      errorClass: "disconnected",
+      message: `Hearth could not safely queue this Confirm before contacting the cloud. Nothing was posted. ${humanizeContinuityError(caught)}`,
     };
   }
   if (input.flush === false) {
@@ -735,12 +792,32 @@ export async function transportHouseholdWithOutbox(input: {
   const result = await flushItem(item, input.identity, input.config, input.household);
   if (result.kind === "synchronized") return { ok: true, remoteRevision: result.revision };
   if (result.kind === "conflict") {
+    if (input.reconcileAmbiguous) {
+      await acknowledgeContinuityOutboxItemDurably(item);
+      await clearStagedHouseholdBooks(item.environment, item.householdId);
+    }
     return {
       ok: false,
       errorClass: "conflict-detected",
       remote: result.remote,
       message: result.message,
     };
+  }
+  if (input.reconcileAmbiguous && input.config) {
+    try {
+      const remote = await pullHouseholdSnapshotById(
+        input.household.householdId,
+        input.household.environment,
+        input.config,
+        input.identity,
+      );
+      if (remote && remoteAcknowledgesOutbox(remote, item)) {
+        await acknowledgeContinuityOutboxItemDurably(item);
+        return { ok: true, remoteRevision: remote.revision, remote };
+      }
+    } catch {
+      // The explicit in-flight marker remains until a later authenticated pull.
+    }
   }
   return { ok: false, errorClass: "pending-transport", message: result.message };
 }

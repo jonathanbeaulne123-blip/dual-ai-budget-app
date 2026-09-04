@@ -172,6 +172,28 @@ describe("buildSyncFreshness", () => {
     expect(display.showPendingHint).toBe(true);
   });
 
+  it("never claims Sharing while the local books gate is blocked", () => {
+    const household = markPendingTransport(baseHousehold());
+    const display = buildSyncFreshness({
+      household,
+      viewerMemberId: household.members[0]!.id,
+      realtimeEnabled: true,
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      pendingOutboxCount: 1,
+      hasOpenConflict: false,
+      booksBlocked: true,
+      lastReconcileAt: null,
+      lastReconcileSource: null,
+      now: NOW,
+    });
+
+    expect(display.transportPrimary).toBe("Local books repair needed");
+    expect(display.transportPrimary).not.toMatch(/Sharing/);
+    expect(display.blocksSyncedLabel).toBe(true);
+    expect(display.tone).toBe("danger");
+  });
+
   it("shows poll fallback copy when Realtime is not subscribed", () => {
     const household = baseHousehold();
     const display = buildSyncFreshness({
