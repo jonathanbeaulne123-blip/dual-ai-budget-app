@@ -45,6 +45,12 @@ function receipt(confirmationId: string, commandKind: string, postedIds: string[
   };
 }
 
+function allSharedOpeningLines(household: Household) {
+  return household.accounts
+    .filter((account) => account.active && account.scope !== "personal")
+    .map((account, index) => ({ accountId: account.id, amountCents: (index + 1) * 100_00 }));
+}
+
 function privacyFixture(): Household {
   let household = catalogHousehold("development");
   household.accounts = shapeAccounts([
@@ -204,21 +210,23 @@ describe("onboarding evidence projector", () => {
     }).household;
     expect(evidenceFor(stale, "ch-05-opening", BIANCA)).toEqual({ kind: "ineligible", reason: "stale" });
 
-    const untied = postOpeningBalances(catalogHousehold("development"), {
+    const untiedHousehold = catalogHousehold("development");
+    const untied = postOpeningBalances(untiedHousehold, {
       asOfDate: "2026-09-03",
       createdBy: BIANCA,
       confirmationId: "OPEN-UNTIED",
-      lines: [{ accountId: "ACC-CHEQUING", amountCents: 100_00 }],
+      lines: allSharedOpeningLines(untiedHousehold),
     }).household;
     expect(evidenceFor(untied, "ch-05-opening", BIANCA)).toEqual({ kind: "ineligible", reason: "untied" });
   });
 
   it("accepts a tied opening receipt and cites the batch rows", () => {
-    const posted = postOpeningBalances(catalogHousehold("development"), {
+    const household = catalogHousehold("development");
+    const posted = postOpeningBalances(household, {
       asOfDate: "2026-09-03",
       createdBy: BIANCA,
       confirmationId: "OPEN-TIED",
-      lines: [{ accountId: "ACC-CHEQUING", amountCents: 100_00 }],
+      lines: allSharedOpeningLines(household),
     });
     posted.household.commandReceipts = [receipt("OPEN-TIED", "postOpeningBalances", posted.postedIds)];
     const result = evidenceFor(posted.household, "ch-05-opening", BIANCA);

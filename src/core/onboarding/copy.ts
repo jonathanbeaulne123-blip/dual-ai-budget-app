@@ -213,6 +213,26 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "Visible only in your Personal books.", slots: [],
   }),
   entry({
+    key: "onboarding.household.ch-05-opening", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Bring every Shared account to today with one opening batch. These are balances you already have — not income or spending.", slots: [],
+  }),
+  entry({
+    key: "opening.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Enter opening balances", slots: [],
+  }),
+  entry({
+    key: "opening.review", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Review opening entries", slots: [],
+  }),
+  entry({
+    key: "opening.partial", speaker: "hercules", surface: "card", scope: "none", announce: "polite",
+    text: "Some Shared accounts are missing from the opening batch. Reverse that batch, then confirm all of them together.", slots: [],
+  }),
+  entry({
+    key: "opening.stale", speaker: "hercules", surface: "card", scope: "none", announce: "polite",
+    text: "There are already posted entries in the books, but no accepted opening balance. Review those entries before continuing.", slots: [],
+  }),
+  entry({
     key: "charter.write", speaker: "system", surface: "button", scope: "none", announce: "none",
     text: "Write the Charter", slots: [],
   }),

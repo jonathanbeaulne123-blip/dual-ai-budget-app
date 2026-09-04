@@ -1,5 +1,49 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 14 — Chapter 5 opening truth (D-213) (2026-09-04)
+
+**Status:** Local implementation, production build, and live UX pass complete
+on `onboarding/14-ch5-opening` from
+`origin/main@97b1119ec9447d24490623418462b5aa4a388d1b`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **High** because onboarding now proves
+an accepted opening-money fact without changing the financial command.
+
+**Outcome:** Chapter 5 completes only from one receipt-tied opening batch whose
+live rows cover every active Shared account. Its evidence names the covered
+accounts, Toronto civil date, and balanced Opening equity. Partial coverage
+stays pending; ordinary accepted money without a live opening fails closed and
+routes to the existing correction/review surface.
+
+**Implementation:** The existing `OpeningTruthCard` now has a Shared-only mode,
+coverage progress, review/change focus, pause, honest balance-sheet copy, and
+exact confirmation-id handoff into accepted persistence. Hercules routes to
+that real Books form or to All activity for correction. The acknowledgement
+command re-projects current evidence. `src/core/openingTruth.ts` is
+byte-identical to the base. Contract:
+[`briefs/ONBOARDING_SLICE_14_CH5_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_14_CH5_CONTRACT_2026-09-04.md).
+
+**UX and accessibility:** Live fictional Development journeys covered task,
+entry, complete review/change, partial, and stale states at 320 and 1100 px
+plus a 550 px 200%-equivalent reflow. The browser pass caught and repaired a
+40/42 px cascade regression; final inputs and actions are 44–48 px, focus
+moves with the review state, and no viewport has horizontal overflow.
+
+**Boundary:** D-183's one reversible opening batch remains authoritative. No
+history reconstruction, fabricated income/spending, partial completion,
+second opening, new correction model, schema, hosted row, Auth/RLS, provider,
+secret, Production, push, merge, or deployment. Browser fixtures were
+temporary and removed.
+
+**Verification:** The exact final focused suite passed **141/141**. The quick
+gate passed AI-surface, TypeScript, diff hygiene, **137 fast + 7 serial tests**
+in **163.5 seconds** on the clean rebased commit. The production build passed TypeScript, Vite (**460
+modules**), Hercules Pro UI, and the redirect sanitizer; only the repository's
+existing PGlite/chunk-size warnings were emitted.
+
+**Next owner:** Review this local branch, then Jonathan may separately
+authorize push/PR/merge. Hosted two-device/cloud-ack proof remains a later
+release check.
+
 ## Onboarding Slice 13 — Chapter 4 accounts (D-211) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete

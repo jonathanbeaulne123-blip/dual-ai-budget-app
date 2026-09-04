@@ -340,7 +340,7 @@ describe("the conductor shell — rendering", () => {
     unmount();
 
     const after = render({ household, memberId: BIANCA });
-    expect(after.host.textContent).toContain("ch-05-opening");
+    expect(after.host.textContent).toContain("Bring every Shared account to today with one opening batch.");
     after.unmount();
 
     // Jonathan's own progress is untouched — he still witnesses ch-04, not ch-05.

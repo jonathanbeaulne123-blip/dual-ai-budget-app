@@ -429,6 +429,13 @@ export function recordChapterAcknowledgement(household: Household, input: {
       throw new ValidationError("Add a Shared account and choose one Shared credit card for the Fund before continuing.");
     }
   }
+  if (chapter.id === "ch-05-opening") {
+    requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+    const projected = evidenceFor(household, chapter.id, input.memberId);
+    if (projected.kind !== "accepted" || projected.card.scope !== "household") {
+      throw new ValidationError("Confirm one complete opening batch for every Shared account before continuing.");
+    }
+  }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id

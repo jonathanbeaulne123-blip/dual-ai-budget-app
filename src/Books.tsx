@@ -55,6 +55,7 @@ import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { DeferredSurface } from "./deferredSurfaces.tsx";
 import { Register } from "./Register.tsx";
+import { OpeningTruthCard } from "./OpeningTruthCard.tsx";
 
 const DeferredBatchImportCard = lazy(() => import("./BatchImport.tsx").then((module) => ({ default: module.BatchImportCard })));
 
@@ -106,17 +107,18 @@ export function BooksPage({
   sourceFocus: HerculesNumberSource | null;
   onFocusAccount: (accountId: string | null) => void;
   onClearSource: () => void;
-  onChange: (household: Household, undo?: UndoToken) => unknown | Promise<unknown>;
+  onChange: (household: Household, undo?: UndoToken, confirmationId?: string) => unknown | Promise<unknown>;
   onRemove: (transaction: Household["transactions"][number]) => void;
   onPayAccount: (account: Account) => void;
   onAddToAccount: (account: Account) => void;
   onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
-  requestedPane?: "fund-register" | "wallet" | null;
+  requestedPane?: "fund-register" | "wallet" | "opening" | "register" | null;
   onConsumeRequestedPane?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
   const [accountFormOpenRequest, setAccountFormOpenRequest] = useState(0);
+  const [openingCardOpen, setOpeningCardOpen] = useState(false);
   const sharedTable = view === "household";
   const auditHousehold = useMemo(() => (
     booksPresentationFloor(booksHousehold, memberId, view)
@@ -220,6 +222,24 @@ export function BooksPage({
   }, [onConsumeRequestedPane, requestedPane, sharedTable]);
 
   useEffect(() => {
+    if (requestedPane !== "opening" || !sharedTable) return;
+    setPane("wallet");
+    setOpeningCardOpen(true);
+    onConsumeRequestedPane?.();
+  }, [onConsumeRequestedPane, requestedPane, sharedTable]);
+
+  useEffect(() => {
+    if (requestedPane !== "register" || !sharedTable) return;
+    setPane("register");
+    setOpeningCardOpen(false);
+    onConsumeRequestedPane?.();
+  }, [onConsumeRequestedPane, requestedPane, sharedTable]);
+
+  useEffect(() => {
+    if (!sharedTable) setOpeningCardOpen(false);
+  }, [sharedTable]);
+
+  useEffect(() => {
     if (!trial.inBalance || isAuditPane) setAuditOpen(true);
   }, [trial.inBalance, isAuditPane]);
 
@@ -315,6 +335,18 @@ export function BooksPage({
       ) : null}
       {pane === "wallet" && sharedTable && (
         <>
+          {openingCardOpen ? (
+            <OpeningTruthCard
+              household={booksHousehold}
+              memberId={memberId}
+              date={today}
+              accountScope="shared"
+              autoFocusHeading
+              onApply={onChange}
+              onDone={() => setOpeningCardOpen(false)}
+              onCancel={() => setOpeningCardOpen(false)}
+            />
+          ) : null}
           <section className="card">
             <header><h2>Shared pool</h2></header>
             <p>Shared is one account. Kitty Banks are the sub-accounts. Room-by-room management lives on My books.</p>

@@ -104,6 +104,20 @@ const SLICE_13_ACCOUNTS_COPY: Record<string, { text: string; announce: CopyEntry
   "accounts.personal.provenance": { text: "Visible only in your Personal books.", announce: "none" },
 };
 
+const SLICE_14_OPENING_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-05-opening": {
+    text: "Bring every Shared account to today with one opening batch. These are balances you already have — not income or spending.", announce: "none",
+  },
+  "opening.open": { text: "Enter opening balances", announce: "none" },
+  "opening.review": { text: "Review opening entries", announce: "none" },
+  "opening.partial": {
+    text: "Some Shared accounts are missing from the opening batch. Reverse that batch, then confirm all of them together.", announce: "polite",
+  },
+  "opening.stale": {
+    text: "There are already posted entries in the books, but no accepted opening balance. Review those entries before continuing.", announce: "polite",
+  },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -116,11 +130,12 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
       ...SLICE_13_ACCOUNTS_COPY,
+      ...SLICE_14_OPENING_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

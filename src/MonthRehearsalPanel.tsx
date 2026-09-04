@@ -157,7 +157,7 @@ export type MonthRehearsalPanelProps = {
   household: Household;
   memberId: string;
   today: DateKey;
-  onApply: (household: Household, undo?: UndoToken) => unknown | Promise<unknown>;
+  onApply: (household: Household, undo?: UndoToken, confirmationId?: string) => unknown | Promise<unknown>;
   onOpenTask?: (taskId: MonthRehearsalTaskId) => void;
   surface?: "home" | "manage";
 };

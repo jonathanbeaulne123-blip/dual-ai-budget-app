@@ -5,6 +5,7 @@ import {
   catalogHousehold,
   confirmHouseholdOnboarding,
   foundHouseholdCharter,
+  postOpeningBalances,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
   recordObservedChapterCompletion,
@@ -158,6 +159,32 @@ describe("onboardingNavigationTarget", () => {
         household = setFundCardAccount(household, {
           memberId: BIANCA, accountId: "ACC-VISA", createdBy: BIANCA,
         }).household;
+      }
+      if (chapterId === "ch-05-opening") {
+        const confirmationId = "OPEN-RETURN-TEST";
+        const posted = postOpeningBalances(household, {
+          asOfDate: TODAY,
+          createdBy: BIANCA,
+          confirmationId,
+          lines: household.accounts
+            .filter((account) => account.active && account.scope !== "personal")
+            .map((account, index) => ({ accountId: account.id, amountCents: (index + 1) * 100_00 })),
+        });
+        household = {
+          ...posted.household,
+          commandReceipts: [
+            ...(posted.household.commandReceipts ?? []),
+            {
+              confirmationId,
+              identityHash: `identity-${confirmationId}`,
+              auditHash: `audit-${confirmationId}`,
+              commandKind: "postOpeningBalances",
+              postedIds: posted.postedIds,
+              revision: 1,
+              acceptedAt: "2026-09-03T16:00:00.000Z",
+            },
+          ],
+        };
       }
       household = chapterId === "ch-02-household"
         ? recordObservedChapterCompletion(household, {
