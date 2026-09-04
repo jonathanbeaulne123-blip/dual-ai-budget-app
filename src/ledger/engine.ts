@@ -8,6 +8,7 @@ import {
 } from "../core/journal.ts";
 import type { Household, Environment } from "../core/types.ts";
 import { ensureHouseholdShape } from "../core/sync.ts";
+import { createWriteQueue } from "../core/writeQueue.ts";
 import { assertReadOnlySelect } from "./queryGuard.ts";
 import { BOOKS_SCHEMA, BOOKS_SCHEMA_VERSION } from "./schema.ts";
 import { hostedTransportAllowed } from "../core/sharing.ts";
@@ -207,6 +208,7 @@ let browserDbOpenings = new Map<string, Promise<BooksDatabase>>();
 let stagedDbs = new Map<string, BooksDatabase>();
 let stagedDbOpenings = new Map<string, Promise<BooksDatabase>>();
 const stagedGenerations = new Map<string, number>();
+const stagedWriteQueues = new Map<string, ReturnType<typeof createWriteQueue>>();
 const compiledBooksCache = new Map<string, CompiledBooks>();
 const stagedHouseholdMemory = new Map<string, Household>();
 let stagedBooksDataDirForTests: ((environment: Environment, householdId: string) => string) | null = null;
@@ -223,6 +225,14 @@ function stagedHouseholdKey(environment: Environment, householdId: string): stri
 
 function stagedGeneration(cacheKey: string): number {
   return stagedGenerations.get(cacheKey) ?? 0;
+}
+
+function stagedWriteQueue(cacheKey: string): ReturnType<typeof createWriteQueue> {
+  const existing = stagedWriteQueues.get(cacheKey);
+  if (existing) return existing;
+  const created = createWriteQueue();
+  stagedWriteQueues.set(cacheKey, created);
+  return created;
 }
 
 function compiledCacheKey(household: Household): string | null {
@@ -1047,6 +1057,14 @@ export async function validateHouseholdBooksStaged(
   options: BooksIngestOptions & { compiled?: CompiledBooks } = {},
 ): Promise<BooksStatus> {
   const cacheKey = stagedHouseholdKey(household.environment, household.householdId);
+  return stagedWriteQueue(cacheKey)(() => validateHouseholdBooksStagedUnlocked(household, options));
+}
+
+async function validateHouseholdBooksStagedUnlocked(
+  household: Household,
+  options: BooksIngestOptions & { compiled?: CompiledBooks } = {},
+): Promise<BooksStatus> {
+  const cacheKey = stagedHouseholdKey(household.environment, household.householdId);
   const generation = stagedGeneration(cacheKey);
   const db = await getStagedBooks(household.environment, household.householdId);
   const status = await ingestBooks(
@@ -1082,35 +1100,40 @@ export async function loadStagedHouseholdBooks(
 }
 
 export async function prewarmStagedHouseholdBooks(household: Household): Promise<void> {
-  const staged = await loadStagedHouseholdBooks(household.environment, household.householdId);
-  // A higher stage may be the only replayable copy of an ambiguously delivered
-  // Confirm. Never replace it with the older household still visible in React.
-  if (staged && staged.revision > household.revision) return;
-  if (
-    staged
-    && staged.revision === household.revision
-    && staged.booksAcceptedHash === household.booksAcceptedHash
-  ) return;
-  await validateHouseholdBooksStaged(household, {
-    previous: staged,
-    auditHash: household.booksAcceptedHash ?? undefined,
-    incremental: Boolean(staged),
+  const cacheKey = stagedHouseholdKey(household.environment, household.householdId);
+  await stagedWriteQueue(cacheKey)(async () => {
+    const staged = await loadStagedHouseholdBooks(household.environment, household.householdId);
+    // A higher stage may be the only replayable copy of an ambiguously delivered
+    // Confirm. Recheck only after acquiring the same lane used by validation.
+    if (staged && staged.revision > household.revision) return;
+    if (
+      staged
+      && staged.revision === household.revision
+      && staged.booksAcceptedHash === household.booksAcceptedHash
+    ) return;
+    await validateHouseholdBooksStagedUnlocked(household, {
+      previous: staged,
+      auditHash: household.booksAcceptedHash ?? undefined,
+      incremental: Boolean(staged),
+    });
   });
 }
 
 export async function clearStagedHouseholdBooks(environment: Environment, householdId: string): Promise<void> {
   const cacheKey = stagedHouseholdKey(environment, householdId);
   stagedGenerations.set(cacheKey, stagedGeneration(cacheKey) + 1);
-  stagedHouseholdMemory.delete(cacheKey);
-  const opening = stagedDbOpenings.get(cacheKey);
-  stagedDbOpenings.delete(cacheKey);
-  if (opening) await opening.catch(() => undefined);
-  const db = stagedDbs.get(cacheKey);
-  stagedDbs.delete(cacheKey);
-  if (db) await db.close().catch(() => undefined);
-  if (typeof indexedDB === "undefined") return;
-  const name = stagedBooksIdbName(environment, householdId).replace(/^idb:\/\//, "");
-  await deleteIndexedDatabase(name);
+  await stagedWriteQueue(cacheKey)(async () => {
+    stagedHouseholdMemory.delete(cacheKey);
+    const opening = stagedDbOpenings.get(cacheKey);
+    stagedDbOpenings.delete(cacheKey);
+    if (opening) await opening.catch(() => undefined);
+    const db = stagedDbs.get(cacheKey);
+    stagedDbs.delete(cacheKey);
+    if (db) await db.close().catch(() => undefined);
+    if (typeof indexedDB === "undefined") return;
+    const name = stagedBooksIdbName(environment, householdId).replace(/^idb:\/\//, "");
+    await deleteIndexedDatabase(name);
+  });
 }
 
 export async function wipeStagedBooksForEnvironment(
@@ -1123,6 +1146,7 @@ export async function wipeStagedBooksForEnvironment(
     ...stagedHouseholdMemory.keys(),
     ...stagedDbOpenings.keys(),
     ...stagedDbs.keys(),
+    ...stagedWriteQueues.keys(),
   ].filter((cacheKey) => cacheKey.startsWith(cachePrefix)));
   await Promise.all([...keys].map((cacheKey) => (
     clearStagedHouseholdBooks(environment, cacheKey.slice(cachePrefix.length))

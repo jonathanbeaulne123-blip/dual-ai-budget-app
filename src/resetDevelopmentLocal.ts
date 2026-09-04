@@ -1,6 +1,6 @@
 import type { Environment } from "./core/types.ts";
 import { disconnectGoogle } from "./google/index.ts";
-import { awaitContinuityOutboxDurable, clearContinuityOutbox } from "./continuity.ts";
+import { clearContinuityOutboxDurably } from "./continuity.ts";
 import { wipeBrowserBooks, wipeStagedBooksForEnvironment } from "./ledger/engine.ts";
 import { clearSession } from "./session.ts";
 import { clearAllHouseholdReplicas, listHouseholdReplicas } from "./storage.ts";
@@ -21,8 +21,7 @@ export async function wipeLocalDevelopmentCopies(environment: Environment): Prom
   }
   clearUndoHistoryForEnvironment(environment);
   clearSyncAnchorsForEnvironment(environment);
-  clearContinuityOutbox(environment);
-  await awaitContinuityOutboxDurable(environment);
+  await clearContinuityOutboxDurably(environment);
   await wipeStagedBooksForEnvironment(environment, catalog.map((item) => item.householdId));
   await clearAllHouseholdReplicas(environment);
   await wipeBrowserBooks(environment);

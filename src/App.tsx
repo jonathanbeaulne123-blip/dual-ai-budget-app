@@ -213,9 +213,9 @@ import {
 import { createAccountFlowGate } from "./auth/accountFlow.ts";
 import {
   cancelContinuityConflictGeneration,
-  awaitContinuityOutboxDurable,
   clearContinuityOutboxConflictBlocks,
   clearContinuityOutboxForHousehold,
+  clearContinuityOutboxForHouseholdDurably,
   continuityMemberId,
   discoverContinuityMemberships,
   flushContinuityOutbox,
@@ -1596,7 +1596,8 @@ export function App() {
       try {
         let inspection = await inspectBrowserBooks(candidate);
         if (!stillCurrent(candidate)) return;
-        const launchOnlineRequired = onlineRequiredSharedSyncEnabled(candidate.environment);
+        const launchOnlineRequired = onlineRequiredSharedSyncEnabled(candidate.environment)
+          && candidate.linked === true;
         if (
           (inspection.issue === "projection-mismatch" || inspection.issue === "incomplete-migration")
           && launchOnlineRequired
@@ -4080,8 +4081,7 @@ export function App() {
       await enqueueWrite(async () => {
         if (who) clearUndoHistory(environment, hid, who);
         clearSyncAnchor(environment, hid);
-        clearContinuityOutboxForHousehold(environment, hid);
-        await awaitContinuityOutboxDurable(environment);
+        await clearContinuityOutboxForHouseholdDurably(environment, hid);
         await clearStagedHouseholdBooks(environment, hid);
         await clearHousehold(environment, hid, { activateRemaining: false });
         householdRef.current = null;
@@ -4297,8 +4297,7 @@ export function App() {
           throw new Error(inviteReasonMessage(result.reason));
         }
         clearSyncAnchor(environment, input.householdId);
-        clearContinuityOutboxForHousehold(environment, input.householdId);
-        await awaitContinuityOutboxDurable(environment);
+        await clearContinuityOutboxForHouseholdDurably(environment, input.householdId);
         await clearStagedHouseholdBooks(environment, input.householdId);
         await clearHousehold(environment, input.householdId);
         if (householdRef.current?.householdId === input.householdId) {

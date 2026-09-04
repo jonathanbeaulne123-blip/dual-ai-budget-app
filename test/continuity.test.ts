@@ -7,6 +7,7 @@ import {
   cancelContinuityConflictGeneration,
   createMemoryContinuityStore,
   clearContinuityOutboxForHousehold,
+  clearContinuityOutboxForHouseholdDurably,
   discoverContinuityMemberships,
   enqueueContinuitySnapshot,
   flushContinuityOutbox,
@@ -1008,13 +1009,50 @@ describe("Sign out continuity wipe", () => {
       await awaitContinuityOutboxDurable("development");
     });
     const clear = enqueue(async () => {
-      clearContinuityOutboxForHousehold("development", household.householdId);
-      await awaitContinuityOutboxDurable("development");
+      await clearContinuityOutboxForHouseholdDurably("development", household.householdId);
     });
 
     releaseConfirm();
     await Promise.all([confirm, clear]);
     expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
+  it("reports a localStorage refusal instead of claiming durable clear", async () => {
+    const values = new Map<string, string>();
+    let refuseRemoval = false;
+    setContinuityStore({
+      getItem: (itemKey) => values.get(itemKey) ?? null,
+      setItem: (itemKey, value) => { values.set(itemKey, value); },
+      removeItem: (itemKey) => {
+        if (refuseRemoval) throw new Error("local removal refused");
+        values.delete(itemKey);
+      },
+    });
+    const household = { ...googleHousehold(), householdId: "HH-LOCAL-REFUSE" };
+    enqueueContinuitySnapshot({ identity, household, expectedRevision: 0, confirmationId: "local-refuse" });
+    refuseRemoval = true;
+
+    await expect(clearContinuityOutboxForHouseholdDurably("development", household.householdId))
+      .rejects.toThrow(/local removal refused/i);
+  });
+
+  it("reports an IndexedDB refusal instead of claiming durable clear", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), householdId: "HH-IDB-REFUSE" };
+    enqueueContinuitySnapshot({ identity, household, expectedRevision: 0, confirmationId: "idb-refuse" });
+    vi.stubGlobal("indexedDB", {
+      open: () => {
+        const request: {
+          error: Error;
+          onerror: (() => void) | null;
+        } = { error: new Error("idb removal refused"), onerror: null };
+        queueMicrotask(() => request.onerror?.());
+        return request;
+      },
+    });
+
+    await expect(clearContinuityOutboxForHouseholdDurably("development", household.householdId))
+      .rejects.toThrow(/idb removal refused/i);
   });
 });
 

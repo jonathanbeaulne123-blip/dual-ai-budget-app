@@ -102,6 +102,7 @@ let nowOverride: (() => number) | null = null;
 /** Survives localStorage quota failures so Retry can still flush this session. */
 const memoryOutbox = new Map<Environment, ContinuityOutboxItem[]>();
 const durableWriteTails = new Map<Environment, Promise<void>>();
+const hydrationFlights = new Map<Environment, Promise<number>>();
 
 function browserStore(): ContinuityStore | null {
   if (storeOverride) return storeOverride;
@@ -293,36 +294,60 @@ function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDu
 }
 
 /** IDB-first durable persist; LS holds the same slim metadata when space allows. */
-async function persistDurableOutbox(environment: Environment, durable: ContinuityOutboxDurable[]): Promise<void> {
+async function persistDurableOutbox(
+  environment: Environment,
+  durable: ContinuityOutboxDurable[],
+  requireEveryAvailableStore = false,
+): Promise<void> {
   let persisted = false;
+  const idbAvailable = typeof indexedDB !== "undefined";
+  let idbPersisted = !idbAvailable;
   try {
     await idbWriteOutbox(environment, durable);
     persisted = true;
+    idbPersisted = true;
   } catch {
     /* IndexedDB may be unavailable in private mode; LS + memory still hold the tip pointer. */
   }
+  const localAvailable = Boolean(browserStore());
+  let localPersisted = !localAvailable;
   try {
-    persisted = writeLocalDurable(environment, durable) || persisted;
+    localPersisted = writeLocalDurable(environment, durable);
+    persisted = localPersisted || persisted;
   } catch {
     /* Quota on slim metadata is rare; memory + IDB remain authoritative. */
+  }
+  if (requireEveryAvailableStore && (!idbPersisted || !localPersisted)) {
+    throw new Error("This phone could not durably clear its shared retry metadata.");
   }
   if (durable.length && !persisted) {
     throw new Error(STORAGE_QUOTA_MESSAGE);
   }
 }
 
-function write(environment: Environment, items: ContinuityOutboxItem[]): void {
+function write(
+  environment: Environment,
+  items: ContinuityOutboxItem[],
+  options: { requireEveryAvailableStore?: boolean } = {},
+): void {
   memoryOutbox.set(environment, items);
   const durable = toDurableOutboxItems(items);
   if (storeOverride) {
     // Tests inject a sync store and read it immediately — write slim LS first.
     writeLocalDurable(environment, durable);
-    void idbWriteOutbox(environment, durable).catch(() => undefined);
-    durableWriteTails.set(environment, Promise.resolve());
+    const idbPersist = typeof indexedDB === "undefined"
+      ? Promise.resolve()
+      : idbWriteOutbox(environment, durable);
+    const settled = options.requireEveryAvailableStore ? idbPersist : idbPersist.catch(() => undefined);
+    durableWriteTails.set(environment, settled);
     return;
   }
   const previous = durableWriteTails.get(environment) ?? Promise.resolve();
-  const next = previous.catch(() => undefined).then(() => persistDurableOutbox(environment, durable));
+  const next = previous.catch(() => undefined).then(() => persistDurableOutbox(
+    environment,
+    durable,
+    options.requireEveryAvailableStore,
+  ));
   void next.catch(() => undefined);
   durableWriteTails.set(environment, next);
 }
@@ -333,7 +358,7 @@ export async function awaitContinuityOutboxDurable(environment: Environment): Pr
 }
 
 /** Load a durable IndexedDB outbox when localStorage was emptied by quota. */
-export async function hydrateContinuityOutbox(environment: Environment): Promise<number> {
+async function hydrateContinuityOutboxNow(environment: Environment): Promise<number> {
   if (memoryOutbox.has(environment) && (memoryOutbox.get(environment)?.length ?? 0) > 0) {
     return memoryOutbox.get(environment)?.length ?? 0;
   }
@@ -348,6 +373,16 @@ export async function hydrateContinuityOutbox(environment: Environment): Promise
     return fromIdb.length;
   }
   return 0;
+}
+
+export function hydrateContinuityOutbox(environment: Environment): Promise<number> {
+  const existing = hydrationFlights.get(environment);
+  if (existing) return existing;
+  const flight = hydrateContinuityOutboxNow(environment).finally(() => {
+    if (hydrationFlights.get(environment) === flight) hydrationFlights.delete(environment);
+  });
+  hydrationFlights.set(environment, flight);
+  return flight;
 }
 
 function sameIdentity(left: ContinuityIdentity, right: ContinuityIdentity): boolean {
@@ -376,6 +411,7 @@ export function setContinuityStore(store: ContinuityStore | null): void {
   storeOverride = store;
   memoryOutbox.clear();
   durableWriteTails.clear();
+  hydrationFlights.clear();
 }
 
 export function setContinuityNow(now: (() => number) | null): void {
@@ -642,10 +678,48 @@ export function clearContinuityOutboxForHousehold(
   return removed;
 }
 
+async function allDurableOutboxItems(environment: Environment): Promise<ContinuityOutboxItem[]> {
+  await hydrateContinuityOutbox(environment);
+  const sources = [
+    ...(await idbReadOutbox(environment) ?? []),
+    ...readFromLocal(environment),
+    ...(memoryOutbox.get(environment) ?? []),
+  ];
+  const byId = new Map<string, ContinuityOutboxItem>();
+  for (const item of sources) {
+    const existing = byId.get(item.id);
+    if (!existing || item.updatedAt >= existing.updatedAt) {
+      byId.set(item.id, item.snapshot || !existing?.snapshot ? item : { ...item, snapshot: existing.snapshot });
+    }
+  }
+  return [...byId.values()];
+}
+
+/** Wait for startup hydration, then erase one household's retry metadata durably. */
+export async function clearContinuityOutboxForHouseholdDurably(
+  environment: Environment,
+  householdId: string,
+): Promise<number> {
+  const items = await allDurableOutboxItems(environment);
+  const next = items.filter((item) => item.householdId !== householdId);
+  const removed = items.length - next.length;
+  write(environment, next, { requireEveryAvailableStore: true });
+  await awaitContinuityOutboxDurable(environment);
+  return removed;
+}
+
 /** Drop every queued snapshot for one environment. */
 export function clearContinuityOutbox(environment: Environment): number {
   const removed = read(environment).length;
   write(environment, []);
+  return removed;
+}
+
+/** Wait for startup hydration, then erase every retry marker in one environment. */
+export async function clearContinuityOutboxDurably(environment: Environment): Promise<number> {
+  const removed = (await allDurableOutboxItems(environment)).length;
+  write(environment, [], { requireEveryAvailableStore: true });
+  await awaitContinuityOutboxDurable(environment);
   return removed;
 }
 

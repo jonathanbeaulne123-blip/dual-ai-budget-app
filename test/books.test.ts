@@ -51,6 +51,36 @@ describe("double-entry books", () => {
     await resetBrowserBooksForTests();
   }, 30_000);
 
+  it("serializes a starting prewarm ahead of a newer candidate validation", async () => {
+    await resetBrowserBooksForTests();
+    const previous = catalogHousehold();
+    previous.booksAcceptedHash = await hashBooksSnapshot(previous);
+    const posted = postEntry(previous, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "5.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Queued after prewarm",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const candidate = { ...posted.household, revision: previous.revision + 1 };
+    candidate.booksAcceptedHash = await hashBooksSnapshot(candidate);
+
+    const prewarming = prewarmStagedHouseholdBooks(previous);
+    const validating = validateHouseholdBooksStaged(candidate, {
+      previous,
+      auditHash: candidate.booksAcceptedHash,
+    });
+    await Promise.all([prewarming, validating]);
+
+    expect((await loadStagedHouseholdBooks(previous.environment, previous.householdId))?.revision)
+      .toBe(candidate.revision);
+    await clearStagedHouseholdBooks(previous.environment, previous.householdId);
+    await resetBrowserBooksForTests();
+  }, 30_000);
+
   it("validates an online candidate in isolated PGlite without advancing the active replica", async () => {
     await resetBrowserBooksForTests();
     const previous = catalogHousehold();

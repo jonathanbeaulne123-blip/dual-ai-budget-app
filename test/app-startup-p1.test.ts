@@ -945,6 +945,31 @@ describe("cached-shell startup books gate", () => {
     expect(startup.inspectOptions[1]).toEqual({ expectedAuditHash: startup.cached.booksAcceptedHash });
   });
 
+  it("keeps the receipt-gated v8 rebuild for a local-only Development household", async () => {
+    vi.stubEnv("VITE_SHARED_ONLINE_REQUIRED", "1");
+    const accepted = { ...seedDemoHousehold(), linked: false };
+    startup.cached = { ...accepted, booksAcceptedHash: await financialAuditHash(accepted) };
+    startup.inspections.push(
+      Promise.resolve({
+        ok: false,
+        issue: "incomplete-migration",
+        message: "PGlite needs one verified full rebuild before fast local updates can resume.",
+        entryCount: startup.cached.transactions.length,
+      }),
+      Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: startup.cached.transactions.length }),
+    );
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+
+    expect(startup.ingestCalls).toBe(1);
+    expect(startup.ingestOptions).toEqual([{ auditHash: startup.cached.booksAcceptedHash, incremental: false }]);
+  });
+
   it("keeps an incomplete migration blocked when the cached snapshot receipt does not match", async () => {
     startup.cached = { ...seedDemoHousehold(), linked: true, booksAcceptedHash: "changed-receipt" };
     startup.inspections.push(Promise.resolve({
