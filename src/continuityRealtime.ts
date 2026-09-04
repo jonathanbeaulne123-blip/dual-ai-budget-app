@@ -59,6 +59,8 @@ export type ContinuityRealtimeDeps = {
   ) => RealtimeClientHandle;
 };
 
+let continuityClientSequence = 0;
+
 export function continuityRealtimeWorkerSupported(): boolean {
   return typeof window !== "undefined" && typeof window.Worker === "function";
 }
@@ -79,6 +81,7 @@ export function attachContinuityRealtime(
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
+      storageKey: `hearth-continuity-ephemeral-${continuityClientSequence += 1}`,
     },
     global: {
       headers: {

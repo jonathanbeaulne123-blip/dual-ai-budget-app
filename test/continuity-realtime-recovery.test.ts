@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createContinuityRealtimeRecoveryGate,
+  createContinuityRealtimeRecoveryScheduler,
   REALTIME_COMMAND_GRACE_MS,
   recoverRealtimeSnapshot,
   shouldRecoverPollCommandsFirst,
@@ -224,6 +225,66 @@ describe("Realtime command-log-first recovery", () => {
       "accept-command-5",
       "reconcile-snapshot",
     ]);
+  });
+});
+
+describe("Realtime recovery scheduler", () => {
+  it("coalesces queued snapshot work to the highest known revision", async () => {
+    const tickets: Array<() => Promise<void>> = [];
+    const recover = vi.fn(async () => undefined);
+    const scheduler = createContinuityRealtimeRecoveryScheduler({
+      run: async (_source, work) => {
+        tickets.push(work);
+      },
+      recover,
+    });
+
+    scheduler.request(18);
+    scheduler.request(19);
+    scheduler.request(19);
+
+    expect(tickets).toHaveLength(1);
+    await tickets[0]!();
+    expect(recover).toHaveBeenCalledOnce();
+    expect(recover).toHaveBeenCalledWith(19, "realtime");
+  });
+
+  it("drains directly to a newer revision that arrives during active recovery", async () => {
+    let releaseFirst!: () => void;
+    const firstBlocked = new Promise<void>((resolve) => { releaseFirst = resolve; });
+    const recovered: Array<number | null> = [];
+    const scheduler = createContinuityRealtimeRecoveryScheduler({
+      run: async (_source, work) => work(),
+      recover: async (revision) => {
+        recovered.push(revision);
+        if (recovered.length === 1) await firstBlocked;
+      },
+    });
+
+    scheduler.request(18);
+    await Promise.resolve();
+    scheduler.request(19);
+    scheduler.request(20);
+    releaseFirst();
+    await vi.waitFor(() => expect(scheduler.running()).toBe(false));
+
+    expect(recovered).toEqual([18, 20]);
+  });
+
+  it("lets an unknown cloud-tip request dominate numbered echoes", async () => {
+    const tickets: Array<() => Promise<void>> = [];
+    const recover = vi.fn(async () => undefined);
+    const scheduler = createContinuityRealtimeRecoveryScheduler({
+      run: async (_source, work) => { tickets.push(work); },
+      recover,
+    });
+
+    scheduler.request(20);
+    scheduler.request(null, "poll");
+    scheduler.request(21);
+    await tickets[0]!();
+
+    expect(recover).toHaveBeenCalledWith(null, "poll");
   });
 });
 

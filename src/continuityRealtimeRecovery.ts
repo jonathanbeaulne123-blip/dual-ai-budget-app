@@ -12,11 +12,90 @@ export type ContinuityRealtimeRecoveryGate = {
   dispose: () => void;
 };
 
+export type ContinuityRealtimeRecoveryScheduler = {
+  request: (targetRevision: number | null, source?: "realtime" | "poll") => void;
+  pendingRevision: () => number | null | undefined;
+  running: () => boolean;
+  dispose: () => void;
+};
+
 type DeferredWork = { clear: () => void };
 
 export const REALTIME_COMMAND_GRACE_MS = 300;
 
 export type RealtimeCommandApplyOutcome = "applied" | "duplicate" | "ignored" | "fallback";
+
+/**
+ * Keep at most one recovery ticket in the continuity mutex. Snapshot echoes,
+ * command fallbacks, and reconnect checks can otherwise capture stale targets
+ * and form a FIFO backlog while PGlite is accepting an earlier revision.
+ *
+ * A numbered request coalesces to the highest known cloud revision. A null
+ * request means the exact tip is unknown and therefore dominates until one
+ * recovery has checked the cloud authoritatively.
+ */
+export function createContinuityRealtimeRecoveryScheduler(input: {
+  run: (
+    source: "realtime" | "poll",
+    work: () => Promise<void>,
+  ) => Promise<unknown>;
+  recover: (targetRevision: number | null, source: "realtime" | "poll") => Promise<void>;
+  onError?: (error: unknown) => void;
+}): ContinuityRealtimeRecoveryScheduler {
+  let pendingRevision: number | null | undefined;
+  let pendingSource: "realtime" | "poll" = "realtime";
+  let running = false;
+  let disposed = false;
+
+  const mergeTarget = (targetRevision: number | null, source: "realtime" | "poll") => {
+    if (targetRevision === null) {
+      pendingRevision = null;
+      pendingSource = source;
+      return;
+    }
+    if (pendingRevision === null) return;
+    if (pendingRevision === undefined || targetRevision > pendingRevision) {
+      pendingRevision = targetRevision;
+      pendingSource = source;
+    }
+  };
+
+  const start = (source: "realtime" | "poll") => {
+    if (disposed || running || pendingRevision === undefined) return;
+    running = true;
+    void input.run(source, async () => {
+      while (!disposed && pendingRevision !== undefined) {
+        const targetRevision = pendingRevision;
+        const recoverySource = pendingSource;
+        pendingRevision = undefined;
+        try {
+          await input.recover(targetRevision, recoverySource);
+        } catch (error) {
+          input.onError?.(error);
+        }
+      }
+    }).catch((error) => {
+      input.onError?.(error);
+    }).finally(() => {
+      running = false;
+      if (!disposed && pendingRevision !== undefined) start(pendingSource);
+    });
+  };
+
+  return {
+    request(targetRevision, source = "realtime") {
+      if (disposed) return;
+      mergeTarget(targetRevision, source);
+      start(source);
+    },
+    pendingRevision: () => pendingRevision,
+    running: () => running,
+    dispose() {
+      disposed = true;
+      pendingRevision = undefined;
+    },
+  };
+}
 
 export function shouldRecoverPollCommandsFirst(input: {
   realtimeEnabled: boolean;

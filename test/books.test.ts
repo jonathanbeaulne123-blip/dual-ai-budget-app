@@ -7,7 +7,7 @@ import {
   trialBalance,
 } from "../src/core/journal.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { clearStagedHouseholdBooks, getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, ingestHouseholdBooks, inspectBrowserBooks, loadStagedHouseholdBooks, migrateBooks, openMemoryBooks, prewarmStagedHouseholdBooks, resetBrowserBooksForTests, validateHouseholdBooksStaged, wipeStagedBooksForEnvironment } from "../src/ledger/engine.ts";
+import { clearStagedHouseholdBooks, getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, ingestHouseholdBooks, inspectBrowserBooks, loadStagedHouseholdBooks, migrateBooks, openMemoryBooks, prewarmStagedHouseholdBooks, replaceAcceptedHouseholdBooks, resetBrowserBooksForTests, validateHouseholdBooksStaged, wipeStagedBooksForEnvironment } from "../src/ledger/engine.ts";
 import { assertReadOnlySelect } from "../src/ledger/queryGuard.ts";
 import { booksSqlDump } from "../src/ledger/export.ts";
 
@@ -108,6 +108,36 @@ describe("double-entry books", () => {
     expect(staged.ok).toBe(true);
     expect((await inspectBrowserBooks(previous, { expectedAuditHash: previous.booksAcceptedHash })).ok).toBe(true);
     expect((await inspectBrowserBooks(candidate, { expectedAuditHash: candidate.booksAcceptedHash })).issue).toBe("projection-mismatch");
+    await resetBrowserBooksForTests();
+  }, 30_000);
+
+  it("replaces a cloud snapshot transactionally without deleting the active database", async () => {
+    await resetBrowserBooksForTests();
+    const previous = catalogHousehold();
+    previous.booksAcceptedHash = await hashBooksSnapshot(previous);
+    await ingestHouseholdBooks(previous, { auditHash: previous.booksAcceptedHash });
+    const posted = postEntry(previous, {
+      date: "2026-09-04",
+      type: "expense",
+      amount: "9.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Cross-tab replacement",
+      createdBy: "MEM-001",
+      confirmDuplicate: true,
+    });
+    const candidate = { ...posted.household, revision: previous.revision + 1 };
+    candidate.booksAcceptedHash = await hashBooksSnapshot(candidate);
+
+    const status = await replaceAcceptedHouseholdBooks(candidate, {
+      auditHash: candidate.booksAcceptedHash,
+    });
+
+    expect(status.ok).toBe(true);
+    expect(status.writeMode).toBe("full");
+    expect((await inspectBrowserBooks(candidate, {
+      expectedAuditHash: candidate.booksAcceptedHash,
+    })).ok).toBe(true);
     await resetBrowserBooksForTests();
   }, 30_000);
   it("keeps the incremental canary default-off and permanently off in Production", () => {

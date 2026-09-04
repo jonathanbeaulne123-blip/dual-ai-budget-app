@@ -43,6 +43,7 @@ export type SyncPilotTraceInput = {
   sourceAcceptedAt?: string | null;
   cloudAcceptedAt?: string | null;
   receiverApplyMs?: number | null;
+  fallbackReason?: string | null;
 };
 
 export type SyncPilotTraceRecord = {
@@ -63,6 +64,7 @@ export type SyncPilotTraceRecord = {
   latencyMs: number | null;
   cloudToPaintMs: number | null;
   receiverApplyMs: number | null;
+  fallbackReason: string | null;
 };
 
 export type SyncPilotDiagnosticState = {
@@ -154,6 +156,21 @@ const TRACE_TRANSPORTS = new Set<SyncPilotTransport>([
   "outbox",
   "local",
 ]);
+const FALLBACK_REASONS = new Set([
+  "household-mismatch",
+  "environment-mismatch",
+  "revision-gap",
+  "missing-materialization-facts",
+  "onboarding-mode-invalid",
+  "month-rehearsal-authority-mismatch",
+  "ask-goal-move-authority-mismatch",
+  "materialization-hash-mismatch",
+  "onboarding-mode-authority-mismatch",
+  "weekly-stamp-invalid",
+  "weekly-stamp-authority-or-hash-mismatch",
+  "immutable-row-divergence",
+  "audit-hash-mismatch",
+]);
 const TRACE_FIELDS = new Set([
   "version",
   "recordedAt",
@@ -172,6 +189,7 @@ const TRACE_FIELDS = new Set([
   "latencyMs",
   "cloudToPaintMs",
   "receiverApplyMs",
+  "fallbackReason",
 ]);
 const HASH16 = /^[a-f0-9]{16}$/;
 
@@ -277,6 +295,12 @@ function projectTrace(value: unknown): SyncPilotTraceRecord | null {
     || row.paintStatus === "visible-timeout"
     || row.paintStatus === "unavailable"
   )) return null;
+  const fallbackReason = row.fallbackReason === undefined || row.fallbackReason === null
+    ? null
+    : typeof row.fallbackReason === "string" && FALLBACK_REASONS.has(row.fallbackReason)
+      ? row.fallbackReason
+      : undefined;
+  if (fallbackReason === undefined) return null;
   return {
     version: 1,
     recordedAt: row.recordedAt,
@@ -295,6 +319,7 @@ function projectTrace(value: unknown): SyncPilotTraceRecord | null {
     latencyMs,
     cloudToPaintMs,
     receiverApplyMs,
+    fallbackReason,
   };
 }
 
@@ -363,6 +388,9 @@ export async function recordSyncPilotTrace(
     latencyMs: safeLatency(recordedAt, input.sourceAcceptedAt),
     cloudToPaintMs: safeLatency(recordedAt, input.cloudAcceptedAt),
     receiverApplyMs: safeDuration(input.receiverApplyMs),
+    fallbackReason: input.fallbackReason && FALLBACK_REASONS.has(input.fallbackReason)
+      ? input.fallbackReason
+      : null,
   };
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify([...readTrace(storage), record].slice(-MAX_RECORDS)));

@@ -165,7 +165,7 @@ import { clearSession, loadSession, saveSession, type Session } from "./session.
 import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
-import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
+import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, replaceAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
 import { readSupabaseConfig, pullConsistentMemberReplicaById, pullHouseholdSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
@@ -181,6 +181,7 @@ import {
 } from "./continuityResume.ts";
 import {
   createContinuityRealtimeRecoveryGate,
+  createContinuityRealtimeRecoveryScheduler,
   recoverRealtimeSnapshot,
   shouldRecoverPollCommandsFirst,
 } from "./continuityRealtimeRecovery.ts";
@@ -299,7 +300,7 @@ function makeBooksAdapters(input: {
     },
     repairIngest: async (household, artifact) => {
       try {
-        const status = await repairAcceptedHouseholdBooks(household, {
+        const status = await replaceAcceptedHouseholdBooks(household, {
           compiled: artifact?.compiled,
           auditHash: artifact?.auditHash,
         });
@@ -811,7 +812,7 @@ export function App() {
     });
     if (!staged.ok) throw new Error(staged.error || "The latest cloud books did not pass local validation.");
     if (!scopeIsCurrent()) throw new Error("The active ledger changed during cloud validation.");
-    const status = await repairAcceptedHouseholdBooks(canonical, {
+    const status = await replaceAcceptedHouseholdBooks(canonical, {
       auditHash: canonical.booksAcceptedHash,
     });
     if (!scopeIsCurrent()) {
@@ -2383,6 +2384,7 @@ export function App() {
             confirmationId: event.confirmation_id,
             revision: event.result_revision,
             transport: "poll",
+            fallbackReason: applied.reason,
           });
         }
         return applied.fallback ? "fallback" : "ignored";
@@ -2452,11 +2454,9 @@ export function App() {
       void coordinator.run(source, () => replayWork(source));
     };
 
-    const scheduleRealtimeRecovery = (
-      targetRevision: number | null,
-      source: "realtime" | "poll" = "realtime",
-    ) => {
-      void coordinator.run(source, async () => {
+    const realtimeRecoveryScheduler = createContinuityRealtimeRecoveryScheduler({
+      run: (source, work) => coordinator.run(source, work),
+      recover: async (targetRevision, source) => {
         await recoverRealtimeSnapshot({
           targetRevision,
           getLocalState: () => {
@@ -2482,7 +2482,19 @@ export function App() {
           applyCommandEvent: tryApplyCommandEvent,
           recoverSnapshot: () => replayWork(source),
         });
-      });
+      },
+      onError: (caught) => {
+        if (!live) return;
+        setSyncState("error");
+        setError(caught instanceof Error ? caught.message : String(caught));
+      },
+    });
+
+    const scheduleRealtimeRecovery = (
+      targetRevision: number | null,
+      source: "realtime" | "poll" = "realtime",
+    ) => {
+      realtimeRecoveryScheduler.request(targetRevision, source);
     };
 
     const realtimeRecoveryGate = createContinuityRealtimeRecoveryGate({
@@ -2754,6 +2766,7 @@ export function App() {
       realtimeGeneration += 1;
       resumeGate.dispose();
       realtimeRecoveryGate.dispose();
+      realtimeRecoveryScheduler.dispose();
       realtimeReconnectGate.dispose();
       detachRealtime?.();
       window.removeEventListener("online", onOnline);
@@ -2918,6 +2931,7 @@ export function App() {
         pendingOutboxCount: 0,
         hasOpenConflict: false,
         booksBlocked: booksReadiness.phase === "blocked" && readinessMatches(booksReadiness, household),
+        syncState,
         lastReconcileAt: null,
         lastReconcileSource: null,
       });
@@ -2933,11 +2947,12 @@ export function App() {
       pendingOutboxCount: listContinuityOutbox(environment).filter((item) => item.householdId === household.householdId).length,
       hasOpenConflict: unresolvedConflicts(household).length > 0,
       booksBlocked: booksReadiness.phase === "blocked" && readinessMatches(booksReadiness, household),
+      syncState,
       lastReconcileAt: lastReconcile?.at ?? null,
       lastReconcileSource: lastReconcile?.source ?? null,
       pollIntervalMs: livePullIntervalMs(activeMembers),
     });
-  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent, booksReadiness]);
+  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent, booksReadiness, syncState]);
   const syncFreshnessLine = useMemo(
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
@@ -4289,6 +4304,7 @@ export function App() {
       sourceAcceptedAt?: string | null;
       cloudAcceptedAt?: string | null;
       receiverApplyMs?: number | null;
+      fallbackReason?: string | null;
     },
   ): void {
     const current = details?.household ?? householdRef.current;
@@ -4310,6 +4326,7 @@ export function App() {
       sourceAcceptedAt: details?.sourceAcceptedAt,
       cloudAcceptedAt: details?.cloudAcceptedAt,
       receiverApplyMs: details?.receiverApplyMs,
+      fallbackReason: details?.fallbackReason,
     }).catch(() => undefined);
   }
 

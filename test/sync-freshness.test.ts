@@ -152,6 +152,28 @@ describe("buildSyncFreshness", () => {
     expect(display.blocksSyncedLabel).toBe(false);
   });
 
+  it("does not call a subscribed socket Live while local books are catching up", () => {
+    const household = baseHousehold();
+    const display = buildSyncFreshness({
+      household,
+      viewerMemberId: household.members[0]!.id,
+      realtimeEnabled: true,
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      pendingOutboxCount: 0,
+      hasOpenConflict: false,
+      syncState: "syncing",
+      lastReconcileAt: null,
+      lastReconcileSource: "realtime",
+      now: NOW,
+    });
+
+    expect(display.transportPrimary).toBe("Catching up");
+    expect(display.transportMode).toBe("live");
+    expect(display.blocksSyncedLabel).toBe(true);
+    expect(display.statusSummary).not.toMatch(/Live/);
+  });
+
   it("never blocks synced label on healthy pending alone when mode is still synchronized", () => {
     const household = baseHousehold();
     const display = buildSyncFreshness({
