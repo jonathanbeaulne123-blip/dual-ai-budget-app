@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "controls": [
+    {
+      "controlId": "OCT-001-GOOGLE-RECOVERY",
+      "testId": "PM-MAP-OCT-001",
+      "proofFiles": ["test/supabase-auth-session.test.ts", "test/continuity-auth-reconnect.test.ts", "test/auth-invite-discovery.test.ts"]
+    },
+    {
+      "controlId": "OCT-002-PERSONAL-DENIAL",
+      "testId": "PM-MAP-OCT-002",
+      "proofFiles": ["test/auth-rls-policy.test.ts", "test/personal-books-privacy.test.ts", "test/shared-money-membership.test.ts"],
+      "permissionCaseIds": ["PM-OCT-002-ANON-PERSONAL-DENY", "PM-OCT-002-SELF-PERSONAL-ALLOW", "PM-OCT-002-CROSS-MEMBER-PERSONAL-DENY", "PM-OCT-002-REVOKED-PERSONAL-INSERT-DENY", "PM-OCT-002-SELF-PERSONAL-INSERT-ALLOW", "PM-OCT-002-CROSS-MEMBER-PERSONAL-INSERT-DENY", "PM-OCT-002-ANON-PERSONAL-INSERT-DENY", "PM-OCT-002-SELF-PERSONAL-UPDATE-ALLOW", "PM-OCT-002-CROSS-MEMBER-PERSONAL-UPDATE-DENY", "PM-OCT-002-ANON-PERSONAL-UPDATE-DENY", "PM-OCT-002-REVOKED-PERSONAL-UPDATE-DENY"]
+    },
+    {
+      "controlId": "OCT-003-MEMBERSHIP-DENIAL",
+      "testId": "PM-MAP-OCT-003",
+      "proofFiles": ["test/auth-rls-policy.test.ts", "test/shared-money-membership.test.ts", "test/live-anon-denial.test.ts"],
+      "permissionCaseIds": ["PM-OCT-003-ANON-SHARED-DENY", "PM-OCT-003-MEMBER-SHARED-ALLOW", "PM-OCT-003-OUTSIDER-SHARED-DENY", "PM-OCT-003-DIRECT-MEMBERSHIP-INSERT-DENY", "PM-OCT-003-OUTSIDER-MEMBERSHIP-SELECT-DENY", "PM-OCT-003-CROSS-HOUSEHOLD-DENY", "PM-OCT-003-OWN-HOUSEHOLD-ALLOW", "PM-OCT-003-ANON-RPC-DENY", "PM-OCT-003-ACTIVE-REALTIME-ALLOW", "PM-OCT-003-CROSS-HOUSEHOLD-REALTIME-DENY"]
+    },
+    {
+      "controlId": "OCT-004-CROSS-ENV-DENIAL",
+      "testId": "PM-MAP-OCT-004",
+      "proofFiles": ["test/auth-rls-policy.test.ts", "test/production-continuity.test.ts", "test/recovery.test.ts"],
+      "permissionCaseIds": ["PM-OCT-004-DEVELOPMENT-TO-PRODUCTION-DENY", "PM-OCT-004-PRODUCTION-TO-DEVELOPMENT-DENY"]
+    },
+    {
+      "controlId": "OCT-005-CREATE",
+      "testId": "PM-MAP-OCT-005",
+      "proofFiles": ["test/auth-rls-policy.test.ts", "test/auth-invite-chrome.test.ts", "test/publish-continuity-snapshot.test.ts"],
+      "permissionCaseIds": ["PM-OCT-005-NEW-DEVELOPMENT-CREATE-ALLOW", "PM-OCT-005-EXISTING-CREATE-DENY", "PM-OCT-005-PRODUCTION-CREATE-SERVER-ALLOW", "PM-OCT-005-HOUSEHOLD-REVOKE-DOES-NOT-REVOKE-AUTH-CREATE"]
+    },
+    {
+      "controlId": "OCT-006-EMAIL-INVITE",
+      "testId": "PM-MAP-OCT-006",
+      "proofFiles": ["test/auth-rls-policy.test.ts", "test/auth-invite-chrome.test.ts", "test/auth-invite-discovery.test.ts"],
+      "permissionCaseIds": ["PM-OCT-006-OWNER-INVITE-RPC-ALLOW", "PM-OCT-006-MEMBER-INVITE-RPC-DENY", "PM-OCT-006-INVITED-EMAIL-SELECT-ALLOW"]
+    },
+    {
+      "controlId": "OCT-007-QR-INVITE",
+      "testId": "PM-MAP-OCT-007",
+      "proofFiles": ["test/auth-rls-policy.test.ts", "test/auth-invite-chrome.test.ts", "test/auth-invite-discovery.test.ts"],
+      "permissionCaseIds": ["PM-OCT-007-OTHER-INVITE-SELECT-DENY"]
+    },
+    {
+      "controlId": "OCT-008-INVITE-REVOKE",
+      "testId": "PM-MAP-OCT-008",
+      "proofFiles": ["test/shared-money-membership.test.ts"],
+      "permissionCaseIds": ["PM-OCT-008-DIRECT-INVITE-UPDATE-DENY"]
+    },
+    {
+      "controlId": "OCT-009-REMOVE-MEMBER",
+      "testId": "PM-MAP-OCT-009",
+      "proofFiles": ["test/shared-money-membership.test.ts", "test/shared-money-access-ui.test.ts", "test/production-continuity.test.ts"],
+      "permissionCaseIds": ["PM-OCT-009-OWNER-REMOVE-MEMBER-ALLOW", "PM-OCT-009-NONOWNER-MANAGEMENT-RPC-DENY"]
+    },
+    {
+      "controlId": "OCT-010-DEVICE-REVOKE",
+      "testId": "PM-MAP-OCT-010",
+      "proofFiles": ["test/shared-money-membership.test.ts", "test/shared-money-access-ui.test.ts", "test/production-continuity.test.ts"],
+      "permissionCaseIds": ["PM-OCT-010-REVOKED-SESSION-SELECT-DENY", "PM-OCT-010-REVOKED-SESSION-PUBLISH-DENY", "PM-OCT-010-REVOKED-SESSION-INVITE-DENY", "PM-OCT-010-REVOKED-SESSION-REMOVE-DENY", "PM-OCT-010-REVOKED-SESSION-LEAVE-DENY", "PM-OCT-010-REVOKED-SESSION-REALTIME-DENY"]
+    },
+    {
+      "controlId": "OCT-011-LAST-OWNER",
+      "testId": "PM-MAP-OCT-011",
+      "proofFiles": ["test/shared-money-membership.test.ts"],
+      "permissionCaseIds": ["PM-OCT-011-DIRECT-MEMBERSHIP-UPDATE-DENY", "PM-OCT-011-LAST-OWNER-LEAVE-DENY", "PM-OCT-011-MEMBER-LEAVE-ALLOW"]
+    },
+    {
+      "controlId": "OCT-012-ATOMIC-COMMAND-CAS",
+      "testId": "PM-MAP-OCT-012",
+      "proofFiles": ["test/publish-continuity-snapshot.test.ts", "test/continuity-command-events.test.ts", "test/online-required-sync.test.ts"],
+      "permissionCaseIds": ["PM-OCT-012-ACTIVE-PUBLISH-RPC-ALLOW", "PM-OCT-012-OUTSIDER-PUBLISH-RPC-DENY", "PM-OCT-012-DIRECT-SNAPSHOT-INSERT-DENY", "PM-OCT-012-DIRECT-SNAPSHOT-UPDATE-DENY"]
+    },
+    {
+      "controlId": "OCT-013-SECRET-INVENTORY",
+      "testId": "PM-MAP-OCT-013",
+      "proofFiles": ["test/supabase-auth-session.test.ts", "test/auth-rls-readiness.test.ts", "test/flinks-worker.test.ts"]
+    },
+    {
+      "controlId": "OCT-014-BRANCH-PROTECTION",
+      "testId": "PM-MAP-OCT-014",
+      "proofFiles": [".github/workflows/ci.yml"]
+    },
+    {
+      "controlId": "OCT-015-PRODUCTION-APPROVAL",
+      "testId": "PM-MAP-OCT-015",
+      "proofFiles": [".github/workflows/full-verification.yml"]
+    },
+    {
+      "controlId": "OCT-016-RATE-LIMIT",
+      "testId": "PM-MAP-OCT-016",
+      "proofFiles": ["test/hercules-worker.test.ts", "test/api.test.ts", "wrangler.jsonc"]
+    },
+    {
+      "controlId": "OCT-017-AUDIT-EXPORT",
+      "testId": "PM-MAP-OCT-017",
+      "proofFiles": ["test/statements.test.ts", "test/personal-books-privacy.test.ts", "test/demo-suite.test.ts"]
+    },
+    {
+      "controlId": "OCT-018-BACKUP-RESTORE",
+      "testId": "PM-MAP-OCT-018",
+      "proofFiles": ["test/recovery.test.ts", "test/app-startup-p1.test.ts", "test/undo-restore-engine.test.ts"]
+    },
+    {
+      "controlId": "OCT-019-DELETION-DISPOSITION",
+      "testId": "PM-MAP-OCT-019",
+      "proofFiles": ["test/auth-invite-chrome.test.ts", "test/reset-development-local.test.ts", "test/production-continuity.test.ts"]
+    },
+    {
+      "controlId": "OCT-020-PROVIDER-OFF",
+      "testId": "PM-MAP-OCT-020",
+      "proofFiles": ["test/flinks-client.test.ts", "test/flinks-worker.test.ts", "test/document-scan-worker.test.ts", "test/hercules-chat-providers.test.ts"]
+    }
+  ]
+}
