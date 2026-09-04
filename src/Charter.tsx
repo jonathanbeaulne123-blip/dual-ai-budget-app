@@ -9,6 +9,7 @@ import {
   charterPageCeilingLabel,
   charterPermissionSentences,
   charterSignatureDateLabel,
+  charterSignatureStatus,
   revokeCharterPermission,
   signHouseholdCharter,
   signatureLines,
@@ -161,7 +162,8 @@ export function Charter({ household, memberId, busy, onCommit, onDismiss }: Prop
 
         <div className="charter-sigblock">
           {lines.map((line) => {
-            const ownUnsigned = line.memberId === memberId && line.signedAt === null;
+            const signatureStatus = charterSignatureStatus(charter, line.memberId);
+            const ownSignable = line.memberId === memberId && signatureStatus !== "current";
             return (
               <div className="charter-sig" key={line.memberId}>
                 <div
@@ -175,14 +177,14 @@ export function Charter({ household, memberId, busy, onCommit, onDismiss }: Prop
                       {` · ${charterSignatureDateLabel(line.signedAt)}`}
                     </span>
                   ) : null}
-                  {ownUnsigned ? (
+                  {ownSignable ? (
                     <button
                       type="button"
                       className="charter-signlink"
                       disabled={busy}
                       onClick={() => onCommit((current) => signHouseholdCharter(current, { memberId }))}
                     >
-                      sign
+                      {signatureStatus === "stale" ? "sign again" : "sign"}
                     </button>
                   ) : null}
                 </p>

@@ -1,6 +1,15 @@
 import { isLiabilityKind } from "../accountKinds.ts";
-import { charterCeilingLabel, charterIsSigned, shapeHouseholdCharter } from "../charter.ts";
-import { signatureLines } from "../charterView.ts";
+import {
+  charterCeilingLabel,
+  charterSignatureStatus,
+  shapeHouseholdCharter,
+} from "../charter.ts";
+import {
+  CHARTER_SPLIT_HEADING,
+  charterCadenceLabel,
+  charterSignatureDateLabel,
+  signatureLines,
+} from "../charterView.ts";
 import { shapeHouseholdFundConfig } from "../householdFund.ts";
 import { formatCad } from "../money.ts";
 import { hasOnlyOpeningCorrectionHistory, householdHasAcceptedMoney } from "../openingTruth.ts";
@@ -169,11 +178,10 @@ function charterEvidence(household: Household, chapterId: ChapterId): Projection
   if (!charter) return { ...EMPTY, ineligible: "malformed" };
   const activeMemberIds = new Set(household.members.filter((member) => member.active).map((member) => member.id));
   const signatures = signatureLines(charter, household.members).filter((signature) => activeMemberIds.has(signature.memberId));
-  if (signatures.some((signature) => signature.signedAt && signature.signedAt < charter.termsUpdatedAt)) {
+  if (signatures.some((signature) => charterSignatureStatus(charter, signature.memberId) === "stale")) {
     return { ...EMPTY, ineligible: "stale" };
   }
-  if (!charterIsSigned(charter)
-    || signatures.length !== activeMemberIds.size
+  if (signatures.length !== activeMemberIds.size
     || signatures.some((signature) => !signature.signedAt)) return EMPTY;
   const custodian = memberName(household, charter.custodianMemberId);
   return {
@@ -181,15 +189,19 @@ function charterEvidence(household: Household, chapterId: ChapterId): Projection
     household: {
       chapterId,
       scope: "household",
-      kind: "approval",
+      kind: "configuration",
       sourceIds: [charter.id],
       lines: [
-        { label: "Purpose", value: charter.purpose },
+        { label: "Purpose", value: charter.purpose || "Left open for now" },
         { label: "Custodian", value: custodian },
-        { label: "Split", value: charter.splitNote || charter.splitRule },
+        { label: "Split", value: CHARTER_SPLIT_HEADING[charter.splitRule] },
+        ...(charter.splitNote ? [{ label: "In your words", value: charter.splitNote }] : []),
         { label: "Ceiling", value: charterCeilingLabel(charter) },
-        { label: "Cadence", value: charter.cadence },
-        ...signatures.map((signature) => ({ label: signature.name, value: signature.signedAt! })),
+        { label: "Cadence", value: charterCadenceLabel(charter) },
+        ...signatures.map((signature) => ({
+          label: `${signature.name} signed`,
+          value: charterSignatureDateLabel(signature.signedAt!),
+        })),
       ],
       observedAt: latestIso(signatures.map((signature) => signature.signedAt!)) ?? "",
     },

@@ -241,20 +241,40 @@ function chooseTerms(left: HouseholdCharter, right: HouseholdCharter): Household
   return charterTermsKey(left) >= charterTermsKey(right) ? left : right;
 }
 
-function mergeSignatures(left: HouseholdCharter, right: HouseholdCharter): CharterSignature[] {
-  const rows = new Map<string, CharterSignature>();
-  for (const signature of [...left.signatures, ...right.signatures]) {
-    const existing = rows.get(signature.memberId);
-    if (!existing) {
-      rows.set(signature.memberId, signature);
-      continue;
+function mergeSignatures(
+  left: HouseholdCharter,
+  right: HouseholdCharter,
+  currentTerms: HouseholdCharter,
+): CharterSignature[] {
+  const rows = new Map<string, Array<{ signedAt: string | null; matchesTerms: boolean }>>();
+  for (const source of [left, right]) {
+    const matchesTerms = source.termsUpdatedAt === currentTerms.termsUpdatedAt
+      && charterTermsKey(source) === charterTermsKey(currentTerms);
+    for (const signature of source.signatures) {
+      rows.set(signature.memberId, [
+        ...(rows.get(signature.memberId) ?? []),
+        { signedAt: signature.signedAt, matchesTerms },
+      ]);
     }
-    rows.set(signature.memberId, {
-      memberId: signature.memberId,
-      signedAt: earliestIso([existing.signedAt, signature.signedAt]),
-    });
   }
-  return [...rows.values()].sort((a, b) => a.memberId.localeCompare(b.memberId));
+  return [...rows.entries()]
+    .map(([memberId, values]) => {
+      const signed = values.flatMap((value) => value.signedAt ? [value.signedAt] : []).sort();
+      const current = values
+        .flatMap((value) => value.matchesTerms && value.signedAt && value.signedAt >= currentTerms.termsUpdatedAt
+          ? [value.signedAt]
+          : [])
+        .sort();
+      const stale = signed.filter((value) => value < currentTerms.termsUpdatedAt);
+      return {
+        memberId,
+        // A later clock on an old-terms replica is not consent to the winning
+        // wording. Keep an actually current re-signature, otherwise retain
+        // only evidence that is unambiguously older than the term boundary.
+        signedAt: current[0] ?? stale[0] ?? null,
+      };
+    })
+    .sort((a, b) => a.memberId.localeCompare(b.memberId));
 }
 
 function permissionIdentity(permission: CharterPermission): string {
@@ -432,18 +452,23 @@ export function mergeHouseholdCharters(
 
   const terms = chooseTerms(left, right);
   const amendments = mergeAmendments(left, right);
-  const resolved = applyResolvedAmendments({
+  const termsUpdatedAt = latestIso([
+    left.termsUpdatedAt,
+    right.termsUpdatedAt,
+    ...amendments.map((amendment) => amendment.resolvedAt),
+  ], terms.termsUpdatedAt);
+  const resolvedTerms = applyResolvedAmendments({
     ...terms,
-    signatures: mergeSignatures(left, right),
+    signatures: [],
     permissions: mergePermissions(left, right),
     amendments,
-    termsUpdatedAt: latestIso([
-      left.termsUpdatedAt,
-      right.termsUpdatedAt,
-      ...amendments.map((amendment) => amendment.resolvedAt),
-    ], terms.termsUpdatedAt),
+    termsUpdatedAt,
     updatedAt: latestIso([left.updatedAt, right.updatedAt], terms.updatedAt),
   }, amendments, context.members.map((member) => member.id));
+  const resolved = {
+    ...resolvedTerms,
+    signatures: mergeSignatures(left, right, resolvedTerms),
+  };
   const withFundCustody = context.householdFund
     ? { ...resolved, custodianMemberId: context.householdFund.custodianMemberId }
     : resolved;
@@ -452,6 +477,20 @@ export function mergeHouseholdCharters(
 
 export function charterIsSigned(charter: HouseholdCharter): boolean {
   return charter.signatures.length > 0 && charter.signatures.every((signature) => signature.signedAt !== null);
+}
+
+export type CharterSignatureStatus = "unsigned" | "stale" | "current";
+
+/** A signature belongs to the latest terms only when it was made at or after that revision boundary. */
+export function charterSignatureStatus(charter: HouseholdCharter, memberId: string): CharterSignatureStatus {
+  const signedAt = charter.signatures.find((signature) => signature.memberId === memberId)?.signedAt ?? null;
+  if (!signedAt) return "unsigned";
+  return signedAt < charter.termsUpdatedAt ? "stale" : "current";
+}
+
+export function charterSignaturesAreCurrent(charter: HouseholdCharter): boolean {
+  return charter.signatures.length > 0
+    && charter.signatures.every((signature) => charterSignatureStatus(charter, signature.memberId) === "current");
 }
 
 export function charterUnsignedMemberIds(charter: HouseholdCharter): string[] {
