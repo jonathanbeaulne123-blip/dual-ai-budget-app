@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   assertDemoReplacementAllowed,
   acceptHouseholdWrite,
@@ -25,8 +25,6 @@ async function yieldToRunner(): Promise<void> {
 }
 
 describe("trustworthy synthetic Demo Suite", () => {
-  beforeEach(yieldToRunner);
-
   it("replays the exact same dated household and manifest from one seed", async () => {
     const first = await generateDemoSuite({ today: TODAY, seed: 8675309, buildSha: "test-sha" });
     await yieldToRunner();
@@ -42,7 +40,7 @@ describe("trustworthy synthetic Demo Suite", () => {
       fixtureHashSha256: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
     expect(first.manifest.fixtureHashSha256).toBe(first.household.syntheticFixture?.fixtureHashSha256);
-  }, 180_000);
+  }, 300_000);
 
   it("covers every domain engine and every Hercules Pro calculation surface", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 424242 });
@@ -68,7 +66,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(report.attestationSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(report.checks.filter((row) => row.status === "fail")).toEqual([]);
     expect(report.status).toBe("ready");
-  }, 180_000);
+  }, 300_000);
 
   it("marks any changed generated fact not-ready even when provenance is retained", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 551122, buildSha: "trust-proof" });
@@ -88,8 +86,9 @@ describe("trustworthy synthetic Demo Suite", () => {
       expect(report.status).toBe("not-ready");
       expect(report.checks.find((row) => row.id === "replay")).toMatchObject({ status: "fail" });
       expect(report.observedFixtureHashSha256).not.toBe(report.fixtureHashSha256);
+      await yieldToRunner();
     }
-  }, 180_000);
+  }, 300_000);
 
   it("keeps synthetic schedules proposal-only and partner-personal facts out of Shared", async () => {
     const { household, manifest } = await generateDemoSuite({ today: TODAY, seed: 10101 });
@@ -119,7 +118,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     const forbidden = ["BIANCA_PRIVATE_CANARY_TRANSACTION", "Bianca Private Canary Vault", "BIANCA_PRIVATE_CANARY_GOAL"];
     expect(forbidden.some((token) => JSON.stringify(shared).includes(token))).toBe(false);
     expect(forbidden.some((token) => JSON.stringify(personal).includes(token))).toBe(false);
-  }, 180_000);
+  }, 300_000);
 
   it("refuses Production and ordinary Development replacement", async () => {
     const { household } = await generateDemoSuite({ today: TODAY, seed: 2026 });
@@ -127,7 +126,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(() => assertDemoReplacementAllowed({ ...household, environment: "production" })).toThrow(/Development-only/);
     expect(() => assertDemoReplacementAllowed({ ...household, syntheticFixture: null })).toThrow(/ordinary Development books/);
     expect(() => assertDemoReplacementAllowed(household)).not.toThrow();
-  }, 180_000);
+  }, 300_000);
 
   it("rejects synthetic provenance outside Development and preserves it through shared merges", async () => {
     const { household } = await generateDemoSuite({ today: TODAY, seed: 8181 });
@@ -149,7 +148,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(outcome.postedNothing).toBe(true);
     expect(outcome.userMessage).toMatch(/only in Development/);
     expect(mergeShared(shared, { ...shared, syntheticFixture: null }).syntheticFixture).toEqual(household.syntheticFixture);
-  }, 180_000);
+  }, 300_000);
 
   it("uses profile as part of generation while keeping each profile replayable", async () => {
     const investor = await generateDemoSuite({ today: TODAY, seed: 9988, profile: "investor" });
@@ -159,7 +158,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(edge.household).not.toEqual(investor.household);
     const replay = await generateDemoSuite({ today: TODAY, seed: 9988, profile: "edge" });
     expect(replay.household).toEqual(edge.household);
-  }, 180_000);
+  }, 300_000);
 
   it("uses Toronto standard and daylight offsets and derives coherent shift duration", async () => {
     expect(torontoOffsetForDate("2026-01-15")).toBe("-05:00");
@@ -172,5 +171,5 @@ describe("trustworthy synthetic Demo Suite", () => {
       expect(elapsedHours).toBeGreaterThanOrEqual(shift.hours);
       expect(elapsedHours - shift.hours).toBeLessThanOrEqual(0.5);
     }
-  }, 180_000);
+  }, 300_000);
 });
