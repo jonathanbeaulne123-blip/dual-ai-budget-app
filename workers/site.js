@@ -11,6 +11,7 @@ import {
 } from "./herculesGuard.js";
 import { handleHerculesPro } from "./herculesPro.js";
 import { handleFlinks } from "./flinks.js";
+import { handleSyncClock } from "./syncClock.js";
 import { handleSevenShifts } from "./sevenshifts.js";
 import { handleEvidence, handleEvidenceEmail, processEvidenceQueue, purgeDueEvidence } from "./evidence.js";
 import { validateRigPayload, sanitizeRigSessionId } from "../src/herculesRig/validate.ts";
@@ -1828,6 +1829,8 @@ export default {
     if (sevenshifts) return sevenshifts;
     const flinks = await handleFlinks(request, env);
     if (flinks) return flinks;
+    const syncClock = await handleSyncClock(request, env);
+    if (syncClock) return syncClock;
     const herculesPro = await handleHerculesPro(request, env);
     if (herculesPro) return herculesPro;
     if (url.pathname === "/hercules/chat") {

@@ -249,6 +249,7 @@ import {
   type SyncPilotTracePhase,
   type SyncPilotTransport,
 } from "./syncPilotDiagnostics.ts";
+import { copySyncClockCalibration } from "./syncClock.ts";
 
 function makeBooksAdapters(input: {
   environment: import("./core/types.ts").Environment;
@@ -4167,6 +4168,21 @@ export function App() {
     return `Copied privacy-safe sync diagnostic · ${bundle.latency.sampleCount} receiving samples · ${p95}.`;
   }
 
+  async function copyPilotClockCalibration(): Promise<string> {
+    const current = householdRef.current;
+    const who = sessionRef.current?.memberId;
+    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) {
+      throw new Error("Proof clock calibration is available only in the Development pilot build.");
+    }
+    const calibration = await copySyncClockCalibration({
+      environment,
+      householdId: current.householdId,
+      memberId: who,
+      deviceId: localDeviceId(),
+    });
+    return `Copied authenticated proof clock · offset ${calibration.offsetMs} ms · uncertainty ${calibration.uncertaintyMs} ms.`;
+  }
+
   function traceSyncPilot(
     phase: SyncPilotTracePhase,
     details?: {
@@ -6040,6 +6056,7 @@ export function App() {
             softPresenceOptedOut={softPresenceOptOut}
             onSoftPresenceOptOut={applySoftPresenceOptOut}
             onCopySyncDiagnostic={syncPilotDiagnosticsEnabled(environment) ? copyPilotSyncDiagnostic : undefined}
+            onCopySyncClockCalibration={syncPilotDiagnosticsEnabled(environment) ? copyPilotClockCalibration : undefined}
             onLeaveHousehold={async () => {
               await removeHouseholdFromDevice({
                 householdId: household.householdId,

@@ -104,6 +104,7 @@ describe("SF-02 household access UI", () => {
     const onLeaveHousehold = vi.fn(async () => {});
     const onCurrentDeviceRevoked = vi.fn();
     const onCopySyncDiagnostic = vi.fn(async () => "Copied privacy-safe sync diagnostic · 100 receiving samples · p95 420 ms.");
+    const onCopySyncClockCalibration = vi.fn(async () => "Copied authenticated proof clock · offset 3 ms · uncertainty 12 ms.");
     act(() => root.render(createElement(PairingCard, {
       household,
       memberId: "MEM-001",
@@ -119,6 +120,7 @@ describe("SF-02 household access UI", () => {
       onLeaveHousehold,
       onCurrentDeviceRevoked,
       onCopySyncDiagnostic,
+      onCopySyncClockCalibration,
     })));
     await settleUntil(() => container.textContent?.includes("Safari on iPhone") === true);
 
@@ -137,6 +139,14 @@ describe("SF-02 household access UI", () => {
     act(() => diagnostic.click());
     await settleUntil(() => container.textContent?.includes("p95 420 ms") === true);
     expect(onCopySyncDiagnostic).toHaveBeenCalledTimes(1);
+
+    const proofClock = [...container.querySelectorAll("button")]
+      .find((button) => button.textContent === "Copy proof clock calibration") as HTMLButtonElement;
+    expect(proofClock.type).toBe("button");
+    expect(proofClock.parentElement?.textContent).toMatch(/hashed-device clock row/i);
+    act(() => proofClock.click());
+    await settleUntil(() => container.textContent?.includes("uncertainty 12 ms") === true);
+    expect(onCopySyncClockCalibration).toHaveBeenCalledTimes(1);
 
     const currentRemove = [...panel.querySelectorAll("button")]
       .find((button) => button.textContent === "Remove device") as HTMLButtonElement;
