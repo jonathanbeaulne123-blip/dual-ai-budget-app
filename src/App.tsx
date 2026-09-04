@@ -702,7 +702,6 @@ export function App() {
   const [categoryTouched, setCategoryTouched] = useState(false);
   const [codingHint, setCodingHint] = useState("");
   const enqueueWrite = useMemo(() => createWriteQueue(), []);
-  const enqueueReplicaInstall = useMemo(() => createWriteQueue(), []);
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
   const openingHouseholdRef = useRef<string | null>(null);
@@ -746,25 +745,38 @@ export function App() {
     return true;
   }
 
-  async function adoptCanonicalCloudReplica(input: {
+  function householdOutboxFingerprint(targetEnvironment: Environment, householdId: string): string {
+    return JSON.stringify(
+      listContinuityOutbox(targetEnvironment)
+        .filter((item) => item.householdId === householdId)
+        .sort((left, right) => left.createdAt.localeCompare(right.createdAt)),
+    );
+  }
+
+  async function installCanonicalCloudReplica(input: {
     shared: Household;
     personal: PersonalEnvelope;
     memberId: string;
     identity: ContinuityIdentity;
-  }): Promise<Household> {
-    return enqueueReplicaInstall(async () => {
+  }, expectedOutboxFingerprint?: string): Promise<Household> {
     const expectedScope = {
       generation: replicaScopeGenerationRef.current,
       environment: input.shared.environment,
       householdId: input.shared.householdId,
       memberId: input.memberId,
     };
-    const scopeIsCurrent = () => replicaAdoptionScopeMatches(expectedScope, {
-      generation: replicaScopeGenerationRef.current,
-      environment: environmentRef.current,
-      householdId: householdRef.current?.householdId ?? null,
-      memberId: sessionRef.current?.memberId ?? null,
-    });
+    const scopeIsCurrent = () => (
+      replicaAdoptionScopeMatches(expectedScope, {
+        generation: replicaScopeGenerationRef.current,
+        environment: environmentRef.current,
+        householdId: householdRef.current?.householdId ?? null,
+        memberId: sessionRef.current?.memberId ?? null,
+      })
+      && (
+        expectedOutboxFingerprint === undefined
+        || householdOutboxFingerprint(input.shared.environment, input.shared.householdId) === expectedOutboxFingerprint
+      )
+    );
     const restoreCurrentProjection = async () => {
       const current = householdRef.current;
       const currentMemberId = sessionRef.current?.memberId;
@@ -794,7 +806,7 @@ export function App() {
       throw new Error("The active ledger changed during cloud repair.");
     }
     await saveHousehold(canonical, {
-      operatingEnvironment: environment,
+      operatingEnvironment: canonical.environment,
       memberId: input.memberId,
       continuityIdentity: input.identity,
     });
@@ -805,6 +817,25 @@ export function App() {
     adoptAcceptedHousehold(canonical, status);
     setBooksStatus(status);
     return canonical;
+  }
+
+  async function adoptCanonicalCloudReplica(input: {
+    shared: Household;
+    personal: PersonalEnvelope;
+    memberId: string;
+    identity: ContinuityIdentity;
+  }): Promise<Household> {
+    const expectedHousehold = householdRef.current;
+    const expectedScopeGeneration = replicaScopeGenerationRef.current;
+    const expectedOutboxFingerprint = householdOutboxFingerprint(input.shared.environment, input.shared.householdId);
+    return enqueueWrite(() => {
+      if (
+        replicaScopeGenerationRef.current !== expectedScopeGeneration
+        || householdRef.current !== expectedHousehold
+      ) {
+        throw new Error("The active books changed before the cloud copy could be installed.");
+      }
+      return installCanonicalCloudReplica(input, expectedOutboxFingerprint);
     });
   }
 
@@ -998,18 +1029,18 @@ export function App() {
             setError("Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this retry.");
             return;
           }
-          const cancelled = await cancelContinuityConflictGeneration(retryConflict.item);
-          if (!cancelled) {
-            setSyncState("error");
-            setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
-            return;
-          }
           const canonical = await adoptCanonicalCloudReplica({
             shared: remoteReplica.shared,
             personal: remoteReplica.personal,
             memberId: who,
             identity,
           });
+          const cancelled = await cancelContinuityConflictGeneration(retryConflict.item);
+          if (!cancelled) {
+            setSyncState("error");
+            setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
+            return;
+          }
           setCloudReplicaReadyKey(onlineRequiredReplicaKey({
             environment,
             householdId: canonical.householdId,
@@ -1507,7 +1538,7 @@ export function App() {
           const accepted = personal && identity
             ? {
                 ok: true as const,
-                household: await adoptCanonicalCloudReplica({
+                household: await installCanonicalCloudReplica({
                   shared: remote,
                   personal,
                   memberId: loadedSession.memberId,
@@ -1898,6 +1929,7 @@ export function App() {
           const current = householdRef.current;
           if (current && current.householdId === conflict.item.householdId) {
             if (onlineRequiredSharedSyncEnabled(environment)) {
+              setCloudReplicaReadyKey(null);
               const remoteReplica = await pullConsistentMemberReplicaById({
                 householdId: current.householdId,
                 memberId,
@@ -1911,13 +1943,6 @@ export function App() {
                 setError("Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this retry.");
                 return;
               }
-              const cancelled = await cancelContinuityConflictGeneration(conflict.item);
-              if (!live) return;
-              if (!cancelled) {
-                setSyncState("error");
-                setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
-                return;
-              }
               const canonical = await adoptCanonicalCloudReplica({
                 shared: remoteReplica.shared,
                 personal: remoteReplica.personal,
@@ -1925,6 +1950,13 @@ export function App() {
                 identity,
               });
               if (!live) return;
+              const cancelled = await cancelContinuityConflictGeneration(conflict.item);
+              if (!live) return;
+              if (!cancelled) {
+                setSyncState("error");
+                setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
+                return;
+              }
               setCloudReplicaReadyKey(onlineRequiredReplicaKey({
                 environment,
                 householdId: canonical.householdId,
@@ -2129,6 +2161,7 @@ export function App() {
             pairedFactsDiffer,
             coordinator.shouldSkipAccept(current.householdId, remoteRevision),
           )) {
+          if (remoteReplica) setCloudReplicaReadyKey(null);
           const accepted = remoteReplica
             ? {
                 ok: true as const,
@@ -2181,6 +2214,7 @@ export function App() {
               adoptKnownMetadataHousehold(synced);
             } else if (pushed.errorClass === "conflict-detected" && pushed.remote) {
               if (onlineRequiredSharedSyncEnabled(environment)) {
+                setCloudReplicaReadyKey(null);
                 const conflictItem = listContinuityOutbox(environment)
                   .find((item) => item.householdId === ready.householdId);
                 const stable = await pullConsistentMemberReplicaById({
@@ -2192,7 +2226,7 @@ export function App() {
                   initialShared: pushed.remote,
                 });
                 if (!live) return;
-                if (!conflictItem || !stable || !await cancelContinuityConflictGeneration(conflictItem)) {
+                if (!conflictItem || !stable) {
                   setSyncState("error");
                   setError("Another device saved first. Hearth is waiting to safely replace this retry with the complete cloud books.");
                   return;
@@ -2204,6 +2238,11 @@ export function App() {
                   identity,
                 });
                 if (!live) return;
+                if (!await cancelContinuityConflictGeneration(conflictItem)) {
+                  setSyncState("error");
+                  setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
+                  return;
+                }
                 setCloudReplicaReadyKey(onlineRequiredReplicaKey({
                   environment,
                   householdId: canonical.householdId,
@@ -2904,7 +2943,7 @@ export function App() {
     setBusy(true);
     setError("");
     try {
-      await enqueueReplicaInstall(async () => {
+      await enqueueWrite(async () => {
       const candidate = await selectHouseholdReplica(environment, householdId, session?.memberId);
       const currentGoogle = session?.memberId
         ? loadGoogleSession(environment, session.memberId, householdRef.current?.householdId)
@@ -3044,7 +3083,7 @@ export function App() {
     setBusy(true);
     setError("");
     try {
-      await enqueueReplicaInstall(async () => {
+      await enqueueWrite(async () => {
       const previous = householdRef.current;
       const candidate = previous?.householdId === found.household.householdId
         ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
@@ -4015,6 +4054,8 @@ export function App() {
 
   async function clearThisPhoneNow() {
     if (clearThisPhoneInFlightRef.current) return;
+    replicaScopeGenerationRef.current += 1;
+    setCloudReplicaReadyKey(null);
     const current = householdRef.current;
     if (!current) {
       signOutWelcomeGoogle();
@@ -4034,8 +4075,10 @@ export function App() {
     clearContinuityOutboxForHousehold(environment, hid);
     setBusy(true);
     try {
-      await clearStagedHouseholdBooks(environment, hid);
-      await clearHousehold(environment, hid, { activateRemaining: false });
+      await enqueueWrite(async () => {
+        await clearStagedHouseholdBooks(environment, hid);
+        await clearHousehold(environment, hid, { activateRemaining: false });
+      });
     } catch {
       setError("Signed out. This phone could not finish removing its offline copy; sign in again before using the books.");
     } finally {
@@ -4224,6 +4267,8 @@ export function App() {
     name: string;
     mode?: "leave";
   }): Promise<void> {
+    replicaScopeGenerationRef.current += 1;
+    setCloudReplicaReadyKey(null);
     setBusy(true);
     try {
       const authSession = await ensureSupabaseSession(environment);
@@ -4242,9 +4287,12 @@ export function App() {
       if (!result.ok) {
         throw new Error(inviteReasonMessage(result.reason));
       }
-      clearSyncAnchor(environment, input.householdId);
-      clearContinuityOutboxForHousehold(environment, input.householdId);
-      await clearStagedHouseholdBooks(environment, input.householdId);
+      await enqueueWrite(async () => {
+        clearSyncAnchor(environment, input.householdId);
+        clearContinuityOutboxForHousehold(environment, input.householdId);
+        await clearStagedHouseholdBooks(environment, input.householdId);
+        await clearHousehold(environment, input.householdId);
+      });
       disconnectGoogle(environment, input.memberId, input.householdId);
       if (session?.memberId && session.memberId !== input.memberId) {
         disconnectGoogle(environment, session.memberId, input.householdId);
@@ -4252,7 +4300,6 @@ export function App() {
       if (session?.memberId) {
         clearUndoHistory(environment, input.householdId, session.memberId);
       }
-      await clearHousehold(environment, input.householdId);
       setDiscoveredLedgers((current) => current.filter((item) => item.household.householdId !== input.householdId));
       if (household?.householdId === input.householdId) {
         closeAdd();
@@ -4274,6 +4321,8 @@ export function App() {
   }
 
   async function startFromScratch(): Promise<void> {
+    replicaScopeGenerationRef.current += 1;
+    setCloudReplicaReadyKey(null);
     setResetBusy(true);
     setBusy(true);
     try {
@@ -4318,7 +4367,7 @@ export function App() {
       if (!result.ok) {
         throw new Error(inviteReasonMessage(result.reason));
       }
-      await wipeLocalDevelopmentCopies(environment);
+      await enqueueWrite(() => wipeLocalDevelopmentCopies(environment));
       setHistory([]);
       setToast(null);
       setPersonalReplica(null);
