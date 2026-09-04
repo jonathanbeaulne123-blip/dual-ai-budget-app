@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const TEST_DIRECTORY = new URL(".", import.meta.url);
 const testDirectoryPath = fileURLToPath(TEST_DIRECTORY);
 const laneRunner = readFileSync(new URL("../scripts/run-test-lanes.mjs", import.meta.url), "utf8");
+const demoSuiteRunner = readFileSync(new URL("../scripts/run-demo-suite-tests.mjs", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
   scripts?: Record<string, string>;
 };
@@ -34,8 +35,15 @@ const serialFixtureTests = [
   "stress-seed.test.ts",
 ];
 
+const serialTimingTests = ["continuity-two-browser-proof.test.ts"];
+
+const rpcIsolatedFixtureTests = [
+  "demo-shift-statistics.test.ts",
+  "stress-seed.test.ts",
+];
+
 describe("Vitest lanes", () => {
-  it("keeps every direct PGlite runtime test in the serial books lane", () => {
+  it("keeps direct PGlite and host-timing tests in the serial books lane", () => {
     expect(packageJson.scripts?.["test:full:lanes"]).toBeUndefined();
     expect(packageJson.scripts?.test).toBe("node scripts/run-quick-gate.mjs");
     expect(packageJson.scripts?.check).toBe("node scripts/run-quick-gate.mjs");
@@ -44,7 +52,7 @@ describe("Vitest lanes", () => {
     const booksLane = packageJson.scripts?.["test:books"] ?? "";
     const fastLane = packageJson.scripts?.["test:fast"] ?? "";
     const runtimeTests = directPGliteRuntimeTests();
-    const serialTests = [...runtimeTests, ...serialFixtureTests].sort();
+    const serialTests = [...runtimeTests, ...serialFixtureTests, ...serialTimingTests].sort();
 
     expect(runtimeTests).toEqual([
       "almost-there.test.ts",
@@ -70,7 +78,16 @@ describe("Vitest lanes", () => {
     }
     expect([...fastLane.matchAll(/--exclude=test\/([^\s]+)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
     expect([...booksLane.matchAll(/test\/([^\s]+\.test\.ts)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
+    for (const fileName of rpcIsolatedFixtureTests) {
+      expect(booksLane).toContain(`&& vitest run test/${fileName} --maxWorkers=1`);
+    }
+    expect(booksLane).toContain("&& node scripts/run-demo-suite-tests.mjs test/demo-suite.test.ts");
+    expect(demoSuiteRunner.match(/^[ ]{2}".+",$/gm)).toHaveLength(8);
+    expect(demoSuiteRunner).toContain('[pnpmEntrypoint, "exec", "vitest", "run", testPath, "--maxWorkers=1", "-t", title]');
     expect(booksLane).toContain("--maxWorkers=1");
+    expect(booksLane).toContain("--testTimeout=30000");
+    expect(readFileSync(new URL("../scripts/run-quick-gate.mjs", import.meta.url), "utf8"))
+      .toContain('...batched, "--maxWorkers=1", "--testTimeout=30000"');
     expect(fastLane).toContain("--maxWorkers=4");
   });
 });

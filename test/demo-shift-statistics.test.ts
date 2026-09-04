@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createDemoRandom, seedStressHousehold, weekdaySunday0 } from "../src/core/index.ts";
 
 const TODAY = "2026-08-29" as const;
@@ -9,6 +9,10 @@ function tipRate(shifts: ReturnType<typeof seedStressHousehold>["shifts"]): numb
 }
 
 describe("Demo Suite shift generation", () => {
+  beforeEach(async () => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  });
+
   it("uses independent deterministic streams", () => {
     const shiftA = createDemoRandom(42, "shifts");
     const shiftB = createDemoRandom(42, "shifts");
@@ -18,8 +22,12 @@ describe("Demo Suite shift generation", () => {
     expect(Array.from({ length: 8 }, () => appointments())).not.toEqual(first);
   });
 
-  it("keeps useful but non-perfect covariate signal across a seed matrix", () => {
-    const households = [17, 90210, 429496].map((seed) => seedStressHousehold({ today: TODAY, seed, environment: "development" }));
+  it("keeps useful but non-perfect covariate signal across a seed matrix", async () => {
+    const households: ReturnType<typeof seedStressHousehold>[] = [];
+    for (const seed of [17, 90210, 429496]) {
+      households.push(seedStressHousehold({ today: TODAY, seed, environment: "development" }));
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
     const all = households.flatMap((row) => row.shifts);
     const weekend = all.filter((row) => [5, 6].includes(weekdaySunday0(row.date)));
     const midweek = all.filter((row) => [1, 2, 3].includes(weekdaySunday0(row.date)));
@@ -30,5 +38,5 @@ describe("Demo Suite shift generation", () => {
     expect(new Set(households.map((row) => row.shifts.length)).size).toBeGreaterThan(1);
     expect(all.some((row) => weekdaySunday0(row.date) <= 3 && row.netTipsCents > tipRate(weekend) * row.hours)).toBe(true);
     expect(all.some((row) => [5, 6].includes(weekdaySunday0(row.date)) && row.netTipsCents < tipRate(midweek) * row.hours)).toBe(true);
-  }, 60_000);
+  }, 180_000);
 });

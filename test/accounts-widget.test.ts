@@ -80,14 +80,11 @@ describe("the accounts widget", () => {
     expect(chosen?.accountId).toBe("ACC-CHEQUING");
   });
 
-  it("commits through the plain household path, never the fundRail-only member-personal scope", () => {
-    // setLandingSurface's precedent, not commitFundRailPreference's: a
-    // persistenceScope of "member-personal" is routed by the live app to
-    // fundRailPreferenceUpdateAllowed, which only accepts a diff confined to
-    // member.fundRail and would silently reject this write outright.
+  it("commits through the explicit member-Personal cloud-authority scope", () => {
     const household = fundHousehold(BIANCA);
     const result = setGlanceAccount(household, { memberId: BIANCA, accountId: "ACC-CHEQUING", createdBy: BIANCA });
-    expect(result.persistenceScope).toBeUndefined();
+    expect(result).toMatchObject({ persistenceScope: "member-personal", personalMemberId: BIANCA });
+    expect(result.undo.commandKind).toBe("glance-account-personal");
     expect(result.household.members.find((member) => member.id === BIANCA)?.glanceAccountUpdatedAt).toMatch(/Z$/);
   });
 

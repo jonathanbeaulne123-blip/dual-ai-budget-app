@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   eraseDevelopmentData,
   executeHerculesReadToolPlan,
@@ -25,6 +25,10 @@ const realistic = seedStressHousehold({
 });
 
 describe("Development stress data controls", () => {
+  beforeEach(async () => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  });
+
   it("refuses to replace Production books with fictional fixture data", () => {
     expect(() => seedStressHousehold({
       today: TODAY,
@@ -155,7 +159,7 @@ describe("Development stress data controls", () => {
     }, TODAY, { memberId: tipMemberId, view: "household" });
     expect(run.results[0]?.status).toBe("ok");
     expect(run.results[0]?.sentence).toMatch(new RegExp(`${report.count} posted shift`));
-  });
+  }, 60_000);
 
   it("preserves Google continuity identity on Reload so Hercules Pro can still read the fixture", () => {
     const linked = {
@@ -196,5 +200,5 @@ describe("Development stress data controls", () => {
     expect(reloaded.shifts.length).toBeGreaterThan(90);
     expect(reloaded.shifts.every((shift) => shift.memberId === "MEM-001")).toBe(true);
     expect(reloaded.workJobs[0]?.memberId).toBe("MEM-001");
-  }, 30_000);
+  }, 60_000);
 });

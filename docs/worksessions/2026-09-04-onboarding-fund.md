@@ -52,7 +52,7 @@ consent into a calm review path instead of a dead end.
 - Empty, one-approval, same-revision-complete, mismatched-revision stale, and Charter-custody-conflict states.
 - Direct routing to the existing Household Fund surface and a self-owned approval control there.
 - Focused command, evidence, merge, source-fence, projection-equality, UI, copy, and accessibility tests.
-- D-214 decision, AI handoff, and responsive browser evidence.
+- D-215 decision, AI handoff, and responsive browser evidence.
 
 ### Out of scope
 
@@ -110,7 +110,7 @@ consent into a calm review path instead of a dead end.
 
 ## Decisions
 
-- D-214 reserved for revision-bound Household Fund setup approvals.
+- D-215 reserved for revision-bound Household Fund setup approvals.
 - A Shared approval may disclose that the custodian selected a Personal savings
   backing account, but never which account or what it contains.
 

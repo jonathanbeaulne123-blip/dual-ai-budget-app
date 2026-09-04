@@ -1,6 +1,6 @@
 # AI Task and Handoff Standard
 
-## Onboarding Slice 16 — Chapter 7 regular money (D-215) (2026-09-04)
+## Onboarding Slice 16 — Chapter 7 regular money (D-216) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete
 on `onboarding/16-ch7-recurrences` from
@@ -53,7 +53,7 @@ eval, and chunk-size warnings appeared.
 authorize push/PR/merge. Hosted two-device continuity proof remains a release
 check.
 
-## Onboarding Slice 15 — Chapter 6 Household Fund (D-214) (2026-09-04)
+## Onboarding Slice 15 — Chapter 6 Household Fund (D-215) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete
 on `onboarding/15-ch6-fund` from

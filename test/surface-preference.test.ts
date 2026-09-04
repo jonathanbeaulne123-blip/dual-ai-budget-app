@@ -41,8 +41,12 @@ describe("Till slice 4 landing preference", () => {
 
   it("lets a member set and reverse only their own preference without changing money", async () => {
     const before = configuredFund();
-    const desk = setLandingSurface(before, { memberId: BIANCA, createdBy: BIANCA, surface: "desk" }).household;
+    const deskResult = setLandingSurface(before, { memberId: BIANCA, createdBy: BIANCA, surface: "desk" });
+    const desk = deskResult.household;
     const till = setLandingSurface(desk, { memberId: BIANCA, createdBy: BIANCA, surface: "till" }).household;
+
+    expect(deskResult).toMatchObject({ persistenceScope: "member-personal", personalMemberId: BIANCA });
+    expect(deskResult.undo.commandKind).toBe("landing-surface-personal");
 
     expect(landingSurfaceForMember(desk, BIANCA)).toBe("desk");
     expect(landingSurfaceForMember(till, BIANCA)).toBe("till");

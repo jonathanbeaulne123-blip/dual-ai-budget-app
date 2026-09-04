@@ -86,7 +86,7 @@ pause after each third item keeps the setup humane.
 
 ## Decisions
 
-- D-215 reserves the distinction between a standing recurrence and a posted
+- D-216 reserves the distinction between a standing recurrence and a posted
   occurrence for Chapter 7.
 
 ## Remaining uncertainty

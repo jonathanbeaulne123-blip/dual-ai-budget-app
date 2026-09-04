@@ -1,6 +1,6 @@
 # Ledger-native “Google Docs feel” Development pilot
 
-> **Status — 2026-09-03:** the deployed D-180/D-186 pilot remains unproven through the complete live signed-in matrix and fourteen-day rehearsal. D-208's online-required launch policy is implemented on a branch but is not merged or deployed.
+> **Status — 2026-09-04:** the deployed D-180/D-186 pilot remains unproven through the complete live signed-in matrix and fourteen-day rehearsal. D-208's online-required commit boundary is on `main`; D-214's truthful Personal-and-Shared cloud-ledger naming and fresh live latency proof remain a release candidate until separately merged and deployed.
 
 ## Entry and household-identity repair — Development deployed
 
@@ -23,7 +23,7 @@ The pilot kitchen build must contain all five exact behavior settings:
 - `VITE_SUPABASE_AUTH_ENABLED=1`
 - `VITE_CONTINUITY_REALTIME=1`
 - `VITE_CONTINUITY_COMMAND_LOG=1`
-- `VITE_SHARED_ONLINE_REQUIRED=1`
+- `VITE_CLOUD_LEDGER_ONLINE_REQUIRED=1`
 - `VITE_PRODUCTION_CONTINUITY=0`
 
 `VITE_SYNC_PILOT_DIAGNOSTICS=1` enables the Development-only local diagnostic. Production discovery, transport, Realtime, and diagnostics must remain refused. The Production code path stays in source for a separate approved packet.
@@ -32,7 +32,7 @@ The only pilot-support API added after the original boundary is D-212's read-onl
 
 ## Normal command and recovery paths
 
-The normal shared path is:
+The normal cloud-backed write path is:
 
 `Confirm -> isolated staged PGlite acceptance -> durable idempotency marker -> authenticated atomic command append -> cloud acknowledgement -> active PGlite/device commit/Saved -> Realtime event -> partner PGlite acceptance`
 
@@ -46,7 +46,7 @@ Snapshots are reserved for first household creation, initial device catch-up, a 
 - A second-device join or failed pull never silently replaces the last accepted local ledger.
 - Financial command events, receipts, reversals, and tombstones are retained throughout the pilot. No compaction or deletion job is authorized.
 - Confirm remains the only financial writer. Realtime, polling, retry, diagnostics, presence, and Hercules never create money.
-- Cached books remain readable offline. Shared Confirm is read-only until connectivity and matching Google Auth return; no locally accepted shared tip waits to publish later.
+- Cached books remain readable offline. Personal and Shared Confirm are read-only for a cloud-backed household until connectivity and matching Google Auth return; no locally accepted cloud-backed tip waits to publish later.
 - A failed or response-lost hosted attempt leaves the prior active PGlite projection and visible/durable household unchanged. Its slim marker and isolated staged candidate remain until the same command is replayed or its exact receipt is confirmed, so no ambiguous response is labelled “nothing posted.” Startup and every ordinary catch-up use the same stable Shared/Personal pairing as ambiguous recovery; both scopes are adopted together, and writes reopen only for the exact proven environment/household/member/revision tuple. A missing Personal read retains the marker and blocks Confirm. A definitive CAS conflict never auto-republishes: after the stable cloud pair is known, its canonical projection is validated, repaired, verified, and persisted before that exact queued/staged generation is compare-cancelled; a local repair failure retains the marker. The rejected row cannot return through later replay, and the person must Confirm again. Manual Retry remains blocked until its successful delivery is followed by paired adoption. Revision-only Realtime dedupe cannot skip differing Personal facts. Confirm, canonical installation, switching, and local clearing share one serialized lane, and an awaited install remains bound to its starting household, scope, and outbox generation. A scope switch or destructive clear invalidates it immediately. A Realtime command immediately schedules a paired refresh before the next write.
 - An incomplete schema-version migration repairs from an exact synchronized, revision-anchored receipt. A pre-launch in-flight tip can bridge the old crash window only when one durable generation exactly binds to the accepted snapshot. An arbitrary projection mismatch remains read-only until the person explicitly restores an authenticated, stable-revision pairing of Shared and signed-in Personal through isolated PGlite validation; pending work or unresolved conflicts refuse replacement.
 - A browser-books worker that does not finish opening/migrating within twelve seconds is retired. Hearth reports an explicit local-books retry state and preserves both IndexedDB and the accepted snapshot; timeout alone never clears or replaces either.
@@ -87,7 +87,7 @@ Use Jonathan and Bianca's separate Google accounts on actual supported devices. 
 - Concurrent disjoint Shared posts converge automatically.
 - An intentional same-id divergent edit converges automatically to the later accepted entry on both devices, with no blocking chooser.
 - A delayed same-id edit after an accepted reversal does not rewrite the reversed original; correction remains reversal plus replacement.
-- Both devices keep cached books readable offline, refuse shared mutation, then write and converge without a duplicate after reconnect.
+- Both devices keep cached books readable offline, refuse Personal and Shared mutation, then write and converge without a duplicate after reconnect.
 - Background then foreground; network loss then recovery; Realtime failure displays fallback/polling honestly and later recovers.
 - Duplicate and out-of-order event delivery applies each command once.
 - Browser restart preserves the last cloud-acknowledged books and any crash-safe in-flight command identity.
@@ -97,9 +97,11 @@ Use Jonathan and Bianca's separate Google accounts on actual supported devices. 
 
 ### Latency gate
 
-Record at least **100 received Shared command events**. On the receiving device, use **Copy sync diagnostic** and retain the sanitized bundle with the rehearsal log. Require `remoteAcceptanceMs.p95 <= 500` while both kitchens are open.
+On the receiving device, choose **Start clean latency run** immediately before the exact-SHA rehearsal; this creates a hashed run marker and clears prior local trace rows. Then record exactly **100 received Shared command events**, choose **Copy sync diagnostic**, and retain the sanitized bundle with the rehearsal log. The candidate cohort is only the active run's current household/member/device Shared `command-realtime` events. Personal, conflict, fallback, and other-household traces do not enter it. Pass only when `measurement.candidateEventCount = 100`, `measurement.qualifyingEventCount = 100`, `measurement.unpaintedEventCount = 0`, `latency.sampleCount = 100`, `latency.invalidClockSampleCount = 0`, and `latency.p95Ms <= 500` while both kitchens remain open and visible.
 
-The local diagnostic contains only revisions, pending count, constrained transport/outcome values, event timing, and hashed household/member/device/confirmation identifiers. It must never contain amounts, merchants, notes, emails, tokens, or raw identifiers. It is bounded to the newest 500 Development records so a multi-phase 100-event run remains measurable, stays on the device, and is transmitted only when a person explicitly copies it.
+`latency` subtracts the sender-stamped command acceptance time from the receiver's post-paint wall clock, so it is valid cross-device evidence only when the rehearsal records a quantitative before/after clock-offset witness for both phones and corrects the samples (or proves the measured offset bound cannot move p95 above 500 ms). Negative/invalid wall-clock samples are counted and fail the gate rather than disappearing. Retain `cloudToPaintLatency` (hosted event timestamp to receiver paint) and `receiverApplyLatency` (receiver monotonic receipt-to-paint duration) as supporting diagnostics. For Jonathan's broader **Confirm tap to peer paint under one second** requirement, record both physical phones in one time base (for example, a single high-frame-rate video) rather than adding two unsynchronized device timers.
+
+The local diagnostic contains only a hashed run marker, revisions, pending count, constrained transport/outcome values, paint witness state, event timing, and hashed household/member/device/confirmation identifiers. It must never contain amounts, merchants, notes, emails, tokens, or raw identifiers. It is bounded to the newest 500 Development records, stays on the device, and is transmitted only when a person explicitly copies it. Record the exact deployed Git SHA beside the diagnostic; the privacy bundle deliberately does not infer deployment identity.
 
 Latency-only failure may degrade to the honest polling fallback. Polling must recover to Realtime without duplicate posting. A false Synced state or lost/duplicated money is not a latency-only failure.
 

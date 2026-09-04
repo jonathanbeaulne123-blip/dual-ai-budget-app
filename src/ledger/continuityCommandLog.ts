@@ -40,7 +40,8 @@ export type AppendCommandRpcResult = {
   remotePayload?: string | null;
 };
 
-function inferLedgerScope(household: Household, postedIds: string[]): "shared" | "personal" {
+function inferLedgerScope(household: Household, postedIds: string[], commandKind: string): "shared" | "personal" {
+  if (commandKind.endsWith("-personal")) return "personal";
   const posted = new Set(postedIds);
   const changesSharedFund = Boolean(
     (household.householdFund && posted.has(household.householdFund.id))
@@ -64,7 +65,7 @@ export function receiptToCommandRef(input: {
   baseRevision: number;
 }): ContinuityCommandRef {
   const { household, receipt, baseRevision } = input;
-  const ledgerScope = inferLedgerScope(household, receipt.postedIds);
+  const ledgerScope = inferLedgerScope(household, receipt.postedIds, receipt.commandKind);
   return {
     idempotencyKey: receipt.confirmationId,
     confirmationId: receipt.confirmationId,

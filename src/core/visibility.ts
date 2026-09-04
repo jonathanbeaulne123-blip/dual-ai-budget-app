@@ -1,4 +1,4 @@
-import { COMPANION, JOINT, type Goal, type Household, type LedgerView, type Shift, type Transaction, type Visibility } from "./types.ts";
+import { COMPANION, JOINT, type Account, type Goal, type Household, type LedgerView, type Shift, type Transaction, type Visibility } from "./types.ts";
 
 export const VISIBILITIES: Visibility[] = ["household", "personal", "both"];
 
@@ -15,6 +15,18 @@ function shiftForHercules(shift: Shift): Shift {
 function shiftForConfirmedToolFacts(shift: Shift): Shift {
   const { sevenShiftsPunchDigest: _digest, sevenShiftsEvidenceBundle: _evidence, ...safe } = shift;
   return safe;
+}
+
+function accountForAiDisclosure(account: Account): Account {
+  if (account.scope !== "personal") return account;
+  return {
+    ...account,
+    institution: "",
+    last4: "",
+    credit: null,
+    savings: null,
+    investment: null,
+  };
 }
 
 export function parseVisibility(value: unknown): Visibility {
@@ -92,6 +104,10 @@ export function householdForAiDisclosure(
     : desk;
   return {
     ...contextual,
+    // Personal account IDs remain available so the member's Personal journal
+    // still compiles, but private bank/product metadata never enters the model
+    // disclosure projection.
+    accounts: contextual.accounts.map(accountForAiDisclosure),
     coworkers: [],
     coworkerAttendance: [],
     coworkerSchedules: [],
@@ -156,7 +172,10 @@ export function householdForHerculesContext(
     shiftBibles: [],
     monthRehearsals: [],
     weeklyDocumentStamps: [],
-    accounts: scoped.accounts.filter((account) => account.scope !== "personal"),
+    // `householdForView` already removes every partner-owned Personal account.
+    // Keep the requesting member's own Personal accounts here so their visible
+    // Personal transactions still compile against a complete journal.
+    accounts: scoped.accounts,
     fundPrivate: { bankBindings: [], reconciliations: [] },
     shifts: scoped.shifts.map(shiftForHercules),
     sevenShiftsSchedules: (household.sevenShiftsSchedules ?? [])

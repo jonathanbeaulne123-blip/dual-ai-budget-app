@@ -309,7 +309,11 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     };
     accepted = rememberReceipt(accepted, receipt);
     accepted.booksAcceptedHash = await financialAuditHash(accepted);
-    const actorMemberId = [
+    const validatedActingMemberId = input.actingMemberId
+      && accepted.members.some((member) => member.active && member.id === input.actingMemberId)
+      ? input.actingMemberId
+      : null;
+    const actorMemberId = validatedActingMemberId ?? [
       ...accepted.transactions.filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
       ...accepted.shifts.filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
       ...(accepted.fundEvents ?? []).filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
@@ -335,11 +339,16 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     const transportAllowed = input.transportRequested === true;
     let cloudAcknowledged = false;
     const clearCandidate = async () => {
-      try {
-        await input.adapters.clearCandidate?.(accepted);
-      } catch {
-        // A stale isolated stage is never authoritative and cannot open writes.
-      }
+      const cleanup = Promise.resolve()
+        .then(() => input.adapters.clearCandidate?.(accepted))
+        .catch(() => undefined);
+      // The stage is isolated and never authoritative. Its generation is
+      // invalidated synchronously by the browser adapter, so a slow IndexedDB
+      // close/delete must not leave the visible command stuck on Saving.
+      await Promise.race([
+        cleanup,
+        new Promise<void>((resolve) => setTimeout(resolve, 100)),
+      ]);
     };
     if (input.requireSynchronized) {
       if (!input.adapters.validateCandidate) {

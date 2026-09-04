@@ -609,6 +609,7 @@ export function PairingCard({
   onLeaveHousehold,
   onCurrentDeviceRevoked,
   onCopySyncDiagnostic,
+  onStartSyncDiagnostic,
   onCopySyncClockCalibration,
 }: {
   household: Household;
@@ -623,6 +624,7 @@ export function PairingCard({
   onLeaveHousehold?: () => Promise<void>;
   onCurrentDeviceRevoked?: () => void;
   onCopySyncDiagnostic?: () => Promise<string>;
+  onStartSyncDiagnostic?: () => Promise<string>;
   onCopySyncClockCalibration?: () => Promise<string>;
   onInviteInput: (value: string) => void;
   onHousehold: (household: Household) => Promise<void>;
@@ -746,6 +748,21 @@ export function PairingCard({
         </p>
         {onCopySyncDiagnostic && (
           <>
+            {onStartSyncDiagnostic && (
+              <button
+                type="button"
+                className="ghost"
+                style={{ width: "100%", marginTop: 8 }}
+                onClick={() => {
+                  setDiagnosticStatus("");
+                  void onStartSyncDiagnostic()
+                    .then(setDiagnosticStatus)
+                    .catch((caught) => setDiagnosticStatus(caught instanceof Error ? caught.message : String(caught)));
+                }}
+              >
+                Start clean latency run
+              </button>
+            )}
             <button
               type="button"
               className="ghost"
@@ -760,7 +777,7 @@ export function PairingCard({
               Copy sync diagnostic
             </button>
             <p className="muted" role="status" aria-live="polite">
-              {diagnosticStatus || "Development only. Copies hashed identifiers, revisions, queue state, and timing — never ledger facts or credentials."}
+              {diagnosticStatus || "Development only. Start a clean run on the receiving phone, then copy hashed identifiers, revisions, queue state, and timing — never ledger facts or credentials."}
             </p>
           </>
         )}

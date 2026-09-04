@@ -1426,7 +1426,7 @@ export type CommitResult = {
   warnings: string[];
   undo: UndoToken;
   postedIds: string[];
-  /** Member preferences bypass accepted-books/PGlite and persist only their Personal replica. */
+  /** Member-owned mutation transported only in the acting member's Personal envelope. */
   persistenceScope?: "member-personal";
   personalMemberId?: string;
 };

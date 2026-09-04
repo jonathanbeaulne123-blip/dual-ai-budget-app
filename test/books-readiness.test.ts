@@ -64,13 +64,22 @@ describe("startup books readiness", () => {
     const metadataOnly = {
       ...household,
       revision: household.revision + 1,
+      sharing: {
+        ...household.sharing,
+        lastTransportAt: "2026-08-30T12:00:00.000Z",
+      },
+    };
+    expect(knownMetadataUpdateAllowed(household, metadataOnly, household.revision)).toBe(true);
+
+    const permissionShortcut = {
+      ...metadataOnly,
       herculesProPermissions: {
         personalWrite: true,
         householdWrite: false,
         updatedAt: "2026-08-30T12:00:00.000Z",
       },
     };
-    expect(knownMetadataUpdateAllowed(household, metadataOnly, household.revision)).toBe(true);
+    expect(knownMetadataUpdateAllowed(household, permissionShortcut, household.revision)).toBe(false);
 
     const transaction = household.transactions[0];
     expect(transaction).toBeDefined();
