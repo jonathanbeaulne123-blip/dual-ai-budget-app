@@ -44,6 +44,8 @@ export type SyncFreshnessInput = {
   hasOpenConflict: boolean;
   /** True only after local PGlite validation has failed closed. */
   booksBlocked?: boolean;
+  /** Socket connectivity is not cloud-tip freshness while local adoption is still running. */
+  syncState?: "idle" | "syncing" | "synced" | "error";
   lastReconcileAt: string | null;
   lastReconcileSource: ContinuitySyncSource | null;
   pollIntervalMs?: number;
@@ -165,7 +167,13 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
 
   const authRequired = Boolean(input.authRequired && !input.offline);
   const booksBlocked = input.booksBlocked === true;
+  const catchingUp = input.syncState === "syncing"
+    && !input.offline
+    && !authRequired
+    && !booksBlocked
+    && mode === "synchronized";
   const blocksSyncedLabel = booksBlocked
+    || catchingUp
     || authRequired
     || mode === "pending-transport"
     || mode === "conflicted"
@@ -198,6 +206,8 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   } else if (mode === "transport-error" || mode === "disconnected") {
     transportPrimary = input.offline ? "Offline · will sync when you're back" : "Share paused";
     tone = "warning";
+  } else if (catchingUp) {
+    transportPrimary = "Catching up";
   }
   if (authRequired && !booksBlocked) {
     transportPrimary = "Google sign-in needed";

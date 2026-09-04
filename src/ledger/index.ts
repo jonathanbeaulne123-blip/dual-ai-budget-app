@@ -2,6 +2,7 @@ export { compileHousehold, trialBalance, booksEquation, accountRegister } from "
 export {
   ingestBooks,
   ingestHouseholdBooks,
+  replaceAcceptedHouseholdBooks,
   restoreHouseholdBooks,
   inspectBrowserBooks,
   publishLinkedHousehold,

@@ -190,4 +190,35 @@ describe("Development sync pilot diagnostics", () => {
       "realtime-subscribed",
     ]);
   });
+
+  it("retains only an allowlisted command fallback reason", async () => {
+    const storage = memoryStorage();
+    await recordSyncPilotTrace({
+      ...identity,
+      phase: "poll-fallback",
+      revision: 19,
+      transport: "poll",
+      fallbackReason: "revision-gap",
+    }, { flag: "1", storage });
+    await recordSyncPilotTrace({
+      ...identity,
+      phase: "poll-fallback",
+      revision: 20,
+      transport: "poll",
+      fallbackReason: "raw private explanation",
+    }, { flag: "1", storage });
+
+    const bundle = await buildSyncPilotDiagnosticBundle({
+      ...identity,
+      revision: 20,
+      pendingCount: 0,
+      syncState: "syncing",
+      realtimeStatus: "SUBSCRIBED",
+      offline: false,
+      freshnessMode: "live",
+    }, { flag: "1", storage });
+
+    expect(bundle?.traces.map((row) => row.fallbackReason)).toEqual(["revision-gap", null]);
+    expect(JSON.stringify(bundle)).not.toContain("raw private explanation");
+  });
 });

@@ -35,6 +35,8 @@ export type SoftPresenceRealtimeDeps = {
   ) => PresenceClientHandle;
 };
 
+let presenceClientSequence = 0;
+
 export { softPresenceRealtimeEnabled } from "./continuityRealtimePolicy.ts";
 
 function rowsFromPresenceState(state: Record<string, SoftPresenceTrackPayload[] | undefined>): SoftPresenceLiveRow[] {
@@ -81,6 +83,7 @@ export function attachSoftPresenceRealtime(
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
+      storageKey: `hearth-presence-ephemeral-${presenceClientSequence += 1}`,
     },
     global: {
       headers: {

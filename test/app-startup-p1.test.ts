@@ -83,6 +83,10 @@ vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
       startup.repairedCandidates.push(household);
       return { ok: true, engine: "pglite" as const, entryCount: household.transactions.length, inBalance: true, equationHolds: true };
     }),
+    replaceAcceptedHouseholdBooks: vi.fn(async (household: Household) => {
+      startup.repairedCandidates.push(household);
+      return { ok: true, engine: "pglite" as const, entryCount: household.transactions.length, inBalance: true, equationHolds: true };
+    }),
   };
 });
 
