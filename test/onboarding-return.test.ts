@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  approveHouseholdFundConfiguration,
   catalogHousehold,
+  configureHouseholdFund,
   confirmHouseholdOnboarding,
   foundHouseholdCharter,
   postOpeningBalances,
@@ -185,6 +187,21 @@ describe("onboardingNavigationTarget", () => {
             },
           ],
         };
+      }
+      if (chapterId === "ch-06-fund") {
+        const revision = "2026-09-03T16:05:00.000Z";
+        household = configureHouseholdFund(household, {
+          custodianMemberId: BIANCA,
+          openedOn: TODAY,
+          createdBy: BIANCA,
+          at: revision,
+        }).household;
+        household = approveHouseholdFundConfiguration(household, {
+          memberId: JONATHAN,
+          createdBy: JONATHAN,
+          revision,
+          at: "2026-09-03T16:06:00.000Z",
+        }).household;
       }
       household = chapterId === "ch-02-household"
         ? recordObservedChapterCompletion(household, {

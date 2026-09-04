@@ -307,10 +307,10 @@ describe("fictional September 2026 golden month", () => {
     const checkpointHashes = household.monthRehearsals![0]!.weeks.map((week) => week.checkpoint!.financialAuditHash);
     const receiptIdentities = household.monthRehearsals![0]!.weeks.map((week) => week.checkpoint!.linkedReceiptIds);
     expect(checkpointHashes).toEqual([
-      "376e95bdfff1e561eb51b7be274be78c37b2a79e94001cd7c6584debff57b91c",
-      "c3467090dc3ac09bdcfdf0c3bf32ed4b4ca45e7a68068ea9545352d2d0cfd9e5",
-      "469269a7660c8c4156617b8597f6b1036d046213bf26a0fa388c666a7e55b601",
-      "92846407622195b89597f9ffccc2e50034e638fe5ab062798d8dfff94babe9c4",
+      "eaa887405885ea48714d45d4bd1f0d69c64a66563e61309489a8bc414c907724",
+      "57db4d0e820d5bae5539fd4f2ae8765e6382c081f6a7b1dfa118ffd2ad23270f",
+      "6823ac1b531ff5196bc848728dd848096e0950e2bf0af16fde4d1a4425734929",
+      "d28d6ca0d352a379f801fbcfd822f4c2012bc05daf91a4c5e76d11832cf84483",
     ]);
     expect(weeklyFinancialHashes).toEqual([
       "732c795dc4c12e07e5e55d2dc06c9f82861490de9b45de0124d984786899e765",
