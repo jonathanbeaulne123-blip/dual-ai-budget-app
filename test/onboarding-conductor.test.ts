@@ -403,14 +403,18 @@ describe("the conductor shell — fences", () => {
     expect(shellViewSource).toMatch(/const exhaustive: never = kind/);
   });
 
-  it("never treats a conflicted or stale evidence read as merely empty", () => {
+  it("never treats a conflicted, stale, untied, or privacy-blocked evidence read as merely empty", () => {
     // resolveEvidence's "ineligible" result is a real blocked state, not
-    // "nothing to show yet" — the copy deck already carries blocked.conflict
-    // and blocked.stale for exactly this, so the component must branch on
-    // evidence.kind === "ineligible" rather than falling through to the
-    // ordinary task card, which would misrepresent the block as untouched.
-    expect(componentSource).toMatch(/evidence\.kind === "ineligible"/);
+    // "nothing to show yet" — the copy deck already carries a committed line
+    // for four of its five IneligibleReason values, so the component must
+    // branch on evidence.kind === "ineligible" rather than falling through
+    // to the ordinary task card, which would misrepresent the block as
+    // untouched. "malformed" has no committed Appendix E line and is a
+    // disclosed exception — see the code comment above blockedCopyKey.
+    expect(componentSource).toMatch(/evidence\.kind !== "ineligible"|evidence\.kind === "ineligible"/);
     expect(componentSource).toContain('"blocked.conflict"');
     expect(componentSource).toContain('"blocked.stale"');
+    expect(componentSource).toContain('"blocked.untied"');
+    expect(componentSource).toContain('"blocked.privacy"');
   });
 });

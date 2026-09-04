@@ -150,17 +150,24 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
   const railIndex = sittingRailIndex(chapter.sitting);
   const chapterId = chapter.id;
 
-  // resolveEvidence can come back "ineligible" (a real conflict or a stale
-  // read, not merely "nothing to show yet"). The copy deck already has
-  // dedicated blocked.* strings for exactly this — showing the ordinary task
-  // card instead would misrepresent a blocked state as an untouched one, so
-  // this is checked ahead of the task/evidence-card choice below and also
-  // gates the Next button off (there is nothing safe to continue past).
-  const blockedCopyKey = evidence.kind === "ineligible" && evidence.reason === "conflicted"
+  // resolveEvidence can come back "ineligible" — a real blocked read, not
+  // merely "nothing to show yet". Showing the ordinary task card instead
+  // would misrepresent a blocked state as an untouched one, so this is
+  // checked ahead of the task/evidence-card choice below and also gates the
+  // Next button off (there is nothing safe to continue past). Four of the
+  // five IneligibleReason values have a committed Appendix E line to show;
+  // "malformed" — a data-shape problem, not something a member did — does
+  // not, so it still falls through to the plain task card rather than
+  // inventing member-facing copy this slice has no authority to add.
+  const blockedCopyKey = evidence.kind !== "ineligible" ? null : evidence.reason === "conflicted"
     ? "blocked.conflict"
-    : evidence.kind === "ineligible" && evidence.reason === "stale"
+    : evidence.reason === "stale"
       ? "blocked.stale"
-      : null;
+      : evidence.reason === "untied"
+        ? "blocked.untied"
+        : evidence.reason === "privacy"
+          ? "blocked.privacy"
+          : null;
 
   function acknowledge() {
     onCommit((current) => recordChapterAcknowledgement(current, {
