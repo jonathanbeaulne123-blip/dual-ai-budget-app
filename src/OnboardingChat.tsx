@@ -12,6 +12,7 @@ import {
   flavorFor,
   isSittingFinalChapter,
   isSittingFirstChapter,
+  memberProgress,
   nextChapterFor,
   recordChapterAcknowledgement,
   sittingRailIndex,
@@ -19,6 +20,7 @@ import {
   taskLengthLabel,
   witnessEvidenceFor,
 } from "./core/index.ts";
+import { OnboardingNotice, OnboardingWitness, noticedEvidenceKey } from "./OnboardingWitness.tsx";
 import "./onboarding.css";
 
 // The conductor shell (ONBOARDING_BUILD_MANUAL.md slice 7; HEARTH_UX_PACKET.md
@@ -150,9 +152,13 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
   const evidence = role === "conductor"
     ? evidenceFor(household, chapter.id, memberId)
     : witnessEvidenceFor(household, chapter.id, memberId);
-  const showNoticedStrip = role === "conductor" && evidence.kind === "accepted";
   const railIndex = sittingRailIndex(chapter.sitting);
   const chapterId = chapter.id;
+  const progress = memberProgress(household, memberId);
+  const probeEvidenceKey = progress.rows.find((row) => row.chapterId === chapterId)?.probeEvidenceKey ?? null;
+  const noticeEventKey = probeEvidenceKey
+    ?? (evidence.kind === "accepted" ? noticedEvidenceKey(evidence.card) : null);
+  const noticeKey = noticeEventKey ? `${progress.id}:${chapterId}:${noticeEventKey}` : null;
 
   // resolveEvidence can come back "ineligible" — a real blocked read, not
   // merely "nothing to show yet". Showing the ordinary task card instead
@@ -205,44 +211,53 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
           />
         ))}
       </div>
-      {showNoticedStrip ? (
-        <p className="onboarding-noticed" role="status" aria-live="polite">
-          {copy("probe.already")}
-        </p>
-      ) : null}
-      <p className="onboarding-turn" style={{ marginBottom: SHELL_VIEW.turnToHerc }}>{turnLine}</p>
-      <p
-        className="onboarding-herc"
-        style={{ marginBottom: SHELL_VIEW.hercToCard, maxWidth: `${SHELL_VIEW.hercMaxEm}em` }}
-        ref={headingRef}
-        tabIndex={-1}
-      >
-        {hercLine}
-      </p>
-      {blockedCopyKey ? (
-        <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
-          <p className="onboarding-card-label">Held up</p>
-          <p className="onboarding-card-task">{copy(blockedCopyKey)}</p>
-        </section>
-      ) : evidence.kind === "accepted" ? (
-        <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
-          <p className="onboarding-card-label">{evidenceCardLabel(evidence.card.kind)}</p>
-          {evidence.card.lines.map((line) => (
-            <p className="onboarding-card-row" key={`${line.label}-${line.value}`}>
-              <span className="onboarding-card-row-label">{line.label}</span>
-              <span className="onboarding-card-row-value">{line.value}</span>
-            </p>
-          ))}
-          <p className="onboarding-card-provenance">{evidenceProvenanceLabel(evidence.card.kind)}</p>
-        </section>
+      {role === "witness" ? (
+        <OnboardingWitness
+          turnLine={turnLine}
+          hercLine={hercLine}
+          chapter={chapter}
+          evidence={evidence}
+          blockedCopyKey={blockedCopyKey}
+          noticeKey={noticeKey}
+        />
       ) : (
-        <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
-          <p className="onboarding-card-label">{role === "conductor" ? "This one's yours" : "Waiting"}</p>
-          <p className="onboarding-card-task">{copy(chapter.copyKey)}</p>
-          {role === "conductor" ? (
-            <p className="onboarding-card-provenance">{taskLengthLabel(chapter.timeBudgetSeconds)}</p>
-          ) : null}
-        </section>
+        <>
+          {evidence.kind === "accepted" && noticeKey
+            ? <OnboardingNotice key={noticeKey} noticeKey={noticeKey} />
+            : null}
+          <p className="onboarding-turn" style={{ marginBottom: SHELL_VIEW.turnToHerc }}>{turnLine}</p>
+          <p
+            className="onboarding-herc"
+            style={{ marginBottom: SHELL_VIEW.hercToCard, maxWidth: `${SHELL_VIEW.hercMaxEm}em` }}
+            ref={headingRef}
+            tabIndex={-1}
+          >
+            {hercLine}
+          </p>
+          {blockedCopyKey ? (
+            <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
+              <p className="onboarding-card-label">Held up</p>
+              <p className="onboarding-card-task">{copy(blockedCopyKey)}</p>
+            </section>
+          ) : evidence.kind === "accepted" ? (
+            <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
+              <p className="onboarding-card-label">{evidenceCardLabel(evidence.card.kind)}</p>
+              {evidence.card.lines.map((line) => (
+                <p className="onboarding-card-row" key={`${line.label}-${line.value}`}>
+                  <span className="onboarding-card-row-label">{line.label}</span>
+                  <span className="onboarding-card-row-value">{line.value}</span>
+                </p>
+              ))}
+              <p className="onboarding-card-provenance">{evidenceProvenanceLabel(evidence.card.kind)}</p>
+            </section>
+          ) : (
+            <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
+              <p className="onboarding-card-label">This one's yours</p>
+              <p className="onboarding-card-task">{copy(chapter.copyKey)}</p>
+              <p className="onboarding-card-provenance">{taskLengthLabel(chapter.timeBudgetSeconds)}</p>
+            </section>
+          )}
+        </>
       )}
       {showAction ? (
         <div className="onboarding-actions">

@@ -160,6 +160,53 @@ export function evidenceCardLabel(kind: EvidenceCard["kind"]): string {
   }
 }
 
+export type WitnessStatusWord = "opened" | "waiting" | "submitted";
+export type WitnessStatusRow = { id: string; label: string; status: WitnessStatusWord };
+
+/**
+ * Witnesses see chapter entities and plain state, never conductor field
+ * values. The four partner-conducted chapters are the only witness rows in
+ * v1; ch-04 may name each already-Shared account from its accepted card.
+ */
+export function witnessStatusRows(chapterId: ChapterId, card: EvidenceCard | null): WitnessStatusRow[] {
+  switch (chapterId) {
+    case "ch-04-accounts": {
+      if (!card) return [{ id: "accounts", label: "Accounts", status: "waiting" }];
+      return card.lines.map((line, index) => ({
+        id: index === 0
+          ? `household-card:${card.sourceIds.join(":")}`
+          : `account:${card.sourceIds[index - 1] ?? `row-${index}`}`,
+        label: line.label === "Fund card" ? "Household card" : line.label,
+        status: "opened",
+      }));
+    }
+    case "ch-05-opening":
+      return [{ id: "opening-balances", label: "Opening balances", status: card ? "submitted" : "waiting" }];
+    case "ch-06-fund":
+      return [{ id: "household-fund", label: "Household Fund", status: card ? "opened" : "waiting" }];
+    case "ch-07-recurrences":
+      return [{ id: "regular-money", label: "Regular money", status: card ? "submitted" : "waiting" }];
+    default:
+      return [{ id: `chapter:${chapterId}`, label: "Household chapter", status: card ? "submitted" : "waiting" }];
+  }
+}
+
+/** Scope disclosure while a partner-conducted chapter is still waiting. */
+export function witnessChapterScopeLabel(chapterId: ChapterId): string {
+  switch (chapterId) {
+    case "ch-04-accounts":
+      return "Shared accounts only.";
+    case "ch-05-opening":
+      return "Shared · opening entries";
+    case "ch-06-fund":
+      return "Shared · Fund setup";
+    case "ch-07-recurrences":
+      return "Shared · recurring bills";
+    default:
+      return "Shared";
+  }
+}
+
 /**
  * The task card's honest-length line (HEARTH_UX_PACKET.md §13.3), rounded to
  * the nearest whole minute. No per-chapter question count exists in the
