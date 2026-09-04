@@ -193,18 +193,21 @@ describe("onboarding copy fences", () => {
   });
 
   it("composes no member-facing sentence at a call site outside the deck", () => {
-    // No src/Onboarding*.tsx component exists yet — Part 2 builds them. This
-    // fence still runs every time the suite does, so the day one lands it is
-    // checked immediately: no template literal containing ". " and no JSX
-    // text ending ".", "?", or "!" — every sentence must come from copy().
+    // src/OnboardingChat.tsx landed in onboarding slice 7. This fence checks
+    // every Onboarding*.tsx component: no template literal containing ". "
+    // and no JSX text ending ".", "?", or "!" — every sentence must come from
+    // copy(). Scoped to a single line so an unrelated comment's own full
+    // stop, sitting between two genuinely separate template literals or tags
+    // elsewhere in the file, can never bridge a false match.
     const srcDir = fileURLToPath(new URL("../src/", import.meta.url));
     const onboardingComponents = readdirSync(srcDir)
       .filter((name) => /^Onboarding.*\.tsx$/.test(name));
+    expect(onboardingComponents.length).toBeGreaterThan(0);
     for (const name of onboardingComponents) {
       const source = readFileSync(new URL(`../src/${name}`, import.meta.url), "utf8");
-      expect(source, `${name} composes a sentence in a template literal`).not.toMatch(/`[^`]*\.\s[^`]*`/);
+      expect(source, `${name} composes a sentence in a template literal`).not.toMatch(/`[^`\n]*\.\s[^`\n]*`/);
       expect(source, `${name} ends JSX text with terminal punctuation instead of using copy()`)
-        .not.toMatch(/>[^<{]*[.?!]\s*</);
+        .not.toMatch(/>[^<{\n]*[.?!]\s*</);
     }
   });
 });

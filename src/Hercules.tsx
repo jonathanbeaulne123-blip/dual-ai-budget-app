@@ -49,6 +49,7 @@ import {
   isInstrumentId,
   loadPhonePlacePrefs,
   householdForHerculesContext,
+  shouldShowOnboardingShell,
   CAT,
   NAV,
   WIDE_BREAKPOINT,
@@ -69,6 +70,7 @@ import {
 import { HerculesDress } from "./HerculesDress.tsx";
 import { HerculesFigure } from "./HerculesFigure.tsx";
 import { launchHerculesPro } from "./HerculesPro.tsx";
+import { OnboardingChat } from "./OnboardingChat.tsx";
 import {
   HerculesRigProvider,
   useHerculesRig,
@@ -323,6 +325,10 @@ export function HerculesPresence({
   const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding;
+  const onboardingShellActive = useMemo(
+    () => shouldShowOnboardingShell(household, memberId, today),
+    [household, memberId, today],
+  );
   const autonomyBlocked = adding || activityBlocked;
   const homeAutonomy = tab === "home" && !autonomyBlocked;
   idleCaptureAllowed.current = !(
@@ -1314,6 +1320,17 @@ export function HerculesPresence({
           <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
             Close
           </button>
+          {onboardingShellActive ? (
+            <OnboardingChat
+              household={household}
+              memberId={memberId}
+              today={today}
+              busy={busy}
+              onCommit={onLedger}
+              onClose={closeChat}
+            />
+          ) : (
+            <>
           <div className="hercules-focus-hero">
             <HerculesLivePortrait
               mood={look.view.mood}
@@ -1393,6 +1410,8 @@ export function HerculesPresence({
               <p className="hercules-spoken">mrrp…</p>
             )}
           </div>
+            </>
+          )}
         </div>
       )}
       {showProposal && proposal && phoneShell && !mobileFocus && (

@@ -1,0 +1,168 @@
+/* The conductor shell (ONBOARDING_BUILD_MANUAL.md slice 7; HEARTH_UX_PACKET.md
+   §13). Spacing rules that are asserted in code live as inline styles driven
+   by SHELL_VIEW (src/core/onboarding/shellView.ts) — this file only carries
+   what a rule does not govern: color, type, and the small cosmetic touches.
+   No hex literals — every color derives from the existing paper/ink tokens. */
+
+.onboarding-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding-bottom: 22px;
+}
+
+.onboarding-rail {
+  display: flex;
+  align-items: center;
+}
+
+.onboarding-rail-mark {
+  display: block;
+  background: var(--line);
+  border-radius: 2px;
+}
+
+.onboarding-rail-mark.is-current {
+  background: var(--ink);
+}
+
+.onboarding-noticed {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--pine) 10%, var(--paper) 90%);
+  border-left: 3px solid var(--pine);
+  border-radius: 0 5px 5px 0;
+}
+
+.onboarding-turn {
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+
+.onboarding-herc {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.onboarding-herc:focus {
+  outline: none;
+}
+
+.onboarding-herc:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 4px;
+}
+
+.onboarding-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 14px;
+}
+
+.onboarding-card-label {
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.onboarding-card-task {
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+
+.onboarding-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+
+.onboarding-card-row-label {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.onboarding-card-row-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.onboarding-card-provenance {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.onboarding-actions button {
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.onboarding-actions button:first-child {
+  border-color: var(--pine);
+  color: var(--pine);
+}
+
+.onboarding-actions button:focus-visible,
+.onboarding-stop-link:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+.onboarding-foot {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.onboarding-stop-link {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-shell * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
