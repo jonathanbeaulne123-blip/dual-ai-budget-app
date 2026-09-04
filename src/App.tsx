@@ -86,6 +86,7 @@ import {
   shiftSettingsFingerprint,
   archiveWorkJob,
   upsertWorkJob,
+  recordEarningCadence,
   todayKey,
   monthKeyFromDateKey,
   TIMEZONE,
@@ -129,6 +130,7 @@ import {
   type ShiftGate,
   type Shift,
   type WorkJob,
+  type WorkPaySchedule,
   type CommitResult,
   type CommandOutcome,
   type Environment,
@@ -2892,6 +2894,11 @@ export function App() {
     household
     && memberId
     && nextChapterFor(household, memberId, today)?.id === "ch-07-recurrences",
+  );
+  const onboardingCadenceOnly = Boolean(
+    household
+    && memberId
+    && nextChapterFor(household, memberId, today)?.id === "ch-08-cadence",
   );
   const personalSource = useMemo(() => {
     return household && memberId && personalReplica?.memberId === memberId
@@ -5975,6 +5982,15 @@ export function App() {
               proposals,
             }));
           }}
+          onboardingCadenceOnly={onboardingCadenceOnly}
+          onRecordEarningCadence={(paySchedule: WorkPaySchedule) => {
+            void run((current) => recordEarningCadence(current, {
+              memberId: session.memberId,
+              createdBy: actorId,
+              paySchedule,
+              detailAction: "skip",
+            }));
+          }}
         />
         </DeferredSurface>
       )}
@@ -7177,6 +7193,10 @@ export function App() {
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           requestCalendarPane("bills", localStorage);
           goTab("calendar");
+        }}
+        onOpenEarningCadence={() => {
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+          goTab("shift");
         }}
         onOpenSource={(source: HerculesNumberSource) => {
           setHerculesSourceFocus(source);

@@ -337,6 +337,34 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "Save standing fact", slots: [],
   }),
   entry({
+    key: "onboarding.household.ch-08-cadence", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Show Hearth when you are usually paid. This is timing only — never an assumed pay or contribution amount.", slots: [],
+  }),
+  entry({
+    key: "cadence.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Set my earning rhythm", slots: [],
+  }),
+  entry({
+    key: "cadence.title", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Your earning rhythm", slots: [],
+  }),
+  entry({
+    key: "cadence.guide", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Pick the rhythm, not a number. Hearth follows the pattern when there is one, and leaves paydays open when there isn't. It never guesses what you earn.", slots: [],
+  }),
+  entry({
+    key: "cadence.detail-later", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Job, rate, deduction, tip, and landing-account details stay for your Personal setup later.", slots: [],
+  }),
+  entry({
+    key: "cadence.save", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Save my earning rhythm", slots: [],
+  }),
+  entry({
+    key: "cadence.saved", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Timing saved. No income or contribution was added.", slots: [],
+  }),
+  entry({
     key: "charter.write", speaker: "system", surface: "button", scope: "none", announce: "none",
     text: "Write the Charter", slots: [],
   }),

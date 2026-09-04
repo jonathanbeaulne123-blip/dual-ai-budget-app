@@ -22,6 +22,7 @@ import {
   type ShiftEarningsPeriod,
   type WeatherGlass,
   type WorkJob,
+  type WorkPaySchedule,
   statusForEnvelopeAt,
   takeShiftEnvelopeIntent,
   historicalWeatherGlass,
@@ -113,6 +114,8 @@ export function WorkShiftPage({
   onImportCoworkers,
   onConfirmEnvelopeOutcome,
   onRefreshShiftEnvelopes,
+  onboardingCadenceOnly = false,
+  onRecordEarningCadence,
 }: {
   household: Household;
   view?: LedgerView;
@@ -139,6 +142,8 @@ export function WorkShiftPage({
   onImportCoworkers?: (input: import("./imports/coworkerRosterDraft.ts").CoworkerRosterImportDraft) => void;
   onConfirmEnvelopeOutcome?: (envelopeId: string, outcome: Exclude<ShiftOutcome, "worked">) => void;
   onRefreshShiftEnvelopes?: (proposals: import("./core/index.ts").ShiftEnvelopeEvidenceProposal[]) => void;
+  onboardingCadenceOnly?: boolean;
+  onRecordEarningCadence?: (schedule: WorkPaySchedule) => void;
 }) {
   const [pane, setPane] = useState<ShiftPane>("today");
   const [sealCaption, setSealCaption] = useState<string | null>(null);
@@ -174,6 +179,10 @@ export function WorkShiftPage({
   }, [environment, today]);
 
   useEffect(() => () => shiftScanScopeRef.current.cancel(), []);
+
+  useEffect(() => {
+    if (onboardingCadenceOnly) setPane("jobs");
+  }, [onboardingCadenceOnly]);
 
   useEffect(() => {
     const takeIntent = () => {
@@ -679,6 +688,8 @@ export function WorkShiftPage({
           busy={busy}
           onAskSave={onAskSaveJob}
           onArchive={onArchiveJob}
+          onboardingCadenceOnly={onboardingCadenceOnly}
+          onSaveCadence={onRecordEarningCadence}
         />
         </div>
       )}

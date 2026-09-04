@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   TIMEZONE,
+  copy,
   formatCad,
+  memberEarningSchedule,
+  onboardingCadenceProbe,
+  onboardingCadenceSentence,
   postedSevenShiftsPunchDigests,
   shapeWorkJob,
+  workPayScheduleIsValid,
   type Account,
   type Household,
   type WorkJob,
   type WorkPayCadence,
+  type WorkPaySchedule,
   type WorkRatePeriod,
   type WorkRole,
   type WorkSalesRequirement,
@@ -127,22 +133,132 @@ function ScheduleFields({ label, value, onChange }: {
       <strong>{label}</strong>
       <label>Cadence
         <select value={value.cadence} onChange={(event) => onChange({ ...value, cadence: event.target.value as WorkPayCadence })}>
-          <option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="twice-monthly">Twice monthly</option><option value="custom">Custom dates</option>
+          <option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="twice-monthly">Twice monthly</option><option value="custom">Custom dates</option><option value="irregular">No fixed rhythm</option>
         </select>
       </label>
-      <label>Anchor date<input type="date" value={value.anchorDate} onChange={(event) => onChange({ ...value, anchorDate: event.target.value })} /></label>
-      <label>Calendar reminder time<input type="time" value={value.reminderTime} onChange={(event) => onChange({ ...value, reminderTime: event.target.value })} /></label>
+      {(value.cadence === "weekly" || value.cadence === "biweekly") && (
+        <label>Anchor payday<input type="date" value={value.anchorDate} onChange={(event) => onChange({ ...value, anchorDate: event.target.value })} /></label>
+      )}
+      {value.cadence === "twice-monthly" && (
+        <div className="work-schedule-days">
+          <label>First day<input type="number" min="1" max="31" value={value.monthDays[0] ?? 15} onChange={(event) => onChange({ ...value, monthDays: [Number(event.target.value) || 1, value.monthDays[1] ?? 30] })} /></label>
+          <label>Second day<input type="number" min="1" max="31" value={value.monthDays[1] ?? 30} onChange={(event) => onChange({ ...value, monthDays: [value.monthDays[0] ?? 15, Number(event.target.value) || 1] })} /></label>
+        </div>
+      )}
+      {value.cadence === "custom" && (
+        <label>Next chosen date<input type="date" value={value.customDates[0] ?? ""} onChange={(event) => onChange({ ...value, customDates: event.target.value ? [event.target.value, ...value.customDates.slice(1)] : value.customDates.slice(1) })} /></label>
+      )}
+      {value.cadence !== "irregular" && <label>Calendar reminder time<input type="time" value={value.reminderTime} onChange={(event) => onChange({ ...value, reminderTime: event.target.value })} /></label>}
     </div>
   );
 }
 
-export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onArchive }: {
+const CADENCE_CHOICES: ReadonlyArray<{ cadence: WorkPayCadence; label: string; hint: string }> = [
+  { cadence: "weekly", label: "Every week", hint: "Same weekday" },
+  { cadence: "biweekly", label: "Every other week", hint: "Same weekday, two weeks apart" },
+  { cadence: "twice-monthly", label: "Twice a month", hint: "Two calendar dates" },
+  { cadence: "custom", label: "Dates I choose", hint: "No repeating rule" },
+  { cadence: "irregular", label: "No fixed rhythm", hint: "Paydays vary" },
+];
+
+function weekdayFor(date: string): number {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00.000Z`).getUTCDay() : 0;
+}
+
+function startingCadence(household: Household, memberId: string, today: string): WorkPaySchedule {
+  return memberEarningSchedule(household, memberId)
+    ?? household.workJobs.find((job) => job.active && job.memberId === memberId)?.paySchedule
+    ?? { ...blankJob(household, memberId, today).paySchedule, anchorDate: today, weekday: weekdayFor(today) };
+}
+
+export function EarningCadenceCard({ household, memberId, today, busy, onSave }: {
+  household: Household;
+  memberId: string;
+  today: string;
+  busy: boolean;
+  onSave: (schedule: WorkPaySchedule) => void;
+}) {
+  const memberName = household.members.find((member) => member.id === memberId)?.name ?? "You";
+  const [draft, setDraft] = useState<WorkPaySchedule>(() => structuredClone(startingCadence(household, memberId, today)));
+  const probe = onboardingCadenceProbe(household, memberId);
+  const valid = workPayScheduleIsValid(draft);
+
+  function choose(cadence: WorkPayCadence) {
+    setDraft((current) => ({
+      ...current,
+      cadence,
+      anchorDate: current.anchorDate || today,
+      weekday: weekdayFor(current.anchorDate || today),
+      monthDays: current.monthDays.length ? current.monthDays : [15, 30],
+      customDates: cadence === "custom" && current.customDates.length === 0 ? [today] : current.customDates,
+    }));
+  }
+
+  return (
+    <section className="card work-cadence-card" data-onboarding-cadence="true">
+      <header>
+        <div>
+          <p className="work-cadence-kicker">Timing only</p>
+          <h2>{copy("cadence.title")}</h2>
+        </div>
+        <span className="pill proj">No amount</span>
+      </header>
+      <p className="work-cadence-guide">{copy("cadence.guide")}</p>
+      <fieldset className="work-cadence-choices">
+        <legend>How are you usually paid?</legend>
+        {CADENCE_CHOICES.map((choice) => (
+          <button
+            key={choice.cadence}
+            type="button"
+            className={`work-cadence-choice ${draft.cadence === choice.cadence ? "is-selected" : ""}`}
+            aria-pressed={draft.cadence === choice.cadence}
+            onClick={() => choose(choice.cadence)}
+          >
+            <strong>{choice.label}</strong>
+            <span>{choice.hint}</span>
+          </button>
+        ))}
+      </fieldset>
+      {(draft.cadence === "weekly" || draft.cadence === "biweekly") && (
+        <label className="work-cadence-detail">
+          <span>One payday to anchor the rhythm</span>
+          <input type="date" value={draft.anchorDate} onChange={(event) => setDraft({ ...draft, anchorDate: event.target.value, weekday: weekdayFor(event.target.value) })} />
+        </label>
+      )}
+      {draft.cadence === "twice-monthly" && (
+        <div className="work-cadence-detail work-cadence-day-pair">
+          <label><span>First day</span><input type="number" min="1" max="31" value={draft.monthDays[0] ?? 15} onChange={(event) => setDraft({ ...draft, monthDays: [Number(event.target.value) || 1, draft.monthDays[1] ?? 30] })} /></label>
+          <label><span>Second day</span><input type="number" min="1" max="31" value={draft.monthDays[1] ?? 30} onChange={(event) => setDraft({ ...draft, monthDays: [draft.monthDays[0] ?? 15, Number(event.target.value) || 1] })} /></label>
+        </div>
+      )}
+      {draft.cadence === "custom" && (
+        <label className="work-cadence-detail">
+          <span>One payday to start with</span>
+          <input type="date" value={draft.customDates[0] ?? ""} onChange={(event) => setDraft({ ...draft, customDates: event.target.value ? [event.target.value] : [] })} />
+        </label>
+      )}
+      <div className="work-cadence-preview" role="status" aria-live="polite">
+        <span className="work-cadence-preview-mark" aria-hidden="true">●</span>
+        <span>{valid ? onboardingCadenceSentence(memberName, draft) : "Choose the timing detail above."}</span>
+      </div>
+      <p className="muted work-cadence-private">{copy("cadence.detail-later")}</p>
+      {probe.complete ? <p className="work-cadence-saved" role="status">{copy("cadence.saved")}</p> : null}
+      <button className="primary work-cadence-save" type="button" disabled={busy || !valid} onClick={() => onSave(draft)}>
+        {copy("cadence.save")}
+      </button>
+    </section>
+  );
+}
+
+export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onArchive, onboardingCadenceOnly = false, onSaveCadence }: {
   household: Household;
   memberId: string;
   today: string;
   busy: boolean;
   onAskSave: (job: WorkJob, summary: string) => void;
   onArchive: (jobId: string) => void;
+  onboardingCadenceOnly?: boolean;
+  onSaveCadence?: (schedule: WorkPaySchedule) => void;
 }) {
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.memberId === memberId), [household.workJobs, memberId]);
   const [draft, setDraft] = useState<WorkJob | null>(null);
@@ -167,6 +283,10 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
 
   function updateRate(roleId: string, rateId: string, change: (rate: WorkRatePeriod) => WorkRatePeriod) {
     updateRole(roleId, (role) => ({ ...role, rates: role.rates.map((rate) => rate.id === rateId ? change(rate) : rate) }));
+  }
+
+  if (onboardingCadenceOnly && onSaveCadence) {
+    return <EarningCadenceCard household={household} memberId={memberId} today={today} busy={busy} onSave={onSaveCadence} />;
   }
 
   if (!draft) {

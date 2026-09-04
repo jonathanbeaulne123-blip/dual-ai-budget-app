@@ -15,7 +15,7 @@ import { shapeAppointments, shapeClaims } from "./appointments.ts";
 import { shapeAccounts } from "./accountKinds.ts";
 import { mergeDevices, shapeDevices } from "./devices.ts";
 import { shapeTransactionLocation } from "./transactionLocation.ts";
-import { DEFAULT_TIMEZONE, isValidIanaTimeZone } from "./calendar.ts";
+import { DEFAULT_TIMEZONE, isValidIanaTimeZone, type DateKey } from "./calendar.ts";
 import type {
   Activity,
   BudgetPlan,
@@ -34,7 +34,7 @@ import type {
 import { ValidationError } from "./types.ts";
 import { belongsToSharedLedger, isPersonalOnly, parseVisibility } from "./visibility.ts";
 import { shapeLedgerNames } from "./ledgerNames.ts";
-import { shapeWorkJobs } from "./work.ts";
+import { shapeWorkJobs, shapeWorkSchedule, workPayScheduleIsValid } from "./work.ts";
 import { shapeCoworkerAttendance, shapeCoworkers, shapeCoworkerSchedules } from "./coworkers.ts";
 import { shapeSevenShiftsEvidenceBundle } from "./evidence.ts";
 import { shapeSevenShiftsSchedules } from "./sevenShiftsCalendar.ts";
@@ -203,7 +203,12 @@ function shapeMembers(
   context: Pick<Household, "environment" | "householdId">,
 ): Member[] {
   return (list ?? []).map((member) => {
-    const shared = memberWithoutLandingSurface(member);
+    const {
+      earningCadence: _unshapedEarningCadence,
+      earningCadenceUpdatedAt: _unshapedEarningCadenceUpdatedAt,
+      earningDetailSkippedAt: _unshapedEarningDetailSkippedAt,
+      ...shared
+    } = memberWithoutLandingSurface(member);
     const fundRail = shapeMemberRail(member.fundRail, member.id);
     const onboardingProgress = shapeMemberOnboardingProgress(member.onboardingProgress, {
       ...context,
@@ -211,6 +216,18 @@ function shapeMembers(
     });
     const glanceAccountId = shapeGlanceAccountId(member.glanceAccountId);
     const fundCardAccountId = shapeGlanceAccountId(member.fundCardAccountId);
+    const shapedEarningCadence = workPayScheduleIsValid(member.earningCadence)
+      ? shapeWorkSchedule(member.earningCadence, MISSING_ISO.slice(0, 10) as DateKey)
+      : null;
+    const earningCadence = shapedEarningCadence;
+    const earningCadenceUpdatedAt = earningCadence && typeof member.earningCadenceUpdatedAt === "string"
+      && !Number.isNaN(Date.parse(member.earningCadenceUpdatedAt))
+      ? new Date(member.earningCadenceUpdatedAt).toISOString()
+      : null;
+    const earningDetailSkippedAt = earningCadence && typeof member.earningDetailSkippedAt === "string"
+      && !Number.isNaN(Date.parse(member.earningDetailSkippedAt))
+      ? new Date(member.earningDetailSkippedAt).toISOString()
+      : null;
     return {
       ...shared,
       ...(isLandingSurface(member.landingSurface)
@@ -237,6 +254,13 @@ function shapeMembers(
             ...(typeof member.fundCardAccountUpdatedAt === "string" && member.fundCardAccountUpdatedAt
               ? { fundCardAccountUpdatedAt: member.fundCardAccountUpdatedAt }
               : {}),
+          }
+        : {}),
+      ...(earningCadence && earningCadenceUpdatedAt
+        ? {
+            earningCadence,
+            earningCadenceUpdatedAt,
+            ...(earningDetailSkippedAt ? { earningDetailSkippedAt } : {}),
           }
         : {}),
       updatedAt: member.updatedAt || fallbackIso,

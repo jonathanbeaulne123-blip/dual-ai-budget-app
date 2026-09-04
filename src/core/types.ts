@@ -40,6 +40,12 @@ export type Member = {
   fundCardAccountId?: string | null;
   /** Record-specific Personal convergence clock; never enters Shared. */
   fundCardAccountUpdatedAt?: string;
+  /** Household-visible timing only. It carries no employer, rate, account, or expected amount. */
+  earningCadence?: WorkPaySchedule;
+  /** Record-specific Shared convergence clock for `earningCadence`. */
+  earningCadenceUpdatedAt?: string;
+  /** Explicitly records that private job detail was left for the optional Personal track. */
+  earningDetailSkippedAt?: string;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
@@ -169,7 +175,7 @@ export type ShiftSettings = {
 };
 
 export type WorkTakeHomeMode = "direct" | "deductions";
-export type WorkPayCadence = "weekly" | "biweekly" | "twice-monthly" | "custom";
+export type WorkPayCadence = "weekly" | "biweekly" | "twice-monthly" | "custom" | "irregular";
 export type WorkTipOutBasis = "total-sales" | "card-tips" | "all-tips" | "fixed-shift" | "fixed-hour" | "manual";
 export type WorkTipOutTiming = "immediate" | "withheld" | "deferred";
 export type WorkSalesRequirement = "off" | "optional" | "required";

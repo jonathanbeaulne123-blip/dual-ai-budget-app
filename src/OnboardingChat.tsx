@@ -89,6 +89,8 @@ type Props = {
   onOpenHouseholdFund?: () => void;
   /** Chapter 7 opens the existing Calendar repeating-items surface. */
   onOpenRecurrences?: () => void;
+  /** Chapter 8 opens the current member's timing-only question on the Shift surface. */
+  onOpenEarningCadence?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -171,6 +173,7 @@ export function OnboardingChat({
   onOpenOpeningBalances,
   onOpenHouseholdFund,
   onOpenRecurrences,
+  onOpenEarningCadence,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -506,6 +509,8 @@ export function OnboardingChat({
     && evidence.kind !== "accepted";
   const recurrenceNeedsNavigation = chapterId === "ch-07-recurrences"
     && evidence.kind !== "accepted";
+  const cadenceNeedsNavigation = chapterId === "ch-08-cadence"
+    && evidence.kind !== "accepted";
 
   const showAction = role === "conductor"
     && !blockedCopyKey
@@ -514,6 +519,7 @@ export function OnboardingChat({
     && !openingNeedsNavigation
     && !fundNeedsNavigation
     && !recurrenceNeedsNavigation
+    && !cadenceNeedsNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
@@ -528,7 +534,12 @@ export function OnboardingChat({
     && Boolean(onOpenRecurrences);
   const showRecurrencePrimaryAction = showRecurrenceAction && recurrenceNeedsNavigation;
   const showRecurrenceOptionalAction = showRecurrenceAction && evidence.kind === "accepted";
-  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrenceAction
+  const showCadenceAction = role === "conductor"
+    && chapterId === "ch-08-cadence"
+    && cadenceNeedsNavigation
+    && !blockedCopyKey
+    && Boolean(onOpenEarningCadence);
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrenceAction || showCadenceAction
     ? SHELL_VIEW.cardToAction
     : 0;
 
@@ -627,7 +638,7 @@ export function OnboardingChat({
           )}
         </>
       )}
-      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrencePrimaryAction ? (
+      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrencePrimaryAction || showCadenceAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
@@ -645,6 +656,8 @@ export function OnboardingChat({
                       ? onOpenHouseholdFund
                     : showRecurrencePrimaryAction
                       ? onOpenRecurrences
+                    : showCadenceAction
+                      ? onOpenEarningCadence
                   : acknowledge}
           >
             {copy(showRetryAction
@@ -659,6 +672,8 @@ export function OnboardingChat({
                       ? "fund.open"
                     : showRecurrencePrimaryAction
                       ? "recurrences.open"
+                    : showCadenceAction
+                      ? "cadence.open"
                   : "continue.next")}
           </button>
           {showPersonalSkipAction ? (

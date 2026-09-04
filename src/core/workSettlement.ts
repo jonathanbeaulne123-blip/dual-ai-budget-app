@@ -8,6 +8,7 @@ function distanceDays(left: DateKey, right: DateKey): number {
 }
 
 export function workScheduleMatches(schedule: WorkPaySchedule, date: DateKey): boolean {
+  if (schedule.cadence === "irregular") return false;
   if (schedule.cadence === "custom") return schedule.customDates.includes(date);
   if (schedule.cadence === "twice-monthly") return schedule.monthDays.includes(Number(date.slice(8)));
   const days = distanceDays(schedule.anchorDate, date);
