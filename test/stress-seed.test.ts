@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   eraseDevelopmentData,
   executeHerculesReadToolPlan,
@@ -25,6 +25,10 @@ const realistic = seedStressHousehold({
 });
 
 describe("Development stress data controls", () => {
+  beforeEach(async () => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  });
+
   it("refuses to replace Production books with fictional fixture data", () => {
     expect(() => seedStressHousehold({
       today: TODAY,

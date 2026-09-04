@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
   assertDemoReplacementAllowed,
   acceptHouseholdWrite,
@@ -21,6 +21,10 @@ import {
 const TODAY = "2026-08-29" as const;
 
 describe("trustworthy synthetic Demo Suite", () => {
+  beforeEach(async () => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  });
+
   it("replays the exact same dated household and manifest from one seed", async () => {
     const first = await generateDemoSuite({ today: TODAY, seed: 8675309, buildSha: "test-sha" });
     const replay = await generateDemoSuite({ today: TODAY, seed: 8675309, buildSha: "test-sha" });

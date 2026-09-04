@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createDemoRandom, seedStressHousehold, weekdaySunday0 } from "../src/core/index.ts";
 
 const TODAY = "2026-08-29" as const;
@@ -9,6 +9,10 @@ function tipRate(shifts: ReturnType<typeof seedStressHousehold>["shifts"]): numb
 }
 
 describe("Demo Suite shift generation", () => {
+  beforeEach(async () => {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  });
+
   it("uses independent deterministic streams", () => {
     const shiftA = createDemoRandom(42, "shifts");
     const shiftB = createDemoRandom(42, "shifts");
