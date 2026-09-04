@@ -22,8 +22,12 @@ describe("Demo Suite shift generation", () => {
     expect(Array.from({ length: 8 }, () => appointments())).not.toEqual(first);
   });
 
-  it("keeps useful but non-perfect covariate signal across a seed matrix", () => {
-    const households = [17, 90210, 429496].map((seed) => seedStressHousehold({ today: TODAY, seed, environment: "development" }));
+  it("keeps useful but non-perfect covariate signal across a seed matrix", async () => {
+    const households: ReturnType<typeof seedStressHousehold>[] = [];
+    for (const seed of [17, 90210, 429496]) {
+      households.push(seedStressHousehold({ today: TODAY, seed, environment: "development" }));
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
     const all = households.flatMap((row) => row.shifts);
     const weekend = all.filter((row) => [5, 6].includes(weekdaySunday0(row.date)));
     const midweek = all.filter((row) => [1, 2, 3].includes(weekdaySunday0(row.date)));

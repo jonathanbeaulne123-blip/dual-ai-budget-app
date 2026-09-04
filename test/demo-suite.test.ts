@@ -20,13 +20,16 @@ import {
 
 const TODAY = "2026-08-29" as const;
 
+async function yieldToRunner(): Promise<void> {
+  await new Promise<void>((resolve) => setImmediate(resolve));
+}
+
 describe("trustworthy synthetic Demo Suite", () => {
-  beforeEach(async () => {
-    await new Promise<void>((resolve) => setImmediate(resolve));
-  });
+  beforeEach(yieldToRunner);
 
   it("replays the exact same dated household and manifest from one seed", async () => {
     const first = await generateDemoSuite({ today: TODAY, seed: 8675309, buildSha: "test-sha" });
+    await yieldToRunner();
     const replay = await generateDemoSuite({ today: TODAY, seed: 8675309, buildSha: "test-sha" });
     expect(replay).toEqual(first);
     expect(first.household.syntheticFixture).toMatchObject({
@@ -43,6 +46,7 @@ describe("trustworthy synthetic Demo Suite", () => {
 
   it("covers every domain engine and every Hercules Pro calculation surface", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 424242 });
+    await yieldToRunner();
     const accepted = await acceptHouseholdWrite({
       previous: null,
       candidate: generated.household,
@@ -68,6 +72,7 @@ describe("trustworthy synthetic Demo Suite", () => {
 
   it("marks any changed generated fact not-ready even when provenance is retained", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 551122, buildSha: "trust-proof" });
+    await yieldToRunner();
     const postedRow = structuredClone(generated.household);
     postedRow.transactions[0]!.note = `${postedRow.transactions[0]!.note} altered`;
 
@@ -88,6 +93,7 @@ describe("trustworthy synthetic Demo Suite", () => {
 
   it("keeps synthetic schedules proposal-only and partner-personal facts out of Shared", async () => {
     const { household, manifest } = await generateDemoSuite({ today: TODAY, seed: 10101 });
+    await yieldToRunner();
     expect(manifest.transactionCountAfterEvidence).toBe(manifest.transactionCountBeforeEvidence);
     expect(household.sevenShiftsSchedules?.length).toBeGreaterThan(0);
     expect(household.shiftEnvelopes?.some((row) => row.status === "upcoming")).toBe(true);
@@ -117,6 +123,7 @@ describe("trustworthy synthetic Demo Suite", () => {
 
   it("refuses Production and ordinary Development replacement", async () => {
     const { household } = await generateDemoSuite({ today: TODAY, seed: 2026 });
+    await yieldToRunner();
     expect(() => assertDemoReplacementAllowed({ ...household, environment: "production" })).toThrow(/Development-only/);
     expect(() => assertDemoReplacementAllowed({ ...household, syntheticFixture: null })).toThrow(/ordinary Development books/);
     expect(() => assertDemoReplacementAllowed(household)).not.toThrow();
@@ -124,6 +131,7 @@ describe("trustworthy synthetic Demo Suite", () => {
 
   it("rejects synthetic provenance outside Development and preserves it through shared merges", async () => {
     const { household } = await generateDemoSuite({ today: TODAY, seed: 8181 });
+    await yieldToRunner();
     const { shared } = splitForSync(household, "MEM-002");
     const production = { ...household, environment: "production" as const };
     expect(() => ensureHouseholdShape(production)).toThrow(/only in Development/);
@@ -145,15 +153,19 @@ describe("trustworthy synthetic Demo Suite", () => {
 
   it("uses profile as part of generation while keeping each profile replayable", async () => {
     const investor = await generateDemoSuite({ today: TODAY, seed: 9988, profile: "investor" });
+    await yieldToRunner();
     const edge = await generateDemoSuite({ today: TODAY, seed: 9988, profile: "edge" });
+    await yieldToRunner();
     expect(edge.household).not.toEqual(investor.household);
-    expect((await generateDemoSuite({ today: TODAY, seed: 9988, profile: "edge" })).household).toEqual(edge.household);
+    const replay = await generateDemoSuite({ today: TODAY, seed: 9988, profile: "edge" });
+    expect(replay.household).toEqual(edge.household);
   }, 180_000);
 
   it("uses Toronto standard and daylight offsets and derives coherent shift duration", async () => {
     expect(torontoOffsetForDate("2026-01-15")).toBe("-05:00");
     expect(torontoOffsetForDate("2026-07-15")).toBe("-04:00");
     const { household } = await generateDemoSuite({ today: TODAY, seed: 707 });
+    await yieldToRunner();
     for (const shift of household.shifts) {
       expect(shift.startedAt).toContain(torontoOffsetForDate(shift.date));
       const elapsedHours = (Date.parse(shift.endedAt!) - Date.parse(shift.startedAt!)) / 3_600_000;
