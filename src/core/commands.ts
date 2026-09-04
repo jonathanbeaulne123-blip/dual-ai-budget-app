@@ -422,6 +422,13 @@ export function recordChapterAcknowledgement(household: Household, input: {
       throw new ValidationError("Both people need to sign the current Charter before this chapter can continue.");
     }
   }
+  if (chapter.id === "ch-04-accounts") {
+    requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+    const projected = evidenceFor(household, chapter.id, input.memberId);
+    if (projected.kind !== "accepted" || projected.card.scope !== "household") {
+      throw new ValidationError("Add a Shared account and choose one Shared credit card for the Fund before continuing.");
+    }
+  }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
@@ -488,6 +495,25 @@ export function skipPersonalStep(household: Household, input: {
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
       ? { ...row, skippedAt: row.skippedAt ?? at, lastSafeResumePoint: chapter.id }
+      : row),
+    updatedAt: at,
+  }));
+}
+
+/** Record Chapter 4's optional owner-only Personal account choice without satisfying its household gate. */
+export function skipChapterFourPersonalAccounts(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  return updateMemberProgress(household, input, "Personal account setup skipped", (progress, at) => ({
+    ...progress,
+    rows: progress.rows.map((row) => row.chapterId === "ch-04-accounts"
+      ? {
+          ...row,
+          personalAccountSetupSkippedAt: row.personalAccountSetupSkippedAt ?? at,
+          lastSafeResumePoint: "ch-04-accounts",
+        }
       : row),
     updatedAt: at,
   }));
@@ -832,6 +858,52 @@ export function setHerculesProPermissions(household: Household, input: {
     "hercules-permissions-personal",
     updatedAt,
   );
+}
+
+/** Choose the acting member's Shared credit card for Fund-backed purchases without changing their glance account. */
+export function setFundCardAccount(household: Household, input: {
+  memberId: string;
+  accountId: string;
+  createdBy: string;
+}): CommitResult {
+  if (!input.createdBy) throw new ValidationError("Only you can choose your Fund card.");
+  const member = requireMember(household, input.memberId);
+  const actor = resolveActor(household, { createdBy: input.createdBy });
+  if (actor.createdBy !== member.id) throw new ValidationError("Only you can choose your Fund card.");
+  const account = requireAccount(household, input.accountId);
+  if (!account.active || account.currency !== CURRENCY || account.kind !== "credit" || account.scope === "personal") {
+    throw new ValidationError("Choose an active Shared credit card for the Fund.");
+  }
+  if (member.fundCardAccountId === account.id) {
+    return {
+      household,
+      warnings: [],
+      postedIds: [],
+      persistenceScope: "member-personal",
+      personalMemberId: member.id,
+      undo: { id: `fund-card-${member.id}-unchanged`, label: "Fund card unchanged", snapshot: household, postedIds: [] },
+    };
+  }
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const updatedAt = nowIso();
+  next.members = next.members.map((row) => row.id === member.id
+    ? { ...row, fundCardAccountId: account.id, fundCardAccountUpdatedAt: updatedAt }
+    : row);
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    persistenceScope: "member-personal",
+    personalMemberId: member.id,
+    undo: {
+      id: `fund-card-${member.id}-${updatedAt}`,
+      label: "Fund card chosen",
+      snapshot: previous,
+      postedIds: [],
+      commandKind: "fund-card-personal",
+    },
+  };
 }
 
 function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {

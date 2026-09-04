@@ -20,6 +20,8 @@ import {
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
   recordObservedChapterCompletion,
+  selfPersonalAccountsEvidenceFor,
+  skipChapterFourPersonalAccounts,
   sittingRailIndex,
   stopHouseholdOnboarding,
   taskLengthLabel,
@@ -77,6 +79,8 @@ type Props = {
   onDismiss: () => void;
   /** Chapter 3 opens the existing founding/document surface; chat never collects Charter answers. */
   onOpenCharter?: () => void;
+  /** Chapter 4 opens the existing account surface with its account form expanded. */
+  onOpenAccounts?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -154,6 +158,7 @@ export function OnboardingChat({
   onCommit,
   onDismiss,
   onOpenCharter,
+  onOpenAccounts,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -406,7 +411,15 @@ export function OnboardingChat({
   const railIndex = sittingRailIndex(chapter.sitting);
   const chapterId = chapter.id;
   const progress = memberProgress(household, memberId);
-  const probeEvidenceKey = progress.rows.find((row) => row.chapterId === chapterId)?.probeEvidenceKey ?? null;
+  const chapterProgress = progress.rows.find((row) => row.chapterId === chapterId);
+  const probeEvidenceKey = chapterProgress?.probeEvidenceKey ?? null;
+  const personalAccountsEvidence = chapterId === "ch-04-accounts"
+    ? selfPersonalAccountsEvidenceFor(household, memberId)
+    : { kind: "empty" as const };
+  const personalAccountChoicePending = chapterId === "ch-04-accounts"
+    && evidence.kind === "accepted"
+    && personalAccountsEvidence.kind === "empty"
+    && !chapterProgress?.personalAccountSetupSkippedAt;
   const noticeEventKey = probeEvidenceKey
     ?? (evidence.kind === "accepted" ? noticedEvidenceKey(evidence.card) : null);
   const noticeKey = noticeEventKey ? `${progress.id}:${chapterId}:${noticeEventKey}` : null;
@@ -430,15 +443,23 @@ export function OnboardingChat({
   const charterNeedsNavigation = charterPresentation.kind === "write"
     || charterPresentation.kind === "open"
     || charterPresentation.kind === "review";
+  const accountsNeedNavigation = chapterId === "ch-04-accounts"
+    && !blockedCopyKey
+    && (evidence.kind !== "accepted" || personalAccountChoicePending);
 
   const showAction = role === "conductor"
     && !blockedCopyKey
     && !charterNeedsNavigation
+    && !accountsNeedNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
   const showCharterAction = role === "conductor" && charterNeedsNavigation && Boolean(onOpenCharter);
-  const cardMarginBottom = showAction || showRetryAction || showCharterAction ? SHELL_VIEW.cardToAction : 0;
+  const showAccountsAction = role === "conductor" && accountsNeedNavigation && Boolean(onOpenAccounts);
+  const showPersonalSkipAction = showAccountsAction && personalAccountChoicePending;
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction
+    ? SHELL_VIEW.cardToAction
+    : 0;
 
   function acknowledge() {
     if (autoCompletable && householdScopeObservation) {
@@ -451,6 +472,13 @@ export function OnboardingChat({
       return;
     }
     onCommit((current) => recordChapterAcknowledgement(current, { memberId, chapterId, createdBy: memberId }));
+  }
+
+  function skipPersonalAccounts() {
+    onCommit((current) => skipChapterFourPersonalAccounts(current, {
+      memberId,
+      createdBy: memberId,
+    }));
   }
 
   return (
@@ -502,6 +530,12 @@ export function OnboardingChat({
               <p className="onboarding-card-label">{waitingForPartner ? "Waiting together" : "Held up"}</p>
               <p className="onboarding-card-task">{copy(blockedCopyKey, blockedCopySlots)}</p>
             </section>
+          ) : personalAccountChoicePending ? (
+            <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
+              <p className="onboarding-card-label">Your Personal books</p>
+              <p className="onboarding-card-task">{copy("accounts.personal.offer")}</p>
+              <p className="onboarding-card-provenance">{copy("accounts.personal.provenance")}</p>
+            </section>
           ) : evidence.kind === "accepted" ? (
             <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
               <p className="onboarding-card-label">{evidenceCardLabel(evidence.card.kind)}</p>
@@ -522,20 +556,38 @@ export function OnboardingChat({
           )}
         </>
       )}
-      {showAction || showRetryAction || showCharterAction ? (
+      {showAction || showRetryAction || showCharterAction || showAccountsAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
             disabled={busy}
             style={{ minHeight: SHELL_VIEW.navButtonHeight }}
-            onClick={showRetryAction ? retryHouseholdScopeProbe : showCharterAction ? onOpenCharter : acknowledge}
+            onClick={showRetryAction
+              ? retryHouseholdScopeProbe
+              : showCharterAction
+                ? onOpenCharter
+                : showAccountsAction
+                  ? onOpenAccounts
+                  : acknowledge}
           >
             {copy(showRetryAction
               ? "probe.retry"
               : showCharterAction
                 ? charterPresentation.copyKey
-                : "continue.next")}
+                : showAccountsAction
+                  ? "accounts.open"
+                  : "continue.next")}
           </button>
+          {showPersonalSkipAction ? (
+            <button
+              type="button"
+              disabled={busy}
+              style={{ minHeight: SHELL_VIEW.navButtonHeight }}
+              onClick={skipPersonalAccounts}
+            >
+              {copy("skip.personal")}
+            </button>
+          ) : null}
         </div>
       ) : null}
       <div className="onboarding-foot" style={{ marginTop: SHELL_VIEW.actionToFoot }}>

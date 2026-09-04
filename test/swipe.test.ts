@@ -25,6 +25,8 @@ import {
   projectLedgerExperience,
   resolveSwipeCardAccount,
   reversePostedMoney,
+  setFundCardAccount,
+  setGlanceAccount,
   undoLedgerConfirm,
   swipeBelongsOnSharedHome,
   swipeCategoryAccessibleName,
@@ -188,6 +190,21 @@ describe("swipe selectors", () => {
     expect(resolveSwipeCardAccount(scoped(remembered), BIANCA)).toEqual({ kind: "ready", accountId: "ACC-MC" });
     const stale = archiveAccount(remembered, "ACC-MC").household;
     expect(resolveSwipeCardAccount(scoped(stale), BIANCA)).toEqual({ kind: "ready", accountId: "ACC-VISA" });
+  });
+
+  it("uses the member's explicit Shared card choice before guessing among cards", () => {
+    const glanceOnly = setGlanceAccount(configuredFund(), {
+      memberId: BIANCA,
+      accountId: "ACC-MC",
+      createdBy: BIANCA,
+    }).household;
+    expect(resolveSwipeCardAccount(scoped(glanceOnly), BIANCA).kind).toBe("ambiguous");
+    const household = setFundCardAccount(glanceOnly, {
+      memberId: BIANCA,
+      accountId: "ACC-MC",
+      createdBy: BIANCA,
+    }).household;
+    expect(resolveSwipeCardAccount(scoped(household), BIANCA)).toEqual({ kind: "ready", accountId: "ACC-MC" });
   });
 
   it("ignores non-CAD and partner-Personal credit candidates", () => {

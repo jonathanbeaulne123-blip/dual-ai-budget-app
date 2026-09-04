@@ -209,6 +209,7 @@ function shapeMembers(
       memberId: member.id,
     });
     const glanceAccountId = shapeGlanceAccountId(member.glanceAccountId);
+    const fundCardAccountId = shapeGlanceAccountId(member.fundCardAccountId);
     return {
       ...shared,
       ...(isLandingSurface(member.landingSurface)
@@ -226,6 +227,14 @@ function shapeMembers(
             glanceAccountId,
             ...(typeof member.glanceAccountUpdatedAt === "string" && member.glanceAccountUpdatedAt
               ? { glanceAccountUpdatedAt: member.glanceAccountUpdatedAt }
+              : {}),
+          }
+        : {}),
+      ...(fundCardAccountId
+        ? {
+            fundCardAccountId,
+            ...(typeof member.fundCardAccountUpdatedAt === "string" && member.fundCardAccountUpdatedAt
+              ? { fundCardAccountUpdatedAt: member.fundCardAccountUpdatedAt }
               : {}),
           }
         : {}),
@@ -507,6 +516,14 @@ export function splitForSync(household: Household, memberId: string): { shared: 
             : {}),
         }
       : {}),
+    ...(shapeGlanceAccountId(personalMember?.fundCardAccountId)
+      ? {
+          fundCardAccountId: shapeGlanceAccountId(personalMember?.fundCardAccountId),
+          ...(personalMember?.fundCardAccountUpdatedAt
+            ? { fundCardAccountUpdatedAt: personalMember.fundCardAccountUpdatedAt }
+            : {}),
+        }
+      : {}),
     accounts: personalAccounts,
     lastCommittedAt: shaped.lastCommittedAt,
     transactions: personalTx,
@@ -584,6 +601,12 @@ export function personalEnvelopeFromPayload(
       && row.glanceAccountUpdatedAt
       ? row.glanceAccountUpdatedAt
       : undefined,
+    fundCardAccountId: shapeGlanceAccountId(row.fundCardAccountId),
+    fundCardAccountUpdatedAt: shapeGlanceAccountId(row.fundCardAccountId)
+      && typeof row.fundCardAccountUpdatedAt === "string"
+      && row.fundCardAccountUpdatedAt
+      ? row.fundCardAccountUpdatedAt
+      : undefined,
     accounts,
     transactions: Array.isArray(row.transactions)
       ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
@@ -647,6 +670,7 @@ export function overlayPersonalReplica(
         memberId,
       });
       const glanceAccountId = shapeGlanceAccountId(personal.glanceAccountId);
+      const fundCardAccountId = shapeGlanceAccountId(personal.fundCardAccountId);
       return {
         ...memberWithoutLandingSurface(member),
         ...(isLandingSurface(personal.landingSurface)
@@ -662,6 +686,14 @@ export function overlayPersonalReplica(
               glanceAccountId,
               ...(personal.glanceAccountUpdatedAt
                 ? { glanceAccountUpdatedAt: personal.glanceAccountUpdatedAt }
+                : {}),
+            }
+          : {}),
+        ...(fundCardAccountId
+          ? {
+              fundCardAccountId,
+              ...(personal.fundCardAccountUpdatedAt
+                ? { fundCardAccountUpdatedAt: personal.fundCardAccountUpdatedAt }
                 : {}),
             }
           : {}),
@@ -782,6 +814,7 @@ export function assembleHousehold(
         memberId: member.id,
       });
       const glanceAccountId = shapeGlanceAccountId(personal?.glanceAccountId);
+      const fundCardAccountId = shapeGlanceAccountId(personal?.fundCardAccountId);
       return {
         ...memberWithoutLandingSurface(member),
         ...(isLandingSurface(personal?.landingSurface)
@@ -797,6 +830,14 @@ export function assembleHousehold(
               glanceAccountId,
               ...(personal?.glanceAccountUpdatedAt
                 ? { glanceAccountUpdatedAt: personal.glanceAccountUpdatedAt }
+                : {}),
+            }
+          : {}),
+        ...(fundCardAccountId
+          ? {
+              fundCardAccountId,
+              ...(personal?.fundCardAccountUpdatedAt
+                ? { fundCardAccountUpdatedAt: personal.fundCardAccountUpdatedAt }
                 : {}),
             }
           : {}),
@@ -979,6 +1020,16 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
         : serverGlanceClock > clientGlanceClock ? server
           : clientGlanceAccountId > serverGlanceAccountId ? client : server;
   const glanceAccountId = shapeGlanceAccountId(glanceSource.glanceAccountId);
+  const serverFundCardAccountId = shapeGlanceAccountId(server.fundCardAccountId);
+  const clientFundCardAccountId = shapeGlanceAccountId(client.fundCardAccountId);
+  const serverFundCardClock = server.fundCardAccountUpdatedAt || server.lastCommittedAt || "";
+  const clientFundCardClock = client.fundCardAccountUpdatedAt || client.lastCommittedAt || "";
+  const fundCardSource = !serverFundCardAccountId ? client
+    : !clientFundCardAccountId ? server
+      : clientFundCardClock > serverFundCardClock ? client
+        : serverFundCardClock > clientFundCardClock ? server
+          : clientFundCardAccountId > serverFundCardAccountId ? client : server;
+  const fundCardAccountId = shapeGlanceAccountId(fundCardSource.fundCardAccountId);
   return {
     kind: "personal",
     memberId,
@@ -997,6 +1048,14 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
           glanceAccountId,
           ...((glanceSource.glanceAccountUpdatedAt || glanceSource.lastCommittedAt)
             ? { glanceAccountUpdatedAt: glanceSource.glanceAccountUpdatedAt || glanceSource.lastCommittedAt || undefined }
+            : {}),
+        }
+      : {}),
+    ...(fundCardAccountId
+      ? {
+          fundCardAccountId,
+          ...((fundCardSource.fundCardAccountUpdatedAt || fundCardSource.lastCommittedAt)
+            ? { fundCardAccountUpdatedAt: fundCardSource.fundCardAccountUpdatedAt || fundCardSource.lastCommittedAt || undefined }
             : {}),
         }
       : {}),

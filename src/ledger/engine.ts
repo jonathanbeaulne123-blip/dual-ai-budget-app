@@ -15,6 +15,10 @@ import { hostedTransportAllowed } from "../core/sharing.ts";
 import { pushSupabaseHousehold, probeSupabase } from "./supabase.ts";
 import { measureHearth } from "../performanceMetrics.ts";
 import {
+  BrowserBooksOpenTimeoutError,
+  withBrowserBooksOpenDeadline,
+} from "./booksOpenDeadline.ts";
+import {
   shapeHouseholdFundConfig,
   shapeHouseholdFundEvents,
   shapeHouseholdFundKittyAllocations,
@@ -377,7 +381,8 @@ export async function getBrowserBooks(environment: Environment = "development"):
   const opening = browserDbOpenings.get(environment);
   if (opening) return opening;
   let nextOpening!: Promise<BooksDatabase>;
-  nextOpening = measureHearth("hearth:books:open-migrate", async () => {
+  let worker: Worker | null = null;
+  const rawOpening = measureHearth("hearth:books:open-migrate", async () => {
     const persist = typeof indexedDB !== "undefined";
     const canUseWorker = persist
       && typeof window !== "undefined"
@@ -390,8 +395,9 @@ export async function getBrowserBooks(environment: Environment = "development"):
           const [{ PGliteWorker }] = await Promise.all([
             import("@electric-sql/pglite/worker"),
           ]);
+          worker = new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` });
           return PGliteWorker.create(
-            new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` }),
+            worker,
             { dataDir: booksIdbName(environment), id: `hearth-books-${environment}` },
           );
         })()
@@ -406,6 +412,9 @@ export async function getBrowserBooks(environment: Environment = "development"):
     }
     browserDbs.set(environment, db);
     return db;
+  });
+  nextOpening = withBrowserBooksOpenDeadline(rawOpening, {
+    onTimeout: () => worker?.terminate(),
   });
   browserDbOpenings.set(environment, nextOpening);
   try {
@@ -562,6 +571,7 @@ export function hostedFailureStatus(
 }
 
 export type BooksRecoveryIssue =
+  | "local-engine-busy"
   | "missing-schema"
   | "incomplete-migration"
   | "invalid-stored-data"
@@ -795,7 +805,9 @@ async function inspectBrowserBooksAttempt(
       }
     }
     const message = caught instanceof Error ? caught.message : "The books engine could not be inspected.";
-    const issue: BooksRecoveryIssue = /migration/i.test(message)
+    const issue: BooksRecoveryIssue = caught instanceof BrowserBooksOpenTimeoutError
+      ? "local-engine-busy"
+      : /migration/i.test(message)
       ? "incomplete-migration"
       : /unbalanced|invalid/i.test(message)
         ? "invalid-stored-data"

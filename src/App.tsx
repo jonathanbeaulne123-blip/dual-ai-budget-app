@@ -255,6 +255,7 @@ import {
   type SyncPilotTracePhase,
   type SyncPilotTransport,
 } from "./syncPilotDiagnostics.ts";
+import { copySyncClockCalibration } from "./syncClock.ts";
 
 function makeBooksAdapters(input: {
   environment: import("./core/types.ts").Environment;
@@ -624,7 +625,7 @@ export function App() {
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
-  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund-register" | null>(null);
+  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund-register" | "wallet" | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
@@ -4254,6 +4255,21 @@ export function App() {
     return `Started clean latency run ${run.runHash}. Use this phone as the receiver, keep it visible, and collect exactly 100 Shared writes.`;
   }
 
+  async function copyPilotClockCalibration(): Promise<string> {
+    const current = householdRef.current;
+    const who = sessionRef.current?.memberId;
+    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) {
+      throw new Error("Proof clock calibration is available only in the Development pilot build.");
+    }
+    const calibration = await copySyncClockCalibration({
+      environment,
+      householdId: current.householdId,
+      memberId: who,
+      deviceId: localDeviceId(),
+    });
+    return `Copied authenticated proof clock · offset ${calibration.offsetMs} ms · uncertainty ${calibration.uncertaintyMs} ms.`;
+  }
+
   function traceSyncPilot(
     phase: SyncPilotTracePhase,
     details?: {
@@ -6138,6 +6154,7 @@ export function App() {
             onSoftPresenceOptOut={applySoftPresenceOptOut}
             onCopySyncDiagnostic={syncPilotDiagnosticsEnabled(environment) ? copyPilotSyncDiagnostic : undefined}
             onStartSyncDiagnostic={syncPilotDiagnosticsEnabled(environment) ? startPilotSyncDiagnostic : undefined}
+            onCopySyncClockCalibration={syncPilotDiagnosticsEnabled(environment) ? copyPilotClockCalibration : undefined}
             onLeaveHousehold={async () => {
               await removeHouseholdFromDevice({
                 householdId: household.householdId,
@@ -7096,6 +7113,12 @@ export function App() {
         onOpenCharter={() => {
           if (household.charter) setCharterPageOpen(true);
           else setCharterFoundingOpen(true);
+        }}
+        onOpenAccounts={() => {
+          rememberSession({ memberId: session.memberId, view: "personal", householdId: household.householdId });
+          setFocusedAccountId(null);
+          setBooksPaneRequest("wallet");
+          goTab("ledger");
         }}
         onOpenSource={(source: HerculesNumberSource) => {
           setHerculesSourceFocus(source);

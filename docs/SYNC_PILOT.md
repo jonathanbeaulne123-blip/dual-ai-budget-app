@@ -1,6 +1,6 @@
 # Ledger-native “Google Docs feel” Development pilot
 
-> **Status — 2026-09-04:** the deployed D-180/D-186 pilot remains unproven through the complete live signed-in matrix and fourteen-day rehearsal. D-208's online-required commit boundary is on `main`; D-211's truthful Personal-and-Shared cloud-ledger naming and fresh live latency proof remain a release candidate until separately merged and deployed.
+> **Status — 2026-09-04:** the deployed D-180/D-186 pilot remains unproven through the complete live signed-in matrix and fourteen-day rehearsal. D-208's online-required commit boundary is on `main`; D-213's truthful Personal-and-Shared cloud-ledger naming and fresh live latency proof remain a release candidate until separately merged and deployed.
 
 ## Entry and household-identity repair — Development deployed
 
@@ -28,7 +28,7 @@ The pilot kitchen build must contain all five exact behavior settings:
 
 `VITE_SYNC_PILOT_DIAGNOSTICS=1` enables the Development-only local diagnostic. Production discovery, transport, Realtime, and diagnostics must remain refused. The Production code path stays in source for a separate approved packet.
 
-No new API, table, migration, secret, provider setting, or hosted-data mutation is part of this pilot. Migration 017 session/device membership is cloud authority. `household.devices` is soft presence only. Revocation denies cloud access; it cannot remotely erase books already cached by an offline browser.
+The only pilot-support API added after the original boundary is D-212's read-only `POST /sync/clock`. It verifies the existing Supabase bearer and exact Development membership and returns only cloud receive/send milliseconds for privacy-safe NTP-style calibration. It adds no table, migration, secret, provider setting, or hosted-data mutation. Migration 017 session/device membership remains cloud authority. `household.devices` is soft presence only. Revocation denies cloud access; it cannot remotely erase books already cached by an offline browser.
 
 ## Normal command and recovery paths
 
@@ -49,6 +49,7 @@ Snapshots are reserved for first household creation, initial device catch-up, a 
 - Cached books remain readable offline. Personal and Shared Confirm are read-only for a cloud-backed household until connectivity and matching Google Auth return; no locally accepted cloud-backed tip waits to publish later.
 - A failed or response-lost hosted attempt leaves the prior active PGlite projection and visible/durable household unchanged. Its slim marker and isolated staged candidate remain until the same command is replayed or its exact receipt is confirmed, so no ambiguous response is labelled “nothing posted.” Startup and every ordinary catch-up use the same stable Shared/Personal pairing as ambiguous recovery; both scopes are adopted together, and writes reopen only for the exact proven environment/household/member/revision tuple. A missing Personal read retains the marker and blocks Confirm. A definitive CAS conflict never auto-republishes: after the stable cloud pair is known, its canonical projection is validated, repaired, verified, and persisted before that exact queued/staged generation is compare-cancelled; a local repair failure retains the marker. The rejected row cannot return through later replay, and the person must Confirm again. Manual Retry remains blocked until its successful delivery is followed by paired adoption. Revision-only Realtime dedupe cannot skip differing Personal facts. Confirm, canonical installation, switching, and local clearing share one serialized lane, and an awaited install remains bound to its starting household, scope, and outbox generation. A scope switch or destructive clear invalidates it immediately. A Realtime command immediately schedules a paired refresh before the next write.
 - An incomplete schema-version migration repairs from an exact synchronized, revision-anchored receipt. A pre-launch in-flight tip can bridge the old crash window only when one durable generation exactly binds to the accepted snapshot. An arbitrary projection mismatch remains read-only until the person explicitly restores an authenticated, stable-revision pairing of Shared and signed-in Personal through isolated PGlite validation; pending work or unresolved conflicts refuse replacement.
+- A browser-books worker that does not finish opening/migrating within twelve seconds is retired. Hearth reports an explicit local-books retry state and preserves both IndexedDB and the accepted snapshot; timeout alone never clears or replaces either.
 
 ## Preflight before an approved deployment
 
@@ -107,6 +108,8 @@ Latency-only failure may degrade to the honest polling fallback. Polling must re
 ### Readiness 4 evidence evaluator
 
 [`SYNC_DAILY_PROOF_TEMPLATE.md`](SYNC_DAILY_PROOF_TEMPLATE.md) defines the D-210 exact-release, privacy-safe operator ledger and local `pnpm sync:proof:collect` evaluator. It requires 100 fresh Realtime samples split at least 50 in each participant direction, authenticated cloud-clock calibration before and after the run on both devices, plus separately bound reconnect, poll-recovery, and relaunch/outbox evidence. The evaluator uses a conservative clock-uncertainty upper bound and emits only an operator-review candidate; it cannot witness real devices or independently earn the live pilot claim. Running the real two-account scenario remains separately authorized.
+
+D-212 supplies that calibration through **More → Pairing → Advanced recovery → Copy proof clock calibration**. Each device performs five authenticated NTP-style probes, subtracts server-side Auth processing, keeps the lowest-uncertainty result, and copies only one hashed-device calibration row. A result above 50 ms is refused rather than rounded into evidence.
 
 ## Fourteen-day Development rehearsal
 

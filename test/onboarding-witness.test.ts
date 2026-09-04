@@ -18,6 +18,7 @@ import {
   recordChapterAcknowledgement,
   recordObservedChapterCompletion,
   signHouseholdCharter,
+  selfPersonalAccountsEvidenceFor,
   witnessStatusRows,
   witnessEvidenceFor,
   type EvidenceCard,
@@ -357,13 +358,8 @@ describe("OnboardingWitness — rendering", () => {
 describe("the witness surface, inside the shell", () => {
   it("witnesses a partner chapter with the custodian's name, no action row, and household-scoped evidence only — never the viewer's own self-personal fact", () => {
     let household = throughSittingOne();
-    // Jonathan opens a personal account of his own. accountsEvidence()
-    // resolves ch-04's projection for *whoever is asking* — here, Jonathan
-    // himself — so this is the one fixture that can make evidenceFor() and
-    // witnessEvidenceFor() actually diverge for the same viewer: the
-    // conductor-style resolver falls back to a viewer's own self-personal
-    // evidence when no household card is ready yet, and witnessOnly must
-    // refuse that fallback.
+    // Jonathan opens a Personal account of his own. It remains available to
+    // his owner-only projector, never to Chapter 4's household resolver.
     household = addAccount(household, {
       name: "Jonathan's side cash",
       kind: "chequing",
@@ -371,12 +367,11 @@ describe("the witness surface, inside the shell", () => {
       scope: "personal",
     }).household;
 
-    // Confirm the fixture is meaningful: the conductor-style resolver really
-    // would surface it, so witnessEvidenceFor refusing it below is a real
-    // guard, not a vacuous pass.
     const conductorStyle = evidenceFor(household, "ch-04-accounts", JONATHAN);
-    expect(conductorStyle.kind).toBe("accepted");
-    expect(conductorStyle.kind === "accepted" && conductorStyle.card.lines.some((line) => line.label.includes("Jonathan's side cash"))).toBe(true);
+    expect(conductorStyle.kind).toBe("empty");
+    const personalStyle = selfPersonalAccountsEvidenceFor(household, JONATHAN);
+    expect(personalStyle.kind).toBe("accepted");
+    expect(personalStyle.kind === "accepted" && personalStyle.card.lines.some((line) => line.label.includes("Jonathan's side cash"))).toBe(true);
 
     const witnessStyle = witnessEvidenceFor(household, "ch-04-accounts", JONATHAN);
     expect(witnessStyle.kind).toBe("empty");

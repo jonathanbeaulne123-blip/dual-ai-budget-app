@@ -197,6 +197,22 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "Your Charter puts the household's shared rules in your own words. Write it together, then each sign your own line.", slots: [],
   }),
   entry({
+    key: "onboarding.household.ch-04-accounts", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Tell me which accounts the household actually uses. Add at least one Shared account and choose one Shared credit card for the Fund.", slots: [],
+  }),
+  entry({
+    key: "accounts.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open accounts", slots: [],
+  }),
+  entry({
+    key: "accounts.personal.offer", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Want to add your own accounts too? They stay in your Personal books, or you can leave them for later.", slots: [],
+  }),
+  entry({
+    key: "accounts.personal.provenance", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Visible only in your Personal books.", slots: [],
+  }),
+  entry({
     key: "charter.write", speaker: "system", surface: "button", scope: "none", announce: "none",
     text: "Write the Charter", slots: [],
   }),
