@@ -996,7 +996,7 @@ describe("Sign out continuity wipe", () => {
       ...newer,
       generation: "2:newer-idb",
       confirmationIds: ["newer-idb"],
-      updatedAt: new Date(Date.parse(older.updatedAt) + 1_000).toISOString(),
+      updatedAt: older.updatedAt,
     }]);
 
     await hydrateContinuityOutbox("development");
@@ -1004,6 +1004,38 @@ describe("Sign out continuity wipe", () => {
     expect(listContinuityOutbox("development")).toMatchObject([{
       tipRevision: 2,
       confirmationIds: ["newer-idb"],
+    }]);
+  });
+
+  it("hydrates a newer localStorage generation over stale IndexedDB at the same time", async () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    const previous = { ...googleHousehold(), householdId: "HH-DURABLE-INVERSE", revision: 1 };
+    const older = enqueueContinuitySnapshot({
+      identity,
+      household: previous,
+      expectedRevision: 0,
+      confirmationId: "older-idb",
+    });
+    const newerHousehold = { ...previous, revision: 2, baseRevision: 1 };
+    const newer = enqueueContinuitySnapshot({
+      identity,
+      household: newerHousehold,
+      expectedRevision: 1,
+      confirmationId: "newer-local",
+    });
+    setContinuityStore(null);
+    vi.stubGlobal("localStorage", store);
+    setContinuityIdbReadForTests(async () => [{
+      ...older,
+      updatedAt: newer.updatedAt,
+    }]);
+
+    await hydrateContinuityOutbox("development");
+
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      tipRevision: 2,
+      confirmationIds: ["older-idb", "newer-local"],
     }]);
   });
 

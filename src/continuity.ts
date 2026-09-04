@@ -296,7 +296,7 @@ function mergeOutboxSources(sources: ContinuityOutboxItem[]): ContinuityOutboxIt
   const byId = new Map<string, ContinuityOutboxItem>();
   for (const item of sources) {
     const existing = byId.get(item.id);
-    if (!existing || item.updatedAt > existing.updatedAt) {
+    if (!existing || compareOutboxFreshness(item, existing) > 0) {
       const snapshot = item.snapshot
         ?? (existing && sameOutboxGeneration(existing, item) ? existing.snapshot : undefined);
       byId.set(item.id, snapshot ? { ...item, snapshot } : item);
@@ -310,6 +310,21 @@ function mergeOutboxSources(sources: ContinuityOutboxItem[]): ContinuityOutboxIt
     }
   }
   return [...byId.values()];
+}
+
+function compareOutboxFreshness(left: ContinuityOutboxItem, right: ContinuityOutboxItem): number {
+  if (left.tipRevision !== right.tipRevision) return left.tipRevision - right.tipRevision;
+  const leftConfirmations = new Set(left.confirmationIds);
+  const rightConfirmations = new Set(right.confirmationIds);
+  const leftDominates = [...rightConfirmations].every((id) => leftConfirmations.has(id));
+  const rightDominates = [...leftConfirmations].every((id) => rightConfirmations.has(id));
+  if (leftDominates !== rightDominates) return leftDominates ? 1 : -1;
+  if (left.confirmationIds.length !== right.confirmationIds.length) {
+    return left.confirmationIds.length - right.confirmationIds.length;
+  }
+  const timeOrder = left.updatedAt.localeCompare(right.updatedAt);
+  if (timeOrder !== 0) return timeOrder;
+  return (left.generation ?? "").localeCompare(right.generation ?? "");
 }
 
 function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDurable[]): boolean {
