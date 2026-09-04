@@ -23,7 +23,7 @@ The pilot kitchen build must contain all five exact behavior settings:
 - `VITE_SUPABASE_AUTH_ENABLED=1`
 - `VITE_CONTINUITY_REALTIME=1`
 - `VITE_CONTINUITY_COMMAND_LOG=1`
-- effective `VITE_SHARED_ONLINE_REQUIRED=1` (the source defaults Development to `1`; explicit `0` is the rollback switch)
+- `VITE_SHARED_ONLINE_REQUIRED=1`
 - `VITE_PRODUCTION_CONTINUITY=0`
 
 `VITE_SYNC_PILOT_DIAGNOSTICS=1` enables the Development-only local diagnostic. Production discovery, transport, Realtime, and diagnostics must remain refused. The Production code path stays in source for a separate approved packet.

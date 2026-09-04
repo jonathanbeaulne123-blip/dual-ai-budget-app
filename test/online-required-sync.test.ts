@@ -8,8 +8,7 @@ import {
 } from "../src/onlineRequiredSync.ts";
 
 describe("online-required shared sync policy", () => {
-  it("defaults on for Development, allows an explicit rollback, and never enables Production", () => {
-    expect(onlineRequiredSharedSyncEnabled("development")).toBe(true);
+  it("is an explicit Development-only launch policy", () => {
     expect(onlineRequiredSharedSyncEnabled("development", "1")).toBe(true);
     expect(onlineRequiredSharedSyncEnabled("development", "0")).toBe(false);
     expect(onlineRequiredSharedSyncEnabled("production", "1")).toBe(false);

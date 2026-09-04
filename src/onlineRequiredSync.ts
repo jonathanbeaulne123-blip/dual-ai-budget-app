@@ -10,14 +10,12 @@ export const ONLINE_REQUIRED_PENDING_MESSAGE =
   "Hearth is finishing an earlier shared change. Wait for Up to date, then Confirm.";
 
 /**
- * Launch safety mode. Development defaults to online-required so a missing
- * build variable cannot silently restore local-first shared writes. An explicit
- * `0` remains a rollback switch. Production stays outside this policy until its
- * separate continuity gate is authorized and proven.
+ * Launch safety mode. It is intentionally Development-only until the separate
+ * Production continuity gate is authorized and proven.
  */
 export function onlineRequiredSharedSyncEnabled(
   environment: Environment,
-  configured = String(import.meta.env.VITE_SHARED_ONLINE_REQUIRED ?? "1"),
+  configured = String(import.meta.env.VITE_SHARED_ONLINE_REQUIRED ?? ""),
 ): boolean {
   return environment === "development" && configured === "1";
 }
