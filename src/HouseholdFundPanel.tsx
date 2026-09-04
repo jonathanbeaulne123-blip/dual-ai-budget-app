@@ -2,14 +2,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   activeHouseholdFundEvents,
   allocateHouseholdFundSurplus,
+  approveHouseholdFundConfiguration,
   bindHouseholdFundBackingAccount,
   configureHouseholdFund,
   confirmHouseholdFundContribution,
   confirmHouseholdFundSettlement,
   formatCad,
   formatDateLabel,
+  copy,
   holdHouseholdFundContribution,
   HOUSEHOLD_FUND_HOLD_COPY,
+  HOUSEHOLD_FUND_SETUP_RULES,
+  householdFundConfigurationApprovalState,
   householdFundContributionMotions,
   householdFundMotionActorActions,
   LEDGER_CUSTODY_DISCLOSURE,
@@ -203,7 +207,13 @@ export function HouseholdFundPanel({
   const projection = useMemo(() => projectHouseholdFund(household, today), [household, today]);
   const events = shapeHouseholdFundEvents(household.fundEvents).slice().reverse();
   const isCustodian = fund?.custodianMemberId === memberId;
-  const member = household.members.find((row) => row.id === memberId);
+  const setupCustodianId = household.charter?.custodianMemberId
+    ?? household.members.find((row) => row.active)?.id
+    ?? null;
+  const approvalState = householdFundConfigurationApprovalState(household);
+  const currentApproval = approvalState?.approvals.find((row) => (
+    row.memberId === memberId && row.revision === approvalState.revision
+  ));
   const [contributionAmount, setContributionAmount] = useState("");
   const [settlementAmount, setSettlementAmount] = useState("");
   const [allocationEdits, setAllocationEdits] = useState<Record<string, string>>({});
@@ -270,11 +280,20 @@ export function HouseholdFundPanel({
         <header><h2>Household Fund</h2><span className="muted">September practice · opens at $0.00</span></header>
         <p>Set aside part of Bianca’s existing savings as the shared operating pool. It is a Hearth subledger, not a bank account.</p>
         <p className="muted">{LEDGER_CUSTODY_DISCLOSURE}</p>
-        {member?.name.toLowerCase().includes("bianca") ? (
-          <button className="primary" type="button" onClick={() => onCommand((current) => configureHouseholdFund(current, { custodianMemberId: memberId, createdBy: memberId, openedOn: today }))}>
-            Confirm $0.00 practice fund
+        {setupCustodianId === memberId ? (
+          <button
+            className="primary"
+            type="button"
+            style={MOTION_ACTION_SIZE}
+            onClick={() => onCommand((current) => configureHouseholdFund(current, {
+              custodianMemberId: memberId,
+              createdBy: memberId,
+              openedOn: today,
+            }))}
+          >
+            {copy("fund.configure")}
           </button>
-        ) : <p className="muted">Bianca confirms the opening because she is the savings custodian.</p>}
+        ) : <p className="muted">{copy("waiting.partner", { name: memberName(household, setupCustodianId) })}</p>}
       </section>
     );
   }
@@ -284,6 +303,40 @@ export function HouseholdFundPanel({
       <section className="card">
         <header><h2>{fund.name}</h2><span className="muted">{fund.mode === "practice" ? "Practice · manual evidence" : "Connected · read-only evidence"}</span></header>
         <p className="fund-disclosure">The money remains in Bianca’s savings. Hearth cannot move it.</p>
+        <div className="fund-setup-review" aria-label="Household Fund setup for approval">
+          <div className="row"><span>Custodian</span><strong>{memberName(household, fund.custodianMemberId)}</strong></div>
+          <div className="row"><span>Backing account</span><strong>{copy("fund.backing.private")}</strong></div>
+          <div className="row"><span>Operating accounts</span><strong>{sharedDestinations.map((account) => account.name).join(", ") || "None yet"}</strong></div>
+          <div className="row"><span>Rules</span><strong>{HOUSEHOLD_FUND_SETUP_RULES.join(" ")}</strong></div>
+          {household.members.filter((row) => row.active).map((row) => {
+            const approval = approvalState?.approvals.find((candidate) => (
+              candidate.memberId === row.id && candidate.revision === approvalState.revision
+            ));
+            return (
+              <div className="row" key={row.id}>
+                <span>{row.name}</span>
+                <strong>{approval ? `Approved ${approval.approvedAt.slice(0, 10)}` : "Waiting for approval"}</strong>
+              </div>
+            );
+          })}
+        </div>
+        <p className="muted">{copy("fund.approval.explain")}</p>
+        {currentApproval ? (
+          <p className="fund-motion-status" role="status">{copy("fund.approval.current")}</p>
+        ) : (
+          <button
+            className="primary"
+            type="button"
+            style={MOTION_ACTION_SIZE}
+            onClick={() => onCommand((current) => approveHouseholdFundConfiguration(current, {
+              memberId,
+              createdBy: memberId,
+              revision: fund.configurationRevision,
+            }))}
+          >
+            {copy("fund.approve")}
+          </button>
+        )}
         <div className="grid">
           <div className="stat"><span>Operating balance</span><strong>{formatCad(projection.operatingBalanceCents)}</strong></div>
           <div className="stat"><span>Transfer due</span><strong>{formatCad(projection.transferDueCents)}</strong></div>

@@ -2,6 +2,7 @@ import { addDays, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import type {
   Household,
   HouseholdFundConfig,
+  HouseholdFundConfigurationApproval,
   HouseholdFundEvent,
   HouseholdFundKittyAllocation,
   HouseholdFundMonthPlan,
@@ -17,6 +18,12 @@ export const HOUSEHOLD_FUND_ID = "FUND-HOUSEHOLD";
 export const HOUSEHOLD_FUND_NAME = "Hearth Household Fund";
 /** Shared clearing label for a debit whose real savings account stays in the custodian's Personal envelope. */
 export const HOUSEHOLD_FUND_DIRECT_DESTINATION = "FUND-DIRECT-DEBIT";
+
+/** Public custody rules reviewed in Chapter 6; no Personal account detail belongs here. */
+export const HOUSEHOLD_FUND_SETUP_RULES = [
+  "The money stays in the custodian's savings.",
+  "Hearth records the Fund, but cannot move its money.",
+] as const;
 
 /** Exact language for every visual treatment of a Fund contribution Hold. */
 export const HOUSEHOLD_FUND_HOLD_COPY = {
@@ -98,19 +105,101 @@ function isoOrFallback(value: unknown, fallback: string): string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) ? new Date(value).toISOString() : fallback;
 }
 
+function shapeHouseholdFundConfigurationApprovals(
+  value: unknown,
+): HouseholdFundConfigurationApproval[] {
+  if (!Array.isArray(value)) return [];
+  const byMember = new Map<string, HouseholdFundConfigurationApproval>();
+  for (const raw of value) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as Partial<HouseholdFundConfigurationApproval>;
+    const memberId = typeof row.memberId === "string" ? row.memberId.trim() : "";
+    if (!memberId || typeof row.revision !== "string" || Number.isNaN(Date.parse(row.revision))
+      || typeof row.approvedAt !== "string" || Number.isNaN(Date.parse(row.approvedAt))) continue;
+    const approval = {
+      memberId,
+      revision: new Date(row.revision).toISOString(),
+      approvedAt: new Date(row.approvedAt).toISOString(),
+    };
+    const prior = byMember.get(memberId);
+    const approvalKey = `${approval.approvedAt}|${approval.revision}`;
+    const priorKey = prior ? `${prior.approvedAt}|${prior.revision}` : "";
+    if (!prior || approvalKey > priorKey) byMember.set(memberId, approval);
+  }
+  return [...byMember.values()].sort((left, right) => left.memberId.localeCompare(right.memberId));
+}
+
 export function shapeHouseholdFundConfig(value: unknown): HouseholdFundConfig | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Partial<HouseholdFundConfig>;
   if (!row.id || !row.custodianMemberId || !/^\d{4}-\d{2}-\d{2}$/.test(String(row.openedOn ?? ""))) return null;
   const createdAt = isoOrFallback(row.createdAt, "1970-01-01T00:00:00.000Z");
+  const updatedAt = isoOrFallback(row.updatedAt, createdAt);
   return {
     id: String(row.id),
     name: String(row.name || HOUSEHOLD_FUND_NAME).trim().slice(0, 60) || HOUSEHOLD_FUND_NAME,
     custodianMemberId: String(row.custodianMemberId),
     mode: row.mode === "connected" ? "connected" : "practice",
     openedOn: String(row.openedOn) as DateKey,
+    configurationRevision: isoOrFallback(row.configurationRevision, updatedAt),
+    approvals: shapeHouseholdFundConfigurationApprovals(row.approvals),
     createdAt,
-    updatedAt: isoOrFallback(row.updatedAt, createdAt),
+    updatedAt,
+  };
+}
+
+/** Merge independently-owned approvals without treating consent as Fund terms. */
+export function mergeHouseholdFundConfigs(leftValue: unknown, rightValue: unknown): HouseholdFundConfig | null {
+  const left = shapeHouseholdFundConfig(leftValue);
+  const right = shapeHouseholdFundConfig(rightValue);
+  if (!left) return right;
+  if (!right) return left;
+  const configKey = (config: HouseholdFundConfig) => [
+    config.configurationRevision,
+    config.custodianMemberId,
+    config.openedOn,
+    config.mode,
+    config.name,
+    config.id,
+  ].join("|");
+  const selected = configKey(right) > configKey(left) ? right : left;
+  return {
+    ...selected,
+    approvals: shapeHouseholdFundConfigurationApprovals([...left.approvals, ...right.approvals]),
+  };
+}
+
+export type HouseholdFundConfigurationApprovalState = {
+  revision: string;
+  approvals: HouseholdFundConfigurationApproval[];
+  approvedMemberIds: string[];
+  pendingMemberIds: string[];
+  kind: "pending" | "complete" | "stale";
+};
+
+/** Pure same-revision approval fold for Chapter 6 and the existing Fund surface. */
+export function householdFundConfigurationApprovalState(
+  household: Pick<Household, "householdFund" | "members">,
+): HouseholdFundConfigurationApprovalState | null {
+  const fund = shapeHouseholdFundConfig(household.householdFund);
+  if (!fund) return null;
+  const activeMemberIds = household.members
+    .filter((member) => member.active)
+    .map((member) => member.id)
+    .sort();
+  const active = new Set(activeMemberIds);
+  const approvals = fund.approvals.filter((row) => active.has(row.memberId));
+  const currentApprovals = approvals.filter((row) => row.revision === fund.configurationRevision);
+  const approvedMemberIds = currentApprovals.map((row) => row.memberId).sort();
+  const approved = new Set(approvedMemberIds);
+  const pendingMemberIds = activeMemberIds.filter((memberId) => !approved.has(memberId));
+  const stale = approvals.some((row) => row.revision !== fund.configurationRevision);
+  return {
+    revision: fund.configurationRevision,
+    approvals,
+    approvedMemberIds,
+    pendingMemberIds,
+    kind: stale ? "stale" : activeMemberIds.length >= 2 && pendingMemberIds.length === 0 ? "complete" : "pending",
   };
 }
 

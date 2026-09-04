@@ -790,12 +790,23 @@ export type HouseholdCharter = {
 
 export type HouseholdFundMode = "practice" | "connected";
 
+/** One member's explicit approval of one exact non-money Fund configuration. */
+export type HouseholdFundConfigurationApproval = {
+  memberId: string;
+  revision: string;
+  approvedAt: string;
+};
+
 export type HouseholdFundConfig = {
   id: string;
   name: string;
   custodianMemberId: string;
   mode: HouseholdFundMode;
   openedOn: DateKey;
+  /** Stable terms clock. Approval timestamps never advance this revision. */
+  configurationRevision: string;
+  /** Shared consent only. Private backing-account metadata never enters this row. */
+  approvals: HouseholdFundConfigurationApproval[];
   createdAt: string;
   updatedAt: string;
 };

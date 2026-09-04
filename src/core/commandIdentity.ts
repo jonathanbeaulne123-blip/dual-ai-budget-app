@@ -1,4 +1,4 @@
-import type { CommandReceipt, Household, HouseholdFundEvent, MonthRehearsal, Recurrence, Transaction } from "./types.ts";
+import type { CommandReceipt, Household, HouseholdFundConfig, HouseholdFundEvent, MonthRehearsal, Recurrence, Transaction } from "./types.ts";
 
 function byId<T extends { id: string }>(rows: T[] | undefined): T[] {
   return [...(rows ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -34,6 +34,15 @@ export function financialHouseholdFundEventFacts(
   { purpose: _purpose, ...event }: HouseholdFundEvent,
 ): Omit<HouseholdFundEvent, "purpose"> {
   return event;
+}
+
+/** Consent provenance is durable Shared configuration, not accepted-books arithmetic. */
+export function financialHouseholdFundConfigFacts(
+  config: HouseholdFundConfig | null | undefined,
+): Omit<HouseholdFundConfig, "approvals" | "configurationRevision"> | null {
+  if (!config) return null;
+  const { approvals: _approvals, configurationRevision: _configurationRevision, ...financial } = config;
+  return financial;
 }
 
 export function financialAuditFacts(household: Household) {
@@ -134,7 +143,7 @@ export function financialAuditFacts(household: Household) {
       cardTipsReceivableAccountId: job.cardTipsReceivableAccountId,
     })),
     ...(household.charter ? { charter: household.charter } : {}),
-    householdFund: household.householdFund ?? null,
+    householdFund: financialHouseholdFundConfigFacts(household.householdFund),
     fundMonthPlans: byId(household.fundMonthPlans ?? []),
     // Purpose remains durable in command/sync facts, but it is editorial provenance,
     // not Fund financial meaning and must not invalidate accepted-books receipts.

@@ -10,7 +10,11 @@ import {
   charterSignatureDateLabel,
   signatureLines,
 } from "../charterView.ts";
-import { shapeHouseholdFundConfig } from "../householdFund.ts";
+import {
+  HOUSEHOLD_FUND_SETUP_RULES,
+  householdFundConfigurationApprovalState,
+  shapeHouseholdFundConfig,
+} from "../householdFund.ts";
 import { formatCad } from "../money.ts";
 import {
   hasOnlyOpeningCorrectionHistory,
@@ -41,7 +45,8 @@ export type IneligibleReason =
   | "scope"
   | "offline"
   | "retry"
-  | "revoked";
+  | "revoked"
+  | "custody";
 
 export type EvidenceCard = {
   chapterId: ChapterId;
@@ -355,22 +360,57 @@ function fundEvidence(household: Household, chapterId: ChapterId): Projection {
     householdFund: null,
   }) : null;
   if (charter && charter.custodianMemberId !== fund.custodianMemberId) {
-    return { ...EMPTY, ineligible: "conflicted" };
+    return { ...EMPTY, ineligible: "custody" };
   }
+  const approvalState = householdFundConfigurationApprovalState(household);
+  if (!approvalState) return { ...EMPTY, ineligible: "malformed" };
+  if (approvalState.kind === "stale") return { ...EMPTY, ineligible: "stale" };
+  if (approvalState.kind !== "complete") return EMPTY;
+  const activeMembers = household.members
+    .filter((member) => member.active)
+    .sort((left, right) => left.id.localeCompare(right.id));
+  const approvalByMember = new Map(approvalState.approvals
+    .filter((approval) => approval.revision === approvalState.revision)
+    .map((approval) => [approval.memberId, approval]));
+  if (activeMembers.length < 2 || activeMembers.some((member) => !approvalByMember.has(member.id))) return EMPTY;
+  const sharedAccounts = household.accounts
+    .filter((account) => account.active && account.scope !== "personal")
+    .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
+  if (!sharedAccounts.length) return EMPTY;
+  const cardResolution = resolveSwipeCardAccount(household, fund.custodianMemberId);
+  const orderedAccounts = cardResolution.kind === "ready"
+    ? [
+        ...sharedAccounts.filter((account) => account.id === cardResolution.accountId),
+        ...sharedAccounts.filter((account) => account.id !== cardResolution.accountId),
+      ]
+    : sharedAccounts;
+  const approvals = activeMembers.map((member) => ({
+    member,
+    approval: approvalByMember.get(member.id)!,
+  }));
   return {
     ...EMPTY,
     household: {
       chapterId,
       scope: "household",
-      kind: "configuration",
-      sourceIds: [fund.id],
+      kind: "approval",
+      sourceIds: [
+        fund.id,
+        ...orderedAccounts.map((account) => account.id),
+        ...approvals.map(({ member }) => `${fund.id}:${member.id}:${fund.configurationRevision}`),
+      ],
       lines: [
         { label: "Fund", value: fund.name },
         { label: "Custodian", value: memberName(household, fund.custodianMemberId) },
-        { label: "Mode", value: fund.mode },
-        { label: "Opened", value: fund.openedOn },
+        { label: "Backing account", value: "Custodian's Personal savings · details stay private" },
+        { label: "Operating accounts", value: orderedAccounts.map((account) => account.name).join(", ") },
+        { label: "Rules", value: HOUSEHOLD_FUND_SETUP_RULES.join(" ") },
+        ...approvals.map(({ member, approval }) => ({
+          label: `${member.name} approved`,
+          value: approval.approvedAt.slice(0, 10),
+        })),
       ],
-      observedAt: fund.updatedAt,
+      observedAt: latestIso(approvals.map(({ approval }) => approval.approvedAt)) ?? "",
     },
   };
 }

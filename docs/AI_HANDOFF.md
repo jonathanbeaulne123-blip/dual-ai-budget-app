@@ -1,5 +1,57 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 15 — Chapter 6 Household Fund (D-214) (2026-09-04)
+
+**Status:** Local implementation, production build, and live UX pass complete
+on `onboarding/15-ch6-fund` from
+`main@cd4c660a0aebc0bc71cc8f88f9dc2c4bd862ab44`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **High** because this adds shared
+consent and convergence metadata beside the Fund without changing money.
+
+**Outcome:** Chapter 6 completes only when the existing Fund is valid and both
+active members approve the same exact configuration revision. One approval is
+pending; mixed revisions are stale; Charter/Fund custody disagreement is
+blocked. Evidence cites the custodian, privacy-safe backing description,
+active Shared operating accounts, fixed custody rules, and approval dates.
+
+**Implementation:** `configureHouseholdFund` seeds the custodian's approval;
+the new self-owned `approveHouseholdFundConfiguration` command records the
+other member's reviewed consent. Approvals merge independently across replicas
+and never advance the terms revision. Hercules routes to the existing Books
+Fund panel, where the review and 44 px approval control live; chat cannot
+approve. The non-custodian stays an actor through approval and Next. Contract:
+[`briefs/ONBOARDING_SLICE_15_CH6_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_15_CH6_CONTRACT_2026-09-04.md).
+
+**Money and privacy boundary:** Approval creates no transaction or Fund event,
+and `projectHouseholdFund` plus the accepted-books financial hash are identical
+before and after. The backing account's id, name, suffix, institution, balance,
+provider, and reconciliation detail remain Personal and never enter Shared
+evidence. The existing online-required Shared acceptance boundary remains in
+force; no Chapter 6 offline bypass was added.
+
+**UX and accessibility:** The live actual-component pass covered empty,
+one-approval, stale, complete, and custody-conflict states at 320, 390, 720,
+and 1100 px. No width overflow occurred; Slice 15 controls remained at least
+44 px; Tab stayed inside the onboarding focus surface; Enter routed focus to
+the Fund. The pass caught and repaired a post-approval witness dead end. The
+existing reduced-motion rule still removes onboarding transitions.
+
+**Boundary:** No new Fund form, money movement, journal row, Fund projection,
+bank feed, schema, hosted row, Auth/RLS, provider, secret, Production, push,
+merge, or deployment. Browser fixtures were temporary and removed.
+
+**Verification:** The focused Slice 15 suite passed **9/9**. The exact final
+High quick gate passed **132 fast + 7 serial tests** in **182.9 seconds**. One
+prior cold PGlite proof-matrix attempt exceeded its fixed 15-second host limit;
+the prescribed isolated 30-second rerun passed 7/7, and the unchanged exact
+gate then passed on the warmed runtime. The production build passed TypeScript,
+Vite (**460 modules**), Hercules Pro UI, and the redirect sanitizer; only the
+repository's existing PGlite and chunk-size warnings appeared.
+
+**Next owner:** Review this local branch, then Jonathan may separately
+authorize push/PR/merge. Hosted two-device/cloud-ack proof remains a release
+check.
+
 ## Onboarding Slice 14 — Chapter 5 opening truth (D-213) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete

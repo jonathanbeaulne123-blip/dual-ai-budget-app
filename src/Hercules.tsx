@@ -228,6 +228,7 @@ export function HerculesPresence({
   onOpenCharter,
   onOpenAccounts,
   onOpenOpeningBalances,
+  onOpenHouseholdFund,
 }: {
   household: Household;
   today: string;
@@ -250,6 +251,7 @@ export function HerculesPresence({
   onOpenCharter?: () => void;
   onOpenAccounts?: () => void;
   onOpenOpeningBalances?: (mode: "entry" | "correction") => void;
+  onOpenHouseholdFund?: () => void;
 }) {
   const contextHousehold = useMemo(
     () => householdForHerculesContext(household, memberId, view),
@@ -857,6 +859,20 @@ export function HerculesPresence({
     onOpenOpeningBalances(mode);
   }
 
+  function openOnboardingHouseholdFund() {
+    if (!onOpenHouseholdFund || navTarget?.chapterId !== "ch-06-fund") return;
+    closeChat();
+    saveReturnMessage({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId,
+      chapterId: navTarget.chapterId,
+      tab: navTarget.target.tab,
+      setAt: new Date().toISOString(),
+    });
+    onOpenHouseholdFund();
+  }
+
   function openMobileFocus() {
     if (adding || phoneShell === false) return;
     setMobileFocus(true);
@@ -1429,6 +1445,7 @@ export function HerculesPresence({
               onOpenCharter={openOnboardingCharter}
               onOpenAccounts={openOnboardingAccounts}
               onOpenOpeningBalances={openOnboardingOpeningBalances}
+              onOpenHouseholdFund={openOnboardingHouseholdFund}
             />
           ) : (
             <>
@@ -1592,8 +1609,9 @@ export function HerculesPresence({
                 onOpenCharter={openOnboardingCharter}
                 onOpenAccounts={openOnboardingAccounts}
                 onOpenOpeningBalances={openOnboardingOpeningBalances}
+                onOpenHouseholdFund={openOnboardingHouseholdFund}
               />
-              {navTarget && !["ch-03-charter", "ch-04-accounts", "ch-05-opening"].includes(navTarget.chapterId) && (
+              {navTarget && !["ch-03-charter", "ch-04-accounts", "ch-05-opening", "ch-06-fund"].includes(navTarget.chapterId) && (
                 <button type="button" className="hercules-help" onClick={goToOnboardingTarget}>
                   {copy("nav.go", { surface: navTargetSurfaceLabel(navTarget.target.tab) })}
                 </button>
