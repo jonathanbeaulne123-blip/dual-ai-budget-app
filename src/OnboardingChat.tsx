@@ -5,6 +5,7 @@ import {
   SITTING_MARK_COUNT,
   acceptedHouseholdOnboarding,
   chapterRoleFor,
+  charterSignatureStatus,
   confirmHouseholdOnboarding,
   copy,
   evidenceCardLabel,
@@ -34,22 +35,15 @@ import "./onboarding.css";
 // the fence in test/onboarding-conductor.test.ts. Every spacing rule comes
 // from SHELL_VIEW in src/core/onboarding/shellView.ts — see the same fence.
 //
-// This is a Part 1 (foundation) slice. The twelve chapters' own content —
-// their actual questions, forms, and specific approve/submit actions — are
-// each their own Part 2 slice and do not exist yet. Until then, copy()
-// resolving an unwritten copyKey to the key itself (by design, since slice
-// 6) is what keeps this shell honest rather than crashing: a viewer sees a
-// visibly-unfinished label, never a blank screen or a made-up sentence.
+// Part 2 slices add one chapter at a time without turning this into a form.
+// Slice 12 routes Chapter 3 to the existing Charter surfaces, then returns
+// here for typed evidence and acknowledgement. Unwritten chapters still use
+// copy()'s honest key fallback rather than an invented sentence.
 //
 // Deliberately out of scope here, disclosed rather than silently skipped:
-// - The return bar (HEARTH_UX_PACKET.md §13.5) lives in the app's shared nav
-//   chrome, not in Hercules.tsx or this component, and that chrome is not in
-//   this slice's file list. SHELL_VIEW.returnBarHeight is defined (the
-//   manual's constant is byte-exact and this module must not edit it) but
-//   has no consumer yet.
-// - Per-chapter actions beyond "continue" (approve, submit, edit) call
-//   commands that are specific to each of the twelve chapters and are not
-//   built yet. This shell only ever offers Next and the stop link.
+// - Later chapters' approve/submit/edit actions remain their own slices.
+//   Chapter 3 is the first chapter-specific navigate action: it opens the
+//   established Charter UI and never collects an answer or signature here.
 // - The noticed strip only fires from a signal this slice actually has:
 //   evidence already accepted for a chapter the viewer has not acknowledged
 //   yet. A richer "you already handled this outside the app" probe is a
@@ -81,6 +75,8 @@ type Props = {
   busy?: boolean;
   onCommit: (fn: (current: Household) => CommitResult) => void;
   onDismiss: () => void;
+  /** Chapter 3 opens the existing founding/document surface; chat never collects Charter answers. */
+  onOpenCharter?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -127,6 +123,29 @@ export function onboardingBlockedPresentation(
   }
 }
 
+export type OnboardingCharterPresentation =
+  | { kind: "none" }
+  | { kind: "write"; copyKey: "charter.write" }
+  | { kind: "open"; copyKey: "charter.open" }
+  | { kind: "review"; copyKey: "charter.review-sign" }
+  | { kind: "waiting"; copyKey: "waiting.partner"; slots: { name: string } };
+
+/** Chapter 3 asks only for the viewer's next safe act; it never turns the partner into a task. */
+export function onboardingCharterPresentation(
+  household: Household,
+  memberId: string,
+  evidence: EvidenceResult,
+): OnboardingCharterPresentation {
+  if (evidence.kind === "accepted") return { kind: "none" };
+  if (evidence.kind === "ineligible" && evidence.reason !== "stale") return { kind: "none" };
+  if (!household.charter) return { kind: "write", copyKey: "charter.write" };
+  const status = charterSignatureStatus(household.charter, memberId);
+  if (status === "stale") return { kind: "review", copyKey: "charter.review-sign" };
+  if (status === "unsigned") return { kind: "open", copyKey: "charter.open" };
+  const otherName = household.members.find((member) => member.active && member.id !== memberId)?.name ?? "your partner";
+  return { kind: "waiting", copyKey: "waiting.partner", slots: { name: otherName } };
+}
+
 export function OnboardingChat({
   household,
   memberId,
@@ -134,6 +153,7 @@ export function OnboardingChat({
   busy,
   onCommit,
   onDismiss,
+  onOpenCharter,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -360,6 +380,9 @@ export function OnboardingChat({
   const turnLine = role === "conductor"
     ? copy("chapter.turn.conductor")
     : copy("chapter.turn.witness", { name: conductorName ?? "your partner" });
+  const evidence = role === "conductor"
+    ? evidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation })
+    : witnessEvidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation });
 
   // A sitting boundary gets its own Hercules line ("Good place to stop.") but
   // no separate Pause button — the foot's stop link (rendered unconditionally
@@ -369,15 +392,17 @@ export function OnboardingChat({
   // would read as a mistake, not emphasis.
   const sittingFinal = isSittingFinalChapter(chapter.id);
   const enteringSittingTwo = isSittingFirstChapter(chapter.id) && chapter.sitting === 2;
-  const hercLine = sittingFinal
+  // Chapter 3 is the first real routed chapter. Calling it a good place to
+  // stop before the Charter is written reads like a dismissal, so its sitting
+  // boundary line waits until the typed Charter evidence is actually ready.
+  const sittingBoundaryReady = sittingFinal
+    && (chapter.id !== "ch-03-charter" || evidence.kind === "accepted");
+  const hercLine = sittingBoundaryReady
     ? copy("sitting.pause")
     : enteringSittingTwo
       ? copy("sitting.two.warning")
       : flavorFor(chapter.id, household.householdId);
 
-  const evidence = role === "conductor"
-    ? evidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation })
-    : witnessEvidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation });
   const railIndex = sittingRailIndex(chapter.sitting);
   const chapterId = chapter.id;
   const progress = memberProgress(household, memberId);
@@ -394,17 +419,26 @@ export function OnboardingChat({
   // "malformed" has no dedicated line, so it uses the deliberately generic
   // stale refusal rather than presenting invalid evidence as untouched work.
   const otherName = household.members.find((member) => member.active && member.id !== memberId)?.name ?? "your partner";
+  const charterPresentation = chapterId === "ch-03-charter"
+    ? onboardingCharterPresentation(household, memberId, evidence)
+    : { kind: "none" as const };
   const blocked = onboardingBlockedPresentation(evidence, otherName);
-  const blockedCopyKey = blocked?.copyKey ?? null;
-  const blockedCopySlots = blocked?.slots;
+  const waitingForPartner = charterPresentation.kind === "waiting";
+  const blockedCopyKey = waitingForPartner ? charterPresentation.copyKey : blocked?.copyKey ?? null;
+  const blockedCopySlots = waitingForPartner ? charterPresentation.slots : blocked?.slots;
   const autoCompletable = chapter.skip === "auto-completable";
+  const charterNeedsNavigation = charterPresentation.kind === "write"
+    || charterPresentation.kind === "open"
+    || charterPresentation.kind === "review";
 
   const showAction = role === "conductor"
     && !blockedCopyKey
+    && !charterNeedsNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
-  const cardMarginBottom = showAction || showRetryAction ? SHELL_VIEW.cardToAction : 0;
+  const showCharterAction = role === "conductor" && charterNeedsNavigation && Boolean(onOpenCharter);
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction ? SHELL_VIEW.cardToAction : 0;
 
   function acknowledge() {
     if (autoCompletable && householdScopeObservation) {
@@ -465,7 +499,7 @@ export function OnboardingChat({
           </p>
           {blockedCopyKey ? (
             <section className="onboarding-card" role="status" aria-live="polite" style={{ marginBottom: cardMarginBottom }}>
-              <p className="onboarding-card-label">Held up</p>
+              <p className="onboarding-card-label">{waitingForPartner ? "Waiting together" : "Held up"}</p>
               <p className="onboarding-card-task">{copy(blockedCopyKey, blockedCopySlots)}</p>
             </section>
           ) : evidence.kind === "accepted" ? (
@@ -488,15 +522,19 @@ export function OnboardingChat({
           )}
         </>
       )}
-      {showAction || showRetryAction ? (
+      {showAction || showRetryAction || showCharterAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
             disabled={busy}
             style={{ minHeight: SHELL_VIEW.navButtonHeight }}
-            onClick={showRetryAction ? retryHouseholdScopeProbe : acknowledge}
+            onClick={showRetryAction ? retryHouseholdScopeProbe : showCharterAction ? onOpenCharter : acknowledge}
           >
-            {copy(showRetryAction ? "probe.retry" : "continue.next")}
+            {copy(showRetryAction
+              ? "probe.retry"
+              : showCharterAction
+                ? charterPresentation.copyKey
+                : "continue.next")}
           </button>
         </div>
       ) : null}

@@ -99,6 +99,7 @@ function render(props: {
   memberId: string;
   onCommit?: (fn: (current: Household) => { household: Household }) => void;
   onDismiss?: () => void;
+  onOpenCharter?: () => void;
 }) {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -110,6 +111,7 @@ function render(props: {
       today: TODAY,
       onCommit: props.onCommit ?? (() => {}),
       onDismiss: props.onDismiss ?? (() => {}),
+      onOpenCharter: props.onOpenCharter ?? (() => {}),
     }));
   });
   return {
@@ -255,13 +257,13 @@ describe("the conductor shell — rendering", () => {
     unmount();
   });
 
-  it("gives the sitting boundary its own Hercules line, above the ever-present Pause/stop control", () => {
+  it("keeps the Chapter 3 entry inviting, then reserves the sitting boundary for completed evidence", () => {
     const { host, unmount } = render({ household: throughChapterTwo(), memberId: BIANCA });
-    expect(host.textContent).toContain("Good place to stop. We'll pick up right here.");
+    expect(host.textContent).not.toContain("Good place to stop. We'll pick up right here.");
     const buttons = [...host.querySelectorAll("button")];
-    // Next still advances; the foot's stop link is the real Pause control here —
-    // a second button with the same words would just duplicate it on screen.
-    expect(buttons.map((button) => button.textContent)).toEqual(["Next", "Stop setup for now"]);
+    // Chapter 3 opens the existing Charter route; navigation itself cannot
+    // stand in for the two current signatures required by its evidence probe.
+    expect(buttons.map((button) => button.textContent)).toEqual(["Write the Charter", "Stop setup for now"]);
     expect(buttons.filter((button) => button.textContent === "Stop setup for now").length).toBe(1);
     unmount();
   });
@@ -458,8 +460,8 @@ describe("the conductor shell — fences", () => {
     for (const field of fields) {
       expect(componentSource, `OnboardingChat.tsx should reference SHELL_VIEW.${field}`).toContain(`SHELL_VIEW.${field}`);
     }
-    // returnBarHeight belongs to the return bar (HEARTH_UX_PACKET.md §13.5), which lives in the
-    // app's shared nav chrome — out of this slice's file list. Not consumed here on purpose.
+    // returnBarHeight is consumed by HerculesPresence's plate 13 bar, not by
+    // the conductor content itself.
   });
 
   it("matches plate 11's card, noticed-strip, and action geometry", () => {

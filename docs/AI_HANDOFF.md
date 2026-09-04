@@ -1,5 +1,49 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 12 — Chapter 3 Charter (D-210) (2026-09-04)
+
+**Status:** Local implementation and live UX pass complete on
+`onboarding/12-ch3-charter` from `origin/main@0c458c8`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **Medium-High** because shared consent
+and replica convergence change, while money and command authority do not.
+
+**Outcome:** Chapter 3 opens the existing Charter founding conversation or
+document with a specific action, then completes only after both people have
+signed the latest terms and the viewer explicitly presses Next. Someone who
+has signed waits quietly. An amendment makes old signatures stale; each person
+may re-sign only their own line, and an older replica cannot erase that newer
+consent.
+
+**Implementation:** Current consent is derived from existing normalized
+timestamps (`signedAt >= termsUpdatedAt`) without a new model field. The
+Charter projector cites purpose, custodian, split, ceiling, cadence, and both
+signature dates. The acknowledgement command re-projects that typed evidence,
+so visiting the route or chat text cannot complete the chapter. Hercules
+closes before navigation, the existing founding/document styling remains the
+authority, and plate 13's 44 px mobile return bar carries the scoped, timer-free
+instruction until the chapter moves on. Contract:
+[`briefs/ONBOARDING_SLICE_12_CH3_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_12_CH3_CONTRACT_2026-09-04.md).
+
+**UX and accessibility:** Live synthetic Development journeys covered missing,
+unsigned, one-signed waiting, stale, re-sign, accepted evidence, and founding
+without signing at 320, 390, 720, and 1100 CSS px. The browser pass caught and
+removed a premature “Good place to stop” opening; it now appears only once the
+final sitting evidence is ready. Keyboard focus visibly reaches the primary
+action, action/sign targets measure 48/44 px, primary-action contrast measured
+6.16:1, the return bar is exactly 44 px with no dismiss control, and the 1100
+px layout reflows at an equivalent 200% viewport without horizontal overflow.
+Forced-colors and reduced-motion treatments were inspected in the scoped CSS;
+the browser controller did not expose media emulation.
+
+**Boundary:** No Charter redesign, signature-revision field, schema, hosted
+row, Auth/RLS, provider, secret, money/Fund behavior, Production, push, merge,
+or deployment change. Browser fixtures were synthetic and temporary; no
+household data or QA route remains in the tree.
+
+**Next owner:** Review this local branch, then Jonathan may separately
+authorize push/PR/merge. Hosted two-device consent remains a later release
+proof, not a claim of this local slice.
+
 ## Onboarding Slice 11 — Chapter 2 live household scope (D-209) (2026-09-04)
 
 **Status:** Local implementation and repair on `onboarding/11-ch2-household`,

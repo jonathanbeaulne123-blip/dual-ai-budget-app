@@ -84,6 +84,15 @@ const SLICE_11_REPAIR_COPY: Record<string, { text: string; announce: CopyEntry["
   },
 };
 
+const SLICE_12_CHARTER_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-03-charter": {
+    text: "Your Charter puts the household's shared rules in your own words. Write it together, then each sign your own line.", announce: "none",
+  },
+  "charter.write": { text: "Write the Charter", announce: "none" },
+  "charter.open": { text: "Open the Charter", announce: "none" },
+  "charter.review-sign": { text: "Review and sign the Charter", announce: "none" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -94,10 +103,10 @@ describe("the onboarding copy deck", () => {
     }
   });
 
-  it("has no keys beyond Appendix E and the documented Slice 11 repair", () => {
+  it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY }).sort());
-    for (const [key, expected] of Object.entries(SLICE_11_REPAIR_COPY)) {
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY }).sort());
+    for (const [key, expected] of Object.entries({ ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }
   });
