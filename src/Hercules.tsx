@@ -50,6 +50,12 @@ import {
   loadPhonePlacePrefs,
   householdForHerculesContext,
   shouldShowOnboardingShell,
+  activeReturnMessage,
+  copy,
+  loadReturnMessage,
+  navTargetSurfaceLabel,
+  onboardingNavigationTarget,
+  saveReturnMessage,
   CAT,
   NAV,
   WIDE_BREAKPOINT,
@@ -329,6 +335,28 @@ export function HerculesPresence({
     () => shouldShowOnboardingShell(household, memberId, today),
     [household, memberId, today],
   );
+  // Slice 9: which chapter's navigate action (if any) this conductor should
+  // be offered right now, and whatever return instruction this phone is
+  // still carrying for this household from a previous "Open {surface}" tap.
+  // Both are read fresh every render — nothing here is client state that
+  // could drift from what nextChapterFor would say on a reload.
+  const navTarget = useMemo(
+    () => (onboardingShellActive ? onboardingNavigationTarget(household, memberId, today) : null),
+    [onboardingShellActive, household, memberId, today],
+  );
+  const storedReturnMessage = useMemo(
+    () => loadReturnMessage(household.environment, household.householdId, memberId),
+    [household.environment, household.householdId, memberId, household.revision],
+  );
+  const activeReturn = useMemo(
+    () => activeReturnMessage(storedReturnMessage, household, today),
+    [storedReturnMessage, household, today],
+  );
+  // Desktop has no mobile-style focus-mode modal to swap into
+  // (focusShellOpen requires phoneShell). "No new desktop surface" means
+  // this reuses the same chat bubble desktop already opens on tap — only
+  // what renders inside it changes while onboarding has the floor.
+  const desktopOnboardingOpen = Boolean(!phoneShell && open && onboardingShellActive);
   const autonomyBlocked = adding || activityBlocked;
   const homeAutonomy = tab === "home" && !autonomyBlocked;
   idleCaptureAllowed.current = !(
@@ -462,7 +490,7 @@ export function HerculesPresence({
     setBubbleSize((prev) => (
       Math.abs(prev.w - next.w) < 2 && Math.abs(prev.h - next.h) < 2 ? prev : next
     ));
-  }, [showProposal, showTalk, showWidgetSnippets, talk?.spoken, proposal?.spoken, open, turns.length, snippets.length, busy]);
+  }, [showProposal, showTalk, showWidgetSnippets, talk?.spoken, proposal?.spoken, open, turns.length, snippets.length, busy, desktopOnboardingOpen, activeReturn?.chapterId]);
 
   useEffect(() => {
     const next = furnitureLand(adding, look.view.mood, today);
@@ -757,6 +785,27 @@ export function HerculesPresence({
     } else {
       setSnippets([]);
     }
+  }
+
+  // Slice 9: "a chapter's navigation button calls onGo(target.tab), closes
+  // chat, and leaves a persistent instruction" (ONBOARDING_BUILD_MANUAL.md).
+  // onGo is the existing prop this component has always had — nothing new
+  // is threaded in to make this call; the only new thing is that this call
+  // site now also records, phone-locally, which chapter sent the member
+  // away, so activeReturnMessage can keep showing the instruction until
+  // that chapter's own probe (nextChapterFor moving past it) says otherwise.
+  function goToOnboardingTarget() {
+    if (!navTarget) return;
+    onGo(navTarget.target.tab);
+    closeChat();
+    saveReturnMessage({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId,
+      chapterId: navTarget.chapterId,
+      tab: navTarget.target.tab,
+      setAt: new Date().toISOString(),
+    });
   }
 
   function openMobileFocus() {
@@ -1448,12 +1497,46 @@ export function HerculesPresence({
           </div>
         </div>
       )}
-      {showTalk && talk && !focusShellOpen && (
+      {/* Slice 9: "Finish here, then open Hercules." Furniture, not an
+          alert — no dismiss control, no timeout. The mobile equivalent is
+          plate 13's 44px nav-chrome bar, out of this slice's file list; on
+          desktop, HerculesPresence's own existing bubble is where the same
+          nav.return copy surfaces instead. */}
+      {!phoneShell && !showProposal && !showTalk && activeReturn && (
+        <div
+          ref={bubbleRef}
+          className={`hercules-bubble ${bubbleSide}`}
+          style={bubbleStyle}
+          role="status"
+          aria-live="polite"
+        >
+          <p className="hercules-spoken">{copy("nav.return")}</p>
+        </div>
+      )}
+      {(desktopOnboardingOpen || (showTalk && talk)) && !focusShellOpen && (
         <div
           ref={bubbleRef}
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""}`}
           style={bubbleStyle}
         >
+          {desktopOnboardingOpen ? (
+            <>
+              <OnboardingChat
+                household={household}
+                memberId={memberId}
+                today={today}
+                busy={busy}
+                onCommit={onLedger}
+                onDismiss={closeChat}
+              />
+              {navTarget && (
+                <button type="button" className="hercules-help" onClick={goToOnboardingTarget}>
+                  {copy("nav.go", { surface: navTargetSurfaceLabel(navTarget.target.tab) })}
+                </button>
+              )}
+            </>
+          ) : talk ? (
+          <>
           {open && !begging && (
             <button
               type="button"
@@ -1543,6 +1626,8 @@ export function HerculesPresence({
               </button>
             </>
           )}
+          </>
+          ) : null}
           <button className="hercules-dismiss" type="button" onClick={closeChat}>
             ok
           </button>
