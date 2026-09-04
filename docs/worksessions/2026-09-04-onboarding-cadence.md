@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/17-ch8-cadence`
 - **Baseline SHA:** `bf19a85341d6135b36c27349d64207706eaad603`
-- **Head SHA:** working tree
+- **Head SHA:** implementation `9c1a1cc48ebd5be51795928659a5c2baf3392f60`; final evidence-only commit is the branch head
 - **PR or issue:** none
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -73,13 +73,14 @@ detail-later language make a necessary setup fact feel small and safe.
 
 ## Evidence log
 
-- Final focused and adjacent cadence/onboarding/work projection suite passed
-  237/237.
-- Final Medium quick gate passed AI-surface, TypeScript, diff hygiene, 104 fast
-  tests, and 7 serial financial-proof tests in 22.643 seconds.
-- Production build passed 462 modules plus Hercules Pro UI. Existing PGlite
+- After rebasing onto `origin/main@bf19a85`, the final focused and adjacent
+  cadence/onboarding/work projection/cloud-authority suite passed 285/285.
+- Exact clean-head Medium quick gate passed AI-surface, TypeScript, diff
+  hygiene, 105 fast tests, and 7 serial financial-proof tests in 21.232 seconds.
+- Production build passed 464 modules plus Hercules Pro UI. Existing PGlite
   browser-external/eval and chunk-size warnings remain unchanged.
-- Live actual-component browser proof covered pending, busy, saved, selected,
+- Live actual-component browser proof was repeated after rebase and covered
+  pending, busy, saved, selected,
   and irregular states at 320, 390, 720, and 1100 px in day and night themes.
   Every combination had zero horizontal overflow, 16 px base card text, one
   selected choice, and controls at least 49 px tall. Keyboard Tab moved from

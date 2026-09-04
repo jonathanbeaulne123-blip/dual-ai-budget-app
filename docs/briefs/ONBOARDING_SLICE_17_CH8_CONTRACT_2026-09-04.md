@@ -55,4 +55,4 @@ contains no money amount or employment-detail field.
 - partner detail appears in evidence;
 - skipping details creates an income or money record;
 - rendering, routing, or selecting a choice acknowledges the chapter;
-- the cadence path bypasses Shared acceptance or writes another member's fact.
+- the cadence path bypasses cloud authority or writes another member's fact.

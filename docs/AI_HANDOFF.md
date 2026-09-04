@@ -33,9 +33,10 @@ and the browser console stayed clean. The pass clarified that irregular leaves
 paydays open instead of implying Hearth would place one. Temporary QA files
 were removed.
 
-**Verification:** The final focused and adjacent suite passed **237/237**. The
-final Medium quick gate passed **104 fast + 7 serial tests** with TypeScript,
-AI-surface, and diff hygiene. The production build passed Vite (**462 modules**)
+**Verification:** After rebasing onto the cloud-authority release, the final
+focused and adjacent suite passed **285/285**. The exact clean-head Medium quick
+gate passed **105 fast + 7 serial tests** with TypeScript, AI-surface, and diff
+hygiene. The production build passed Vite (**464 modules**)
 and Hercules Pro UI; only the existing PGlite browser-external/eval and chunk
 warnings appeared. The optional Windows script could not run because this macOS
 host has no `pwsh`; no Windows result is claimed.
