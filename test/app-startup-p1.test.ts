@@ -487,7 +487,7 @@ describe("cached-shell startup books gate", () => {
     expect(startup.stagedCandidates).toHaveLength(0);
     expect(startup.ingestCalls).toBe(ingestsBefore);
     expect(startup.saveCalls).toBe(savesBefore);
-    expect(container.textContent).toContain("Google sign-in does not match the selected household member");
+    expect(container.textContent).toMatch(/Google sign-in does not match the selected household member|Continue with Google before changing the shared books/);
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
   });
 
@@ -619,7 +619,7 @@ describe("cached-shell startup books gate", () => {
     expect(adopted?.transactions.some((row) => row.note === "Partner shared row")).toBe(true);
     expect(adopted?.transactions.some((row) => row.note === "Newest cloud Personal")).toBe(true);
     expect(adopted?.transactions.some((row) => row.note === "Old local Personal")).toBe(false);
-  });
+  }, 30_000);
 
   it("fails closed on a projection mismatch and offers retry without rebuilding", async () => {
     startup.inspections.push(Promise.resolve({

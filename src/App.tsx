@@ -212,6 +212,7 @@ import {
 } from "./auth/supabaseSession.ts";
 import { createAccountFlowGate } from "./auth/accountFlow.ts";
 import {
+  cancelContinuityConflictGeneration,
   clearContinuityOutboxConflictBlocks,
   clearContinuityOutboxForHousehold,
   continuityMemberId,
@@ -906,6 +907,63 @@ export function App() {
       });
       const retryConflict = flushed.conflicts[0];
       if (retryConflict) {
+        if (onlineRequiredSharedSyncEnabled(environment)) {
+          setCloudReplicaReadyKey(null);
+          const remoteReplica = await pullConsistentMemberReplicaById({
+            householdId: current.householdId,
+            memberId: who,
+            environment,
+            config: cloudConfig,
+            identity,
+            initialShared: retryConflict.remote,
+          });
+          if (!remoteReplica) {
+            setSyncState("error");
+            setError("Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this retry.");
+            return;
+          }
+          const currentWithCanonicalPersonal = assembleHousehold(
+            splitForSync(current, who).shared,
+            remoteReplica.personal,
+            { linked: current.linked },
+          );
+          const reconciled = await reconcileHouseholdSnapshots(
+            currentWithCanonicalPersonal,
+            remoteReplica.shared,
+            who,
+          );
+          const accepted = await acceptHouseholdWrite({
+            previous: current,
+            candidate: reconciled,
+            confirmationId: `retry-conflict-adopt-${current.householdId}-${remoteReplica.revision}`,
+            commandKind: "continuity-conflict-adopt",
+            postedIds: [],
+            actingMemberId: who,
+            adapters: makeBooksAdapters({ environment, memberId: who, continuityIdentity: identity }),
+          });
+          if (!accepted.ok) {
+            setSyncState("error");
+            setError(accepted.userMessage || retryConflict.message);
+            return;
+          }
+          const cancelled = await cancelContinuityConflictGeneration(retryConflict.item);
+          if (!cancelled) {
+            setSyncState("error");
+            setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
+            return;
+          }
+          adoptAcceptedHousehold(accepted.household);
+          setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+            environment,
+            householdId: accepted.household.householdId,
+            memberId: who,
+            revision: accepted.household.revision,
+          }));
+          setSyncState("synced");
+          setCommandChrome(null);
+          setError("Another device saved first. Hearth opened the latest complete books; review them and Confirm your change again.");
+          return;
+        }
         const resolved = await autoResolveSharedConflict(current, retryConflict.remote, who, "local");
         const accepted = await acceptHouseholdWrite({
           previous: current,
@@ -1737,6 +1795,58 @@ export function App() {
         if (conflict) {
           const current = householdRef.current;
           if (current && current.householdId === conflict.item.householdId) {
+            if (onlineRequiredSharedSyncEnabled(environment)) {
+              const remoteReplica = await pullConsistentMemberReplicaById({
+                householdId: current.householdId,
+                memberId,
+                environment,
+                config: cloudConfig,
+                identity,
+                initialShared: conflict.remote,
+              });
+              if (!remoteReplica) {
+                setSyncState("error");
+                setError("Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this retry.");
+                return;
+              }
+              const currentWithCanonicalPersonal = assembleHousehold(
+                splitForSync(current, memberId).shared,
+                remoteReplica.personal,
+                { linked: current.linked },
+              );
+              const reconciled = await reconcileHouseholdSnapshots(
+                currentWithCanonicalPersonal,
+                remoteReplica.shared,
+                memberId,
+              );
+              const accepted = await acceptReplayCandidate(
+                reconciled,
+                `outbox-conflict-adopt-${current.householdId}-${remoteReplica.revision}`,
+                "continuity-conflict-adopt",
+              );
+              if (!live) return;
+              if (!accepted?.ok) {
+                setSyncState("error");
+                setError(accepted?.userMessage || conflict.message);
+                return;
+              }
+              const cancelled = await cancelContinuityConflictGeneration(conflict.item);
+              if (!live) return;
+              if (!cancelled) {
+                setSyncState("error");
+                setError("The latest cloud books are safe, but this phone could not cancel the exact conflicted retry. Shared writes remain blocked.");
+                return;
+              }
+              setCloudReplicaReadyKey(onlineRequiredReplicaKey({
+                environment,
+                householdId: accepted.household.householdId,
+                memberId,
+                revision: accepted.household.revision,
+              }));
+              setSyncState("synced");
+              setError("Another device saved first. Hearth opened the latest complete books; review them and Confirm your change again.");
+              return;
+            }
             if (canAbsorbDisjointSharedMoney(current, conflict.remote)) {
               const absorbed = absorbDisjointSharedMoney(current, conflict.remote, memberId);
               const accepted = await acceptReplayCandidate(
@@ -2012,6 +2122,7 @@ export function App() {
         });
         return "duplicate";
       }
+      if (onlineRequiredSharedSyncEnabled(environment)) setCloudReplicaReadyKey(null);
       const accepted = await acceptReplayCandidate(
         markSynchronized(
           applied.household,
@@ -2040,7 +2151,14 @@ export function App() {
         transport: "command-realtime",
         sourceAcceptedAt: event.payload_json.acceptedAt,
       });
-      if (live) setSyncState("synced");
+      if (live && onlineRequiredSharedSyncEnabled(environment)) {
+        setSyncState("syncing");
+        window.setTimeout(() => {
+          if (live) scheduleReplay("realtime");
+        }, 0);
+      } else if (live) {
+        setSyncState("synced");
+      }
       return "applied";
     };
 
@@ -3358,7 +3476,10 @@ export function App() {
           }));
         }
       } else if (outcome.kind === "pending-transport") setSyncState("syncing");
-      else if (outcome.kind === "conflict-needs-attention") setSyncState("error");
+      else if (outcome.kind === "conflict-needs-attention") {
+        setCloudReplicaReadyKey(null);
+        setSyncState("error");
+      }
       else if (outcome.ok) setSyncState("idle");
       if (outcome.ok && !(outcome.recoveryAvailable && outcome.errorClass === "books-unavailable")) {
         const status: BooksStatus = {

@@ -565,6 +565,41 @@ export async function acknowledgeContinuityOutboxItemDurably(item: ContinuityOut
   await awaitContinuityOutboxDurable(item.environment);
 }
 
+export function stagedHouseholdMatchesContinuityGeneration(
+  staged: Household,
+  item: ContinuityOutboxItem,
+): boolean {
+  try {
+    assertOutboxItemBinding({ ...item, snapshot: staged, identity: item.identity });
+  } catch {
+    return false;
+  }
+  const receipts = new Set((staged.commandReceipts ?? []).map((row) => row.confirmationId));
+  return staged.revision === item.tipRevision
+    && item.confirmationIds.every((id) => receipts.has(id));
+}
+
+/**
+ * Cancel one definitive-conflict generation after a stable cloud pair is known.
+ * A newer/replaced queue or stage is never removed by an older in-flight result.
+ */
+export async function cancelContinuityConflictGeneration(item: ContinuityOutboxItem): Promise<boolean> {
+  const current = read(item.environment).find((row) => row.id === item.id);
+  if (!current || !sameOutboxGeneration(current, item)) return false;
+  let staged: Household | null = null;
+  try {
+    staged = await loadStagedHouseholdBooks(item.environment, item.householdId);
+  } catch {
+    return false;
+  }
+  if (staged) {
+    if (!stagedHouseholdMatchesContinuityGeneration(staged, item)) return false;
+    await clearStagedHouseholdBooks(item.environment, item.householdId);
+  }
+  await acknowledgeContinuityOutboxItemDurably(item);
+  return true;
+}
+
 function remoteAcknowledgesOutbox(remote: Household, item: ContinuityOutboxItem): boolean {
   if (
     remote.environment !== item.environment
@@ -793,9 +828,43 @@ export async function transportHouseholdWithOutbox(input: {
   const result = await flushItem(item, input.identity, input.config, input.household);
   if (result.kind === "synchronized") return { ok: true, remoteRevision: result.revision };
   if (result.kind === "conflict") {
-    if (input.reconcileAmbiguous) {
-      await acknowledgeContinuityOutboxItemDurably(item);
-      await clearStagedHouseholdBooks(item.environment, item.householdId);
+    if (input.reconcileAmbiguous && input.config) {
+      try {
+        const consistent = await pullConsistentMemberReplicaById({
+          householdId: item.householdId,
+          memberId: item.memberId,
+          environment: item.environment,
+          config: input.config,
+          identity: input.identity,
+          initialShared: result.remote,
+        });
+        if (!consistent) {
+          return {
+            ok: false,
+            errorClass: "pending-transport",
+            message: "Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this Confirm.",
+          };
+        }
+        if (!await cancelContinuityConflictGeneration(item)) {
+          return {
+            ok: false,
+            errorClass: "pending-transport",
+            message: "Another device saved first, but the queued or staged generation changed before Hearth could cancel it.",
+          };
+        }
+        return {
+          ok: false,
+          errorClass: "conflict-detected",
+          remote: consistent.shared,
+          message: result.message,
+        };
+      } catch {
+        return {
+          ok: false,
+          errorClass: "pending-transport",
+          message: "Another device saved first. Hearth is waiting for a complete Shared and Personal cloud copy before cancelling this Confirm.",
+        };
+      }
     }
     return {
       ok: false,

@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  cancelContinuityConflictGeneration,
   createMemoryContinuityStore,
   clearContinuityOutboxForHousehold,
   discoverContinuityMemberships,
@@ -13,6 +14,7 @@ import {
   listContinuityOutbox,
   resolveOutboxHousehold,
   setContinuityStore,
+  stagedHouseholdMatchesContinuityGeneration,
   transportHouseholdWithOutbox,
 } from "../src/continuity.ts";
 import { catalogHousehold, financialAuditHash, linkGoogleIdentity, personalReplicaForMember, postEntry, postWorkShift, upsertWorkJob, shapeWorkJob, type WorkJob } from "../src/core/index.ts";
@@ -514,8 +516,23 @@ describe("Google-account continuity", () => {
   it("durably cancels a definitive online-required conflict instead of publishing it later", async () => {
     setContinuityStore(createMemoryContinuityStore());
     const household = { ...googleHousehold(), revision: 2, baseRevision: 1 };
-    const remote = { ...googleHousehold(), revision: 3, baseRevision: 3 };
-    vi.stubGlobal("fetch", continuityCasFetch({ remote }));
+    const remote = {
+      ...googleHousehold(),
+      householdId: household.householdId,
+      inviteCode: household.inviteCode,
+      revision: 3,
+      baseRevision: 3,
+    };
+    const personal = personalReplicaForMember(remote, "MEM-001");
+    const conflictFetch = continuityCasFetch({ remote });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("household_snapshots?")) return response([{ payload: JSON.stringify(remote) }]);
+      if (url.includes("continuity_personal_snapshots?")) {
+        return response([{ revision: 3, payload: JSON.stringify(personal) }]);
+      }
+      return conflictFetch(input, init);
+    }));
 
     const conflict = await transportHouseholdWithOutbox({
       household,
@@ -530,6 +547,76 @@ describe("Google-account continuity", () => {
     expect(listContinuityOutbox("development")).toEqual([]);
     expect(await flushContinuityOutbox({ environment: "development", identity, config, force: true }))
       .toEqual({ synchronized: 0, pending: 0, deferred: 0, conflicts: [] });
+  });
+
+  it("retains a definitive conflict when the complete cloud pair is unavailable", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    const remote = { ...googleHousehold(), revision: 3, baseRevision: 3 };
+    vi.stubGlobal("fetch", continuityCasFetch({ remote }));
+
+    const conflict = await transportHouseholdWithOutbox({
+      household,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-conflict-no-personal",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    expect(conflict).toMatchObject({ ok: false, errorClass: "pending-transport" });
+    expect(listContinuityOutbox("development")).toHaveLength(1);
+    expect(listContinuityOutbox("development")[0]?.blockedByConflict).toBe(true);
+  });
+
+  it("cancels only an exact conflicted outbox and staged-books generation", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const candidate = {
+      ...googleHousehold(),
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-cancel-exact",
+        identityHash: "identity-hash",
+        auditHash: "audit-hash",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    const item = enqueueContinuitySnapshot({
+      household: candidate,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-cancel-exact",
+    });
+
+    expect(stagedHouseholdMatchesContinuityGeneration(candidate, item)).toBe(true);
+    expect(stagedHouseholdMatchesContinuityGeneration({ ...candidate, revision: 3 }, item)).toBe(false);
+    await expect(cancelContinuityConflictGeneration(item)).resolves.toBe(true);
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
+  it("does not let an older conflict cancel a replacement queue generation", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const first = { ...googleHousehold(), revision: 2, baseRevision: 1 };
+    const oldItem = enqueueContinuitySnapshot({
+      household: first,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-old-conflict",
+    });
+    const replacement = { ...first, revision: 3 };
+    const newItem = enqueueContinuitySnapshot({
+      household: replacement,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-new-generation",
+    });
+
+    await expect(cancelContinuityConflictGeneration(oldItem)).resolves.toBe(false);
+    expect(listContinuityOutbox("development")).toEqual([newItem]);
   });
 
   it("durably enqueues a local Confirm without waiting for cloud transport", async () => {

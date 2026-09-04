@@ -78,7 +78,8 @@ Jonathan and Bianca can use the same shared ledger from two signed-in devices wi
 - A filesystem-backed PGlite test closes every stage handle, reloads the slim durable outbox, and replays the candidate from the persisted stage rather than warm memory.
 - High/Release quick gate on PR head `c902a1890075b17b2b0b71e1fb543f2c739f9ace`: passed in 63.786s with TypeScript, 122/122 fast tests, and 58/58 serial books tests; no time-budget breach. A trust review then found the newer-remote Shared/stale-Personal generation gap, so this is retained as pre-fix evidence rather than the final gate.
 - Focused proof after closing that finding: TypeScript passed and 87/87 continuity, runtime, environment-isolation, and startup tests passed, including a Shared/Personal interleaving retry and same-member second-device Personal adoption.
-- A second exact-head audit found Shared-only startup/catch-up and an Auth/member shortcut. The follow-up binds Auth to the exact selected member, adopts stable Shared+Personal together on every launch-mode pull, and binds write readiness to the exact environment/household/member/revision tuple. TypeScript and 96/96 combined startup, continuity, runtime, isolation, and policy tests pass; missing Personal and mismatched Auth prove zero staging or local advancement.
+- A second exact-head audit found Shared-only startup/catch-up and an Auth/member shortcut. The follow-up binds Auth to the exact selected member, adopts stable Shared+Personal together on every launch-mode pull, and binds write readiness to the exact environment/household/member/revision tuple. TypeScript and 99/99 combined startup, continuity, runtime, isolation, and policy tests pass; missing Personal and mismatched Auth prove zero staging or local advancement.
+- Final audit follow-up removes both manual and background legacy conflict republish in launch mode. A definitive conflict adopts a stable pair, compare-cancels only its exact outbox/stage generation, and requires a fresh Confirm; missing Personal retains the blocked generation. Realtime command acceptance invalidates the prior tuple and schedules an immediate paired refresh.
 - Browser proof on the current implementation: at 1280px and 390×844 the books reached `ready`, there was no horizontal overflow, the full bottom navigation remained present, and the browser reported no warnings or errors.
 - GitHub PR #323 is open. The branch remains unmerged and undeployed; no hosted schema, data, secret, provider, or Production setting changed.
 
@@ -90,6 +91,7 @@ Jonathan and Bianca can use the same shared ledger from two signed-in devices wi
 - Realtime is the fast path; authenticated command/snapshot catch-up is the correctness path.
 - A newer ambiguous acknowledgement and explicit projection restore reopen writes only after two equal Shared-revision reads bracket the signed-in member's revisioned Personal read; a moving generation retries and then fails closed.
 - Startup and normal catch-up use that same pairing. A Shared-only result cannot acknowledge an outbox marker, advance the base revision, or authorize the next write.
+- Launch-mode conflict recovery never auto-merges or republishes the losing staged snapshot. Realtime command materialization cannot carry its prior revision's readiness forward.
 
 ## Remaining uncertainty
 
