@@ -29,6 +29,7 @@ function directPGliteRuntimeTests() {
 const serialFixtureTests = [
   "demo-shift-statistics.test.ts",
   "demo-suite.test.ts",
+  "permission-matrix.test.ts",
   "scale.test.ts",
   "stress-seed.test.ts",
 ];
@@ -51,6 +52,7 @@ describe("Vitest lanes", () => {
       "ask-books.test.ts",
       "auth-invite-discovery.test.ts",
       "books.test.ts",
+      "continuity.test.ts",
       "hosted-transport.test.ts",
       "household-fund-pglite.test.ts",
       "opening-truth-pglite.test.ts",

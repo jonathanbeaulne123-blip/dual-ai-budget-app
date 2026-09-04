@@ -17,6 +17,31 @@
         "test/test-lanes.test.ts"
       ],
       "reason": "Verification command, coordinator, and CI policy contracts"
+    },
+    {
+      "sources": [
+        "docs/AUTH_RLS_CUTOVER.md",
+        "docs/OCTOBER_READINESS_MATRIX.md",
+        "src/auth/supabaseSession.ts",
+        "src/continuityRealtime.ts",
+        "src/core/lifecycleAuthority.ts",
+        "src/ledger/continuityPolicy.ts",
+        "src/ledger/supabase.ts",
+        "supabase/migrations/006_auth_rls_cutover.sql",
+        "supabase/migrations/008_production_continuity_select.sql",
+        "supabase/migrations/012_publish_continuity_snapshot.sql",
+        "supabase/migrations/013_continuity_command_events.sql",
+        "supabase/migrations/014_realtime_publication.sql",
+        "supabase/migrations/017_shared_money_membership_sessions.sql",
+        "supabase/migrations/018_qr_invite_full_house.sql",
+        "test/fixtures/permission-matrix.sql",
+        "test/permission-matrix.manifest.json"
+      ],
+      "tests": [
+        "test/october-readiness-matrix.test.ts",
+        "test/permission-matrix.test.ts"
+      ],
+      "reason": "October control registry, effective Auth/RLS migration order, runtime gates, and synthetic PostgreSQL authorization matrix"
     }
   ]
 }
