@@ -1,13 +1,13 @@
 # Hearth worksession — Readiness 5 preflight repair
 
-- **Status:** LOCAL RELEASE CANDIDATE; exact clean-SHA rerun pending
+- **Status:** LOCAL RELEASE REVIEW PASS; PR/deploy/two-device witness pending
 - **Opened:** 2026-09-04 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/readiness-5-preflight-repair`
 - **Baseline SHA:** `46ec498` (`origin/main`, after onboarding Chapter 4 / PR #332)
-- **Head SHA:** pending rebased candidate commit
+- **Head SHA:** `587f14cee4cdf045e2be798c9c0e075195bb9fd5` (exact tested code head; release-record follow-up is docs-only)
 - **PR or issue:** pending
 - **Risk:** Release
 - **Decision owner:** Jonathan
@@ -59,7 +59,7 @@ An extra Hearth tab cannot leave the laptop indefinitely claiming that local boo
 - [x] Authenticated Development members can copy an allowlisted clock calibration with hashed device identity.
 - [x] Anonymous, wrong-origin, wrong-scope, and Production clock requests fail closed.
 - [x] Clock uncertainty over 50 ms is refused; the lowest-RTT valid sample is used.
-- [ ] Focused and release gates pass on the exact candidate SHA.
+- [x] Focused and release gates pass on the exact candidate SHA.
 - [ ] PR checks, merge, Development deploy, live HTTP, and exact asset anchor pass.
 - [ ] Laptop and phone complete a clean recovery/calibration rerun without loss, duplicate, invalid books, or false Synced state.
 
@@ -70,7 +70,7 @@ An extra Hearth tab cannot leave the laptop indefinitely claiming that local boo
 - [x] Implement bounded books opening and deterministic tests.
 - [x] Implement authenticated cloud-clock calibration and privacy/authority tests.
 - [x] Update only the affected continuity/proof canon.
-- [ ] Run focused gates, release review, PR/merge/deploy checks, and live Development verification.
+- [ ] Run focused gates, release review, PR/merge/deploy checks, and live Development verification. (Local review is complete; remote and live steps remain.)
 - [ ] Guide the two physical devices through the clean rerun and record only privacy-safe results.
 
 ## Evidence log
@@ -84,6 +84,9 @@ An extra Hearth tab cannot leave the laptop indefinitely claiming that local boo
 - 2026-09-04 Toronto — `pnpm build` passed: 459 modules plus Hercules Pro UI; no `dist/_redirects`.
 - 2026-09-04 Toronto — semantic Pairing UI at 320/390/720/1100 px passed 4/4 with the new proof-clock control, explicit Development/privacy copy, keyboard-native button type, and live status result. Combined final focused set passed 15/15.
 - 2026-09-04 Toronto — fetched new `origin/main@46ec498` (Onboarding Chapter 4 / PR #332), rebased the isolated candidate, preserved both current handoff/roadmap records, and renumbered this decision to D-212.
+- 2026-09-04 Toronto — exact clean code head `587f14cee4cdf045e2be798c9c0e075195bb9fd5` over `origin/main@46ec4982fa5214aabdc69decc2adcf65cc1fe7c0`: Release quick gate passed 16 files / 141 tests, TypeScript, AI-surface, and diff hygiene in 163.463 s; no time-budget breach.
+- 2026-09-04 Toronto — exact current-main `pnpm build` passed TypeScript, Vite 459 modules, Hercules Pro UI, and redirect sanitizer. Only existing PGlite/chunk warnings appeared.
+- 2026-09-04 Toronto — local Release review PASS: current main is the ancestor; scope contains no migration/schema, credential, hosted household mutation, Production flag, automatic clearing, or financial command/formula change. Rollback is the source commit; a deployed rollback still requires a separate approved Development deployment.
 
 ## Decisions
 
@@ -98,4 +101,4 @@ An extra Hearth tab cannot leave the laptop indefinitely claiming that local boo
 
 ## Handoff
 
-Codex owns implementation through Development deployment. Jonathan owns physical-phone actions and the operator witness. Local, branch, PR, merged, deployed, and manually verified states must remain distinct.
+Codex owns the authorized PR, merge, Development deployment, and live-origin checks. Jonathan owns physical-phone actions and the operator witness. Current state is local branch/review only: not pushed, in a PR, merged, deployed, or physically rerun yet.

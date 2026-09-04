@@ -48,13 +48,15 @@ repository's existing PGlite/chunk-size warnings were emitted.
 **Next owner:** Review this local branch, then Jonathan may separately
 authorize push/PR/merge. Hosted two-device/cloud-ack proof remains a later
 release check.
+
 ## Readiness 5 preflight repair — local books and proof clock (D-212) (2026-09-04)
 
-**Status:** Local release candidate rebased onto clean current `origin/main@46ec498`; exact clean-SHA rerun, PR, merge, deploy, and physical two-device witness remain pending. The pre-rebase dirty-tree Release quick gate passed 15 files / 137 tests plus TypeScript, AI-surface, and diff hygiene in 200.654 seconds; `pnpm build` passed 459 modules plus Hercules Pro UI; the new Pairing control passed semantic 320/390/720/1100 px coverage. Risk: **Release**. Development only.
+**Status:** **LOCAL RELEASE REVIEW PASS** on exact code head `587f14cee4cdf045e2be798c9c0e075195bb9fd5`, rebased onto clean current `origin/main@46ec4982fa5214aabdc69decc2adcf65cc1fe7c0`. The clean Release quick gate passed 16 files / 141 tests plus TypeScript, AI-surface, and diff hygiene in 163.463 seconds; the current-main production build passed 459 modules plus Hercules Pro UI; the new Pairing control passed semantic 320/390/720/1100 px coverage. PR, merge, deploy, and physical two-device witness remain pending. Risk: **Release**. Development only.
 
 **Outcome:** a stalled browser PGlite worker cannot leave Hearth indefinitely validating. After twelve seconds the attempt and worker retire into an explicit retry/recovery state while the accepted snapshot and IndexedDB remain untouched. Signed-in Development devices can copy one D-210 clock-calibration row through an authenticated exact-membership Worker route; output contains only a hashed device id and timing fields.
 
 **Boundary:** no automatic local-books deletion/replacement, financial command/formula change, schema, hosted household row, secret, provider, bank, Production continuity, raw identity, or ledger fact. The clean two-device rerun and release receipts remain pending until the candidate passes review and deploys.
+
 ## Onboarding Slice 12 — Chapter 3 Charter (D-210) (2026-09-04)
 
 **Status:** Local implementation and live UX pass complete on
