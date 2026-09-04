@@ -135,6 +135,21 @@ describe("onboardingNavigationTarget", () => {
     ];
     let household = proposedActive();
     for (const chapterId of HOUSEHOLD_CHAPTER_IDS) {
+      if (chapterId === "ch-03-charter") {
+        household = foundHouseholdCharter(household, {
+          memberId: JONATHAN,
+          custodianMemberId: BIANCA,
+          purpose: "Roof and groceries.",
+          splitRule: "remainder",
+          splitNote: "Bianca covers what she can, Jonathan closes the rest.",
+          ceilingKind: "none",
+          cadence: "weekly",
+          cadenceWeekday: 0,
+          date: TODAY,
+        }).household;
+        household = signHouseholdCharter(household, { memberId: BIANCA }).household;
+        household = signHouseholdCharter(household, { memberId: JONATHAN }).household;
+      }
       household = chapterId === "ch-02-household"
         ? recordObservedChapterCompletion(household, {
             memberId: BIANCA,

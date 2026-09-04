@@ -56,6 +56,7 @@ import {
   navTargetSurfaceLabel,
   onboardingNavigationTarget,
   saveReturnMessage,
+  SHELL_VIEW,
   CAT,
   NAV,
   WIDE_BREAKPOINT,
@@ -224,6 +225,7 @@ export function HerculesPresence({
   onAcceptPreset,
   onDismissNotice,
   onOpenSource,
+  onOpenCharter,
 }: {
   household: Household;
   today: string;
@@ -243,6 +245,7 @@ export function HerculesPresence({
   onAcceptPreset?: (key: string, summary: string) => void;
   onDismissNotice?: (key: string) => void;
   onOpenSource: (source: HerculesNumberSource) => void;
+  onOpenCharter?: () => void;
 }) {
   const contextHousehold = useMemo(
     () => householdForHerculesContext(household, memberId, view),
@@ -806,6 +809,20 @@ export function HerculesPresence({
       tab: navTarget.target.tab,
       setAt: new Date().toISOString(),
     });
+  }
+
+  function openOnboardingCharter() {
+    if (!onOpenCharter || navTarget?.chapterId !== "ch-03-charter") return;
+    closeChat();
+    saveReturnMessage({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId,
+      chapterId: navTarget.chapterId,
+      tab: navTarget.target.tab,
+      setAt: new Date().toISOString(),
+    });
+    onOpenCharter();
   }
 
   function openMobileFocus() {
@@ -1377,6 +1394,7 @@ export function HerculesPresence({
               busy={busy}
               onCommit={onLedger}
               onDismiss={closeChat}
+              onOpenCharter={openOnboardingCharter}
             />
           ) : (
             <>
@@ -1497,11 +1515,9 @@ export function HerculesPresence({
           </div>
         </div>
       )}
-      {/* Slice 9: "Finish here, then open Hercules." Furniture, not an
-          alert — no dismiss control, no timeout. The mobile equivalent is
-          plate 13's 44px nav-chrome bar, out of this slice's file list; on
-          desktop, HerculesPresence's own existing bubble is where the same
-          nav.return copy surfaces instead. */}
+      {/* "Finish here, then open Hercules." Furniture, not an alert: no
+          dismiss control and no timeout. Desktop reuses the existing status
+          surface; mobile uses plate 13's bar above the nav. */}
       {!phoneShell && !showProposal && !showTalk && activeReturn && (
         <div
           ref={bubbleRef}
@@ -1511,6 +1527,17 @@ export function HerculesPresence({
           aria-live="polite"
         >
           <p className="hercules-spoken">{copy("nav.return")}</p>
+        </div>
+      )}
+      {phoneShell && !focusShellOpen && activeReturn && (
+        <div
+          className="onboarding-return-bar"
+          role="status"
+          aria-live="polite"
+          style={{ minHeight: SHELL_VIEW.returnBarHeight }}
+        >
+          <span className="onboarding-return-dot" aria-hidden="true" />
+          <span>{copy("nav.return")}</span>
         </div>
       )}
       {(desktopOnboardingOpen || (showTalk && talk)) && !focusShellOpen && (
@@ -1528,8 +1555,9 @@ export function HerculesPresence({
                 busy={busy}
                 onCommit={onLedger}
                 onDismiss={closeChat}
+                onOpenCharter={openOnboardingCharter}
               />
-              {navTarget && (
+              {navTarget && navTarget.chapterId !== "ch-03-charter" && (
                 <button type="button" className="hercules-help" onClick={goToOnboardingTarget}>
                   {copy("nav.go", { surface: navTargetSurfaceLabel(navTarget.target.tab) })}
                 </button>

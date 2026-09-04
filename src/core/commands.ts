@@ -416,6 +416,12 @@ export function recordChapterAcknowledgement(household: Household, input: {
   if (chapter.skip === "auto-completable") {
     throw new ValidationError("This setup chapter needs accepted evidence.");
   }
+  if (chapter.id === "ch-03-charter") {
+    requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+    if (evidenceFor(household, chapter.id, input.memberId).kind !== "accepted") {
+      throw new ValidationError("Both people need to sign the current Charter before this chapter can continue.");
+    }
+  }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
@@ -5740,7 +5746,9 @@ export function signHouseholdCharter(household: Household, input: { memberId: st
   const charter = requireHouseholdCharter(household);
   const signature = charter.signatures.find((row) => row.memberId === input.memberId);
   if (!signature || signature.memberId !== input.memberId) throw new ValidationError("You can only sign your own line.");
-  if (signature.signedAt) throw new ValidationError("That charter line is already signed.");
+  if (signature.signedAt && signature.signedAt >= charter.termsUpdatedAt) {
+    throw new ValidationError("That charter line is already signed for the current terms.");
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const signedAt = charterIso(input.at);
@@ -5750,7 +5758,8 @@ export function signHouseholdCharter(household: Household, input: { memberId: st
     signatures: charter.signatures.map((row) => row.memberId === input.memberId ? { ...row, signedAt } : row),
     updatedAt,
   };
-  return commit(previous, next, "Charter", "Signed the household charter", [`CHARTER-SIGN-${input.memberId}`]);
+  const summary = signature.signedAt ? "Re-signed the household charter" : "Signed the household charter";
+  return commit(previous, next, "Charter", summary, [`CHARTER-SIGN-${input.memberId}`]);
 }
 
 export function grantCharterPermission(household: Household, input: {

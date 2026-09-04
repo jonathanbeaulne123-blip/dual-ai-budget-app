@@ -192,6 +192,22 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     key: "onboarding.household.ch-02-household", speaker: "hercules", surface: "card", scope: "none", announce: "none",
     text: "Let me make sure this is the right household for both of you.", slots: [],
   }),
+  entry({
+    key: "onboarding.household.ch-03-charter", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Your Charter puts the household's shared rules in your own words. Write it together, then each sign your own line.", slots: [],
+  }),
+  entry({
+    key: "charter.write", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Write the Charter", slots: [],
+  }),
+  entry({
+    key: "charter.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open the Charter", slots: [],
+  }),
+  entry({
+    key: "charter.review-sign", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Review and sign the Charter", slots: [],
+  }),
 
   // E.5 The budget chapters
   entry({

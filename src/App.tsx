@@ -6984,6 +6984,10 @@ export function App() {
         onLedger={(fn) => { void runKitchen(fn); }}
         onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
         onDismissNotice={(key) => { void run((current) => dismissNotice(current, key)); }}
+        onOpenCharter={() => {
+          if (household.charter) setCharterPageOpen(true);
+          else setCharterFoundingOpen(true);
+        }}
         onOpenSource={(source: HerculesNumberSource) => {
           setHerculesSourceFocus(source);
           rememberSession({ memberId: session.memberId, view: source.view, householdId: household.householdId });

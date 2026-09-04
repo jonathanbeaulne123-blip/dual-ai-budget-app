@@ -81,6 +81,8 @@ describe("onboarding registry", () => {
     ]);
     expect(personalModules()).toEqual([]);
     expect(chapterById("ch-03-charter")?.target).toEqual({ tab: "more" });
+    expect(chapterById("ch-03-charter")?.timeBudgetSeconds).toBe(480);
+    expect(chapterById("ch-03-charter")?.pausePoints).toEqual(["after-question-two"]);
     expect(chapterById("missing")).toBeNull();
   });
 

@@ -161,6 +161,41 @@
   cursor: pointer;
 }
 
+.onboarding-return-bar {
+  position: fixed;
+  z-index: 14;
+  left: 0;
+  right: 0;
+  bottom: var(--nav);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-2);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.3;
+  pointer-events: none;
+}
+
+.onboarding-return-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  background: var(--copper);
+}
+
+@media (min-width: 720px) {
+  .onboarding-return-bar { display: none; }
+}
+
+@media (forced-colors: active) {
+  .onboarding-return-dot { background: CanvasText; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .onboarding-shell * {
     transition: none !important;

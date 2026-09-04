@@ -15,13 +15,9 @@
 // "Open {surface}" bubble control, and App.tsx's onGo wiring) own every
 // event listener; this file owns none.
 //
-// Plate 13's 44px bar is mobile nav-chrome furniture that this slice's file
-// list does not touch (disclosed in OnboardingChat.tsx's own header
-// comment, unchanged by this slice). Desktop has no equivalent chrome to
-// pin a bar to, so "the existing HerculesPresence and bubble system" is
-// where the same instruction surfaces instead — the same nav.return copy
-// key, the same "no dismiss, no timeout" rule, just read by a different
-// component. See apply-onboarding-return-*.md for what mobile still owes.
+// Slice 12 adds plate 13's mobile bar to HerculesPresence, using the same
+// record as the existing desktop status furniture. This module remains only
+// the scoped, timer-free record and probe; React owns the presentation.
 
 import type { DateKey } from "../calendar.ts";
 import type { Environment, Household } from "../types.ts";
