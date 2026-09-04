@@ -15,6 +15,7 @@ import {
   nextChapterFor,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
+  recordObservedChapterCompletion,
   setOnboardingOffersMuted,
   shapeHouseholdOnboarding,
   skipPersonalStep,
@@ -389,8 +390,18 @@ describe("onboarding member progress", () => {
     expect(bianca.shared.members.every((member) => member.onboardingProgress === undefined)).toBe(true);
     expect(memberProgress(assembleHousehold(bianca.shared, bianca.personal), BIANCA).offersMuted).toBe(true);
 
-    const later = recordChapterAcknowledgement(muted, {
-      memberId: BIANCA, chapterId: "ch-02-household", createdBy: BIANCA, at: "2026-09-03T15:00:00.000Z",
+    const later = recordObservedChapterCompletion(muted, {
+      memberId: BIANCA,
+      chapterId: "ch-02-household",
+      createdBy: BIANCA,
+      at: "2026-09-03T15:00:00.000Z",
+      observation: {
+        kind: "resolved",
+        scope: { environment: muted.environment, householdId: muted.householdId, memberId: BIANCA },
+        currentMemberId: BIANCA,
+        seatMemberIds: [BIANCA, JONATHAN],
+        observedAt: "2026-09-03T14:59:00.000Z",
+      },
     }).household;
     const merged = mergePersonal(bianca.personal, splitForSync(later, BIANCA).personal);
     expect(merged.onboardingProgress?.rows.filter((row) => row.acknowledgedAt).map((row) => row.chapterId)).toEqual([

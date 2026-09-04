@@ -74,6 +74,16 @@ const APPENDIX_E: Record<string, { text: string; announce: CopyEntry["announce"]
   "personal.off": { text: "Stop offering these", announce: "none" },
 };
 
+const SLICE_11_REPAIR_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "blocked.revoked": { text: "Your household access isn't active right now.", announce: "polite" },
+  "blocked.offline": { text: "You're offline, so I can't finish this check yet. Nothing's lost.", announce: "polite" },
+  "blocked.scope": { text: "I found more than one household. Open the one you want, then come back here.", announce: "polite" },
+  "probe.retry": { text: "Try again", announce: "none" },
+  "onboarding.household.ch-02-household": {
+    text: "Let me make sure this is the right household for both of you.", announce: "none",
+  },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -84,8 +94,12 @@ describe("the onboarding copy deck", () => {
     }
   });
 
-  it("has no keys beyond Appendix E", () => {
-    expect(Object.keys(ONBOARDING_COPY).sort()).toEqual(Object.keys(APPENDIX_E).sort());
+  it("has no keys beyond Appendix E and the documented Slice 11 repair", () => {
+    expect(Object.keys(ONBOARDING_COPY).sort())
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY }).sort());
+    for (const [key, expected] of Object.entries(SLICE_11_REPAIR_COPY)) {
+      expect(ONBOARDING_COPY[key]).toMatchObject(expected);
+    }
   });
 
   it("declares slots that match every {named} placeholder in its own text", () => {

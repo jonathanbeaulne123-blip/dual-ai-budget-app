@@ -8,15 +8,31 @@ import { resolveSwipeCardAccount } from "../swipe.ts";
 import type { Account, Household, Transaction } from "../types.ts";
 import { acceptedHouseholdOnboarding, onboardingIsActive, shapeHouseholdOnboarding } from "./mode.ts";
 import { chapterById } from "./registry.ts";
+import {
+  validateHouseholdScopeObservation,
+  type HouseholdScopeFailure,
+  type HouseholdScopeObservation,
+} from "./householdScope.ts";
 import type { ChapterId } from "./types.ts";
 
 export type EvidenceScope = "household" | "self-personal";
-export type IneligibleReason = "malformed" | "stale" | "conflicted" | "untied" | "privacy";
+export type IneligibleReason =
+  | "malformed"
+  | "stale"
+  | "conflicted"
+  | "untied"
+  | "privacy"
+  | "identity"
+  | "membership"
+  | "scope"
+  | "offline"
+  | "retry"
+  | "revoked";
 
 export type EvidenceCard = {
   chapterId: ChapterId;
   scope: EvidenceScope;
-  kind: "transaction" | "receipt" | "account" | "configuration" | "recurrence" | "submission" | "approval";
+  kind: "transaction" | "receipt" | "account" | "configuration" | "household" | "recurrence" | "submission" | "approval";
   sourceIds: string[];
   lines: Array<{ label: string; value: string }>;
   observedAt: string;
@@ -26,6 +42,11 @@ export type EvidenceResult =
   | { kind: "accepted"; card: EvidenceCard }
   | { kind: "empty" }
   | { kind: "ineligible"; reason: IneligibleReason };
+
+export type EvidenceContext = {
+  /** Sanitized transient Chapter 2 observation; never stored on Household. */
+  householdScope?: HouseholdScopeObservation | null;
+};
 
 type Projection = {
   household: EvidenceCard | null;
@@ -95,22 +116,46 @@ function meetEvidence(household: Household, chapterId: ChapterId): Projection {
   };
 }
 
-function householdEvidence(household: Household, chapterId: ChapterId): Projection {
-  const members = household.members.filter((member) => member.active).sort((left, right) => left.id.localeCompare(right.id));
-  if (members.length < 2) return EMPTY;
+function householdFailureReason(reason: HouseholdScopeFailure): IneligibleReason {
+  switch (reason) {
+    case "missing-auth": return "identity";
+    case "missing-partner-membership": return "membership";
+    case "ambiguous-household-scope": return "scope";
+    case "revoked-membership": return "revoked";
+    case "offline-cached-identity": return "offline";
+    case "probe-failed": return "retry";
+    case "scope-changed": return "stale";
+  }
+}
+
+function householdEvidence(
+  household: Household,
+  chapterId: ChapterId,
+  viewerMemberId: string,
+  observation?: HouseholdScopeObservation | null,
+): Projection {
+  const validation = validateHouseholdScopeObservation(household, viewerMemberId, observation);
+  if (validation.kind === "checking") return EMPTY;
+  if (validation.kind === "blocked") {
+    return { ...EMPTY, ineligible: householdFailureReason(validation.reason) };
+  }
+  const memberIds = new Set(validation.memberIds);
+  const members = household.members
+    .filter((member) => member.active && memberIds.has(member.id))
+    .sort((left, right) => left.id.localeCompare(right.id));
   return {
     ...EMPTY,
     household: {
       chapterId,
       scope: "household",
-      kind: "configuration",
+      kind: "household",
       sourceIds: [household.householdId, ...members.map((member) => member.id)],
       lines: [
         { label: "Household", value: household.name },
         { label: "Members", value: members.map((member) => member.name).join(" and ") },
         { label: "Environment", value: household.environment },
       ],
-      observedAt: latestIso(members.map((member) => member.updatedAt)) ?? "",
+      observedAt: validation.observedAt,
     },
   };
 }
@@ -401,10 +446,15 @@ function readyEvidence(household: Household, chapterId: ChapterId, viewerMemberI
   return transactionCard(household, chapterId, own, "self-personal");
 }
 
-function project(household: Household, chapterId: ChapterId, viewerMemberId: string): Projection {
+function project(
+  household: Household,
+  chapterId: ChapterId,
+  viewerMemberId: string,
+  context?: EvidenceContext,
+): Projection {
   switch (chapterId) {
     case "ch-01-meet": return meetEvidence(household, chapterId);
-    case "ch-02-household": return householdEvidence(household, chapterId);
+    case "ch-02-household": return householdEvidence(household, chapterId, viewerMemberId, context?.householdScope);
     case "ch-03-charter": return charterEvidence(household, chapterId);
     case "ch-04-accounts": return accountsEvidence(household, chapterId, viewerMemberId);
     case "ch-05-opening": return openingEvidence(household, chapterId);
@@ -424,6 +474,7 @@ function resolveEvidence(
   chapterId: ChapterId,
   viewerMemberId: string,
   witnessOnly: boolean,
+  context?: EvidenceContext,
 ): EvidenceResult {
   if (!chapterById(chapterId)) return { kind: "ineligible", reason: "malformed" };
   if (!household.members.some((member) => member.active && member.id === viewerMemberId)) {
@@ -432,7 +483,7 @@ function resolveEvidence(
   if (household.conflicts.some((conflict) => !conflict.resolved)) {
     return { kind: "ineligible", reason: "conflicted" };
   }
-  const projection = project(household, chapterId, viewerMemberId);
+  const projection = project(household, chapterId, viewerMemberId, context);
   if (projection.ineligible) return { kind: "ineligible", reason: projection.ineligible };
   return cardResult(witnessOnly ? projection.household : projection.household ?? projection.personal);
 }
@@ -441,14 +492,20 @@ export function evidenceFor(
   household: Household,
   chapterId: ChapterId,
   viewerMemberId: string,
+  context?: EvidenceContext,
 ): EvidenceResult {
-  return resolveEvidence(household, chapterId, viewerMemberId, false);
+  return resolveEvidence(household, chapterId, viewerMemberId, false, context);
 }
 
 export function witnessEvidenceFor(
   household: Household,
   chapterId: ChapterId,
   viewerMemberId: string,
+  context?: EvidenceContext,
 ): EvidenceResult {
-  return resolveEvidence(household, chapterId, viewerMemberId, true);
+  return resolveEvidence(household, chapterId, viewerMemberId, true, context);
+}
+
+export function probeEvidenceKey(card: EvidenceCard): string {
+  return `${card.chapterId}:${[...card.sourceIds].sort().join("|")}:${card.observedAt}`;
 }

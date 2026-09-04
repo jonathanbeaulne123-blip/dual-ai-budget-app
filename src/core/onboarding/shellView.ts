@@ -113,6 +113,8 @@ export function evidenceProvenanceLabel(kind: EvidenceCard["kind"]): string {
   switch (kind) {
     case "configuration":
       return "From the charter record.";
+    case "household":
+      return "From live household access.";
     case "account":
       return "From the accounts.";
     case "transaction":
@@ -141,6 +143,8 @@ export function evidenceCardLabel(kind: EvidenceCard["kind"]): string {
   switch (kind) {
     case "configuration":
       return "The charter";
+    case "household":
+      return "The household";
     case "account":
       return "The accounts";
     case "transaction":

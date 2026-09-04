@@ -16,6 +16,7 @@ import {
   foundHouseholdCharter,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
+  recordObservedChapterCompletion,
   signHouseholdCharter,
   witnessStatusRows,
   witnessEvidenceFor,
@@ -40,6 +41,22 @@ function proposedActive(): Household {
 }
 
 function acknowledgeBoth(household: Household, chapterId: string): Household {
+  if (chapterId === "ch-02-household") {
+    const observation = (memberId: string) => ({
+      kind: "resolved" as const,
+      scope: { environment: household.environment, householdId: household.householdId, memberId },
+      currentMemberId: memberId,
+      seatMemberIds: [BIANCA, JONATHAN],
+      observedAt: "2026-09-03T14:02:00.000Z",
+    });
+    let next = recordObservedChapterCompletion(household, {
+      memberId: BIANCA, chapterId, createdBy: BIANCA, observation: observation(BIANCA),
+    }).household;
+    next = recordObservedChapterCompletion(next, {
+      memberId: JONATHAN, chapterId, createdBy: JONATHAN, observation: observation(JONATHAN),
+    }).household;
+    return next;
+  }
   let next = recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
   next = recordChapterAcknowledgement(next, { memberId: JONATHAN, chapterId, createdBy: JONATHAN }).household;
   return next;

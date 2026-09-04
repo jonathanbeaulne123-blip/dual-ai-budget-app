@@ -170,6 +170,8 @@ import {
 } from "./onboarding/mode.ts";
 import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.ts";
 import { memberProgress } from "./onboarding/progress.ts";
+import { evidenceFor, probeEvidenceKey } from "./onboarding/evidence.ts";
+import type { HouseholdScopeObservation } from "./onboarding/householdScope.ts";
 import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
@@ -411,11 +413,52 @@ export function recordChapterAcknowledgement(household: Household, input: {
 }): CommitResult {
   const chapter = chapterById(input.chapterId);
   if (!chapter) throw new ValidationError("Choose a current onboarding chapter.");
+  if (chapter.skip === "auto-completable") {
+    throw new ValidationError("This setup chapter needs accepted evidence.");
+  }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
       ? {
           ...row,
+          acknowledgedAt: row.acknowledgedAt ?? at,
+          lastSafeResumePoint: chapter.id,
+        }
+      : row),
+    updatedAt: at,
+  }));
+}
+
+/**
+ * Accept a live, sanitized probe for an auto-completable chapter. The command
+ * re-projects against the current Household so a member/household switch
+ * cannot carry an earlier observation forward.
+ */
+export function recordObservedChapterCompletion(household: Household, input: {
+  memberId: string;
+  chapterId: string;
+  createdBy: string;
+  observation: HouseholdScopeObservation;
+  at?: string;
+}): CommitResult {
+  const chapter = chapterById(input.chapterId);
+  if (!chapter || chapter.skip !== "auto-completable") {
+    throw new ValidationError("That setup chapter cannot complete from a probe.");
+  }
+  const projected = evidenceFor(household, chapter.id, input.memberId, {
+    householdScope: input.observation,
+  });
+  if (projected.kind !== "accepted" || projected.card.scope !== "household") {
+    throw new ValidationError("That household check is no longer current.");
+  }
+  const evidenceKey = probeEvidenceKey(projected.card);
+  return updateMemberProgress(household, input, "Onboarding probe accepted", (progress, at) => ({
+    ...progress,
+    rows: progress.rows.map((row) => row.chapterId === chapter.id
+      ? {
+          ...row,
+          observedCompleteAt: row.observedCompleteAt ?? projected.card.observedAt,
+          probeEvidenceKey: row.probeEvidenceKey ?? evidenceKey,
           acknowledgedAt: row.acknowledgedAt ?? at,
           lastSafeResumePoint: chapter.id,
         }

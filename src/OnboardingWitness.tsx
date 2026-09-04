@@ -36,6 +36,7 @@ type Props = {
   chapter: OnboardingChapter;
   evidence: EvidenceResult;
   blockedCopyKey: string | null;
+  blockedCopySlots?: Record<string, string>;
   noticeKey: string | null;
 };
 
@@ -99,7 +100,15 @@ export function OnboardingNotice({ noticeKey }: { noticeKey: string }) {
   );
 }
 
-export function OnboardingWitness({ turnLine, hercLine, chapter, evidence, blockedCopyKey, noticeKey }: Props) {
+export function OnboardingWitness({
+  turnLine,
+  hercLine,
+  chapter,
+  evidence,
+  blockedCopyKey,
+  blockedCopySlots,
+  noticeKey,
+}: Props) {
   const headingRef = useRef<HTMLParagraphElement>(null);
   const acceptedCard = evidence.kind === "accepted" ? evidence.card : null;
   const statusRows = witnessStatusRows(chapter.id, acceptedCard);
@@ -130,7 +139,7 @@ export function OnboardingWitness({ turnLine, hercLine, chapter, evidence, block
       {blockedCopyKey ? (
         <section className="onboarding-card">
           <p className="onboarding-card-label">Held up</p>
-          <p className="onboarding-card-task">{copy(blockedCopyKey)}</p>
+          <p className="onboarding-card-task">{copy(blockedCopyKey, blockedCopySlots)}</p>
         </section>
       ) : evidence.kind === "accepted" ? (
         <section className="onboarding-card">

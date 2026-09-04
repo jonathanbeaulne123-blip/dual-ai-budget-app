@@ -1,5 +1,42 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 11 — Chapter 2 live household scope (D-209) (2026-09-04)
+
+**Status:** Local implementation and repair on `onboarding/11-ch2-household`,
+rebased onto `origin/main@e109708`; not pushed, merged, or deployed.
+Risk: **Medium-High** because the slice reads privacy-sensitive live Auth and
+membership authority but posts no money and changes no Auth/RLS policy.
+
+**Outcome:** Chapter 2 accepts only a live exact selected household with the
+current authenticated member and exactly the two expected active seats. A
+multi-household person passes after an exact scope is selected; Hearth never
+chooses the first membership. Cached/offline identity remains readable but
+pending. Probe success enables Next and never auto-advances.
+
+**Implementation:** `src/onboardingHouseholdScope.ts` performs guarded live I/O
+and emits a sanitized transient observation. Pure
+`src/core/onboarding/householdScope.ts` and `evidence.ts` validate and project
+it without browser/network imports. Next uses
+`recordObservedChapterCompletion`, which re-projects against the current
+Household and writes only the actor's Personal onboarding progress. Ordinary
+acknowledgement is refused for auto-completable chapters. Repaired contract:
+[`briefs/ONBOARDING_SLICE_11_CH2_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_11_CH2_CONTRACT_2026-09-04.md).
+
+**Review repair:** Hosted continuity membership, not the local Google bridge,
+now resolves the current member. Checking stays neutral. Unknown RPC/network
+failures become an honest retryable state instead of false missing-Auth or
+missing-partner copy. Revoked current access no longer names the partner.
+Chapter 2 evidence is labelled as live household access, with dedicated calm
+offline and multi-household copy. The actual component passed live browser QA
+at 320, 390, 720, and 1100 CSS px, keyboard forward/reverse wrapping, 44 px
+touch targets, zero horizontal overflow, forced colors, reduced motion, and
+contrast checks.
+
+**Boundary:** No Auth/session/roster cache on Household or Member; no App,
+Pairing, schema, RLS, hosted row, secret, provider, money command, Production,
+push, merge, or deployment change. No signed-in hosted two-browser proof is
+claimed.
+
 ## Single-run pull-request CI (D-202 why-note) (2026-09-03)
 
 **Status:** Local implementation on `codex/ci-single-pr-run` from clean `origin/main@f5a3cab8746d60131568768801d8145cd17f9a9b`; not pushed, merged, deployed, or released. Risk: **Medium** because CI verification scheduling changes without runtime behavior.
