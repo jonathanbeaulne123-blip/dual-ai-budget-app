@@ -1,5 +1,5 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { CommitResult, DateKey, Household } from "./core/index.ts";
+import type { CommitResult, DateKey, EvidenceResult, Household } from "./core/index.ts";
 import {
   SHELL_VIEW,
   SITTING_MARK_COUNT,
@@ -18,12 +18,14 @@ import {
   nextChapterFor,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
+  recordObservedChapterCompletion,
   sittingRailIndex,
   stopHouseholdOnboarding,
   taskLengthLabel,
   witnessEvidenceFor,
 } from "./core/index.ts";
 import { OnboardingNotice, OnboardingWitness, noticedEvidenceKey } from "./OnboardingWitness.tsx";
+import { useHouseholdScopeProbe } from "./onboardingHouseholdScope.ts";
 import "./onboarding.css";
 
 // The conductor shell (ONBOARDING_BUILD_MANUAL.md slice 7; HEARTH_UX_PACKET.md
@@ -94,7 +96,46 @@ type Props = {
   now?: string;
 };
 
-export function OnboardingChat({ household, memberId, today, busy, onCommit, onDismiss, now }: Props) {
+export type OnboardingBlockedPresentation = {
+  copyKey: string;
+  slots?: Record<string, string>;
+  retryable: boolean;
+};
+
+/** Keep async Chapter 2 failures honest without making the shared shell guess. */
+export function onboardingBlockedPresentation(
+  evidence: EvidenceResult,
+  otherName: string,
+): OnboardingBlockedPresentation | null {
+  if (evidence.kind !== "ineligible") return null;
+  switch (evidence.reason) {
+    case "conflicted": return { copyKey: "blocked.conflict", retryable: false };
+    case "stale": return { copyKey: "blocked.stale", retryable: false };
+    case "untied": return { copyKey: "blocked.untied", retryable: false };
+    case "privacy": return { copyKey: "blocked.privacy", retryable: false };
+    case "scope": return { copyKey: "blocked.scope", retryable: false };
+    case "identity": return { copyKey: "blocked.identity", retryable: false };
+    case "offline": return { copyKey: "blocked.offline", retryable: false };
+    case "membership": return {
+      copyKey: "blocked.membership",
+      slots: { name: otherName },
+      retryable: false,
+    };
+    case "revoked": return { copyKey: "blocked.revoked", retryable: false };
+    case "retry": return { copyKey: "retry.honest", retryable: true };
+    default: return { copyKey: "blocked.stale", retryable: false };
+  }
+}
+
+export function OnboardingChat({
+  household,
+  memberId,
+  today,
+  busy,
+  onCommit,
+  onDismiss,
+  now,
+}: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLParagraphElement>(null);
 
@@ -143,6 +184,12 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
 
   const record = acceptedHouseholdOnboarding(household);
   const nowIso = now ?? new Date().toISOString();
+  const chapter = nextChapterFor(household, memberId, today);
+  const { observation: householdScopeObservation, retry: retryHouseholdScopeProbe } = useHouseholdScopeProbe({
+    active: record?.state === "active" && chapter?.id === "ch-02-household",
+    household,
+    memberId,
+  });
 
   if (record?.state === "offered") {
     return (
@@ -303,7 +350,6 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
     );
   }
 
-  const chapter = nextChapterFor(household, memberId, today);
   if (!chapter) return null;
 
   const custodianMemberId = household.charter?.custodianMemberId ?? household.householdFund?.custodianMemberId ?? null;
@@ -330,8 +376,8 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
       : flavorFor(chapter.id, household.householdId);
 
   const evidence = role === "conductor"
-    ? evidenceFor(household, chapter.id, memberId)
-    : witnessEvidenceFor(household, chapter.id, memberId);
+    ? evidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation })
+    : witnessEvidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation });
   const railIndex = sittingRailIndex(chapter.sitting);
   const chapterId = chapter.id;
   const progress = memberProgress(household, memberId);
@@ -344,31 +390,33 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
   // merely "nothing to show yet". Showing the ordinary task card instead
   // would misrepresent a blocked state as an untouched one, so this is
   // checked ahead of the task/evidence-card choice below and also gates the
-  // Next button off (there is nothing safe to continue past). Four of the
-  // five IneligibleReason values have a committed Appendix E line to show.
+  // Next button off (there is nothing safe to continue past).
   // "malformed" has no dedicated line, so it uses the deliberately generic
   // stale refusal rather than presenting invalid evidence as untouched work.
-  const blockedCopyKey = evidence.kind !== "ineligible" ? null : evidence.reason === "conflicted"
-    ? "blocked.conflict"
-    : evidence.reason === "stale"
-      ? "blocked.stale"
-      : evidence.reason === "untied"
-        ? "blocked.untied"
-        : evidence.reason === "privacy"
-          ? "blocked.privacy"
-          : "blocked.stale";
+  const otherName = household.members.find((member) => member.active && member.id !== memberId)?.name ?? "your partner";
+  const blocked = onboardingBlockedPresentation(evidence, otherName);
+  const blockedCopyKey = blocked?.copyKey ?? null;
+  const blockedCopySlots = blocked?.slots;
+  const autoCompletable = chapter.skip === "auto-completable";
 
   const showAction = role === "conductor"
     && !blockedCopyKey
+    && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
-  const cardMarginBottom = showAction ? SHELL_VIEW.cardToAction : 0;
+  const showRetryAction = role === "conductor" && blocked?.retryable === true;
+  const cardMarginBottom = showAction || showRetryAction ? SHELL_VIEW.cardToAction : 0;
 
   function acknowledge() {
-    onCommit((current) => recordChapterAcknowledgement(current, {
-      memberId,
-      chapterId,
-      createdBy: memberId,
-    }));
+    if (autoCompletable && householdScopeObservation) {
+      onCommit((current) => recordObservedChapterCompletion(current, {
+        memberId,
+        chapterId,
+        createdBy: memberId,
+        observation: householdScopeObservation,
+      }));
+      return;
+    }
+    onCommit((current) => recordChapterAcknowledgement(current, { memberId, chapterId, createdBy: memberId }));
   }
 
   return (
@@ -398,6 +446,7 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
           chapter={chapter}
           evidence={evidence}
           blockedCopyKey={blockedCopyKey}
+          blockedCopySlots={blockedCopySlots}
           noticeKey={noticeKey}
         />
       ) : (
@@ -415,9 +464,9 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
             {hercLine}
           </p>
           {blockedCopyKey ? (
-            <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
+            <section className="onboarding-card" role="status" aria-live="polite" style={{ marginBottom: cardMarginBottom }}>
               <p className="onboarding-card-label">Held up</p>
-              <p className="onboarding-card-task">{copy(blockedCopyKey)}</p>
+              <p className="onboarding-card-task">{copy(blockedCopyKey, blockedCopySlots)}</p>
             </section>
           ) : evidence.kind === "accepted" ? (
             <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
@@ -439,15 +488,15 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
           )}
         </>
       )}
-      {showAction ? (
+      {showAction || showRetryAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
             disabled={busy}
             style={{ minHeight: SHELL_VIEW.navButtonHeight }}
-            onClick={acknowledge}
+            onClick={showRetryAction ? retryHouseholdScopeProbe : acknowledge}
           >
-            {copy("continue.next")}
+            {copy(showRetryAction ? "probe.retry" : "continue.next")}
           </button>
         </div>
       ) : null}

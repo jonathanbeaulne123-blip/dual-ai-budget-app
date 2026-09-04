@@ -264,5 +264,6 @@ describe("onboarding evidence projector", () => {
     expect(source).not.toContain("window");
     expect(source).not.toMatch(/from\s+["'][^"']*\.tsx["']/);
     expect(source).not.toMatch(/from\s+["'][^"']*commands\.ts["']/);
+    expect(source).not.toContain("onboardingHouseholdScope");
   });
 });

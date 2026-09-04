@@ -1,5 +1,7 @@
 // The deterministic copy deck. Every member-facing onboarding sentence lives
-// here, byte-exact from ONBOARDING_BUILD_MANUAL.md Appendix E — never
+// here. Appendix E remains byte-exact; explicitly documented repair keys
+// may extend it when a later slice introduces a state Appendix E did not
+// name. Components never compose those additions at a call site.
 // composed at a call site. A component asks copy() for a key; it never
 // concatenates, templates, or punctuates a sentence itself (see the fence in
 // test/onboarding-copy.test.ts over src/Onboarding*.tsx).
@@ -169,6 +171,26 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   entry({
     key: "retry.honest", speaker: "hercules", surface: "chat", scope: "none", announce: "polite",
     text: "That didn't go through. Nothing changed — want to try again?", slots: [],
+  }),
+  entry({
+    key: "blocked.revoked", speaker: "hercules", surface: "chat", scope: "none", announce: "polite",
+    text: "Your household access isn't active right now.", slots: [],
+  }),
+  entry({
+    key: "blocked.offline", speaker: "hercules", surface: "chat", scope: "none", announce: "polite",
+    text: "You're offline, so I can't finish this check yet. Nothing's lost.", slots: [],
+  }),
+  entry({
+    key: "blocked.scope", speaker: "hercules", surface: "chat", scope: "none", announce: "polite",
+    text: "I found more than one household. Open the one you want, then come back here.", slots: [],
+  }),
+  entry({
+    key: "probe.retry", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Try again", slots: [],
+  }),
+  entry({
+    key: "onboarding.household.ch-02-household", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Let me make sure this is the right household for both of you.", slots: [],
   }),
 
   // E.5 The budget chapters

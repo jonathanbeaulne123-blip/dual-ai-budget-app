@@ -137,6 +137,7 @@ export * from "./onboarding/types.ts";
 export * from "./onboarding/registry.ts";
 export * from "./onboarding/mode.ts";
 export * from "./onboarding/progress.ts";
+export * from "./onboarding/householdScope.ts";
 export * from "./onboarding/affirmative.ts";
 export * from "./onboarding/actions.ts";
 export * from "./onboarding/evidence.ts";

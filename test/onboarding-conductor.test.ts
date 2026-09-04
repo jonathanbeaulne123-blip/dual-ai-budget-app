@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
-import { OnboardingChat } from "../src/OnboardingChat.tsx";
+import { OnboardingChat, onboardingBlockedPresentation } from "../src/OnboardingChat.tsx";
 import {
   SHELL_VIEW,
   SITTING_MARK_COUNT,
@@ -19,6 +19,7 @@ import {
   isSittingFirstChapter,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
+  recordObservedChapterCompletion,
   shouldShowOnboardingShell,
   signHouseholdCharter,
   sittingRailIndex,
@@ -44,6 +45,22 @@ function proposedActive(): Household {
 }
 
 function acknowledgeBoth(household: Household, chapterId: string): Household {
+  if (chapterId === "ch-02-household") {
+    const observation = (memberId: string) => ({
+      kind: "resolved" as const,
+      scope: { environment: household.environment, householdId: household.householdId, memberId },
+      currentMemberId: memberId,
+      seatMemberIds: [BIANCA, JONATHAN],
+      observedAt: "2026-09-03T14:02:00.000Z",
+    });
+    let next = recordObservedChapterCompletion(household, {
+      memberId: BIANCA, chapterId, createdBy: BIANCA, observation: observation(BIANCA),
+    }).household;
+    next = recordObservedChapterCompletion(next, {
+      memberId: JONATHAN, chapterId, createdBy: JONATHAN, observation: observation(JONATHAN),
+    }).household;
+    return next;
+  }
   let next = recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
   next = recordChapterAcknowledgement(next, { memberId: JONATHAN, chapterId, createdBy: JONATHAN }).household;
   return next;
@@ -188,6 +205,22 @@ describe("shellView — geometry and pure rules", () => {
 });
 
 describe("the conductor shell — rendering", () => {
+  it("holds Chapter 2 without live Auth and never offers Next from the local member shape", async () => {
+    window.localStorage.clear();
+    let household = proposedActive();
+    household = recordChapterAcknowledgement(household, {
+      memberId: BIANCA,
+      chapterId: "ch-01-meet",
+      createdBy: BIANCA,
+    }).household;
+    const view = render({ household, memberId: BIANCA });
+    await act(async () => Promise.resolve());
+    expect(view.host.textContent).toContain("Held up");
+    expect(view.host.textContent).toContain("I can't see both of you in this household yet.");
+    expect([...view.host.querySelectorAll("button")].map((button) => button.textContent)).not.toContain("Next");
+    view.unmount();
+  });
+
   it("shows the noticed strip and an evidence card, with its provenance, once evidence is already accepted", () => {
     const { host, unmount } = render({ household: proposedActive(), memberId: BIANCA });
     expect(host.textContent).toContain("This one's yours.");
@@ -374,6 +407,19 @@ describe("the conductor shell — rendering", () => {
 });
 
 describe("the conductor shell — fences", () => {
+  it("keeps retry and revoked-current copy honest without blaming the partner", () => {
+    expect(onboardingBlockedPresentation({ kind: "ineligible", reason: "retry" }, "Jonathan"))
+      .toEqual({ copyKey: "retry.honest", retryable: true });
+    expect(onboardingBlockedPresentation({ kind: "ineligible", reason: "revoked" }, "Jonathan"))
+      .toEqual({ copyKey: "blocked.revoked", retryable: false });
+    expect(onboardingBlockedPresentation({ kind: "ineligible", reason: "membership" }, "Jonathan"))
+      .toEqual({ copyKey: "blocked.membership", slots: { name: "Jonathan" }, retryable: false });
+    expect(onboardingBlockedPresentation({ kind: "ineligible", reason: "offline" }, "Jonathan"))
+      .toEqual({ copyKey: "blocked.offline", retryable: false });
+    expect(onboardingBlockedPresentation({ kind: "ineligible", reason: "scope" }, "Jonathan"))
+      .toEqual({ copyKey: "blocked.scope", retryable: false });
+  });
+
   it("composes no sentence at a call site — every visible string comes from copy() or flavorFor()", () => {
     // Scoped to a single line so an unrelated comment's own full stop, sitting
     // between two genuinely separate template literals elsewhere in the file,
@@ -423,6 +469,11 @@ describe("the conductor shell — fences", () => {
     expect(cssSource).toContain("padding: 8px 12px;");
     expect(cssSource).toContain("color-mix(in srgb, var(--pine) 8%, var(--paper))");
     expect(cssSource).toMatch(/\.onboarding-actions button \{[^}]*width: 100%;/s);
+  });
+
+  it("labels live Chapter 2 evidence as household access, never as the charter", () => {
+    expect(evidenceCardLabel("household")).toBe("The household");
+    expect(evidenceProvenanceLabel("household")).toBe("From live household access.");
   });
 
   it("never renders a second copy of the sitting rail — always exactly three marks, never one per chapter", () => {

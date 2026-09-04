@@ -7,6 +7,7 @@ import {
   foundHouseholdCharter,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
+  recordObservedChapterCompletion,
   signHouseholdCharter,
   type Household,
 } from "../src/core/index.ts";
@@ -46,6 +47,22 @@ function proposedActive(): Household {
 }
 
 function acknowledgeBoth(household: Household, chapterId: string): Household {
+  if (chapterId === "ch-02-household") {
+    const observation = (memberId: string) => ({
+      kind: "resolved" as const,
+      scope: { environment: household.environment, householdId: household.householdId, memberId },
+      currentMemberId: memberId,
+      seatMemberIds: [BIANCA, JONATHAN],
+      observedAt: "2026-09-03T14:02:00.000Z",
+    });
+    let next = recordObservedChapterCompletion(household, {
+      memberId: BIANCA, chapterId, createdBy: BIANCA, observation: observation(BIANCA),
+    }).household;
+    next = recordObservedChapterCompletion(next, {
+      memberId: JONATHAN, chapterId, createdBy: JONATHAN, observation: observation(JONATHAN),
+    }).household;
+    return next;
+  }
   let next = recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
   next = recordChapterAcknowledgement(next, { memberId: JONATHAN, chapterId, createdBy: JONATHAN }).household;
   return next;
@@ -118,7 +135,20 @@ describe("onboardingNavigationTarget", () => {
     ];
     let household = proposedActive();
     for (const chapterId of HOUSEHOLD_CHAPTER_IDS) {
-      household = recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
+      household = chapterId === "ch-02-household"
+        ? recordObservedChapterCompletion(household, {
+            memberId: BIANCA,
+            chapterId,
+            createdBy: BIANCA,
+            observation: {
+              kind: "resolved",
+              scope: { environment: household.environment, householdId: household.householdId, memberId: BIANCA },
+              currentMemberId: BIANCA,
+              seatMemberIds: [BIANCA, JONATHAN],
+              observedAt: "2026-09-03T14:02:00.000Z",
+            },
+          }).household
+        : recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
     }
     expect(onboardingNavigationTarget(household, BIANCA, TODAY)).toBeNull();
   });
