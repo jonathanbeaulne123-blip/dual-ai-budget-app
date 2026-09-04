@@ -81,7 +81,7 @@ function render(props: {
   household: Household;
   memberId: string;
   onCommit?: (fn: (current: Household) => { household: Household }) => void;
-  onClose?: () => void;
+  onDismiss?: () => void;
 }) {
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -92,7 +92,7 @@ function render(props: {
       memberId: props.memberId,
       today: TODAY,
       onCommit: props.onCommit ?? (() => {}),
-      onClose: props.onClose ?? (() => {}),
+      onDismiss: props.onDismiss ?? (() => {}),
     }));
   });
   return {
@@ -230,6 +230,36 @@ describe("the conductor shell — rendering", () => {
     // a second button with the same words would just duplicate it on screen.
     expect(buttons.map((button) => button.textContent)).toEqual(["Next", "Stop setup for now"]);
     expect(buttons.filter((button) => button.textContent === "Stop setup for now").length).toBe(1);
+    unmount();
+  });
+
+  it("shows the blocked card and hides Next when evidence comes back ineligible/conflicted, keeping only the stop link", () => {
+    const base = throughSittingOne();
+    const household: Household = {
+      ...base,
+      conflicts: [
+        {
+          id: "CONFLICT-1",
+          detectedAt: "2026-09-03T00:00:00.000Z",
+          environment: base.environment,
+          localRevision: 1,
+          remoteRevision: 2,
+          localHash: "local-hash",
+          remoteHash: "remote-hash",
+          localSnapshot: base,
+          remoteSnapshot: base,
+          autoMerged: false,
+          resolved: false,
+        },
+      ],
+    };
+    const { host, unmount } = render({ household, memberId: BIANCA });
+    expect(host.textContent).toContain("Two versions of this disagree. Let's settle which one is right.");
+    expect(host.textContent).toContain("Held up");
+    const buttons = [...host.querySelectorAll("button")];
+    // No Next: there is nothing safe to continue past. The stop link stays —
+    // it is the one control this shell never withholds.
+    expect(buttons.map((button) => button.textContent)).toEqual(["Stop setup for now"]);
     unmount();
   });
 
@@ -371,5 +401,16 @@ describe("the conductor shell — fences", () => {
 
   it("evidenceProvenanceLabel and evidenceCardLabel are exhaustive — a new evidence kind fails to compile silently uncited", () => {
     expect(shellViewSource).toMatch(/const exhaustive: never = kind/);
+  });
+
+  it("never treats a conflicted or stale evidence read as merely empty", () => {
+    // resolveEvidence's "ineligible" result is a real blocked state, not
+    // "nothing to show yet" — the copy deck already carries blocked.conflict
+    // and blocked.stale for exactly this, so the component must branch on
+    // evidence.kind === "ineligible" rather than falling through to the
+    // ordinary task card, which would misrepresent the block as untouched.
+    expect(componentSource).toMatch(/evidence\.kind === "ineligible"/);
+    expect(componentSource).toContain('"blocked.conflict"');
+    expect(componentSource).toContain('"blocked.stale"');
   });
 });

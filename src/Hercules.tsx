@@ -1327,7 +1327,7 @@ export function HerculesPresence({
               today={today}
               busy={busy}
               onCommit={onLedger}
-              onClose={closeChat}
+              onDismiss={closeChat}
             />
           ) : (
             <>

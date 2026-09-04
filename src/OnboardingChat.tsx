@@ -54,10 +54,10 @@ type Props = {
   today: DateKey;
   busy?: boolean;
   onCommit: (fn: (current: Household) => CommitResult) => void;
-  onClose: () => void;
+  onDismiss: () => void;
 };
 
-export function OnboardingChat({ household, memberId, today, busy, onCommit, onClose }: Props) {
+export function OnboardingChat({ household, memberId, today, busy, onCommit, onDismiss }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLParagraphElement>(null);
 
@@ -92,7 +92,7 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onC
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
       event.preventDefault();
-      onClose();
+      onDismiss();
     }
   }
 
@@ -150,6 +150,18 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onC
   const railIndex = sittingRailIndex(chapter.sitting);
   const chapterId = chapter.id;
 
+  // resolveEvidence can come back "ineligible" (a real conflict or a stale
+  // read, not merely "nothing to show yet"). The copy deck already has
+  // dedicated blocked.* strings for exactly this — showing the ordinary task
+  // card instead would misrepresent a blocked state as an untouched one, so
+  // this is checked ahead of the task/evidence-card choice below and also
+  // gates the Next button off (there is nothing safe to continue past).
+  const blockedCopyKey = evidence.kind === "ineligible" && evidence.reason === "conflicted"
+    ? "blocked.conflict"
+    : evidence.kind === "ineligible" && evidence.reason === "stale"
+      ? "blocked.stale"
+      : null;
+
   function acknowledge() {
     onCommit((current) => recordChapterAcknowledgement(current, {
       memberId,
@@ -192,7 +204,12 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onC
       >
         {hercLine}
       </p>
-      {evidence.kind === "accepted" ? (
+      {blockedCopyKey ? (
+        <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
+          <p className="onboarding-card-label">Held up</p>
+          <p className="onboarding-card-task">{copy(blockedCopyKey)}</p>
+        </section>
+      ) : evidence.kind === "accepted" ? (
         <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
           <p className="onboarding-card-label">{evidenceCardLabel(evidence.card.kind)}</p>
           {evidence.card.lines.map((line) => (
@@ -212,7 +229,7 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onC
           ) : null}
         </section>
       )}
-      {role === "conductor" && chapter.actions.includes("continue") ? (
+      {role === "conductor" && !blockedCopyKey && chapter.actions.includes("continue") ? (
         <div className="onboarding-actions">
           <button
             type="button"
