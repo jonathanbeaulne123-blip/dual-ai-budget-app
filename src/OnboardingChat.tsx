@@ -5,15 +5,18 @@ import {
   SITTING_MARK_COUNT,
   acceptedHouseholdOnboarding,
   chapterRoleFor,
+  confirmHouseholdOnboarding,
   copy,
   evidenceCardLabel,
   evidenceFor,
   evidenceProvenanceLabel,
   flavorFor,
+  handshakeExpired,
   isSittingFinalChapter,
   isSittingFirstChapter,
   memberProgress,
   nextChapterFor,
+  proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
   sittingRailIndex,
   stopHouseholdOnboarding,
@@ -49,6 +52,25 @@ import "./onboarding.css";
 //   evidence already accepted for a chapter the viewer has not acknowledged
 //   yet. A richer "you already handled this outside the app" probe is a
 //   later slice's job.
+//
+// Onboarding slice 10 adds the pre-active "offered" / "handshake-pending"
+// screens below (the invitation and the handshake, HEARTH_UX_PACKET.md
+// §13.7-§13.8). App.tsx now mounts this component standalone — outside the
+// mobile focus surface and outside Hercules's desktop presence container,
+// with no enclosing ".hercules-focus-shell" — specifically so these two
+// screens can render before shouldShowOnboardingShell() would ever allow
+// this component's other two mount points to open. The keyboard-trap
+// fallback a few lines below ("standalone renders fall back to this
+// shell") already anticipated exactly this. Two judgment calls, disclosed
+// rather than silently decided: the "Not now" control on both new screens
+// reuses the existing personal.decline copy key ("Not now") rather than a
+// new invite-specific key, since Appendix E has no dedicated one and every
+// on-screen sentence must come from copy(); and the confirmer's screen
+// shows invite.explain's own "Three sittings, about an hour all in" line
+// rather than a per-sitting length table (plate 10's mockup) — Appendix E
+// has no row labels for that table and evidence.ts's card projector (the
+// only existing mechanism for a computed-data row) is outside this slice's
+// file list.
 
 type Props = {
   household: Household;
@@ -57,9 +79,22 @@ type Props = {
   busy?: boolean;
   onCommit: (fn: (current: Household) => CommitResult) => void;
   onDismiss: () => void;
+  /**
+   * ISO instant used only for the handshake-expiry check below — separate
+   * from `today` (a DateKey, not enough precision for a fifteen-minute
+   * window). Optional and defaulted to the real clock at render time so
+   * the two existing mount points in Hercules.tsx (neither touched this
+   * slice) keep compiling and behaving exactly as before; they can never
+   * actually reach the offered/handshake-pending branches below in the
+   * first place (shouldShowOnboardingShell is false in both states).
+   * App.tsx's new standalone mount passes its own already-ticking `now`
+   * state so this stays real-time there too, and tests can pass a fixed
+   * value instead of depending on the real clock.
+   */
+  now?: string;
 };
 
-export function OnboardingChat({ household, memberId, today, busy, onCommit, onDismiss }: Props) {
+export function OnboardingChat({ household, memberId, today, busy, onCommit, onDismiss, now }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLParagraphElement>(null);
 
@@ -107,6 +142,151 @@ export function OnboardingChat({ household, memberId, today, busy, onCommit, onD
   }
 
   const record = acceptedHouseholdOnboarding(household);
+  const nowIso = now ?? new Date().toISOString();
+
+  if (record?.state === "offered") {
+    return (
+      <div
+        ref={shellRef}
+        className="onboarding-shell"
+        style={{ paddingTop: SHELL_VIEW.padTop, paddingLeft: SHELL_VIEW.padSide, paddingRight: SHELL_VIEW.padSide }}
+        onKeyDown={onKeyDown}
+      >
+        <p
+          className="onboarding-herc"
+          style={{ marginBottom: SHELL_VIEW.hercToCard, maxWidth: `${SHELL_VIEW.hercMaxEm}em` }}
+          ref={headingRef}
+          tabIndex={-1}
+        >
+          {copy("invite.offer")}
+        </p>
+        <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
+          <p className="onboarding-card-task">{copy("invite.explain")}</p>
+        </section>
+        <div className="onboarding-actions">
+          <button
+            type="button"
+            disabled={busy}
+            style={{ minHeight: SHELL_VIEW.navButtonHeight }}
+            onClick={() => onCommit((current) => proposeHouseholdOnboarding(current, { memberId, at: nowIso }))}
+          >
+            {copy("invite.propose")}
+          </button>
+        </div>
+        <div className="onboarding-foot" style={{ marginTop: SHELL_VIEW.actionToFoot }}>
+          <button
+            type="button"
+            className="onboarding-stop-link"
+            disabled={busy}
+            style={{ minHeight: SHELL_VIEW.minTouch, minWidth: SHELL_VIEW.minTouch }}
+            onClick={onDismiss}
+          >
+            {copy("personal.decline")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (record?.state === "handshake-pending") {
+    const expired = handshakeExpired(record, nowIso);
+    const isProposer = record.proposedByMemberId === memberId;
+    const otherName = household.members.find((member) => member.active && member.id !== memberId)?.name ?? "your partner";
+
+    if (expired) {
+      return (
+        <div
+          ref={shellRef}
+          className="onboarding-shell"
+          style={{ paddingTop: SHELL_VIEW.padTop, paddingLeft: SHELL_VIEW.padSide, paddingRight: SHELL_VIEW.padSide }}
+          onKeyDown={onKeyDown}
+        >
+          <p
+            className="onboarding-herc"
+            role="status"
+            aria-live="polite"
+            style={{ marginBottom: SHELL_VIEW.hercToCard, maxWidth: `${SHELL_VIEW.hercMaxEm}em` }}
+            ref={headingRef}
+            tabIndex={-1}
+          >
+            {copy("invite.expired")}
+          </p>
+          <div className="onboarding-actions">
+            <button
+              type="button"
+              disabled={busy}
+              style={{ minHeight: SHELL_VIEW.navButtonHeight }}
+              onClick={() => onCommit((current) => proposeHouseholdOnboarding(current, { memberId, at: nowIso }))}
+            >
+              {copy("invite.propose")}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (isProposer) {
+      return (
+        <div
+          ref={shellRef}
+          className="onboarding-shell"
+          style={{ paddingTop: SHELL_VIEW.padTop, paddingLeft: SHELL_VIEW.padSide, paddingRight: SHELL_VIEW.padSide }}
+          onKeyDown={onKeyDown}
+        >
+          <p
+            className="onboarding-herc"
+            role="status"
+            aria-live="polite"
+            style={{ maxWidth: `${SHELL_VIEW.hercMaxEm}em` }}
+            ref={headingRef}
+            tabIndex={-1}
+          >
+            {copy("invite.waiting", { name: otherName })}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        ref={shellRef}
+        className="onboarding-shell"
+        style={{ paddingTop: SHELL_VIEW.padTop, paddingLeft: SHELL_VIEW.padSide, paddingRight: SHELL_VIEW.padSide }}
+        onKeyDown={onKeyDown}
+      >
+        <p
+          className="onboarding-herc"
+          style={{ marginBottom: SHELL_VIEW.hercToCard, maxWidth: `${SHELL_VIEW.hercMaxEm}em` }}
+          ref={headingRef}
+          tabIndex={-1}
+        >
+          {copy("invite.explain")}
+        </p>
+        <div className="onboarding-actions" style={{ marginBottom: SHELL_VIEW.actionToFoot }}>
+          <button
+            type="button"
+            disabled={busy}
+            style={{ minHeight: SHELL_VIEW.navButtonHeight }}
+            onClick={() => onCommit((current) => confirmHouseholdOnboarding(current, { memberId, at: nowIso }))}
+          >
+            {copy("invite.confirm")}
+          </button>
+        </div>
+        <div className="onboarding-foot">
+          <button
+            type="button"
+            className="onboarding-stop-link"
+            disabled={busy}
+            style={{ minHeight: SHELL_VIEW.minTouch, minWidth: SHELL_VIEW.minTouch }}
+            onClick={onDismiss}
+          >
+            {copy("personal.decline")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (record?.state === "waiting-member" && record.stoppedByMemberIds.includes(memberId)) {
     const otherName = household.members.find((member) => member.active && member.id !== memberId)?.name ?? "your partner";
     return (

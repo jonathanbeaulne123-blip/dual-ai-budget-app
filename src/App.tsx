@@ -21,6 +21,8 @@ import {
   ledgerRouteContract,
   kitchenPrimaryNav,
   householdNeedsCharterFounding,
+  offerHouseholdOnboarding,
+  acceptedHouseholdOnboarding,
   showsLedgerPurposeBanner,
   projectLedgerExperience,
   restoreAcceptedSnapshot,
@@ -140,6 +142,7 @@ import {
   type TransactionLocation,
   type HerculesNumberSource,
   type DemoRunReport,
+  type OnboardingModeState,
 } from "./core/index.ts";
 import {
   STORAGE_EXPLAINER,
@@ -402,6 +405,7 @@ import { Till, TILL_COPY, TILL_DESK_HASH, TILL_HOME_HASH } from "./Till.tsx";
 import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
+import { OnboardingChat } from "./OnboardingChat.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -562,6 +566,7 @@ export function App() {
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
+  const [onboardingInviteDismissedState, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [swipeOpen, setSwipeOpen] = useState(false);
@@ -2765,13 +2770,46 @@ export function App() {
   useEffect(() => {
     if (tab === "till" && view !== "household") setTab("home");
   }, [tab, view]);
+  // Onboarding slice 10: the D-129 auto-start this superseded ("automatic
+  // start after Home renders") used to drop an empty household straight
+  // into Charter founding — no invitation, no explanation, no partner. The
+  // predicate stays exactly as it was; only its consumer changes. An empty
+  // household is now offered the household onboarding track instead
+  // (HEARTH_ONBOARDING_BUILD_MANUAL.md Appendix B.2). offerHouseholdOnboarding
+  // is a safe no-op once the record exists and is no longer "inactive" (see
+  // its own implementation in core/commands.ts), but the explicit prior-state
+  // guard below keeps this effect from re-committing an identical write on
+  // every household reference change once the household has already been
+  // offered — the effect fires many times over a session; the commit must
+  // fire at most once.
   useEffect(() => {
     if (!household || view !== "household") return;
-    if (householdNeedsCharterFounding(household)) setCharterFoundingOpen(true);
+    if (!householdNeedsCharterFounding(household)) return;
+    const priorOnboarding = acceptedHouseholdOnboarding(household);
+    if (priorOnboarding && priorOnboarding.state !== "inactive") return;
+    void run((current) => offerHouseholdOnboarding(current, { memberId }));
   }, [household, view]);
   const charterFoundingVisible = Boolean(household && session && view === "household" && charterFoundingOpen);
   const charterPageVisible = Boolean(household && session && view === "household" && charterPageOpen && household.charter);
   const charterTakeoverVisible = charterFoundingVisible || charterPageVisible;
+  // The invitation (plate 9) and the handshake (plate 10) — a card on Home,
+  // never a takeover: deliberately NOT part of charterTakeoverVisible, so
+  // app-shell is never made inert and Home keeps rendering underneath it.
+  // "Not now" is session-only (component state, not a household write) —
+  // per HEARTH_UX_PACKET.md §13.7 it does not return this session, but a
+  // fresh session sees it again if the household is still offered. Keyed by
+  // OnboardingModeState rather than a plain boolean so dismissing the
+  // "offered" screen never suppresses a later, genuinely new
+  // "handshake-pending" screen (the partner proposing on their own device).
+  const onboardingInviteRecord = household ? acceptedHouseholdOnboarding(household) : null;
+  const onboardingInviteVisible = Boolean(
+    household
+    && session
+    && view === "household"
+    && onboardingInviteRecord
+    && (onboardingInviteRecord.state === "offered" || onboardingInviteRecord.state === "handshake-pending")
+    && onboardingInviteDismissedState !== onboardingInviteRecord.state,
+  );
   const personalSource = useMemo(() => (
     household && memberId && personalReplica?.memberId === memberId
       && personalReplica.lastCommittedAt === household.lastCommittedAt
@@ -5323,6 +5361,17 @@ export function App() {
           busy={busy}
           onCommit={(fn) => { void run(fn); }}
           onDismiss={() => setCharterFoundingOpen(false)}
+        />
+      ) : null}
+      {onboardingInviteVisible && household && session ? (
+        <OnboardingChat
+          household={household}
+          memberId={session.memberId}
+          today={today}
+          busy={busy}
+          now={now.toISOString()}
+          onCommit={(fn) => { void run(fn); }}
+          onDismiss={() => setOnboardingInviteDismissedState(onboardingInviteRecord?.state ?? null)}
         />
       ) : null}
       {charterPageVisible && household && session ? (
