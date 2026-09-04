@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyHearthPass,
   catalogHousehold,
+  linkGoogleIdentity,
   makeHearthPass,
+  personalReplicaForMember,
+  postEntry,
   seedDemoHousehold,
 } from "../src/core/index.ts";
 import {
@@ -21,6 +24,7 @@ import {
 } from "../src/continuity.ts";
 import {
   pullHouseholdSnapshotById,
+  pullConsistentMemberReplicaById,
   pullPersonalSnapshotById,
   pullSupabaseHousehold,
 } from "../src/ledger/supabase.ts";
@@ -95,6 +99,87 @@ describe("environment isolation adversarial boundaries", () => {
       { status: 200 },
     )));
     await expect(pullPersonalSnapshotById("HH-001", "MEM-001", "development", config)).resolves.toBeNull();
+  });
+
+  it("retries until Shared and same-member Personal come from a stable cloud generation", async () => {
+    const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      ...identity,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const sharedEight = { ...linked, linked: true, revision: 8, baseRevision: 8 };
+    const latest = postEntry(sharedEight, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "7.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Second-device Personal",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const sharedNine = {
+      ...latest,
+      linked: true,
+      revision: 9,
+      baseRevision: 9,
+      transactions: latest.transactions.filter((row) => row.visibility !== "personal"),
+    };
+    const personalNine = personalReplicaForMember(latest, "MEM-001");
+    let sharedReads = 0;
+    let personalReads = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("household_snapshots?")) {
+        sharedReads += 1;
+        return new Response(JSON.stringify([{ payload: JSON.stringify(sharedReads === 1 ? sharedEight : sharedNine) }]), { status: 200 });
+      }
+      if (url.includes("continuity_personal_snapshots?")) {
+        personalReads += 1;
+        return new Response(JSON.stringify([{ revision: 9, payload: JSON.stringify(personalNine) }]), { status: 200 });
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    }));
+
+    const replica = await pullConsistentMemberReplicaById({
+      householdId: linked.householdId,
+      memberId: "MEM-001",
+      environment: "development",
+      config,
+      identity,
+    });
+
+    expect(replica?.revision).toBe(9);
+    expect(replica?.personal.transactions.some((row) => row.note === "Second-device Personal")).toBe(true);
+    expect(sharedReads).toBe(3);
+    expect(personalReads).toBe(2);
+  });
+
+  it("rejects a stable replica read when the requested member is not the signed-in Google member", async () => {
+    const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      ...identity,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    let fetches = 0;
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      fetches += 1;
+      return new Response(JSON.stringify([{ payload: JSON.stringify(linked) }]), { status: 200 });
+    }));
+
+    await expect(pullConsistentMemberReplicaById({
+      householdId: linked.householdId,
+      memberId: "MEM-002",
+      environment: "development",
+      config,
+      identity,
+    })).rejects.toThrow(/does not belong to the signed-in Google member/);
+    expect(fetches).toBe(1);
   });
 
   it("rejects persist when operatingEnvironment disagrees with the snapshot", async () => {

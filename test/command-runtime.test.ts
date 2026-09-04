@@ -7,6 +7,7 @@ import {
   compileHousehold,
   contributeToGoal,
   postEntry,
+  splitForSync,
   type Household,
   type WriteAdapters,
 } from "../src/core/index.ts";
@@ -541,22 +542,27 @@ describe("atomic household writes", () => {
     const posted = postEntry(previous, grocery("Shared milk"));
     const store = memoryAdapters({
       transport: async (accepted) => {
-        const cloudProjection = {
-          ...accepted,
-          transactions: accepted.transactions.filter((row) => row.visibility !== "personal"),
-        };
-        const partner = postEntry(cloudProjection, {
+        const sameMember = postEntry(accepted, {
+          ...grocery("Private lunch"),
+          visibility: "personal",
+        });
+        const partner = postEntry(sameMember.household, {
           ...grocery("Partner bread"),
           createdBy: "MEM-002",
         });
+        const cloudProjection = {
+          ...partner.household,
+          transactions: partner.household.transactions.filter((row) => row.visibility !== "personal"),
+        };
         return {
           ok: true,
-          remoteRevision: accepted.revision + 1,
+          remoteRevision: accepted.revision + 2,
           remote: {
-            ...partner.household,
-            revision: accepted.revision + 1,
-            baseRevision: accepted.revision + 1,
+            ...cloudProjection,
+            revision: accepted.revision + 2,
+            baseRevision: accepted.revision + 2,
           },
+          remotePersonal: splitForSync(partner.household, "MEM-001").personal,
         };
       },
     });
@@ -573,12 +579,13 @@ describe("atomic household writes", () => {
 
     expect(outcome.ok).toBe(true);
     expect(outcome.kind).toBe("synchronized");
-    expect(outcome.revision).toBe(9);
+    expect(outcome.revision).toBe(10);
     expect(outcome.household.transactions.some((row) => row.note === "Shared milk")).toBe(true);
     expect(outcome.household.transactions.some((row) => row.note === "Partner bread")).toBe(true);
     expect(outcome.household.transactions.some((row) => row.note === "Private breakfast")).toBe(true);
-    expect(store.ingested()?.revision).toBe(9);
-    expect(store.persisted()?.revision).toBe(9);
+    expect(outcome.household.transactions.some((row) => row.note === "Private lunch")).toBe(true);
+    expect(store.ingested()?.revision).toBe(10);
+    expect(store.persisted()?.revision).toBe(10);
   });
 
   it("rebuilds the disposable active projection immediately after cloud acceptance", async () => {

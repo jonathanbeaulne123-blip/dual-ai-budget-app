@@ -1040,6 +1040,39 @@ export async function pullHouseholdSnapshotById(
   return bound;
 }
 
+export type PersonalSnapshotRead = {
+  personal: PersonalEnvelope;
+  revision: number;
+};
+
+/** Same-member second-device personal tip plus the cloud revision that wrote it. */
+export async function pullPersonalSnapshotRecordById(
+  householdId: string,
+  memberId: string,
+  environment: Environment = "development",
+  config = readSupabaseConfig(),
+): Promise<PersonalSnapshotRead | null> {
+  if (!config || !hostedContinuityAllowed(environment)) return null;
+  const result = await rest(
+    config,
+    `continuity_personal_snapshots?environment=eq.${encodeURIComponent(environment)}&household_id=eq.${encodeURIComponent(householdId)}&member_id=eq.${encodeURIComponent(memberId)}&select=revision,payload&limit=1`,
+    { method: "GET", headers: { Prefer: "return=representation" } },
+  );
+  if (isMissingTable(result.body)) return null;
+  if (!result.ok) throw new Error(messageOf(result.body));
+  const rows = Array.isArray(result.body)
+    ? result.body as { revision?: number; payload?: string | PersonalEnvelope }[]
+    : [];
+  const row = rows[0];
+  const personal = await personalFromRow(row, memberId);
+  if (!personal) return null;
+  if (!Number.isInteger(row?.revision) || Number(row?.revision) < 0) {
+    throw new ValidationError("The signed-in member's personal cloud copy has an invalid revision.");
+  }
+  assertPersonalEnvelopeBinding(personal, { environment, householdId, memberId });
+  return { personal, revision: Number(row!.revision) };
+}
+
 /** Same-member second-device personal tip (Auth JWT). */
 export async function pullPersonalSnapshotById(
   householdId: string,
@@ -1047,19 +1080,61 @@ export async function pullPersonalSnapshotById(
   environment: Environment = "development",
   config = readSupabaseConfig(),
 ): Promise<PersonalEnvelope | null> {
+  return (await pullPersonalSnapshotRecordById(householdId, memberId, environment, config))?.personal ?? null;
+}
+
+/**
+ * Read Shared and the signed-in member's Personal envelope from one stable cloud
+ * generation without adding a hosted RPC. A commit after the final Shared read
+ * is harmless: the next write still uses the older CAS revision and conflicts.
+ */
+export async function pullConsistentMemberReplicaById(input: {
+  householdId: string;
+  memberId: string;
+  environment?: Environment;
+  config?: SupabaseConfig | null;
+  identity: GoogleIdentitySelector;
+  initialShared?: Household | null;
+  maxAttempts?: number;
+}): Promise<{ shared: Household; personal: PersonalEnvelope; revision: number } | null> {
+  const environment = input.environment ?? "development";
+  const config = input.config ?? readSupabaseConfig();
   if (!config || !hostedContinuityAllowed(environment)) return null;
-  const result = await rest(
+  const attempts = Math.max(1, Math.min(5, input.maxAttempts ?? 3));
+  let before = input.initialShared ?? await pullHouseholdSnapshotById(
+    input.householdId,
+    environment,
     config,
-    `continuity_personal_snapshots?environment=eq.${encodeURIComponent(environment)}&household_id=eq.${encodeURIComponent(householdId)}&member_id=eq.${encodeURIComponent(memberId)}&select=payload&limit=1`,
-    { method: "GET", headers: { Prefer: "return=representation" } },
+    input.identity,
   );
-  if (isMissingTable(result.body)) return null;
-  if (!result.ok) throw new Error(messageOf(result.body));
-  const rows = Array.isArray(result.body) ? result.body as { payload?: string | PersonalEnvelope }[] : [];
-  const personal = await personalFromRow(rows[0], memberId);
-  if (!personal) return null;
-  assertPersonalEnvelopeBinding(personal, { environment, householdId, memberId });
-  return personal;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (!before) return null;
+    if (memberIdForGoogleIdentity(before, input.identity) !== input.memberId) {
+      throw new ValidationError("That Personal cloud copy does not belong to the signed-in Google member.");
+    }
+    const personal = await pullPersonalSnapshotRecordById(
+      input.householdId,
+      input.memberId,
+      environment,
+      config,
+    );
+    if (!personal) return null;
+    const after = await pullHouseholdSnapshotById(
+      input.householdId,
+      environment,
+      config,
+      input.identity,
+    );
+    if (!after) return null;
+    if (memberIdForGoogleIdentity(after, input.identity) !== input.memberId) {
+      throw new ValidationError("The signed-in Google membership changed while Hearth was restoring Personal books.");
+    }
+    if (before.revision === after.revision && personal.revision <= after.revision) {
+      return { shared: after, personal: personal.personal, revision: after.revision };
+    }
+    before = after;
+  }
+  throw new Error("The shared household changed while Hearth was restoring the signed-in member's copy. Retry after both devices settle.");
 }
 
 export async function pushSupabaseHousehold(

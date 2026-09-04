@@ -4,7 +4,7 @@ import {
 } from "./core/google.ts";
 import { ensureHouseholdShape } from "./core/sync.ts";
 import { assertOutboxItemBinding } from "./core/environmentIsolation.ts";
-import type { Environment, Household } from "./core/types.ts";
+import type { Environment, Household, PersonalEnvelope } from "./core/types.ts";
 import { hostedContinuityAllowed } from "./ledger/continuityPolicy.ts";
 import {
   buildCommandRef,
@@ -16,6 +16,7 @@ import {
 import {
   appendContinuityCommand,
   discoverSupabaseHouseholdsByGoogleIdentity,
+  pullConsistentMemberReplicaById,
   pullHouseholdSnapshotById,
   pushSupabaseHousehold,
   type DiscoveredHousehold,
@@ -757,7 +758,7 @@ export async function transportHouseholdWithOutbox(input: {
   /** On an ambiguous response, verify the same confirmation receipt by authenticated pull. */
   reconcileAmbiguous?: boolean;
 }): Promise<
-  | { ok: true; remoteRevision?: number; remote?: Household }
+  | { ok: true; remoteRevision?: number; remote?: Household; remotePersonal?: PersonalEnvelope }
   | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; message: string }
 > {
   const priorItems = read(input.household.environment);
@@ -812,6 +813,26 @@ export async function transportHouseholdWithOutbox(input: {
         input.identity,
       );
       if (remote && remoteAcknowledgesOutbox(remote, item)) {
+        if (remote.revision > input.household.revision) {
+          const consistent = await pullConsistentMemberReplicaById({
+            householdId: input.household.householdId,
+            memberId: item.memberId,
+            environment: input.household.environment,
+            config: input.config,
+            identity: input.identity,
+            initialShared: remote,
+          });
+          if (!consistent || !remoteAcknowledgesOutbox(consistent.shared, item)) {
+            throw new Error("The newer shared household could not be paired with the signed-in member's Personal copy.");
+          }
+          await acknowledgeContinuityOutboxItemDurably(item);
+          return {
+            ok: true,
+            remoteRevision: consistent.revision,
+            remote: consistent.shared,
+            remotePersonal: consistent.personal,
+          };
+        }
         await acknowledgeContinuityOutboxItemDurably(item);
         return { ok: true, remoteRevision: remote.revision, remote };
       }

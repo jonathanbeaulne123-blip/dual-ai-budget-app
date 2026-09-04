@@ -26,6 +26,7 @@ const startup = vi.hoisted(() => ({
   remote: new Promise<Household>(() => {}),
   cloudRemote: new Promise<Household | null>(() => {}),
   cloudPersonal: new Promise<PersonalEnvelope | null>(() => {}),
+  consistentPullCalls: 0,
   stagedCandidates: [] as Household[],
   repairedCandidates: [] as Household[],
 }));
@@ -91,6 +92,11 @@ vi.mock("../src/ledger/supabase.ts", async (importOriginal) => {
     ...actual,
     pullHouseholdSnapshotById: vi.fn(() => startup.cloudRemote),
     pullPersonalSnapshotById: vi.fn(() => startup.cloudPersonal),
+    pullConsistentMemberReplicaById: vi.fn(async () => {
+      startup.consistentPullCalls += 1;
+      const [shared, personal] = await Promise.all([startup.cloudRemote, startup.cloudPersonal]);
+      return shared && personal ? { shared, personal, revision: shared.revision } : null;
+    }),
   };
 });
 
@@ -212,6 +218,7 @@ describe("cached-shell startup books gate", () => {
     startup.remote = new Promise<Household>(() => {});
     startup.cloudRemote = new Promise<Household | null>(() => {});
     startup.cloudPersonal = new Promise<PersonalEnvelope | null>(() => {});
+    startup.consistentPullCalls = 0;
     startup.stagedCandidates = [];
     startup.repairedCandidates = [];
     localStorage.setItem("hearth:session:v1:development", JSON.stringify({
@@ -568,6 +575,7 @@ describe("cached-shell startup books gate", () => {
     expect(restored?.revision).toBe(9);
     expect(restored?.transactions.some((row) => row.note === "Shared cloud row")).toBe(true);
     expect(restored?.transactions.some((row) => row.note === "Personal cloud row")).toBe(true);
+    expect(startup.consistentPullCalls).toBe(1);
     expect(restored?.transactions.some((row) => row.note === "Corrupted local private row")).toBe(false);
     expect(startup.stagedCandidates.at(-1)?.householdId).toBe(restored?.householdId);
     expect(startup.repairedCandidates.at(-1)?.booksAcceptedHash).toBe(restored?.booksAcceptedHash);

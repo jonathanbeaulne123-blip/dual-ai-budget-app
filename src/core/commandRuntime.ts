@@ -30,7 +30,7 @@ import {
   acceptedHouseholdOnboarding,
 } from "./onboarding/mode.ts";
 import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
-import type { CommandReceipt, Household } from "./types.ts";
+import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
 
@@ -42,7 +42,7 @@ export type AcceptedBooksArtifact = {
 };
 
 export type TransportResult =
-  | { ok: true; remoteRevision?: number; remote?: Household }
+  | { ok: true; remoteRevision?: number; remote?: Household; remotePersonal?: PersonalEnvelope }
   | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; remote?: Household; message: string };
 
 export type WriteAdapters = {
@@ -407,16 +407,15 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
           return transportUncertainOutcome(previous, confirmationId, transported.message);
         }
         if (transported.remote && transported.remote.revision > accepted.revision) {
-          if (!input.actingMemberId) {
+          if (!input.actingMemberId || !transported.remotePersonal) {
             return transportUncertainOutcome(
               previous,
               confirmationId,
-              "The Confirm reached the shared household, which already has a newer change. Hearth is catching up before writes reopen.",
+              "The Confirm reached the shared household, which already has a newer change. Hearth is pairing the latest Shared and Personal copies before writes reopen.",
             );
           }
           const remoteShared = splitForSync(transported.remote, input.actingMemberId).shared;
-          const localPersonal = splitForSync(accepted, input.actingMemberId).personal;
-          accepted = markSynchronized(assembleHousehold(remoteShared, localPersonal, { linked: true }));
+          accepted = markSynchronized(assembleHousehold(remoteShared, transported.remotePersonal, { linked: true }));
           accepted.booksAcceptedHash = await financialAuditHash(accepted);
           acceptedArtifact = {
             compiled: assertAcceptableBooks(accepted),

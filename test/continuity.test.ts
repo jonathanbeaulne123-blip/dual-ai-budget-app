@@ -404,6 +404,70 @@ describe("Google-account continuity", () => {
     expect(listContinuityOutbox("development")).toHaveLength(1);
   });
 
+  it("pairs a newer ambiguous Shared acknowledgement with canonical same-member Personal", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "1");
+    setContinuityStore(createMemoryContinuityStore());
+    const base = googleHousehold();
+    const candidate = {
+      ...base,
+      revision: 2,
+      baseRevision: 1,
+      commandReceipts: [{
+        confirmationId: "confirm-newer-personal",
+        identityHash: "identity-newer-personal",
+        auditHash: "accepted",
+        commandKind: "commit",
+        postedIds: [],
+        revision: 2,
+        acceptedAt: "2026-09-03T12:00:00.000Z",
+      }],
+    };
+    const latest = postEntry(candidate, {
+      date: "2026-09-03",
+      type: "expense",
+      amount: "6.00",
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Personal from device B",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      confirmDuplicate: true,
+    }).household;
+    const remote = {
+      ...latest,
+      revision: 3,
+      baseRevision: 3,
+      transactions: latest.transactions.filter((row) => row.visibility !== "personal"),
+    };
+    const remotePersonal = personalReplicaForMember(latest, "MEM-001");
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("households?select=id")) return response([]);
+      if (url.includes("rpc/")) throw new Error("response lost after commit");
+      if (url.includes("household_snapshots?")) {
+        return response([{ payload: JSON.stringify(remote) }]);
+      }
+      if (url.includes("continuity_personal_snapshots?")) {
+        return response([{ revision: 3, payload: JSON.stringify(remotePersonal) }]);
+      }
+      return response([]);
+    }));
+
+    const result = await transportHouseholdWithOutbox({
+      household: candidate,
+      identity,
+      expectedRevision: 1,
+      confirmationId: "confirm-newer-personal",
+      config,
+      reconcileAmbiguous: true,
+    });
+
+    if (!result.ok) throw new Error(result.message);
+    expect(result).toMatchObject({ ok: true, remoteRevision: 3 });
+    expect(result.remotePersonal?.transactions.some((row) => row.note === "Personal from device B")).toBe(true);
+    expect(listContinuityOutbox("development")).toEqual([]);
+  });
+
   it("replays a never-sent staged candidate after durable outbox reload", async () => {
     const stageRoot = await mkdtemp(join(tmpdir(), "hearth-stage-reload-"));
     setStagedBooksDataDirForTests((environment, householdId) => join(stageRoot, `${environment}-${householdId}`));

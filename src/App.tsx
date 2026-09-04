@@ -161,7 +161,7 @@ import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots }
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
-import { readSupabaseConfig, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
+import { readSupabaseConfig, pullConsistentMemberReplicaById, pullHouseholdSnapshotById, pullPersonalSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
@@ -1026,25 +1026,19 @@ export function App() {
         subject: authSession.googleSubject,
       };
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-      const remote = await pullHouseholdSnapshotById(
-        current.householdId,
-        environment,
-        cloudConfig,
-        identity,
-      );
-      if (!remote) throw new Error("The shared household could not be found. Nothing local was replaced.");
-      const remotePersonal = await pullPersonalSnapshotById(
-        current.householdId,
+      const remoteReplica = await pullConsistentMemberReplicaById({
+        householdId: current.householdId,
         memberId,
         environment,
-        cloudConfig,
-      );
-      if (!remotePersonal) {
+        config: cloudConfig,
+        identity,
+      });
+      if (!remoteReplica) {
         throw new Error("The signed-in member's shared personal copy could not be found. Nothing local was replaced.");
       }
 
-      const remoteShared = splitForSync(remote, memberId).shared;
-      const restored = markSynchronized(assembleHousehold(remoteShared, remotePersonal, { linked: true }));
+      const remoteShared = splitForSync(remoteReplica.shared, memberId).shared;
+      const restored = markSynchronized(assembleHousehold(remoteShared, remoteReplica.personal, { linked: true }));
       restored.booksAcceptedHash = await financialAuditHash(restored);
       const staged = await validateHouseholdBooksStaged(restored, {
         auditHash: restored.booksAcceptedHash,

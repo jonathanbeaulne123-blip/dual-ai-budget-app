@@ -76,7 +76,8 @@ Jonathan and Bianca can use the same shared ledger from two signed-in devices wi
 - Baseline branch/status: `codex/sync-online-required-launch`; isolated and rebased to `cd6171d9551126e1576485315be60f7b5123d81c`.
 - Focused verification: TypeScript passed; 106/106 tests passed across books staging/reset, durable outbox/restart, cloud-boundary runtime, and startup recovery UI.
 - A filesystem-backed PGlite test closes every stage handle, reloads the slim durable outbox, and replays the candidate from the persisted stage rather than warm memory.
-- High/Release quick gate on implementation head `a06f87fffe4396b5efcd2044a49a33b0c86a9264`: passed in 69.864s with TypeScript, 123/123 fast tests, and 58/58 serial books tests; no time-budget breach. The final exact-head rerun follows this evidence update.
+- High/Release quick gate on PR head `c902a1890075b17b2b0b71e1fb543f2c739f9ace`: passed in 63.786s with TypeScript, 122/122 fast tests, and 58/58 serial books tests; no time-budget breach. A trust review then found the newer-remote Shared/stale-Personal generation gap, so this is retained as pre-fix evidence rather than the final gate.
+- Focused proof after closing that finding: TypeScript passed and 87/87 continuity, runtime, environment-isolation, and startup tests passed, including a Shared/Personal interleaving retry and same-member second-device Personal adoption.
 - Browser proof on the current implementation: at 1280px and 390×844 the books reached `ready`, there was no horizontal overflow, the full bottom navigation remained present, and the browser reported no warnings or errors.
 - GitHub PR #323 is open. The branch remains unmerged and undeployed; no hosted schema, data, secret, provider, or Production setting changed.
 
@@ -86,6 +87,7 @@ Jonathan and Bianca can use the same shared ledger from two signed-in devices wi
 - `Saved` means the cloud transaction accepted the command. Isolated PGlite acceptance is necessary first but not sufficient for shared durability; active PGlite advances only afterward.
 - Automatic local rebuild is permitted only for the synchronized version-upgrade receipt or an exact durable legacy-tip binding. Arbitrary mismatch requires a person's explicit authenticated restore of both Shared and signed-in Personal cloud scopes through isolated validation.
 - Realtime is the fast path; authenticated command/snapshot catch-up is the correctness path.
+- A newer ambiguous acknowledgement and explicit projection restore reopen writes only after two equal Shared-revision reads bracket the signed-in member's revisioned Personal read; a moving generation retries and then fails closed.
 
 ## Remaining uncertainty
 
