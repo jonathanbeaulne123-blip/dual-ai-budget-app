@@ -259,9 +259,9 @@ describe("OnboardingWitness — rendering", () => {
           kind: "recurrence",
           lines: [{ label: "Rent", value: "monthly · $1,200.00" }],
         }),
-        row: "Regular moneysubmitted",
-        scope: "Shared · recurring bills",
-        omitted: "Rent",
+        row: "Rentmonthly · $1,200.00",
+        scope: "Shared · regular money",
+        omitted: "Private account",
       },
     ] as const;
 

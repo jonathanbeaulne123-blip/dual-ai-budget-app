@@ -1,5 +1,58 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 16 — Chapter 7 regular money (D-215) (2026-09-04)
+
+**Status:** Local implementation, production build, and live UX pass complete
+on `onboarding/16-ch7-recurrences` from
+`origin/main@912ac532c4e9f2fe1d21e6b37f1e51294ee4fa03`; not pushed, merged,
+deployed, or hosted-live verified. The repository classifies the diff as
+**Medium** risk.
+
+**Outcome:** Chapter 7 recognizes a valid active Shared rent-or-housing
+equivalent plus one other distinct valid Shared recurrence. Existing rows count
+once; Personal, paused, malformed, wrong-currency, orphaned, and invalid-split
+rows fail closed. Evidence cites each accepted label, cadence, CAD amount, and
+next date.
+
+**Implementation:** Hercules routes both members to the existing Calendar Bills
+pane. Bianca leads; Jonathan remains named as a contributor who may add a known
+item and acknowledge his own progress. The live surface distinguishes reminder,
+standing fact, and posted occurrence. While Chapter 7 is current it hides Mark
+paid, bulk posting, Skip once, save-and-post, and the automatic due preview;
+the confirmation hard-forces `postFirst` false. Ordinary recurrence behavior is
+unchanged outside onboarding. Contract:
+[`briefs/ONBOARDING_SLICE_16_CH7_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_16_CH7_CONTRACT_2026-09-04.md).
+
+**Money and privacy boundary:** The chapter projector is pure and cannot import
+`postOneRecurrence`, browser state, or a component. Acknowledging existing
+evidence produces no posted id, recurrence row, transaction, next-date advance,
+or compiled-journal delta. Personal recurrence data neither counts nor appears
+in household evidence. The existing online-required Shared acceptance boundary
+is unchanged.
+
+**UX and accessibility:** The actual-component browser pass covered pending,
+accepted, three-item pause, conductor, and contributor states at 320, 390, 720,
+and 1100 px. No width overflow occurred; routed controls are at least 44 px;
+focus begins on the Hercules line; the action loop is Next → add → stop → Next;
+and reduced motion removes transitions and animations. The pass repaired small
+touch targets, contradictory empty-state copy, a distracting due warning, and
+an occurrence-advancing Skip control. Temporary browser fixtures were removed.
+
+**Boundary:** No recurrence arithmetic, obligation fold, posting command,
+second Calendar/form, schema, hosted row, Auth/RLS, provider, secret,
+Production, push, merge, or deployment. The six-minute estimate remains honest
+guidance, with a calm pause after every third qualifying recurrence.
+
+**Verification:** The focused Slice 16 and adjacent suite passed **99/99**. The
+final Medium quick gate passed **78 fast + 7 serial tests** with TypeScript,
+AI-surface, and diff hygiene. The production build passed Vite (**461 modules**)
+and Hercules Pro UI; only the repository's existing PGlite browser-external,
+eval, and chunk-size warnings appeared.
+
+**Next owner:** Review this local branch, then Jonathan may separately
+authorize push/PR/merge. Hosted two-device continuity proof remains a release
+check.
+
 ## Onboarding Slice 15 — Chapter 6 Household Fund (D-214) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete

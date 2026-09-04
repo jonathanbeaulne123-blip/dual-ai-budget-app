@@ -131,6 +131,37 @@ const SLICE_15_FUND_COPY: Record<string, { text: string; announce: CopyEntry["an
   "fund.custody-mismatch": { text: "Custody moves through the Fund, not the charter.", announce: "polite" },
 };
 
+const SLICE_16_RECURRENCES_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-07-recurrences": {
+    text: "Put the household's rent or equivalent and one other regular item on the calendar as standing facts.", announce: "none",
+  },
+  "recurrences.open": { text: "Open regular money", announce: "none" },
+  "recurrences.title": { text: "Regular money", announce: "none" },
+  "recurrences.count": { text: "{count} standing", announce: "none" },
+  "recurrences.add-another": { text: "Add another regular item", announce: "none" },
+  "recurrences.add": { text: "Add a standing fact", announce: "none" },
+  "recurrences.witness-add": {
+    text: "{name} is leading this one. You can add a regular item too, if there's one you know.", announce: "none",
+  },
+  "recurrences.guide": {
+    text: "A reminder helps you remember. A standing fact anchors the plan. An actual posted occurrence changes the books. We only need the standing fact here.", announce: "none",
+  },
+  "recurrences.minimum": { text: "Add rent or its equivalent, plus one other regular item.", announce: "polite" },
+  "recurrences.empty": {
+    text: "Add rent or its equivalent first. This list holds standing facts for the plan; nothing here posts an occurrence.", announce: "none",
+  },
+  "recurrences.ready": { text: "The two anchors are here. Add more if it helps, or return to Hercules.", announce: "polite" },
+  "recurrences.pause": { text: "Three are plenty for one pass. Good place to pause or carry on.", announce: "polite" },
+  "recurrences.standing": { text: "Standing fact, not a post", announce: "none" },
+  "recurrences.form-explain": { text: "This anchors the plan. It doesn't post an occurrence or move money.", announce: "none" },
+  "recurrences.form-add": { text: "Add regular money", announce: "none" },
+  "recurrences.form-edit": { text: "Edit regular money", announce: "none" },
+  "recurrences.adopt-explain": {
+    text: "Adopt saves a standing fact from accepted history. Marking it paid is a separate step later.", announce: "none",
+  },
+  "recurrences.save": { text: "Save standing fact", announce: "none" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -143,13 +174,14 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
       ...SLICE_13_ACCOUNTS_COPY,
       ...SLICE_14_OPENING_COPY,
       ...SLICE_15_FUND_COPY,
+      ...SLICE_16_RECURRENCES_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

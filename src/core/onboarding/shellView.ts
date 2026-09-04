@@ -152,7 +152,7 @@ export function evidenceCardLabel(kind: EvidenceCard["kind"]): string {
     case "receipt":
       return "The receipt";
     case "recurrence":
-      return "The recurring bills";
+      return "The regular money";
     case "submission":
       return "What was submitted";
     case "approval":
@@ -165,7 +165,7 @@ export function evidenceCardLabel(kind: EvidenceCard["kind"]): string {
 }
 
 export type WitnessStatusWord = "opened" | "waiting" | "submitted";
-export type WitnessStatusRow = { id: string; label: string; status: WitnessStatusWord };
+export type WitnessStatusRow = { id: string; label: string; status: WitnessStatusWord; detail?: string };
 
 /**
  * Witnesses see chapter entities and plain state, never conductor field
@@ -189,7 +189,14 @@ export function witnessStatusRows(chapterId: ChapterId, card: EvidenceCard | nul
     case "ch-06-fund":
       return [{ id: "household-fund", label: "Household Fund", status: card ? "opened" : "waiting" }];
     case "ch-07-recurrences":
-      return [{ id: "regular-money", label: "Regular money", status: card ? "submitted" : "waiting" }];
+      return card
+        ? card.lines.map((line, index) => ({
+            id: card.sourceIds[index] ?? `recurrence-${index}`,
+            label: line.label,
+            status: "submitted",
+            detail: line.value,
+          }))
+        : [{ id: "regular-money", label: "Regular money", status: "waiting" }];
     default:
       return [{ id: `chapter:${chapterId}`, label: "Household chapter", status: card ? "submitted" : "waiting" }];
   }
@@ -205,7 +212,7 @@ export function witnessChapterScopeLabel(chapterId: ChapterId): string {
     case "ch-06-fund":
       return "Shared · Fund setup";
     case "ch-07-recurrences":
-      return "Shared · recurring bills";
+      return "Shared · regular money";
     default:
       return "Shared";
   }
