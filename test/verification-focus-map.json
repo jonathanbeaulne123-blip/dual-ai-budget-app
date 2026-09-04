@@ -42,6 +42,27 @@
         "test/permission-matrix.test.ts"
       ],
       "reason": "October control registry, effective Auth/RLS migration order, runtime gates, and synthetic PostgreSQL authorization matrix"
+    },
+    {
+      "sources": [
+        "docs/CLOUD_CONTINUITY.md",
+        "docs/SYNC_PILOT.md",
+        "docs/SYNC_DAILY_PROOF_TEMPLATE.md",
+        "scripts/collect-sync-proof.mjs",
+        "src/continuityRealtimeRecovery.ts",
+        "src/continuityTwoClientHarness.ts",
+        "src/onlineRequiredSync.ts",
+        "src/syncDailyProof.ts",
+        "src/syncPilotDiagnostics.ts"
+      ],
+      "tests": [
+        "test/continuity-realtime-recovery.test.ts",
+        "test/continuity-two-browser-proof.test.ts",
+        "test/online-required-sync.test.ts",
+        "test/sync-daily-proof.test.ts",
+        "test/sync-pilot-diagnostics.test.ts"
+      ],
+      "reason": "Exact-release daily sync evidence, privacy-safe diagnostics, two-client visibility, reconnect, poll fallback, and relaunch proof"
     }
   ]
 }

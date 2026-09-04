@@ -102,6 +102,10 @@ The local diagnostic contains only revisions, pending count, constrained transpo
 
 Latency-only failure may degrade to the honest polling fallback. Polling must recover to Realtime without duplicate posting. A false Synced state or lost/duplicated money is not a latency-only failure.
 
+### Readiness 4 evidence evaluator
+
+[`SYNC_DAILY_PROOF_TEMPLATE.md`](SYNC_DAILY_PROOF_TEMPLATE.md) defines the D-210 exact-release, privacy-safe operator ledger and local `pnpm sync:proof:collect` evaluator. It requires 100 fresh Realtime samples split at least 50 in each participant direction, authenticated cloud-clock calibration before and after the run on both devices, plus separately bound reconnect, poll-recovery, and relaunch/outbox evidence. The evaluator uses a conservative clock-uncertainty upper bound and emits only an operator-review candidate; it cannot witness real devices or independently earn the live pilot claim. Running the real two-account scenario remains separately authorized.
+
 ## Fourteen-day Development rehearsal
 
 Use disposable rehearsal information only. For fourteen consecutive days:
