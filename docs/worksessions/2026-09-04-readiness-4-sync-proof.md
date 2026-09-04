@@ -1,6 +1,6 @@
 # Hearth worksession — Readiness 4 sync proof
 
-- **Status:** OPEN
+- **Status:** READY FOR REVIEW
 - **Opened:** 2026-09-04 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -59,7 +59,7 @@ Jonathan and Bianca can collect one privacy-safe, release-bound ledger of two-ac
 - [x] Realtime refusal recovers through a poll within four seconds and returns to Realtime without a duplicate.
 - [x] Relaunch preserves one outbox command identity and proves exactly one receiver acceptance.
 - [x] The CLI rejects synthetic/fabricated-source labels and unknown/private fields, emits hashed identifiers only, binds a live candidate to a clean exact-SHA checkout, and can produce only a non-passing operator-review candidate.
-- [ ] Focused High-risk quick gate and independent sync/trust review pass.
+- [x] Focused High-risk quick gate and independent sync/trust review pass.
 
 ## Plan
 
@@ -67,7 +67,7 @@ Jonathan and Bianca can collect one privacy-safe, release-bound ledger of two-ac
 - [x] Branch from exact merged `main`.
 - [x] Implement the strict proof model, collector, tests, and operator template.
 - [x] Update risk mapping and living decision evidence.
-- [ ] Run exact-head verification and independent review; open a draft PR only after the local gate is green.
+- [x] Run exact-head verification and independent review; open a draft PR only after the local gate is green.
 
 ## Evidence log
 
@@ -76,6 +76,8 @@ Jonathan and Bianca can collect one privacy-safe, release-bound ledger of two-ac
 - No open PR touched the Slice 4 diagnostic, two-client, reconnect, or target test files at branch creation.
 - Focused proof/diagnostic/two-client/reconnect/online-policy plus verification-policy gate: 7 files / 63 tests passed.
 - Pre-rebase exact-head High quick gate passed 110/110 selected tests in 97.386 seconds with fingerprint `310ed002e8862e83480358bd2be94dda77052cc4a8dfe436813e909afd50de1f`; final rebased-head evidence follows after the review correction.
+- Rebased exact-head High quick gate passed 110/110 selected tests in 127.735 seconds at `5c57572b49d67e066322dbfba76902f94dadbe60`, fingerprint `92d735baff040f256bfc0b8db0d79ead4903849e187568d0b9c75a2365bcb953`, with no breach.
+- Independent sync/trust re-review passed at exact head `5c57572b49d67e066322dbfba76902f94dadbe60` with no P0–P2 findings after adversarial checks for fabricated live proof, pre-auth acknowledgement, pre-ack relaunch, bidirectional sampling, calibrated p95, and uncertainty-bound chronology/windowing.
 - `pnpm exec tsc --noEmit` passed. The fresh isolated dependency tree made this run unusually slow (about 140 seconds) but it remained inside the five-minute quick-gate budget.
 - `git diff --check`, JSON parsing, and the pre-push secret/private-artifact scan passed; only the eleven named source/test/doc/package files are changed or new.
 
@@ -92,4 +94,4 @@ Jonathan and Bianca can collect one privacy-safe, release-bound ledger of two-ac
 
 ## Handoff
 
-Implementation is in progress locally. No Slice 4 push, PR, deploy, hosted mutation, real-account run, schema action, secret, or Production action has occurred.
+The local candidate is ready for a draft PR. No Slice 4 deploy, hosted mutation, real-account run, schema action, secret, or Production action has occurred.
