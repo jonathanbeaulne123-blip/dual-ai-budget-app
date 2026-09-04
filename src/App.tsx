@@ -625,7 +625,7 @@ export function App() {
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
-  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund-register" | "wallet" | null>(null);
+  const [booksPaneRequest, setBooksPaneRequest] = useState<"fund-register" | "wallet" | "opening" | "register" | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
@@ -3955,9 +3955,14 @@ export function App() {
     pendingDemoFramesRef.current = [];
   }, []);
 
-  function persistLedgerWrite(next: Household, token?: UndoToken) {
+  function persistLedgerWrite(next: Household, token?: UndoToken, confirmationId?: string) {
     const accepted = householdRef.current;
-    return persist(accepted ? restoreAcceptedSnapshot(accepted, next) : next, token);
+    return persist(
+      accepted ? restoreAcceptedSnapshot(accepted, next) : next,
+      token,
+      undefined,
+      confirmationId ? { confirmationId } : undefined,
+    );
   }
 
   async function gateWithGoogle(options?: { record?: boolean }) {
@@ -5727,7 +5732,7 @@ export function App() {
             memberId={session.memberId}
             today={today}
             surface="home"
-            onApply={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+            onApply={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
             onOpenTask={openMonthRehearsalTask}
           />
         ) : null}
@@ -5956,7 +5961,7 @@ export function App() {
           sourceFocus={herculesSourceFocus}
           onFocusAccount={setFocusedAccountId}
           onClearSource={() => setHerculesSourceFocus(null)}
-          onChange={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+          onChange={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
           onCommand={(command) => { void run(command); }}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
@@ -6005,7 +6010,7 @@ export function App() {
               memberId={session.memberId}
               today={today}
               surface="manage"
-              onApply={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+              onApply={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
               onOpenTask={openMonthRehearsalTask}
             />
           ) : null}
@@ -7118,6 +7123,12 @@ export function App() {
           rememberSession({ memberId: session.memberId, view: "personal", householdId: household.householdId });
           setFocusedAccountId(null);
           setBooksPaneRequest("wallet");
+          goTab("ledger");
+        }}
+        onOpenOpeningBalances={(mode) => {
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+          setFocusedAccountId(null);
+          setBooksPaneRequest(mode === "entry" ? "opening" : "register");
           goTab("ledger");
         }}
         onOpenSource={(source: HerculesNumberSource) => {

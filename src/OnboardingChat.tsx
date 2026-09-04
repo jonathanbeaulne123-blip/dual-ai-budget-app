@@ -13,6 +13,7 @@ import {
   evidenceProvenanceLabel,
   flavorFor,
   handshakeExpired,
+  hasPostedOpeningTruth,
   isSittingFinalChapter,
   isSittingFirstChapter,
   memberProgress,
@@ -81,6 +82,8 @@ type Props = {
   onOpenCharter?: () => void;
   /** Chapter 4 opens the existing account surface with its account form expanded. */
   onOpenAccounts?: () => void;
+  /** Chapter 5 opens the existing opening card, or the existing activity correction path. */
+  onOpenOpeningBalances?: (mode: "entry" | "correction") => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -159,6 +162,7 @@ export function OnboardingChat({
   onDismiss,
   onOpenCharter,
   onOpenAccounts,
+  onOpenOpeningBalances,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -435,7 +439,16 @@ export function OnboardingChat({
   const charterPresentation = chapterId === "ch-03-charter"
     ? onboardingCharterPresentation(household, memberId, evidence)
     : { kind: "none" as const };
-  const blocked = onboardingBlockedPresentation(evidence, otherName);
+  const baseBlocked = onboardingBlockedPresentation(evidence, otherName);
+  const openingStaleConflict = chapterId === "ch-05-opening"
+    && evidence.kind === "ineligible"
+    && evidence.reason === "stale";
+  const openingHasBatch = chapterId === "ch-05-opening" && hasPostedOpeningTruth(household);
+  const openingNeedsCorrection = openingStaleConflict
+    || (chapterId === "ch-05-opening" && evidence.kind === "empty" && openingHasBatch);
+  const blocked = openingStaleConflict
+    ? { copyKey: "opening.stale", retryable: false }
+    : baseBlocked;
   const waitingForPartner = charterPresentation.kind === "waiting";
   const blockedCopyKey = waitingForPartner ? charterPresentation.copyKey : blocked?.copyKey ?? null;
   const blockedCopySlots = waitingForPartner ? charterPresentation.slots : blocked?.slots;
@@ -446,18 +459,22 @@ export function OnboardingChat({
   const accountsNeedNavigation = chapterId === "ch-04-accounts"
     && !blockedCopyKey
     && (evidence.kind !== "accepted" || personalAccountChoicePending);
+  const openingNeedsNavigation = chapterId === "ch-05-opening"
+    && (evidence.kind === "empty" || openingStaleConflict);
 
   const showAction = role === "conductor"
     && !blockedCopyKey
     && !charterNeedsNavigation
     && !accountsNeedNavigation
+    && !openingNeedsNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
   const showCharterAction = role === "conductor" && charterNeedsNavigation && Boolean(onOpenCharter);
   const showAccountsAction = role === "conductor" && accountsNeedNavigation && Boolean(onOpenAccounts);
   const showPersonalSkipAction = showAccountsAction && personalAccountChoicePending;
-  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction
+  const showOpeningAction = role === "conductor" && openingNeedsNavigation && Boolean(onOpenOpeningBalances);
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction
     ? SHELL_VIEW.cardToAction
     : 0;
 
@@ -550,13 +567,13 @@ export function OnboardingChat({
           ) : (
             <section className="onboarding-card" style={{ marginBottom: cardMarginBottom }}>
               <p className="onboarding-card-label">This one's yours</p>
-              <p className="onboarding-card-task">{copy(chapter.copyKey)}</p>
+              <p className="onboarding-card-task">{copy(openingNeedsCorrection ? "opening.partial" : chapter.copyKey)}</p>
               <p className="onboarding-card-provenance">{taskLengthLabel(chapter.timeBudgetSeconds)}</p>
             </section>
           )}
         </>
       )}
-      {showAction || showRetryAction || showCharterAction || showAccountsAction ? (
+      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
@@ -568,6 +585,8 @@ export function OnboardingChat({
                 ? onOpenCharter
                 : showAccountsAction
                   ? onOpenAccounts
+                  : showOpeningAction
+                    ? () => onOpenOpeningBalances?.(openingNeedsCorrection ? "correction" : "entry")
                   : acknowledge}
           >
             {copy(showRetryAction
@@ -576,6 +595,8 @@ export function OnboardingChat({
                 ? charterPresentation.copyKey
                 : showAccountsAction
                   ? "accounts.open"
+                  : showOpeningAction
+                    ? openingNeedsCorrection ? "opening.review" : "opening.open"
                   : "continue.next")}
           </button>
           {showPersonalSkipAction ? (

@@ -12,7 +12,12 @@ import {
 } from "../charterView.ts";
 import { shapeHouseholdFundConfig } from "../householdFund.ts";
 import { formatCad } from "../money.ts";
-import { hasOnlyOpeningCorrectionHistory, householdHasAcceptedMoney } from "../openingTruth.ts";
+import {
+  hasOnlyOpeningCorrectionHistory,
+  hasPostedOpeningTruth,
+  householdHasAcceptedMoney,
+  openingBatchRows,
+} from "../openingTruth.ts";
 import { resolveSwipeCardAccount } from "../swipe.ts";
 import type { Account, Household, Transaction } from "../types.ts";
 import { acceptedHouseholdOnboarding, onboardingIsActive, shapeHouseholdOnboarding } from "./mode.ts";
@@ -281,6 +286,10 @@ function activeOpeningRows(household: Household): Transaction[] {
 function openingEvidence(household: Household, chapterId: ChapterId): Projection {
   const sharedTransactions = household.transactions.filter((transaction) => transaction.visibility !== "personal");
   const sharedHousehold = { ...household, transactions: sharedTransactions };
+  const sharedAccountIds = household.accounts
+    .filter((account) => account.active && account.scope !== "personal")
+    .map((account) => account.id)
+    .sort();
   const rows = activeOpeningRows(sharedHousehold)
     .filter((transaction) => household.accounts.some((account) => (
       account.id === transaction.accountId && account.scope !== "personal"
@@ -295,6 +304,17 @@ function openingEvidence(household: Household, chapterId: ChapterId): Projection
   const sourceId = rows[0]?.sourceId;
   if (!sourceId || rows.some((row) => row.sourceId !== sourceId || row.date !== rows[0]?.date)) {
     return { ...EMPTY, ineligible: "untied" };
+  }
+  const batchRows = openingBatchRows(sharedHousehold, sourceId)
+    .filter((transaction) => transaction.visibility !== "personal");
+  if (batchRows.length !== rows.length || !hasPostedOpeningTruth(sharedHousehold)) {
+    return { ...EMPTY, ineligible: "untied" };
+  }
+  const coveredAccountIds = new Set(rows.map((row) => row.accountId));
+  if (!sharedAccountIds.length || sharedAccountIds.some((accountId) => !coveredAccountIds.has(accountId))) {
+    // A partial opening is real accepted history, but it is not completion.
+    // The existing whole-batch reversal is the only correction path.
+    return EMPTY;
   }
   const receipt = household.commandReceipts.find((candidate) => (
     candidate.commandKind === "postOpeningBalances"
@@ -314,7 +334,7 @@ function openingEvidence(household: Household, chapterId: ChapterId): Projection
       kind: "receipt",
       sourceIds: [receipt.confirmationId, ...rows.map((row) => row.id)],
       lines: [
-        { label: "Accounts", value: rows.map((row) => accountName(household, row.accountId)).join(", ") },
+        { label: "Accounts covered", value: rows.map((row) => accountName(household, row.accountId)).join(", ") },
         { label: "Civil date", value: rows[0]!.date },
         { label: "Opening equity", value: formatCad(equityCents) },
       ],

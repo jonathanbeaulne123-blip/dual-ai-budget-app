@@ -1,6 +1,6 @@
 # Ledger-native “Google Docs feel” Development pilot
 
-> **Status — 2026-09-04:** the deployed D-180/D-186 pilot remains unproven through the complete live signed-in matrix and fourteen-day rehearsal. D-208's online-required commit boundary is on `main`; D-213's truthful Personal-and-Shared cloud-ledger naming and fresh live latency proof remain a release candidate until separately merged and deployed.
+> **Status — 2026-09-04:** the deployed D-180/D-186 pilot remains unproven through the complete live signed-in matrix and fourteen-day rehearsal. D-208's online-required commit boundary is on `main`; D-214's truthful Personal-and-Shared cloud-ledger naming and fresh live latency proof remain a release candidate until separately merged and deployed.
 
 ## Entry and household-identity repair — Development deployed
 

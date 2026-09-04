@@ -2,7 +2,7 @@
 
 > **Accepted direction — D-149 (2026-08-26).** This file is the canonical sync plan. It supersedes snapshot-only Phase 2 wording, the 4-second live-pull target, and Packet 7’s “atomic CAS + outbox” framing as the *end state*. Those pieces remain **Tier 1 foundations**, not the finish line.
 >
-> **Launch policy — D-208 + D-213 (2026-09-04).** Every Development mutation of a cloud-backed household is online-required, whether the current presentation is Personal or Shared. A reusable isolated PGlite replica validates the candidate through the real Postgres schema first; the cloud command acknowledgement is the commit and `Saved` boundary, and the active PGlite replica advances afterward. Startup, catch-up, ambiguous acknowledgement, and manual projection restore pair Shared with the signed-in member's revisioned Personal envelope between two equal Shared-revision reads. Both scopes are adopted together and Confirm stays blocked until that exact environment/household/member/revision tuple is proven. Cached books remain readable offline; Production continuity remains off.
+> **Launch policy — D-208 + D-214 (2026-09-04).** Every Development mutation of a cloud-backed household is online-required, whether the current presentation is Personal or Shared. A reusable isolated PGlite replica validates the candidate through the real Postgres schema first; the cloud command acknowledgement is the commit and `Saved` boundary, and the active PGlite replica advances afterward. Startup, catch-up, ambiguous acknowledgement, and manual projection restore pair Shared with the signed-in member's revisioned Personal envelope between two equal Shared-revision reads. Both scopes are adopted together and Confirm stays blocked until that exact environment/household/member/revision tuple is proven. Cached books remain readable offline; Production continuity remains off.
 >
 > **Household outcome:** when Bianca confirms a grocery on her phone, Jonathan’s open kitchen shows it in **100–500 ms** — as naturally as a text message — without either phone being the host, without silent loss, and without the model or widgets posting money.
 >
@@ -52,7 +52,7 @@ Imagine the household budget is **two shared notebooks** on a **cloud fridge**:
 These survive every tier. A slice that violates one is **stop-ship**.
 
 1. **PGlite is the accounting gate.** Every inbound bytes — poll, Realtime, or command — passes the same `acceptHouseholdWrite` / hash / environment / membership checks before display or persistence.
-2. **Cloud is durable continuity; no device is host.** In D-208/D-213 launch mode, an authenticated cloud acknowledgement is required before any cloud-backed Personal or Shared write commits locally; cached reading remains available offline.
+2. **Cloud is durable continuity; no device is host.** In D-208/D-214 launch mode, an authenticated cloud acknowledgement is required before any cloud-backed Personal or Shared write commits locally; cached reading remains available offline.
 3. **Confirm is the money boundary.** Transport never invents journal rows.
 4. **Fail closed on scope.** Environment, Google subject, member, household, and ledger scope must match at discovery, pull, push, and Realtime subscription boundaries (D-146).
 5. **Atomic hosted writes.** Shared CAS + Personal envelope + membership touchpoints commit in **one SQL transaction** (Migration 012 pattern from 011).
