@@ -34,6 +34,8 @@ const serialFixtureTests = [
   "stress-seed.test.ts",
 ];
 
+const serialTimingTests = ["continuity-two-browser-proof.test.ts"];
+
 const rpcIsolatedFixtureTests = [
   "demo-suite.test.ts",
   "demo-shift-statistics.test.ts",
@@ -41,7 +43,7 @@ const rpcIsolatedFixtureTests = [
 ];
 
 describe("Vitest lanes", () => {
-  it("keeps every direct PGlite runtime test in the serial books lane", () => {
+  it("keeps direct PGlite and host-timing tests in the serial books lane", () => {
     expect(packageJson.scripts?.["test:full:lanes"]).toBeUndefined();
     expect(packageJson.scripts?.test).toBe("node scripts/run-quick-gate.mjs");
     expect(packageJson.scripts?.check).toBe("node scripts/run-quick-gate.mjs");
@@ -50,7 +52,7 @@ describe("Vitest lanes", () => {
     const booksLane = packageJson.scripts?.["test:books"] ?? "";
     const fastLane = packageJson.scripts?.["test:fast"] ?? "";
     const runtimeTests = directPGliteRuntimeTests();
-    const serialTests = [...runtimeTests, ...serialFixtureTests].sort();
+    const serialTests = [...runtimeTests, ...serialFixtureTests, ...serialTimingTests].sort();
 
     expect(runtimeTests).toEqual([
       "almost-there.test.ts",
