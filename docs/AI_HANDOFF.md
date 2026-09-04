@@ -1,5 +1,54 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 13 — Chapter 4 accounts (D-211) (2026-09-04)
+
+**Status:** Local implementation, production build, and live UX pass complete
+on `onboarding/13-ch4-accounts` from
+`origin/main@eb479f9e8abb67d8b49eb8b8b0e520eafc5d276d`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **Medium-High** because account scope,
+privacy projection, and onboarding completion change without money authority.
+
+**Outcome:** Chapter 4 now completes only from cited Shared accounts plus one
+resolvable Shared credit card for the Fund. The custodian chooses when several
+cards exist; Hearth never guesses. Personal accounts remain owner-only and
+optional. Skipping that optional step records a Personal progress fact, adds
+nothing, and never weakens the Shared gate.
+
+**Implementation:** The Chapter 4 resolver no longer falls back to Personal
+evidence. A separate owner-only projector supports the soft Personal step,
+while a privacy refusal reveals nothing when only a partner-Personal card has
+the needed shape. The acknowledgement command re-projects current household
+evidence. Hercules routes directly to Personal Books with the existing account
+editor expanded, and the editor makes the Shared Fund-card default explicit
+while saying it neither opens accounts nor moves money. Contract:
+[`briefs/ONBOARDING_SLICE_13_CH4_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_13_CH4_CONTRACT_2026-09-04.md).
+
+**UX and accessibility:** Live fictional Development journeys covered empty,
+Personal-choice, accepted, privacy-blocked, and account-editor states at 320,
+390, 720, and 1100 CSS px plus a 550 px 200%-equivalent reflow. The browser
+pass caught and repaired 37 px legacy account chips; final routed controls are
+44–49 px. There was no horizontal overflow. Primary-action contrast measured
+6.16:1. Keyboard wrapping, forced-colors focus/rail, reduced motion, explicit
+`aria-pressed` Fund selection, skip recovery, and privacy copy passed.
+
+**Boundary:** The new Fund-card preference is member-owned Personal continuity
+and is stripped from Shared; the independent glance preference is unchanged.
+D-208 remains authoritative: offline Shared additions refuse
+before accepted evidence rather than becoming locally queued completion. No
+bank feed, issued card, financial movement, Shared Fund/account field, schema,
+hosted row, Auth/RLS, provider, secret, Production, push, merge, or deploy.
+Browser fixtures were temporary and removed.
+
+**Verification:** The exact final focused suite passed **180/180**. The
+Medium-High quick gate passed AI-surface, TypeScript, diff hygiene, **201 fast
++ 7 serial tests** in **under two minutes**. The production build passed TypeScript,
+Vite (**457 modules**), Hercules Pro UI, and the redirect sanitizer; only the
+repository's existing PGlite/chunk-size warnings were emitted.
+
+**Next owner:** Review this local branch, then Jonathan may separately
+authorize push/PR/merge. Hosted two-device/cloud-ack proof remains a later
+release check.
+
 ## Onboarding Slice 12 — Chapter 3 Charter (D-210) (2026-09-04)
 
 **Status:** Local implementation and live UX pass complete on

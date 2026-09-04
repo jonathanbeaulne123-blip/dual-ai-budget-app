@@ -19,6 +19,8 @@ export type MemberChapterProgress = {
   probeEvidenceKey: string | null;
   /** Only personal, member-skippable modules may carry this field. */
   skippedAt: string | null;
+  /** Chapter 4's optional owner-only Personal account setup; never satisfies the household chapter. */
+  personalAccountSetupSkippedAt: string | null;
   lastSafeResumePoint: string | null;
   acknowledgedAt: string | null;
 };
@@ -94,6 +96,7 @@ function emptyChapter(chapterId: ChapterId): MemberChapterProgress {
     observedCompleteAt: null,
     probeEvidenceKey: null,
     skippedAt: null,
+    personalAccountSetupSkippedAt: null,
     lastSafeResumePoint: null,
     acknowledgedAt: null,
   };
@@ -141,6 +144,9 @@ export function shapeMemberOnboardingProgress(
       probeEvidenceKey: hasAcceptedProbe ? probeEvidenceKey : null,
       skippedAt: chapter.track === "personal" && chapter.skip === "member-skippable"
         ? isoOrNull(candidate?.skippedAt)
+        : null,
+      personalAccountSetupSkippedAt: chapter.id === "ch-04-accounts"
+        ? isoOrNull(candidate?.personalAccountSetupSkippedAt)
         : null,
       lastSafeResumePoint: textOrNull(candidate?.lastSafeResumePoint),
       acknowledgedAt: isoOrNull(candidate?.acknowledgedAt),
@@ -246,6 +252,10 @@ export function mergeMemberProgress(
       observedCompleteAt,
       probeEvidenceKey: observedCompleteAt ? evidenceCandidates[0] ?? null : null,
       skippedAt: earlier(left.skippedAt, right.skippedAt),
+      personalAccountSetupSkippedAt: earlier(
+        left.personalAccountSetupSkippedAt,
+        right.personalAccountSetupSkippedAt,
+      ),
       lastSafeResumePoint: !left.lastSafeResumePoint
         ? right.lastSafeResumePoint
         : !right.lastSafeResumePoint

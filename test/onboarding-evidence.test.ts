@@ -7,6 +7,7 @@ import {
   evidenceFor,
   postEntry,
   postOpeningBalances,
+  selfPersonalAccountsEvidenceFor,
   witnessEvidenceFor,
   type CommandReceipt,
   type Household,
@@ -135,19 +136,20 @@ describe("onboarding evidence projector", () => {
     if (partnerWitness.kind === "accepted") expect(partnerWitness.card.scope).toBe("household");
   });
 
-  it("returns self-personal evidence only to its owner and never to a witness", () => {
+  it("keeps self-personal account evidence owner-only and outside the Chapter 4 household gate", () => {
     const household = privacyFixture();
     household.accounts = household.accounts.filter((account) => account.scope === "personal");
-    const owner = evidenceFor(household, "ch-04-accounts", BIANCA);
+    const owner = selfPersonalAccountsEvidenceFor(household, BIANCA);
     expect(owner).toMatchObject({
       kind: "accepted",
       card: { scope: "self-personal", sourceIds: [BIANCA_PRIVATE[0]] },
     });
     expectNoTokens(owner, JONATHAN_PRIVATE);
+    expect(evidenceFor(household, "ch-04-accounts", BIANCA)).toEqual({ kind: "empty" });
     expect(witnessEvidenceFor(household, "ch-04-accounts", BIANCA)).toEqual({ kind: "empty" });
 
     household.accounts = household.accounts.filter((account) => account.ownerMemberId === BIANCA);
-    const partner = evidenceFor(household, "ch-04-accounts", JONATHAN);
+    const partner = selfPersonalAccountsEvidenceFor(household, JONATHAN);
     expect(partner).toEqual({ kind: "empty" });
     expectNoTokens(partner, BIANCA_PRIVATE);
   });
@@ -230,10 +232,11 @@ describe("onboarding evidence projector", () => {
     });
   });
 
-  it("lets witness projection remove self-personal evidence but never add evidence", () => {
+  it("keeps Personal evidence separate while conductor and witness share the same household projection", () => {
     const household = privacyFixture();
     household.accounts = household.accounts.filter((account) => account.scope === "personal");
-    expect(evidenceFor(household, "ch-04-accounts", BIANCA).kind).toBe("accepted");
+    expect(selfPersonalAccountsEvidenceFor(household, BIANCA).kind).toBe("accepted");
+    expect(evidenceFor(household, "ch-04-accounts", BIANCA)).toEqual({ kind: "empty" });
     expect(witnessEvidenceFor(household, "ch-04-accounts", BIANCA)).toEqual({ kind: "empty" });
 
     const shared = privacyFixture();

@@ -69,7 +69,7 @@ describe("onboarding registry", () => {
       { id: "ch-01-meet", sitting: 1, conductor: "both", approval: "joint", skip: "household-required", target: null },
       { id: "ch-02-household", sitting: 1, conductor: "both", approval: "none", skip: "auto-completable", target: "more" },
       { id: "ch-03-charter", sitting: 1, conductor: "either", approval: "joint", skip: "household-required", target: "more" },
-      { id: "ch-04-accounts", sitting: 2, conductor: "partner", approval: "none", skip: "household-required", target: "more" },
+      { id: "ch-04-accounts", sitting: 2, conductor: "partner", approval: "none", skip: "household-required", target: "ledger" },
       { id: "ch-05-opening", sitting: 2, conductor: "partner", approval: "none", skip: "household-required", target: "ledger" },
       { id: "ch-06-fund", sitting: 2, conductor: "partner", approval: "joint", skip: "household-required", target: "plan" },
       { id: "ch-07-recurrences", sitting: 2, conductor: "partner", approval: "none", skip: "household-required", target: "calendar" },
@@ -83,6 +83,8 @@ describe("onboarding registry", () => {
     expect(chapterById("ch-03-charter")?.target).toEqual({ tab: "more" });
     expect(chapterById("ch-03-charter")?.timeBudgetSeconds).toBe(480);
     expect(chapterById("ch-03-charter")?.pausePoints).toEqual(["after-question-two"]);
+    expect(chapterById("ch-04-accounts")?.timeBudgetSeconds).toBe(360);
+    expect(chapterById("ch-04-accounts")?.pausePoints).toEqual(["after-shared-accounts"]);
     expect(chapterById("missing")).toBeNull();
   });
 

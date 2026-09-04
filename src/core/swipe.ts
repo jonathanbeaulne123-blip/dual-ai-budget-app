@@ -124,6 +124,10 @@ function visibleSwipeCards(household: Household): Account[] {
 export function resolveSwipeCardAccount(household: Household, memberId: string): SwipeCardResolution {
   const visible = visibleSwipeCards(household);
   const visibleIds = new Set(visible.map((account) => account.id));
+  const chosenId = household.members.find((member) => member.id === memberId)?.fundCardAccountId;
+  if (chosenId && isEligibleSwipeCard(visible.find((account) => account.id === chosenId))) {
+    return { kind: "ready", accountId: chosenId };
+  }
   const recent = shapeHouseholdFundEvents(household.fundEvents)
     .filter((event) => event.kind === "purchase-funded" && event.createdBy === memberId)
     .sort((left, right) => (

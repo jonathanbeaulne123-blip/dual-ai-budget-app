@@ -36,6 +36,10 @@ export type Member = {
   glanceAccountId?: string | null;
   /** Record-specific Personal convergence clock; never enters Shared. */
   glanceAccountUpdatedAt?: string;
+  /** Member-owned Shared credit-card choice for Fund-backed purchases. */
+  fundCardAccountId?: string | null;
+  /** Record-specific Personal convergence clock; never enters Shared. */
+  fundCardAccountUpdatedAt?: string;
 };
 
 export type AccountKind = "chequing" | "savings" | "credit" | "investment" | "other" | "receivable";
@@ -1351,6 +1355,9 @@ export type PersonalEnvelope = {
   /** Member-owned Accounts glance preference. Never enters the Shared envelope. */
   glanceAccountId?: string | null;
   glanceAccountUpdatedAt?: string;
+  /** Member-owned Fund-card preference. Never enters the Shared envelope. */
+  fundCardAccountId?: string | null;
+  fundCardAccountUpdatedAt?: string;
   /** Member-owned account metadata. Legacy envelopes omit this collection. */
   accounts?: Account[];
   lastCommittedAt: string | null;

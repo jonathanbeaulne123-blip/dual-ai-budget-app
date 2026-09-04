@@ -112,10 +112,11 @@ export function BooksPage({
   onAddToAccount: (account: Account) => void;
   onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
-  requestedPane?: "fund-register" | null;
+  requestedPane?: "fund-register" | "wallet" | null;
   onConsumeRequestedPane?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
+  const [accountFormOpenRequest, setAccountFormOpenRequest] = useState(0);
   const sharedTable = view === "household";
   const auditHousehold = useMemo(() => (
     booksPresentationFloor(booksHousehold, memberId, view)
@@ -208,6 +209,13 @@ export function BooksPage({
   useEffect(() => {
     if (requestedPane !== "fund-register" || !sharedTable) return;
     setPane("fund-register");
+    onConsumeRequestedPane?.();
+  }, [onConsumeRequestedPane, requestedPane, sharedTable]);
+
+  useEffect(() => {
+    if (requestedPane !== "wallet" || sharedTable) return;
+    setPane("wallet");
+    setAccountFormOpenRequest((current) => current + 1);
     onConsumeRequestedPane?.();
   }, [onConsumeRequestedPane, requestedPane, sharedTable]);
 
@@ -335,6 +343,7 @@ export function BooksPage({
           onChange={onChange}
           onPay={onPayAccount}
           onAdd={onAddToAccount}
+          accountFormOpenRequest={accountFormOpenRequest}
         />
       )}
       {pane === "fund" && (

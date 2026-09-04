@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ACCOUNT_KIND_HINT,
   ACCOUNT_KIND_LABEL,
@@ -17,6 +17,9 @@ import {
   postCardInterest,
   postCardRewards,
   postSavingsInterest,
+  isEligibleSwipeCard,
+  resolveSwipeCardAccount,
+  setFundCardAccount,
   updateAccount,
   type Account,
   type AccountKind,
@@ -388,11 +391,13 @@ export function AddAccountForm({
   writeHousehold = household,
   memberId,
   onSave,
+  openRequest = 0,
 }: {
   household: Household;
   writeHousehold?: Household;
   memberId: string;
   onSave: (household: Household, undo?: UndoToken) => void;
+  openRequest?: number;
 }) {
   const [kind, setKind] = useState<AccountKind>("credit");
   const [name, setName] = useState("");
@@ -408,15 +413,53 @@ export function AddAccountForm({
   const [error, setError] = useState("");
   const [scope, setScope] = useState<"shared" | "personal">("shared");
   const [open, setOpen] = useState(false);
+  const sharedFundCards = useMemo(() => household.accounts
+    .filter(isEligibleSwipeCard)
+    .sort((left, right) => left.name.localeCompare(right.name)), [household.accounts]);
+  const fundCard = resolveSwipeCardAccount(household, memberId);
+
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true);
+  }, [openRequest]);
 
   return (
     <CollapsibleCard
-      title="Open an account"
+      title="Add an account"
       hint="Chequing, cards, investments"
       open={open}
       onToggle={setOpen}
     >
-      <p className="muted">Chequing, savings, as many cards as you hold, investments, money owed to us, or Goals savings. Interest and cashback never auto-post.</p>
+      <div className="add-account-form-fields">
+      <p className="muted">Record chequing, savings, cards, investments, money owed to you, or Goals savings. Hearth does not open accounts or move money, and interest and cashback never auto-post.</p>
+      {sharedFundCards.length > 0 ? (
+        <fieldset className="account-fund-card-choice">
+          <legend>Shared card for the Fund</legend>
+          <p className="muted">Choose the Shared card that household purchases use. This records a default; it does not charge the card.</p>
+          <div className="chips">
+            {sharedFundCards.map((account) => {
+              const selected = fundCard.kind === "ready" && fundCard.accountId === account.id;
+              return (
+                <button
+                  key={account.id}
+                  className={`chip ${selected ? "selected" : ""}`}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    const result = setFundCardAccount(writeHousehold, {
+                      memberId,
+                      accountId: account.id,
+                      createdBy: memberId,
+                    });
+                    onSave(result.household, result.undo);
+                  }}
+                >
+                  {selected ? `${account.name} selected` : `Use ${account.name}`}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      ) : null}
       <label>Who can see this account?</label>
       <div className="chips">
         <button className={`chip ${scope === "shared" ? "selected" : ""}`} type="button" onClick={() => setScope("shared")}>Household</button>
@@ -510,8 +553,9 @@ export function AddAccountForm({
           }
         }}
       >
-        Open {ACCOUNT_KIND_LABEL[kind].toLowerCase()}
+        Add {kind === "credit" ? "credit card" : ACCOUNT_KIND_LABEL[kind].toLowerCase()}
       </button>
+      </div>
     </CollapsibleCard>
   );
 }
@@ -526,6 +570,7 @@ export function WalletPane({
   onChange,
   onPay,
   onAdd,
+  accountFormOpenRequest = 0,
 }: {
   household: Household;
   writeHousehold?: Household;
@@ -536,6 +581,7 @@ export function WalletPane({
   onChange: (household: Household, undo?: UndoToken) => void;
   onPay: (account: Account) => void;
   onAdd: (account: Account) => void;
+  accountFormOpenRequest?: number;
 }) {
   return (
     <>
@@ -550,7 +596,13 @@ export function WalletPane({
         onPay={onPay}
         onAdd={onAdd}
       />
-      <AddAccountForm household={household} writeHousehold={writeHousehold} memberId={memberId} onSave={onChange} />
+      <AddAccountForm
+        household={household}
+        writeHousehold={writeHousehold}
+        memberId={memberId}
+        onSave={onChange}
+        openRequest={accountFormOpenRequest}
+      />
     </>
   );
 }
