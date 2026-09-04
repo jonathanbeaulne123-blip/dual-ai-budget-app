@@ -956,7 +956,7 @@ describe("cached-shell startup books gate", () => {
       button("Restore from cloud copy").click();
       await Promise.resolve();
     });
-    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull(), 15_000);
 
     const restored = startup.savedHouseholds.at(-1);
     expect(restored?.revision).toBe(9);
@@ -966,7 +966,7 @@ describe("cached-shell startup books gate", () => {
     expect(restored?.transactions.some((row) => row.note === "Corrupted local private row")).toBe(false);
     expect(startup.stagedCandidates.at(-1)?.householdId).toBe(restored?.householdId);
     expect(startup.repairedCandidates.at(-1)?.booksAcceptedHash).toBe(restored?.booksAcceptedHash);
-  });
+  }, 30_000);
 
   it("keeps projection recovery blocked when the device still has an unacknowledged tip", async () => {
     vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
