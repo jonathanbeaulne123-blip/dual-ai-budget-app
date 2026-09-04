@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  acknowledgeContinuityOutboxItemDurably,
   awaitContinuityOutboxDurable,
   cancelContinuityConflictGeneration,
   createMemoryContinuityStore,
@@ -969,6 +970,43 @@ describe("Google-account continuity", () => {
 });
 
 describe("Sign out continuity wipe", () => {
+  it("hydrates the newer IndexedDB generation when localStorage is stale", async () => {
+    const store = createMemoryContinuityStore();
+    setContinuityStore(store);
+    const previous = { ...googleHousehold(), householdId: "HH-DURABLE-MERGE", revision: 1 };
+    const older = enqueueContinuitySnapshot({
+      identity,
+      household: previous,
+      expectedRevision: 0,
+      confirmationId: "older-local",
+    });
+    const storedKey = Object.keys(store.snapshot())[0]!;
+    const olderLocal = store.snapshot()[storedKey]!;
+    const newerHousehold = { ...previous, revision: 2, baseRevision: 1 };
+    const newer = enqueueContinuitySnapshot({
+      identity,
+      household: newerHousehold,
+      expectedRevision: 1,
+      confirmationId: "newer-idb",
+    });
+    store.setItem(storedKey, olderLocal);
+    setContinuityStore(null);
+    vi.stubGlobal("localStorage", store);
+    setContinuityIdbReadForTests(async () => [{
+      ...newer,
+      generation: "2:newer-idb",
+      confirmationIds: ["newer-idb"],
+      updatedAt: new Date(Date.parse(older.updatedAt) + 1_000).toISOString(),
+    }]);
+
+    await hydrateContinuityOutbox("development");
+
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      tipRevision: 2,
+      confirmationIds: ["newer-idb"],
+    }]);
+  });
+
   it("does not let delayed hydration replace a newer Confirm generation", async () => {
     const seedStore = createMemoryContinuityStore();
     setContinuityStore(seedStore);
@@ -1118,6 +1156,58 @@ describe("Sign out continuity wipe", () => {
 
     await expect(clearContinuityOutboxForHouseholdDurably("development", household.householdId))
       .rejects.toThrow(/idb removal refused/i);
+  });
+
+  it("fails closed when localStorage cannot be read before a household clear", async () => {
+    const values = new Map<string, string>();
+    let refuseRead = false;
+    setContinuityStore({
+      getItem: (itemKey) => {
+        if (refuseRead) throw new Error("local read refused");
+        return values.get(itemKey) ?? null;
+      },
+      setItem: (itemKey, value) => { values.set(itemKey, value); },
+      removeItem: (itemKey) => { values.delete(itemKey); },
+    });
+    const first = { ...googleHousehold(), householdId: "HH-CLEAR-A" };
+    const second = { ...googleHousehold(), householdId: "HH-KEEP-B" };
+    enqueueContinuitySnapshot({ identity, household: first, expectedRevision: 0, confirmationId: "clear-a" });
+    enqueueContinuitySnapshot({ identity, household: second, expectedRevision: 0, confirmationId: "keep-b" });
+    refuseRead = true;
+
+    await expect(clearContinuityOutboxForHouseholdDurably("development", first.householdId))
+      .rejects.toThrow(/local read refused/i);
+    refuseRead = false;
+    expect(listContinuityOutbox("development").map((item) => item.householdId).sort())
+      .toEqual([first.householdId, second.householdId].sort());
+  });
+});
+
+describe("durable acknowledgement", () => {
+  it("does not report synchronized when one durable store refuses marker deletion", async () => {
+    setContinuityStore(createMemoryContinuityStore());
+    const household = { ...googleHousehold(), revision: 1, baseRevision: 0 };
+    const item = enqueueContinuitySnapshot({
+      identity,
+      household,
+      expectedRevision: 0,
+      confirmationId: "strict-ack-delete",
+    });
+    vi.stubGlobal("indexedDB", {
+      open: () => {
+        const request: { error: Error; onerror: (() => void) | null } = {
+          error: new Error("idb delete refused"),
+          onerror: null,
+        };
+        queueMicrotask(() => request.onerror?.());
+        return request;
+      },
+    });
+
+    await expect(acknowledgeContinuityOutboxItemDurably(item)).rejects.toThrow(/idb delete refused/i);
+    expect(listContinuityOutbox("development")).toMatchObject([{
+      confirmationIds: ["strict-ack-delete"],
+    }]);
   });
 });
 

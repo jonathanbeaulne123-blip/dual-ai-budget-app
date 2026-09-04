@@ -248,7 +248,7 @@ function isOutboxItem(value: unknown): value is ContinuityOutboxItem {
   return Number.isFinite(item.tipRevision) || Number.isFinite(item.expectedRevision);
 }
 
-function readFromLocal(environment: Environment): ContinuityOutboxItem[] {
+function readFromLocal(environment: Environment, strict = false): ContinuityOutboxItem[] {
   const store = browserStore();
   if (!store) return [];
   try {
@@ -257,7 +257,10 @@ function readFromLocal(environment: Environment): ContinuityOutboxItem[] {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isOutboxItem).map(normalizeOutboxItem);
-  } catch {
+  } catch (caught) {
+    if (strict) {
+      throw caught instanceof Error ? caught : new Error("Could not read the continuity outbox from local storage.");
+    }
     return [];
   }
 }
@@ -287,6 +290,26 @@ function read(environment: Environment): ContinuityOutboxItem[] {
     });
   }
   return mem;
+}
+
+function mergeOutboxSources(sources: ContinuityOutboxItem[]): ContinuityOutboxItem[] {
+  const byId = new Map<string, ContinuityOutboxItem>();
+  for (const item of sources) {
+    const existing = byId.get(item.id);
+    if (!existing || item.updatedAt > existing.updatedAt) {
+      const snapshot = item.snapshot
+        ?? (existing && sameOutboxGeneration(existing, item) ? existing.snapshot : undefined);
+      byId.set(item.id, snapshot ? { ...item, snapshot } : item);
+    } else if (
+      item.updatedAt === existing.updatedAt
+      && sameOutboxGeneration(existing, item)
+      && item.snapshot
+      && !existing.snapshot
+    ) {
+      byId.set(item.id, { ...existing, snapshot: item.snapshot });
+    }
+  }
+  return [...byId.values()];
 }
 
 function writeLocalDurable(environment: Environment, durable: ContinuityOutboxDurable[]): boolean {
@@ -369,24 +392,19 @@ export async function awaitContinuityOutboxDurable(environment: Environment): Pr
 
 /** Load a durable IndexedDB outbox when localStorage was emptied by quota. */
 async function hydrateContinuityOutboxNow(environment: Environment): Promise<number> {
-  if (memoryOutbox.has(environment) && (memoryOutbox.get(environment)?.length ?? 0) > 0) {
-    return memoryOutbox.get(environment)?.length ?? 0;
-  }
-  const local = readFromLocal(environment);
-  if (local.length) {
-    memoryOutbox.set(environment, local);
-    return local.length;
-  }
   const startingEpoch = outboxMutationEpochs.get(environment) ?? 0;
+  const local = readFromLocal(environment);
   const fromIdb = await idbReadOutbox(environment);
   if ((outboxMutationEpochs.get(environment) ?? 0) !== startingEpoch) {
     return read(environment).length;
   }
-  if (fromIdb?.length) {
-    memoryOutbox.set(environment, fromIdb);
-    return fromIdb.length;
-  }
-  return 0;
+  const merged = mergeOutboxSources([
+    ...(fromIdb ?? []),
+    ...local,
+    ...(memoryOutbox.get(environment) ?? []),
+  ]);
+  memoryOutbox.set(environment, merged);
+  return merged.length;
 }
 
 export function hydrateContinuityOutbox(environment: Environment): Promise<number> {
@@ -620,8 +638,25 @@ export function acknowledgeContinuityOutboxItem(item: ContinuityOutboxItem): voi
 
 /** Compare-and-remove an outbox generation and wait until its durable deletion settles. */
 export async function acknowledgeContinuityOutboxItemDurably(item: ContinuityOutboxItem): Promise<void> {
-  acknowledgeContinuityOutboxItem(item);
-  await awaitContinuityOutboxDurable(item.environment);
+  const items = read(item.environment);
+  if (!items.some((row) => sameOutboxGeneration(row, item))) return;
+  write(
+    item.environment,
+    items.filter((row) => !sameOutboxGeneration(row, item)),
+    { requireEveryAvailableStore: true },
+  );
+  const removalEpoch = outboxMutationEpochs.get(item.environment) ?? 0;
+  try {
+    await awaitContinuityOutboxDurable(item.environment);
+  } catch (caught) {
+    // Cloud accepted the command, but this device must retain the exact marker
+    // until every durable store can forget it or authenticated pull proves it.
+    if ((outboxMutationEpochs.get(item.environment) ?? 0) === removalEpoch) {
+      write(item.environment, items);
+      await awaitContinuityOutboxDurable(item.environment).catch(() => undefined);
+    }
+    throw caught;
+  }
 }
 
 export function stagedHouseholdMatchesContinuityGeneration(
@@ -708,17 +743,10 @@ async function allDurableOutboxItems(environment: Environment): Promise<Continui
     : [];
   const sources = [
     ...indexed,
-    ...readFromLocal(environment),
+    ...readFromLocal(environment, true),
     ...(memoryOutbox.get(environment) ?? []),
   ];
-  const byId = new Map<string, ContinuityOutboxItem>();
-  for (const item of sources) {
-    const existing = byId.get(item.id);
-    if (!existing || item.updatedAt >= existing.updatedAt) {
-      byId.set(item.id, item.snapshot || !existing?.snapshot ? item : { ...item, snapshot: existing.snapshot });
-    }
-  }
-  return [...byId.values()];
+  return mergeOutboxSources(sources);
 }
 
 /** Wait for startup hydration, then erase one household's retry metadata durably. */
