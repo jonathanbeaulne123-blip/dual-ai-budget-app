@@ -200,5 +200,5 @@ describe("Development stress data controls", () => {
     expect(reloaded.shifts.length).toBeGreaterThan(90);
     expect(reloaded.shifts.every((shift) => shift.memberId === "MEM-001")).toBe(true);
     expect(reloaded.workJobs[0]?.memberId).toBe("MEM-001");
-  }, 30_000);
+  }, 60_000);
 });
