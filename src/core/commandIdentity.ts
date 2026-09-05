@@ -21,11 +21,13 @@ export function commandMaterializationFacts(input: {
   recurrences?: Recurrence[];
   monthRehearsals?: MonthRehearsal[];
   householdOnboarding?: Household["householdOnboarding"];
+  onboardingSubmissions?: Household["onboardingSubmissions"];
 }): unknown {
   return stable({
     ...(input.recurrences?.length ? { recurrences: byId(input.recurrences) } : {}),
     ...(input.monthRehearsals?.length ? { monthRehearsals: byId(input.monthRehearsals) } : {}),
     ...(input.householdOnboarding ? { householdOnboarding: input.householdOnboarding } : {}),
+    ...(input.onboardingSubmissions?.length ? { onboardingSubmissions: byId(input.onboardingSubmissions) } : {}),
   });
 }
 
@@ -215,6 +217,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const householdOnboarding = next.householdOnboarding && posted.has(next.householdOnboarding.id)
     ? next.householdOnboarding
     : null;
+  const onboardingSubmissions = (next.onboardingSubmissions ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -286,6 +289,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     shiftBibles,
     weeklyDocumentStamps,
     householdOnboarding,
+    onboardingSubmissions,
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.

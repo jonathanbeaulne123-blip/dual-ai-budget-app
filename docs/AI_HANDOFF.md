@@ -1,5 +1,47 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 18 — submission contract (D-218) (2026-09-04)
+
+**Status:** Local implementation and proof complete at
+`f400132e388e2eceb8d7348275808659d8b43c16` on
+`onboarding/18-submissions`, based on unchanged
+`origin/main@1d4998379875bde84229f194b85242b815218940`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** Each active member may explicitly submit only their own category
+choices and estimate cents. Replacement retains linked history; two replicas
+converge deterministically; member estimates remain separate; zero and missing
+remain different facts.
+
+**Authority, privacy, and money boundary:** Drafts are not stored in the
+Household. Published records carry only ids and integer cents. Partner-Personal
+source facts cannot enter the command shape. Submission creates no transaction,
+journal entry, Fund event, budget, contribution claim, or approval. Command-event
+materialization is bound to the active submitting member and exact household.
+Contract: [`briefs/ONBOARDING_SLICE_18_SUBMISSIONS_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_18_SUBMISSIONS_CONTRACT_2026-09-04.md).
+
+**Verification:** The focused and adjacent suite passes 53/53, including 13/13
+Slice 18 contract tests. The explicit High-risk quick gate passes 67 fast plus
+7 serial PGlite proof tests in 46.4 seconds, with TypeScript, AI-surface, diff
+hygiene, and no time-budget breach. The production build passes at 465 modules
+plus Hercules Pro UI; `pnpm ai:verify` passes 48 required files and two Clerk
+fences. An independent High-risk trust review reports no remaining local
+correctness or security blocker. `pnpm check:windows` cannot run because this
+macOS host has no `pwsh`, so no Windows result is claimed. No UI or CSS changed,
+so there is no rendered browser surface in this slice.
+
+**Commands and evidence class:**
+`pnpm test -- --risk=high --focus=test/onboarding-submissions.test.ts
+--focus-reason="proves self-only explicit submit, bounded Shared payloads,
+append-only convergence, event replay, and no money mutation"`, `pnpm build`,
+and `pnpm ai:verify` passed; `pnpm check:windows` reached only the missing-host
+tool gap above. This is quick-gate plus local-build evidence, not a full-suite,
+Windows, hosted two-account, deployment, or Production claim. All exercised
+records were synthetic local Development fixtures; no hosted row or schema was
+read or changed.
+
+**Next owner:** Jonathan separately decides whether to push or open a PR.
+
 ## Onboarding Slice 17 — Chapter 8 earning cadence (D-217) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete on
