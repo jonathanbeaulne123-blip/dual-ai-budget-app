@@ -36,7 +36,20 @@ export type MemberOnboardingProgress = {
   /** Field-specific clock so an unrelated later acknowledgement cannot undo this preference. */
   offersMutedUpdatedAt: string | null;
   declineCountByModule: Record<ChapterId, number>;
+  /** Month paired with each decline counter so two declines suppress only that month. */
+  declineMonthByModule: Record<ChapterId, string>;
+  /** Member-Personal, append-only offer facts. They enforce cross-session caps without exposing a trigger fact. */
+  personalOfferHistory: PersonalModuleOfferRecord[];
   updatedAt: string;
+};
+
+export type PersonalModuleOfferRecord = {
+  id: string;
+  moduleId: ChapterId;
+  sessionId: string;
+  offeredAt: string;
+  declinedAt: string | null;
+  declineMonth: string | null;
 };
 
 type ProgressContext = {
@@ -113,8 +126,42 @@ export function emptyMemberOnboardingProgress(context: ProgressContext): MemberO
     offersMuted: false,
     offersMutedUpdatedAt: null,
     declineCountByModule: {},
+    declineMonthByModule: {},
+    personalOfferHistory: [],
     updatedAt: MISSING_ISO,
   };
+}
+
+function shapedPersonalOfferHistory(value: unknown): PersonalModuleOfferRecord[] {
+  if (!Array.isArray(value)) return [];
+  const personalIds = new Set(personalModules().map((module) => module.id));
+  const candidates = value.flatMap((item): PersonalModuleOfferRecord[] => {
+    if (!item || typeof item !== "object") return [];
+    const row = item as Partial<PersonalModuleOfferRecord>;
+    const moduleId = typeof row.moduleId === "string" ? row.moduleId.trim() : "";
+    const sessionId = typeof row.sessionId === "string" ? row.sessionId.trim().slice(0, 120) : "";
+    const offeredAt = isoOrNull(row.offeredAt);
+    const declinedAt = isoOrNull(row.declinedAt);
+    const declineMonth = typeof row.declineMonth === "string" && /^\d{4}-\d{2}$/.test(row.declineMonth)
+      ? row.declineMonth
+      : null;
+    const id = typeof row.id === "string" ? row.id.trim().slice(0, 260) : "";
+    if (!personalIds.has(moduleId) || !sessionId || !offeredAt || id !== `PERSONAL-OFFER-${moduleId}-${sessionId}`) return [];
+    const acceptedDeclinedAt = declinedAt && declinedAt >= offeredAt ? declinedAt : null;
+    return [{ id, moduleId, sessionId, offeredAt, declinedAt: acceptedDeclinedAt, declineMonth: acceptedDeclinedAt ? declineMonth : null }];
+  }).sort((left, right) => left.offeredAt.localeCompare(right.offeredAt) || left.id.localeCompare(right.id));
+  const bySession = new Map<string, PersonalModuleOfferRecord>();
+  for (const candidate of candidates) {
+    const prior = bySession.get(candidate.sessionId);
+    if (!prior) {
+      bySession.set(candidate.sessionId, candidate);
+      continue;
+    }
+    if (prior.id === candidate.id && candidate.declinedAt && (!prior.declinedAt || candidate.declinedAt > prior.declinedAt)) {
+      bySession.set(candidate.sessionId, { ...prior, declinedAt: candidate.declinedAt, declineMonth: candidate.declineMonth });
+    }
+  }
+  return [...bySession.values()].sort((left, right) => left.offeredAt.localeCompare(right.offeredAt) || left.id.localeCompare(right.id));
 }
 
 /** Defensive member-scoped shape. Invalid identity or registry versions are refused. */
@@ -157,6 +204,10 @@ export function shapeMemberOnboardingProgress(
     .filter(([chapterId, count]) => typeof chapterId === "string" && chapterId.trim()
       && Number.isInteger(count) && Number(count) >= 0)
     .map(([chapterId, count]) => [chapterId, Number(count)]));
+  const declineMonthByModule = Object.fromEntries(Object.entries(row.declineMonthByModule ?? {})
+    .filter(([chapterId, month]) => typeof chapterId === "string" && chapterId.trim()
+      && typeof month === "string" && /^\d{4}-\d{2}$/.test(month))
+    .map(([chapterId, month]) => [chapterId, month as string]));
   return {
     id: memberProgressId(context),
     householdId: context.householdId,
@@ -166,6 +217,8 @@ export function shapeMemberOnboardingProgress(
     offersMuted: row.offersMuted === true,
     offersMutedUpdatedAt: isoOrNull(row.offersMutedUpdatedAt),
     declineCountByModule,
+    declineMonthByModule,
+    personalOfferHistory: shapedPersonalOfferHistory(row.personalOfferHistory),
     updatedAt: isoOrNull(row.updatedAt) ?? MISSING_ISO,
   };
 }
@@ -275,11 +328,41 @@ export function mergeMemberProgress(
   const declineKeys = new Set([
     ...Object.keys(server.declineCountByModule),
     ...Object.keys(client.declineCountByModule),
+    ...Object.keys(server.declineMonthByModule),
+    ...Object.keys(client.declineMonthByModule),
   ]);
-  const declineCountByModule = Object.fromEntries([...declineKeys].sort().map((chapterId) => [
-    chapterId,
-    Math.max(server.declineCountByModule[chapterId] ?? 0, client.declineCountByModule[chapterId] ?? 0),
-  ]));
+  const declineCountByModule: Record<ChapterId, number> = {};
+  const declineMonthByModule: Record<ChapterId, string> = {};
+  for (const chapterId of [...declineKeys].sort()) {
+    const serverMonth = server.declineMonthByModule[chapterId];
+    const clientMonth = client.declineMonthByModule[chapterId];
+    const latestMonth = [serverMonth, clientMonth].filter((value): value is string => Boolean(value)).sort().at(-1);
+    if (!latestMonth) {
+      declineCountByModule[chapterId] = Math.max(
+        server.declineCountByModule[chapterId] ?? 0,
+        client.declineCountByModule[chapterId] ?? 0,
+      );
+      continue;
+    }
+    declineMonthByModule[chapterId] = latestMonth;
+    declineCountByModule[chapterId] = Math.max(
+      serverMonth === latestMonth ? server.declineCountByModule[chapterId] ?? 0 : 0,
+      clientMonth === latestMonth ? client.declineCountByModule[chapterId] ?? 0 : 0,
+    );
+  }
+  const personalOfferHistory = shapedPersonalOfferHistory([
+    ...server.personalOfferHistory,
+    ...client.personalOfferHistory,
+  ]);
+  for (const module of personalModules()) {
+    const declined = personalOfferHistory.filter((row) => row.moduleId === module.id && row.declinedAt);
+    const latestMonth = declined.flatMap((row) => row.declineMonth ? [row.declineMonth] : []).sort().at(-1);
+    if (!latestMonth) continue;
+    const historyCount = declined.filter((row) => row.declineMonth === latestMonth).length;
+    const existingCount = declineMonthByModule[module.id] === latestMonth ? declineCountByModule[module.id] ?? 0 : 0;
+    declineMonthByModule[module.id] = latestMonth;
+    declineCountByModule[module.id] = Math.max(existingCount, historyCount);
+  }
   const updatedAt = later(server.updatedAt, client.updatedAt) ?? MISSING_ISO;
   const serverOfferAt = server.offersMutedUpdatedAt ?? "";
   const clientOfferAt = client.offersMutedUpdatedAt ?? "";
@@ -295,6 +378,8 @@ export function mergeMemberProgress(
     offersMuted,
     offersMutedUpdatedAt,
     declineCountByModule,
+    declineMonthByModule,
+    personalOfferHistory,
     updatedAt,
   };
 }

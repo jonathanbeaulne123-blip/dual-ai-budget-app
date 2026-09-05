@@ -18,6 +18,18 @@ const householdChapter = (
   contributesToFinalGate: true,
 });
 
+const personalChapter = (
+  row: Omit<OnboardingChapter, "registryVersion" | "track" | "sitting" | "copyKey" | "flavorKeys" | "contributesToFinalGate">,
+): OnboardingChapter => ({
+  ...row,
+  registryVersion: ONBOARDING_REGISTRY_VERSION,
+  track: "personal",
+  sitting: null,
+  copyKey: `onboarding.personal.${row.id}`,
+  flavorKeys: [1, 2, 3].map((index) => `onboarding.personal.${row.id}.flavor-${index}`),
+  contributesToFinalGate: false,
+});
+
 export const ONBOARDING_REGISTRY: readonly OnboardingChapter[] = [
   householdChapter({
     id: "ch-01-meet", order: 1, sitting: 1, target: null, conductor: "both", approval: "joint",
@@ -66,6 +78,30 @@ export const ONBOARDING_REGISTRY: readonly OnboardingChapter[] = [
   householdChapter({
     id: "ch-12-ready", order: 12, sitting: 3, target: { tab: "ledger" }, conductor: "both", approval: "joint",
     skip: "household-required", timeBudgetSeconds: 180, pausePoints: [], actions: ["navigate", "approve", "continue"], dependsOn: ["ch-11-plan"],
+  }),
+  personalChapter({
+    id: "pm-01-own-books", order: 1, target: { tab: "ledger" }, conductor: "self", approval: "none",
+    skip: "member-skippable", timeBudgetSeconds: 240, pausePoints: [], actions: ["navigate", "continue", "skip-personal"], dependsOn: [],
+  }),
+  personalChapter({
+    id: "pm-02-shifts", order: 2, target: { tab: "shift" }, conductor: "self", approval: "none",
+    skip: "member-skippable", timeBudgetSeconds: 300, pausePoints: [], actions: ["navigate", "continue", "skip-personal"], dependsOn: [],
+  }),
+  personalChapter({
+    id: "pm-03-tips", order: 3, target: { tab: "shift" }, conductor: "self", approval: "none",
+    skip: "member-skippable", timeBudgetSeconds: 240, pausePoints: [], actions: ["navigate", "continue", "skip-personal"], dependsOn: [],
+  }),
+  personalChapter({
+    id: "pm-04-own-plan", order: 4, target: { tab: "plan" }, conductor: "self", approval: "none",
+    skip: "member-skippable", timeBudgetSeconds: 240, pausePoints: [], actions: ["navigate", "continue", "skip-personal"], dependsOn: [],
+  }),
+  personalChapter({
+    id: "pm-05-office", order: 5, target: { tab: "home" }, conductor: "self", approval: "none",
+    skip: "member-skippable", timeBudgetSeconds: 180, pausePoints: [], actions: ["navigate", "continue", "skip-personal"], dependsOn: [],
+  }),
+  personalChapter({
+    id: "pm-06-hercules", order: 6, target: null, conductor: "self", approval: "none",
+    skip: "member-skippable", timeBudgetSeconds: 180, pausePoints: [], actions: ["continue", "skip-personal"], dependsOn: [],
   }),
 ];
 

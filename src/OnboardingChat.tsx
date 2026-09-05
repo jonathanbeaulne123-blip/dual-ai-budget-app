@@ -1,13 +1,15 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import type { CommitResult, DateKey, EvidenceResult, Household } from "./core/index.ts";
+import type { CommitResult, DateKey, EvidenceResult, Household, PersonalModuleOffer } from "./core/index.ts";
 import {
   SHELL_VIEW,
   SITTING_MARK_COUNT,
   acceptedHouseholdOnboarding,
   chapterRoleFor,
   charterSignatureStatus,
+  completePersonalModule,
   confirmHouseholdOnboarding,
   copy,
+  declinePersonalModuleOffer,
   evidenceCardLabel,
   evidenceFor,
   evidenceProvenanceLabel,
@@ -23,7 +25,9 @@ import {
   recordChapterAcknowledgement,
   recordObservedChapterCompletion,
   selfPersonalAccountsEvidenceFor,
+  setOnboardingOffersMuted,
   skipChapterFourPersonalAccounts,
+  skipPersonalStep,
   sittingRailIndex,
   stopHouseholdOnboarding,
   taskLengthLabel,
@@ -99,6 +103,11 @@ type Props = {
   onOpenPlan?: () => void;
   /** Chapter 12 opens the isolated Practice and shared Ready finale on Books. */
   onOpenReady?: () => void;
+  /** Optional member-owned guide. It never enters or changes the household conductor. */
+  personalOffer?: PersonalModuleOffer | null;
+  personalOfferSessionId?: string;
+  personalOfferRecorded?: boolean;
+  onOpenPersonalModule?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -186,6 +195,10 @@ export function OnboardingChat({
   onOpenEstimates,
   onOpenPlan,
   onOpenReady,
+  personalOffer,
+  personalOfferSessionId,
+  personalOfferRecorded = false,
+  onOpenPersonalModule,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -398,6 +411,125 @@ export function OnboardingChat({
         <p className="onboarding-herc" style={{ maxWidth: `${SHELL_VIEW.hercMaxEm}em` }} ref={headingRef} tabIndex={-1}>
           {copy("waiting.partner", { name: otherName })}
         </p>
+      </div>
+    );
+  }
+
+  if (personalOffer && personalOfferSessionId) {
+    const module = personalOffer.module;
+    const sessionId = personalOfferSessionId;
+    const actionCopyKey = module.id === "pm-01-own-books"
+      ? "personal.open.books"
+      : module.id === "pm-02-shifts"
+        ? "personal.open.shifts"
+        : module.id === "pm-03-tips"
+          ? "personal.open.tips"
+          : module.id === "pm-04-own-plan"
+            ? "personal.open.plan"
+            : module.id === "pm-05-office"
+              ? "personal.open.office"
+              : "personal.module.done";
+
+    function finishPersonalModule() {
+      onCommit((current) => completePersonalModule(current, {
+        memberId,
+        createdBy: memberId,
+        moduleId: module.id,
+        sessionId,
+      }));
+      onDismiss();
+    }
+
+    function declinePersonalModule() {
+      onCommit((current) => declinePersonalModuleOffer(current, {
+        memberId,
+        createdBy: memberId,
+        moduleId: module.id,
+        sessionId,
+      }));
+      onDismiss();
+    }
+
+    function skipPersonalModule() {
+      onCommit((current) => skipPersonalStep(current, {
+        memberId,
+        createdBy: memberId,
+        chapterId: module.id,
+      }));
+      onDismiss();
+    }
+
+    function mutePersonalModules() {
+      onCommit((current) => setOnboardingOffersMuted(current, {
+        memberId,
+        createdBy: memberId,
+        muted: true,
+      }));
+      onDismiss();
+    }
+
+    return (
+      <div
+        ref={shellRef}
+        className="onboarding-shell onboarding-personal-shell"
+        style={{ paddingTop: SHELL_VIEW.padTop, paddingLeft: SHELL_VIEW.padSide, paddingRight: SHELL_VIEW.padSide }}
+        onKeyDown={onKeyDown}
+        aria-busy={!personalOfferRecorded}
+      >
+        <p className="onboarding-personal-label">{copy("personal.module.label")}</p>
+        <p
+          className="onboarding-herc"
+          style={{ marginBottom: SHELL_VIEW.hercToCard, maxWidth: `${SHELL_VIEW.hercMaxEm}em` }}
+          ref={headingRef}
+          tabIndex={-1}
+        >
+          {copy("personal.offer")}
+        </p>
+        <section className="onboarding-card onboarding-personal-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
+          <p className="onboarding-card-task">{copy(module.copyKey)}</p>
+          <div className="onboarding-personal-reason">
+            <p className="onboarding-card-label">{copy("personal.module.why")}</p>
+            <p>{copy(personalOffer.triggerCopyKey)}</p>
+          </div>
+          <p className="onboarding-card-provenance">{copy("personal.module.private")}</p>
+        </section>
+        {!personalOfferRecorded ? (
+          <p className="onboarding-personal-saving" role="status" aria-live="polite">{copy("personal.module.saving")}</p>
+        ) : (
+          <div className="onboarding-actions onboarding-personal-actions">
+            {module.target && onOpenPersonalModule ? (
+              <button type="button" disabled={busy} style={{ minHeight: SHELL_VIEW.navButtonHeight }} onClick={onOpenPersonalModule}>
+                {copy(actionCopyKey)}
+              </button>
+            ) : null}
+            <button type="button" disabled={busy} style={{ minHeight: SHELL_VIEW.navButtonHeight }} onClick={finishPersonalModule}>
+              {copy("personal.module.done")}
+            </button>
+            <button type="button" disabled={busy} style={{ minHeight: SHELL_VIEW.navButtonHeight }} onClick={declinePersonalModule}>
+              {copy("personal.decline")}
+            </button>
+          </div>
+        )}
+        <div className="onboarding-foot onboarding-personal-foot" style={{ marginTop: SHELL_VIEW.actionToFoot }}>
+          <button
+            type="button"
+            className="onboarding-stop-link"
+            disabled={busy || !personalOfferRecorded}
+            style={{ minHeight: SHELL_VIEW.minTouch, minWidth: SHELL_VIEW.minTouch }}
+            onClick={skipPersonalModule}
+          >
+            {copy("skip.personal")}
+          </button>
+          <button
+            type="button"
+            className="onboarding-stop-link"
+            disabled={busy || !personalOfferRecorded}
+            style={{ minHeight: SHELL_VIEW.minTouch, minWidth: SHELL_VIEW.minTouch }}
+            onClick={mutePersonalModules}
+          >
+            {copy("personal.off")}
+          </button>
+        </div>
       </div>
     );
   }

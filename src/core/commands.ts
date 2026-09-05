@@ -172,6 +172,7 @@ import {
 } from "./onboarding/mode.ts";
 import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.ts";
 import { householdGatesOutstanding, memberProgress } from "./onboarding/progress.ts";
+import { personalModuleById, personalModuleOfferFor } from "./onboarding/personal.ts";
 import { evidenceFor, probeEvidenceKey } from "./onboarding/evidence.ts";
 import type { HouseholdScopeObservation } from "./onboarding/householdScope.ts";
 import {
@@ -629,6 +630,98 @@ export function setOnboardingOffersMuted(household: Household, input: {
     offersMutedUpdatedAt: at,
     updatedAt: at,
   }));
+}
+
+/** Record one accepted contextual offer in the acting member's Personal envelope. */
+export function recordPersonalModuleOffer(household: Household, input: {
+  memberId: string;
+  moduleId: string;
+  sessionId: string;
+  isDesktop: boolean;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+  const at = onboardingCommandAt(input.at);
+  const sessionId = input.sessionId.trim().slice(0, 120);
+  const offer = personalModuleOfferFor(household, input.memberId, {
+    now: at,
+    sessionId,
+    isDesktop: input.isDesktop,
+  });
+  if (!offer || offer.module.id !== input.moduleId) {
+    throw new ValidationError("That Personal guide is not available right now.");
+  }
+  return updateMemberProgress(household, { ...input, at }, "Personal onboarding guide offered", (progress) => ({
+    ...progress,
+    personalOfferHistory: [
+      ...progress.personalOfferHistory,
+      {
+        id: `PERSONAL-OFFER-${offer.module.id}-${sessionId}`,
+        moduleId: offer.module.id,
+        sessionId,
+        offeredAt: at,
+        declinedAt: null,
+        declineMonth: null,
+      },
+    ],
+    updatedAt: at,
+  }));
+}
+
+/** A soft "Not now": count only the offer this member actually saw, in its civil month. */
+export function declinePersonalModuleOffer(household: Household, input: {
+  memberId: string;
+  moduleId: string;
+  sessionId: string;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  const module = personalModuleById(input.moduleId);
+  if (!module) throw new ValidationError("Choose a current Personal guide.");
+  return updateMemberProgress(household, input, "Personal onboarding guide declined", (progress, at) => {
+    const offer = progress.personalOfferHistory.find((row) => row.moduleId === module.id
+      && row.sessionId === input.sessionId.trim());
+    if (!offer) throw new ValidationError("That Personal guide was not offered in this session.");
+    if (offer.declinedAt) return progress;
+    const month = monthKeyFromDateKey(todayKey(new Date(at), household.timezone));
+    const priorCount = progress.declineMonthByModule[module.id] === month
+      ? progress.declineCountByModule[module.id] ?? 0
+      : 0;
+    return {
+      ...progress,
+      declineCountByModule: { ...progress.declineCountByModule, [module.id]: priorCount + 1 },
+      declineMonthByModule: { ...progress.declineMonthByModule, [module.id]: month },
+      personalOfferHistory: progress.personalOfferHistory.map((row) => row.id === offer.id
+        ? { ...row, declinedAt: at, declineMonth: month }
+        : row),
+      updatedAt: at,
+    };
+  });
+}
+
+/** Finish only the offered member-owned lesson. This acknowledges teaching; it never proves or writes money. */
+export function completePersonalModule(household: Household, input: {
+  memberId: string;
+  moduleId: string;
+  sessionId: string;
+  createdBy: string;
+  at?: string;
+}): CommitResult {
+  const module = personalModuleById(input.moduleId);
+  if (!module) throw new ValidationError("Choose a current Personal guide.");
+  return updateMemberProgress(household, input, "Personal onboarding guide completed", (progress, at) => {
+    const offer = progress.personalOfferHistory.find((row) => row.moduleId === module.id
+      && row.sessionId === input.sessionId.trim() && !row.declinedAt);
+    if (!offer) throw new ValidationError("That Personal guide was not offered in this session.");
+    return {
+      ...progress,
+      rows: progress.rows.map((row) => row.chapterId === module.id
+        ? { ...row, acknowledgedAt: row.acknowledgedAt ?? at, lastSafeResumePoint: module.id }
+        : row),
+      updatedAt: at,
+    };
+  });
 }
 
 /** Development escape hatch. This stops setup without claiming any chapter or finale completion. */

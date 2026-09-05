@@ -257,7 +257,7 @@ describe("onboarding member progress", () => {
       const forcedBeforeHouseholdProgress = forceUnlockOnboarding(activeOnboarding(), {
         memberId: BIANCA, createdBy: BIANCA, at: "2026-09-03T17:59:00.000Z",
       }).household;
-      expect(nextChapterFor(forcedBeforeHouseholdProgress, BIANCA, "2026-09-03")?.id).toBe("pm-test");
+      expect(nextChapterFor(forcedBeforeHouseholdProgress, BIANCA, "2026-09-03")?.id).toBe("pm-01-own-books");
 
       let running = activeOnboarding();
       running = acknowledgeEveryHouseholdChapter(running, BIANCA);
@@ -265,7 +265,7 @@ describe("onboarding member progress", () => {
       const stopped = forceUnlockOnboarding(running, {
         memberId: BIANCA, createdBy: BIANCA, at: "2026-09-03T18:00:00.000Z",
       }).household;
-      expect(nextChapterFor(stopped, BIANCA, "2026-09-03")?.id).toBe("pm-test");
+      expect(nextChapterFor(stopped, BIANCA, "2026-09-03")?.id).toBe("pm-01-own-books");
       expect(skipPersonalStep(stopped, {
         memberId: BIANCA, chapterId: "pm-test", createdBy: BIANCA, at: "2026-09-03T18:01:00.000Z",
       }).postedIds).toEqual([]);

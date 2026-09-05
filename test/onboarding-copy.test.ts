@@ -307,6 +307,31 @@ const SLICE_25_READY_COPY: Record<string, { text: string; announce: CopyEntry["a
   "ready.open-books": { text: "Open ordinary Books", announce: "none" },
 };
 
+const SLICE_26_PERSONAL_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "personal.module.label": { text: "Optional · just yours", announce: "none" },
+  "personal.module.private": { text: "This guide belongs to you. It never changes the household setup.", announce: "none" },
+  "personal.module.why": { text: "Why this showed up", announce: "none" },
+  "personal.module.saving": { text: "Saving this guide…", announce: "polite" },
+  "personal.module.done": { text: "Got it", announce: "none" },
+  "onboarding.personal.pm-01-own-books": { text: "Personal books are your own room. Your accounts and Personal transactions stay out of the household view.", announce: "none" },
+  "onboarding.personal.pm-02-shifts": { text: "The Shift room keeps your clock, a careful review before posting, and a streak made only from posted shifts.", announce: "none" },
+  "onboarding.personal.pm-03-tips": { text: "The tip oracle waits for four posted shifts before it speaks. Before that, not enough history is the honest answer.", announce: "none" },
+  "onboarding.personal.pm-04-own-plan": { text: "Your Personal plan gives your own categories a monthly shape without changing the household plan.", announce: "none" },
+  "onboarding.personal.pm-05-office": { text: "Your desk is yours to arrange. Plates are shortcuts into real Hearth rooms, not a second set of books.", announce: "none" },
+  "onboarding.personal.pm-06-hercules": { text: "You can ask me about the ledger you chose and tell me what to remember. I still cannot post money for you.", announce: "none" },
+  "personal.trigger.own-books": { text: "You posted your first Personal transaction.", announce: "none" },
+  "personal.trigger.shifts": { text: "You recorded an earning rhythm built around your work.", announce: "none" },
+  "personal.trigger.tips": { text: "You now have enough posted shifts for the oracle to use a real sample.", announce: "none" },
+  "personal.trigger.own-plan": { text: "You have three Personal transactions in this month.", announce: "none" },
+  "personal.trigger.office": { text: "This is your first desktop visit since the household unlocked.", announce: "none" },
+  "personal.trigger.hercules": { text: "The household has been unlocked for a week.", announce: "none" },
+  "personal.open.books": { text: "Open Personal Books", announce: "none" },
+  "personal.open.shifts": { text: "Open Shifts", announce: "none" },
+  "personal.open.tips": { text: "See the tip oracle", announce: "none" },
+  "personal.open.plan": { text: "Open Personal Plan", announce: "none" },
+  "personal.open.office": { text: "Open my desk", announce: "none" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -319,7 +344,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY, ...SLICE_25_READY_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY, ...SLICE_25_READY_COPY, ...SLICE_26_PERSONAL_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -332,6 +357,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_20_ESTIMATES_COPY,
       ...SLICE_24_PLAN_COPY,
       ...SLICE_25_READY_COPY,
+      ...SLICE_26_PERSONAL_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

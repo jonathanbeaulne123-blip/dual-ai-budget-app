@@ -48,7 +48,10 @@ import {
   openHelpState,
   isInstrumentId,
   loadPhonePlacePrefs,
+  memberProgress,
   householdForHerculesContext,
+  personalModuleOfferFor,
+  recordPersonalModuleOffer,
   shouldShowOnboardingShell,
   activeReturnMessage,
   copy,
@@ -73,6 +76,7 @@ import {
   type LedgerView,
   type HerculesNumberSource,
   type InstrumentId,
+  type PersonalModuleOffer,
 } from "./core/index.ts";
 import { HerculesDress } from "./HerculesDress.tsx";
 import { HerculesFigure } from "./HerculesFigure.tsx";
@@ -118,6 +122,13 @@ function dressedLook(household: Household, today: string, visorPop: boolean) {
 
 function reducedMotion(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+let personalOfferSessionSequence = 0;
+
+function createPersonalOfferSessionId(): string {
+  personalOfferSessionSequence += 1;
+  return `HERCULES-${Date.now().toString(36)}-${personalOfferSessionSequence.toString(36)}`;
 }
 
 function furnitureLand(adding: boolean, mood: CompanionMood, today: string) {
@@ -287,6 +298,7 @@ export function HerculesPresence({
   const [motion, setMotion] = useState<HerculesPose>("loaf");
   const [talk, setTalk] = useState<HerculesTalk | null>(null);
   const [open, setOpen] = useState(false);
+  const [activePersonalOffer, setActivePersonalOffer] = useState<PersonalModuleOffer | null>(null);
   const [helpAsked, setHelpAsked] = useState(false);
   const [begging, setBegging] = useState(false);
   const [bagPlay, setBagPlay] = useState(false);
@@ -327,6 +339,10 @@ export function HerculesPresence({
   const chatGen = useRef(0);
   const chatRigUntilRef = useRef(0);
   const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}`;
+  const personalOfferSessionId = useMemo(createPersonalOfferSessionId, [chatScope]);
+  useEffect(() => {
+    setActivePersonalOffer(null);
+  }, [chatScope]);
   const previousChatScope = useRef(chatScope);
   const activeChatIdentity = useRef<Omit<HerculesReplyContext, "requestId">>({
     environment: household.environment,
@@ -352,18 +368,27 @@ export function HerculesPresence({
   const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding;
-  const onboardingShellActive = useMemo(
+  const householdOnboardingShellActive = useMemo(
     () => shouldShowOnboardingShell(household, memberId, today),
     [household, memberId, today],
   );
+  const personalOffer = useMemo(() => personalModuleOfferFor(household, memberId, {
+    now: new Date().toISOString(),
+    sessionId: personalOfferSessionId,
+    isDesktop: desktopFly,
+  }), [household, memberId, personalOfferSessionId, desktopFly]);
+  const personalOfferRecorded = useMemo(() => Boolean(activePersonalOffer && memberProgress(household, memberId)
+    .personalOfferHistory.some((row) => row.sessionId === personalOfferSessionId
+      && row.moduleId === activePersonalOffer.module.id)), [activePersonalOffer, household, memberId, personalOfferSessionId]);
+  const onboardingShellActive = householdOnboardingShellActive || Boolean(activePersonalOffer);
   // Slice 9: which chapter's navigate action (if any) this conductor should
   // be offered right now, and whatever return instruction this phone is
   // still carrying for this household from a previous "Open {surface}" tap.
   // Both are read fresh every render — nothing here is client state that
   // could drift from what nextChapterFor would say on a reload.
   const navTarget = useMemo(
-    () => (onboardingShellActive ? onboardingNavigationTarget(household, memberId, today) : null),
-    [onboardingShellActive, household, memberId, today],
+    () => (householdOnboardingShellActive ? onboardingNavigationTarget(household, memberId, today) : null),
+    [householdOnboardingShellActive, household, memberId, today],
   );
   const storedReturnMessage = useMemo(
     () => loadReturnMessage(household.environment, household.householdId, memberId),
@@ -799,6 +824,7 @@ export function HerculesPresence({
     setReplyProvider(null);
     setShareWorkplaceRoster(false);
     setEphemeralWorkplaceTurn(false);
+    setActivePersonalOffer(null);
     setTurns([]);
     if (phoneShell) setMobileFocus(false);
     if (focusedWidget) {
@@ -969,6 +995,12 @@ export function HerculesPresence({
     onOpenReady();
   }
 
+  function openPersonalModule() {
+    const target = activePersonalOffer?.module.target;
+    if (target) onGo(target.tab);
+    closeChat();
+  }
+
   function openMobileFocus() {
     if (adding || phoneShell === false) return;
     setMobileFocus(true);
@@ -1022,6 +1054,24 @@ export function HerculesPresence({
 
   function openChatFromBeg() {
     setBegging(false);
+    if (activePersonalOffer) {
+      setOpen(true);
+      return;
+    }
+    if (!householdOnboardingShellActive && personalOffer) {
+      const offeredAt = new Date().toISOString();
+      setActivePersonalOffer(personalOffer);
+      onLedger((current) => recordPersonalModuleOffer(current, {
+        memberId,
+        createdBy: memberId,
+        moduleId: personalOffer.module.id,
+        sessionId: personalOfferSessionId,
+        isDesktop: desktopFly,
+        at: offeredAt,
+      }));
+      setOpen(true);
+      return;
+    }
     const page = adding ? "add" : tab;
     const instrument = currentInstrument();
     const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
@@ -1548,6 +1598,10 @@ export function HerculesPresence({
               onOpenEstimates={openOnboardingEstimates}
               onOpenPlan={openOnboardingPlan}
               onOpenReady={openOnboardingReady}
+              personalOffer={activePersonalOffer}
+              personalOfferSessionId={personalOfferSessionId}
+              personalOfferRecorded={personalOfferRecorded}
+              onOpenPersonalModule={openPersonalModule}
             />
           ) : (
             <>
@@ -1718,6 +1772,10 @@ export function HerculesPresence({
                 onOpenEstimates={openOnboardingEstimates}
                 onOpenPlan={openOnboardingPlan}
                 onOpenReady={openOnboardingReady}
+                personalOffer={activePersonalOffer}
+                personalOfferSessionId={personalOfferSessionId}
+                personalOfferRecorded={personalOfferRecorded}
+                onOpenPersonalModule={openPersonalModule}
               />
               {navTarget && !["ch-03-charter", "ch-04-accounts", "ch-05-opening", "ch-06-fund", "ch-07-recurrences", "ch-08-cadence", "ch-09-categories", "ch-10-estimates", "ch-11-plan", "ch-12-ready"].includes(navTarget.chapterId) && (
                 <button type="button" className="hercules-help" onClick={goToOnboardingTarget}>
