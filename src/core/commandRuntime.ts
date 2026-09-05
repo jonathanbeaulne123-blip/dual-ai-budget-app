@@ -30,10 +30,11 @@ import {
   acceptedHouseholdOnboarding,
 } from "./onboarding/mode.ts";
 import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
-import { assertOnboardingSubmissionTransition } from "./onboarding/submissions.ts";
+import { assertOnboardingSubmissionTransition, currentSubmission } from "./onboarding/submissions.ts";
+import { assertOnboardingEstimateSubmissionScope } from "./onboarding/estimates.ts";
 import { assertOnboardingCategoryMergeTransition } from "./onboarding/categories.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
-import { NeedsConfirmationError } from "./types.ts";
+import { NeedsConfirmationError, ValidationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
 
 export type BooksAcceptStatus = { ok: boolean; error?: string };
@@ -280,6 +281,12 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         commandKind: input.commandKind,
         postedIds,
       });
+      if (input.commandKind === "submitOnboardingEstimates" && input.actingMemberId) {
+        if (!previous) throw new ValidationError("Only you can submit your own.");
+        const estimateSubmission = currentSubmission(candidate, input.actingMemberId, "estimates");
+        if (!estimateSubmission) throw new ValidationError("Only you can submit your own.");
+        assertOnboardingEstimateSubmissionScope(previous, estimateSubmission);
+      }
     }
     const onboardingCategoryMergeStateChanged = JSON.stringify(previous?.onboardingCategoryMerges ?? [])
       !== JSON.stringify(candidate.onboardingCategoryMerges ?? []);

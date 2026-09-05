@@ -29,6 +29,7 @@ import { chapterById } from "./registry.ts";
 import { onboardingRecurrenceCadenceLabel, onboardingRecurrenceProbe } from "./recurrences.ts";
 import { onboardingCadenceProbe, onboardingCadenceSentence } from "./cadence.ts";
 import { onboardingCategoryState } from "./categories.ts";
+import { onboardingEstimateState } from "./estimates.ts";
 import { currentSubmission } from "./submissions.ts";
 import {
   validateHouseholdScopeObservation,
@@ -549,6 +550,37 @@ function categoryEvidence(household: Household, chapterId: ChapterId): Projectio
   };
 }
 
+function estimateEvidence(household: Household, chapterId: ChapterId): Projection {
+  const state = onboardingEstimateState(household);
+  if (state.kind === "invalid") return { ...EMPTY, ineligible: "malformed" };
+  if (state.kind !== "complete") return EMPTY;
+  const members = household.members
+    .filter((member) => member.active)
+    .sort((left, right) => left.id.localeCompare(right.id));
+  const submissions = members.map((member) => currentSubmission(household, member.id, "estimates"));
+  const observedAt = latestIso(submissions.map((row) => row?.submittedAt ?? ""));
+  if (!observedAt || submissions.some((row) => !row)) return { ...EMPTY, ineligible: "malformed" };
+  return {
+    ...EMPTY,
+    household: {
+      chapterId,
+      scope: "household",
+      kind: "submission",
+      sourceIds: [
+        ...state.categorySubmissionIds,
+        ...(state.categoryMergeId ? [state.categoryMergeId] : []),
+        ...state.submissionIds,
+        ...state.categoryIds,
+      ],
+      lines: members.flatMap((member) => (state.bySubmitter[member.id] ?? []).map((answer) => ({
+        label: `${member.name} · ${answer.label}`,
+        value: answer.kind === "missing" ? "Not estimated" : formatCad(answer.amountCents ?? 0),
+      }))),
+      observedAt,
+    },
+  };
+}
+
 function project(
   household: Household,
   chapterId: ChapterId,
@@ -565,7 +597,7 @@ function project(
     case "ch-07-recurrences": return recurrenceEvidence(household, chapterId);
     case "ch-08-cadence": return cadenceEvidence(household, chapterId, viewerMemberId);
     case "ch-09-categories": return categoryEvidence(household, chapterId);
-    case "ch-10-estimates": return EMPTY;
+    case "ch-10-estimates": return estimateEvidence(household, chapterId);
     case "ch-11-plan": return planEvidence(household, chapterId);
     case "ch-12-ready": return readyEvidence(household, chapterId, viewerMemberId);
     default: return { ...EMPTY, ineligible: "malformed" };

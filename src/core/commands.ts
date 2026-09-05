@@ -193,6 +193,7 @@ import {
   type OnboardingCategoryMerge,
   type OnboardingCategoryProposal,
 } from "./onboarding/categories.ts";
+import { assertOnboardingEstimateScope } from "./onboarding/estimates.ts";
 import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
@@ -800,7 +801,8 @@ export function submitOnboardingEstimates(household: Household, input: {
 }): CommitResult {
   requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
   const estimates = normalizeSubmissionEstimates(input.estimates);
-  return appendOnboardingSubmission(household, input, { kind: "estimates", categoryIds: [], estimates });
+  const categoryIds = assertOnboardingEstimateScope(household, estimates);
+  return appendOnboardingSubmission(household, input, { kind: "estimates", categoryIds, estimates });
 }
 
 function requireOpenPeriod(household: Household, date: DateKey): void {

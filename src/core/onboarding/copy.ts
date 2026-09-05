@@ -463,6 +463,66 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "Submit my numbers", slots: [],
   }),
   entry({
+    key: "onboarding.household.ch-10-estimates", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "It's okay to guess. This is the first shape, not a promise; Hearth will learn from what actually happens.", slots: [],
+  }),
+  entry({
+    key: "estimates.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Add my first guesses", slots: [],
+  }),
+  entry({
+    key: "estimates.title", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "What might a month look like?", slots: [],
+  }),
+  entry({
+    key: "estimates.guide", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Give each category a rough monthly amount. Leave any box blank when you don't have a useful guess yet.", slots: [],
+  }),
+  entry({
+    key: "estimates.blank-help", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Blank means not estimated. Enter 0 when you mean $0.00.", slots: [],
+  }),
+  entry({
+    key: "estimates.currency", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Monthly guess (CAD)", slots: [],
+  }),
+  entry({
+    key: "estimates.placeholder", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Leave blank", slots: [],
+  }),
+  entry({
+    key: "estimates.missing", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Not estimated", slots: [],
+  }),
+  entry({
+    key: "estimates.waiting", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Your guesses are in. {name}'s stay private until they submit.", slots: ["name"],
+  }),
+  entry({
+    key: "estimates.together", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "The first guesses", slots: [],
+  }),
+  entry({
+    key: "estimates.member-set", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "{name}'s guesses", slots: ["name"],
+  }),
+  entry({
+    key: "estimates.done", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Both sets are here. They shape the next proposal; they did not create a budget or move money.", slots: [],
+  }),
+  entry({
+    key: "estimates.categories-first", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Finish the household category set before adding guesses.", slots: [],
+  }),
+  entry({
+    key: "estimates.changed", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Our category set changed, so take another look at your guesses.", slots: [],
+  }),
+  entry({
+    key: "estimates.invalid", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Use dollars and cents, like 125 or 125.50. Leave a box blank if you don't have a guess.", slots: [],
+  }),
+  entry({
     key: "runrate.absent", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
     text: "I've got nothing to go on yet — no month has gone by. This is built from the two of you and the bills we know about.", slots: [],
   }),

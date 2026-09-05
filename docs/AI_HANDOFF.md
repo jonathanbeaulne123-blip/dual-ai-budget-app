@@ -1,5 +1,47 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 20 — Chapter 10 first estimates (D-220) (2026-09-04)
+
+**Status:** Local implementation is complete on
+`onboarding/20-ch10-estimates`, based on
+`origin/main@8b035ffaaf75f60dcebfc9cf1b08a448f69d1ba9`; final exact-SHA proof
+is pending. Nothing is pushed, merged, deployed, or hosted-live verified.
+Risk: **Medium**.
+
+**Outcome:** Each person gives a private first monthly guess for every accepted
+household category. Blank is preserved as not estimated and zero remains
+`$0.00`. One submission waits without revealing the other. Both current
+submissions reveal two author-labelled lists without a total, ratio, ranking,
+or comparison. Contract:
+[`briefs/ONBOARDING_SLICE_20_CH10_ESTIMATES_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_20_CH10_ESTIMATES_CONTRACT_2026-09-04.md).
+
+**Authority, privacy, and money boundary:** Drafts are keyed to the household
+and active member and remain component-local until Submit. Each estimate
+submission stores the exact accepted category-id set reviewed, so offline clock
+skew cannot make an old set current. Direct command, accepted-write validation,
+and command-event replay fail closed on pending/mismatched scopes. The chapter
+creates no budget plan, transaction, journal entry, Fund event, contribution,
+commitment, or approval.
+
+**Verification so far:** 142 focused and adjacent tests pass, including clock
+skew, pending-category race, forged replay, member-switch draft isolation,
+field-specific invalid-input recovery, convergence, evidence, and no-money
+cases. TypeScript, `pnpm ai:verify`, and the 469-module production build pass.
+accepted-write rejection. Actual-component browser proof covers draft, invalid, waiting, changed-set, and
+two-author reveal states at 320, 390, 720, and 1100 px: no horizontal overflow,
+48 px controls, keyboard-only Submit, field focus recovery, reduced motion,
+clean console, and zero scoped axe WCAG A/AA violations. `pnpm check:windows`
+could not start because this macOS host has no `pwsh`; no Windows result is
+claimed. Exact clean-head quick-gate evidence remains to be recorded.
+
+**Evidence class:** Synthetic local Development fixtures, focused/adjacent
+tests, local build, and actual-component local browser proof. This is not a
+full-suite, Windows, hosted two-account, deployment, or Production claim. No
+hosted row, schema, secret, provider, or Production setting was read or changed.
+
+**Next owner:** Codex closes the exact-SHA gate and record; Jonathan separately
+decides whether to push or open a PR.
+
 ## Onboarding Slice 19 — Chapter 9 category selection (D-219) (2026-09-04)
 
 **Status:** Local implementation and proof are complete at

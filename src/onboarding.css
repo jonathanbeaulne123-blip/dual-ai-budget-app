@@ -471,3 +471,225 @@
     animation: none !important;
   }
 }
+
+.onboarding-estimate-card {
+  width: min(100%, 820px);
+  margin-inline: auto;
+  padding: clamp(18px, 4vw, 32px);
+  overflow: hidden;
+}
+
+.onboarding-estimate-header h2,
+.onboarding-estimate-header p,
+.onboarding-estimate-reveal h3,
+.onboarding-estimate-member-sets h3,
+.onboarding-estimate-member-sets dl,
+.onboarding-estimate-member-sets dt,
+.onboarding-estimate-member-sets dd {
+  margin: 0;
+}
+
+.onboarding-estimate-card .kicker {
+  color: var(--pine-2);
+}
+
+.onboarding-estimate-card .onboarding-estimate-header {
+  display: block;
+  margin-bottom: 0;
+}
+
+.onboarding-estimate-header h2 {
+  margin-top: 4px;
+  font-family: var(--display);
+  font-size: clamp(25px, 4vw, 34px);
+  line-height: 1.1;
+}
+
+.onboarding-estimate-reassure {
+  max-width: 60ch;
+  margin-top: 12px !important;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.onboarding-estimate-guide {
+  max-width: 60ch;
+  margin: 24px 0 6px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.onboarding-estimate-blank-help {
+  margin: 0 0 16px;
+  color: var(--pine-2);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.onboarding-estimate-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.onboarding-estimate-field {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 4px 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper-2);
+}
+
+.onboarding-estimate-field-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.onboarding-estimate-field-caption {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.onboarding-estimate-field input {
+  grid-column: 1 / -1;
+  min-width: 0;
+  min-height: 48px;
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-estimate-primary {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 18px;
+}
+
+.onboarding-estimate-error {
+  margin: 12px 0 0;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.onboarding-estimate-wait,
+.onboarding-estimate-status {
+  min-height: 220px;
+  margin: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.onboarding-estimate-wait > span {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pine) 12%, var(--paper));
+  color: var(--pine);
+  font-size: 24px;
+}
+
+.onboarding-estimate-wait p {
+  max-width: 42ch;
+  margin: 0;
+}
+
+.onboarding-estimate-reveal {
+  margin-top: 24px;
+}
+
+.onboarding-estimate-reveal > h3 {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.onboarding-estimate-member-sets {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.onboarding-estimate-member-sets > section {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--paper-2);
+}
+
+.onboarding-estimate-member-sets h3 {
+  font-family: var(--display);
+  font-size: 18px;
+}
+
+.onboarding-estimate-member-sets dl {
+  margin-top: 10px;
+}
+
+.onboarding-estimate-member-sets dl > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+.onboarding-estimate-member-sets dt {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+
+.onboarding-estimate-member-sets dd {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.onboarding-estimate-done {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border-left: 3px solid var(--pine);
+  border-radius: 0 5px 5px 0;
+  background: color-mix(in srgb, var(--pine) 8%, var(--paper));
+  line-height: 1.5;
+}
+
+.onboarding-estimate-field:focus-within,
+.onboarding-estimate-card button:focus-visible,
+.onboarding-estimate-card input:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .onboarding-estimate-fields,
+  .onboarding-estimate-member-sets {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-estimate-card * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
