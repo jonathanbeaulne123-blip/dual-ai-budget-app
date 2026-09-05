@@ -8,7 +8,7 @@
 - **Branch:** `codex/realtime-session-lease`
 - **Baseline SHA:** `58e90df5f40dfdba1399f6a8f35c8efe8fb62c15`
 - **Head SHA:** runtime implementation `8de827c20eb4dcc3b35837613ad46db8b91ce267`; documentation closeout may follow without changing runtime
-- **PR or issue:** pending
+- **PR or issue:** PR #350
 - **Risk:** Medium-High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development only
@@ -74,7 +74,7 @@ Inference:
 - [x] Implement identity- and membership-bound socket token renewal with command catch-up.
 - [x] Add focused regression coverage.
 - [x] Complete local verification and diff review.
-- [ ] Open a PR and request the bounded release decision.
+- [x] Open PR #350 and request the bounded release decision after CI.
 - [ ] If authorized, deploy only to Development and repeat the witnessed latency run.
 
 ## Evidence log
