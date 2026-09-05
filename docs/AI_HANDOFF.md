@@ -2,7 +2,7 @@
 
 ## Onboarding Slice 25 — Chapter 12 Ready and unlock (D-225) (2026-09-05)
 
-**Status:** Local implementation is complete on `onboarding/25-ch12-ready`, based on `origin/main@146dc1a7160d163ea911321aa2034cf4324c44d8`. Nothing is pushed, merged, deployed, or hosted-live verified. Risk: **High**.
+**Status:** Local implementation is complete on `onboarding/25-ch12-ready` at `c1664bf6dfef1792ea3965a131593b225e98e5bf`, based on `origin/main@146dc1a7160d163ea911321aa2034cf4324c44d8`. Nothing is pushed, merged, deployed, or hosted-live verified. Risk: **High**.
 
 **Outcome:** Chapter 12 closes on a dedicated Books and Health finale. A member can use privacy-safe accepted transaction evidence or a discarded `$45` correction Practice. The screen shows the twelve-item household gate checklist, current Books/Health truth, each member's own exact-digest Ready action, a named waiting state, interrupted-completion repair, and an honest post-unlock summary plus optional Personal-track offer. Contract: [`briefs/ONBOARDING_SLICE_25_CH12_READY_CONTRACT_2026-09-05.md`](briefs/ONBOARDING_SLICE_25_CH12_READY_CONTRACT_2026-09-05.md).
 
