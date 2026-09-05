@@ -1209,8 +1209,10 @@ export function proposalDigest(proposal: Omit<BudgetProposal, "sourceDigest">): 
 
 **Branch:** `onboarding/22-approvals` · **PR:** `feat(onboarding): self-owned approvals keyed to a digest` · **Owner:** Codex · **Depends on:** 21
 
+**Read first:** `src/core/onboarding/submissions.ts` (append-only self-owned record precedent), `src/core/sync.ts` (Shared split/assemble/merge), `src/core/commandRuntime.ts` and `src/ledger/materializeSnapshotFromEvents.ts` (accepted-command and replay authority).
+
 **Create:** `src/core/onboarding/approvals.ts`, `test/onboarding-approvals.test.ts`
-**Modify:** `src/core/types.ts`, `src/core/commands.ts`, `src/core/index.ts`
+**Modify:** `src/core/types.ts`, `src/core/commands.ts`, `src/core/index.ts`, `src/core/sync.ts`, `src/core/commandIdentity.ts`, `src/core/commandRuntime.ts`, `src/ledger/continuityCommandLog.ts`, `src/ledger/materializeSnapshotFromEvents.ts`
 
 ```ts
 export type OnboardingApproval = {

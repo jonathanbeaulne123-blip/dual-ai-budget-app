@@ -1,6 +1,7 @@
 import type { CommandReceipt, Household } from "../core/types.ts";
 import { commandMaterializationFacts, sha256Hex } from "../core/commandIdentity.ts";
 import { mergeSubmissions } from "../core/onboarding/submissions.ts";
+import { mergeOnboardingApprovals } from "../core/onboarding/approvals.ts";
 import {
   extractMaterializationFacts,
   type ContinuityMaterializationFacts,
@@ -138,6 +139,7 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.onboardingSubmissions ?? []).map((row) => row.id),
     ...(mergedFacts?.onboardingCategoryProposals ?? []).map((row) => row.id),
     ...(mergedFacts?.onboardingCategoryMerges ?? []).map((row) => row.id),
+    ...(mergedFacts?.onboardingApprovals ?? []).map((row) => row.id),
     ...(mergedFacts?.categories ?? []).map((row) => row.id),
     ...charterPostedIds,
     ...(mergedFacts?.householdFund ? [mergedFacts.householdFund.id] : []),
@@ -156,6 +158,7 @@ export async function compactedCommandPayload(
       || mergedFacts?.onboardingSubmissions?.length
       || mergedFacts?.onboardingCategoryProposals?.length
       || mergedFacts?.onboardingCategoryMerges?.length
+      || mergedFacts?.onboardingApprovals?.length
       || mergedFacts?.categories?.length
       ? await sha256Hex(commandMaterializationFacts({
         monthRehearsals: mergedFacts.monthRehearsals,
@@ -164,6 +167,7 @@ export async function compactedCommandPayload(
         onboardingSubmissions: mergedFacts.onboardingSubmissions,
         onboardingCategoryProposals: mergedFacts.onboardingCategoryProposals,
         onboardingCategoryMerges: mergedFacts.onboardingCategoryMerges,
+        onboardingApprovals: mergedFacts.onboardingApprovals,
         categories: mergedFacts.categories,
       }))
       : primary.commandPayload.materializationHash,
@@ -244,6 +248,12 @@ function mergeMaterializationFacts(
         ...(merged.onboardingCategoryMerges ?? []),
         ...facts.onboardingCategoryMerges,
       ];
+    }
+    if (facts.onboardingApprovals?.length) {
+      merged.onboardingApprovals = mergeOnboardingApprovals(
+        merged.onboardingApprovals,
+        facts.onboardingApprovals,
+      );
     }
     if (facts.categories?.length) {
       merged.categories = [...(merged.categories ?? []), ...facts.categories];
