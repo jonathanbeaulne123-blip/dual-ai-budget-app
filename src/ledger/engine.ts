@@ -211,6 +211,8 @@ async function deleteRows(
 
 let browserDbs = new Map<string, BooksDatabase>();
 let browserDbOpenings = new Map<string, Promise<BooksDatabase>>();
+let browserDbClosings = new Map<string, Promise<void>>();
+let browserDbClosePromises = new WeakMap<BooksDatabase, Promise<void>>();
 let stagedDbs = new Map<string, BooksDatabase>();
 let stagedDbOpenings = new Map<string, Promise<BooksDatabase>>();
 const stagedGenerations = new Map<string, number>();
@@ -218,11 +220,21 @@ const stagedWriteQueues = new Map<string, ReturnType<typeof createWriteQueue>>()
 const compiledBooksCache = new Map<string, CompiledBooks>();
 const stagedHouseholdMemory = new Map<string, Household>();
 let stagedBooksDataDirForTests: ((environment: Environment, householdId: string) => string) | null = null;
+let browserBooksFactoryForTests: ((environment: Environment) => Promise<BooksDatabase>) | null = null;
+let browserBooksInitializerForTests: ((db: BooksDatabase, environment: Environment) => Promise<void>) | null = null;
 
 export function setStagedBooksDataDirForTests(
   factory: ((environment: Environment, householdId: string) => string) | null,
 ): void {
   stagedBooksDataDirForTests = factory;
+}
+
+export function setBrowserBooksFactoryForTests(
+  factory: ((environment: Environment) => Promise<BooksDatabase>) | null,
+  initializer: ((db: BooksDatabase, environment: Environment) => Promise<void>) | null = null,
+): void {
+  browserBooksFactoryForTests = factory;
+  browserBooksInitializerForTests = initializer;
 }
 
 function stagedHouseholdKey(environment: Environment, householdId: string): string {
@@ -381,72 +393,107 @@ export async function getBrowserBooks(environment: Environment = "development"):
   const existing = browserDbs.get(environment);
   if (existing) return existing;
   const opening = browserDbOpenings.get(environment);
-  if (opening) return opening;
-  let nextOpening!: Promise<BooksDatabase>;
-  let worker: Worker | null = null;
-  const rawOpening = measureHearth("hearth:books:open-migrate", async () => {
-    const persist = typeof indexedDB !== "undefined";
-    const canUseWorker = persist
-      && typeof window !== "undefined"
-      && typeof Worker !== "undefined"
-      && typeof BroadcastChannel !== "undefined"
-      && typeof navigator !== "undefined"
-      && "locks" in navigator;
-    const db: BooksDatabase = canUseWorker
-      ? await (async () => {
-          const [{ PGliteWorker }] = await Promise.all([
-            import("@electric-sql/pglite/worker"),
-          ]);
-          worker = new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` });
-          return PGliteWorker.create(
-            worker,
-            { dataDir: booksIdbName(environment), id: `hearth-books-${environment}` },
-          );
-        })()
-      : await (async () => {
-          const { PGlite } = await import("@electric-sql/pglite");
-          return persist ? PGlite.create(booksIdbName(environment)) : PGlite.create();
-        })();
-    await migrateBooks(db);
-    if (browserDbOpenings.get(environment) !== nextOpening) {
-      await db.close().catch(() => undefined);
-      throw new Error("The books engine opening was retired before it became active.");
-    }
-    browserDbs.set(environment, db);
-    return db;
-  });
-  nextOpening = withBrowserBooksOpenDeadline(rawOpening, {
-    onTimeout: () => worker?.terminate(),
-  });
-  browserDbOpenings.set(environment, nextOpening);
-  try {
-    return await nextOpening;
-  } finally {
-    if (browserDbOpenings.get(environment) === nextOpening) browserDbOpenings.delete(environment);
+  if (opening) return withBrowserBooksOpenDeadline(opening);
+  const closing = browserDbClosings.get(environment);
+  if (closing) {
+    await closing;
+    return getBrowserBooks(environment);
   }
+  const testFactory = browserBooksFactoryForTests;
+  const testInitializer = browserBooksInitializerForTests;
+  let rawOpening!: Promise<BooksDatabase>;
+  rawOpening = measureHearth("hearth:books:open-migrate", async () => {
+    let db: BooksDatabase | null = null;
+    try {
+      if (testFactory) {
+        db = await testFactory(environment);
+      } else {
+        const persist = typeof indexedDB !== "undefined";
+        const canUseWorker = persist
+          && typeof window !== "undefined"
+          && typeof Worker !== "undefined"
+          && typeof BroadcastChannel !== "undefined"
+          && typeof navigator !== "undefined"
+          && "locks" in navigator;
+        db = canUseWorker
+          ? await (async () => {
+              const [{ PGliteWorker }] = await Promise.all([
+                import("@electric-sql/pglite/worker"),
+              ]);
+              const worker = new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` });
+              return PGliteWorker.create(
+                worker,
+                { dataDir: booksIdbName(environment), id: `hearth-books-${environment}` },
+              );
+            })()
+          : await (async () => {
+              const { PGlite } = await import("@electric-sql/pglite");
+              return persist ? PGlite.create(booksIdbName(environment)) : PGlite.create();
+            })();
+      }
+      if (testFactory) await testInitializer?.(db, environment);
+      else await migrateBooks(db);
+      if (browserDbOpenings.get(environment) !== rawOpening) {
+        throw new Error("The books engine opening was retired before it became active.");
+      }
+      browserDbs.set(environment, db);
+      return db;
+    } catch (caught) {
+      // PGliteWorker.create has already acquired its tab-close lock before
+      // migration begins. A failed migration or retired activation must close
+      // that exact handle before this opening rejects and permits a retry.
+      if (db) await retireBrowserBooksConnection(environment, db);
+      throw caught;
+    }
+  });
+  browserDbOpenings.set(environment, rawOpening);
+  void rawOpening.then(
+    () => {
+      if (browserDbOpenings.get(environment) === rawOpening) browserDbOpenings.delete(environment);
+    },
+    () => {
+      if (browserDbOpenings.get(environment) === rawOpening) browserDbOpenings.delete(environment);
+    },
+  );
+  // Keep one raw opening in flight after a caller's deadline. Starting another
+  // PGliteWorker while the first waits for leader handoff leaks a tab-close lock
+  // that only a page teardown can release. Later callers get their own bounded
+  // wait against this same opening instead of multiplying workers and locks.
+  return withBrowserBooksOpenDeadline(rawOpening);
 }
 
 async function reopenBrowserBooks(environment: Environment): Promise<BooksDatabase> {
   const opening = browserDbOpenings.get(environment);
-  browserDbOpenings.delete(environment);
-  const existing = browserDbs.get(environment);
-  browserDbs.delete(environment);
   if (opening) {
-    try { await opening; } catch { /* retired opening */ }
+    // A still-opening client is the only safe candidate for this page. Let its
+    // normal deadline surface busy state; do not create a competing worker.
+    await withBrowserBooksOpenDeadline(opening);
   }
+  const existing = browserDbs.get(environment);
   if (existing) {
-    try {
-      await existing.close();
-    } catch {
-      /* A lost worker leader may already have closed this handle. */
-    }
+    await retireBrowserBooksConnection(environment, existing);
+  } else {
+    await browserDbClosings.get(environment);
   }
   return getBrowserBooks(environment);
 }
 
-function retireBrowserBooksConnection(environment: Environment, db: BooksDatabase): void {
+function retireBrowserBooksConnection(environment: Environment, db: BooksDatabase): Promise<void> {
   if (browserDbs.get(environment) === db) browserDbs.delete(environment);
-  void db.close().catch(() => undefined);
+  const alreadyClosing = browserDbClosePromises.get(db);
+  if (alreadyClosing) return alreadyClosing;
+  const previousClosing = browserDbClosings.get(environment) ?? Promise.resolve();
+  let closing!: Promise<void>;
+  closing = previousClosing
+    .catch(() => undefined)
+    .then(() => db.close())
+    .catch(() => undefined)
+    .finally(() => {
+      if (browserDbClosings.get(environment) === closing) browserDbClosings.delete(environment);
+    });
+  browserDbClosePromises.set(db, closing);
+  browserDbClosings.set(environment, closing);
+  return closing;
 }
 
 function isLeaderChangedError(caught: unknown): boolean {
@@ -639,6 +686,9 @@ export async function resetBrowserBooksForTests(): Promise<void> {
     }
   }
   browserDbs = new Map();
+  await Promise.allSettled(browserDbClosings.values());
+  browserDbClosings = new Map();
+  browserDbClosePromises = new WeakMap();
   await closeStagedBooksHandlesForTests();
   compiledBooksCache.clear();
 }
@@ -670,18 +720,16 @@ function deleteIndexedDatabase(name: string): Promise<void> {
 /** Close and drop the PGlite IDB for one environment so a new household starts empty. */
 export async function wipeBrowserBooks(environment: Environment): Promise<void> {
   const opening = browserDbOpenings.get(environment);
-  browserDbOpenings.delete(environment);
   if (opening) {
-    try { await opening; } catch { /* retired opening */ }
+    // Never delete the durable IDB while a worker client is still negotiating
+    // its cross-tab lock. Busy state is recoverable; a competing wipe is not.
+    await withBrowserBooksOpenDeadline(opening);
   }
   const existing = browserDbs.get(environment);
   if (existing) {
-    try {
-      await existing.close();
-    } catch {
-      /* drop proceeds even if close is already done */
-    }
-    browserDbs.delete(environment);
+    await retireBrowserBooksConnection(environment, existing);
+  } else {
+    await browserDbClosings.get(environment);
   }
   const name = booksIdbName(environment).replace(/^idb:\/\//, "");
   await deleteIndexedDatabase(name);
@@ -806,9 +854,16 @@ async function inspectBrowserBooksAttempt(
       { onTimeout: () => retireBrowserBooksConnection(household.environment, db) },
     );
   } catch (caught) {
-    if (retryLeaderChange && (
-      isLeaderChangedError(caught) || caught instanceof BrowserBooksOperationTimeoutError
-    )) {
+    if (retryLeaderChange && isLeaderChangedError(caught)) {
+      try {
+        // PGliteWorker reconnects this client to the elected leader. Reusing it
+        // lets the inspection determine whether the interrupted transaction
+        // committed without creating another worker/election participant.
+        return inspectBrowserBooksAttempt(household, false, options);
+      } catch (retryCaught) {
+        caught = retryCaught;
+      }
+    } else if (retryLeaderChange && caught instanceof BrowserBooksOperationTimeoutError) {
       try {
         await reopenBrowserBooks(household.environment);
         return inspectBrowserBooksAttempt(household, false, options);
@@ -819,6 +874,7 @@ async function inspectBrowserBooksAttempt(
     const message = caught instanceof Error ? caught.message : "The books engine could not be inspected.";
     const issue: BooksRecoveryIssue = caught instanceof BrowserBooksOpenTimeoutError
       || caught instanceof BrowserBooksOperationTimeoutError
+      || isLeaderChangedError(caught)
       ? "local-engine-busy"
       : /migration/i.test(message)
       ? "incomplete-migration"
@@ -1060,7 +1116,7 @@ export async function ingestHouseholdBooks(
       return { compiled, status };
     } catch (caught) {
       if (!(caught instanceof BrowserBooksOperationTimeoutError) || !retryTimeout) throw caught;
-      retireBrowserBooksConnection(household.environment, db);
+      await retireBrowserBooksConnection(household.environment, db);
       return attempt(false);
     }
   };
@@ -1068,7 +1124,9 @@ export async function ingestHouseholdBooks(
     return await attempt(true);
   } catch (caught) {
     if (!isLeaderChangedError(caught)) throw caught;
-    await reopenBrowserBooks(household.environment);
+    // The worker client reconnects itself after leadership changes. Inspect the
+    // same durable projection to resolve the indeterminate transaction; closing
+    // it here would trigger another election and can amplify cross-tab churn.
     const inspection = await inspectBrowserBooks(household);
     if (!inspection.ok) throw caught;
     return {

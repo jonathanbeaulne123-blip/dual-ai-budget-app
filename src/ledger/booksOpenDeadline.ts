@@ -28,8 +28,9 @@ type DeadlineOptions = {
 
 /**
  * Bound browser database startup without pretending the underlying storage was
- * corrupted. The caller retires any worker; a late database handle is closed
- * by the opening-generation check in engine.ts.
+ * corrupted. The caller owns the opening lifecycle. engine.ts deliberately
+ * keeps one raw worker opening in flight after this caller deadline so a retry
+ * cannot multiply cross-tab lock requests.
  */
 export function withBrowserBooksOpenDeadline<T>(
   opening: Promise<T>,

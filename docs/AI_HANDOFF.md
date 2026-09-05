@@ -43,6 +43,48 @@ claim. All exercised records were synthetic local Development fixtures; no
 hosted row, schema, secret, provider, or Production setting was read or changed.
 
 **Next owner:** Jonathan separately decides whether to push or open a PR.
+## D-212 browser-books handoff repair (2026-09-04)
+
+**Status:** Local High-risk repair, quick gate, and production build pass on
+`codex/pglite-sync-stall-repair` from
+`origin/main@f5ef04722830b5661c4f312da6e5ca5b5f5f84b6`; not pushed, merged,
+deployed, or live-retested. The failed live sample was Development only.
+
+**Observed failure:** In a calibrated phone-to-Mac witness, the phone's Shared
+command committed as hosted revision 25 and its Realtime event reached the Mac.
+The Mac remained on revision 24 with no PGlite acceptance or paint. Its renderer
+held eleven `pglite-tab-close` locks and logged repeated indeterminate leader
+changes after overlapping open retries.
+
+**Repair:** One environment now retains one raw browser-books opening across
+caller deadlines. A retry gets a new bounded wait on that same opener rather
+than another worker. A leader change reuses PGliteWorker's reconnecting client
+and inspects the exact candidate receipt. Operation-timeout retirement is
+idempotent and environment-serialized, and a replacement open waits for close.
+Explicit local wipe refuses while an opener is busy. IndexedDB and the accepted
+snapshot are never cleared by timeout.
+
+**Risk and Dual Course:** Risk **High** because this is the accepted-books
+projection used by inbound Shared commands. Budget delta (5): `+4` — removes a
+false-live path between cloud commit and accepted local books. Engagement delta
+(3): `0` — no visible feature was added. Books win: a command still cannot paint
+or be counted as latency evidence until PGlite and the active UI accept it.
+
+**Verification:** The required High-risk quick gate passed in 42.9 seconds with
+31 fast command-contract/runtime tests, 45 serial books/proof tests, TypeScript,
+AI-surface verification, test discovery, and diff hygiene. A direct focused run
+also passed 44/44 books and deadline tests. Regression cases prove single-opener
+reuse after a deadline, close-before-reopen ordering, idempotent retirement, and
+same-client leader-change inspection. No time-budget breach occurred.
+The production build passed TypeScript, 465 transformed modules, Hercules Pro
+UI, and the deployment redirect sanitizer; only the repository's existing
+PGlite/browser-external and chunk-size warnings were emitted.
+
+**Boundary and next action:** No financial command/formula, cloud request,
+schema, hosted row, secret, provider setting, Production continuity, or local
+replacement changed. Production remains off. Independent review remains, then
+Jonathan must separately authorize this new PR's merge and Development
+deployment before the physical Mac/phone witness can be repeated.
 
 ## Onboarding Slice 18 — submission contract (D-218) (2026-09-04)
 

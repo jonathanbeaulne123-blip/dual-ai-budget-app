@@ -7,7 +7,7 @@ import {
   trialBalance,
 } from "../src/core/journal.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { clearStagedHouseholdBooks, getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, ingestHouseholdBooks, inspectBrowserBooks, loadStagedHouseholdBooks, migrateBooks, openMemoryBooks, prewarmStagedHouseholdBooks, replaceAcceptedHouseholdBooks, resetBrowserBooksForTests, validateHouseholdBooksStaged, wipeStagedBooksForEnvironment } from "../src/ledger/engine.ts";
+import { clearStagedHouseholdBooks, getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, ingestHouseholdBooks, inspectBrowserBooks, loadStagedHouseholdBooks, migrateBooks, openMemoryBooks, prewarmStagedHouseholdBooks, replaceAcceptedHouseholdBooks, resetBrowserBooksForTests, setBrowserBooksFactoryForTests, validateHouseholdBooksStaged, wipeStagedBooksForEnvironment } from "../src/ledger/engine.ts";
 import { assertReadOnlySelect } from "../src/ledger/queryGuard.ts";
 import { booksSqlDump } from "../src/ledger/export.ts";
 
@@ -425,6 +425,183 @@ describe("Postgres books engine", () => {
       await resetBrowserBooksForTests();
     }
   }, 30_000);
+
+  it("keeps one raw browser opening after a caller deadline instead of leaking replacement workers", async () => {
+    await resetBrowserBooksForTests();
+    vi.useFakeTimers();
+    type BrowserDb = Awaited<ReturnType<typeof getBrowserBooks>>;
+    let finishOpening!: (db: BrowserDb) => void;
+    const db = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(),
+      close: vi.fn(async () => undefined),
+    } as unknown as BrowserDb;
+    const opening = new Promise<BrowserDb>((resolve) => { finishOpening = resolve; });
+    const factory = vi.fn(() => opening);
+    setBrowserBooksFactoryForTests(factory);
+    try {
+      const first = getBrowserBooks("development");
+      const firstRejection = expect(first).rejects.toMatchObject({
+        code: "BROWSER_BOOKS_OPEN_TIMEOUT",
+      });
+      await vi.advanceTimersByTimeAsync(12_000);
+      await firstRejection;
+
+      const second = getBrowserBooks("development");
+      expect(factory).toHaveBeenCalledTimes(1);
+      finishOpening(db);
+
+      await expect(second).resolves.toBe(db);
+      await expect(getBrowserBooks("development")).resolves.toBe(db);
+      expect(factory).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+      setBrowserBooksFactoryForTests(null);
+      await resetBrowserBooksForTests();
+    }
+  });
+
+  it("closes a created browser worker before retrying after initialization fails", async () => {
+    await resetBrowserBooksForTests();
+    type BrowserDb = Awaited<ReturnType<typeof getBrowserBooks>>;
+    let finishClose!: () => void;
+    let noteCloseStarted!: () => void;
+    const closeFinished = new Promise<void>((resolve) => { finishClose = resolve; });
+    const closeStarted = new Promise<void>((resolve) => { noteCloseStarted = resolve; });
+    const failedDb = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(),
+      close: vi.fn(() => {
+        noteCloseStarted();
+        return closeFinished;
+      }),
+    } as unknown as BrowserDb;
+    const readyDb = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(),
+      close: vi.fn(async () => undefined),
+    } as unknown as BrowserDb;
+    const factory = vi.fn()
+      .mockResolvedValueOnce(failedDb)
+      .mockResolvedValueOnce(readyDb);
+    const initialize = vi.fn()
+      .mockRejectedValueOnce(new Error("migration exploded"))
+      .mockResolvedValueOnce(undefined);
+    setBrowserBooksFactoryForTests(factory, initialize);
+    try {
+      const failedOpening = getBrowserBooks("development");
+      await closeStarted;
+      const overlappingCaller = getBrowserBooks("development");
+
+      expect(failedDb.close).toHaveBeenCalledTimes(1);
+      expect(factory).toHaveBeenCalledTimes(1);
+      finishClose();
+
+      await expect(failedOpening).rejects.toThrow("migration exploded");
+      await expect(overlappingCaller).rejects.toThrow("migration exploded");
+      await expect(getBrowserBooks("development")).resolves.toBe(readyDb);
+      expect(factory).toHaveBeenCalledTimes(2);
+      expect(failedDb.close).toHaveBeenCalledTimes(1);
+    } finally {
+      setBrowserBooksFactoryForTests(null);
+      await resetBrowserBooksForTests();
+    }
+  });
+
+  it("waits for a timed-out browser connection to close before opening its retry", async () => {
+    await resetBrowserBooksForTests();
+    vi.useFakeTimers();
+    type BrowserDb = Awaited<ReturnType<typeof getBrowserBooks>>;
+    let finishClose!: () => void;
+    const closeFinished = new Promise<void>((resolve) => { finishClose = resolve; });
+    const stalledDb = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(() => new Promise<never>(() => undefined)),
+      close: vi.fn(() => closeFinished),
+    } as unknown as BrowserDb;
+    const acceptedDb = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(async () => ({
+        ok: true,
+        engine: "pglite" as const,
+        entryCount: 0,
+        inBalance: true,
+        equationHolds: true,
+      })),
+      close: vi.fn(async () => undefined),
+    } as unknown as BrowserDb;
+    const factory = vi.fn()
+      .mockResolvedValueOnce(stalledDb)
+      .mockResolvedValueOnce(acceptedDb);
+    setBrowserBooksFactoryForTests(factory);
+    try {
+      const ingesting = ingestHouseholdBooks(catalogHousehold());
+      await vi.advanceTimersByTimeAsync(12_000);
+
+      expect(stalledDb.close).toHaveBeenCalledTimes(1);
+      expect(factory).toHaveBeenCalledTimes(1);
+      finishClose();
+
+      await expect(ingesting).resolves.toMatchObject({ status: { ok: true } });
+      expect(factory).toHaveBeenCalledTimes(2);
+      expect(stalledDb.close).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+      setBrowserBooksFactoryForTests(null);
+      await resetBrowserBooksForTests();
+    }
+  });
+
+  it("reuses the reconnecting worker to inspect an indeterminate leader-change transaction", async () => {
+    await resetBrowserBooksForTests();
+    type BrowserDb = Awaited<ReturnType<typeof getBrowserBooks>>;
+    const household = catalogHousehold();
+    const compiled = compileHousehold(household);
+    const auditHash = await hashBooksSnapshot(household);
+    const leaderChanged = new Error("Leader changed, pending operation in indeterminate state");
+    leaderChanged.name = "LeaderChangedError";
+    const query = vi.fn(async () => ({
+      rows: [{
+        schema_initialized: true,
+        schema_current: true,
+        household_present: true,
+        entry_count: compiled.entries.length,
+        snapshot_hash: auditHash,
+        projection_hash: "materialized-proof",
+        actual_projection_hash: "materialized-proof",
+        unbalanced: false,
+      }],
+    }));
+    const transaction = vi.fn()
+      .mockRejectedValueOnce(leaderChanged)
+      .mockImplementationOnce(async (work: (tx: { query: typeof query; exec: ReturnType<typeof vi.fn> }) => unknown) => (
+        work({ query, exec: vi.fn() })
+      ));
+    const db = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction,
+      close: vi.fn(async () => undefined),
+    } as unknown as BrowserDb;
+    const factory = vi.fn(async () => db);
+    setBrowserBooksFactoryForTests(factory);
+    try {
+      await expect(ingestHouseholdBooks(household, { compiled, auditHash })).resolves.toMatchObject({
+        status: { ok: true, entryCount: compiled.entries.length },
+      });
+      expect(transaction).toHaveBeenCalledTimes(2);
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(db.close).not.toHaveBeenCalled();
+    } finally {
+      setBrowserBooksFactoryForTests(null);
+      await resetBrowserBooksForTests();
+    }
+  });
 
   it("ingests a household into PGlite and the SQL trial balance matches the compiler", async () => {
     const household = postEntry(catalogHousehold(), {
