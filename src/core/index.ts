@@ -149,6 +149,7 @@ export * from "./onboarding/categories.ts";
 export * from "./onboarding/estimates.ts";
 export * from "./onboarding/proposal.ts";
 export * from "./onboarding/approvals.ts";
+export * from "./onboarding/adoption.ts";
 export * from "./onboarding/copy.ts";
 export * from "./onboarding/flavor.ts";
 export * from "./onboarding/shellView.ts";

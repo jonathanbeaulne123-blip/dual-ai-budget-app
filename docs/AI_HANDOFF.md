@@ -2455,3 +2455,39 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
   Approval UI and atomic plan adoption belong to Slices 22–24.
 - No push, PR, merge, deploy, hosted mutation, schema, secret, or Production work
   has been authorized.
+
+## Onboarding Slice 23 — atomic budget-plan adoption (D-223) (2026-09-05)
+
+- Branch `onboarding/23-adoption` starts from clean merged Slice 22
+  `origin/main@85bafffc4d39668fc1aed1dd0c90a080cfb58ea4`; implementation commit
+  `119c30b0d6776dce6b9796d9c596f3a864dcb7d1` is local only.
+- `adoptFirstBudget` rebuilds the current month proposal and requires the same
+  active actor plus both active seats' approvals for its exact digest before it
+  changes any plan row.
+- One cloned batch updates existing plan identities and creates every missing
+  row. The accepted boundary rejects stale, partial, unrelated, malformed, or
+  forged batches before persistence; the compiled journal stays deep-equal.
+- `ONB-ADOPT-{month}-{digest}` is both adoption identity and confirmation id.
+  Ambiguous/post-commit Retry returns the same receipt and revision.
+- Proposal approvals bind the exact current plan snapshot with browser-safe
+  SHA-256, so later edits cannot hide behind equal or skewed device clocks.
+- Changed plan rows travel as bounded Shared command materialization with actor,
+  proposal, approval, hash, complete-row validation, and a per-command compacted
+  receipt hash covering identity, audit, revision, and accepted time.
+- **Budget delta (5): `+4`.** The agreed first monthly plan now has an atomic,
+  exactly-once acceptance and continuity boundary.
+- **Engagement delta (3): `+1`.** Slice 24 can present one calm Adopt/Retry state;
+  no rendered surface changes in this slice.
+- Verification is complete: focused Slice 23 proof passed 14/14; the eight-file
+  adjacent set passed 95/95; the final High quick gate passed TypeScript,
+  AI-surface verification, diff hygiene, and 75/75 selected fast plus serial
+  PGlite tests in 32.810 s; the production build passed at 473 modules plus
+  Hercules Pro UI. Independent
+  High-risk review reported no P0-P3 finding. The first broad adjacent run's one
+  existing slow Personal-cloud-refusal timeout passed alone immediately and is
+  retained as host-timing uncertainty. PowerShell was unavailable, so no
+  Windows result is claimed. No component or CSS changed; Slice 24 owns browser
+  UX proof. Mixed historical bundles that cannot prove an earlier audit state
+  fail closed to full-snapshot recovery.
+- No push, PR, merge, deploy, hosted mutation, schema, secret, provider, Personal
+  payload, journal/transfer behavior, or Production work has been authorized.
