@@ -1,5 +1,54 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 24 — Chapter 11 first plan (D-224) (2026-09-05)
+
+**Status:** Release candidate implementation and proof are complete on
+`onboarding/24-ch11-plan` at implementation commit
+`5730361d5ff214202c55eff5a951cc70a43d3006`, rebased onto
+`origin/main@6056cceedebb9a4611e7f5c70c45c1105e562e4d`. Jonathan authorized
+push and merge; deployment and hosted-live verification remain separate. Risk:
+**Medium**.
+
+**Outcome:** Chapter 11 opens a dedicated calm Plan surface. It shows both
+authored monthly estimate sets without comparing members, the exact eligible
+recurrence occurrences and floor, accepted run-rate evidence or its honest
+absence, each frozen basis, every proposed amount, and the total. With no
+accepted capacity fact, it says so rather than inventing one. Each member edits
+and approves only for themselves; a changed estimate or current plan snapshot
+retires prior approval authority. A separate Adopt action appears only after
+both current-version approvals. Contract:
+[`briefs/ONBOARDING_SLICE_24_CH11_CONTRACT_2026-09-05.md`](briefs/ONBOARDING_SLICE_24_CH11_CONTRACT_2026-09-05.md).
+
+**Authority, evidence, and recovery:** Adoption still invokes D-223's atomic
+command and remains the only plan-write boundary. Completion requires the
+current Toronto civil month's exact receipt plus unchanged active posted plan
+rows; direct acknowledgement derives that month at the command boundary.
+Receipt evidence is labelled as receipt provenance. A known pre-acceptance
+rejection may offer ordinary retry and says nothing changed; an
+accepted-but-unsaved result says recovery is required and cannot offer another
+adoption. No transaction, journal row, transfer, Fund event, Personal fact,
+provider/model call, schema, or hosted record is added.
+
+**Verification:** Slice component proof passes 16/16; independent review ran
+six files at 96/96 and reports no remaining P0-P2 finding. The final 27-file
+onboarding suite passes 426/426. The exact clean implementation SHA passes
+the Medium quick gate in 122.1 seconds: 119 fast plus 7 serial PGlite proof
+tests, TypeScript, AI-surface, discovery, and diff hygiene. The production build
+passes at 475 Vite modules plus Hercules Pro UI. Actual-component Chromium at
+320, 390, 720, and 1100 px has no overflow, undersized control, console/page
+error, or scoped axe WCAG A/AA violation; keyboard edit and associated invalid
+input recovery pass. Mobile and desktop screenshots were visually inspected.
+
+**Evidence class:** Synthetic local Development fixtures, focused/adjacent
+tests, exact clean-head Medium gate, local build, actual-component browser
+proof, and independent review. This is not full-suite, Windows, hosted
+two-account, deployment, or Production proof. PowerShell is unavailable on
+this macOS host, so no Windows result is claimed. No hosted row, schema, secret,
+provider, Production setting, or deploy was touched.
+
+**Release decision:** Jonathan authorized push and merge on 2026-09-05. Do not
+deploy without a separate explicit instruction.
+
 ## Onboarding Slice 22 — self-owned exact-digest approvals (D-222) (2026-09-04)
 
 **Status:** Local implementation and proof are complete on
