@@ -1241,6 +1241,10 @@ approveOnboardingReady(household, { memberId, createdBy, digest }): CommitResult
 
 **Read first:** `setBudget` in `src/core/commands.ts:1488` and `seedBudgetPlan` at `:1473` — this command batches over that exact behavior.
 
+**Create:** `src/core/onboarding/adoption.ts`, `src/core/commandConfirmation.ts`, `test/onboarding-adoption.test.ts`
+**Modify:** `src/core/commands.ts`, `src/core/index.ts`, `src/core/commandIdentity.ts`, `src/core/commandRuntime.ts`, `src/ledger/continuityCommandLog.ts`, `src/ledger/materializeSnapshotFromEvents.ts`, `src/App.tsx`
+**Do not modify:** `src/core/journal.ts`, `src/core/onboarding/proposal.ts`, `src/core/onboarding/approvals.ts`, schema, hosted data, provider/model paths, or Production settings.
+
 ```ts
 adoptFirstBudget(household, { memberId: string; createdBy: string; monthKey: MonthKey; proposalDigest: string }): CommitResult
 ```
