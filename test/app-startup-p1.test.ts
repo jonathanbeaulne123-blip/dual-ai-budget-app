@@ -1337,6 +1337,29 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("keeps Bianca Month inside the current App and opens the current income slideshow", async () => {
+    // Bianca Month is a post-onboarding rehearsal. The production UI now
+    // deliberately hides it until guided setup is complete, so this legacy
+    // mounted fixture must carry that prerequisite explicitly.
+    startup.cached!.householdOnboarding = {
+      id: `ONBOARDING-${startup.cached!.environment}-${startup.cached!.householdId}`,
+      environment: startup.cached!.environment,
+      householdId: startup.cached!.householdId,
+      registryVersion: 1,
+      state: "complete",
+      proposedByMemberId: "MEM-001",
+      proposedAt: "2026-08-01T11:00:00.000Z",
+      handshakeExpiresAt: "2026-08-01T11:15:00.000Z",
+      confirmedByMemberIds: ["MEM-001", "MEM-002"],
+      startedAt: "2026-08-01T11:15:00.000Z",
+      stoppedAt: null,
+      stoppedByMemberIds: [],
+      stoppedSolo: false,
+      forcedUnlock: false,
+      completedAt: "2026-08-01T11:45:00.000Z",
+      completionDigest: `ready-v1-${"a".repeat(64)}`,
+      createdAt: "2026-08-01T11:00:00.000Z",
+      updatedAt: "2026-08-01T11:45:00.000Z",
+    };
     startup.cached = startMonthRehearsal(startup.cached!, {
       monthKey: "2026-08",
       biancaParticipantId: "MEM-001",
