@@ -7,6 +7,7 @@ import {
   buildDashboard,
   previewShiftAmounts,
   catalogHousehold,
+  newHouseholdTemplate,
   centsDigitsFromDollars,
   createWriteQueue,
   creditCardView,
@@ -421,6 +422,7 @@ import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
+import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
 import { OnboardingPlan } from "./OnboardingPlan.tsx";
@@ -4876,7 +4878,7 @@ export function App() {
                 if (!welcomeIdentity) throw new Error("Sign in with Google before creating a household.");
                 const memberId = newHouseholdDraft.personalMemberId;
                 adoptedMemberId = memberId;
-                const named = nameHouseholdLedgers(catalogHousehold(environment), newHouseholdDraft);
+                const named = nameHouseholdLedgers(newHouseholdTemplate(environment), newHouseholdDraft);
                 const next = linkGoogleIdentity(named, {
                   memberId,
                   email: welcomeIdentity.email,
@@ -5861,7 +5863,7 @@ export function App() {
             </section>
           );
         })()}
-        {view === "household" ? (
+        {view === "household" && onboardingInviteRecord?.state === "complete" ? (
           <MonthRehearsalPanel
             household={household}
             memberId={session.memberId}
@@ -6190,7 +6192,7 @@ export function App() {
               </button>
             </section>
           ) : null}
-          {view === "household" ? (
+          {view === "household" && onboardingInviteRecord?.state === "complete" ? (
             <MonthRehearsalPanel
               household={household}
               memberId={session.memberId}
@@ -6199,6 +6201,17 @@ export function App() {
               onApply={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
               onOpenTask={openMonthRehearsalTask}
             />
+          ) : null}
+          {view === "household" && onboardingInviteRecord?.state !== "complete" ? (
+            <section className="card" aria-labelledby="rehearsal-locked-title">
+              <header><h2 id="rehearsal-locked-title">Four-week household rehearsal</h2></header>
+              <p className="muted">
+                This is a later Development reliability exercise, not household setup. It becomes available after both people finish guided setup.
+              </p>
+            </section>
+          ) : null}
+          {view === "household" && environment === "development" ? (
+            <GuidedSetupPreview household={household} />
           ) : null}
           {environment === "development" && (
             <section className="card">

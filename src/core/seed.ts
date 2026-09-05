@@ -212,6 +212,21 @@ export function catalogHousehold(environment: Household["environment"] = "develo
   return household;
 }
 
+/**
+ * The real create-household path starts with Hearth's member and category
+ * catalogue, but it must not inherit the demo account fixture. Accounts are
+ * household facts that the two members name during guided setup; seeding them
+ * here would make a brand-new household look already configured and suppress
+ * the invitation entirely.
+ */
+export function newHouseholdTemplate(environment: Household["environment"] = "development"): Household {
+  const household = catalogHousehold(environment);
+  return {
+    ...household,
+    accounts: [],
+  };
+}
+
 const MONTHLY: { subcategoryId: string; amount: number }[] = [
   { subcategoryId: "SUB-INCOME-BIANCA", amount: 4200 },
   { subcategoryId: "SUB-HOUSING-RENT", amount: 1850 },
