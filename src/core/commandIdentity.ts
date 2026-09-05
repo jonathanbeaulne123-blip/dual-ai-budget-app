@@ -1,4 +1,4 @@
-import type { Category, CommandReceipt, Household, HouseholdFundConfig, HouseholdFundEvent, MonthRehearsal, Recurrence, Transaction } from "./types.ts";
+import type { BudgetPlan, Category, CommandReceipt, Household, HouseholdFundConfig, HouseholdFundEvent, MonthRehearsal, Recurrence, Transaction } from "./types.ts";
 
 function byId<T extends { id: string }>(rows: T[] | undefined): T[] {
   return [...(rows ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -26,6 +26,7 @@ export function commandMaterializationFacts(input: {
   onboardingCategoryMerges?: Household["onboardingCategoryMerges"];
   onboardingApprovals?: Household["onboardingApprovals"];
   categories?: Category[];
+  budgetPlans?: BudgetPlan[];
 }): unknown {
   return stable({
     ...(input.recurrences?.length ? { recurrences: byId(input.recurrences) } : {}),
@@ -36,6 +37,7 @@ export function commandMaterializationFacts(input: {
     ...(input.onboardingCategoryMerges?.length ? { onboardingCategoryMerges: byId(input.onboardingCategoryMerges) } : {}),
     ...(input.onboardingApprovals?.length ? { onboardingApprovals: byId(input.onboardingApprovals) } : {}),
     ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
+    ...(input.budgetPlans?.length ? { budgetPlans: byId(input.budgetPlans) } : {}),
   });
 }
 
@@ -229,6 +231,10 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const onboardingCategoryProposals = (next.onboardingCategoryProposals ?? []).filter((row) => posted.has(row.id));
   const onboardingCategoryMerges = (next.onboardingCategoryMerges ?? []).filter((row) => posted.has(row.id));
   const onboardingApprovals = (next.onboardingApprovals ?? []).filter((row) => posted.has(row.id));
+  const postsCategory = next.categories.some((row) => posted.has(row.id));
+  const budgetPlans = next.budgetPlans.filter((row) => (
+    posted.has(row.id) && (row.id.includes("-ONB-") || !postsCategory)
+  ));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -304,6 +310,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     onboardingCategoryProposals,
     onboardingCategoryMerges,
     onboardingApprovals,
+    budgetPlans,
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.
@@ -338,6 +345,30 @@ export async function sha256Hex(value: unknown): Promise<string> {
   const bytes = new TextEncoder().encode(JSON.stringify(value));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export async function commandReceiptEnvelopeHash(input: {
+  confirmationId: string;
+  commandKind: string;
+  postedIds: readonly string[];
+  ledgerScope: "shared" | "personal";
+  materializationHash?: string;
+  identityHash: string;
+  auditHash: string;
+  revision: number;
+  acceptedAt: string;
+}): Promise<string> {
+  return sha256Hex({
+    confirmationId: input.confirmationId,
+    commandKind: input.commandKind,
+    postedIds: [...input.postedIds].sort(),
+    ledgerScope: input.ledgerScope,
+    materializationHash: input.materializationHash ?? null,
+    identityHash: input.identityHash,
+    auditHash: input.auditHash,
+    revision: input.revision,
+    acceptedAt: input.acceptedAt,
+  });
 }
 
 export async function financialAuditHash(household: Household): Promise<string> {

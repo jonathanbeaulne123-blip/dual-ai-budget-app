@@ -1,5 +1,7 @@
 import {
+  commandIdentityHash,
   commandMaterializationFacts,
+  commandReceiptEnvelopeHash,
   financialAuditHash,
   financialAuditHashForScope,
   sha256Hex,
@@ -36,12 +38,18 @@ import {
   type OnboardingApproval,
   type OnboardingApprovalScope,
 } from "../core/onboarding/approvals.ts";
+import {
+  assertOnboardingAdoptionPlans,
+  ONBOARDING_ADOPTION_COMMAND_KIND,
+} from "../core/onboarding/adoption.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { advanceCadence } from "../core/recurrence.ts";
+import { dateKeyInZone, parseMonthKey, type DateKey } from "../core/calendar.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
   Claim,
+  BudgetPlan,
   Category,
   CommandReceipt,
   GoalContribution,
@@ -94,6 +102,7 @@ export type ContinuityMaterializationFacts = {
   onboardingCategoryMerges?: OnboardingCategoryMerge[];
   onboardingApprovals?: OnboardingApproval[];
   categories?: Category[];
+  budgetPlans?: BudgetPlan[];
   charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -114,6 +123,11 @@ export type ContinuityCommandEventPayload = ContinuityCommandRef["commandPayload
     postedIds: string[];
     ledgerScope: "shared" | "personal";
     materializationHash?: string;
+    auditHash?: string;
+    identityHash?: string;
+    revision?: number;
+    acceptedAt?: string;
+    receiptHash?: string;
   }>;
 };
 
@@ -213,6 +227,38 @@ function readableCompactedCommands(
   ));
 }
 
+function shapeOnboardingAdoptionPlans(value: unknown): BudgetPlan[] | null {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) return null;
+  const expectedKeys = [
+    "active", "amountCents", "createdAt", "essential", "id", "incomeStability", "monthKey", "subcategoryId", "updatedAt",
+  ];
+  const plans: BudgetPlan[] = [];
+  for (const candidate of value) {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return null;
+    const row = candidate as Partial<BudgetPlan>;
+    if (JSON.stringify(Object.keys(row).sort()) !== JSON.stringify(expectedKeys)
+      || typeof row.id !== "string" || !row.id || row.id.trim() !== row.id
+      || typeof row.subcategoryId !== "string" || !row.subcategoryId || row.subcategoryId.trim() !== row.subcategoryId
+      || !Number.isSafeInteger(row.amountCents) || row.amountCents! < 0
+      || typeof row.essential !== "boolean"
+      || (row.incomeStability !== null && row.incomeStability !== "fixed" && row.incomeStability !== "variable")
+      || typeof row.active !== "boolean"
+      || typeof row.createdAt !== "string" || Number.isNaN(Date.parse(row.createdAt))
+      || new Date(row.createdAt).toISOString() !== row.createdAt
+      || typeof row.updatedAt !== "string" || Number.isNaN(Date.parse(row.updatedAt))
+      || new Date(row.updatedAt).toISOString() !== row.updatedAt) return null;
+    try {
+      parseMonthKey(row.monthKey!);
+    } catch {
+      return null;
+    }
+    plans.push(row as BudgetPlan);
+  }
+  if (new Set(plans.map((row) => row.id)).size !== plans.length) return null;
+  return plans;
+}
+
 function validCommandEnvelope(event: ContinuityCommandEvent): boolean {
   const postedIds: unknown = event.payload_json.postedIds;
   if (!Array.isArray(postedIds)
@@ -223,9 +269,9 @@ function validCommandEnvelope(event: ContinuityCommandEvent): boolean {
   if (commands === undefined && confirmations === undefined) return true;
   if (!Array.isArray(commands) || !Array.isArray(confirmations)) return false;
   const allowedDescriptorKeys = new Set([
-    "confirmationId", "commandKind", "ledgerScope", "materializationHash", "postedIds",
+    "acceptedAt", "auditHash", "confirmationId", "commandKind", "identityHash", "ledgerScope", "materializationHash", "postedIds", "receiptHash", "revision",
   ]);
-  return commands.every((candidate) => {
+  const validDescriptors = commands.every((candidate) => {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return false;
     const row = candidate as Record<string, unknown>;
     return Object.keys(row).every((key) => allowedDescriptorKeys.has(key))
@@ -234,10 +280,16 @@ function validCommandEnvelope(event: ContinuityCommandEvent): boolean {
       && (row.ledgerScope === "shared" || row.ledgerScope === "personal")
       && Array.isArray(row.postedIds)
       && row.postedIds.every((id) => typeof id === "string" && Boolean(id) && id.trim() === id)
-      && (row.materializationHash === undefined || typeof row.materializationHash === "string");
+      && (row.materializationHash === undefined || typeof row.materializationHash === "string")
+      && (row.auditHash === undefined || typeof row.auditHash === "string")
+      && (row.identityHash === undefined || typeof row.identityHash === "string")
+      && (row.revision === undefined || Number.isSafeInteger(row.revision))
+      && (row.acceptedAt === undefined || typeof row.acceptedAt === "string")
+      && (row.receiptHash === undefined || typeof row.receiptHash === "string");
   }) && confirmations.every(
     (id) => typeof id === "string" && Boolean(id) && id.trim() === id,
   );
+  return validDescriptors;
 }
 
 function eventDeclaresMonthRehearsalUpdate(event: ContinuityCommandEvent): boolean {
@@ -289,6 +341,58 @@ function eventContainsOnboardingApproval(event: ContinuityCommandEvent): boolean
     );
 }
 
+function onboardingAdoptionCommands(
+  event: ContinuityCommandEvent,
+): NonNullable<ContinuityCommandEventPayload["compactedCommands"]> | null {
+  const readable = readableCompactedCommands(event);
+  const compacted = readable.filter(
+    (row) => row.ledgerScope === "shared" && row.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND,
+  );
+  if (event.payload_json.compactedCommands !== undefined) {
+    const confirmations = event.payload_json.compactedConfirmationIds;
+    const descriptorIds = readable.map((row) => row.confirmationId);
+    const aggregateIds = new Set(event.payload_json.postedIds);
+    if (!Array.isArray(confirmations)
+      || descriptorIds.length !== confirmations.length
+      || new Set(descriptorIds).size !== descriptorIds.length
+      || new Set(confirmations).size !== confirmations.length
+      || descriptorIds.some((id) => !confirmations.includes(id))
+      || !readable.some((row) => (
+        row.confirmationId === event.confirmation_id
+        && row.commandKind === event.command_type
+        && row.ledgerScope === event.ledger_scope
+      ))
+      || compacted.some((row) => (
+        new Set(row.postedIds).size !== row.postedIds.length
+        || row.postedIds.some((id) => !aggregateIds.has(id))
+        || typeof row.auditHash !== "string"
+        || !/^[a-f0-9]{64}$/.test(row.auditHash)
+        || typeof row.identityHash !== "string"
+        || !row.identityHash
+        || !Number.isSafeInteger(row.revision)
+        || row.revision! < 1
+        || typeof row.acceptedAt !== "string"
+        || Number.isNaN(Date.parse(row.acceptedAt))
+        || typeof row.receiptHash !== "string"
+        || !/^[a-f0-9]{64}$/.test(row.receiptHash)
+      ))) return null;
+    return compacted;
+  }
+  return event.command_type === ONBOARDING_ADOPTION_COMMAND_KIND
+    ? [{
+        confirmationId: event.confirmation_id,
+        commandKind: event.command_type,
+        postedIds: event.payload_json.postedIds,
+        ledgerScope: event.ledger_scope,
+        materializationHash: event.payload_json.materializationHash,
+        auditHash: event.payload_json.auditHash,
+        identityHash: event.payload_json.identityHash,
+        revision: event.payload_json.revision,
+        acceptedAt: event.payload_json.acceptedAt,
+      }]
+    : [];
+}
+
 async function actorMayApplyOnboardingApprovals(
   local: Household,
   event: ContinuityCommandEvent,
@@ -305,7 +409,7 @@ async function actorMayApplyOnboardingApprovals(
   if (rawCompactedCommands !== undefined) {
     if (!Array.isArray(rawCompactedCommands) || !Array.isArray(rawConfirmations)) return false;
     const allowedDescriptorKeys = new Set([
-      "confirmationId", "commandKind", "ledgerScope", "materializationHash", "postedIds",
+      "acceptedAt", "auditHash", "confirmationId", "commandKind", "identityHash", "ledgerScope", "materializationHash", "postedIds", "receiptHash", "revision",
     ]);
     if (rawCompactedCommands.some((candidate) => {
       if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return true;
@@ -316,7 +420,12 @@ async function actorMayApplyOnboardingApprovals(
         || (row.ledgerScope !== "shared" && row.ledgerScope !== "personal")
         || !Array.isArray(row.postedIds)
         || row.postedIds.some((id) => typeof id !== "string" || !id || id.trim() !== id)
-        || (row.materializationHash !== undefined && typeof row.materializationHash !== "string");
+        || (row.materializationHash !== undefined && typeof row.materializationHash !== "string")
+        || (row.auditHash !== undefined && typeof row.auditHash !== "string")
+        || (row.identityHash !== undefined && typeof row.identityHash !== "string")
+        || (row.revision !== undefined && !Number.isSafeInteger(row.revision))
+        || (row.acceptedAt !== undefined && typeof row.acceptedAt !== "string")
+        || (row.receiptHash !== undefined && typeof row.receiptHash !== "string");
     })) return false;
     const compactedCommands = rawCompactedCommands as NonNullable<ContinuityCommandEventPayload["compactedCommands"]>;
     const confirmations = rawConfirmations as string[];
@@ -616,6 +725,7 @@ function filterFactsForScope(
   }
   if (event.ledger_scope === "shared") {
     if (facts.categories?.length) scoped.categories = facts.categories;
+    if (facts.budgetPlans?.length) scoped.budgetPlans = facts.budgetPlans;
     if (facts.recurrences?.length) scoped.recurrences = facts.recurrences;
     if (facts.householdOnboarding) scoped.householdOnboarding = facts.householdOnboarding;
     if (facts.onboardingSubmissions?.length) {
@@ -695,6 +805,10 @@ export function extractMaterializationFacts(
   if (scope !== "personal") {
     const categories = household.categories.filter((row) => posted.has(row.id));
     if (categories.length) facts.categories = categories;
+    const budgetPlans = options?.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND
+      ? household.budgetPlans.filter((row) => posted.has(row.id))
+      : [];
+    if (budgetPlans.length) facts.budgetPlans = budgetPlans;
     if (household.householdOnboarding && posted.has(household.householdOnboarding.id)) {
       facts.householdOnboarding = household.householdOnboarding;
     }
@@ -789,6 +903,11 @@ async function applyEvent(
   );
   const categoryMap = rowMapsTo(snapshot.categories);
   for (const category of facts.categories ?? []) categoryMap.set(category.id, category);
+  const budgetPlanMap = rowMapsTo(snapshot.budgetPlans);
+  for (const budgetPlan of facts.budgetPlans ?? []) {
+    const existing = budgetPlanMap.get(budgetPlan.id);
+    if (!existing || budgetPlan.updatedAt >= existing.updatedAt) budgetPlanMap.set(budgetPlan.id, budgetPlan);
+  }
   const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
   for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
   const householdFund = facts.householdFund ?? snapshot.householdFund;
@@ -828,6 +947,7 @@ async function applyEvent(
     goalPurchases: goalPurchases.filter((row) => !dead.has(row.id)),
     recurrences: recurrences.filter((row) => !dead.has(row.id)),
     categories: [...categoryMap.values()],
+    budgetPlans: [...budgetPlanMap.values()],
     householdOnboarding,
     onboardingSubmissions,
     onboardingCategoryProposals,
@@ -851,6 +971,19 @@ async function applyEvent(
     tombstones: mergedTombstones,
   };
   next = rememberReceipt(next, receiptFromPayload(payload));
+  for (const command of onboardingAdoptionCommands(event) ?? []) {
+    if (!command.identityHash || !command.auditHash || !command.revision || !command.acceptedAt) continue;
+    next = rememberReceipt(next, {
+      confirmationId: command.confirmationId,
+      identityHash: command.identityHash,
+      auditHash: command.auditHash,
+      materializationHash: command.materializationHash,
+      commandKind: command.commandKind,
+      postedIds: [...command.postedIds],
+      revision: command.revision,
+      acceptedAt: command.acceptedAt,
+    });
+  }
   next.booksAcceptedHash = await financialAuditHash(next);
   return next;
 }
@@ -1026,6 +1159,8 @@ export async function applyCommandEventLocally(input: {
   const rawIncomingApprovals = event.payload_json.materializationFacts.onboardingApprovals;
   const rawIncomingCategories = event.payload_json.materializationFacts.categories;
   const incomingCategories = Array.isArray(rawIncomingCategories) ? rawIncomingCategories : [];
+  const rawIncomingBudgetPlans = event.payload_json.materializationFacts.budgetPlans;
+  const incomingBudgetPlans = shapeOnboardingAdoptionPlans(rawIncomingBudgetPlans);
   let incomingSubmissions: OnboardingSubmission[];
   try {
     incomingSubmissions = shapeOnboardingSubmissions(rawIncomingSubmissions);
@@ -1068,6 +1203,9 @@ export async function applyCommandEventLocally(input: {
   }
   if (rawIncomingCategories && !Array.isArray(rawIncomingCategories)) {
     return { ok: false, reason: "onboarding-category-catalog-invalid", fallback: true };
+  }
+  if (!incomingBudgetPlans) {
+    return { ok: false, reason: "onboarding-adoption-plan-invalid", fallback: true };
   }
   if (incomingCategoryProposals.length || incomingCategoryMerges.length) {
     try {
@@ -1139,8 +1277,99 @@ export async function applyCommandEventLocally(input: {
   if (incomingApprovals.length && !await actorMayApplyOnboardingApprovals(local, event, incomingApprovals)) {
     return { ok: false, reason: "onboarding-approval-authority-mismatch", fallback: true };
   }
+  const adoptionRelevant = incomingBudgetPlans.length > 0
+    || event.command_type === ONBOARDING_ADOPTION_COMMAND_KIND
+    || readableCompactedCommands(event).some((row) => row.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND);
+  const adoptionCommands = adoptionRelevant ? onboardingAdoptionCommands(event) : [];
+  if (!adoptionCommands) {
+    return { ok: false, reason: "onboarding-adoption-materialization-mismatch", fallback: true };
+  }
+  if ((incomingBudgetPlans.length > 0 || adoptionCommands.length > 0)
+    && (incomingBudgetPlans.length === 0 || adoptionCommands.length !== 1)) {
+    return { ok: false, reason: "onboarding-adoption-materialization-mismatch", fallback: true };
+  }
+  if (adoptionCommands.length === 1) {
+    const command = adoptionCommands[0]!;
+    const planIds = new Set(command.postedIds);
+    const commandPlans = incomingBudgetPlans.filter((plan) => planIds.has(plan.id));
+    if (event.ledger_scope !== "shared"
+      || event.payload_json.commandKind !== event.command_type
+      || event.payload_json.confirmationId !== event.confirmation_id
+      || event.payload_json.identityHash !== event.identity_hash
+      || event.payload_json.revision !== event.result_revision
+      || commandPlans.length !== incomingBudgetPlans.length
+      || command.postedIds.length !== incomingBudgetPlans.length
+      || !command.materializationHash
+      || await sha256Hex(commandMaterializationFacts({ budgetPlans: commandPlans })) !== command.materializationHash) {
+      return { ok: false, reason: "onboarding-adoption-materialization-mismatch", fallback: true };
+    }
+    const categoryMap = new Map(local.categories.map((row) => [row.id, row]));
+    for (const row of incomingCategories) categoryMap.set(row.id, row);
+    const planMap = new Map(local.budgetPlans.map((row) => [row.id, row]));
+    for (const row of incomingBudgetPlans) planMap.set(row.id, row);
+    const staged: Household = {
+      ...local,
+      categories: [...categoryMap.values()],
+      householdOnboarding: mergeHouseholdOnboarding(local.householdOnboarding, incomingOnboarding, {
+        householdId: local.householdId,
+        environment: local.environment,
+        members: local.members,
+      }),
+      onboardingSubmissions: mergeSubmissions(local.onboardingSubmissions, incomingSubmissions),
+      onboardingCategoryProposals: mergeOnboardingCategoryProposals(
+        local.onboardingCategoryProposals,
+        incomingCategoryProposals,
+      ),
+      onboardingCategoryMerges: mergeOnboardingCategoryMerges(
+        local.onboardingCategoryMerges,
+        incomingCategoryMerges,
+      ),
+      onboardingApprovals: mergeOnboardingApprovals(local.onboardingApprovals, incomingApprovals),
+    };
+    let observedOn: DateKey;
+    try {
+      if (!command.identityHash
+        || !command.auditHash
+        || !command.revision
+        || command.revision <= event.base_revision
+        || command.revision > event.result_revision
+        || !command.acceptedAt
+        || new Date(command.acceptedAt).toISOString() !== command.acceptedAt
+        || Date.parse(command.acceptedAt) > Date.parse(event.payload_json.acceptedAt)) {
+        throw new Error("The adoption receipt history is invalid.");
+      }
+      const candidate = { ...staged, budgetPlans: [...planMap.values()] };
+      const identityPrevious = { ...staged, revision: command.revision - 1 };
+      const receiptHash = await commandReceiptEnvelopeHash({
+        confirmationId: command.confirmationId,
+        commandKind: command.commandKind,
+        postedIds: command.postedIds,
+        ledgerScope: command.ledgerScope,
+        materializationHash: command.materializationHash,
+        identityHash: command.identityHash,
+        auditHash: command.auditHash,
+        revision: command.revision,
+        acceptedAt: command.acceptedAt,
+      });
+      if ((event.payload_json.compactedCommands !== undefined && command.receiptHash !== receiptHash)
+        || await commandIdentityHash(identityPrevious, candidate, command.postedIds) !== command.identityHash
+        || await financialAuditHashForScope(local, "shared", event.member_id) !== command.auditHash) {
+        throw new Error("The adoption receipt does not match its historical command.");
+      }
+      observedOn = dateKeyInZone(new Date(command.acceptedAt), local.timezone) as DateKey;
+      assertOnboardingAdoptionPlans(staged, [...planMap.values()], {
+        actorMemberId: event.member_id,
+        confirmationId: command.confirmationId,
+        postedIds: command.postedIds,
+        observedOn,
+      });
+    } catch {
+      return { ok: false, reason: "onboarding-adoption-authority-mismatch", fallback: true };
+    }
+  }
   if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length
-    || incomingCategoryProposals.length || incomingCategoryMerges.length || incomingApprovals.length) {
+    || incomingCategoryProposals.length || incomingCategoryMerges.length || incomingApprovals.length
+    || incomingBudgetPlans.length) {
     const expected = await sha256Hex(commandMaterializationFacts({
       monthRehearsals: incomingRehearsals,
       recurrences: incomingRecurrences,
@@ -1150,6 +1379,7 @@ export async function applyCommandEventLocally(input: {
       onboardingCategoryMerges: incomingCategoryMerges,
       onboardingApprovals: incomingApprovals,
       categories: incomingCategories,
+      budgetPlans: incomingBudgetPlans,
     }));
     const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
       ? await sha256Hex(incomingRehearsals)

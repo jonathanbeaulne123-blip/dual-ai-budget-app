@@ -34,6 +34,10 @@ import { assertOnboardingSubmissionTransition, currentSubmission } from "./onboa
 import { assertOnboardingEstimateSubmissionScope } from "./onboarding/estimates.ts";
 import { assertOnboardingCategoryMergeTransition } from "./onboarding/categories.ts";
 import { assertOnboardingApprovalTransition } from "./onboarding/approvals.ts";
+import {
+  assertOnboardingAdoptionTransition,
+  ONBOARDING_ADOPTION_COMMAND_KIND,
+} from "./onboarding/adoption.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError, ValidationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
@@ -249,6 +253,12 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       }
     }
     const sameHousehold = Boolean(previous && previous.householdId === candidate.householdId);
+    if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND
+      && (!sameHousehold
+        || !input.actingMemberId
+        || !previous?.members.some((member) => member.active && member.id === input.actingMemberId))) {
+      throw new ValidationError("Only an active household member can adopt the first plan.");
+    }
     const identityHash = await commandIdentityHash(sameHousehold ? previous : null, candidate, postedIds);
     const existing = sameHousehold && previous ? findReceipt(previous, confirmationId) : undefined;
     if (existing && previous) {
@@ -309,6 +319,14 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         postedIds,
       });
     }
+    if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND) {
+      assertOnboardingAdoptionTransition(previous, candidate, {
+        actorMemberId: input.actingMemberId,
+        commandKind: input.commandKind,
+        confirmationId,
+        postedIds,
+      });
+    }
     const candidateCompiled = measureHearthSync(
       "hearth:command:compile",
       () => assertAcceptableBooks(candidate),
@@ -360,6 +378,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
                 ? await sha256Hex(commandMaterializationFacts({
                   onboardingApprovals: (accepted.onboardingApprovals ?? [])
                     .filter((row) => postedIds.includes(row.id)),
+                }))
+              : input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND
+                ? await sha256Hex(commandMaterializationFacts({
+                  budgetPlans: accepted.budgetPlans.filter((row) => postedIds.includes(row.id)),
                 }))
             : undefined,
       postedIds,

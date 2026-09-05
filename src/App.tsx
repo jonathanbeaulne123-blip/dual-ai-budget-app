@@ -169,6 +169,7 @@ import { clearSession, loadSession, saveSession, type Session } from "./session.
 import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
+import { selectCommandConfirmationId } from "./core/commandConfirmation.ts";
 import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, replaceAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
 import { readSupabaseConfig, pullConsistentMemberReplicaById, pullHouseholdSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
@@ -3522,9 +3523,15 @@ export function App() {
       return null;
     }
     setBusy(true);
-    const explicitConfirmationId = options?.confirmationId;
-    const confirmationId = explicitConfirmationId ?? confirmationRef.current ?? newConfirmationId();
-    if (!explicitConfirmationId) confirmationRef.current = confirmationId;
+    const explicitConfirmationId = options?.confirmationId
+      ?? (token?.commandKind === "adoptFirstBudget" ? token.id : undefined);
+    const confirmation = selectCommandConfirmationId(
+      explicitConfirmationId,
+      confirmationRef.current,
+      newConfirmationId,
+    );
+    const confirmationId = confirmation.confirmationId;
+    confirmationRef.current = confirmation.pendingConfirmationId;
     const ledgerWrite = isLedgerWrite(token);
     const memberId = actorId ?? session?.memberId;
     const shareCapable = Boolean((previous?.linked || next.linked) && hostedContinuityAllowed(environment) && memberId);
