@@ -83,6 +83,16 @@ function later(left: string | null, right: string | null): string | null {
   return left >= right ? left : right;
 }
 
+function earliestProofAfterInvalidation(
+  left: string | null,
+  right: string | null,
+  invalidatedAt: string | null,
+): string | null {
+  const candidates = [left, right].filter((value): value is string => Boolean(value)).sort();
+  if (!invalidatedAt) return candidates[0] ?? null;
+  return candidates.find((value) => value > invalidatedAt) ?? candidates[0] ?? null;
+}
+
 export function memberProgressId(context: ProgressContext): string {
   return `ONBOARDING-PROGRESS-${context.environment}-${context.householdId}-${context.memberId}-v${ONBOARDING_REGISTRY_VERSION}`;
 }
@@ -322,8 +332,12 @@ export function mergeMemberProgress(
   const rows = ONBOARDING_REGISTRY.map((chapter): MemberChapterProgress => {
     const left = serverRows.get(chapter.id) ?? emptyChapter(chapter.id);
     const right = clientRows.get(chapter.id) ?? emptyChapter(chapter.id);
-    const observedCompleteAt = earlier(left.observedCompleteAt, right.observedCompleteAt);
     const invalidatedAt = later(left.invalidatedAt, right.invalidatedAt);
+    const observedCompleteAt = earliestProofAfterInvalidation(
+      left.observedCompleteAt,
+      right.observedCompleteAt,
+      invalidatedAt,
+    );
     const evidenceCandidates = [left, right]
       .filter((row) => row.observedCompleteAt === observedCompleteAt && row.probeEvidenceKey)
       .map((row) => row.probeEvidenceKey as string)
@@ -332,7 +346,7 @@ export function mergeMemberProgress(
       chapterId: chapter.id,
       observedCompleteAt,
       probeEvidenceKey: observedCompleteAt ? evidenceCandidates[0] ?? null : null,
-      skippedAt: earlier(left.skippedAt, right.skippedAt),
+      skippedAt: earliestProofAfterInvalidation(left.skippedAt, right.skippedAt, invalidatedAt),
       personalAccountSetupSkippedAt: earlier(
         left.personalAccountSetupSkippedAt,
         right.personalAccountSetupSkippedAt,
@@ -346,7 +360,7 @@ export function mergeMemberProgress(
             : server.updatedAt > client.updatedAt
               ? left.lastSafeResumePoint
               : later(left.lastSafeResumePoint, right.lastSafeResumePoint),
-      acknowledgedAt: earlier(left.acknowledgedAt, right.acknowledgedAt),
+      acknowledgedAt: earliestProofAfterInvalidation(left.acknowledgedAt, right.acknowledgedAt, invalidatedAt),
       invalidatedAt,
     };
   });

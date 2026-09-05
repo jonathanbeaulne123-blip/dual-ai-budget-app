@@ -4,6 +4,7 @@ import {
   acceptedHouseholdOnboarding,
   approvalsFor,
   catalogHousehold,
+  chapterProgressSatisfied,
   completeSyntheticDemoOnboarding,
   copy,
   confirmHouseholdOnboarding,
@@ -38,13 +39,18 @@ function completed(): Household {
   });
 }
 
-function resolvedFor(household: Household, memberId: string, partnerId: string): HouseholdScopeObservation {
+function resolvedFor(
+  household: Household,
+  memberId: string,
+  partnerId: string,
+  observedAt = "2026-09-30T12:05:00.000Z",
+): Extract<HouseholdScopeObservation, { kind: "resolved" }> {
   return {
     kind: "resolved",
     scope: { environment: household.environment, householdId: household.householdId, memberId },
     currentMemberId: memberId,
     seatMemberIds: [memberId, partnerId].sort(),
-    observedAt: "2026-09-30T12:05:00.000Z",
+    observedAt,
   };
 }
 
@@ -164,6 +170,18 @@ describe("onboarding lifecycle", () => {
     const converged = mergeMemberProgress(oldReplica, refreshed);
     const ch3 = converged.rows.find((row) => row.chapterId === "ch-03-charter")!;
     expect(ch3.invalidatedAt).toBe("2026-09-30T12:20:00.000Z");
+
+    household = recordObservedChapterCompletion(household, {
+      memberId: BIANCA,
+      createdBy: BIANCA,
+      chapterId: "ch-02-household",
+      observation: resolvedFor(household, BIANCA, JONATHAN, "2026-09-30T12:22:00.000Z"),
+      at: "2026-09-30T12:22:00.000Z",
+    }).household;
+    const reprobed = mergeMemberProgress(oldReplica, memberProgress(household, BIANCA));
+    const ch2 = reprobed.rows.find((row) => row.chapterId === "ch-02-household")!;
+    expect(ch2.observedCompleteAt).toBe("2026-09-30T12:22:00.000Z");
+    expect(chapterProgressSatisfied(ch2)).toBe(true);
   });
 
   it("routes version changes to repair and fails closed on an unknown chapter id", () => {

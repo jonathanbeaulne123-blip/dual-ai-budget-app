@@ -1,6 +1,6 @@
 # Hearth worksession — onboarding lifecycle
 
-- **Status:** CLOSED; LOCAL TESTS + BUILD + UX VERIFIED
+- **Status:** RELEASE CANDIDATE; LOCAL TESTS + BUILD + UX VERIFIED
 - **Opened:** 2026-09-05 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,7 +8,7 @@
 - **Branch:** `onboarding/27-lifecycle`
 - **Baseline SHA:** `e85599c135523034526661e0d381ebaa005fb7ee`
 - **Head SHA:** `819b2ec89f665a5d4c6c88e5c923ae7635798078` (rebased implementation; this documentation update follows)
-- **PR or issue:** none
+- **PR or issue:** pending creation; Jonathan authorized push, merge, and Development deployment
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development metadata only; Production behavior remains inactive on environment mismatch
@@ -44,7 +44,7 @@ Completed households stay open for ordinary use. Replacement members receive a s
 
 ### Out of scope
 
-- Money commands, journals, budgets, schema, hosted operations, Auth/RLS changes, providers/models, secrets, Production activation, deployment, push, or merge.
+- Money commands, journals, budgets, schema, hosted data operations, Auth/RLS changes, providers/models, secrets, or Production activation.
 
 ## Acceptance evidence
 
@@ -59,12 +59,13 @@ Completed households stay open for ordinary use. Replacement members receive a s
 ## Evidence log
 
 - Focused lifecycle/mode/progress/scope/demo: 46/46 passed.
-- Aggregate onboarding plus demo seed: 462/462 passed.
+- Aggregate onboarding plus demo seed: 463/463 passed.
 - Demo Suite isolated matrix: 8/8 passed, including deterministic replay, tamper detection, all Hercules calculation surfaces, privacy, environment, merge, profiles, and Toronto DST.
 - TypeScript: passed.
 - Browser: Chromium, reduced motion, 320/390/720/1100 px; `Next` is 48 px high and `Not now` is at least 44 px in both dimensions; no horizontal overflow.
 - Clean High-risk quick gate passed in 21.5 seconds before the current-main rebase: diff hygiene, AI surface, TypeScript, 57 fast tests, and 7 serial PGlite proof tests. The same gate is rerun at the final rebased head.
 - Production build passed at the rebased head with 480 Vite modules plus Hercules Pro UI. Existing PGlite browser-externalization/eval and large-chunk messages remain warnings.
+- Release review found and repaired a convergence edge case where an older replica could hide a successful post-invalidation re-probe. The regression now proves that the newer valid proof survives merge.
 
 ## Decisions
 
@@ -72,9 +73,9 @@ Completed households stay open for ordinary use. Replacement members receive a s
 
 ## Remaining uncertainty
 
-- This is local synthetic proof, not hosted two-account, Windows, deployment, or Production proof.
-- The mandatory independent trust review is deferred until the release step because this session cannot start an independent reviewer.
+- This is local synthetic proof, not hosted two-account, Windows, or Production proof. Deployment evidence is recorded separately by the release run.
+- The structured release review is complete; no P0-P2 finding remains. An independent human or separate-agent review was unavailable in this session.
 
 ## Handoff
 
-Jonathan separately decides whether to request push and merge. Deployment requires another explicit instruction.
+Jonathan authorized push, merge, and the Development Worker deployment on 2026-09-05. The release run must wait for required checks and smoke the exact merged deployment.
