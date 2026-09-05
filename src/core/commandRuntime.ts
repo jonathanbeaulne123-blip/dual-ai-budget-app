@@ -33,6 +33,7 @@ import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import { assertOnboardingSubmissionTransition, currentSubmission } from "./onboarding/submissions.ts";
 import { assertOnboardingEstimateSubmissionScope } from "./onboarding/estimates.ts";
 import { assertOnboardingCategoryMergeTransition } from "./onboarding/categories.ts";
+import { assertOnboardingApprovalTransition } from "./onboarding/approvals.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError, ValidationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
@@ -297,6 +298,17 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         postedIds,
       });
     }
+    const isOnboardingApprovalCommand = input.commandKind === "approveOnboardingProposal"
+      || input.commandKind === "approveOnboardingReady";
+    const onboardingApprovalStateChanged = JSON.stringify(previous?.onboardingApprovals ?? [])
+      !== JSON.stringify(candidate.onboardingApprovals ?? []);
+    if (isOnboardingApprovalCommand || onboardingApprovalStateChanged) {
+      assertOnboardingApprovalTransition(previous, candidate, {
+        actorMemberId: input.actingMemberId,
+        commandKind: input.commandKind,
+        postedIds,
+      });
+    }
     const candidateCompiled = measureHearthSync(
       "hearth:command:compile",
       () => assertAcceptableBooks(candidate),
@@ -343,6 +355,11 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
                   onboardingCategoryMerges: (accepted.onboardingCategoryMerges ?? [])
                     .filter((row) => postedIds.includes(row.id)),
                   categories: accepted.categories.filter((row) => postedIds.includes(row.id)),
+                }))
+              : input.commandKind === "approveOnboardingProposal" || input.commandKind === "approveOnboardingReady"
+                ? await sha256Hex(commandMaterializationFacts({
+                  onboardingApprovals: (accepted.onboardingApprovals ?? [])
+                    .filter((row) => postedIds.includes(row.id)),
                 }))
             : undefined,
       postedIds,

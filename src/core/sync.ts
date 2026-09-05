@@ -65,6 +65,7 @@ import {
   mergeMemberProgress,
   shapeMemberOnboardingProgress,
 } from "./onboarding/progress.ts";
+import { mergeOnboardingApprovals, shapeOnboardingApprovals } from "./onboarding/approvals.ts";
 
 export type { PersonalEnvelope, SharedEnvelope };
 
@@ -363,6 +364,7 @@ export function ensureHouseholdShape(household: Household): Household {
     onboardingSubmissions: shapeOnboardingSubmissions(household.onboardingSubmissions, household.householdId),
     onboardingCategoryProposals: shapeOnboardingCategoryProposals(household.onboardingCategoryProposals, household.householdId),
     onboardingCategoryMerges: shapeOnboardingCategoryMerges(household.onboardingCategoryMerges, household.householdId),
+    onboardingApprovals: shapeOnboardingApprovals(household.onboardingApprovals, household.householdId),
     charter: shapeHouseholdCharter(household.charter, { members, householdFund }),
     householdFund,
     fundMonthPlans: shapeHouseholdFundMonthPlans(household.fundMonthPlans),
@@ -503,6 +505,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     onboardingSubmissions: shaped.onboardingSubmissions ?? [],
     onboardingCategoryProposals: shaped.onboardingCategoryProposals ?? [],
     onboardingCategoryMerges: shaped.onboardingCategoryMerges ?? [],
+    onboardingApprovals: shaped.onboardingApprovals ?? [],
     charter: shaped.charter ?? null,
     householdFund: shaped.householdFund ?? null,
     fundMonthPlans: shaped.fundMonthPlans ?? [],
@@ -897,6 +900,7 @@ export function assembleHousehold(
     onboardingSubmissions: shapeOnboardingSubmissions(shared.onboardingSubmissions, shared.householdId),
     onboardingCategoryProposals: shapeOnboardingCategoryProposals(shared.onboardingCategoryProposals, shared.householdId),
     onboardingCategoryMerges: shapeOnboardingCategoryMerges(shared.onboardingCategoryMerges, shared.householdId),
+    onboardingApprovals: shapeOnboardingApprovals(shared.onboardingApprovals, shared.householdId),
     charter: shared.charter ?? null,
     householdFund: shared.householdFund ?? null,
     fundMonthPlans: shared.fundMonthPlans ?? [],
@@ -954,6 +958,10 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     server.onboardingCategoryMerges,
     client.onboardingCategoryMerges,
   ).filter((row) => row.householdId === (server.householdId || client.householdId));
+  const onboardingApprovals = mergeOnboardingApprovals(
+    server.onboardingApprovals,
+    client.onboardingApprovals,
+  ).filter((row) => row.householdId === (server.householdId || client.householdId));
   const charter = mergeHouseholdCharters(server.charter, client.charter, { members, householdFund });
   return {
     kind: "shared",
@@ -982,6 +990,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     onboardingSubmissions,
     onboardingCategoryProposals,
     onboardingCategoryMerges,
+    onboardingApprovals,
     charter,
     householdFund,
     fundMonthPlans: mergeRecords(server.fundMonthPlans ?? [], client.fundMonthPlans ?? [], tombstones),

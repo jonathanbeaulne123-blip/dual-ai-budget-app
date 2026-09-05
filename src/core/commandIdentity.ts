@@ -24,6 +24,7 @@ export function commandMaterializationFacts(input: {
   onboardingSubmissions?: Household["onboardingSubmissions"];
   onboardingCategoryProposals?: Household["onboardingCategoryProposals"];
   onboardingCategoryMerges?: Household["onboardingCategoryMerges"];
+  onboardingApprovals?: Household["onboardingApprovals"];
   categories?: Category[];
 }): unknown {
   return stable({
@@ -33,6 +34,7 @@ export function commandMaterializationFacts(input: {
     ...(input.onboardingSubmissions?.length ? { onboardingSubmissions: byId(input.onboardingSubmissions) } : {}),
     ...(input.onboardingCategoryProposals?.length ? { onboardingCategoryProposals: byId(input.onboardingCategoryProposals) } : {}),
     ...(input.onboardingCategoryMerges?.length ? { onboardingCategoryMerges: byId(input.onboardingCategoryMerges) } : {}),
+    ...(input.onboardingApprovals?.length ? { onboardingApprovals: byId(input.onboardingApprovals) } : {}),
     ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
   });
 }
@@ -226,6 +228,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const onboardingSubmissions = (next.onboardingSubmissions ?? []).filter((row) => posted.has(row.id));
   const onboardingCategoryProposals = (next.onboardingCategoryProposals ?? []).filter((row) => posted.has(row.id));
   const onboardingCategoryMerges = (next.onboardingCategoryMerges ?? []).filter((row) => posted.has(row.id));
+  const onboardingApprovals = (next.onboardingApprovals ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -300,6 +303,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     onboardingSubmissions,
     onboardingCategoryProposals,
     onboardingCategoryMerges,
+    onboardingApprovals,
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.

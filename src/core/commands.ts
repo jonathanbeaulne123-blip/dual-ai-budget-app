@@ -195,6 +195,13 @@ import {
 } from "./onboarding/categories.ts";
 import { assertOnboardingEstimateScope } from "./onboarding/estimates.ts";
 import {
+  OWN_ONBOARDING_APPROVAL_COPY,
+  normalizeOnboardingApprovalDigest,
+  onboardingApprovalSummary,
+  shapeOnboardingApprovals,
+  type OnboardingApprovalScope,
+} from "./onboarding/approvals.ts";
+import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
   hasPostedOpeningTruth,
@@ -803,6 +810,55 @@ export function submitOnboardingEstimates(household: Household, input: {
   const estimates = normalizeSubmissionEstimates(input.estimates);
   const categoryIds = assertOnboardingEstimateScope(household, estimates);
   return appendOnboardingSubmission(household, input, { kind: "estimates", categoryIds, estimates });
+}
+
+function appendOnboardingApproval(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  digest: string;
+}, scope: OnboardingApprovalScope): CommitResult {
+  const member = household.members.find((candidate) => candidate.active && candidate.id === input.memberId);
+  const actor = household.members.find((candidate) => candidate.active && candidate.id === input.createdBy);
+  if (!member || !actor || member.id !== actor.id) throw new ValidationError(OWN_ONBOARDING_APPROVAL_COPY);
+  const digest = normalizeOnboardingApprovalDigest(input.digest);
+  const approvals = shapeOnboardingApprovals(household.onboardingApprovals, household.householdId);
+  const approvedAt = nowIso();
+  const id = nextId("ONB-APP-", approvals.map((row) => row.id));
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.onboardingApprovals = [...approvals, {
+    id,
+    householdId: household.householdId,
+    memberId: member.id,
+    scope,
+    digest,
+    approvedAt,
+  }];
+  return commit(
+    previous,
+    next,
+    "Onboarding approval",
+    onboardingApprovalSummary(member.name, scope),
+    [id],
+    [],
+    scope === "proposal" ? "approveOnboardingProposal" : "approveOnboardingReady",
+  );
+}
+
+export function approveOnboardingProposal(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  digest: string;
+}): CommitResult {
+  return appendOnboardingApproval(household, input, "proposal");
+}
+
+export function approveOnboardingReady(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  digest: string;
+}): CommitResult {
+  return appendOnboardingApproval(household, input, "ready");
 }
 
 function requireOpenPeriod(household: Household, date: DateKey): void {

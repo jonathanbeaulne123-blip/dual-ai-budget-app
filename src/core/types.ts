@@ -1271,6 +1271,8 @@ export type Household = {
   onboardingCategoryProposals?: import("./onboarding/categories.ts").OnboardingCategoryProposal[];
   /** Reviewed mappings from submitted ideas to the canonical category catalog. */
   onboardingCategoryMerges?: import("./onboarding/categories.ts").OnboardingCategoryMerge[];
+  /** Append-only, self-owned approvals of exact onboarding meaning digests. */
+  onboardingApprovals?: import("./onboarding/approvals.ts").OnboardingApproval[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -1342,6 +1344,8 @@ export type SharedEnvelope = {
   onboardingCategoryProposals?: import("./onboarding/categories.ts").OnboardingCategoryProposal[];
   /** Reviewed Chapter 9 category merge records. */
   onboardingCategoryMerges?: import("./onboarding/categories.ts").OnboardingCategoryMerge[];
+  /** Shared approval history; each record belongs to its approving member. */
+  onboardingApprovals?: import("./onboarding/approvals.ts").OnboardingApproval[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];

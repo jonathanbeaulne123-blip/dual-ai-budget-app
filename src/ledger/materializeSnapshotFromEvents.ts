@@ -30,6 +30,12 @@ import {
   type OnboardingCategoryMerge,
   type OnboardingCategoryProposal,
 } from "../core/onboarding/categories.ts";
+import {
+  mergeOnboardingApprovals,
+  shapeOnboardingApprovals,
+  type OnboardingApproval,
+  type OnboardingApprovalScope,
+} from "../core/onboarding/approvals.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { advanceCadence } from "../core/recurrence.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
@@ -86,6 +92,7 @@ export type ContinuityMaterializationFacts = {
   onboardingSubmissions?: OnboardingSubmission[];
   onboardingCategoryProposals?: OnboardingCategoryProposal[];
   onboardingCategoryMerges?: OnboardingCategoryMerge[];
+  onboardingApprovals?: OnboardingApproval[];
   categories?: Category[];
   charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
@@ -196,35 +203,176 @@ function receiptFromPayload(payload: ContinuityCommandEventPayload): CommandRece
   };
 }
 
+function readableCompactedCommands(
+  event: ContinuityCommandEvent,
+): NonNullable<ContinuityCommandEventPayload["compactedCommands"]> {
+  const value: unknown = event.payload_json.compactedCommands;
+  if (!Array.isArray(value)) return [];
+  return value.filter((row): row is NonNullable<ContinuityCommandEventPayload["compactedCommands"]>[number] => (
+    Boolean(row) && typeof row === "object" && !Array.isArray(row)
+  ));
+}
+
+function validCommandEnvelope(event: ContinuityCommandEvent): boolean {
+  const postedIds: unknown = event.payload_json.postedIds;
+  if (!Array.isArray(postedIds)
+    || postedIds.some((id) => typeof id !== "string" || !id || id.trim() !== id)
+    || new Set(postedIds).size !== postedIds.length) return false;
+  const commands: unknown = event.payload_json.compactedCommands;
+  const confirmations: unknown = event.payload_json.compactedConfirmationIds;
+  if (commands === undefined && confirmations === undefined) return true;
+  if (!Array.isArray(commands) || !Array.isArray(confirmations)) return false;
+  const allowedDescriptorKeys = new Set([
+    "confirmationId", "commandKind", "ledgerScope", "materializationHash", "postedIds",
+  ]);
+  return commands.every((candidate) => {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return false;
+    const row = candidate as Record<string, unknown>;
+    return Object.keys(row).every((key) => allowedDescriptorKeys.has(key))
+      && typeof row.confirmationId === "string"
+      && typeof row.commandKind === "string"
+      && (row.ledgerScope === "shared" || row.ledgerScope === "personal")
+      && Array.isArray(row.postedIds)
+      && row.postedIds.every((id) => typeof id === "string" && Boolean(id) && id.trim() === id)
+      && (row.materializationHash === undefined || typeof row.materializationHash === "string");
+  }) && confirmations.every(
+    (id) => typeof id === "string" && Boolean(id) && id.trim() === id,
+  );
+}
+
 function eventDeclaresMonthRehearsalUpdate(event: ContinuityCommandEvent): boolean {
   if (event.payload_json.commandKind !== event.command_type) return false;
   return event.command_type === "updateMonthRehearsal"
-    || event.payload_json.compactedCommands?.some(
+    || readableCompactedCommands(event).some(
       (row) => row.commandKind === "updateMonthRehearsal" && row.ledgerScope === "shared",
-    ) === true;
+    );
 }
 
 function eventDeclaresAskGoalMove(event: ContinuityCommandEvent): boolean {
   if (event.payload_json.commandKind !== event.command_type) return false;
   return event.command_type === "moveAskGoalClaimToNextMonth"
-    || event.payload_json.compactedCommands?.some(
+    || readableCompactedCommands(event).some(
       (row) => row.commandKind === "moveAskGoalClaimToNextMonth" && row.ledgerScope === "shared",
-    ) === true;
+    );
 }
 
 function eventContainsOnboardingSubmissionCommand(event: ContinuityCommandEvent): boolean {
   const kinds = new Set(["submitOnboardingCategories", "submitOnboardingEstimates"]);
   return kinds.has(event.command_type)
-    || event.payload_json.compactedCommands?.some(
+    || readableCompactedCommands(event).some(
       (row) => row.ledgerScope === "shared" && kinds.has(row.commandKind),
-    ) === true;
+    );
 }
 
 function eventContainsOnboardingCategoryMerge(event: ContinuityCommandEvent): boolean {
   return event.command_type === "mergeOnboardingCategories"
-    || event.payload_json.compactedCommands?.some(
+    || readableCompactedCommands(event).some(
       (row) => row.ledgerScope === "shared" && row.commandKind === "mergeOnboardingCategories",
-    ) === true;
+    );
+}
+
+function onboardingApprovalScope(commandKind: string): OnboardingApprovalScope | null {
+  return commandKind === "approveOnboardingProposal"
+    ? "proposal"
+    : commandKind === "approveOnboardingReady"
+      ? "ready"
+      : null;
+}
+
+function eventContainsOnboardingApproval(event: ContinuityCommandEvent): boolean {
+  return onboardingApprovalScope(event.command_type) !== null
+    || readableCompactedCommands(event).some(
+      (row) => Boolean(row)
+        && typeof row === "object"
+        && row.ledgerScope === "shared"
+        && onboardingApprovalScope(row.commandKind) !== null,
+    );
+}
+
+async function actorMayApplyOnboardingApprovals(
+  local: Household,
+  event: ContinuityCommandEvent,
+  incoming: OnboardingApproval[],
+): Promise<boolean> {
+  if (event.ledger_scope !== "shared") return false;
+  if (!local.members.some((row) => row.active && row.id === event.member_id)) return false;
+  if (event.payload_json.commandKind !== event.command_type
+    || event.payload_json.confirmationId !== event.confirmation_id
+    || event.payload_json.identityHash !== event.identity_hash
+    || event.payload_json.revision !== event.result_revision) return false;
+  const rawCompactedCommands: unknown = event.payload_json.compactedCommands;
+  const rawConfirmations: unknown = event.payload_json.compactedConfirmationIds;
+  if (rawCompactedCommands !== undefined) {
+    if (!Array.isArray(rawCompactedCommands) || !Array.isArray(rawConfirmations)) return false;
+    const allowedDescriptorKeys = new Set([
+      "confirmationId", "commandKind", "ledgerScope", "materializationHash", "postedIds",
+    ]);
+    if (rawCompactedCommands.some((candidate) => {
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return true;
+      const row = candidate as Record<string, unknown>;
+      return Object.keys(row).some((key) => !allowedDescriptorKeys.has(key))
+        || typeof row.confirmationId !== "string"
+        || typeof row.commandKind !== "string"
+        || (row.ledgerScope !== "shared" && row.ledgerScope !== "personal")
+        || !Array.isArray(row.postedIds)
+        || row.postedIds.some((id) => typeof id !== "string" || !id || id.trim() !== id)
+        || (row.materializationHash !== undefined && typeof row.materializationHash !== "string");
+    })) return false;
+    const compactedCommands = rawCompactedCommands as NonNullable<ContinuityCommandEventPayload["compactedCommands"]>;
+    const confirmations = rawConfirmations as string[];
+    const descriptorIds = compactedCommands.map((row) => row.confirmationId);
+    if (descriptorIds.some((id) => !id || id.trim() !== id)
+      || confirmations.some((id) => typeof id !== "string" || !id || id.trim() !== id)
+      || new Set(descriptorIds).size !== descriptorIds.length
+      || new Set(confirmations).size !== confirmations.length
+      || descriptorIds.length !== confirmations.length
+      || descriptorIds.some((id) => !confirmations.includes(id))
+      || !compactedCommands.some((row) => (
+        row.confirmationId === event.confirmation_id
+        && row.commandKind === event.command_type
+        && row.ledgerScope === event.ledger_scope
+      ))) return false;
+  } else if (rawConfirmations !== undefined) {
+    return false;
+  }
+  const compactedCommands = rawCompactedCommands as ContinuityCommandEventPayload["compactedCommands"];
+  const commands = compactedCommands?.filter(
+    (row) => row.ledgerScope === "shared" && onboardingApprovalScope(row.commandKind) !== null,
+  ) ?? (onboardingApprovalScope(event.command_type)
+    ? [{
+        confirmationId: event.confirmation_id,
+        commandKind: event.command_type,
+        postedIds: event.payload_json.postedIds,
+        ledgerScope: "shared" as const,
+        materializationHash: event.payload_json.materializationHash,
+      }]
+    : []);
+  if (!commands.length) return false;
+  const byId = new Map(incoming.map((row) => [row.id, row]));
+  const localIds = new Set(shapeOnboardingApprovals(
+    local.onboardingApprovals,
+    local.householdId,
+  ).map((row) => row.id));
+  if (incoming.some((row) => localIds.has(row.id))) return false;
+  const declared = new Set<string>();
+  for (const command of commands) {
+    const scope = onboardingApprovalScope(command.commandKind);
+    const ids = [...new Set(command.postedIds)];
+    if (!scope || command.postedIds.length !== 1 || ids.length !== 1) return false;
+    const row = byId.get(ids[0]!);
+    if (!row
+      || row.householdId !== event.household_id
+      || row.memberId !== event.member_id
+      || row.scope !== scope
+      || declared.has(row.id)
+      || !command.materializationHash
+      || await sha256Hex(commandMaterializationFacts({ onboardingApprovals: [row] }))
+        !== command.materializationHash) return false;
+    declared.add(row.id);
+  }
+  const aggregatePostedIds = new Set(event.payload_json.postedIds);
+  return incoming.length === declared.size
+    && incoming.every((row) => declared.has(row.id) && aggregatePostedIds.has(row.id));
 }
 
 function actorMayApplyOnboardingSubmissions(
@@ -236,18 +384,21 @@ function actorMayApplyOnboardingSubmissions(
   if (event.ledger_scope !== "shared") return false;
   if (!local.members.some((row) => row.active && row.id === event.member_id)) return false;
   if (event.payload_json.commandKind !== event.command_type) return false;
-  const commands = event.payload_json.compactedCommands?.filter(
-    (row) => row.ledgerScope === "shared"
-      && (row.commandKind === "submitOnboardingCategories" || row.commandKind === "submitOnboardingEstimates"),
-  ) ?? (event.command_type === "submitOnboardingCategories" || event.command_type === "submitOnboardingEstimates"
-    ? [{
-      confirmationId: event.confirmation_id,
-      commandKind: event.command_type,
-      postedIds: event.payload_json.postedIds,
-      ledgerScope: "shared" as const,
-      materializationHash: event.payload_json.materializationHash,
-    }]
-    : []);
+  const hasCompactedCommands = event.payload_json.compactedCommands !== undefined;
+  const commands = hasCompactedCommands
+    ? readableCompactedCommands(event).filter(
+      (row) => row.ledgerScope === "shared"
+        && (row.commandKind === "submitOnboardingCategories" || row.commandKind === "submitOnboardingEstimates"),
+    )
+    : (event.command_type === "submitOnboardingCategories" || event.command_type === "submitOnboardingEstimates"
+      ? [{
+        confirmationId: event.confirmation_id,
+        commandKind: event.command_type,
+        postedIds: event.payload_json.postedIds,
+        ledgerScope: "shared" as const,
+        materializationHash: event.payload_json.materializationHash,
+      }]
+      : []);
   if (!commands.length) return false;
   try {
     const combined = mergeSubmissions(local.onboardingSubmissions, incoming);
@@ -302,7 +453,7 @@ function actorMayApplyAskGoalRecurrences(
   if (!actor || local.householdFund?.custodianMemberId === actor.id) return false;
   const posted = new Set([
     ...event.payload_json.postedIds,
-    ...(event.payload_json.compactedCommands ?? [])
+    ...readableCompactedCommands(event)
       .filter((row) => row.commandKind === "moveAskGoalClaimToNextMonth" && row.ledgerScope === "shared")
       .flatMap((row) => row.postedIds),
   ]);
@@ -366,7 +517,7 @@ function actorMayApplyHouseholdOnboarding(
     || incoming.registryVersion !== ONBOARDING_REGISTRY_VERSION) return false;
   const commandKinds = [
     event.command_type,
-    ...(event.payload_json.compactedCommands ?? [])
+    ...readableCompactedCommands(event)
       .filter((row) => row.ledgerScope === "shared" && row.postedIds.includes(incoming.id))
       .map((row) => row.commandKind),
   ];
@@ -383,7 +534,7 @@ function stampCommands(event: ContinuityCommandEvent): Array<{
   materializationHash?: string;
 }> {
   if (event.payload_json.commandKind !== event.command_type) return [];
-  const compacted = event.payload_json.compactedCommands?.filter(
+  const compacted = readableCompactedCommands(event).filter(
     (row) => row.commandKind === "stampWeeklyDocument" && row.ledgerScope === "shared",
   ) ?? [];
   if (compacted.length) return compacted;
@@ -479,6 +630,10 @@ function filterFactsForScope(
       scoped.onboardingCategoryMerges = shapeOnboardingCategoryMerges(facts.onboardingCategoryMerges)
         .filter((row) => row.householdId === event.household_id && row.mergedByMemberId === event.member_id);
     }
+    if (facts.onboardingApprovals?.length) {
+      scoped.onboardingApprovals = shapeOnboardingApprovals(facts.onboardingApprovals)
+        .filter((row) => row.householdId === event.household_id && row.memberId === event.member_id);
+    }
     if (facts.charter) scoped.charter = facts.charter;
     if (facts.householdFund) scoped.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) scoped.fundMonthPlans = facts.fundMonthPlans;
@@ -562,6 +717,11 @@ export function extractMaterializationFacts(
       household.householdId,
     ).filter((row) => posted.has(row.id) && (!memberId || row.mergedByMemberId === memberId));
     if (onboardingCategoryMerges.length) facts.onboardingCategoryMerges = onboardingCategoryMerges;
+    const onboardingApprovals = shapeOnboardingApprovals(
+      household.onboardingApprovals,
+      household.householdId,
+    ).filter((row) => posted.has(row.id) && (!memberId || row.memberId === memberId));
+    if (onboardingApprovals.length) facts.onboardingApprovals = onboardingApprovals;
     if (household.charter && postedIds.some((id) => id.startsWith("CHARTER-"))) {
       facts.charter = household.charter;
     }
@@ -647,6 +807,10 @@ async function applyEvent(
     snapshot.onboardingCategoryMerges,
     facts.onboardingCategoryMerges,
   ).filter((row) => row.householdId === snapshot.householdId);
+  const onboardingApprovals = mergeOnboardingApprovals(
+    snapshot.onboardingApprovals,
+    facts.onboardingApprovals,
+  ).filter((row) => row.householdId === snapshot.householdId);
   const charter = facts.charter
     ? shapeHouseholdCharter(facts.charter, { members: snapshot.members, householdFund })
     : snapshot.charter;
@@ -668,6 +832,7 @@ async function applyEvent(
     onboardingSubmissions,
     onboardingCategoryProposals,
     onboardingCategoryMerges,
+    onboardingApprovals,
     charter,
     householdFund,
     fundMonthPlans: [...planMap.values()],
@@ -711,6 +876,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     onboardingSubmissions: [],
     onboardingCategoryProposals: [],
     onboardingCategoryMerges: [],
+    onboardingApprovals: [],
     charter: null,
     householdFund: null,
     fundMonthPlans: [],
@@ -830,6 +996,9 @@ export async function applyCommandEventLocally(input: {
   if (event.environment !== local.environment) {
     return { ok: false, reason: "environment-mismatch", fallback: true };
   }
+  if (!validCommandEnvelope(event)) {
+    return { ok: false, reason: "malformed-command-envelope", fallback: true };
+  }
   if (!commandEventVisibleToMember(event, input.memberId)) {
     return { ok: false, reason: "personal-scope-hidden", fallback: false };
   }
@@ -854,6 +1023,7 @@ export async function applyCommandEventLocally(input: {
   const rawIncomingSubmissions = event.payload_json.materializationFacts.onboardingSubmissions;
   const rawIncomingCategoryProposals = event.payload_json.materializationFacts.onboardingCategoryProposals;
   const rawIncomingCategoryMerges = event.payload_json.materializationFacts.onboardingCategoryMerges;
+  const rawIncomingApprovals = event.payload_json.materializationFacts.onboardingApprovals;
   const rawIncomingCategories = event.payload_json.materializationFacts.categories;
   const incomingCategories = Array.isArray(rawIncomingCategories) ? rawIncomingCategories : [];
   let incomingSubmissions: OnboardingSubmission[];
@@ -871,6 +1041,12 @@ export async function applyCommandEventLocally(input: {
   }
   const incomingCategoryProposals = shapeOnboardingCategoryProposals(rawIncomingCategoryProposals);
   const incomingCategoryMerges = shapeOnboardingCategoryMerges(rawIncomingCategoryMerges);
+  let incomingApprovals: OnboardingApproval[];
+  try {
+    incomingApprovals = shapeOnboardingApprovals(rawIncomingApprovals);
+  } catch {
+    return { ok: false, reason: "onboarding-approval-invalid", fallback: true };
+  }
   if (rawIncomingCategoryProposals && (!Array.isArray(rawIncomingCategoryProposals)
     || incomingCategoryProposals.length !== rawIncomingCategoryProposals.length)) {
     return { ok: false, reason: "onboarding-category-proposal-invalid", fallback: true };
@@ -878,6 +1054,17 @@ export async function applyCommandEventLocally(input: {
   if (rawIncomingCategoryMerges && (!Array.isArray(rawIncomingCategoryMerges)
     || incomingCategoryMerges.length !== rawIncomingCategoryMerges.length)) {
     return { ok: false, reason: "onboarding-category-merge-invalid", fallback: true };
+  }
+  if (rawIncomingApprovals && (!Array.isArray(rawIncomingApprovals)
+    || incomingApprovals.length !== rawIncomingApprovals.length)) {
+    return { ok: false, reason: "onboarding-approval-invalid", fallback: true };
+  }
+  if (incomingApprovals.length) {
+    try {
+      mergeOnboardingApprovals(local.onboardingApprovals, incomingApprovals);
+    } catch {
+      return { ok: false, reason: "onboarding-approval-history-conflict", fallback: true };
+    }
   }
   if (rawIncomingCategories && !Array.isArray(rawIncomingCategories)) {
     return { ok: false, reason: "onboarding-category-catalog-invalid", fallback: true };
@@ -933,6 +1120,9 @@ export async function applyCommandEventLocally(input: {
   if (eventContainsOnboardingSubmissionCommand(event) && incomingSubmissions.length === 0) {
     return { ok: false, reason: "onboarding-submission-missing", fallback: true };
   }
+  if (eventContainsOnboardingApproval(event) && incomingApprovals.length === 0) {
+    return { ok: false, reason: "onboarding-approval-missing", fallback: true };
+  }
   if (incomingRehearsals.length) {
     if (!actorMayApplyMonthRehearsals(local, event, incomingRehearsals)) {
       return { ok: false, reason: "month-rehearsal-authority-mismatch", fallback: true };
@@ -946,8 +1136,11 @@ export async function applyCommandEventLocally(input: {
     && !actorMayApplyOnboardingSubmissions(local, event, incomingSubmissions, incomingCategoryProposals)) {
     return { ok: false, reason: "onboarding-submission-authority-mismatch", fallback: true };
   }
+  if (incomingApprovals.length && !await actorMayApplyOnboardingApprovals(local, event, incomingApprovals)) {
+    return { ok: false, reason: "onboarding-approval-authority-mismatch", fallback: true };
+  }
   if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length
-    || incomingCategoryProposals.length || incomingCategoryMerges.length) {
+    || incomingCategoryProposals.length || incomingCategoryMerges.length || incomingApprovals.length) {
     const expected = await sha256Hex(commandMaterializationFacts({
       monthRehearsals: incomingRehearsals,
       recurrences: incomingRecurrences,
@@ -955,6 +1148,7 @@ export async function applyCommandEventLocally(input: {
       onboardingSubmissions: incomingSubmissions,
       onboardingCategoryProposals: incomingCategoryProposals,
       onboardingCategoryMerges: incomingCategoryMerges,
+      onboardingApprovals: incomingApprovals,
       categories: incomingCategories,
     }));
     const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
