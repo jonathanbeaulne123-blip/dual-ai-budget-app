@@ -95,6 +95,8 @@ type Props = {
   onOpenCategories?: () => void;
   /** Chapter 10 opens the private guessing flow on the existing Plan surface. */
   onOpenEstimates?: () => void;
+  /** Chapter 11 opens the shared derivation and self-owned approval flow. */
+  onOpenPlan?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -180,6 +182,7 @@ export function OnboardingChat({
   onOpenEarningCadence,
   onOpenCategories,
   onOpenEstimates,
+  onOpenPlan,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -427,8 +430,8 @@ export function OnboardingChat({
       ? copy("chapter.turn.conductor")
       : copy("chapter.turn.witness", { name: conductorName ?? "your partner" });
   const evidence = role === "conductor"
-    ? evidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation })
-    : witnessEvidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation });
+    ? evidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation, today })
+    : witnessEvidenceFor(household, chapter.id, memberId, { householdScope: householdScopeObservation, today });
 
   // A sitting boundary gets its own Hercules line ("Good place to stop.") but
   // no separate Pause button — the foot's stop link (rendered unconditionally
@@ -521,6 +524,8 @@ export function OnboardingChat({
     && evidence.kind !== "accepted";
   const estimatesNeedNavigation = chapterId === "ch-10-estimates"
     && evidence.kind !== "accepted";
+  const planNeedsNavigation = chapterId === "ch-11-plan"
+    && evidence.kind !== "accepted";
 
   const showAction = role === "conductor"
     && !blockedCopyKey
@@ -532,6 +537,7 @@ export function OnboardingChat({
     && !cadenceNeedsNavigation
     && !categoriesNeedNavigation
     && !estimatesNeedNavigation
+    && !planNeedsNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
@@ -561,7 +567,12 @@ export function OnboardingChat({
     && estimatesNeedNavigation
     && !blockedCopyKey
     && Boolean(onOpenEstimates);
-  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrenceAction || showCadenceAction || showCategoriesAction || showEstimatesAction
+  const showPlanAction = role === "conductor"
+    && chapterId === "ch-11-plan"
+    && planNeedsNavigation
+    && !blockedCopyKey
+    && Boolean(onOpenPlan);
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrenceAction || showCadenceAction || showCategoriesAction || showEstimatesAction || showPlanAction
     ? SHELL_VIEW.cardToAction
     : 0;
 
@@ -660,7 +671,7 @@ export function OnboardingChat({
           )}
         </>
       )}
-      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrencePrimaryAction || showCadenceAction || showCategoriesAction || showEstimatesAction ? (
+      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrencePrimaryAction || showCadenceAction || showCategoriesAction || showEstimatesAction || showPlanAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
@@ -684,6 +695,8 @@ export function OnboardingChat({
                       ? onOpenCategories
                     : showEstimatesAction
                       ? onOpenEstimates
+                    : showPlanAction
+                      ? onOpenPlan
                   : acknowledge}
           >
             {copy(showRetryAction
@@ -704,6 +717,8 @@ export function OnboardingChat({
                       ? "categories.open"
                     : showEstimatesAction
                       ? "estimates.open"
+                    : showPlanAction
+                      ? "proposal.open"
                   : "continue.next")}
           </button>
           {showPersonalSkipAction ? (

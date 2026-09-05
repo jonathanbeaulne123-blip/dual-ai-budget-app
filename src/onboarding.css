@@ -203,6 +203,421 @@
   }
 }
 
+.onboarding-first-plan {
+  width: min(100%, 900px);
+  margin-inline: auto;
+  padding: clamp(18px, 4vw, 34px);
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--pine) 5%, transparent), transparent 42%),
+    var(--card);
+}
+
+.onboarding-first-plan-header {
+  display: block !important;
+  max-width: 650px;
+}
+
+.onboarding-first-plan .kicker {
+  color: var(--pine);
+}
+
+.onboarding-first-plan-header h2,
+.onboarding-first-plan-header p,
+.onboarding-plan-row h3,
+.onboarding-plan-row dl,
+.onboarding-plan-total p,
+.onboarding-plan-approvals h3,
+.onboarding-plan-approvals p,
+.onboarding-plan-editor h3,
+.onboarding-plan-editor p,
+.onboarding-plan-outcome p {
+  margin: 0;
+}
+
+.onboarding-first-plan-header h2 {
+  margin-top: 4px;
+  font-family: var(--display);
+  font-size: clamp(27px, 5vw, 40px);
+  line-height: 1.08;
+}
+
+.onboarding-first-plan-header h2:focus {
+  outline: none;
+}
+
+.onboarding-first-plan-header h2:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 4px;
+}
+
+.onboarding-first-plan-header > p:last-child {
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.onboarding-plan-runrate,
+.onboarding-plan-version,
+.onboarding-plan-outcome {
+  margin: 22px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--copper);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--paper-2) 78%, var(--card));
+  line-height: 1.5;
+}
+
+.onboarding-plan-version,
+.onboarding-plan-outcome.is-adopted {
+  border-left-color: var(--pine);
+}
+
+.onboarding-plan-outcome.is-failed {
+  border-left-color: var(--negative, var(--copper));
+}
+
+.onboarding-plan-outcome p + p {
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.onboarding-plan-rows {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.onboarding-plan-row {
+  min-width: 0;
+  padding: clamp(16px, 3vw, 22px);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+
+.onboarding-first-plan .onboarding-plan-row > header {
+  display: flex !important;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.onboarding-plan-row h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--display);
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1.16;
+}
+
+.onboarding-plan-row > header div {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.onboarding-plan-row > header span,
+.onboarding-plan-total span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.onboarding-plan-row > header strong,
+.onboarding-plan-total > strong {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(22px, 4vw, 32px);
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-plan-derivation {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.onboarding-plan-fact {
+  min-width: 0;
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--paper-2);
+}
+
+.onboarding-plan-fact.is-wide {
+  grid-column: 1 / -1;
+}
+
+.onboarding-plan-fact dt {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.onboarding-plan-fact dd {
+  margin: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.onboarding-plan-fact.is-result dd {
+  font-size: 18px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-plan-member-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.onboarding-plan-member-inputs > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.onboarding-plan-member-inputs span span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.onboarding-plan-member-inputs strong {
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-plan-anchor {
+  display: block;
+}
+
+.onboarding-plan-anchor + .onboarding-plan-anchor {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+.onboarding-plan-anchor > span {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-plan-total {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid var(--pine);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--pine) 7%, var(--card));
+}
+
+.onboarding-plan-total p {
+  margin-top: 9px;
+  max-width: 62ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.onboarding-plan-edit,
+.onboarding-plan-actions button,
+.onboarding-plan-outcome button {
+  min-height: 48px;
+  min-width: 48px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.onboarding-plan-edit {
+  margin-top: 18px;
+}
+
+.onboarding-plan-edit:focus-visible,
+.onboarding-plan-actions button:focus-visible,
+.onboarding-plan-outcome button:focus-visible,
+.onboarding-plan-edit-fields input:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 3px;
+}
+
+.onboarding-plan-actions button.primary {
+  width: auto;
+  border-color: var(--pine);
+  background: var(--pine);
+  color: var(--paper);
+}
+
+.onboarding-plan-edit:disabled,
+.onboarding-plan-actions button:disabled,
+.onboarding-plan-outcome button:disabled {
+  cursor: wait;
+  opacity: .62;
+}
+
+.onboarding-plan-editor,
+.onboarding-plan-approvals {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.onboarding-plan-edit-warning {
+  margin-bottom: 14px !important;
+  padding: 12px 14px;
+  border-left: 4px solid var(--copper);
+  background: var(--paper-2);
+  line-height: 1.5;
+}
+
+.onboarding-plan-editor h3,
+.onboarding-plan-approvals h3 {
+  font-family: var(--display);
+  font-size: 22px;
+}
+
+.onboarding-plan-edit-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.onboarding-plan-edit-fields label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 650;
+}
+
+.onboarding-plan-edit-fields label > span {
+  overflow-wrap: anywhere;
+}
+
+.onboarding-plan-edit-fields input {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.onboarding-plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.onboarding-plan-approvals > p {
+  margin-top: 8px;
+  max-width: 62ch;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.onboarding-plan-approvals ul {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboarding-plan-approvals li {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: var(--paper-2);
+}
+
+.onboarding-plan-approvals li span {
+  overflow-wrap: anywhere;
+}
+
+.onboarding-plan-approvals li strong {
+  flex: 0 1 auto;
+  color: var(--muted);
+  text-align: right;
+}
+
+@media (max-width: 559px) {
+  .onboarding-first-plan .onboarding-plan-row > header {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .onboarding-plan-row > header div {
+    text-align: left;
+  }
+
+  .onboarding-plan-derivation,
+  .onboarding-plan-member-inputs,
+  .onboarding-plan-edit-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onboarding-plan-fact.is-wide {
+    grid-column: auto;
+  }
+
+  .onboarding-plan-actions,
+  .onboarding-plan-actions button,
+  .onboarding-plan-actions button.primary,
+  .onboarding-plan-edit,
+  .onboarding-plan-outcome button {
+    width: 100%;
+  }
+
+  .onboarding-plan-approvals li {
+    display: grid;
+  }
+
+  .onboarding-plan-approvals li strong {
+    text-align: left;
+  }
+}
+
+@media (forced-colors: active) {
+  .onboarding-plan-runrate,
+  .onboarding-plan-version,
+  .onboarding-plan-outcome,
+  .onboarding-plan-total,
+  .onboarding-plan-edit-warning {
+    border-color: CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-first-plan * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 .onboarding-category-card {
   width: min(100%, 760px);
   margin-inline: auto;

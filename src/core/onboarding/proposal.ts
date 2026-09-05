@@ -31,6 +31,13 @@ export type ProposalInput = {
 
 export type ProposalRow = ProposalInput & { proposedCents: number; basis: ProposalBasis };
 
+export type RecurrenceFloorPart = {
+  recurrenceId: string;
+  amountCents: number;
+  occurrenceDates: DateKey[];
+  totalCents: number;
+};
+
 export type ProposalSource = {
   categoryIds: string[];
   estimateSubmissions: Array<{
@@ -153,10 +160,15 @@ function sortedUniqueIds(values: readonly string[], label: string): string[] {
   return unique;
 }
 
-function recurringFloor(recurrences: readonly Recurrence[], subcategoryId: string, monthKey: MonthKey): number {
+/** The exact occurrence projection used by the frozen first-plan formula. */
+export function recurrenceFloorBreakdown(
+  recurrences: readonly Recurrence[],
+  subcategoryId: string,
+  monthKey: MonthKey,
+): RecurrenceFloorPart[] {
   const start = monthStartKey(monthKey);
   const end = monthEndKey(monthKey);
-  let total = 0;
+  const parts: RecurrenceFloorPart[] = [];
   for (const recurrence of recurrences) {
     if (recurrence.type !== "expense" || recurrence.subcategoryId !== subcategoryId) continue;
     let first = recurrence.nextDate;
@@ -171,18 +183,26 @@ function recurringFloor(recurrences: readonly Recurrence[], subcategoryId: strin
       first = next;
     }
     if (first < start) throw new ValidationError("Recurring obligation date is too far from the proposal month.");
-    let dates = projectCadence(first, recurrence.cadence, start, end);
-    let occurrences = dates.length;
-    while (dates.length === 24 && dates[23]! < end) {
-      const next = advanceCadence(dates[23]!, recurrence.cadence);
-      if (next <= dates[23]!) throw new ValidationError("Recurring obligation dates are invalid.");
-      dates = projectCadence(next, recurrence.cadence, next, end);
-      occurrences += dates.length;
+    let batch = projectCadence(first, recurrence.cadence, start, end);
+    const occurrenceDates = [...batch];
+    while (batch.length === 24 && batch[23]! < end) {
+      const next = advanceCadence(batch[23]!, recurrence.cadence);
+      if (next <= batch[23]!) throw new ValidationError("Recurring obligation dates are invalid.");
+      batch = projectCadence(next, recurrence.cadence, next, end);
+      occurrenceDates.push(...batch);
     }
     const amount = checkedCents(recurrence.amountCents, "Recurring obligation");
-    const rowTotal = amount * occurrences;
+    const rowTotal = amount * occurrenceDates.length;
     if (!Number.isSafeInteger(rowTotal)) throw new ValidationError("Recurring obligations are too large.");
-    total = addCents(total, rowTotal, "Recurring obligations");
+    parts.push({ recurrenceId: recurrence.id, amountCents: amount, occurrenceDates, totalCents: rowTotal });
+  }
+  return parts;
+}
+
+function recurringFloor(recurrences: readonly Recurrence[], subcategoryId: string, monthKey: MonthKey): number {
+  let total = 0;
+  for (const part of recurrenceFloorBreakdown(recurrences, subcategoryId, monthKey)) {
+    total = addCents(total, part.totalCents, "Recurring obligations");
   }
   return total;
 }

@@ -421,6 +421,7 @@ import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
+import { OnboardingPlan } from "./OnboardingPlan.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -2915,6 +2916,12 @@ export function App() {
     && view === "household"
     && nextChapterFor(household, memberId, today)?.id === "ch-10-estimates",
   );
+  const onboardingPlanOnly = Boolean(
+    household
+    && memberId
+    && view === "household"
+    && nextChapterFor(household, memberId, today)?.id === "ch-11-plan",
+  );
   const personalSource = useMemo(() => {
     return household && memberId && personalReplica?.memberId === memberId
       && personalReplica.lastCommittedAt === household.lastCommittedAt
@@ -4204,16 +4211,16 @@ export function App() {
     });
   }
 
-  function runKitchen(fn: (current: Household) => CommitResult) {
+  function runKitchen(fn: (current: Household) => CommitResult): Promise<CommandOutcome | null> {
     return enqueueWrite(async () => {
       const current = householdRef.current;
-      if (!current) return;
+      if (!current) return null;
       try {
         const result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
         if (memberPersonal) {
           assertMemberPersonalUpdate(current, result);
-          if (result.household === current) return;
+          if (result.household === current) return null;
         }
         const outcome = await commitHousehold(
           result.household,
@@ -4223,8 +4230,10 @@ export function App() {
         if (outcome?.ok && memberPersonal && result.personalMemberId) {
           setPersonalReplica(personalReplicaForMember(outcome.household, result.personalMemberId));
         }
+        return outcome;
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : String(caught));
+        return null;
       }
     });
   }
@@ -5879,6 +5888,16 @@ export function App() {
                 onCommit={(fn) => { void runKitchen(fn); }}
               />
             </div>
+          ) : onboardingPlanOnly ? (
+            <div className="plan-wide onboarding-plan-focus">
+              <OnboardingPlan
+                household={household}
+                memberId={memberId}
+                today={today}
+                busy={busy}
+                onCommit={runKitchen}
+              />
+            </div>
           ) : (
           <div className="plan-wide">
           <div className="plan-wide-lead">
@@ -7244,6 +7263,10 @@ export function App() {
           goTab("plan");
         }}
         onOpenEstimates={() => {
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+          goTab("plan");
+        }}
+        onOpenPlan={() => {
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           goTab("plan");
         }}

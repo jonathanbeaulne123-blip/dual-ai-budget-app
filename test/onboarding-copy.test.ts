@@ -227,6 +227,47 @@ const SLICE_20_ESTIMATES_COPY: Record<string, { text: string; announce: CopyEntr
   },
 };
 
+const SLICE_24_PLAN_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-11-plan": { text: "Let's lay out the first month together. Every number will show where it came from before either of you approves it.", announce: "none" },
+  "proposal.open": { text: "Review our first plan", announce: "none" },
+  "proposal.title": { text: "Our first month, laid out", announce: "none" },
+  "proposal.subtitle": { text: "A starting shape from your two guesses, known repeating costs, and only the history Hearth can honestly use.", announce: "none" },
+  "proposal.review-pause": { text: "Take your time here. Review the trail under every amount before giving your own yes.", announce: "none" },
+  "proposal.guesses": { text: "Your two guesses", announce: "none" },
+  "proposal.recurrences": { text: "Known repeating costs", announce: "none" },
+  "proposal.recurrence.none": { text: "No repeating cost is assigned here.", announce: "none" },
+  "proposal.recurrence.value": { text: "{amount} each · {cadence} · standing date {date}", announce: "none" },
+  "proposal.recurrence.month": { text: "This month: {count} × {amount} = {total} ({dates})", announce: "none" },
+  "proposal.recurrence.floor": { text: "Repeating-cost floor: {amount}", announce: "none" },
+  "proposal.history": { text: "Accepted history", announce: "none" },
+  "proposal.history.ready": { text: "{amount} from {weeks} complete weeks", announce: "none" },
+  "proposal.history.short": { text: "Not enough complete history yet.", announce: "none" },
+  "proposal.history.untied": { text: "No accepted history can be tied here yet.", announce: "none" },
+  "proposal.history.empty": { text: "No accepted spending is recorded here yet.", announce: "none" },
+  "proposal.basis.both": { text: "Half-up average of both guesses", announce: "none" },
+  "proposal.basis.single": { text: "The one available guess", announce: "none" },
+  "proposal.basis.runrate": { text: "Raised to accepted monthly history", announce: "none" },
+  "proposal.result": { text: "Proposed for the month", announce: "none" },
+  "proposal.total": { text: "First-plan total", announce: "none" },
+  "proposal.capacity.absent": { text: "You didn't enter a household capacity in this setup, so I'm not comparing this total with one.", announce: "polite" },
+  "proposal.edit": { text: "Change my guesses", announce: "none" },
+  "proposal.edit.title": { text: "Change my monthly guesses", announce: "none" },
+  "proposal.edit.save": { text: "Save a new version", announce: "none" },
+  "proposal.edit.cancel": { text: "Keep this version", announce: "none" },
+  "proposal.edit.changed": { text: "This version changed. Earlier approvals don't apply; each of you can review and say yes again.", announce: "polite" },
+  "proposal.edit.invalid": { text: "Use dollars and cents, like 125 or 125.50. Leave a box blank when you don't have a guess.", announce: "polite" },
+  "approve.title": { text: "Two personal approvals", announce: "none" },
+  "approve.mine": { text: "Your approval is on this version.", announce: "polite" },
+  "approve.recorded": { text: "{name} approved this version.", announce: "polite" },
+  "approve.pending": { text: "Not approved yet", announce: "none" },
+  "approve.complete": { text: "You both approved this exact version. Nothing changes until one of you adopts it.", announce: "polite" },
+  "adopt.self": { text: "Adopt our first plan", announce: "none" },
+  "adopt.working": { text: "Adopting this exact version", announce: "polite" },
+  "adopt.retry": { text: "Try adoption again", announce: "none" },
+  "adopt.failed": { text: "That didn't go through. Nothing changed, and this exact version is still here to try again.", announce: "polite" },
+  "adopt.recovery": { text: "The books may have accepted this plan, but this device couldn't save the receipt. Use recovery before trying again.", announce: "polite" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -239,7 +280,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -250,6 +291,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_17_CADENCE_COPY,
       ...SLICE_19_CATEGORIES_COPY,
       ...SLICE_20_ESTIMATES_COPY,
+      ...SLICE_24_PLAN_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

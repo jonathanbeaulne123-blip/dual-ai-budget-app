@@ -1268,15 +1268,21 @@ adoptFirstBudget(household, { memberId: string; createdBy: string; monthKey: Mon
 
 **Read first:** `src/core/registerView.ts` and `src/Register.tsx` (the drawing pattern and its presentation states), `src/core/askView.ts` (`askBelongsOnDesk`).
 
+**Create:** `src/core/onboarding/planView.ts`, `src/OnboardingPlan.tsx`, `test/onboarding-plan.test.ts`.
+
+**Modify:** `src/core/index.ts`, `src/core/onboarding/copy.ts`, `src/core/onboarding/evidence.ts`, `src/core/onboarding/registry.ts`, `src/core/onboarding/proposal.ts` (export the existing month-occurrence breakdown for presentation only; totals and formula semantics stay frozen), `src/core/commands.ts`, `src/OnboardingChat.tsx`, `src/Hercules.tsx`, `src/App.tsx`, `src/onboarding.css`, focused onboarding tests, and the living handoff/roadmap/worksession documents.
+
+**Do not modify:** the frozen proposal, approval, or adoption formulas; Ask/Ask-routes/Ask-view; Register; journals; schema; providers; hosted data; or Production settings. With no accepted capacity fact, render the honest empty state. Because Chapter 11's conductor is `both`, browser proof uses both member perspectives rather than inventing a witness role.
+
 **Probe:** an accepted `adoptFirstBudget` receipt for the current month.
 
 **Anatomy:** both submitted estimate sets, authored and **uncompared** · the exact recurrence anchors · the run-rate line — **on a first run, the honest empty state** · one proposed amount per category showing input values, eligibility, source label, formula result, integer cents · the total against entered capacity · each member's own approval control.
 
 **Rules:** every number shows its basis — a proposed figure with no visible derivation is a bug · **never** silently trim, compute a ratio, rank members, or tell one member how much the other must work · editing creates a new revision and digest and **visibly invalidates approvals — the copy warns before the edit, not after** · **the Ask, routes, and any hours figure do not appear**; fence that this component imports nothing from `ask.ts`, `askRoutes.ts`, or `askView.ts`.
 
-**States:** built · one approval (waiting-member) · edited after approval · adopting · adopted · adoption failed (nothing changed, honest retry).
+**States:** built · one approval (waiting-member) · edited after approval · adopting · adopted · adoption failed before acceptance (nothing changed, honest retry) · accepted-but-unsaved ambiguity (recovery required, never ordinary retry).
 
-**Tests:** the run-rate-empty copy is the default render; an edit visibly clears approvals; the Ask/routes import fence; screenshots at four breakpoints, conductor and witness.
+**Tests:** the run-rate-empty copy is the default render; an edit visibly clears approvals; the Ask/routes import fence; screenshots at four breakpoints from both member perspectives.
 
 ---
 
