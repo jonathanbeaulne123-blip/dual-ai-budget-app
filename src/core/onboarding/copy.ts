@@ -705,6 +705,105 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
 
   // E.6 The finale
   entry({
+    key: "onboarding.household.ch-12-ready", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
+    text: "Let's prove one ordinary entry will be easy tomorrow, then look over everything we set up.", slots: [],
+  }),
+  entry({
+    key: "ready.title", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Ready for ordinary days", slots: [],
+  }),
+  entry({
+    key: "ready.subtitle", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
+    text: "One small proof, one last look, and each of you gives your own yes.", slots: [],
+  }),
+  entry({
+    key: "ready.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open Books", slots: [],
+  }),
+  entry({
+    key: "ready.accepted", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "You've already posted an ordinary entry. That counts.", slots: [],
+  }),
+  entry({
+    key: "ready.practice.title", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Try it safely in Practice", slots: [],
+  }),
+  entry({
+    key: "ready.practice.explain", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
+    text: "Add a pretend grocery, then correct it. Practice is discarded and never touches your books, reports, streak, or Health.", slots: [],
+  }),
+  entry({
+    key: "ready.practice.add", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Add pretend $45 grocery", slots: [],
+  }),
+  entry({
+    key: "ready.practice.correct", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Correct the pretend entry", slots: [],
+  }),
+  entry({
+    key: "ready.practice.running", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Checking the correction in Practice…", slots: [],
+  }),
+  entry({
+    key: "ready.practice.done", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Practice balanced, and the pretend row was discarded.", slots: [],
+  }),
+  entry({
+    key: "ready.complete", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Set up", slots: [],
+  }),
+  entry({
+    key: "ready.pending", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Still needed", slots: [],
+  }),
+  entry({
+    key: "ready.current", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Your Ready approval is recorded on this exact version.", slots: [],
+  }),
+  entry({
+    key: "ready.books", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Books", slots: [],
+  }),
+  entry({
+    key: "ready.books.tied", speaker: "hercules", surface: "status", scope: "none", announce: "none",
+    text: "Trial and equation agree", slots: [],
+  }),
+  entry({
+    key: "ready.books.attention", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "Books need another look", slots: [],
+  }),
+  entry({
+    key: "ready.health", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Health", slots: [],
+  }),
+  entry({
+    key: "ready.health.clean", speaker: "hercules", surface: "status", scope: "none", announce: "none",
+    text: "No integrity findings", slots: [],
+  }),
+  entry({
+    key: "ready.health.findings", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "{count} integrity findings", slots: ["count"],
+  }),
+  entry({
+    key: "ready.failure", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "That didn't finish. Nothing was marked complete — try again when you're ready.", slots: [],
+  }),
+  entry({
+    key: "ready.offline", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "You're offline. Practice still works here, but Ready waits until this device can reach the household.", slots: [],
+  }),
+  entry({
+    key: "ready.finish", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Finish setup", slots: [],
+  }),
+  ...[
+    "Meet Hercules", "Right household", "Household Charter", "Accounts", "Opening balances", "Household Fund",
+    "Regular money", "Earning rhythms", "Plan categories", "First guesses", "First month", "Tomorrow's proof",
+  ].map((text, index) => entry({
+    key: `ready.chapter.${String(index + 1).padStart(2, "0")}`,
+    speaker: "system", surface: "card", scope: "none", announce: "none", text, slots: [],
+  })),
+  entry({
     key: "ready.checklist", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
     text: "Here's everything we set up.", slots: [],
   }),
@@ -735,6 +834,10 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   entry({
     key: "personal.off", speaker: "system", surface: "button", scope: "none", announce: "none",
     text: "Stop offering these", slots: [],
+  }),
+  entry({
+    key: "ready.open-books", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open ordinary Books", slots: [],
   }),
 ]));
 

@@ -511,8 +511,14 @@ function transactionCard(
 }
 
 function readyEvidence(household: Household, chapterId: ChapterId, viewerMemberId: string): Projection {
+  const reversedIds = new Set(household.transactions
+    .map((transaction) => transaction.reversalOfId)
+    .filter((id): id is string => Boolean(id)));
   const candidates = household.transactions
-    .filter((transaction) => !transaction.isDuplicate && transaction.source !== "reversal" && transaction.type !== "opening")
+    .filter((transaction) => !transaction.isDuplicate
+      && transaction.source !== "reversal"
+      && transaction.type !== "opening"
+      && !reversedIds.has(transaction.id))
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id));
   const shared = candidates.find((transaction) => transaction.visibility !== "personal");
   if (shared) return transactionCard(household, chapterId, shared, "household");

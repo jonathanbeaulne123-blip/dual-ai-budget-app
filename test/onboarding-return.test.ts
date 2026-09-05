@@ -130,13 +130,7 @@ describe("onboardingNavigationTarget", () => {
     expect(onboardingNavigationTarget(household, JONATHAN, TODAY)).toBeNull();
   });
 
-  it("returns null once there is no next chapter left at all for this member", () => {
-    // nextChapterFor is per-member: acknowledging every household chapter
-    // as Bianca (regardless of who actually conducts each one — recording
-    // is not the same as satisfying someone else's turn) exhausts her own
-    // queue while onboarding stays active, which is the one path in
-    // progress.ts that returns null instead of falling through to a
-    // personal module.
+  it("keeps the Chapter 12 Books target reachable until the shared unlock is accepted", () => {
     const HOUSEHOLD_CHAPTER_IDS = [
       "ch-01-meet", "ch-02-household", "ch-03-charter", "ch-04-accounts",
       "ch-05-opening", "ch-06-fund", "ch-07-recurrences", "ch-08-cadence",
@@ -237,7 +231,7 @@ describe("onboardingNavigationTarget", () => {
           detailAction: "skip",
         }).household;
       }
-      household = chapterId === "ch-11-plan"
+      household = chapterId === "ch-11-plan" || chapterId === "ch-12-ready"
         ? {
             ...household,
             members: household.members.map((member) => member.id === BIANCA && member.onboardingProgress
@@ -267,7 +261,10 @@ describe("onboardingNavigationTarget", () => {
           }).household
         : recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
     }
-    expect(onboardingNavigationTarget(household, BIANCA, TODAY)).toBeNull();
+    expect(onboardingNavigationTarget(household, BIANCA, TODAY)).toEqual({
+      chapterId: "ch-12-ready",
+      target: { tab: "ledger" },
+    });
   });
 });
 

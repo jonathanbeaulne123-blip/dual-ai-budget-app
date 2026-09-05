@@ -268,6 +268,45 @@ const SLICE_24_PLAN_COPY: Record<string, { text: string; announce: CopyEntry["an
   "adopt.recovery": { text: "The books may have accepted this plan, but this device couldn't save the receipt. Use recovery before trying again.", announce: "polite" },
 };
 
+const SLICE_25_READY_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-12-ready": { text: "Let's prove one ordinary entry will be easy tomorrow, then look over everything we set up.", announce: "none" },
+  "ready.title": { text: "Ready for ordinary days", announce: "none" },
+  "ready.subtitle": { text: "One small proof, one last look, and each of you gives your own yes.", announce: "none" },
+  "ready.open": { text: "Open Books", announce: "none" },
+  "ready.accepted": { text: "You've already posted an ordinary entry. That counts.", announce: "polite" },
+  "ready.practice.title": { text: "Try it safely in Practice", announce: "none" },
+  "ready.practice.explain": { text: "Add a pretend grocery, then correct it. Practice is discarded and never touches your books, reports, streak, or Health.", announce: "none" },
+  "ready.practice.add": { text: "Add pretend $45 grocery", announce: "none" },
+  "ready.practice.correct": { text: "Correct the pretend entry", announce: "none" },
+  "ready.practice.running": { text: "Checking the correction in Practice…", announce: "polite" },
+  "ready.practice.done": { text: "Practice balanced, and the pretend row was discarded.", announce: "polite" },
+  "ready.complete": { text: "Set up", announce: "none" },
+  "ready.pending": { text: "Still needed", announce: "none" },
+  "ready.current": { text: "Your Ready approval is recorded on this exact version.", announce: "polite" },
+  "ready.books": { text: "Books", announce: "none" },
+  "ready.books.tied": { text: "Trial and equation agree", announce: "none" },
+  "ready.books.attention": { text: "Books need another look", announce: "polite" },
+  "ready.health": { text: "Health", announce: "none" },
+  "ready.health.clean": { text: "No integrity findings", announce: "none" },
+  "ready.health.findings": { text: "{count} integrity findings", announce: "polite" },
+  "ready.failure": { text: "That didn't finish. Nothing was marked complete — try again when you're ready.", announce: "polite" },
+  "ready.offline": { text: "You're offline. Practice still works here, but Ready waits until this device can reach the household.", announce: "polite" },
+  "ready.finish": { text: "Finish setup", announce: "none" },
+  "ready.chapter.01": { text: "Meet Hercules", announce: "none" },
+  "ready.chapter.02": { text: "Right household", announce: "none" },
+  "ready.chapter.03": { text: "Household Charter", announce: "none" },
+  "ready.chapter.04": { text: "Accounts", announce: "none" },
+  "ready.chapter.05": { text: "Opening balances", announce: "none" },
+  "ready.chapter.06": { text: "Household Fund", announce: "none" },
+  "ready.chapter.07": { text: "Regular money", announce: "none" },
+  "ready.chapter.08": { text: "Earning rhythms", announce: "none" },
+  "ready.chapter.09": { text: "Plan categories", announce: "none" },
+  "ready.chapter.10": { text: "First guesses", announce: "none" },
+  "ready.chapter.11": { text: "First month", announce: "none" },
+  "ready.chapter.12": { text: "Tomorrow's proof", announce: "none" },
+  "ready.open-books": { text: "Open ordinary Books", announce: "none" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -280,7 +319,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY, ...SLICE_25_READY_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -292,6 +331,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_19_CATEGORIES_COPY,
       ...SLICE_20_ESTIMATES_COPY,
       ...SLICE_24_PLAN_COPY,
+      ...SLICE_25_READY_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

@@ -151,6 +151,7 @@ export * from "./onboarding/proposal.ts";
 export * from "./onboarding/approvals.ts";
 export * from "./onboarding/adoption.ts";
 export * from "./onboarding/planView.ts";
+export * from "./onboarding/ready.ts";
 export * from "./onboarding/copy.ts";
 export * from "./onboarding/flavor.ts";
 export * from "./onboarding/shellView.ts";

@@ -422,6 +422,7 @@ import { OnboardingChat } from "./OnboardingChat.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
 import { OnboardingPlan } from "./OnboardingPlan.tsx";
+import { OnboardingReady } from "./OnboardingReady.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -635,6 +636,7 @@ export function App() {
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
+  const [dismissedOnboardingCompletionDigest, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
@@ -2921,6 +2923,17 @@ export function App() {
     && memberId
     && view === "household"
     && nextChapterFor(household, memberId, today)?.id === "ch-11-plan",
+  );
+  const onboardingReadyOnly = Boolean(
+    household
+    && memberId
+    && view === "household"
+    && (
+      nextChapterFor(household, memberId, today)?.id === "ch-12-ready"
+      || (onboardingInviteRecord?.state === "complete"
+        && onboardingInviteRecord.completionDigest
+        && onboardingInviteRecord.completionDigest !== dismissedOnboardingCompletionDigest)
+    ),
   );
   const personalSource = useMemo(() => {
     return household && memberId && personalReplica?.memberId === memberId
@@ -6057,7 +6070,18 @@ export function App() {
 
       {tab === "ledger" && (
         <DeferredSurface label="Books">
-        <DeferredBooksPage
+        {onboardingReadyOnly ? (
+          <OnboardingReady
+            household={household}
+            memberId={session.memberId}
+            today={today}
+            busy={busy}
+            onCommit={runKitchen}
+            onDismiss={() => setDismissedOnboardingCompletionDigest(
+              acceptedHouseholdOnboarding(household)?.completionDigest ?? null,
+            )}
+          />
+        ) : <DeferredBooksPage
           household={displayHousehold}
           booksHousehold={household}
           memberId={session.memberId}
@@ -6083,7 +6107,7 @@ export function App() {
                 : `This posts a reversing entry for ${dollars}${transaction.note ? ` (${transaction.note})` : ""}. The original row stays.`;
             setGuard({ kind: "remove", transactionId: transaction.id, summary });
           }}
-        />
+        />}
         </DeferredSurface>
       )}
 
@@ -7269,6 +7293,11 @@ export function App() {
         onOpenPlan={() => {
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           goTab("plan");
+        }}
+        onOpenReady={() => {
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+          setFocusedAccountId(null);
+          goTab("ledger");
         }}
         onOpenSource={(source: HerculesNumberSource) => {
           setHerculesSourceFocus(source);

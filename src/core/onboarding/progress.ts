@@ -4,6 +4,7 @@ import { ValidationError } from "../types.ts";
 import {
   ONBOARDING_REGISTRY,
   ONBOARDING_REGISTRY_VERSION,
+  chapterById,
   householdChapters,
   personalModules,
 } from "./registry.ts";
@@ -201,7 +202,10 @@ export function nextChapterFor(household: Household, memberId: string, today: Da
   }
   const householdChapter = nextEligible(householdChapters(), progress);
   if (householdChapter) return householdChapter;
-  if (onboardingIsActive(household)) return null;
+  // Chapter 12 remains the active finale after its proof is recorded. This
+  // keeps the waiting-member and interrupted-unlock repair UI reachable until
+  // the shared completion record is accepted.
+  if (onboardingIsActive(household)) return chapterById("ch-12-ready");
   return nextEligible(personalModules(), progress);
 }
 

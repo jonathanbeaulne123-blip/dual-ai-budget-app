@@ -97,6 +97,8 @@ type Props = {
   onOpenEstimates?: () => void;
   /** Chapter 11 opens the shared derivation and self-owned approval flow. */
   onOpenPlan?: () => void;
+  /** Chapter 12 opens the isolated Practice and shared Ready finale on Books. */
+  onOpenReady?: () => void;
   /**
    * ISO instant used only for the handshake-expiry check below — separate
    * from `today` (a DateKey, not enough precision for a fifteen-minute
@@ -183,6 +185,7 @@ export function OnboardingChat({
   onOpenCategories,
   onOpenEstimates,
   onOpenPlan,
+  onOpenReady,
   now,
 }: Props) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -526,6 +529,7 @@ export function OnboardingChat({
     && evidence.kind !== "accepted";
   const planNeedsNavigation = chapterId === "ch-11-plan"
     && evidence.kind !== "accepted";
+  const readyNeedsNavigation = chapterId === "ch-12-ready";
 
   const showAction = role === "conductor"
     && !blockedCopyKey
@@ -538,6 +542,7 @@ export function OnboardingChat({
     && !categoriesNeedNavigation
     && !estimatesNeedNavigation
     && !planNeedsNavigation
+    && !readyNeedsNavigation
     && (!autoCompletable || evidence.kind === "accepted")
     && chapter.actions.includes("continue");
   const showRetryAction = role === "conductor" && blocked?.retryable === true;
@@ -572,7 +577,11 @@ export function OnboardingChat({
     && planNeedsNavigation
     && !blockedCopyKey
     && Boolean(onOpenPlan);
-  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrenceAction || showCadenceAction || showCategoriesAction || showEstimatesAction || showPlanAction
+  const showReadyAction = role === "conductor"
+    && chapterId === "ch-12-ready"
+    && !blockedCopyKey
+    && Boolean(onOpenReady);
+  const cardMarginBottom = showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrenceAction || showCadenceAction || showCategoriesAction || showEstimatesAction || showPlanAction || showReadyAction
     ? SHELL_VIEW.cardToAction
     : 0;
 
@@ -671,7 +680,7 @@ export function OnboardingChat({
           )}
         </>
       )}
-      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrencePrimaryAction || showCadenceAction || showCategoriesAction || showEstimatesAction || showPlanAction ? (
+      {showAction || showRetryAction || showCharterAction || showAccountsAction || showOpeningAction || showFundAction || showRecurrencePrimaryAction || showCadenceAction || showCategoriesAction || showEstimatesAction || showPlanAction || showReadyAction ? (
         <div className="onboarding-actions">
           <button
             type="button"
@@ -697,6 +706,8 @@ export function OnboardingChat({
                       ? onOpenEstimates
                     : showPlanAction
                       ? onOpenPlan
+                    : showReadyAction
+                      ? onOpenReady
                   : acknowledge}
           >
             {copy(showRetryAction
@@ -719,6 +730,8 @@ export function OnboardingChat({
                       ? "estimates.open"
                     : showPlanAction
                       ? "proposal.open"
+                    : showReadyAction
+                      ? "ready.open"
                   : "continue.next")}
           </button>
           {showPersonalSkipAction ? (

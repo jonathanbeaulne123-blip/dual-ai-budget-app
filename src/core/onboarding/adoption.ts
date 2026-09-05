@@ -25,7 +25,7 @@ function rotateRight(value: number, count: number): number {
   return (value >>> count) | (value << (32 - count));
 }
 
-function adoptionSha256(value: string): string {
+export function adoptionSha256(value: string): string {
   const source = new TextEncoder().encode(value);
   const byteLength = Math.ceil((source.length + 9) / 64) * 64;
   const bytes = new Uint8Array(byteLength);

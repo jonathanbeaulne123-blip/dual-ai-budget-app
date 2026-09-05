@@ -181,11 +181,11 @@ export function actorMayApplyHouseholdOnboardingTransition(input: {
   actingMemberId: string;
 }): boolean {
   const { household, incoming, commandKind, actingMemberId } = input;
+  const isCompletion = commandKind === "completeHouseholdOnboarding";
   if (incoming.householdId !== household.householdId
     || incoming.environment !== household.environment
     || incoming.registryVersion !== ONBOARDING_REGISTRY_VERSION
-    || incoming.completedAt
-    || incoming.completionDigest) return false;
+    || (!isCompletion && (incoming.completedAt || incoming.completionDigest))) return false;
   const actor = household.members.find((member) => member.id === actingMemberId && member.active);
   if (!actor) return false;
   const prior = acceptedHouseholdOnboarding(household);
@@ -238,6 +238,26 @@ export function actorMayApplyHouseholdOnboardingTransition(input: {
       && incoming.createdAt === (prior?.createdAt ?? incoming.updatedAt)
       && incoming.completedAt === null
       && incoming.completionDigest === null;
+  }
+  if (commandKind === "completeHouseholdOnboarding") {
+    return Boolean(prior
+      && prior.state === "active"
+      && incoming.state === "complete"
+      && incoming.completedAt
+      && incoming.completedAt === incoming.updatedAt
+      && typeof incoming.completionDigest === "string"
+      && /^ready-v1-[a-f0-9]{64}$/.test(incoming.completionDigest)
+      && incoming.id === prior.id
+      && incoming.proposedByMemberId === prior.proposedByMemberId
+      && incoming.proposedAt === prior.proposedAt
+      && incoming.handshakeExpiresAt === prior.handshakeExpiresAt
+      && sameIds(incoming.confirmedByMemberIds, prior.confirmedByMemberIds)
+      && incoming.startedAt === prior.startedAt
+      && incoming.stoppedAt === prior.stoppedAt
+      && sameIds(incoming.stoppedByMemberIds, prior.stoppedByMemberIds)
+      && incoming.stoppedSolo === prior.stoppedSolo
+      && !incoming.forcedUnlock
+      && incoming.createdAt === prior.createdAt);
   }
   return false;
 }

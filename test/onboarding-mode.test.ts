@@ -172,6 +172,7 @@ describe("onboarding household mode", () => {
       .map((match) => match[1])
       .sort();
     expect(commandNames).toEqual([
+      "completeHouseholdOnboarding",
       "confirmHouseholdOnboarding",
       "offerHouseholdOnboarding",
       "proposeHouseholdOnboarding",

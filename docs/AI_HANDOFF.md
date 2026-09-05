@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 25 — Chapter 12 Ready and unlock (D-225) (2026-09-05)
+
+**Status:** Local implementation is complete on `onboarding/25-ch12-ready`, based on `origin/main@146dc1a7160d163ea911321aa2034cf4324c44d8`. Nothing is pushed, merged, deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** Chapter 12 closes on a dedicated Books and Health finale. A member can use privacy-safe accepted transaction evidence or a discarded `$45` correction Practice. The screen shows the twelve-item household gate checklist, current Books/Health truth, each member's own exact-digest Ready action, a named waiting state, interrupted-completion repair, and an honest post-unlock summary plus optional Personal-track offer. Contract: [`briefs/ONBOARDING_SLICE_25_CH12_READY_CONTRACT_2026-09-05.md`](briefs/ONBOARDING_SLICE_25_CH12_READY_CONTRACT_2026-09-05.md).
+
+**Authority, privacy, and recovery:** Practice remains outside every accepted financial projection and can only become an unconfirmed real draft. Ready approvals are self-owned and Shared; Chapter 12 progress is member-Personal. Completion requires all gates and both current approvals for one deterministic digest over the shared setup facts. `completeHouseholdOnboarding` changes metadata only, and accepted complete state converges forward over an interrupted active replica. No financial writer, proposal/adoption formula, schema, hosted record, provider, Auth/RLS, or Production setting changes.
+
+**Verification:** Focused Slice 25 proof passes 30/30 and the complete onboarding suite passes 438/438. The High quick gate passes in under 40 seconds with 120 fast and 7 serial PGlite proof tests, TypeScript, AI-surface, discovery, and diff checks. The production build passes with 477 Vite modules plus Hercules Pro UI. Actual-component Chromium at 320/390/720/1100 px has no overflow, undersized control, console/page error, or scoped WCAG A/AA axe finding; keyboard/focus, reduced motion, busy, Practice-empty, waiting, completion, failure, and offline states pass. Screenshots were visually inspected. Full evidence is in [`worksessions/2026-09-05-onboarding-ready-unlock.md`](worksessions/2026-09-05-onboarding-ready-unlock.md).
+
+**Evidence class:** Synthetic local Development fixtures and local verification. This is not exhaustive-suite, Windows, hosted two-account, deployment, or Production proof. No hosted row, schema, secret, provider, Production setting, push, merge, or deploy was touched.
+
+**Next owner:** Jonathan separately decides whether to push and merge. Deployment requires another explicit instruction.
+
 ## Onboarding Slice 24 — Chapter 11 first plan (D-224) (2026-09-05)
 
 **Status:** Release candidate implementation and proof are complete on
