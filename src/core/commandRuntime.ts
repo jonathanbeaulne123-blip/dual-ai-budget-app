@@ -30,6 +30,7 @@ import {
   acceptedHouseholdOnboarding,
 } from "./onboarding/mode.ts";
 import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
+import { assertOnboardingSubmissionTransition } from "./onboarding/submissions.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
@@ -268,6 +269,17 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     }
 
     assertHouseholdFundTransition(previous, candidate);
+    const isOnboardingSubmissionCommand = input.commandKind === "submitOnboardingCategories"
+      || input.commandKind === "submitOnboardingEstimates";
+    const onboardingSubmissionStateChanged = JSON.stringify(previous?.onboardingSubmissions ?? [])
+      !== JSON.stringify(candidate.onboardingSubmissions ?? []);
+    if (isOnboardingSubmissionCommand || onboardingSubmissionStateChanged) {
+      assertOnboardingSubmissionTransition(previous, candidate, {
+        actorMemberId: input.actingMemberId,
+        commandKind: input.commandKind,
+        postedIds,
+      });
+    }
     const candidateCompiled = measureHearthSync(
       "hearth:command:compile",
       () => assertAcceptableBooks(candidate),
@@ -302,6 +314,11 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
             ).filter((row) => postedIds.includes(row.id)))
             : input.commandKind?.endsWith("HouseholdOnboarding") && accepted.householdOnboarding
               ? await sha256Hex(commandMaterializationFacts({ householdOnboarding: accepted.householdOnboarding }))
+              : input.commandKind?.startsWith("submitOnboarding")
+                ? await sha256Hex(commandMaterializationFacts({
+                  onboardingSubmissions: (accepted.onboardingSubmissions ?? [])
+                    .filter((row) => postedIds.includes(row.id)),
+                }))
             : undefined,
       postedIds,
       revision,
@@ -318,6 +335,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       ...accepted.shifts.filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
       ...(accepted.fundEvents ?? []).filter((row) => postedIds.includes(row.id)).map((row) => row.createdBy),
       ...(accepted.weeklyDocumentStamps ?? []).filter((row) => postedIds.includes(row.id)).map((row) => row.memberId),
+      ...(accepted.onboardingSubmissions ?? []).filter((row) => postedIds.includes(row.id)).map((row) => row.memberId),
     ].find(Boolean) ?? accepted.members.find((member) => member.active)?.id ?? accepted.members[0]?.id ?? "MEM-001";
     accepted = rememberReceipt(accepted, {
       ...receipt,

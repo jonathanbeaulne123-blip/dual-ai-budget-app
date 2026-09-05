@@ -1,5 +1,32 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 18 — submission contract (D-218) (2026-09-04)
+
+**Status:** Local implementation and focused proof in progress on
+`onboarding/18-submissions` from
+`origin/main@1d4998379875bde84229f194b85242b815218940`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** Each active member may explicitly submit only their own category
+choices and estimate cents. Replacement retains linked history; two replicas
+converge deterministically; member estimates remain separate; zero and missing
+remain different facts.
+
+**Authority, privacy, and money boundary:** Drafts are not stored in the
+Household. Published records carry only ids and integer cents. Partner-Personal
+source facts cannot enter the command shape. Submission creates no transaction,
+journal entry, Fund event, budget, contribution claim, or approval. Command-event
+materialization is bound to the active submitting member and exact household.
+Contract: [`briefs/ONBOARDING_SLICE_18_SUBMISSIONS_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_18_SUBMISSIONS_CONTRACT_2026-09-04.md).
+
+**Verification:** Focused contract tests pass 8/8; adjacent onboarding,
+Shared-sync, materialization, and Realtime tests pass 46/46. Final clean-head
+gates and independent High-risk review remain pending. No UI or CSS changed, so
+there is no rendered browser surface in this slice.
+
+**Next owner:** Codex completes the local gates and review. Jonathan separately
+decides whether to push or open a PR.
+
 ## Onboarding Slice 17 — Chapter 8 earning cadence (D-217) (2026-09-04)
 
 **Status:** Local implementation, production build, and live UX pass complete on

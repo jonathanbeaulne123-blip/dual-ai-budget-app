@@ -175,6 +175,13 @@ import { memberProgress } from "./onboarding/progress.ts";
 import { evidenceFor, probeEvidenceKey } from "./onboarding/evidence.ts";
 import type { HouseholdScopeObservation } from "./onboarding/householdScope.ts";
 import {
+  currentSubmission,
+  normalizeSubmissionCategoryIds,
+  normalizeSubmissionEstimates,
+  shapeOnboardingSubmissions,
+  type OnboardingSubmission,
+} from "./onboarding/submissions.ts";
+import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
   hasPostedOpeningTruth,
@@ -598,6 +605,78 @@ export function forceUnlockOnboarding(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Onboarding", "Stopped incomplete with the Development unlock", [id], [], "forceUnlockHouseholdOnboarding");
+}
+
+const OWN_SUBMISSION_COPY = "Only you can submit your own.";
+
+function requireOnboardingSubmissionActor(household: Household, memberId: string, createdBy: string) {
+  const member = household.members.find((candidate) => candidate.id === memberId && candidate.active);
+  const actor = household.members.find((candidate) => candidate.id === createdBy && candidate.active);
+  if (!member || !actor || actor.id !== member.id) throw new ValidationError(OWN_SUBMISSION_COPY);
+  return member;
+}
+
+function appendOnboardingSubmission(
+  household: Household,
+  input: { memberId: string; createdBy: string; at?: string },
+  values: Pick<OnboardingSubmission, "kind" | "categoryIds" | "estimates">,
+): CommitResult {
+  const member = requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
+  const submittedAt = onboardingCommandAt(input.at);
+  const rows = shapeOnboardingSubmissions(household.onboardingSubmissions, household.householdId);
+  const prior = currentSubmission({ ...household, onboardingSubmissions: rows }, member.id, values.kind);
+  const revision = rows
+    .filter((row) => row.memberId === member.id && row.kind === values.kind)
+    .reduce((highest, row) => Math.max(highest, row.revision), 0) + 1;
+  const id = nextId("ONB-SUB-", rows.map((row) => row.id));
+  const submission: OnboardingSubmission = {
+    id,
+    householdId: household.householdId,
+    memberId: member.id,
+    kind: values.kind,
+    revision,
+    categoryIds: values.categoryIds,
+    estimates: values.estimates,
+    submittedAt,
+    supersededBy: null,
+  };
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.onboardingSubmissions = [
+    ...rows.map((row) => row.id === prior?.id ? { ...row, supersededBy: id } : row),
+    submission,
+  ];
+  return commit(
+    previous,
+    next,
+    "Onboarding submission",
+    `${member.name} submitted ${values.kind}`,
+    prior ? [prior.id, id] : [id],
+    [],
+    values.kind === "categories" ? "submitOnboardingCategories" : "submitOnboardingEstimates",
+  );
+}
+
+export function submitOnboardingCategories(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  categoryIds: string[];
+  at?: string;
+}): CommitResult {
+  requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
+  const categoryIds = normalizeSubmissionCategoryIds(input.categoryIds);
+  return appendOnboardingSubmission(household, input, { kind: "categories", categoryIds, estimates: [] });
+}
+
+export function submitOnboardingEstimates(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  estimates: Array<{ subcategoryId: string; amountCents: number }>;
+  at?: string;
+}): CommitResult {
+  requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
+  const estimates = normalizeSubmissionEstimates(input.estimates);
+  return appendOnboardingSubmission(household, input, { kind: "estimates", categoryIds: [], estimates });
 }
 
 function requireOpenPeriod(household: Household, date: DateKey): void {

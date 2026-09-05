@@ -1265,6 +1265,8 @@ export type Household = {
   goalPurchases: GoalPurchase[];
   /** Shared setup-mode authority. Free roam is represented by no record or a non-locking state. */
   householdOnboarding?: import("./onboarding/mode.ts").HouseholdOnboarding | null;
+  /** Explicitly submitted household-plan choices. Drafts never enter this collection. */
+  onboardingSubmissions?: import("./onboarding/submissions.ts").OnboardingSubmission[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -1330,6 +1332,8 @@ export type SharedEnvelope = {
   goalPurchases: GoalPurchase[];
   /** Shared setup-mode authority; never copied into a Personal envelope. */
   householdOnboarding?: import("./onboarding/mode.ts").HouseholdOnboarding | null;
+  /** Explicitly submitted household-plan choices; never member-private drafts. */
+  onboardingSubmissions?: import("./onboarding/submissions.ts").OnboardingSubmission[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];

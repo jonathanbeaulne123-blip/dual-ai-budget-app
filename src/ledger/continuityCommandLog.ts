@@ -1,5 +1,6 @@
 import type { CommandReceipt, Household } from "../core/types.ts";
 import { commandMaterializationFacts, sha256Hex } from "../core/commandIdentity.ts";
+import { mergeSubmissions } from "../core/onboarding/submissions.ts";
 import {
   extractMaterializationFacts,
   type ContinuityMaterializationFacts,
@@ -134,6 +135,7 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.goalContributions ?? []).map((row) => row.id),
     ...(mergedFacts?.goalPurchases ?? []).map((row) => row.id),
     ...(mergedFacts?.householdOnboarding ? [mergedFacts.householdOnboarding.id] : []),
+    ...(mergedFacts?.onboardingSubmissions ?? []).map((row) => row.id),
     ...charterPostedIds,
     ...(mergedFacts?.householdFund ? [mergedFacts.householdFund.id] : []),
     ...(mergedFacts?.fundMonthPlans ?? []).map((row) => row.id),
@@ -148,10 +150,12 @@ export async function compactedCommandPayload(
     materializationHash: mergedFacts?.monthRehearsals?.length
       || mergedFacts?.recurrences?.length
       || mergedFacts?.householdOnboarding
+      || mergedFacts?.onboardingSubmissions?.length
       ? await sha256Hex(commandMaterializationFacts({
         monthRehearsals: mergedFacts.monthRehearsals,
         recurrences: mergedFacts.recurrences,
         householdOnboarding: mergedFacts.householdOnboarding,
+        onboardingSubmissions: mergedFacts.onboardingSubmissions,
       }))
       : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
@@ -214,6 +218,12 @@ function mergeMaterializationFacts(
     }
     if (facts.charter) merged.charter = facts.charter;
     if (facts.householdOnboarding) merged.householdOnboarding = facts.householdOnboarding;
+    if (facts.onboardingSubmissions?.length) {
+      merged.onboardingSubmissions = mergeSubmissions(
+        merged.onboardingSubmissions,
+        facts.onboardingSubmissions,
+      );
+    }
     if (facts.householdFund) merged.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) merged.fundMonthPlans = [...(merged.fundMonthPlans ?? []), ...facts.fundMonthPlans];
     if (facts.fundEvents?.length) merged.fundEvents = [...(merged.fundEvents ?? []), ...facts.fundEvents];
