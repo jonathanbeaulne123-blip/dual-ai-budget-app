@@ -2393,6 +2393,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 - Branch `onboarding/21-proposal` starts from clean merged Slice 20
   `origin/main@5941d50f395ccbc7ed13c8fdfd5463b0a906628b`.
+- Local implementation commit: `bbb93f7`.
 - `buildProposal` consumes the accepted two-member category set, current estimate
   submissions, valid Shared recurrence facts, and one carried `houseRunRate`
   reading. It emits category-id-ordered integer-cent rows and never writes money.

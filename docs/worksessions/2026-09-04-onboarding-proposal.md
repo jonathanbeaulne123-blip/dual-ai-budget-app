@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/21-proposal`
 - **Baseline SHA:** `5941d50f395ccbc7ed13c8fdfd5463b0a906628b`
-- **Head SHA:** working tree
+- **Implementation SHA:** `bbb93f7`
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
