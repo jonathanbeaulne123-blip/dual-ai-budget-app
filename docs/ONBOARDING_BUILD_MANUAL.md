@@ -1163,6 +1163,15 @@ export type ProposalInput = {
 
 export type ProposalRow = ProposalInput & { proposedCents: number; basis: ProposalBasis };
 
+export type ProposalSource = {
+  categoryIds: string[];
+  estimateSubmissions: Array<{
+    memberId: string;
+    submissionId: string | null;
+    revision: number | null;
+  }>;
+};
+
 export type BudgetProposal = {
   monthKey: MonthKey;
   formulaVersion: number;
@@ -1170,6 +1179,7 @@ export type BudgetProposal = {
   totalCents: number;
   capacityCents: number | null;
   capacitySourceRevision: string | null;    // stable revision/digest of the accepted capacity fact
+  source: ProposalSource;                   // carried; proposalDigest never rereads mutable household state
   sourceDigest: string;
 };
 
