@@ -550,6 +550,158 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     key: "adopt.done", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
     text: "That's our first month. It's a plan, not a promise.", slots: [],
   }),
+  entry({
+    key: "onboarding.household.ch-11-plan", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
+    text: "Let's lay out the first month together. Every number will show where it came from before either of you approves it.", slots: [],
+  }),
+  entry({
+    key: "proposal.open", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Review our first plan", slots: [],
+  }),
+  entry({
+    key: "proposal.title", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Our first month, laid out", slots: [],
+  }),
+  entry({
+    key: "proposal.subtitle", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "A starting shape from your two guesses, known repeating costs, and only the history Hearth can honestly use.", slots: [],
+  }),
+  entry({
+    key: "proposal.review-pause", speaker: "hercules", surface: "status", scope: "none", announce: "none",
+    text: "Take your time here. Review the trail under every amount before giving your own yes.", slots: [],
+  }),
+  entry({
+    key: "proposal.guesses", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Your two guesses", slots: [],
+  }),
+  entry({
+    key: "proposal.recurrences", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Known repeating costs", slots: [],
+  }),
+  entry({
+    key: "proposal.recurrence.none", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "No repeating cost is assigned here.", slots: [],
+  }),
+  entry({
+    key: "proposal.recurrence.value", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "{amount} each · {cadence} · standing date {date}", slots: ["amount", "cadence", "date"],
+  }),
+  entry({
+    key: "proposal.recurrence.month", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "This month: {count} × {amount} = {total} ({dates})", slots: ["count", "amount", "total", "dates"],
+  }),
+  entry({
+    key: "proposal.recurrence.floor", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Repeating-cost floor: {amount}", slots: ["amount"],
+  }),
+  entry({
+    key: "proposal.history", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Accepted history", slots: [],
+  }),
+  entry({
+    key: "proposal.history.ready", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "{amount} from {weeks} complete weeks", slots: ["amount", "weeks"],
+  }),
+  entry({
+    key: "proposal.history.short", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Not enough complete history yet.", slots: [],
+  }),
+  entry({
+    key: "proposal.history.untied", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "No accepted history can be tied here yet.", slots: [],
+  }),
+  entry({
+    key: "proposal.history.empty", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "No accepted spending is recorded here yet.", slots: [],
+  }),
+  entry({
+    key: "proposal.basis.both", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Half-up average of both guesses", slots: [],
+  }),
+  entry({
+    key: "proposal.basis.single", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "The one available guess", slots: [],
+  }),
+  entry({
+    key: "proposal.basis.runrate", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Raised to accepted monthly history", slots: [],
+  }),
+  entry({
+    key: "proposal.result", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Proposed for the month", slots: [],
+  }),
+  entry({
+    key: "proposal.total", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "First-plan total", slots: [],
+  }),
+  entry({
+    key: "proposal.capacity.absent", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "You didn't enter a household capacity in this setup, so I'm not comparing this total with one.", slots: [],
+  }),
+  entry({
+    key: "proposal.edit", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Change my guesses", slots: [],
+  }),
+  entry({
+    key: "proposal.edit.title", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Change my monthly guesses", slots: [],
+  }),
+  entry({
+    key: "proposal.edit.save", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Save a new version", slots: [],
+  }),
+  entry({
+    key: "proposal.edit.cancel", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Keep this version", slots: [],
+  }),
+  entry({
+    key: "proposal.edit.changed", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "This version changed. Earlier approvals don't apply; each of you can review and say yes again.", slots: [],
+  }),
+  entry({
+    key: "proposal.edit.invalid", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Use dollars and cents, like 125 or 125.50. Leave a box blank when you don't have a guess.", slots: [],
+  }),
+  entry({
+    key: "approve.title", speaker: "system", surface: "card", scope: "none", announce: "none",
+    text: "Two personal approvals", slots: [],
+  }),
+  entry({
+    key: "approve.mine", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Your approval is on this version.", slots: [],
+  }),
+  entry({
+    key: "approve.recorded", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "{name} approved this version.", slots: ["name"],
+  }),
+  entry({
+    key: "approve.pending", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Not approved yet", slots: [],
+  }),
+  entry({
+    key: "approve.complete", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "You both approved this exact version. Nothing changes until one of you adopts it.", slots: [],
+  }),
+  entry({
+    key: "adopt.self", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Adopt our first plan", slots: [],
+  }),
+  entry({
+    key: "adopt.working", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Adopting this exact version", slots: [],
+  }),
+  entry({
+    key: "adopt.retry", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Try adoption again", slots: [],
+  }),
+  entry({
+    key: "adopt.failed", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "That didn't go through. Nothing changed, and this exact version is still here to try again.", slots: [],
+  }),
+  entry({
+    key: "adopt.recovery", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
+    text: "The books may have accepted this plan, but this device couldn't save the receipt. Use recovery before trying again.", slots: [],
+  }),
 
   // E.6 The finale
   entry({

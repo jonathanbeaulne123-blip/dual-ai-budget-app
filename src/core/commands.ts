@@ -495,6 +495,15 @@ export function recordChapterAcknowledgement(household: Household, input: {
       throw new ValidationError("Record your own earning rhythm before continuing.");
     }
   }
+  if (chapter.id === "ch-11-plan") {
+    requireOnboardingProgressActor(household, input.memberId, input.createdBy);
+    const projected = evidenceFor(household, chapter.id, input.memberId, {
+      today: todayKey(new Date(), household.timezone),
+    });
+    if (projected.kind !== "accepted" || projected.card.scope !== "household") {
+      throw new ValidationError("Adopt the current month's exact first plan before continuing.");
+    }
+  }
   return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id

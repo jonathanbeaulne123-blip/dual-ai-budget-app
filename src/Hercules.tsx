@@ -233,6 +233,7 @@ export function HerculesPresence({
   onOpenEarningCadence,
   onOpenCategories,
   onOpenEstimates,
+  onOpenPlan,
 }: {
   household: Household;
   today: string;
@@ -260,6 +261,7 @@ export function HerculesPresence({
   onOpenEarningCadence?: () => void;
   onOpenCategories?: () => void;
   onOpenEstimates?: () => void;
+  onOpenPlan?: () => void;
 }) {
   const contextHousehold = useMemo(
     () => householdForHerculesContext(household, memberId, view),
@@ -937,6 +939,20 @@ export function HerculesPresence({
     onOpenEstimates();
   }
 
+  function openOnboardingPlan() {
+    if (!onOpenPlan || navTarget?.chapterId !== "ch-11-plan") return;
+    closeChat();
+    saveReturnMessage({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId,
+      chapterId: navTarget.chapterId,
+      tab: navTarget.target.tab,
+      setAt: new Date().toISOString(),
+    });
+    onOpenPlan();
+  }
+
   function openMobileFocus() {
     if (adding || phoneShell === false) return;
     setMobileFocus(true);
@@ -1514,6 +1530,7 @@ export function HerculesPresence({
               onOpenEarningCadence={openOnboardingEarningCadence}
               onOpenCategories={openOnboardingCategories}
               onOpenEstimates={openOnboardingEstimates}
+              onOpenPlan={openOnboardingPlan}
             />
           ) : (
             <>
@@ -1682,8 +1699,9 @@ export function HerculesPresence({
                 onOpenEarningCadence={openOnboardingEarningCadence}
                 onOpenCategories={openOnboardingCategories}
                 onOpenEstimates={openOnboardingEstimates}
+                onOpenPlan={openOnboardingPlan}
               />
-              {navTarget && !["ch-03-charter", "ch-04-accounts", "ch-05-opening", "ch-06-fund", "ch-07-recurrences", "ch-08-cadence", "ch-09-categories", "ch-10-estimates"].includes(navTarget.chapterId) && (
+              {navTarget && !["ch-03-charter", "ch-04-accounts", "ch-05-opening", "ch-06-fund", "ch-07-recurrences", "ch-08-cadence", "ch-09-categories", "ch-10-estimates", "ch-11-plan"].includes(navTarget.chapterId) && (
                 <button type="button" className="hercules-help" onClick={goToOnboardingTarget}>
                   {copy("nav.go", { surface: navTargetSurfaceLabel(navTarget.target.tab) })}
                 </button>

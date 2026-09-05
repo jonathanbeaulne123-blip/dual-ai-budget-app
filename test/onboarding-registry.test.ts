@@ -87,6 +87,7 @@ describe("onboarding registry", () => {
     expect(chapterById("ch-04-accounts")?.pausePoints).toEqual(["after-shared-accounts"]);
     expect(chapterById("ch-05-opening")?.timeBudgetSeconds).toBe(360);
     expect(chapterById("ch-05-opening")?.pausePoints).toEqual(["between-accounts"]);
+    expect(chapterById("ch-11-plan")?.pausePoints).toEqual(["before-approval"]);
     expect(chapterById("missing")).toBeNull();
   });
 

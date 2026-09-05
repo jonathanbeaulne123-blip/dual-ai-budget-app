@@ -16,6 +16,7 @@ import {
   shapeHouseholdFundConfig,
 } from "../householdFund.ts";
 import { formatCad } from "../money.ts";
+import { monthKeyFromDateKey, type DateKey } from "../calendar.ts";
 import {
   hasOnlyOpeningCorrectionHistory,
   hasPostedOpeningTruth,
@@ -31,6 +32,8 @@ import { onboardingCadenceProbe, onboardingCadenceSentence } from "./cadence.ts"
 import { onboardingCategoryState } from "./categories.ts";
 import { onboardingEstimateState } from "./estimates.ts";
 import { currentSubmission } from "./submissions.ts";
+import { buildProposal } from "./proposal.ts";
+import { currentPlanAdoptionReceipt } from "./planView.ts";
 import {
   validateHouseholdScopeObservation,
   type HouseholdScopeFailure,
@@ -70,6 +73,8 @@ export type EvidenceResult =
 export type EvidenceContext = {
   /** Sanitized transient Chapter 2 observation; never stored on Household. */
   householdScope?: HouseholdScopeObservation | null;
+  /** Civil date supplied by the shell when a probe is month-sensitive. */
+  today?: DateKey;
 };
 
 type Projection = {
@@ -456,20 +461,22 @@ function cadenceEvidence(household: Household, chapterId: ChapterId, viewerMembe
   };
 }
 
-function planEvidence(household: Household, chapterId: ChapterId): Projection {
-  const receipt = [...household.commandReceipts]
-    .filter((candidate) => candidate.commandKind === "adoptFirstBudget")
-    .sort((left, right) => right.acceptedAt.localeCompare(left.acceptedAt))[0];
+function planEvidence(household: Household, chapterId: ChapterId, today?: DateKey): Projection {
+  if (!today) return EMPTY;
+  let proposal;
+  try {
+    proposal = buildProposal(household, monthKeyFromDateKey(today), today);
+  } catch {
+    return { ...EMPTY, ineligible: "stale" };
+  }
+  const receipt = currentPlanAdoptionReceipt(household, proposal.monthKey, proposal);
   if (!receipt) return EMPTY;
-  if (!receipt.postedIds.length) return { ...EMPTY, ineligible: "untied" };
-  const planIds = new Set(household.budgetPlans.map((plan) => plan.id));
-  if (receipt.postedIds.some((id) => !planIds.has(id))) return { ...EMPTY, ineligible: "untied" };
   return {
     ...EMPTY,
     household: {
       chapterId,
       scope: "household",
-      kind: "submission",
+      kind: "receipt",
       sourceIds: [receipt.confirmationId, ...receipt.postedIds],
       lines: [{ label: "Accepted plan", value: `${receipt.postedIds.length} plan rows` }],
       observedAt: receipt.acceptedAt,
@@ -598,7 +605,7 @@ function project(
     case "ch-08-cadence": return cadenceEvidence(household, chapterId, viewerMemberId);
     case "ch-09-categories": return categoryEvidence(household, chapterId);
     case "ch-10-estimates": return estimateEvidence(household, chapterId);
-    case "ch-11-plan": return planEvidence(household, chapterId);
+    case "ch-11-plan": return planEvidence(household, chapterId, context?.today);
     case "ch-12-ready": return readyEvidence(household, chapterId, viewerMemberId);
     default: return { ...EMPTY, ineligible: "malformed" };
   }

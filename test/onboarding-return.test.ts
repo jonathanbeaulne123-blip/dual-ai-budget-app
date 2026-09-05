@@ -237,7 +237,22 @@ describe("onboardingNavigationTarget", () => {
           detailAction: "skip",
         }).household;
       }
-      household = chapterId === "ch-02-household"
+      household = chapterId === "ch-11-plan"
+        ? {
+            ...household,
+            members: household.members.map((member) => member.id === BIANCA && member.onboardingProgress
+              ? {
+                  ...member,
+                  onboardingProgress: {
+                    ...member.onboardingProgress,
+                    rows: member.onboardingProgress.rows.map((row) => row.chapterId === chapterId
+                      ? { ...row, acknowledgedAt: "2026-09-03T14:03:00.000Z", lastSafeResumePoint: chapterId }
+                      : row),
+                  },
+                }
+              : member),
+          }
+        : chapterId === "ch-02-household"
         ? recordObservedChapterCompletion(household, {
             memberId: BIANCA,
             chapterId,
