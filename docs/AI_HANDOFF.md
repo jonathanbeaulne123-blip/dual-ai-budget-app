@@ -2388,3 +2388,30 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 **Next owner:** Jonathan and Bianca — conduct the four-week Development rehearsal and separately authorize two-authenticated-phone continuity/joint-signoff proof when ready. Gemini review still requires Jonathan's explicit external-transmission approval. Jonathan remains the only owner who may approve any launch/Production step.
 
 **Trust boundary:** current client replay rejects wrong-kind, Personal-scope, changed-participant, nonparticipant, and SHA-mismatched rehearsal materialization, including compacted events. The SHA is client-generated tamper detection, not server authority; a malicious authenticated-participant client remains unproven until Jonathan separately authorizes a server transition validator or signing boundary.
+
+## Onboarding Slice 21 — deterministic first-plan proposal (D-221) (2026-09-04)
+
+- Branch `onboarding/21-proposal` starts from clean merged Slice 20
+  `origin/main@5941d50f395ccbc7ed13c8fdfd5463b0a906628b`.
+- `buildProposal` consumes the accepted two-member category set, current estimate
+  submissions, valid Shared recurrence facts, and one carried `houseRunRate`
+  reading. It emits category-id-ordered integer-cent rows and never writes money.
+- Both guesses use a half-up mean, one uses that answer, and none begins at zero.
+  Valid recurring obligations and eligible observed history are upward bounds only.
+- The proposal carries both estimate submission ids/revisions plus the merged
+  category list so `proposalDigest` can reproduce the accepted source without
+  rereading a changed household.
+- The current repo has no accepted capacity fact. `capacityCents` and
+  `capacitySourceRevision` therefore remain `null`; the digest accepts a future
+  pair only together and changes when either changes.
+- Focused proof is 13/13 and the proposal plus adjacent estimate/category/
+  recurrence/run-rate suite is 61/61. The High quick gate passed 44 fast plus 7
+  serial tests; the production build passed 470 modules and Hercules Pro UI.
+- Independent review found four boundary gaps, all repaired: direct digest
+  formula validation, exact two-seat provenance, maximum-cent averaging, and
+  collision-resistant approval identity. Re-review found no P0-P2 blocker and
+  matched SHA-256 boundary and Unicode cases to Node crypto.
+- No component or CSS changed, so there is no browser UX surface in this slice.
+  Approval UI and atomic plan adoption belong to Slices 22–24.
+- No push, PR, merge, deploy, hosted mutation, schema, secret, or Production work
+  has been authorized.
