@@ -1,4 +1,4 @@
-import type { CommandReceipt, Household, HouseholdFundConfig, HouseholdFundEvent, MonthRehearsal, Recurrence, Transaction } from "./types.ts";
+import type { Category, CommandReceipt, Household, HouseholdFundConfig, HouseholdFundEvent, MonthRehearsal, Recurrence, Transaction } from "./types.ts";
 
 function byId<T extends { id: string }>(rows: T[] | undefined): T[] {
   return [...(rows ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -22,12 +22,18 @@ export function commandMaterializationFacts(input: {
   monthRehearsals?: MonthRehearsal[];
   householdOnboarding?: Household["householdOnboarding"];
   onboardingSubmissions?: Household["onboardingSubmissions"];
+  onboardingCategoryProposals?: Household["onboardingCategoryProposals"];
+  onboardingCategoryMerges?: Household["onboardingCategoryMerges"];
+  categories?: Category[];
 }): unknown {
   return stable({
     ...(input.recurrences?.length ? { recurrences: byId(input.recurrences) } : {}),
     ...(input.monthRehearsals?.length ? { monthRehearsals: byId(input.monthRehearsals) } : {}),
     ...(input.householdOnboarding ? { householdOnboarding: input.householdOnboarding } : {}),
     ...(input.onboardingSubmissions?.length ? { onboardingSubmissions: byId(input.onboardingSubmissions) } : {}),
+    ...(input.onboardingCategoryProposals?.length ? { onboardingCategoryProposals: byId(input.onboardingCategoryProposals) } : {}),
+    ...(input.onboardingCategoryMerges?.length ? { onboardingCategoryMerges: byId(input.onboardingCategoryMerges) } : {}),
+    ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
   });
 }
 
@@ -218,6 +224,8 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     ? next.householdOnboarding
     : null;
   const onboardingSubmissions = (next.onboardingSubmissions ?? []).filter((row) => posted.has(row.id));
+  const onboardingCategoryProposals = (next.onboardingCategoryProposals ?? []).filter((row) => posted.has(row.id));
+  const onboardingCategoryMerges = (next.onboardingCategoryMerges ?? []).filter((row) => posted.has(row.id));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -290,6 +298,8 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     weeklyDocumentStamps,
     householdOnboarding,
     onboardingSubmissions,
+    onboardingCategoryProposals,
+    onboardingCategoryMerges,
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.

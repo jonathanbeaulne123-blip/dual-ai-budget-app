@@ -1,5 +1,39 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 19 — Chapter 9 category selection (D-219) (2026-09-04)
+
+**Status:** Local implementation and focused proof are complete on
+`onboarding/19-ch9-categories`, based on
+`origin/main@f5ef04722830b5661c4f312da6e5ca5b5f5f84b6`; final quick gate and
+build are pending. Not pushed, merged, deployed, or hosted-live verified. Risk:
+**Medium**.
+
+**Outcome:** Each person privately chooses what the household plan should cover.
+One submitted list waits without revealing the other. Both current lists reveal
+one deterministic household set and the authored lists without comparison.
+Submitted ideas remain staged until a reviewed merge creates each accepted
+canonical category once. Contract:
+[`briefs/ONBOARDING_SLICE_19_CH9_CATEGORIES_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_19_CH9_CATEGORIES_CONTRACT_2026-09-04.md).
+
+**Authority, privacy, and money boundary:** Drafts stay in component state.
+Proposal and merge facts are Shared only at explicit commands and are bound to
+the active actor, household, and current submissions. Same-name/different-id
+alternatives require an explicit choice. Newly canonical categories travel with
+the merge event. No estimate, budget amount, transaction, journal entry, Fund
+event, contribution, or approval is created.
+
+**Focused verification:** 122 focused and adjacent tests pass, including the
+Slice 19 private/wait/reveal/conflict/merge, accepted-command, command-event, and
+no-journal cases. Actual-component browser proof covers draft, waiting, review,
+and done at 320, 390, 720, and 1100 px: no horizontal overflow, controls are at
+least 46 px, reduced motion removes transitions, keyboard Enter adds an idea,
+Submit reaches the waiting state, and scoped axe scans report no violations.
+Temporary QA files were removed. Final Medium quick-gate, production-build, AI
+verifier, and Windows-host results will be recorded before handoff closes.
+
+**Next owner:** Codex finishes the local gate and updates exact evidence;
+Jonathan separately decides whether to push or open a PR.
+
 ## Onboarding Slice 18 — submission contract (D-218) (2026-09-04)
 
 **Status:** Local implementation and proof complete at

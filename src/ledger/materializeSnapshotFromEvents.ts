@@ -19,12 +19,23 @@ import {
   shapeOnboardingSubmissions,
   type OnboardingSubmission,
 } from "../core/onboarding/submissions.ts";
+import {
+  assertOnboardingCategoryCollections,
+  assertOnboardingCategoryMergeTransition,
+  mergeOnboardingCategoryMerges,
+  mergeOnboardingCategoryProposals,
+  shapeOnboardingCategoryMerges,
+  shapeOnboardingCategoryProposals,
+  type OnboardingCategoryMerge,
+  type OnboardingCategoryProposal,
+} from "../core/onboarding/categories.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import { advanceCadence } from "../core/recurrence.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
 import type {
   Claim,
+  Category,
   CommandReceipt,
   GoalContribution,
   GoalPurchase,
@@ -72,6 +83,9 @@ export type ContinuityMaterializationFacts = {
   goalPurchases?: GoalPurchase[];
   householdOnboarding?: Household["householdOnboarding"];
   onboardingSubmissions?: OnboardingSubmission[];
+  onboardingCategoryProposals?: OnboardingCategoryProposal[];
+  onboardingCategoryMerges?: OnboardingCategoryMerge[];
+  categories?: Category[];
   charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -205,10 +219,18 @@ function eventContainsOnboardingSubmissionCommand(event: ContinuityCommandEvent)
     ) === true;
 }
 
+function eventContainsOnboardingCategoryMerge(event: ContinuityCommandEvent): boolean {
+  return event.command_type === "mergeOnboardingCategories"
+    || event.payload_json.compactedCommands?.some(
+      (row) => row.ledgerScope === "shared" && row.commandKind === "mergeOnboardingCategories",
+    ) === true;
+}
+
 function actorMayApplyOnboardingSubmissions(
   local: Household,
   event: ContinuityCommandEvent,
   incoming: OnboardingSubmission[],
+  incomingProposals: OnboardingCategoryProposal[],
 ): boolean {
   if (event.ledger_scope !== "shared") return false;
   if (!local.members.some((row) => row.active && row.id === event.member_id)) return false;
@@ -230,17 +252,28 @@ function actorMayApplyOnboardingSubmissions(
     const combined = mergeSubmissions(local.onboardingSubmissions, incoming);
     assertOnboardingSubmissionHistory(combined);
     const byId = new Map(combined.map((row) => [row.id, row]));
+    const proposalById = new Map(incomingProposals.map((row) => [row.id, row]));
     const declared = new Set<string>();
     for (const command of commands) {
       const ids = [...new Set(command.postedIds)];
-      const rows = ids.map((id) => byId.get(id));
+      const submissionIds = ids.filter((id) => byId.has(id));
+      const proposalIds = ids.filter((id) => proposalById.has(id));
+      if (submissionIds.length + proposalIds.length !== ids.length) return false;
+      const rows = submissionIds.map((id) => byId.get(id));
       const kind = command.commandKind === "submitOnboardingCategories" ? "categories" : "estimates";
-      if ((ids.length !== 1 && ids.length !== 2)
+      if ((submissionIds.length !== 1 && submissionIds.length !== 2)
         || rows.some((row) => !row
           || row.householdId !== event.household_id
           || row.memberId !== event.member_id
           || row.kind !== kind)) return false;
-      ids.forEach((id) => declared.add(id));
+      if (proposalIds.some((id) => {
+        const proposal = proposalById.get(id)!;
+        return kind !== "categories"
+          || proposal.householdId !== event.household_id
+          || proposal.memberId !== event.member_id
+          || !submissionIds.includes(proposal.submissionId);
+      })) return false;
+      submissionIds.forEach((id) => declared.add(id));
       const ordered = (rows as OnboardingSubmission[])
         .sort((left, right) => left.revision - right.revision || left.id.localeCompare(right.id));
       if (ordered.length === 1) {
@@ -427,11 +460,20 @@ function filterFactsForScope(
     scoped.goalPurchases = facts.goalPurchases.filter((row) => scopeAllowsRow(event, row));
   }
   if (event.ledger_scope === "shared") {
+    if (facts.categories?.length) scoped.categories = facts.categories;
     if (facts.recurrences?.length) scoped.recurrences = facts.recurrences;
     if (facts.householdOnboarding) scoped.householdOnboarding = facts.householdOnboarding;
     if (facts.onboardingSubmissions?.length) {
       scoped.onboardingSubmissions = shapeOnboardingSubmissions(facts.onboardingSubmissions)
         .filter((row) => row.householdId === event.household_id && row.memberId === event.member_id);
+    }
+    if (facts.onboardingCategoryProposals?.length) {
+      scoped.onboardingCategoryProposals = shapeOnboardingCategoryProposals(facts.onboardingCategoryProposals)
+        .filter((row) => row.householdId === event.household_id && row.memberId === event.member_id);
+    }
+    if (facts.onboardingCategoryMerges?.length) {
+      scoped.onboardingCategoryMerges = shapeOnboardingCategoryMerges(facts.onboardingCategoryMerges)
+        .filter((row) => row.householdId === event.household_id && row.mergedByMemberId === event.member_id);
     }
     if (facts.charter) scoped.charter = facts.charter;
     if (facts.householdFund) scoped.householdFund = facts.householdFund;
@@ -492,6 +534,8 @@ export function extractMaterializationFacts(
   const goalPurchases = (household.goalPurchases ?? []).filter((row) => posted.has(row.id) && allows(row));
   if (goalPurchases.length) facts.goalPurchases = goalPurchases;
   if (scope !== "personal") {
+    const categories = household.categories.filter((row) => posted.has(row.id));
+    if (categories.length) facts.categories = categories;
     if (household.householdOnboarding && posted.has(household.householdOnboarding.id)) {
       facts.householdOnboarding = household.householdOnboarding;
     }
@@ -504,6 +548,16 @@ export function extractMaterializationFacts(
         ? { ...row, supersededBy: null }
         : row);
     if (onboardingSubmissions.length) facts.onboardingSubmissions = onboardingSubmissions;
+    const onboardingCategoryProposals = shapeOnboardingCategoryProposals(
+      household.onboardingCategoryProposals,
+      household.householdId,
+    ).filter((row) => posted.has(row.id) && (!memberId || row.memberId === memberId));
+    if (onboardingCategoryProposals.length) facts.onboardingCategoryProposals = onboardingCategoryProposals;
+    const onboardingCategoryMerges = shapeOnboardingCategoryMerges(
+      household.onboardingCategoryMerges,
+      household.householdId,
+    ).filter((row) => posted.has(row.id) && (!memberId || row.mergedByMemberId === memberId));
+    if (onboardingCategoryMerges.length) facts.onboardingCategoryMerges = onboardingCategoryMerges;
     if (household.charter && postedIds.some((id) => id.startsWith("CHARTER-"))) {
       facts.charter = household.charter;
     }
@@ -569,6 +623,8 @@ async function applyEvent(
     shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps),
     mergedTombstones,
   );
+  const categoryMap = rowMapsTo(snapshot.categories);
+  for (const category of facts.categories ?? []) categoryMap.set(category.id, category);
   const planMap = rowMapsTo(snapshot.fundMonthPlans ?? []);
   for (const plan of facts.fundMonthPlans ?? []) planMap.set(plan.id, plan);
   const householdFund = facts.householdFund ?? snapshot.householdFund;
@@ -579,6 +635,14 @@ async function applyEvent(
   });
   const onboardingSubmissions = mergeSubmissions(snapshot.onboardingSubmissions, facts.onboardingSubmissions)
     .filter((row) => row.householdId === snapshot.householdId);
+  const onboardingCategoryProposals = mergeOnboardingCategoryProposals(
+    snapshot.onboardingCategoryProposals,
+    facts.onboardingCategoryProposals,
+  ).filter((row) => row.householdId === snapshot.householdId);
+  const onboardingCategoryMerges = mergeOnboardingCategoryMerges(
+    snapshot.onboardingCategoryMerges,
+    facts.onboardingCategoryMerges,
+  ).filter((row) => row.householdId === snapshot.householdId);
   const charter = facts.charter
     ? shapeHouseholdCharter(facts.charter, { members: snapshot.members, householdFund })
     : snapshot.charter;
@@ -595,8 +659,11 @@ async function applyEvent(
     goalContributions: goalContributions.filter((row) => !dead.has(row.id)),
     goalPurchases: goalPurchases.filter((row) => !dead.has(row.id)),
     recurrences: recurrences.filter((row) => !dead.has(row.id)),
+    categories: [...categoryMap.values()],
     householdOnboarding,
     onboardingSubmissions,
+    onboardingCategoryProposals,
+    onboardingCategoryMerges,
     charter,
     householdFund,
     fundMonthPlans: [...planMap.values()],
@@ -638,6 +705,8 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     goalPurchases: [],
     householdOnboarding: null,
     onboardingSubmissions: [],
+    onboardingCategoryProposals: [],
+    onboardingCategoryMerges: [],
     charter: null,
     householdFund: null,
     fundMonthPlans: [],
@@ -779,6 +848,10 @@ export async function applyCommandEventLocally(input: {
   const rawIncomingOnboarding = event.payload_json.materializationFacts.householdOnboarding;
   const incomingOnboarding = shapeHouseholdOnboarding(rawIncomingOnboarding);
   const rawIncomingSubmissions = event.payload_json.materializationFacts.onboardingSubmissions;
+  const rawIncomingCategoryProposals = event.payload_json.materializationFacts.onboardingCategoryProposals;
+  const rawIncomingCategoryMerges = event.payload_json.materializationFacts.onboardingCategoryMerges;
+  const rawIncomingCategories = event.payload_json.materializationFacts.categories;
+  const incomingCategories = Array.isArray(rawIncomingCategories) ? rawIncomingCategories : [];
   let incomingSubmissions: OnboardingSubmission[];
   try {
     incomingSubmissions = shapeOnboardingSubmissions(rawIncomingSubmissions);
@@ -791,6 +864,67 @@ export async function applyCommandEventLocally(input: {
   if (rawIncomingSubmissions && (!Array.isArray(rawIncomingSubmissions)
     || incomingSubmissions.length !== rawIncomingSubmissions.length)) {
     return { ok: false, reason: "onboarding-submission-invalid", fallback: true };
+  }
+  const incomingCategoryProposals = shapeOnboardingCategoryProposals(rawIncomingCategoryProposals);
+  const incomingCategoryMerges = shapeOnboardingCategoryMerges(rawIncomingCategoryMerges);
+  if (rawIncomingCategoryProposals && (!Array.isArray(rawIncomingCategoryProposals)
+    || incomingCategoryProposals.length !== rawIncomingCategoryProposals.length)) {
+    return { ok: false, reason: "onboarding-category-proposal-invalid", fallback: true };
+  }
+  if (rawIncomingCategoryMerges && (!Array.isArray(rawIncomingCategoryMerges)
+    || incomingCategoryMerges.length !== rawIncomingCategoryMerges.length)) {
+    return { ok: false, reason: "onboarding-category-merge-invalid", fallback: true };
+  }
+  if (rawIncomingCategories && !Array.isArray(rawIncomingCategories)) {
+    return { ok: false, reason: "onboarding-category-catalog-invalid", fallback: true };
+  }
+  if (incomingCategoryProposals.length || incomingCategoryMerges.length) {
+    try {
+      assertOnboardingCategoryCollections({
+        ...local,
+        onboardingSubmissions: mergeSubmissions(local.onboardingSubmissions, incomingSubmissions),
+        onboardingCategoryProposals: mergeOnboardingCategoryProposals(local.onboardingCategoryProposals, incomingCategoryProposals),
+        onboardingCategoryMerges: mergeOnboardingCategoryMerges(local.onboardingCategoryMerges, incomingCategoryMerges),
+      });
+    } catch {
+      return { ok: false, reason: "onboarding-category-history-invalid", fallback: true };
+    }
+  }
+  if (incomingCategoryMerges.length) {
+    if (!eventContainsOnboardingCategoryMerge(event)) {
+      return { ok: false, reason: "onboarding-category-merge-authority-mismatch", fallback: true };
+    }
+    try {
+      let staged: Household = {
+        ...local,
+        onboardingSubmissions: mergeSubmissions(local.onboardingSubmissions, incomingSubmissions),
+        onboardingCategoryProposals: mergeOnboardingCategoryProposals(local.onboardingCategoryProposals, incomingCategoryProposals),
+      };
+      const incomingCategoryById = new Map(incomingCategories.map((row) => [row.id, row]));
+      const allowedCategoryIds = new Set(incomingCategoryMerges.flatMap((row) => row.categoryIds));
+      if (incomingCategories.some((row) => !allowedCategoryIds.has(row.id) || staged.categories.some((prior) => prior.id === row.id))) {
+        throw new Error("Review the category merge again.");
+      }
+      for (const merge of incomingCategoryMerges) {
+        const mergeCategories = [...incomingCategoryById.values()].filter((row) => merge.categoryIds.includes(row.id));
+        const candidate: Household = {
+          ...staged,
+          categories: [...staged.categories, ...mergeCategories],
+          onboardingCategoryMerges: [
+            ...shapeOnboardingCategoryMerges(staged.onboardingCategoryMerges, staged.householdId),
+            merge,
+          ],
+        };
+        assertOnboardingCategoryMergeTransition(staged, candidate, {
+          actorMemberId: event.member_id,
+          commandKind: "mergeOnboardingCategories",
+          postedIds: [merge.id, ...mergeCategories.map((row) => row.id)],
+        });
+        staged = candidate;
+      }
+    } catch {
+      return { ok: false, reason: "onboarding-category-merge-authority-mismatch", fallback: true };
+    }
   }
   if (eventContainsOnboardingSubmissionCommand(event) && incomingSubmissions.length === 0) {
     return { ok: false, reason: "onboarding-submission-missing", fallback: true };
@@ -805,15 +939,19 @@ export async function applyCommandEventLocally(input: {
     return { ok: false, reason: "ask-goal-move-authority-mismatch", fallback: true };
   }
   if (incomingSubmissions.length
-    && !actorMayApplyOnboardingSubmissions(local, event, incomingSubmissions)) {
+    && !actorMayApplyOnboardingSubmissions(local, event, incomingSubmissions, incomingCategoryProposals)) {
     return { ok: false, reason: "onboarding-submission-authority-mismatch", fallback: true };
   }
-  if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length) {
+  if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length
+    || incomingCategoryProposals.length || incomingCategoryMerges.length) {
     const expected = await sha256Hex(commandMaterializationFacts({
       monthRehearsals: incomingRehearsals,
       recurrences: incomingRecurrences,
       householdOnboarding: incomingOnboarding,
       onboardingSubmissions: incomingSubmissions,
+      onboardingCategoryProposals: incomingCategoryProposals,
+      onboardingCategoryMerges: incomingCategoryMerges,
+      categories: incomingCategories,
     }));
     const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
       ? await sha256Hex(incomingRehearsals)
