@@ -1,5 +1,89 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 22 — self-owned exact-digest approvals (D-222) (2026-09-04)
+
+**Status:** Local implementation and proof are complete on
+`onboarding/22-approvals` at implementation commit
+`e84b72506b992ec4d2d5c2b111f1b308082fa11c`, based on
+`origin/main@e49e3ec10e89d2e64225fb472067a31743f51b29`. Nothing is pushed,
+merged, deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** Each active member may append only their own proposal or Ready
+approval for one exact digest. Both approval requires exactly two active seats
+on that same household, scope, and digest. Older records remain auditable but
+cannot authorize changed meaning. Contract:
+[`briefs/ONBOARDING_SLICE_22_APPROVALS_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_22_APPROVALS_CONTRACT_2026-09-04.md).
+
+**Authority, privacy, and money boundary:** Direct commands, accepted-write
+validation, and command-event replay bind the actor, command kind, household,
+and posted approval id. Approvals travel only through Shared continuity and
+contain no Personal source facts. Chat text cannot approve. Fund-configuration
+consent remains separate. The slice changes no budget plan, transaction,
+journal row, Fund event, accepted financial hash, provider, or model state.
+
+**Verification:** Focused proof passes 14/14. Approval, adjacent onboarding,
+and continuity suites pass 164/164; the High quick gate passes TypeScript,
+AI-surface verification, diff hygiene, fast tests, and serial PGlite proof. The
+production build passes at 471 Vite modules plus Hercules Pro UI. Independent
+High-risk review drove adversarial activity, replay, compacted-provenance,
+identity, and malformed-envelope repairs, then reported no remaining P0-P2
+finding. No component or CSS changed, so
+there is no browser UX surface in this slice. `pnpm check:windows` depends on a
+PowerShell-capable host; no Windows result is claimed here.
+
+**Evidence class:** Synthetic local Development fixtures, focused/adjacent
+tests, exact clean-head quick-gate, local build, and independent review. This is
+not a full-suite, Windows, hosted two-account, deployment, or Production claim.
+No hosted row, schema, secret, provider, or Production setting was read or
+changed.
+
+**Next owner:** Jonathan separately decides whether to push or open a PR.
+
+## Onboarding Slice 20 — Chapter 10 first estimates (D-220) (2026-09-04)
+
+**Status:** Local implementation and proof are complete at
+`1429142beb8fd33089d2e68100f0bda708ad0488` on
+`onboarding/20-ch10-estimates`, based on unchanged
+`origin/main@8b035ffaaf75f60dcebfc9cf1b08a448f69d1ba9`. Nothing is pushed,
+merged, deployed, or hosted-live verified. Risk: **Medium**.
+
+**Outcome:** Each person gives a private first monthly guess for every accepted
+household category. Blank is preserved as not estimated and zero remains
+`$0.00`. One submission waits without revealing the other. Both current
+submissions reveal two author-labelled lists without a total, ratio, ranking,
+or comparison. Contract:
+[`briefs/ONBOARDING_SLICE_20_CH10_ESTIMATES_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_20_CH10_ESTIMATES_CONTRACT_2026-09-04.md).
+
+**Authority, privacy, and money boundary:** Drafts are keyed to the household
+and active member and remain component-local until Submit. Each estimate
+submission stores the exact accepted category-id set reviewed, so offline clock
+skew cannot make an old set current. Direct command, accepted-write validation,
+and command-event replay fail closed on pending/mismatched scopes. The chapter
+creates no budget plan, transaction, journal entry, Fund event, contribution,
+commitment, or approval.
+
+**Verification:** 142 focused and adjacent tests pass, including clock
+skew, pending-category race, forged replay, member-switch draft isolation,
+field-specific invalid-input recovery, convergence, evidence, and no-money
+cases, plus forged accepted-write rejection. The exact clean implementation SHA
+passed the Medium quick gate in 53.3 seconds: 69 fast plus 7 serial PGlite proof
+tests, TypeScript, AI-surface, and diff hygiene. `pnpm ai:verify` and the
+469-module production build also pass. Actual-component browser proof covers
+draft, invalid, waiting, changed-set, and
+two-author reveal states at 320, 390, 720, and 1100 px: no horizontal overflow,
+48 px controls, keyboard-only Submit, field focus recovery, reduced motion,
+clean console, and zero scoped axe WCAG A/AA violations. `pnpm check:windows`
+could not start because this macOS host has no `pwsh`; no Windows result is
+claimed. An independent read-only audit's four scope, replay, draft-isolation,
+and invalid-field findings are fixed and covered by the 142-test adjacent suite.
+
+**Evidence class:** Synthetic local Development fixtures, focused/adjacent
+tests, local build, and actual-component local browser proof. This is not a
+full-suite, Windows, hosted two-account, deployment, or Production claim. No
+hosted row, schema, secret, provider, or Production setting was read or changed.
+
+**Next owner:** Jonathan separately decides whether to push or open a PR.
+
 ## Onboarding Slice 19 — Chapter 9 category selection (D-219) (2026-09-04)
 
 **Status:** Local implementation and proof are complete at
@@ -2389,3 +2473,67 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 **Next owner:** Jonathan and Bianca — conduct the four-week Development rehearsal and separately authorize two-authenticated-phone continuity/joint-signoff proof when ready. Gemini review still requires Jonathan's explicit external-transmission approval. Jonathan remains the only owner who may approve any launch/Production step.
 
 **Trust boundary:** current client replay rejects wrong-kind, Personal-scope, changed-participant, nonparticipant, and SHA-mismatched rehearsal materialization, including compacted events. The SHA is client-generated tamper detection, not server authority; a malicious authenticated-participant client remains unproven until Jonathan separately authorizes a server transition validator or signing boundary.
+
+## Onboarding Slice 21 — deterministic first-plan proposal (D-221) (2026-09-04)
+
+- Branch `onboarding/21-proposal` starts from clean merged Slice 20
+  `origin/main@5941d50f395ccbc7ed13c8fdfd5463b0a906628b`.
+- Local implementation commit: `bbb93f7`.
+- `buildProposal` consumes the accepted two-member category set, current estimate
+  submissions, valid Shared recurrence facts, and one carried `houseRunRate`
+  reading. It emits category-id-ordered integer-cent rows and never writes money.
+- Both guesses use a half-up mean, one uses that answer, and none begins at zero.
+  Valid recurring obligations and eligible observed history are upward bounds only.
+- The proposal carries both estimate submission ids/revisions plus the merged
+  category list so `proposalDigest` can reproduce the accepted source without
+  rereading a changed household.
+- The current repo has no accepted capacity fact. `capacityCents` and
+  `capacitySourceRevision` therefore remain `null`; the digest accepts a future
+  pair only together and changes when either changes.
+- Focused proof is 13/13 and the proposal plus adjacent estimate/category/
+  recurrence/run-rate suite is 61/61. The High quick gate passed 44 fast plus 7
+  serial tests; the production build passed 470 modules and Hercules Pro UI.
+- Independent review found four boundary gaps, all repaired: direct digest
+  formula validation, exact two-seat provenance, maximum-cent averaging, and
+  collision-resistant approval identity. Re-review found no P0-P2 blocker and
+  matched SHA-256 boundary and Unicode cases to Node crypto.
+- No component or CSS changed, so there is no browser UX surface in this slice.
+  Approval UI and atomic plan adoption belong to Slices 22–24.
+- No push, PR, merge, deploy, hosted mutation, schema, secret, or Production work
+  has been authorized.
+
+## Onboarding Slice 23 — atomic budget-plan adoption (D-223) (2026-09-05)
+
+- Branch `onboarding/23-adoption` starts from clean merged Slice 22
+  `origin/main@85bafffc4d39668fc1aed1dd0c90a080cfb58ea4`; implementation commit
+  `119c30b0d6776dce6b9796d9c596f3a864dcb7d1` is local only.
+- `adoptFirstBudget` rebuilds the current month proposal and requires the same
+  active actor plus both active seats' approvals for its exact digest before it
+  changes any plan row.
+- One cloned batch updates existing plan identities and creates every missing
+  row. The accepted boundary rejects stale, partial, unrelated, malformed, or
+  forged batches before persistence; the compiled journal stays deep-equal.
+- `ONB-ADOPT-{month}-{digest}` is both adoption identity and confirmation id.
+  Ambiguous/post-commit Retry returns the same receipt and revision.
+- Proposal approvals bind the exact current plan snapshot with browser-safe
+  SHA-256, so later edits cannot hide behind equal or skewed device clocks.
+- Changed plan rows travel as bounded Shared command materialization with actor,
+  proposal, approval, hash, complete-row validation, and a per-command compacted
+  receipt hash covering identity, audit, revision, and accepted time.
+- **Budget delta (5): `+4`.** The agreed first monthly plan now has an atomic,
+  exactly-once acceptance and continuity boundary.
+- **Engagement delta (3): `+1`.** Slice 24 can present one calm Adopt/Retry state;
+  no rendered surface changes in this slice.
+- Verification is complete: focused Slice 23 proof passed 14/14; the eight-file
+  adjacent set passed 95/95; the final High quick gate passed TypeScript,
+  AI-surface verification, diff hygiene, and 75/75 selected fast plus serial
+  PGlite tests in 32.810 s; the production build passed at 473 modules plus
+  Hercules Pro UI. Independent
+  High-risk review reported no P0-P3 finding. The first broad adjacent run's one
+  existing slow Personal-cloud-refusal timeout passed alone immediately and is
+  retained as host-timing uncertainty. PowerShell was unavailable, so no
+  Windows result is claimed. No component or CSS changed; Slice 24 owns browser
+  UX proof. Mixed historical bundles that cannot prove an earlier audit state
+  fail closed to full-snapshot recovery.
+- No push, PR, merge, deploy, hosted mutation, schema, secret, provider, Personal
+  payload, journal/transfer behavior, or Production work has been authorized.

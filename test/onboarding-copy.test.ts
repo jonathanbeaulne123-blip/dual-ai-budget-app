@@ -201,6 +201,32 @@ const SLICE_19_CATEGORIES_COPY: Record<string, { text: string; announce: CopyEnt
   "categories.done": { text: "The combined set is ready. No budget amounts or money moved.", announce: "polite" },
 };
 
+const SLICE_20_ESTIMATES_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-10-estimates": {
+    text: "It's okay to guess. This is the first shape, not a promise; Hearth will learn from what actually happens.", announce: "none",
+  },
+  "estimates.open": { text: "Add my first guesses", announce: "none" },
+  "estimates.title": { text: "What might a month look like?", announce: "none" },
+  "estimates.guide": {
+    text: "Give each category a rough monthly amount. Leave any box blank when you don't have a useful guess yet.", announce: "none",
+  },
+  "estimates.blank-help": { text: "Blank means not estimated. Enter 0 when you mean $0.00.", announce: "none" },
+  "estimates.currency": { text: "Monthly guess (CAD)", announce: "none" },
+  "estimates.placeholder": { text: "Leave blank", announce: "none" },
+  "estimates.missing": { text: "Not estimated", announce: "none" },
+  "estimates.waiting": { text: "Your guesses are in. {name}'s stay private until they submit.", announce: "polite" },
+  "estimates.together": { text: "The first guesses", announce: "none" },
+  "estimates.member-set": { text: "{name}'s guesses", announce: "none" },
+  "estimates.done": {
+    text: "Both sets are here. They shape the next proposal; they did not create a budget or move money.", announce: "polite",
+  },
+  "estimates.categories-first": { text: "Finish the household category set before adding guesses.", announce: "polite" },
+  "estimates.changed": { text: "Our category set changed, so take another look at your guesses.", announce: "polite" },
+  "estimates.invalid": {
+    text: "Use dollars and cents, like 125 or 125.50. Leave a box blank if you don't have a guess.", announce: "polite",
+  },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -213,7 +239,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -223,6 +249,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_16_RECURRENCES_COPY,
       ...SLICE_17_CADENCE_COPY,
       ...SLICE_19_CATEGORIES_COPY,
+      ...SLICE_20_ESTIMATES_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

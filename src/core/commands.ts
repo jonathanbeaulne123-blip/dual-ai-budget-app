@@ -193,6 +193,23 @@ import {
   type OnboardingCategoryMerge,
   type OnboardingCategoryProposal,
 } from "./onboarding/categories.ts";
+import { assertOnboardingEstimateScope } from "./onboarding/estimates.ts";
+import {
+  OWN_ONBOARDING_APPROVAL_COPY,
+  normalizeOnboardingApprovalDigest,
+  onboardingApprovalSummary,
+  shapeOnboardingApprovals,
+  type OnboardingApprovalScope,
+} from "./onboarding/approvals.ts";
+import {
+  currentOnboardingAdoptionProposal,
+  onboardingAdoptionApprovedAt,
+  onboardingAdoptionIdentity,
+  onboardingAdoptionPlanId,
+  onboardingPlanApprovalPrefix,
+  ONBOARDING_ADOPTION_COMMAND_KIND,
+  type OnboardingAdoptionInput,
+} from "./onboarding/adoption.ts";
 import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
@@ -800,7 +817,60 @@ export function submitOnboardingEstimates(household: Household, input: {
 }): CommitResult {
   requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
   const estimates = normalizeSubmissionEstimates(input.estimates);
-  return appendOnboardingSubmission(household, input, { kind: "estimates", categoryIds: [], estimates });
+  const categoryIds = assertOnboardingEstimateScope(household, estimates);
+  return appendOnboardingSubmission(household, input, { kind: "estimates", categoryIds, estimates });
+}
+
+function appendOnboardingApproval(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  digest: string;
+}, scope: OnboardingApprovalScope): CommitResult {
+  const member = household.members.find((candidate) => candidate.active && candidate.id === input.memberId);
+  const actor = household.members.find((candidate) => candidate.active && candidate.id === input.createdBy);
+  if (!member || !actor || member.id !== actor.id) throw new ValidationError(OWN_ONBOARDING_APPROVAL_COPY);
+  const digest = normalizeOnboardingApprovalDigest(input.digest);
+  const approvals = shapeOnboardingApprovals(household.onboardingApprovals, household.householdId);
+  const approvedAt = nowIso();
+  const id = nextId(
+    scope === "proposal" ? onboardingPlanApprovalPrefix(household) : "ONB-APP-",
+    approvals.map((row) => row.id),
+  );
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  next.onboardingApprovals = [...approvals, {
+    id,
+    householdId: household.householdId,
+    memberId: member.id,
+    scope,
+    digest,
+    approvedAt,
+  }];
+  return commit(
+    previous,
+    next,
+    "Onboarding approval",
+    onboardingApprovalSummary(member.name, scope),
+    [id],
+    [],
+    scope === "proposal" ? "approveOnboardingProposal" : "approveOnboardingReady",
+  );
+}
+
+export function approveOnboardingProposal(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  digest: string;
+}): CommitResult {
+  return appendOnboardingApproval(household, input, "proposal");
+}
+
+export function approveOnboardingReady(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  digest: string;
+}): CommitResult {
+  return appendOnboardingApproval(household, input, "ready");
 }
 
 function requireOpenPeriod(household: Household, date: DateKey): void {
@@ -2909,10 +2979,16 @@ export function addCategory(household: Household, input: {
   return commit(previous, next, "Add Category", `Added ${name}`, posted);
 }
 
-function seedBudgetPlan(household: Household, monthKey: MonthKey, category: Category, amountCents: number): BudgetPlan {
-  const at = nowIso();
+function seedBudgetPlan(
+  household: Household,
+  monthKey: MonthKey,
+  category: Category,
+  amountCents: number,
+  identity?: { id: string; at: string },
+): BudgetPlan {
+  const at = identity?.at ?? nowIso();
   return {
-    id: nextId(`BUD-${monthKey.replace("-", "")}-`, household.budgetPlans.map((plan) => plan.id), 3),
+    id: identity?.id ?? nextId(`BUD-${monthKey.replace("-", "")}-`, household.budgetPlans.map((plan) => plan.id), 3),
     monthKey,
     subcategoryId: category.id,
     amountCents,
@@ -2936,6 +3012,78 @@ export function setBudget(household: Household, input: { monthKey: MonthKey; sub
     existing.updatedAt = nowIso();
   } else next.budgetPlans.push(seedBudgetPlan(next, input.monthKey, category, amountCents));
   return commit(previous, next, "Set Budget", `${category.name} ${input.monthKey} → $${(amountCents / 100).toFixed(2)}`, []);
+}
+
+export function adoptFirstBudget(household: Household, input: OnboardingAdoptionInput): CommitResult {
+  const confirmationId = onboardingAdoptionIdentity(input.monthKey, input.proposalDigest);
+  const member = household.members.find((candidate) => candidate.active && candidate.id === input.memberId);
+  const actor = household.members.find((candidate) => candidate.active && candidate.id === input.createdBy);
+  if (!member || !actor || member.id !== actor.id) {
+    throw new ValidationError("Only an active household member can adopt the first plan.");
+  }
+  const existingReceipt = household.commandReceipts?.find((receipt) => receipt.confirmationId === confirmationId);
+  if (existingReceipt) {
+    if (existingReceipt.commandKind !== ONBOARDING_ADOPTION_COMMAND_KIND) {
+      throw new ValidationError("That first-plan adoption identity is already used by another command.");
+    }
+    return {
+      household,
+      warnings: [],
+      postedIds: [...existingReceipt.postedIds],
+      undo: {
+        id: confirmationId,
+        label: `Adopted the ${input.monthKey} first plan`,
+        snapshot: household,
+        postedIds: [...existingReceipt.postedIds],
+        commandKind: ONBOARDING_ADOPTION_COMMAND_KIND,
+        actorMemberId: input.memberId,
+      },
+    };
+  }
+
+  const proposal = currentOnboardingAdoptionProposal(household, input);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const approvedAt = onboardingAdoptionApprovedAt(household, proposal.sourceDigest, proposal.monthKey);
+  const changedIds: string[] = [];
+  const planned = [...next.budgetPlans];
+  for (const [rowIndex, row] of proposal.rows.entries()) {
+    const existing = planned.find((plan) => (
+      plan.active && plan.monthKey === input.monthKey && plan.subcategoryId === row.subcategoryId
+    ));
+    if (existing) {
+      existing.amountCents = row.proposedCents;
+      existing.updatedAt = existing.updatedAt >= approvedAt ? existing.updatedAt : approvedAt;
+      changedIds.push(existing.id);
+      continue;
+    }
+    const category = requireSubcategory(next, row.subcategoryId);
+    const plan = seedBudgetPlan(
+      { ...next, budgetPlans: planned },
+      input.monthKey,
+      category,
+      row.proposedCents,
+      {
+        id: onboardingAdoptionPlanId(input.monthKey, proposal.sourceDigest, rowIndex),
+        at: approvedAt,
+      },
+    );
+    planned.push(plan);
+    changedIds.push(plan.id);
+  }
+  next.budgetPlans = planned;
+  const result = commit(
+    previous,
+    next,
+    "Adopt first budget",
+    `${household.members.find((member) => member.id === input.memberId)!.name} adopted the ${input.monthKey} first plan`,
+    changedIds.sort((left, right) => left.localeCompare(right)),
+    [],
+    ONBOARDING_ADOPTION_COMMAND_KIND,
+  );
+  result.undo.id = confirmationId;
+  result.undo.actorMemberId = input.memberId;
+  return result;
 }
 
 function parseBps(value: string | number | undefined, label: string, fallback = 0): number {

@@ -30,10 +30,16 @@ import {
   acceptedHouseholdOnboarding,
 } from "./onboarding/mode.ts";
 import { shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
-import { assertOnboardingSubmissionTransition } from "./onboarding/submissions.ts";
+import { assertOnboardingSubmissionTransition, currentSubmission } from "./onboarding/submissions.ts";
+import { assertOnboardingEstimateSubmissionScope } from "./onboarding/estimates.ts";
 import { assertOnboardingCategoryMergeTransition } from "./onboarding/categories.ts";
+import { assertOnboardingApprovalTransition } from "./onboarding/approvals.ts";
+import {
+  assertOnboardingAdoptionTransition,
+  ONBOARDING_ADOPTION_COMMAND_KIND,
+} from "./onboarding/adoption.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
-import { NeedsConfirmationError } from "./types.ts";
+import { NeedsConfirmationError, ValidationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
 
 export type BooksAcceptStatus = { ok: boolean; error?: string };
@@ -247,6 +253,12 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       }
     }
     const sameHousehold = Boolean(previous && previous.householdId === candidate.householdId);
+    if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND
+      && (!sameHousehold
+        || !input.actingMemberId
+        || !previous?.members.some((member) => member.active && member.id === input.actingMemberId))) {
+      throw new ValidationError("Only an active household member can adopt the first plan.");
+    }
     const identityHash = await commandIdentityHash(sameHousehold ? previous : null, candidate, postedIds);
     const existing = sameHousehold && previous ? findReceipt(previous, confirmationId) : undefined;
     if (existing && previous) {
@@ -280,6 +292,12 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         commandKind: input.commandKind,
         postedIds,
       });
+      if (input.commandKind === "submitOnboardingEstimates" && input.actingMemberId) {
+        if (!previous) throw new ValidationError("Only you can submit your own.");
+        const estimateSubmission = currentSubmission(candidate, input.actingMemberId, "estimates");
+        if (!estimateSubmission) throw new ValidationError("Only you can submit your own.");
+        assertOnboardingEstimateSubmissionScope(previous, estimateSubmission);
+      }
     }
     const onboardingCategoryMergeStateChanged = JSON.stringify(previous?.onboardingCategoryMerges ?? [])
       !== JSON.stringify(candidate.onboardingCategoryMerges ?? []);
@@ -287,6 +305,25 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       assertOnboardingCategoryMergeTransition(previous, candidate, {
         actorMemberId: input.actingMemberId,
         commandKind: input.commandKind,
+        postedIds,
+      });
+    }
+    const isOnboardingApprovalCommand = input.commandKind === "approveOnboardingProposal"
+      || input.commandKind === "approveOnboardingReady";
+    const onboardingApprovalStateChanged = JSON.stringify(previous?.onboardingApprovals ?? [])
+      !== JSON.stringify(candidate.onboardingApprovals ?? []);
+    if (isOnboardingApprovalCommand || onboardingApprovalStateChanged) {
+      assertOnboardingApprovalTransition(previous, candidate, {
+        actorMemberId: input.actingMemberId,
+        commandKind: input.commandKind,
+        postedIds,
+      });
+    }
+    if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND) {
+      assertOnboardingAdoptionTransition(previous, candidate, {
+        actorMemberId: input.actingMemberId,
+        commandKind: input.commandKind,
+        confirmationId,
         postedIds,
       });
     }
@@ -336,6 +373,15 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
                   onboardingCategoryMerges: (accepted.onboardingCategoryMerges ?? [])
                     .filter((row) => postedIds.includes(row.id)),
                   categories: accepted.categories.filter((row) => postedIds.includes(row.id)),
+                }))
+              : input.commandKind === "approveOnboardingProposal" || input.commandKind === "approveOnboardingReady"
+                ? await sha256Hex(commandMaterializationFacts({
+                  onboardingApprovals: (accepted.onboardingApprovals ?? [])
+                    .filter((row) => postedIds.includes(row.id)),
+                }))
+              : input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND
+                ? await sha256Hex(commandMaterializationFacts({
+                  budgetPlans: accepted.budgetPlans.filter((row) => postedIds.includes(row.id)),
                 }))
             : undefined,
       postedIds,

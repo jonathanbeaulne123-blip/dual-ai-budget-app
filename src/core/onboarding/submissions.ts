@@ -79,7 +79,7 @@ function shapeSubmission(value: unknown): OnboardingSubmission | null {
   if (!Number.isSafeInteger(row.revision) || Number(row.revision) < 1) return null;
   if (row.supersededBy !== null && row.supersededBy !== undefined && !cleanId(row.supersededBy)) return null;
   if (row.kind === "categories" && (!Array.isArray(row.estimates) || row.estimates.length !== 0)) return null;
-  if (row.kind === "estimates" && (!Array.isArray(row.categoryIds) || row.categoryIds.length !== 0)) return null;
+  if (!Array.isArray(row.categoryIds)) return null;
 
   try {
     return {
@@ -88,7 +88,10 @@ function shapeSubmission(value: unknown): OnboardingSubmission | null {
       memberId,
       kind: row.kind,
       revision: Number(row.revision),
-      categoryIds: row.kind === "categories" ? normalizeSubmissionCategoryIds(row.categoryIds) : [],
+      // Category submissions store the member's selection. Estimate
+      // submissions store the exact accepted category scope the member saw.
+      // Older standalone Slice 18 estimate records remain valid with [].
+      categoryIds: normalizeSubmissionCategoryIds(row.categoryIds),
       estimates: row.kind === "estimates" ? normalizeSubmissionEstimates(row.estimates) : [],
       submittedAt,
       supersededBy: cleanId(row.supersededBy),

@@ -169,6 +169,7 @@ import { clearSession, loadSession, saveSession, type Session } from "./session.
 import { joinSharedHousehold, pullSharedHousehold, reconcileHouseholdSnapshots } from "./api.ts";
 import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedgerWrite } from "./core/index.ts";
 import type { WriteAdapters } from "./core/commandRuntime.ts";
+import { selectCommandConfirmationId } from "./core/commandConfirmation.ts";
 import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, replaceAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
 import { readSupabaseConfig, pullConsistentMemberReplicaById, pullHouseholdSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
@@ -419,6 +420,7 @@ import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
+import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -2907,6 +2909,12 @@ export function App() {
     && view === "household"
     && nextChapterFor(household, memberId, today)?.id === "ch-09-categories",
   );
+  const onboardingEstimatesOnly = Boolean(
+    household
+    && memberId
+    && view === "household"
+    && nextChapterFor(household, memberId, today)?.id === "ch-10-estimates",
+  );
   const personalSource = useMemo(() => {
     return household && memberId && personalReplica?.memberId === memberId
       && personalReplica.lastCommittedAt === household.lastCommittedAt
@@ -3515,9 +3523,15 @@ export function App() {
       return null;
     }
     setBusy(true);
-    const explicitConfirmationId = options?.confirmationId;
-    const confirmationId = explicitConfirmationId ?? confirmationRef.current ?? newConfirmationId();
-    if (!explicitConfirmationId) confirmationRef.current = confirmationId;
+    const explicitConfirmationId = options?.confirmationId
+      ?? (token?.commandKind === "adoptFirstBudget" ? token.id : undefined);
+    const confirmation = selectCommandConfirmationId(
+      explicitConfirmationId,
+      confirmationRef.current,
+      newConfirmationId,
+    );
+    const confirmationId = confirmation.confirmationId;
+    confirmationRef.current = confirmation.pendingConfirmationId;
     const ledgerWrite = isLedgerWrite(token);
     const memberId = actorId ?? session?.memberId;
     const shareCapable = Boolean((previous?.linked || next.linked) && hostedContinuityAllowed(environment) && memberId);
@@ -5856,6 +5870,15 @@ export function App() {
                 onCommit={(fn) => { void runKitchen(fn); }}
               />
             </div>
+          ) : onboardingEstimatesOnly ? (
+            <div className="plan-wide onboarding-plan-focus">
+              <OnboardingEstimates
+                household={household}
+                memberId={memberId}
+                busy={busy}
+                onCommit={(fn) => { void runKitchen(fn); }}
+              />
+            </div>
           ) : (
           <div className="plan-wide">
           <div className="plan-wide-lead">
@@ -7217,6 +7240,10 @@ export function App() {
           goTab("shift");
         }}
         onOpenCategories={() => {
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+          goTab("plan");
+        }}
+        onOpenEstimates={() => {
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           goTab("plan");
         }}

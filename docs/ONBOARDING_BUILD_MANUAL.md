@@ -1163,6 +1163,15 @@ export type ProposalInput = {
 
 export type ProposalRow = ProposalInput & { proposedCents: number; basis: ProposalBasis };
 
+export type ProposalSource = {
+  categoryIds: string[];
+  estimateSubmissions: Array<{
+    memberId: string;
+    submissionId: string | null;
+    revision: number | null;
+  }>;
+};
+
 export type BudgetProposal = {
   monthKey: MonthKey;
   formulaVersion: number;
@@ -1170,6 +1179,7 @@ export type BudgetProposal = {
   totalCents: number;
   capacityCents: number | null;
   capacitySourceRevision: string | null;    // stable revision/digest of the accepted capacity fact
+  source: ProposalSource;                   // carried; proposalDigest never rereads mutable household state
   sourceDigest: string;
 };
 
@@ -1199,8 +1209,10 @@ export function proposalDigest(proposal: Omit<BudgetProposal, "sourceDigest">): 
 
 **Branch:** `onboarding/22-approvals` · **PR:** `feat(onboarding): self-owned approvals keyed to a digest` · **Owner:** Codex · **Depends on:** 21
 
+**Read first:** `src/core/onboarding/submissions.ts` (append-only self-owned record precedent), `src/core/sync.ts` (Shared split/assemble/merge), `src/core/commandRuntime.ts` and `src/ledger/materializeSnapshotFromEvents.ts` (accepted-command and replay authority).
+
 **Create:** `src/core/onboarding/approvals.ts`, `test/onboarding-approvals.test.ts`
-**Modify:** `src/core/types.ts`, `src/core/commands.ts`, `src/core/index.ts`
+**Modify:** `src/core/types.ts`, `src/core/commands.ts`, `src/core/index.ts`, `src/core/sync.ts`, `src/core/commandIdentity.ts`, `src/core/commandRuntime.ts`, `src/ledger/continuityCommandLog.ts`, `src/ledger/materializeSnapshotFromEvents.ts`
 
 ```ts
 export type OnboardingApproval = {
@@ -1228,6 +1240,10 @@ approveOnboardingReady(household, { memberId, createdBy, digest }): CommitResult
 **Branch:** `onboarding/23-adoption` · **PR:** `feat(onboarding): exactly-once budget adoption` · **Owner:** Codex · **Depends on:** 22
 
 **Read first:** `setBudget` in `src/core/commands.ts:1488` and `seedBudgetPlan` at `:1473` — this command batches over that exact behavior.
+
+**Create:** `src/core/onboarding/adoption.ts`, `src/core/commandConfirmation.ts`, `test/onboarding-adoption.test.ts`
+**Modify:** `src/core/commands.ts`, `src/core/index.ts`, `src/core/commandIdentity.ts`, `src/core/commandRuntime.ts`, `src/ledger/continuityCommandLog.ts`, `src/ledger/materializeSnapshotFromEvents.ts`, `src/App.tsx`
+**Do not modify:** `src/core/journal.ts`, `src/core/onboarding/proposal.ts`, `src/core/onboarding/approvals.ts`, schema, hosted data, provider/model paths, or Production settings.
 
 ```ts
 adoptFirstBudget(household, { memberId: string; createdBy: string; monthKey: MonthKey; proposalDigest: string }): CommitResult

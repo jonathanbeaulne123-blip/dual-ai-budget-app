@@ -1,6 +1,7 @@
 import type { CommandReceipt, Household } from "../core/types.ts";
-import { commandMaterializationFacts, sha256Hex } from "../core/commandIdentity.ts";
+import { commandMaterializationFacts, commandReceiptEnvelopeHash, sha256Hex } from "../core/commandIdentity.ts";
 import { mergeSubmissions } from "../core/onboarding/submissions.ts";
+import { mergeOnboardingApprovals } from "../core/onboarding/approvals.ts";
 import {
   extractMaterializationFacts,
   type ContinuityMaterializationFacts,
@@ -138,7 +139,9 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.onboardingSubmissions ?? []).map((row) => row.id),
     ...(mergedFacts?.onboardingCategoryProposals ?? []).map((row) => row.id),
     ...(mergedFacts?.onboardingCategoryMerges ?? []).map((row) => row.id),
+    ...(mergedFacts?.onboardingApprovals ?? []).map((row) => row.id),
     ...(mergedFacts?.categories ?? []).map((row) => row.id),
+    ...(mergedFacts?.budgetPlans ?? []).map((row) => row.id),
     ...charterPostedIds,
     ...(mergedFacts?.householdFund ? [mergedFacts.householdFund.id] : []),
     ...(mergedFacts?.fundMonthPlans ?? []).map((row) => row.id),
@@ -148,6 +151,22 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.weeklyDocumentStamps ?? []).map((row) => row.id),
     ...(mergedFacts?.tombstones ?? []).map((row) => row.id),
   ].sort();
+  const compactedCommands = await Promise.all(item.commandRefs
+    .filter((ref) => ref.ledgerScope === primary.ledgerScope)
+    .map(async (ref) => {
+      const descriptor = {
+        confirmationId: ref.confirmationId,
+        commandKind: ref.commandType,
+        postedIds: ref.commandPayload.postedIds,
+        ledgerScope: ref.ledgerScope,
+        materializationHash: ref.commandPayload.materializationHash,
+        auditHash: ref.commandPayload.auditHash,
+        identityHash: ref.commandPayload.identityHash,
+        revision: ref.commandPayload.revision,
+        acceptedAt: ref.commandPayload.acceptedAt,
+      };
+      return { ...descriptor, receiptHash: await commandReceiptEnvelopeHash(descriptor) };
+    }));
   return {
     ...primary.commandPayload,
     materializationHash: mergedFacts?.monthRehearsals?.length
@@ -156,7 +175,9 @@ export async function compactedCommandPayload(
       || mergedFacts?.onboardingSubmissions?.length
       || mergedFacts?.onboardingCategoryProposals?.length
       || mergedFacts?.onboardingCategoryMerges?.length
+      || mergedFacts?.onboardingApprovals?.length
       || mergedFacts?.categories?.length
+      || mergedFacts?.budgetPlans?.length
       ? await sha256Hex(commandMaterializationFacts({
         monthRehearsals: mergedFacts.monthRehearsals,
         recurrences: mergedFacts.recurrences,
@@ -164,7 +185,9 @@ export async function compactedCommandPayload(
         onboardingSubmissions: mergedFacts.onboardingSubmissions,
         onboardingCategoryProposals: mergedFacts.onboardingCategoryProposals,
         onboardingCategoryMerges: mergedFacts.onboardingCategoryMerges,
+        onboardingApprovals: mergedFacts.onboardingApprovals,
         categories: mergedFacts.categories,
+        budgetPlans: mergedFacts.budgetPlans,
       }))
       : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
@@ -177,15 +200,7 @@ export async function compactedCommandPayload(
     }),
     materializationFacts: mergedFacts,
     compactedConfirmationIds: item.confirmationIds,
-    compactedCommands: item.commandRefs
-      .filter((ref) => ref.ledgerScope === primary.ledgerScope)
-      .map((ref) => ({
-        confirmationId: ref.confirmationId,
-        commandKind: ref.commandType,
-        postedIds: ref.commandPayload.postedIds,
-        ledgerScope: ref.ledgerScope,
-        materializationHash: ref.commandPayload.materializationHash,
-      })),
+    compactedCommands,
   };
 }
 
@@ -245,8 +260,19 @@ function mergeMaterializationFacts(
         ...facts.onboardingCategoryMerges,
       ];
     }
+    if (facts.onboardingApprovals?.length) {
+      merged.onboardingApprovals = mergeOnboardingApprovals(
+        merged.onboardingApprovals,
+        facts.onboardingApprovals,
+      );
+    }
     if (facts.categories?.length) {
       merged.categories = [...(merged.categories ?? []), ...facts.categories];
+    }
+    if (facts.budgetPlans?.length) {
+      const plans = new Map((merged.budgetPlans ?? []).map((row) => [row.id, row]));
+      for (const row of facts.budgetPlans) plans.set(row.id, row);
+      merged.budgetPlans = [...plans.values()];
     }
     if (facts.householdFund) merged.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) merged.fundMonthPlans = [...(merged.fundMonthPlans ?? []), ...facts.fundMonthPlans];
