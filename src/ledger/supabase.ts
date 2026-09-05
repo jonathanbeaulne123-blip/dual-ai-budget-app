@@ -1101,17 +1101,49 @@ export async function pullConsistentMemberReplicaById(input: {
   const config = input.config ?? readSupabaseConfig();
   if (!config || !hostedContinuityAllowed(environment)) return null;
   const attempts = Math.max(1, Math.min(5, input.maxAttempts ?? 3));
-  let before = input.initialShared ?? await pullHouseholdSnapshotById(
+  let membership: ContinuityMembershipRow | null | undefined;
+  const bindMember = async (snapshot: Household): Promise<Household> => {
+    const linkedMemberId = memberIdForGoogleIdentity(snapshot, input.identity);
+    if (linkedMemberId === input.memberId) return snapshot;
+    if (linkedMemberId && linkedMemberId !== input.memberId) {
+      throw new ValidationError("That Personal cloud copy does not belong to the signed-in Google member.");
+    }
+    if (membership === undefined) {
+      const rows = await continuityMembershipRows(config, input.identity, environment);
+      membership = rows?.find((row) => (
+        row.household_id === input.householdId && row.member_id === input.memberId
+      )) ?? null;
+    }
+    if (!membership) {
+      throw new ValidationError("That Personal cloud copy does not belong to the signed-in Google member.");
+    }
+    assertMembershipAuthoritativeDiscovery(
+      snapshot,
+      {
+        householdId: membership.household_id,
+        memberId: membership.member_id,
+        googleSubject: membership.google_subject,
+        googleEmail: membership.google_email,
+        authUserId: membership.auth_user_id,
+      },
+      input.identity,
+      environment,
+      { authUserId: config.authUserId },
+    );
+    return overlayGoogleLinkFromMembership(snapshot, {
+      memberId: input.memberId,
+      subject: membership.google_subject || input.identity.subject,
+      email: membership.google_email || input.identity.email,
+    });
+  };
+  const initial = input.initialShared ?? await pullHouseholdSnapshotById(
     input.householdId,
     environment,
     config,
-    input.identity,
   );
+  let before = initial ? await bindMember(initial) : null;
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (!before) return null;
-    if (memberIdForGoogleIdentity(before, input.identity) !== input.memberId) {
-      throw new ValidationError("That Personal cloud copy does not belong to the signed-in Google member.");
-    }
     const personal = await pullPersonalSnapshotRecordById(
       input.householdId,
       input.memberId,
@@ -1123,16 +1155,13 @@ export async function pullConsistentMemberReplicaById(input: {
       input.householdId,
       environment,
       config,
-      input.identity,
     );
     if (!after) return null;
-    if (memberIdForGoogleIdentity(after, input.identity) !== input.memberId) {
-      throw new ValidationError("The signed-in Google membership changed while Hearth was restoring Personal books.");
+    const boundAfter = await bindMember(after);
+    if (before.revision === boundAfter.revision && personal.revision <= boundAfter.revision) {
+      return { shared: boundAfter, personal: personal.personal, revision: boundAfter.revision };
     }
-    if (before.revision === after.revision && personal.revision <= after.revision) {
-      return { shared: after, personal: personal.personal, revision: after.revision };
-    }
-    before = after;
+    before = boundAfter;
   }
   throw new Error("The shared household changed while Hearth was restoring the signed-in member's copy. Retry after both devices settle.");
 }
@@ -1425,6 +1454,101 @@ export async function pushSupabaseHousehold(
     identity,
     publishScopeBeforeCas,
   );
+}
+
+/**
+ * A newly redeemed household seat predates its member-owned Personal row. Seed
+ * that empty/private envelope by replaying the exact current shared revision;
+ * the atomic RPC's duplicate branch may insert only this member's missing row
+ * and refuses any disagreement in the shared payload or an existing Personal
+ * payload. This closes the first-device bootstrap loop without relaxing the
+ * normal paired Shared + Personal write gate.
+ */
+export async function pullOrBootstrapConsistentMemberReplicaById(input: {
+  householdId: string;
+  memberId: string;
+  environment?: Environment;
+  config?: SupabaseConfig | null;
+  identity: GoogleIdentitySelector;
+  localHousehold: Household;
+  initialShared?: Household | null;
+  maxAttempts?: number;
+}): Promise<{ shared: Household; personal: PersonalEnvelope; revision: number } | null> {
+  const environment = input.environment ?? "development";
+  const config = input.config ?? readSupabaseConfig();
+  if (!config || !hostedContinuityAllowed(environment)) return null;
+  if (
+    input.localHousehold.environment !== environment
+    || input.localHousehold.householdId !== input.householdId
+  ) {
+    throw new ValidationError("The local books do not match the Personal cloud copy being prepared.");
+  }
+
+  const existing = await pullConsistentMemberReplicaById({
+    householdId: input.householdId,
+    memberId: input.memberId,
+    environment,
+    config,
+    identity: input.identity,
+    initialShared: input.initialShared ?? input.localHousehold,
+    maxAttempts: input.maxAttempts,
+  });
+  if (existing) return existing;
+
+  const remote = await pullHouseholdSnapshotById(input.householdId, environment, config);
+  if (!remote) return null;
+  const memberBoundRemote = overlayGoogleLinkFromMembership(remote, {
+    memberId: input.memberId,
+    email: input.identity.email,
+    subject: input.identity.subject,
+  });
+  if (memberIdForGoogleIdentity(memberBoundRemote, input.identity) !== input.memberId) {
+    throw new ValidationError("That Personal cloud copy does not belong to the signed-in Google member.");
+  }
+  const bootstrap = {
+    ...assembleHousehold(
+      splitForSync(memberBoundRemote, input.memberId).shared,
+      personalReplicaForMember(input.localHousehold, input.memberId),
+      { linked: true },
+    ),
+    linked: true,
+    revision: remote.revision,
+    baseRevision: remote.revision,
+    lastCommittedAt: remote.lastCommittedAt,
+  };
+  if (!usesAuthContinuitySession(config)) {
+    throw new Error("A signed-in Auth session is required to prepare the Personal cloud copy.");
+  }
+  const probe = await probeSupabase(config);
+  if (!probe.schema) {
+    throw new Error(probe.error || "The cloud books schema is not ready.");
+  }
+  // Keep the shared bytes/hash exactly as they already exist. The membership
+  // overlay is local proof for Personal binding and must not become an
+  // unversioned change to the shared snapshot at this same revision.
+  const pushed = await publishContinuitySnapshotAtomic(
+    config,
+    probe,
+    bootstrap,
+    householdCloudProjection(remote, input.memberId),
+    remote.revision,
+    input.memberId,
+  );
+  if (!pushed.schema || pushed.skipped || pushed.conflict || pushed.error) {
+    throw new Error(
+      pushed.error
+      || "Hearth could not prepare this member's Personal cloud copy. The shared books were not changed.",
+    );
+  }
+  return pullConsistentMemberReplicaById({
+    householdId: input.householdId,
+    memberId: input.memberId,
+    environment,
+    config,
+    identity: input.identity,
+    initialShared: memberBoundRemote,
+    maxAttempts: input.maxAttempts,
+  });
 }
 
 async function pushSupabaseHouseholdLegacy(
