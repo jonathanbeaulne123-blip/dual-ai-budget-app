@@ -189,6 +189,14 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "Try again", slots: [],
   }),
   entry({
+    key: "onboarding.household.ch-01-meet", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "I'm Hercules. I can explain what Hearth sees and prepare the next step, but I never post money or confirm for you.", slots: [],
+  }),
+  entry({
+    key: "lifecycle.new-member.intro", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
+    text: "The household is already set up. I'll give you a short, private catch-up without interrupting anyone else.", slots: [],
+  }),
+  entry({
     key: "onboarding.household.ch-02-household", speaker: "hercules", surface: "card", scope: "none", announce: "none",
     text: "Let me make sure this is the right household for both of you.", slots: [],
   }),

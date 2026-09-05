@@ -250,8 +250,9 @@ export function OnboardingChat({
   const record = acceptedHouseholdOnboarding(household);
   const nowIso = now ?? new Date().toISOString();
   const chapter = nextChapterFor(household, memberId, today);
+  const newMemberCatchUp = record?.state === "complete" && !record.confirmedByMemberIds.includes(memberId);
   const { observation: householdScopeObservation, retry: retryHouseholdScopeProbe } = useHouseholdScopeProbe({
-    active: record?.state === "active" && chapter?.id === "ch-02-household",
+    active: (record?.state === "active" || newMemberCatchUp) && chapter?.id === "ch-02-household",
     household,
     memberId,
   });
@@ -581,11 +582,13 @@ export function OnboardingChat({
   // boundary line waits until the typed Charter evidence is actually ready.
   const sittingBoundaryReady = sittingFinal
     && (chapter.id !== "ch-03-charter" || evidence.kind === "accepted");
-  const hercLine = sittingBoundaryReady
-    ? copy("sitting.pause")
-    : enteringSittingTwo
-      ? copy("sitting.two.warning")
-      : flavorFor(chapter.id, household.householdId);
+  const hercLine = newMemberCatchUp && chapter.id === "ch-01-meet"
+    ? copy("lifecycle.new-member.intro")
+    : sittingBoundaryReady
+      ? copy("sitting.pause")
+      : enteringSittingTwo
+        ? copy("sitting.two.warning")
+        : flavorFor(chapter.id, household.householdId);
 
   const railIndex = sittingRailIndex(chapter.sitting);
   const progress = memberProgress(household, memberId);
@@ -894,9 +897,9 @@ export function OnboardingChat({
           className="onboarding-stop-link"
           disabled={busy}
           style={{ minHeight: SHELL_VIEW.minTouch, minWidth: SHELL_VIEW.minTouch }}
-          onClick={requestStop}
+          onClick={newMemberCatchUp ? onDismiss : requestStop}
         >
-          {copy("stop.offer")}
+          {newMemberCatchUp ? copy("personal.decline") : copy("stop.offer")}
         </button>
       </div>
     </div>

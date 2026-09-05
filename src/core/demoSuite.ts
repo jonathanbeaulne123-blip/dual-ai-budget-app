@@ -35,6 +35,7 @@ import { askBooks } from "./askBooks.ts";
 import { sitDownExportText, sitDownWorkbookCsv } from "./sitDown.ts";
 import { booksJournalCsv, booksSqlDump } from "../ledger/export.ts";
 import { formatCad } from "./money.ts";
+import { completeSyntheticDemoOnboarding } from "./onboarding/lifecycle.ts";
 
 export const DEMO_SUITE_VERSION = "2.0.0";
 
@@ -209,12 +210,19 @@ export function canonicalDemoFixturePayload(household: Household): unknown {
     conflicts: _conflicts,
     commandReceipts: _commandReceipts,
     restorePoints: _restorePoints,
+    householdOnboarding: _householdOnboarding,
+    onboardingApprovals: _onboardingApprovals,
     herculesProPermissions: _herculesProPermissions,
     lastCommittedAt: _lastCommittedAt,
+    members: rawMembers,
     ...generatorFacts
   } = household;
   return {
     ...generatorFacts,
+    members: rawMembers.map((member) => {
+      const { onboardingProgress: _onboardingProgress, ...memberFacts } = member;
+      return memberFacts;
+    }),
     syntheticFixture: household.syntheticFixture
       ? { ...household.syntheticFixture, fixtureHashSha256: "" }
       : null,
@@ -560,6 +568,10 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
   }
   household = closeBooksMonth(household, { monthKey: priorMonth, createdBy: "MEM-001" }).household;
   household = ensureHouseholdShape({ ...household, syntheticFixture: provenance });
+  household = completeSyntheticDemoOnboarding(household, {
+    at: generatedAt,
+    sourceKey: `suite:${DEMO_SUITE_VERSION}:${seed}:${options.today}:${profile}:${numberStyle}:${provenance.buildSha}`,
+  });
 
   const manifest: DemoSuiteManifest = {
     kind: "hearth-demo-suite-manifest",
@@ -820,7 +832,7 @@ export function assertDemoReplacementAllowed(current: Household): void {
 
 export function preserveDemoShowcaseContinuity(current: Household, generated: Household): Household {
   assertDemoReplacementAllowed(current);
-  return {
+  const preserved = {
     ...generated,
     householdId: current.householdId,
     inviteCode: current.inviteCode,
@@ -831,4 +843,8 @@ export function preserveDemoShowcaseContinuity(current: Household, generated: Ho
     devices: current.devices,
     sharing: current.sharing,
   };
+  return completeSyntheticDemoOnboarding(preserved, {
+    at: generated.householdOnboarding?.completedAt ?? generated.syntheticFixture?.generatedAt ?? `${generated.syntheticFixture?.generatedForDate ?? "1970-01-01"}T12:00:00.000Z`,
+    sourceKey: `preserved:${generated.syntheticFixture?.version ?? "seed"}:${generated.syntheticFixture?.seed ?? 0}:${generated.syntheticFixture?.generatedForDate ?? "unknown"}`,
+  });
 }

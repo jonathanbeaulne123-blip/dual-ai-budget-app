@@ -332,6 +332,11 @@ const SLICE_26_PERSONAL_COPY: Record<string, { text: string; announce: CopyEntry
   "personal.open.office": { text: "Open my desk", announce: "none" },
 };
 
+const SLICE_27_LIFECYCLE_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-01-meet": { text: "I'm Hercules. I can explain what Hearth sees and prepare the next step, but I never post money or confirm for you.", announce: "none" },
+  "lifecycle.new-member.intro": { text: "The household is already set up. I'll give you a short, private catch-up without interrupting anyone else.", announce: "none" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -344,7 +349,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY, ...SLICE_25_READY_COPY, ...SLICE_26_PERSONAL_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY, ...SLICE_25_READY_COPY, ...SLICE_26_PERSONAL_COPY, ...SLICE_27_LIFECYCLE_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -358,6 +363,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_24_PLAN_COPY,
       ...SLICE_25_READY_COPY,
       ...SLICE_26_PERSONAL_COPY,
+      ...SLICE_27_LIFECYCLE_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }
