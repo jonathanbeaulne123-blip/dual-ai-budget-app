@@ -161,6 +161,85 @@
   cursor: pointer;
 }
 
+.onboarding-personal-shell {
+  background:
+    radial-gradient(circle at 92% 6%, color-mix(in srgb, var(--copper) 11%, transparent), transparent 34%),
+    var(--paper);
+}
+
+.onboarding-personal-label {
+  align-self: flex-start;
+  margin: 0 0 12px;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--copper) 36%, var(--line));
+  border-radius: 999px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--copper) 7%, var(--card));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.onboarding-personal-card {
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.onboarding-personal-card > .onboarding-card-task {
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.onboarding-personal-reason {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--pine) 7%, var(--card));
+}
+
+.onboarding-personal-reason .onboarding-card-label,
+.onboarding-personal-reason p:last-child,
+.onboarding-personal-saving {
+  margin: 0;
+}
+
+.onboarding-personal-reason p:last-child,
+.onboarding-personal-saving {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.onboarding-personal-saving {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.onboarding-personal-actions button:first-child {
+  background: var(--pine);
+  color: var(--paper);
+}
+
+.onboarding-personal-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 18px;
+}
+
+.onboarding-personal-foot .onboarding-stop-link:last-child {
+  color: var(--muted);
+}
+
+@media (min-width: 720px) {
+  .onboarding-personal-actions button {
+    width: auto;
+    min-width: 150px;
+  }
+}
+
 .onboarding-return-bar {
   position: fixed;
   z-index: 14;

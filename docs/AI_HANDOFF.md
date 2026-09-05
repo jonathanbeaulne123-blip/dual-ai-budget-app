@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 26 — opt-in Personal track (D-226) (2026-09-05)
+
+**Status:** Local implementation is complete on `onboarding/26-personal` at `4495386b74da1249d3a6afc535e5ca172cad5cdc`, based on `origin/main@58e90df5f40dfdba1399f6a8f35c8efe8fb62c15`. Nothing is pushed, merged, deployed, or hosted-live verified. Risk: **Low**; the repository quick-gate floor ran it as Medium.
+
+**Outcome:** Six optional Personal guides now appear contextually through ordinary Hercules after household unlock: own books, shifts, the tip oracle, a Personal plan, the desktop office, and Hercules itself. Each trigger is a pure typed-state predicate scoped to the current member. Opening a destination keeps the guide resumable; only `Got it` completes it. `Not now`, per-module skip, and a member-owned mute remain immediately available. No Personal guide locks Hearth or contributes to `householdGatesOutstanding()`.
+
+**Privacy and frequency:** Offers, declines, skips, completion, and mute state persist only in the acting member's Personal onboarding envelope. Commands refuse cross-member writes. An append-only offer history converges across devices and enforces one offer per session, two per civil week, and per-module suppression after two declines in the same civil month without carrying an old month's count forward. Partner-Personal transactions and shifts cannot satisfy the viewer's triggers.
+
+**Verification:** The complete 33-file onboarding/command suite passes 481/481. The final change-focused quick gate passes TypeScript, AI-surface and diff checks, 78 fast tests, and 7 serial PGlite proof tests in 41.1 seconds. The production build passes with 478 Vite modules plus Hercules Pro UI; existing PGlite browser-externalization, eval, and large-chunk messages remain warnings. Live actual-component Chromium verified the mobile Hercules entry, same-session silence after navigation, desktop bubble entry, all six variants, saving state, focus wrapping, reduced motion, and 44 px minimum controls at 320/390/720/1100 px. At 320 and 390 px the focus shell uses its existing controlled inner scroll; there is no body-width overflow. No console warning or error remained on the clean final harness load.
+
+**Evidence class:** Synthetic local Development fixtures, focused and adjacent tests, change-focused quick gate, local build, and actual-component browser proof. PowerShell is unavailable on this macOS host. This is not exhaustive-suite, Windows, hosted two-account, deployment, or Production proof. No transaction writer, journal, budget, schema, hosted row, Auth/RLS, secret, provider/model call, Production setting, push, merge, or deploy was touched.
+
+**Next owner:** Jonathan separately decides whether to push and merge. Deployment requires another explicit instruction. Slice 27 may build lifecycle and new-member behavior on this Personal track.
+
 ## Onboarding Slice 25 — Chapter 12 Ready and unlock (D-225) (2026-09-05)
 
 **Status:** Local implementation is complete on `onboarding/25-ch12-ready` at `c1664bf5f59089b4ff26cc96f257b60cfb76d743`, based on `origin/main@146dc1a7160d163ea911321aa2034cf4324c44d8`. Nothing is pushed, merged, deployed, or hosted-live verified. Risk: **High**.

@@ -836,6 +836,94 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     text: "Stop offering these", slots: [],
   }),
   entry({
+    key: "personal.module.label", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Optional · just yours", slots: [],
+  }),
+  entry({
+    key: "personal.module.private", speaker: "hercules", surface: "status", scope: "none", announce: "none",
+    text: "This guide belongs to you. It never changes the household setup.", slots: [],
+  }),
+  entry({
+    key: "personal.module.why", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "Why this showed up", slots: [],
+  }),
+  entry({
+    key: "personal.module.saving", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Saving this guide…", slots: [],
+  }),
+  entry({
+    key: "personal.module.done", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Got it", slots: [],
+  }),
+  entry({
+    key: "onboarding.personal.pm-01-own-books", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Personal books are your own room. Your accounts and Personal transactions stay out of the household view.", slots: [],
+  }),
+  entry({
+    key: "onboarding.personal.pm-02-shifts", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "The Shift room keeps your clock, a careful review before posting, and a streak made only from posted shifts.", slots: [],
+  }),
+  entry({
+    key: "onboarding.personal.pm-03-tips", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "The tip oracle waits for four posted shifts before it speaks. Before that, not enough history is the honest answer.", slots: [],
+  }),
+  entry({
+    key: "onboarding.personal.pm-04-own-plan", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Your Personal plan gives your own categories a monthly shape without changing the household plan.", slots: [],
+  }),
+  entry({
+    key: "onboarding.personal.pm-05-office", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "Your desk is yours to arrange. Plates are shortcuts into real Hearth rooms, not a second set of books.", slots: [],
+  }),
+  entry({
+    key: "onboarding.personal.pm-06-hercules", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "You can ask me about the ledger you chose and tell me what to remember. I still cannot post money for you.", slots: [],
+  }),
+  entry({
+    key: "personal.trigger.own-books", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "You posted your first Personal transaction.", slots: [],
+  }),
+  entry({
+    key: "personal.trigger.shifts", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "You recorded an earning rhythm built around your work.", slots: [],
+  }),
+  entry({
+    key: "personal.trigger.tips", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "You now have enough posted shifts for the oracle to use a real sample.", slots: [],
+  }),
+  entry({
+    key: "personal.trigger.own-plan", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "You have three Personal transactions in this month.", slots: [],
+  }),
+  entry({
+    key: "personal.trigger.office", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "This is your first desktop visit since the household unlocked.", slots: [],
+  }),
+  entry({
+    key: "personal.trigger.hercules", speaker: "system", surface: "status", scope: "none", announce: "none",
+    text: "The household has been unlocked for a week.", slots: [],
+  }),
+  entry({
+    key: "personal.open.books", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open Personal Books", slots: [],
+  }),
+  entry({
+    key: "personal.open.shifts", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open Shifts", slots: [],
+  }),
+  entry({
+    key: "personal.open.tips", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "See the tip oracle", slots: [],
+  }),
+  entry({
+    key: "personal.open.plan", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open Personal Plan", slots: [],
+  }),
+  entry({
+    key: "personal.open.office", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Open my desk", slots: [],
+  }),
+  entry({
     key: "ready.open-books", speaker: "system", surface: "button", scope: "none", announce: "none",
     text: "Open ordinary Books", slots: [],
   }),

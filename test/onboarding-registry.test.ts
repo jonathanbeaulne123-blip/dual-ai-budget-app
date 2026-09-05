@@ -79,7 +79,16 @@ describe("onboarding registry", () => {
       { id: "ch-11-plan", sitting: 3, conductor: "both", approval: "joint", skip: "household-required", target: "plan" },
       { id: "ch-12-ready", sitting: 3, conductor: "both", approval: "joint", skip: "household-required", target: "ledger" },
     ]);
-    expect(personalModules()).toEqual([]);
+    expect(personalModules().map(({ id, order, sitting, conductor, approval, skip, target, contributesToFinalGate }) => ({
+      id, order, sitting, conductor, approval, skip, target: target?.tab ?? null, contributesToFinalGate,
+    }))).toEqual([
+      { id: "pm-01-own-books", order: 1, sitting: null, conductor: "self", approval: "none", skip: "member-skippable", target: "ledger", contributesToFinalGate: false },
+      { id: "pm-02-shifts", order: 2, sitting: null, conductor: "self", approval: "none", skip: "member-skippable", target: "shift", contributesToFinalGate: false },
+      { id: "pm-03-tips", order: 3, sitting: null, conductor: "self", approval: "none", skip: "member-skippable", target: "shift", contributesToFinalGate: false },
+      { id: "pm-04-own-plan", order: 4, sitting: null, conductor: "self", approval: "none", skip: "member-skippable", target: "plan", contributesToFinalGate: false },
+      { id: "pm-05-office", order: 5, sitting: null, conductor: "self", approval: "none", skip: "member-skippable", target: "home", contributesToFinalGate: false },
+      { id: "pm-06-hercules", order: 6, sitting: null, conductor: "self", approval: "none", skip: "member-skippable", target: null, contributesToFinalGate: false },
+    ]);
     expect(chapterById("ch-03-charter")?.target).toEqual({ tab: "more" });
     expect(chapterById("ch-03-charter")?.timeBudgetSeconds).toBe(480);
     expect(chapterById("ch-03-charter")?.pausePoints).toEqual(["after-question-two"]);
