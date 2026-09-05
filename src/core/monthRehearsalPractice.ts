@@ -20,6 +20,59 @@ export type CorrectionPracticeProof = {
   persistedIds: [];
 };
 
+export type PracticeRealDraft = {
+  kind: "expense";
+  amountCents: 4500;
+  date: DateKey;
+  note: "Groceries";
+  requiresReviewAndConfirm: true;
+  practiceReceiptId: string;
+};
+
+/** Defensive receipt check for a proof that crossed an async UI boundary. */
+export function isCorrectionPracticeProof(
+  value: unknown,
+  memberId: string,
+  date: DateKey,
+): value is CorrectionPracticeProof {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Partial<CorrectionPracticeProof>;
+  return row.version === 1
+    && row.memberId === memberId
+    && row.date === date
+    && row.fictional === true
+    && row.discarded === true
+    && row.mistakeCents === 4500
+    && row.mistakeEntryCount === 1
+    && row.reversalEntryCount === 2
+    && row.trialInBalance === true
+    && row.equationHolds === true
+    && row.netIncomeCents === 0
+    && Array.isArray(row.persistedIds)
+    && row.persistedIds.length === 0
+    && typeof row.receiptId === "string"
+    && /^PRACTICE-[A-F0-9]{20}$/.test(row.receiptId);
+}
+
+/**
+ * Practice can prefill review, never accepted books. The returned value has
+ * no id, command, or posting authority; the ordinary Add flow must still
+ * collect review and Confirm before it becomes real.
+ */
+export function practiceProofToRealDraft(proof: CorrectionPracticeProof): PracticeRealDraft {
+  if (!isCorrectionPracticeProof(proof, proof.memberId, proof.date)) {
+    throw new Error("Finish the isolated Practice correction before making a draft.");
+  }
+  return {
+    kind: "expense",
+    amountCents: 4500,
+    date: proof.date,
+    note: "Groceries",
+    requiresReviewAndConfirm: true,
+    practiceReceiptId: proof.receiptId,
+  };
+}
+
 /**
  * Runs the real posting, reversal, and journal compiler against a throwaway
  * fictional household. Only this proof object escapes; the practice household

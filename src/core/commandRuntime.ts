@@ -35,6 +35,10 @@ import { assertOnboardingEstimateSubmissionScope } from "./onboarding/estimates.
 import { assertOnboardingCategoryMergeTransition } from "./onboarding/categories.ts";
 import { assertOnboardingApprovalTransition } from "./onboarding/approvals.ts";
 import {
+  assertOnboardingCompletionTransition,
+  assertReadyApprovalPrerequisites,
+} from "./onboarding/ready.ts";
+import {
   assertOnboardingAdoptionTransition,
   ONBOARDING_ADOPTION_COMMAND_KIND,
 } from "./onboarding/adoption.ts";
@@ -318,6 +322,12 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         commandKind: input.commandKind,
         postedIds,
       });
+      if (input.commandKind === "approveOnboardingReady" && previous && input.actingMemberId) {
+        assertReadyApprovalPrerequisites(previous, candidate, input.actingMemberId);
+      }
+    }
+    if (input.commandKind === "completeHouseholdOnboarding" && previous) {
+      assertOnboardingCompletionTransition(previous, candidate);
     }
     if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND) {
       assertOnboardingAdoptionTransition(previous, candidate, {

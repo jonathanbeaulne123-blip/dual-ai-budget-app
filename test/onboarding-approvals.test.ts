@@ -9,8 +9,10 @@ import {
   bothApproved,
   catalogHousehold,
   compileHousehold,
+  emptyMemberOnboardingProgress,
   mergeOnboardingApprovals,
   mergeShared,
+  onboardingCompletionDigest,
   resolveAction,
   shapeOnboardingApprovals,
   splitForSync,
@@ -36,6 +38,42 @@ const JONATHAN = "MEM-002";
 const PROPOSAL_A = `proposal-v1-${"a".repeat(64)}`;
 const PROPOSAL_B = `proposal-v1-${"b".repeat(64)}`;
 const READY_A = `ready-v1-${"c".repeat(64)}`;
+
+function readyHousehold(): Household {
+  const household = catalogHousehold("development");
+  const at = "2026-09-05T02:00:00.000Z";
+  household.householdOnboarding = {
+    id: `ONBOARDING-${household.environment}-${household.householdId}`,
+    environment: household.environment,
+    householdId: household.householdId,
+    registryVersion: 1,
+    state: "active",
+    proposedByMemberId: BIANCA,
+    proposedAt: "2026-09-05T01:45:00.000Z",
+    handshakeExpiresAt: at,
+    confirmedByMemberIds: [BIANCA, JONATHAN],
+    startedAt: at,
+    stoppedAt: null,
+    stoppedByMemberIds: [],
+    stoppedSolo: false,
+    forcedUnlock: false,
+    completedAt: null,
+    completionDigest: null,
+    createdAt: "2026-09-05T01:45:00.000Z",
+    updatedAt: at,
+  };
+  household.members = household.members.map((member) => {
+    const progress = emptyMemberOnboardingProgress({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId: member.id,
+    });
+    progress.rows = progress.rows.map((row) => ({ ...row, acknowledgedAt: at, lastSafeResumePoint: row.chapterId }));
+    progress.updatedAt = at;
+    return { ...member, onboardingProgress: progress };
+  });
+  return household;
+}
 
 function approveProposal(household: Household, memberId: string, digest = PROPOSAL_A) {
   return approveOnboardingProposal(household, { memberId, createdBy: memberId, digest });
@@ -129,18 +167,20 @@ describe("onboarding approval contract", () => {
   });
 
   it("keeps proposal and Ready authority separate", () => {
-    const bianca = approveOnboardingReady(catalogHousehold("development"), {
+    const household = readyHousehold();
+    const digest = onboardingCompletionDigest(household);
+    const bianca = approveOnboardingReady(household, {
       memberId: BIANCA,
       createdBy: BIANCA,
-      digest: READY_A,
+      digest,
     });
     const bothReady = approveOnboardingReady(bianca.household, {
       memberId: JONATHAN,
       createdBy: JONATHAN,
-      digest: READY_A,
+      digest,
     });
-    expect(bothApproved(bothReady.household, "ready", READY_A)).toBe(true);
-    expect(bothApproved(bothReady.household, "proposal", READY_A)).toBe(false);
+    expect(bothApproved(bothReady.household, "ready", digest)).toBe(true);
+    expect(bothApproved(bothReady.household, "proposal", digest)).toBe(false);
     expect(bothApproved(bothReady.household, "ready", PROPOSAL_A)).toBe(false);
   });
 
