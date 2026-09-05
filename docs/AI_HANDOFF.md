@@ -1,5 +1,44 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 22 — self-owned exact-digest approvals (D-222) (2026-09-04)
+
+**Status:** Local implementation and proof are complete on
+`onboarding/22-approvals` at implementation commit
+`e84b72506b992ec4d2d5c2b111f1b308082fa11c`, based on
+`origin/main@e49e3ec10e89d2e64225fb472067a31743f51b29`. Nothing is pushed,
+merged, deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** Each active member may append only their own proposal or Ready
+approval for one exact digest. Both approval requires exactly two active seats
+on that same household, scope, and digest. Older records remain auditable but
+cannot authorize changed meaning. Contract:
+[`briefs/ONBOARDING_SLICE_22_APPROVALS_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_22_APPROVALS_CONTRACT_2026-09-04.md).
+
+**Authority, privacy, and money boundary:** Direct commands, accepted-write
+validation, and command-event replay bind the actor, command kind, household,
+and posted approval id. Approvals travel only through Shared continuity and
+contain no Personal source facts. Chat text cannot approve. Fund-configuration
+consent remains separate. The slice changes no budget plan, transaction,
+journal row, Fund event, accepted financial hash, provider, or model state.
+
+**Verification:** Focused proof passes 14/14. Approval, adjacent onboarding,
+and continuity suites pass 164/164; the High quick gate passes TypeScript,
+AI-surface verification, diff hygiene, fast tests, and serial PGlite proof. The
+production build passes at 471 Vite modules plus Hercules Pro UI. Independent
+High-risk review drove adversarial activity, replay, compacted-provenance,
+identity, and malformed-envelope repairs, then reported no remaining P0-P2
+finding. No component or CSS changed, so
+there is no browser UX surface in this slice. `pnpm check:windows` depends on a
+PowerShell-capable host; no Windows result is claimed here.
+
+**Evidence class:** Synthetic local Development fixtures, focused/adjacent
+tests, exact clean-head quick-gate, local build, and independent review. This is
+not a full-suite, Windows, hosted two-account, deployment, or Production claim.
+No hosted row, schema, secret, provider, or Production setting was read or
+changed.
+
+**Next owner:** Jonathan separately decides whether to push or open a PR.
+
 ## Onboarding Slice 20 — Chapter 10 first estimates (D-220) (2026-09-04)
 
 **Status:** Local implementation and proof are complete at
