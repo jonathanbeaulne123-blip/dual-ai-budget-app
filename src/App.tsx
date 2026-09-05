@@ -172,7 +172,7 @@ import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedger
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { selectCommandConfirmationId } from "./core/commandConfirmation.ts";
 import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, replaceAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
-import { readSupabaseConfig, pullConsistentMemberReplicaById, pullHouseholdSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
+import { readSupabaseConfig, pullOrBootstrapConsistentMemberReplicaById, pullHouseholdSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
 import {
@@ -1068,12 +1068,13 @@ export function App() {
       if (retryConflict) {
         if (cloudLedgerOnlineRequiredEnabled(environment)) {
           setCloudReplicaReadyKey(null);
-          const remoteReplica = await pullConsistentMemberReplicaById({
+          const remoteReplica = await pullOrBootstrapConsistentMemberReplicaById({
             householdId: current.householdId,
             memberId: who,
             environment,
             config: cloudConfig,
             identity,
+            localHousehold: current,
             initialShared: retryConflict.remote,
           });
           if (!remoteReplica) {
@@ -1148,12 +1149,13 @@ export function App() {
       }
       if (flushed.synchronized > 0) {
         if (cloudLedgerOnlineRequiredEnabled(environment)) {
-          const remoteReplica = await pullConsistentMemberReplicaById({
+          const remoteReplica = await pullOrBootstrapConsistentMemberReplicaById({
             householdId: current.householdId,
             memberId: who,
             environment,
             config: cloudConfig,
             identity,
+            localHousehold: current,
           });
           if (!remoteReplica) {
             setSyncState("error");
@@ -1276,12 +1278,13 @@ export function App() {
         subject: authSession.googleSubject,
       };
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
-      const remoteReplica = await pullConsistentMemberReplicaById({
+      const remoteReplica = await pullOrBootstrapConsistentMemberReplicaById({
         householdId: current.householdId,
         memberId,
         environment: expectedScope.environment,
         config: cloudConfig,
         identity,
+        localHousehold: current,
       });
       if (!remoteReplica) {
         throw new Error("The signed-in member's complete Shared and Personal cloud copy could not be found. Nothing local was replaced.");
@@ -1597,12 +1600,13 @@ export function App() {
         if (continuityMemberId(candidate, identity) !== loadedSession.memberId) {
           throw new Error("Google sign-in does not match the selected household member.");
         }
-        const replica = await pullConsistentMemberReplicaById({
+        const replica = await pullOrBootstrapConsistentMemberReplicaById({
           householdId: candidate.householdId,
           memberId: loadedSession.memberId,
           environment: candidate.environment,
           config: authenticatedSupabaseConfig(readSupabaseConfig(), authSession),
           identity,
+          localHousehold: candidate,
         });
         if (!replica) throw new Error(CLOUD_LEDGER_REFRESH_MESSAGE);
         return { remote: replica.shared, personal: replica.personal, identity };
@@ -2013,12 +2017,13 @@ export function App() {
           if (current && current.householdId === conflict.item.householdId) {
             if (cloudLedgerOnlineRequiredEnabled(environment)) {
               setCloudReplicaReadyKey(null);
-              const remoteReplica = await pullConsistentMemberReplicaById({
+              const remoteReplica = await pullOrBootstrapConsistentMemberReplicaById({
                 householdId: current.householdId,
                 memberId,
                 environment,
                 config: cloudConfig,
                 identity,
+                localHousehold: current,
                 initialShared: conflict.remote,
               });
               if (!remoteReplica) {
@@ -2179,12 +2184,13 @@ export function App() {
         }
         const pairRequired = Boolean(current && cloudLedgerOnlineRequiredEnabled(environment));
         const remoteReplica = current && pairRequired
-          ? await pullConsistentMemberReplicaById({
+          ? await pullOrBootstrapConsistentMemberReplicaById({
               householdId: current.householdId,
               memberId,
               environment,
               config: cloudConfig,
               identity,
+              localHousehold: current,
             })
           : null;
         if (pairRequired && !remoteReplica) {
@@ -2312,12 +2318,13 @@ export function App() {
                 setCloudReplicaReadyKey(null);
                 const conflictItem = listContinuityOutbox(environment)
                   .find((item) => item.householdId === ready.householdId);
-                const stable = await pullConsistentMemberReplicaById({
+                const stable = await pullOrBootstrapConsistentMemberReplicaById({
                   householdId: ready.householdId,
                   memberId,
                   environment,
                   config: cloudConfig,
                   identity,
+                  localHousehold: ready,
                   initialShared: pushed.remote,
                 });
                 if (!live) return;

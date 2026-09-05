@@ -126,6 +126,11 @@ vi.mock("../src/ledger/supabase.ts", async (importOriginal) => {
       const [shared, personal] = await Promise.all([startup.cloudRemote, startup.cloudPersonal]);
       return shared && personal ? { shared, personal, revision: shared.revision } : null;
     }),
+    pullOrBootstrapConsistentMemberReplicaById: vi.fn(async () => {
+      startup.consistentPullCalls += 1;
+      const [shared, personal] = await Promise.all([startup.cloudRemote, startup.cloudPersonal]);
+      return shared && personal ? { shared, personal, revision: shared.revision } : null;
+    }),
   };
 });
 

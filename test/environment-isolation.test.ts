@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applyHearthPass,
   catalogHousehold,
+  financialAuditHash,
   linkGoogleIdentity,
   makeHearthPass,
+  overlayGoogleLinkFromMembership,
   personalReplicaForMember,
   postEntry,
   seedDemoHousehold,
@@ -23,8 +25,10 @@ import {
   setContinuityStore,
 } from "../src/continuity.ts";
 import {
+  householdCloudProjection,
   pullHouseholdSnapshotById,
   pullConsistentMemberReplicaById,
+  pullOrBootstrapConsistentMemberReplicaById,
   pullPersonalSnapshotById,
   pullSupabaseHousehold,
 } from "../src/ledger/supabase.ts";
@@ -180,6 +184,81 @@ describe("environment isolation adversarial boundaries", () => {
       identity,
     })).rejects.toThrow(/does not belong to the signed-in Google member/);
     expect(fetches).toBe(1);
+  });
+
+  it("bootstraps a newly redeemed member's missing Personal envelope at the unchanged shared revision", async () => {
+    const identity = { email: "bianca@example.com", subject: "google-sub-bianca" };
+    const authConfig = {
+      ...config,
+      accessToken: "signed-in-bianca",
+      authUserId: "auth-user-bianca",
+    };
+    const shared = {
+      ...catalogHousehold(),
+      linked: true,
+      revision: 4,
+      baseRevision: 4,
+    };
+    const local = overlayGoogleLinkFromMembership(shared, {
+      memberId: "MEM-002",
+      ...identity,
+      displayName: "Bianca",
+    });
+    const personal = personalReplicaForMember(local, "MEM-002");
+    const expectedSharedHash = await financialAuditHash(householdCloudProjection(shared, "MEM-002"));
+    let personalSeeded = false;
+    let atomicPublishes = 0;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("continuity_memberships?")) {
+        return new Response(JSON.stringify([{
+          household_id: shared.householdId,
+          member_id: "MEM-002",
+          google_subject: identity.subject,
+          google_email: identity.email,
+          auth_user_id: authConfig.authUserId,
+          role: "member",
+        }]), { status: 200 });
+      }
+      if (url.includes("continuity_personal_snapshots?")) {
+        return new Response(JSON.stringify(personalSeeded
+          ? [{ revision: 4, payload: JSON.stringify(personal) }]
+          : []), { status: 200 });
+      }
+      if (url.includes("household_snapshots?")) {
+        return new Response(JSON.stringify([{ payload: JSON.stringify(shared) }]), { status: 200 });
+      }
+      if (url.includes("households?select=id&limit=1")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("rpc/publish_continuity_snapshot")) {
+        const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        expect(body.p_expected_revision).toBe(4);
+        expect(body.p_revision).toBe(4);
+        expect(body.p_member_id).toBe("MEM-002");
+        expect(body.p_snapshot_hash).toBe(expectedSharedHash);
+        personalSeeded = true;
+        atomicPublishes += 1;
+        return new Response(JSON.stringify({ ok: true, conflict: false, duplicate: true, revision: 4 }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    const replica = await pullOrBootstrapConsistentMemberReplicaById({
+      householdId: shared.householdId,
+      memberId: "MEM-002",
+      environment: "development",
+      config: authConfig,
+      identity,
+      localHousehold: local,
+    });
+
+    expect(atomicPublishes).toBe(1);
+    expect(replica?.revision).toBe(4);
+    expect(replica?.personal.memberId).toBe("MEM-002");
+    expect(replica?.shared.google.links.some((row) => (
+      row.memberId === "MEM-002" && row.subject === identity.subject
+    ))).toBe(true);
   });
 
   it("rejects persist when operatingEnvironment disagrees with the snapshot", async () => {
