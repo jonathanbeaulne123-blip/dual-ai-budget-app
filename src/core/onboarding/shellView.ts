@@ -14,8 +14,8 @@
 import type { DateKey } from "../calendar.ts";
 import type { Household } from "../types.ts";
 import type { EvidenceCard } from "./evidence.ts";
-import { ordinaryHerculesAvailable } from "./mode.ts";
-import { nextChapterFor } from "./progress.ts";
+import { acceptedHouseholdOnboarding, ordinaryHerculesAvailable } from "./mode.ts";
+import { NEW_MEMBER_CATCH_UP_CHAPTER_IDS, nextChapterFor } from "./progress.ts";
 import { householdChapters } from "./registry.ts";
 import type { ChapterId, OnboardingChapter, OnboardingSitting } from "./types.ts";
 
@@ -100,7 +100,12 @@ export function chapterRoleFor(
  * further) leaves the ordinary chat in place rather than showing an empty shell.
  */
 export function shouldShowOnboardingShell(household: Household, memberId: string, today: DateKey): boolean {
-  return !ordinaryHerculesAvailable(household) && nextChapterFor(household, memberId, today) !== null;
+  const next = nextChapterFor(household, memberId, today);
+  const completed = acceptedHouseholdOnboarding(household);
+  const isNewMemberCatchUp = completed?.state === "complete"
+    && !completed.confirmedByMemberIds.includes(memberId)
+    && Boolean(next && new Set<ChapterId>(NEW_MEMBER_CATCH_UP_CHAPTER_IDS).has(next.id));
+  return isNewMemberCatchUp || (!ordinaryHerculesAvailable(household) && next !== null);
 }
 
 /**

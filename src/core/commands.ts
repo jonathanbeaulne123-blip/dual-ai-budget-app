@@ -174,6 +174,7 @@ import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.
 import { householdGatesOutstanding, memberProgress } from "./onboarding/progress.ts";
 import { personalModuleById, personalModuleOfferFor } from "./onboarding/personal.ts";
 import { evidenceFor, probeEvidenceKey } from "./onboarding/evidence.ts";
+import { reprobeMemberOnboardingProgress } from "./onboarding/lifecycle.ts";
 import type { HouseholdScopeObservation } from "./onboarding/householdScope.ts";
 import {
   currentSubmission,
@@ -345,6 +346,14 @@ export function confirmHouseholdOnboarding(household: Household, input: {
   const activates = allActiveOnboardingMembersConfirmed(household, confirmedByMemberIds);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
+  const resumedProgress = prior.startedAt
+    ? reprobeMemberOnboardingProgress(next, input.memberId, at)
+    : null;
+  if (resumedProgress) {
+    next.members = next.members.map((member) => member.id === input.memberId
+      ? { ...member, onboardingProgress: resumedProgress }
+      : member);
+  }
   next.householdOnboarding = {
     ...prior,
     state: activates ? "active" : "handshake-pending",
@@ -386,17 +395,22 @@ export function stopHouseholdOnboarding(household: Household, input: {
 
 export function resumeHouseholdOnboarding(household: Household, input: {
   memberId: string;
+  at?: string;
 }): CommitResult {
   requireMember(household, input.memberId);
   const prior = acceptedHouseholdOnboarding(household);
   if (!prior || prior.state !== "stopped-incomplete") {
     throw new ValidationError(ONBOARDING_MODE_COPY["stop.recorded"]);
   }
-  const at = nowIso();
+  const at = onboardingCommandAt(input.at);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const proposal = onboardingProposal(household, input.memberId, at, prior);
   next.householdOnboarding = proposal;
+  const refreshed = reprobeMemberOnboardingProgress(next, input.memberId, at);
+  next.members = next.members.map((member) => member.id === input.memberId
+    ? { ...member, onboardingProgress: refreshed }
+    : member);
   return commit(previous, next, "Onboarding", "Proposed resuming household setup", [proposal.id], [], "resumeHouseholdOnboarding");
 }
 
@@ -568,9 +582,15 @@ export function recordObservedChapterCompletion(household: Household, input: {
     rows: progress.rows.map((row) => row.chapterId === chapter.id
       ? {
           ...row,
-          observedCompleteAt: row.observedCompleteAt ?? projected.card.observedAt,
-          probeEvidenceKey: row.probeEvidenceKey ?? evidenceKey,
-          acknowledgedAt: row.acknowledgedAt ?? at,
+          observedCompleteAt: row.invalidatedAt && (row.observedCompleteAt ?? "") <= row.invalidatedAt
+            ? projected.card.observedAt
+            : row.observedCompleteAt ?? projected.card.observedAt,
+          probeEvidenceKey: row.invalidatedAt && (row.observedCompleteAt ?? "") <= row.invalidatedAt
+            ? evidenceKey
+            : row.probeEvidenceKey ?? evidenceKey,
+          acknowledgedAt: row.invalidatedAt && (row.acknowledgedAt ?? "") <= row.invalidatedAt
+            ? at
+            : row.acknowledgedAt ?? at,
           lastSafeResumePoint: chapter.id,
         }
       : row),

@@ -42,6 +42,7 @@ import {
   assertOnboardingAdoptionTransition,
   ONBOARDING_ADOPTION_COMMAND_KIND,
 } from "./onboarding/adoption.ts";
+import { syntheticDemoOnboardingIsValid } from "./onboarding/lifecycle.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError, ValidationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
@@ -316,7 +317,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       || input.commandKind === "approveOnboardingReady";
     const onboardingApprovalStateChanged = JSON.stringify(previous?.onboardingApprovals ?? [])
       !== JSON.stringify(candidate.onboardingApprovals ?? []);
-    if (isOnboardingApprovalCommand || onboardingApprovalStateChanged) {
+    const validSyntheticDemoCreation = input.commandKind === "create-demo-suite"
+      && !previous
+      && syntheticDemoOnboardingIsValid(candidate);
+    if (isOnboardingApprovalCommand || (onboardingApprovalStateChanged && !validSyntheticDemoCreation)) {
       assertOnboardingApprovalTransition(previous, candidate, {
         actorMemberId: input.actingMemberId,
         commandKind: input.commandKind,

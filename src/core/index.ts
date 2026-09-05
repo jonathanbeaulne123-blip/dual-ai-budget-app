@@ -157,6 +157,7 @@ export * from "./onboarding/copy.ts";
 export * from "./onboarding/flavor.ts";
 export * from "./onboarding/shellView.ts";
 export * from "./onboarding/returnMessage.ts";
+export * from "./onboarding/lifecycle.ts";
 export { createWriteQueue } from "./writeQueue.ts";
 export { formatInviteCode, normalizeInviteCode, randomHouseholdId, randomInviteCode } from "./ids.ts";
 export {

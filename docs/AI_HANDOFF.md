@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 27 — lifecycle and re-runs (D-227) (2026-09-05)
+
+**Status:** Release candidate implementation and proof are complete on `onboarding/27-lifecycle`, based on `origin/main@e85599c135523034526661e0d381ebaa005fb7ee`. Jonathan authorized push, merge, and the Development Worker deployment; hosted-live proof remains part of the release run. Risk: **High**.
+
+**Outcome:** Completed household setup is now sticky rather than a standing gate. Charter changes and stale stopped replicas cannot reopen it. A replacement member receives only a private Ch. 1, live Ch. 2, and self-owned Ch. 8 catch-up; existing members stay in ordinary Hearth. Environment mismatch starts inactive, registry drift enters repair, unknown chapter ids fail closed, and a stopped run demotes evidence that no longer matches current canonical state.
+
+**Demo and authority:** Both demo generators stamp deterministic synthetic completion and two Ready approvals, so a demo never opens in setup. Demo creation accepts that metadata only through a narrow Development/provenance/two-seat/all-chapters/two-approval proof. Financial fixture facts remain hash-covered; portable onboarding identity is normalized with other household identity. Hercules says he never posts or confirms, and Final Confirm remains the only money boundary.
+
+**Verification:** The 33-file onboarding suite plus demo seed passes 463/463. The isolated eight-case Demo Suite matrix passes deterministic replay, all domain/Hercules surfaces, tamper detection, privacy, environment/replacement refusal, shared merges, profiles, and Toronto DST. Actual-component Chromium at 320/390/720/1100 px passes overflow, 44 px controls, reduced motion, console/page errors, and scoped WCAG A/AA axe checks; `Not now` returns the replacement member to ordinary Hearth, and unavailable live Ch. 2 proof stays held up. Release review found and repaired an old-replica convergence edge case after a successful re-probe; its regression and the exact-head release gate pass. Clean gate and production-build evidence are in [`worksessions/2026-09-05-onboarding-lifecycle.md`](worksessions/2026-09-05-onboarding-lifecycle.md).
+
+**Evidence class:** Synthetic local Development fixtures and local verification before release. This is not Windows, hosted two-account, or Production proof. No money writer, journal, budget formula, schema, hosted row, Auth/RLS rule, provider/model call, secret, or Production setting was touched.
+
+**Next owner:** The release run pushes the branch, waits for required checks, merges it, waits for the `main` Development deployment, and smokes the exact hosted artifact. A separate-agent or human trust review remains desirable because only the structured release review was available here.
+
 ## Onboarding Slice 26 — opt-in Personal track (D-226) (2026-09-05)
 
 **Status:** Local implementation is complete on `onboarding/26-personal` at `4495386b74da1249d3a6afc535e5ca172cad5cdc`, based on `origin/main@58e90df5f40dfdba1399f6a8f35c8efe8fb62c15`. Nothing is pushed, merged, deployed, or hosted-live verified. Risk: **Low**; the repository quick-gate floor ran it as Medium.

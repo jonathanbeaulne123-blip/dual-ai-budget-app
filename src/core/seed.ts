@@ -33,6 +33,7 @@ import { COMPANION, JOINT, type Category, type Household, type WorkJob } from ".
 import { jointSplit, equalSplits } from "./splits.ts";
 import { shapeWorkJob } from "./work.ts";
 import { shiftBibleMaterialHash, type ShiftBible } from "./shiftEnvelope.ts";
+import { completeSyntheticDemoOnboarding } from "./onboarding/lifecycle.ts";
 
 function mulberry32(seed: number) {
   return function random() {
@@ -744,7 +745,10 @@ export function seedDemoHousehold(options?: { today?: DateKey; environment?: Hou
     return { ...shift, jobId: demoJob.id, roleId: demoRole.id, shiftBible: { ...base, materialHash: shiftBibleMaterialHash(base) } };
   });
 
-  return household;
+  return completeSyntheticDemoOnboarding(household, {
+    at: `${today}T12:00:00.000Z`,
+    sourceKey: `seed:${today}`,
+  });
 }
 
 /** Four synthetic months of command-authored Fund and Charter history. */

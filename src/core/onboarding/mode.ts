@@ -325,8 +325,8 @@ export function mergeHouseholdOnboarding(
   let state: OnboardingModeState = newer.state;
   let startedAt = existingStartedAt;
   if (server.state === "repair" || client.state === "repair") state = "repair";
-  else if (forcedUnlock || stoppedSolo || stoppedTogether) state = "stopped-incomplete";
   else if (completed) state = "complete";
+  else if (forcedUnlock || stoppedSolo || stoppedTogether) state = "stopped-incomplete";
   else if (stoppedByMemberIds.length > 0) state = "waiting-member";
   else if (confirmedTogether) {
     state = "active";
@@ -340,9 +340,9 @@ export function mergeHouseholdOnboarding(
     state,
     confirmedByMemberIds,
     startedAt,
-    stoppedAt,
-    stoppedByMemberIds,
-    stoppedSolo,
+    stoppedAt: completed ? null : stoppedAt,
+    stoppedByMemberIds: completed ? [] : stoppedByMemberIds,
+    stoppedSolo: completed ? false : stoppedSolo,
     forcedUnlock,
     completedAt: completed && !forcedUnlock ? completedAt : null,
     completionDigest: completed && !forcedUnlock ? completionDigest : null,

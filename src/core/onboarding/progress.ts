@@ -12,6 +12,7 @@ import { acceptedHouseholdOnboarding, onboardingIsActive } from "./mode.ts";
 import type { ChapterId, OnboardingChapter } from "./types.ts";
 
 const MISSING_ISO = "1970-01-01T00:00:00.000Z";
+export const NEW_MEMBER_CATCH_UP_CHAPTER_IDS = ["ch-01-meet", "ch-02-household", "ch-08-cadence"] as const;
 
 export type MemberChapterProgress = {
   chapterId: ChapterId;
@@ -24,6 +25,8 @@ export type MemberChapterProgress = {
   personalAccountSetupSkippedAt: string | null;
   lastSafeResumePoint: string | null;
   acknowledgedAt: string | null;
+  /** A later lifecycle repair invalidates older proof without letting a stale replica resurrect it. */
+  invalidatedAt: string | null;
 };
 
 export type MemberOnboardingProgress = {
@@ -80,6 +83,16 @@ function later(left: string | null, right: string | null): string | null {
   return left >= right ? left : right;
 }
 
+function earliestProofAfterInvalidation(
+  left: string | null,
+  right: string | null,
+  invalidatedAt: string | null,
+): string | null {
+  const candidates = [left, right].filter((value): value is string => Boolean(value)).sort();
+  if (!invalidatedAt) return candidates[0] ?? null;
+  return candidates.find((value) => value > invalidatedAt) ?? candidates[0] ?? null;
+}
+
 export function memberProgressId(context: ProgressContext): string {
   return `ONBOARDING-PROGRESS-${context.environment}-${context.householdId}-${context.memberId}-v${ONBOARDING_REGISTRY_VERSION}`;
 }
@@ -113,6 +126,7 @@ function emptyChapter(chapterId: ChapterId): MemberChapterProgress {
     personalAccountSetupSkippedAt: null,
     lastSafeResumePoint: null,
     acknowledgedAt: null,
+    invalidatedAt: null,
   };
 }
 
@@ -198,6 +212,7 @@ export function shapeMemberOnboardingProgress(
         : null,
       lastSafeResumePoint: textOrNull(candidate?.lastSafeResumePoint),
       acknowledgedAt: isoOrNull(candidate?.acknowledgedAt),
+      invalidatedAt: isoOrNull(candidate?.invalidatedAt),
     };
   });
   const declineCountByModule = Object.fromEntries(Object.entries(row.declineCountByModule ?? {})
@@ -227,19 +242,36 @@ export function memberProgress(household: Household, memberId: string): MemberOn
   const member = household.members.find((candidate) => candidate.id === memberId && candidate.active);
   if (!member) throw new ValidationError("Choose an active household member.");
   const context = { environment: household.environment, householdId: household.householdId, memberId };
-  return shapeMemberOnboardingProgress(member.onboardingProgress, context)
-    ?? emptyMemberOnboardingProgress(context);
+  const shaped = shapeMemberOnboardingProgress(member.onboardingProgress, context);
+  if (shaped) return shaped;
+  const empty = emptyMemberOnboardingProgress(context);
+  const completed = acceptedHouseholdOnboarding(household);
+  if (completed?.state !== "complete" || completed.confirmedByMemberIds.includes(memberId)) return empty;
+  const inheritedAt = completed.completedAt ?? completed.updatedAt;
+  const catchUp = new Set<ChapterId>(NEW_MEMBER_CATCH_UP_CHAPTER_IDS);
+  return {
+    ...empty,
+    rows: empty.rows.map((row) => householdChapters().some((chapter) => chapter.id === row.chapterId)
+      && !catchUp.has(row.chapterId)
+      ? { ...row, acknowledgedAt: inheritedAt, lastSafeResumePoint: row.chapterId }
+      : row),
+    updatedAt: inheritedAt,
+  };
 }
 
-function chapterSatisfied(row: MemberChapterProgress | undefined): boolean {
-  return Boolean(row?.observedCompleteAt || row?.acknowledgedAt || row?.skippedAt);
+export function chapterProgressSatisfied(row: MemberChapterProgress | undefined): boolean {
+  const completedAt = [row?.observedCompleteAt, row?.acknowledgedAt, row?.skippedAt]
+    .filter((value): value is string => Boolean(value))
+    .sort()
+    .at(-1);
+  return Boolean(completedAt && (!row?.invalidatedAt || completedAt > row.invalidatedAt));
 }
 
 function nextEligible(
   chapters: readonly OnboardingChapter[],
   progress: MemberOnboardingProgress,
 ): OnboardingChapter | null {
-  const satisfied = new Set(progress.rows.filter(chapterSatisfied).map((row) => row.chapterId));
+  const satisfied = new Set(progress.rows.filter(chapterProgressSatisfied).map((row) => row.chapterId));
   for (const chapter of chapters) {
     if (satisfied.has(chapter.id)) continue;
     if (chapter.dependsOn.every((dependencyId) => satisfied.has(dependencyId))) return chapter;
@@ -264,6 +296,7 @@ export function nextChapterFor(household: Household, memberId: string, today: Da
 
 /** The finale's fail-closed source of truth for household-track requirements. */
 export function householdGatesOutstanding(household: Household): ChapterId[] {
+  if (acceptedHouseholdOnboarding(household)?.state === "complete") return [];
   const representedMembers = household.members.filter((member) => member.active
     && shapeMemberOnboardingProgress(member.onboardingProgress, {
       environment: household.environment,
@@ -274,7 +307,7 @@ export function householdGatesOutstanding(household: Household): ChapterId[] {
     .filter((chapter) => chapter.contributesToFinalGate)
     .filter((chapter) => representedMembers.length === 0 || representedMembers.some((member) => {
       const row = memberProgress(household, member.id).rows.find((candidate) => candidate.chapterId === chapter.id);
-      return !chapterSatisfied(row);
+      return !chapterProgressSatisfied(row);
     }))
     .map((chapter) => chapter.id);
 }
@@ -299,7 +332,12 @@ export function mergeMemberProgress(
   const rows = ONBOARDING_REGISTRY.map((chapter): MemberChapterProgress => {
     const left = serverRows.get(chapter.id) ?? emptyChapter(chapter.id);
     const right = clientRows.get(chapter.id) ?? emptyChapter(chapter.id);
-    const observedCompleteAt = earlier(left.observedCompleteAt, right.observedCompleteAt);
+    const invalidatedAt = later(left.invalidatedAt, right.invalidatedAt);
+    const observedCompleteAt = earliestProofAfterInvalidation(
+      left.observedCompleteAt,
+      right.observedCompleteAt,
+      invalidatedAt,
+    );
     const evidenceCandidates = [left, right]
       .filter((row) => row.observedCompleteAt === observedCompleteAt && row.probeEvidenceKey)
       .map((row) => row.probeEvidenceKey as string)
@@ -308,7 +346,7 @@ export function mergeMemberProgress(
       chapterId: chapter.id,
       observedCompleteAt,
       probeEvidenceKey: observedCompleteAt ? evidenceCandidates[0] ?? null : null,
-      skippedAt: earlier(left.skippedAt, right.skippedAt),
+      skippedAt: earliestProofAfterInvalidation(left.skippedAt, right.skippedAt, invalidatedAt),
       personalAccountSetupSkippedAt: earlier(
         left.personalAccountSetupSkippedAt,
         right.personalAccountSetupSkippedAt,
@@ -322,7 +360,8 @@ export function mergeMemberProgress(
             : server.updatedAt > client.updatedAt
               ? left.lastSafeResumePoint
               : later(left.lastSafeResumePoint, right.lastSafeResumePoint),
-      acknowledgedAt: earlier(left.acknowledgedAt, right.acknowledgedAt),
+      acknowledgedAt: earliestProofAfterInvalidation(left.acknowledgedAt, right.acknowledgedAt, invalidatedAt),
+      invalidatedAt,
     };
   });
   const declineKeys = new Set([
