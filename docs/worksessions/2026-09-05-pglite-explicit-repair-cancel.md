@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/pglite-explicit-repair-cancel`
-- **Baseline SHA:** `6056cceedebb9a4611e7f5c70c45c1105e562e4d`
-- **Head SHA:** dirty working tree over baseline
+- **Baseline SHA:** `146dc1a7160d163ea911321aa2034cf4324c44d8`
+- **Head SHA:** runtime implementation `4dfde475809efa072531961ec8d1287d01e1e76a`; documentation closeout may follow without changing runtime
 - **PR or issue:** none yet
 - **Risk:** Release
 - **Decision owner:** Jonathan

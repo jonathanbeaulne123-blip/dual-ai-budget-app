@@ -51,9 +51,11 @@ deploy without a separate explicit instruction.
 ## D-212 explicit cloud-repair opener retirement (2026-09-05)
 
 **Status:** Active Release-risk repair on `codex/pglite-explicit-repair-cancel`,
-based on deployed Development `main@6056cceedebb9a4611e7f5c70c45c1105e562e4d`.
-The implementation is local and uncommitted with a **CONDITIONAL** release
-review. No new PR is open, and nothing from this repair is merged or deployed.
+rebased onto `origin/main@146dc1a7160d163ea911321aa2034cf4324c44d8` at
+runtime implementation commit `4dfde475809efa072531961ec8d1287d01e1e76a`.
+Development still serves `main@6056cceedebb9a4611e7f5c70c45c1105e562e4d`.
+The implementation is committed locally with a **CONDITIONAL** release review.
+No new PR is open, and nothing from this repair is merged or deployed.
 Production continuity remains off.
 
 **Observed failure:** Jonathan's phone committed a Shared `postEntry` as hosted
