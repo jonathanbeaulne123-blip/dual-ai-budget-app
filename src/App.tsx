@@ -193,7 +193,9 @@ import {
 import {
   createContinuityRealtimeReconnectGate,
   shouldDeferResumeForRealtimeReconnect,
+  type ContinuityRealtimeReconnectGate,
 } from "./continuityRealtimeReconnect.ts";
+import { createContinuityRealtimeAccessTokenProvider } from "./continuityRealtimeAuth.ts";
 import {
   canAttachContinuityRealtime,
   continuityRealtimeSelfHealEnabled,
@@ -2570,6 +2572,7 @@ export function App() {
         Date.now() + livePullIntervalMs(memberCount),
       );
     };
+    let realtimeReconnectGate: ContinuityRealtimeReconnectGate | undefined;
 
     const setupRealtime = async (): Promise<boolean> => {
       const generation = ++realtimeGeneration;
@@ -2611,6 +2614,29 @@ export function App() {
         supabaseUrl: authConfig.supabaseUrl,
         publishableKey: authConfig.publishableKey,
         accessToken: authSession.accessToken,
+        accessTokenProvider: createContinuityRealtimeAccessTokenProvider({
+          initialSession: authSession,
+          identity,
+          ensureSession: () => ensureSupabaseSession(environment),
+          validateMembership: async (refreshedSession) => Boolean(await fetchContinuityMembershipRole({
+            householdId: currentHouseholdId,
+            memberId,
+            identity,
+            environment,
+            config: authenticatedSupabaseConfig(readSupabaseConfig(), refreshedSession),
+          })),
+        }),
+        onAccessTokenChange: () => {
+          if (!live || generation !== realtimeGeneration) return;
+          scheduleRealtimeRecovery(null);
+        },
+        onAccessTokenError: () => {
+          if (!live || generation !== realtimeGeneration) return;
+          realtimeStatusRef.current = "CHANNEL_ERROR";
+          setRealtimeStatus("CHANNEL_ERROR");
+          traceSyncPilot("realtime-disconnected", { transport: "command-realtime" });
+          realtimeReconnectGate?.noteHeartbeat("error");
+        },
         householdId: currentHouseholdId,
         memberId,
         environment,
@@ -2657,7 +2683,7 @@ export function App() {
             traceSyncPilot("realtime-disconnected", { transport: "command-realtime" });
           }
           setRealtimeStatus(status);
-          realtimeReconnectGate.noteStatus(status);
+          realtimeReconnectGate?.noteStatus(status);
         },
         onHeartbeatStatus: (status) => {
           if (!live || generation !== realtimeGeneration) return;
@@ -2666,7 +2692,7 @@ export function App() {
             setRealtimeStatus("CHANNEL_ERROR");
             traceSyncPilot("realtime-disconnected", { transport: "command-realtime" });
           }
-          realtimeReconnectGate.noteHeartbeat(status);
+          realtimeReconnectGate?.noteHeartbeat(status);
         },
       });
       if (!live || generation !== realtimeGeneration) {
@@ -2677,7 +2703,7 @@ export function App() {
       return true;
     };
 
-    const realtimeReconnectGate = createContinuityRealtimeReconnectGate({
+    realtimeReconnectGate = createContinuityRealtimeReconnectGate({
       reconnect: async () => {
         if (!live) return;
         traceSyncPilot("realtime-reconnect", { transport: "command-realtime" });
@@ -2724,7 +2750,7 @@ export function App() {
         realtimeEnabled: realtimeOn,
         status: realtimeStatusRef.current,
       });
-      if (healingRealtime) realtimeReconnectGate.requestReconnect("online");
+      if (healingRealtime) realtimeReconnectGate?.requestReconnect("online");
       else requestResume("online");
     };
     const onFocus = () => {
@@ -2732,7 +2758,7 @@ export function App() {
         realtimeEnabled: realtimeOn,
         status: realtimeStatusRef.current,
       });
-      if (healingRealtime) realtimeReconnectGate.requestReconnect("focus");
+      if (healingRealtime) realtimeReconnectGate?.requestReconnect("focus");
       else requestResume("focus");
     };
     const onVisibility = () => {
@@ -2741,7 +2767,7 @@ export function App() {
         realtimeEnabled: realtimeOn,
         status: realtimeStatusRef.current,
       });
-      if (healingRealtime) realtimeReconnectGate.requestReconnect("visibility");
+      if (healingRealtime) realtimeReconnectGate?.requestReconnect("visibility");
       else requestResume("visibility");
     };
     window.addEventListener("online", onOnline);
@@ -2759,7 +2785,7 @@ export function App() {
         if (!live || realtimeGeneration !== initialRealtimeGeneration) return;
         realtimeStatusRef.current = "CHANNEL_ERROR";
         setRealtimeStatus("CHANNEL_ERROR");
-        realtimeReconnectGate.noteStatus("CHANNEL_ERROR");
+        realtimeReconnectGate?.noteStatus("CHANNEL_ERROR");
       });
     }
     // Tick often enough to honor backoff without a fixed 4s heartbeat when unhealthy.
@@ -2807,7 +2833,7 @@ export function App() {
       resumeGate.dispose();
       realtimeRecoveryGate.dispose();
       realtimeRecoveryScheduler.dispose();
-      realtimeReconnectGate.dispose();
+      realtimeReconnectGate?.dispose();
       detachRealtime?.();
       window.removeEventListener("online", onOnline);
       window.removeEventListener("focus", onFocus);
