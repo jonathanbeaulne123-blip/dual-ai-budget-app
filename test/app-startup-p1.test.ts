@@ -32,6 +32,7 @@ const startup = vi.hoisted(() => ({
   consistentPullCalls: 0,
   stagedCandidates: [] as Household[],
   repairedCandidates: [] as Household[],
+  repairFailure: null as Error | null,
   transportCalls: [] as Household[],
   lifecycle: [] as string[],
   transportResult: null as null | { ok: true; remoteRevision?: number } | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; message: string },
@@ -103,6 +104,8 @@ vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
     }),
     repairAcceptedHouseholdBooks: vi.fn(async (household: Household) => {
       startup.repairedCandidates.push(household);
+      startup.lifecycle.push(`repair:${household.transactions.length}`);
+      if (startup.repairFailure) throw startup.repairFailure;
       return { ok: true, engine: "pglite" as const, entryCount: household.transactions.length, inBalance: true, equationHolds: true };
     }),
     replaceAcceptedHouseholdBooks: vi.fn(async (household: Household) => {
@@ -277,6 +280,7 @@ describe("cached-shell startup books gate", () => {
     startup.consistentPullCalls = 0;
     startup.stagedCandidates = [];
     startup.repairedCandidates = [];
+    startup.repairFailure = null;
     startup.transportCalls = [];
     startup.lifecycle = [];
     startup.transportResult = null;
@@ -956,6 +960,17 @@ describe("cached-shell startup books gate", () => {
     });
     await startValidation();
     await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
+    const savesBeforeRepair = startup.saveCalls;
+    startup.repairFailure = new Error("The replacement projection did not validate.");
+    await act(async () => {
+      button("Restore from cloud copy").click();
+      await Promise.resolve();
+    });
+    await waitForUi(() => expect(container.textContent).toContain("The replacement projection did not validate."));
+    expect(startup.saveCalls).toBe(savesBeforeRepair);
+    expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull();
+
+    startup.repairFailure = null;
     await act(async () => {
       button("Restore from cloud copy").click();
       await Promise.resolve();
@@ -970,6 +985,8 @@ describe("cached-shell startup books gate", () => {
     expect(restored?.transactions.some((row) => row.note === "Corrupted local private row")).toBe(false);
     expect(startup.stagedCandidates.at(-1)?.householdId).toBe(restored?.householdId);
     expect(startup.repairedCandidates.at(-1)?.booksAcceptedHash).toBe(restored?.booksAcceptedHash);
+    expect(startup.lifecycle.findIndex((event) => event.startsWith("repair:")))
+      .toBeLessThan(startup.lifecycle.findIndex((event) => event.startsWith("save:")));
   });
 
   it("keeps projection recovery blocked when the device still has an unacknowledged tip", async () => {

@@ -211,8 +211,18 @@ async function deleteRows(
 
 let browserDbs = new Map<string, BooksDatabase>();
 let browserDbOpenings = new Map<string, Promise<BooksDatabase>>();
+type BrowserBooksOpeningControl = {
+  handle: BooksDatabase | null;
+  isRetired: () => boolean;
+  retired: Promise<never>;
+  retire: () => void;
+  throwIfRetired: () => void;
+};
+let browserDbOpeningControls = new Map<string, BrowserBooksOpeningControl>();
 let browserDbClosings = new Map<string, Promise<void>>();
 let browserDbClosePromises = new WeakMap<BooksDatabase, Promise<void>>();
+let browserBooksRepairBarriers = new Map<string, Promise<void>>();
+let browserBooksActiveRepairs = new Map<string, { key: string; promise: Promise<BooksStatus> }>();
 let stagedDbs = new Map<string, BooksDatabase>();
 let stagedDbOpenings = new Map<string, Promise<BooksDatabase>>();
 const stagedGenerations = new Map<string, number>();
@@ -389,7 +399,43 @@ async function getStagedBooks(environment: Environment, householdId: string): Pr
   }
 }
 
-export async function getBrowserBooks(environment: Environment = "development"): Promise<BooksDatabase> {
+export class BrowserBooksRecoveryInProgressError extends Error {
+  readonly code = "BROWSER_BOOKS_RECOVERY_IN_PROGRESS";
+
+  constructor() {
+    super("The local books are restarting for an authenticated cloud repair. Retry after the repair finishes.");
+    this.name = "BrowserBooksRecoveryInProgressError";
+  }
+}
+
+async function waitForBrowserBooksRepair(environment: Environment): Promise<void> {
+  while (true) {
+    const barrier = browserBooksRepairBarriers.get(environment);
+    if (!barrier) return;
+    await barrier;
+    if (browserBooksRepairBarriers.get(environment) === barrier) return;
+  }
+}
+
+function enqueueBrowserBooksRepair<T>(environment: Environment, work: () => Promise<T>): Promise<T> {
+  const previous = browserBooksRepairBarriers.get(environment) ?? Promise.resolve();
+  const result = previous.then(work);
+  const barrier = result.then(() => undefined, () => undefined);
+  browserBooksRepairBarriers.set(environment, barrier);
+  void barrier.then(() => {
+    if (browserBooksRepairBarriers.get(environment) === barrier) browserBooksRepairBarriers.delete(environment);
+  });
+  return result;
+}
+
+async function getBrowserBooksInternal(
+  environment: Environment,
+  options: { duringRepair?: boolean } = {},
+): Promise<BooksDatabase> {
+  if (!options.duringRepair && browserBooksRepairBarriers.has(environment)) {
+    await waitForBrowserBooksRepair(environment);
+    return getBrowserBooksInternal(environment);
+  }
   const existing = browserDbs.get(environment);
   if (existing) return existing;
   const opening = browserDbOpenings.get(environment);
@@ -397,16 +443,39 @@ export async function getBrowserBooks(environment: Environment = "development"):
   const closing = browserDbClosings.get(environment);
   if (closing) {
     await closing;
-    return getBrowserBooks(environment);
+    return getBrowserBooksInternal(environment, options);
   }
   const testFactory = browserBooksFactoryForTests;
   const testInitializer = browserBooksInitializerForTests;
+  let rejectRetired!: (caught: Error) => void;
+  let retired = false;
+  const retiredError = new BrowserBooksRecoveryInProgressError();
+  const control: BrowserBooksOpeningControl = {
+    handle: null,
+    retired: new Promise<never>((_resolve, reject) => { rejectRetired = reject; }),
+    isRetired: () => retired,
+    retire: () => {
+      if (retired) return;
+      retired = true;
+      rejectRetired(retiredError);
+    },
+    throwIfRetired: () => {
+      if (retired) throw retiredError;
+    },
+  };
+  // Retirement is also observed through explicit state checks. Mark the
+  // rejection handled immediately so a cancellation during a module import
+  // cannot surface as an unrelated unhandled promise rejection.
+  void control.retired.catch(() => undefined);
+  browserDbOpeningControls.set(environment, control);
   let rawOpening!: Promise<BooksDatabase>;
   rawOpening = measureHearth("hearth:books:open-migrate", async () => {
     let db: BooksDatabase | null = null;
     try {
       if (testFactory) {
         db = await testFactory(environment);
+        control.handle = db;
+        control.throwIfRetired();
       } else {
         const persist = typeof indexedDB !== "undefined";
         const canUseWorker = persist
@@ -417,22 +486,34 @@ export async function getBrowserBooks(environment: Environment = "development"):
           && "locks" in navigator;
         db = canUseWorker
           ? await (async () => {
-              const [{ PGliteWorker }] = await Promise.all([
-                import("@electric-sql/pglite/worker"),
-              ]);
+              const { PGliteWorker } = await import("@electric-sql/pglite/worker");
+              control.throwIfRetired();
               const worker = new Worker(new URL("./pglite.worker.ts", import.meta.url), { type: "module", name: `hearth-books-${environment}` });
-              return PGliteWorker.create(
+              const client = new PGliteWorker(
                 worker,
                 { dataDir: booksIdbName(environment), id: `hearth-books-${environment}` },
               );
+              control.handle = client;
+              db = client;
+              await Promise.race([client.waitReady, control.retired]);
+              return client;
             })()
           : await (async () => {
               const { PGlite } = await import("@electric-sql/pglite");
-              return persist ? PGlite.create(booksIdbName(environment)) : PGlite.create();
+              control.throwIfRetired();
+              const client = persist ? new PGlite(booksIdbName(environment)) : new PGlite();
+              control.handle = client;
+              db = client;
+              await Promise.race([client.waitReady, control.retired]);
+              return client;
             })();
       }
-      if (testFactory) await testInitializer?.(db, environment);
-      else await migrateBooks(db);
+      control.handle = db;
+      if (testFactory) {
+        if (testInitializer) await Promise.race([testInitializer(db, environment), control.retired]);
+      } else {
+        await Promise.race([migrateBooks(db), control.retired]);
+      }
       if (browserDbOpenings.get(environment) !== rawOpening) {
         throw new Error("The books engine opening was retired before it became active.");
       }
@@ -442,7 +523,8 @@ export async function getBrowserBooks(environment: Environment = "development"):
       // PGliteWorker.create has already acquired its tab-close lock before
       // migration begins. A failed migration or retired activation must close
       // that exact handle before this opening rejects and permits a retry.
-      if (db) await retireBrowserBooksConnection(environment, db);
+      const handle = db ?? control.handle;
+      if (handle) await retireBrowserBooksConnection(environment, handle);
       throw caught;
     }
   });
@@ -450,9 +532,11 @@ export async function getBrowserBooks(environment: Environment = "development"):
   void rawOpening.then(
     () => {
       if (browserDbOpenings.get(environment) === rawOpening) browserDbOpenings.delete(environment);
+      if (browserDbOpeningControls.get(environment) === control) browserDbOpeningControls.delete(environment);
     },
     () => {
       if (browserDbOpenings.get(environment) === rawOpening) browserDbOpenings.delete(environment);
+      if (browserDbOpeningControls.get(environment) === control) browserDbOpeningControls.delete(environment);
     },
   );
   // Keep one raw opening in flight after a caller's deadline. Starting another
@@ -462,7 +546,27 @@ export async function getBrowserBooks(environment: Environment = "development"):
   return withBrowserBooksOpenDeadline(rawOpening);
 }
 
-async function reopenBrowserBooks(environment: Environment): Promise<BooksDatabase> {
+export async function getBrowserBooks(environment: Environment = "development"): Promise<BooksDatabase> {
+  return getBrowserBooksInternal(environment);
+}
+
+async function retireBrowserBooksOpeningForRecovery(environment: Environment): Promise<void> {
+  const opening = browserDbOpenings.get(environment);
+  const control = browserDbOpeningControls.get(environment);
+  if (!opening) return;
+  control?.retire();
+  const knownHandle = control?.handle ?? null;
+  if (knownHandle) await retireBrowserBooksConnection(environment, knownHandle);
+  await opening.catch(() => undefined);
+  const lateHandle = control?.handle ?? null;
+  if (lateHandle && lateHandle !== knownHandle) {
+    await retireBrowserBooksConnection(environment, lateHandle);
+  }
+  if (browserDbOpenings.get(environment) === opening) browserDbOpenings.delete(environment);
+  if (browserDbOpeningControls.get(environment) === control) browserDbOpeningControls.delete(environment);
+}
+
+async function reopenBrowserBooks(environment: Environment, duringRepair = false): Promise<BooksDatabase> {
   const opening = browserDbOpenings.get(environment);
   if (opening) {
     // A still-opening client is the only safe candidate for this page. Let its
@@ -475,7 +579,7 @@ async function reopenBrowserBooks(environment: Environment): Promise<BooksDataba
   } else {
     await browserDbClosings.get(environment);
   }
-  return getBrowserBooks(environment);
+  return getBrowserBooksInternal(environment, { duringRepair });
 }
 
 function retireBrowserBooksConnection(environment: Environment, db: BooksDatabase): Promise<void> {
@@ -675,9 +779,11 @@ export async function ingestBooks(
 }
 
 export async function resetBrowserBooksForTests(): Promise<void> {
+  for (const control of browserDbOpeningControls.values()) control.retire();
   const openings = [...browserDbOpenings.values()];
   browserDbOpenings = new Map();
   await Promise.allSettled(openings);
+  await Promise.allSettled(browserBooksRepairBarriers.values());
   for (const db of browserDbs.values()) {
     try {
       await db.close();
@@ -686,9 +792,12 @@ export async function resetBrowserBooksForTests(): Promise<void> {
     }
   }
   browserDbs = new Map();
+  browserDbOpeningControls = new Map();
   await Promise.allSettled(browserDbClosings.values());
   browserDbClosings = new Map();
   browserDbClosePromises = new WeakMap();
+  browserBooksRepairBarriers = new Map();
+  browserBooksActiveRepairs = new Map();
   await closeStagedBooksHandlesForTests();
   compiledBooksCache.clear();
 }
@@ -746,9 +855,10 @@ async function inspectBrowserBooksAttempt(
   household: Household,
   retryLeaderChange: boolean,
   options: { compiled?: CompiledBooks; expectedAuditHash?: string } = {},
+  duringRepair = false,
 ): Promise<BooksInspection> {
   try {
-    const db = await getBrowserBooks(household.environment);
+    const db = await getBrowserBooksInternal(household.environment, { duringRepair });
     return await withBrowserBooksOperationDeadline(
       measureHearth("hearth:books:inspect", () => db.transaction(async (tx) => {
     const status = await tx.query<{
@@ -859,14 +969,14 @@ async function inspectBrowserBooksAttempt(
         // PGliteWorker reconnects this client to the elected leader. Reusing it
         // lets the inspection determine whether the interrupted transaction
         // committed without creating another worker/election participant.
-        return inspectBrowserBooksAttempt(household, false, options);
+        return inspectBrowserBooksAttempt(household, false, options, duringRepair);
       } catch (retryCaught) {
         caught = retryCaught;
       }
     } else if (retryLeaderChange && caught instanceof BrowserBooksOperationTimeoutError) {
       try {
-        await reopenBrowserBooks(household.environment);
-        return inspectBrowserBooksAttempt(household, false, options);
+        await reopenBrowserBooks(household.environment, duringRepair);
+        return inspectBrowserBooksAttempt(household, false, options, duringRepair);
       } catch (retryCaught) {
         caught = retryCaught;
       }
@@ -874,6 +984,7 @@ async function inspectBrowserBooksAttempt(
     const message = caught instanceof Error ? caught.message : "The books engine could not be inspected.";
     const issue: BooksRecoveryIssue = caught instanceof BrowserBooksOpenTimeoutError
       || caught instanceof BrowserBooksOperationTimeoutError
+      || caught instanceof BrowserBooksRecoveryInProgressError
       || isLeaderChangedError(caught)
       ? "local-engine-busy"
       : /migration/i.test(message)
@@ -1093,10 +1204,10 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
   };
 }
 
-/** Local books only. Never calls hosted REST. */
-export async function ingestHouseholdBooks(
+async function ingestHouseholdBooksInternal(
   household: Household,
   options: BooksIngestOptions & { compiled?: CompiledBooks } = {},
+  duringRepair = false,
 ): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
   const compiled = options.compiled ?? compileHousehold(household);
   const ingestOptions = {
@@ -1104,7 +1215,7 @@ export async function ingestHouseholdBooks(
     incremental: options.incremental ?? incrementalBooksEnabled(household.environment),
   };
   const attempt = async (retryTimeout: boolean): Promise<{ compiled: CompiledBooks; status: BooksStatus }> => {
-    const db = await getBrowserBooks(household.environment);
+    const db = await getBrowserBooksInternal(household.environment, { duringRepair });
     try {
       const status = await withBrowserBooksOperationDeadline(
         measureHearth(
@@ -1127,7 +1238,7 @@ export async function ingestHouseholdBooks(
     // The worker client reconnects itself after leadership changes. Inspect the
     // same durable projection to resolve the indeterminate transaction; closing
     // it here would trigger another election and can amplify cross-tab churn.
-    const inspection = await inspectBrowserBooks(household);
+    const inspection = await inspectBrowserBooksAttempt(household, true, {}, duringRepair);
     if (!inspection.ok) throw caught;
     return {
       compiled,
@@ -1140,6 +1251,14 @@ export async function ingestHouseholdBooks(
       },
     };
   }
+}
+
+/** Local books only. Never calls hosted REST. */
+export async function ingestHouseholdBooks(
+  household: Household,
+  options: BooksIngestOptions & { compiled?: CompiledBooks } = {},
+): Promise<{ compiled: CompiledBooks; status: BooksStatus }> {
+  return ingestHouseholdBooksInternal(household, options);
 }
 
 /**
@@ -1269,18 +1388,44 @@ export async function repairAcceptedHouseholdBooks(
   household: Household,
   options: { compiled?: CompiledBooks; auditHash?: string } = {},
 ): Promise<BooksStatus> {
-  await wipeBrowserBooks(household.environment);
-  const { status } = await ingestHouseholdBooks(household, {
-    compiled: options.compiled,
-    auditHash: options.auditHash,
-    incremental: false,
+  const environment = household.environment;
+  const key = [household.householdId, household.revision, options.auditHash ?? household.booksAcceptedHash ?? ""].join(":");
+  const active = browserBooksActiveRepairs.get(environment);
+  if (active?.key === key) return active.promise;
+
+  const repair = enqueueBrowserBooksRepair(environment, async () => {
+    // The cloud snapshot has already passed authenticated member-scoped staging.
+    // Retire only this page's exact stuck client, then rebuild transactionally in
+    // the same durable database. Avoiding deleteDatabase means another healthy
+    // Hearth tab cannot leave an uncancellable blocked deletion behind.
+    await retireBrowserBooksOpeningForRecovery(environment);
+    const existing = browserDbs.get(environment);
+    if (existing) await retireBrowserBooksConnection(environment, existing);
+    else await browserDbClosings.get(environment);
+
+    const { status } = await ingestHouseholdBooksInternal(household, {
+      compiled: options.compiled,
+      auditHash: options.auditHash,
+      incremental: false,
+    }, true);
+    const inspection = await inspectBrowserBooksAttempt(household, true, {
+      compiled: options.compiled,
+      expectedAuditHash: options.auditHash,
+    }, true);
+    if (!inspection.ok) throw new Error(inspection.message);
+    return status;
   });
-  const inspection = await inspectBrowserBooks(household, {
-    compiled: options.compiled,
-    expectedAuditHash: options.auditHash,
-  });
-  if (!inspection.ok) throw new Error(inspection.message);
-  return status;
+  const tracked = { key, promise: repair };
+  browserBooksActiveRepairs.set(environment, tracked);
+  void repair.then(
+    () => {
+      if (browserBooksActiveRepairs.get(environment) === tracked) browserBooksActiveRepairs.delete(environment);
+    },
+    () => {
+      if (browserBooksActiveRepairs.get(environment) === tracked) browserBooksActiveRepairs.delete(environment);
+    },
+  );
+  return repair;
 }
 
 /**
@@ -1289,8 +1434,9 @@ export async function repairAcceptedHouseholdBooks(
  * has the same PGlite IDB open: deleting that IDB waits for every tab to close
  * and can leave a newer cloud revision queued behind the blocked delete.
  *
- * The full projection replacement is already atomic inside ingestBooks. Keep
- * the destructive wipe-and-rebuild path above for explicit local repair only.
+ * The full projection replacement is already atomic inside ingestBooks. The
+ * explicit repair path above additionally restarts this page's exact stuck
+ * client, but still does not issue an uncancellable cross-tab IDB deletion.
  */
 export async function replaceAcceptedHouseholdBooks(
   household: Household,

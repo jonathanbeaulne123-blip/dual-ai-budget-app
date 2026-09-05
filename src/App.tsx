@@ -1231,7 +1231,22 @@ export function App() {
     const current = householdRef.current;
     const memberId = sessionRef.current?.memberId;
     if (!current || !memberId) return;
-    if (!cloudLedgerOnlineRequiredEnabled(environment)) {
+    const expectedScope = {
+      generation: replicaScopeGenerationRef.current,
+      environment: current.environment,
+      householdId: current.householdId,
+      memberId,
+      household: current,
+      outboxFingerprint: householdOutboxFingerprint(current.environment, current.householdId),
+    };
+    const scopeIsCurrent = () => (
+      replicaScopeGenerationRef.current === expectedScope.generation
+      && environmentRef.current === expectedScope.environment
+      && householdRef.current === expectedScope.household
+      && householdRef.current?.householdId === expectedScope.householdId
+      && sessionRef.current?.memberId === expectedScope.memberId
+    );
+    if (!cloudLedgerOnlineRequiredEnabled(expectedScope.environment)) {
       setValidationAttempt((attempt) => attempt + 1);
       return;
     }
@@ -1239,7 +1254,7 @@ export function App() {
       setError("Connect to the internet before restoring these books from the cloud.");
       return;
     }
-    if (listContinuityOutbox(environment).some((item) => item.householdId === current.householdId)) {
+    if (listContinuityOutbox(expectedScope.environment).some((item) => item.householdId === current.householdId)) {
       setError("Hearth must settle the existing Confirm before it can replace this local projection.");
       return;
     }
@@ -1250,7 +1265,7 @@ export function App() {
     setBusy(true);
     setError("");
     try {
-      const authSession = await ensureSupabaseSession(environment);
+      const authSession = await ensureSupabaseSession(expectedScope.environment);
       if (!authSession) throw new Error("Continue with Google before restoring the cloud-backed books.");
       const identity: ContinuityIdentity = {
         email: authSession.email,
@@ -1260,7 +1275,7 @@ export function App() {
       const remoteReplica = await pullConsistentMemberReplicaById({
         householdId: current.householdId,
         memberId,
-        environment,
+        environment: expectedScope.environment,
         config: cloudConfig,
         identity,
       });
@@ -1270,27 +1285,42 @@ export function App() {
 
       const remoteShared = splitForSync(remoteReplica.shared, memberId).shared;
       const restored = markSynchronized(assembleHousehold(remoteShared, remoteReplica.personal, { linked: true }));
-      restored.booksAcceptedHash = await financialAuditHash(restored);
+      const restoredAuditHash = await financialAuditHash(restored);
+      restored.booksAcceptedHash = restoredAuditHash;
       const staged = await validateHouseholdBooksStaged(restored, {
-        auditHash: restored.booksAcceptedHash,
+        auditHash: restoredAuditHash,
         incremental: false,
       });
       if (!staged.ok) throw new Error(staged.error || "The shared books did not pass local validation.");
-      const status = await repairAcceptedHouseholdBooks(restored, {
-        auditHash: restored.booksAcceptedHash,
+      await enqueueWrite(async () => {
+        if (!scopeIsCurrent()) throw new Error("The active ledger changed before cloud repair began. Nothing local was replaced.");
+        if (householdOutboxFingerprint(expectedScope.environment, expectedScope.householdId) !== expectedScope.outboxFingerprint) {
+          throw new Error("A Confirm started while the cloud copy was loading. Settle it before restoring local books.");
+        }
+        if (listContinuityOutbox(expectedScope.environment).some((item) => item.householdId === expectedScope.householdId)) {
+          throw new Error("Hearth must settle the existing Confirm before it can replace this local projection.");
+        }
+        if (unresolvedConflicts(expectedScope.household).length > 0) {
+          throw new Error("Review the preserved books conflict before restoring this local projection.");
+        }
+        const status = await repairAcceptedHouseholdBooks(restored, {
+          auditHash: restoredAuditHash,
+        });
+        if (!scopeIsCurrent()) throw new Error("The active ledger changed during cloud repair. The cloud copy was not adopted.");
+        await saveHousehold(restored, {
+          operatingEnvironment: expectedScope.environment,
+          memberId: expectedScope.memberId,
+          continuityIdentity: identity,
+        });
+        if (!scopeIsCurrent()) throw new Error("The active ledger changed while saving repaired books. The cloud copy was not adopted.");
+        householdRef.current = restored;
+        setHousehold(restored);
+        setBooksStatus(status);
+        const ready = readinessForHousehold("ready", startupGenerationRef.current, restored, { status });
+        booksReadinessRef.current = ready;
+        booksGateRef.current = booksWriteGate(ready, restored);
+        setBooksReadiness(ready);
       });
-      await saveHousehold(restored, {
-        operatingEnvironment: environment,
-        memberId,
-        continuityIdentity: identity,
-      });
-      householdRef.current = restored;
-      setHousehold(restored);
-      setBooksStatus(status);
-      const ready = readinessForHousehold("ready", startupGenerationRef.current, restored, { status });
-      booksReadinessRef.current = ready;
-      booksGateRef.current = booksWriteGate(ready, restored);
-      setBooksReadiness(ready);
       setSyncState("synced");
       setCommandChrome(null);
       setError("");

@@ -62,7 +62,60 @@ provider, Production setting, or deploy was touched.
 
 **Release decision:** Jonathan authorized push and merge on 2026-09-05. Do not
 deploy without a separate explicit instruction.
+## D-212 explicit cloud-repair opener retirement (2026-09-05)
 
+**Status:** Active Release-risk repair on `codex/pglite-explicit-repair-cancel`,
+rebased onto `origin/main@146dc1a7160d163ea911321aa2034cf4324c44d8` at
+runtime implementation commit `4dfde475809efa072531961ec8d1287d01e1e76a`.
+Development still serves `main@6056cceedebb9a4611e7f5c70c45c1105e562e4d`.
+The implementation is committed locally with a **CONDITIONAL** release review.
+No new PR is open, and nothing from this repair is merged or deployed.
+Production continuity remains off.
+
+**Observed failure:** Jonathan's phone committed a Shared `postEntry` as hosted
+revision 26 at `2026-09-05T06:15:15.57714Z`, but the Mac stayed on revision 25.
+The fresh Mac page owned only one worker/client lock set and timed out while that
+worker never completed PGlite readiness. IndexedDB itself opened normally, so
+this is unfinished local-engine initialization rather than proof of corruption.
+
+**Repair and boundaries:** Routine twelve-second timeouts keep reusing one raw
+opener. The explicit authenticated cloud restore can now retire this page's
+exact opener, including a handle that arrives after cancellation, then close it
+before one replacement opens. A per-environment barrier spans restart,
+transactional full projection replacement, and inspection; routine opens wait,
+matching repairs coalesce, and recovery interruption is typed
+`local-engine-busy`. Repair does not delete IndexedDB. App adoption runs on the
+write queue and rechecks household, member, environment, scope generation,
+outbox generation, and conflicts before replacement and adoption. Shared plus
+the signed-in member's Personal envelope still pass isolated PGlite validation
+first. No financial command, formula, cloud transport, schema, hosted row,
+secret, provider, or Production setting changes.
+
+**Risk and Dual Course:** Risk **Release**. Budget delta (5): `+5`, restoring
+the accepted-books gate between cloud commit and receiver paint. Engagement
+delta (3): `+1`, replacing a dead-end browser repair loop with a bounded member
+action. Books still win: revision 26 is durable cloud evidence, not a successful
+latency sample, until the Mac accepts and paints it.
+
+**Verification so far:** The expanded `test/books.test.ts` passes **43/43**,
+covering retained routine opener semantics, late-handle disposal,
+close-before-replacement, typed concurrent inspection, repair exclusion,
+matching-repair coalescing, and reset cancellation. The focused authenticated
+restore test passes, including failed-rebuild no-save behavior and repair before
+save. The Release quick gate passed **161/161** selected tests plus AI surface,
+TypeScript, discovery, and diff hygiene; its serial lane crossed the five-minute
+soft budget, so the recorded classification is `quick-gate-passed;
+time-budget-breached`. The production build passed at 473 Vite modules plus
+Hercules Pro UI and the redirect guard. Independent re-review reports **PASS,
+no remaining P1/P2 release blocker**. The exhaustive full gate was not run
+because Jonathan did not explicitly request it for this exact SHA; PR CI and
+live Development proof remain required.
+
+**Next action:** Finish exact-tree release verification and review, then open a
+PR. Jonathan must separately authorize that PR's merge and Development-only
+deployment. After deployment, the Mac restore needs action-time confirmation
+before replacing its disposable local projection; then repeat a fresh calibrated
+phone-to-Mac witness. No sub-one-second claim exists yet.
 ## Onboarding Slice 22 — self-owned exact-digest approvals (D-222) (2026-09-04)
 
 **Status:** Local implementation and proof are complete on

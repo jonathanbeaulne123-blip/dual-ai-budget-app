@@ -7,7 +7,7 @@ import {
   trialBalance,
 } from "../src/core/journal.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { clearStagedHouseholdBooks, getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, ingestHouseholdBooks, inspectBrowserBooks, loadStagedHouseholdBooks, migrateBooks, openMemoryBooks, prewarmStagedHouseholdBooks, replaceAcceptedHouseholdBooks, resetBrowserBooksForTests, setBrowserBooksFactoryForTests, validateHouseholdBooksStaged, wipeStagedBooksForEnvironment } from "../src/ledger/engine.ts";
+import { clearStagedHouseholdBooks, getBrowserBooks, hashBooksSnapshot, incrementalBooksEnabled, ingestBooks, ingestHouseholdBooks, inspectBrowserBooks, loadStagedHouseholdBooks, migrateBooks, openMemoryBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, replaceAcceptedHouseholdBooks, resetBrowserBooksForTests, setBrowserBooksFactoryForTests, validateHouseholdBooksStaged, wipeStagedBooksForEnvironment } from "../src/ledger/engine.ts";
 import { assertReadOnlySelect } from "../src/ledger/queryGuard.ts";
 import { booksSqlDump } from "../src/ledger/export.ts";
 
@@ -460,6 +460,133 @@ describe("Postgres books engine", () => {
       setBrowserBooksFactoryForTests(null);
       await resetBrowserBooksForTests();
     }
+  });
+
+  it("lets explicit cloud repair close one stuck opening before rebuilding the local projection", async () => {
+    await resetBrowserBooksForTests();
+    type BrowserDb = Awaited<ReturnType<typeof getBrowserBooks>>;
+    const household = catalogHousehold();
+    let noteInitializerStarted!: () => void;
+    const initializerStarted = new Promise<void>((resolve) => { noteInitializerStarted = resolve; });
+    const closeStalledDb = vi.fn(async () => undefined);
+    const stalledDb = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(),
+      close: closeStalledDb,
+    } as unknown as BrowserDb;
+    const recoveredDb = await openMemoryBooks();
+    const factory = vi.fn()
+      .mockResolvedValueOnce(stalledDb)
+      .mockResolvedValueOnce(recoveredDb);
+    const initialize = vi.fn()
+      .mockImplementationOnce(() => {
+        noteInitializerStarted();
+        return new Promise<void>(() => undefined);
+      })
+      .mockResolvedValueOnce(undefined);
+    setBrowserBooksFactoryForTests(factory, initialize);
+    try {
+      const blockedOpening = getBrowserBooks("development").catch((caught: unknown) => caught);
+      const blockedInspection = inspectBrowserBooks(household);
+      await initializerStarted;
+
+      const repairing = repairAcceptedHouseholdBooks(household);
+      const routineCaller = getBrowserBooks("development");
+      const repaired = await repairing;
+
+      await expect(blockedOpening).resolves.toMatchObject({
+        code: "BROWSER_BOOKS_RECOVERY_IN_PROGRESS",
+      });
+      await expect(blockedInspection).resolves.toMatchObject({ issue: "local-engine-busy" });
+      expect(repaired).toMatchObject({ ok: true, engine: "pglite" });
+      expect(closeStalledDb).toHaveBeenCalledTimes(1);
+      expect(factory).toHaveBeenCalledTimes(2);
+      expect(closeStalledDb.mock.invocationCallOrder[0]!).toBeLessThan(factory.mock.invocationCallOrder[1]!);
+      await expect(routineCaller).resolves.toBe(recoveredDb);
+    } finally {
+      setBrowserBooksFactoryForTests(null);
+      await resetBrowserBooksForTests();
+    }
+  });
+
+  it("disposes a late-created handle before explicit repair opens its replacement", async () => {
+    await resetBrowserBooksForTests();
+    type BrowserDb = Awaited<ReturnType<typeof getBrowserBooks>>;
+    let finishFirstFactory!: (db: BrowserDb) => void;
+    const firstFactory = new Promise<BrowserDb>((resolve) => { finishFirstFactory = resolve; });
+    const closeLateDb = vi.fn(async () => undefined);
+    const lateDb = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(),
+      close: closeLateDb,
+    } as unknown as BrowserDb;
+    const recoveredDb = await openMemoryBooks();
+    const factory = vi.fn()
+      .mockImplementationOnce(() => firstFactory)
+      .mockResolvedValueOnce(recoveredDb);
+    setBrowserBooksFactoryForTests(factory);
+    try {
+      const blockedOpening = getBrowserBooks("development").catch((caught: unknown) => caught);
+      await vi.waitFor(() => expect(factory).toHaveBeenCalledTimes(1));
+      const repairing = repairAcceptedHouseholdBooks(catalogHousehold());
+      finishFirstFactory(lateDb);
+
+      await expect(blockedOpening).resolves.toMatchObject({ code: "BROWSER_BOOKS_RECOVERY_IN_PROGRESS" });
+      await expect(repairing).resolves.toMatchObject({ ok: true });
+      expect(closeLateDb).toHaveBeenCalledTimes(1);
+      expect(closeLateDb.mock.invocationCallOrder[0]!).toBeLessThan(factory.mock.invocationCallOrder[1]!);
+      expect(factory).toHaveBeenCalledTimes(2);
+    } finally {
+      setBrowserBooksFactoryForTests(null);
+      await resetBrowserBooksForTests();
+    }
+  });
+
+  it("coalesces matching explicit cloud repairs for one environment", async () => {
+    await resetBrowserBooksForTests();
+    const recoveredDb = await openMemoryBooks();
+    const factory = vi.fn(async () => recoveredDb);
+    setBrowserBooksFactoryForTests(factory);
+    try {
+      const household = catalogHousehold();
+      const [left, right] = await Promise.all([
+        repairAcceptedHouseholdBooks(household),
+        repairAcceptedHouseholdBooks(household),
+      ]);
+
+      expect(left).toEqual(right);
+      expect(factory).toHaveBeenCalledTimes(1);
+    } finally {
+      setBrowserBooksFactoryForTests(null);
+      await resetBrowserBooksForTests();
+    }
+  });
+
+  it("cancels a tracked opening before test reset waits for it", async () => {
+    await resetBrowserBooksForTests();
+    type BrowserDb = Awaited<ReturnType<typeof getBrowserBooks>>;
+    let noteInitializerStarted!: () => void;
+    const initializerStarted = new Promise<void>((resolve) => { noteInitializerStarted = resolve; });
+    const db = {
+      query: vi.fn(),
+      exec: vi.fn(),
+      transaction: vi.fn(),
+      close: vi.fn(async () => undefined),
+    } as unknown as BrowserDb;
+    setBrowserBooksFactoryForTests(async () => db, async () => {
+      noteInitializerStarted();
+      return new Promise<void>(() => undefined);
+    });
+    const opening = getBrowserBooks("development").catch((caught: unknown) => caught);
+    await initializerStarted;
+
+    await resetBrowserBooksForTests();
+
+    await expect(opening).resolves.toMatchObject({ code: "BROWSER_BOOKS_RECOVERY_IN_PROGRESS" });
+    expect(db.close).toHaveBeenCalledTimes(1);
+    setBrowserBooksFactoryForTests(null);
   });
 
   it("closes a created browser worker before retrying after initialization fails", async () => {
