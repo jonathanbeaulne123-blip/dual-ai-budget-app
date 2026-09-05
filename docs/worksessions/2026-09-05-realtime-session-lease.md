@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/realtime-session-lease`
 - **Baseline SHA:** `58e90df5f40dfdba1399f6a8f35c8efe8fb62c15`
-- **Head SHA:** pending
+- **Head SHA:** runtime implementation `8de827c20eb4dcc3b35837613ad46db8b91ce267`; documentation closeout may follow without changing runtime
 - **PR or issue:** pending
 - **Risk:** Medium-High
 - **Decision owner:** Jonathan
