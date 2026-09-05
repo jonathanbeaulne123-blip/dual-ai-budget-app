@@ -6,8 +6,8 @@
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/27-lifecycle`
-- **Baseline SHA:** `65b25ad8feccf979ae4d8b6a591cbd101889a570`
-- **Head SHA:** `26c53181526755a27b6a32da48ececbbd4a4d5c0` (implementation; documentation amendment follows)
+- **Baseline SHA:** `e85599c135523034526661e0d381ebaa005fb7ee`
+- **Head SHA:** `819b2ec89f665a5d4c6c88e5c923ae7635798078` (rebased implementation; this documentation update follows)
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -27,7 +27,7 @@ Completed households stay open for ordinary use. Replacement members receive a s
 
 ## Verified baseline
 
-- `origin/main@65b25ad8feccf979ae4d8b6a591cbd101889a570` includes merged Slice 26.
+- `origin/main@e85599c135523034526661e0d381ebaa005fb7ee` includes merged Slice 26 plus the realtime-session lease repair.
 - Shared completion already unlocked ordinary Hercules, but new-member catch-up, resume invalidation, and demo completion did not exist.
 - Member onboarding progress is Personal; shared completion and Ready approvals are Shared.
 
@@ -63,8 +63,8 @@ Completed households stay open for ordinary use. Replacement members receive a s
 - Demo Suite isolated matrix: 8/8 passed, including deterministic replay, tamper detection, all Hercules calculation surfaces, privacy, environment, merge, profiles, and Toronto DST.
 - TypeScript: passed.
 - Browser: Chromium, reduced motion, 320/390/720/1100 px; `Next` is 48 px high and `Not now` is at least 44 px in both dimensions; no horizontal overflow.
-- Clean High-risk quick gate passed in 21.5 seconds at implementation SHA `26c53181526755a27b6a32da48ececbbd4a4d5c0`: diff hygiene, AI surface, TypeScript, 57 fast tests, and 7 serial PGlite proof tests.
-- Production build passed with 479 Vite modules plus Hercules Pro UI. Existing PGlite browser-externalization/eval and large-chunk messages remain warnings.
+- Clean High-risk quick gate passed in 21.5 seconds before the current-main rebase: diff hygiene, AI surface, TypeScript, 57 fast tests, and 7 serial PGlite proof tests. The same gate is rerun at the final rebased head.
+- Production build passed at the rebased head with 480 Vite modules plus Hercules Pro UI. Existing PGlite browser-externalization/eval and large-chunk messages remain warnings.
 
 ## Decisions
 
