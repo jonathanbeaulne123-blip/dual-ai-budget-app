@@ -19,6 +19,7 @@ import {
   shapeOnboardingSubmissions,
   type OnboardingSubmission,
 } from "../core/onboarding/submissions.ts";
+import { assertOnboardingEstimateSubmissionScope } from "../core/onboarding/estimates.ts";
 import {
   assertOnboardingCategoryCollections,
   assertOnboardingCategoryMergeTransition,
@@ -280,6 +281,9 @@ function actorMayApplyOnboardingSubmissions(
         if (ordered[0]!.revision !== 1) return false;
       } else if (ordered[1]!.revision !== ordered[0]!.revision + 1
         || ordered[0]!.supersededBy !== ordered[1]!.id) return false;
+      if (kind === "estimates") {
+        assertOnboardingEstimateSubmissionScope(local, ordered.at(-1)!);
+      }
     }
     if (!incoming.every((row) => declared.has(row.id))) return false;
     return true;
