@@ -1,13 +1,13 @@
 # Hearth worksession — onboarding category selection
 
-- **Status:** OPEN
+- **Status:** CLOSED; LOCAL IMPLEMENTATION AND PROOF COMPLETE
 - **Opened:** 2026-09-04 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `onboarding/19-ch9-categories`
 - **Baseline SHA:** `f5ef04722830b5661c4f312da6e5ca5b5f5f84b6`
-- **Head SHA:** `f5ef04722830b5661c4f312da6e5ca5b5f5f84b6`
+- **Implementation SHA:** `0d21cc41b0d745c0cf20d126473cca44d16bedbc`
 - **PR or issue:** none
 - **Risk:** Medium
 - **Decision owner:** Jonathan
@@ -65,39 +65,64 @@ scores, ratios, rankings, or competitive framing.
 
 ## Acceptance evidence
 
-- [ ] A private draft changes no Household data before Submit.
-- [ ] One current submission reads waiting-member and reveals no partner choice.
-- [ ] Submission order does not change the merged category-id union.
-- [ ] A suggestion is not a canonical category before the reviewed merge.
-- [ ] Same-name/different-id suggestions require an explicit joint-facing choice.
-- [ ] Both current submissions produce cited household evidence.
-- [ ] No rendered string compares, ranks, ratios, or counts the members' choices.
-- [ ] The Chapter 9 Plan experience works at phone and desktop widths with
+- [x] A private draft changes no Household data before Submit.
+- [x] One current submission reads waiting-member and reveals no partner choice.
+- [x] Submission order does not change the merged category-id union.
+- [x] A suggestion is not a canonical category before the reviewed merge.
+- [x] Same-name/different-id suggestions require an explicit joint-facing choice.
+- [x] Both current submissions produce cited household evidence.
+- [x] No rendered string compares, ranks, ratios, or counts the members' choices.
+- [x] The Chapter 9 Plan experience works at phone and desktop widths with
       keyboard and reduced-motion checks.
 
 ## Plan
 
 - [x] Verify current main, exact Slice 19 contract, and Slice 18 boundary.
-- [ ] Add the staged suggestion and reviewed merge contract.
-- [ ] Project Chapter 9 evidence and route Hercules to the existing Plan surface.
-- [ ] Build the private-select, wait, reveal, conflict, and merged UX states.
-- [ ] Run focused tests, Medium quick gate, build, auditors, and browser proof.
-- [ ] Close the worksession with exact evidence and remaining uncertainty.
+- [x] Add the staged suggestion and reviewed merge contract.
+- [x] Project Chapter 9 evidence and route Hercules to the existing Plan surface.
+- [x] Build the private-select, wait, reveal, conflict, and merged UX states.
+- [x] Run focused tests, Medium quick gate, build, auditors, and browser proof.
+- [x] Close the worksession with exact evidence and remaining uncertainty.
 
 ## Evidence log
 
-Evidence will be recorded from this branch only.
+- Baseline `pnpm test` passed AI-surface verification and TypeScript with no
+  selected tests before implementation.
+- Focused and adjacent category/submission/evidence/copy/conductor/runtime
+  proof passed 122/122 tests, including 13/13 Slice 19 contract and UI tests.
+- Exact clean implementation SHA `0d21cc4` passed the Medium quick gate in
+  25.4 seconds: 85 fast plus 7 serial PGlite proof tests, TypeScript,
+  AI-surface, and diff hygiene; fingerprint
+  `14f181feea41a815bad2aafb367730c764c76f898833bf6840c8d19480913081`.
+  The five-minute budget was not breached and the gate correctly required
+  separate UI proof.
+- Production `pnpm build` passed TypeScript, Vite at 467 modules, and Hercules
+  Pro UI. Only the existing PGlite browser-external/eval and large-chunk
+  warnings appeared.
+- `pnpm ai:verify` passed 48 required files and both Clerk fences.
+- `pnpm check:windows` could not start because this macOS host has no `pwsh`;
+  no Windows result is claimed.
+- Actual-component browser proof covered draft, waiting, conflict review, and
+  completed states at 320, 390, 720, and 1100 px. No width overflow occurred;
+  actionable controls were at least 46 px; reduced motion removed transitions;
+  keyboard Enter added an idea; Submit reached the private waiting state; and
+  scoped axe scans at 320/720/1100 reported zero violations. The initial scan
+  found one small-text contrast miss on the existing orange kicker treatment;
+  the Chapter 9 card now uses the darker pine token and the rerun passed.
+- Temporary browser harness files and the local Vite server were removed.
 
 ## Decisions
 
-- Pending: a suggested category is Shared only with the explicit category
+- D-219: a suggested category is Shared only with the explicit category
   submission and becomes canonical only through the reviewed merge command.
 
 ## Remaining uncertainty
 
-- Hosted two-account delivery is release evidence and is not authorized here.
+- Hosted two-account delivery is release evidence and was not authorized here.
+- The Windows lane remains unproved on this macOS host.
 
 ## Handoff
 
-Local implementation is in progress. Jonathan remains the release decision
-owner; push, PR, merge, deployment, and hosted mutation remain separate.
+Local implementation and proof are complete at `0d21cc4`. Jonathan decides
+whether to push or open a PR. Merge, deployment, hosted mutation, and Production
+remain separate decisions.
