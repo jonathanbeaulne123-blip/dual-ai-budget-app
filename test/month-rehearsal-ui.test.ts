@@ -15,10 +15,11 @@ function emptyDevelopment() {
 }
 
 describe("Bianca month rehearsal UI", () => {
-  it("offers an ordinary Development-only Start our month invitation", () => {
+  it("offers a clearly named Development-only four-week rehearsal", () => {
     const household = emptyDevelopment();
     const html = renderToStaticMarkup(createElement(MonthRehearsalPanel, { household, memberId: "MEM-001", today: "2026-08-28", onApply: () => undefined }));
-    expect(html).toContain("Start our month");
+    expect(html).toContain("Four-week household rehearsal");
+    expect(html).toContain("Start rehearsal");
     expect(html).toContain("About ten minutes a week");
     expect(html).toContain("Nothing here enables Production");
     expect(html).toContain("Choose Bianca");
@@ -32,7 +33,7 @@ describe("Bianca month rehearsal UI", () => {
     expect(html).toContain("Both phones show Development");
     expect(html).toContain("false Synced state");
     expect(html).toContain("not uploaded, added to the household snapshot, or sent to Hercules");
-    expect(html).toMatch(/<button type="button" class="primary" disabled="">Start our month<\/button>/);
+    expect(html).toMatch(/<button type="button" class="primary" disabled="">Start rehearsal<\/button>/);
     expect(html).not.toMatch(/test case|fixture|QA instruction/i);
     expect(renderToStaticMarkup(createElement(MonthRehearsalPanel, { household: { ...household, environment: "production" }, memberId: "MEM-001", today: "2026-08-28", onApply: () => undefined }))).toBe("");
   });

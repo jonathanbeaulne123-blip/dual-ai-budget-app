@@ -219,14 +219,14 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
     if (!empty || dismissed) return null;
     const canStart = Boolean(biancaParticipantId && jonathanPartnerId && biancaParticipantId !== jonathanPartnerId && (memberId === biancaParticipantId || memberId === jonathanPartnerId));
     const canStartPrepared = canStart && preflightReady;
-    return <aside className="month-invite" aria-label="Start our month">
-      <button className="month-dismiss" type="button" aria-label="Dismiss Start our month" onClick={() => void apply("dismiss", async () => {
+    return <aside className="month-invite" aria-label="Four-week household rehearsal">
+      <button className="month-dismiss" type="button" aria-label="Dismiss four-week household rehearsal" onClick={() => void apply("dismiss", async () => {
         const result = dismissNotice(household, inviteKey);
         await onApply(result.household, result.undo);
       })}>×</button>
       <div className="month-hercules-line"><span aria-hidden="true">🐈</span><p>One short sit-down each week. We’ll begin with the balances you already have, then prove the books together.</p></div>
       <p className="eyebrow">{formatMonthLabel(monthKey)} · Development</p>
-      <h2>Start our month</h2>
+      <h2>Four-week household rehearsal</h2>
       <p>About ten minutes a week on your own phones. Nothing here enables Production or moves money without the ordinary Confirm.</p>
       <div className="month-participant-selectors">
         <label>Bianca’s phone<select value={biancaParticipantId} onChange={(event) => setBiancaParticipantId(event.target.value)}><option value="">Choose Bianca</option>{household.members.filter((row) => row.active).map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
@@ -244,7 +244,7 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
           startedByMemberId: memberId,
         });
         await onApply(result.household, result.undo);
-      })}>{busy === "start" ? "Starting…" : "Start our month"}</button>
+      })}>{busy === "start" ? "Starting…" : "Start rehearsal"}</button>
     </aside>;
   }
 
