@@ -136,6 +136,9 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.goalPurchases ?? []).map((row) => row.id),
     ...(mergedFacts?.householdOnboarding ? [mergedFacts.householdOnboarding.id] : []),
     ...(mergedFacts?.onboardingSubmissions ?? []).map((row) => row.id),
+    ...(mergedFacts?.onboardingCategoryProposals ?? []).map((row) => row.id),
+    ...(mergedFacts?.onboardingCategoryMerges ?? []).map((row) => row.id),
+    ...(mergedFacts?.categories ?? []).map((row) => row.id),
     ...charterPostedIds,
     ...(mergedFacts?.householdFund ? [mergedFacts.householdFund.id] : []),
     ...(mergedFacts?.fundMonthPlans ?? []).map((row) => row.id),
@@ -151,11 +154,17 @@ export async function compactedCommandPayload(
       || mergedFacts?.recurrences?.length
       || mergedFacts?.householdOnboarding
       || mergedFacts?.onboardingSubmissions?.length
+      || mergedFacts?.onboardingCategoryProposals?.length
+      || mergedFacts?.onboardingCategoryMerges?.length
+      || mergedFacts?.categories?.length
       ? await sha256Hex(commandMaterializationFacts({
         monthRehearsals: mergedFacts.monthRehearsals,
         recurrences: mergedFacts.recurrences,
         householdOnboarding: mergedFacts.householdOnboarding,
         onboardingSubmissions: mergedFacts.onboardingSubmissions,
+        onboardingCategoryProposals: mergedFacts.onboardingCategoryProposals,
+        onboardingCategoryMerges: mergedFacts.onboardingCategoryMerges,
+        categories: mergedFacts.categories,
       }))
       : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
@@ -223,6 +232,21 @@ function mergeMaterializationFacts(
         merged.onboardingSubmissions,
         facts.onboardingSubmissions,
       );
+    }
+    if (facts.onboardingCategoryProposals?.length) {
+      merged.onboardingCategoryProposals = [
+        ...(merged.onboardingCategoryProposals ?? []),
+        ...facts.onboardingCategoryProposals,
+      ];
+    }
+    if (facts.onboardingCategoryMerges?.length) {
+      merged.onboardingCategoryMerges = [
+        ...(merged.onboardingCategoryMerges ?? []),
+        ...facts.onboardingCategoryMerges,
+      ];
+    }
+    if (facts.categories?.length) {
+      merged.categories = [...(merged.categories ?? []), ...facts.categories];
     }
     if (facts.householdFund) merged.householdFund = facts.householdFund;
     if (facts.fundMonthPlans?.length) merged.fundMonthPlans = [...(merged.fundMonthPlans ?? []), ...facts.fundMonthPlans];

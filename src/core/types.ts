@@ -1267,6 +1267,10 @@ export type Household = {
   householdOnboarding?: import("./onboarding/mode.ts").HouseholdOnboarding | null;
   /** Explicitly submitted household-plan choices. Drafts never enter this collection. */
   onboardingSubmissions?: import("./onboarding/submissions.ts").OnboardingSubmission[];
+  /** Category ideas published with an explicit Chapter 9 submission; never canonical budget categories. */
+  onboardingCategoryProposals?: import("./onboarding/categories.ts").OnboardingCategoryProposal[];
+  /** Reviewed mappings from submitted ideas to the canonical category catalog. */
+  onboardingCategoryMerges?: import("./onboarding/categories.ts").OnboardingCategoryMerge[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -1334,6 +1338,10 @@ export type SharedEnvelope = {
   householdOnboarding?: import("./onboarding/mode.ts").HouseholdOnboarding | null;
   /** Explicitly submitted household-plan choices; never member-private drafts. */
   onboardingSubmissions?: import("./onboarding/submissions.ts").OnboardingSubmission[];
+  /** Submitted Chapter 9 category ideas; Shared only after the author's explicit Submit. */
+  onboardingCategoryProposals?: import("./onboarding/categories.ts").OnboardingCategoryProposal[];
+  /** Reviewed Chapter 9 category merge records. */
+  onboardingCategoryMerges?: import("./onboarding/categories.ts").OnboardingCategoryMerge[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];

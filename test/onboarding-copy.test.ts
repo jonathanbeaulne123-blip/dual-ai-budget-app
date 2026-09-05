@@ -178,6 +178,29 @@ const SLICE_17_CADENCE_COPY: Record<string, { text: string; announce: CopyEntry[
   "cadence.saved": { text: "Timing saved. No income or contribution was added.", announce: "polite" },
 };
 
+const SLICE_19_CATEGORIES_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "onboarding.household.ch-09-categories": {
+    text: "Choose what the household plan should cover on your own device. Your choices stay private until both lists are in.", announce: "none",
+  },
+  "categories.open": { text: "Choose what the plan covers", announce: "none" },
+  "categories.title": { text: "What should our plan cover?", announce: "none" },
+  "categories.existing": { text: "Choose from the household list", announce: "none" },
+  "categories.suggest": { text: "Suggest another category", announce: "none" },
+  "categories.suggest-help": { text: "It stays an idea until both lists are in and someone reviews the merge.", announce: "none" },
+  "categories.name": { text: "Category name", announce: "none" },
+  "categories.group": { text: "Category group", announce: "none" },
+  "categories.add-idea": { text: "Add idea", announce: "none" },
+  "categories.remove-idea": { text: "Remove idea", announce: "none" },
+  "categories.submit": { text: "Submit my choices", announce: "none" },
+  "categories.waiting": { text: "Your choices are in. {name}'s choices stay private until they submit.", announce: "polite" },
+  "categories.together": { text: "Our household set", announce: "none" },
+  "categories.member-set": { text: "{name}'s choices", announce: "none" },
+  "categories.review": { text: "Both lists are here. Review the ideas once, then add the agreed categories to the household list.", announce: "none" },
+  "categories.conflict": { text: "The same category arrived in two versions. Choose the version you both want to keep.", announce: "polite" },
+  "categories.accept": { text: "Accept our category set", announce: "none" },
+  "categories.done": { text: "The combined set is ready. No budget amounts or money moved.", announce: "polite" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -190,7 +213,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -199,6 +222,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_15_FUND_COPY,
       ...SLICE_16_RECURRENCES_COPY,
       ...SLICE_17_CADENCE_COPY,
+      ...SLICE_19_CATEGORIES_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

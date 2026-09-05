@@ -418,6 +418,7 @@ import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
+import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -2899,6 +2900,12 @@ export function App() {
     household
     && memberId
     && nextChapterFor(household, memberId, today)?.id === "ch-08-cadence",
+  );
+  const onboardingCategoriesOnly = Boolean(
+    household
+    && memberId
+    && view === "household"
+    && nextChapterFor(household, memberId, today)?.id === "ch-09-categories",
   );
   const personalSource = useMemo(() => {
     return household && memberId && personalReplica?.memberId === memberId
@@ -5840,6 +5847,16 @@ export function App() {
 
       {tab === "plan" && dashboard && (
         <>
+          {onboardingCategoriesOnly ? (
+            <div className="plan-wide onboarding-plan-focus">
+              <OnboardingCategories
+                household={household}
+                memberId={memberId}
+                busy={busy}
+                onCommit={(fn) => { void runKitchen(fn); }}
+              />
+            </div>
+          ) : (
           <div className="plan-wide">
           <div className="plan-wide-lead">
           <section className="hero">
@@ -5874,6 +5891,7 @@ export function App() {
             onSave={(next, token) => persist(next, token)}
           />
           </div>
+          )}
         </>
       )}
 
@@ -7197,6 +7215,10 @@ export function App() {
         onOpenEarningCadence={() => {
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           goTab("shift");
+        }}
+        onOpenCategories={() => {
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+          goTab("plan");
         }}
         onOpenSource={(source: HerculesNumberSource) => {
           setHerculesSourceFocus(source);

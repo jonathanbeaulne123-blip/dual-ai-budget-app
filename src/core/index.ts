@@ -145,6 +145,7 @@ export * from "./onboarding/evidence.ts";
 export * from "./onboarding/recurrences.ts";
 export * from "./onboarding/cadence.ts";
 export * from "./onboarding/submissions.ts";
+export * from "./onboarding/categories.ts";
 export * from "./onboarding/copy.ts";
 export * from "./onboarding/flavor.ts";
 export * from "./onboarding/shellView.ts";

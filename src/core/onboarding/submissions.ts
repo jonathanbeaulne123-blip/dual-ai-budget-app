@@ -239,7 +239,29 @@ export function assertOnboardingSubmissionTransition(
     .filter((row) => row.memberId === memberId && row.kind === kind)
     .reduce((highest, row) => Math.max(highest, row.revision), 0) + 1;
   const row = added[0];
-  const expectedPosted = new Set(prior ? [prior.id, row?.id] : [row?.id]);
+  const beforeProposals = previous.onboardingCategoryProposals ?? [];
+  const afterProposals = next.onboardingCategoryProposals ?? [];
+  const beforeProposalById = new Map(beforeProposals.map((proposal) => [proposal.id, proposal]));
+  const addedProposals = afterProposals.filter((proposal) => !beforeProposalById.has(proposal.id));
+  const existingProposalsUnchanged = beforeProposals.every((proposal) => {
+    const retained = afterProposals.find((candidate) => candidate.id === proposal.id);
+    return retained && sameValue(retained, proposal);
+  });
+  const proposalsValid = existingProposalsUnchanged
+    && afterProposals.length === beforeProposals.length + addedProposals.length
+    && addedProposals.every((proposal) => (
+      kind === "categories"
+      && proposal.householdId === previous.householdId
+      && proposal.memberId === memberId
+      && proposal.submissionId === row?.id
+      && proposal.proposedAt === row?.submittedAt
+      && row?.categoryIds.includes(proposal.id)
+    ));
+  const expectedPosted = new Set([
+    ...(prior ? [prior.id] : []),
+    ...(row ? [row.id] : []),
+    ...addedProposals.map((proposal) => proposal.id),
+  ]);
   const posted = new Set(input.postedIds);
   if (added.length !== 1 || !row
     || row.householdId !== previous.householdId
@@ -247,6 +269,8 @@ export function assertOnboardingSubmissionTransition(
     || row.kind !== kind
     || row.revision !== expectedRevision
     || row.supersededBy !== null
+    || !proposalsValid
+    || !sameValue(previous.onboardingCategoryMerges ?? [], next.onboardingCategoryMerges ?? [])
     || posted.size !== expectedPosted.size
     || [...expectedPosted].some((id) => !id || !posted.has(id))) {
     throw new ValidationError("Only you can submit your own.");
@@ -297,12 +321,14 @@ export function assertOnboardingSubmissionTransition(
   };
   const {
     onboardingSubmissions: _beforeRows,
+    onboardingCategoryProposals: _beforeProposals,
     activity: _beforeActivity,
     lastCommittedAt: _beforeCommittedAt,
     ...beforeState
   } = normalizedPrevious;
   const {
     onboardingSubmissions: _afterRows,
+    onboardingCategoryProposals: _afterProposals,
     activity: _afterActivity,
     lastCommittedAt: _afterCommittedAt,
     ...afterState

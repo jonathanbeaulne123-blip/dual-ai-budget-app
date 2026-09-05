@@ -1,5 +1,49 @@
 # AI Task and Handoff Standard
 
+## Onboarding Slice 19 — Chapter 9 category selection (D-219) (2026-09-04)
+
+**Status:** Local implementation and proof are complete at
+`0d21cc41b0d745c0cf20d126473cca44d16bedbc` on
+`onboarding/19-ch9-categories`, based on
+`origin/main@f5ef04722830b5661c4f312da6e5ca5b5f5f84b6`; not pushed, merged,
+deployed, or hosted-live verified. Risk: **Medium**.
+
+**Outcome:** Each person privately chooses what the household plan should cover.
+One submitted list waits without revealing the other. Both current lists reveal
+one deterministic household set and the authored lists without comparison.
+Submitted ideas remain staged until a reviewed merge creates each accepted
+canonical category once. Contract:
+[`briefs/ONBOARDING_SLICE_19_CH9_CATEGORIES_CONTRACT_2026-09-04.md`](briefs/ONBOARDING_SLICE_19_CH9_CATEGORIES_CONTRACT_2026-09-04.md).
+
+**Authority, privacy, and money boundary:** Drafts stay in component state.
+Proposal and merge facts are Shared only at explicit commands and are bound to
+the active actor, household, and current submissions. Same-name/different-id
+alternatives require an explicit choice. Newly canonical categories travel with
+the merge event. No estimate, budget amount, transaction, journal entry, Fund
+event, contribution, or approval is created.
+
+**Verification:** 122 focused and adjacent tests pass, including the
+Slice 19 private/wait/reveal/conflict/merge, accepted-command, command-event, and
+no-journal cases. Actual-component browser proof covers draft, waiting, review,
+and done at 320, 390, 720, and 1100 px: no horizontal overflow, controls are at
+least 46 px, reduced motion removes transitions, keyboard Enter adds an idea,
+Submit reaches the waiting state, and scoped axe scans report no violations.
+Temporary QA files were removed. The exact clean implementation SHA passed the
+Medium quick gate in 25.4 seconds: 85 fast plus 7 serial PGlite proof tests,
+TypeScript, AI-surface, and diff hygiene, with no five-minute breach. The
+production build passed at 467 Vite modules plus Hercules Pro UI; `pnpm
+ai:verify` passed 48 required files and both Clerk fences. `pnpm check:windows`
+could not start because this macOS host has no `pwsh`, so no Windows result is
+claimed.
+
+**Evidence class:** This is focused/adjacent tests, exact clean-head Medium
+quick-gate, local production build, and actual-component local browser proof.
+It is not a full-suite, Windows, hosted two-account, deployment, or Production
+claim. All exercised records were synthetic local Development fixtures; no
+hosted row, schema, secret, provider, or Production setting was read or changed.
+
+**Next owner:** Jonathan separately decides whether to push or open a PR.
+
 ## Onboarding Slice 18 — submission contract (D-218) (2026-09-04)
 
 **Status:** Local implementation and proof complete at

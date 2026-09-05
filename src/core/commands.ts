@@ -182,6 +182,18 @@ import {
   type OnboardingSubmission,
 } from "./onboarding/submissions.ts";
 import {
+  assertCategoryProposalInputs,
+  canonicalCategoryId,
+  categoryMergeId,
+  currentCategorySubmissionIds,
+  onboardingCategoryProposalId,
+  onboardingCategoryState,
+  shapeOnboardingCategoryMerges,
+  shapeOnboardingCategoryProposals,
+  type OnboardingCategoryMerge,
+  type OnboardingCategoryProposal,
+} from "./onboarding/categories.ts";
+import {
   buildOpeningTruthDraft,
   hasOnlyOpeningCorrectionHistory,
   hasPostedOpeningTruth,
@@ -620,6 +632,7 @@ function appendOnboardingSubmission(
   household: Household,
   input: { memberId: string; createdBy: string; at?: string },
   values: Pick<OnboardingSubmission, "kind" | "categoryIds" | "estimates">,
+  proposalInputs: Array<{ name: string; parentId: string }> = [],
 ): CommitResult {
   const member = requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
   const submittedAt = onboardingCommandAt(input.at);
@@ -629,13 +642,22 @@ function appendOnboardingSubmission(
     .filter((row) => row.memberId === member.id && row.kind === values.kind)
     .reduce((highest, row) => Math.max(highest, row.revision), 0) + 1;
   const id = nextId("ONB-SUB-", rows.map((row) => row.id));
+  const proposals: OnboardingCategoryProposal[] = proposalInputs.map((proposal, index) => ({
+    id: onboardingCategoryProposalId(member.id, revision, index),
+    householdId: household.householdId,
+    memberId: member.id,
+    submissionId: id,
+    name: proposal.name,
+    parentId: proposal.parentId,
+    proposedAt: submittedAt,
+  }));
   const submission: OnboardingSubmission = {
     id,
     householdId: household.householdId,
     memberId: member.id,
     kind: values.kind,
     revision,
-    categoryIds: values.categoryIds,
+    categoryIds: normalizeSubmissionCategoryIds([...values.categoryIds, ...proposals.map((row) => row.id)]),
     estimates: values.estimates,
     submittedAt,
     supersededBy: null,
@@ -646,12 +668,18 @@ function appendOnboardingSubmission(
     ...rows.map((row) => row.id === prior?.id ? { ...row, supersededBy: id } : row),
     submission,
   ];
+  if (proposals.length) {
+    next.onboardingCategoryProposals = [
+      ...shapeOnboardingCategoryProposals(next.onboardingCategoryProposals, next.householdId),
+      ...proposals,
+    ];
+  }
   return commit(
     previous,
     next,
     "Onboarding submission",
     `${member.name} submitted ${values.kind}`,
-    prior ? [prior.id, id] : [id],
+    [...(prior ? [prior.id] : []), id, ...proposals.map((row) => row.id)],
     [],
     values.kind === "categories" ? "submitOnboardingCategories" : "submitOnboardingEstimates",
   );
@@ -661,11 +689,107 @@ export function submitOnboardingCategories(household: Household, input: {
   memberId: string;
   createdBy: string;
   categoryIds: string[];
+  proposals?: Array<{ name: string; parentId: string }>;
   at?: string;
 }): CommitResult {
   requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
   const categoryIds = normalizeSubmissionCategoryIds(input.categoryIds);
-  return appendOnboardingSubmission(household, input, { kind: "categories", categoryIds, estimates: [] });
+  const proposals = assertCategoryProposalInputs(household, input.proposals ?? []);
+  if (categoryIds.length === 0 && proposals.length === 0) {
+    throw new ValidationError("Choose at least one category for the household plan.");
+  }
+  return appendOnboardingSubmission(household, input, { kind: "categories", categoryIds, estimates: [] }, proposals);
+}
+
+export function mergeOnboardingCategories(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+  conflictSelections?: string[];
+  at?: string;
+}): CommitResult {
+  const member = requireOnboardingSubmissionActor(household, input.memberId, input.createdBy);
+  const state = onboardingCategoryState(household);
+  if (state.kind !== "review" || state.submissionIds.length !== 2) {
+    throw new ValidationError("Both category lists need to be current before review.");
+  }
+  const selected = new Set(input.conflictSelections ?? []);
+  for (const conflict of state.conflicts) {
+    const chosen = conflict.options.filter((option) => selected.has(option.id));
+    if (chosen.length !== 1) throw new ValidationError("Choose one version of each matching category together.");
+  }
+  const at = onboardingCommandAt(input.at);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const usedIds = new Set(next.categories.map((row) => row.id));
+  const canonical = next.categories.filter((row) => row.active && row.recordType === "category" && row.transactionType === "expense");
+  const proposalById = new Map(state.proposals.map((row) => [row.id, row]));
+  const sourceRows = state.unionIds.map((id) => {
+    const category = canonical.find((row) => row.id === id);
+    if (category) return { id, name: category.name, parentId: category.parentId ?? "", proposed: false };
+    const proposal = proposalById.get(id);
+    if (!proposal) throw new ValidationError("Review the category lists again.");
+    return { id, name: proposal.name, parentId: proposal.parentId, proposed: true };
+  });
+  for (const proposal of state.proposals) {
+    const key = proposal.name.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-CA");
+    for (const row of canonical.filter((candidate) => candidate.name.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-CA") === key)) {
+      if (!sourceRows.some((source) => source.id === row.id)) {
+        sourceRows.push({ id: row.id, name: row.name, parentId: row.parentId ?? "", proposed: false });
+      }
+    }
+  }
+  const byName = new Map<string, typeof sourceRows>();
+  for (const row of sourceRows) {
+    const key = row.name.trim().replace(/\s+/g, " ").toLocaleLowerCase("en-CA");
+    byName.set(key, [...(byName.get(key) ?? []), row]);
+  }
+  const resolutions: OnboardingCategoryMerge["resolutions"] = [];
+  for (const rowsByName of [...byName.values()].sort((left, right) => left[0]!.name.localeCompare(right[0]!.name))) {
+    const chosen = rowsByName.length > 1
+      ? rowsByName.find((row) => selected.has(row.id))!
+      : rowsByName[0]!;
+    let categoryId = chosen.proposed ? "" : chosen.id;
+    if (!categoryId) {
+      const proposal = proposalById.get(chosen.id)!;
+      const parent = next.categories.find((row) => row.id === proposal.parentId && row.active && row.recordType === "group" && row.transactionType === "expense");
+      if (!parent) throw new ValidationError("Choose where each suggested category belongs.");
+      categoryId = canonicalCategoryId(parent.name, proposal.name, usedIds);
+      usedIds.add(categoryId);
+      const sortOrder = next.categories.reduce((highest, row) => Math.max(highest, row.sortOrder), 0) + 1;
+      next.categories.push({
+        id: categoryId,
+        parentId: parent.id,
+        recordType: "category",
+        name: proposal.name,
+        transactionType: "expense",
+        essential: false,
+        incomeStability: "variable",
+        active: true,
+        sortOrder,
+        createdAt: at,
+        updatedAt: at,
+      });
+    }
+    rowsByName.filter((row) => state.unionIds.includes(row.id))
+      .forEach((row) => resolutions.push({ sourceId: row.id, categoryId }));
+  }
+  const categoryIds = [...new Set(resolutions.map((row) => row.categoryId))].sort();
+  const merge: OnboardingCategoryMerge = {
+    id: categoryMergeId(state.submissionIds),
+    householdId: household.householdId,
+    submissionIds: currentCategorySubmissionIds(household),
+    resolutions: resolutions.sort((left, right) => left.sourceId.localeCompare(right.sourceId)),
+    categoryIds,
+    mergedByMemberId: member.id,
+    mergedAt: at,
+  };
+  const existing = shapeOnboardingCategoryMerges(next.onboardingCategoryMerges, next.householdId);
+  if (existing.some((row) => row.id === merge.id)) throw new ValidationError("These category lists were already merged.");
+  next.onboardingCategoryMerges = [...existing, merge];
+  return commit(previous, next, "Onboarding categories", "Merged the household category lists", [
+    merge.id,
+    ...next.categories.filter((row) => !previous.categories.some((prior) => prior.id === row.id)).map((row) => row.id),
+  ], [], "mergeOnboardingCategories");
 }
 
 export function submitOnboardingEstimates(household: Household, input: {
