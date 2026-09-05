@@ -128,6 +128,57 @@ describe("continuityRealtimeSelfHealEnabled", () => {
 });
 
 describe("attachContinuityRealtime lifecycle", () => {
+  it("renews the authenticated socket token, catches up, and reports renewal failure", async () => {
+    vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
+    const channel = {
+      on: vi.fn(() => channel),
+      subscribe: vi.fn(() => channel),
+    };
+    const client = {
+      channel: vi.fn(() => channel),
+      removeChannel: vi.fn(),
+      realtime: { setAuth: vi.fn() },
+    };
+    const createClientMock = vi.fn((..._args: Parameters<NonNullable<ContinuityRealtimeDeps["createClient"]>>) => client);
+    const accessTokenProvider = vi.fn(async () => "access-token");
+    const onAccessTokenChange = vi.fn();
+    const onAccessTokenError = vi.fn();
+
+    const detach = attachContinuityRealtime({
+      supabaseUrl: "https://example.supabase.co",
+      publishableKey: "sb_publishable_test",
+      accessToken: "access-token",
+      accessTokenProvider,
+      onAccessTokenChange,
+      onAccessTokenError,
+      householdId: "HH-DEMO",
+      memberId: "MEM-001",
+      environment: "development",
+      onSnapshotSignal: vi.fn(),
+    }, { createClient: createClientMock as ContinuityRealtimeDeps["createClient"] });
+
+    const socketTokenProvider = createClientMock.mock.calls[0]?.[2]?.accessToken;
+    expect(socketTokenProvider).toBeTypeOf("function");
+    if (typeof socketTokenProvider !== "function") throw new Error("Missing socket token provider.");
+
+    await expect(socketTokenProvider()).resolves.toBe("access-token");
+    expect(onAccessTokenChange).not.toHaveBeenCalled();
+
+    accessTokenProvider.mockResolvedValue("renewed-access-token");
+    await expect(socketTokenProvider()).resolves.toBe("renewed-access-token");
+    expect(onAccessTokenChange).toHaveBeenCalledOnce();
+
+    const renewalError = new Error("renewal failed");
+    accessTokenProvider.mockRejectedValueOnce(renewalError);
+    await expect(socketTokenProvider()).rejects.toThrow("renewal failed");
+    expect(onAccessTokenError).toHaveBeenCalledWith(renewalError);
+
+    const providerCallsBeforeDetach = accessTokenProvider.mock.calls.length;
+    detach();
+    await expect(socketTokenProvider()).resolves.toBeNull();
+    expect(accessTokenProvider).toHaveBeenCalledTimes(providerCallsBeforeDetach);
+  });
+
   it("subscribes to shared and personal snapshot channels and cleans up", () => {
     vi.stubEnv("VITE_CONTINUITY_REALTIME", "1");
     vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "");

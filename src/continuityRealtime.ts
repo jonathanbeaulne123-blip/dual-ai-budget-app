@@ -24,6 +24,9 @@ export type AttachContinuityRealtimeInput = {
   supabaseUrl: string;
   publishableKey: string;
   accessToken: string;
+  accessTokenProvider?: () => Promise<string | null>;
+  onAccessTokenChange?: () => void;
+  onAccessTokenError?: (caught: unknown) => void;
   householdId: string;
   memberId: string;
   environment: Environment;
@@ -74,9 +77,27 @@ export function attachContinuityRealtime(
   deps: ContinuityRealtimeDeps = {},
 ): () => void {
   let disposed = false;
+  let currentAccessToken = input.accessToken;
+  const accessToken = async (): Promise<string | null> => {
+    if (disposed) return null;
+    try {
+      const next = input.accessTokenProvider
+        ? await input.accessTokenProvider()
+        : currentAccessToken;
+      if (!next) throw new Error("Realtime has no authenticated access token.");
+      const changed = next !== currentAccessToken;
+      currentAccessToken = next;
+      if (changed && !disposed) input.onAccessTokenChange?.();
+      return next;
+    } catch (caught) {
+      if (!disposed) input.onAccessTokenError?.(caught);
+      throw caught;
+    }
+  };
   const create: NonNullable<ContinuityRealtimeDeps["createClient"]> = deps.createClient
     ?? (createClient as unknown as NonNullable<ContinuityRealtimeDeps["createClient"]>);
   const client = create(input.supabaseUrl, input.publishableKey, {
+    accessToken,
     auth: {
       persistSession: false,
       autoRefreshToken: false,
