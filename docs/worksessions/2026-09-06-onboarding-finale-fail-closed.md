@@ -1,14 +1,14 @@
 # Hearth worksession — onboarding finale fail-closed repair
 
-- **Status:** LOCAL IMPLEMENTATION AND VERIFICATION COMPLETE
+- **Status:** RELEASE CANDIDATE — PR #357 open; checks pending
 - **Opened:** 2026-09-06 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `codex/onboarding-gates-fail-closed`
 - **Baseline SHA:** `157afbb`
-- **Implementation SHA:** uncommitted local candidate
-- **PR or issue:** none
+- **Implementation SHA:** `b25b047affaf6f531cfb0025934831cdfae04369`; this evidence/status closure follows
+- **PR or issue:** [#357](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/357)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none; local test execution only
@@ -92,4 +92,4 @@ Guided setup cannot reach Ready or completion by omitting an active member's pro
 
 ## Handoff
 
-Keep this branch local until Jonathan separately authorizes commit, push, and merge. Do not deploy or touch either Worker.
+Implementation commit `b25b047` is pushed in the single PR #357. Jonathan authorized push and merge; wait for required checks and merge only the unchanged reviewed head. Do not deploy or touch either Worker.

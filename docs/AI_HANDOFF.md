@@ -2,7 +2,7 @@
 
 ## Onboarding finale fail-closed repair (D-230) (2026-09-06)
 
-**Status:** Local implementation is complete on `codex/onboarding-gates-fail-closed`, based on `origin/main@157afbb`. Nothing is committed, pushed, merged, deployed, or hosted-live verified. Risk: **High**.
+**Status:** [PR #357](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/357) is the single release-candidate PR on `codex/onboarding-gates-fail-closed`, based on `origin/main@157afbb69564ddaa376e3568fbbe7845b557a0da`. Verified implementation commit `b25b047affaf6f531cfb0025934831cdfae04369`; this evidence/status closure follows. Checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.
 
 **Outcome:** The finale now evaluates all active members, treating missing or rejected Personal progress as unsatisfied instead of dropping the member. New-member catch-up is limited to genuinely absent progress; malformed or stale stored progress returns empty and requests registry repair. Ready approval reads shaped progress and rejects invalidated Chapter 12 proof.
 
@@ -12,7 +12,7 @@
 
 **Evidence class:** Local synthetic fixtures, direct core/runtime tests, and jsdom component coverage. This is not exhaustive/release, browser, authenticated two-device, hosted-live, deployment, or Production proof. No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, push, merge, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-finale-fail-closed.md`](worksessions/2026-09-06-onboarding-finale-fail-closed.md).
 
-**Next owner:** Jonathan reviews the local candidate and separately decides whether to authorize commit, push, and merge. Deployment remains unauthorized.
+**Next owner:** Codex waits for PR #357's required checks and merges only the unchanged reviewed head under Jonathan's explicit authorization. Deployment remains unauthorized.
 
 ## Onboarding audit — entry and rehearsal test-net repairs (D-229) (2026-09-06)
 
