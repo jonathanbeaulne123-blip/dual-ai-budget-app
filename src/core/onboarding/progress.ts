@@ -252,6 +252,7 @@ export function memberProgress(household: Household, memberId: string): MemberOn
   const shaped = shapeMemberOnboardingProgress(member.onboardingProgress, context);
   if (shaped) return shaped;
   const empty = emptyMemberOnboardingProgress(context);
+  if (member.onboardingProgress != null) return empty;
   const completed = acceptedHouseholdOnboarding(household);
   if (completed?.state !== "complete" || completed.confirmedByMemberIds.includes(memberId)) return empty;
   const inheritedAt = completed.completedAt ?? completed.updatedAt;
@@ -304,15 +305,10 @@ export function nextChapterFor(household: Household, memberId: string, today: Da
 /** The finale's fail-closed source of truth for household-track requirements. */
 export function householdGatesOutstanding(household: Household): ChapterId[] {
   if (acceptedHouseholdOnboarding(household)?.state === "complete") return [];
-  const representedMembers = household.members.filter((member) => member.active
-    && shapeMemberOnboardingProgress(member.onboardingProgress, {
-      environment: household.environment,
-      householdId: household.householdId,
-      memberId: member.id,
-    }));
+  const activeMembers = household.members.filter((member) => member.active);
   return householdChapters()
     .filter((chapter) => chapter.contributesToFinalGate)
-    .filter((chapter) => representedMembers.length === 0 || representedMembers.some((member) => {
+    .filter((chapter) => activeMembers.length === 0 || activeMembers.some((member) => {
       const row = memberProgress(household, member.id).rows.find((candidate) => candidate.chapterId === chapter.id);
       return !chapterProgressSatisfied(row);
     }))

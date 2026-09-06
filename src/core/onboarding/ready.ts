@@ -8,7 +8,7 @@ import { adoptionSha256 } from "./adoption.ts";
 import { approvalsFor, bothApproved } from "./approvals.ts";
 import { evidenceFor, type EvidenceResult } from "./evidence.ts";
 import { acceptedHouseholdOnboarding } from "./mode.ts";
-import { householdGatesOutstanding } from "./progress.ts";
+import { chapterProgressSatisfied, householdGatesOutstanding, memberProgress } from "./progress.ts";
 import { householdChapters, ONBOARDING_REGISTRY_VERSION } from "./registry.ts";
 
 export const READY_CHAPTER_ID = "ch-12-ready";
@@ -182,11 +182,11 @@ export function assertReadyApprovalPrerequisites(previous: Household, next: Hous
   const digest = onboardingCompletionDigest(previous);
   const beforeIds = new Set(approvalsFor(previous, "ready", digest).map((row) => row.id));
   const added = approvalsFor(next, "ready", digest).filter((row) => !beforeIds.has(row.id));
-  const progress = previous.members.find((member) => member.active && member.id === actorMemberId)?.onboardingProgress;
-  const readyRow = progress?.rows.find((row) => row.chapterId === READY_CHAPTER_ID);
+  const readyRow = memberProgress(previous, actorMemberId).rows
+    .find((row) => row.chapterId === READY_CHAPTER_ID);
   if (householdGatesOutstanding(previous).length > 0
     || !readyRow
-    || !(readyRow.observedCompleteAt || readyRow.acknowledgedAt)
+    || !chapterProgressSatisfied(readyRow)
     || added.length !== 1
     || added[0]!.memberId !== actorMemberId) {
     throw new ValidationError("Finish every setup check on your own device before saying you're ready.");

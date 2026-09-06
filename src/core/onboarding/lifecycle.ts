@@ -9,6 +9,7 @@ import {
   chapterProgressSatisfied,
   memberProgress,
   NEW_MEMBER_CATCH_UP_CHAPTER_IDS,
+  shapeMemberOnboardingProgress,
   type MemberOnboardingProgress,
 } from "./progress.ts";
 import { ONBOARDING_REGISTRY, ONBOARDING_REGISTRY_VERSION, householdChapters } from "./registry.ts";
@@ -127,6 +128,20 @@ export function onboardingRegistryMigrationPlan(household: Household): Onboardin
         : "";
       if (chapterId && !known.has(chapterId)) return { kind: "blocked", reason: "unknown-chapter-id", chapterId };
     }
+  }
+  for (const member of household.members) {
+    const raw = member.onboardingProgress;
+    if (raw == null) continue;
+    const shaped = shapeMemberOnboardingProgress(raw, {
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId: member.id,
+    });
+    if (shaped) continue;
+    const rawVersion = typeof raw === "object" && Number.isInteger((raw as { registryVersion?: unknown }).registryVersion)
+      ? Number((raw as { registryVersion: number }).registryVersion)
+      : 0;
+    return { kind: "repair", fromVersion: rawVersion, toVersion: ONBOARDING_REGISTRY_VERSION };
   }
   const rawVersion = household.householdOnboarding && typeof household.householdOnboarding === "object"
     && Number.isInteger(household.householdOnboarding.registryVersion)

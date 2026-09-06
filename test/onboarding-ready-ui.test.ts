@@ -44,20 +44,22 @@ function readyHousehold(readyAcknowledged = false): Household {
     createdAt: "2026-09-05T13:45:00.000Z",
     updatedAt: AT,
   };
-  const progress = emptyMemberOnboardingProgress({
-    environment: household.environment,
-    householdId: household.householdId,
-    memberId: BIANCA,
+  household.members = household.members.map((member) => {
+    const progress = emptyMemberOnboardingProgress({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId: member.id,
+    });
+    progress.rows = progress.rows.map((row) => ({
+      ...row,
+      acknowledgedAt: row.chapterId === "ch-12-ready" && member.id === BIANCA && !readyAcknowledged ? null : AT,
+      lastSafeResumePoint: row.chapterId === "ch-12-ready" && member.id === BIANCA && !readyAcknowledged
+        ? "ch-11-plan"
+        : row.chapterId,
+    }));
+    progress.updatedAt = AT;
+    return { ...member, onboardingProgress: progress };
   });
-  progress.rows = progress.rows.map((row) => ({
-    ...row,
-    acknowledgedAt: row.chapterId === "ch-12-ready" && !readyAcknowledged ? null : AT,
-    lastSafeResumePoint: row.chapterId === "ch-12-ready" && !readyAcknowledged ? "ch-11-plan" : row.chapterId,
-  }));
-  progress.updatedAt = AT;
-  household.members = household.members.map((member) => member.id === BIANCA
-    ? { ...member, onboardingProgress: progress }
-    : { ...member, onboardingProgress: undefined });
   return household;
 }
 

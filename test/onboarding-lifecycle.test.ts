@@ -272,6 +272,9 @@ describe("onboarding lifecycle", () => {
     expect(shouldShowOnboardingShell(household, ALEX, TODAY)).toBe(true);
     expect(shouldShowOnboardingShell(household, BIANCA, TODAY)).toBe(false);
     expect(householdGatesOutstanding(household)).toEqual([]);
+    const inherited = memberProgress(household, ALEX);
+    expect(inherited.rows.find((row) => row.chapterId === "ch-03-charter")?.acknowledgedAt).toBe(COMPLETED_AT);
+    expect(inherited.rows.find((row) => row.chapterId === "ch-12-ready")?.acknowledgedAt).toBe(COMPLETED_AT);
 
     household = recordChapterAcknowledgement(household, {
       memberId: ALEX,
@@ -290,6 +293,26 @@ describe("onboarding lifecycle", () => {
     }).household;
     expect(nextChapterFor(household, ALEX, TODAY)?.id).toBe("ch-08-cadence");
     expect(householdGatesOutstanding(household)).toEqual([]);
+  });
+
+  it("refuses inherited proof for a present but unshapeable member progress record", () => {
+    const household = completed();
+    household.members = [
+      household.members.find((member) => member.id === BIANCA)!,
+      { ...household.members.find((member) => member.id === JONATHAN)!, active: false },
+      {
+        id: ALEX,
+        name: "Alex",
+        color: "#785a9a",
+        active: true,
+        updatedAt: COMPLETED_AT,
+        onboardingProgress: { garbage: true } as never,
+      },
+    ];
+
+    const progress = memberProgress(household, ALEX);
+    expect(progress.rows.every((row) => !chapterProgressSatisfied(row))).toBe(true);
+    expect(onboardingRegistryMigrationPlan(household)).toEqual({ kind: "repair", fromVersion: 0, toVersion: 1 });
   });
 
   it("does not inherit Development completion into Production", () => {
