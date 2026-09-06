@@ -15,7 +15,6 @@ import { ONBOARDING_REGISTRY, ONBOARDING_REGISTRY_VERSION, householdChapters } f
 
 export { NEW_MEMBER_CATCH_UP_CHAPTER_IDS };
 
-export const DEMO_TABLE_COMMAND_KIND = "create-demo-table";
 export const DEMO_SUITE_COMMAND_KIND = "create-demo-suite";
 
 /**
@@ -153,34 +152,19 @@ export function seededOnboardingApprovalsValid(household: Household): boolean {
     || household.onboardingApprovals.length !== 2
     || approvals.length !== 2
     || !bothApproved(household, "ready", record.completionDigest)) return false;
-  const householdIds = new Set(householdChapters().map((chapter) => chapter.id));
-  return memberIds.every((memberId) => memberProgress(household, memberId).rows
-    .filter((row) => householdIds.has(row.chapterId))
-    .every(chapterProgressSatisfied));
-}
-
-/** Narrow acceptance proof for the Demo Suite boundary, including fixture provenance. */
-export function syntheticDemoFixtureProvenanceValid(household: Household): boolean {
-  const fixture = household.syntheticFixture;
-  return household.environment === "development"
-    && fixture?.kind === "hearth-demo-suite"
-    && typeof fixture.version === "string"
-    && fixture.version.length > 0
-    && Number.isSafeInteger(fixture.seed)
-    && fixture.seed >= 0
-    && fixture.seed <= 0xffffffff
-    && /^\d{4}-\d{2}-\d{2}$/.test(fixture.generatedForDate)
-    && !Number.isNaN(Date.parse(fixture.generatedAt))
-    && typeof fixture.buildSha === "string"
-    && fixture.buildSha.length > 0
-    && ["investor", "edge", "scale"].includes(fixture.profile)
-    && ["realistic", "pretty"].includes(fixture.numberStyle)
-    && /^[a-f0-9]{16}$/.test(fixture.coverageDigest)
-    && /^[a-f0-9]{64}$/.test(fixture.fixtureHashSha256);
+  const householdChapterIds = householdChapters().map((chapter) => chapter.id);
+  return memberIds.every((memberId) => {
+    const progressByChapter = new Map(memberProgress(household, memberId).rows
+      .map((row) => [row.chapterId, row]));
+    return householdChapterIds.every((chapterId) => {
+      const row = progressByChapter.get(chapterId);
+      return Boolean(row && chapterProgressSatisfied(row));
+    });
+  });
 }
 
 export function syntheticDemoOnboardingIsValid(household: Household): boolean {
-  return syntheticDemoFixtureProvenanceValid(household)
+  return household.syntheticFixture?.kind === "hearth-demo-suite"
     && seededOnboardingApprovalsValid(household);
 }
 

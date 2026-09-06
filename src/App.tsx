@@ -83,7 +83,6 @@ import {
   verifyDemoSuite,
   freshDemoSeed,
   DEMO_SUITE_COMMAND_KIND,
-  DEMO_TABLE_COMMAND_KIND,
   preserveDemoShowcaseContinuity,
   eraseDevelopmentData,
   shiftSettingsFingerprint,
@@ -4063,17 +4062,7 @@ export function App() {
         const secondFrame = window.requestAnimationFrame(() => {
           pendingDemoFramesRef.current = [];
           const next = seedDemoHousehold({ today, environment });
-          const confirmationId = `demo-table-${next.householdId}`;
-          void persist(next, {
-            id: confirmationId,
-            label: "Open Demo Table",
-            snapshot: next,
-            postedIds: [],
-            commandKind: DEMO_TABLE_COMMAND_KIND,
-          }, undefined, {
-            confirmationId,
-            suppressUndo: true,
-          }).then(resolve);
+          void persist(next).then(resolve);
         });
         pendingDemoFramesRef.current = [secondFrame];
       });

@@ -8,8 +8,8 @@ import {
   chapterProgressSatisfied,
   completeSyntheticDemoOnboarding,
   copy,
-  DEMO_TABLE_COMMAND_KIND,
   confirmHouseholdOnboarding,
+  DEMO_SUITE_COMMAND_KIND,
   householdGatesOutstanding,
   memberProgress,
   mergeHouseholdOnboarding,
@@ -144,7 +144,7 @@ describe("onboarding lifecycle", () => {
     expect(syntheticDemoOnboardingIsValid(household)).toBe(false);
   });
 
-  it("accepts seeded Demo Table approvals only through the explicit Development demo command", async () => {
+  it("accepts the seeded Demo Table first write without widening ordinary approval commands", async () => {
     const household = seedDemoHousehold({ today: TODAY, environment: "development" });
     const missingApproval = { ...household, onboardingApprovals: household.onboardingApprovals?.slice(0, 1) };
     const duplicateMemberApproval = structuredClone(household);
@@ -159,6 +159,16 @@ describe("onboarding lifecycle", () => {
     ];
     const wrongDigest = structuredClone(household);
     wrongDigest.onboardingApprovals![0]!.digest = `${wrongDigest.onboardingApprovals![0]!.digest}-changed`;
+    const forgedDigest = structuredClone(household);
+    forgedDigest.householdOnboarding!.completionDigest = `ready-demo-v1-${"0".repeat(64)}`;
+    const absentDigest = structuredClone(household);
+    absentDigest.householdOnboarding!.completionDigest = null;
+    const thirdActiveMember = structuredClone(household);
+    thirdActiveMember.members.push({
+      ...thirdActiveMember.members[0]!,
+      id: "MEM-003",
+      name: "Third member",
+    });
     const incompleteProgress = structuredClone(household);
     incompleteProgress.members[0]!.onboardingProgress!.rows[0]!.acknowledgedAt = null;
     for (const invalid of [
@@ -167,6 +177,9 @@ describe("onboarding lifecycle", () => {
       duplicateMemberApproval,
       extraApproval,
       wrongDigest,
+      forgedDigest,
+      absentDigest,
+      thirdActiveMember,
       incompleteProgress,
     ]) expect(seededOnboardingApprovalsValid(invalid)).toBe(false);
     const adapters = {
@@ -177,44 +190,66 @@ describe("onboarding lifecycle", () => {
       previous: null,
       candidate: household,
       confirmationId: "CONFIRM-DEMO-TABLE",
-      commandKind: DEMO_TABLE_COMMAND_KIND,
       postedIds: [],
+      actingMemberId: household.members.find((member) => member.active)!.id,
       adapters,
     });
     expect(accepted.ok).toBe(true);
 
-    for (const [candidate, commandKind, postedIds] of [
-      [household, "commit", []],
-      [household, DEMO_TABLE_COMMAND_KIND, ["forged-posted-id"]],
-      [{ ...household, environment: "production" as const }, DEMO_TABLE_COMMAND_KIND, []],
-      [missingApproval, DEMO_TABLE_COMMAND_KIND, []],
-      [duplicateMemberApproval, DEMO_TABLE_COMMAND_KIND, []],
-      [extraApproval, DEMO_TABLE_COMMAND_KIND, []],
-      [wrongDigest, DEMO_TABLE_COMMAND_KIND, []],
-      [incompleteProgress, DEMO_TABLE_COMMAND_KIND, []],
+    const acceptedSuite = await acceptHouseholdWrite({
+      previous: catalogHousehold("development"),
+      candidate: {
+        ...household,
+        syntheticFixture: { kind: "hearth-demo-suite" } as never,
+      },
+      confirmationId: "CONFIRM-DEMO-SUITE-WITH-OPEN-HOUSEHOLD",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: household.members.find((member) => member.active)!.id,
+      adapters,
+    });
+    expect(acceptedSuite.ok).toBe(true);
+
+    for (const [candidate, postedIds] of [
+      [household, ["forged-posted-id"]],
+      [{ ...household, environment: "production" as const }, []],
+      [missingApproval, []],
+      [duplicateMemberApproval, []],
+      [extraApproval, []],
+      [wrongDigest, []],
+      [forgedDigest, []],
+      [absentDigest, []],
+      [thirdActiveMember, []],
+      [incompleteProgress, []],
     ] as const) {
       const outcome = await acceptHouseholdWrite({
         previous: null,
         candidate,
-        confirmationId: `REJECT-${commandKind}-${postedIds.length}-${candidate.onboardingApprovals?.length ?? 0}`,
-        commandKind,
+        confirmationId: `REJECT-DEMO-TABLE-${postedIds.length}-${candidate.onboardingApprovals?.length ?? 0}-${candidate.members.length}`,
         postedIds: [...postedIds],
+        actingMemberId: household.members.find((member) => member.active)!.id,
         adapters,
       });
       expect(outcome.ok).toBe(false);
       expect(outcome.postedNothing).toBe(true);
     }
 
-    const refusedReplacement = await acceptHouseholdWrite({
-      previous: catalogHousehold("development"),
-      candidate: household,
-      confirmationId: "REJECT-DEMO-TABLE-REPLACEMENT",
-      commandKind: DEMO_TABLE_COMMAND_KIND,
-      postedIds: [],
-      adapters,
-    });
-    expect(refusedReplacement.ok).toBe(false);
-    expect(refusedReplacement.postedNothing).toBe(true);
+    for (const commandKind of ["approveOnboardingProposal", "approveOnboardingReady"] as const) {
+      const ordinaryApproval = await acceptHouseholdWrite({
+        previous: null,
+        candidate: household,
+        confirmationId: `REJECT-ORDINARY-${commandKind}`,
+        commandKind,
+        postedIds: [],
+        actingMemberId: household.members.find((member) => member.active)!.id,
+        adapters,
+      });
+      expect(ordinaryApproval).toMatchObject({
+        ok: false,
+        postedNothing: true,
+        userMessage: "Only you can approve for yourself.",
+      });
+    }
   });
 
   it("re-probes a stopped run, demotes stale facts, and converges against an old replica", () => {

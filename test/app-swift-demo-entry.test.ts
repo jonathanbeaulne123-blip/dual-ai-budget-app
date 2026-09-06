@@ -119,7 +119,7 @@ describe("swift demo entry", () => {
 
     await act(async () => { await vi.advanceTimersByTimeAsync(34); });
     expect(acceptance.calls).toBe(1);
-    expect(acceptance.lastInput?.commandKind).toBe("create-demo-table");
+    expect(acceptance.lastInput?.commandKind).toBe("commit");
     expect(acceptance.lastInput?.previous).toBeNull();
 
     act(() => button(/I am Jonathan/i).click());

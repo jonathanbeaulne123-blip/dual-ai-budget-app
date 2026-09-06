@@ -44,9 +44,7 @@ import {
 } from "./onboarding/adoption.ts";
 import {
   DEMO_SUITE_COMMAND_KIND,
-  DEMO_TABLE_COMMAND_KIND,
   seededOnboardingApprovalsValid,
-  syntheticDemoFixtureProvenanceValid,
   syntheticDemoOnboardingIsValid,
 } from "./onboarding/lifecycle.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
@@ -264,7 +262,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       }
     }
     const sameHousehold = Boolean(previous && previous.householdId === candidate.householdId);
-    const validDemoTableCreation = input.commandKind === DEMO_TABLE_COMMAND_KIND
+    const validDemoTableCreation = (!input.commandKind || input.commandKind === "commit")
       && postedIds.length === 0
       && !previous
       && !candidate.syntheticFixture
@@ -275,10 +273,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       && (!previous
         || Boolean(input.actingMemberId
           && previous.members.some((member) => member.active && member.id === input.actingMemberId)
-          && candidate.members.some((member) => member.active && member.id === input.actingMemberId)))
-      && (!previous
-        || previous.householdId !== candidate.householdId
-        || syntheticDemoFixtureProvenanceValid(previous));
+          && candidate.members.some((member) => member.active && member.id === input.actingMemberId)));
     const validSyntheticDemoReplacement = sameHousehold
       && Boolean(previous)
       && validSyntheticDemoCommand;

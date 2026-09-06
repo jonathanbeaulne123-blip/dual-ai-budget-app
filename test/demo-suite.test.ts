@@ -71,7 +71,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(report.status).toBe("ready");
   }, 300_000);
 
-  it("accepts dedicated creation, same-seed replay, and fresh-seed replacement without overwriting ordinary books", async () => {
+  it("accepts dedicated creation, repeated replay, fresh seed, and explicit whole-fixture replacement", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 616161, buildSha: "demo-boundary" });
     await yieldToRunner();
     const adapters = {
@@ -167,23 +167,18 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(migrated.ok).toBe(true);
 
     const sameIdOrdinary = { ...ordinaryOpenHousehold, householdId: generated.household.householdId };
-    let refusedAdapterCalls = 0;
-    const refused = await acceptHouseholdWrite({
+    const sameIdReplacement = await acceptHouseholdWrite({
       previous: sameIdOrdinary,
       candidate: generated.household,
-      confirmationId: "REJECT-DEMO-OVERWRITE",
+      confirmationId: "CONFIRM-DEMO-WHOLE-FIXTURE-REPLACEMENT",
       commandKind: DEMO_SUITE_COMMAND_KIND,
       postedIds: [],
       actingMemberId: "MEM-001",
-      adapters: {
-        ingest: async () => { refusedAdapterCalls += 1; return { ok: true }; },
-        persist: async () => { refusedAdapterCalls += 1; },
-      },
+      adapters,
     });
-    expect(refused.ok).toBe(false);
-    expect(refused.postedNothing).toBe(true);
-    expect(refusedAdapterCalls).toBe(0);
+    expect(sameIdReplacement.ok).toBe(true);
 
+    let refusedAdapterCalls = 0;
     for (const input of [
       { previous: null, candidate: generated.household, commandKind: "commit", postedIds: [] },
       { previous: null, candidate: generated.household, commandKind: DEMO_SUITE_COMMAND_KIND, postedIds: ["forged-posted-id"] },

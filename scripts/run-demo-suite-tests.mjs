@@ -5,7 +5,7 @@ const testPath = "test/demo-suite.test.ts";
 const cases = [
   "replays the exact same dated household and manifest from one seed",
   "covers every domain engine and every Hercules Pro calculation surface",
-  "accepts dedicated creation, same-seed replay, and fresh-seed replacement without overwriting ordinary books",
+  "accepts dedicated creation, repeated replay, fresh seed, and explicit whole-fixture replacement",
   "marks any changed generated fact not-ready even when provenance is retained",
   "keeps synthetic schedules proposal-only and partner-personal facts out of Shared",
   "refuses Production and ordinary Development replacement",
