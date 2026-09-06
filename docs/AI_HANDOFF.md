@@ -2,7 +2,7 @@
 
 ## Onboarding lifecycle convergence repair (D-231) (2026-09-06)
 
-**Status:** Local implementation is complete on `codex/onboarding-lifecycle-convergence`, based on `origin/main@8eff077`. Nothing is committed, pushed, merged, deployed, or hosted-live verified. Risk: **High**.
+**Status:** [PR #358](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/358) is the single PR on `codex/onboarding-lifecycle-convergence`, based on `origin/main@8eff077`. Verified implementation commit `31a2a1b`; required checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.
 
 **Outcome:** A forced unlock now wins only when its timestamp is strictly newer than the competing non-forced lifecycle fact. A newer completed record therefore survives stale forced state in either merge order, while a genuinely newer forced unlock still produces `stopped-incomplete`. Household-onboarding shaping and migration planning now share the same registry-version reader, so invalid versions consistently normalize to version 0 and request repair.
 
@@ -12,7 +12,7 @@
 
 **Evidence class:** Local synthetic Development fixtures and pure core convergence tests. This is not exhaustive/release, browser, authenticated two-device, hosted-live, deployment, or Production proof. No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, push, merge, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-lifecycle-convergence.md`](worksessions/2026-09-06-onboarding-lifecycle-convergence.md).
 
-**Next owner:** Jonathan reviews the local candidate and separately decides whether to authorize commit, push, and merge. Deployment remains unauthorized.
+**Next owner:** Codex waits for all required PR checks, triages any in-scope blockers, and merges the exact reviewed head when green. Deployment remains unauthorized.
 
 ## Onboarding finale fail-closed repair (D-230) (2026-09-06)
 
