@@ -28,8 +28,8 @@ async function settleUntil(predicate: () => boolean, message: string) {
 }
 
 function startButton(): HTMLButtonElement {
-  const button = [...container.querySelectorAll("button")].find((item) => item.textContent?.trim() === "Start our month");
-  if (!button) throw new Error("Missing Start our month button");
+  const button = container.querySelector<HTMLButtonElement>('[data-testid="month-rehearsal-start"]');
+  if (!button) throw new Error("Missing month rehearsal start button");
   return button;
 }
 

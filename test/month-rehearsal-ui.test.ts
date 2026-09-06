@@ -35,7 +35,7 @@ describe("Bianca month rehearsal UI", () => {
     expect(html).toContain("Both phones show Development");
     expect(html).toContain("false Synced state");
     expect(html).toContain("not uploaded, added to the household snapshot, or sent to Hercules");
-    expect(html).toMatch(/<button type="button" class="primary" disabled="">Start rehearsal<\/button>/);
+    expect(html).toMatch(/<button type="button" class="primary" data-testid="month-rehearsal-start" disabled="">Start rehearsal<\/button>/);
     expect(html).not.toMatch(/test case|fixture|QA instruction/i);
     expect(renderToStaticMarkup(createElement(MonthRehearsalPanel, { household: { ...household, environment: "production" }, memberId: "MEM-001", today: "2026-08-28", onApply: () => undefined }))).toBe("");
   });
