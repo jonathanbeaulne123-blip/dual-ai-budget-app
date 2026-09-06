@@ -3,7 +3,12 @@ import type { Household } from "../types.ts";
 import { adoptionSha256 } from "./adoption.ts";
 import { approvalsFor, bothApproved } from "./approvals.ts";
 import { evidenceFor, probeEvidenceKey } from "./evidence.ts";
-import { acceptedHouseholdOnboarding, onboardingRecordId, type OnboardingModeState } from "./mode.ts";
+import {
+  acceptedHouseholdOnboarding,
+  onboardingRecordId,
+  readOnboardingRegistryVersion,
+  type OnboardingModeState,
+} from "./mode.ts";
 import {
   emptyMemberOnboardingProgress,
   chapterProgressSatisfied,
@@ -144,8 +149,7 @@ export function onboardingRegistryMigrationPlan(household: Household): Onboardin
     return { kind: "repair", fromVersion: rawVersion, toVersion: ONBOARDING_REGISTRY_VERSION };
   }
   const rawVersion = household.householdOnboarding && typeof household.householdOnboarding === "object"
-    && Number.isInteger(household.householdOnboarding.registryVersion)
-    ? household.householdOnboarding.registryVersion
+    ? readOnboardingRegistryVersion(household.householdOnboarding.registryVersion)
     : ONBOARDING_REGISTRY_VERSION;
   return rawVersion === ONBOARDING_REGISTRY_VERSION
     ? { kind: "current" }

@@ -16,6 +16,7 @@ import {
   financialAuditHash,
   householdGatesOutstanding,
   householdChapters,
+  ONBOARDING_REGISTRY_VERSION,
   memberProgress,
   memberNeedsAcceptedOnboardingEvidenceAdoption,
   mergeHouseholdOnboarding,
@@ -25,6 +26,7 @@ import {
   onboardingLifecycleState,
   onboardingRegistryMigrationPlan,
   ordinaryHerculesAvailable,
+  personalTrackAvailable,
   offerHouseholdOnboarding,
   probeEvidenceKey,
   proposeHouseholdOnboarding,
@@ -33,6 +35,7 @@ import {
   resumeHouseholdOnboarding,
   seedDemoHousehold,
   seededOnboardingApprovalsValid,
+  shapeHouseholdOnboarding,
   shouldShowOnboardingShell,
   syntheticDemoOnboardingIsValid,
   todayKey,
@@ -256,6 +259,77 @@ describe("onboarding lifecycle", () => {
       householdId: household.householdId,
       members: household.members,
     })?.state).toBe("complete");
+  });
+
+  it("keeps completion sticky when an older forced-unlock replica arrives in either argument order", () => {
+    const household = completed();
+    const complete = {
+      ...household.householdOnboarding!,
+      completedAt: "2026-09-05T00:00:00.000Z",
+      updatedAt: "2026-09-05T00:00:00.000Z",
+    };
+    const staleForcedUnlock = {
+      ...complete,
+      state: "stopped-incomplete" as const,
+      stoppedAt: "2026-09-02T00:00:00.000Z",
+      stoppedByMemberIds: [BIANCA],
+      stoppedSolo: true,
+      forcedUnlock: true,
+      completedAt: null,
+      completionDigest: null,
+      updatedAt: "2026-09-02T00:00:00.000Z",
+    };
+    const context = {
+      environment: household.environment,
+      householdId: household.householdId,
+      members: household.members,
+    };
+
+    for (const [server, client] of [[complete, staleForcedUnlock], [staleForcedUnlock, complete]]) {
+      const merged = mergeHouseholdOnboarding(server, client, context)!;
+      expect(merged).toMatchObject({
+        state: "complete",
+        forcedUnlock: false,
+        completedAt: complete.completedAt,
+        completionDigest: complete.completionDigest,
+      });
+      expect(ordinaryHerculesAvailable({ ...household, householdOnboarding: merged })).toBe(true);
+      expect(personalTrackAvailable({ ...household, householdOnboarding: merged })).toBe(true);
+    }
+  });
+
+  it("honours a genuinely newer forced unlock over an older completion", () => {
+    const household = completed();
+    const complete = {
+      ...household.householdOnboarding!,
+      completedAt: "2026-09-05T00:00:00.000Z",
+      updatedAt: "2026-09-05T00:00:00.000Z",
+    };
+    const newerForcedUnlock = {
+      ...complete,
+      state: "stopped-incomplete" as const,
+      stoppedAt: "2026-09-06T00:00:00.000Z",
+      stoppedByMemberIds: [BIANCA],
+      stoppedSolo: true,
+      forcedUnlock: true,
+      completedAt: null,
+      completionDigest: null,
+      updatedAt: "2026-09-06T00:00:00.000Z",
+    };
+    const context = {
+      environment: household.environment,
+      householdId: household.householdId,
+      members: household.members,
+    };
+
+    for (const [server, client] of [[complete, newerForcedUnlock], [newerForcedUnlock, complete]]) {
+      expect(mergeHouseholdOnboarding(server, client, context)).toMatchObject({
+        state: "stopped-incomplete",
+        forcedUnlock: true,
+        completedAt: null,
+        completionDigest: null,
+      });
+    }
   });
 
   it("gives a replacement member only Chapters 1, 2, and 8 without relocking the existing member", () => {
@@ -506,6 +580,26 @@ describe("onboarding lifecycle", () => {
       reason: "unknown-chapter-id",
       chapterId: "ch-unknown",
     });
+  });
+
+  it.each([
+    ["undefined", undefined],
+    ["null", null],
+    ["string", String(ONBOARDING_REGISTRY_VERSION)],
+    ["float", ONBOARDING_REGISTRY_VERSION + 0.5],
+    ["negative", -1],
+    ["older integer", ONBOARDING_REGISTRY_VERSION - 1],
+    ["current integer", ONBOARDING_REGISTRY_VERSION],
+  ])("keeps the registry planner aligned with the shaper for %s versions", (_label, registryVersion) => {
+    const household = completed();
+    const raw = { ...household.householdOnboarding!, registryVersion } as never;
+    household.householdOnboarding = raw;
+    const shaped = shapeHouseholdOnboarding(raw)!;
+    const plan = onboardingRegistryMigrationPlan(household);
+
+    expect(plan).toEqual(shaped.state === "repair"
+      ? { kind: "repair", fromVersion: shaped.registryVersion, toVersion: ONBOARDING_REGISTRY_VERSION }
+      : { kind: "current" });
   });
 
   it("keeps lifecycle policy pure and outside money authority", () => {

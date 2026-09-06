@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Onboarding lifecycle convergence repair (D-231) (2026-09-06)
+
+**Status:** [PR #358](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/358) is the single PR on `codex/onboarding-lifecycle-convergence`, based on `origin/main@8eff077`. Verified implementation commit `31a2a1b`; required checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** A forced unlock now wins only when its timestamp is strictly newer than the competing non-forced lifecycle fact. A newer completed record therefore survives stale forced state in either merge order, while a genuinely newer forced unlock still produces `stopped-incomplete`. Household-onboarding shaping and migration planning now share the same registry-version reader, so invalid versions consistently normalize to version 0 and request repair.
+
+**Risk and Dual Course:** Risk **High** because this changes lifecycle convergence and recovery authority. Budget delta (5): `+2`, preserving accepted setup metadata under stale replica delivery. Engagement delta (3): `+2`, preventing completed households from relocking Hercules and reopening the Personal track incorrectly while retaining the intentional Development escape hatch.
+
+**Verification:** Untouched `origin/main@8eff077` reproduced six failures: the older forced replica erased completion, four invalid version shapes disagreed with a `current` plan, and negative version normalization disagreed on `fromVersion`. The legitimate newer forced unlock and 17 unaffected lifecycle assertions passed before the fix. After the repair, lifecycle, onboarding-mode, and onboarding-progress pass 50/50 without fixture edits; the complete 33-file onboarding lane passes 481/481. The final High quick gate passed 88/88 assertions in 98.557 seconds at fingerprint `32c025de7fbae8f219afbb01650dd8afed85bae41cfc74d5c5b7cab81cdfc007`, including TypeScript, AI-surface, discovery, diff, and the seven-test serial trust matrix. `pnpm exec tsc --noEmit`, `pnpm build` (483 Vite modules plus Hercules Pro UI), and `pnpm ai:verify` pass. The host has no `npx`, so the equivalent `pnpm exec tsc` spelling was used. Existing PGlite browser-externalization/eval, mixed-import, and large-chunk build messages remain non-failing warnings.
+
+**Evidence class:** Local synthetic Development fixtures and pure core convergence tests. This is not exhaustive/release, browser, authenticated two-device, hosted-live, deployment, or Production proof. No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, push, merge, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-lifecycle-convergence.md`](worksessions/2026-09-06-onboarding-lifecycle-convergence.md).
+
+**Next owner:** Codex waits for all required PR checks, triages any in-scope blockers, and merges the exact reviewed head when green. Deployment remains unauthorized.
+
 ## Onboarding finale fail-closed repair (D-230) (2026-09-06)
 
 **Status:** [PR #357](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/357) is the single release-candidate PR on `codex/onboarding-gates-fail-closed`, based on `origin/main@157afbb69564ddaa376e3568fbbe7845b557a0da`. Verified implementation commit `b25b047affaf6f531cfb0025934831cdfae04369`; this evidence/status closure follows. Checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.
