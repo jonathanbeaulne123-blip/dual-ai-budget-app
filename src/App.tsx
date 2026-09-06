@@ -82,6 +82,8 @@ import {
   generateDemoSuite,
   verifyDemoSuite,
   freshDemoSeed,
+  DEMO_SUITE_COMMAND_KIND,
+  DEMO_TABLE_COMMAND_KIND,
   preserveDemoShowcaseContinuity,
   eraseDevelopmentData,
   shiftSettingsFingerprint,
@@ -3249,7 +3251,19 @@ export function App() {
     let accepted: Household;
     if (current.syntheticFixture?.kind === "hearth-demo-suite") {
       candidate = preserveDemoShowcaseContinuity(current, candidate);
-      const outcome = await persist(candidate, undefined, memberId, { forceFlush: true });
+      const confirmationId = `demo-suite-replace-${candidate.householdId}-${seed}`;
+      const outcome = await persist(candidate, {
+        id: confirmationId,
+        label: "Replace Demo Suite",
+        snapshot: current,
+        postedIds: [],
+        actorMemberId: memberId,
+        commandKind: DEMO_SUITE_COMMAND_KIND,
+      }, memberId, {
+        confirmationId,
+        forceFlush: true,
+        suppressUndo: true,
+      });
       if (!outcome?.ok) throw new Error(outcome?.userMessage || "Demo Suite could not replace its synthetic household.");
       accepted = outcome.household;
     } else {
@@ -3267,7 +3281,7 @@ export function App() {
         snapshot: current,
         postedIds: [],
         actorMemberId: memberId,
-        commandKind: "create-demo-suite",
+        commandKind: DEMO_SUITE_COMMAND_KIND,
       }, memberId, {
         confirmationId,
         forceFlush: true,
@@ -4049,7 +4063,17 @@ export function App() {
         const secondFrame = window.requestAnimationFrame(() => {
           pendingDemoFramesRef.current = [];
           const next = seedDemoHousehold({ today, environment });
-          void persist(next).then(resolve);
+          const confirmationId = `demo-table-${next.householdId}`;
+          void persist(next, {
+            id: confirmationId,
+            label: "Open Demo Table",
+            snapshot: next,
+            postedIds: [],
+            commandKind: DEMO_TABLE_COMMAND_KIND,
+          }, undefined, {
+            confirmationId,
+            suppressUndo: true,
+          }).then(resolve);
         });
         pendingDemoFramesRef.current = [secondFrame];
       });

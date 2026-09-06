@@ -1,7 +1,7 @@
 import { todayKey } from "../calendar.ts";
 import type { Household } from "../types.ts";
 import { adoptionSha256 } from "./adoption.ts";
-import { approvalsFor } from "./approvals.ts";
+import { approvalsFor, bothApproved } from "./approvals.ts";
 import { evidenceFor } from "./evidence.ts";
 import { acceptedHouseholdOnboarding, onboardingRecordId, type OnboardingModeState } from "./mode.ts";
 import {
@@ -14,6 +14,9 @@ import {
 import { ONBOARDING_REGISTRY, ONBOARDING_REGISTRY_VERSION, householdChapters } from "./registry.ts";
 
 export { NEW_MEMBER_CATCH_UP_CHAPTER_IDS };
+
+export const DEMO_TABLE_COMMAND_KIND = "create-demo-table";
+export const DEMO_SUITE_COMMAND_KIND = "create-demo-suite";
 
 /**
  * A stopped run rechecks canonical state. Live Auth/seat scope is deliberately
@@ -134,20 +137,51 @@ export function completeSyntheticDemoOnboarding(household: Household, input: { a
   };
 }
 
-/** Narrow acceptance proof for the create-demo-suite boundary. */
-export function syntheticDemoOnboardingIsValid(household: Household): boolean {
-  if (household.environment !== "development" || household.syntheticFixture?.kind !== "hearth-demo-suite") return false;
+/** Complete, deterministic onboarding proof shared by Development-only seeded demos. */
+export function seededOnboardingApprovalsValid(household: Household): boolean {
+  if (household.environment !== "development") return false;
   const record = acceptedHouseholdOnboarding(household);
   const memberIds = household.members.filter((member) => member.active).map((member) => member.id).sort();
+  const approvals = record?.completionDigest
+    ? approvalsFor(household, "ready", record.completionDigest)
+    : [];
   if (record?.state !== "complete"
     || !record.completionDigest?.match(/^ready-demo-v1-[a-f0-9]{64}$/)
     || memberIds.length !== 2
     || record.confirmedByMemberIds.join("|") !== memberIds.join("|")
-    || approvalsFor(household, "ready", record.completionDigest).length !== 2) return false;
+    || !Array.isArray(household.onboardingApprovals)
+    || household.onboardingApprovals.length !== 2
+    || approvals.length !== 2
+    || !bothApproved(household, "ready", record.completionDigest)) return false;
   const householdIds = new Set(householdChapters().map((chapter) => chapter.id));
   return memberIds.every((memberId) => memberProgress(household, memberId).rows
     .filter((row) => householdIds.has(row.chapterId))
     .every(chapterProgressSatisfied));
+}
+
+/** Narrow acceptance proof for the Demo Suite boundary, including fixture provenance. */
+export function syntheticDemoFixtureProvenanceValid(household: Household): boolean {
+  const fixture = household.syntheticFixture;
+  return household.environment === "development"
+    && fixture?.kind === "hearth-demo-suite"
+    && typeof fixture.version === "string"
+    && fixture.version.length > 0
+    && Number.isSafeInteger(fixture.seed)
+    && fixture.seed >= 0
+    && fixture.seed <= 0xffffffff
+    && /^\d{4}-\d{2}-\d{2}$/.test(fixture.generatedForDate)
+    && !Number.isNaN(Date.parse(fixture.generatedAt))
+    && typeof fixture.buildSha === "string"
+    && fixture.buildSha.length > 0
+    && ["investor", "edge", "scale"].includes(fixture.profile)
+    && ["realistic", "pretty"].includes(fixture.numberStyle)
+    && /^[a-f0-9]{16}$/.test(fixture.coverageDigest)
+    && /^[a-f0-9]{64}$/.test(fixture.fixtureHashSha256);
+}
+
+export function syntheticDemoOnboardingIsValid(household: Household): boolean {
+  return syntheticDemoFixtureProvenanceValid(household)
+    && seededOnboardingApprovalsValid(household);
 }
 
 export function onboardingLifecycleState(household: Household): OnboardingModeState {

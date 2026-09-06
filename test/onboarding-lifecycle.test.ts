@@ -2,11 +2,13 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   acceptedHouseholdOnboarding,
+  acceptHouseholdWrite,
   approvalsFor,
   catalogHousehold,
   chapterProgressSatisfied,
   completeSyntheticDemoOnboarding,
   copy,
+  DEMO_TABLE_COMMAND_KIND,
   confirmHouseholdOnboarding,
   householdGatesOutstanding,
   memberProgress,
@@ -20,6 +22,7 @@ import {
   recordObservedChapterCompletion,
   resumeHouseholdOnboarding,
   seedDemoHousehold,
+  seededOnboardingApprovalsValid,
   shouldShowOnboardingShell,
   syntheticDemoOnboardingIsValid,
   type Household,
@@ -137,6 +140,81 @@ describe("onboarding lifecycle", () => {
     expect(householdGatesOutstanding(household)).toEqual([]);
     expect(ordinaryHerculesAvailable(household)).toBe(true);
     expect(shouldShowOnboardingShell(household, BIANCA, TODAY)).toBe(false);
+    expect(seededOnboardingApprovalsValid(household)).toBe(true);
+    expect(syntheticDemoOnboardingIsValid(household)).toBe(false);
+  });
+
+  it("accepts seeded Demo Table approvals only through the explicit Development demo command", async () => {
+    const household = seedDemoHousehold({ today: TODAY, environment: "development" });
+    const missingApproval = { ...household, onboardingApprovals: household.onboardingApprovals?.slice(0, 1) };
+    const duplicateMemberApproval = structuredClone(household);
+    duplicateMemberApproval.onboardingApprovals = [
+      duplicateMemberApproval.onboardingApprovals![0]!,
+      { ...duplicateMemberApproval.onboardingApprovals![0]!, id: "ONB-APP-DEMO-DUPLICATE" },
+    ];
+    const extraApproval = structuredClone(household);
+    extraApproval.onboardingApprovals = [
+      ...extraApproval.onboardingApprovals!,
+      { ...extraApproval.onboardingApprovals![0]!, id: "ONB-APP-DEMO-EXTRA", scope: "proposal" },
+    ];
+    const wrongDigest = structuredClone(household);
+    wrongDigest.onboardingApprovals![0]!.digest = `${wrongDigest.onboardingApprovals![0]!.digest}-changed`;
+    const incompleteProgress = structuredClone(household);
+    incompleteProgress.members[0]!.onboardingProgress!.rows[0]!.acknowledgedAt = null;
+    for (const invalid of [
+      { ...household, environment: "production" as const },
+      missingApproval,
+      duplicateMemberApproval,
+      extraApproval,
+      wrongDigest,
+      incompleteProgress,
+    ]) expect(seededOnboardingApprovalsValid(invalid)).toBe(false);
+    const adapters = {
+      ingest: async () => ({ ok: true }),
+      persist: async () => undefined,
+    };
+    const accepted = await acceptHouseholdWrite({
+      previous: null,
+      candidate: household,
+      confirmationId: "CONFIRM-DEMO-TABLE",
+      commandKind: DEMO_TABLE_COMMAND_KIND,
+      postedIds: [],
+      adapters,
+    });
+    expect(accepted.ok).toBe(true);
+
+    for (const [candidate, commandKind, postedIds] of [
+      [household, "commit", []],
+      [household, DEMO_TABLE_COMMAND_KIND, ["forged-posted-id"]],
+      [{ ...household, environment: "production" as const }, DEMO_TABLE_COMMAND_KIND, []],
+      [missingApproval, DEMO_TABLE_COMMAND_KIND, []],
+      [duplicateMemberApproval, DEMO_TABLE_COMMAND_KIND, []],
+      [extraApproval, DEMO_TABLE_COMMAND_KIND, []],
+      [wrongDigest, DEMO_TABLE_COMMAND_KIND, []],
+      [incompleteProgress, DEMO_TABLE_COMMAND_KIND, []],
+    ] as const) {
+      const outcome = await acceptHouseholdWrite({
+        previous: null,
+        candidate,
+        confirmationId: `REJECT-${commandKind}-${postedIds.length}-${candidate.onboardingApprovals?.length ?? 0}`,
+        commandKind,
+        postedIds: [...postedIds],
+        adapters,
+      });
+      expect(outcome.ok).toBe(false);
+      expect(outcome.postedNothing).toBe(true);
+    }
+
+    const refusedReplacement = await acceptHouseholdWrite({
+      previous: catalogHousehold("development"),
+      candidate: household,
+      confirmationId: "REJECT-DEMO-TABLE-REPLACEMENT",
+      commandKind: DEMO_TABLE_COMMAND_KIND,
+      postedIds: [],
+      adapters,
+    });
+    expect(refusedReplacement.ok).toBe(false);
+    expect(refusedReplacement.postedNothing).toBe(true);
   });
 
   it("re-probes a stopped run, demotes stale facts, and converges against an old replica", () => {

@@ -42,7 +42,13 @@ import {
   assertOnboardingAdoptionTransition,
   ONBOARDING_ADOPTION_COMMAND_KIND,
 } from "./onboarding/adoption.ts";
-import { syntheticDemoOnboardingIsValid } from "./onboarding/lifecycle.ts";
+import {
+  DEMO_SUITE_COMMAND_KIND,
+  DEMO_TABLE_COMMAND_KIND,
+  seededOnboardingApprovalsValid,
+  syntheticDemoFixtureProvenanceValid,
+  syntheticDemoOnboardingIsValid,
+} from "./onboarding/lifecycle.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError, ValidationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
@@ -258,6 +264,25 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       }
     }
     const sameHousehold = Boolean(previous && previous.householdId === candidate.householdId);
+    const validDemoTableCreation = input.commandKind === DEMO_TABLE_COMMAND_KIND
+      && postedIds.length === 0
+      && !previous
+      && !candidate.syntheticFixture
+      && seededOnboardingApprovalsValid(candidate);
+    const validSyntheticDemoCommand = input.commandKind === DEMO_SUITE_COMMAND_KIND
+      && postedIds.length === 0
+      && syntheticDemoOnboardingIsValid(candidate)
+      && (!previous
+        || Boolean(input.actingMemberId
+          && previous.members.some((member) => member.active && member.id === input.actingMemberId)
+          && candidate.members.some((member) => member.active && member.id === input.actingMemberId)))
+      && (!previous
+        || previous.householdId !== candidate.householdId
+        || syntheticDemoFixtureProvenanceValid(previous));
+    const validSyntheticDemoReplacement = sameHousehold
+      && Boolean(previous)
+      && validSyntheticDemoCommand;
+    const validSeededDemoCommand = validDemoTableCreation || validSyntheticDemoCommand;
     if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND
       && (!sameHousehold
         || !input.actingMemberId
@@ -286,12 +311,14 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       });
     }
 
-    assertHouseholdFundTransition(previous, candidate);
+    // A validated synthetic replacement is a whole disposable fixture, not an
+    // append-only edit of its previous seed. Candidate Fund integrity still runs.
+    assertHouseholdFundTransition(validSyntheticDemoReplacement ? null : previous, candidate);
     const isOnboardingSubmissionCommand = input.commandKind === "submitOnboardingCategories"
       || input.commandKind === "submitOnboardingEstimates";
     const onboardingSubmissionStateChanged = JSON.stringify(previous?.onboardingSubmissions ?? [])
       !== JSON.stringify(candidate.onboardingSubmissions ?? []);
-    if (isOnboardingSubmissionCommand || onboardingSubmissionStateChanged) {
+    if (!validSyntheticDemoCommand && (isOnboardingSubmissionCommand || onboardingSubmissionStateChanged)) {
       assertOnboardingSubmissionTransition(previous, candidate, {
         actorMemberId: input.actingMemberId,
         commandKind: input.commandKind,
@@ -306,7 +333,8 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     }
     const onboardingCategoryMergeStateChanged = JSON.stringify(previous?.onboardingCategoryMerges ?? [])
       !== JSON.stringify(candidate.onboardingCategoryMerges ?? []);
-    if (input.commandKind === "mergeOnboardingCategories" || onboardingCategoryMergeStateChanged) {
+    if (!validSyntheticDemoCommand
+      && (input.commandKind === "mergeOnboardingCategories" || onboardingCategoryMergeStateChanged)) {
       assertOnboardingCategoryMergeTransition(previous, candidate, {
         actorMemberId: input.actingMemberId,
         commandKind: input.commandKind,
@@ -317,10 +345,8 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       || input.commandKind === "approveOnboardingReady";
     const onboardingApprovalStateChanged = JSON.stringify(previous?.onboardingApprovals ?? [])
       !== JSON.stringify(candidate.onboardingApprovals ?? []);
-    const validSyntheticDemoCreation = input.commandKind === "create-demo-suite"
-      && !previous
-      && syntheticDemoOnboardingIsValid(candidate);
-    if (isOnboardingApprovalCommand || (onboardingApprovalStateChanged && !validSyntheticDemoCreation)) {
+    if (isOnboardingApprovalCommand || (onboardingApprovalStateChanged
+      && !validSeededDemoCommand)) {
       assertOnboardingApprovalTransition(previous, candidate, {
         actorMemberId: input.actingMemberId,
         commandKind: input.commandKind,

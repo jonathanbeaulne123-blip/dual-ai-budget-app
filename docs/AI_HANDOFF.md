@@ -1,5 +1,21 @@
 # AI Task and Handoff Standard
 
+## Onboarding audit Step 1 — seeded demo approval acceptance (D-227 why-note) (2026-09-06)
+
+**Status:** Local implementation and High-risk quick proof are complete on `codex/onboarding-demo-approval-repair`, based on `origin/main@9057d7285e449816e7e4dbd81799f48959329d4c`. Release verification and the authorized single-PR workflow are in progress. Deployment remains explicitly unauthorized.
+
+**Outcome:** The welcome Demo Table now supplies an explicit `create-demo-table` command and accepts its deterministic completed two-member onboarding proof. Dedicated Demo Suite creation may begin while a different ordinary household is open. Same-seed replay, a different-seed Fresh showcase, and replacement of a pre-Slice-27 Demo Suite all cross the runtime successfully without replacing a same-id ordinary household.
+
+**Authority:** The shared seeded predicate requires Development, exactly two active members, exactly two member-distinct Ready approvals for the current synthetic digest, and every household chapter complete. Demo Suite candidates also require complete provenance. Both commands require zero posted ids; Suite work from an open household requires an active actor in both current and candidate households. Whole-suite replacement still validates candidate Household Fund integrity, full journal shape, the PGlite stage, and synchronized transport; only old-fixture append-only comparisons are inapplicable. Ordinary approvals and Final Confirm are unchanged.
+
+**Risk and Dual Course:** Risk **High**. Budget delta (5): `+2`, restoring validated demo acceptance without changing balances, ledger posting, account semantics, or Final Confirm. Engagement delta (3): `+3`, restoring immediate access to the Demo Table and Demo Suite flows.
+
+**Verification:** The final High quick gate before commit passed in 351.4 seconds at pre-evidence-update fingerprint `a8bcf08cb334620419c5e141a2f37f3685fe40b07f0c5db129b882d49659b47a`: AI-surface, TypeScript, diff hygiene, 49 fast assertions, 7 PGlite trust assertions, and all 9 isolated Demo Suite cases. Its serial phase exceeded the five-minute target by 51.4 seconds and is classified `quick-gate-passed; time-budget-breached`. The production build passed TypeScript, 482 Vite modules, and Hercules Pro UI; separate `tsc --noEmit` and `pnpm ai:verify` passed. Manual local Chromium opened the Demo Table, completed acceptance, and entered Jonathan's kitchen. The Demo Suite confirmation rendered; the credential-free build then stopped at its expected Google sign-in prerequisite. Real-runtime tests prove synchronized dedicated creation, replay, fresh replacement, continuity retention, legacy replacement, and adversarial refusals. One initial combined Vitest load timed out fetching `AddSlideshow.tsx`; the isolated mounted test then passed 2/2, classifying it as transient worker load.
+
+**Evidence class:** Local Development fixtures, real command-runtime tests, PGlite trust proof, local production build, and partial application-path browser proof. This is quick evidence, not a full suite or release proof; it is also not Windows, authenticated Google/Supabase browser journey, hosted-live, deployment, or Production proof. No schema, hosted row, secret, provider setting, Production data, or deploy changed. Detailed evidence is in [`worksessions/2026-09-06-onboarding-demo-approval-repair.md`](worksessions/2026-09-06-onboarding-demo-approval-repair.md).
+
+**Next owner:** Codex completes the authorized commit, single PR, and required-check review without deployment. A merge must stop if the `main` workflow would deploy. Jonathan separately decides whether to proceed to the attached audit's Step 2. Step 3's stronger mounted real-runtime integration test remains separate scope.
+
 ## Onboarding Slice 27 — lifecycle and re-runs (D-227) (2026-09-05)
 
 **Status:** Release candidate implementation and proof are complete on `onboarding/27-lifecycle`, based on `origin/main@e85599c135523034526661e0d381ebaa005fb7ee`. Jonathan authorized push, merge, and the Development Worker deployment; hosted-live proof remains part of the release run. Risk: **High**.

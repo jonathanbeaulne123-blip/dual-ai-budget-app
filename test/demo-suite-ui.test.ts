@@ -41,6 +41,7 @@ describe("Demo Suite paper-room placement", () => {
     expect(createFlow).not.toContain("commitHousehold(candidate");
     expect(createFlow).not.toContain("acceptHouseholdWrite({");
     expect(createFlow).not.toContain("cloud copy is still pending");
+    expect(createFlow.match(/commandKind: DEMO_SUITE_COMMAND_KIND/g)).toHaveLength(2);
     expect(createFlow).toContain("adoptAcceptedHousehold(accepted, status)");
     expect(createFlow).toContain("rememberSession({ memberId, view: \"household\", householdId: accepted.householdId })");
   });
