@@ -1,6 +1,6 @@
 # Hearth worksession — onboarding demo approval repair
 
-- **Status:** RELEASE CANDIDATE — PR #354 update in progress
+- **Status:** RELEASE CANDIDATE — PR #354 implementation checks passed; merge blocked by no-deploy boundary
 - **Opened:** 2026-09-06 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,6 +8,7 @@
 - **Branch:** `codex/onboarding-demo-approval-repair`
 - **Baseline SHA:** `9057d7285e449816e7e4dbd81799f48959329d4c`
 - **Head before this correction:** `ea9ee14e1ee24e262e64b015873abdd9b90dc195`
+- **Corrected implementation SHA:** `76ea1423e5513646a96d64f9c557fed79d9acda4`; this evidence-only closure follows
 - **PR or issue:** [#354](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/354)
 - **Risk:** High
 - **Decision owner:** Jonathan
@@ -59,7 +60,7 @@ The Development Demo Table can accept its own deterministic, already-complete on
 - [x] Explicit `approveOnboardingProposal` and `approveOnboardingReady` inputs still reach `assertOnboardingApprovalTransition` and refuse the synthetic pre-completed state with `Only you can approve for yourself.`
 - [x] The real app opens the Demo Table, accepts Jonathan, and renders Home through the browser's direct PGlite fallback.
 - [x] Final change-focused High quick gate, TypeScript, production build, and AI verification pass on the corrected tree.
-- [ ] PR #354 checks on the pushed corrected head.
+- [x] PR #354 implementation-head checks pass: `test`, `pages`, and the automatic branch-preview Workers build succeeded; Supabase Preview was skipped.
 
 ## Implementation notes
 
@@ -80,6 +81,7 @@ The Development Demo Table can accept its own deterministic, already-complete on
 - `pnpm build` passed: TypeScript, 482 Vite modules, Hercules Pro UI, and the `_redirects` refusal. Existing PGlite browser-external/eval and large-chunk notices remained non-failing warnings.
 - `pnpm ai:verify` passed separately: 48 required files, 2 Clerk fences, docs-only MCP, bounded roles, guards, and proof gate.
 - Independent read-only trust review returned PASS with no P0-P3 findings. Its separate run passed 40/40 onboarding/UI assertions plus the focused generated Suite replacement case. It retained only the disclosed worker-backed browser and hosted-auth evidence limitations.
+- PR #354 implementation head `76ea1423e5513646a96d64f9c557fed79d9acda4`: GitHub `test`, `pages`, and `Workers Builds: hearth-books` completed successfully; `Supabase Preview` was skipped. The Workers result was the provider's automatic branch preview after push, not a manual Wrangler or main deployment.
 - Earlier evidence and CI on PR #354 predate this corrected implementation and are superseded for release purposes.
 
 ## Remaining uncertainty
@@ -90,8 +92,8 @@ The Development Demo Table can accept its own deterministic, already-complete on
 
 ## Release review
 
-**CONDITIONAL.** The final local gates and independent read-only trust review pass. PR checks remain required. Merge must remain stopped because `.github/workflows/pages.yml` deploys the Development Worker after a push to `main`, while deployment is explicitly unauthorized.
+**CONDITIONAL.** The final local gates, independent read-only trust review, and implementation-head PR checks pass. Quick evidence is not release evidence, and worker-backed/Home plus hosted-auth proof remain incomplete. Merge must remain stopped because `.github/workflows/pages.yml` deploys the Development Worker after a push to `main`, while deployment is explicitly unauthorized.
 
 ## Handoff
 
-Update the single existing PR #354 after the corrected local gate passes, wait for required checks, and do not merge while the automatic main deployment conflicts with Jonathan's no-deployment boundary. No deployment, schema application, hosted-data mutation, or Production change is authorized.
+The corrected implementation is committed and pushed in the single PR #354, and its checks pass. Do not merge while the automatic main deployment conflicts with Jonathan's no-deployment boundary. No manual deployment, schema application, hosted-data mutation, or Production change occurred or is authorized.

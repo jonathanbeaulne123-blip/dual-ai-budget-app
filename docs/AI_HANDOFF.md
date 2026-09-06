@@ -2,7 +2,7 @@
 
 ## Onboarding audit Step 1 — seeded demo approval acceptance (D-227 why-note) (2026-09-06)
 
-**Status:** [PR #354](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/354) remains the single PR on `codex/onboarding-demo-approval-repair`, based on `origin/main@9057d7285e449816e7e4dbd81799f48959329d4c`. The corrected implementation, local High gate, production build, browser use, and independent review pass; commit/push and PR checks remain. Deployment is explicitly unauthorized. Release review is **CONDITIONAL**.
+**Status:** [PR #354](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/354) remains the single PR on `codex/onboarding-demo-approval-repair`, based on `origin/main@9057d7285e449816e7e4dbd81799f48959329d4c`. Corrected implementation commit `76ea1423e5513646a96d64f9c557fed79d9acda4`, the local High gate, production build, browser use, independent review, and its PR checks pass; this evidence-only closure follows. Deployment is explicitly unauthorized. Release review is **CONDITIONAL**.
 
 **Outcome:** The welcome Demo Table keeps its existing no-special-command App call and accepts its deterministic completed two-member onboarding proof on the first write. An explicit Demo Suite may create or replace its whole synthetic fixture while another household is open, including `preserveDemoShowcaseContinuity` output and a same-id ordinary predecessor. Repeated actions retain fresh confirmation ids.
 
@@ -14,7 +14,7 @@
 
 **Evidence class:** Local Development fixtures, real command-runtime tests, and application-path browser proof through direct PGlite. This is not worker-backed browser proof, exhaustive/release evidence, Windows, authenticated Google/Supabase, hosted-live, deployment, or Production proof. No money writer, journal/budget formula, schema, hosted row, Auth/RLS rule, secret, provider setting, Production data, or deploy changed. Detailed evidence is in [`worksessions/2026-09-06-onboarding-demo-approval-repair.md`](worksessions/2026-09-06-onboarding-demo-approval-repair.md).
 
-**Next owner:** Codex commits and pushes the verified correction to PR #354, then waits for its checks. Merge stays stopped because `.github/workflows/pages.yml` deploys the Development Worker on every push to `main`, conflicting with the explicit no-deployment boundary.
+**Next owner:** Jonathan decides whether to authorize the automatic Development deployment required by merge. Until then, PR #354 stays open and unmerged because `.github/workflows/pages.yml` deploys the Development Worker on every push to `main`, conflicting with the explicit no-deployment boundary.
 
 ## Onboarding Slice 27 — lifecycle and re-runs (D-227) (2026-09-05)
 
