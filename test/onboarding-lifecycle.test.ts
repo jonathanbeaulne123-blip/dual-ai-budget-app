@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   acceptedHouseholdOnboarding,
   acceptHouseholdWrite,
+  adoptAcceptedOnboardingEvidence,
+  adoptExistingOnboardingEvidence,
   approvalsFor,
   catalogHousehold,
   chapterProgressSatisfied,
@@ -10,14 +12,22 @@ import {
   copy,
   confirmHouseholdOnboarding,
   DEMO_SUITE_COMMAND_KIND,
+  evidenceFor,
+  financialAuditHash,
   householdGatesOutstanding,
+  householdChapters,
   memberProgress,
+  memberNeedsAcceptedOnboardingEvidenceAdoption,
   mergeHouseholdOnboarding,
   mergeMemberProgress,
+  newHouseholdTemplate,
   nextChapterFor,
   onboardingLifecycleState,
   onboardingRegistryMigrationPlan,
   ordinaryHerculesAvailable,
+  offerHouseholdOnboarding,
+  probeEvidenceKey,
+  proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
   recordObservedChapterCompletion,
   resumeHouseholdOnboarding,
@@ -25,9 +35,16 @@ import {
   seededOnboardingApprovalsValid,
   shouldShowOnboardingShell,
   syntheticDemoOnboardingIsValid,
+  todayKey,
   type Household,
   type HouseholdScopeObservation,
 } from "../src/core/index.ts";
+import {
+  BIANCA as FIXTURE_BIANCA,
+  existingBooksActivationAt,
+  existingBooksHousehold,
+  JONATHAN as FIXTURE_JONATHAN,
+} from "./fixtures/existing-books-onboarding.ts";
 
 const BIANCA = "MEM-001";
 const JONATHAN = "MEM-002";
@@ -58,6 +75,158 @@ function resolvedFor(
 }
 
 describe("onboarding lifecycle", () => {
+  it("adopts only accepted pre-existing evidence and keeps the four live chapters for both people", async () => {
+    const activationAt = existingBooksActivationAt();
+    const before = existingBooksHousehold(activationAt);
+    let household = offerHouseholdOnboarding(before, {
+      memberId: FIXTURE_BIANCA,
+      at: new Date(Date.parse(activationAt) - 120_000).toISOString(),
+    }).household;
+    household = proposeHouseholdOnboarding(household, {
+      memberId: FIXTURE_BIANCA,
+      at: new Date(Date.parse(activationAt) - 60_000).toISOString(),
+    }).household;
+    household = confirmHouseholdOnboarding(household, {
+      memberId: FIXTURE_JONATHAN,
+      at: activationAt,
+    }).household;
+    const financialBeforeAdoption = await financialAuditHash(household);
+    household = adoptExistingOnboardingEvidence(household, {
+      memberId: FIXTURE_BIANCA,
+      createdBy: FIXTURE_BIANCA,
+    }).household;
+    household = adoptExistingOnboardingEvidence(household, {
+      memberId: FIXTURE_JONATHAN,
+      createdBy: FIXTURE_JONATHAN,
+    }).household;
+    expect(await financialAuditHash(household)).toBe(financialBeforeAdoption);
+    expect(acceptedHouseholdOnboarding(household)).toMatchObject({
+      state: "active",
+      completedAt: null,
+      completionDigest: null,
+    });
+    const adoptedChapterIds = [
+      "ch-03-charter",
+      "ch-04-accounts",
+      "ch-05-opening",
+      "ch-06-fund",
+      "ch-07-recurrences",
+      "ch-09-categories",
+      "ch-10-estimates",
+      "ch-11-plan",
+    ];
+    const liveChapterIds = ["ch-01-meet", "ch-02-household", "ch-08-cadence", "ch-12-ready"];
+
+    for (const memberId of [FIXTURE_BIANCA, FIXTURE_JONATHAN]) {
+      expect(memberNeedsAcceptedOnboardingEvidenceAdoption(household, memberId)).toBe(false);
+      const rows = new Map(memberProgress(household, memberId).rows.map((row) => [row.chapterId, row]));
+      for (const chapterId of adoptedChapterIds) {
+        const projected = evidenceFor(before, chapterId, memberId, {
+          today: todayKey(new Date(activationAt), before.timezone),
+        });
+        expect(projected.kind).toBe("accepted");
+        if (projected.kind !== "accepted") throw new Error(`Expected ${chapterId} evidence.`);
+        expect(rows.get(chapterId)).toMatchObject({
+          observedCompleteAt: projected.card.observedAt,
+          probeEvidenceKey: probeEvidenceKey(projected.card),
+          acknowledgedAt: null,
+        });
+      }
+      for (const chapterId of liveChapterIds) {
+        expect(rows.get(chapterId)).toMatchObject({
+          observedCompleteAt: null,
+          probeEvidenceKey: null,
+          acknowledgedAt: null,
+        });
+      }
+
+      expect(nextChapterFor(household, memberId, todayKey(new Date(activationAt), household.timezone))?.id).toBe("ch-01-meet");
+      let walking = recordChapterAcknowledgement(household, {
+        memberId, createdBy: memberId, chapterId: "ch-01-meet", at: new Date(Date.parse(activationAt) + 60_000).toISOString(),
+      }).household;
+      expect(nextChapterFor(walking, memberId, todayKey(new Date(activationAt), walking.timezone))?.id).toBe("ch-02-household");
+      walking = recordObservedChapterCompletion(walking, {
+        memberId,
+        createdBy: memberId,
+        chapterId: "ch-02-household",
+        observation: resolvedFor(walking, memberId, memberId === FIXTURE_BIANCA ? FIXTURE_JONATHAN : FIXTURE_BIANCA),
+        at: new Date(Date.parse(activationAt) + 120_000).toISOString(),
+      }).household;
+      expect(nextChapterFor(walking, memberId, todayKey(new Date(activationAt), walking.timezone))?.id).toBe("ch-08-cadence");
+    }
+  });
+
+  it("leaves a genuinely empty new household on the complete twelve-chapter path", () => {
+    const activationAt = existingBooksActivationAt();
+    let household = newHouseholdTemplate("development");
+    household = proposeHouseholdOnboarding(household, {
+      memberId: BIANCA,
+      at: new Date(Date.parse(activationAt) - 60_000).toISOString(),
+    }).household;
+    household = confirmHouseholdOnboarding(household, { memberId: JONATHAN, at: activationAt }).household;
+    const progress = adoptAcceptedOnboardingEvidence(household, BIANCA);
+    expect(progress.rows.filter(chapterProgressSatisfied)).toEqual([]);
+
+    for (const [index, chapter] of householdChapters().entries()) {
+      const walked = {
+        ...household,
+        members: household.members.map((member) => member.id === BIANCA
+          ? {
+              ...member,
+              onboardingProgress: {
+                ...progress,
+                rows: progress.rows.map((row) => ({
+                  ...row,
+                  acknowledgedAt: householdChapters().slice(0, index).some((prior) => prior.id === row.chapterId)
+                    ? activationAt
+                    : null,
+                })),
+              },
+            }
+          : member),
+      };
+      expect(nextChapterFor(walked, BIANCA, todayKey(new Date(activationAt), walked.timezone))?.id).toBe(chapter.id);
+    }
+  });
+
+  it("adopts a signed Charter but leaves missing recurrences to the live Chapter 7", () => {
+    const activationAt = existingBooksActivationAt();
+    let household = existingBooksHousehold(activationAt);
+    household.recurrences = [];
+    household = proposeHouseholdOnboarding(household, {
+      memberId: BIANCA,
+      at: new Date(Date.parse(activationAt) - 60_000).toISOString(),
+    }).household;
+    household = confirmHouseholdOnboarding(household, { memberId: JONATHAN, at: activationAt }).household;
+    const progress = adoptAcceptedOnboardingEvidence(household, BIANCA);
+    const rows = new Map(progress.rows.map((row) => [row.chapterId, row]));
+    expect(rows.get("ch-03-charter")?.observedCompleteAt).toBeTruthy();
+    expect(rows.get("ch-07-recurrences")).toMatchObject({ observedCompleteAt: null, probeEvidenceKey: null });
+  });
+
+  it("does not adopt evidence created after this setup run became active", () => {
+    const activationAt = existingBooksActivationAt();
+    const legacy = existingBooksHousehold(activationAt);
+    const futureAt = new Date(Date.parse(activationAt) + 60_000).toISOString();
+    let household: Household = { ...legacy, recurrences: [] };
+    household = proposeHouseholdOnboarding(household, {
+      memberId: BIANCA,
+      at: new Date(Date.parse(activationAt) - 60_000).toISOString(),
+    }).household;
+    household = confirmHouseholdOnboarding(household, { memberId: JONATHAN, at: activationAt }).household;
+    household = {
+      ...household,
+      recurrences: legacy.recurrences.map((row) => ({ ...row, createdAt: futureAt, updatedAt: futureAt })),
+    };
+
+    const progress = adoptAcceptedOnboardingEvidence(household, BIANCA);
+    expect(progress.rows.find((row) => row.chapterId === "ch-07-recurrences")).toMatchObject({
+      observedCompleteAt: null,
+      probeEvidenceKey: null,
+      acknowledgedAt: null,
+    });
+  });
+
   it("keeps a completed household complete when its Charter changes", () => {
     const household = completed();
     household.charter = undefined;

@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Existing-books guided onboarding adoption (D-228) (2026-09-06)
+
+**Status:** [PR #355](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/355) is the single release-candidate PR on `codex/onboarding-existing-books-adoption`, based on `origin/main@d26f1254007e009a390c28c7f8aca6ecb920e58d`. Implementation commit `a7626d6fa1ea292487a058b1ebbf047a95b1748e`; this evidence/status closure follows. Checks are pending. Nothing is merged, manually deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** Every household whose accepted onboarding mode is absent or inactive can receive guided setup after its local books validate. Once both people activate the run, each member's own device adopts only accepted canonical evidence that predates activation, recording exact observation/key proof without acknowledgement or completion. Chapters 1, 2, 8, and 12 remain live. Home and More share one rehearsal access component and both explain the lock until real setup completion.
+
+**Risk and Dual Course:** Risk **High**. Budget delta (5): `+3`, restoring a path from existing accepted books through setup to the D-183 rehearsal without changing financial meaning or Final Confirm. Engagement delta (3): `+2`, removing needless re-entry and making the setup/rehearsal path visible in both contexts.
+
+**Verification:** Final focused lifecycle/entry/rehearsal run passes 24/24 and the mandated startup lane passes 26/26. The High quick gate passes in 107.401 seconds at fingerprint `c7a96af653e4d3f5209f17b34470d0ef50c4da812a809e88dea22ceddf165f88`: 80 fast and 33 serial assertions across eight selected files, including `test/onboarding-entry-integration.test.ts` and `test/app-startup-p1.test.ts`. `pnpm exec tsc --noEmit`, `pnpm build` (483 Vite modules plus Hercules Pro UI), and `pnpm ai:verify` pass. The host has no `npx`, so the equivalent `pnpm exec tsc` spelling was used. Local Chromium on the existing Development household showed exactly one `Start together` action and one locked rehearsal explanation after journal validation; at 390×844 it had no horizontal overflow, keyboard Tab reached the action, and the console had no errors.
+
+**Evidence class:** Local synthetic fixtures, core commands, mounted App/component tests, and application-path Chromium. Browser use persisted only the intended offer metadata to the existing local Development household. This is not exhaustive/release, authenticated two-device, hosted-live, deployment, or Production-data proof. No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, push, merge, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-existing-books-adoption.md`](worksessions/2026-09-06-onboarding-existing-books-adoption.md).
+
+**Next owner:** Codex waits for PR #355's required checks and merges only the unchanged reviewed head under Jonathan's explicit instruction. No manual deployment is authorized.
+
 ## Onboarding audit Step 1 — seeded demo approval acceptance (D-227 why-note) (2026-09-06)
 
 **Status:** [PR #354](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/354) remains the single PR on `codex/onboarding-demo-approval-repair`, based on `origin/main@9057d7285e449816e7e4dbd81799f48959329d4c`. Corrected implementation commit `76ea1423e5513646a96d64f9c557fed79d9acda4`, the local High gate, production build, browser use, independent review, and its PR checks pass; this evidence-only closure follows. Deployment is explicitly unauthorized. Release review is **CONDITIONAL**.

@@ -21,9 +21,10 @@ import {
   ledgerNameForView,
   ledgerRouteContract,
   kitchenPrimaryNav,
-  householdNeedsCharterFounding,
+  adoptExistingOnboardingEvidence,
   offerHouseholdOnboarding,
   acceptedHouseholdOnboarding,
+  memberNeedsAcceptedOnboardingEvidenceAdoption,
   copy,
   nextChapterFor,
   showsLedgerPurposeBanner,
@@ -416,7 +417,7 @@ import { defaultSubcategoryForMode } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
-import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx";
+import { MonthRehearsalAccess } from "./MonthRehearsalAccess.tsx";
 import { Swipe } from "./Swipe.tsx";
 import { Till, TILL_COPY, TILL_DESK_HASH, TILL_HOME_HASH } from "./Till.tsx";
 import "./swipe.css";
@@ -2922,25 +2923,33 @@ export function App() {
   useEffect(() => {
     if (tab === "till" && view !== "household") setTab("home");
   }, [tab, view]);
-  // Onboarding slice 10: the D-129 auto-start this superseded ("automatic
-  // start after Home renders") used to drop an empty household straight
-  // into Charter founding — no invitation, no explanation, no partner. The
-  // predicate stays exactly as it was; only its consumer changes. An empty
-  // household is now offered the household onboarding track instead
-  // (HEARTH_ONBOARDING_BUILD_MANUAL.md Appendix B.2). offerHouseholdOnboarding
-  // is a safe no-op once the record exists and is no longer "inactive" (see
-  // its own implementation in core/commands.ts), but the explicit prior-state
-  // guard below keeps this effect from re-committing an identical write on
-  // every household reference change once the household has already been
-  // offered — the effect fires many times over a session; the commit must
-  // fire at most once.
+  // Guided setup is available to every household, including books created
+  // before onboarding existed. offerHouseholdOnboarding is itself idempotent,
+  // and this accepted-state guard prevents this frequently re-fired effect
+  // from committing the same offer more than once.
   useEffect(() => {
-    if (!household || view !== "household") return;
-    if (!householdNeedsCharterFounding(household)) return;
+    if (!household || !memberId || view !== "household" || !activeBooksGate.ready) return;
     const priorOnboarding = acceptedHouseholdOnboarding(household);
     if (priorOnboarding && priorOnboarding.state !== "inactive") return;
-    void run((current) => offerHouseholdOnboarding(current, { memberId }));
-  }, [household, view]);
+    void run(
+      (current) => offerHouseholdOnboarding(current, { memberId }),
+      { closeAdd: false },
+    );
+  }, [household, memberId, view, activeBooksGate.ready]);
+  // Each member adopts only their own Personal progress, on their own device.
+  // The lifecycle projector considers accepted evidence that predates this
+  // run's start, so later setup work still needs its ordinary live chapter.
+  useEffect(() => {
+    if (!household || !memberId || view !== "household" || !activeBooksGate.ready) return;
+    if (!memberNeedsAcceptedOnboardingEvidenceAdoption(household, memberId)) return;
+    void run(
+      (current) => adoptExistingOnboardingEvidence(current, {
+        memberId,
+        createdBy: memberId,
+      }),
+      { closeAdd: false },
+    );
+  }, [household, memberId, view, activeBooksGate.ready]);
   const charterFoundingVisible = Boolean(household && session && view === "household" && charterFoundingOpen);
   const charterPageVisible = Boolean(household && session && view === "household" && charterPageOpen && household.charter);
   const charterTakeoverVisible = charterFoundingVisible || charterPageVisible;
@@ -5883,8 +5892,8 @@ export function App() {
             </section>
           );
         })()}
-        {view === "household" && onboardingInviteRecord?.state === "complete" ? (
-          <MonthRehearsalPanel
+        {view === "household" ? (
+          <MonthRehearsalAccess
             household={household}
             memberId={session.memberId}
             today={today}
@@ -6212,8 +6221,8 @@ export function App() {
               </button>
             </section>
           ) : null}
-          {view === "household" && onboardingInviteRecord?.state === "complete" ? (
-            <MonthRehearsalPanel
+          {view === "household" ? (
+            <MonthRehearsalAccess
               household={household}
               memberId={session.memberId}
               today={today}
@@ -6221,14 +6230,6 @@ export function App() {
               onApply={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
               onOpenTask={openMonthRehearsalTask}
             />
-          ) : null}
-          {view === "household" && onboardingInviteRecord?.state !== "complete" ? (
-            <section className="card" aria-labelledby="rehearsal-locked-title">
-              <header><h2 id="rehearsal-locked-title">Four-week household rehearsal</h2></header>
-              <p className="muted">
-                This is a later Development reliability exercise, not household setup. It becomes available after both people finish guided setup.
-              </p>
-            </section>
           ) : null}
           {view === "household" && environment === "development" ? (
             <GuidedSetupPreview household={household} />

@@ -2,7 +2,7 @@ import { todayKey } from "../calendar.ts";
 import type { Household } from "../types.ts";
 import { adoptionSha256 } from "./adoption.ts";
 import { approvalsFor, bothApproved } from "./approvals.ts";
-import { evidenceFor } from "./evidence.ts";
+import { evidenceFor, probeEvidenceKey } from "./evidence.ts";
 import { acceptedHouseholdOnboarding, onboardingRecordId, type OnboardingModeState } from "./mode.ts";
 import {
   emptyMemberOnboardingProgress,
@@ -12,6 +12,8 @@ import {
   type MemberOnboardingProgress,
 } from "./progress.ts";
 import { ONBOARDING_REGISTRY, ONBOARDING_REGISTRY_VERSION, householdChapters } from "./registry.ts";
+import { READY_CHAPTER_ID } from "./ready.ts";
+import type { ChapterId } from "./types.ts";
 
 export { NEW_MEMBER_CATCH_UP_CHAPTER_IDS };
 
@@ -42,6 +44,70 @@ export function reprobeMemberOnboardingProgress(
     }),
     updatedAt: at,
   };
+}
+
+const LIVE_ONBOARDING_CHAPTER_IDS = new Set<ChapterId>([
+  ...NEW_MEMBER_CATCH_UP_CHAPTER_IDS,
+  READY_CHAPTER_ID,
+]);
+
+function acceptedEvidenceAvailableAtActivation(
+  household: Household,
+  memberId: string,
+): Map<ChapterId, { observedCompleteAt: string; probeEvidenceKey: string }> {
+  const onboarding = acceptedHouseholdOnboarding(household);
+  if (onboarding?.state !== "active" || !onboarding.startedAt) return new Map();
+  const today = todayKey(new Date(onboarding.startedAt), household.timezone);
+  const accepted = new Map<ChapterId, { observedCompleteAt: string; probeEvidenceKey: string }>();
+  for (const chapter of householdChapters()) {
+    if (LIVE_ONBOARDING_CHAPTER_IDS.has(chapter.id)) continue;
+    const projected = evidenceFor(household, chapter.id, memberId, { today });
+    if (
+      projected.kind !== "accepted"
+      || Date.parse(projected.card.observedAt) > Date.parse(onboarding.startedAt)
+    ) continue;
+    accepted.set(chapter.id, {
+      observedCompleteAt: projected.card.observedAt,
+      probeEvidenceKey: probeEvidenceKey(projected.card),
+    });
+  }
+  return accepted;
+}
+
+/**
+ * Adopt only canonical evidence that was already accepted when this setup run
+ * became active. The four live chapters stay untouched, and acknowledgement
+ * remains exclusively the person's own action.
+ */
+export function adoptAcceptedOnboardingEvidence(
+  household: Household,
+  memberId: string,
+): MemberOnboardingProgress {
+  const progress = memberProgress(household, memberId);
+  const accepted = acceptedEvidenceAvailableAtActivation(household, memberId);
+  if (accepted.size === 0) return progress;
+  const startedAt = acceptedHouseholdOnboarding(household)?.startedAt ?? progress.updatedAt;
+  return {
+    ...progress,
+    rows: progress.rows.map((row) => {
+      const evidence = accepted.get(row.chapterId);
+      return evidence ? { ...row, ...evidence } : row;
+    }),
+    updatedAt: progress.updatedAt > startedAt ? progress.updatedAt : startedAt,
+  };
+}
+
+export function memberNeedsAcceptedOnboardingEvidenceAdoption(
+  household: Household,
+  memberId: string,
+): boolean {
+  const progress = memberProgress(household, memberId);
+  const rows = new Map(progress.rows.map((row) => [row.chapterId, row]));
+  return [...acceptedEvidenceAvailableAtActivation(household, memberId)].some(([chapterId, evidence]) => {
+    const row = rows.get(chapterId);
+    return row?.observedCompleteAt !== evidence.observedCompleteAt
+      || row.probeEvidenceKey !== evidence.probeEvidenceKey;
+  });
 }
 
 export type OnboardingRegistryMigrationPlan =
