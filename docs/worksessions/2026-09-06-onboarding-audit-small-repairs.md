@@ -1,6 +1,6 @@
 # Hearth worksession — onboarding audit small repairs
 
-- **Status:** LOCAL VERIFIED CANDIDATE — handoff ready
+- **Status:** PR #360 RELEASE CANDIDATE — checks pending
 - **Opened:** 2026-09-06 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -8,7 +8,7 @@
 - **Branch:** `codex/onboarding-audit-small-repairs`
 - **Baseline SHA:** `954c484d5f804d3e69436093df0277fb244baec7`
 - **Risk:** Medium
-- **Environment impact:** Application code and local synthetic Development/browser evidence only; no hosted or Production state
+- **Environment impact:** Application code plus an authorized Development deployment after merge; no hosted household row or Production state
 
 ## Household outcome
 
@@ -68,7 +68,7 @@ At every width, `prefers-reduced-motion: reduce` matched, `Meet Hercules` and `P
 - No second Start button, desktop conductor, or chapter surface: the existing invitation and Hercules shell already form the live path.
 - No category removal, rename, activation change, or plan mutation: Jonathan chose copy-level starter-set curation.
 - No change to strict `memberProgress` behavior for invalid actors; only render callers degrade.
-- No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS, provider/model call, secret, Production setting/data, Worker, push, merge, or deployment.
+- No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS, provider/model call, secret, Production setting/data, or Worker implementation.
 
 ## Remaining uncertainty
 
@@ -78,4 +78,6 @@ At every width, `prefers-reduced-motion: reduce` matched, `Meet Hercules` and `P
 
 ## Handoff
 
-The local verified candidate contains all five supplied repairs/decisions in one branch. It is deliberately uncommitted and unpushed because this task did not authorize commit, PR, merge, or deployment. Jonathan's next action is to review the diff and, if desired, authorize the single-PR release workflow. Deployment remains separately prohibited.
+[PR #360](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/360) contains all five supplied repairs/decisions in one branch. Implementation commit `79907a6206698d8a2eaae7c21a42993f5d282795` is locally verified; this evidence/status closure follows on the same PR. Jonathan authorized merge and Development deployment on 2026-09-06. Codex's next action is to wait for the exact PR head's required checks, merge only if they pass without unresolved review blockers, and verify the resulting no-store Development bundle. Production remains untouched.
+
+Claude's independent-review map and paste-ready prompt are in [`CLAUDE_ONBOARDING_AUDIT_SMALL_REPAIRS_REVIEW.md`](../CLAUDE_ONBOARDING_AUDIT_SMALL_REPAIRS_REVIEW.md).
