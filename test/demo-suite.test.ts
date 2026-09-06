@@ -112,11 +112,27 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(replayed.kind).toBe("synchronized");
     if (!replayed.ok) throw new Error(replayed.userMessage ?? "Demo Suite replay failed");
 
+    const editedReplay = { ...replayed.household, name: "Edited synthetic demo" };
+    const replayedAgainCandidate = preserveDemoShowcaseContinuity(editedReplay, generated.household);
+    const replayedAgain = await acceptHouseholdWrite({
+      previous: editedReplay,
+      candidate: replayedAgainCandidate,
+      confirmationId: "CONFIRM-DEMO-REPLAY-AGAIN",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      adapters,
+    });
+    expect(replayedAgain.ok).toBe(true);
+    if (!replayedAgain.ok) throw new Error(replayedAgain.userMessage ?? "Repeated Demo Suite replay failed");
+    expect(replayedAgain.household.name).toBe(generated.household.name);
+    expect(replayedAgain.household.revision).toBeGreaterThan(replayed.household.revision);
+
     const fresh = await generateDemoSuite({ today: TODAY, seed: 616162, buildSha: "demo-boundary" });
     await yieldToRunner();
-    const replacement = preserveDemoShowcaseContinuity(replayed.household, fresh.household);
+    const replacement = preserveDemoShowcaseContinuity(replayedAgain.household, fresh.household);
     const replaced = await acceptHouseholdWrite({
-      previous: replayed.household,
+      previous: replayedAgain.household,
       candidate: replacement,
       confirmationId: "CONFIRM-DEMO-FRESH",
       commandKind: DEMO_SUITE_COMMAND_KIND,

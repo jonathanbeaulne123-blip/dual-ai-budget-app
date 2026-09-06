@@ -3251,7 +3251,7 @@ export function App() {
     let accepted: Household;
     if (current.syntheticFixture?.kind === "hearth-demo-suite") {
       candidate = preserveDemoShowcaseContinuity(current, candidate);
-      const confirmationId = `demo-suite-replace-${candidate.householdId}-${seed}`;
+      const confirmationId = newConfirmationId();
       const outcome = await persist(candidate, {
         id: confirmationId,
         label: "Replace Demo Suite",
@@ -3274,7 +3274,7 @@ export function App() {
         displayName: authSession?.displayName ?? (googleSession ? googleSession.identity.displayName : currentLink?.displayName) ?? "",
         grantedScopes: googleSession?.grantedScopes ?? currentLink?.grantedScopes ?? ["openid", "email", "profile"],
       }).household;
-      const confirmationId = `demo-suite-${candidate.householdId}-${seed}`;
+      const confirmationId = newConfirmationId();
       const outcome = await persist(candidate, {
         id: confirmationId,
         label: "Create Demo Suite",

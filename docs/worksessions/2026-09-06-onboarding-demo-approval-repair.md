@@ -75,11 +75,13 @@ The Demo Table and both Demo Suite create/replace paths accept only their determ
 - Focused `test/onboarding-lifecycle.test.ts`, `test/demo-suite-ui.test.ts`, and `test/app-swift-demo-entry.test.ts` passed. The mounted test's first combined run hit a worker fetch timeout for `AddSlideshow.tsx`; its isolated rerun passed 2/2.
 - The isolated new Demo Suite runtime case passed dedicated synchronized creation, same-seed replay, different-seed replacement, legacy-suite replacement, continuity retention, and denial cases in 21.3 seconds on its final focused run.
 - `tsc --noEmit` passed.
-- Final High quick gate before commit: `quick-gate-passed; time-budget-breached`, base/head `9057d7285e449816e7e4dbd81799f48959329d4c`, pre-evidence-update fingerprint `a8bcf08cb334620419c5e141a2f37f3685fe40b07f0c5db129b882d49659b47a`, 351.4 seconds, 49 fast assertions, 7 PGlite assertions, and all 9 isolated Demo Suite cases. The soft five-minute budget was exceeded by 51.4 seconds while the serial Demo Suite phase completed successfully.
-- Production build passed: TypeScript, 482 Vite modules, and Hercules Pro UI. Existing PGlite browser-externalization/eval and large-chunk warnings remained warnings.
+- Initial pre-review High quick gate: `quick-gate-passed; time-budget-breached`, base/head `9057d7285e449816e7e4dbd81799f48959329d4c`, pre-evidence-update fingerprint `a8bcf08cb334620419c5e141a2f37f3685fe40b07f0c5db129b882d49659b47a`, 351.4 seconds, 49 fast assertions, 7 PGlite assertions, and all 9 isolated Demo Suite cases.
+- Final P2-repair High quick gate: `quick-gate-passed; time-budget-breached`, base `9057d7285e449816e7e4dbd81799f48959329d4c`, pre-repair-commit head `a466c2d264ff1a4894a7be8c6096e64932d01f70`, fingerprint `527a23316f95a7d52a6caf39ccbfd202281222468e531fbdd09931dd53368852`, 378.1 seconds, 49 fast assertions, 7 PGlite assertions, and all 9 isolated Demo Suite cases. The soft five-minute budget was exceeded by 78.1 seconds while the serial Demo Suite phase completed successfully.
+- Production build passed before commit and passed again after the P2 repair: TypeScript, 482 Vite modules, and Hercules Pro UI. Existing PGlite browser-externalization/eval and large-chunk warnings remained warnings.
 - Separate `tsc --noEmit`, `pnpm ai:verify`, and `git diff --check` passed after the production build.
 - Local Chromium at `http://127.0.0.1:4317/` opened the Demo Table, entered as Jonathan, and rendered the normal kitchen. The Demo Suite guard rendered its generated-seed disclosure and `Generate & verify`; continuing stopped at the expected Google sign-in prerequisite because the local build has no credentials.
 - A read-only authority review found no remaining Step 1 code defect. It retained one later test-quality recommendation: replace the mounted app's fabricated acceptance result with a real-runtime wrapper in the attached audit's Step 3 scope.
+- PR review found one P2: deterministic same-seed replay confirmation ids could resolve to an earlier receipt and leave post-replay edits in place. The repair allocates a fresh id per user action, retains it through that action's internal retry, and adds source-wiring plus repeated-replay regression proof.
 
 ## Decisions
 
@@ -95,7 +97,7 @@ The Demo Table and both Demo Suite create/replace paths accept only their determ
 
 ## Release review
 
-**CONDITIONAL.** The complete Step 1 diff, targeted authority paths, financial boundaries, environment separation, private-artifact scope, browser evidence, production build, TypeScript, AI surface, and High quick gate pass. Quick evidence cannot establish release readiness, and authenticated Google/Supabase application proof remains absent. PR checks evaluate the exact final head. Merging is additionally blocked by the explicit no-deployment boundary because `.github/workflows/pages.yml` runs `wrangler deploy` for every push to `main`.
+**CONDITIONAL.** The complete Step 1 diff, targeted authority paths, financial boundaries, environment separation, private-artifact scope, browser evidence, repeated production build, TypeScript, AI surface, and final P2-repair High quick gate pass. Quick evidence cannot establish release readiness, and authenticated Google/Supabase application proof remains absent. PR checks must re-evaluate the repaired final head. Merging is additionally blocked by the explicit no-deployment boundary because `.github/workflows/pages.yml` runs `wrangler deploy` for every push to `main`.
 
 ## Handoff
 
