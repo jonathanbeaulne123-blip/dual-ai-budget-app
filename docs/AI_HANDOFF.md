@@ -2,7 +2,7 @@
 
 ## Existing-books guided onboarding adoption (D-228) (2026-09-06)
 
-**Status:** Local verified implementation on `codex/onboarding-existing-books-adoption`, based on `origin/main@d26f1254007e009a390c28c7f8aca6ecb920e58d`. Nothing is committed, pushed, merged, deployed, or hosted-live verified. Risk: **High**.
+**Status:** [PR #355](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/355) is the single release-candidate PR on `codex/onboarding-existing-books-adoption`, based on `origin/main@d26f1254007e009a390c28c7f8aca6ecb920e58d`. Implementation commit `a7626d6fa1ea292487a058b1ebbf047a95b1748e`; this evidence/status closure follows. Checks are pending. Nothing is merged, manually deployed, or hosted-live verified. Risk: **High**.
 
 **Outcome:** Every household whose accepted onboarding mode is absent or inactive can receive guided setup after its local books validate. Once both people activate the run, each member's own device adopts only accepted canonical evidence that predates activation, recording exact observation/key proof without acknowledgement or completion. Chapters 1, 2, 8, and 12 remain live. Home and More share one rehearsal access component and both explain the lock until real setup completion.
 
@@ -12,7 +12,7 @@
 
 **Evidence class:** Local synthetic fixtures, core commands, mounted App/component tests, and application-path Chromium. Browser use persisted only the intended offer metadata to the existing local Development household. This is not exhaustive/release, authenticated two-device, hosted-live, deployment, or Production-data proof. No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, push, merge, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-existing-books-adoption.md`](worksessions/2026-09-06-onboarding-existing-books-adoption.md).
 
-**Next owner:** Jonathan reviews the local verified diff and decides whether to authorize commit/push/PR/merge; deployment remains separately unauthorized.
+**Next owner:** Codex waits for PR #355's required checks and merges only the unchanged reviewed head under Jonathan's explicit instruction. No manual deployment is authorized.
 
 ## Onboarding audit Step 1 — seeded demo approval acceptance (D-227 why-note) (2026-09-06)
 

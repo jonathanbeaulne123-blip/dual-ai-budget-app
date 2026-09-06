@@ -1,14 +1,14 @@
 # Hearth worksession — existing-books onboarding adoption
 
-- **Status:** LOCAL VERIFIED — ready for review; not pushed
+- **Status:** RELEASE CANDIDATE — PR #355 open; checks pending
 - **Opened:** 2026-09-06 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `codex/onboarding-existing-books-adoption`
 - **Baseline SHA:** `d26f1254007e009a390c28c7f8aca6ecb920e58d`
-- **Head SHA:** uncommitted working tree
-- **PR or issue:** none
+- **Implementation SHA:** `a7626d6fa1ea292487a058b1ebbf047a95b1748e`; this evidence/status closure follows
+- **PR or issue:** [#355](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/355)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development and Production application code; local Development offer metadata exercised; no hosted or Production data/settings touched
@@ -71,7 +71,7 @@ Pre-onboarding households with accepted books receive the same guided-setup invi
 - Final focused lifecycle, entry, rehearsal UI, and rehearsal mainline run: 24/24 passed, including evidence cutoff, exact keys, empty and rich chapter order, financial hash stability, real completion, and both gate surfaces.
 - `test/app-startup-p1.test.ts`: 26/26 passed after automatic offer commits were made non-disruptive to an open Add flow and an unrelated schema-repair fixture received a real offered record for async isolation.
 - `test/month-rehearsal-mainline.test.ts`, invitation, progress, and evidence suites passed in the adjacent run.
-- High quick gate passed in 107.401 seconds, within its 300-second budget, at fingerprint `c7a96af653e4d3f5209f17b34470d0ef50c4da812a809e88dea22ceddf165f88`: diff/AI-surface/TypeScript passed, then 80/80 fast and 33/33 serial assertions across eight selected files. The working tree was deliberately uncommitted (`clean=false`); quick-gate evidence is not release evidence.
+- High quick gate passed in 107.401 seconds, within its 300-second budget, at fingerprint `c7a96af653e4d3f5209f17b34470d0ef50c4da812a809e88dea22ceddf165f88`: diff/AI-surface/TypeScript passed, then 80/80 fast and 33/33 serial assertions across eight selected files. The gate preceded implementation commit `a7626d6` and this evidence/status closure; quick-gate evidence is not release evidence.
 - `pnpm exec tsc --noEmit` passed separately. The bundled runtime has no `npx` executable, so the equivalent repository command was used and the quick gate/build independently reran TypeScript.
 - `pnpm build` passed with 483 Vite modules plus Hercules Pro UI. Existing PGlite browser externalization/eval and large-chunk messages remained non-failing warnings.
 - `pnpm ai:verify` passed: 48 required files, 2 Clerk fences, docs-only MCP, bounded roles, guards, and proof gate.
@@ -92,4 +92,4 @@ Pre-onboarding households with accepted books receive the same guided-setup invi
 
 ## Handoff
 
-Local implementation and required verification are complete. Jonathan decides whether to authorize commit/push/PR/merge. Deployment is not authorized and has not been touched.
+Implementation commit `a7626d6` is pushed in the single PR #355. Jonathan authorized push and merge; wait for required checks and merge only the unchanged reviewed head. No manual deployment, schema application, hosted-data mutation, or Production change is authorized or performed.
