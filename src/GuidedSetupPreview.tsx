@@ -39,6 +39,10 @@ function destinationLabel(chapter: OnboardingChapter): string {
   return names[chapter.target.tab] ?? chapter.target.tab;
 }
 
+function chapterTitle(chapter: OnboardingChapter): string {
+  return copy(`ready.chapter.${String(chapter.order).padStart(2, "0")}`);
+}
+
 /**
  * A Development-only, read-only gallery of the shipped conductor copy.
  * It never receives onCommit and cannot touch the accepted household.
@@ -73,7 +77,8 @@ export function GuidedSetupPreview({ household }: { household: Household }) {
                 aria-current={chapterIndex === index ? "step" : undefined}
                 onClick={() => setIndex(chapterIndex)}
               >
-                <span>{row.order}</span>
+                <span className="guided-preview__chapter-order">{row.order}</span>
+                <strong>{chapterTitle(row)}</strong>
                 <small>Sitting {row.sitting}</small>
               </button>
             ))}
@@ -104,11 +109,11 @@ export function GuidedSetupPreview({ household }: { household: Household }) {
               <p className="onboarding-card-provenance">Opens: {destinationLabel(chapter)}</p>
             </section>
             <div className="onboarding-actions guided-preview__sample-action">
-              <button type="button" disabled aria-describedby="guided-preview-action-help">
+              <button type="button" disabled>
                 {copy(ACTION_COPY[chapter.id] ?? "continue.next")}
               </button>
             </div>
-            <p id="guided-preview-action-help" className="guided-preview__action-help">
+            <p className="guided-preview__action-help">
               Sample only — the live guide enables this when the chapter is active.
             </p>
           </div>

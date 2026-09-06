@@ -1,4 +1,3 @@
-import type { DateKey } from "../calendar.ts";
 import type { Environment, Household } from "../types.ts";
 import { ValidationError } from "../types.ts";
 import {
@@ -287,8 +286,7 @@ function nextEligible(
   return null;
 }
 
-export function nextChapterFor(household: Household, memberId: string, today: DateKey): OnboardingChapter | null {
-  void today;
+export function nextChapterFor(household: Household, memberId: string): OnboardingChapter | null {
   const progress = memberProgress(household, memberId);
   if (acceptedHouseholdOnboarding(household)?.forcedUnlock) {
     return nextEligible(personalModules(), progress);

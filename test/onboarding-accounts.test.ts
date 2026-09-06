@@ -130,7 +130,7 @@ describe("onboarding Slice 13 — Chapter 4 accounts", () => {
     household = recordChapterAcknowledgement(household, {
       memberId: BIANCA, chapterId: "ch-04-accounts", createdBy: BIANCA,
     }).household;
-    expect(nextChapterFor(household, BIANCA, TODAY)?.id).toBe("ch-05-opening");
+    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-05-opening");
   });
 
   it("keeps the Fund-card preference self-owned, Personal-only, and convergent", () => {
@@ -182,7 +182,7 @@ describe("onboarding Slice 13 — Chapter 4 accounts", () => {
     expect(ownRow?.skippedAt).toBeNull();
     expect(partnerRow?.personalAccountSetupSkippedAt).toBeNull();
     expect(skipped.household.accounts).toEqual(beforeAccounts);
-    expect(nextChapterFor(skipped.household, BIANCA, TODAY)?.id).toBe("ch-04-accounts");
+    expect(nextChapterFor(skipped.household, BIANCA)?.id).toBe("ch-04-accounts");
     expect(skipped.persistenceScope).toBe("member-personal");
   });
 

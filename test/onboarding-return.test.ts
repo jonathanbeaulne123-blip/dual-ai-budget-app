@@ -113,7 +113,7 @@ function recordFor(household: Household, memberId: string, chapterId: string, ta
 describe("onboardingNavigationTarget", () => {
   it("offers the conductor a target when the chapter's registry row lists navigate", () => {
     const household = throughSittingOne();
-    expect(onboardingNavigationTarget(household, BIANCA, TODAY)).toEqual({
+    expect(onboardingNavigationTarget(household, BIANCA)).toEqual({
       chapterId: "ch-04-accounts",
       target: { tab: "ledger" },
     });
@@ -121,13 +121,13 @@ describe("onboardingNavigationTarget", () => {
 
   it("never offers the witness a control that would write the conductor's state", () => {
     const household = throughSittingOne();
-    expect(onboardingNavigationTarget(household, JONATHAN, TODAY)).toBeNull();
+    expect(onboardingNavigationTarget(household, JONATHAN)).toBeNull();
   });
 
   it("returns null for a chapter whose target is null (ch-01-meet: no navigate action)", () => {
     const household = proposedActive();
-    expect(onboardingNavigationTarget(household, BIANCA, TODAY)).toBeNull();
-    expect(onboardingNavigationTarget(household, JONATHAN, TODAY)).toBeNull();
+    expect(onboardingNavigationTarget(household, BIANCA)).toBeNull();
+    expect(onboardingNavigationTarget(household, JONATHAN)).toBeNull();
   });
 
   it("keeps the Chapter 12 Books target reachable until the shared unlock is accepted", () => {
@@ -261,7 +261,7 @@ describe("onboardingNavigationTarget", () => {
           }).household
         : recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
     }
-    expect(onboardingNavigationTarget(household, BIANCA, TODAY)).toEqual({
+    expect(onboardingNavigationTarget(household, BIANCA)).toEqual({
       chapterId: "ch-12-ready",
       target: { tab: "ledger" },
     });
@@ -326,7 +326,7 @@ describe("the instruction survives ordinary navigation and a reload; only a pass
     // household's own chapter progress.
     for (let hop = 0; hop < 3; hop += 1) {
       const reloaded = loadReturnMessage(household.environment, household.householdId, BIANCA, store);
-      expect(activeReturnMessage(reloaded, household, TODAY)).toEqual(record);
+      expect(activeReturnMessage(reloaded, household)).toEqual(record);
     }
   });
 
@@ -339,7 +339,7 @@ describe("the instruction survives ordinary navigation and a reload; only a pass
     // handed back — this is what a real page refresh would do too.
     const reloaded = loadReturnMessage(household.environment, household.householdId, BIANCA, store);
     expect(reloaded).toEqual(record);
-    expect(activeReturnMessage(reloaded, household, TODAY)).toEqual(record);
+    expect(activeReturnMessage(reloaded, household)).toEqual(record);
   });
 
   it("clears once the chapter that sent the member away is no longer their next chapter", () => {
@@ -348,12 +348,12 @@ describe("the instruction survives ordinary navigation and a reload; only a pass
     saveReturnMessage(recordFor(household, BIANCA, "ch-04-accounts", "more"), store);
 
     const stillPending = loadReturnMessage(household.environment, household.householdId, BIANCA, store)!;
-    expect(returnMessageProbePassed(stillPending, household, TODAY)).toBe(false);
-    expect(activeReturnMessage(stillPending, household, TODAY)).not.toBeNull();
+    expect(returnMessageProbePassed(stillPending, household)).toBe(false);
+    expect(activeReturnMessage(stillPending, household)).not.toBeNull();
 
     const finished = recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId: "ch-04-accounts", createdBy: BIANCA }).household;
-    expect(returnMessageProbePassed(stillPending, finished, TODAY)).toBe(true);
-    expect(activeReturnMessage(stillPending, finished, TODAY)).toBeNull();
+    expect(returnMessageProbePassed(stillPending, finished)).toBe(true);
+    expect(activeReturnMessage(stillPending, finished)).toBeNull();
   });
 
   it("does not clear on an unrelated household change while the chapter is still outstanding", () => {
@@ -364,23 +364,23 @@ describe("the instruction survives ordinary navigation and a reload; only a pass
     // this module reacts to "the household changed"; only to whether the
     // one chapter it is watching has been satisfied.
     const untouched: Household = { ...household, revision: household.revision + 7 };
-    expect(activeReturnMessage(record, untouched, TODAY)).toEqual(record);
+    expect(activeReturnMessage(record, untouched)).toEqual(record);
   });
 
   it("does not apply a record left over from a different household or environment", () => {
     const household = throughSittingOne();
     const foreignHousehold = recordFor(household, BIANCA, "ch-04-accounts", "more");
     foreignHousehold.householdId = "some-other-household";
-    expect(activeReturnMessage(foreignHousehold, household, TODAY)).toBeNull();
+    expect(activeReturnMessage(foreignHousehold, household)).toBeNull();
 
     const foreignEnvironment = recordFor(household, BIANCA, "ch-04-accounts", "more");
     foreignEnvironment.environment = household.environment === "development" ? "production" : "development";
-    expect(activeReturnMessage(foreignEnvironment, household, TODAY)).toBeNull();
+    expect(activeReturnMessage(foreignEnvironment, household)).toBeNull();
   });
 
   it("activeReturnMessage(null, ...) is null — nothing stored, nothing shown", () => {
     const household = throughSittingOne();
-    expect(activeReturnMessage(null, household, TODAY)).toBeNull();
+    expect(activeReturnMessage(null, household)).toBeNull();
   });
 });
 

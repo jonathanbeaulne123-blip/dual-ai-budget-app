@@ -388,7 +388,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   // E.5 The budget chapters
   entry({
     key: "onboarding.household.ch-09-categories", speaker: "hercules", surface: "card", scope: "none", announce: "none",
-    text: "Choose what the household plan should cover on your own device. Your choices stay private until both lists are in.", slots: [],
+    text: "Review the named household starter set on your own device. Keep what fits and suggest what's missing; your choices stay private until both lists are in.", slots: [],
   }),
   entry({
     key: "guess.reassure", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
@@ -396,23 +396,23 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "categories.solo", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
-    text: "Pick what our money should cover. {name} is picking too — we'll put the lists together after.", slots: ["name"],
+    text: "Curate our starter set: keep what fits and suggest what's missing. {name} is reviewing it too — we'll put the lists together after.", slots: ["name"],
   }),
   entry({
     key: "categories.open", speaker: "system", surface: "button", scope: "none", announce: "none",
-    text: "Choose what the plan covers", slots: [],
+    text: "Review the starter categories", slots: [],
   }),
   entry({
     key: "categories.title", speaker: "system", surface: "card", scope: "none", announce: "none",
-    text: "What should our plan cover?", slots: [],
+    text: "Shape our starter categories", slots: [],
   }),
   entry({
     key: "categories.existing", speaker: "system", surface: "card", scope: "none", announce: "none",
-    text: "Choose from the household list", slots: [],
+    text: "Named starter set — keep what fits", slots: [],
   }),
   entry({
     key: "categories.suggest", speaker: "system", surface: "card", scope: "none", announce: "none",
-    text: "Suggest another category", slots: [],
+    text: "Suggest what's missing", slots: [],
   }),
   entry({
     key: "categories.suggest-help", speaker: "hercules", surface: "card", scope: "none", announce: "none",
@@ -436,7 +436,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "categories.submit", speaker: "system", surface: "button", scope: "none", announce: "none",
-    text: "Submit my choices", slots: [],
+    text: "Submit my curated set", slots: [],
   }),
   entry({
     key: "categories.waiting", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
@@ -444,7 +444,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "categories.together", speaker: "system", surface: "card", scope: "none", announce: "none",
-    text: "Our household set", slots: [],
+    text: "Our curated household set", slots: [],
   }),
   entry({
     key: "categories.member-set", speaker: "system", surface: "card", scope: "none", announce: "none",
@@ -452,7 +452,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "categories.review", speaker: "hercules", surface: "card", scope: "none", announce: "none",
-    text: "Both lists are here. Review the ideas once, then add the agreed categories to the household list.", slots: [],
+    text: "Both curated sets are here. Review the ideas once, then add the agreed categories to the household list.", slots: [],
   }),
   entry({
     key: "categories.conflict", speaker: "hercules", surface: "card", scope: "none", announce: "polite",
@@ -460,11 +460,11 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "categories.accept", speaker: "system", surface: "button", scope: "none", announce: "none",
-    text: "Accept our category set", slots: [],
+    text: "Accept our curated set", slots: [],
   }),
   entry({
     key: "categories.done", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
-    text: "The combined set is ready. No budget amounts or money moved.", slots: [],
+    text: "The curated set is ready. No budget amounts or money moved.", slots: [],
   }),
   entry({
     key: "estimates.submit", speaker: "system", surface: "button", scope: "none", announce: "none",

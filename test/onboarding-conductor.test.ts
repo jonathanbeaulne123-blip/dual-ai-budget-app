@@ -184,9 +184,9 @@ describe("shellView — geometry and pure rules", () => {
 
   it("shows the shell only when onboarding has actually locked ordinary Hercules and this member has a chapter waiting", () => {
     const fresh = catalogHousehold("development");
-    expect(shouldShowOnboardingShell(fresh, BIANCA, TODAY)).toBe(false); // not locked yet, even though ch-01 is "next"
-    expect(shouldShowOnboardingShell(proposedActive(), BIANCA, TODAY)).toBe(true);
-    expect(shouldShowOnboardingShell(proposedActive(), JONATHAN, TODAY)).toBe(true);
+    expect(shouldShowOnboardingShell(fresh, BIANCA)).toBe(false); // not locked yet, even though ch-01 is "next"
+    expect(shouldShowOnboardingShell(proposedActive(), BIANCA)).toBe(true);
+    expect(shouldShowOnboardingShell(proposedActive(), JONATHAN)).toBe(true);
   });
 
   it("gives every evidence kind a non-empty, distinct cap label and provenance line", () => {

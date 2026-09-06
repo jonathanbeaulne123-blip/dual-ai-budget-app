@@ -219,7 +219,7 @@ describe("onboarding member progress", () => {
 
   it("returns only dependency-safe chapters and withholds personal modules while household mode is active", () => {
     let household = catalogHousehold("development");
-    expect(nextChapterFor(household, BIANCA, "2026-09-03")?.id).toBe("ch-01-meet");
+    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-01-meet");
     household = withProgress(household, BIANCA, (progress) => ({
       ...progress,
       rows: progress.rows.map((row) => row.chapterId === "ch-01-meet"
@@ -229,7 +229,7 @@ describe("onboarding member progress", () => {
           : row),
       updatedAt: AT_1,
     }));
-    expect(nextChapterFor(household, BIANCA, "2026-09-03")?.id).toBe("ch-02-household");
+    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-02-household");
 
     const personalChapter: OnboardingChapter = {
       id: "pm-test",
@@ -257,15 +257,15 @@ describe("onboarding member progress", () => {
       const forcedBeforeHouseholdProgress = forceUnlockOnboarding(activeOnboarding(), {
         memberId: BIANCA, createdBy: BIANCA, at: "2026-09-03T17:59:00.000Z",
       }).household;
-      expect(nextChapterFor(forcedBeforeHouseholdProgress, BIANCA, "2026-09-03")?.id).toBe("pm-01-own-books");
+      expect(nextChapterFor(forcedBeforeHouseholdProgress, BIANCA)?.id).toBe("pm-01-own-books");
 
       let running = activeOnboarding();
       running = acknowledgeEveryHouseholdChapter(running, BIANCA);
-      expect(nextChapterFor(running, BIANCA, "2026-09-03")?.id).toBe("ch-12-ready");
+      expect(nextChapterFor(running, BIANCA)?.id).toBe("ch-12-ready");
       const stopped = forceUnlockOnboarding(running, {
         memberId: BIANCA, createdBy: BIANCA, at: "2026-09-03T18:00:00.000Z",
       }).household;
-      expect(nextChapterFor(stopped, BIANCA, "2026-09-03")?.id).toBe("pm-01-own-books");
+      expect(nextChapterFor(stopped, BIANCA)?.id).toBe("pm-01-own-books");
       expect(skipPersonalStep(stopped, {
         memberId: BIANCA, chapterId: "pm-test", createdBy: BIANCA, at: "2026-09-03T18:01:00.000Z",
       }).postedIds).toEqual([]);

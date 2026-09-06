@@ -284,9 +284,15 @@ describe("Development guided setup preview", () => {
     act(() => previewRoot.render(createElement(GuidedSetupPreview, { household: newHouseholdTemplate("development") })));
     const details = host.querySelector("details") as HTMLDetailsElement;
     act(() => { details.open = true; details.dispatchEvent(new Event("toggle", { bubbles: false })); });
-    expect(host.querySelectorAll("[aria-label='Guided setup chapters'] button")).toHaveLength(12);
+    const chapterButtons = [...host.querySelectorAll<HTMLButtonElement>("[aria-label='Guided setup chapters'] button")];
+    expect(chapterButtons).toHaveLength(12);
+    expect(chapterButtons[0]?.textContent).toContain("Meet Hercules");
+    expect(chapterButtons[8]?.textContent).toContain("Plan categories");
     expect(host.textContent).toContain("Nothing is saved");
     expect(host.textContent).toContain("never post money or confirm for you");
+    const sampleAction = [...host.querySelectorAll<HTMLButtonElement>("button:disabled")]
+      .find((candidate) => candidate.textContent?.includes("Next"));
+    expect(sampleAction?.hasAttribute("aria-describedby")).toBe(false);
     act(() => [...host.querySelectorAll("[aria-label='Guided setup chapters'] button")].at(-1)?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     expect(host.textContent).toContain("Let's prove one ordinary entry will be easy tomorrow");
     act(() => previewRoot.unmount());
