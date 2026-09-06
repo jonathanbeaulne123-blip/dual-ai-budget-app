@@ -2,7 +2,7 @@
 
 ## Onboarding audit Step 1 — seeded demo approval acceptance (D-227 why-note) (2026-09-06)
 
-**Status:** Local implementation and High-risk quick proof are complete on `codex/onboarding-demo-approval-repair`, based on `origin/main@9057d7285e449816e7e4dbd81799f48959329d4c`. Release verification and the authorized single-PR workflow are in progress. Deployment remains explicitly unauthorized.
+**Status:** Release candidate [PR #354](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/354) is open on `codex/onboarding-demo-approval-repair`, based on `origin/main@9057d7285e449816e7e4dbd81799f48959329d4c`; implementation commit `c63f9e905f991f7f5d3d394ddbd2dfcc20062170`. Local verification is complete and required PR checks evaluate the final head. Deployment remains explicitly unauthorized. Release review: **CONDITIONAL** because quick evidence is not release evidence and authenticated hosted proof is absent.
 
 **Outcome:** The welcome Demo Table now supplies an explicit `create-demo-table` command and accepts its deterministic completed two-member onboarding proof. Dedicated Demo Suite creation may begin while a different ordinary household is open. Same-seed replay, a different-seed Fresh showcase, and replacement of a pre-Slice-27 Demo Suite all cross the runtime successfully without replacing a same-id ordinary household.
 
@@ -14,7 +14,7 @@
 
 **Evidence class:** Local Development fixtures, real command-runtime tests, PGlite trust proof, local production build, and partial application-path browser proof. This is quick evidence, not a full suite or release proof; it is also not Windows, authenticated Google/Supabase browser journey, hosted-live, deployment, or Production proof. No schema, hosted row, secret, provider setting, Production data, or deploy changed. Detailed evidence is in [`worksessions/2026-09-06-onboarding-demo-approval-repair.md`](worksessions/2026-09-06-onboarding-demo-approval-repair.md).
 
-**Next owner:** Codex completes the authorized commit, single PR, and required-check review without deployment. A merge must stop if the `main` workflow would deploy. Jonathan separately decides whether to proceed to the attached audit's Step 2. Step 3's stronger mounted real-runtime integration test remains separate scope.
+**Next owner:** Codex waits for PR #354 checks and review state without deployment. Merge remains stopped because `.github/workflows/pages.yml` runs `wrangler deploy` on every push to `main`, which conflicts with the explicit no-deployment boundary. Jonathan separately decides whether to authorize that automatic Development deployment or proceed to the attached audit's Step 2. Step 3's stronger mounted real-runtime integration test remains separate scope.
 
 ## Onboarding Slice 27 — lifecycle and re-runs (D-227) (2026-09-05)
 

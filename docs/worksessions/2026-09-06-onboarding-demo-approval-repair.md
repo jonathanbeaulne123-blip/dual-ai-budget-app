@@ -1,14 +1,14 @@
 # Hearth worksession — onboarding demo approval repair
 
-- **Status:** RELEASE REVIEW IN PROGRESS
+- **Status:** RELEASE CANDIDATE — PR #354
 - **Opened:** 2026-09-06 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `codex/onboarding-demo-approval-repair`
 - **Baseline SHA:** `9057d7285e449816e7e4dbd81799f48959329d4c`
-- **Head SHA:** local release candidate; exact commit to be recorded after verification
-- **PR or issue:** pending single-PR creation
+- **Head SHA:** implementation commit `c63f9e905f991f7f5d3d394ddbd2dfcc20062170`; this evidence update follows on the same branch
+- **PR or issue:** [#354](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/354)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** Development
@@ -93,6 +93,10 @@ The Demo Table and both Demo Suite create/replace paths accept only their determ
 - Quick evidence is not exhaustive or release evidence. Jonathan did not request `pnpm check:full`, so it was not run.
 - The broader onboarding audit findings and the attached audit's Steps 2 and 3 remain intentionally untouched.
 
+## Release review
+
+**CONDITIONAL.** The complete Step 1 diff, targeted authority paths, financial boundaries, environment separation, private-artifact scope, browser evidence, production build, TypeScript, AI surface, and High quick gate pass. Quick evidence cannot establish release readiness, and authenticated Google/Supabase application proof remains absent. PR checks evaluate the exact final head. Merging is additionally blocked by the explicit no-deployment boundary because `.github/workflows/pages.yml` runs `wrangler deploy` for every push to `main`.
+
 ## Handoff
 
-Step 1 is complete on the local release candidate. Jonathan authorized commit, push, one PR, required-check monitoring, and merge only if that can preserve the explicit no-deployment boundary. No deployment, schema application, hosted-data mutation, or Production change is authorized.
+Step 1 is committed and pushed in the single authorized PR #354. Codex will wait for required checks and review state. Merge must remain stopped because the repository deploys the Development Worker on every push to `main`, which conflicts with the explicit no-deployment boundary. No deployment, schema application, hosted-data mutation, or Production change is authorized.
