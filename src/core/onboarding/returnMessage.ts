@@ -19,7 +19,6 @@
 // record as the existing desktop status furniture. This module remains only
 // the scoped, timer-free record and probe; React owns the presentation.
 
-import type { DateKey } from "../calendar.ts";
 import type { Environment, Household } from "../types.ts";
 import type { HearthTab } from "../hercules.ts";
 import { nextChapterFor } from "./progress.ts";
@@ -38,9 +37,8 @@ import type { ChapterId, NavTarget } from "./types.ts";
 export function onboardingNavigationTarget(
   household: Household,
   memberId: string,
-  today: DateKey,
 ): { chapterId: ChapterId; target: NavTarget } | null {
-  const chapter = nextChapterFor(household, memberId, today);
+  const chapter = nextChapterFor(household, memberId);
   if (!chapter || !chapter.target) return null;
   const custodianMemberId = household.charter?.custodianMemberId ?? household.householdFund?.custodianMemberId ?? null;
   if (chapterRoleFor(chapter, memberId, custodianMemberId) !== "conductor") return null;
@@ -152,8 +150,8 @@ export function clearReturnMessage(
  * a plain read of the same nextChapterFor the rest of onboarding already
  * trusts as the source of truth for "whose turn, for what."
  */
-export function returnMessageProbePassed(record: ReturnMessageRecord, household: Household, today: DateKey): boolean {
-  const chapter = nextChapterFor(household, record.memberId, today);
+export function returnMessageProbePassed(record: ReturnMessageRecord, household: Household): boolean {
+  const chapter = nextChapterFor(household, record.memberId);
   return chapter?.id !== record.chapterId;
 }
 
@@ -169,10 +167,9 @@ export function returnMessageProbePassed(record: ReturnMessageRecord, household:
 export function activeReturnMessage(
   record: ReturnMessageRecord | null,
   household: Household,
-  today: DateKey,
 ): ReturnMessageRecord | null {
   if (!record) return null;
   if (record.environment !== household.environment || record.householdId !== household.householdId) return null;
-  if (returnMessageProbePassed(record, household, today)) return null;
+  if (returnMessageProbePassed(record, household)) return null;
   return record;
 }

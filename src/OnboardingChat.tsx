@@ -249,7 +249,7 @@ export function OnboardingChat({
 
   const record = acceptedHouseholdOnboarding(household);
   const nowIso = now ?? new Date().toISOString();
-  const chapter = nextChapterFor(household, memberId, today);
+  const chapter = nextChapterFor(household, memberId);
   const newMemberCatchUp = record?.state === "complete" && !record.confirmedByMemberIds.includes(memberId);
   const { observation: householdScopeObservation, retry: retryHouseholdScopeProbe } = useHouseholdScopeProbe({
     active: (record?.state === "active" || newMemberCatchUp) && chapter?.id === "ch-02-household",

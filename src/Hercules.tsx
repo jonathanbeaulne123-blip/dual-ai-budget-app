@@ -340,9 +340,13 @@ export function HerculesPresence({
   const chatRigUntilRef = useRef(0);
   const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}`;
   const personalOfferSessionId = useMemo(createPersonalOfferSessionId, [chatScope]);
+  const activeMemberPresent = useMemo(
+    () => household.members.some((member) => member.active && member.id === memberId),
+    [household.members, memberId],
+  );
   useEffect(() => {
     setActivePersonalOffer(null);
-  }, [chatScope]);
+  }, [chatScope, activeMemberPresent]);
   const previousChatScope = useRef(chatScope);
   const activeChatIdentity = useRef<Omit<HerculesReplyContext, "requestId">>({
     environment: household.environment,
@@ -369,34 +373,35 @@ export function HerculesPresence({
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding;
   const householdOnboardingShellActive = useMemo(
-    () => shouldShowOnboardingShell(household, memberId, today),
-    [household, memberId, today],
+    () => activeMemberPresent && shouldShowOnboardingShell(household, memberId),
+    [activeMemberPresent, household, memberId],
   );
-  const personalOffer = useMemo(() => personalModuleOfferFor(household, memberId, {
+  const personalOffer = useMemo(() => activeMemberPresent ? personalModuleOfferFor(household, memberId, {
     now: new Date().toISOString(),
     sessionId: personalOfferSessionId,
     isDesktop: desktopFly,
-  }), [household, memberId, personalOfferSessionId, desktopFly]);
-  const personalOfferRecorded = useMemo(() => Boolean(activePersonalOffer && memberProgress(household, memberId)
+  }) : null, [activeMemberPresent, household, memberId, personalOfferSessionId, desktopFly]);
+  const personalOfferRecorded = useMemo(() => Boolean(activeMemberPresent && activePersonalOffer && memberProgress(household, memberId)
     .personalOfferHistory.some((row) => row.sessionId === personalOfferSessionId
-      && row.moduleId === activePersonalOffer.module.id)), [activePersonalOffer, household, memberId, personalOfferSessionId]);
-  const onboardingShellActive = householdOnboardingShellActive || Boolean(activePersonalOffer);
+      && row.moduleId === activePersonalOffer.module.id)), [activeMemberPresent, activePersonalOffer, household, memberId, personalOfferSessionId]);
+  const onboardingShellActive = activeMemberPresent
+    && (householdOnboardingShellActive || Boolean(activePersonalOffer));
   // Slice 9: which chapter's navigate action (if any) this conductor should
   // be offered right now, and whatever return instruction this phone is
   // still carrying for this household from a previous "Open {surface}" tap.
   // Both are read fresh every render — nothing here is client state that
   // could drift from what nextChapterFor would say on a reload.
   const navTarget = useMemo(
-    () => (householdOnboardingShellActive ? onboardingNavigationTarget(household, memberId, today) : null),
-    [householdOnboardingShellActive, household, memberId, today],
+    () => (householdOnboardingShellActive ? onboardingNavigationTarget(household, memberId) : null),
+    [householdOnboardingShellActive, household, memberId],
   );
   const storedReturnMessage = useMemo(
     () => loadReturnMessage(household.environment, household.householdId, memberId),
     [household.environment, household.householdId, memberId, household.revision],
   );
   const activeReturn = useMemo(
-    () => activeReturnMessage(storedReturnMessage, household, today),
-    [storedReturnMessage, household, today],
+    () => (activeMemberPresent ? activeReturnMessage(storedReturnMessage, household) : null),
+    [activeMemberPresent, storedReturnMessage, household],
   );
   // Desktop has no mobile-style focus-mode modal to swap into
   // (focusShellOpen requires phoneShell). "No new desktop surface" means

@@ -54,7 +54,7 @@ const APPENDIX_E: Record<string, { text: string; announce: CopyEntry["announce"]
   "retry.honest": { text: "That didn't go through. Nothing changed — want to try again?", announce: "polite" },
 
   "guess.reassure": { text: "It's okay to guess. This is the first shape, not a promise; Hearth will learn from what actually happens.", announce: "none" },
-  "categories.solo": { text: "Pick what our money should cover. {name} is picking too — we'll put the lists together after.", announce: "none" },
+  "categories.solo": { text: "Curate our starter set: keep what fits and suggest what's missing. {name} is reviewing it too — we'll put the lists together after.", announce: "none" },
   "estimates.submit": { text: "Submit my numbers", announce: "none" },
   "runrate.absent": { text: "I've got nothing to go on yet — no month has gone by. This is built from the two of you and the bills we know about.", announce: "none" },
   "proposal.basis.floor": { text: "at least the bills assigned here", announce: "none" },
@@ -180,25 +180,25 @@ const SLICE_17_CADENCE_COPY: Record<string, { text: string; announce: CopyEntry[
 
 const SLICE_19_CATEGORIES_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
   "onboarding.household.ch-09-categories": {
-    text: "Choose what the household plan should cover on your own device. Your choices stay private until both lists are in.", announce: "none",
+    text: "Review the named household starter set on your own device. Keep what fits and suggest what's missing; your choices stay private until both lists are in.", announce: "none",
   },
-  "categories.open": { text: "Choose what the plan covers", announce: "none" },
-  "categories.title": { text: "What should our plan cover?", announce: "none" },
-  "categories.existing": { text: "Choose from the household list", announce: "none" },
-  "categories.suggest": { text: "Suggest another category", announce: "none" },
+  "categories.open": { text: "Review the starter categories", announce: "none" },
+  "categories.title": { text: "Shape our starter categories", announce: "none" },
+  "categories.existing": { text: "Named starter set — keep what fits", announce: "none" },
+  "categories.suggest": { text: "Suggest what's missing", announce: "none" },
   "categories.suggest-help": { text: "It stays an idea until both lists are in and someone reviews the merge.", announce: "none" },
   "categories.name": { text: "Category name", announce: "none" },
   "categories.group": { text: "Category group", announce: "none" },
   "categories.add-idea": { text: "Add idea", announce: "none" },
   "categories.remove-idea": { text: "Remove idea", announce: "none" },
-  "categories.submit": { text: "Submit my choices", announce: "none" },
+  "categories.submit": { text: "Submit my curated set", announce: "none" },
   "categories.waiting": { text: "Your choices are in. {name}'s choices stay private until they submit.", announce: "polite" },
-  "categories.together": { text: "Our household set", announce: "none" },
+  "categories.together": { text: "Our curated household set", announce: "none" },
   "categories.member-set": { text: "{name}'s choices", announce: "none" },
-  "categories.review": { text: "Both lists are here. Review the ideas once, then add the agreed categories to the household list.", announce: "none" },
+  "categories.review": { text: "Both curated sets are here. Review the ideas once, then add the agreed categories to the household list.", announce: "none" },
   "categories.conflict": { text: "The same category arrived in two versions. Choose the version you both want to keep.", announce: "polite" },
-  "categories.accept": { text: "Accept our category set", announce: "none" },
-  "categories.done": { text: "The combined set is ready. No budget amounts or money moved.", announce: "polite" },
+  "categories.accept": { text: "Accept our curated set", announce: "none" },
+  "categories.done": { text: "The curated set is ready. No budget amounts or money moved.", announce: "polite" },
 };
 
 const SLICE_20_ESTIMATES_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {

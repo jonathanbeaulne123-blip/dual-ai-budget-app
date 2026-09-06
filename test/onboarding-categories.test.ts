@@ -351,7 +351,7 @@ describe("Chapter 9 category experience", () => {
     click(groceries);
     expect(original.onboardingSubmissions).toBeUndefined();
     expect(onCommit).not.toHaveBeenCalled();
-    click([...host.querySelectorAll("button")].find((button) => button.textContent?.includes("Submit my choices"))!);
+    click([...host.querySelectorAll("button")].find((button) => button.textContent?.includes("Submit my curated set"))!);
     expect(onCommit).toHaveBeenCalledTimes(1);
     act(() => root.unmount());
 
@@ -378,9 +378,9 @@ describe("Chapter 9 category experience", () => {
       onDismiss: vi.fn(),
       onOpenCategories,
     })));
-    expect(host.textContent).toContain("Choose what the plan covers");
+    expect(host.textContent).toContain("Review the starter categories");
     expect(host.textContent).not.toContain("Next");
-    click([...host.querySelectorAll("button")].find((button) => button.textContent?.includes("Choose what the plan covers"))!);
+    click([...host.querySelectorAll("button")].find((button) => button.textContent?.includes("Review the starter categories"))!);
     expect(onOpenCategories).toHaveBeenCalledTimes(1);
     act(() => root.unmount());
   });

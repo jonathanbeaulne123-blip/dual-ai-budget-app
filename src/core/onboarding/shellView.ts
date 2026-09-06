@@ -11,7 +11,6 @@
 // mutates anything, or reaches into the network — it only reads the
 // registry, a member's own progress, and the household's onboarding record.
 
-import type { DateKey } from "../calendar.ts";
 import type { Household } from "../types.ts";
 import type { EvidenceCard } from "./evidence.ts";
 import { acceptedHouseholdOnboarding, ordinaryHerculesAvailable } from "./mode.ts";
@@ -99,8 +98,8 @@ export function chapterRoleFor(
  * this particular member (an edge state Part 2's chapters will each refine
  * further) leaves the ordinary chat in place rather than showing an empty shell.
  */
-export function shouldShowOnboardingShell(household: Household, memberId: string, today: DateKey): boolean {
-  const next = nextChapterFor(household, memberId, today);
+export function shouldShowOnboardingShell(household: Household, memberId: string): boolean {
+  const next = nextChapterFor(household, memberId);
   const completed = acceptedHouseholdOnboarding(household);
   const isNewMemberCatchUp = completed?.state === "complete"
     && !completed.confirmedByMemberIds.includes(memberId)

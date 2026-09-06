@@ -143,11 +143,11 @@ describe("onboarding lifecycle", () => {
         });
       }
 
-      expect(nextChapterFor(household, memberId, todayKey(new Date(activationAt), household.timezone))?.id).toBe("ch-01-meet");
+      expect(nextChapterFor(household, memberId)?.id).toBe("ch-01-meet");
       let walking = recordChapterAcknowledgement(household, {
         memberId, createdBy: memberId, chapterId: "ch-01-meet", at: new Date(Date.parse(activationAt) + 60_000).toISOString(),
       }).household;
-      expect(nextChapterFor(walking, memberId, todayKey(new Date(activationAt), walking.timezone))?.id).toBe("ch-02-household");
+      expect(nextChapterFor(walking, memberId)?.id).toBe("ch-02-household");
       walking = recordObservedChapterCompletion(walking, {
         memberId,
         createdBy: memberId,
@@ -155,7 +155,7 @@ describe("onboarding lifecycle", () => {
         observation: resolvedFor(walking, memberId, memberId === FIXTURE_BIANCA ? FIXTURE_JONATHAN : FIXTURE_BIANCA),
         at: new Date(Date.parse(activationAt) + 120_000).toISOString(),
       }).household;
-      expect(nextChapterFor(walking, memberId, todayKey(new Date(activationAt), walking.timezone))?.id).toBe("ch-08-cadence");
+      expect(nextChapterFor(walking, memberId)?.id).toBe("ch-08-cadence");
     }
   });
 
@@ -188,7 +188,7 @@ describe("onboarding lifecycle", () => {
             }
           : member),
       };
-      expect(nextChapterFor(walked, BIANCA, todayKey(new Date(activationAt), walked.timezone))?.id).toBe(chapter.id);
+      expect(nextChapterFor(walked, BIANCA)?.id).toBe(chapter.id);
     }
   });
 
@@ -237,7 +237,7 @@ describe("onboarding lifecycle", () => {
     expect(onboardingLifecycleState(household)).toBe("complete");
     expect(householdGatesOutstanding(household)).toEqual([]);
     expect(ordinaryHerculesAvailable(household)).toBe(true);
-    expect(shouldShowOnboardingShell(household, BIANCA, TODAY)).toBe(false);
+    expect(shouldShowOnboardingShell(household, BIANCA)).toBe(false);
     expect(syntheticDemoOnboardingIsValid(household)).toBe(false);
   });
 
@@ -340,11 +340,11 @@ describe("onboarding lifecycle", () => {
       { id: ALEX, name: "Alex", color: "#785a9a", active: true, updatedAt: COMPLETED_AT },
     ];
 
-    expect(nextChapterFor(household, ALEX, TODAY)?.id).toBe("ch-01-meet");
+    expect(nextChapterFor(household, ALEX)?.id).toBe("ch-01-meet");
     expect(copy("lifecycle.new-member.intro")).toContain("short, private catch-up");
     expect(copy("onboarding.household.ch-01-meet")).toContain("never post money or confirm for you");
-    expect(shouldShowOnboardingShell(household, ALEX, TODAY)).toBe(true);
-    expect(shouldShowOnboardingShell(household, BIANCA, TODAY)).toBe(false);
+    expect(shouldShowOnboardingShell(household, ALEX)).toBe(true);
+    expect(shouldShowOnboardingShell(household, BIANCA)).toBe(false);
     expect(householdGatesOutstanding(household)).toEqual([]);
     const inherited = memberProgress(household, ALEX);
     expect(inherited.rows.find((row) => row.chapterId === "ch-03-charter")?.acknowledgedAt).toBe(COMPLETED_AT);
@@ -356,7 +356,7 @@ describe("onboarding lifecycle", () => {
       chapterId: "ch-01-meet",
       at: "2026-09-30T12:04:00.000Z",
     }).household;
-    expect(nextChapterFor(household, ALEX, TODAY)?.id).toBe("ch-02-household");
+    expect(nextChapterFor(household, ALEX)?.id).toBe("ch-02-household");
 
     household = recordObservedChapterCompletion(household, {
       memberId: ALEX,
@@ -365,7 +365,7 @@ describe("onboarding lifecycle", () => {
       observation: resolvedFor(household, ALEX, BIANCA),
       at: "2026-09-30T12:06:00.000Z",
     }).household;
-    expect(nextChapterFor(household, ALEX, TODAY)?.id).toBe("ch-08-cadence");
+    expect(nextChapterFor(household, ALEX)?.id).toBe("ch-08-cadence");
     expect(householdGatesOutstanding(household)).toEqual([]);
   });
 
@@ -405,7 +405,7 @@ describe("onboarding lifecycle", () => {
     expect(approvalsFor(household, "ready", record.completionDigest!)).toHaveLength(2);
     expect(householdGatesOutstanding(household)).toEqual([]);
     expect(ordinaryHerculesAvailable(household)).toBe(true);
-    expect(shouldShowOnboardingShell(household, BIANCA, TODAY)).toBe(false);
+    expect(shouldShowOnboardingShell(household, BIANCA)).toBe(false);
     expect(seededOnboardingApprovalsValid(household)).toBe(true);
     expect(syntheticDemoOnboardingIsValid(household)).toBe(false);
   });
@@ -544,7 +544,7 @@ describe("onboarding lifecycle", () => {
     expect(refreshed.rows.find((row) => row.chapterId === "ch-01-meet")?.invalidatedAt).toBeNull();
     expect(refreshed.rows.find((row) => row.chapterId === "ch-02-household")?.invalidatedAt).toBe("2026-09-30T12:20:00.000Z");
     expect(refreshed.rows.find((row) => row.chapterId === "ch-03-charter")?.invalidatedAt).toBe("2026-09-30T12:20:00.000Z");
-    expect(nextChapterFor(household, BIANCA, TODAY)?.id).toBe("ch-02-household");
+    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-02-household");
 
     const converged = mergeMemberProgress(oldReplica, refreshed);
     const ch3 = converged.rows.find((row) => row.chapterId === "ch-03-charter")!;

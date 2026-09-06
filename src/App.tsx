@@ -2919,6 +2919,9 @@ export function App() {
   const today = todayKey(now, booksZone);
   const googleEntryAvailable = googleConfigured() || supabaseAuthEnabled();
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
+  const activeMemberSelected = Boolean(
+    household && memberId && household.members.some((member) => member.active && member.id === memberId),
+  );
   const view: LedgerView = session?.view ?? "household";
   useEffect(() => {
     if (tab === "till" && view !== "household") setTab("home");
@@ -2928,19 +2931,19 @@ export function App() {
   // and this accepted-state guard prevents this frequently re-fired effect
   // from committing the same offer more than once.
   useEffect(() => {
-    if (!household || !memberId || view !== "household" || !activeBooksGate.ready) return;
+    if (!household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
     const priorOnboarding = acceptedHouseholdOnboarding(household);
     if (priorOnboarding && priorOnboarding.state !== "inactive") return;
     void run(
       (current) => offerHouseholdOnboarding(current, { memberId }),
       { closeAdd: false },
     );
-  }, [household, memberId, view, activeBooksGate.ready]);
+  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready]);
   // Each member adopts only their own Personal progress, on their own device.
   // The lifecycle projector considers accepted evidence that predates this
   // run's start, so later setup work still needs its ordinary live chapter.
   useEffect(() => {
-    if (!household || !memberId || view !== "household" || !activeBooksGate.ready) return;
+    if (!household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
     if (!memberNeedsAcceptedOnboardingEvidenceAdoption(household, memberId)) return;
     void run(
       (current) => adoptExistingOnboardingEvidence(current, {
@@ -2949,7 +2952,7 @@ export function App() {
       }),
       { closeAdd: false },
     );
-  }, [household, memberId, view, activeBooksGate.ready]);
+  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready]);
   const charterFoundingVisible = Boolean(household && session && view === "household" && charterFoundingOpen);
   const charterPageVisible = Boolean(household && session && view === "household" && charterPageOpen && household.charter);
   const charterTakeoverVisible = charterFoundingVisible || charterPageVisible;
@@ -2966,6 +2969,7 @@ export function App() {
   const onboardingInviteVisible = Boolean(
     household
     && session
+    && activeMemberSelected
     && view === "household"
     && onboardingInviteRecord
     && (onboardingInviteRecord.state === "offered" || onboardingInviteRecord.state === "handshake-pending")
@@ -2974,37 +2978,43 @@ export function App() {
   const onboardingStandingFactOnly = Boolean(
     household
     && memberId
-    && nextChapterFor(household, memberId, today)?.id === "ch-07-recurrences",
+    && activeMemberSelected
+    && nextChapterFor(household, memberId)?.id === "ch-07-recurrences",
   );
   const onboardingCadenceOnly = Boolean(
     household
     && memberId
-    && nextChapterFor(household, memberId, today)?.id === "ch-08-cadence",
+    && activeMemberSelected
+    && nextChapterFor(household, memberId)?.id === "ch-08-cadence",
   );
   const onboardingCategoriesOnly = Boolean(
     household
     && memberId
+    && activeMemberSelected
     && view === "household"
-    && nextChapterFor(household, memberId, today)?.id === "ch-09-categories",
+    && nextChapterFor(household, memberId)?.id === "ch-09-categories",
   );
   const onboardingEstimatesOnly = Boolean(
     household
     && memberId
+    && activeMemberSelected
     && view === "household"
-    && nextChapterFor(household, memberId, today)?.id === "ch-10-estimates",
+    && nextChapterFor(household, memberId)?.id === "ch-10-estimates",
   );
   const onboardingPlanOnly = Boolean(
     household
     && memberId
+    && activeMemberSelected
     && view === "household"
-    && nextChapterFor(household, memberId, today)?.id === "ch-11-plan",
+    && nextChapterFor(household, memberId)?.id === "ch-11-plan",
   );
   const onboardingReadyOnly = Boolean(
     household
     && memberId
+    && activeMemberSelected
     && view === "household"
     && (
-      nextChapterFor(household, memberId, today)?.id === "ch-12-ready"
+      nextChapterFor(household, memberId)?.id === "ch-12-ready"
       || (onboardingInviteRecord?.state === "complete"
         && onboardingInviteRecord.completionDigest
         && onboardingInviteRecord.completionDigest !== dismissedOnboardingCompletionDigest)
