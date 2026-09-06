@@ -295,7 +295,22 @@ describe("onboarding member progress", () => {
     const onlySignedInMember = acknowledgeEveryHouseholdChapter(catalogHousehold("development"), BIANCA);
     const biancaReplica = splitForSync(onlySignedInMember, BIANCA);
     expect(biancaReplica.shared.members.every((member) => member.onboardingProgress === undefined)).toBe(true);
-    expect(householdGatesOutstanding(assembleHousehold(biancaReplica.shared, biancaReplica.personal))).toEqual([]);
+    expect(householdGatesOutstanding(assembleHousehold(biancaReplica.shared, biancaReplica.personal))).toEqual(
+      ONBOARDING_REGISTRY.filter((chapter) => chapter.track === "household").map((chapter) => chapter.id),
+    );
+  });
+
+  it("keeps members with missing or stale progress inside every finale gate", () => {
+    const householdChapterIds = ONBOARDING_REGISTRY
+      .filter((chapter) => chapter.track === "household")
+      .map((chapter) => chapter.id);
+    const missing = acknowledgeEveryHouseholdChapter(catalogHousehold("development"), BIANCA);
+    expect(missing.members.find((member) => member.id === JONATHAN)?.onboardingProgress).toBeUndefined();
+    expect(householdGatesOutstanding(missing)).toEqual(householdChapterIds);
+
+    let stale = acknowledgeEveryHouseholdChapter(missing, JONATHAN);
+    stale = withProgress(stale, JONATHAN, (progress) => ({ ...progress, registryVersion: 0 }));
+    expect(householdGatesOutstanding(stale)).toEqual(householdChapterIds);
   });
 
   it("keeps the Development force unlock stopped-incomplete forever and refuses Production", async () => {

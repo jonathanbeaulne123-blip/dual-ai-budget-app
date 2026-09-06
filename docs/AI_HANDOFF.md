@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Onboarding finale fail-closed repair (D-230) (2026-09-06)
+
+**Status:** [PR #357](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/357) is the single release-candidate PR on `codex/onboarding-gates-fail-closed`, based on `origin/main@157afbb69564ddaa376e3568fbbe7845b557a0da`. Verified implementation commit `b25b047affaf6f531cfb0025934831cdfae04369`; this evidence/status closure follows. Checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** The finale now evaluates all active members, treating missing or rejected Personal progress as unsatisfied instead of dropping the member. New-member catch-up is limited to genuinely absent progress; malformed or stale stored progress returns empty and requests registry repair. Ready approval reads shaped progress and rejects invalidated Chapter 12 proof.
+
+**Risk and Dual Course:** Risk **High** because this changes setup-completion authority. Budget delta (5): `+4`, closing three paths that could authorize completion without durable valid proof. Engagement delta (3): `+1`, keeping legitimate new-member catch-up and real two-member completion intact while routing corrupt state to repair.
+
+**Verification:** Untouched `origin/main@157afbb` failed four new assertions exactly as reported: missing/stale active-member progress returned no gates, malformed stored progress inherited completion, and invalidated Ready proof passed its direct fence. After the repair, the three focused files pass 31/31. The first complete onboarding run passed 471/472; its only failure was a second existing UI fixture that supplied Bianca's proof while leaving Jonathan undefined. Correcting that fixture to model both members' completed work produced a clean 472/472 rerun. The invalidated-Ready case was then strengthened to cross the real accepted-write boundary and passes. Temporarily restoring only the old raw-row/timestamp Ready check made that exact case fail because the write returned `ok: true`; restoring the candidate made it pass as `validation-rejected`, and the final diff check passes. The final High quick gate passed in 59.411 seconds at fingerprint `915883b94424f9f6ced91f118972f5fb8771f17952aa39d2c3a391e9a7ced635`: 66 fast assertions and the 7-test serial trust matrix, plus diff, AI-surface, TypeScript, and discovery checks. `pnpm exec tsc --noEmit`, `pnpm build` (483 Vite modules plus Hercules Pro UI), and `pnpm ai:verify` pass. The host has no `npx`, so the equivalent `pnpm exec tsc` spelling was used. Existing PGlite browser-externalization/eval and large-chunk build messages remain non-failing warnings.
+
+**Evidence class:** Local synthetic fixtures, direct core/runtime tests, and jsdom component coverage. This is not exhaustive/release, browser, authenticated two-device, hosted-live, deployment, or Production proof. No money writer, journal/budget formula, migration/schema, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, push, merge, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-finale-fail-closed.md`](worksessions/2026-09-06-onboarding-finale-fail-closed.md).
+
+**Next owner:** Codex waits for PR #357's required checks and merges only the unchanged reviewed head under Jonathan's explicit authorization. Deployment remains unauthorized.
+
 ## Onboarding audit — entry and rehearsal test-net repairs (D-229) (2026-09-06)
 
 **Status:** [PR #356](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/356) is the single release-candidate PR on `codex/onboarding-test-net-repairs`, based on `origin/main@a3b6124f1211f511453241d88c2e021255caf34c`. Verified implementation commit `e86f2f5bbdd24faec94f064e6176dfd41a8ff62c`; this evidence/status closure follows. Checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **Medium**.

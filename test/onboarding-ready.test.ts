@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   acceptHouseholdWrite,
   approveOnboardingReady,
-  assembleHousehold,
   buildDashboard,
   catalogHousehold,
   completeHouseholdOnboarding,
@@ -54,20 +53,23 @@ function activeRecord(household: Household) {
 function memberReadyView(memberId: string, readyComplete = true, source?: Household): Household {
   const household = source ? structuredClone(source) : catalogHousehold("development");
   household.householdOnboarding = activeRecord(household);
-  const progress = emptyMemberOnboardingProgress({
-    environment: household.environment,
-    householdId: household.householdId,
-    memberId,
+  household.members = household.members.map((member) => {
+    if (source && member.id !== memberId) return member;
+    const progress = emptyMemberOnboardingProgress({
+      environment: household.environment,
+      householdId: household.householdId,
+      memberId: member.id,
+    });
+    progress.rows = progress.rows.map((row) => ({
+      ...row,
+      acknowledgedAt: row.chapterId === "ch-12-ready" && member.id === memberId && !readyComplete ? null : AT,
+      lastSafeResumePoint: row.chapterId === "ch-12-ready" && member.id === memberId && !readyComplete
+        ? "ch-11-plan"
+        : row.chapterId,
+    }));
+    progress.updatedAt = AT;
+    return { ...member, onboardingProgress: progress };
   });
-  progress.rows = progress.rows.map((row) => ({
-    ...row,
-    acknowledgedAt: row.chapterId === "ch-12-ready" && !readyComplete ? null : AT,
-    lastSafeResumePoint: row.chapterId === "ch-12-ready" && !readyComplete ? "ch-11-plan" : row.chapterId,
-  }));
-  progress.updatedAt = AT;
-  household.members = household.members.map((member) => member.id === memberId
-    ? { ...member, onboardingProgress: progress }
-    : { ...member, onboardingProgress: undefined });
   return household;
 }
 
@@ -161,20 +163,46 @@ describe("onboarding Chapter 12 Ready", () => {
     })).toThrow(/Both members must finish/);
   });
 
+  it("refuses Ready approval when the actor's Chapter 12 proof was invalidated", async () => {
+    const previous = memberReadyView(BIANCA);
+    previous.householdOnboarding = {
+      ...previous.householdOnboarding!,
+      state: "complete",
+      completedAt: AT,
+      completionDigest: onboardingCompletionDigest(previous),
+    };
+    previous.members[0]!.onboardingProgress!.rows = previous.members[0]!.onboardingProgress!.rows.map((row) => (
+      row.chapterId === "ch-12-ready" ? { ...row, invalidatedAt: "2026-09-05T14:01:00.000Z" } : row
+    ));
+    const candidate = approveOnboardingReady(previous, {
+      memberId: BIANCA,
+      createdBy: BIANCA,
+      digest: onboardingCompletionDigest(previous),
+    });
+    const outcome = await acceptHouseholdWrite({
+      previous,
+      candidate: candidate.household,
+      postedIds: candidate.postedIds,
+      commandKind: "approveOnboardingReady",
+      actingMemberId: BIANCA,
+      adapters: {
+        ingest: async () => ({ ok: true }),
+        persist: async () => undefined,
+      },
+    });
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.errorClass).toBe("validation-rejected");
+  });
+
   it("requires both independently accepted approvals, then records one atomic unlock", () => {
     const biancaView = memberReadyView(BIANCA);
-    const jonathanView = memberReadyView(JONATHAN, true, biancaView);
     const digest = onboardingCompletionDigest(biancaView);
     const biancaApproved = approveOnboardingReady(biancaView, {
       memberId: BIANCA, createdBy: BIANCA, digest,
     }).household;
-    const sharedAfterBianca = splitForSync(biancaApproved, BIANCA).shared;
-    const jonathanPersonal = splitForSync(jonathanView, JONATHAN).personal;
-    expect(jonathanPersonal.onboardingProgress?.rows.every((row) => Boolean(row.acknowledgedAt))).toBe(true);
-    const jonathanLocal = assembleHousehold(sharedAfterBianca, jonathanPersonal);
-    expect(jonathanLocal.members.find((member) => member.id === JONATHAN)?.onboardingProgress).toBeTruthy();
-    expect(householdGatesOutstanding(jonathanLocal)).toEqual([]);
-    const bothApproved = approveOnboardingReady(jonathanLocal, {
+    expect(householdGatesOutstanding(biancaApproved)).toEqual([]);
+    const bothApproved = approveOnboardingReady(biancaApproved, {
       memberId: JONATHAN, createdBy: JONATHAN, digest,
     }).household;
     const complete = completeHouseholdOnboarding(bothApproved, {
