@@ -3,7 +3,9 @@ import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { MonthRehearsalPanel } from "../src/MonthRehearsalPanel.tsx";
+import { MonthRehearsalAccess } from "../src/MonthRehearsalAccess.tsx";
 import { catalogHousehold, startMonthRehearsal } from "../src/core/index.ts";
+import { completedExistingBooksHousehold } from "./fixtures/existing-books-onboarding.ts";
 
 function emptyDevelopment() {
   const household = catalogHousehold("development");
@@ -78,13 +80,48 @@ describe("Bianca month rehearsal UI", () => {
 
   it("mounts only on the Household Home and More surfaces without adding navigation", () => {
     const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
-    expect(app).toContain('import { MonthRehearsalPanel } from "./MonthRehearsalPanel.tsx"');
-    expect(app.match(/<MonthRehearsalPanel/g)).toHaveLength(2);
+    const access = readFileSync(new URL("../src/MonthRehearsalAccess.tsx", import.meta.url), "utf8");
+    expect(app).toContain('import { MonthRehearsalAccess } from "./MonthRehearsalAccess.tsx"');
+    expect(app.match(/<MonthRehearsalAccess/g)).toHaveLength(2);
+    expect(app).not.toContain("<MonthRehearsalPanel");
+    expect(access.match(/<MonthRehearsalPanel/g)).toHaveLength(1);
     expect(app).toMatch(/tab === "home"[\s\S]*view === "household"[\s\S]*surface="home"/);
     expect(app).toMatch(/tab === "more"[\s\S]*view === "household"[\s\S]*surface="manage"/);
     expect(app).toContain("persistLedgerWrite(preserveCurrentPersonal(next), token)");
     expect(app).toContain("token?.commandKind ?? token?.label ?? \"commit\"");
     expect(app).not.toMatch(/<button[^>]*>Our month<\/button>/);
+  });
+
+  it("shows one consistent locked explanation mid-setup and opens after real completion", () => {
+    const incomplete = catalogHousehold("development");
+    for (const surface of ["home", "manage"] as const) {
+      const locked = renderToStaticMarkup(createElement(MonthRehearsalAccess, {
+        household: incomplete,
+        memberId: "MEM-001",
+        today: "2026-09-06",
+        surface,
+        onApply: () => undefined,
+      }));
+      expect(locked).toContain("It becomes available after both people finish guided setup.");
+    }
+
+    let completed = completedExistingBooksHousehold();
+    completed = startMonthRehearsal(completed, {
+      monthKey: completed.householdOnboarding!.completedAt!.slice(0, 7),
+      biancaParticipantId: "MEM-001",
+      jonathanPartnerId: "MEM-002",
+      startedByMemberId: "MEM-001",
+      now: new Date(Date.parse(completed.householdOnboarding!.completedAt!) + 60_000).toISOString(),
+    }).household;
+    const open = renderToStaticMarkup(createElement(MonthRehearsalAccess, {
+      household: completed,
+      memberId: "MEM-001",
+      today: completed.householdOnboarding!.completedAt!.slice(0, 10),
+      surface: "manage",
+      onApply: () => undefined,
+    }));
+    expect(open).toContain('aria-label="Our month"');
+    expect(open).not.toContain("It becomes available after both people finish guided setup.");
   });
 
   it("does not disclose a conflicting rehearsal to another household member", () => {

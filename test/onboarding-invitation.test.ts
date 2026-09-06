@@ -123,9 +123,10 @@ describe("the auto-open fix — fences over src/App.tsx", () => {
     expect(appSource).not.toMatch(/householdNeedsCharterFounding\(household\)\)\s*setCharterFoundingOpen\(true\)/);
   });
 
-  it("does not delete householdNeedsCharterFounding — only its consumer changed", () => {
-    expect(appSource).toMatch(/householdNeedsCharterFounding,/);
-    expect(appSource).toMatch(/if \(!householdNeedsCharterFounding\(household\)\) return;/);
+  it("offers households with existing books and retains the accepted-state one-commit guard", () => {
+    expect(appSource).not.toMatch(/householdNeedsCharterFounding,/);
+    expect(appSource).not.toMatch(/if \(!householdNeedsCharterFounding\(household\)\) return;/);
+    expect(appSource).toMatch(/if \(priorOnboarding && priorOnboarding\.state !== "inactive"\) return;/);
   });
 
   it("still supports the existing manual charter-founding button elsewhere in App.tsx", () => {

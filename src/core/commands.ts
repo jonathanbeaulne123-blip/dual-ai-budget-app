@@ -167,6 +167,7 @@ import {
   ONBOARDING_MODE_COPY,
   acceptedHouseholdOnboarding,
   handshakeExpired,
+  onboardingIsActive,
   onboardingRecordId,
   type HouseholdOnboarding,
 } from "./onboarding/mode.ts";
@@ -174,7 +175,7 @@ import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.
 import { householdGatesOutstanding, memberProgress } from "./onboarding/progress.ts";
 import { personalModuleById, personalModuleOfferFor } from "./onboarding/personal.ts";
 import { evidenceFor, probeEvidenceKey } from "./onboarding/evidence.ts";
-import { reprobeMemberOnboardingProgress } from "./onboarding/lifecycle.ts";
+import { adoptAcceptedOnboardingEvidence, reprobeMemberOnboardingProgress } from "./onboarding/lifecycle.ts";
 import type { HouseholdScopeObservation } from "./onboarding/householdScope.ts";
 import {
   currentSubmission,
@@ -462,6 +463,21 @@ function updateMemberProgress(
     ? { ...member, onboardingProgress: progress }
     : member);
   return commitOnboardingProgress(previous, next, input.memberId, label, at);
+}
+
+/** Adopt canonical facts that predate activation; never acknowledge for the member. */
+export function adoptExistingOnboardingEvidence(household: Household, input: {
+  memberId: string;
+  createdBy: string;
+}): CommitResult {
+  if (!onboardingIsActive(household)) {
+    throw new ValidationError("Household setup must be active before existing evidence can be adopted.");
+  }
+  const startedAt = acceptedHouseholdOnboarding(household)?.startedAt;
+  if (!startedAt) throw new ValidationError("Household setup must have an accepted start time.");
+  return updateMemberProgress(household, { ...input, at: startedAt }, "Existing setup evidence adopted", () => (
+    adoptAcceptedOnboardingEvidence(household, input.memberId)
+  ));
 }
 
 /** Record only the acting member's acknowledgement; accepted probes own observed completion. */

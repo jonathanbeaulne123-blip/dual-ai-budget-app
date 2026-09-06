@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AcceptWriteInput, CommandOutcome, Household } from "../src/core/index.ts";
 
-const writes = vi.hoisted(() => ({ candidates: [] as Household[] }));
+const writes = vi.hoisted(() => ({ candidates: [] as Household[], stored: null as Household | null }));
 
 vi.mock("../src/core/index.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/core/index.ts")>();
@@ -38,11 +38,40 @@ vi.mock("../src/storage.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/storage.ts")>();
   return {
     ...actual,
-    peekHousehold: vi.fn(() => null),
-    loadHousehold: vi.fn(async () => null),
+    peekHousehold: vi.fn(() => writes.stored),
+    loadHousehold: vi.fn(async () => writes.stored),
     listHouseholdReplicas: vi.fn(async () => []),
     loadPersonalReplica: vi.fn(async () => null),
     saveHousehold: vi.fn(async () => undefined),
+  };
+});
+
+vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/ledger/engine.ts")>();
+  return {
+    ...actual,
+    inspectBrowserBooks: vi.fn(async (household: Household) => ({
+      ok: true,
+      message: "PGlite agrees.",
+      entryCount: household.transactions.length,
+    })),
+    ingestHouseholdBooks: vi.fn(async (household: Household) => ({
+      compiled: {} as never,
+      status: {
+        ok: true,
+        engine: "pglite" as const,
+        entryCount: household.transactions.length,
+        inBalance: true,
+        equationHolds: true,
+      },
+    })),
+    validateHouseholdBooksStaged: vi.fn(async (household: Household) => ({
+      ok: true,
+      engine: "pglite" as const,
+      entryCount: household.transactions.length,
+      inBalance: true,
+      equationHolds: true,
+    })),
   };
 });
 
@@ -104,6 +133,7 @@ import { App } from "../src/App.tsx";
 import { GuidedSetupPreview } from "../src/GuidedSetupPreview.tsx";
 import {
   acceptedHouseholdOnboarding,
+  catalogHousehold,
   householdNeedsCharterFounding,
   newHouseholdTemplate,
 } from "../src/core/index.ts";
@@ -137,6 +167,7 @@ describe("real household creation enters guided setup", () => {
 
   beforeEach(() => {
     writes.candidates = [];
+    writes.stored = null;
     localStorage.clear();
     sessionStorage.clear();
     Object.defineProperty(window, "matchMedia", {
@@ -191,6 +222,26 @@ describe("real household creation enters guided setup", () => {
     await waitFor(() => expect(container.textContent).toContain("This is a later Development reliability exercise, not household setup"));
     expect(container.textContent).toContain("Preview guided setup");
     expect(container.textContent).not.toContain("Prove recovery before week 1");
+  });
+
+  it("mounts existing accepted books and offers guided setup exactly once", async () => {
+    writes.stored = catalogHousehold("development");
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({
+      memberId: "MEM-002",
+      view: "household",
+      householdId: writes.stored.householdId,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(writes.candidates.filter(
+      (candidate) => acceptedHouseholdOnboarding(candidate)?.state === "offered",
+    )).toHaveLength(1));
+    const offers = writes.candidates.filter((candidate) => acceptedHouseholdOnboarding(candidate)?.state === "offered");
+    expect(offers).toHaveLength(1);
+    expect(offers[0]?.accounts.length).toBeGreaterThan(0);
   });
 });
 

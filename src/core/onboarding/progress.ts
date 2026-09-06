@@ -71,6 +71,13 @@ function textOrNull(value: unknown): string | null {
   return value.trim().slice(0, 200);
 }
 
+function probeEvidenceKeyOrNull(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  // The key is the exact typed-evidence identity, not display copy. Truncating
+  // a multi-source key makes a later canonical probe look different forever.
+  return value.trim();
+}
+
 function earlier(left: string | null, right: string | null): string | null {
   if (!left) return right;
   if (!right) return left;
@@ -198,7 +205,7 @@ export function shapeMemberOnboardingProgress(
   const rows = ONBOARDING_REGISTRY.map((chapter): MemberChapterProgress => {
     const candidate = byChapter.get(chapter.id);
     const observedCompleteAt = isoOrNull(candidate?.observedCompleteAt);
-    const probeEvidenceKey = textOrNull(candidate?.probeEvidenceKey);
+    const probeEvidenceKey = probeEvidenceKeyOrNull(candidate?.probeEvidenceKey);
     const hasAcceptedProbe = Boolean(observedCompleteAt && probeEvidenceKey);
     return {
       chapterId: chapter.id,

@@ -2,9 +2,10 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addAccount, catalogHousehold, financialAuditHash, linkGoogleIdentity, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, type Household, type PersonalEnvelope } from "../src/core/index.ts";
+import { addAccount, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
+import { completedExistingBooksHousehold, existingBooksActivationAt } from "./fixtures/existing-books-onboarding.ts";
 
 vi.setConfig({ testTimeout: 60_000 });
 afterAll(() => vi.resetConfig());
@@ -470,7 +471,10 @@ describe("cached-shell startup books gate", () => {
 
     expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull();
     const confirmReady = container.querySelector("[data-add-confirm]") as HTMLButtonElement;
-    expect(confirmReady.disabled).toBe(false);
+    // Existing books now receive the setup offer as soon as validation opens
+    // the write gate. Wait for that one metadata commit before asserting that
+    // an unrelated financial Confirm is available.
+    await waitForUi(() => expect(confirmReady.disabled).toBe(false));
     expect(startup.reconcileCalls).toBe(1);
 
     const savesBeforePost = startup.saveCalls;
@@ -1134,6 +1138,13 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("repairs only a missing schema and opens after the repaired projection validates", async () => {
+    // This test owns only schema repair. Give its cached books a real offered
+    // record so the new startup offer write cannot outlive this test and leak
+    // into the following migration assertion.
+    startup.cached = offerHouseholdOnboarding(startup.cached!, {
+      memberId: "MEM-002",
+      at: "2026-09-06T12:00:00.000Z",
+    }).household;
     startup.inspections.push(
       Promise.resolve({ ok: false, issue: "missing-schema", message: "Schema missing.", entryCount: 0 }),
       Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: 0 }),
@@ -1337,35 +1348,15 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("keeps Bianca Month inside the current App and opens the current income slideshow", async () => {
-    // Bianca Month is a post-onboarding rehearsal. The production UI now
-    // deliberately hides it until guided setup is complete, so this legacy
-    // mounted fixture must carry that prerequisite explicitly.
-    startup.cached!.householdOnboarding = {
-      id: `ONBOARDING-${startup.cached!.environment}-${startup.cached!.householdId}`,
-      environment: startup.cached!.environment,
-      householdId: startup.cached!.householdId,
-      registryVersion: 1,
-      state: "complete",
-      proposedByMemberId: "MEM-001",
-      proposedAt: "2026-08-01T11:00:00.000Z",
-      handshakeExpiresAt: "2026-08-01T11:15:00.000Z",
-      confirmedByMemberIds: ["MEM-001", "MEM-002"],
-      startedAt: "2026-08-01T11:15:00.000Z",
-      stoppedAt: null,
-      stoppedByMemberIds: [],
-      stoppedSolo: false,
-      forcedUnlock: false,
-      completedAt: "2026-08-01T11:45:00.000Z",
-      completionDigest: `ready-v1-${"a".repeat(64)}`,
-      createdAt: "2026-08-01T11:00:00.000Z",
-      updatedAt: "2026-08-01T11:45:00.000Z",
-    };
+    const activationAt = existingBooksActivationAt();
+    startup.cached = completedExistingBooksHousehold(activationAt);
+    const rehearsalMonth = todayKey(new Date(activationAt), startup.cached.timezone).slice(0, 7);
     startup.cached = startMonthRehearsal(startup.cached!, {
-      monthKey: "2026-08",
+      monthKey: rehearsalMonth,
       biancaParticipantId: "MEM-001",
       jonathanPartnerId: "MEM-002",
       startedByMemberId: "MEM-001",
-      now: "2026-08-01T12:00:00.000Z",
+      now: new Date(Date.parse(activationAt) + 10 * 60_000).toISOString(),
     }).household;
     startup.inspections.push(Promise.resolve({
       ok: true,
