@@ -8,6 +8,7 @@ const acceptance = vi.hoisted(() => ({
   calls: 0,
   ok: true,
   resolve: null as null | (() => void),
+  lastInput: null as AcceptWriteInput | null,
 }));
 
 vi.mock("../src/core/index.ts", async (importOriginal) => {
@@ -16,6 +17,7 @@ vi.mock("../src/core/index.ts", async (importOriginal) => {
     ...actual,
     acceptHouseholdWrite: vi.fn((input: AcceptWriteInput) => {
       acceptance.calls += 1;
+      acceptance.lastInput = input;
       return new Promise<CommandOutcome>((resolve) => {
         acceptance.resolve = () => resolve({
           kind: acceptance.ok ? "accepted-local" : "retryable-failure",
@@ -71,6 +73,7 @@ describe("swift demo entry", () => {
     acceptance.calls = 0;
     acceptance.ok = true;
     acceptance.resolve = null;
+    acceptance.lastInput = null;
     localStorage.clear();
     sessionStorage.clear();
     Object.defineProperty(window, "matchMedia", {
@@ -116,6 +119,8 @@ describe("swift demo entry", () => {
 
     await act(async () => { await vi.advanceTimersByTimeAsync(34); });
     expect(acceptance.calls).toBe(1);
+    expect(acceptance.lastInput?.commandKind).toBe("commit");
+    expect(acceptance.lastInput?.previous).toBeNull();
 
     act(() => button(/I am Jonathan/i).click());
     expect(container.textContent).toContain("Validating the local journal before entering");

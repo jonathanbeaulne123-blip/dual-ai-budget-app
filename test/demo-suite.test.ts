@@ -3,6 +3,8 @@ import {
   assertDemoReplacementAllowed,
   acceptHouseholdWrite,
   assembleHousehold,
+  catalogHousehold,
+  DEMO_SUITE_COMMAND_KIND,
   DEMO_ENGINE_NAMES,
   DEMO_TOOL_COVERAGE,
   ensureHouseholdShape,
@@ -13,6 +15,7 @@ import {
   householdForShiftReadTools,
   mergeShared,
   personalReplicaForMember,
+  preserveDemoShowcaseContinuity,
   splitForSync,
   torontoOffsetForDate,
   verifyDemoSuite,
@@ -49,7 +52,7 @@ describe("trustworthy synthetic Demo Suite", () => {
       previous: null,
       candidate: generated.household,
       confirmationId: "CONFIRM-DEMO-CREATE",
-      commandKind: "create-demo-suite",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
       postedIds: [],
       adapters: {
         ingest: async () => ({ ok: true }),
@@ -66,6 +69,134 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(report.attestationSha256).toMatch(/^[a-f0-9]{64}$/);
     expect(report.checks.filter((row) => row.status === "fail")).toEqual([]);
     expect(report.status).toBe("ready");
+  }, 300_000);
+
+  it("accepts dedicated creation, repeated replay, fresh seed, and explicit whole-fixture replacement", async () => {
+    const generated = await generateDemoSuite({ today: TODAY, seed: 616161, buildSha: "demo-boundary" });
+    await yieldToRunner();
+    const adapters = {
+      ingest: async () => ({ ok: true }),
+      persist: async () => undefined,
+      validateCandidate: async () => ({ ok: true }),
+      transport: async () => ({ ok: true as const }),
+    };
+    const ordinaryOpenHousehold = catalogHousehold("development");
+    const created = await acceptHouseholdWrite({
+      previous: ordinaryOpenHousehold,
+      candidate: generated.household,
+      confirmationId: "CONFIRM-DEMO-DEDICATED",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters,
+    });
+    expect(created.ok).toBe(true);
+    expect(created.kind).toBe("synchronized");
+    if (!created.ok) throw new Error(created.userMessage ?? "Dedicated Demo Suite creation failed");
+
+    const replay = preserveDemoShowcaseContinuity(created.household, generated.household);
+    const replayed = await acceptHouseholdWrite({
+      previous: created.household,
+      candidate: replay,
+      confirmationId: "CONFIRM-DEMO-REPLAY",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters,
+    });
+    expect(replayed.ok).toBe(true);
+    expect(replayed.kind).toBe("synchronized");
+    if (!replayed.ok) throw new Error(replayed.userMessage ?? "Demo Suite replay failed");
+
+    const editedReplay = { ...replayed.household, name: "Edited synthetic demo" };
+    const replayedAgainCandidate = preserveDemoShowcaseContinuity(editedReplay, generated.household);
+    const replayedAgain = await acceptHouseholdWrite({
+      previous: editedReplay,
+      candidate: replayedAgainCandidate,
+      confirmationId: "CONFIRM-DEMO-REPLAY-AGAIN",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      adapters,
+    });
+    expect(replayedAgain.ok).toBe(true);
+    if (!replayedAgain.ok) throw new Error(replayedAgain.userMessage ?? "Repeated Demo Suite replay failed");
+    expect(replayedAgain.household.name).toBe(generated.household.name);
+    expect(replayedAgain.household.revision).toBeGreaterThan(replayed.household.revision);
+
+    const fresh = await generateDemoSuite({ today: TODAY, seed: 616162, buildSha: "demo-boundary" });
+    await yieldToRunner();
+    const replacement = preserveDemoShowcaseContinuity(replayedAgain.household, fresh.household);
+    const replaced = await acceptHouseholdWrite({
+      previous: replayedAgain.household,
+      candidate: replacement,
+      confirmationId: "CONFIRM-DEMO-FRESH",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      transportRequested: true,
+      requireSynchronized: true,
+      adapters,
+    });
+    expect(replaced.ok).toBe(true);
+    expect(replaced.kind).toBe("synchronized");
+    if (!replaced.ok) throw new Error(replaced.userMessage ?? "Fresh Demo Suite replacement failed");
+    expect(replaced.household.householdId).toBe(created.household.householdId);
+    expect(replaced.household.syntheticFixture?.seed).toBe(616162);
+    expect(replaced.household.google).toEqual(created.household.google);
+    expect(replaced.household.devices).toEqual(created.household.devices);
+
+    const legacySuite = structuredClone(created.household);
+    legacySuite.householdOnboarding = undefined;
+    legacySuite.onboardingApprovals = [];
+    legacySuite.members = legacySuite.members.map((member) => ({ ...member, onboardingProgress: undefined }));
+    const migratedCandidate = preserveDemoShowcaseContinuity(legacySuite, fresh.household);
+    const migrated = await acceptHouseholdWrite({
+      previous: legacySuite,
+      candidate: migratedCandidate,
+      confirmationId: "CONFIRM-DEMO-LEGACY-REPLACE",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      adapters,
+    });
+    expect(migrated.ok).toBe(true);
+
+    const sameIdOrdinary = { ...ordinaryOpenHousehold, householdId: generated.household.householdId };
+    const sameIdReplacement = await acceptHouseholdWrite({
+      previous: sameIdOrdinary,
+      candidate: generated.household,
+      confirmationId: "CONFIRM-DEMO-WHOLE-FIXTURE-REPLACEMENT",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      adapters,
+    });
+    expect(sameIdReplacement.ok).toBe(true);
+
+    let refusedAdapterCalls = 0;
+    for (const input of [
+      { previous: null, candidate: generated.household, commandKind: "commit", postedIds: [] },
+      { previous: null, candidate: generated.household, commandKind: DEMO_SUITE_COMMAND_KIND, postedIds: ["forged-posted-id"] },
+      { previous: ordinaryOpenHousehold, candidate: generated.household, commandKind: DEMO_SUITE_COMMAND_KIND, postedIds: [] },
+      { previous: null, candidate: { ...generated.household, syntheticFixture: null }, commandKind: DEMO_SUITE_COMMAND_KIND, postedIds: [] },
+    ]) {
+      const outcome = await acceptHouseholdWrite({
+        ...input,
+        confirmationId: `REJECT-DEMO-SUITE-${input.commandKind}-${input.postedIds.length}`,
+        adapters: {
+          ingest: async () => { refusedAdapterCalls += 1; return { ok: true }; },
+          persist: async () => { refusedAdapterCalls += 1; },
+        },
+      });
+      expect(outcome.ok).toBe(false);
+      expect(outcome.postedNothing).toBe(true);
+    }
+    expect(refusedAdapterCalls).toBe(0);
   }, 300_000);
 
   it("marks any changed generated fact not-ready even when provenance is retained", async () => {
