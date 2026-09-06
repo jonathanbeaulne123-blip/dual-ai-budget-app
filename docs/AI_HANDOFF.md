@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Consistent-replica materialization and compaction repair (D-232) (2026-09-06)
+
+**Status:** [PR #359](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/359) is the single PR on `codex/continuity-replay-repair`, based on `origin/main@9758f90`. Verified implementation commit `4e8424a`; required checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.
+
+**Outcome:** Stable Shared + Personal pulls once again attempt command-log materialization with the already resolved member id, but only after the snapshot passes the current Google/membership binding. Signed-in restores now re-read authoritative membership on every snapshot attempt and refuse a membership that disappears during the retry loop. Compacted command envelopes deduplicate and sort their top-level posted ids while retaining every command descriptor and materialization fact, so repeated row touches reach their specific replay authority checks instead of failing as malformed.
+
+**Risk and Dual Course:** Risk **High** because this repairs authenticated continuity binding and the ledger command-log replay path. Budget delta (5): `+4`, restoring validated command replay without weakening member authority or snapshot fallback. Engagement delta (3): `+1`, avoiding needless full-snapshot recovery and refusing a revoked session truthfully.
+
+**Verification:** Untouched `origin/main@9758f90` reproduced all three missing-net failures: the consistent-member pull made zero command-event reads, a membership removed during retry still returned a stable replica, and `test/ask-goal-move.test.ts` returned `malformed-command-envelope` instead of its command-specific authority refusal. The first two trace to `aa6ca41`; the duplicate-id compaction defect is independently present at `85bafff`, before onboarding Slice 23. After the repair, the three focused files pass 26/26, including a valid compacted envelope whose two descriptors touch one recurrence and still apply, while the two-move authority case keeps its original `ask-goal-move-authority-mismatch` expectation. The eight-file continuity, materialization, startup, and D-183 rehearsal set passes 72/72. The final High quick gate passed 114/114 assertions in 211.268 seconds at fingerprint `867b5a780abdefb854b3ef4facfa4d9ffbcd8a534e586ff42e2848d09fca0369`, including TypeScript, AI-surface, discovery, diff, the permission matrix, and the seven-test serial trust matrix. `pnpm exec tsc --noEmit`, `pnpm build` (483 Vite modules plus Hercules Pro UI), and `pnpm ai:verify` pass. The host has no `npx`, so the equivalent `pnpm exec tsc` spelling was used. Existing PGlite browser-externalization/eval, mixed-import, and large-chunk build messages remain non-failing warnings.
+
+**Evidence class:** Local synthetic client-side identity, REST-adapter, command-materialization, and App-startup tests. This is not exhaustive/release, hosted-row, browser, authenticated two-device, deployment, or Production proof. No schema, migration, hosted row, Auth/RLS rule, secret, provider/model call, Production setting/data, Worker, or financial formula changed. Detailed evidence: [`worksessions/2026-09-06-continuity-replay-repair.md`](worksessions/2026-09-06-continuity-replay-repair.md).
+
+**Next owner:** Codex waits for all required PR checks, triages any in-scope blockers, and merges the exact reviewed head when green. Deployment remains unauthorized.
+
 ## Onboarding lifecycle convergence repair (D-231) (2026-09-06)
 
 **Status:** [PR #358](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/358) is the single PR on `codex/onboarding-lifecycle-convergence`, based on `origin/main@8eff077`. Verified implementation commit `31a2a1b`; required checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.

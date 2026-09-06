@@ -270,6 +270,69 @@ describe("The Ask shared-goal move", () => {
     expect(remote.household.recurrences.find((row) => row.id === move.recurrenceId)?.nextDate).toBe("2026-10-30");
   });
 
+  it("validates and applies a compacted envelope whose commands touch one recurrence twice", async () => {
+    const previous = halifaxHousehold();
+    const move = currentHalifaxMove(previous);
+    const moved = moveAskGoalClaimToNextMonth(previous, move);
+    const accepted = await acceptHouseholdWrite({
+      previous,
+      candidate: moved.household,
+      confirmationId: "confirm-halifax-repeat-a",
+      postedIds: moved.postedIds,
+      commandKind: moved.undo.commandKind,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    const receipt = accepted.household.commandReceipts.at(-1)!;
+    const firstRef = receiptToCommandRef({
+      household: accepted.household,
+      receipt,
+      baseRevision: previous.revision,
+    });
+    const secondRef = {
+      ...firstRef,
+      idempotencyKey: "confirm-halifax-repeat-b",
+      confirmationId: "confirm-halifax-repeat-b",
+      commandPayload: {
+        ...firstRef.commandPayload,
+        confirmationId: "confirm-halifax-repeat-b",
+      },
+    };
+    const refs = [firstRef, secondRef];
+    const primary = primaryCommandRef(refs);
+    const payload = await compactedCommandPayload(
+      { confirmationIds: refs.map((row) => row.confirmationId), commandRefs: refs },
+      primary,
+      accepted.household,
+      JONATHAN,
+    ) as ContinuityCommandEventPayload;
+
+    expect(payload.postedIds).toEqual([move.recurrenceId]);
+    expect(payload.compactedCommands).toHaveLength(2);
+    const remote = await applyCommandEventLocally({
+      local: previous,
+      event: {
+        id: "evt-halifax-repeat-compacted",
+        environment: previous.environment,
+        household_id: previous.householdId,
+        member_id: JONATHAN,
+        idempotency_key: primary.idempotencyKey,
+        confirmation_id: primary.confirmationId,
+        identity_hash: primary.identityHash,
+        base_revision: previous.revision,
+        result_revision: accepted.household.revision,
+        ledger_scope: "shared",
+        command_type: primary.commandType,
+        payload_json: payload,
+        created_at: primary.commandPayload.acceptedAt,
+      },
+      memberId: JONATHAN,
+    });
+
+    expect(remote.ok).toBe(true);
+    if (!remote.ok) throw new Error(remote.reason);
+    expect(remote.household.recurrences.find((row) => row.id === move.recurrenceId)?.nextDate).toBe("2026-10-30");
+  });
+
   it("fails closed when compaction contains two moves of the same recurrence", async () => {
     const previous = halifaxHousehold();
     const move = currentHalifaxMove(previous);

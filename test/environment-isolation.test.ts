@@ -162,6 +162,65 @@ describe("environment isolation adversarial boundaries", () => {
     expect(personalReads).toBe(2);
   });
 
+  it("refuses when signed-in membership is revoked between stable-replica retry attempts", async () => {
+    vi.stubEnv("VITE_CONTINUITY_COMMAND_LOG", "");
+    const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
+    const authConfig = {
+      ...config,
+      accessToken: "signed-in-jonathan",
+      authUserId: "auth-user-jonathan",
+    };
+    const linked = linkGoogleIdentity(catalogHousehold(), {
+      memberId: "MEM-001",
+      ...identity,
+      displayName: "Jonathan",
+      grantedScopes: ["openid", "email"],
+    }).household;
+    const sharedEight = { ...linked, linked: true, revision: 8, baseRevision: 8 };
+    const sharedNine = { ...linked, linked: true, revision: 9, baseRevision: 9 };
+    const personalNine = personalReplicaForMember(sharedNine, "MEM-001");
+    let sharedReads = 0;
+    let membershipReads = 0;
+
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("continuity_memberships?")) {
+        membershipReads += 1;
+        return new Response(JSON.stringify(membershipReads < 3 ? [{
+          household_id: linked.householdId,
+          member_id: "MEM-001",
+          google_subject: identity.subject,
+          google_email: identity.email,
+          auth_user_id: authConfig.authUserId,
+          role: "owner",
+        }] : []), { status: 200 });
+      }
+      if (url.includes("household_snapshots?")) {
+        sharedReads += 1;
+        return new Response(JSON.stringify([{
+          payload: JSON.stringify(sharedReads === 1 ? sharedEight : sharedNine),
+        }]), { status: 200 });
+      }
+      if (url.includes("continuity_personal_snapshots?")) {
+        return new Response(JSON.stringify([{
+          revision: 9,
+          payload: JSON.stringify(personalNine),
+        }]), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    }));
+
+    await expect(pullConsistentMemberReplicaById({
+      householdId: linked.householdId,
+      memberId: "MEM-001",
+      environment: "development",
+      config: authConfig,
+      identity,
+      maxAttempts: 3,
+    })).rejects.toThrow("The signed-in Google membership changed while Hearth was restoring Personal books.");
+    expect(membershipReads).toBe(3);
+  });
+
   it("rejects a stable replica read when the requested member is not the signed-in Google member", async () => {
     const identity = { email: "jonathan@example.com", subject: "google-sub-jonathan" };
     const linked = linkGoogleIdentity(catalogHousehold(), {

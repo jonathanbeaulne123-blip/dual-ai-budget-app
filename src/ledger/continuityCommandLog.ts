@@ -127,7 +127,7 @@ export async function compactedCommandPayload(
       .flatMap((ref) => ref.commandPayload.postedIds)
       .filter((id) => id.startsWith("CHARTER-")))]
     : [];
-  const scopedPostedIds = [
+  const scopedPostedIds = [...new Set([
     ...(mergedFacts?.recurrences ?? []).map((row) => row.id),
     ...(mergedFacts?.transactions ?? []).map((row) => row.id),
     ...(mergedFacts?.shifts ?? []).map((row) => row.id),
@@ -150,7 +150,7 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.fundKittyAllocations ?? []).map((row) => row.id),
     ...(mergedFacts?.weeklyDocumentStamps ?? []).map((row) => row.id),
     ...(mergedFacts?.tombstones ?? []).map((row) => row.id),
-  ].sort();
+  ])].sort();
   const compactedCommands = await Promise.all(item.commandRefs
     .filter((ref) => ref.ledgerScope === primary.ledgerScope)
     .map(async (ref) => {

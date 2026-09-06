@@ -958,11 +958,12 @@ async function pullViaCommandLogMaterialization(
   environment: Environment,
   config: SupabaseConfig,
   continuityIdentity?: GoogleIdentitySelector | null,
+  resolvedMemberId?: string | null,
 ): Promise<Household | null> {
   if (!continuityCommandLogEnabled()) return null;
-  const memberId = continuityIdentity
+  const memberId = resolvedMemberId ?? (continuityIdentity
     ? memberIdForGoogleIdentity(snapshotTip, continuityIdentity)
-    : null;
+    : null);
   if (!memberId) return null;
   const events = await fetchContinuityCommandEvents(householdId, environment, config, { memberId });
   if (!events.length) return null;
@@ -1101,40 +1102,63 @@ export async function pullConsistentMemberReplicaById(input: {
   const config = input.config ?? readSupabaseConfig();
   if (!config || !hostedContinuityAllowed(environment)) return null;
   const attempts = Math.max(1, Math.min(5, input.maxAttempts ?? 3));
-  let membership: ContinuityMembershipRow | null | undefined;
+  let memberWasBound = false;
   const bindMember = async (snapshot: Household): Promise<Household> => {
     const linkedMemberId = memberIdForGoogleIdentity(snapshot, input.identity);
-    if (linkedMemberId === input.memberId) return snapshot;
+    const changedMessage = memberWasBound
+      ? "The signed-in Google membership changed while Hearth was restoring Personal books."
+      : "That Personal cloud copy does not belong to the signed-in Google member.";
     if (linkedMemberId && linkedMemberId !== input.memberId) {
-      throw new ValidationError("That Personal cloud copy does not belong to the signed-in Google member.");
+      throw new ValidationError(changedMessage);
     }
-    if (membership === undefined) {
+    let membership: ContinuityMembershipRow | null = null;
+    if (usesAuthContinuitySession(config) || linkedMemberId !== input.memberId) {
       const rows = await continuityMembershipRows(config, input.identity, environment);
       membership = rows?.find((row) => (
         row.household_id === input.householdId && row.member_id === input.memberId
       )) ?? null;
     }
-    if (!membership) {
-      throw new ValidationError("That Personal cloud copy does not belong to the signed-in Google member.");
+    if (usesAuthContinuitySession(config) && !membership) {
+      throw new ValidationError(changedMessage);
     }
-    assertMembershipAuthoritativeDiscovery(
-      snapshot,
-      {
-        householdId: membership.household_id,
-        memberId: membership.member_id,
-        googleSubject: membership.google_subject,
-        googleEmail: membership.google_email,
-        authUserId: membership.auth_user_id,
-      },
-      input.identity,
-      environment,
-      { authUserId: config.authUserId },
-    );
-    return overlayGoogleLinkFromMembership(snapshot, {
-      memberId: input.memberId,
-      subject: membership.google_subject || input.identity.subject,
-      email: membership.google_email || input.identity.email,
-    });
+    if (membership) {
+      assertMembershipAuthoritativeDiscovery(
+        snapshot,
+        {
+          householdId: membership.household_id,
+          memberId: membership.member_id,
+          googleSubject: membership.google_subject,
+          googleEmail: membership.google_email,
+          authUserId: membership.auth_user_id,
+        },
+        input.identity,
+        environment,
+        { authUserId: config.authUserId },
+      );
+    }
+    const bound = linkedMemberId === input.memberId
+      ? snapshot
+      : membership
+        ? overlayGoogleLinkFromMembership(snapshot, {
+            memberId: input.memberId,
+            subject: membership.google_subject || input.identity.subject,
+            email: membership.google_email || input.identity.email,
+          })
+        : null;
+    if (!bound) throw new ValidationError(changedMessage);
+    memberWasBound = true;
+    try {
+      return await pullViaCommandLogMaterialization(
+        bound,
+        input.householdId,
+        environment,
+        config,
+        null,
+        input.memberId,
+      ) ?? bound;
+    } catch {
+      return bound;
+    }
   };
   const initial = input.initialShared ?? await pullHouseholdSnapshotById(
     input.householdId,
