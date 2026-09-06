@@ -94,6 +94,10 @@ function sameIds(left: readonly string[], right: readonly string[]): boolean {
   return uniqueIds(left).join("|") === uniqueIds(right).join("|");
 }
 
+export function readOnboardingRegistryVersion(value: unknown): number {
+  return Number.isInteger(value) && Number(value) >= 0 ? Number(value) : 0;
+}
+
 export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | null {
   if (!value || typeof value !== "object") return null;
   const row = value as Partial<HouseholdOnboarding> & { state?: unknown };
@@ -101,9 +105,7 @@ export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | 
   if (row.environment !== "development" && row.environment !== "production") return null;
   if (typeof row.householdId !== "string" || !row.householdId.trim()) return null;
 
-  const registryVersion = Number.isInteger(row.registryVersion) && Number(row.registryVersion) >= 0
-    ? Number(row.registryVersion)
-    : 0;
+  const registryVersion = readOnboardingRegistryVersion(row.registryVersion);
   const rawState = MODE_STATES.has(row.state as OnboardingModeState)
     ? row.state as OnboardingModeState
     : "blocked";
@@ -283,6 +285,11 @@ export function mergeHouseholdOnboarding(
   const client = rowForContext(clientValue, context);
   if (!server) return client;
   if (!client) return server;
+  if (server.forcedUnlock !== client.forcedUnlock) {
+    const forced = server.forcedUnlock ? server : client;
+    const other = server.forcedUnlock ? client : server;
+    if (forced.updatedAt <= other.updatedAt) return other;
+  }
   if (server.forcedUnlock || client.forcedUnlock) {
     const forced = [server, client]
       .filter((row) => row.forcedUnlock)
