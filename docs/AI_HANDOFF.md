@@ -2,7 +2,7 @@
 
 ## Onboarding audit — entry and rehearsal test-net repairs (D-229) (2026-09-06)
 
-**Status:** Local implementation on `codex/onboarding-test-net-repairs`, based on current `origin/main@a3b6124f1211f511453241d88c2e021255caf34c`. Nothing is committed, pushed, merged, deployed, or hosted-live verified. Risk: **Medium**.
+**Status:** [PR #356](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/356) is the single release-candidate PR on `codex/onboarding-test-net-repairs`, based on `origin/main@a3b6124f1211f511453241d88c2e021255caf34c`. Verified implementation commit `e86f2f5bbdd24faec94f064e6176dfd41a8ff62c`; this evidence/status closure follows. Checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **Medium**.
 
 **Outcome:** The mounted onboarding entry integration test now executes the real `acceptHouseholdWrite` validators while storage, continuity, Google, and ledger adapters remain in memory. Accepted candidates are observed through persistence rather than by replacing the command boundary. A dedicated Demo Table seed case crosses that real boundary and proves an active member choice survives acceptance. The rehearsal preflight uses a stable `data-testid` for its Start control while retaining separate copy coverage. Production behavior is unchanged.
 
@@ -12,7 +12,7 @@
 
 **Evidence class:** Local synthetic Development fixtures, real command-runtime acceptance, mounted jsdom application paths, and static component rendering. This is not an exhaustive/release gate, browser/live UI, authenticated two-device, hosted-live, deployment, or Production proof. No money writer, journal/budget formula, schema/migration, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-test-net-repairs.md`](worksessions/2026-09-06-onboarding-test-net-repairs.md).
 
-**Next owner:** Jonathan reviews the local test-only branch and separately decides whether to authorize its one PR. Deployment remains unauthorized.
+**Next owner:** Codex waits for PR #356's required checks and merges only the unchanged reviewed head under Jonathan's explicit authorization. Deployment remains unauthorized.
 
 ## Existing-books guided onboarding adoption (D-228) (2026-09-06)
 

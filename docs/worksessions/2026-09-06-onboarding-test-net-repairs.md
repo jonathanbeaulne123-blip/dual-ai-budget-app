@@ -1,14 +1,14 @@
 # Hearth worksession — onboarding test-net repairs
 
-- **Status:** LOCAL IMPLEMENTATION AND VERIFICATION COMPLETE
+- **Status:** RELEASE CANDIDATE — PR #356 open; checks pending
 - **Opened:** 2026-09-06 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `codex/onboarding-test-net-repairs`
 - **Baseline SHA:** `a3b6124f1211f511453241d88c2e021255caf34c`
-- **Head SHA:** uncommitted local candidate
-- **PR or issue:** none
+- **Implementation SHA:** `e86f2f5bbdd24faec94f064e6176dfd41a8ff62c`; this evidence/status closure follows
+- **PR or issue:** [#356](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/356)
 - **Risk:** Medium
 - **Decision owner:** Jonathan
 - **Environment impact:** none; local test execution only
@@ -91,4 +91,4 @@ No household behavior changes. The entry integration net now exercises the real 
 
 ## Handoff
 
-Keep this as one test-only PR if Jonathan authorizes push. Do not deploy or touch either Worker.
+Implementation commit `e86f2f5` is pushed in the single PR #356. Jonathan authorized push and merge; wait for required checks and merge only the unchanged reviewed head. Do not deploy or touch either Worker.
