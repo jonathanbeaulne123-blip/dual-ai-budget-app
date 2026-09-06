@@ -2,7 +2,7 @@
 
 ## Consistent-replica materialization and compaction repair (D-232) (2026-09-06)
 
-**Status:** Local implementation is complete on `codex/continuity-replay-repair`, based on `origin/main@9758f90`. Nothing is committed, pushed, merged, deployed, or hosted-live verified. Risk: **High**.
+**Status:** [PR #359](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/359) is the single PR on `codex/continuity-replay-repair`, based on `origin/main@9758f90`. Verified implementation commit `4e8424a`; required checks are pending. Nothing is merged, deployed, or hosted-live verified. Risk: **High**.
 
 **Outcome:** Stable Shared + Personal pulls once again attempt command-log materialization with the already resolved member id, but only after the snapshot passes the current Google/membership binding. Signed-in restores now re-read authoritative membership on every snapshot attempt and refuse a membership that disappears during the retry loop. Compacted command envelopes deduplicate and sort their top-level posted ids while retaining every command descriptor and materialization fact, so repeated row touches reach their specific replay authority checks instead of failing as malformed.
 
@@ -12,7 +12,7 @@
 
 **Evidence class:** Local synthetic client-side identity, REST-adapter, command-materialization, and App-startup tests. This is not exhaustive/release, hosted-row, browser, authenticated two-device, deployment, or Production proof. No schema, migration, hosted row, Auth/RLS rule, secret, provider/model call, Production setting/data, Worker, or financial formula changed. Detailed evidence: [`worksessions/2026-09-06-continuity-replay-repair.md`](worksessions/2026-09-06-continuity-replay-repair.md).
 
-**Next owner:** Jonathan reviews the local candidate and separately decides whether to authorize commit, push, and merge. Deployment remains unauthorized.
+**Next owner:** Codex waits for all required PR checks, triages any in-scope blockers, and merges the exact reviewed head when green. Deployment remains unauthorized.
 
 ## Onboarding lifecycle convergence repair (D-231) (2026-09-06)
 

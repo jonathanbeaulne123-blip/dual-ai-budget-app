@@ -1,14 +1,14 @@
 # Hearth worksession — continuity replay repair
 
-- **Status:** LOCAL IMPLEMENTATION AND REQUIRED VERIFICATION COMPLETE
+- **Status:** PR #359 OPEN — required checks pending
 - **Opened:** 2026-09-06 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app
 - **Branch:** `codex/continuity-replay-repair`
 - **Baseline SHA:** `9758f90`
-- **Implementation SHA:** uncommitted local candidate
-- **PR or issue:** none
+- **Implementation SHA:** `4e8424a`
+- **PR or issue:** [PR #359](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/359)
 - **Risk:** High
 - **Decision owner:** Jonathan
 - **Environment impact:** none; local test execution only
@@ -67,4 +67,4 @@ An authenticated device can use the command-log fast path again while assembling
 
 ## Handoff
 
-Keep this branch local until Jonathan separately authorizes commit, push, and merge. Do not deploy or touch either Worker.
+Jonathan authorized push and merge. PR #359 carries the single scoped branch; merge only after required checks pass on the exact reviewed head. Do not deploy or touch either Worker.
