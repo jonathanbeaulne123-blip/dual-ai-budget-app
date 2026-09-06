@@ -3,36 +3,9 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AcceptWriteInput, CommandOutcome, Household } from "../src/core/index.ts";
+import type { Household } from "../src/core/index.ts";
 
 const writes = vi.hoisted(() => ({ candidates: [] as Household[], stored: null as Household | null }));
-
-vi.mock("../src/core/index.ts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/core/index.ts")>();
-  return {
-    ...actual,
-    acceptHouseholdWrite: vi.fn(async (input: AcceptWriteInput): Promise<CommandOutcome> => {
-      writes.candidates.push(input.candidate);
-      return {
-        kind: "accepted-local",
-        ok: true,
-        household: input.candidate,
-        previous: input.previous,
-        postedIds: [],
-        confirmationId: input.confirmationId ?? "create-entry-test",
-        identityHash: "create-entry-test",
-        revision: input.candidate.revision,
-        sharingMode: "local",
-        errorClass: null,
-        userMessage: null,
-        retryable: false,
-        recoveryAvailable: false,
-        postedExactlyOnce: true,
-        postedNothing: false,
-      };
-    }),
-  };
-});
 
 vi.mock("../src/storage.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/storage.ts")>();
@@ -42,7 +15,9 @@ vi.mock("../src/storage.ts", async (importOriginal) => {
     loadHousehold: vi.fn(async () => writes.stored),
     listHouseholdReplicas: vi.fn(async () => []),
     loadPersonalReplica: vi.fn(async () => null),
-    saveHousehold: vi.fn(async () => undefined),
+    saveHousehold: vi.fn(async (household: Household) => {
+      writes.candidates.push(household);
+    }),
   };
 });
 
@@ -132,10 +107,12 @@ vi.mock("../src/HerculesPro.tsx", async (importOriginal) => {
 import { App } from "../src/App.tsx";
 import { GuidedSetupPreview } from "../src/GuidedSetupPreview.tsx";
 import {
+  acceptHouseholdWrite,
   acceptedHouseholdOnboarding,
   catalogHousehold,
   householdNeedsCharterFounding,
   newHouseholdTemplate,
+  seedDemoHousehold,
 } from "../src/core/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -196,6 +173,57 @@ describe("real household creation enters guided setup", () => {
     expect(householdNeedsCharterFounding(household)).toBe(true);
   });
 
+  it("accepts the demo kitchen seed through the real write boundary and exposes a member choice", async () => {
+    const seeded = seedDemoHousehold({ today: "2026-09-06", environment: "development" });
+    const selectedMember = seeded.members.find((member) => member.active && member.name === "Jonathan");
+    let persisted: Household | null = null;
+    expect(selectedMember).toBeDefined();
+
+    const accepted = await acceptHouseholdWrite({
+      previous: null,
+      candidate: seeded,
+      confirmationId: "demo-table-entry-test",
+      actingMemberId: selectedMember!.id,
+      adapters: {
+        persist: async (household) => { persisted = household; },
+        ingest: async () => ({ ok: true }),
+      },
+    });
+
+    expect(accepted).toMatchObject({ ok: true, postedNothing: false });
+    expect(persisted).toEqual(accepted.household);
+    expect(accepted.household.members.find((member) => member.id === selectedMember!.id)).toMatchObject({
+      active: true,
+      name: "Jonathan",
+    });
+  });
+
+  it("mounts the demo kitchen table and enters Home as the chosen member", async () => {
+    const seeded = seedDemoHousehold({ today: "2026-09-06", environment: "development" });
+    const jonathan = seeded.members.find((member) => member.active && member.name === "Jonathan")!;
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(container.textContent).toContain("Open the demo kitchen table"));
+
+    act(() => button("Open the demo kitchen table").click());
+    await waitFor(() => expect(container.textContent).toContain("Choose yourself"));
+    await act(async () => { button("I am Jonathan").click(); });
+
+    await waitFor(() => expect(container.querySelector("nav")).not.toBeNull());
+    const acceptedDemo = writes.candidates.find((candidate) => (
+      acceptedHouseholdOnboarding(candidate)?.state === "complete"
+    ));
+    expect(acceptedDemo).toBeDefined();
+    expect(JSON.parse(localStorage.getItem("hearth:session:v1:development") ?? "null")).toMatchObject({
+      memberId: jonathan.id,
+      householdId: acceptedDemo!.householdId,
+      view: "household",
+    });
+  });
+
   it("mounts App and proves Create household reaches the invitation", async () => {
     await act(async () => {
       root.render(createElement(App));
@@ -236,12 +264,15 @@ describe("real household creation enters guided setup", () => {
       root.render(createElement(App));
       await Promise.resolve();
     });
-    await waitFor(() => expect(writes.candidates.filter(
-      (candidate) => acceptedHouseholdOnboarding(candidate)?.state === "offered",
-    )).toHaveLength(1));
+    const offerReceiptIds = () => new Set(writes.candidates.flatMap((candidate) => candidate.commandReceipts
+      .filter((receipt) => receipt.commandKind === "offerHouseholdOnboarding")
+      .map((receipt) => receipt.confirmationId)));
+    await waitFor(() => expect(offerReceiptIds().size).toBe(1));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
+    expect(offerReceiptIds().size).toBe(1);
     const offers = writes.candidates.filter((candidate) => acceptedHouseholdOnboarding(candidate)?.state === "offered");
-    expect(offers).toHaveLength(1);
-    expect(offers[0]?.accounts.length).toBeGreaterThan(0);
+    expect(offers.length).toBeGreaterThan(0);
+    expect(offers.at(-1)?.accounts.length).toBeGreaterThan(0);
   });
 });
 

@@ -1,5 +1,19 @@
 # AI Task and Handoff Standard
 
+## Onboarding audit — entry and rehearsal test-net repairs (D-229) (2026-09-06)
+
+**Status:** Local implementation on `codex/onboarding-test-net-repairs`, based on current `origin/main@a3b6124f1211f511453241d88c2e021255caf34c`. Nothing is committed, pushed, merged, deployed, or hosted-live verified. Risk: **Medium**.
+
+**Outcome:** The mounted onboarding entry integration test now executes the real `acceptHouseholdWrite` validators while storage, continuity, Google, and ledger adapters remain in memory. Accepted candidates are observed through persistence rather than by replacing the command boundary. A dedicated Demo Table seed case crosses that real boundary and proves an active member choice survives acceptance. The rehearsal preflight uses a stable `data-testid` for its Start control while retaining separate copy coverage. Production behavior is unchanged.
+
+**Risk and Dual Course:** Risk **Medium** because this changes regression authority around the accepted-books boundary, with one inert DOM test hook. Budget delta (5): `+1`, making onboarding entry tests capable of catching validator refusals before merge. Engagement delta (3): `+1`, protecting the Demo Table member entry and rehearsal start flow from silent test gaps.
+
+**Verification:** Untouched main reproduced the rehearsal defect: both preflight UI cases failed with `Missing Start our month button`. The original onboarding entry integration suite passed 4/4 while its always-accept replacement still bypassed all runtime validation. Mutation proof then removed the full PR #354 command-runtime demo exemption temporarily: the new Demo Table case failed with `ok: false` and `postedNothing: true`. Restoring the exact source made that case pass, and `git diff --exit-code -- src/core/commandRuntime.ts` confirms no mutation remains. The final entry integration suite passed 6/6, including a mounted Demo Table member selection into Home. The Medium quick gate passed in 75.879 seconds at fingerprint `c1dece9de262bf7a052000ac93e4d77d7bc6a8f9ef9b4a36e48aafa66528ee10`: 16/16 fast and 26/26 serial assertions, including `test/app-swift-demo-entry.test.ts` and D-183's `test/app-startup-p1.test.ts`. `pnpm exec tsc --noEmit`, `pnpm build` (483 Vite modules plus Hercules Pro UI), and `pnpm ai:verify` pass. Existing PGlite browser-externalization/eval and large-chunk build messages remain non-failing warnings.
+
+**Evidence class:** Local synthetic Development fixtures, real command-runtime acceptance, mounted jsdom application paths, and static component rendering. This is not an exhaustive/release gate, browser/live UI, authenticated two-device, hosted-live, deployment, or Production proof. No money writer, journal/budget formula, schema/migration, hosted row, Auth/RLS rule, provider/model call, secret, Production setting/data, or deploy changed. Detailed evidence: [`worksessions/2026-09-06-onboarding-test-net-repairs.md`](worksessions/2026-09-06-onboarding-test-net-repairs.md).
+
+**Next owner:** Jonathan reviews the local test-only branch and separately decides whether to authorize its one PR. Deployment remains unauthorized.
+
 ## Existing-books guided onboarding adoption (D-228) (2026-09-06)
 
 **Status:** [PR #355](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/355) is the single release-candidate PR on `codex/onboarding-existing-books-adoption`, based on `origin/main@d26f1254007e009a390c28c7f8aca6ecb920e58d`. Implementation commit `a7626d6fa1ea292487a058b1ebbf047a95b1748e`; this evidence/status closure follows. Checks are pending. Nothing is merged, manually deployed, or hosted-live verified. Risk: **High**.

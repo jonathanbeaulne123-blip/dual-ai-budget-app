@@ -236,7 +236,7 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
       {!canStart ? <p className="month-error">Choose two different participants, including the person using this phone.</p> : null}
       <RehearsalPreflight household={household} today={today} onReadyChange={setPreflightReady} />
       {!canStartPrepared ? <p className="month-error">Finish the recovery check and every preparation acknowledgement before starting.</p> : null}
-      <button type="button" className="primary" disabled={!canStartPrepared || Boolean(busy)} onClick={() => void apply("start", async () => {
+      <button type="button" className="primary" data-testid="month-rehearsal-start" disabled={!canStartPrepared || Boolean(busy)} onClick={() => void apply("start", async () => {
         const result = startMonthRehearsal(household, {
           monthKey,
           biancaParticipantId,
