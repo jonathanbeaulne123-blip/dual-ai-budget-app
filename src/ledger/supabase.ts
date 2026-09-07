@@ -1,6 +1,7 @@
 import { financialAuditHash } from "../core/commandIdentity.ts";
 import {
   assertHouseholdBinding,
+  assertContinuityMembershipEvidence,
   assertMembershipAuthoritativeDiscovery,
   assertPersonalEnvelopeBinding,
 } from "../core/environmentIsolation.ts";
@@ -91,6 +92,8 @@ type ContinuityMembershipRow = {
   google_subject: string;
   google_email: string;
   auth_user_id?: string;
+  display_name?: string;
+  updated_at?: string;
   role?: string;
 };
 
@@ -316,6 +319,22 @@ export function householdCloudProjection(household: Household, memberId: string)
   };
 }
 
+/** A redeemed invite may precede its roster projection. Only current own Auth
+ * membership may fill an absent row; an inactive existing row remains refused. */
+function hydrateInvitedMember(household: Household, membership: ContinuityMembershipRow,
+  identity: GoogleIdentitySelector, environment: Environment, config: SupabaseConfig): Household {
+  if (household.members.some(member => member.id === membership.member_id)) return household;
+  if (!config.accessToken || !config.authUserId || membership.auth_user_id !== config.authUserId
+      || household.environment !== environment || household.householdId !== membership.household_id
+      || !membership.display_name?.trim() || !membership.google_subject || !membership.google_email) return household;
+  assertContinuityMembershipEvidence({ householdId: membership.household_id, memberId: membership.member_id,
+    authUserId: membership.auth_user_id, googleSubject: membership.google_subject, googleEmail: membership.google_email },
+    identity, { authUserId: config.authUserId });
+  return { ...household, members: [...household.members, { id: membership.member_id,
+    name: membership.display_name.trim(), color: "#718477", active: true,
+    updatedAt: membership.updated_at || household.lastCommittedAt || "1970-01-01T00:00:00.000Z" }] };
+}
+
 async function continuityMembershipRows(
   config: SupabaseConfig,
   identity: GoogleIdentitySelector,
@@ -323,7 +342,7 @@ async function continuityMembershipRows(
 ): Promise<ContinuityMembershipRow[] | null> {
   const subject = identity.subject.trim();
   const email = identity.email.trim().toLowerCase();
-  const select = "select=household_id,member_id,google_subject,google_email,auth_user_id,role&active=eq.true&limit=500";
+  const select = "select=household_id,member_id,google_subject,google_email,auth_user_id,display_name,updated_at,role&active=eq.true&limit=500";
   if (config.authUserId) {
     const byAuthUser = await rest(
       config,
@@ -407,10 +426,11 @@ async function discoverFromContinuityMemberships(
     const snapshotRows = Array.isArray(snapshotResult.body)
       ? snapshotResult.body as { payload?: string | Household }[]
       : [];
-    const household = await snapshotFromRow(snapshotRows[0]);
+    let household = await snapshotFromRow(snapshotRows[0]);
     if (!household || household.environment !== environment) continue;
     if (household.householdId !== membership.household_id) continue;
     try {
+      household = hydrateInvitedMember(household, membership, identity, environment, config);
       assertMembershipAuthoritativeDiscovery(
         household,
         {
@@ -1122,6 +1142,7 @@ export async function pullConsistentMemberReplicaById(input: {
       throw new ValidationError(changedMessage);
     }
     if (membership) {
+      snapshot = hydrateInvitedMember(snapshot, membership, input.identity, environment, config);
       assertMembershipAuthoritativeDiscovery(
         snapshot,
         {

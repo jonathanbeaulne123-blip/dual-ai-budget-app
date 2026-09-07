@@ -3523,7 +3523,7 @@ export function App() {
     );
   }
 
-  async function redeemAuthInviteToken(token: string, shouldContinue: () => boolean = () => true): Promise<void> {
+  async function redeemAuthInviteToken(token: string, shouldContinue: () => boolean = () => true, displayName?: string): Promise<void> {
     if (!shouldContinue()) return;
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
@@ -3544,12 +3544,13 @@ export function App() {
         startSupabaseGoogleSignIn(environment);
         return;
       }
+      if (!displayName?.trim()) { setInviteFlowState("awaiting-name"); return; }
       setInviteFlowState("redeeming");
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
       const redeemed = await redeemHouseholdInvite({
         environment,
         inviteToken: token,
-        displayName: authSession.displayName,
+        displayName: displayName.trim(),
         config: cloudConfig,
       });
       if (!shouldContinue()) return;
@@ -5039,9 +5040,10 @@ export function App() {
               onError={setError}
               onBusy={setBusy}
               onJoined={async (next) => { await persist(next); }}
-              onRedeemAuthInvite={async (token) => {
+              onRedeemAuthInvite={async (token, displayName) => {
                 setPendingAuthInvite(token);
-                await redeemAuthInviteToken(token);
+                const flow = accountFlowGateRef.current.begin();
+                await redeemAuthInviteToken(token, flow.isCurrent, displayName);
               }}
               inviteFlowState={inviteFlowState}
               onScanQr={() => { setWelcomeMode("qr"); setError(""); }}

@@ -28,6 +28,7 @@ export function discoveredHouseholdForTarget(
 
 export type InviteFlowState =
   | "idle"
+  | "awaiting-name"
   | "awaiting-google"
   | "redeeming"
   | "refreshing"
@@ -105,6 +106,8 @@ export function inviteFlowMessage(state: InviteFlowState): string {
   switch (state) {
     case "awaiting-google":
       return "Continue with Google to accept this invitation.";
+    case "awaiting-name":
+      return "What name would you like to use in this household?";
     case "redeeming":
       return "Accepting your invitation…";
     case "refreshing":

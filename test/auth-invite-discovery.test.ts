@@ -63,6 +63,7 @@ type MockState = {
     auth_user_id: string;
     role: string;
     active: boolean;
+    display_name?: string;
   }>;
   snapshot: Household;
   redeemCount: number;
@@ -92,6 +93,7 @@ function mockInviteDiscoveryFetch(state: MockState) {
           auth_user_id: "auth-partner",
           role: "member",
           active: true,
+          display_name: "Bianca",
         });
       }
       return response({
@@ -119,6 +121,7 @@ function mockInviteDiscoveryFetch(state: MockState) {
         google_email: row.google_email,
         auth_user_id: row.auth_user_id,
         role: row.role,
+        display_name: row.display_name,
       })));
     }
 
@@ -185,6 +188,17 @@ describe("Auth QR invite discovery contract", () => {
       email: partnerIdentity.email,
       active: true,
     });
+  });
+
+  it("discovers a newly joined person absent from the old roster without changing the snapshot", async () => {
+    const snapshot = partnerInviteHousehold();
+    snapshot.members = snapshot.members.filter(member => member.id !== "MEM-002");
+    const before = JSON.stringify(snapshot);
+    const state: MockState = { memberships: [], snapshot, redeemCount: 0 };
+    vi.stubGlobal("fetch", mockInviteDiscoveryFetch(state));
+    const { match } = await redeemAndDiscover(HEX64, authConfig);
+    expect(match?.household.members.find(member => member.id === "MEM-002")).toMatchObject({name:"Bianca",active:true});
+    expect(JSON.stringify(snapshot)).toBe(before);
   });
 
   it("treats duplicate QR redemption as idempotent and still discovers immediately", async () => {

@@ -153,6 +153,8 @@ export function inviteReasonMessage(reason: string): string {
       return "Only the household owner can send an invite.";
     case "email-required":
       return "Email invites need the other person's Google email.";
+    case "display-name-required":
+      return "Enter the name you want to use in this household (up to 80 characters).";
     case "member-not-in-household":
       return "That person is not on this household roster.";
     case "member-already-bound":
@@ -225,7 +227,7 @@ export function isFullHouseInviteReason(reason: string): boolean {
 export async function issueHouseholdInvite(input: {
   environment: Environment;
   householdId: string;
-  targetMemberId: string;
+  targetMemberId: string | null;
   kind: InviteKind;
   invitedEmail?: string | null;
   role?: MembershipRole;
