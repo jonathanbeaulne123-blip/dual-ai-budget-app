@@ -6,6 +6,7 @@ import {
   adoptAcceptedOnboardingEvidence,
   adoptExistingOnboardingEvidence,
   approvalsFor,
+  assertDemoReplacementAllowed,
   catalogHousehold,
   chapterProgressSatisfied,
   completeSyntheticDemoOnboarding,
@@ -42,6 +43,7 @@ import {
   type Household,
   type HouseholdScopeObservation,
 } from "../src/core/index.ts";
+import { assertHouseholdFundTransition } from "../src/core/householdFund.ts";
 import {
   BIANCA as FIXTURE_BIANCA,
   existingBooksActivationAt,
@@ -516,6 +518,81 @@ describe("onboarding lifecycle", () => {
         userMessage: "Only you can approve for yourself.",
       });
     }
+  });
+
+  it("refuses a same-household Suite replacement of ordinary Development books", async () => {
+    const adapters = {
+      ingest: async () => ({ ok: true }),
+      persist: async () => undefined,
+    };
+    // One base household, so previous and candidate differ only where each case says.
+    const base = seedDemoHousehold({ today: "2026-09-06", environment: "development" });
+    const fixture = {
+      kind: "hearth-demo-suite",
+      seed: 7,
+      version: "2.0.0",
+      generatedForDate: "2026-09-06",
+      generatedAt: "2026-09-06T12:00:00.000Z",
+      buildSha: "regression",
+      fixtureHashSha256: "",
+    } as never;
+    const candidate = { ...base, syntheticFixture: fixture };
+    // A Fund whose custodian differs is an append-only violation the whole-fixture
+    // replacement path deliberately skips, so it proves the skip is load-bearing.
+    const otherCustodian = {
+      ...base,
+      householdFund: base.householdFund
+        ? { ...base.householdFund, custodianMemberId: "MEM-002" }
+        : null,
+    };
+    const ordinaryBooks = { ...otherCustodian, syntheticFixture: null };
+    const priorFixture = {
+      ...otherCustodian,
+      syntheticFixture: { ...(fixture as object), seed: 6 } as never,
+    };
+    const actingMemberId = base.members.find((member) => member.active)!.id;
+
+    // The App-side helper already refuses this; the runtime must agree.
+    expect(() => assertDemoReplacementAllowed(ordinaryBooks))
+      .toThrow("Demo Suite will not replace ordinary Development books.");
+    expect(() => assertHouseholdFundTransition(ordinaryBooks, candidate))
+      .toThrow("The Household Fund identity, opening date, and custodian are immutable.");
+
+    const refused = await acceptHouseholdWrite({
+      previous: ordinaryBooks,
+      candidate,
+      confirmationId: "REJECT-SUITE-OVER-ORDINARY-BOOKS",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId,
+      adapters,
+    });
+    expect(refused).toMatchObject({ ok: false, postedNothing: true });
+
+    // The legitimate whole-fixture replacement keeps its documented D-227 skip.
+    expect(() => assertDemoReplacementAllowed(priorFixture)).not.toThrow();
+    const replaced = await acceptHouseholdWrite({
+      previous: priorFixture,
+      candidate,
+      confirmationId: "ACCEPT-SUITE-OVER-SUITE",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId,
+      adapters,
+    });
+    expect(replaced.ok).toBe(true);
+
+    // Creating the Suite as a separate household alongside ordinary books still works.
+    const alongside = await acceptHouseholdWrite({
+      previous: { ...ordinaryBooks, householdId: `${ordinaryBooks.householdId}-OTHER` },
+      candidate,
+      confirmationId: "ACCEPT-SUITE-BESIDE-ORDINARY-BOOKS",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId,
+      adapters,
+    });
+    expect(alongside.ok).toBe(true);
   });
 
   it("re-probes a stopped run, demotes stale facts, and converges against an old replica", () => {

@@ -1,5 +1,7 @@
 # AI Task and Handoff Standard
 
+> Release authorization update, 2026-09-07: Jonathan superseded the no-deployment hold and authorized merge and Development publication of F1, F4, F3 in that order. Earlier hold statements below are historical. F1 merged as 51ab7dd; F4 and F3 remain pending at this record. Production ledger activation remains unchanged.
+
 ## Onboarding F4 — mounted App stale-seat regression (2026-09-07)
 
 **Status:** Local test-only implementation on `codex/onboarding-f4-app-stale-seat`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
@@ -13,6 +15,20 @@
 **Evidence class:** Local synthetic jsdom App test. No hosted, browser, two-device, exhaustive, or Production proof.
 
 **Next owner:** Codex finishes verification. Merge remains withheld because main pushes auto-deploy and deployment is unauthorized. Apply after F1 and before F3.
+
+## Onboarding F1 — Suite predecessor fence (2026-09-07)
+
+**Status:** Implemented locally on `codex/onboarding-f1-suite-fence`, based on `origin/main@44c5931`. Not merged or deployed. Risk High.
+
+**Outcome:** Same-household ordinary books no longer receive the whole-fixture transition exemption. Legitimate Suite-to-Suite replacement and separate-household creation retain the exemption. This narrows an exemption rather than rejecting every command solely by name.
+
+**Risk and Dual Course:** High command-authority boundary. Budget delta (5): +3, restoring ordinary transition protection. Engagement delta (3): 0, existing legitimate demo behavior preserved.
+
+**Verification:** The new test failed on untouched runtime: expected refusal, received accepted-local. Post-fix High quick gate passed: 55 fast plus 7 serial assertions, 202.299 seconds, fingerprint ab840cf5631e700d07a9eeb9563e2f38721db68b820d9b105623cba36310841d. TypeScript and build passed. Independent review found no functional blocker; its comment-precision correction is applied. Documentation/comment-only closure followed the gate, with AI verification and diff hygiene rechecked.
+
+**Evidence class:** Local synthetic Development command tests only. No hosted, two-device, exhaustive, browser, or Production proof.
+
+**Next owner:** Codex completes verification and prepares the branch/PR. Jonathan owns release; merge is withheld because main pushes deploy automatically and deployment is not authorized.
 
 
 ## Onboarding audit — entry truth, resilient rendering, and preview accessibility (D-233) (2026-09-06)

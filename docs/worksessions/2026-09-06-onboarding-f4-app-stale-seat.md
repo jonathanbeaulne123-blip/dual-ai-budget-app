@@ -23,3 +23,6 @@ Existing resilience test mounts Hercules only. New test passed before mutation. 
 
 ## Boundaries and handoff
 No money writer, formula, household data, hosted request, schema, Auth/RLS, provider, secret, Worker, or deployment change. Tests are local and synthetic, not exhaustive or two-device/live proof. Bundled Node and existing onboarding dependencies are used; pnpm dependency auto-install is disabled to preserve the shared installation. Next owner: Codex verification, Jonathan release boundary. Apply after F1 and before F3.
+
+## Release authorization update — 2026-09-07
+Jonathan superseded the deployment hold. F1 merged via #362 as 51ab7dd. Merged current main into this branch, preserving both handoff blocks; conflict was documentation-only and no executable file changed from the reviewed combined code. F4 #363 is authorized next, then F3 #364. Exact updated-head CI is required before merge; Development publication follows main. Earlier no-deploy statements are historical.
