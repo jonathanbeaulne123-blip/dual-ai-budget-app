@@ -1,10 +1,25 @@
 # AI Task and Handoff Standard
 
-> Release authorization update, 2026-09-07: Jonathan superseded the no-deployment hold and authorized merge and Development publication of F1, F4, F3 in that order. Earlier hold statements below are historical. F1 merged as 51ab7dd; F4 and F3 remain pending at this record. Production ledger activation remains unchanged.
+> Release update, 2026-09-07: Jonathan authorized merge and Development deployment, superseding earlier holds. F1 #362 merged as 51ab7dd; F4 #363 merged as e5df73e. F3 #364 is the final release candidate; its updated-head checks and final deployment proof remain pending at this record. Production ledger activation is unchanged.
+
+## Onboarding F3 — Development-only rehearsal access (2026-09-07)
+
+**Status:** Local implementation on `codex/onboarding-f3-rehearsal-environment`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
+
+**Outcome:** The access wrapper now returns null outside Development before rendering its locked explainer. Home and More remain unchanged for Development households.
+
+**Risk and Dual Course:** Medium UI behavior. Budget delta (5): 0; Engagement delta (3): +1, removing Development scaffolding copy from Production presentation. No Production setting or data is changed.
+
+**Verification:** The new static-render assertion failed before the guard, returning the locked card instead of an empty string. Medium quick gate passed: 14 fast plus 26 serial startup assertions, 281.190 seconds. TypeScript, build including Hercules Pro UI, AI verification and diff hygiene passed. Independent review found no blocker. See worksession for exact evidence and scope.
+
+**Evidence class:** Local synthetic component rendering only. No hosted, browser, two-device, exhaustive, or Production deployment proof.
+
+**Next owner:** Codex verification; Jonathan release decision. Apply third, after F1 and F4. Merge and verify the authorized Development deployment after updated-head checks pass.
+
 
 ## Onboarding F4 — mounted App stale-seat regression (2026-09-07)
 
-**Status:** Local test-only implementation on `codex/onboarding-f4-app-stale-seat`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
+**Status:** Merged via PR #363 as `e5df73e`, after updated-head checks passed. Final combined Development deployment verification follows PR #364. Risk Medium.
 
 **Outcome:** A mounted App with a deactivated stored session member must render its shell, avoid the identity error, and commit no onboarding-offer receipt. Storage, ledger, continuity and Google doubles remain below the real command boundary. The test directly awaits React act to avoid overlapping-act warnings.
 
@@ -14,11 +29,11 @@
 
 **Evidence class:** Local synthetic jsdom App test. No hosted, browser, two-device, exhaustive, or Production proof.
 
-**Next owner:** Codex finishes verification. Merge remains withheld because main pushes auto-deploy and deployment is unauthorized. Apply after F1 and before F3.
+**Next owner:** Codex finishes verification. F4 merged after F1; complete F3 and verify final Development publication.
 
 ## Onboarding F1 — Suite predecessor fence (2026-09-07)
 
-**Status:** Implemented locally on `codex/onboarding-f1-suite-fence`, based on `origin/main@44c5931`. Not merged or deployed. Risk High.
+**Status:** Merged via PR #362 as `51ab7dd`, after reviewed-head checks passed. Final combined Development deployment verification follows PR #364. Risk High.
 
 **Outcome:** Same-household ordinary books no longer receive the whole-fixture transition exemption. Legitimate Suite-to-Suite replacement and separate-household creation retain the exemption. This narrows an exemption rather than rejecting every command solely by name.
 
@@ -28,7 +43,7 @@
 
 **Evidence class:** Local synthetic Development command tests only. No hosted, two-device, exhaustive, browser, or Production proof.
 
-**Next owner:** Codex completes verification and prepares the branch/PR. Jonathan owns release; merge is withheld because main pushes deploy automatically and deployment is not authorized.
+**Next owner:** Codex completes verification and prepares the branch/PR. Jonathan authorized release; F1 is merged. Complete F4/F3 sequence and final Development publication proof.
 
 
 ## Onboarding audit — entry truth, resilient rendering, and preview accessibility (D-233) (2026-09-06)

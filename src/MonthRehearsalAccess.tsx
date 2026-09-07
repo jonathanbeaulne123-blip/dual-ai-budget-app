@@ -6,6 +6,10 @@ import {
 
 /** One deliberate gate shared by Home and More. */
 export function MonthRehearsalAccess(props: MonthRehearsalPanelProps) {
+  // The rehearsal and its locked explainer are both Development-only. MonthRehearsalPanel
+  // already refuses to render outside Development; this gate must refuse before it, or the
+  // "later Development reliability exercise" card reaches the Production ledger.
+  if (props.household.environment !== "development") return null;
   if (acceptedHouseholdOnboarding(props.household)?.state !== "complete") {
     return (
       <section className="card" aria-labelledby={`rehearsal-locked-title-${props.surface ?? "home"}`}>
