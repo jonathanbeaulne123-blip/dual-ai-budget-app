@@ -50,7 +50,8 @@ export function LedgerPage({
 }) {
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState("");
-  const [showContrast, setShowContrast] = useState(true);
+  const [showContrast, setShowContrast] = useState(false);
+  const [rowLimit, setRowLimit] = useState(50);
   const visible = useMemo(
     () => presentedTransactions
       ? household.transactions
@@ -62,7 +63,11 @@ export function LedgerPage({
   }, [sourceFocus, visible]);
   const grouped = useMemo(() => partitionLedger(sourceRows), [sourceRows]);
   const flagged = visible.filter((tx) => tx.potentialDuplicate && !tx.isDuplicate).length;
-  const contrasts = useMemo(() => duplicateContrastPairs(visible), [visible]);
+  // Pair scoring is review work; ordinary activity and every inbound posting
+  // must not pay its quadratic cost while the review is closed.
+  const contrasts = useMemo(() => showContrast ? duplicateContrastPairs(visible) : [], [visible, showContrast]);
+
+  useEffect(() => setRowLimit(50), [query, section, sourceFocus, memberId, view]);
 
   useEffect(() => {
     if (!sourceFocus?.transactionId) return;
@@ -90,10 +95,10 @@ export function LedgerPage({
       {flagged > 0 && (
         <article className="pulse" style={{ marginTop: 0 }}>
           <article className="warn">
-            {flagged} {flagged === 1 ? "row looks" : "rows look"} like a repeat. Contrast pairs weigh confidence 0–100 without loosening the scorer.
+            {flagged} {flagged === 1 ? "row looks" : "rows look"} like a repeat. Review the pairs before excluding an entry.
             {" "}
-            <button type="button" className="chip" onClick={() => setShowContrast((value) => !value)}>
-              {showContrast ? "Hide contrast" : "Show contrast"}
+            <button type="button" className="chip" aria-expanded={showContrast} onClick={() => setShowContrast((value) => !value)}>
+              {showContrast ? "Close review" : "Review possible repeats"}
             </button>
           </article>
         </article>
@@ -159,7 +164,7 @@ export function LedgerPage({
         <p className="muted">Transfers move money between accounts. Refunds undo spend. Neither is ordinary income.</p>
       )}
       <section className="card">
-        {rows.length === 0 ? <p className="muted">Nothing in this list yet.</p> : rows.map((tx) => (
+        {rows.length === 0 ? <p className="muted">Nothing in this list yet.</p> : rows.slice(0, rowLimit).map((tx) => (
           <LedgerRow
             key={tx.id}
             household={household}
@@ -171,6 +176,11 @@ export function LedgerPage({
             onRemove={() => onRemove(tx)}
           />
         ))}
+        {rows.length > rowLimit && (
+          <button type="button" className="chip" onClick={() => setRowLimit((limit) => limit + 50)}>
+            Show {Math.min(50, rows.length - rowLimit)} more · {rowLimit} of {rows.length}
+          </button>
+        )}
       </section>
     </>
   );
@@ -203,7 +213,7 @@ function LedgerRow({
     ? household.transactions.find((item) => item.id === transaction.transferPairId)
     : undefined;
   return (
-    <div className="ledger-row">
+    <div className="ledger-row" data-ledger-row-id={transaction.id}>
       <div>
         <strong>{transaction.note || transactionTypeLabel(transaction.type)}</strong>
         <div className="muted">

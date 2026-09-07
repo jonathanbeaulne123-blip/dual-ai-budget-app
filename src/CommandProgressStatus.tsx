@@ -2,6 +2,7 @@ import type { CommandProgressDisplay, CommandProgressStepState } from "./command
 
 type Props = {
   display: CommandProgressDisplay;
+  commandId?: string;
 };
 
 function stepGlyph(state: CommandProgressStepState): string {
@@ -11,12 +12,14 @@ function stepGlyph(state: CommandProgressStepState): string {
   return "○";
 }
 
-export function CommandProgressStatus({ display }: Props) {
+export function CommandProgressStatus({ display, commandId }: Props) {
   if (!display.visible) return null;
 
   return (
     <div
       className="command-progress"
+      data-command-id={commandId}
+      data-command-phase={display.phase}
       role="status"
       aria-live="polite"
       aria-atomic="true"
