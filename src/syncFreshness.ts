@@ -34,6 +34,8 @@ export type SyncFreshnessDisplay = {
 };
 
 export type SyncFreshnessInput = {
+  /** Durable event stream has no polling fallback. */
+  eventStream?: boolean;
   household: Household | null;
   viewerMemberId: string | null;
   realtimeEnabled: boolean;
@@ -85,6 +87,7 @@ export function inferLastSharedActor(
 }
 
 export function continuityTransportLabel(input: {
+  eventStream?: boolean;
   realtimeEnabled: boolean;
   realtimeStatus: ContinuityRealtimeStatus | null;
   authRequired?: boolean;
@@ -99,6 +102,7 @@ export function continuityTransportLabel(input: {
   }
   if (input.realtimeStatus === "SUBSCRIBED") return { primary: "Live", mode: "live" };
   if (input.realtimeStatus === "JOINING") return { primary: "Connecting…", mode: "connecting" };
+  if (input.eventStream) return { primary: "Connecting…", mode: "connecting" };
   const seconds = Math.round((input.pollIntervalMs ?? LIVE_PULL_INTERVAL_MS) / 1000);
   return { primary: `Checking every ${seconds} s`, mode: "poll" };
 }
@@ -150,6 +154,7 @@ export function buildSyncFreshness(input: SyncFreshnessInput): SyncFreshnessDisp
   if (mode === "local" || mode === "invite-draft") return hidden;
 
   const transport = continuityTransportLabel({
+    eventStream: input.eventStream,
     realtimeEnabled: input.realtimeEnabled,
     realtimeStatus: input.realtimeStatus,
     authRequired: input.authRequired,

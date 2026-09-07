@@ -244,26 +244,6 @@ export function OfficeWide({
       return id ? byWidget.has(id) : false;
     })];
   }, [fundConfigured, unarrangedPlates, household, memberId]);
-  const fundWalkToday = useMemo(() => (
-    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
-      ? fundWalk(booksHousehold, monthKeyFromDateKey(today), today)
-      : null
-  ), [fundConfigured, booksHousehold, today]);
-  const fundWeekToday = useMemo(() => (
-    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
-      ? fundWeek(booksHousehold, today)
-      : null
-  ), [fundConfigured, booksHousehold, today]);
-  const categoryShapeToday: CategoryShape[] = useMemo(() => (
-    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
-      ? categoryShape(booksHousehold, monthKeyFromDateKey(today), today)
-      : []
-  ), [fundConfigured, booksHousehold, today]);
-  const twoStreamsToday: MemberStream[] = useMemo(() => (
-    fundConfigured && shapeHouseholdFundConfig(booksHousehold.householdFund)
-      ? twoStreams(booksHousehold, today)
-      : []
-  ), [fundConfigured, booksHousehold, today]);
   const selectedFundPlate = useMemo(() => (
     plates.find((plate) => fundWidgetIdForPlateId(plate.id) === selectedFundWidget)
     ?? plates.find((plate) => fundWidgetIdForPlateId(plate.id) === "level")
@@ -550,6 +530,26 @@ export function OfficeWide({
   const openSpec = openId ? specs[openId] : null;
   /** Shared Home's default centre is the Month Spread. Left plates grow in the mosaic. */
   const spreadIsStage = view === "household" && !openSpec && !monthList;
+  const fundWalkToday = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && (activeFundWidget === "level" || activeFundWidget === "next-out" || activeFundWidget === "spoken-for") && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? fundWalk(booksHousehold, monthKeyFromDateKey(today), today)
+      : null
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
+  const fundWeekToday = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && activeFundWidget === "week" && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? fundWeek(booksHousehold, today)
+      : null
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
+  const categoryShapeToday: CategoryShape[] = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && activeFundWidget === "shape" && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? categoryShape(booksHousehold, monthKeyFromDateKey(today), today)
+      : []
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
+  const twoStreamsToday: MemberStream[] = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && activeFundWidget === "streams" && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? twoStreams(booksHousehold, today)
+      : []
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
   const showAsk = spreadIsStage
     && (!fundConfigured || fundWidgetIdForPlateId(selectedFundPlate?.id ?? "") === "level")
     && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);

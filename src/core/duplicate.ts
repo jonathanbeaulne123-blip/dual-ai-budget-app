@@ -168,6 +168,9 @@ export function refreshDuplicateFlags(transactions: Transaction[]): Transaction[
       const left = transactions[leftIndex]!;
       for (let j = i + 1; j < indexes.length; j += 1) {
         const rightIndex = indexes[j]!;
+        // This projection returns booleans, not all matching pairs. Once both
+        // endpoints are true, scoring their relationship cannot change output.
+        if (flags[leftIndex] && flags[rightIndex]) continue;
         const right = transactions[rightIndex]!;
         if (scoreSimilarity(left, right) || scoreSimilarity(right, left)) {
           flags[leftIndex] = true;

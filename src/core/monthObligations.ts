@@ -87,22 +87,27 @@ function plannedGoalClaims(
   return { rows, suppressedPostedDuplicate };
 }
 
-function postedPositionSource(
-  household: Household,
-  fundId: string,
-  positionId: string,
-): { date: DateKey; transaction: Transaction | undefined } | undefined {
-  const transaction = household.transactions
-    .filter((transaction) => (
-      transaction.type === "expense"
-      && (transaction.funding?.positionId ?? transaction.id) === positionId
-    ))
-    .sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id))[0];
-  const purchaseEvent = activeHouseholdFundEvents(household, fundId)
-    .filter((event) => event.kind === "purchase-funded" && event.relatedTransactionIds.includes(positionId))
-    .sort((left, right) => left.date.localeCompare(right.date) || left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id))[0];
-  if (!transaction && !purchaseEvent) return undefined;
-  return { date: transaction?.date ?? purchaseEvent!.date, transaction };
+/** Preserve earliest date/id selection with one index per read-model evaluation. */
+function postedPositionSources(household: Household, fundId: string) {
+  const sources = new Map<string, { date: DateKey; transaction: Transaction | undefined }>();
+  for (const transaction of household.transactions) {
+    if (transaction.type !== "expense") continue;
+    const id = transaction.funding?.positionId ?? transaction.id;
+    const previous = sources.get(id)?.transaction;
+    if (!previous || transaction.date.localeCompare(previous.date) < 0
+      || (transaction.date === previous.date && transaction.id.localeCompare(previous.id) < 0)) {
+      sources.set(id, { date: transaction.date, transaction });
+    }
+  }
+  const purchases = activeHouseholdFundEvents(household, fundId)
+    .filter((event) => event.kind === "purchase-funded")
+    .sort((left, right) => left.date.localeCompare(right.date) || left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id));
+  for (const event of purchases) {
+    for (const id of event.relatedTransactionIds) {
+      if (!sources.has(id)) sources.set(id, { date: event.date, transaction: undefined });
+    }
+  }
+  return sources;
 }
 
 /** One date-ordered, cents-exact list of what the Household Fund owes in a month. */
@@ -114,6 +119,7 @@ export function monthObligations(household: Household, monthKey: string, today: 
   if (!fund) return { monthKey, rows: [], owedCents: 0, tiesToProjection: false };
 
   const projection = projectHouseholdFund(household, from);
+  const postedSources = postedPositionSources(household, fund.id);
   const recurrenceById = new Map(household.recurrences.map((row) => [row.id, row]));
   const postedRecurrenceOccurrences = new Set(household.transactions
     .filter((row) => row.source === "recurring" && row.sourceId && row.date >= start && row.date <= end)
@@ -142,7 +148,7 @@ export function monthObligations(household: Household, monthKey: string, today: 
   });
 
   const postedRows: MonthObligation[] = projection.transactionPositions.flatMap((position) => {
-    const source = postedPositionSource(household, fund.id, position.transactionId);
+    const source = postedSources.get(position.transactionId);
     const amountCents = position.fundedCents - position.refundedCents;
     if (!source || source.date < start || source.date > end || amountCents <= 0) return [];
     const visibleTransaction = source.transaction?.visibility === "personal" ? undefined : source.transaction;
@@ -165,7 +171,7 @@ export function monthObligations(household: Household, monthKey: string, today: 
   const recurrenceCents = recurrenceRows.reduce((sum, row) => sum + row.amountCents, 0);
   const postedCents = postedRows.reduce((sum, row) => sum + row.amountCents, 0);
   const projectedPostedCents = projection.transactionPositions.reduce((sum, position) => {
-    const source = postedPositionSource(household, fund.id, position.transactionId);
+    const source = postedSources.get(position.transactionId);
     return source && source.date >= start && source.date <= end
       ? sum + Math.max(0, position.fundedCents - position.refundedCents)
       : sum;
