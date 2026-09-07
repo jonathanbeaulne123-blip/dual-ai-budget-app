@@ -1,5 +1,20 @@
 # AI Task and Handoff Standard
 
+## Onboarding F4 — mounted App stale-seat regression (2026-09-07)
+
+**Status:** Local test-only implementation on `codex/onboarding-f4-app-stale-seat`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
+
+**Outcome:** A mounted App with a deactivated stored session member must render its shell, avoid the identity error, and commit no onboarding-offer receipt. Storage, ledger, continuity and Google doubles remain below the real command boundary. The test directly awaits React act to avoid overlapping-act warnings.
+
+**Risk and Dual Course:** Medium regression authority. Budget delta (5): +1; Engagement delta (3): +1. No production behavior changes.
+
+**Verification:** The new test passes with guards present and fails with Choose an active household member when App guards are removed; both Hercules-only tests remain green. App source was restored exactly. Medium quick gate passed (1 mounted-App assertion, 92.085 seconds), including TypeScript and AI verification. Independent review found no blocker. `pnpm build` passed including Hercules Pro UI; existing PGlite externalization/eval and chunk-size warnings remain non-failing; see worksession.
+
+**Evidence class:** Local synthetic jsdom App test. No hosted, browser, two-device, exhaustive, or Production proof.
+
+**Next owner:** Codex finishes verification. Merge remains withheld because main pushes auto-deploy and deployment is unauthorized. Apply after F1 and before F3.
+
+
 ## Onboarding audit — entry truth, resilient rendering, and preview accessibility (D-233) (2026-09-06)
 
 **Status:** [PR #360](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/360) is the single release-candidate PR on `codex/onboarding-audit-small-repairs`, based on `origin/main@954c484d5f804d3e69436093df0277fb244baec7`. Verified implementation commit `79907a6206698d8a2eaae7c21a42993f5d282795`; this evidence/status closure follows on the same PR. Checks are pending. Jonathan authorized merge and Development deployment; nothing is merged, deployed, or hosted-live verified yet. Risk: **Medium**.
