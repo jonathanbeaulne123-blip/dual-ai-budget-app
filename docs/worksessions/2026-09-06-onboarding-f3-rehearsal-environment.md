@@ -28,3 +28,6 @@ Bundled Node and the existing onboarding dependency tree are used; pnpm dependen
 
 ## Remaining uncertainty and handoff
 Synthetic static React proof, not exhaustive, hosted-live, two-device, or Production deployment evidence. Jonathan owns release; main pushes deploy automatically, so merge remains withheld. Codex completes branch verification and PR preparation.
+
+## Release update — 2026-09-07
+Jonathan superseded the no-deployment hold. F1 #362 merged as 51ab7dd and F4 #363 as e5df73e. Merged current main into F3, preserving both decision entries and all three handoff records. Conflicts were documentation-only; no production/test logic changed during integration. Updated-head CI and final deployment verification remain pending at this record. Earlier hold statements are historical.

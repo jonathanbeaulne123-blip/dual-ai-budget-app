@@ -1,5 +1,7 @@
 # AI Task and Handoff Standard
 
+> Release update, 2026-09-07: Jonathan authorized merge and Development deployment, superseding earlier holds. F1 #362 merged as 51ab7dd; F4 #363 merged as e5df73e. F3 #364 is the final release candidate; its updated-head checks and final deployment proof remain pending at this record. Production ledger activation is unchanged.
+
 ## Onboarding F3 — Development-only rehearsal access (2026-09-07)
 
 **Status:** Local implementation on `codex/onboarding-f3-rehearsal-environment`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
@@ -12,7 +14,36 @@
 
 **Evidence class:** Local synthetic component rendering only. No hosted, browser, two-device, exhaustive, or Production deployment proof.
 
-**Next owner:** Codex verification; Jonathan release decision. Apply third, after F1 and F4. No merge because main pushes auto-deploy and deployment is unauthorized.
+**Next owner:** Codex verification; Jonathan release decision. Apply third, after F1 and F4. Merge and verify the authorized Development deployment after updated-head checks pass.
+
+
+## Onboarding F4 — mounted App stale-seat regression (2026-09-07)
+
+**Status:** Local test-only implementation on `codex/onboarding-f4-app-stale-seat`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
+
+**Outcome:** A mounted App with a deactivated stored session member must render its shell, avoid the identity error, and commit no onboarding-offer receipt. Storage, ledger, continuity and Google doubles remain below the real command boundary. The test directly awaits React act to avoid overlapping-act warnings.
+
+**Risk and Dual Course:** Medium regression authority. Budget delta (5): +1; Engagement delta (3): +1. No production behavior changes.
+
+**Verification:** The new test passes with guards present and fails with Choose an active household member when App guards are removed; both Hercules-only tests remain green. App source was restored exactly. Medium quick gate passed (1 mounted-App assertion, 92.085 seconds), including TypeScript and AI verification. Independent review found no blocker. `pnpm build` passed including Hercules Pro UI; existing PGlite externalization/eval and chunk-size warnings remain non-failing; see worksession.
+
+**Evidence class:** Local synthetic jsdom App test. No hosted, browser, two-device, exhaustive, or Production proof.
+
+**Next owner:** Codex finishes verification. F4 merged after F1; complete F3 and verify final Development publication.
+
+## Onboarding F1 — Suite predecessor fence (2026-09-07)
+
+**Status:** Implemented locally on `codex/onboarding-f1-suite-fence`, based on `origin/main@44c5931`. Not merged or deployed. Risk High.
+
+**Outcome:** Same-household ordinary books no longer receive the whole-fixture transition exemption. Legitimate Suite-to-Suite replacement and separate-household creation retain the exemption. This narrows an exemption rather than rejecting every command solely by name.
+
+**Risk and Dual Course:** High command-authority boundary. Budget delta (5): +3, restoring ordinary transition protection. Engagement delta (3): 0, existing legitimate demo behavior preserved.
+
+**Verification:** The new test failed on untouched runtime: expected refusal, received accepted-local. Post-fix High quick gate passed: 55 fast plus 7 serial assertions, 202.299 seconds, fingerprint ab840cf5631e700d07a9eeb9563e2f38721db68b820d9b105623cba36310841d. TypeScript and build passed. Independent review found no functional blocker; its comment-precision correction is applied. Documentation/comment-only closure followed the gate, with AI verification and diff hygiene rechecked.
+
+**Evidence class:** Local synthetic Development command tests only. No hosted, two-device, exhaustive, browser, or Production proof.
+
+**Next owner:** Codex completes verification and prepares the branch/PR. Jonathan authorized release; F1 is merged. Complete F4/F3 sequence and final Development publication proof.
 
 
 ## Onboarding audit — entry truth, resilient rendering, and preview accessibility (D-233) (2026-09-06)
