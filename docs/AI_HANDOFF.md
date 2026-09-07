@@ -1,5 +1,18 @@
 # AI Task and Handoff Standard
 
+## QR invitation entry (D-239) (2026-09-07)
+
+**Status:** Local candidate on `codex/qr-invite-entry`, based on `fc78635`. Risk High; migration 021 not applied, not deployed.
+
+**Outcome:** Owners can invite Someone new without a roster prerequisite. The recipient signs in, enters their name and accepts. Inactive reservation, identity-bound redemption, replacement revocation, capacity and cancelled-flow guards remain blocking. Budget delta (5): +1; Engagement delta (3): +2.
+
+**Verification:** High quick gate 89/89, 79.569 seconds; final focused invite/discovery/account-flow tests 12/12. TypeScript, build and AI verification pass. Independent re-review found no remaining blocker. Executable local SQL plus client discovery and React coverage; details in the [worksession](worksessions/2026-09-07-qr-invite-entry.md).
+
+**Evidence class:** Local synthetic, not hosted RLS, real camera/OAuth, exhaustive or release proof.
+
+**Next owner:** Codex finishes review/gates; Jonathan authorizes the concrete migration and Development release before live two-account acceptance.
+
+
 > Release update, 2026-09-07: Jonathan authorized merge and Development deployment, superseding earlier holds. F1 #362 merged as 51ab7dd; F4 #363 merged as e5df73e. F3 #364 is the final release candidate; its updated-head checks and final deployment proof remain pending at this record. Production ledger activation is unchanged.
 
 ## Onboarding F3 — Development-only rehearsal access (2026-09-07)

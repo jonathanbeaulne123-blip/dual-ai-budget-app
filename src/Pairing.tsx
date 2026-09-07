@@ -108,7 +108,7 @@ export function WelcomeJoin({
   onBusy: (value: boolean) => void;
   onJoined: (household: Household) => Promise<void>;
   /** Auth/RLS one-time invite (email/QR). Phrase path stays separate. */
-  onRedeemAuthInvite?: (token: string) => Promise<void>;
+  onRedeemAuthInvite?: (token: string, displayName?: string) => Promise<void>;
   inviteFlowState?: InviteFlowState;
   onScanQr?: () => void;
   onUseAnotherGoogle?: () => void;
@@ -117,6 +117,7 @@ export function WelcomeJoin({
   const fileRef = useRef<HTMLInputElement>(null);
   const [cloud, setCloud] = useState<boolean | null>(null);
   const [recoveryInput, setRecoveryInput] = useState("");
+  const [joinName, setJoinName] = useState("");
   const authToken = authInviteTokenFromText(inviteInput) || (isAuthInviteToken(inviteInput.trim()) ? inviteInput.trim().toLowerCase() : "");
 
   useEffect(() => {
@@ -133,7 +134,7 @@ export function WelcomeJoin({
         if (!onRedeemAuthInvite) {
           throw new Error("Continue with Google to accept this invitation.");
         }
-        await onRedeemAuthInvite(token);
+        await onRedeemAuthInvite(token, inviteFlowState === "awaiting-name" ? joinName.trim() : undefined);
         return;
       }
       throw new Error("Paste the Google invitation link you received, or scan its QR code.");
@@ -184,8 +185,11 @@ export function WelcomeJoin({
       <p className="welcome-join__status" role="status" aria-live="polite" aria-busy={inviteFlowState === "redeeming" || inviteFlowState === "refreshing"}>
         {inviteFlowMessage(inviteFlowState)}
       </p>
+      {inviteFlowState === "awaiting-name" && <label>Your name
+        <input value={joinName} onChange={event => setJoinName(event.target.value)} autoComplete="given-name" maxLength={80} />
+      </label>}
       <KitchenNotice message={error} />
-      <button className="primary welcome-join__primary" disabled={busy || !authToken} onClick={() => void redeemGoogleInvite()}>
+      <button className="primary welcome-join__primary" disabled={busy || !authToken || (inviteFlowState === "awaiting-name" && !joinName.trim())} onClick={() => void redeemGoogleInvite()}>
         {inviteFlowState === "awaiting-google" ? "Continue with Google" : inviteFlowState === "redeeming" ? "Accepting invitation…" : inviteFlowState === "refreshing" ? "Refreshing households…" : inviteFlowState === "error" ? "Try invitation again" : "Accept invitation"}
       </button>
       {onScanQr && <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={onScanQr}>Scan invitation QR code</button>}
@@ -241,7 +245,7 @@ export function WelcomeJoin({
   );
 }
 
-function AuthInviteChrome({
+export function AuthInviteChrome({
   household,
   memberId,
   busy,
@@ -257,7 +261,7 @@ function AuthInviteChrome({
   onBusy: (value: boolean) => void;
 }) {
   const invitees = household.members.filter((member) => member.active && member.id !== memberId);
-  const [targetMemberId, setTargetMemberId] = useState(invitees[0]?.id ?? "");
+  const [targetMemberId, setTargetMemberId] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<MembershipRole>("owner");
   const [issued, setIssued] = useState<IssueInviteResult & { ok: true } | null>(null);
@@ -274,7 +278,6 @@ function AuthInviteChrome({
     try {
       if (!hostedContinuityAllowed(household.environment)) throw new Error(inviteReasonMessage("continuity-disabled"));
       if (!issueGate.ready) throw new Error(issueGate.message ?? "Wait until this household finishes sharing.");
-      if (!targetMemberId) throw new Error("Choose who this invite is for.");
       const session = await ensureSupabaseSession(household.environment);
       const config = authenticatedSupabaseConfig(readSupabaseConfig(), session);
       if (!session || !config?.accessToken) {
@@ -283,7 +286,7 @@ function AuthInviteChrome({
       const result = await issueHouseholdInvite({
         environment: household.environment,
         householdId: household.householdId,
-        targetMemberId,
+        targetMemberId: targetMemberId || null,
         kind,
         invitedEmail: kind === "email" ? email : null,
         role,
@@ -313,15 +316,6 @@ function AuthInviteChrome({
       </div>
     );
   }
-  if (invitees.length === 0) {
-    return (
-      <div className="auth-invite">
-        <h3>Invite with Google</h3>
-        <p className="muted">Add another person to the household roster before issuing an email or QR invite.</p>
-      </div>
-    );
-  }
-
   const absoluteJoin = issued
     ? joinUrlFromInviteToken(window.location.origin, issued.inviteToken, household.environment)
     : "";
@@ -332,7 +326,8 @@ function AuthInviteChrome({
       <p className="muted">
         One-time Google join. Phrase and Hearth Pass stay under Advanced — they are not Auth.
       </p>
-      <label htmlFor="auth-invite-member">Invite seat</label>
+      <p className="muted">They’ll sign in with Google and enter their name to join. They don’t need to be on the household roster first.</p>
+      <label htmlFor="auth-invite-member">Who is joining?</label>
       <select
         id="auth-invite-member"
         value={targetMemberId}
@@ -340,6 +335,7 @@ function AuthInviteChrome({
         disabled={issueBlocked}
         aria-describedby="auth-invite-wait"
       >
+        <option value="">Someone new</option>
         {invitees.map((member) => (
           <option key={member.id} value={member.id}>{member.name}</option>
         ))}
