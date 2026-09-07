@@ -1,0 +1,11 @@
+import {syncScaleFixture} from '../test/fixtures/syncScaleFixture.ts';
+import {compileHousehold,trialBalance,booksEquation} from '../src/core/journal.ts';
+const h=syncScaleFixture(), b=compileHousehold(h), tb=trialBalance(b);
+const accountKinds=new Map(b.chart.map(a=>[a.id,a.accountType]));
+const balances=new Map(tb.rows.map(r=>[r.id,r.netCents]));
+let debit=tb.totalDebitCents,credit=tb.totalCreditCents;
+let equation=booksEquation(b);let left=equation.assetCents, right=equation.liabilityCents+equation.openingEquityCents+equation.netIncomeCents;
+const tx=h.transactions.find(t=>t.type==='expense'&&!t.reversalOfId)!;
+function operation(){const d=compileHousehold({...h,transactions:[{...tx,id:'delta-op'}]});for(const e of d.entries){let ed=0,ec=0;for(const line of e.lines){if(!Number.isSafeInteger(line.debitCents)||!Number.isSafeInteger(line.creditCents))throw Error('fractional');ed+=line.debitCents;ec+=line.creditCents;}if(ed!==ec)throw Error('unbalanced');if(!e.recognized)continue;for(const line of e.lines){const old=balances.get(line.accountId)??0;const change=line.debitCents-line.creditCents;const next=old+change;debit+=Math.max(next,0)-Math.max(old,0);credit+=Math.max(-next,0)-Math.max(-old,0);balances.set(line.accountId,next);const kind=accountKinds.get(line.accountId);if(kind==='asset')left+=change;else right-=change;}}if(debit!==credit||left!==right)throw Error('invalid accumulator');}
+const times=[];for(let i=0;i<100;i++){let t=performance.now();for(let j=0;j<100;j++)operation();times.push((performance.now()-t)/100);}times.sort((a,b)=>a-b);console.log(JSON.stringify({operation:'compile single expense + safe integer line validation + running trial/equation update',batches:100,operationsPerBatch:100,p50:times[50],p95:times[94],assumption:'account catalog and reference context already indexed; no IO or serialization'}));
+const final=compileHousehold({...h,transactions:[...h.transactions,...Array.from({length:10000},(_,i)=>({...tx,id:`delta-${i}`}))]});const finalTb=trialBalance(final),finalEq=booksEquation(final);if(finalTb.totalDebitCents!==debit||finalTb.totalCreditCents!==credit||finalEq.assetCents!==left||finalEq.liabilityCents+finalEq.openingEquityCents+finalEq.netIncomeCents!==right)throw Error('incremental differs from full');console.log('exact accumulator equivalence passed for 10000 expense operations');

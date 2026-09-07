@@ -2781,3 +2781,17 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
   fail closed to full-snapshot recovery.
 - No push, PR, merge, deploy, hosted mutation, schema, secret, provider, Personal
   payload, journal/transfer behavior, or Production work has been authorized.
+
+## Sync foundation spike (2026-09-07)
+
+**Status:** Task branch `codex/sync-foundation-spike`; Development diagnostic deployed; vocabulary freeze blocked and real-token proof incomplete. Risk **High**.
+
+**Outcome:** 148 core producers and 15 additional receipt/acceptance families inventoried; 97 core NO-FIT findings. JS-to-TS SQLite DO runs live. Incremental validation GO for bounded operations, with affected-entry handling for global edits.
+
+**Verification:** Live probe n20 p95 260.22 ms HTTP; local compile p95 62.14 ms; trial/equation 5.15 ms; warm actual staged PGlite 1,878.83 ms; expense delta prototype 0.09995 ms per-operation batch mean p95 with exact 10,000-operation equivalence. Fixture max 1,021.80 ms for 5,056 transactions. Real-token cached samples 0; T_partner samples 0. Final quick-gate results and deployment SHAs in evidence.
+
+**Evidence class:** Live Development toolchain probe plus local synthetic benchmark; not release, real-token or physical LTE paint certification.
+
+**Budget delta (5): +2. Engagement delta (3): 0**, infrastructure knowledge only.
+
+**Next owner:** Jonathan resolves D-036/D-119/D-124 money conflicts and enables real-session console verification; next protocol lanes consume [vocabulary](sync/OP_VOCABULARY.md) with explicit no-fit blockers. [Evidence](worksessions/2026-09-07-sync-foundation-spike.md). No household writes, Supabase/D1 schema application, Production deployment, secret changes or offline behavior changes.

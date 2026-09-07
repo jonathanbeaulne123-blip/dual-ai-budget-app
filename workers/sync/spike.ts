@@ -1,7 +1,15 @@
-import { DurableObject } from "cloudflare:workers";
+type SpikeState = { storage: { sql: { exec(query: string): { one(): Record<string, unknown> } } } };
+type SpikeEnv = { SUPABASE_URL: string };
 
 // Disposable Development probe. No household data, membership authority or money writes.
-export class SyncSpike extends DurableObject {
+export class SyncSpike {
+  constructor(private ctx: SpikeState, private env: SpikeEnv) {}
+
+  async fetch(request: Request): Promise<Response> {
+    try {
+      return Response.json(await this.probe(request.headers.get("Authorization")?.match(/^Bearer (\S+)$/)?.[1]));
+    } catch { return Response.json({ error: "verification-failed" }, { status: 401 }); }
+  }
   private keys = new Map<string, CryptoKey>();
   private keysUntil = 0;
 
@@ -11,7 +19,7 @@ export class SyncSpike extends DurableObject {
     const parts = token.split(".");
     if (parts.length !== 3) throw new Error("invalid-token");
     const decode = (s: string) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
-    const header = JSON.parse(new TextDecoder().decode(decode(parts[0])));
+    const header = JSON.parse(new TextDecoder().decode(decode(parts[0]!)));
     if (header.alg !== "ES256") throw new Error("unsupported-algorithm");
     const cached = this.keysUntil > Date.now() && this.keys.has(header.kid);
     if (!cached) {
@@ -29,9 +37,9 @@ export class SyncSpike extends DurableObject {
     const key = this.keys.get(header.kid);
     if (!key) throw new Error("unknown-key");
     const start = performance.now();
-    const valid = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, decode(parts[2]), new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
+    const valid = await crypto.subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, decode(parts[2]!), new TextEncoder().encode(`${parts[0]}.${parts[1]}`));
     if (!valid) throw new Error("invalid-signature");
-    const claims = JSON.parse(new TextDecoder().decode(decode(parts[1])));
+    const claims = JSON.parse(new TextDecoder().decode(decode(parts[1]!)));
     const now = Date.now() / 1000;
     if (claims.iss !== `${this.env.SUPABASE_URL}/auth/v1` || claims.aud !== "authenticated" ||
         typeof claims.exp !== "number" || claims.exp <= now || (claims.nbf !== undefined && claims.nbf > now) ||
@@ -52,8 +60,8 @@ export async function handleSyncSpike(request: Request, env: any): Promise<Respo
   const token = request.headers.get("Authorization")?.match(/^Bearer (\S+)$/)?.[1];
   if (path.endsWith("/verify") && !token) return new Response('{"error":"unauthorized"}', { status: 401, headers });
   try {
-    const result = await env.SYNC_SPIKE.getByName("development:toolchain-spike").probe(token);
-    return Response.json(result, { headers });
+    const response = await env.SYNC_SPIKE.getByName("development:toolchain-spike").fetch(request);
+    return new Response(response.body, { status: response.status, headers });
   } catch {
     return new Response('{"error":"verification-failed"}', { status: 401, headers });
   }
