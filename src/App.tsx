@@ -695,6 +695,7 @@ export function App() {
     revision: number;
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
+  const [ledgerCommandId, setLedgerCommandId] = useState<string | undefined>();
   const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
   const [softPresenceLive, setSoftPresenceLive] = useState<SoftPresenceLiveRow[]>([]);
   const [softPresenceOptOut, setSoftPresenceOptOutState] = useState(() => isSoftPresenceOptedOut("development"));
@@ -2940,7 +2941,9 @@ export function App() {
       setPersonalReplica(null);
       return () => { live = false; };
     }
-    if (useLedgerSync) { setPersonalReplica(personalReplicaForMember(household, memberId)); return () => { live = false; }; }
+    // V2 adopts Shared + this member's Personal atomically. Re-projecting a
+    // second Personal object on every revision causes another full render.
+    if (useLedgerSync) return () => { live = false; };
     void saveHousehold(household, { operatingEnvironment: environment, memberId }).then(async () => {
       const [personal, items] = await Promise.all([
         loadPersonalReplica(environment, household.householdId, memberId),
@@ -2953,7 +2956,7 @@ export function App() {
       if (live) setError(caught instanceof Error ? caught.message : String(caught));
     });
     return () => { live = false; };
-  }, [environment, household?.householdId, household?.revision, session?.memberId, activeBooksGate.ready]);
+  }, [environment, household?.householdId, household?.revision, session?.memberId, activeBooksGate.ready, useLedgerSync]);
 
   useEffect(() => {
     setPlacePrefs(loadPhonePlacePrefs(environment));
@@ -3102,11 +3105,12 @@ export function App() {
     ),
   );
   const personalSource = useMemo(() => {
+    if (useLedgerSync) return household;
     return household && memberId && personalReplica?.memberId === memberId
       && personalReplica.lastCommittedAt === household.lastCommittedAt
       ? assembleHousehold(splitForSync(household, memberId).shared, personalReplica, { linked: household.linked })
       : household;
-  }, [household, memberId, personalReplica]);
+  }, [household, memberId, personalReplica, useLedgerSync]);
   const visible = useMemo(
     () => (personalSource && memberId ? householdForView(personalSource, memberId, view) : personalSource),
     [personalSource, memberId, view],
@@ -3751,6 +3755,7 @@ export function App() {
       if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); setError(message); return null; }
       const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
       confirmationRef.current = confirmationId;
+      setLedgerCommandId(confirmationId);
       setBusy(true); setCommandProgressPhase("confirming");
       try {
         await ledgerSyncReady.current;
@@ -5802,7 +5807,7 @@ export function App() {
   }
 
   return (
-    <div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase}>
+    <div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
       {charterFoundingVisible && household && session ? (
         <CharterFounding
           household={household}
@@ -5913,7 +5918,7 @@ export function App() {
         />
       ) : null}
       <SoftPresenceStatus display={softPresenceDisplay} />
-      <CommandProgressStatus display={commandProgressDisplay} />
+      <CommandProgressStatus display={commandProgressDisplay} commandId={useLedgerSync ? ledgerCommandId : undefined} />
       {commandChrome?.chip && !syncChromeSuppression.hideChip && (
         <div
           className={`command-chip command-chip--${commandChrome.chip.tone}`}
@@ -7421,7 +7426,7 @@ export function App() {
       </p>
 
       {toast && commandChrome?.toast && (
-        <div className="toast">
+        <div className="toast" data-command-id={useLedgerSync ? ledgerCommandId : undefined} data-command-phase={commandProgressPhase}>
           <span>
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
