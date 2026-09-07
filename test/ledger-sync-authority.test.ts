@@ -57,6 +57,15 @@ function fixture() {
   return { h, state, scope };
 }
 describe("ledger sync v2 money authority", () => {
+  it("preserves imported confirmation history after a new posting and refuses reusing its UUID", async () => {
+    const { h, state, scope } = fixture();
+    const legacy = { confirmationId: crypto.randomUUID(), identityHash: 'legacy-identity', auditHash: 'legacy-audit', commandKind: 'postEntry', postedIds: ['TXN-imported'], revision: 1, acceptedAt: '2026-09-01T12:00:00Z' };
+    h.commandReceipts = [legacy]; state.shared.commandReceipts = [legacy];
+    const command = await commandFromCapture(capturedIntent(postEntry(h, grocery('new posting')).household)!, scope, crypto.randomUUID());
+    const accepted = await prepareCommand(state, command, scope, () => {});
+    expect(accepted.shared.commandReceipts).toEqual([]);
+    await expect(prepareCommand(state, {...command,id:legacy.confirmationId}, scope, () => {})).rejects.toThrow('IMPORTED_CONFIRMATION_EXISTS');
+  });
   it("accepts simultaneous groceries against the same observed sequence without overwriting either", async () => {
     const { h, state, scope } = fixture();
     const a = await commandFromCapture(

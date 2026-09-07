@@ -5,6 +5,31 @@ import { capturedIntent } from "../src/ledgerSync/capture.ts";
 import { commandFromCapture } from "../src/ledgerSync/protocol.ts";
 import { encodeMessage, MessageReader } from "../src/ledgerSync/wire.ts";
 const base = process.env.HEARTH_LEDGER_WORKER_URL;
+it.skipIf(!base)('imported receipt UUID remains reserved after a v2 posting and reconnect', async () => {
+  const id = crypto.randomUUID();
+  const legacy = { confirmationId:id, identityHash:'original-legacy-hash',auditHash:'original-audit',commandKind:'postEntry',postedIds:['TXN-OLD-PRIVATE-ID'],revision:1,acceptedAt:'2026-09-01T12:00:00Z' };
+  const h = {...catalogHousehold(),householdId:`HH-RECEIPT-${crypto.randomUUID()}`,commandReceipts:[legacy],revision:1,baseRevision:1};
+  const headers = {Authorization:'Bearer local:MEM-001','Content-Type':'application/json'};
+  const imported = await fetch(`${base}/ledger-sync/v2/development/${h.householdId}/import`,{method:'POST',headers,body:JSON.stringify(h)});
+  expect(imported.status).toBe(200);
+  const c = await connection(h.householdId,'MEM-001');
+  try {
+    const command = await commandFromCapture(capturedIntent(postEntry(h,{date:'2026-09-07',type:'expense',amount:'2.00',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:'MEM-001',confirmDuplicate:true}).household)!,c.scope,crypto.randomUUID());
+    await c.send({type:'command',command});
+    expect((await c.next('ack')).receipt.sequence).toBe(2);
+    await c.send({type:'command',command:{...command,id}});
+    const refusal = await c.next('error');
+    expect(refusal).toMatchObject({code:'IMPORTED_CONFIRMATION_EXISTS',definitive:true});
+    const resolution = await fetch(`${base}/ledger-sync/v2/development/${h.householdId}/receipt?id=${id}`,{headers});
+    expect(await resolution.json()).toEqual({version:1,confirmationId:id,revision:1,acceptedAt:legacy.acceptedAt,reserved:true});
+  } finally { c.ws.close(); }
+  const again = await connection(h.householdId,'MEM-001');
+  try {
+    expect(again.initial.replica.sequence).toBe(2);
+    expect(again.initial.replica.shared.commandReceipts).toEqual([]);
+    expect(JSON.stringify(again.initial)).not.toContain("TXN-OLD-PRIVATE-ID");
+  } finally { again.ws.close(); }
+});
 async function connection(
   householdId: string,
   memberId: string,
@@ -193,9 +218,11 @@ it.skipIf(!base)(
 it.skipIf(!base)(
   "archive failures block exposure; import retries archive their baseline; empty authority retains an unacknowledged durable receipt",
   async () => {
+    const legacyId = crypto.randomUUID();
     const h = {
       ...catalogHousehold(),
       householdId: `HH-FAULT-${crypto.randomUUID()}`,
+      commandReceipts: [{confirmationId:legacyId,identityHash:'legacy',auditHash:'legacy',commandKind:'postEntry',postedIds:['PRIVATE-LEGACY-ID'],revision:0,acceptedAt:'2026-09-01T00:00:00Z'}],
       revision: 0,
       baseRevision: 0,
     };
@@ -265,6 +292,7 @@ it.skipIf(!base)(
         )
       ).status,
     ).toBe(409);
+    expect((await fetch(`${base}/ledger-sync/v2/development/${h.householdId}/receipt?id=${command.id}`, { headers })).status).toBe(409);
     const incomplete = (await (
       await fetch(`${base}/test/archive/${h.householdId}`)
     ).json()) as any;
@@ -300,6 +328,11 @@ it.skipIf(!base)(
       const ack = await recovered.next("ack");
       expect(ack.receipt.id).toBe(command.id);
       expect(ack.receipt.sequence).toBe(1);
+      await recovered.send({type:'command',command:{...command,id:legacyId.toUpperCase()}});
+      expect(await recovered.next('error')).toMatchObject({code:'IMPORTED_CONFIRMATION_EXISTS',definitive:true});
+      const legacyResolution = await fetch(`${base}/ledger-sync/v2/development/${h.householdId}/receipt?recovery=1&id=${legacyId.toUpperCase()}`, {headers});
+      expect(await legacyResolution.json()).toEqual({version:1,confirmationId:legacyId.toUpperCase(),reserved:true});
+      expect(JSON.stringify(recovered.initial)).not.toContain('PRIVATE-LEGACY-ID');
       expect(
         recovered.initial.replica.shared.transactions.filter(
           (row: any) => row.note === "durability fault",

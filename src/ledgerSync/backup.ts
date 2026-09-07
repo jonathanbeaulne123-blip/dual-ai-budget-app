@@ -4,6 +4,7 @@ import type {
   PersonalEnvelope,
   SharedEnvelope,
   RestorePoint,
+  CommandReceipt,
 } from "../core/types.ts";
 import type { AcceptedEvent, Receipt } from "./protocol.ts";
 import { digest, project } from "./patch.ts";
@@ -16,6 +17,10 @@ export type Checkpoint = {
   shared: SharedEnvelope;
   personal: [string, PersonalEnvelope][];
   receipts: Receipt[];
+  /** Original receipt semantics; UUID reservation survives authority recovery. */
+  importedReceipts?: CommandReceipt[];
+  /** Present only after the complete immutable legacy manifest was imported. */
+  reservationDigests?: string[];
   restorePoints?: RestorePointSummary[];
 };
 export type ArchiveRecord = {
