@@ -1,6 +1,6 @@
 # QR invitation entry repair
 
-- Status: [draft PR #369](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/369), implementation `3057dce7a9148f387c24e4aeeefb453bab1b6947`. Hosted migration and deployment not performed.
+- Status: [PR #369](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/369), implementation `3057dce7a9148f387c24e4aeeefb453bab1b6947`. Jonathan approved migration 021 and Development release. Migration 021 applied successfully; deployment follows merge.
 - Owner: Jonathan. Assignee: Codex.
 - Branch: `codex/qr-invite-entry`; base `origin/main@fc786359cddcae62e83c0334db0e0844f4e95104`.
 - Risk: High, changes invitation issuance and membership discovery.
@@ -36,6 +36,15 @@ Name acceptance uses the existing cancellable account-flow gate. A cancelled or 
 
 ## Boundaries / next action
 
-No meaningful household data, credentials, provider calls, financial postings, hosted schema application, deployment or Production changes. No exhaustive lanes. This is not live two-account camera/OAuth proof. No claim that the deployed QR system is fixed yet.
+No meaningful household data, financial postings or Production activation changed. No exhaustive lanes. This is not live two-account camera/OAuth proof.
 
-The net addition includes the forward migration and its executable SQL tests; existing applied migrations are unchanged. Jonathan's explicit authorization is required to apply migration 021 and release the Development build. Apply the reviewed migration before deploying the nullable-target UI. After that, verify owner-only household → QR → fresh Google member → chosen name → shared household, plus old QR rejection and Personal isolation, on the actual deployed origin.
+The net addition includes the forward migration and its executable SQL tests; existing applied migrations are unchanged. Jonathan explicitly approved migration 021 and the Development release. The migration was applied before releasing the nullable-target UI. After deployment, verify owner-only household → QR → fresh Google member → chosen name → shared household, plus old QR rejection and Personal isolation, on the actual deployed origin.
+
+## Authorized hosted release
+
+- Jonathan approved migration 021, merge and Development deployment on 2026-09-07.
+- Exact reviewed candidate `662f459d6db28f9ce344270ed286174460756759`: CI run 34143439524 and Cloudflare Workers PR build 34143439463 both completed successfully.
+- Applied repository migration 021 through the authenticated Supabase SQL editor to configured project `tykhocwacaxwquhynkok`; editor returned Success. No rows returned. Preflight found migrations 19 and 20 and no 21. No credentials were extracted or passed to scripts.
+- Hosted verification: migration 21 count **1**; anonymous issue/redeem execute grants **false/false**, authenticated grants **true/true**; unauthenticated execution returns **not-owner / session-not-live**. These are hosted schema and denial-path checks, not authenticated invitation acceptance proof.
+- A verification query initially failed because the editor replaced only its visible text; rerun in a clean snippet passed. This did not invalidate the previously successful migration.
+- PR ready for review; automatic Development publication follows merge. Final deployment SHA and publication outcome are recorded in the PR release comment.
