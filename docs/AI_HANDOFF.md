@@ -1,5 +1,20 @@
 # AI Task and Handoff Standard
 
+## Onboarding F1 — Suite predecessor fence (2026-09-07)
+
+**Status:** Implemented locally on `codex/onboarding-f1-suite-fence`, based on `origin/main@44c5931`. Not merged or deployed. Risk High.
+
+**Outcome:** Same-household ordinary books no longer receive the whole-fixture transition exemption. Legitimate Suite-to-Suite replacement and separate-household creation retain the exemption. This narrows an exemption rather than rejecting every command solely by name.
+
+**Risk and Dual Course:** High command-authority boundary. Budget delta (5): +3, restoring ordinary transition protection. Engagement delta (3): 0, existing legitimate demo behavior preserved.
+
+**Verification:** The new test failed on untouched runtime: expected refusal, received accepted-local. Post-fix High quick gate passed: 55 fast plus 7 serial assertions, 202.299 seconds, fingerprint ab840cf5631e700d07a9eeb9563e2f38721db68b820d9b105623cba36310841d. TypeScript and build passed. Independent review found no functional blocker; its comment-precision correction is applied. Documentation/comment-only closure followed the gate, with AI verification and diff hygiene rechecked.
+
+**Evidence class:** Local synthetic Development command tests only. No hosted, two-device, exhaustive, browser, or Production proof.
+
+**Next owner:** Codex completes verification and prepares the branch/PR. Jonathan owns release; merge is withheld because main pushes deploy automatically and deployment is not authorized.
+
+
 ## Onboarding audit — entry truth, resilient rendering, and preview accessibility (D-233) (2026-09-06)
 
 **Status:** [PR #360](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/360) is the single release-candidate PR on `codex/onboarding-audit-small-repairs`, based on `origin/main@954c484d5f804d3e69436093df0277fb244baec7`. Verified implementation commit `79907a6206698d8a2eaae7c21a42993f5d282795`; this evidence/status closure follows on the same PR. Checks are pending. Jonathan authorized merge and Development deployment; nothing is merged, deployed, or hosted-live verified yet. Risk: **Medium**.
