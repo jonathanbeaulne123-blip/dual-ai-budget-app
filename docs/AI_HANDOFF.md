@@ -2788,7 +2788,7 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 
 **Outcome:** 148 core producers and 15 additional receipt/acceptance families inventoried; 97 core NO-FIT findings. JS-to-TS SQLite DO runs live. Incremental validation GO for bounded operations, with affected-entry handling for global edits.
 
-**Verification:** Live probe n20 p95 260.22 ms HTTP; local compile p95 62.14 ms; trial/equation 5.15 ms; warm actual staged PGlite 1,878.83 ms; expense delta prototype 0.09995 ms per-operation batch mean p95 with exact 10,000-operation equivalence. Fixture max 1,021.80 ms for 5,056 transactions. Real-token cached samples 0; T_partner samples 0. Final quick-gate results and deployment SHAs in evidence.
+**Verification:** Final live probe 100/100, p95 73.09 ms HTTP; local compile p95 62.14 ms; trial/equation 5.15 ms; warm actual staged PGlite 1,878.83 ms; expense delta prototype 0.09995 ms per-operation batch mean p95 with exact 10,000-operation equivalence. Fixture max 1,021.80 ms for 5,056 transactions. Real-token cached samples 0; T_partner samples 0. Quick gate passed 28/28 in 66.6 seconds; TypeScript, build and AI verification passed. Development source `2d8768a`, version `bc5edddf-4c23-4edf-9636-d5b0e4352f80`.
 
 **Evidence class:** Live Development toolchain probe plus local synthetic benchmark; not release, real-token or physical LTE paint certification.
 

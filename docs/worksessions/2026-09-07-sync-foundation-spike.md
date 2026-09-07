@@ -4,7 +4,7 @@
 
 | Unknown | Result |
 |---|---|
-| JS entry → TypeScript SQLite Durable Object | GO: Wrangler 4.125.0 bundles and Development responds HTTP 200, `sqlite: 1`. First deployment startup 9 ms. 20 sequential remote HTTP probes: p50 49.13 ms, p95 260.22 ms, max 508.04 ms (includes initial requests). Not T_partner. |
+| JS entry → TypeScript SQLite Durable Object | GO: Wrangler 4.125.0 bundles and Development responds HTTP 200, `sqlite: 1`. Final deployment startup 10 ms. Final 100/100 sequential remote HTTP probes: p50 46.76 ms, p95 73.09 ms, max 363.34 ms (includes initial request). Earlier n20: p50 49.13 ms, p95 260.22 ms, max 508.04 ms. Not T_partner. |
 | Real Supabase token / cached JWKS | INCOMPLETE: live public JWKS has 1 ES256 P-256 key, 0 HS256 keys. No real session token verified; cached verification samples = 0. Browser connector timed out then reported debugger unattached; native console opening did not expose a console. No JWT secret requested or installed. |
 | Validation cost, 5,056 transactions | Full compile n100: p50 17.06 ms / p95 62.14 ms. Trial balance + equation n100: 1.75 / 5.15 ms. Actual isolated staged PGlite cold n1: 6,860.74 ms; warm incremental n20: 843.09 / 1,878.83 ms. |
 
@@ -50,3 +50,13 @@ Independent code/privacy review found no blocking defect in the diagnostic; requ
 Net additions outside src/sync and workers/sync are intentional: this task explicitly delivers a reusable fixture, focused tests, reproducible benchmarks and knowledge documents, without deleting working transport before its replacement exists.
 
 Next owner: Jonathan resolves money-meaning conflicts; real signed-in Development console access completes token verification. Protocol implementers may use the producer inventory now but must not treat NO-FIT rows as approved operations. Two Toronto LTE devices and actual paint instrumentation remain required for the series target.
+
+## Final verification record
+
+- Final deployed source SHA: `2d8768a51efcd1ba14ee1019eb3acf488816a5ed`; version `bc5edddf-4c23-4edf-9636-d5b0e4352f80`; same isolated Development Worker. Startup 10 ms. Final 100/100 HTTP probes return SQLite success; p50 46.76 ms, p95 73.09 ms, max 363.34 ms. Missing bearer verification returns 401. This does not measure a WebSocket fanout or receiver paint.
+- `pnpm test -- --risk=high --focus=test/sync-spike.test.ts --focus=test/sync-scale-fixture.test.ts --focus-reason="Proves JS-to-TS DO and SQLite, signed ES256 cache and refusal cases, and a balanced linked 5056-row fixture"`: PASS, 28/28 tests across 5 files, 66,578 ms, no five-minute breach. Captured head was `0a17e17` with working change fingerprint `aa8d12cfcf510b4b922fda81c2e1ed380ed701a8c4ea1191721dd0da06cad737`; those source/test changes are committed in `2d8768a`. Only evidence docs change afterward.
+- Standalone `pnpm exec tsc --noEmit`: PASS. Literal `npx` was unavailable in the bundled runtime, so the same local TypeScript command ran through pnpm instead. `pnpm build`: PASS, existing large-chunk warning; `pnpm ai:verify`: PASS (48 required files). No exhaustive lane or release certification.
+- Initial Miniflare test used its older option shape and failed; corrected to the repository's existing `convertV4MiniflareOptions` adapter, then local worker and synthetic ES256 tests passed. No unrelated test failure was patched.
+- Pre-existing live browser banner reported local books did not finish opening and stale revision 13. Observed only; no local storage reset, repair or household write attempted.
+- [Draft PR #361](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/361), not merged. Net change outside new sync directories is positive because this is a knowledge/fixture spike, with no transport deletion yet.
+- Acceptance remains incomplete: real-token/cached-JWKS n=0 and wire freeze blocked on documented money-meaning/no-fit findings. Public ES256 JWKS plus synthetic signing tests are not substituted for the missing real-session proof.
