@@ -65,7 +65,9 @@
     "EVIDENCE_COMPANION_ENABLED": "true",
     "EVIDENCE_GMAIL_COMPANION_ENABLED": "true",
     "EVIDENCE_RETENTION_ENABLED": "true",
-    "EVIDENCE_PRODUCTION_QUEUE_NAME": "hearth-evidence-derive-production"
+    "EVIDENCE_PRODUCTION_QUEUE_NAME": "hearth-evidence-derive-production",
+    "LEDGER_SYNC_LOCAL_AUTH": "false",
+    "LEDGER_SYNC_ENABLED": "true"
   },
   "d1_databases": [
     {
@@ -101,6 +103,10 @@
     {
       "binding": "EVIDENCE_PRODUCTION_RAW",
       "bucket_name": "hearth-evidence-raw-production"
+    },
+    {
+      "binding": "LEDGER_ARCHIVE",
+      "bucket_name": "hearth-ledger-sync-archive-development"
     }
   ],
   "queues": {
@@ -131,5 +137,25 @@
       }
     ]
   },
-  "triggers": { "crons": ["17 9 * * *"] }
+  "triggers": {
+    "crons": [
+      "17 9 * * *"
+    ]
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LEDGER_ROOMS",
+        "class_name": "LedgerRoom"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "ledger-sync-v2",
+      "new_sqlite_classes": [
+        "LedgerRoom"
+      ]
+    }
+  ]
 }

@@ -110,9 +110,18 @@ export function assertAcceptableBooks(household: Household, compiled = compileHo
         "unbalanced-journal",
       );
     }
-    if (!Number.isInteger(debit) || !Number.isInteger(credit)) {
+    if (!Number.isSafeInteger(debit) || !Number.isSafeInteger(credit)
+      || entry.lines.some(line => !Number.isSafeInteger(line.debitCents) || !Number.isSafeInteger(line.creditCents))) {
       throw new BooksRejectedError("Books only accept integer CAD cents. Nothing was posted.", "validation-rejected");
     }
+  }
+  // Bound cumulative arithmetic before Number can silently discard a cent.
+  let totalDebit = 0n, totalCredit = 0n;
+  const limit = BigInt(Number.MAX_SAFE_INTEGER);
+  for (const entry of compiled.entries) for (const line of entry.lines) {
+    totalDebit += BigInt(Math.abs(line.debitCents));
+    totalCredit += BigInt(Math.abs(line.creditCents));
+    if (totalDebit > limit || totalCredit > limit) throw new BooksRejectedError("The ledger exceeds exact CAD-cent arithmetic limits. Nothing was posted.", "validation-rejected");
   }
   const tb = trialBalance(compiled);
   const equation = booksEquation(compiled);

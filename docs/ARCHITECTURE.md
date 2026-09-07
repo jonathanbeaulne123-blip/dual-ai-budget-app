@@ -1,5 +1,7 @@
 # Architecture
 
+> **D-235 replacement in development:** [Ledger sync v2](LEDGER_SYNC_V2.md) implements a separate command/event authority for the ordinary App. Its hosted migration and acceptance are not yet claimed. The older transport described below remains historical runtime context for households that have not cut over; it is not a fallback after cutover.
+
 ## Runtime
 
 Hearth is a TypeScript household ledger with a React interface. The domain lives in `src/core` and does not import React, DOM, or storage. The UI in `src/App.tsx` is an untrusted client: it may format, filter, and preview, but every write goes through a command that validates plain data and returns a new household snapshot.

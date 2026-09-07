@@ -1,3 +1,5 @@
+import { ledgerSyncEnabled } from "./ledgerSync/mode.ts";
+import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import {
   memberIdForGoogleIdentity,
   type GoogleIdentitySelector,
@@ -15,6 +17,7 @@ import {
 } from "./ledger/continuityCommandLog.ts";
 import {
   appendContinuityCommand,
+  listActiveContinuityMemberships,
   discoverSupabaseHouseholdsByGoogleIdentity,
   pullConsistentMemberReplicaById,
   pullHouseholdSnapshotById,
@@ -1131,5 +1134,12 @@ export async function discoverContinuityMemberships(
   environment: Environment,
   config?: SupabaseConfig | null,
 ): Promise<DiscoveredHousehold[]> {
+  if (ledgerSyncEnabled(environment)) {
+    if (!config?.accessToken) throw new Error("Google sign-in is required to open the cloud ledger.");
+    const memberships=await listActiveContinuityMemberships({identity,environment,config});
+    const found:DiscoveredHousehold[]=[];
+    for(const membership of memberships)found.push({memberId:membership.memberId,household:await fetchLedgerSnapshot(environment,membership.householdId,membership.memberId,config.accessToken)});
+    return found;
+  }
   return discoverSupabaseHouseholdsByGoogleIdentity(identity, config, environment);
 }

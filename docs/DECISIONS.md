@@ -6,6 +6,7 @@ Older Sheets-era rows, including superseded ones such as “stay on Sheets until
 
 | ID | Status | Decision | Reason |
 |---|---|---|---|
+| D-235 | Implemented locally; activation gated | Replace actual Development ledger snapshot CAS with typed intents, a household Durable Object, immutable SQL receipts, scoped event patches, durable IndexedDB outbox and an R2 barrier before public acceptance. Preserve Confirm and Personal privacy. | D-234 review identified the standalone document editor as the wrong target. See [LEDGER_SYNC_V2.md](LEDGER_SYNC_V2.md); no hosted cutover or Production claim. |
 | D-001 | Accepted | Git is the canonical source for code, tests, architecture, and release preparation. | Prevent full-file drift. |
 | D-002 | Accepted | Keep separate development and production ledgers. | Reversible testing without risking household history. |
 | D-005 | Accepted | Jonathan is product owner, production approver, and tie-breaker. | Product tradeoffs belong to the user. |

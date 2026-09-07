@@ -1,3 +1,4 @@
+import { captureCommand } from "../ledgerSync/capture.ts";
 import { TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
@@ -281,7 +282,7 @@ function onboardingProposal(
   };
 }
 
-export function offerHouseholdOnboarding(household: Household, input: {
+export const offerHouseholdOnboarding = captureCommand("offerHouseholdOnboarding", function offerHouseholdOnboarding(household: Household, input: {
   memberId: string;
   at?: string;
 }): CommitResult {
@@ -314,9 +315,9 @@ export function offerHouseholdOnboarding(household: Household, input: {
         updatedAt: at,
       };
   return commit(previous, next, "Onboarding", "Offered household setup", [id], [], "offerHouseholdOnboarding");
-}
+});
 
-export function proposeHouseholdOnboarding(household: Household, input: {
+export const proposeHouseholdOnboarding = captureCommand("proposeHouseholdOnboarding", function proposeHouseholdOnboarding(household: Household, input: {
   memberId: string;
   at?: string;
 }): CommitResult {
@@ -331,9 +332,9 @@ export function proposeHouseholdOnboarding(household: Household, input: {
   const proposal = onboardingProposal(household, input.memberId, at, prior);
   next.householdOnboarding = proposal;
   return commit(previous, next, "Onboarding", "Proposed household setup", [proposal.id], [], "proposeHouseholdOnboarding");
-}
+});
 
-export function confirmHouseholdOnboarding(household: Household, input: {
+export const confirmHouseholdOnboarding = captureCommand("confirmHouseholdOnboarding", function confirmHouseholdOnboarding(household: Household, input: {
   memberId: string;
   at?: string;
 }): CommitResult {
@@ -363,9 +364,9 @@ export function confirmHouseholdOnboarding(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Onboarding", activates ? "Started household setup" : "Confirmed household setup", [prior.id], [], "confirmHouseholdOnboarding");
-}
+});
 
-export function stopHouseholdOnboarding(household: Household, input: {
+export const stopHouseholdOnboarding = captureCommand("stopHouseholdOnboarding", function stopHouseholdOnboarding(household: Household, input: {
   memberId: string;
   soloReason?: string;
 }): CommitResult {
@@ -392,9 +393,9 @@ export function stopHouseholdOnboarding(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Onboarding", stopped ? ONBOARDING_MODE_COPY["stop.recorded"] : "Requested to stop household setup", [prior.id], [], "stopHouseholdOnboarding");
-}
+});
 
-export function resumeHouseholdOnboarding(household: Household, input: {
+export const resumeHouseholdOnboarding = captureCommand("resumeHouseholdOnboarding", function resumeHouseholdOnboarding(household: Household, input: {
   memberId: string;
   at?: string;
 }): CommitResult {
@@ -413,7 +414,7 @@ export function resumeHouseholdOnboarding(household: Household, input: {
     ? { ...member, onboardingProgress: refreshed }
     : member);
   return commit(previous, next, "Onboarding", "Proposed resuming household setup", [proposal.id], [], "resumeHouseholdOnboarding");
-}
+});
 
 const OWN_PROGRESS_COPY = "Only you can record your own progress.";
 
@@ -466,7 +467,7 @@ function updateMemberProgress(
 }
 
 /** Adopt canonical facts that predate activation; never acknowledge for the member. */
-export function adoptExistingOnboardingEvidence(household: Household, input: {
+export const adoptExistingOnboardingEvidence = captureCommand("adoptExistingOnboardingEvidence", function adoptExistingOnboardingEvidence(household: Household, input: {
   memberId: string;
   createdBy: string;
 }): CommitResult {
@@ -478,10 +479,10 @@ export function adoptExistingOnboardingEvidence(household: Household, input: {
   return updateMemberProgress(household, { ...input, at: startedAt }, "Existing setup evidence adopted", () => (
     adoptAcceptedOnboardingEvidence(household, input.memberId)
   ));
-}
+});
 
 /** Record only the acting member's acknowledgement; accepted probes own observed completion. */
-export function recordChapterAcknowledgement(household: Household, input: {
+export const recordChapterAcknowledgement = captureCommand("recordChapterAcknowledgement", function recordChapterAcknowledgement(household: Household, input: {
   memberId: string;
   chapterId: string;
   createdBy: string;
@@ -568,14 +569,14 @@ export function recordChapterAcknowledgement(household: Household, input: {
       : row),
     updatedAt: at,
   }));
-}
+});
 
 /**
  * Accept a live, sanitized probe for an auto-completable chapter. The command
  * re-projects against the current Household so a member/household switch
  * cannot carry an earlier observation forward.
  */
-export function recordObservedChapterCompletion(household: Household, input: {
+export const recordObservedChapterCompletion = captureCommand("recordObservedChapterCompletion", function recordObservedChapterCompletion(household: Household, input: {
   memberId: string;
   chapterId: string;
   createdBy: string;
@@ -612,10 +613,10 @@ export function recordObservedChapterCompletion(household: Household, input: {
       : row),
     updatedAt: at,
   }));
-}
+});
 
 /** Skip only a personal module whose registry policy explicitly permits it. */
-export function skipPersonalStep(household: Household, input: {
+export const skipPersonalStep = captureCommand("skipPersonalStep", function skipPersonalStep(household: Household, input: {
   memberId: string;
   chapterId: string;
   createdBy: string;
@@ -632,10 +633,10 @@ export function skipPersonalStep(household: Household, input: {
       : row),
     updatedAt: at,
   }));
-}
+});
 
 /** Record Chapter 4's optional owner-only Personal account choice without satisfying its household gate. */
-export function skipChapterFourPersonalAccounts(household: Household, input: {
+export const skipChapterFourPersonalAccounts = captureCommand("skipChapterFourPersonalAccounts", function skipChapterFourPersonalAccounts(household: Household, input: {
   memberId: string;
   createdBy: string;
   at?: string;
@@ -651,10 +652,10 @@ export function skipChapterFourPersonalAccounts(household: Household, input: {
       : row),
     updatedAt: at,
   }));
-}
+});
 
 /** Mute or restore only the acting member's future personal-module offers. */
-export function setOnboardingOffersMuted(household: Household, input: {
+export const setOnboardingOffersMuted = captureCommand("setOnboardingOffersMuted", function setOnboardingOffersMuted(household: Household, input: {
   memberId: string;
   muted: boolean;
   createdBy: string;
@@ -666,10 +667,10 @@ export function setOnboardingOffersMuted(household: Household, input: {
     offersMutedUpdatedAt: at,
     updatedAt: at,
   }));
-}
+});
 
 /** Record one accepted contextual offer in the acting member's Personal envelope. */
-export function recordPersonalModuleOffer(household: Household, input: {
+export const recordPersonalModuleOffer = captureCommand("recordPersonalModuleOffer", function recordPersonalModuleOffer(household: Household, input: {
   memberId: string;
   moduleId: string;
   sessionId: string;
@@ -703,10 +704,10 @@ export function recordPersonalModuleOffer(household: Household, input: {
     ],
     updatedAt: at,
   }));
-}
+});
 
 /** A soft "Not now": count only the offer this member actually saw, in its civil month. */
-export function declinePersonalModuleOffer(household: Household, input: {
+export const declinePersonalModuleOffer = captureCommand("declinePersonalModuleOffer", function declinePersonalModuleOffer(household: Household, input: {
   memberId: string;
   moduleId: string;
   sessionId: string;
@@ -734,10 +735,10 @@ export function declinePersonalModuleOffer(household: Household, input: {
       updatedAt: at,
     };
   });
-}
+});
 
 /** Finish only the offered member-owned lesson. This acknowledges teaching; it never proves or writes money. */
-export function completePersonalModule(household: Household, input: {
+export const completePersonalModule = captureCommand("completePersonalModule", function completePersonalModule(household: Household, input: {
   memberId: string;
   moduleId: string;
   sessionId: string;
@@ -758,10 +759,10 @@ export function completePersonalModule(household: Household, input: {
       updatedAt: at,
     };
   });
-}
+});
 
 /** Development escape hatch. This stops setup without claiming any chapter or finale completion. */
-export function forceUnlockOnboarding(household: Household, input: {
+export const forceUnlockOnboarding = captureCommand("forceUnlockOnboarding", function forceUnlockOnboarding(household: Household, input: {
   memberId: string;
   createdBy: string;
   at?: string;
@@ -794,7 +795,7 @@ export function forceUnlockOnboarding(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Onboarding", "Stopped incomplete with the Development unlock", [id], [], "forceUnlockHouseholdOnboarding");
-}
+});
 
 const OWN_SUBMISSION_COPY = "Only you can submit your own.";
 
@@ -862,7 +863,7 @@ function appendOnboardingSubmission(
   );
 }
 
-export function submitOnboardingCategories(household: Household, input: {
+export const submitOnboardingCategories = captureCommand("submitOnboardingCategories", function submitOnboardingCategories(household: Household, input: {
   memberId: string;
   createdBy: string;
   categoryIds: string[];
@@ -876,9 +877,9 @@ export function submitOnboardingCategories(household: Household, input: {
     throw new ValidationError("Choose at least one category for the household plan.");
   }
   return appendOnboardingSubmission(household, input, { kind: "categories", categoryIds, estimates: [] }, proposals);
-}
+});
 
-export function mergeOnboardingCategories(household: Household, input: {
+export const mergeOnboardingCategories = captureCommand("mergeOnboardingCategories", function mergeOnboardingCategories(household: Household, input: {
   memberId: string;
   createdBy: string;
   conflictSelections?: string[];
@@ -967,9 +968,9 @@ export function mergeOnboardingCategories(household: Household, input: {
     merge.id,
     ...next.categories.filter((row) => !previous.categories.some((prior) => prior.id === row.id)).map((row) => row.id),
   ], [], "mergeOnboardingCategories");
-}
+});
 
-export function submitOnboardingEstimates(household: Household, input: {
+export const submitOnboardingEstimates = captureCommand("submitOnboardingEstimates", function submitOnboardingEstimates(household: Household, input: {
   memberId: string;
   createdBy: string;
   estimates: Array<{ subcategoryId: string; amountCents: number }>;
@@ -979,7 +980,7 @@ export function submitOnboardingEstimates(household: Household, input: {
   const estimates = normalizeSubmissionEstimates(input.estimates);
   const categoryIds = assertOnboardingEstimateScope(household, estimates);
   return appendOnboardingSubmission(household, input, { kind: "estimates", categoryIds, estimates });
-}
+});
 
 function appendOnboardingApproval(household: Household, input: {
   memberId: string;
@@ -1021,15 +1022,15 @@ function appendOnboardingApproval(household: Household, input: {
   );
 }
 
-export function approveOnboardingProposal(household: Household, input: {
+export const approveOnboardingProposal = captureCommand("approveOnboardingProposal", function approveOnboardingProposal(household: Household, input: {
   memberId: string;
   createdBy: string;
   digest: string;
 }): CommitResult {
   return appendOnboardingApproval(household, input, "proposal");
-}
+});
 
-export function approveOnboardingReady(household: Household, input: {
+export const approveOnboardingReady = captureCommand("approveOnboardingReady", function approveOnboardingReady(household: Household, input: {
   memberId: string;
   createdBy: string;
   digest: string;
@@ -1044,9 +1045,9 @@ export function approveOnboardingReady(household: Household, input: {
     throw new ValidationError("Finish every setup check before saying you're ready.");
   }
   return appendOnboardingApproval(household, input, "ready");
-}
+});
 
-export function completeHouseholdOnboarding(household: Household, input: {
+export const completeHouseholdOnboarding = captureCommand("completeHouseholdOnboarding", function completeHouseholdOnboarding(household: Household, input: {
   memberId: string;
   createdBy: string;
   at?: string;
@@ -1070,7 +1071,7 @@ export function completeHouseholdOnboarding(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Onboarding", "Completed household setup", [prior.id], [], "completeHouseholdOnboarding");
-}
+});
 
 function requireOpenPeriod(household: Household, date: DateKey): void {
   const monthKey = monthKeyFromDateKey(date);
@@ -1116,7 +1117,7 @@ function commitMemberPersonalPreference(
  * Change only the acting member's default landing surface.
  * The caller must supply the trusted acting member separately from the target.
  */
-export function setLandingSurface(household: Household, input: {
+export const setLandingSurface = captureCommand("setLandingSurface", function setLandingSurface(household: Household, input: {
   memberId: string;
   surface: "desk" | "till";
   createdBy: string;
@@ -1156,7 +1157,7 @@ export function setLandingSurface(household: Household, input: {
     "landing-surface-personal",
     updatedAt,
   );
-}
+});
 
 function requireFundRailActor(household: Household, memberId: string, createdBy: string) {
   if (!createdBy) throw new ValidationError("Only you can arrange your own board.");
@@ -1184,7 +1185,7 @@ function commitFundRailPreference(previous: Household, next: Household, memberId
 }
 
 /** Arrange one member-owned board slot. Slot numbers are the visible one-based places. */
-export function setFundRailSlot(household: Household, input: {
+export const setFundRailSlot = captureCommand("setFundRailSlot", function setFundRailSlot(household: Household, input: {
   memberId: string;
   createdBy: string;
   slot: number;
@@ -1230,10 +1231,10 @@ export function setFundRailSlot(household: Household, input: {
     ? { ...row, fundRail: { memberId: member.id, slots, updatedAt } }
     : row);
   return commitFundRailPreference(previous, next, member.id, "Fund board arranged", updatedAt);
-}
+});
 
 /** Return only the acting member's board to the role-derived calm default. */
-export function resetFundRail(household: Household, input: {
+export const resetFundRail = captureCommand("resetFundRail", function resetFundRail(household: Household, input: {
   memberId: string;
   createdBy: string;
 }): CommitResult {
@@ -1257,7 +1258,7 @@ export function resetFundRail(household: Household, input: {
     ? { ...row, fundRail: { memberId: member.id, slots, updatedAt } }
     : row);
   return commitFundRailPreference(previous, next, member.id, "Fund board reset", updatedAt);
-}
+});
 
 /**
  * Change only the acting member's own glance account. Stored per member,
@@ -1265,7 +1266,7 @@ export function resetFundRail(household: Household, input: {
  * cloud-acknowledged member-Personal path. Sync projection strips the
  * preference from Shared and carries it only in this member's Personal envelope.
  */
-export function setGlanceAccount(household: Household, input: {
+export const setGlanceAccount = captureCommand("setGlanceAccount", function setGlanceAccount(household: Household, input: {
   memberId: string;
   accountId: string;
   createdBy: string;
@@ -1307,9 +1308,9 @@ export function setGlanceAccount(household: Household, input: {
     "glance-account-personal",
     updatedAt,
   );
-}
+});
 
-export function setHerculesProPermissions(household: Household, input: {
+export const setHerculesProPermissions = captureCommand("setHerculesProPermissions", function setHerculesProPermissions(household: Household, input: {
   memberId: string;
   createdBy: string;
   personalWrite: boolean;
@@ -1360,10 +1361,10 @@ export function setHerculesProPermissions(household: Household, input: {
     "hercules-permissions-personal",
     updatedAt,
   );
-}
+});
 
 /** Choose the acting member's Shared credit card for Fund-backed purchases without changing their glance account. */
-export function setFundCardAccount(household: Household, input: {
+export const setFundCardAccount = captureCommand("setFundCardAccount", function setFundCardAccount(household: Household, input: {
   memberId: string;
   accountId: string;
   createdBy: string;
@@ -1406,7 +1407,7 @@ export function setFundCardAccount(household: Household, input: {
       commandKind: "fund-card-personal",
     },
   };
-}
+});
 
 function requireAccountScopeForWrite(household: Household, accountId: string, actor: { createdBy: string; visibility: Visibility }): void {
   const account = requireAccount(household, accountId);
@@ -1576,7 +1577,7 @@ function baseTx(household: Household, input: {
   };
 }
 
-export function postEntry(household: Household, input: {
+export const postEntry = captureCommand("postEntry", function postEntry(household: Household, input: {
   date: string;
   type: "expense" | "income" | "refund";
   amount: string | number;
@@ -1718,14 +1719,14 @@ export function postEntry(household: Household, input: {
   }
   const warnings = matches.length ? ["Saved with a duplicate fingerprint. Review it when you have a moment."] : [];
   return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, postedIds, warnings, "postEntry");
-}
+});
 
 /**
  * Posts existing account balances against Opening equity on one Toronto date.
  * This is a balance-sheet batch: no income, expense, budget, cash-flow, shift,
  * recurrence, or Household Fund event is created.
  */
-export function postOpeningBalances(household: Household, input: {
+export const postOpeningBalances = captureCommand("postOpeningBalances", function postOpeningBalances(household: Household, input: {
   asOfDate: string;
   lines: OpeningLineInput[];
   createdBy?: string;
@@ -1794,10 +1795,10 @@ export function postOpeningBalances(household: Household, input: {
     postedIds.push(row.id);
   }
   return commit(previous, next, "Opening truth", openingTruthReviewSummary(draft), postedIds, [], "postOpeningBalances");
-}
+});
 
 /** Books civil timezone is fixed to America/Toronto (D-126 Q2 C). Phone display zones are phone-local. */
-export function setHouseholdTimezone(household: Household, timeZone: string): CommitResult {
+export const setHouseholdTimezone = captureCommand("setHouseholdTimezone", function setHouseholdTimezone(household: Household, timeZone: string): CommitResult {
   const nextZone = requireIanaTimeZone(timeZone);
   if (nextZone !== TIMEZONE) {
     throw new ValidationError(
@@ -1816,9 +1817,9 @@ export function setHouseholdTimezone(household: Household, timeZone: string): Co
   const next = cloneHousehold(household);
   next.timezone = nextZone;
   return commit(previous, next, "Timezone", `Household calendar is ${nextZone}`, []);
-}
+});
 
-export function postTransfer(household: Household, input: {
+export const postTransfer = captureCommand("postTransfer", function postTransfer(household: Household, input: {
   date: string;
   amount: string | number;
   fromAccountId: string;
@@ -1900,9 +1901,9 @@ export function postTransfer(household: Household, input: {
   inDraft.transferToAccountId = input.toAccountId;
   next.transactions.push(outDraft, inDraft);
   return commit(previous, next, "Transfer", `Moved $${(amountCents / 100).toFixed(2)} on ${date}`, [outDraft.id, inDraft.id], [], "postTransfer");
-}
+});
 
-export function postShift(household: Household, input: {
+export const postShift = captureCommand("postShift", function postShift(household: Household, input: {
   date: string;
   memberId: string;
   accountId: string;
@@ -2012,7 +2013,7 @@ export function postShift(household: Household, input: {
     next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: createdAt } : row);
   }
   return commit(previous, next, "Add Shift", `${shiftId}: ${member.name} on ${parsed.date}`, [shiftId, wagesTx.id, tipsTx.id], warnings);
-}
+});
 
 function optionalMoneyCents(value: string | number | undefined, label: string): number {
   if (value == null || value === "" || Number(value) === 0) return 0;
@@ -2192,7 +2193,7 @@ export type PostWorkShiftInput = {
  * Job-based Confirm boundary. Earnings first land in employer receivables; only
  * same-day cash tips touch cash. Payday and card-tip payout are later transfers.
  */
-export function postWorkShift(household: Household, input: PostWorkShiftInput): CommitResult {
+export const postWorkShift = captureCommand("postWorkShift", function postWorkShift(household: Household, input: PostWorkShiftInput): CommitResult {
   requireTimezone(household);
   const date = parseDate(input.date);
   const member = requireMember(household, input.memberId);
@@ -2532,9 +2533,9 @@ export function postWorkShift(household: Household, input: PostWorkShiftInput): 
   if (punch) next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: createdAt } : row);
   const warnings = calculation.cardTipsAfterTipOutCents < 0 ? ["Withheld tip-outs are greater than this shift's card tips; the job's owed balance may be negative."] : [];
   return commit(previous, next, "Confirm Work Shift", `${shiftId}: ${member.name} at ${job.name} on ${date}`, [shiftId, ...(confirmedShift.shiftBible ? [confirmedShift.shiftBible.id] : []), ...transactionIds], warnings);
-}
+});
 
-export function refreshSevenShiftsSchedule(household: Household, input: {
+export const refreshSevenShiftsSchedule = captureCommand("refreshSevenShiftsSchedule", function refreshSevenShiftsSchedule(household: Household, input: {
   memberId: string;
   schedules: SevenShiftsScheduledShift[];
   confirmedPersonalFeed?: boolean;
@@ -2590,9 +2591,9 @@ export function refreshSevenShiftsSchedule(household: Household, input: {
   return commit(previous, next, "Refresh 7shifts schedule", `${member.name} saved ${schedules.length} published schedule shift${schedules.length === 1 ? "" : "s"} for outlook only`, [...schedules.map((row) => row.id), ...(next.shiftEnvelopes ?? []).filter((row) => row.memberId === member.id).map((row) => row.id)], [
     "Published schedule rows are projections only. They do not post hours, wages, tips, or money.",
   ]);
-}
+});
 
-export function refreshShiftEnvelopesFromEvidence(household: Household, input: {
+export const refreshShiftEnvelopesFromEvidence = captureCommand("refreshShiftEnvelopesFromEvidence", function refreshShiftEnvelopesFromEvidence(household: Household, input: {
   memberId: string;
   createdBy: string;
   proposals: ShiftEnvelopeEvidenceProposal[];
@@ -2713,10 +2714,10 @@ export function refreshShiftEnvelopesFromEvidence(household: Household, input: {
   return commit(previous, next, "Refresh Shift mail", `${member.name} refreshed ${touched.size} shift envelope${touched.size === 1 ? "" : "s"} from bounded 7shifts facts`, [...touched], [
     "This refresh is nonfinancial. It cannot post hours, wages, tips, sales, corrections, or journal rows.",
   ]);
-}
+});
 
 /** Visible, non-money confirmation for a cut, employee call-out, or traded-away shift. */
-export function confirmShiftEnvelopeOutcome(household: Household, input: {
+export const confirmShiftEnvelopeOutcome = captureCommand("confirmShiftEnvelopeOutcome", function confirmShiftEnvelopeOutcome(household: Household, input: {
   memberId: string;
   envelopeId: string;
   outcome: Exclude<ShiftOutcome, "worked">;
@@ -2746,10 +2747,10 @@ export function confirmShiftEnvelopeOutcome(household: Household, input: {
   return commit(previous, next, "Confirm Shift Outcome", `${member.name} confirmed a non-work shift outcome`, [bible.id, envelope.id], [
     "This outcome records no hours, wages, sales, tips, or journal money.",
   ]);
-}
+});
 
 /** Append-only, nonfinancial context revision for a previously confirmed Bible. */
-export function appendShiftBibleWeather(household: Household, input: {
+export const appendShiftBibleWeather = captureCommand("appendShiftBibleWeather", function appendShiftBibleWeather(household: Household, input: {
   memberId: string;
   bibleId: string;
   weather: ShiftWeatherContext;
@@ -2788,9 +2789,9 @@ export function appendShiftBibleWeather(household: Household, input: {
   return commit(previous, next, "Add Shift weather", `${member.name} added historical weather to a confirmed Shift Bible`, [current.id], [
     "This context revision does not add, reverse, or change journal money.",
   ]);
-}
+});
 
-export function retireResolvedShiftEnvelope(household: Household, input: {
+export const retireResolvedShiftEnvelope = captureCommand("retireResolvedShiftEnvelope", function retireResolvedShiftEnvelope(household: Household, input: {
   memberId: string;
   envelopeId: string;
   bibleId: string;
@@ -2811,9 +2812,9 @@ export function retireResolvedShiftEnvelope(household: Household, input: {
   return commit(previous, next, "Archive resolved Shift mail", `${member.name} archived a resolved shift envelope after its Bible was sealed`, [envelope.id], [
     "The permanent Shift Bible and any linked financial journal remain unchanged.",
   ]);
-}
+});
 
-export function reconcileWorkWeekFromEvidence(household: Household, input: {
+export const reconcileWorkWeekFromEvidence = captureCommand("reconcileWorkWeekFromEvidence", function reconcileWorkWeekFromEvidence(household: Household, input: {
   memberId: string;
   jobId: string;
   payrollWeekStarts: 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -2890,11 +2891,11 @@ export function reconcileWorkWeekFromEvidence(household: Household, input: {
   return commit(previous, next, "Reconcile 7shifts Work Week", `${member.name} reconciled ${originals.length} source-backed shift${originals.length === 1 ? "" : "s"} for ${weekStart} through ${weekEnd}`, postedIds, [
     "Every original journal component remains with one exact reversal; replacements were recalculated chronologically for weekly overtime.",
   ]);
-}
+});
 
 export type WorkSettlementKind = "wages" | "card-tips";
 
-export function settleWorkReceivable(household: Household, input: {
+export const settleWorkReceivable = captureCommand("settleWorkReceivable", function settleWorkReceivable(household: Household, input: {
   jobId: string;
   kind: WorkSettlementKind;
   date: string;
@@ -2923,9 +2924,9 @@ export function settleWorkReceivable(household: Household, input: {
     createdBy: input.createdBy,
     visibility: input.kind === "wages" ? job.defaults.wagesVisibility : job.defaults.cardTipsVisibility,
   });
-}
+});
 
-export function payDeferredWorkTipOut(household: Household, input: {
+export const payDeferredWorkTipOut = captureCommand("payDeferredWorkTipOut", function payDeferredWorkTipOut(household: Household, input: {
   jobId: string;
   date: string;
   amount: string | number;
@@ -2969,9 +2970,9 @@ export function payDeferredWorkTipOut(household: Household, input: {
     return { ...shift, deferredTipOutPaidCents: (shift.deferredTipOutPaidCents ?? 0) + applied, updatedAt: at };
   });
   return commit(previous, next, "Pay Deferred Tip-out", `${job.name}: paid $${(amountCents / 100).toFixed(2)} deferred tip-out`, [tx.id]);
-}
+});
 
-export function clockInShift(household: Household, input: { memberId: string; scheduledItemId?: string | null; sourceDeviceId?: string | null }): CommitResult {
+export const clockInShift = captureCommand("clockInShift", function clockInShift(household: Household, input: { memberId: string; scheduledItemId?: string | null; sourceDeviceId?: string | null }): CommitResult {
   const member = requireMember(household, input.memberId);
   const already = activeOpenShift(household.kitchen, member.id);
   if (already) throw new ValidationError(already.status === "confirming" ? "Finish confirming the previous shift before starting another." : "Already on the clock. Sign out when you know the hours.");
@@ -2992,9 +2993,9 @@ export function clockInShift(household: Household, input: { memberId: string; sc
     status: "open",
   });
   return commit(previous, next, "Clock in", `${member.name} punched in.`, []);
-}
+});
 
-export function clockOutShift(household: Household, input: { memberId: string }): CommitResult {
+export const clockOutShift = captureCommand("clockOutShift", function clockOutShift(household: Household, input: { memberId: string }): CommitResult {
   const member = requireMember(household, input.memberId);
   const punch = activeOpenShift(household.kitchen, member.id);
   if (!punch) throw new ValidationError("There is no open shift to clock out.");
@@ -3011,9 +3012,9 @@ export function clockOutShift(household: Household, input: { memberId: string })
     updatedAt: at,
   } : row);
   return commit(previous, next, "Clock out", `${member.name} clocked out; Confirm still posts the shift`, []);
-}
+});
 
-export function startShiftBreak(household: Household, input: { memberId: string; kind: "paid" | "unpaid" | "custom"; label?: string }): CommitResult {
+export const startShiftBreak = captureCommand("startShiftBreak", function startShiftBreak(household: Household, input: { memberId: string; kind: "paid" | "unpaid" | "custom"; label?: string }): CommitResult {
   const member = requireMember(household, input.memberId);
   const punch = activeOpenShift(household.kitchen, member.id);
   if (!punch || punch.status !== "open") throw new ValidationError("Clock in before starting a break.");
@@ -3035,9 +3036,9 @@ export function startShiftBreak(household: Household, input: { memberId: string;
     updatedAt: at,
   } : row);
   return commit(previous, next, "Start break", `${member.name} started a ${input.kind} break`, []);
-}
+});
 
-export function endShiftBreak(household: Household, input: { memberId: string }): CommitResult {
+export const endShiftBreak = captureCommand("endShiftBreak", function endShiftBreak(household: Household, input: { memberId: string }): CommitResult {
   const member = requireMember(household, input.memberId);
   const punch = activeOpenShift(household.kitchen, member.id);
   const openBreak = punch?.breaks.find((item) => !item.endedAt);
@@ -3052,9 +3053,9 @@ export function endShiftBreak(household: Household, input: { memberId: string })
     updatedAt: at,
   } : row);
   return commit(previous, next, "End break", `${member.name} ended a break`, []);
-}
+});
 
-export function updateOpenShiftTimeline(household: Household, input: { memberId: string; startedAt: string; endedAt: string; breaks: Household["kitchen"]["openShifts"][number]["breaks"] }): CommitResult {
+export const updateOpenShiftTimeline = captureCommand("updateOpenShiftTimeline", function updateOpenShiftTimeline(household: Household, input: { memberId: string; startedAt: string; endedAt: string; breaks: Household["kitchen"]["openShifts"][number]["breaks"] }): CommitResult {
   const member = requireMember(household, input.memberId);
   const punch = activeOpenShift(household.kitchen, member.id);
   if (!punch) throw new ValidationError("That shift is no longer open.");
@@ -3075,9 +3076,9 @@ export function updateOpenShiftTimeline(household: Household, input: { memberId:
   } : row);
   next.kitchen = shapeKitchen(next.kitchen);
   return commit(previous, next, "Edit timesheet", `${member.name} corrected clock and break times before Confirm`, []);
-}
+});
 
-export function abandonOpenShift(household: Household, input?: { memberId?: string }): CommitResult {
+export const abandonOpenShift = captureCommand("abandonOpenShift", function abandonOpenShift(household: Household, input?: { memberId?: string }): CommitResult {
   const punch = activeOpenShift(household.kitchen, input?.memberId);
   if (!punch) throw new ValidationError("Nobody is on the clock.");
   const previous = cloneHousehold(household);
@@ -3086,9 +3087,9 @@ export function abandonOpenShift(household: Household, input?: { memberId?: stri
   const at = nowIso();
   next.kitchen.openShifts = next.kitchen.openShifts.map((row) => row.id === punch.id ? { ...row, status: "cleared", updatedAt: at } : row);
   return commit(previous, next, "Clock out", "Wiped an open punch. Not a reverse.", []);
-}
+});
 
-export function chooseOpenShiftTimeline(household: Household, input: { memberId: string; keepId: string }): CommitResult {
+export const chooseOpenShiftTimeline = captureCommand("chooseOpenShiftTimeline", function chooseOpenShiftTimeline(household: Household, input: { memberId: string; keepId: string }): CommitResult {
   const member = requireMember(household, input.memberId);
   const conflicts = openShiftConflicts(household.kitchen, member.id);
   const keep = conflicts.find((row) => row.id === input.keepId);
@@ -3102,9 +3103,9 @@ export function chooseOpenShiftTimeline(household: Household, input: { memberId:
     ? { ...row, status: "cleared", updatedAt: at }
     : row);
   return commit(previous, next, "Choose Timesheet", `${member.name} kept one device timeline; no money posted`, []);
-}
+});
 
-export function addCategory(household: Household, input: {
+export const addCategory = captureCommand("addCategory", function addCategory(household: Household, input: {
   name: string;
   type: "expense" | "income";
   parentId?: string;
@@ -3176,7 +3177,7 @@ export function addCategory(household: Household, input: {
     posted.push(plan.id);
   }
   return commit(previous, next, "Add Category", `Added ${name}`, posted);
-}
+});
 
 function seedBudgetPlan(
   household: Household,
@@ -3199,7 +3200,7 @@ function seedBudgetPlan(
   };
 }
 
-export function setBudget(household: Household, input: { monthKey: MonthKey; subcategoryId: string; amount: string | number }): CommitResult {
+export const setBudget = captureCommand("setBudget", function setBudget(household: Household, input: { monthKey: MonthKey; subcategoryId: string; amount: string | number }): CommitResult {
   requireTimezone(household);
   const amountCents = parseMoneyCents(input.amount, "Budgeted amount", { allowZero: true });
   const category = requireSubcategory(household, input.subcategoryId);
@@ -3211,9 +3212,9 @@ export function setBudget(household: Household, input: { monthKey: MonthKey; sub
     existing.updatedAt = nowIso();
   } else next.budgetPlans.push(seedBudgetPlan(next, input.monthKey, category, amountCents));
   return commit(previous, next, "Set Budget", `${category.name} ${input.monthKey} → $${(amountCents / 100).toFixed(2)}`, []);
-}
+});
 
-export function adoptFirstBudget(household: Household, input: OnboardingAdoptionInput): CommitResult {
+export const adoptFirstBudget = captureCommand("adoptFirstBudget", function adoptFirstBudget(household: Household, input: OnboardingAdoptionInput): CommitResult {
   const confirmationId = onboardingAdoptionIdentity(input.monthKey, input.proposalDigest);
   const member = household.members.find((candidate) => candidate.active && candidate.id === input.memberId);
   const actor = household.members.find((candidate) => candidate.active && candidate.id === input.createdBy);
@@ -3283,7 +3284,7 @@ export function adoptFirstBudget(household: Household, input: OnboardingAdoption
   result.undo.id = confirmationId;
   result.undo.actorMemberId = input.memberId;
   return result;
-}
+});
 
 function parseBps(value: string | number | undefined, label: string, fallback = 0): number {
   if (value === undefined || value === null || value === "") return fallback;
@@ -3347,7 +3348,7 @@ function requireExpenseNamed(household: Household, name: string, groupName = "De
   return { household: added.household, subcategoryId: created.id };
 }
 
-export function addAccount(household: Household, input: {
+export const addAccount = captureCommand("addAccount", function addAccount(household: Household, input: {
   name: string;
   kind: AccountKind | string;
   ownerMemberId?: string;
@@ -3417,9 +3418,9 @@ export function addAccount(household: Household, input: {
   }, next.accounts.length);
   next.accounts = [...next.accounts, draft];
   return commit(previous, next, "Add Account", `Opened ${draft.name}`, [id]);
-}
+});
 
-export function updateAccount(household: Household, input: {
+export const updateAccount = captureCommand("updateAccount", function updateAccount(household: Household, input: {
   accountId: string;
   name?: string;
   institution?: string;
@@ -3486,9 +3487,9 @@ export function updateAccount(household: Household, input: {
   account.updatedAt = nowIso();
   next.accounts = next.accounts.map((row) => row.id === account.id ? shapeAccount(account) : row);
   return commit(previous, next, "Account", `Updated ${account.name}`, []);
-}
+});
 
-export function archiveAccount(household: Household, accountId: string): CommitResult {
+export const archiveAccount = captureCommand("archiveAccount", function archiveAccount(household: Household, accountId: string): CommitResult {
   requireTimezone(household);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -3499,9 +3500,9 @@ export function archiveAccount(household: Household, accountId: string): CommitR
   account.active = false;
   account.updatedAt = nowIso();
   return commit(previous, next, "Account", `Archived ${account.name}`, []);
-}
+});
 
-export function markInvestmentValue(household: Household, input: {
+export const markInvestmentValue = captureCommand("markInvestmentValue", function markInvestmentValue(household: Household, input: {
   accountId: string;
   markedValue: string | number;
   markedAt?: string;
@@ -3528,9 +3529,9 @@ export function markInvestmentValue(household: Household, input: {
       : row
   ));
   return commit(previous, next, "Investment mark", `${account.name} marked at $${(markedValueCents / 100).toFixed(2)}`, []);
-}
+});
 
-export function postCardInterest(household: Household, input: {
+export const postCardInterest = captureCommand("postCardInterest", function postCardInterest(household: Household, input: {
   accountId: string;
   date?: string;
   createdBy?: string;
@@ -3554,9 +3555,9 @@ export function postCardInterest(household: Household, input: {
     confirmDuplicate: input.confirmDuplicate,
     createdBy: input.createdBy,
   });
-}
+});
 
-export function postCardRewards(household: Household, input: {
+export const postCardRewards = captureCommand("postCardRewards", function postCardRewards(household: Household, input: {
   accountId: string;
   date?: string;
   as?: "statement-credit" | "deposit";
@@ -3598,9 +3599,9 @@ export function postCardRewards(household: Household, input: {
     confirmDuplicate: input.confirmDuplicate,
     createdBy: input.createdBy,
   });
-}
+});
 
-export function postSavingsInterest(household: Household, input: {
+export const postSavingsInterest = captureCommand("postSavingsInterest", function postSavingsInterest(household: Household, input: {
   accountId: string;
   date?: string;
   createdBy?: string;
@@ -3624,9 +3625,9 @@ export function postSavingsInterest(household: Household, input: {
     confirmDuplicate: input.confirmDuplicate,
     createdBy: input.createdBy,
   });
-}
+});
 
-export function applySitDown(household: Household, sourceMonth: MonthKey, amounts: Record<string, number>): CommitResult {
+export const applySitDown = captureCommand("applySitDown", function applySitDown(household: Household, sourceMonth: MonthKey, amounts: Record<string, number>): CommitResult {
   const preview = sitDownPreview(household, sourceMonth);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -3644,7 +3645,7 @@ export function applySitDown(household: Household, sourceMonth: MonthKey, amount
     session.updatedAt = nowIso();
   }
   return commit(previous, next, "Monthly Sit-Down", `Planned ${preview.targetMonth} from ${sourceMonth}`, []);
-}
+});
 
 function upsertSitDownSession(household: Household, patch: Partial<SitDownSession> & { monthKey: MonthKey; createdBy: string }): SitDownSession {
   const leftover = leftoverProjection(household, todayKey());
@@ -3675,7 +3676,7 @@ function upsertSitDownSession(household: Household, patch: Partial<SitDownSessio
   return row;
 }
 
-export function saveSitDownSession(household: Household, input: {
+export const saveSitDownSession = captureCommand("saveSitDownSession", function saveSitDownSession(household: Household, input: {
   monthKey: MonthKey;
   act?: 1 | 2 | 3;
   slices?: AllocationSlice[];
@@ -3692,9 +3693,9 @@ export function saveSitDownSession(household: Household, input: {
     createdBy: actor.createdBy,
   });
   return commit(previous, next, "Sit-down", `Saved the ${input.monthKey} sit-down`, []);
-}
+});
 
-export function executeSitDownMoves(household: Household, input: {
+export const executeSitDownMoves = captureCommand("executeSitDownMoves", function executeSitDownMoves(household: Household, input: {
   monthKey: MonthKey;
   slices: AllocationSlice[];
   createdBy?: string;
@@ -3796,9 +3797,9 @@ export function executeSitDownMoves(household: Household, input: {
     [...transferIds, ...contributionIds],
     warnings,
   );
-}
+});
 
-export function recordSitDownDrive(household: Household, sessionId: string, driveFileId: string | null): CommitResult {
+export const recordSitDownDrive = captureCommand("recordSitDownDrive", function recordSitDownDrive(household: Household, sessionId: string, driveFileId: string | null): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.sitDownSessions = shapeSitDownSessions(next.sitDownSessions);
@@ -3807,13 +3808,13 @@ export function recordSitDownDrive(household: Household, sessionId: string, driv
   session.driveFileId = driveFileId;
   session.updatedAt = nowIso();
   return commit(previous, next, "Sit-down", "Remembered a Drive file id (not the file)", []);
-}
+});
 
 /**
  * Turn this month's sit-down weights into monthly transfer standing orders for next month.
  * Confirm still posts each due transfer. Never auto-posts.
  */
-export function adoptSitDownStandingOrders(household: Household, input: {
+export const adoptSitDownStandingOrders = captureCommand("adoptSitDownStandingOrders", function adoptSitDownStandingOrders(household: Household, input: {
   monthKey: MonthKey;
   slices?: AllocationSlice[];
 } & ActorInput): CommitResult {
@@ -3895,9 +3896,9 @@ export function adoptSitDownStandingOrders(household: Household, input: {
       postedIds,
     },
   };
-}
+});
 
-export function addGoal(household: Household, input: {
+export const addGoal = captureCommand("addGoal", function addGoal(household: Household, input: {
   name: string;
   target: string | number;
   deadline?: string | null;
@@ -3939,9 +3940,9 @@ export function addGoal(household: Household, input: {
     updatedAt: at,
   });
   return commit(previous, next, "Add Goal", input.name.trim(), [id]);
-}
+});
 
-export function contributeToGoal(household: Household, goalId: string, amount: string | number, input: ActorInput & {
+export const contributeToGoal = captureCommand("contributeToGoal", function contributeToGoal(household: Household, goalId: string, amount: string | number, input: ActorInput & {
   date?: string;
   transferId?: string | null;
   markFunded?: boolean;
@@ -3976,13 +3977,13 @@ export function contributeToGoal(household: Household, goalId: string, amount: s
   }
   goal.updatedAt = at;
   return commit(previous, next, "Goal Progress", `${goal.name} +$${(amountCents / 100).toFixed(2)}`, [id]);
-}
+});
 
 /**
  * Move cash into the Goals vault, then append the envelope contribution.
  * Confirm still writes. Hercules never calls this.
  */
-export function fundGoal(household: Household, input: {
+export const fundGoal = captureCommand("fundGoal", function fundGoal(household: Household, input: {
   goalId: string;
   amount: string | number;
   fromAccountId: string;
@@ -4032,9 +4033,9 @@ export function fundGoal(household: Household, input: {
       postedIds: [...withVault.postedIds, ...moved.postedIds, ...contributed.postedIds],
     },
   };
-}
+});
 
-export function ensureGoalsVault(household: Household): CommitResult {
+export const ensureGoalsVault = captureCommand("ensureGoalsVault", function ensureGoalsVault(household: Household): CommitResult {
   if (goalsVaultAccount(household)) {
     return {
       household,
@@ -4050,9 +4051,9 @@ export function ensureGoalsVault(household: Household): CommitResult {
     institution: "EQ Bank",
     apyPercent: 0,
   });
-}
+});
 
-export function purchaseGoal(household: Household, input: {
+export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal(household: Household, input: {
   goalId: string;
   amount: string | number;
   lines?: { note: string; amount: string | number }[];
@@ -4143,9 +4144,9 @@ export function purchaseGoal(household: Household, input: {
     `${goal.name} · spent $${(spentCents / 100).toFixed(2)}`,
     [purchaseId, ...transactionIds],
   );
-}
+});
 
-export function addRecurrence(household: Household, input: {
+export const addRecurrence = captureCommand("addRecurrence", function addRecurrence(household: Household, input: {
   cadence: Recurrence["cadence"];
   nextDate: string;
   type: "expense" | "income" | "transfer";
@@ -4210,9 +4211,9 @@ export function addRecurrence(household: Household, input: {
     updatedAt: at,
   });
   return commit(previous, next, "Add Recurring", `${note || "Recurring"} ${input.cadence}`, [id]);
-}
+});
 
-export function updateRecurrence(household: Household, input: {
+export const updateRecurrence = captureCommand("updateRecurrence", function updateRecurrence(household: Household, input: {
   id: string;
   cadence: Recurrence["cadence"];
   nextDate: string;
@@ -4267,9 +4268,9 @@ export function updateRecurrence(household: Household, input: {
   item.fundingDefault = fundingDefault;
   item.updatedAt = nowIso();
   return commit(previous, next, "Edit Recurring", `${note || "Recurring"} ${item.cadence}`, [item.id]);
-}
+});
 
-export function adoptRhythm(household: Household, key: string, today: DateKey): CommitResult {
+export const adoptRhythm = captureCommand("adoptRhythm", function adoptRhythm(household: Household, key: string, today: DateKey): CommitResult {
   const rhythm = detectRhythms(household, today).find((item) => item.key === key);
   if (!rhythm || rhythm.status === "tracked") {
     throw new ValidationError("That repeating bill is no longer waiting to be adopted.");
@@ -4292,9 +4293,9 @@ export function adoptRhythm(household: Household, key: string, today: DateKey): 
     dismissedRhythmKeys: (result.household.calendar?.dismissedRhythmKeys ?? []).filter((item) => item !== key),
   };
   return result;
-}
+});
 
-export function dismissRhythm(household: Household, key: string): CommitResult {
+export const dismissRhythm = captureCommand("dismissRhythm", function dismissRhythm(household: Household, key: string): CommitResult {
   if (!key.trim()) throw new ValidationError("Nothing to dismiss.");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -4303,9 +4304,9 @@ export function dismissRhythm(household: Household, key: string): CommitResult {
     dismissedRhythmKeys: [...new Set([...(next.calendar?.dismissedRhythmKeys ?? []), key])].sort(),
   };
   return commit(previous, next, "Calendar", "Hid a detected repeating bill", []);
-}
+});
 
-export function pauseRecurrence(household: Household, recurrenceId: string): CommitResult {
+export const pauseRecurrence = captureCommand("pauseRecurrence", function pauseRecurrence(household: Household, recurrenceId: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const item = next.recurrences.find((row) => row.id === recurrenceId);
@@ -4313,9 +4314,9 @@ export function pauseRecurrence(household: Household, recurrenceId: string): Com
   item.active = !item.active;
   item.updatedAt = nowIso();
   return commit(previous, next, "Calendar", `${item.active ? "Resumed" : "Paused"} ${item.note || "recurring"}`, [item.id]);
-}
+});
 
-export function skipOccurrence(household: Household, recurrenceId: string): CommitResult {
+export const skipOccurrence = captureCommand("skipOccurrence", function skipOccurrence(household: Household, recurrenceId: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const item = next.recurrences.find((row) => row.id === recurrenceId);
@@ -4323,13 +4324,13 @@ export function skipOccurrence(household: Household, recurrenceId: string): Comm
   item.nextDate = advanceCadence(item.nextDate, item.cadence);
   item.updatedAt = nowIso();
   return commit(previous, next, "Calendar", `Skipped ${item.note || "recurring"} · next ${item.nextDate}`, [item.id]);
-}
+});
 
 /**
  * Move the exact shared monthly goal claim currently offered by The Ask.
  * This changes planning time only: no transfer, contribution, or journal row is posted.
  */
-export function moveAskGoalClaimToNextMonth(household: Household, input: {
+export const moveAskGoalClaimToNextMonth = captureCommand("moveAskGoalClaimToNextMonth", function moveAskGoalClaimToNextMonth(household: Household, input: {
   today: DateKey;
   memberId: string;
   goalId: string;
@@ -4376,13 +4377,13 @@ export function moveAskGoalClaimToNextMonth(household: Household, input: {
     [],
     "moveAskGoalClaimToNextMonth",
   );
-}
+});
 
-export function postOneRecurrence(
+export const postOneRecurrence = captureCommand("postOneRecurrence", function postOneRecurrence(
   household: Household,
   recurrenceId: string,
   today: DateKey,
-  options: { allowNotDue?: boolean } = {},
+  options: { allowNotDue?: boolean; createdBy?: string } = {},
 ): CommitResult {
   const item = household.recurrences.find((row) => row.id === recurrenceId && row.active);
   if (!item) throw new ValidationError("That repeating item is not active.");
@@ -4399,6 +4400,7 @@ export function postOneRecurrence(
       toAccountId: item.transferToAccountId,
       note: item.note || "Standing transfer",
       confirmDuplicate: true,
+      createdBy: options.createdBy,
     });
     working = moved.household;
     postedIds.push(...moved.postedIds);
@@ -4407,6 +4409,7 @@ export function postOneRecurrence(
         date: item.nextDate,
         transferId: moved.postedIds[0] ?? null,
         markFunded: true,
+        createdBy: options.createdBy,
       });
       working = contributed.household;
       postedIds.push(...contributed.postedIds);
@@ -4421,6 +4424,7 @@ export function postOneRecurrence(
       note: item.note,
       splits: item.splits,
       confirmDuplicate: true,
+      createdBy: options.createdBy,
       source: "recurring",
       sourceId: item.id,
       funding: item.fundingDefault ? {
@@ -4439,9 +4443,9 @@ export function postOneRecurrence(
     current.updatedAt = nowIso();
   }
   return commit(previous, next, "Post Recurring", `Posted ${item.note || "recurring"}`, postedIds);
-}
+});
 
-export function setRecurrenceGoogleSync(
+export const setRecurrenceGoogleSync = captureCommand("setRecurrenceGoogleSync", function setRecurrenceGoogleSync(
   household: Household,
   patches: { recurrenceId: string; memberId: string; calendarId: string; eventId: string }[],
 ): CommitResult {
@@ -4464,9 +4468,9 @@ export function setRecurrenceGoogleSync(
     patches.length ? `Linked ${patches.length} Google reminder${patches.length === 1 ? "" : "s"}` : "Google calendar unchanged",
     [],
   );
-}
+});
 
-export function postDueRecurrences(household: Household, today: DateKey, recurrenceIds?: string[]): CommitResult {
+export const postDueRecurrences = captureCommand("postDueRecurrences", function postDueRecurrences(household: Household, today: DateKey, recurrenceIds?: string[], options: {createdBy?:string} = {}): CommitResult {
   const previous = cloneHousehold(household);
   let next = cloneHousehold(household);
   const postedIds: string[] = [];
@@ -4476,14 +4480,14 @@ export function postDueRecurrences(household: Household, today: DateKey, recurre
   const due = selected.filter((item) => item.active && item.nextDate <= today);
   if (!due.length) throw new ValidationError("Nothing is due today.");
   for (const item of due) {
-    const result = postOneRecurrence(next, item.id, today);
+    const result = postOneRecurrence(next, item.id, today, options);
     next = result.household;
     postedIds.push(...result.postedIds);
   }
   return commit(previous, next, "Post Recurring", `Posted ${due.length} recurring ${due.length === 1 ? "item" : "items"}`, postedIds);
-}
+});
 
-export function markDuplicate(household: Household, transactionId: string, isDuplicate: boolean): CommitResult {
+export const markDuplicate = captureCommand("markDuplicate", function markDuplicate(household: Household, transactionId: string, isDuplicate: boolean): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const tx = next.transactions.find((item) => item.id === transactionId);
@@ -4491,18 +4495,18 @@ export function markDuplicate(household: Household, transactionId: string, isDup
   tx.isDuplicate = isDuplicate;
   tx.updatedAt = nowIso();
   return commit(previous, next, "Duplicate Review", `${tx.id} ${isDuplicate ? "excluded from totals" : "included in totals"}`, [tx.id]);
-}
+});
 
-export function updateShiftSettings(household: Household, settings: Household["shiftSettings"]): CommitResult {
+export const updateShiftSettings = captureCommand("updateShiftSettings", function updateShiftSettings(household: Household, settings: Household["shiftSettings"]): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.shiftSettings = settings;
   shiftSettingsFingerprint(settings);
   return commit(previous, next, "Shift Settings", "Updated tip-out and wage rules", []);
-}
+});
 
 /** Record one member's household-visible timing while explicitly leaving private job detail for later. */
-export function recordEarningCadence(household: Household, input: {
+export const recordEarningCadence = captureCommand("recordEarningCadence", function recordEarningCadence(household: Household, input: {
   memberId: string;
   createdBy: string;
   paySchedule: WorkPaySchedule;
@@ -4534,7 +4538,7 @@ export function recordEarningCadence(household: Household, input: {
     [],
     "recordEarningCadence",
   );
-}
+});
 
 function workReceivableAccount(household: Household, id: string, name: string, memberId: string, at: string) {
   return shapeAccount({
@@ -4553,7 +4557,7 @@ function workReceivableAccount(household: Household, id: string, name: string, m
 }
 
 /** Add/Edit Job is catalog-only. It creates job-specific receivable accounts but never posts money. */
-export function upsertWorkJob(household: Household, input: { job: WorkJob }): CommitResult {
+export const upsertWorkJob = captureCommand("upsertWorkJob", function upsertWorkJob(household: Household, input: { job: WorkJob }): CommitResult {
   requireTimezone(household);
   const member = requireMember(household, input.job.memberId);
   const previous = cloneHousehold(household);
@@ -4609,9 +4613,9 @@ export function upsertWorkJob(household: Household, input: { job: WorkJob }): Co
   next.workJobs = [...(next.workJobs ?? []).filter((row) => row.id !== jobId), shaped]
     .sort((left, right) => left.name.localeCompare(right.name));
   return commit(previous, next, existing ? "Edit Job" : "Add Job", `${existing ? "Updated" : "Added"} ${shaped.name}`, [jobId]);
-}
+});
 
-export function archiveWorkJob(household: Household, jobId: string): CommitResult {
+export const archiveWorkJob = captureCommand("archiveWorkJob", function archiveWorkJob(household: Household, jobId: string): CommitResult {
   const existing = (household.workJobs ?? []).find((job) => job.id === jobId);
   if (!existing) throw new ValidationError("That job is gone.");
   const previous = cloneHousehold(household);
@@ -4619,7 +4623,7 @@ export function archiveWorkJob(household: Household, jobId: string): CommitResul
   const at = nowIso();
   next.workJobs = (next.workJobs ?? []).map((job) => job.id === jobId ? { ...job, active: false, updatedAt: at } : job);
   return commit(previous, next, "Archive Job", `Archived ${existing.name}; shifts and owed balances remain`, []);
-}
+});
 
 export type UpsertCoworkerInput = {
   id?: string;
@@ -4636,7 +4640,7 @@ export type UpsertCoworkerInput = {
 };
 
 /** Private workplace directory update. It never creates a Member or posts money. */
-export function upsertCoworker(household: Household, input: UpsertCoworkerInput): CommitResult {
+export const upsertCoworker = captureCommand("upsertCoworker", function upsertCoworker(household: Household, input: UpsertCoworkerInput): CommitResult {
   const member = requireMember(household, input.ownerMemberId);
   const job = (household.workJobs ?? []).find((row) => row.id === input.jobId && row.active);
   if (!job || job.memberId !== member.id) throw new ValidationError("Choose an active job owned by this member.");
@@ -4674,9 +4678,9 @@ export function upsertCoworker(household: Household, input: UpsertCoworkerInput)
   if (!shaped) throw new ValidationError("Coworker details are invalid.");
   next.coworkers = [...(next.coworkers ?? []).filter((row) => row.id !== id), shaped];
   return commit(previous, next, existing ? "Edit coworker" : "Add coworker", "Updated the private workplace roster", [id]);
-}
+});
 
-export function importCoworkerRoster(household: Household, input: {
+export const importCoworkerRoster = captureCommand("importCoworkerRoster", function importCoworkerRoster(household: Household, input: {
   ownerMemberId: string;
   jobId: string;
   locationName: string;
@@ -4820,7 +4824,7 @@ export function importCoworkerRoster(household: Household, input: {
   }
   if (!postedIds.length) throw new ValidationError("Roster did not contain a new or updated coworker.");
   return commit(previous, next, "Import coworker roster", `Updated ${identityCount} private workplace ${identityCount === 1 ? "identity" : "identities"}`, postedIds);
-}
+});
 
 export type RecordCoworkerAttendanceInput = {
   ownerMemberId: string;
@@ -4835,7 +4839,7 @@ export type RecordCoworkerAttendanceInput = {
 };
 
 /** Replaces reviewed staffing context beside an already confirmed shift. */
-export function recordCoworkerAttendance(household: Household, input: RecordCoworkerAttendanceInput): CommitResult {
+export const recordCoworkerAttendance = captureCommand("recordCoworkerAttendance", function recordCoworkerAttendance(household: Household, input: RecordCoworkerAttendanceInput): CommitResult {
   requireMember(household, input.ownerMemberId);
   const shift = household.shifts.find((row) => row.id === input.shiftId);
   if (!shift || shift.memberId !== input.ownerMemberId || shift.createdBy !== input.ownerMemberId || !shift.jobId) {
@@ -4893,10 +4897,10 @@ export function recordCoworkerAttendance(household: Household, input: RecordCowo
     ...replacements.map((row) => row.id),
     ...omittedIds,
   ]);
-}
+});
 
 /** One visible Shift Confirm can atomically retain its reviewed, non-financial attendance sidecar. */
-export function postWorkShiftWithAttendanceReview(
+export const postWorkShiftWithAttendanceReview = captureCommand("postWorkShiftWithAttendanceReview", function postWorkShiftWithAttendanceReview(
   household: Household,
   input: PostWorkShiftInput,
   review?: ShiftAttendanceReviewDraft | null,
@@ -4963,9 +4967,9 @@ export function postWorkShiftWithAttendanceReview(
       postedIds: allIds,
     },
   };
-}
+});
 
-export function reversePostedMoney(household: Household, transactionId: string, input: ActorInput & { reversalDate?: string } = {}): CommitResult {
+export const reversePostedMoney = captureCommand("reversePostedMoney", function reversePostedMoney(household: Household, transactionId: string, input: ActorInput & { reversalDate?: string } = {}): CommitResult {
   const tx = household.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That row is already gone.");
   const pair = tx.transferPairId
@@ -5076,10 +5080,10 @@ export function reversePostedMoney(household: Household, transactionId: string, 
       ? `Reversed ${tx.date} transfer ${dollars}`
       : `Reversed ${tx.date} ${tx.type} ${dollars}`;
   return commit(previous, next, "Reverse", label, postedIds);
-}
+});
 
 /** Reverse one confirmed Bible shift and reopen its exact envelope for the visible replacement Confirm. */
-export function beginShiftBibleCorrection(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {
+export const beginShiftBibleCorrection = captureCommand("beginShiftBibleCorrection", function beginShiftBibleCorrection(household: Household, transactionId: string, input: ActorInput = {}): CommitResult {
   const transaction = household.transactions.find((row) => row.id === transactionId && row.source === "shift" && row.sourceId);
   const shift = transaction?.sourceId ? household.shifts.find((row) => row.id === transaction.sourceId) : null;
   if (!transaction || !shift?.shiftBible) throw new ValidationError("That correction is not linked to a confirmed Shift Bible.");
@@ -5107,7 +5111,7 @@ export function beginShiftBibleCorrection(household: Household, transactionId: s
     updatedAt: nowIso(),
   } : row);
   return { ...reversed, household: next, warnings: [...reversed.warnings, "The old Bible remains linked to its balanced reversal until the visible replacement is confirmed."] };
-}
+});
 
 /**
  * @deprecated Whole-snapshot undo — unsafe in dual-use (can tombstone partner live-pulled rows).
@@ -5144,7 +5148,7 @@ export function undo(current: Household, token: UndoToken): Household {
   return restored;
 }
 
-export function scribbleChalk(household: Household, input: { text?: string; author: string; ink?: ChalkInk | null }): CommitResult {
+export const scribbleChalk = captureCommand("scribbleChalk", function scribbleChalk(household: Household, input: { text?: string; author: string; ink?: ChalkInk | null }): CommitResult {
   const ink = shapeChalkInk(input.ink ?? null);
   let text = (input.text ?? "").trim();
   if (!text && ink) text = detectChalkLetters(ink);
@@ -5161,9 +5165,9 @@ export function scribbleChalk(household: Household, input: { text?: string; auth
     { id, text, author: input.author, createdAt: at, updatedAt: at, ink },
   ].slice(-MAX_CHALK_NOTES);
   return commit(previous, next, "Chalkboard", ink ? "Drew on the chalkboard" : "Scribbled on the chalkboard", []);
-}
+});
 
-export function neatenChalk(household: Household, id: string): CommitResult {
+export const neatenChalk = captureCommand("neatenChalk", function neatenChalk(household: Household, id: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.kitchen = shapeKitchen(next.kitchen);
@@ -5175,9 +5179,9 @@ export function neatenChalk(household: Household, id: string): CommitResult {
   note.text = neat.slice(0, MAX_CHALK_CHARS);
   note.updatedAt = nowIso();
   return commit(previous, next, "Chalkboard", "Neatened a chalkboard note", []);
-}
+});
 
-export function wipeChalk(household: Household, id: string): CommitResult {
+export const wipeChalk = captureCommand("wipeChalk", function wipeChalk(household: Household, id: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.kitchen = shapeKitchen(next.kitchen);
@@ -5186,10 +5190,10 @@ export function wipeChalk(household: Household, id: string): CommitResult {
   next.kitchen.chalkboard = next.kitchen.chalkboard.filter((item) => item.id !== id);
   next.tombstones = mergeTombstones(next.tombstones, [{ id, deletedAt: nowIso() }]);
   return commit(previous, next, "Chalkboard", "Wiped a chalkboard note", []);
-}
+});
 
 /** Replace a chalk note's ink after letter-erasing. Empty ink wipes the note. */
-export function reviseChalkInk(household: Household, id: string, ink: ChalkInk | null): CommitResult {
+export const reviseChalkInk = captureCommand("reviseChalkInk", function reviseChalkInk(household: Household, id: string, ink: ChalkInk | null): CommitResult {
   if (!hasChalkInk(ink)) return wipeChalk(household, id);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -5202,9 +5206,9 @@ export function reviseChalkInk(household: Household, id: string, ink: ChalkInk |
   if (read) note.text = read.slice(0, MAX_CHALK_CHARS);
   note.updatedAt = nowIso();
   return commit(previous, next, "Chalkboard", "Erased chalk", []);
-}
+});
 
-export function recordReconciliation(household: Household, input: {
+export const recordReconciliation = captureCommand("recordReconciliation", function recordReconciliation(household: Household, input: {
   accountId: string;
   statementDate: string;
   statementAmount: string | number;
@@ -5251,9 +5255,9 @@ export function recordReconciliation(household: Household, input: {
     [],
     "recordReconciliation",
   );
-}
+});
 
-export function closeBooksMonth(household: Household, input: { monthKey: MonthKey; createdBy?: string }): CommitResult {
+export const closeBooksMonth = captureCommand("closeBooksMonth", function closeBooksMonth(household: Household, input: { monthKey: MonthKey; createdBy?: string }): CommitResult {
   requireTimezone(household);
   if (!/^\d{4}-\d{2}$/.test(input.monthKey)) throw new ValidationError("Close a Toronto month (YYYY-MM).");
   if (isMonthClosed(household, input.monthKey)) {
@@ -5269,9 +5273,9 @@ export function closeBooksMonth(household: Household, input: { monthKey: MonthKe
   ];
   const periodId = closedPeriodId(input.monthKey);
   return commit(previous, next, "Close month", `Closed ${input.monthKey}. That month accepts no new posts until you reopen it.`, [periodId], [], "closeBooksMonth");
-}
+});
 
-export function reopenBooksMonth(household: Household, monthKey: MonthKey): CommitResult {
+export const reopenBooksMonth = captureCommand("reopenBooksMonth", function reopenBooksMonth(household: Household, monthKey: MonthKey): CommitResult {
   requireTimezone(household);
   if (!isMonthClosed(household, monthKey)) throw new ValidationError(`${monthKey} is not closed.`);
   const previous = cloneHousehold(household);
@@ -5281,9 +5285,9 @@ export function reopenBooksMonth(household: Household, monthKey: MonthKey): Comm
   next.kitchen.books.closedMonths = next.kitchen.books.closedMonths.filter((item) => item.monthKey !== monthKey);
   next.tombstones = mergeTombstones(next.tombstones, [{ id: row?.id || closedPeriodId(monthKey), deletedAt: nowIso() }]);
   return commit(previous, next, "Reopen month", `Reopened ${monthKey}`, []);
-}
+});
 
-export function renameCompanion(household: Household, name: string): CommitResult {
+export const renameCompanion = captureCommand("renameCompanion", function renameCompanion(household: Household, name: string): CommitResult {
   const trimmed = name.trim();
   if (trimmed.length < 2) throw new ValidationError("Give Hercules a name with at least two letters.");
   if (trimmed.length > MAX_COMPANION_NAME) throw new ValidationError("Keep the name short enough to shout across the kitchen.");
@@ -5295,9 +5299,9 @@ export function renameCompanion(household: Household, name: string): CommitResul
   next.kitchen = shapeKitchen(next.kitchen);
   next.kitchen.companion = { ...next.kitchen.companion, name: trimmed, updatedAt: nowIso() };
   return commit(previous, next, "Companion", `Named the companion ${trimmed}`, []);
-}
+});
 
-export function equipCosmetic(household: Household, input: {
+export const equipCosmetic = captureCommand("equipCosmetic", function equipCosmetic(household: Household, input: {
   slot: string;
   itemId: string | null;
   today: DateKey;
@@ -5321,9 +5325,9 @@ export function equipCosmetic(household: Household, input: {
   };
   const label = itemId ? COSMETIC_BY_ID.get(itemId)?.name || itemId : `no ${input.slot}`;
   return commit(previous, next, "Companion", `Equipped ${label}`, []);
-}
+});
 
-export function recordHerculesTalk(household: Household, input: {
+export const recordHerculesTalk = captureCommand("recordHerculesTalk", function recordHerculesTalk(household: Household, input: {
   author: string;
   userText?: string;
   herculesText: string;
@@ -5382,9 +5386,9 @@ export function recordHerculesTalk(household: Household, input: {
     ? "Hercules kept a note in the kitchen ledger"
     : "Hercules talked; the books kept the chat";
   return commit(previous, next, "Hercules", summary, []);
-}
+});
 
-export function forgetHerculesMemory(household: Household, id: string): CommitResult {
+export const forgetHerculesMemory = captureCommand("forgetHerculesMemory", function forgetHerculesMemory(household: Household, id: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.kitchen = shapeKitchen(next.kitchen);
@@ -5393,9 +5397,9 @@ export function forgetHerculesMemory(household: Household, id: string): CommitRe
   next.kitchen.hercules.memories = next.kitchen.hercules.memories.filter((item) => item.id !== id);
   next.tombstones = mergeTombstones(next.tombstones, [{ id, deletedAt: nowIso() }]);
   return commit(previous, next, "Hercules", "Forgot a Hercules note", []);
-}
+});
 
-export function wipeHerculesChat(household: Household): CommitResult {
+export const wipeHerculesChat = captureCommand("wipeHerculesChat", function wipeHerculesChat(household: Household): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.kitchen = shapeKitchen(next.kitchen);
@@ -5404,9 +5408,9 @@ export function wipeHerculesChat(household: Household): CommitResult {
   next.kitchen.hercules.chats = [];
   next.tombstones = mergeTombstones(next.tombstones, ids.map((id) => ({ id, deletedAt: nowIso() })));
   return commit(previous, next, "Hercules", "Wiped Hercules chat from the kitchen ledger", []);
-}
+});
 
-export function linkGoogleIdentity(household: Household, input: {
+export const linkGoogleIdentity = captureCommand("linkGoogleIdentity", function linkGoogleIdentity(household: Household, input: {
   memberId: string;
   email: string;
   subject: string;
@@ -5450,9 +5454,9 @@ export function linkGoogleIdentity(household: Household, input: {
   next.tombstones = next.tombstones.filter((tombstone) => tombstone.id !== googleLinkTombstoneId(input.memberId));
   const member = requireMember(next, input.memberId);
   return commit(previous, next, "Google", `Linked ${member.name} to ${email}`, []);
-}
+});
 
-export function unlinkGoogleIdentity(household: Household, memberId: string): CommitResult {
+export const unlinkGoogleIdentity = captureCommand("unlinkGoogleIdentity", function unlinkGoogleIdentity(household: Household, memberId: string): CommitResult {
   requireMember(household, memberId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -5467,9 +5471,9 @@ export function unlinkGoogleIdentity(household: Household, memberId: string): Co
   next.tombstones = mergeTombstones(next.tombstones, [{ id: googleLinkTombstoneId(memberId), deletedAt: at }]);
   const member = requireMember(next, memberId);
   return commit(previous, next, "Google", `Unlinked ${member.name} from Google`, []);
-}
+});
 
-export function touchGoogleConfirmation(household: Household, memberId: string): CommitResult {
+export const touchGoogleConfirmation = captureCommand("touchGoogleConfirmation", function touchGoogleConfirmation(household: Household, memberId: string): CommitResult {
   requireMember(household, memberId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -5481,9 +5485,9 @@ export function touchGoogleConfirmation(household: Household, memberId: string):
   link.updatedAt = at;
   next.google = shapeGoogle(next.google);
   return commit(previous, next, "Google", "Confirmed with Google", []);
-}
+});
 
-export function setGoogleServices(household: Household, services: Iterable<string>): CommitResult {
+export const setGoogleServices = captureCommand("setGoogleServices", function setGoogleServices(household: Household, services: Iterable<string>): CommitResult {
   const enabled = uniqueGoogleServices(services);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -5494,7 +5498,7 @@ export function setGoogleServices(household: Household, services: Iterable<strin
   });
   const labels = enabled.filter((service) => service !== "identity").join(", ") || "sign-in only";
   return commit(previous, next, "Google", `Google services: ${labels}`, []);
-}
+});
 
 function requireAppointmentParty(household: Household, memberId: AppointmentMemberId): void {
   if (memberId === JOINT || memberId === COMPANION) return;
@@ -5544,7 +5548,7 @@ function assignTxId(next: Household, type: Transaction["type"]): string {
   return nextId(prefix, next.transactions.map((tx) => tx.id));
 }
 
-export function addAppointment(household: Household, input: {
+export const addAppointment = captureCommand("addAppointment", function addAppointment(household: Household, input: {
   title: string;
   kind?: AppointmentKind;
   memberId?: AppointmentMemberId;
@@ -5602,9 +5606,9 @@ export function addAppointment(household: Household, input: {
   }, at);
   next.appointments = [...next.appointments, appointment];
   return commit(previous, next, "Appointment", appointment.title, [id]);
-}
+});
 
-export function updateAppointment(household: Household, input: {
+export const updateAppointment = captureCommand("updateAppointment", function updateAppointment(household: Household, input: {
   appointmentId: string;
   title?: string;
   kind?: AppointmentKind;
@@ -5651,9 +5655,9 @@ export function updateAppointment(household: Household, input: {
   if (input.subcategoryId) appointment.subcategoryId = input.subcategoryId;
   appointment.updatedAt = nowIso();
   return commit(previous, next, "Appointment", appointment.title, []);
-}
+});
 
-export function postVisit(household: Household, input: {
+export const postVisit = captureCommand("postVisit", function postVisit(household: Household, input: {
   date: string;
   amount: string | number;
   accountId?: string;
@@ -5840,13 +5844,13 @@ export function postVisit(household: Household, input: {
     ? `${note} ${formatVisitAmount(amountCents)} · ${formatVisitAmount(claim.expectedCents)} owing`
     : `${note} ${formatVisitAmount(amountCents)}`;
   return commit(previous, next, "Visit", summary, postedIds);
-}
+});
 
 function formatVisitAmount(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export function openClaim(household: Household, input: {
+export const openClaim = captureCommand("openClaim", function openClaim(household: Household, input: {
   expenseTransactionId: string;
   expectedRecovery: string | number;
   receivableAccountId?: string;
@@ -5920,9 +5924,9 @@ export function openClaim(household: Household, input: {
   claim.status = deriveClaimStatus(claim);
   next.claims = [...next.claims, claim];
   return commit(previous, next, "Claim", `${claim.label} ${formatVisitAmount(expectedCents)} owing`, [refund.id, claim.id]);
-}
+});
 
-export function submitClaim(household: Household, claimId: string): CommitResult {
+export const submitClaim = captureCommand("submitClaim", function submitClaim(household: Household, claimId: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const claim = next.claims.find((item) => item.id === claimId);
@@ -5933,9 +5937,9 @@ export function submitClaim(household: Household, claimId: string): CommitResult
   claim.updatedAt = at;
   claim.status = deriveClaimStatus(claim);
   return commit(previous, next, "Claim", `Submitted ${claim.label}`, []);
-}
+});
 
-export function settleClaim(household: Household, input: {
+export const settleClaim = captureCommand("settleClaim", function settleClaim(household: Household, input: {
   claimId: string;
   amount?: string | number;
   toAccountId: string;
@@ -6039,9 +6043,9 @@ export function settleClaim(household: Household, input: {
   if (claimRemainingCents(row) <= 0) row.settledAt = createdAt;
   row.status = deriveClaimStatus(row);
   return commit(previous, next, "Claim", `${claim.label} landed ${formatVisitAmount(receivedCents)}`, postedIds);
-}
+});
 
-export function writeOffClaim(household: Household, input: {
+export const writeOffClaim = captureCommand("writeOffClaim", function writeOffClaim(household: Household, input: {
   claimId: string;
   amount?: string | number;
   denied?: boolean;
@@ -6093,9 +6097,9 @@ export function writeOffClaim(household: Household, input: {
   if (claimRemainingCents(row) <= 0) row.settledAt = createdAt;
   if (row.status !== "denied") row.status = deriveClaimStatus(row);
   return commit(previous, next, "Claim", `${claim.label} ${input.denied ? "denied" : "short"} ${formatVisitAmount(writeOffCents)}`, [writeOff.id]);
-}
+});
 
-export function acceptVisitGoal(household: Household, appointmentId: string, createdBy?: string): CommitResult {
+export const acceptVisitGoal = captureCommand("acceptVisitGoal", function acceptVisitGoal(household: Household, appointmentId: string, createdBy?: string): CommitResult {
   void createdBy;
   const today = todayKey();
   const proposal = proposeVisitGoal(household, appointmentId, today);
@@ -6116,7 +6120,7 @@ export function acceptVisitGoal(household: Household, appointmentId: string, cre
     row.updatedAt = nowIso();
   }
   return { ...named, household: next };
-}
+});
 
 export function activePresets(household: Household): Preset[] {
   return (household.presets ?? [])
@@ -6124,7 +6128,7 @@ export function activePresets(household: Household): Preset[] {
     .sort((left, right) => left.sortOrder - right.sortOrder || left.note.localeCompare(right.note));
 }
 
-export function addPreset(household: Household, input: {
+export const addPreset = captureCommand("addPreset", function addPreset(household: Household, input: {
   type: "expense" | "income";
   amount?: string | number;
   accountId: string;
@@ -6169,9 +6173,9 @@ export function addPreset(household: Household, input: {
     updatedAt: at,
   });
   return commit(previous, next, "Preset", `Saved ${note} as a preset`, [id]);
-}
+});
 
-export function archivePreset(household: Household, presetId: string): CommitResult {
+export const archivePreset = captureCommand("archivePreset", function archivePreset(household: Household, presetId: string): CommitResult {
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   next.presets = [...(next.presets ?? [])];
@@ -6180,9 +6184,9 @@ export function archivePreset(household: Household, presetId: string): CommitRes
   row.active = false;
   row.updatedAt = nowIso();
   return commit(previous, next, "Preset", `Forgot ${row.note}`, [row.id]);
-}
+});
 
-export function acceptPresetNotice(household: Household, key: string): CommitResult {
+export const acceptPresetNotice = captureCommand("acceptPresetNotice", function acceptPresetNotice(household: Household, key: string): CommitResult {
   if (!key.trim()) throw new ValidationError("Nothing to save.");
   const today = todayKey();
   const habit = detectHabits(household, today).find((item) => item.key === key);
@@ -6208,9 +6212,9 @@ export function acceptPresetNotice(household: Household, key: string): CommitRes
     dismissedNoticeKeys: (result.household.calendar?.dismissedNoticeKeys ?? []).filter((item) => item !== key),
   };
   return result;
-}
+});
 
-export function dismissNotice(household: Household, key: string): CommitResult {
+export const dismissNotice = captureCommand("dismissNotice", function dismissNotice(household: Household, key: string): CommitResult {
   if (!key.trim()) throw new ValidationError("Nothing to dismiss.");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -6219,7 +6223,7 @@ export function dismissNotice(household: Household, key: string): CommitResult {
     dismissedNoticeKeys: [...new Set([...(next.calendar?.dismissedNoticeKeys ?? []), key])].sort(),
   };
   return commit(previous, next, "Hercules", "Hid a notice", []);
-}
+});
 
 function gamesMemberCount(household: Household): number {
   return household.members.filter((member) => member.active).length;
@@ -6232,7 +6236,7 @@ function assertGameTurn(household: Household, lastMemberId: string, memberId: st
   }
 }
 
-export function resetTicTacToe(household: Household, memberId: string): CommitResult {
+export const resetTicTacToe = captureCommand("resetTicTacToe", function resetTicTacToe(household: Household, memberId: string): CommitResult {
   requireMember(household, memberId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -6245,9 +6249,9 @@ export function resetTicTacToe(household: Household, memberId: string): CommitRe
     updatedBy: memberId,
   };
   return commit(previous, next, "Desk game", "New tic-tac-toe", []);
-}
+});
 
-export function playTicTacToe(household: Household, input: { memberId: string; index: number }): CommitResult {
+export const playTicTacToe = captureCommand("playTicTacToe", function playTicTacToe(household: Household, input: { memberId: string; index: number }): CommitResult {
   const member = requireMember(household, input.memberId);
   const index = Math.round(input.index);
   if (!Number.isInteger(index) || index < 0 || index > 8) throw new ValidationError("That square is off the board.");
@@ -6272,9 +6276,9 @@ export function playTicTacToe(household: Household, input: { memberId: string; i
       ? `${member.name} wins tic-tac-toe.`
       : `${member.name} played ${mark.toUpperCase()}.`;
   return commit(previous, next, "Desk game", summary, []);
-}
+});
 
-export function resetHangman(household: Household, memberId: string): CommitResult {
+export const resetHangman = captureCommand("resetHangman", function resetHangman(household: Household, memberId: string): CommitResult {
   requireMember(household, memberId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -6288,9 +6292,9 @@ export function resetHangman(household: Household, memberId: string): CommitResu
     updatedBy: memberId,
   };
   return commit(previous, next, "Desk game", "New hangman", []);
-}
+});
 
-export function guessHangman(household: Household, input: { memberId: string; letter: string }): CommitResult {
+export const guessHangman = captureCommand("guessHangman", function guessHangman(household: Household, input: { memberId: string; letter: string }): CommitResult {
   const member = requireMember(household, input.memberId);
   const letter = input.letter.trim().toLowerCase();
   if (!/^[a-z]$/.test(letter)) throw new ValidationError("Guess one letter.");
@@ -6314,9 +6318,9 @@ export function guessHangman(household: Household, input: { memberId: string; le
       ? "Hung. New word when you're ready."
       : `${member.name} guessed ${letter.toUpperCase()}.`;
   return commit(previous, next, "Desk game", summary, []);
-}
+});
 
-export function touchHouseholdDevice(household: Household, input: {
+export const touchHouseholdDevice = captureCommand("touchHouseholdDevice", function touchHouseholdDevice(household: Household, input: {
   deviceId: string;
   label: string;
   memberId?: string | null;
@@ -6336,7 +6340,7 @@ export function touchHouseholdDevice(household: Household, input: {
     postedIds: [],
     undo: { id: `presence-${input.deviceId}`, label: `Saw ${input.label}`, snapshot: previous, postedIds: [] },
   };
-}
+});
 
 const CHARTER_SPLIT_RULES = new Set<CharterSplitRule>(["even", "proportional", "remainder"]);
 const CHARTER_CEILING_KINDS = new Set<CharterCeilingKind>(["hours-per-week", "amount-per-month", "none"]);
@@ -6477,7 +6481,7 @@ function applyCharterAmendment(household: Household, charter: HouseholdCharter, 
   }
 }
 
-export function foundHouseholdCharter(household: Household, input: {
+export const foundHouseholdCharter = captureCommand("foundHouseholdCharter", function foundHouseholdCharter(household: Household, input: {
   memberId: string;
   custodianMemberId: string;
   purpose: string;
@@ -6530,9 +6534,9 @@ export function foundHouseholdCharter(household: Household, input: {
   next.charter = shapeHouseholdCharter(charter, { members: next.members, householdFund: next.householdFund });
   if (!next.charter) throw new ValidationError("The household charter could not be founded.");
   return commit(previous, next, "Charter", "Founded the household charter", [next.charter.id]);
-}
+});
 
-export function signHouseholdCharter(household: Household, input: { memberId: string; at?: string }): CommitResult {
+export const signHouseholdCharter = captureCommand("signHouseholdCharter", function signHouseholdCharter(household: Household, input: { memberId: string; at?: string }): CommitResult {
   requireMember(household, input.memberId);
   if (!household.charter?.signatures.some((row) => row.memberId === input.memberId)) {
     throw new ValidationError("You can only sign your own line.");
@@ -6554,9 +6558,9 @@ export function signHouseholdCharter(household: Household, input: { memberId: st
   };
   const summary = signature.signedAt ? "Re-signed the household charter" : "Signed the household charter";
   return commit(previous, next, "Charter", summary, [`CHARTER-SIGN-${input.memberId}`]);
-}
+});
 
-export function grantCharterPermission(household: Household, input: {
+export const grantCharterPermission = captureCommand("grantCharterPermission", function grantCharterPermission(household: Household, input: {
   memberId: string;
   actorMemberId: string;
   label: string;
@@ -6583,9 +6587,9 @@ export function grantCharterPermission(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Charter", `Granted ${label}`, [id]);
-}
+});
 
-export function revokeCharterPermission(household: Household, input: {
+export const revokeCharterPermission = captureCommand("revokeCharterPermission", function revokeCharterPermission(household: Household, input: {
   memberId: string;
   permissionId: string;
 }): CommitResult {
@@ -6603,9 +6607,9 @@ export function revokeCharterPermission(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Charter", `Revoked ${permission.label}`, [permission.id]);
-}
+});
 
-export function proposeCharterAmendment(household: Household, input: {
+export const proposeCharterAmendment = captureCommand("proposeCharterAmendment", function proposeCharterAmendment(household: Household, input: {
   memberId: string;
   field: string;
   toText: string;
@@ -6655,9 +6659,9 @@ export function proposeCharterAmendment(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Charter", `Raised a charter amendment to ${field}`, [id]);
-}
+});
 
-export function proposeCharterCeilingAmendment(household: Household, input: {
+export const proposeCharterCeilingAmendment = captureCommand("proposeCharterCeilingAmendment", function proposeCharterCeilingAmendment(household: Household, input: {
   memberId: string;
   ceilingKind: CharterCeilingKind;
   ceilingValue?: string | number;
@@ -6689,9 +6693,9 @@ export function proposeCharterCeilingAmendment(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Charter", "Raised a charter ceiling amendment", [id], [], "proposeCharterCeilingAmendment");
-}
+});
 
-export function confirmCharterAmendment(household: Household, input: {
+export const confirmCharterAmendment = captureCommand("confirmCharterAmendment", function confirmCharterAmendment(household: Household, input: {
   memberId: string;
   amendmentId: string;
 }): CommitResult {
@@ -6718,9 +6722,9 @@ export function confirmCharterAmendment(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Charter", `Confirmed the charter amendment to ${amendment.field}`, [amendment.id]);
-}
+});
 
-export function holdCharterAmendment(household: Household, input: {
+export const holdCharterAmendment = captureCommand("holdCharterAmendment", function holdCharterAmendment(household: Household, input: {
   memberId: string;
   amendmentId: string;
   note?: string;
@@ -6742,7 +6746,7 @@ export function holdCharterAmendment(household: Household, input: {
     updatedAt: at,
   };
   return commit(previous, next, "Charter", "Held the charter amendment for conversation", [amendment.id]);
-}
+});
 
 function requireHouseholdFund(household: Household) {
   const fund = shapeHouseholdFundConfig(household.householdFund);
@@ -6774,7 +6778,7 @@ function nextFundEventAt(household: Household): string {
   return new Date(Math.max(Date.parse(nowIso()), latest + 1)).toISOString();
 }
 
-export function configureHouseholdFund(household: Household, input: {
+export const configureHouseholdFund = captureCommand("configureHouseholdFund", function configureHouseholdFund(household: Household, input: {
   custodianMemberId: string;
   openedOn: string;
   createdBy: string;
@@ -6815,10 +6819,10 @@ export function configureHouseholdFund(household: Household, input: {
   next.fundKittyAllocations = [];
   next.fundPrivate = { bankBindings: [], reconciliations: [] };
   return commit(previous, next, "Household Fund", `Opened ${next.householdFund.name} at $0.00`, [next.householdFund.id], [], "configureHouseholdFund");
-}
+});
 
 /** Record only the acting member's approval of the exact Fund setup they reviewed. */
-export function approveHouseholdFundConfiguration(household: Household, input: {
+export const approveHouseholdFundConfiguration = captureCommand("approveHouseholdFundConfiguration", function approveHouseholdFundConfiguration(household: Household, input: {
   memberId: string;
   createdBy: string;
   revision: string;
@@ -6848,9 +6852,9 @@ export function approveHouseholdFundConfiguration(household: Household, input: {
     ].sort((left, right) => left.memberId.localeCompare(right.memberId)),
   };
   return commit(previous, next, "Household Fund", "Approved the current Household Fund setup", [fund.id], [], "approveHouseholdFundConfiguration");
-}
+});
 
-export function bindHouseholdFundBackingAccount(household: Household, input: {
+export const bindHouseholdFundBackingAccount = captureCommand("bindHouseholdFundBackingAccount", function bindHouseholdFundBackingAccount(household: Household, input: {
   memberId: string;
   accountId: string;
   provider?: "manual" | "flinks";
@@ -6881,9 +6885,9 @@ export function bindHouseholdFundBackingAccount(household: Household, input: {
   };
   next.fundPrivate = { ...state, bankBindings: [...state.bankBindings.filter((item) => item.id !== id), row] };
   return commit(previous, next, "Household Fund", "Updated the custodian-only backing account", [id]);
-}
+});
 
-export function setHouseholdFundMonthPlan(household: Household, input: {
+export const setHouseholdFundMonthPlan = captureCommand("setHouseholdFundMonthPlan", function setHouseholdFundMonthPlan(household: Household, input: {
   memberId: string;
   monthKey: MonthKey;
   target: string | number;
@@ -6905,9 +6909,9 @@ export function setHouseholdFundMonthPlan(household: Household, input: {
   const plan = { id, fundId: fund.id, monthKey: input.monthKey, targetCents, bufferCents, agreedByMemberIds: agreedByMemberIds.sort(), createdAt: prior?.createdAt ?? at, updatedAt: at };
   next.fundMonthPlans = [...plans.filter((row) => row.id !== id), plan];
   return commit(previous, next, "Household Fund", `Agreed ${input.monthKey} target $${(targetCents / 100).toFixed(2)}`, [id]);
-}
+});
 
-export function proposeHouseholdFundContribution(household: Household, input: {
+export const proposeHouseholdFundContribution = captureCommand("proposeHouseholdFundContribution", function proposeHouseholdFundContribution(household: Household, input: {
   memberId: string;
   contributorMemberId: string;
   amount: string | number;
@@ -6943,9 +6947,9 @@ export function proposeHouseholdFundContribution(household: Household, input: {
     updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Proposed $${(amountCents / 100).toFixed(2)} contribution`, [id]);
-}
+});
 
-export function holdHouseholdFundContribution(household: Household, input: {
+export const holdHouseholdFundContribution = captureCommand("holdHouseholdFundContribution", function holdHouseholdFundContribution(household: Household, input: {
   memberId: string;
   proposalEventId: string;
   note?: string;
@@ -6981,9 +6985,9 @@ export function holdHouseholdFundContribution(household: Household, input: {
     updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", "Held a contribution motion for conversation", [id], [], "holdHouseholdFundContribution");
-}
+});
 
-export function releaseHouseholdFundHold(household: Household, input: {
+export const releaseHouseholdFundHold = captureCommand("releaseHouseholdFundHold", function releaseHouseholdFundHold(household: Household, input: {
   memberId: string;
   holdEventId: string;
   date?: string;
@@ -7018,9 +7022,9 @@ export function releaseHouseholdFundHold(household: Household, input: {
     updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", "Released a contribution Hold", [id], [], "releaseHouseholdFundHold");
-}
+});
 
-export function withdrawHouseholdFundContribution(household: Household, input: {
+export const withdrawHouseholdFundContribution = captureCommand("withdrawHouseholdFundContribution", function withdrawHouseholdFundContribution(household: Household, input: {
   memberId: string;
   proposalEventId: string;
   date?: string;
@@ -7054,9 +7058,9 @@ export function withdrawHouseholdFundContribution(household: Household, input: {
     updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", "Withdrew a contribution motion", [id], [], "withdrawHouseholdFundContribution");
-}
+});
 
-export function confirmHouseholdFundContribution(household: Household, input: {
+export const confirmHouseholdFundContribution = captureCommand("confirmHouseholdFundContribution", function confirmHouseholdFundContribution(household: Household, input: {
   memberId: string;
   proposalEventId: string;
   date?: string;
@@ -7088,9 +7092,9 @@ export function confirmHouseholdFundContribution(household: Household, input: {
     updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Received $${(proposal.amountCents / 100).toFixed(2)} contribution`, [id], [], "confirmHouseholdFundContribution");
-}
+});
 
-export function confirmHouseholdFundSettlement(household: Household, input: {
+export const confirmHouseholdFundSettlement = captureCommand("confirmHouseholdFundSettlement", function confirmHouseholdFundSettlement(household: Household, input: {
   memberId: string;
   amount: string | number;
   destinationAccountId: string;
@@ -7175,9 +7179,9 @@ export function confirmHouseholdFundSettlement(household: Household, input: {
   return commit(previous, next, "Household Fund", isDirectDebit
     ? `Confirmed $${(amountCents / 100).toFixed(2)} direct debit`
     : `Transferred $${(amountCents / 100).toFixed(2)} to ${destination!.name}`, [id, ...next.fundSettlementAllocations.filter((row) => row.eventId === id).map((row) => row.id)], [], "confirmHouseholdFundSettlement");
-}
+});
 
-export function allocateHouseholdFundSurplus(household: Household, input: {
+export const allocateHouseholdFundSurplus = captureCommand("allocateHouseholdFundSurplus", function allocateHouseholdFundSurplus(household: Household, input: {
   memberId: string;
   date: string;
   allocations: Array<{ goalId: string; amount: string | number }>;
@@ -7210,9 +7214,9 @@ export function allocateHouseholdFundSurplus(household: Household, input: {
     amountCents: row.amountCents, createdAt: at, updatedAt: at,
   }))];
   return commit(previous, next, "Household Fund", `Rolled $${(amountCents / 100).toFixed(2)} into Kitty Banks`, [id, ...next.fundKittyAllocations.filter((row) => row.eventId === id).map((row) => row.id)]);
-}
+});
 
-export function releaseHouseholdFundKitty(household: Household, input: {
+export const releaseHouseholdFundKitty = captureCommand("releaseHouseholdFundKitty", function releaseHouseholdFundKitty(household: Household, input: {
   memberId: string;
   amount: string | number;
   date: string;
@@ -7234,10 +7238,10 @@ export function releaseHouseholdFundKitty(household: Household, input: {
     createdAt: at, updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Released $${(amountCents / 100).toFixed(2)} from Kitty Banks`, [id]);
-}
+});
 
 /** One visible confirmation records a direct-debit expense and its matching fund settlement. */
-export function postHouseholdFundDirectDebit(household: Household, input: {
+export const postHouseholdFundDirectDebit = captureCommand("postHouseholdFundDirectDebit", function postHouseholdFundDirectDebit(household: Household, input: {
   memberId: string;
   date: string;
   amount: string | number;
@@ -7285,9 +7289,9 @@ export function postHouseholdFundDirectDebit(household: Household, input: {
     postedIds: [...posted.postedIds, ...settled.postedIds],
     undo: { id: settled.undo.id, label: `Direct debit $${(amountCents / 100).toFixed(2)}`, snapshot: household, postedIds: [...posted.postedIds, ...settled.postedIds], commandKind: "postHouseholdFundDirectDebit" },
   };
-}
+});
 
-export function recordHouseholdFundReconciliation(household: Household, input: {
+export const recordHouseholdFundReconciliation = captureCommand("recordHouseholdFundReconciliation", function recordHouseholdFundReconciliation(household: Household, input: {
   memberId: string;
   date: string;
   bankTotal: string | number;
@@ -7322,9 +7326,9 @@ export function recordHouseholdFundReconciliation(household: Household, input: {
     personalRemainderCents, differenceCents, sharedEventId: eventId, createdAt: at, updatedAt: at,
   }] };
   return commit(previous, next, "Household Fund", differenceCents === 0 ? "Household Fund reconciliation tied" : `Household Fund reconciliation is off by $${(Math.abs(differenceCents) / 100).toFixed(2)}`, [eventId, id], [], "recordHouseholdFundReconciliation");
-}
+});
 
-export function reverseHouseholdFundEvent(household: Household, input: {
+export const reverseHouseholdFundEvent = captureCommand("reverseHouseholdFundEvent", function reverseHouseholdFundEvent(household: Household, input: {
   memberId: string;
   eventId: string;
   date: string;
@@ -7351,9 +7355,9 @@ export function reverseHouseholdFundEvent(household: Household, input: {
     purpose: "", note: input.reason.trim().slice(0, 180), createdAt: at, updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Reversed ${target.id}: ${input.reason.trim()}`, [id]);
-}
+});
 
-export function activateHouseholdFundConnection(household: Household, input: { memberId: string }): CommitResult {
+export const activateHouseholdFundConnection = captureCommand("activateHouseholdFundConnection", function activateHouseholdFundConnection(household: Household, input: { memberId: string }): CommitResult {
   const fund = requireFundCustodian(household, input.memberId);
   const binding = shapeHouseholdFundPrivate(household.fundPrivate, input.memberId).bankBindings
     .find((row) => row.fundId === fund.id && row.provider === "flinks" && row.status === "connected" && row.accountDigest);
@@ -7362,9 +7366,9 @@ export function activateHouseholdFundConnection(household: Household, input: { m
   const next = cloneHousehold(household);
   next.householdFund = { ...fund, mode: "connected", updatedAt: nowIso() };
   return commit(previous, next, "Household Fund", "Enabled read-only bank evidence", [fund.id]);
-}
+});
 
-export function recordHouseholdFundBankVerification(household: Household, input: {
+export const recordHouseholdFundBankVerification = captureCommand("recordHouseholdFundBankVerification", function recordHouseholdFundBankVerification(household: Household, input: {
   memberId: string;
   evidence: HouseholdFundBankEvidence[];
   selectedEventIds?: string[];
@@ -7398,7 +7402,7 @@ export function recordHouseholdFundBankVerification(household: Household, input:
     purpose: "", note: `Exact ${match.direction} bank evidence`, createdAt: at, updatedAt: at,
   }];
   return commit(previous, next, "Household Fund", `Verified $${(match.amountCents / 100).toFixed(2)} against read-only bank evidence`, [id]);
-}
+});
 
 export function emptyHousehold(environment: Household["environment"] = "development"): Household {
   return {

@@ -1,3 +1,4 @@
+import { captureCommand } from "../ledgerSync/capture.ts";
 import { monthEndKey, parseDateKey, parseMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { financialHouseholdFundEventFacts, sha256Hex } from "./commandIdentity.ts";
 import { cloneHousehold } from "./household.ts";
@@ -222,7 +223,7 @@ function touchRehearsal(rehearsal: MonthRehearsal, week: MonthRehearsalWeekProgr
   rehearsal.approvedAt = null;
 }
 
-export function startMonthRehearsal(household: Household, input: {
+export const startMonthRehearsal = captureCommand("startMonthRehearsal", function startMonthRehearsal(household: Household, input: {
   monthKey: MonthKey;
   biancaParticipantId: string;
   jonathanPartnerId: string;
@@ -264,9 +265,9 @@ export function startMonthRehearsal(household: Household, input: {
     updatedAt: at,
   }];
   return nonMoneyCommit(previous, next, `Started Our month for ${input.monthKey}`, at);
-}
+});
 
-export function startRehearsalTask(household: Household, input: {
+export const startRehearsalTask = captureCommand("startRehearsalTask", function startRehearsalTask(household: Household, input: {
   rehearsalId: string;
   taskId: MonthRehearsalTaskId;
   memberId: string;
@@ -302,9 +303,9 @@ export function startRehearsalTask(household: Household, input: {
   const week = getWeek(rehearsal, task.week);
   touchRehearsal(rehearsal, week, at);
   return nonMoneyCommit(previous, next, `Started ${task.taskId}`, at);
-}
+});
 
-export function recordRehearsalOutcome(household: Household, input: {
+export const recordRehearsalOutcome = captureCommand("recordRehearsalOutcome", function recordRehearsalOutcome(household: Household, input: {
   rehearsalId: string;
   taskId: MonthRehearsalTaskId;
   attemptId: string;
@@ -345,7 +346,7 @@ export function recordRehearsalOutcome(household: Household, input: {
   const week = getWeek(rehearsal, task.week);
   touchRehearsal(rehearsal, week, at);
   return nonMoneyCommit(previous, next, `Recorded ${task.taskId} clarity`, at);
-}
+});
 
 function requireReceiptArtifact(household: Household, rehearsal: MonthRehearsal, task: MonthRehearsalTaskProgress, input: {
   kind: MonthRehearsalReceiptKind;
@@ -472,7 +473,7 @@ function requireReceiptArtifact(household: Household, rehearsal: MonthRehearsal,
   return { postedIds, auditHash: receipt?.auditHash ?? null };
 }
 
-export function linkRehearsalReceipt(household: Household, input: {
+export const linkRehearsalReceipt = captureCommand("linkRehearsalReceipt", function linkRehearsalReceipt(household: Household, input: {
   rehearsalId: string;
   taskId: MonthRehearsalTaskId;
   memberId: string;
@@ -512,7 +513,7 @@ export function linkRehearsalReceipt(household: Household, input: {
   const week = getWeek(rehearsal, task.week);
   touchRehearsal(rehearsal, week, at);
   return nonMoneyCommit(previous, next, `Linked proof for ${task.taskId}`, at);
-}
+});
 
 /** Runs the real fictional post/reversal recipe, discards it, then stores only its exact non-money proof. */
 export async function completeRehearsalCorrectionPractice(household: Household, input: {
@@ -852,7 +853,7 @@ export async function approveMonthRehearsal(household: Household, input: {
   return nonMoneyCommit(previous, next, rehearsal.status === "archived" ? "Approved and archived Our month" : "Recorded one month approval", at);
 }
 
-export function archiveMonthRehearsal(household: Household, input: {
+export const archiveMonthRehearsal = captureCommand("archiveMonthRehearsal", function archiveMonthRehearsal(household: Household, input: {
   rehearsalId: string;
   memberId: string;
   now?: string;
@@ -870,7 +871,7 @@ export function archiveMonthRehearsal(household: Household, input: {
   rehearsal.archivedAt = at;
   rehearsal.updatedAt = at;
   return nonMoneyCommit(previous, next, "Archived Our month without changing money", at);
-}
+});
 
 function newer<T extends { updatedAt: string }>(left: T | null, right: T | null): T | null {
   if (!left) return right;

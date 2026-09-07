@@ -1,5 +1,7 @@
 # Hearth living roadmap
 
+> **D-235 replacement in development:** [Ledger sync v2](LEDGER_SYNC_V2.md) implements a separate command/event authority for the ordinary App. Its hosted migration and acceptance are not yet claimed. The older transport described below remains historical runtime context for households that have not cut over; it is not a fallback after cutover.
+
 > **Product:** Hearth — Jonathan and Bianca's household budget and family office  
 > **Roadmap baseline:** `origin/main@9376c30ba5db55c920d15ce3feacb65dedae5733`, reconciled by SF-01 on 2026-08-30 (Toronto)
 > **Canonical order:** latest explicit instruction → `docs/CLOUD_CONTINUITY.md` → `docs/DECISIONS.md` → `docs/STRATEGY.md` → `docs/ARCHITECTURE.md` → this roadmap  

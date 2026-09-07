@@ -1,3 +1,4 @@
+import { captureCommand } from "../ledgerSync/capture.ts";
 import { dateKeyInZone, parseDateKey, TIMEZONE, weekBounds, type DateKey } from "./calendar.ts";
 import { cloneHousehold } from "./household.ts";
 import { nextId, nowIso } from "./ids.ts";
@@ -120,7 +121,7 @@ export function weeklyDocumentIsComplete(
   return weeklyDocumentStampsForWeek(household, today).length > 0;
 }
 
-export function stampWeeklyDocument(household: Household, input: {
+export const stampWeeklyDocument = captureCommand("stampWeeklyDocument", function stampWeeklyDocument(household: Household, input: {
   memberId: string;
   today: DateKey;
   now?: string;
@@ -162,4 +163,4 @@ export function stampWeeklyDocument(household: Household, input: {
       commandKind: "stampWeeklyDocument",
     },
   };
-}
+});

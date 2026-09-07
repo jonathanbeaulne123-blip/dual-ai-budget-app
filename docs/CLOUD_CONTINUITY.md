@@ -1,5 +1,7 @@
 # Google-account cloud continuity
 
+> **D-235 replacement in development:** [Ledger sync v2](LEDGER_SYNC_V2.md) implements a separate command/event authority for the ordinary App. Its hosted migration and acceptance are not yet claimed. The older transport described below remains historical runtime context for households that have not cut over; it is not a fallback after cutover.
+
 > **Accepted product direction — 2026-08-24.** This file supersedes language that describes hosted sync as optional publishing, a three-word phrase as the normal access model, or one phone as the durable home of the ledger.
 
 ## Implementation status — D-114 continuity, D-117 scopes, D-122 CAS, D-123 repair, D-149 T1 atomic push, D-176 Development-verified access controls, D-180 pilot, D-186 automatic reconciliation

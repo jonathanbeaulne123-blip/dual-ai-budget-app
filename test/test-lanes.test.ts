@@ -28,6 +28,7 @@ function directPGliteRuntimeTests() {
 }
 
 const serialFixtureTests = [
+  "ledger-sync-cutover.test.ts",
   "demo-shift-statistics.test.ts",
   "demo-suite.test.ts",
   "permission-matrix.test.ts",
@@ -63,6 +64,8 @@ describe("Vitest lanes", () => {
       "continuity.test.ts",
       "hosted-transport.test.ts",
       "household-fund-pglite.test.ts",
+      "onboarding-app-stale-seat.test.ts",
+      "onboarding-entry-integration.test.ts",
       "opening-truth-pglite.test.ts",
       "performance-p2-benchmark.test.ts",
       "pglite-development-canary.test.ts",
@@ -82,7 +85,7 @@ describe("Vitest lanes", () => {
       expect(booksLane).toContain(`&& vitest run test/${fileName} --maxWorkers=1`);
     }
     expect(booksLane).toContain("&& node scripts/run-demo-suite-tests.mjs test/demo-suite.test.ts");
-    expect(demoSuiteRunner.match(/^[ ]{2}".+",$/gm)).toHaveLength(8);
+    expect(demoSuiteRunner.match(/^[ ]{2}".+",$/gm)).toHaveLength(9);
     expect(demoSuiteRunner).toContain('[pnpmEntrypoint, "exec", "vitest", "run", testPath, "--maxWorkers=1", "-t", title]');
     expect(booksLane).toContain("--maxWorkers=1");
     expect(booksLane).toContain("--testTimeout=30000");

@@ -1,3 +1,5 @@
+import { handleLedgerSync } from "./ledgerSync.ts";
+export { LedgerRoom } from "./ledgerRoom.ts";
 // Third-party keys are allowed (D-045): GEMINI_API_KEY / GROQ_API_KEY /
 // OPENAI_API_KEY / ANTHROPIC_API_KEY via `wrangler secret put`. Never VITE_.
 // D-184 ordinary chat has a bounded provider chain; planner and scan keep their
@@ -1821,6 +1823,8 @@ async function herculesRigPoll(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const ledgerSync = await handleLedgerSync(request, env);
+    if (ledgerSync) return ledgerSync;
     const toastOcr = await handleToastOcr(request, env);
     if (toastOcr) return toastOcr;
     const evidence = await handleEvidence(request, env);
