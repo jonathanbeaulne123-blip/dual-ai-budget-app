@@ -267,9 +267,16 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       && !previous
       && !candidate.syntheticFixture
       && seededOnboardingApprovalsValid(candidate);
+    // A same-household Suite write replaces the whole fixture in place, and is the one
+    // path that skips the append-only Fund, submission, and category-merge transitions.
+    // Only an existing fixture may receive this transition exemption. Ordinary
+    // same-household writes retain the normal validators; this does not duplicate
+    // the App helper's separate allowance for transaction-empty households.
+    const previousIsSyntheticFixture = previous?.syntheticFixture?.kind === "hearth-demo-suite";
     const validSyntheticDemoCommand = input.commandKind === DEMO_SUITE_COMMAND_KIND
       && postedIds.length === 0
       && syntheticDemoOnboardingIsValid(candidate)
+      && (!sameHousehold || previousIsSyntheticFixture)
       && (!previous
         || Boolean(input.actingMemberId
           && previous.members.some((member) => member.active && member.id === input.actingMemberId)
