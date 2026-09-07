@@ -131,5 +131,40 @@
       }
     ]
   },
-  "triggers": { "crons": ["17 9 * * *"] }
+  "triggers": {
+    "crons": [
+      "17 9 * * *"
+    ]
+  },
+  "env": {
+    "development": {
+      "name": "hearth-sync-spike-development",
+      "vars": {
+        "SYNC_SPIKE_ENABLED": "true",
+        "SUPABASE_URL": "https://tykhocwacaxwquhynkok.supabase.co"
+      },
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "SYNC_SPIKE",
+            "class_name": "SyncSpike"
+          }
+        ]
+      },
+      "migrations": [
+        {
+          "tag": "sync-spike-v1",
+          "new_sqlite_classes": [
+            "SyncSpike"
+          ]
+        }
+      ],
+      "secrets": {
+        "required": []
+      },
+      "triggers": {
+        "crons": []
+      }
+    }
+  }
 }
