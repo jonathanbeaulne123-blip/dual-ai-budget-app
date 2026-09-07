@@ -1,6 +1,6 @@
 # QR invitation entry repair
 
-- Status: local candidate, hosted migration and deployment not performed.
+- Status: [draft PR #369](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/369), implementation `3057dce7a9148f387c24e4aeeefb453bab1b6947`. Hosted migration and deployment not performed.
 - Owner: Jonathan. Assignee: Codex.
 - Branch: `codex/qr-invite-entry`; base `origin/main@fc786359cddcae62e83c0334db0e0844f4e95104`.
 - Risk: High, changes invitation issuance and membership discovery.

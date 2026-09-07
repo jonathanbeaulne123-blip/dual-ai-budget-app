@@ -2,7 +2,7 @@
 
 ## QR invitation entry (D-239) (2026-09-07)
 
-**Status:** Local candidate on `codex/qr-invite-entry`, based on `fc78635`. Risk High; migration 021 not applied, not deployed.
+**Status:** [Draft PR #369](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/369), implementation `3057dce`, on `codex/qr-invite-entry`, based on `fc78635`. Risk High; migration 021 not applied, not deployed.
 
 **Outcome:** Owners can invite Someone new without a roster prerequisite. The recipient signs in, enters their name and accepts. Inactive reservation, identity-bound redemption, replacement revocation, capacity and cancelled-flow guards remain blocking. Budget delta (5): +1; Engagement delta (3): +2.
 
