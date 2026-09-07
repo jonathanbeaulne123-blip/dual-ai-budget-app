@@ -106,7 +106,7 @@ export type RestoreEligibility =
  */
 export function canRestorePoint(
   household: Household,
-  point: RestorePoint | undefined,
+  point: Omit<RestorePoint,"shared"> | undefined,
   input: { isOwner: boolean },
 ): RestoreEligibility {
   if (!input.isOwner) {

@@ -1,0 +1,10 @@
+{
+ "name":"hearth-ledger-local-proof",
+ "main":"ledger-worker.ts",
+ "compatibility_date":"2026-08-27",
+ "compatibility_flags":["nodejs_compat"],
+ "durable_objects":{"bindings":[{"name":"LEDGER_ROOMS","class_name":"LedgerRoom"}]},
+ "migrations":[{"tag":"v1","new_sqlite_classes":["LedgerRoom"]}],
+ "r2_buckets":[{"binding":"LEDGER_ARCHIVE","bucket_name":"ledger-local-proof"}],
+ "vars":{"LEDGER_SYNC_LOCAL_AUTH":"true","LEDGER_SYNC_ENABLED":"true","SUPABASE_URL":"http://127.0.0.1:1","SUPABASE_PUBLISHABLE_KEY":"local-fixture"}
+}

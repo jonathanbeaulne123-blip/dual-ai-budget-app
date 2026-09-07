@@ -1,3 +1,4 @@
+import { ledgerSyncEnabled } from "../ledgerSync/mode.ts";
 import type { PGlite } from "@electric-sql/pglite";
 import { financialAuditHash } from "../core/commandIdentity.ts";
 import {
@@ -299,6 +300,14 @@ export function incrementalBooksEnabled(environment: Environment): boolean {
 }
 
 export async function migrateBooks(db: Queryable): Promise<void> {
+  const transactional = db as Queryable & Partial<Pick<BooksDatabase,"transaction">>;
+  if (transactional.transaction) {
+    // One cross-tab exclusive transaction also avoids a durable IDB flush per DDL statement.
+    await transactional.transaction(tx => applyBooksMigrations(tx));
+  } else await applyBooksMigrations(db);
+}
+
+async function applyBooksMigrations(db: Queryable): Promise<void> {
   await db.exec(BOOKS_SCHEMA);
   const applied = await db.query<{ id: number }>("SELECT id FROM schema_migrations ORDER BY id");
   const have = new Set(applied.rows.map((row) => row.id));
@@ -439,7 +448,7 @@ async function getBrowserBooksInternal(
   const existing = browserDbs.get(environment);
   if (existing) return existing;
   const opening = browserDbOpenings.get(environment);
-  if (opening) return withBrowserBooksOpenDeadline(opening);
+  if (opening) return withBrowserBooksOpenDeadline(opening, ledgerSyncEnabled(environment) ? {timeoutMs:30_000} : undefined);
   const closing = browserDbClosings.get(environment);
   if (closing) {
     await closing;
@@ -543,7 +552,7 @@ async function getBrowserBooksInternal(
   // PGliteWorker while the first waits for leader handoff leaks a tab-close lock
   // that only a page teardown can release. Later callers get their own bounded
   // wait against this same opening instead of multiplying workers and locks.
-  return withBrowserBooksOpenDeadline(rawOpening);
+  return withBrowserBooksOpenDeadline(rawOpening, ledgerSyncEnabled(environment) ? {timeoutMs:30_000} : undefined);
 }
 
 export async function getBrowserBooks(environment: Environment = "development"): Promise<BooksDatabase> {
@@ -571,7 +580,7 @@ async function reopenBrowserBooks(environment: Environment, duringRepair = false
   if (opening) {
     // A still-opening client is the only safe candidate for this page. Let its
     // normal deadline surface busy state; do not create a competing worker.
-    await withBrowserBooksOpenDeadline(opening);
+    await withBrowserBooksOpenDeadline(opening, ledgerSyncEnabled(environment) ? {timeoutMs:30_000} : undefined);
   }
   const existing = browserDbs.get(environment);
   if (existing) {
@@ -832,7 +841,7 @@ export async function wipeBrowserBooks(environment: Environment): Promise<void> 
   if (opening) {
     // Never delete the durable IDB while a worker client is still negotiating
     // its cross-tab lock. Busy state is recoverable; a competing wipe is not.
-    await withBrowserBooksOpenDeadline(opening);
+    await withBrowserBooksOpenDeadline(opening, ledgerSyncEnabled(environment) ? {timeoutMs:30_000} : undefined);
   }
   const existing = browserDbs.get(environment);
   if (existing) {

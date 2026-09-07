@@ -1,3 +1,4 @@
+import { ledgerSyncEnabled } from "./ledgerSync/mode.ts";
 import type { Environment, Household, PersonalEnvelope } from "./core/types.ts";
 import {
   assertEnvironmentMatch,
@@ -24,6 +25,8 @@ export type HouseholdReplicaSummary = {
 };
 
 export type SaveHouseholdOptions = {
+  /** New cloud authority uses IndexedDB, never full-book localStorage mirrors. */
+  indexedDbOnly?: boolean;
   memberId?: string;
   activate?: boolean;
   operatingEnvironment?: Environment;
@@ -276,7 +279,7 @@ export async function saveHousehold(household: Household, options: SaveHousehold
   if (activate) touchedKeys.push(legacyKey, activeKey(shaped.environment));
   if (memberPersonalKey) touchedKeys.push(memberPersonalKey);
   const previous = new Map<string, string | null>();
-  let localAccessible = true;
+  let localAccessible = options.indexedDbOnly !== true && !ledgerSyncEnabled(household.environment);
   for (const key of touchedKeys) {
     try { previous.set(key, localStorage.getItem(key)); }
     catch { localAccessible = false; break; }
@@ -306,7 +309,7 @@ export async function saveHousehold(household: Household, options: SaveHousehold
     await idbSetMany(entries);
     indexedDbSaved = true;
   } catch {
-    // localStorage remains the durable fallback when IndexedDB is unavailable or blocked.
+    // New-authority saves must not fall back to a full localStorage snapshot.
   }
   if (!localSaved && !indexedDbSaved) {
     throw new Error("The last valid household is still here. This phone could not save the new snapshot.");

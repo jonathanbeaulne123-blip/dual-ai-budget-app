@@ -1,3 +1,14 @@
+import { stageLedgerCreation, completeLedgerCreation } from './ledgerSync/creationStore.ts';
+import type { RestorePointSummary } from './ledgerSync/backup.ts';
+import { DEMO_SUITE_VERSION } from './core/demoSuite.ts';
+import { eraseDevelopmentActivity, restoreSharedPoint } from './ledgerSync/lifecycle.ts';
+import { createLedger, deleteLedger } from './ledgerSync/discovery.ts';
+import { clearLedgerStores } from './ledgerSync/localStore.ts';
+import { attachLedgerPresence } from "./ledgerSync/presence.ts";
+import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
+import { captureExplicit } from './ledgerSync/capture.ts';
+import { LedgerSyncClient } from "./ledgerSync/client.ts";
+import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   JOINT,
@@ -735,6 +746,19 @@ export function App() {
   const householdRef = useRef<Household | null>(household);
   householdRef.current = household;
   const openingHouseholdRef = useRef<string | null>(null);
+  const ledgerSyncRef = useRef<LedgerSyncClient | null>(null);
+  const ledgerSyncReady = useRef<Promise<void> | null>(null);
+  const useLedgerSync = ledgerSyncEnabled(environment);
+  const [ledgerRestorePoints,setLedgerRestorePoints]=useState<RestorePointSummary[]>([]);
+  const visibleRestorePoints=useLedgerSync?ledgerRestorePoints:(household?listRestorePoints(household):[]);
+  useEffect(()=>{
+    if(!useLedgerSync||!household?.linked||!session?.memberId||tab!=='more')return;
+    let live=true;setLedgerRestorePoints([]);
+    void(async()=>{const local=localLedgerIdentity(session.memberId),auth=local?null:await ensureSupabaseSession(environment);if(!local&&!auth)return;
+      const response=await fetch(`/ledger-sync/v2/${environment}/${household.householdId}/points`,{headers:{Authorization:`Bearer ${local??auth!.accessToken}`}});if(response.ok&&live)setLedgerRestorePoints(await response.json());
+    })().catch(()=>{});return()=>{live=false;};
+  },[useLedgerSync,environment,household?.householdId,session?.memberId,tab]);
+
 
   function adoptAcceptedHousehold(next: Household, statusOverride?: BooksStatus): void {
     householdRef.current = next;
@@ -861,7 +885,7 @@ export function App() {
     return enqueueWrite(() => {
       if (
         replicaScopeGenerationRef.current !== expectedScopeGeneration
-        || householdRef.current !== expectedHousehold
+        || (useLedgerSync ? householdRef.current?.householdId !== expectedHousehold?.householdId : householdRef.current !== expectedHousehold)
       ) {
         throw new Error("The active books changed before the cloud copy could be installed.");
       }
@@ -874,7 +898,7 @@ export function App() {
   ): Promise<Household | null> {
     return enqueueWrite(async () => {
       const current = householdRef.current;
-      if (!current || !booksGateRef.current.ready) return null;
+      if (useLedgerSync || !current || !booksGateRef.current.ready) return null;
       const next = update(current);
       if (!next) return null;
       if (!knownMetadataUpdateAllowed(current, next, current.revision)) return null;
@@ -1026,6 +1050,7 @@ export function App() {
   }
 
   async function retryShareNow() {
+    if (ledgerSyncRef.current) { ledgerSyncRef.current.retryPending(); return; }
     const who = session?.memberId;
     const current = householdRef.current;
     if (!who || !current) {
@@ -1239,6 +1264,7 @@ export function App() {
     const current = householdRef.current;
     const memberId = sessionRef.current?.memberId;
     if (!current || !memberId) return;
+    if(useLedgerSync){setError("");ledgerSyncRef.current?.retryPending(true);return;}
     const expectedScope = {
       generation: replicaScopeGenerationRef.current,
       environment: current.environment,
@@ -1529,7 +1555,7 @@ export function App() {
       setHistory([]);
       setBooting(true);
     }
-    void hydrateContinuityOutbox(environment);
+    if (!ledgerSyncEnabled(environment)) void hydrateContinuityOutbox(environment);
     void listHouseholdReplicas(environment).then((items) => {
       if (live && startupGenerationRef.current === generation) setReplicas(items);
     });
@@ -1575,6 +1601,7 @@ export function App() {
     };
 
     const reconcileAfterValidation = (candidate: Household) => {
+      if (ledgerSyncEnabled(candidate.environment)) return;
       if (!candidate.linked || !loadedSession?.memberId || !stillCurrent(candidate)) return;
       if (
         cloudLedgerOnlineRequiredEnabled(candidate.environment)
@@ -1679,6 +1706,7 @@ export function App() {
 
     const validate = async (candidate: Household) => {
       if (!stillCurrent(candidate)) return;
+      if (ledgerSyncEnabled(candidate.environment) && ((candidate.linked&&loadSupabaseSession(candidate.environment)) || localLedgerIdentity(loadedSession?.memberId ?? ""))) return;
       performance.mark?.("hearth:books-validation-start");
       try {
         let inspection = await inspectBrowserBooks(candidate);
@@ -1829,7 +1857,7 @@ export function App() {
   }, [environment]);
 
   useEffect(() => {
-    if (!household || !activeBooksGate.ready) return;
+    if (useLedgerSync || !household || !activeBooksGate.ready) return;
     touchVisitSpark(environment, todayKey());
     setClinkOn(readClinkOn(environment));
     const memberId = session?.memberId ?? null;
@@ -1860,7 +1888,7 @@ export function App() {
   }, [environment, household?.householdId, session?.memberId, softPresenceOptOut, activeBooksGate.ready]);
 
   useEffect(() => {
-    if (!household || !session?.memberId || !activeBooksGate.ready) {
+    if (useLedgerSync || !household || !session?.memberId || !activeBooksGate.ready) {
       setSoftPresenceLive([]);
       return;
     }
@@ -1910,12 +1938,13 @@ export function App() {
   }, [environment, household?.householdId, session?.memberId, softPresenceOptOut, activeBooksGate.ready]);
 
   useEffect(() => {
-    if (!household || !activeBooksGate.ready || !cloudLedgerOnlineRequiredEnabled(environment)) return;
+    if (ledgerSyncEnabled(environment) || !household || !activeBooksGate.ready || !cloudLedgerOnlineRequiredEnabled(environment)) return;
     if (listContinuityOutbox(environment).some((item) => item.householdId === household.householdId)) return;
     void prewarmStagedHouseholdBooks(household).catch(() => undefined);
   }, [environment, household, activeBooksGate.ready]);
 
   useEffect(() => {
+    if (ledgerSyncEnabled(environment)) return;
     const memberId = session?.memberId;
     if (!memberId || !household || !activeBooksGate.ready) return;
     const googleSession = loadGoogleSession(environment, memberId, household.householdId);
@@ -2853,6 +2882,58 @@ export function App() {
     };
   }, [environment, session?.memberId, household?.householdId, activeBooksGate.ready]);
 
+  useEffect(()=>{
+    const memberId=session?.memberId;if(!useLedgerSync||!household||!memberId)return;
+    const local=localLedgerIdentity(memberId),auth=loadSupabaseSession(environment);if(!local&&(!auth||!household.linked))return;
+    return attachLedgerPresence({environment,householdId:household.householdId,memberId,deviceId:localDeviceId(),advertise:!softPresenceOptOut,onPresence:setSoftPresenceLive,token:async()=>{
+      if(local)return local;const fresh=await ensureSupabaseSession(environment);if(!fresh||fresh.userId!==auth!.userId)throw new Error('UNAUTHENTICATED');return fresh.accessToken;
+    }});
+  },[environment,household?.householdId,session?.memberId,supabaseSessionPresent,softPresenceOptOut,useLedgerSync]);
+
+  useEffect(() => {
+    const memberId = session?.memberId, current = householdRef.current;
+    if (!useLedgerSync || !current || !memberId) return;
+    const local = localLedgerIdentity(memberId), auth = loadSupabaseSession(environment);
+    if (!local && (!auth || !current.linked)) return;
+    let live = true;
+    const client = new LedgerSyncClient({
+      scope: { environment, householdId: current.householdId, memberId, subject: local ?? auth!.userId },
+      token: async () => {
+        if (local) return local;
+        const fresh = await ensureSupabaseSession(environment);
+        if (!fresh || fresh.userId !== auth!.userId) throw new Error("UNAUTHENTICATED");
+        return fresh.accessToken;
+      },
+      adopt: async (next) => {
+        if (!live || householdRef.current?.householdId !== next.householdId) return;
+        const previous = householdRef.current;
+        // The durable server event is already validated and saved by LedgerSyncClient.
+        // Paint that accepted state immediately; the SQL query replica catches up below.
+        householdRef.current = next;
+        setHousehold(next);
+        const { status } = await ingestHouseholdBooks(next, { previous, auditHash: next.booksAcceptedHash ?? undefined, incremental: true });
+        if (!status.ok) throw new Error(status.error ?? "Local books projection failed.");
+        await saveHousehold(next, { operatingEnvironment: environment, memberId, indexedDbOnly: true });
+        if (!live || householdRef.current?.householdId !== next.householdId) return;
+        startupGenerationRef.current += 1;
+        adoptAcceptedHousehold(next, status);
+        setError("");
+        setCloudReplicaReadyKey(onlineRequiredReplicaKey({environment:next.environment,householdId:next.householdId,memberId,revision:next.revision}));
+        setPersonalReplica(personalReplicaForMember(next, memberId));
+      },
+      status: (status, message) => {
+        if (!live) return;
+        setSyncState(status === "ready" ? "synced" : status === "error" ? "error" : status === "offline" ? "idle" : "syncing");
+        setRealtimeStatus(status === "ready" ? "SUBSCRIBED" : "JOINING");
+        if (message && (status === "error" || status === "recovery")) setError(message);
+      },
+    });
+    ledgerSyncRef.current = client;
+    ledgerSyncReady.current = client.start();
+    void ledgerSyncReady.current.catch(error => { if (live) setError(error instanceof Error ? error.message : String(error)); });
+    return () => { live = false; if (ledgerSyncRef.current === client) ledgerSyncRef.current = null; void client.destroy(); };
+  }, [environment, household?.householdId, session?.memberId, supabaseSessionPresent, useLedgerSync]);
+
   useEffect(() => {
     let live = true;
     const memberId = session?.memberId;
@@ -2860,6 +2941,7 @@ export function App() {
       setPersonalReplica(null);
       return () => { live = false; };
     }
+    if (useLedgerSync) { setPersonalReplica(personalReplicaForMember(household, memberId)); return () => { live = false; }; }
     void saveHousehold(household, { operatingEnvironment: environment, memberId }).then(async () => {
       const [personal, items] = await Promise.all([
         loadPersonalReplica(environment, household.householdId, memberId),
@@ -3058,7 +3140,7 @@ export function App() {
       return buildSyncFreshness({
         household: null,
         viewerMemberId: null,
-        realtimeEnabled: continuityRealtimeTransportEnabled(),
+        realtimeEnabled: useLedgerSync || continuityRealtimeTransportEnabled(),
         realtimeStatus,
         authRequired,
         offline,
@@ -3074,7 +3156,7 @@ export function App() {
     return buildSyncFreshness({
       household,
       viewerMemberId: memberId,
-      realtimeEnabled: continuityRealtimeTransportEnabled(),
+      realtimeEnabled: useLedgerSync || continuityRealtimeTransportEnabled(),
       realtimeStatus,
       authRequired,
       offline,
@@ -3269,6 +3351,7 @@ export function App() {
     let accepted: Household;
     if (current.syntheticFixture?.kind === "hearth-demo-suite") {
       candidate = preserveDemoShowcaseContinuity(current, candidate);
+      if(useLedgerSync)candidate=captureExplicit(current,{household:candidate,postedIds:[],warnings:[],undo:{id:crypto.randomUUID(),label:"Replace Demo Suite",snapshot:current,postedIds:[]}},"regenerateDemoSuite",[DEMO_SUITE_VERSION,{today,seed,profile:"investor",numberStyle:"realistic",buildSha:import.meta.env.VITE_GIT_SHA||"local-development"}]).household;
       const confirmationId = newConfirmationId();
       const outcome = await persist(candidate, {
         id: confirmationId,
@@ -3346,6 +3429,21 @@ export function App() {
     try {
       await enqueueWrite(async () => {
       const previous = householdRef.current;
+      if (useLedgerSync) {
+        const auth=await ensureSupabaseSession(environment);
+        if(!auth)throw new Error("Google sign-in is required to open this ledger.");
+        const canonical=await fetchLedgerSnapshot(environment,found.household.householdId,found.memberId,auth.accessToken);
+        if(!accountFlow())return;
+        const {status}=await ingestHouseholdBooks(canonical,{previous:previous??undefined,auditHash:canonical.booksAcceptedHash??undefined,incremental:true});
+        if(!status.ok)throw new Error(status.error??"The local journal could not open these books.");
+        await saveHousehold(canonical,{operatingEnvironment:environment,memberId:found.memberId,activate:true,indexedDbOnly:true});
+        if(!accountFlow())return;
+        adoptGoogleSession(environment,"__welcome__",found.memberId,canonical.householdId);
+        adoptAcceptedHousehold(canonical,status);
+        rememberSession({memberId:found.memberId,view:"household",householdId:canonical.householdId});
+        setHistory([]);setToast(null);setBooksStatus(status);
+        return;
+      }
       const candidate = previous?.householdId === found.household.householdId
         ? await reconcileHouseholdSnapshots(previous, found.household, found.memberId)
         : found.household;
@@ -3633,6 +3731,47 @@ export function App() {
     options?: CommitHouseholdOptions,
   ): Promise<CommandOutcome | null> {
     const previous = householdRef.current;
+    const creatingMember=actorId??session?.memberId;
+    if(useLedgerSync&&creatingMember&&next.householdId!==previous?.householdId&&(next.linked||next.google.links.some(link=>link.active&&link.memberId===creatingMember))){
+      setBusy(true);
+      try{
+        const local=localLedgerIdentity(creatingMember),auth=local?null:await ensureSupabaseSession(environment);
+        if(!local&&!auth)throw new Error('Continue with Google before creating a cloud ledger.');
+        const accepted=await createLedger(next,creatingMember,local??auth!.accessToken,local??auth!.userId);
+        const {status}=await ingestHouseholdBooks(accepted,{auditHash:accepted.booksAcceptedHash??undefined});
+        if(!status.ok)throw new Error(status.error??'Local books could not open the new ledger.');
+        await saveHousehold(accepted,{operatingEnvironment:environment,memberId:creatingMember,indexedDbOnly:true});
+        await completeLedgerCreation(accepted,creatingMember,local??auth!.userId);
+        adoptAcceptedHousehold(accepted,status);
+        return {kind:'synchronized',ok:true,household:accepted,previous,postedIds:[],confirmationId:options?.confirmationId??crypto.randomUUID(),identityHash:null,revision:accepted.revision,sharingMode:'synchronized',errorClass:null,userMessage:null,retryable:false,postedExactlyOnce:true,postedNothing:false,recoveryAvailable:false};
+      }catch(error){setError(error instanceof Error?error.message:String(error));return null;}finally{setBusy(false);}
+    }
+    if (useLedgerSync && previous && (previous.linked || localLedgerIdentity(actorId ?? session?.memberId ?? ""))) {
+      if(next.householdId!==previous.householdId){setError("Choose the new ledger before submitting an entry.");return null;}
+      const client = ledgerSyncRef.current;
+      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); setError(message); return null; }
+      const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
+      confirmationRef.current = confirmationId;
+      setBusy(true); setCommandProgressPhase("confirming");
+      try {
+        await ledgerSyncReady.current;
+        const accepted = await client.confirm(next, confirmationId);
+        confirmationRef.current = null;
+        if (isLedgerWrite(accepted.undo) && !options?.suppressUndo && accepted.postedIds.length) {
+          setToast(accepted.undo);
+          rememberUndoHistory([...historyRef.current, accepted.undo].slice(-20));
+          window.setTimeout(() => setToast(item => item?.id === accepted.undo.id ? null : item), 8000);
+        }
+        const outcome: CommandOutcome = { kind:"synchronized",ok:true,household:accepted.household,previous,postedIds:accepted.postedIds,confirmationId,identityHash:null,revision:accepted.household.revision,sharingMode:"synchronized",errorClass:null,userMessage:null,retryable:false,postedExactlyOnce:true,postedNothing:false,recoveryAvailable:false };
+        setCommandChrome(renderCommandSurface(outcome,{offline:false,pendingCount:0,lastError:null,amountLabel:lastAmountLabelRef.current,ledgerName:accepted.household.name,autoMerged:false,ledgerWrite:isLedgerWrite(token)}));
+        setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome,true));
+        return outcome;
+      } catch (caught) {
+        const message = caught instanceof Error ? caught.message : String(caught);
+        if (/BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) confirmationRef.current = null;
+        options?.onRejected?.(message); setError(message); return null;
+      } finally { setBusy(false); }
+    }
     if (previous && !booksGateRef.current.ready) {
       const message = booksGateRef.current.reason || "The local journal must finish validating before anything can change.";
       if (options?.onRejected) options.onRejected(message);
@@ -4063,7 +4202,7 @@ export function App() {
     return enqueueWrite(() => {
       if (
         replicaScopeGenerationRef.current !== expectedScopeGeneration
-        || householdRef.current !== expectedHousehold
+        || (useLedgerSync ? householdRef.current?.householdId !== expectedHousehold?.householdId : householdRef.current !== expectedHousehold)
       ) {
         const message = "The active books changed before this save began. Review the latest books, then Confirm again.";
         if (options?.onRejected) options.onRejected(message);
@@ -4130,7 +4269,7 @@ export function App() {
   function persistLedgerWrite(next: Household, token?: UndoToken, confirmationId?: string) {
     const accepted = householdRef.current;
     return persist(
-      accepted ? restoreAcceptedSnapshot(accepted, next) : next,
+      useLedgerSync ? next : accepted ? restoreAcceptedSnapshot(accepted, next) : next,
       token,
       undefined,
       confirmationId ? { confirmationId } : undefined,
@@ -4146,7 +4285,7 @@ export function App() {
       environment,
       memberId: who,
     });
-    if (result.kind === "confirmed" && options?.record !== false) {
+    if (!useLedgerSync && result.kind === "confirmed" && options?.record !== false) {
       const latest = householdRef.current ?? current;
       const touched = touchGoogleConfirmation(latest, who);
       await commitHousehold(touched.household, touched.undo);
@@ -4169,9 +4308,10 @@ export function App() {
         }
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
         const fundedTransactionId = fundedMoneyUndoTarget(current, token);
-        const result = fundedTransactionId
+        let result = fundedTransactionId
           ? reversePostedMoney(current, fundedTransactionId, { createdBy: who })
           : undoLedgerConfirm(current, token);
+        if (useLedgerSync && !fundedTransactionId) result = captureExplicit(current,result,'undoConfirm',[token.id]);
         lastAmountLabelRef.current = null;
         const outcome = await commitHousehold(result.household, {
           ...result.undo,
@@ -4191,6 +4331,11 @@ export function App() {
     const current = householdRef.current;
     const who = session?.memberId;
     if (!current || !who) return;
+    if(useLedgerSync){
+      const point=ledgerRestorePoints.find(point=>point.id===pointId);if(!point||!isHouseholdOwner)return;
+      const preview=captureExplicit(current,{household:{...current},postedIds:[],warnings:[],undo:{id:crypto.randomUUID(),label:`Restore ${point.label}`,snapshot:current,postedIds:[],actorMemberId:who}},'restoreSharedPoint',[pointId,who]);
+      await commitHousehold(preview.household,preview.undo,who,{suppressUndo:true});return;
+    }
     const point = listRestorePoints(current).find((row) => row.id === pointId);
     const gate = canRestorePoint(current, point, { isOwner: isHouseholdOwner });
     if (!gate.ok) {
@@ -4199,7 +4344,7 @@ export function App() {
     }
     if (!point) return;
     try {
-      const restored = applyRestorePoint(current, point, who, { isOwner: isHouseholdOwner });
+      const restored = useLedgerSync?restoreSharedPoint(current,point.id,who).household:applyRestorePoint(current, point, who, { isOwner: isHouseholdOwner });
       await commitHousehold(restored, {
         id: `restore-${point.id}`,
         label: `Restored ${point.label}`,
@@ -4228,7 +4373,7 @@ export function App() {
       }
       setError("");
       try {
-        const result = fn(current);
+        let result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
         if (memberPersonal) {
           assertMemberPersonalUpdate(current, result);
@@ -4254,6 +4399,8 @@ export function App() {
           outcome?.postedExactlyOnce === true &&
           (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
         if (!accepted) return;
+        const canonicalResult = outcome ? ledgerSyncRef.current?.result(outcome.confirmationId) : undefined;
+        if (canonicalResult) result = canonicalResult;
         if (memberPersonal && result.personalMemberId) {
           setPersonalReplica(personalReplicaForMember(outcome.household, result.personalMemberId));
         }
@@ -4368,6 +4515,7 @@ export function App() {
       return;
     }
     clearThisPhoneInFlightRef.current = true;
+    if(ledgerSyncRef.current){await ledgerSyncRef.current.destroy();ledgerSyncRef.current=null;}
     cancelAccountFlow();
     const who = sessionRef.current?.memberId;
     const hid = current.householdId;
@@ -4378,6 +4526,7 @@ export function App() {
     setBusy(true);
     try {
       await enqueueWrite(async () => {
+        await clearLedgerStores(environment);
         if (who) clearUndoHistory(environment, hid, who);
         clearSyncAnchor(environment, hid);
         await clearContinuityOutboxForHouseholdDurably(environment, hid);
@@ -4619,7 +4768,7 @@ export function App() {
       await enqueueWrite(async () => {
         const result = input.mode === "leave"
           ? await leaveHousehold({ environment, householdId: input.householdId, config: cloudConfig })
-          : await leaveOrDeleteHousehold({
+          : useLedgerSync&&input.role==="owner"?await deleteLedger(environment,input.householdId,authSession.accessToken):await leaveOrDeleteHousehold({
             environment,
             householdId: input.householdId,
             role: input.role,
@@ -4628,6 +4777,8 @@ export function App() {
         if (!result.ok) {
           throw new Error(inviteReasonMessage(result.reason));
         }
+        if(householdRef.current?.householdId===input.householdId){await ledgerSyncRef.current?.destroy();ledgerSyncRef.current=null;}
+        await clearLedgerStores(environment,input.householdId);
         clearSyncAnchor(environment, input.householdId);
         await clearContinuityOutboxForHouseholdDurably(environment, input.householdId);
         await clearStagedHouseholdBooks(environment, input.householdId);
@@ -4703,7 +4854,10 @@ export function App() {
         await remember(household.householdId, session.memberId);
       }
       await enqueueWrite(async () => {
-        const result = await resetDevelopmentHouseholds({
+        if(useLedgerSync){
+          for(const row of known){if(row.role==="owner")await deleteLedger(environment,row.householdId,authSession.accessToken);else{const left=await leaveHousehold({environment,householdId:row.householdId,config:cloudConfig});if(!left.ok)throw new Error(inviteReasonMessage(left.reason));}}
+        }
+        const result = useLedgerSync?{ok:true as const}:await resetDevelopmentHouseholds({
           environment,
           identity,
           known,
@@ -4712,6 +4866,8 @@ export function App() {
         if (!result.ok) {
           throw new Error(inviteReasonMessage(result.reason));
         }
+        await ledgerSyncRef.current?.destroy();ledgerSyncRef.current=null;
+        await clearLedgerStores(environment);
         await wipeLocalDevelopmentCopies(environment);
         householdRef.current = null;
         sessionRef.current = null;
@@ -4918,13 +5074,14 @@ export function App() {
                 const memberId = newHouseholdDraft.personalMemberId;
                 adoptedMemberId = memberId;
                 const named = nameHouseholdLedgers(newHouseholdTemplate(environment), newHouseholdDraft);
-                const next = linkGoogleIdentity(named, {
+                let next = linkGoogleIdentity(named, {
                   memberId,
                   email: welcomeIdentity.email,
                   subject: welcomeIdentity.subject,
                   displayName: welcomeIdentity.displayName,
                   grantedScopes: welcomeIdentity.grantedScopes,
                 }).household;
+                if(useLedgerSync){const local=localLedgerIdentity(memberId),auth=local?null:await ensureSupabaseSession(environment);if(!local&&!auth)throw new Error("Continue with Google before creating a ledger.");next=await stageLedgerCreation(next,memberId,local??auth!.userId);}
                 adoptedHouseholdId = next.householdId;
                 adoptedWelcomeSession = Boolean(adoptGoogleSession(environment, "__welcome__", memberId, next.householdId));
                 const outcome = await persist(next, undefined, memberId);
@@ -4934,7 +5091,7 @@ export function App() {
                   }
                   return;
                 }
-                const nextSession = { memberId, view: "household" as const, householdId: next.householdId };
+                const nextSession = { memberId, view: "household" as const, householdId: outcome.household.householdId };
                 closeAdd();
                 sessionRef.current = nextSession;
                 setSession(nextSession);
@@ -6333,12 +6490,12 @@ export function App() {
           <section className="card">
             <header>
               <h2>Restore points</h2>
-              <span className="muted">{restorePointsHeaderPill(listRestorePoints(household).length)}</span>
+              <span className="muted">{restorePointsHeaderPill(visibleRestorePoints.length)}</span>
             </header>
-            {listRestorePoints(household).length === 0 ? (
+            {visibleRestorePoints.length === 0 ? (
               <p className="muted">{restorePointsEmptyCopy(isHouseholdOwner)}</p>
             ) : (
-              listRestorePoints(household).map((point) => {
+              visibleRestorePoints.map((point) => {
                 const gate = canRestorePoint(household, point, { isOwner: isHouseholdOwner });
                 return (
                   <div className="row" key={point.id}>
@@ -6354,7 +6511,7 @@ export function App() {
                         onClick={() => setGuard({
                           kind: "restorePoint",
                           pointId: point.id,
-                          summary: restoreConfirmBody(point, household),
+                          summary: useLedgerSync?`Replace Shared books with ${point.label}. Later Shared postings leave the current books. Personal ledgers stay unchanged.`:restoreConfirmBody(point as import("./core/types.ts").RestorePoint, household),
                         })}
                       >
                         Restore
@@ -6366,7 +6523,7 @@ export function App() {
                 );
               })
             )}
-            {!isHouseholdOwner && listRestorePoints(household).length > 0 ? (
+            {!isHouseholdOwner && visibleRestorePoints.length > 0 ? (
               <p className="muted">Everyone can see restore points. Only an owner can Restore.</p>
             ) : null}
           </section>
@@ -6867,7 +7024,7 @@ export function App() {
                 setHistory([]);
                 setToast(null);
                 setGuard(null);
-                await persist(eraseDevelopmentData(household));
+                await persist(useLedgerSync?eraseDevelopmentActivity(household,session!.memberId).household:eraseDevelopmentData(household));
                 if (session?.memberId) {
                   clearUndoHistory(environment, household.householdId, session.memberId);
                 }
@@ -7046,7 +7203,7 @@ export function App() {
           onConfirm={() => {
             const id = guard.recurrenceId;
             setGuard(null);
-            void run((current) => postOneRecurrence(current, id, today));
+            void run((current) => postOneRecurrence(current, id, today, {createdBy:session!.memberId}));
           }}
         />
       )}
@@ -7104,7 +7261,7 @@ export function App() {
               if (!postFirst) return saved;
               const recurrenceId = draft.id ?? saved.postedIds[0];
               if (!recurrenceId) return saved;
-              return postOneRecurrence(saved.household, recurrenceId, today, { allowNotDue: true });
+              return postOneRecurrence(saved.household, recurrenceId, today, { allowNotDue: true, createdBy:session!.memberId });
             });
           }}
         />
@@ -7134,7 +7291,7 @@ export function App() {
           onConfirm={() => {
             const ids = guard.recurrenceIds;
             setGuard(null);
-            void run((current) => postDueRecurrences(current, today, ids));
+            void run((current) => postDueRecurrences(current, today, ids, {createdBy:session!.memberId}));
           }}
         />
       )}

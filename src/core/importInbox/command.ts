@@ -1,3 +1,4 @@
+import { captureCommand } from "../../ledgerSync/capture.ts";
 import { markDuplicate, postEntry, postTransfer } from "../commands.ts";
 import { cloneHousehold } from "../household.ts";
 import { ValidationError, type CommitResult, type Household, type UndoToken } from "../types.ts";
@@ -23,7 +24,12 @@ function validatePostable(row: ImportReviewRow): void {
   }
 }
 
-export function buildBatchImport(input: {
+type BatchInput = {
+  household: Household; memberId: string; rows: ImportReviewRow[];
+};
+const capturedBatch = captureCommand("buildBatchImport", (household:Household, input:Omit<BatchInput,"household">) => buildBatchImportImpl({...input,household}));
+export function buildBatchImport(input:BatchInput):CommitResult {return capturedBatch(input.household,{memberId:input.memberId,rows:input.rows});}
+function buildBatchImportImpl(input: {
   household: Household;
   memberId: string;
   rows: ImportReviewRow[];

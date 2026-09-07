@@ -1,5 +1,7 @@
 # Current docs
 
+Current sync replacement: [Ledger sync v2 — D-235](LEDGER_SYNC_V2.md), implementation and activation contract; see its explicit local-versus-hosted evidence boundary.
+
 Hearth is the product. Current planning and build canon is in this folder, led by Jonathan's latest instruction and the living files below. The nostalgia and reference folders are Jonathan's personal museum: they are not planning inputs and must not be cited as next work.
 
 **Start here:** [AGENTS.md](../AGENTS.md) (agent constitution) · [HEARTH_ROADMAP.md](HEARTH_ROADMAP.md) (living plan) · [README](../README.md) (run the app).

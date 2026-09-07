@@ -1,3 +1,4 @@
+import { captureCommand } from "../ledgerSync/capture.ts";
 import type {
   CharterCeilingKind,
   CharterSplitRule,
@@ -146,7 +147,7 @@ export function permissionActorMemberId(
   return household.members.find((member) => member.id !== founderId && member.active !== false)?.id ?? null;
 }
 
-export function commitCharterFounding(
+export const commitCharterFounding = captureCommand("commitCharterFounding", function commitCharterFounding(
   household: Household,
   input: { memberId: string; today: DateKey; draft: CharterFoundingDraft },
 ): CommitResult {
@@ -174,4 +175,4 @@ export function commitCharterFounding(
     });
   }
   return result;
-}
+});
