@@ -34,6 +34,12 @@ export class LedgerRoom extends AuthorityRoom {
 }
 export default {
   async fetch(request: Request, env: any) {
+    // Auth-free clock exists solely in this loopback-only test entrypoint.
+    // Its source label can never establish authenticated cloud or LTE evidence.
+    if (new URL(request.url).pathname === '/sync/clock' && ['localhost','127.0.0.1','[::1]'].includes(new URL(request.url).hostname)) {
+      const received = Date.now();
+      return Response.json({ok:true,source:'local-test-clock',serverReceivedAtMs:received,serverSentAtMs:Date.now()},{headers:{'Cache-Control':'no-store'}});
+    }
     const url = new URL(request.url),
       test = url.pathname.match(
         /^\/test\/(fault|fence|archive)\/(HH-FAULT-[a-zA-Z0-9-]+)$/,

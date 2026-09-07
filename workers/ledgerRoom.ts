@@ -23,6 +23,7 @@ import type {
   PersonalEnvelope,
   SharedEnvelope,
   RestorePoint,
+  CommandReceipt,
 } from "../src/core/types.ts";
 import {
   prepareCommand,
@@ -46,6 +47,7 @@ import {
   WINDOW,
 } from "../src/ledgerSync/wire.ts";
 import { importLegacy, supabase, type AuthEnv } from "./ledgerSyncAuth.ts";
+import { importReservationDigests, reservationDigest } from "./ledgerReservations.ts";
 type Env = AuthEnv & { LEDGER_ARCHIVE: R2Bucket };
 type Attachment = {
   scope?: Scope;
@@ -88,6 +90,7 @@ export class LedgerRoom extends DurableObject<Env> {
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS archive(sequence INTEGER PRIMARY KEY,hash TEXT)",
     );
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS legacy_reservations(digest TEXT PRIMARY KEY)");
     for (const ws of ctx.getWebSockets()) ws.close(1012, "RECONNECT");
   }
   private metric(event: string, values: Record<string, number | string> = {}) {
@@ -114,6 +117,33 @@ export class LedgerRoom extends DurableObject<Env> {
       key,
       value,
     );
+  }
+  private importedReceipts(): CommandReceipt[] {
+    return JSON.parse(this.meta("importedReceipts", "[]"));
+  }
+  private reserveImportedReceipts(receipts: CommandReceipt[]) {
+    const reserved = new Map(this.importedReceipts().map(receipt => [receipt.confirmationId, receipt]));
+    for (const receipt of receipts) {
+      const previous = reserved.get(receipt.confirmationId);
+      if (previous && JSON.stringify(previous) !== JSON.stringify(receipt)) throw new Error("IMPORT_RECEIPT_CONFLICT");
+      reserved.set(receipt.confirmationId, receipt);
+    }
+    this.set("importedReceipts", JSON.stringify([...reserved.values()]));
+
+  }
+  private reserveDigests(digests: string[]) {
+    for (const value of digests) {
+      if (!/^[0-9a-f]{64}$/.test(value)) throw new Error("INVALID_RESERVATION_DIGEST");
+      this.ctx.storage.sql.exec("INSERT OR IGNORE INTO legacy_reservations VALUES (?)", value);
+    }
+    this.set("importedReceiptsReady", "2");
+  }
+  private async collectReservations(scope: Scope, token: string, receipts: CommandReceipt[]) {
+    const ring = await Promise.all(receipts.map(receipt => reservationDigest(scope, receipt.confirmationId)));
+    const history = this.env.LEDGER_SYNC_LOCAL_AUTH === "true" ? []
+      : await importReservationDigests(this.env, scope, token, this.meta("authorityInstance"));
+    this.check(scope);
+    return [...new Set([...ring, ...history])];
   }
   private put(scope: string, field: string, entity: string, value: unknown) {
     const sql = this.ctx.storage.sql;
@@ -307,6 +337,7 @@ export class LedgerRoom extends DurableObject<Env> {
           "projection",
           "journal",
           "receipts",
+          "legacy_reservations",
           "archive",
           "checkpoint_outbox",
           "tickets",
@@ -314,6 +345,8 @@ export class LedgerRoom extends DurableObject<Env> {
           this.ctx.storage.sql.exec(`DELETE FROM ${table}`);
         this.set("deleted", subject);
         this.set("checkpointRequired", "");
+        this.set("importedReceipts", "[]");
+        this.set("importedReceiptsReady", "");
       });
       await this.ctx.storage.sync();
       this.state = undefined;
@@ -322,6 +355,27 @@ export class LedgerRoom extends DurableObject<Env> {
   }
   async deletionOwner() {
     return this.meta("deleting") || this.meta("deleted");
+  }
+  async resolveReceipt(scope: Scope, id: string) {
+    return this.serial(async () => {
+      this.check(scope);
+      if (!this.meta("initialized") || this.meta("importedReceiptsReady") !== "2") throw new Error("IMPORT_RECEIPT_REPAIR_REQUIRED");
+      await this.archiveBarrier();
+      this.check(scope);
+      const imported = this.importedReceipts().find(receipt => receipt.confirmationId === id);
+      if (imported) {
+        // Legacy receipt format lacks submitting subject. Reserve and resolve
+        // its identity without inventing ownership or disclosing private IDs.
+        return { version: 1, confirmationId: imported.confirmationId, revision: imported.revision,
+          acceptedAt: imported.acceptedAt, reserved: true };
+      }
+      const reserved = this.ctx.storage.sql.exec("SELECT 1 FROM legacy_reservations WHERE digest=?", await reservationDigest(scope, id)).toArray().length;
+      this.check(scope);
+      if (reserved) return { version: 1, confirmationId: id, reserved: true };
+      const row = this.ctx.storage.sql.exec<{ actor: string; data: string }>("SELECT actor,data FROM receipts WHERE id=?", id).toArray()[0];
+      if (!row || row.actor !== scope.memberId) throw new Error("RECEIPT_NOT_FOUND");
+      return { version: 2, receipt: JSON.parse(row.data) as Receipt };
+    });
   }
   async registerCreation(
     token: string,
@@ -336,7 +390,7 @@ export class LedgerRoom extends DurableObject<Env> {
         throw new Error("INVALID_SCOPE");
       assertAcceptableBooks(household);
       const split = splitForSync(
-        { ...household, commandReceipts: [], restorePoints: [], linked: true },
+        { ...household, restorePoints: [], linked: true },
         memberId,
       );
       if (!this.meta("authorityInstance")) {
@@ -364,6 +418,23 @@ export class LedgerRoom extends DurableObject<Env> {
             )
             .toArray().length > 0;
       if (exists && personalExists) {
+        if (this.meta("importedReceiptsReady") !== "2") {
+          // Upgrade already-imported rooms from the immutable fenced source,
+          // not the current projection (older builds cleared these receipts).
+          const original = local ?? (this.env.LEDGER_SYNC_LOCAL_AUTH === "true"
+            ? { commandReceipts: this.load().shared.commandReceipts }
+            : await importLegacy(this.env, scope, token, this.meta("authorityInstance")));
+          const reservations = await this.collectReservations(scope, token, original.commandReceipts ?? []);
+          this.check(scope);
+          this.ctx.storage.transactionSync(() => {
+            this.reserveImportedReceipts(original.commandReceipts ?? []);
+            this.reserveDigests(reservations);
+            this.field("shared", "commandReceipts", []);
+            this.set("checkpointRequired", "1");
+          });
+          await this.ctx.storage.sync();
+          this.state = undefined;
+        }
         await this.archiveBarrier();
         return;
       }
@@ -388,11 +459,14 @@ export class LedgerRoom extends DurableObject<Env> {
       assertAcceptableBooks(household);
       const split = splitForSync(household, scope.memberId),
         sourceHash = await digest(split);
+      const reservations = await this.collectReservations(scope, token, household.commandReceipts ?? []);
       this.check(scope);
       this.ctx.storage.transactionSync(() => {
+        this.reserveImportedReceipts(household.commandReceipts ?? []);
+        this.reserveDigests(reservations);
         if (!exists) {
           for (const [field, value] of Object.entries(split.shared))
-            this.field("shared", field, value);
+            this.field("shared", field, field === "commandReceipts" ? [] : value);
           this.set("sequence", String(household.revision));
           this.set("importSequence", String(household.revision));
           this.set("scope", `${scope.environment}/${scope.householdId}`);
@@ -512,6 +586,8 @@ export class LedgerRoom extends DurableObject<Env> {
         .exec<{ data: string }>("SELECT data FROM receipts ORDER BY sequence")
         .toArray()
         .map((row) => JSON.parse(row.data)),
+      ...(this.meta("importedReceiptsReady") === "2" ? { importedReceipts: this.importedReceipts(),
+        reservationDigests: this.ctx.storage.sql.exec<{ digest: string }>("SELECT digest FROM legacy_reservations ORDER BY digest").toArray().map(row => row.digest) } : {}),
       restorePoints: retained,
     };
     const body = JSON.stringify(await seal(data));
@@ -572,8 +648,10 @@ export class LedgerRoom extends DurableObject<Env> {
       );
       this.check(scope);
       this.ctx.storage.transactionSync(() => {
+        if (restored.importedReceipts) this.reserveImportedReceipts(restored.importedReceipts);
+        if (restored.reservationDigests) this.reserveDigests(restored.reservationDigests);
         for (const [field, value] of Object.entries(restored.shared))
-          this.field("shared", field, value);
+          this.field("shared", field, field === "commandReceipts" ? [] : value);
         for (const [member, own] of restored.personal)
           for (const [field, value] of Object.entries(own))
             this.field(member, field, value);
@@ -879,7 +957,10 @@ export class LedgerRoom extends DurableObject<Env> {
         if (m.type !== "command" || !a.ready) throw new Error("SYNC_REQUIRED");
         const command = parseCommand(m.command);
         requestId = command.id;
+        if (this.meta("importedReceiptsReady") !== "2") throw new Error("IMPORT_RECEIPT_REPAIR_REQUIRED");
         admission = true;
+        if (this.ctx.storage.sql.exec("SELECT 1 FROM legacy_reservations WHERE digest=?", await reservationDigest(a.scope, command.id)).toArray().length)
+          throw new Error("IMPORTED_CONFIRMATION_EXISTS");
         const hash = await intentDigest(command, a.scope.memberId);
         this.check(a.scope);
         const old = this.ctx.storage.sql

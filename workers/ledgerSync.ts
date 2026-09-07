@@ -22,7 +22,7 @@ export async function handleLedgerSync(
   if (url.pathname === "/ledger-sync/config")
     return json({ version: 2, enabled: true });
   const path = url.pathname.match(
-    /^\/ledger-sync\/v2\/(development|production)\/(HH-[a-zA-Z0-9_-]{1,96})\/(ticket|socket|snapshot|import|revoke|restore|create|delete|points)$/,
+    /^\/ledger-sync\/v2\/(development|production)\/(HH-[a-zA-Z0-9_-]{1,96})\/(ticket|socket|snapshot|import|revoke|restore|create|delete|points|receipt)$/,
   );
   if (!path) return json({ error: "NOT_FOUND" }, 404);
   const environment = path[1]!,
@@ -135,6 +135,11 @@ export async function handleLedgerSync(
       environment,
       householdId,
     );
+    if (action === "receipt" && request.method === "GET") {
+      const id = url.searchParams.get("id");
+      if (!id || id.length > 256) return json({ error: "INVALID_RECEIPT_ID" }, 400);
+      return json(await room.resolveReceipt(scope, id));
+    }
     if (action === "points" && request.method === "GET")
       return json(await room.listRestorePoints(scope));
     if (action === "ticket" && request.method === "POST") {

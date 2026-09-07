@@ -84,6 +84,10 @@ export async function prepareCommand(
     throw new Error("MEMBERSHIP_CHANGED");
   const before = current,
     ids = new Map<string, string>();
+  // Legacy receipts use another hash contract and do not bind an actor. They
+  // cannot be fabricated into v2 receipts, but their UUIDs remain reserved.
+  if (before.commandReceipts.some(receipt => receipt.confirmationId === command.id))
+    throw new Error("IMPORTED_CONFIRMATION_EXISTS");
   let result: CommitResult | undefined;
   const warnings: string[] = [],
     postedIds: string[] = [];

@@ -130,6 +130,7 @@ export async function importLegacy(
         scope.memberId,
       )
     : splitForSync(shared, scope.memberId).personal;
+  if (record.personal && !personal) throw new Error("INVALID_PERSONAL_IMPORT");
   return assembleHousehold(
     splitForSync(shared, scope.memberId).shared,
     personal,

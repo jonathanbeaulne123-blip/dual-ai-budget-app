@@ -7426,7 +7426,7 @@ export function App() {
       </p>
 
       {toast && commandChrome?.toast && (
-        <div className="toast" data-command-id={useLedgerSync ? ledgerCommandId : undefined} data-command-phase={commandProgressPhase}>
+        <div className="toast" data-command-id={useLedgerSync ? toast.id : undefined} data-command-phase={commandProgressPhase}>
           <span>
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
