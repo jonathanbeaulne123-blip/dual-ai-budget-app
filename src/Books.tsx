@@ -744,7 +744,9 @@ function BooksStorageNotes({
     <>
       {booksStatus?.ok ? (
         <p className="muted">
-          {`Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
+          {booksStatus.engine === "ledger-sync-v2"
+            ? `${booksStatus.entryCount} journal entries checked against the cloud ledger. Your device keeps a scoped copy.`
+            : `Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
         </p>
       ) : booksStatus ? (
         <KitchenNotice
@@ -752,7 +754,9 @@ function BooksStorageNotes({
           onGoMore={onGoMore}
         />
       ) : null}
-      {household.linked ? (
+      {booksStatus?.engine === "ledger-sync-v2" ? (
+        <p className="muted">Confirmed entries are saved by the household authority and shared live with authorized members.</p>
+      ) : household.linked ? (
         booksStatus?.hosted?.schema ? (
           <p className="muted">
             {`The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}

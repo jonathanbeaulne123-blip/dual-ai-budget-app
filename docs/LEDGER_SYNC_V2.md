@@ -1,5 +1,15 @@
 # Ledger sync v2 — D-235
 
+## Acceptance commission addendum — 2026-09-07
+
+Decision owner: Jonathan. PR #365 is deployed in Development at main `5cd1f18`; migration 019 was applied during that separately authorized release. The pre-release status statements below are historical. This new commission prohibits further hosted schema application and Production deployment and requires G1–G4 in order; see [the acceptance worksession](worksessions/2026-09-07-ledger-sync-acceptance.md). The release does **not** meet the commission yet.
+
+**G1 decision, recorded before further runtime changes:** the ledger uses server-side execution against current state rather than small-payload household CAS. `observedSequence` is a catch-up hint, never an expected-revision precondition. Two independent additive postings inside the same 200 ms window both execute and commit serially; the earlier posting cannot cause a revision-conflict dialog for the later one. Reconnection silently catches up and resends the same persisted UUID. UUID plus intent hash plus authenticated submitting subject must return the original receipt on retry. A stale edit to an actually changed business resource remains a semantic refusal; it cannot silently overwrite a reviewed amount. This is the server-side equivalent of rebasing an additive intent, with no extra client revision-fetch round trip. No third ledger runtime is to be created.
+
+Required measurements are author paint <=16 ms, durable ACK <=120 ms, partner paint p95 <=250 ms, cold-open interactive <=500 ms, and zero money-entry conflict dialogs, against 5,000 transactions. Report p50/p95/p99, bytes, lost/duplicate operations, clock uncertainty and warm/cold conditions. G4 specifically requires two physical Toronto devices on LTE. Existing local 100-sample partner p95 329.4 ms fails the target. Cached-shell paint is not interactive readiness. No optimistic unvalidated money may be exposed to meet a timer.
+
+G2 (complete deployed baseline), G3 (actual-household importer parity) and G4 (physical LTE) remain open. Keep legacy source until G4 as requested; the existing migration's permanent writer fence means it is not a safe live rollback for an already-cut-over household. Do not remove that fence or silently enable Production. The separate document experiment's `gc:false` and 5 MiB retention ceiling remain a known document lifecycle limitation, not a ledger capacity strategy.
+
 Status: implemented in `codex/ledger-sync-rebuild`, based on `9c54a8f9fb019360bc6aacae4983ddce0e56b2d5`. This is an implementation and activation contract, not a claim that hosted households have migrated. Production is explicitly rejected by this service.
 
 The household outcome is concrete: Bianca confirms groceries in the ordinary Add flow; the authority accepts that intent against the current books, persists it, and Jonathan sees the accepted balance through a WebSocket event. A second editor's unrelated posting does not cause a whole-household CAS conflict. Local drafts respond immediately; money becomes accepted only after durable cloud acknowledgement. An optimistic draft must never masquerade as posted money.

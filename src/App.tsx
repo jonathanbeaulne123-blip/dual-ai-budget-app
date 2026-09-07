@@ -185,6 +185,7 @@ import { acceptHouseholdWrite, classifyCommandError, newConfirmationId, isLedger
 import type { WriteAdapters } from "./core/commandRuntime.ts";
 import { selectCommandConfirmationId } from "./core/commandConfirmation.ts";
 import { clearStagedHouseholdBooks, ingestHouseholdBooks, inspectBrowserBooks, prewarmStagedHouseholdBooks, repairAcceptedHouseholdBooks, replaceAcceptedHouseholdBooks, restoreHouseholdBooks, validateHouseholdBooksStaged, type BooksStatus } from "./ledger/engine.ts";
+import { validatedLedgerBooksStatus } from "./ledgerSync/validatedBooks.ts";
 import { readSupabaseConfig, pullOrBootstrapConsistentMemberReplicaById, pullHouseholdSnapshotById, fetchContinuityMembershipRole, listActiveContinuityMemberships, fetchContinuityCommandEvents } from "./ledger/supabase.ts";
 import { undoToastSecondaryCopy } from "./core/commandClassification.ts";
 import { livePullIntervalMs, shouldRunLivePull } from "./continuityLivePull.ts";
@@ -2904,22 +2905,20 @@ export function App() {
         if (!fresh || fresh.userId !== auth!.userId) throw new Error("UNAUTHENTICATED");
         return fresh.accessToken;
       },
-      adopt: async (next) => {
+      adopt: async (next, validatedStatus) => {
         if (!live || householdRef.current?.householdId !== next.householdId) return;
-        const previous = householdRef.current;
-        // The durable server event is already validated and saved by LedgerSyncClient.
-        // Paint that accepted state immediately; the SQL query replica catches up below.
-        householdRef.current = next;
-        setHousehold(next);
-        const { status } = await ingestHouseholdBooks(next, { previous, auditHash: next.booksAcceptedHash ?? undefined, incremental: true });
-        if (!status.ok) throw new Error(status.error ?? "Local books projection failed.");
+        // The client has saved the scoped server replica. Validate before UI
+        // publication; a legacy PGlite transaction cannot gate this authority.
+        const status = validatedStatus ?? validatedLedgerBooksStatus(next);
         await saveHousehold(next, { operatingEnvironment: environment, memberId, indexedDbOnly: true });
         if (!live || householdRef.current?.householdId !== next.householdId) return;
         startupGenerationRef.current += 1;
+        setBooksStatus(status);
         adoptAcceptedHousehold(next, status);
         setError("");
         setCloudReplicaReadyKey(onlineRequiredReplicaKey({environment:next.environment,householdId:next.householdId,memberId,revision:next.revision}));
         setPersonalReplica(personalReplicaForMember(next, memberId));
+        performance.mark?.("hearth:accepted-replica-adopted");
       },
       status: (status, message) => {
         if (!live) return;
@@ -3140,6 +3139,7 @@ export function App() {
       return buildSyncFreshness({
         household: null,
         viewerMemberId: null,
+        eventStream: useLedgerSync,
         realtimeEnabled: useLedgerSync || continuityRealtimeTransportEnabled(),
         realtimeStatus,
         authRequired,
@@ -3156,6 +3156,7 @@ export function App() {
     return buildSyncFreshness({
       household,
       viewerMemberId: memberId,
+      eventStream: useLedgerSync,
       realtimeEnabled: useLedgerSync || continuityRealtimeTransportEnabled(),
       realtimeStatus,
       authRequired,
@@ -3434,8 +3435,7 @@ export function App() {
         if(!auth)throw new Error("Google sign-in is required to open this ledger.");
         const canonical=await fetchLedgerSnapshot(environment,found.household.householdId,found.memberId,auth.accessToken);
         if(!accountFlow())return;
-        const {status}=await ingestHouseholdBooks(canonical,{previous:previous??undefined,auditHash:canonical.booksAcceptedHash??undefined,incremental:true});
-        if(!status.ok)throw new Error(status.error??"The local journal could not open these books.");
+        const status=validatedLedgerBooksStatus(canonical);
         await saveHousehold(canonical,{operatingEnvironment:environment,memberId:found.memberId,activate:true,indexedDbOnly:true});
         if(!accountFlow())return;
         adoptGoogleSession(environment,"__welcome__",found.memberId,canonical.householdId);
@@ -3738,8 +3738,7 @@ export function App() {
         const local=localLedgerIdentity(creatingMember),auth=local?null:await ensureSupabaseSession(environment);
         if(!local&&!auth)throw new Error('Continue with Google before creating a cloud ledger.');
         const accepted=await createLedger(next,creatingMember,local??auth!.accessToken,local??auth!.userId);
-        const {status}=await ingestHouseholdBooks(accepted,{auditHash:accepted.booksAcceptedHash??undefined});
-        if(!status.ok)throw new Error(status.error??'Local books could not open the new ledger.');
+        const status=validatedLedgerBooksStatus(accepted);
         await saveHousehold(accepted,{operatingEnvironment:environment,memberId:creatingMember,indexedDbOnly:true});
         await completeLedgerCreation(accepted,creatingMember,local??auth!.userId);
         adoptAcceptedHousehold(accepted,status);

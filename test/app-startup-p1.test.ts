@@ -18,6 +18,7 @@ type Inspection = {
 };
 
 const startup = vi.hoisted(() => ({
+  v2: false,
   cached: null as Household | null,
   inspections: [] as Array<Promise<Inspection> | Error>,
   inspectOptions: [] as Array<{ expectedAuditHash?: string }>,
@@ -38,6 +39,25 @@ const startup = vi.hoisted(() => ({
   lifecycle: [] as string[],
   transportResult: null as null | { ok: true; remoteRevision?: number } | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; message: string },
 }));
+
+vi.mock("../src/ledgerSync/presence.ts", () => ({ attachLedgerPresence: () => () => {} }));
+vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/ledgerSync/client.ts")>();
+  return { LedgerSyncClient: class {
+    options: import("../src/ledgerSync/client.ts").ClientOptions;
+    constructor(options: import("../src/ledgerSync/client.ts").ClientOptions) {
+      this.options = options;
+      if (!startup.v2) return new actual.LedgerSyncClient(options);
+    }
+    async start() {
+      // Models an authenticated, validated canonical snapshot. SQL readiness
+      // must not be a second commit authority for this already-accepted state.
+      await this.options.adopt(startup.cached!);
+      this.options.status("ready");
+    }
+    async destroy() {}
+  } };
+});
 
 vi.mock("../src/continuity.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/continuity.ts")>();
@@ -267,6 +287,7 @@ describe("cached-shell startup books gate", () => {
   let container: HTMLDivElement;
 
   beforeEach(async () => {
+    startup.v2 = false;
     setContinuityStore(createMemoryContinuityStore());
     localStorage.clear();
     sessionStorage.clear();
@@ -405,6 +426,21 @@ describe("cached-shell startup books gate", () => {
       await Promise.resolve();
     });
     expect(container.querySelector(".sync-freshness")?.textContent).toContain("Google sign-in needed");
+  });
+
+  it("opens v2 accepted books without waiting for the legacy SQL replica", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
+    startup.cached = markSynchronized({ ...catalogHousehold(), linked: true, revision: 13 });
+    const engine = await import("../src/ledger/engine.ts");
+    vi.spyOn(engine, "ingestHouseholdBooks").mockClear().mockImplementation(() => new Promise(() => {}));
+    await act(async () => { root.render(createElement(App)); });
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull(), 2000);
+    expect(startup.ingestCalls).toBe(0);
+    expect(engine.ingestHouseholdBooks).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("Validating the local journal");
+    expect(container.querySelector('.sync-freshness')?.textContent).not.toContain("Checking every");
   });
 
   it("turns a refused session refresh into the same explicit reconnect state", async () => {

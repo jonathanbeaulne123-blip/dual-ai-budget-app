@@ -60,8 +60,7 @@ function paidRecurringCount(household: Household): number {
   return household.transactions.filter((tx) => tx.source === "recurring" && !tx.isDuplicate).length;
 }
 
-export function isCosmeticUnlocked(household: Household, item: CosmeticItem, today: DateKey): boolean {
-  const healthClean = runHealthCheck(household).length === 0;
+function cosmeticUnlocked(household: Household, item: CosmeticItem, today: DateKey, healthClean: () => boolean): boolean {
   if (item.id === "toque") return household.transactions.some((tx) => tx.type === "expense" && !tx.isDuplicate);
   if (item.id === "visor") return paidRecurringCount(household) > 0;
   if (item.id === "chef") return household.activity.some((row) => row.action === "Monthly Sit-Down");
@@ -71,9 +70,9 @@ export function isCosmeticUnlocked(household: Household, item: CosmeticItem, tod
   if (item.id === "gold") {
     return household.goals.some((goal) => goal.targetCents > 0 && goal.savedCents >= goal.targetCents);
   }
-  if (item.id === "cottage") return healthClean;
+  if (item.id === "cottage") return healthClean();
   if (item.id === "townhouse") {
-    return healthClean && overdueBills(household, today).length === 0 && household.recurrences.some((item) => item.active);
+    return healthClean() && overdueBills(household, today).length === 0 && household.recurrences.some((item) => item.active);
   }
   if (item.id === "patio") {
     return kitchenSeason(today) === "patio" || household.transactions.some((tx) => !tx.isDuplicate && [6, 7, 8].includes(parseDateKey(tx.date).month));
@@ -89,8 +88,13 @@ export function isCosmeticUnlocked(household: Household, item: CosmeticItem, tod
   return false;
 }
 
+export function isCosmeticUnlocked(household: Household, item: CosmeticItem, today: DateKey): boolean {
+  return cosmeticUnlocked(household, item, today, () => runHealthCheck(household).length === 0);
+}
+
 export function unlockedCosmetics(household: Household, today: DateKey): CosmeticItem[] {
-  return COSMETICS.filter((item) => isCosmeticUnlocked(household, item, today));
+  let clean: boolean | undefined;
+  return COSMETICS.filter((item) => cosmeticUnlocked(household, item, today, () => (clean ??= runHealthCheck(household).length === 0)));
 }
 
 export function companionMood(household: Household, today: DateKey, name = "Hercules"): { mood: CompanionMood; reason: string } {

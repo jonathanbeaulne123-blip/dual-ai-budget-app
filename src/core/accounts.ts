@@ -5,16 +5,30 @@ import { accountRegister, compileHousehold } from "./journal.ts";
 import { formatCad, sumCents } from "./money.ts";
 import type { Account, AccountKind, Household, Transaction } from "./types.ts";
 
-export function accountBookBalance(household: Household, accountId: string, asOf?: DateKey): number {
+type BalanceReader = (accountId: string, asOf?: DateKey) => number;
+
+/** One immutable calculation scope; never cache across mutable Household edits. */
+function balanceReader(household: Household): BalanceReader {
   const books = compileHousehold(household);
-  const rows = accountRegister(books, accountId, { recognizedOnly: true });
-  if (!asOf) return rows.at(-1)?.runningCents ?? 0;
-  let last = 0;
-  for (const row of rows) {
-    if (row.date > asOf) break;
-    last = row.runningCents;
-  }
-  return last;
+  const registers = new Map<string, ReturnType<typeof accountRegister>>();
+  return (accountId, asOf) => {
+    let rows = registers.get(accountId);
+    if (!rows) {
+      rows = accountRegister(books, accountId, { recognizedOnly: true });
+      registers.set(accountId, rows);
+    }
+    if (!asOf) return rows.at(-1)?.runningCents ?? 0;
+    let last = 0;
+    for (const row of rows) {
+      if (row.date > asOf) break;
+      last = row.runningCents;
+    }
+    return last;
+  };
+}
+
+export function accountBookBalance(household: Household, accountId: string, asOf?: DateKey): number {
+  return balanceReader(household)(accountId, asOf);
 }
 
 export function cashbackBpsFor(account: Account, subcategoryId: string | null): number {
@@ -86,15 +100,19 @@ export type CreditCardView = {
 };
 
 export function creditCardView(household: Household, account: Account, today: DateKey): CreditCardView {
+  return creditCardViewWithBalances(household, account, today, balanceReader(household));
+}
+
+function creditCardViewWithBalances(household: Household, account: Account, today: DateKey, balance: BalanceReader): CreditCardView {
   const desk = account.credit;
-  const owedCents = Math.max(0, accountBookBalance(household, account.id, today));
+  const owedCents = Math.max(0, balance(account.id, today));
   const limitCents = desk?.creditLimitCents ?? 0;
   const availableCents = limitCents > 0 ? Math.max(0, limitCents - owedCents) : 0;
   const utilization = limitCents > 0 ? owedCents / limitCents : null;
   const statementDay = desk?.statementDay ?? 21;
   const statementDate = lastStatementDate(today, statementDay);
   const dueDate = addDays(statementDate, desk?.dueDaysAfterStatement ?? 21);
-  const statementBalanceCents = Math.max(0, accountBookBalance(household, account.id, statementDate));
+  const statementBalanceCents = Math.max(0, balance(account.id, statementDate));
   const paidSinceStatementCents = transfersTo(household, account.id, addDays(statementDate, 1), today);
   const paidInFull = statementBalanceCents > 0 && paidSinceStatementCents >= statementBalanceCents;
   const remaining = Math.max(0, statementBalanceCents - paidSinceStatementCents);
@@ -172,7 +190,11 @@ export type SavingsView = {
 };
 
 export function savingsView(household: Household, account: Account, today: DateKey): SavingsView {
-  const balanceCents = accountBookBalance(household, account.id, today);
+  return savingsViewWithBalances(account, today, balanceReader(household));
+}
+
+function savingsViewWithBalances(account: Account, today: DateKey, balance: BalanceReader): SavingsView {
+  const balanceCents = balance(account.id, today);
   const apyBps = account.savings?.apyBps ?? 0;
   const estimatedMonthlyInterestCents = balanceCents > 0 && apyBps > 0
     ? Math.round(balanceCents * (apyBps / 10000) / 12)
@@ -201,7 +223,11 @@ export type InvestmentView = {
 };
 
 export function investmentView(household: Household, account: Account, today: DateKey): InvestmentView {
-  const costBasisCents = accountBookBalance(household, account.id, today);
+  return investmentViewWithBalances(account, today, balanceReader(household));
+}
+
+function investmentViewWithBalances(account: Account, today: DateKey, balance: BalanceReader): InvestmentView {
+  const costBasisCents = balance(account.id, today);
   const markedValueCents = account.investment?.markedValueCents ?? null;
   const markedAt = account.investment?.markedAt ?? null;
   const unrealizedCents = markedValueCents == null ? null : markedValueCents - costBasisCents;
@@ -246,9 +272,9 @@ export type HouseholdWallet = {
   hottestCard: CreditCardView | null;
 };
 
-function tileSub(household: Household, account: Account, today: DateKey): { sub: string; tone: "good" | "warn" | "neutral"; credit?: CreditCardView; savings?: SavingsView; investment?: InvestmentView } {
+function tileSub(household: Household, account: Account, today: DateKey, balance: BalanceReader): { sub: string; tone: "good" | "warn" | "neutral"; credit?: CreditCardView; savings?: SavingsView; investment?: InvestmentView } {
   if (isCreditKind(account.kind)) {
-    const credit = creditCardView(household, account, today);
+    const credit = creditCardViewWithBalances(household, account, today, balance);
     const pct = credit.utilization == null ? "" : ` · ${Math.round(credit.utilization * 100)}% used`;
     return {
       sub: credit.limitCents
@@ -259,7 +285,7 @@ function tileSub(household: Household, account: Account, today: DateKey): { sub:
     };
   }
   if (account.kind === "savings") {
-    const savings = savingsView(household, account, today);
+    const savings = savingsViewWithBalances(account, today, balance);
     const vault = account.savings?.purpose === "goals" ? "Goals savings · " : "";
     return {
       sub: savings.apyBps
@@ -272,7 +298,7 @@ function tileSub(household: Household, account: Account, today: DateKey): { sub:
     };
   }
   if (isInvestmentKind(account.kind)) {
-    const investment = investmentView(household, account, today);
+    const investment = investmentViewWithBalances(account, today, balance);
     return {
       sub: investment.markedValueCents == null
         ? `${investment.vehicle.toUpperCase()} · cost ${formatCad(investment.costBasisCents)}`
@@ -282,7 +308,7 @@ function tileSub(household: Household, account: Account, today: DateKey): { sub:
     };
   }
   if (isReceivableKind(account.kind)) {
-    const balanceCents = accountBookBalance(household, account.id, today);
+    const balanceCents = balance(account.id, today);
     return {
       sub: balanceCents ? `Outstanding ${formatCad(balanceCents)}` : "Nothing outstanding",
       tone: balanceCents > 0 ? "warn" : "good",
@@ -292,11 +318,12 @@ function tileSub(household: Household, account: Account, today: DateKey): { sub:
 }
 
 export function householdWallet(household: Household, today: DateKey): HouseholdWallet {
+  const balance = balanceReader(household);
   const tiles: WalletTile[] = household.accounts
     .filter((account) => account.active)
     .map((account) => {
-      const balanceCents = accountBookBalance(household, account.id, today);
-      const extra = tileSub(household, account, today);
+      const balanceCents = balance(account.id, today);
+      const extra = tileSub(household, account, today, balance);
       return {
         account,
         kind: account.kind,

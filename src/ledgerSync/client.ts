@@ -1,6 +1,7 @@
 import type { Household, CommitResult } from "../core/types.ts";
 import { assembleHousehold } from "../core/sync.ts";
-import { assertAcceptableBooks } from "../core/commandRuntime.ts";
+import { validatedLedgerBooksStatus } from "./validatedBooks.ts";
+import type { BooksStatus } from "../ledger/engine.ts";
 import { financialAuditHash } from "../core/commandIdentity.ts";
 import { capturedIntent, clearCapturedIntent } from "./capture.ts";
 import { project, digest } from "./patch.ts";
@@ -24,10 +25,11 @@ export type SyncStatus =
 export type ClientOptions = {
   scope: Pick<Scope, "environment" | "householdId" | "memberId" | "subject">;
   token: () => Promise<string>;
-  adopt: (household: Household) => Promise<void>;
+  adopt: (household: Household, validatedStatus?: BooksStatus) => Promise<void>;
   status: (status: SyncStatus, message?: string) => void;
 };
 export class LedgerSyncClient {
+  private verified = new WeakMap<Replica, { household: Household; status: BooksStatus }>();
   private store?: LedgerStore;
   private replica?: Replica;
   private socket?: WebSocket;
@@ -172,6 +174,7 @@ export class LedgerSyncClient {
               if (this.replica && this.pending.size)
                 await this.store!.recover(this.replica);
               this.validateScope(replica);
+              await this.household(replica);
               await this.store!.save(replica);
               await this.publish(replica);
               this.replica = replica;
@@ -266,6 +269,9 @@ export class LedgerSyncClient {
       throw new Error("SCOPE_MISMATCH");
   }
   private async household(r: Replica) {
+    this.validateScope(r);
+    const known = this.verified.get(r);
+    if (known) return known.household;
     const h = assembleHousehold(r.shared, r.personal, { linked: true });
     h.revision = r.sequence;
     h.baseRevision = r.sequence;
@@ -275,13 +281,17 @@ export class LedgerSyncClient {
       pending: false,
       lastError: null,
     };
-    assertAcceptableBooks(h);
+    const status = validatedLedgerBooksStatus(h);
     h.booksAcceptedHash = await financialAuditHash(h);
     clearCapturedIntent(h);
+    this.verified.set(r, { household: h, status });
     return h;
   }
   private async publish(r: Replica) {
-    if (!this.stopped) await this.options.adopt(await this.household(r));
+    if (!this.stopped) {
+      const household = await this.household(r);
+      if (!this.stopped) await this.options.adopt(household, this.verified.get(r)!.status);
+    }
   }
   private async event(event: AcceptedEvent) {
     if (!this.replica) throw new Error("SEQUENCE_GAP");
@@ -298,6 +308,7 @@ export class LedgerSyncClient {
         : this.replica.personal,
     };
     this.validateScope(next);
+    await this.household(next);
     await this.store!.save(next);
     await this.publish(next);
     this.replica = next;

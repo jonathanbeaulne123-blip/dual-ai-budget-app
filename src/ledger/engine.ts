@@ -34,7 +34,7 @@ export type HostedBooksMode = "local" | "opted-in" | "published" | "failed";
 
 export type BooksStatus = {
   ok: boolean;
-  engine: "pglite" | "pglite+supabase";
+  engine: "pglite" | "pglite+supabase" | "ledger-sync-v2";
   postgresVersion?: string;
   entryCount: number;
   inBalance: boolean;
