@@ -38,6 +38,16 @@ describe("Bianca month rehearsal UI", () => {
     expect(html).toMatch(/<button type="button" class="primary" data-testid="month-rehearsal-start" disabled="">Start rehearsal<\/button>/);
     expect(html).not.toMatch(/test case|fixture|QA instruction/i);
     expect(renderToStaticMarkup(createElement(MonthRehearsalPanel, { household: { ...household, environment: "production" }, memberId: "MEM-001", today: "2026-08-28", onApply: () => undefined }))).toBe("");
+    // The access gate renders before the panel, so it needs its own Production refusal.
+    for (const surface of ["home", "manage"] as const) {
+      expect(renderToStaticMarkup(createElement(MonthRehearsalAccess, {
+        household: { ...household, environment: "production" as const },
+        memberId: "MEM-001",
+        today: "2026-08-28",
+        surface,
+        onApply: () => undefined,
+      }))).toBe("");
+    }
   });
 
   it("renders a persistent four-week Hercules-led card with shared friction disclosure", () => {

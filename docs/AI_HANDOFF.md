@@ -1,5 +1,20 @@
 # AI Task and Handoff Standard
 
+## Onboarding F3 — Development-only rehearsal access (2026-09-07)
+
+**Status:** Local implementation on `codex/onboarding-f3-rehearsal-environment`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
+
+**Outcome:** The access wrapper now returns null outside Development before rendering its locked explainer. Home and More remain unchanged for Development households.
+
+**Risk and Dual Course:** Medium UI behavior. Budget delta (5): 0; Engagement delta (3): +1, removing Development scaffolding copy from Production presentation. No Production setting or data is changed.
+
+**Verification:** The new static-render assertion failed before the guard, returning the locked card instead of an empty string. Medium quick gate passed: 14 fast plus 26 serial startup assertions, 281.190 seconds. TypeScript, build including Hercules Pro UI, AI verification and diff hygiene passed. Independent review found no blocker. See worksession for exact evidence and scope.
+
+**Evidence class:** Local synthetic component rendering only. No hosted, browser, two-device, exhaustive, or Production deployment proof.
+
+**Next owner:** Codex verification; Jonathan release decision. Apply third, after F1 and F4. No merge because main pushes auto-deploy and deployment is unauthorized.
+
+
 ## Onboarding audit — entry truth, resilient rendering, and preview accessibility (D-233) (2026-09-06)
 
 **Status:** [PR #360](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/360) is the single release-candidate PR on `codex/onboarding-audit-small-repairs`, based on `origin/main@954c484d5f804d3e69436093df0277fb244baec7`. Verified implementation commit `79907a6206698d8a2eaae7c21a42993f5d282795`; this evidence/status closure follows on the same PR. Checks are pending. Jonathan authorized merge and Development deployment; nothing is merged, deployed, or hosted-live verified yet. Risk: **Medium**.
