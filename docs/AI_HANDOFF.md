@@ -19,7 +19,7 @@
 
 ## Onboarding F4 — mounted App stale-seat regression (2026-09-07)
 
-**Status:** Local test-only implementation on `codex/onboarding-f4-app-stale-seat`, based on `origin/main@44c5931`. Not merged or deployed. Risk Medium.
+**Status:** Merged via PR #363 as `e5df73e`, after updated-head checks passed. Final combined Development deployment verification follows PR #364. Risk Medium.
 
 **Outcome:** A mounted App with a deactivated stored session member must render its shell, avoid the identity error, and commit no onboarding-offer receipt. Storage, ledger, continuity and Google doubles remain below the real command boundary. The test directly awaits React act to avoid overlapping-act warnings.
 
@@ -33,7 +33,7 @@
 
 ## Onboarding F1 — Suite predecessor fence (2026-09-07)
 
-**Status:** Implemented locally on `codex/onboarding-f1-suite-fence`, based on `origin/main@44c5931`. Not merged or deployed. Risk High.
+**Status:** Merged via PR #362 as `51ab7dd`, after reviewed-head checks passed. Final combined Development deployment verification follows PR #364. Risk High.
 
 **Outcome:** Same-household ordinary books no longer receive the whole-fixture transition exemption. Legitimate Suite-to-Suite replacement and separate-household creation retain the exemption. This narrows an exemption rather than rejecting every command solely by name.
 
