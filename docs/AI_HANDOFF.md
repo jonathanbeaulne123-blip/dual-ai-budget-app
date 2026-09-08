@@ -1,3 +1,17 @@
+## Mobile B4 — the Weight (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b4-weight`; exact base/pre-commit HEAD `92e5183c31c6ba31d2dd28a8f213f2dd9c3e98de` (B3, PR385). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's phone day rail replaces the two-tap grid below720. Posted and scheduled cash use exact dated provenance; card activity and cash returned retain their separate meaning. Corrections do not silently reopen Post. Desk grid and ordinary Confirm remain. Shared mono token restores Plex Mono utility type.
+
+**Risk and Dual Course:** High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Final High quick gate118/118 plus TypeScript/AI/diff passed118.615seconds. Eight Weight browser cases, twelve Reach cases and four touch/sheet cases passed with complete main CSS. Twenty-four captured original cash-flow statements unchanged. Independent source and UX reviews clear. [Exact commands, fingerprints, failures and limits](worksessions/2026-09-08-mobile-weight.md).
+
+**Limits:** Fictional actual components/commands; no authenticated full-App browser, physical, exhaustive, hosted or release claim. No merge, deployment or schema.
+
+**Next owner:** Codex creates the separate stacked draft PR and builds Claude's B5 Fill, preserving safe source and Confirm semantics.
+
 ## Mobile B3 — the Reach (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b3-reach`; exact base/pre-commit HEAD `24469bd5b206efca912c4c3ff5ff40024a4ffcc7` (SC06, PR384). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.

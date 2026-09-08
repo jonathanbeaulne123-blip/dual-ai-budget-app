@@ -519,3 +519,10 @@ App alone issues complete Shared plus own Personal scenario sources from validat
 ## Mobile B3 — Claude's Reach (2026-09-08)
 
 The phone contributor keeps Claude's flat composition: current Shared Ask, one Level, five real count stops, named offered dates and one projection paperbox. Additional receipt and contribution choices fit inside its disclosure. Choosing a route or reviewing a receipt does not lift the Fund; only explicit dated fixed/up-to choices do. Current Ask remains the accepted reading, while model end deficit is separately labelled. Accepted history geometry stays fixed; actual paired bounds alone draw a cone. Custody, complete own sources and synchronous source lifetime guard every result. Risk High; Budget(5)+3; Engagement(3)+3. Native touch revealed a pre-existing body scroll-chain trap; document scrolling now works and the expanding sheet locks/restores the actual document scroller. [Evidence](worksessions/2026-09-08-mobile-reach.md). No accounting command, merge or deployment.
+
+
+## Mobile B4 — Claude's Weight (2026-09-08)
+
+The phone Calendar replaces its grid with Claude's compressed day rail and immediately readable day card. Copper means scheduled cash out; ink means posted cash out. The board lacked ordinary posted cash, so a dated extraction of the existing six cash-flow components supplies recognized receipts without changing statement totals. Signed corrections preserve cash leaving versus returned; card activity/internal transfers remain context. Exact occurrence IDs and dates prevent duplicate visits or Paid actions on a later recurrence. Corrected/excluded receipts remain unresolved and unplotted, with no silent repost. The existing Confirm path remains the writer. Risk High; Budget(5)+2; Engagement(3)+2.
+
+A missing shared --mono token caused utility text to fall back to Figtree; restoring the already-loaded Plex Mono family preserves Claude's typography across the mobile stack. The full application CSS, Reach and Weight were rechecked. [Worksession](worksessions/2026-09-08-mobile-weight.md). No merge or deployment.
