@@ -294,6 +294,11 @@ function LiveChalkSurface({
   const [tool, setTool] = useState<"chalk" | "eraser">("chalk");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawn = useRef<ChalkInk | null>(null);
+  useEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    drawn.current = null;
+  }, []);
   const inkNotes = notes.filter((note) => hasChalkInk(note.ink));
   const textNotes = notes.filter((note) => !hasChalkInk(note.ink) && note.text);
 
@@ -387,6 +392,7 @@ export function ChalkboardBody({
   shrunk = false,
   onToggleShrink,
   liveSurface = false,
+  typingAlternative = false,
 }: {
   household: Household;
   memberId: string;
@@ -397,17 +403,25 @@ export function ChalkboardBody({
   shrunk?: boolean;
   onToggleShrink?: () => void;
   liveSurface?: boolean;
+  typingAlternative?: boolean;
 }) {
   const [draft, setDraft] = useState("");
+  const [typedPending, setTypedPending] = useState<{ text: string; previousIds: string[] } | null>(null);
   const [ink, setInk] = useState<ChalkInk | null>(null);
   const [slate, setSlate] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const memberName = household.members.find((member) => member.id === memberId)?.name ?? "You";
   const notes = organizeChalkNotes(household.kitchen?.chalkboard ?? []);
   const preview = ink ? detectChalkLetters(ink) : "";
+  useEffect(() => {
+    if (typedPending && notes.some(note => !typedPending.previousIds.includes(note.id) && note.text === typedPending.text.trim() && note.author === memberId)) {
+      setDraft(current => current === typedPending.text ? "" : current);
+      setTypedPending(null);
+    }
+  }, [notes, typedPending, memberId]);
 
   function saveNote(text: string, nextInk: ChalkInk | null) {
-    setDraft("");
+    if (!liveSurface) setDraft("");
     setInk(null);
     setSlate((n) => n + 1);
     onCommand((current) => scribbleChalk(current, { text, author: memberId, ink: nextInk }));
@@ -423,6 +437,7 @@ export function ChalkboardBody({
 
   if (liveSurface) {
     return (
+      <>
       <LiveChalkSurface
         notes={notes}
         slate={slate}
@@ -436,6 +451,18 @@ export function ChalkboardBody({
           onCommand((current) => reviseChalkInk(current, noteId, next));
         }}
       />
+      {typingAlternative && <form className="chalk-compose chalk-compose--live" onSubmit={(event) => {
+        event.preventDefault();
+        if (!busy && draft.trim()) {
+          const text = draft;
+          setTypedPending({ text, previousIds: notes.map(note => note.id) });
+          onCommand((current) => scribbleChalk(current, { text, author: memberId, ink: null }));
+        }
+      }}>
+        <label>Type a note<textarea className="chalk-input" rows={2} maxLength={160} placeholder={`${memberName}, leave a little note…`} value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
+        <button type="submit" className="primary chalk-save" disabled={busy || !draft.trim()}>Save note</button>
+      </form>}
+      </>
     );
   }
 
