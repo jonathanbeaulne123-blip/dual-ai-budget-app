@@ -1,3 +1,4 @@
+import { useAtmosphereVisibility } from "../theme/ThemeProvider.tsx";
 import { weatherChip, type WeatherReading } from "../core/weather.ts";
 import { useFurniture } from "./useFurniture.ts";
 
@@ -15,13 +16,14 @@ export function OfficeWindow({
   stale?: boolean;
   onToggle: () => void;
 }) {
+  const atmosphereRef = useAtmosphereVisibility();
   const sill = useFurniture("window", "sill", true, false);
   const chip = weatherChip(reading);
   const temp = reading.celsius == null ? "" : `${reading.celsius}°`;
   const aria = `Window. ${reading.sentence}${temp ? ` ${temp}` : ""}`.replace(/\$/g, "");
 
   return (
-    <section
+    <section ref={atmosphereRef}
       className={`office-window glass-${reading.glass} ${minimized ? "is-minimized" : ""}`}
       aria-label={aria}
     >

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { parseAppearance, resolveThemeScene, sceneTokens, type Appearance } from "../../src/theme/scenes.ts";
 
 type HerculesMood = "idle" | "curious" | "teaching" | "concerned" | "celebrating";
 
@@ -9,6 +10,7 @@ type CompanionResult = {
   message?: string;
   headline?: string;
   ledger?: "personal" | "household";
+  appearance?: Appearance;
 };
 
 type OpenAiBridge = {
@@ -61,6 +63,12 @@ function cleanText(value: unknown, maxLength: number): string {
 function applyResult(value: unknown): void {
   const next = value && typeof value === "object" ? value as CompanionResult : {};
   companionResult = next;
+  const appearance = parseAppearance(next.appearance);
+  const surface = resolveThemeScene(appearance.theme, "home", next.ledger === "household" ? "household" : "personal");
+  host.dataset.theme = appearance.theme;
+  host.dataset.scene = surface.id;
+  host.style.colorScheme = surface.dark ? "dark" : "light";
+  for (const [token, color] of Object.entries(sceneTokens(surface))) host.style.setProperty(token, color);
   mood = moods.has(next.mood as HerculesMood) ? next.mood as HerculesMood : "idle";
   host.dataset.mood = mood;
   messageEl.textContent = cleanText(next.message, 180) || "Mrrp. I’m watching the books.";

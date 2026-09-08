@@ -1,7 +1,8 @@
-import { StrictMode } from "react";
+import { StrictMode, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";
 import { KitchenErrorBoundary } from "./KitchenErrorBoundary.tsx";
+import { ThemeProvider } from "./theme/ThemeProvider.tsx";
 import "./styles.css";
 import "./office.css";
 import "./office-phone.css";
@@ -13,6 +14,7 @@ import "./charter-founding.css";
 import "./charter.css";
 import "./hearth-theme.css";
 import "./hercules.css";
+import "./theme/worlds.css";
 
 if (typeof window !== "undefined") {
   const phone = window.matchMedia("(max-width: 719px)");
@@ -21,13 +23,21 @@ if (typeof window !== "undefined") {
   };
   syncTouchAction();
   phone.addEventListener("change", syncTouchAction);
-  document.addEventListener("gesturestart", (event) => event.preventDefault());
 }
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!);
+const renderKitchen = (content: ReactNode) => root.render(
   <StrictMode>
+    <ThemeProvider>
     <KitchenErrorBoundary>
-      <App />
+      {content}
     </KitchenErrorBoundary>
+    </ThemeProvider>
   </StrictMode>,
 );
+
+if (import.meta.env.DEV && new URLSearchParams(window.location.search).has("themeStudio")) {
+  void import("./theme/ThemeStudio.tsx").then(({ default: Studio }) => renderKitchen(<Studio />));
+} else {
+  renderKitchen(<App />);
+}

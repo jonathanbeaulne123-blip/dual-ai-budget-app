@@ -2,6 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import worker from "../workers/site.js";
 
+// These HTTP tests do not instantiate the platform-owned ledger Durable Object.
+vi.mock("../workers/ledgerRoom.ts", () => ({ LedgerRoom: class {} }));
+
 function assetEnvironment(body = "public companion asset") {
   return {
     ASSETS: {

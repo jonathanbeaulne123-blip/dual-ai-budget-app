@@ -1,3 +1,4 @@
+import { useAppearance } from "./theme/ThemeProvider.tsx";
 /**
  * Wardrobe overlays for the 200×200 left-facing figure.
  * The figure already has a mane — equipped "ruff" is a no-op so we do not
@@ -14,8 +15,20 @@ export function HerculesDress({
   house: string | null;
   collar: string | null;
 }) {
+  const { scene, saved } = useAppearance();
+  const autoHat = !saved.hideThemeHat;
+  const autoNeck = !saved.hideThemeNeck;
   return (
     <g className="herc-dress" fill="none" stroke="var(--herc-ink, #1b1712)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {autoNeck && !collar && !chain && scene.theme === "taylor" && <g className="herc-theme-beads" aria-hidden="true">
+        {[0, 1, 2, 3, 4, 5, 6].map(i => <circle key={i} cx={53 + i * 6} cy={120 + Math.sin(i / 6 * Math.PI) * 5} r="3.4" fill={i % 2 ? "var(--card)" : "var(--theme-accent)"} stroke="var(--theme-second)" strokeWidth="1" />)}
+        <path d="m70 129 3 4-3 4-3-4Z" fill="var(--theme-second)" strokeWidth="1" />
+      </g>}
+      {autoHat && !hat && scene.theme === "newfoundland" && <g className="herc-theme-sou-wester" aria-hidden="true">
+        <path d="M43 44Q50 28 76 27Q99 29 101 46L109 52Q78 44 39 53Z" fill="#edbd38" />
+        <path d="M49 44Q76 39 97 46" stroke="#9a7027" strokeWidth="1.4" />
+      </g>}
+      {autoNeck && !collar && !chain && scene.theme === "newfoundland" && <path className="herc-theme-neckerchief" d="M51 117Q72 126 91 116L78 127L81 140L68 132L62 136L65 125Z" fill="#edbd38" strokeWidth="1.4" aria-hidden="true" />}
       {house === "patio" && (
         <g>
           <ellipse cx="78" cy="18" rx="26" ry="7" fill="#c45c26" opacity="0.85" />

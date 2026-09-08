@@ -445,3 +445,8 @@ Risk High; Budget +5; Engagement +3. Development publication is authorized in th
 ### Desktop Home scroll why-note — 2026-09-07
 
 Remove the desktop Home app's `max-height: 100dvh` and nested overflow scrolling so the document can carry the entire office past the fixed navigation. Jonathan reported the desk cutting off when scrolling on desktop. Low-risk presentation repair; budget delta (5): readable lower ledger cards; engagement delta (3): uninterrupted desk scrolling. Financial behavior is unchanged. Isolated Chromium checks using the actual stylesheet at 1100, 1440, 2048 and 390px reach the final content with no horizontal overflow; authenticated live household verification remains unperformed.
+
+
+## 2026-09-08 — Three visual worlds (Jonathan’s approved implementation plan; candidate in progress)
+
+Adopt Classic Hearth, Taylor’s Scrapbook and Newfoundland as per-account visual worlds with authored page scenes. `docs/THREE_VISUAL_WORLDS.md` supersedes older single-palette restrictions while preserving existing navigation, identity, privacy, money meaning and Final Confirm. Cosmetic preference lives in environment-namespaced allowlisted Auth user metadata, with scoped local cache and offline field intent. No ledger commands or migrations. Existing board-only settings are retained as Classic Desk finish. Codex owns design/art/React/integration and Claude production CSS from the supplied design packet. Both Taylor Home pages require real-photo-derived name bracelets and selected personal memorabilia; missing originals remain a completion blocker. No merge/deployment implied by this design decision. Worksession: `docs/worksessions/2026-09-08-three-visual-worlds.md`.

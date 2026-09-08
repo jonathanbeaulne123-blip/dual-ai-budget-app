@@ -1,4 +1,9 @@
 import { isVisibleInView } from "./core/visibility.ts";
+import { useAppearanceBinding } from "./theme/ThemeProvider.tsx";
+import { AppearancePicker } from "./theme/AppearancePicker.tsx";
+import { Memorabilia } from "./theme/Memorabilia.tsx";
+import { useAppearance } from "./theme/ThemeProvider.tsx";
+import { ThemeSceneHeading } from "./theme/SceneArtwork.tsx";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
 import { stageLedgerCreation, completeLedgerCreation } from './ledgerSync/creationStore.ts';
 import type { RestorePointSummary } from './ledgerSync/backup.ts';
@@ -3019,6 +3024,8 @@ export function App() {
     household && memberId && household.members.some((member) => member.active && member.id === memberId),
   );
   const view: LedgerView = session?.view ?? "household";
+  const appearance = useAppearance();
+  useAppearanceBinding(environment, household && session ? tab : "entry", view, adding || swipeOpen || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
     if (tab === "till" && view !== "household") setTab("home");
   }, [tab, view]);
@@ -4970,6 +4977,7 @@ export function App() {
   if (fullHouseInvite) {
     return (
       <div className="welcome">
+        <ThemeSceneHeading />
         <div className="welcome-card">
           <p className="kicker">Household access</p>
           <img src="/hercules-mark.svg" alt="" />
@@ -4994,6 +5002,7 @@ export function App() {
     return (
       <>
         <div className="welcome">
+        <ThemeSceneHeading />
           <div className="welcome-card">
             <p className="kicker">On this device</p>
             <h1>Opening the ledger…</h1>
@@ -5007,6 +5016,7 @@ export function App() {
   if (!household && pendingDemo) {
     return (
       <div className="welcome">
+        <ThemeSceneHeading />
         <div className="welcome-card">
           <p className="kicker">Demo kitchen</p>
           <h1>Choose yourself</h1>
@@ -5043,6 +5053,7 @@ export function App() {
     const foundById = new Map(discoveredLedgers.map((found) => [found.household.householdId, found]));
     return (
       <div className="welcome">
+        <ThemeSceneHeading />
         <div className="welcome-card" data-welcome-mode={welcomeMode}>
           <p className="kicker">CAD · Toronto books · two people</p>
           <img src="/hercules-mark.svg" alt="" />
@@ -5284,6 +5295,7 @@ export function App() {
     const signedOutFoundById = new Map(discoveredLedgers.map((found) => [found.household.householdId, found]));
     return (
       <div className="welcome">
+        <ThemeSceneHeading />
         <div className="welcome-card">
           <p className="kicker">Who is using this phone?</p>
           <h1>Choose yourself</h1>
@@ -6019,12 +6031,12 @@ export function App() {
           </div>
         </details>
       )}
-      <div className="view-switch" role="tablist" aria-label="Ledger view">
+      <div className="view-switch" role="group" aria-label="Ledger view">
         {(["household", "personal"] as LedgerView[]).map((item) => (
           <button
             key={item}
             className={view === item ? "active" : ""}
-            aria-selected={view === item}
+            aria-pressed={view === item}
             onClick={() => {
               if (item === "household" && tab === "shift") goTab("home");
               if (item !== "household" && tab === "till") goTab("home");
@@ -6038,6 +6050,9 @@ export function App() {
       {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
+
+      <ThemeSceneHeading home={tab === "home"} />
+      <Memorabilia scene={appearance.scene.id} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
         <Till
@@ -6407,6 +6422,7 @@ export function App() {
 
       {tab === "more" && (
         <>
+          <AppearancePicker />
           {view === "household" ? (
             <section className="card">
               <header><h2>the charter</h2></header>

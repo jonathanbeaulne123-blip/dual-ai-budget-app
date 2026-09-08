@@ -1,0 +1,428 @@
+{
+  "version": 1,
+  "originalsPolicy": "Original personal photos stay outside git; commit optimized public derivatives only after metadata and identifier removal.",
+  "personalAssetManifest": "src/theme/memorabilia.ts",
+  "assets": [
+    {
+      "id": "scene-lover",
+      "scene": "lover",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-red",
+      "scene": "red",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-fearless",
+      "scene": "fearless",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-reputation",
+      "scene": "reputation",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-evermore",
+      "scene": "evermore",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-1989",
+      "scene": "1989",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-showgirl",
+      "scene": "showgirl",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-midnights",
+      "scene": "midnights",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-speak-now",
+      "scene": "speak-now",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-poets",
+      "scene": "poets",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-debut",
+      "scene": "debut",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-folklore",
+      "scene": "folklore",
+      "world": "taylor",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-jellybean",
+      "scene": "jellybean",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-rain",
+      "scene": "rain",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-trail",
+      "scene": "trail",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-harbour",
+      "scene": "harbour",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-jag-lobby",
+      "scene": "jag-lobby",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-water-street",
+      "scene": "water-street",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-quidi-vidi",
+      "scene": "quidi-vidi",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-cape-spear",
+      "scene": "cape-spear",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-george-street",
+      "scene": "george-street",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-battery",
+      "scene": "battery",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-summit",
+      "scene": "summit",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "scene-jag-music",
+      "scene": "jag-music",
+      "world": "newfoundland",
+      "source": "Original Codex SVG illustration; references recorded in docs/THREE_VISUAL_WORLDS.md",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Non-interactive scene header, behind authored title and controls",
+      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
+      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "desktop": "Minimum 200px, expands for text; separate from financial widgets",
+      "status": "implemented; final full-App visual proof pending"
+    },
+    {
+      "id": "classic-scene",
+      "world": "classic",
+      "source": "Original Codex SVG illustration",
+      "file": "src/theme/SceneArtwork.tsx",
+      "dimensions": [
+        1000,
+        280
+      ],
+      "placement": "Kitchen, pinboard, calendar and ledger scene header",
+      "alt": "Decorative; visible caption supplies meaning",
+      "status": "implemented; full route treatment pending"
+    }
+  ]
+}

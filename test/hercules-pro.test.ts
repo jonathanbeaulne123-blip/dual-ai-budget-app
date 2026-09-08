@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../workers/site.js";
+
+// These HTTP tests do not instantiate the platform-owned ledger Durable Object.
+vi.mock("../workers/ledgerRoom.ts", () => ({ LedgerRoom: class {} }));
 import { herculesProTest } from "../workers/herculesPro.js";
 import { catalogHousehold, postShift, seedDemoHousehold, todayKey } from "../src/core/index.ts";
 import { assembleHousehold, personalReplicaForMember, splitForSync } from "../src/core/sync.ts";
@@ -160,7 +163,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     expect(listed.result.tools.find((tool) => tool.name === "shift_year_simulation")?.annotations.readOnlyHint).toBe(true);
     expect(listed.result.tools.some((tool) => /^(?:post|delete|pay|transfer)(?:_|$)/.test(tool.name))).toBe(false);
     expect(listed.result.tools.some((tool) => tool.name === "tip_oracle")).toBe(true);
-    expect(listed.result.tools.find((tool) => tool.name === "summon_hercules")?._meta?.ui?.resourceUri).toBe("ui://hearth/hercules-companion-v5.html");
+    expect(listed.result.tools.find((tool) => tool.name === "summon_hercules")?._meta?.ui?.resourceUri).toBe("ui://hearth/hercules-companion-v6.html");
 
     const resources = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
@@ -168,18 +171,18 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 30, method: "resources/list" }),
     }), env);
     expect(await resources.json()).toMatchObject({ result: { resources: [{
-      uri: "ui://hearth/hercules-companion-v5.html",
+      uri: "ui://hearth/hercules-companion-v6.html",
       mimeType: "text/html;profile=mcp-app",
     }] } });
 
     const resource = await worker.fetch(new Request(`${origin}/mcp`, {
       method: "POST",
       headers: { Authorization: `Bearer ${tokens.access_token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 31, method: "resources/read", params: { uri: "ui://hearth/hercules-companion-v5.html" } }),
+      body: JSON.stringify({ jsonrpc: "2.0", id: 31, method: "resources/read", params: { uri: "ui://hearth/hercules-companion-v6.html" } }),
     }), env);
     const rendered = await resource.json() as { result: { contents: Array<{ text: string; _meta: { ui: { csp: { resourceDomains: string[] } } } }> } };
     expect(rendered.result.contents[0]?.text).toContain("/hercules-pro/hercules.pro.v1.glb");
-    expect(rendered.result.contents[0]?.text).toContain("/hercules-pro/companion.v1.js?v=5");
+    expect(rendered.result.contents[0]?.text).toContain("/hercules-pro/companion.v1.js?v=6");
     expect(rendered.result.contents[0]?.text).toContain(".companion { position: relative; width: 100%; height: 100vh; min-height: 300px; overflow: hidden; background: transparent; }");
     expect(rendered.result.contents[0]?.text).toContain('<section class="sr-only" aria-live="polite">');
     expect(rendered.result.contents[0]?.text).not.toContain("radial-gradient");
@@ -199,6 +202,7 @@ describe("Hercules Pro OAuth and MCP bridge", () => {
     }), env);
     expect(await summon.json()).toMatchObject({ result: { isError: false, structuredContent: {
       status: "companion-ready",
+      appearance: { theme: "classic", atmosphere: true },
       mood: "teaching",
       headline: "Follow the journal",
       ledger: "personal",

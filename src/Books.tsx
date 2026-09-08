@@ -1,5 +1,5 @@
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
-import { lazy, useEffect, useMemo, useState } from "react";
+import { lazy, useEffect, useId, useMemo, useState } from "react";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   ASK_SUGGESTIONS,
@@ -122,6 +122,7 @@ export function BooksPage({
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
   const [accountFormOpenRequest, setAccountFormOpenRequest] = useState(0);
   const [openingCardOpen, setOpeningCardOpen] = useState(false);
+  const controlId = useId();
   const sharedTable = view === "household";
   const auditHousehold = useMemo(() => (
     booksPresentationFloor(booksHousehold, memberId, view)
@@ -332,9 +333,9 @@ export function BooksPage({
         active={pane}
         onPick={(id) => setPane(id as Pane)}
       />
-      <div className="tabs" role="tablist" aria-label={sharedTable ? "Household table" : "My books"} data-books-tabs="table">
+      <div className="tabs" role="group" aria-label={sharedTable ? "Household table" : "My books"} data-books-tabs="table">
         {tablePanes.map((item) => (
-          <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
+          <button key={item.id} aria-pressed={pane === item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
             {item.label}
           </button>
         ))}
@@ -435,9 +436,9 @@ export function BooksPage({
             <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
           </>
         ) : null}
-        <div className="tabs" role="tablist" aria-label="Audit office" data-books-tabs="audit">
+        <div className="tabs" role="group" aria-label="Audit office" data-books-tabs="audit">
           {auditPanes.map((item) => (
-            <button key={item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
+            <button key={item.id} aria-pressed={pane === item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
               {item.label}
             </button>
           ))}
@@ -451,7 +452,7 @@ export function BooksPage({
             <h2>General journal</h2>
             <span className="muted">{books.entries.length} entries</span>
           </header>
-          <div className="books-scroll">
+          <div className="books-scroll" tabIndex={0} role="region" aria-label="Financial table">
             <table className="books-table">
               <thead>
                 <tr>
@@ -490,7 +491,7 @@ export function BooksPage({
             <h2>Trial balance</h2>
             <span className={`pill ${trial.inBalance ? "good" : "warn"}`}>{trial.inBalance ? "In balance" : "Off"}</span>
           </header>
-          <div className="books-scroll">
+          <div className="books-scroll" tabIndex={0} role="region" aria-label="Financial table">
             <table className="books-table">
               <thead>
                 <tr>
@@ -535,16 +536,16 @@ export function BooksPage({
             <span className="muted">Statement vs books. Not a feed.</span>
           </header>
           <p className="muted">Ending balance from the statement. Nothing posts.</p>
-          <label>Account</label>
-          <select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
+          <label htmlFor={`${controlId}-account`}>Account</label>
+          <select id={`${controlId}-account`} value={accountId} onChange={(event) => setAccountId(event.target.value)}>
             {auditHousehold.accounts.filter((account) => account.active).map((account) => (
               <option key={account.id} value={account.id}>{accountOptionLabel(account)}</option>
             ))}
           </select>
-          <label>Statement date</label>
-          <input type="date" value={recDate} onChange={(event) => setRecDate(event.target.value)} />
-          <label>Statement balance (CAD)</label>
-          <input inputMode="decimal" value={recAmount} placeholder="0.00" onChange={(event) => setRecAmount(event.target.value)} />
+          <label htmlFor={`${controlId}-statement-date`}>Statement date</label>
+          <input id={`${controlId}-statement-date`} type="date" value={recDate} onChange={(event) => setRecDate(event.target.value)} />
+          <label htmlFor={`${controlId}-statement-balance`}>Statement balance (CAD)</label>
+          <input id={`${controlId}-statement-balance`} inputMode="decimal" value={recAmount} placeholder="0.00" onChange={(event) => setRecAmount(event.target.value)} />
           <KitchenNotice message={recError} />
           <button
             className="primary"
@@ -568,7 +569,7 @@ export function BooksPage({
           >
             Record rec
           </button>
-          <div className="books-scroll" style={{ marginTop: 12 }}>
+          <div className="books-scroll" tabIndex={0} role="region" aria-label="Financial table" style={{ marginTop: 12 }}>
             <table className="books-table">
               <thead>
                 <tr>
@@ -682,13 +683,13 @@ export function BooksPage({
       {pane === "accounts" && (
         <section className="card">
           <header><h2>Account register</h2></header>
-          <label>Account</label>
-          <select value={accountId} onChange={(event) => setAccountId(event.target.value)}>
+          <label htmlFor={`${controlId}-account`}>Account</label>
+          <select id={`${controlId}-account`} value={accountId} onChange={(event) => setAccountId(event.target.value)}>
             {books.chart.filter((account) => account.source === "bank" || account.source === "category").map((account) => (
               <option key={account.id} value={account.id}>{account.code} · {account.name}</option>
             ))}
           </select>
-          <div className="books-scroll">
+          <div className="books-scroll" tabIndex={0} role="region" aria-label="Financial table">
             <table className="books-table">
               <thead>
                 <tr>
@@ -956,7 +957,7 @@ function StatementTable({
   total: number;
 }) {
   return (
-    <div className="books-scroll">
+    <div className="books-scroll" tabIndex={0} role="region" aria-label="Financial table">
       <table className="books-table">
         <thead>
           <tr>

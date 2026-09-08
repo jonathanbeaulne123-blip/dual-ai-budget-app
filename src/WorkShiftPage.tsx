@@ -67,11 +67,11 @@ function LoafMark() {
       <ellipse cx="14" cy="20" rx="10" ry="5.5" fill="currentColor" opacity="0.12" />
       <path
         d="M7 17c0-5 3-9 7-9s7 4 7 9c0 3-2.4 5-7 5s-7-2-7-5z"
-        fill="#f7f1e8"
+        fill="var(--card)"
         stroke="currentColor"
         strokeWidth="1.2"
       />
-      <path d="M11 9.2c-.2-2.2 1.4-3.8 2.8-3.2.4 1.4-.4 2.8-1.6 3.4zM17 9.2c.2-2.2-1.4-3.8-2.8-3.2-.4 1.4.4 2.8 1.6 3.4z" fill="#f7f1e8" stroke="currentColor" strokeWidth="1.1" />
+      <path d="M11 9.2c-.2-2.2 1.4-3.8 2.8-3.2.4 1.4-.4 2.8-1.6 3.4zM17 9.2c.2-2.2-1.4-3.8-2.8-3.2-.4 1.4.4 2.8 1.6 3.4z" fill="var(--card)" stroke="currentColor" strokeWidth="1.1" />
       <circle cx="12.2" cy="16.2" r="0.7" fill="currentColor" />
       <circle cx="15.8" cy="16.2" r="0.7" fill="currentColor" />
     </svg>
@@ -81,9 +81,9 @@ function LoafMark() {
 function FloorLampRings() {
   return (
     <svg className="shift-rings" viewBox="0 0 118 118" aria-hidden="true">
-      <path d="M18 92 A 41 41 0 0 1 100 92" fill="none" stroke="#c45c26" strokeWidth="11" strokeLinecap="round" opacity="0.38" />
-      <path d="M30 86 A 29 29 0 0 1 88 86" fill="none" stroke="#a8895c" strokeWidth="10" strokeLinecap="round" opacity="0.58" />
-      <path d="M44 80 A 16 16 0 0 1 74 80" fill="none" stroke="#2c6a4e" strokeWidth="9" strokeLinecap="round" opacity="0.9" />
+      <path d="M18 92 A 41 41 0 0 1 100 92" fill="none" stroke="var(--theme-chart-negative, #c45c26)" strokeWidth="11" strokeLinecap="round" opacity="0.38" />
+      <path d="M30 86 A 29 29 0 0 1 88 86" fill="none" stroke="var(--theme-chart-plan, #a8895c)" strokeWidth="10" strokeLinecap="round" opacity="0.58" />
+      <path d="M44 80 A 16 16 0 0 1 74 80" fill="none" stroke="var(--theme-chart-positive, #2c6a4e)" strokeWidth="9" strokeLinecap="round" opacity="0.9" />
     </svg>
   );
 }

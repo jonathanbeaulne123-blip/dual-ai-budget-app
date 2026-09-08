@@ -1,0 +1,15 @@
+/** Only prepared, intentionally public derivatives belong here. Never point at an original photo. */
+export type MemorabiliaAsset = {
+  id: string; scenes: string[]; source: string; src: string | null;
+  width: number; height: number; alt: string; placement: "bracelets" | "keepsake" | "reference";
+  crop: string; phone: string; desktop: string; status: "awaiting-original" | "prepared";
+};
+export const MEMORABILIA: MemorabiliaAsset[] = [
+  { id: "jonathan-bracelet", scenes: ["lover", "showgirl"], source: "Jonathan’s actual bracelet photograph", src: null, width: 840, height: 410, alt: "Jonathan’s friendship bracelet", placement: "reference", crop: "Isolate bead colours, letter spacing and charms for the authored bracelet pair", phone: "Reference for the 150px paired illustration", desktop: "Reference for the 260px paired illustration", status: "awaiting-original" },
+  { id: "bianca-bracelet", scenes: ["lover", "showgirl"], source: "Bianca’s actual bracelet photograph", src: null, width: 840, height: 410, alt: "Bianca’s friendship bracelet", placement: "reference", crop: "Isolate bead colours, letter spacing and charms for the authored bracelet pair", phone: "Reference for the 150px paired illustration", desktop: "Reference for the 260px paired illustration", status: "awaiting-original" },
+  { id: "bracelet-pair", scenes: ["lover", "showgirl"], source: "Prepared original artwork based on the two supplied bracelet photographs", src: null, width: 840, height: 410, alt: "Jonathan and Bianca’s friendship bracelets, together", placement: "bracelets", crop: "Transparent background; preserve both complete names", phone: "150×73px, 128×63px at 320px", desktop: "260×127px", status: "awaiting-original" },
+  { id: "concert-dress", scenes: ["showgirl"], source: "Bianca’s concert dress photograph", src: null, width: 480, height: 640, alt: "The sparkle and fabric of Bianca’s concert dress", placement: "reference", crop: "Fabric detail only; preserve real colour and sparkle character", phone: "Accent reference for satin/sequin art", desktop: "Accent reference for satin/sequin art", status: "awaiting-original" },
+  { id: "concert-ticket", scenes: ["showgirl", "red"], source: "Bianca’s actual concert ticket", src: null, width: 720, height: 360, alt: "A keepsake from Bianca’s concert", placement: "keepsake", crop: "Keep genuine artist, venue and date; remove barcode, QR, order/account identifiers", phone: "One mounted ticket beneath the scene, width bounded by content", desktop: "Mounted ticket in scene margin, max 360px", status: "awaiting-original" },
+  { id: "concert-photo", scenes: ["showgirl", "1989"], source: "Selected personal concert photograph", src: null, width: 640, height: 800, alt: "A favourite moment from the concert", placement: "keepsake", crop: "One authored instant-photo crop; confirm subject and caption from supplied original", phone: "One photo with reserved 4:5 ratio", desktop: "Margin keepsake max 240px", status: "awaiting-original" },
+];
+export const missingMemorabilia = () => MEMORABILIA.filter(asset => asset.status !== "prepared" || !asset.src);

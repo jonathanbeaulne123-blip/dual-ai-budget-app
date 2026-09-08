@@ -8,7 +8,7 @@ paths:
 
 # Hearth UI theme
 
-Living theme authority: `docs/HEARTH_UI_THEME.md`. Implementation packet: `docs/briefs/CURSOR_UI_THEME_PACKET.md`.
+Living theme authority: `docs/THREE_VISUAL_WORLDS.md` and `docs/HEARTH_UI_THEME.md`. Current CSS brief: `docs/briefs/CLAUDE_THREE_WORLDS_CSS.md`. The approved three-worlds plan supersedes older single-theme colour restrictions.
 
 ## Locked shells
 
@@ -18,7 +18,7 @@ Living theme authority: `docs/HEARTH_UI_THEME.md`. Implementation packet: `docs/
 ## Before any UI change
 
 1. Reuse paper tile / seal / notebook grammar; do not invent new card systems.
-2. Use `:root` tokens only; Figtree + Fraunces; sentence-case finance labels.
+2. Use the root scene tokens from `src/theme/scenes.ts`; Classic uses Figtree + Fraunces. Taylor and Newfoundland use their authored materials and typography. Keep sentence-case finance labels.
 3. Never cover Confirm/Post; never put CAD on weather; never shrink desktop to match phone.
 4. Hercules: Maine Coon; mobile pill until focus; desktop ever-present wanderer.
 5. Verify 320/390/720/~1100px, reduced motion, 44px targets, expand a11y.

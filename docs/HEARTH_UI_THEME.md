@@ -1,6 +1,6 @@
 # Hearth UI theme — living packet for all shells
 
-> **Authority:** Jonathan's 2026-08-25 UX direction + this file + `docs/ux/2026-08-25-home-ux-report.md`.  
+> **Authority:** Jonathan's approved 2026-09-08 three-worlds implementation plan + [THREE_VISUAL_WORLDS.md](THREE_VISUAL_WORLDS.md). Earlier shell guidance below remains applicable to behavior and responsive layout.
 > **Use when:** any AI adds or restyles UI on Home, Calendar, Books, Plan, Add-in-room, or Hercules chrome.  
 > **Does not change:** money meaning, Commands, Confirm boundary, Auth/RLS, hosted schema.
 
@@ -11,7 +11,7 @@ Hearth is **one product, two UI branches, one theme kernel** (D-079 / D-080 / D-
 | **Mobile** | `< 720px` | `OfficePhone` + tab pages | **Draft C ★** — hybrid seals, story strip, notebook expand |
 | **Desktop / wide** | `≥ 720px` | `OfficeWide` paper office (default) + opt-in Classic desk | **Draft D ★ + D-156** — same room (window, wander) with phone C grammar composed as a two-column paper office; free-move canvas is Classic desk |
 
-**Theme is shared.** Tokens, fonts, paper grammar, Hercules identity (Maine Coon), Dual Course gates.  
+**The theme system is shared; each person chooses their world.** Classic Hearth, Taylor’s Scrapbook and Newfoundland use one semantic token/provider system. Pages have authored scenes and lighting. Hercules identity (Maine Coon) and Dual Course gates hold throughout.
 **Layout is not shared.** Never shrink desktop to phone or stretch phone C onto a free-move grid. Compose the grammar at width.
 
 Mockup evidence lives under `/opt/cursor/artifacts/` and in PR [#117](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/117).
@@ -98,7 +98,7 @@ Source of truth: `:root` in `src/styles.css`; office extensions in `src/office.c
 | `--display` | Fraunces — money, hero figures |
 | `--shadow`, `--lift-*` | Paper lift, not Material elevation |
 
-**Extend** tokens; do not introduce a second theme system or fintech blue palette.
+**Extend** semantic tokens through `src/theme/scenes.ts`; do not introduce a second theme system. The approved era/place palettes include blue, dark paper, metallic and satin surfaces. Financial status meanings stay distinct from decorative colour.
 
 ---
 
@@ -206,7 +206,7 @@ Before opening a PR that touches UI:
 - Static tile tilt on phone under reduced motion  
 - Shrinking desktop desk to “match” mobile  
 - Stretching mobile C to desktop without free-move room  
-- New theme colors/fonts outside token table without Jonathan approval  
+- Unregistered colours/fonts outside the approved scene system
 
 ---
 
