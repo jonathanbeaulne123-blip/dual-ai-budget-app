@@ -78,6 +78,21 @@ function requireDate(h: Household, date: string) {
 function inputOnly(r: AccountHistoryInput): AccountHistoryInput {
   return { createdBy: r.createdBy, visibility: r.visibility, accounts: structuredClone(r.accounts), rows: structuredClone(r.rows) };
 }
+function ownsSource(t: Transaction, source: {accountId:string;sourceIdentity:string}) {
+  return t.accountId === source.accountId && (t.importSourceIdentity === source.sourceIdentity || t.source === 'import' && t.sourceId === source.sourceIdentity);
+}
+function retainedSources(h: Household, row: AccountHistoryRow) {
+  const retained = h.transactions.find(t => t.id === row.retainedTransactionId)!;
+  const sources = row.transferSources ?? [{accountId:row.accountId,sourceIdentity:row.sourceIdentity,sourceHash:row.sourceHash}];
+  return sources.map(source => {
+    const transaction = source.accountId === retained.accountId ? retained : h.transactions.find(t => t.id === retained.transferPairId);
+    if (!transaction || transaction.accountId !== source.accountId || transaction.isDuplicate || transaction.reversalOfId || h.transactions.some(t => t.reversalOfId === transaction.id)
+      || transaction !== retained && (transaction.transferPairId !== retained.id || transaction.type !== 'transfer' || transaction.date !== retained.date || transaction.amountCents !== retained.amountCents || transaction.currency !== retained.currency || transaction.visibility !== retained.visibility || transaction.transferFromAccountId !== row.accountId || transaction.transferToAccountId !== row.toAccountId)) fail('The retained transfer pair no longer matches the reviewed source rows.');
+    if (h.transactions.some(t => ownsSource(t, source) && t.id !== transaction!.id)) fail('The source identity belongs to a different accepted transaction.');
+    if (transaction!.importSourceIdentity && transaction!.importSourceIdentity !== source.sourceIdentity) fail('This retained transaction already has different source provenance.');
+    return {transaction:transaction!,source};
+  });
+}
 export function accountHistoryState(h: Household, input: AccountHistoryInput): string {
   const ids = new Set(input.accounts.map(a => a.accountId));
   return sha256String(canonical({ householdId: h.householdId, environment: h.environment,
@@ -110,8 +125,10 @@ function validate(h: Household, input: AccountHistoryInput) {
   const transferKeys = new Set<string>();
   for (const r of input.rows) {
     if (!ids.has(r.accountId) || !r.sourceIdentity.trim() || !r.sourceHash.trim() || r.sourceIdentity.length > 300) fail('Every row needs its source identity and a reviewed account.');
-    const key = `${r.accountId}:${r.sourceIdentity}`;
-    if (sourceKeys.has(key)) fail('The same source row appears twice. Review duplicates.'); sourceKeys.add(key);
+    for (const source of r.transferSources ?? [r]) {
+      const key = canonical([source.accountId,source.sourceIdentity]);
+      if (sourceKeys.has(key)) fail('The same source row appears twice. Review duplicates.'); sourceKeys.add(key);
+    }
     requireDate(h, r.date);
     const c = input.accounts.find(a => a.accountId === r.accountId)!;
     if (r.date <= c.openingDate || r.date > c.closingDate || !Number.isSafeInteger(r.amountCents) || r.amountCents <= 0) fail('Import only positive-cent movements strictly after the opening cutoff and through the closing checkpoint.');
@@ -122,18 +139,24 @@ function validate(h: Household, input: AccountHistoryInput) {
       if (r.date <= other.openingDate || r.date > other.closingDate) fail('The transfer must fall within both account review periods.');
       const transferKey = canonical([r.accountId,r.toAccountId,r.date,r.amountCents,r.transferGroupIdentity??null]);
       if(r.transferSources){
-        if(r.transferSources.length!==2||new Set(r.transferSources.map(s=>s.accountId)).size!==2||r.transferSources.some(s=>![r.accountId,r.toAccountId].includes(s.accountId)||!s.sourceIdentity.trim()||!s.sourceHash.trim()))fail("Review one source identity for each transfer account.");
-        for(const source of r.transferSources)if(h.transactions.some(t=>t.accountId===source.accountId&&t.importSourceIdentity===source.sourceIdentity)&&r.decision==='post')fail("A transfer source identity is already accepted. Retain the canonical transfer.");
+        if(r.transferSources.length!==2||new Set(r.transferSources.map(s=>s.accountId)).size!==2||r.transferSources.some(s=>![r.accountId,r.toAccountId].includes(s.accountId)||!s.sourceIdentity.trim()||s.sourceIdentity.length>300||!s.sourceHash.trim()))fail("Review one source identity for each transfer account.");
+        const primary=r.transferSources.find(s=>s.accountId===r.accountId)!;
+        if(primary.sourceIdentity!==r.sourceIdentity||primary.sourceHash!==r.sourceHash)fail('The outgoing transfer source must match its reviewed row.');
+        for(const source of r.transferSources)if(h.transactions.some(t=>ownsSource(t,source))&&r.decision==='post')fail("A transfer source identity is already accepted. Retain the canonical transfer.");
       }
       if (r.decision === 'post' && transferKeys.has(transferKey)) fail('Two transfer legs must resolve to one canonical transfer.');
       if (r.decision === 'post') transferKeys.add(transferKey);
-    } else if (!r.subcategoryId) fail('Choose a category for every imported income, expense, or refund.');
+    } else {
+      if(r.transferSources)fail('Only a transfer may include paired source identities.');
+      if (!r.subcategoryId) fail('Choose a category for every imported income, expense, or refund.');
+    }
     const accepted = h.transactions.filter(t => t.accountId === r.accountId && (t.importSourceIdentity === r.sourceIdentity || t.source === 'import' && t.sourceId === r.sourceIdentity));
     if (r.decision === 'post' && accepted.length) fail('This source identity is already accepted. Retain its existing row.');
     if (r.decision === 'retain') {
       const t = h.transactions.find(t => t.id === r.retainedTransactionId);
       if (!t || t.isDuplicate || t.reversalOfId || h.transactions.some(x=>x.reversalOfId===t.id) || t.accountId !== r.accountId || t.date !== r.date || t.amountCents !== r.amountCents || t.type !== r.type || (r.type === 'transfer' && (t.transferFromAccountId !== r.accountId || t.transferToAccountId !== r.toAccountId)) || (r.type !== 'transfer' && t.subcategoryId !== r.subcategoryId)) fail('The retained transaction does not match the reviewed source row.');
       if (accepted.some(x=>x.id!==t!.id)) fail('The source identity belongs to a different accepted transaction.');
+      retainedSources(h,r);
     }
   }
 }
@@ -166,10 +189,11 @@ function build(h: Household, input: AccountHistoryInput, confirmationId: string)
   }
   for (const r of input.rows) {
     if (r.decision==='retain') {
-      const retained=next.transactions.find(t=>t.id===r.retainedTransactionId)!;
       // Remember reviewed provenance even for matched legacy rows; money is unchanged.
-      if (retained.importSourceIdentity && retained.importSourceIdentity!==r.sourceIdentity) fail('This retained transaction already has different source provenance.');
-      retained.importSourceIdentity=r.sourceIdentity;retained.importSourceHash=r.sourceHash;
+      for (const {transaction,source} of retainedSources(next,r)) {
+        transaction.importSourceIdentity=source.sourceIdentity;transaction.importSourceHash=source.sourceHash;
+        transaction.updatedAt=nowIso();
+      }
       continue;
     }
     const posted = r.type==='transfer' ? postTransfer(next,{date:r.date,amount:r.amountCents/100,fromAccountId:r.accountId,toAccountId:r.toAccountId!,createdBy:input.createdBy,visibility:input.visibility,source:'import',sourceId:r.sourceIdentity,note:r.note,confirmDuplicate:true})
