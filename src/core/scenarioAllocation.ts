@@ -2,6 +2,7 @@ import { isValidDateKey } from "./calendar.ts";
 import { reviewFundScenarioRequest, type FundScenarioRequest, type ScenarioBasis, type ScenarioRefusal } from "./fundScenario.ts";
 import type { EarningsAvailability } from "./earningsAvailability.ts";
 import type { Household } from "./types.ts";
+/** Increments for two cumulative paths; a later increment can narrow their earlier gap. */
 export type ElectedScenarioContribution = Readonly<{id: string; date: string; lowerCents: number; expectedCents: number; memberId: string}>;
 export type ScenarioAllocationReview = Readonly<{kind: "refused"; reasons: readonly ScenarioRefusal[]}> | Readonly<{kind: "allocated"; contributions: readonly ElectedScenarioContribution[]}>;
 const refuse = (code: ScenarioRefusal["code"], message: string): ScenarioAllocationReview => ({kind: "refused", reasons: [{code, message}]});
@@ -19,17 +20,22 @@ export function reviewScenarioAllocations(household: Household, liveBasis: Scena
   if ([...tranches.values()].some(row => !amountsValid(row.lower, row.expected) || row.source.ownerMemberId !== liveBasis.scope.memberId || !row.source.factsDigest)
     || [...groups.values()].some(row => !amountsValid(row.lower, row.expected))) return refuse("source-not-owned", "Source availability needs a supported owned amount and basis.");
   const contributions: ElectedScenarioContribution[] = [];
-  for (const election of [...request.elections].sort((a, b) => a.contributionOn.localeCompare(b.contributionOn) || a.id.localeCompare(b.id))) {
-    if (election.kind !== "fixed") return refuse("forecast-model-unsupported", "This cash stage supports a fixed contribution choice.");
-    for (const allocation of election.allocations) {
+  for (const election of [...reviewed.request.elections].sort((a, b) => a.contributionOn.localeCompare(b.contributionOn) || a.id.localeCompare(b.id))) {
+    let lowerCents = 0, expectedCents = 0;
+    const allocations = election.kind === "fixed" ? election.allocations.map(row => ({trancheId: row.trancheId, cap: row.cents})) : election.allocations.map(row => ({trancheId: row.trancheId, cap: row.maximumCents}));
+    for (const allocation of allocations.sort((a, b) => a.trancheId.localeCompare(b.trancheId))) {
       const tranche = tranches.get(allocation.trancheId), group = tranche && groups.get(tranche.capacityGroupId);
       if (!tranche || !group) return refuse("source-not-accepted", "Choose a source from the current availability review.");
       if (typeof tranche.availableOn !== "string" || tranche.availableOn.length !== 10 || !isValidDateKey(tranche.availableOn) || tranche.availableOn > election.contributionOn || tranche.availableOn < liveBasis.asOf || tranche.availableOn > liveBasis.through) return refuse("availability-date-missing", "The contribution precedes its supported availability date.");
-      if (allocation.cents > tranche.lower || allocation.cents > group.lower) return refuse("insufficient-lower-availability", "The fixed choice exceeds the remaining lower source capacity.");
-      tranche.lower -= allocation.cents; tranche.expected -= allocation.cents;
-      group.lower -= allocation.cents; group.expected -= allocation.cents;
+      // Up-to consumption can leave expected residuals below lower residuals.
+      // A later fixed choice must fit both; initial bound ordering is not enough.
+      if (election.kind === "fixed" && allocation.cap > Math.min(tranche.lower, tranche.expected, group.lower, group.expected)) return refuse("insufficient-lower-availability", "The fixed choice exceeds the remaining capacity on one of the reviewed paths.");
+      const lower = Math.min(allocation.cap, tranche.lower, group.lower), expected = Math.min(allocation.cap, tranche.expected, group.expected);
+      tranche.lower -= lower; tranche.expected -= expected; group.lower -= lower; group.expected -= expected;
+      lowerCents += lower; expectedCents += expected;
+      if (![tranche.lower, tranche.expected, group.lower, group.expected, lowerCents, expectedCents].every(value => Number.isSafeInteger(value) && value >= 0)) return refuse("unsafe-cents", "The remaining source amounts exceed supported cents.");
     }
-    if (election.chosenCents > 0) contributions.push({id: election.id, date: election.contributionOn, lowerCents: election.chosenCents, expectedCents: election.chosenCents, memberId: election.chosenByMemberId});
+    if (lowerCents || expectedCents) contributions.push({id: election.id, date: election.contributionOn, lowerCents, expectedCents, memberId: election.chosenByMemberId});
   }
   return {kind: "allocated", contributions};
 }

@@ -1,3 +1,17 @@
+## Mobile SC05 — paired scenario composition (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc5-paired-scenario`, stacked on SC04 `78b5f5e` (PR382). Phase2 remains in progress.
+
+**Outcome:** Re-resolved source choices, conserved fixed/up-to contributions, exact estimate replacements and aligned hypothetical paths. Accepted monthly walk, current Fund and Ask are preserved; terminal deficits are separate model outputs. The46-dollar fixture yields -50500 cents from the same168500 anchor and223600 dated claims.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** High quick gate106 assertions plus TypeScript/AI/diff passed in546.457seconds, with a five-minute TypeScript breach retained. Independent16/16 and no remaining financial/source blocker; two mutations killed. [Exact evidence](worksessions/2026-09-08-mobile-paired-scenario.md).
+
+**Limits:** Fictional local model only; no UI, accepted write, physical, hosted, exhaustive, merge, deployment or schema claim. G4 final consumer review remains open.
+
+**Next owner:** Codex opens the separate draft PR, then implements the App's accepted-pair source adapter before connecting Claude's Reach.
+
 ## Mobile SC04 — forecast receipt assumptions and named route families (2026-09-08)
 
 **Status:** Implemented on `codex/mobile-sc4-forecast-availability`, stacked on SC03 `7fba9a8` (PR381). Phase2 remains in progress.

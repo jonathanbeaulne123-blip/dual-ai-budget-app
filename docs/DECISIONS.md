@@ -504,3 +504,8 @@ An accepted Personal readiness marker and dedicated metadata/source digests prec
 ## Mobile SC04 — named routes and forecast receipt assumptions (2026-09-08)
 
 Claude's five Reach stops now have real cardinality families and stable named dated routes. The old askRoutes output is unchanged. Whole-pool coherent own single-job/role receipts and current policy support only explicit cash-on-shift-day or card-at-next-recorded-payout assumptions. Net forecast tip bands are not deducted twice; mixed channels, deferred policy, missing timing or incoherent permanent duration refuse. Payout destination must be active own CAD cash. One selected route supplies candidate identities, never contribution intent. Risk High; Budget(5)+3; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-forecast-availability.md).
+
+
+## Mobile SC05 — paired Fund scenario paths (2026-09-08)
+
+Fund simulation re-resolves accepted sources and explicit member elections; no UI array becomes money authority. Both residual paths constrain fixed choices, while up-to caps conserve each path independently. Exact reviewed own future observed estimates may be replaced once; effective zero leaves baseline intact. Common source slots preserve paired ordering even with zero deltas. Accepted Fund/monthly walk/current Ask stay unchanged; baseline and hypothetical terminal deficits are distinct core outputs. Smaller replacements may worsen baseline and fixed choices may have coincident bounds. Risk High; Budget(5)+3; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-paired-scenario.md). Claude's original Reach is the forthcoming consumer.
