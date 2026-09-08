@@ -88,3 +88,44 @@ it("never submits a late upload into a new household session", async () => {
   await act(async () => finish({ mediaId, pendingId: "late" }));
   expect(commands).toHaveLength(0); expect(options[0]!.isCurrent()).toBe(false);
 });
+
+it("uses matching cached expired auth for offline queue/recovery and refreshes again when online", async () => {
+  const { createBoardMediaClient } = await vi.importActual<typeof import("../src/boardMedia/index.ts")>("../src/boardMedia/index.ts");
+  const { Blob: NodeBlob } = await import("node:buffer");
+  const { jpeg } = await import("./fixtures/boardMedia.ts");
+  const records = new Map<string, import("../src/boardMedia/index.ts").PendingBoardPhotoRecord>();
+  const store: import("../src/boardMedia/index.ts").BoardPhotoStore = {
+    add: async record => { records.set(record.pendingId, record); },
+    get: async (_scope, id) => records.get(id),
+    list: async () => [...records.values()],
+    update: async (_scope, id, patch) => { const record = records.get(id); if (!record) return; const next = { ...record, ...patch }; records.set(id, next); return next; },
+    remove: async (_scope, id) => { records.delete(id); },
+  };
+  const expired = { userId: "test-auth-A", sessionId: "test-session-A", accessToken: "synthetic-expired", expiresAt: 1 };
+  mocks.load.mockReturnValue(expired); mocks.ensure.mockRejectedValue(new Error("Cannot refresh while offline"));
+  let online = false;
+  vi.spyOn(navigator, "onLine", "get").mockImplementation(() => online);
+  await render(); const binding = options[0]!;
+  const bytes = await jpeg(); const blob = new NodeBlob([bytes], { type: "image/jpeg" }) as unknown as Blob;
+  const fetcher = vi.fn(async () => { throw new Error("Offline"); });
+  const makeClient = () => createBoardMediaClient({ ...binding, store, fetch: fetcher, prepare: async () => ({ blob, width: 12, height: 8 }) });
+  const media = makeClient(); const intent = pending(3).intent!;
+  await expect(media.uploadBoardPhoto(blob, intent)).rejects.toMatchObject({ code: "NETWORK_UNAVAILABLE" });
+  expect(records.size).toBe(1); expect(mocks.ensure).not.toHaveBeenCalled();
+  media.dispose(); const recovered = makeClient();
+  expect((await recovered.listPendingBoardPhotos())[0]).toMatchObject({ intent, status: "queued" });
+  mocks.ensure.mockResolvedValue({ ...expired, accessToken: "synthetic-fresh" }); online = true;
+  await expect(binding.getSession()).resolves.toMatchObject({ accessToken: "synthetic-fresh", authIdentity: "test-auth-A", actorId: memberId });
+  expect(mocks.ensure).toHaveBeenCalledOnce();
+  recovered.dispose(); vi.restoreAllMocks();
+});
+
+it("removes only the accepted board reference and never deletes stored photo bytes", async () => {
+  household = setBoardPhoto(household, { memberId, slot: 1, mediaId: oldMediaId, caption: "Original", crop: { x: 50, y: 50, zoom: 1 }, expectedVersion: 0 }).household;
+  await render(); await click("Remove photo 1");
+  expect(household.kitchen.boards?.photos[0]!.mediaId).toBe(oldMediaId);
+  expect(clients[0]!.deleteBoardPhoto).not.toHaveBeenCalled();
+  household = commands[0]!(household).household; await render();
+  expect(household.kitchen.boards?.photos[0]!.mediaId).toBeNull();
+  expect(clients[0]!.deleteBoardPhoto).not.toHaveBeenCalled(); expect(clients[0]!.discardPendingBoardPhoto).not.toHaveBeenCalled();
+});

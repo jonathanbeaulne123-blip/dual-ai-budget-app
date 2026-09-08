@@ -42,8 +42,14 @@ function PhotoSession({ household, memberId, busy, onCommand, identity }: Props 
       scope: { environment: household.environment, householdId: household.householdId, actorId: memberId, authIdentity: session.userId },
       isCurrent: () => !retired.current && authKey(household) === identity && latest.current.members.some(member => member.id === memberId && member.active),
       getSession: async () => {
-        const fresh = await ensureSupabaseSession(household.environment);
-        return fresh && authKey(household) === identity ? { accessToken: fresh.accessToken, actorId: memberId, authIdentity: fresh.userId } : null;
+        if (retired.current || authKey(household) !== identity) return null;
+        // Offline local queue/recovery may use cached identity. Upload requests still
+        // reach the authenticated service, which independently rejects expired tokens.
+        const session = navigator.onLine === false
+          ? loadSupabaseSession(household.environment)
+          : await ensureSupabaseSession(household.environment);
+        return session && !retired.current && authKey(household) === identity
+          ? { accessToken: session.accessToken, actorId: memberId, authIdentity: session.userId } : null;
       },
     });
     // Retire synchronously at the auth event, before React can batch A → B → A into one render.

@@ -40,7 +40,7 @@ function canSwipe(target: EventTarget | null) {
 }
 function SharedBoardsSession({ scope, household, memberId, today, busy, view = "household", scenarioSource, onCommand, onOpenGoals }: SharedBoardsProps & { scope: SharedBoardScope }) {
   const allowedAsk = askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
-  const available = pages.filter(page => page.id !== "ask" || allowedAsk);
+  const available = pages;
   const storageKey = `hearth:shared-board:${sharedBoardScopeKey(scope)}`;
   const [selected, setSelected] = useState<SharedBoard>(() => {
     const saved = readSharedBoardSelection(scope); return available.find(page => page.id === saved)?.id ?? "notes";
@@ -100,7 +100,7 @@ function SharedBoardsSession({ scope, household, memberId, today, busy, view = "
       onMove={alternative => command(latest => {
         if (!askBelongsOnDesk(memberId, latest.householdFund?.custodianMemberId)) throw new Error("This reading is no longer available to this viewer.");
         return moveAskGoalClaimToNextMonth(latest, { today, memberId, goalId: alternative.goalId, recurrenceId: alternative.recurrenceId, claimDate: alternative.claimDate });
-      })} /> : null,
+      })} /> : <p className="shared-board-empty">There isn’t a Shift Ask for your household role. This space only shows your own reading.</p>,
   };
   return <section className="shared-boards" aria-label="Shared household boards" aria-roledescription="carousel"
     onPointerDown={pointerDown} onPointerUp={pointerUp} onPointerCancel={() => { gesture.current = null; }}

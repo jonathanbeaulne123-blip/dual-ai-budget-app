@@ -54,8 +54,10 @@ describe("shared household boards", () => {
     household = { ...household, householdId: "HH-OTHER" }; await render(); expect(selected()).toBe("Photos");
     window.removeEventListener(SHARED_BOARD_EVENT, received);
   });
-  it("withholds Ask from custodian and every board from inactive/unknown viewers", async () => {
-    await render({ memberId: "MEM-001" }); expect(host.querySelectorAll('.shared-board-page')).toHaveLength(4); expect(host.textContent).not.toContain("Shift Ask");
+  it("keeps five tabs for both roles without rendering another member’s Ask, and withholds boards from inactive/unknown viewers", async () => {
+    await render({ memberId: "MEM-001" }); expect(host.querySelectorAll('[role=tab]')).toHaveLength(5);
+    await click("Shift Ask"); expect(host.textContent).toContain("There isn’t a Shift Ask for your household role"); expect(host.querySelector('.ask')).toBeNull();
+    await render(); expect(host.querySelectorAll('[role=tab]')).toHaveLength(5); expect(host.querySelector('.ask')).not.toBeNull();
     await render({ memberId: "unknown" }); expect(host.querySelector('.shared-boards')).toBeNull();
     household = { ...household, members: household.members.map(row => ({ ...row, active: false })) }; await render(); expect(host.querySelector('canvas')).toBeNull();
   });
