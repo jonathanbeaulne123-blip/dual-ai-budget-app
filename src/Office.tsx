@@ -864,6 +864,7 @@ export function Office({
   if (breakpoint === "phone") {
     return (
       <OfficePhone
+        scenarioSource={scenarioSource}
         household={household} booksHousehold={booksHousehold} view={view} onOpenFundDestination={onOpenFundDestination} dashboard={dashboard} sill={sill}
         reading={reading}
         layout={layout} onLayout={setLayout}

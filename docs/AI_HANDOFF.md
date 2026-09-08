@@ -1,3 +1,17 @@
+## Mobile B3 — the Reach (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b3-reach`; exact base/pre-commit HEAD `24469bd5b206efca912c4c3ff5ff40024a4ffcc7` (SC06, PR384). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's original phone composition consumes the reviewed Fund scenario. Native effort stops select true named route families. Receipt assumptions and separately elected contributions live inside the one paperbox. Current Ask and accepted history remain unchanged; paired model paths and dated terminal deficits stay hypothetical. Unavailable or stale own sources hide private choices while retaining the Shared reading. Native page and modal scrolling are repaired.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+3.
+
+**Verification:** Final High quick gate147/147, TypeScript/AI/diff passed124.450seconds within five minutes. Twelve browser layout/state cases, two sheet/keyboard cases and native touch page/scrim/inner-content checks passed. Independent G4 source and UX reviews clear. [Exact commands, fingerprints, earlier failures and evidence](worksessions/2026-09-08-mobile-reach.md).
+
+**Limits:** Fictional local actual-component browser proof; no authenticated full-App browser, physical, exhaustive, hosted or release claim. Earlier446.729second gate breach and timeout recovery retained. B2 physical/blank-entry G3 and B6 G4 remain open. No merge, deployment or schema.
+
+**Next owner:** Codex creates the separate stacked draft PR and builds Claude's B4 Weight.
+
 ## Mobile SC06 — App-issued accepted scenario source (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-sc6-accepted-scenario-source`; exact base/current pre-commit HEAD `a13c6c4155707cb7d1f68d68bbe5c89078a49b80` (SC05, PR383). Phase2 remains in progress. Implementation HEAD is the commit carrying this handoff, resolved by Git/PR.

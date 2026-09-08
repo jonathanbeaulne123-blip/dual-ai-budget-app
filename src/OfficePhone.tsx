@@ -1,3 +1,4 @@
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { PhoneSpread } from "./PhoneSpread.tsx";
 import { ApronCard, useApronReceipt } from "./ApronCard.tsx";
 import type { PhoneChapter } from "./core/phoneSpread.ts";
@@ -54,6 +55,7 @@ type Spec = {
 };
 
 export function OfficePhone({
+  scenarioSource,
   household, booksHousehold = household, view = "household", onOpenFundDestination, dashboard, sill, reading, layout, onLayout,
   today, memberId, busy, adding, form, mode, error, categories, postLabel,
   integrityFindings = [],
@@ -61,6 +63,7 @@ export function OfficePhone({
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onGo,
 }: {
+  scenarioSource?: ScenarioSourceContext | null;
   household: Household;
   booksHousehold?: Household;
   view?: "household" | "personal";
@@ -272,7 +275,7 @@ export function OfficePhone({
     <div ref={officeRoot} className={`office-phone office-phone-c ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
       <div inert={adding || undefined}><PhoneFold items={foldItems} render={foldContent} /></div>
 
-      {chapter && !adding ? <PhoneSpread key={spreadScope} chapter={chapter} household={booksHousehold} memberId={memberId} view={view} today={today} busy={busy}
+      {chapter && !adding ? <PhoneSpread scenarioSource={scenarioSource} key={spreadScope} chapter={chapter} household={booksHousehold} memberId={memberId} view={view} today={today} busy={busy}
         onClose={closeChapter} onKitchen={onKitchen} onOpen={destination => { setChapter(null); if (onOpenFundDestination) onOpenFundDestination(destination); else onGo(destination === "shelf" ? "plan" : "ledger"); }} /> : null}
 
       {openSpec && openId && (

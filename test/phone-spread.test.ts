@@ -56,13 +56,13 @@ describe('Claude chapter spread',()=>{
       expect(document.querySelector('.fund-ledge-modal')).not.toBeNull();expect(writes).toBe(0);
     }finally{await act(async()=>root.unmount());host.remove();}
   });
-  it('navigates all pages with real index buttons without writing or adding rails',async()=>{
+  it('navigates all pages without writing and confines the Reach rail to the Ask reading',async()=>{
     const h=fixture(),before=JSON.stringify(h),host=document.createElement('div');document.body.append(host);const root=createRoot(host);let writes=0,opens=0;
     try {
       for(const chapter of ['in','out','leftover'] as const){
         await act(async()=>root.render(createElement(PhoneSpread,{chapter,household:h,memberId:'MEM-002',view:'personal',today:'2026-09-08',busy:false,onClose:()=>{},onKitchen:()=>writes++,onOpen:()=>opens++})));
         const tabs=[...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];expect(tabs).toHaveLength(PHONE_CHAPTERS[chapter].pages.length);
-        for(const tab of tabs){await act(async()=>tab.click());expect(host.querySelector('[role="tabpanel"]')?.textContent?.length).toBeGreaterThan(0);expect(host.querySelector('input[type="range"],[role="slider"],.fund-board')).toBeNull();}
+        for(const tab of tabs){await act(async()=>tab.click());expect(host.querySelector('[role="tabpanel"]')?.textContent?.length).toBeGreaterThan(0);if(tab.getAttribute('aria-label')?.includes('The Ask')) expect(host.querySelector('input[type="range"]')).not.toBeNull(); else expect(host.querySelector('input[type="range"],[role="slider"],.fund-board')).toBeNull();}
       }
       expect(writes).toBe(0);expect(opens).toBe(0);expect(JSON.stringify(h)).toBe(before);
     }finally{await act(async()=>root.unmount());host.remove();}

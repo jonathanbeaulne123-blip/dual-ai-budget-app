@@ -28,6 +28,8 @@ describe("Fund ledge at rest", () => {
       expect(rest.getAttribute("aria-label")).toContain("Shared money, from Personal");
       expect(host.querySelector('.fund-ledge-figure')?.textContent).toBe("$1,685.00");
       await act(async()=>rest.click());
+      expect(document.documentElement.style.overflow).toBe('hidden');
+      expect(document.body.style.overflow).toBe('hidden');
       expect(document.querySelector('.fund-ledge-sheet')?.getAttribute('data-detent')).toBe('half');
       expect(document.querySelector<HTMLElement>('.fund-ledge-board')?.hidden).toBe(true);
       expect(host.hasAttribute('inert')).toBe(true);
@@ -38,6 +40,8 @@ describe("Fund ledge at rest", () => {
       expect(opens).toBe(0);expect(writes).toBe(0);
       await act(async()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
       expect(document.querySelector('.fund-ledge-modal')).toBeNull();
+      expect(document.documentElement.style.overflow).toBe('');
+      expect(document.body.style.overflow).toBe('');
       expect(host.hasAttribute('inert')).toBe(false);expect(document.activeElement).toBe(rest);
       expect(JSON.stringify(household)).toBe(before);
     } finally {await act(async()=>root.unmount());host.remove();}
@@ -54,7 +58,7 @@ describe("Fund ledge at rest", () => {
       expect(document.querySelector('.fund-ledge-modal')).toBeNull();expect(writes).toBe(0);
     } finally {await act(async()=>root.unmount());host.remove();}
   });
-  it("preserves all sixteen library entries and the same figures on either presentation", async()=>{
+  it("preserves all sixteen entries and accepted figures while phone Level becomes the contributor Reach", async()=>{
     const h=fixture(),before=JSON.stringify(h);let actions=0;
     const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
     try {
@@ -63,9 +67,11 @@ describe("Fund ledge at rest", () => {
         for(const presentation of ['phone','desk'] as const){
           await act(async()=>root.render(createElement(FundStage,{widgetId:id,household:h,memberId:'MEM-002',today:'2026-09-08',busy:false,presentation,onKitchen:()=>actions++,onOpenAccount:()=>actions++,onOpenDestination:()=>actions++})));
           texts.push(host.textContent);expect(host.textContent?.length).toBeGreaterThan(0);
+          if((id==='level'||id==='ask') && presentation==='phone') { expect(host.querySelectorAll('svg')).toHaveLength(1); expect(host.querySelector('[data-ask-figure]')?.textContent).toBe('$0.00'); expect(host.querySelector('svg')?.getAttribute('aria-label')).toContain('$1685.00'); }
           if(id==='streams' && presentation==='phone') expect(host.querySelector('time')?.getAttribute('aria-label')).toContain('Sep 8, 2026');
         }
         if(id === 'streams') { expect(texts[0]).toContain('September 2026'); expect(texts[1]).toContain('Sep 8, 2026'); }
+        else if(id==='level'||id==='ask') { expect(texts[0]).toContain('Current Shared Ask$0.00'); expect(texts[1]).toContain('$0.00'); }
         else expect(texts[0]).toBe(texts[1]);
       }
       for(const memberId of ['MEM-001','MEM-002'])for(const presentation of ['phone','desk'] as const){

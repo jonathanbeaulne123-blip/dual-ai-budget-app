@@ -1,3 +1,4 @@
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { useEffect, useId, useMemo, useRef, useState, type PointerEvent } from "react";
 import {
   askAlternatives, askBelongsOnDesk, booksPresentationFloor, categorySpendBars, contributionRegister,
@@ -9,7 +10,8 @@ import { FundStage, type FundDestination } from "./FundStage.tsx";
 import { PaperBars, PaperSpark } from "./theme/PaperTheme.tsx";
 import "./phone-spread.css";
 
-function Reading({ id, household, memberId, today, busy, onKitchen, onOpen }: {
+function Reading({ scenarioSource, id, household, memberId, today, busy, onKitchen, onOpen }: {
+  scenarioSource?: ScenarioSourceContext | null;
   id: PhoneReading; household: Household; memberId: string; today: string; busy: boolean;
   onKitchen: (fn: (current: Household) => CommitResult) => void; onOpen: (destination: FundDestination) => void;
 }) {
@@ -40,12 +42,13 @@ function Reading({ id, household, memberId, today, busy, onKitchen, onOpen }: {
   if (model.kind === "members") return <><h3>Confirmed contributions by member</h3>{model.sources.length ? <ul className="spread-contributions">{model.sources.map(source => <li key={source.eventId}><strong>{nameOf(source.memberId)}</strong><time dateTime={source.date}>{formatDateLabel(source.date)}</time><span>{formatCad(source.amountCents)}</span></li>)}</ul> : <p className="desk-plate-empty">No confirmed contributions this month.</p>}<p className="desk-plate-foot">Each entry is confirmed money put into the Shared Fund.</p></>;
   if (model.kind === "deferral") return <><h3>Moving a goal claim</h3><p>Current Ask · {formatCad(model.ask.askCents)}</p>{model.rows.length ? <ul className="spread-deferrals">{model.rows.map(row => <li key={`${row.goalId}:${row.claimDate}`}><strong>{row.label}</strong><p>{formatDateLabel(row.claimDate)} · {formatCad(row.claimCents)} claimed.</p><p>{row.copy}</p></li>)}</ul> : <p className="desk-plate-empty">No eligible goal claim to move this month.</p>}<p className="desk-plate-foot">This is the effect of moving the claim to next month. The Ask page holds the separate review and confirmation.</p></>;
   const widgetId = id === "shape" || id === "next-out" || id === "week" || id === "streams" || id === "ask" ? id : "shelf";
-  return <FundStage widgetId={widgetId} household={household} memberId={memberId} today={today} busy={busy}
+  return <FundStage scenarioSource={scenarioSource} widgetId={widgetId} household={household} memberId={memberId} today={today} busy={busy}
     presentation="phone" onKitchen={onKitchen} onOpenDestination={onOpen} onOpenAccount={() => onOpen("record")} />;
 }
 
 /** The album has page gestures only. Interactive rails stay in the Ledge. */
-export function PhoneSpread({ chapter, household, memberId, view, today, busy, onClose, onKitchen, onOpen }: {
+export function PhoneSpread({ scenarioSource, chapter, household, memberId, view, today, busy, onClose, onKitchen, onOpen }: {
+  scenarioSource?: ScenarioSourceContext | null;
   chapter: PhoneChapter; household: Household; memberId: string; view: "household" | "personal"; today: string; busy: boolean;
   onClose: () => void; onKitchen: (fn: (current: Household) => CommitResult) => void; onOpen: (destination: FundDestination) => void;
 }) {
@@ -94,7 +97,7 @@ export function PhoneSpread({ chapter, household, memberId, view, today, busy, o
     <div ref={panel} id={`${id}-page`} className="spread-page" tabIndex={-1} role="tabpanel" aria-labelledby={`${id}-heading`}
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onLostPointerCapture={cancel}>
       <div style={{ transform: `translateX(${offset}px)` }} key={`${reading}:${household.environment}:${household.householdId}:${memberId}:${today}`}>
-        <Reading id={reading} household={household} memberId={memberId} today={today} busy={busy} onKitchen={onKitchen} onOpen={destination => { onClose(); onOpen(destination); }} />
+        <Reading scenarioSource={scenarioSource} id={reading} household={household} memberId={memberId} today={today} busy={busy} onKitchen={onKitchen} onOpen={destination => { onClose(); onOpen(destination); }} />
       </div>
     </div>
     <footer className="spread-foot"><button type="button" aria-label="Previous reading" disabled={index===0} onClick={()=>select(index-1)}>‹</button>

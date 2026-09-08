@@ -152,6 +152,8 @@ html, body {
 }
 /* D-090 mobile viewport lock only — desktop keeps native document scroll. */
 @media (max-width: 719px) {
+  /* Let vertical gestures reach the document; html still contains its boundary. */
+  body { overscroll-behavior-y: auto; }
   html, body {
     touch-action: manipulation;
     overflow-x: hidden;

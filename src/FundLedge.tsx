@@ -99,8 +99,13 @@ export function FundLedge({ household, today, view, memberId, busy, onOpen, onKi
     onExpandedChange?.(expanded);
     if (!expanded) return;
     const previous = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = previous; };
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+      document.documentElement.style.overflow = previousRootOverflow;
+    };
   }, [expanded, onExpandedChange]);
   useEffect(() => () => onExpandedChange?.(false), [onExpandedChange]);
 
