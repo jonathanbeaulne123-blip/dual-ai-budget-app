@@ -1,6 +1,6 @@
 # Onboarding repair, curriculum v2, and statement-assisted setup
 
-- Status: OPEN — implementation; not released or ready for household use
+- Status: LOCAL IMPLEMENTATION VERIFIED — draft review; not released or ready for household use
 - Opened: 2026-09-08 (America/Toronto)
 - Owner: Jonathan
 - Coordinator: Codex
@@ -36,14 +36,14 @@ Each implementer has a separate checkout. No competing writes to this integratio
 
 ## Acceptance evidence
 
-- [ ] All five positive regressions, mounted App with Development v2 enabled
-- [ ] Two principals/replicas through required journey without Fund/card/bills/work
-- [ ] Complete/incomplete v1 migration; no old Ready approval reuse; incompatible writes refused
-- [ ] Signed/zero multi-account openings; history reconciliation and backfill checkpoint preservation
-- [ ] Duplicate/identical activity, transfers, partial legacy batches, closed periods, concurrency and retries
-- [ ] PDF/image/OFX intake bounds, scanned pages, uncertainty, reload and Personal isolation
+- [x] All five positive regressions, mounted App with Development v2 enabled
+- [x] Two principals/replicas through required journey without Fund/card/bills/work
+- [x] Complete/incomplete v1 migration; no old Ready approval reuse; incompatible writes refused
+- [x] Signed/zero multi-account openings; history reconciliation and backfill checkpoint preservation
+- [x] Duplicate/identical activity, transfers, partial legacy batches, closed periods, concurrency and retries
+- [x] PDF/image/OFX intake bounds, scanned pages, uncertainty, reload and Personal isolation
 - [ ] Three themes at 390/1440 and boundaries 320/719/1100, keyboard/large text/motion/focus
-- [ ] Focused High gate, TypeScript/build, startup and Bianca rehearsal regressions
+- [x] Focused High gate, TypeScript/build, startup and Bianca rehearsal regressions
 - [ ] Real two-account/two-device Development run with interruption/offline/reopen
 
 No unexecuted path, theme or device check can be represented as passing. Full exhaustive gates and release are separate from the requested focused validation. Physical device results require actual device observations.
@@ -69,3 +69,15 @@ Desktop and mobile screenshots were inspected. Keyboard focus moved into review,
 ### Real Development rehearsal gate (not executed)
 
 Use two separate Google principals on two physical devices, including a previously used browser and a fresh browser. Check invitation precedence and cancellation, complete the five stages with at least two Shared accounts, interrupt during intake and after Confirm, reconnect offline drafts, reopen with the other device powered off, and complete staggered Ready approval. Exercise a fresh history import and a Shared two-approval rebase using disposable Development data. Record device/browser versions and actual acceptance receipts. No deployment or hosted migration was performed by this implementation task.
+
+## Final local verification
+
+Code head: `3d4e88cfbc3998398bd19dfc2027e1bcc852f46c`; clean tree, base `a1215b2d49331c311ddd39402cfba0237d909cbd` rechecked against remote main. Focused High gate passed **543 tests in 45 files** (441 fast + 102 serial), **185.173 seconds**, within its five-minute budget. TypeScript, diff checks and AI-surface checks passed. This includes mounted invitation cancellation/identity shielding, all five audit regressions, the real captured-command two-principal journey, legacy compatibility refusal, real PGlite history/proof matrix, startup and Bianca rehearsal. The prior broad discovery run exposed integration failures which were repaired; the final gate is the acceptance result.
+
+Command: `pnpm --config.manage-package-manager-versions=false --config.verify-deps-before-run=never test -- --risk=high --focus=test/onboarding-v2-authority-journey.test.ts --focus=test/app-startup-p1.test.ts --focus=test/month-rehearsal.test.ts --focus=test/month-rehearsal-mainline.test.ts --focus=test/month-rehearsal-golden.test.ts --focus=test/month-rehearsal-preflight-ui.test.ts --focus=test/month-rehearsal-ui.test.ts --focus-reason="Onboarding v2 authority, migration, invitation recovery, reviewed statement history and Bianca startup rehearsal"`
+
+The full production build passed; after the final runtime guard, Vite and the Hercules UI bundle were rebuilt successfully. Its source tree `9013f319098efe08935b1e918d095e672f1d29af` is identical to the final gate head. Bundled PDF worker assets are present; existing large-chunk/PGlite eval warnings remain. New direct PGlite tests run serially. No exhaustive full gate was run. Verification logs are `/tmp/onboarding-v2-high-gate2.log`, `/tmp/onboarding-v2-final-build2.log` and `/tmp/onboarding-v2-final-bundle.log` on this host.
+
+### Release and rollback handoff
+
+This is a local implementation result and a draft integration PR, not tonight's device certification. Release is a separately authorized step. After any new accepted history exists, never deploy the unmodified old writer against those records. A rollback must keep the compatible receipt/lineage decoder and authority, or disable mutations while preserving records; use a forward correction for accepted financial changes. Do not reset the household, erase receipts, reverse only part of a correction group, or use legacy sync as fallback. Finish the real Development and physical accessibility gates above before marking this patch ready.
