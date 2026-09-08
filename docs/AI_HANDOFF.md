@@ -1,3 +1,17 @@
+## Mobile A1 — Claude's fold (2026-09-07)
+
+**Status:** Locally verified on `codex/mobile-a1-fold`, baseline `6fb15c7a98f3336862bb743b836aa96a358a35b9`; isolated slice, not merged or deployed.
+
+**Outcome:** At most four whole Home objects above Claude's dashed crease. Own active shift and warnings outrank ordinary stories. His outlined paper seals replace the old wax gradients; enlarged text spills/reflows without clipping amounts. Add remains inert and keyboard focus survives priority changes.
+
+**Risk and Dual Course:** Medium; Budget (5) 0, Engagement (3) +2.
+
+**Verification:** Medium quick gate passed 58 assertions, TypeScript and AI checks in 32.645 seconds. Actual-component Chromium passed 28 width/state cases, with keyboard focus and reduced motion. Independent UX findings were fixed and rechecked. [Worksession and evidence](worksessions/2026-09-07-mobile-fold.md).
+
+**Evidence class:** Local synthetic component and quick-gate proof. Wide widths force the phone component for stress testing; they are not full-App desktop screenshots. No physical phone, hosted recovery, exhaustive, live household or Production proof. No money or schema change.
+
+**Next owner:** Codex prepares the separate A1 PR and proceeds to A2/A3; Jonathan waived the Ledge's fortnight build gate with “just build it.” The mobile program remains in progress.
+
 # AI Task and Handoff Standard
 
 ## QR invitation entry (D-239) (2026-09-07)

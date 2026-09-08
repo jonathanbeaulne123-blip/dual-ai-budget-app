@@ -8,6 +8,8 @@ import {
   phoneDrawerIds,
   phoneRailOrder,
   phoneStoryIds,
+  phoneFoldOrder,
+  activeOpenShift,
   instrumentIsOpen,
   revealPhoneInstrument,
   deskMonthSeals,
@@ -29,7 +31,8 @@ import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
-import { NotebookBody, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
+import { NotebookBody, PaperTile, WaxSeal } from "./theme/PaperTheme.tsx";
+import { PhoneFold } from "./PhoneFold.tsx";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 /**
@@ -211,61 +214,38 @@ export function OfficePhone({
   const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : null;
   const panelId = openId ? `ph-notebook-${openId}` : "ph-notebook";
 
+  const foldItems = phoneFoldOrder({
+    stories: storyIds,
+    ownShift: !!activeOpenShift(household.kitchen, memberId),
+    overdue: mailWarn,
+    health: lampLit,
+    needs: !!sill.needsMe,
+  });
+  const foldContent = (id: typeof foldItems[number]["id"]) => {
+    if (id === "weather") return <WeatherRibbon reading={reading} />;
+    if (id === "needs") return <div className="ph-sill"><span className="ph-needs">{sill.needsMe}</span></div>;
+    if (id === "seals") return sealsContent;
+    const spec = specs[id];
+    if (!spec) return null;
+    return <PaperTile kind={spec.kind} name={spec.name} value={spec.glance}
+      warn={spec.warn} active={instrumentIsOpen(layout, id)}
+      onClick={() => setExpanded(id)} ariaLabel={spec.aria} />;
+  };
+  const sealsContent = (
+    <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
+      <WaxSeal label="Money in" tone="post" pending={seals.inCents === 0}
+        value={formatCad(seals.inCents)} sub="posted income this month" onClick={() => tapSeal("blotter")} />
+      <WaxSeal label="Money out" tone="due" pending={seals.outCents === 0}
+        value={formatCad(seals.outCents)} sub="posted expenses only" onClick={() => tapSeal("blotter")} />
+      <WaxSeal label="Leftover spend" tone="close" value={formatCad(seals.leftoverCents)}
+        sub="posted in minus posted expenses" pending={seals.inCents === 0 && seals.outCents === 0}
+        onClick={() => onGo("plan")} />
+    </div>
+  );
+
   return (
     <div className={`office-phone office-phone-c ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
-      <WeatherRibbon reading={reading} />
-
-      {sill.needsMe && (
-        <div className="ph-sill">
-          <span className="ph-needs">{sill.needsMe}</span>
-        </div>
-      )}
-
-      <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
-        <WaxSeal
-          label="Money in"
-          tone="post"
-          pending={seals.inCents === 0}
-          value={formatCad(seals.inCents)}
-          sub="posted income this month"
-          onClick={() => tapSeal("blotter")}
-        />
-        <WaxSeal
-          label="Money out"
-          tone="due"
-          pending={seals.outCents === 0}
-          value={formatCad(seals.outCents)}
-          sub="posted expenses only"
-          onClick={() => tapSeal("blotter")}
-        />
-        <WaxSeal
-          label="Leftover spend"
-          tone="close"
-          value={formatCad(seals.leftoverCents)}
-          sub="posted in minus posted expenses"
-          pending={seals.inCents === 0 && seals.outCents === 0}
-          onClick={() => onGo("plan")}
-        />
-      </div>
-
-      <StoryStrip>
-        {storyIds.map((id) => {
-          const spec = specs[id];
-          if (!spec) return null;
-          return (
-            <PaperTile
-              key={id}
-              kind={spec.kind}
-              name={spec.name}
-              value={spec.glance}
-              warn={spec.warn}
-              active={instrumentIsOpen(layout, id)}
-              onClick={() => setExpanded(id)}
-              ariaLabel={spec.aria}
-            />
-          );
-        })}
-      </StoryStrip>
+      <div inert={adding || undefined}><PhoneFold items={foldItems} render={foldContent} /></div>
 
       {openSpec && openId && (
         <NotebookBody

@@ -445,3 +445,7 @@ Risk High; Budget +5; Engagement +3. Development publication is authorized in th
 ### Desktop Home scroll why-note — 2026-09-07
 
 Remove the desktop Home app's `max-height: 100dvh` and nested overflow scrolling so the document can carry the entire office past the fixed navigation. Jonathan reported the desk cutting off when scrolling on desktop. Low-risk presentation repair; budget delta (5): readable lower ledger cards; engagement delta (3): uninterrupted desk scrolling. Financial behavior is unchanged. Isolated Chromium checks using the actual stylesheet at 1100, 1440, 2048 and 390px reach the final content with no horizontal overflow; authenticated live household verification remains unperformed.
+
+### Mobile fold why-note — 2026-09-07
+
+Jonathan retained Claude's Apron Pocket design and exact style for the mobile build. A1 counts each seal and each paper tile as one visible object; the three seals remain an indivisible row. Weather and the needs sentence each count as one. A ranked prefix of at most four objects occupies the measured head; whole objects that exceed its height remain immediately below the dashed crease. The current member's active/confirming shift, integrity findings and overdue bills take precedence over ordinary stories. No layout preference may suppress an urgent object. This is a presentation selector, not a money command or a new persisted preference. Risk Medium; Budget 0; Engagement +2. See the mobile-fold worksession for measured evidence.
