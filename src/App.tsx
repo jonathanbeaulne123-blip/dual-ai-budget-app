@@ -35,7 +35,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, useEffect, useMemo, useRef, useState } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -458,6 +458,8 @@ import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
+const AccountHistorySetup = lazy(() => import("./AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
+import { OnboardingJourney, type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
@@ -805,6 +807,8 @@ export function App() {
   const [supabaseAuthReturned, setSupabaseAuthReturned] = useState(false);
   const [inviteInput, setInviteInput] = useState("");
   const [pendingAuthInvite, setPendingAuthInvite] = useState<string | null>(null);
+  const invitationTokenRef = useRef<string | null>(null);
+  const [invitationBusy, setInvitationBusy] = useState(false);
   const [fullHouseInvite, setFullHouseInvite] = useState<{ email: string } | null>(null);
   const [inviteFlowState, setInviteFlowState] = useState<InviteFlowState>("idle");
   const [highlightedHouseholdId, setHighlightedHouseholdId] = useState<string | null>(null);
@@ -1604,7 +1608,7 @@ export function App() {
   }, [supabaseAuthReturned]);
 
   useEffect(() => {
-    if (!supabaseAuthEnabled() || !hostedContinuityAllowed(environment) || !household || !session) return;
+    if (pendingAuthInvite || loadPendingAuthInvite() || !supabaseAuthEnabled() || !hostedContinuityAllowed(environment) || !household || !session) return;
     let cancelled = false;
     void (async () => {
       const authSession = await ensureSupabaseSession(environment);
@@ -1637,7 +1641,7 @@ export function App() {
       }
     });
     return () => { cancelled = true; };
-  }, [environment, household?.householdId, session?.memberId]);
+  }, [environment, household?.householdId, session?.memberId, pendingAuthInvite]);
 
   useEffect(() => {
     const stored = loadPendingAuthInvite();
@@ -1662,7 +1666,7 @@ export function App() {
       const url = new URL(window.location.href);
       url.searchParams.delete("invite");
       url.searchParams.delete("env");
-      if (url.pathname === "/join") url.pathname = "/";
+      if (/^\/join(?:\/|$)/.test(url.pathname)) url.pathname = "/";
       const next = url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : "") + url.hash;
       window.history.replaceState({}, "", next);
       if (supabaseAuthEnabled() && hostedContinuityAllowed(env)) {
@@ -3204,19 +3208,19 @@ export function App() {
   // and this accepted-state guard prevents this frequently re-fired effect
   // from committing the same offer more than once.
   useEffect(() => {
-    if (!household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
+    if (pendingAuthInvite || loadPendingAuthInvite() || !household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
     const priorOnboarding = acceptedHouseholdOnboarding(household);
     if (priorOnboarding && priorOnboarding.state !== "inactive") return;
     void run(
       (current) => offerHouseholdOnboarding(current, { memberId }),
       { closeAdd: false },
     );
-  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready]);
+  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready, pendingAuthInvite]);
   // Each member adopts only their own Personal progress, on their own device.
   // The lifecycle projector considers accepted evidence that predates this
   // run's start, so later setup work still needs its ordinary live chapter.
   useEffect(() => {
-    if (!household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
+    if (pendingAuthInvite || loadPendingAuthInvite() || !household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
     if (!memberNeedsAcceptedOnboardingEvidenceAdoption(household, memberId)) return;
     void run(
       (current) => adoptExistingOnboardingEvidence(current, {
@@ -3225,7 +3229,7 @@ export function App() {
       }),
       { closeAdd: false },
     );
-  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready]);
+  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready, pendingAuthInvite]);
   const charterFoundingVisible = Boolean(household && session && view === "household" && charterFoundingOpen);
   const charterPageVisible = Boolean(household && session && view === "household" && charterPageOpen && household.charter);
   const charterTakeoverVisible = charterFoundingVisible || charterPageVisible;
@@ -3248,6 +3252,8 @@ export function App() {
     && (onboardingInviteRecord.state === "offered" || onboardingInviteRecord.state === "handshake-pending")
     && onboardingInviteDismissedState !== onboardingInviteRecord.state,
   );
+  const guidedJourneyVisible = Boolean(view === "household" && onboardingInviteRecord
+    && ["active", "paused-safe", "waiting-member", "blocked", "adopting", "stopped-incomplete"].includes(onboardingInviteRecord.state));
   const onboardingStandingFactOnly = Boolean(
     household
     && memberId
@@ -3645,7 +3651,8 @@ export function App() {
         const canonical=await fetchLedgerSnapshot(environment,found.household.householdId,found.memberId,auth.accessToken);
         if(!accountFlow())return;
         const status=validatedLedgerBooksStatus(canonical);
-        await saveHousehold(canonical,{operatingEnvironment:environment,memberId:found.memberId,activate:true,indexedDbOnly:true});
+        // Save the named replica first. The guarded session switch below owns selection.
+        await saveHousehold(canonical,{operatingEnvironment:environment,memberId:found.memberId,activate:false,indexedDbOnly:true});
         if(!accountFlow())return;
         adoptGoogleSession(environment,"__welcome__",found.memberId,canonical.householdId);
         adoptAcceptedHousehold(canonical,status);
@@ -3710,6 +3717,7 @@ export function App() {
 
   function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): void {
     cancelAccountFlow();
+    invitationTokenRef.current = token;
     savePendingAuthInvite({ token, environment: inviteEnvironment });
     setInviteInput(token);
     setPendingAuthInvite(token);
@@ -3728,8 +3736,22 @@ export function App() {
     );
   }
 
-  async function redeemAuthInviteToken(token: string, shouldContinue: () => boolean = () => true, displayName?: string): Promise<void> {
-    if (!shouldContinue()) return;
+  async function redeemAuthInviteToken(token: string, parentIsCurrent: () => boolean, displayName?: string): Promise<void> {
+    if (!parentIsCurrent()) return;
+    invitationTokenRef.current = token;
+    const sourceHouseholdId = householdRef.current?.householdId;
+    const sourceMemberId = sessionRef.current?.memberId;
+    let destination: HouseholdEntryTarget | null = null;
+    let acceptingIdentity: { userId: string; sessionId: string } | null = null;
+    const shouldContinue = () => {
+      if (!parentIsCurrent() || invitationTokenRef.current !== token || environmentRef.current !== environment) return false;
+      const current = householdRef.current;
+      const member = sessionRef.current?.memberId;
+      if ((current?.householdId !== sourceHouseholdId || member !== sourceMemberId)
+        && (!destination || current?.householdId !== destination.householdId || member !== destination.memberId)) return false;
+      const auth = loadSupabaseSession(environment);
+      return !acceptingIdentity || (auth?.userId === acceptingIdentity.userId && auth.sessionId === acceptingIdentity.sessionId);
+    };
     savePendingAuthInvite({ token, environment });
     setPendingAuthInvite(token);
     setInviteInput(token);
@@ -3749,6 +3771,8 @@ export function App() {
         startSupabaseGoogleSignIn(environment);
         return;
       }
+      acceptingIdentity = { userId: authSession.userId, sessionId: authSession.sessionId };
+      if (!shouldContinue()) return;
       if (!displayName?.trim()) { setInviteFlowState("awaiting-name"); return; }
       setInviteFlowState("redeeming");
       const cloudConfig = authenticatedSupabaseConfig(readSupabaseConfig(), authSession);
@@ -3796,10 +3820,8 @@ export function App() {
         grantedScopes: ["openid", "email", "profile"],
       });
       setDiscoveredLedgers(found);
-      await openDiscoveredLedger({
-        householdId: match.household.householdId,
-        memberId: match.memberId,
-      }, found, shouldContinue);
+      destination = { householdId: match.household.householdId, memberId: match.memberId };
+      await openDiscoveredLedger(destination, found, shouldContinue);
       if (!shouldContinue()) return;
       setHighlightedHouseholdId(null);
       setPendingAuthInvite(null);
@@ -3812,6 +3834,13 @@ export function App() {
       if (!shouldContinue()) return;
       setInviteFlowState("error");
       throw caught;
+    } finally {
+      const currentAuth = loadSupabaseSession(environment);
+      if (parentIsCurrent() && invitationTokenRef.current === token && environmentRef.current === environment
+        && acceptingIdentity && (currentAuth?.userId !== acceptingIdentity.userId || currentAuth?.sessionId !== acceptingIdentity.sessionId)) {
+        setInviteFlowState("error");
+        setError("The Google account changed during this invitation. Review the invitation with the account you want to join.");
+      }
     }
   }
 
@@ -4921,6 +4950,9 @@ export function App() {
   }
 
   function dismissWelcomeJoin() {
+    cancelAccountFlow();
+    invitationTokenRef.current = null;
+    setInvitationBusy(false);
     setPendingAuthInvite(null);
     setInviteInput("");
     clearPendingAuthInvite();
@@ -5311,7 +5343,9 @@ export function App() {
     );
   }
 
-  if (!household) {
+  // Invitation entry is independent of the selected local replica. Cancellation
+  // returns to that replica without deleting or replacing its selection.
+  if (!household || welcomeMode === "join" || (welcomeMode === "qr" && pendingAuthInvite)) {
     const welcomeSignedIn = Boolean(
       welcomeIdentity
       || discoveredLedgers.length > 0
@@ -5332,12 +5366,22 @@ export function App() {
             <DeferredSurface label="Join Hearth">
             <DeferredWelcomeJoin
               error={error}
-              busy={busy}
+              busy={invitationBusy}
               environment={environment}
               inviteInput={inviteInput}
-              onInviteInput={setInviteInput}
+              onInviteInput={(value) => {
+                cancelAccountFlow();
+                invitationTokenRef.current = authInviteTokenFromText(value);
+                setPendingAuthInvite(invitationTokenRef.current);
+                if (invitationTokenRef.current) savePendingAuthInvite({ token: invitationTokenRef.current, environment });
+                else clearPendingAuthInvite();
+                setInviteInput(value);
+                setInviteFlowState("idle");
+                setInvitationBusy(false);
+                setError("");
+              }}
               onError={setError}
-              onBusy={setBusy}
+              onBusy={setInvitationBusy}
               onJoined={async (next) => { await persist(next); }}
               onRedeemAuthInvite={async (token, displayName) => {
                 setPendingAuthInvite(token);
@@ -6174,6 +6218,26 @@ export function App() {
     });
   }
 
+  function openJourneyDestination(destination: JourneyDestination) {
+    rememberSession({ memberId: session!.memberId, view: destination === "personal" ? "personal" : "household", householdId: household!.householdId });
+    if (destination === "people") {
+      if (household!.charter) setCharterPageOpen(true); else setCharterFoundingOpen(true);
+      return;
+    }
+    if (destination === "plan" || destination === "personal") { goTab("plan"); return; }
+    if (destination === "work") { goTab("shift"); return; }
+    if (destination === "bills") { requestCalendarPane("bills", localStorage); goTab("calendar"); return; }
+    if (destination === "boards") {
+      requestSharedBoard({ environment, householdId: household!.householdId, memberId: session!.memberId }, "tasks");
+      goTab("home"); return;
+    }
+    if (destination === "hercules") { goTab("home"); return; }
+    setFocusedAccountId(null);
+    if (destination === "books") setBooksPaneRequest("opening");
+    if (destination === "fund") setBooksPaneRequest("fund");
+    goTab("ledger");
+  }
+
   function addPostLabel(): string {
     if (mode === "shift") return "Post shift";
     const digits = centsDigitsFromDollars(form.amount);
@@ -6396,6 +6460,9 @@ export function App() {
           </button>
         ))}
       </div>
+      <div className={`onboarding-workspace${guidedJourneyVisible ? " is-guided" : ""}`}>
+        {guidedJourneyVisible && <OnboardingJourney household={household} memberId={session.memberId} onGo={openJourneyDestination} />}
+        <div className="onboarding-detail">
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
@@ -6518,6 +6585,8 @@ export function App() {
 
       {tab === "plan" && dashboard && (
         <>
+          {(onboardingCategoriesOnly || onboardingEstimatesOnly || onboardingPlanOnly) && <header className="journey-plan-heading"><p className="kicker">Stage 3</p><h2>Our first plan</h2><p>Choose starter categories, review each person's amounts, then independently approve and adopt the same proposal.</p><ol aria-label="First plan steps"><li aria-current={onboardingCategoriesOnly ? "step" : undefined}>Categories</li><li aria-current={onboardingEstimatesOnly ? "step" : undefined}>Starter amounts</li><li aria-current={onboardingPlanOnly ? "step" : undefined}>Review and adopt</li></ol></header>}
+
           {onboardingCategoriesOnly ? (
             <div className="plan-wide onboarding-plan-focus">
               <OnboardingCategories
@@ -6719,6 +6788,7 @@ export function App() {
             )}
           />
         ) : <DeferredBooksPage
+          accountHistorySetup={<AccountHistorySetup household={household} memberId={session.memberId} authUserId={localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId} view={view} today={today} busy={busy} onCommand={runKitchen} />}
           duplicateAuthorityGeneration={replicaScopeGenerationRef.current}
           onDuplicateCommand={runKitchen}
           duplicateBusy={busy}
@@ -7848,6 +7918,8 @@ export function App() {
         </div>
       )}
 
+        </div>
+      </div>
       {!charterTakeoverVisible ? (
       <HerculesPresence
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
@@ -7886,7 +7958,7 @@ export function App() {
           else setCharterFoundingOpen(true);
         }}
         onOpenAccounts={() => {
-          rememberSession({ memberId: session.memberId, view: "personal", householdId: household.householdId });
+          rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           setFocusedAccountId(null);
           setBooksPaneRequest("wallet");
           goTab("ledger");

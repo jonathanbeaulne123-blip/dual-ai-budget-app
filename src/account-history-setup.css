@@ -1,0 +1,30 @@
+.account-history-setup { background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: var(--world-r-card, 10px); padding: clamp(16px, 3vw, 28px); margin-block: 20px; min-width: 0; overflow-wrap: anywhere; }
+.account-history-setup h2 { font: 600 clamp(24px, 3vw, 32px)/1.2 var(--display); }
+.account-history-setup p { line-height: 1.55; }
+.history-mode { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 20px; }
+.account-history-setup button { min-height: 44px; padding: 10px 14px; margin: 4px 6px 4px 0; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control, 5px); font: inherit; }
+.account-history-setup button[aria-pressed=true] { border-color: var(--pine); box-shadow: inset 0 -3px var(--pine); }
+.account-history-setup button.primary { background: var(--pine); color: var(--paper); }
+.account-history-setup button:disabled { opacity: .6; }
+.history-manual { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.history-manual label { display: grid; gap: 8px; min-width: 0; }
+.history-manual :is(input,select) { min-height: 44px; min-width: 0; width: 100%; background: var(--card); color: var(--ink); font: inherit; }
+.history-full { grid-column: 1/-1; }
+.history-manual label.history-check { display: flex; align-items: start; }
+.history-check input { min-height: 24px; width: 24px; flex-shrink: 0; }
+.history-review { margin-top: 24px; border-top: 2px solid var(--line); padding-top: 20px; }
+.history-checkpoints { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 16px; }
+.history-checkpoints article, .history-rows article { border: 1px solid var(--line); padding: 16px; background: var(--card); }
+.history-checkpoints h4 { margin: 0 0 12px; font: 600 20px/1.3 var(--display); }
+.history-checkpoints dl { margin: 0; }
+.history-checkpoints dt { font-size: 13px; color: var(--muted); margin-top: 10px; }
+.history-checkpoints dd { margin: 4px 0; font-variant-numeric: tabular-nums; }
+.history-review summary { min-height: 44px; padding-block: 12px; cursor: pointer; }
+.history-rows { display: grid; gap: 10px; }
+.account-history-setup :is(button,input,select,summary):focus-visible { outline: 3px solid var(--world-focus,var(--pine)); outline-offset: 3px; }
+:root[data-theme="classic"] .account-history-setup { border-top: 4px solid var(--pine); }
+:root[data-theme="taylor"] .account-history-setup { border-style: dashed; box-shadow: 4px 4px 0 var(--card),5px 5px 0 var(--line); }
+:root[data-theme="taylor"] .history-checkpoints article { border-style: dashed; border-radius: 8px; }
+:root[data-theme="newfoundland"] .account-history-setup { border-top: 5px solid var(--theme-accent); border-radius: 2px; }
+:root[data-theme="newfoundland"] .history-checkpoints article { border-left: 3px solid var(--theme-accent); }
+@media(max-width:719px) { .history-manual { grid-template-columns: minmax(0,1fr); } .account-history-setup { padding: 16px 12px max(20px,env(safe-area-inset-bottom)); } .history-mode button { flex: 1 1 120px; } .history-review > button { width: 100%; margin-inline: 0; } }

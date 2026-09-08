@@ -104,6 +104,7 @@ function BooksSession({
   onAddToAccount,
   onCommand,
   onDuplicateCommand,
+  accountHistorySetup,
   duplicateBusy,
   duplicateAuthorityGeneration,
   onGoMore,
@@ -125,6 +126,7 @@ function BooksSession({
   onPayAccount: (account: Account) => void;
   onAddToAccount: (account: Account) => void;
   onDuplicateCommand?:DuplicateCommand;
+  accountHistorySetup?: import("react").ReactNode;
   duplicateBusy?:boolean;
   duplicateAuthorityGeneration?:number;
   onCommand: (command: (current: Household) => CommitResult) => void;
@@ -244,7 +246,7 @@ function BooksSession({
   }, [onConsumeRequestedPane, requestedPane, sharedTable]);
 
   useEffect(() => {
-    if (requestedPane !== "opening" || !sharedTable) return;
+    if (requestedPane !== "opening") return;
     setPane("wallet");
     setOpeningCardOpen(true);
     onConsumeRequestedPane?.();
@@ -378,9 +380,10 @@ function BooksSession({
       {!isAuditPane ? (
         <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
       ) : null}
-      {pane === "wallet" && sharedTable && (
+      {pane === "wallet" && (sharedTable || accountHistorySetup) && (
         <>
-          {openingCardOpen ? (
+          {accountHistorySetup && <button type="button" className="ghost" onClick={() => setOpeningCardOpen(value => !value)} aria-expanded={openingCardOpen}>Balances and statements</button>}
+          {openingCardOpen ? accountHistorySetup ?? (
             <OpeningTruthCard
               household={booksHousehold}
               memberId={memberId}
@@ -477,6 +480,7 @@ function BooksSession({
         {isAuditPane ? (
           <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
         ) : null}
+      {pane === "import" && accountHistorySetup}
       {pane === "import" && sharedTable && (
         <DeferredSurface label="Import">
         <DeferredBatchImportCard

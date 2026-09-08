@@ -1,3 +1,13 @@
+## Curriculum v2 and statement-assisted starting books — implementation (2026-09-08)
+
+Jonathan explicitly approved one coherent onboarding repair patch on audited main `a1215b2`. Five stages replace mandatory Fund/card, detailed bills and work cadence: People and agreement, Starting books, Our first plan, Using Hearth day to day, Ready together. Existing household agreement and spending authority remain. Both members complete discarded expense/correction Practice and independently approve current Shared foundation evidence. Optional lessons remain resumable and unfinished until actually completed.
+
+Minimal versioned Shared attestations replace dependence on both Personal lesson envelopes. Acceptance binds current prerequisite facts; changed required evidence invalidates relevant approvals, while ordinary purchases and deferred lessons do not. Incomplete v1 progress maps by semantic requirement and revalidates; genuine complete households retain completion, financial records survive, and old Ready approvals never become v2 consent.
+
+Reviewed statement setup supports bounded PDF/image and OFX/QFX evidence, owner-scoped local drafts, reviewed suggestions, signed or zero per-account openings, and atomic reconciled history. Shared rebases publish the exact reviewed proposal for both independent approvals, reverse only selected live openings at original effective dates, preserve prior checkpoints and reject affected closed periods. Authority enforces import identities, scoped resources and stable retries. Incompatible writers refuse new lineage mutations; rollback preserves accepted receipts.
+
+Risk High. Budget (5): truthful openings, reconciled history and completion authority. Engagement (3): preparation and progressive practical teaching in authored Classic Hearth, Taylor's Scrapbook and Newfoundland desktop/mobile layouts. Small unrelated UX suggestions remain excluded. Local implementation is not release or physical-device proof. [Worksession and acceptance matrix](worksessions/2026-09-08-onboarding-v2-statement-setup.md).
+
 # Decision Log
 
 Living product and architecture decisions for **Hearth**.

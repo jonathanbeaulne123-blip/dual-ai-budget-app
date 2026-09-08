@@ -118,6 +118,12 @@ export function WelcomeJoin({
   const [cloud, setCloud] = useState<boolean | null>(null);
   const [recoveryInput, setRecoveryInput] = useState("");
   const [joinName, setJoinName] = useState("");
+  const requestGeneration = useRef(0);
+  useEffect(() => {
+    requestGeneration.current += 1;
+    setJoinName("");
+    return () => { requestGeneration.current += 1; };
+  }, [inviteInput, environment]);
   const authToken = authInviteTokenFromText(inviteInput) || (isAuthInviteToken(inviteInput.trim()) ? inviteInput.trim().toLowerCase() : "");
 
   useEffect(() => {
@@ -125,6 +131,8 @@ export function WelcomeJoin({
   }, [inviteInput]);
 
   async function redeemGoogleInvite() {
+    const generation = ++requestGeneration.current;
+    const isCurrent = () => requestGeneration.current === generation;
     onBusy(true);
     onError("");
     try {
@@ -139,9 +147,9 @@ export function WelcomeJoin({
       }
       throw new Error("Paste the Google invitation link you received, or scan its QR code.");
     } catch (caught) {
-      onError(caught instanceof Error ? caught.message : String(caught));
+      if (isCurrent()) onError(caught instanceof Error ? caught.message : String(caught));
     } finally {
-      onBusy(false);
+      if (isCurrent()) onBusy(false);
     }
   }
 
@@ -240,7 +248,7 @@ export function WelcomeJoin({
           });
         }}
       />
-      <button className="ghost welcome-join__secondary" type="button" disabled={busy} onClick={onBack}>Back to households</button>
+      <button className="ghost welcome-join__secondary" type="button" onClick={() => { requestGeneration.current += 1; onBack(); }}>Back to households</button>
     </section>
   );
 }
