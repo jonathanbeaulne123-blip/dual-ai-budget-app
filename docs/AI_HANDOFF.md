@@ -1,3 +1,7 @@
+## Mobile Return stitch (2026-09-08)
+
+Locally verified codex/mobile-return-stitch; baseb4146b279c70792ce6a729ec71b7897c02b9726f(Proof PR404); HEAD is this commit. Medium-High; Budget(5)+1; Engagement(3)+2. Resume lives in the single existing bar, resolves current scope/chapter and existing destination, publishes its local bookmark for repeat use. Quick gate141.909s plus four browser widths, repeat Enter/click and measured last-action clearance passed. Independent review clear. [Exact evidence/limits](worksessions/2026-09-08-mobile-return-stitch.md). Next integration; no hosted/merge/deploy.
+
 ## Mobile Proof seam (2026-09-08)
 
 Locally verified codex/mobile-proof-seam; base3a12133b02a487e71c4cba6018f22b1ed4df3e7c(C12 PR403); HEAD is this commit. Medium-High; Budget(5)+2; Engagement(3)+1. Existing amount opens exact accepted scoped source; actual compiler links and separate reversal history, no repeated money or write.98 selected tests plus TypeScript/AI/diff152.113s; final CSS refined then four widths/200%/focus passed. Independent money/UX reviews clear. [Evidence and repaired findings](worksessions/2026-09-08-mobile-proof-seam.md). Next Return, then integration. No hosted/merge/deploy.

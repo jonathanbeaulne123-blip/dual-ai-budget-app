@@ -612,3 +612,7 @@ Elapsed hint and quarter-preview schedulers stop while hidden and resume from wa
 ## Mobile Proof — provenance belongs to the amount (2026-09-08)
 
 Use Claude's existing Books row, with one amount and an optional paper source disclosure. Resolve against the full accepted privacy floor and compiler origin links; a shared transfer journal carries the same reversal history from either leg. Missing facts stay unavailable. Budget(5)+2; Engagement(3)+1.
+
+## Mobile Return — one place to resume (2026-09-08)
+
+Keep Claude's return bar and add one named action within it. Re-resolve the existing scoped bookmark and current chapter, then use the established room handler. Local bookmark changes publish immediately; external replacements refuse. Measured furniture clearance protects the last action. Budget(5)+1; Engagement(3)+2.

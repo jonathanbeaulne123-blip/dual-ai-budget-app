@@ -1369,3 +1369,10 @@
     animation: none !important;
   }
 }
+
+.onboarding-return-bar > span:not(.onboarding-return-dot) { min-width: 0; flex: 1; }
+.onboarding-return-bar .onboarding-resume { pointer-events: auto; flex: 0 0 auto; min-height: 44px; padding: 6px 8px; border: 0; border-left: 1px solid var(--line); border-radius: 3px; background: transparent; color: var(--pine); font: 11px var(--mono); }
+@media (max-width: 719px) {
+  .app:has(.onboarding-return-bar):not(:has(.fund-ledge)) { padding-bottom: calc(var(--nav) + var(--standalone-return-height, 44px) + var(--standalone-pill-clearance, 0px) + 28px); }
+  .app:has(.onboarding-return-bar):not(:has(.fund-ledge)) .hercules-pill { bottom: calc(var(--nav) + var(--standalone-return-height, 44px) + 10px); }
+}
