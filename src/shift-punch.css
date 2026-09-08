@@ -1,4 +1,4 @@
-.shift-punch-instrument { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 12px; color: var(--ink); touch-action: pan-y; }
+.shift-punch-instrument { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 12px; color: var(--ink); touch-action: pan-y pinch-zoom; }
 .shift-punch-handle { align-self: stretch; min-height: 104px; width: 44px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper-2); color: var(--ink); display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 8px 3px; font: 400 10.5px/1.5 var(--mono); touch-action: none; cursor: ns-resize; }
 .shift-punch-handle[aria-expanded="true"] { border-color: var(--pine); background: var(--card); }
 .shift-punch-grip { font-size: 22px; line-height: 1; }

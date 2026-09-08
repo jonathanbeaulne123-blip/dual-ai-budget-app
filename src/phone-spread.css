@@ -5,7 +5,7 @@
 .spread-head p { text-transform: uppercase; letter-spacing: .1em; }
 .spread-head button { border: 0; background: transparent; font: inherit; color: var(--muted); }
 .spread-heading { margin: 12px 0; font-family: var(--display); font-size: 24px; line-height: 1.15; }
-.spread-page { max-height: 62dvh; min-height: 180px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.spread-page { max-height: 62dvh; min-height: 180px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 .spread-page > div { will-change: transform; }
 .spread-page h3 { font-family: var(--display); font-size: 21px; line-height: 1.25; }
 .spread-page section { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; min-height: 0; }

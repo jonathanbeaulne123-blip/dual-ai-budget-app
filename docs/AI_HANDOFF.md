@@ -1,3 +1,13 @@
+## Mobile Phase 2 — implementation complete locally (2026-09-08)
+
+**Branch/base:** codex/mobile-phase2-integration; exact baseccd9304936479bf964ca8d0fe472e7a3ccdceaf5(Return PR405); HEAD is this commit. Fresh origin/main6fb15c7a98f3336862bb743b836aa96a358a35b9 remains unchanged.35 stacked draft slices; no merge/deploy/schema.
+
+**Outcome:** Claude's A1–A5, B1–B9, C1–C12 plus independently reviewed SC01–SC06 and compatible Proof/Return are implemented. His latest style/space authority wins; G2 was explicitly waived. Earned/received/contributed stay distinct; Apron receipt never claims to reduce the current Ask. Medium-High final integration; Budget(5)+0; Engagement(3)+1.
+
+**Proof:** Final133-test focused quick gate + TypeScript/AI/diff166.486s, no breach;570-module production build and Hercules Pro UI passed. Four browser widths and simulated native pinch1→1.6 at320/390 passed; independent final review clear. [Exact commands/fingerprint/limits](worksessions/2026-09-08-mobile-phase2-integration.md). [Full dependency-ordered PR/commit inventory](MOBILE_PHASE_2_REVIEW.md).
+
+**Acceptance/next owner:** Jonathan. Physical/device gates remain open, including B2 G3:14 blank-entry taps against under10 target. Real QR/OAuth, camera/OCR, physical background/pinch and pre-existing sync certification are not claimed. Earlier scoped timing failures remain honestly recorded in their worksessions. Local build and labelled fictional previews are available; Google sign-in needs environment configuration in the compiled preview. Release requires separate instruction.
+
 ## Mobile Return stitch (2026-09-08)
 
 Locally verified codex/mobile-return-stitch; baseb4146b279c70792ce6a729ec71b7897c02b9726f(Proof PR404); HEAD is this commit. Medium-High; Budget(5)+1; Engagement(3)+2. Resume lives in the single existing bar, resolves current scope/chapter and existing destination, publishes its local bookmark for repeat use. Quick gate141.909s plus four browser widths, repeat Enter/click and measured last-action clearance passed. Independent review clear. [Exact evidence/limits](worksessions/2026-09-08-mobile-return-stitch.md). Next integration; no hosted/merge/deploy.

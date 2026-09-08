@@ -134,7 +134,7 @@ function LedgerSession({
         body={stale&&!pending?"Return to the entries and review their current details.":`${view==="household"?"Shared":"Personal view · Shared and your Personal entries"}\n${review.reading.target.note||transactionTypeLabel(review.reading.target.type)} · ${formatCad(review.reading.target.amountCents)} · ${formatDateLabel(review.reading.target.date)}\n${accountName(household,review.reading.target.accountId)}\nID ${review.reading.target.id}`}
         notice={failure} extra={stale&&!pending?undefined:[review.reading.changes.length?`Eligibility for dated totals changes for ${review.reading.changes.length} ${review.reading.changes.length===1?"entry":"entries"}:\n${review.reading.changes.map(row=>`${row.date} · ${row.id} · ${row.willCount?"included":"excluded"}`).join("\n")}`:"No entry changes its eligibility for dated totals.",!review.reading.request.isDuplicate&&!review.reading.targetWillCount?"A linked exclusion still keeps this entry out of totals.":"", "Only this entry’s duplicate flag changes. Original entries stay in Books."].filter(Boolean).join("\n\n")}
         confirmLabel={stale?"Return to entries":`Confirm ${review.reading.request.isDuplicate?"exclusion":"inclusion"}`} review={stale&&!pending?undefined:{openingId:review.openingId,identity:review.reading.basis,readIdentity:()=>String(reviewOpening.current)===review.openingId&&scope.isCurrent(review.token)&&liveReview.current?.kind==="ready"?liveReview.current.basis:"retired"}} danger={review.reading.request.isDuplicate&&!stale} busy={pending||busy} onCancel={()=>setReview(null)} onConfirm={()=>void confirm()}/>,document.body)}
-      <section className="hero">
+      <section className="hero ledger-overview">
         <div className="label">{ledgerNameForView(household, memberId, view)}</div>
         <div className="money" style={{ fontSize: 36 }}>{rows.length}</div>
         <div className="sub">
@@ -142,7 +142,7 @@ function LedgerSession({
         </div>
       </section>
       {flagged > 0 && (
-        <article className="pulse" style={{ marginTop: 0 }}>
+        <article className="pulse ledger-repeat" style={{ marginTop: 0 }}>
           <article className="warn">
             {flagged} {flagged === 1 ? "row looks" : "rows look"} like a repeat. Review the pairs before excluding an entry.
             {" "}
@@ -194,7 +194,7 @@ function LedgerSession({
           <button type="button" className="chip" onClick={onClearSource}>Show all activity</button>
         </p>
       )}
-      <div className="tabs">
+      <div className="tabs ledger-tabs">
         {SECTIONS.map((item) => (
           <button key={item.id} className={section === item.id ? "active" : ""} onClick={() => setSection(item.id)}>
             {item.label}
@@ -202,12 +202,12 @@ function LedgerSession({
           </button>
         ))}
       </div>
-      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notes, place, category…" />
+      <input className="ledger-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notes, place, category…" />
       {section === "other" && (
         <p className="muted">Transfers move money between accounts. Refunds undo spend. Neither is ordinary income.</p>
       )}
       {pendingRows.some(preview => preview.rows.some(tx => isVisibleInView(tx, memberId, view))) && (
-        <section className="card" aria-label="Pending entries">
+        <section className="card ledger-pending" aria-label="Pending entries">
           <p className="muted">Pending · awaiting confirmation. Posted balances update when saved.</p>
           {pendingRows.flatMap(preview => partitionLedger(transactionsForHerculesSource(preview.rows.filter(tx => isVisibleInView(tx, memberId, view)), sourceFocus))[section]
             .filter(tx => !query.trim() || `${tx.note} ${tx.place} ${categoryName(household, tx.subcategoryId)} ${accountName(household, tx.accountId)}`.toLowerCase().includes(query.trim().toLowerCase()))
@@ -217,7 +217,7 @@ function LedgerSession({
             </div>))}
         </section>
       )}
-      <section className="card">
+      <section className="card ledger-entries">
         {rows.length === 0 ? <p className="muted">Nothing in this list yet.</p> : rows.slice(0, rowLimit).map((tx) => (
           <LedgerRow
             key={tx.id}

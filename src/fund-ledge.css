@@ -43,7 +43,7 @@
 .fund-ledge-board[hidden] { display: none; }
 .fund-ledge-arrange, .fund-ledge-record { min-height: 44px; border: 0; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
 .fund-ledge-arrange { display: block; margin-left: auto; font-size: 11.5px; }
-.fund-ledge-content { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.fund-ledge-content { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
 .fund-ledge-stage { min-height: 0; padding: 8px 14px 16px; }
 .fund-ledge-stage:focus-visible, .fund-ledge-arrange:focus-visible, .fund-ledge-record:focus-visible { outline: 2px solid var(--pine); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { .fund-ledge-sheet.is-settling { transition: none; } }

@@ -616,3 +616,7 @@ Use Claude's existing Books row, with one amount and an optional paper source di
 ## Mobile Return — one place to resume (2026-09-08)
 
 Keep Claude's return bar and add one named action within it. Re-resolve the existing scoped bookmark and current chapter, then use the established room handler. Local bookmark changes publish immediately; external replacements refuse. Measured furniture clearance protects the last action. Budget(5)+1; Engagement(3)+2.
+
+## Mobile Phase 2 — preserve authored geometry, restore native zoom (2026-09-08)
+
+Normalize inherited conventional phone Work/Books furniture to Claude's5px cards,3px controls and44px targets without changing instrument handles or desktop. Remove global zoom restrictions and allow pinch within scrolling Spread/Fund/Timesheet content. Final local gate/build/browser evidence is in the integration worksession; physical acceptance is separate. Budget(5)+0; Engagement(3)+1.

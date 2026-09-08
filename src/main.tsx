@@ -13,6 +13,7 @@ import "./charter-founding.css";
 import "./charter.css";
 import "./hearth-theme.css";
 import "./hercules.css";
+import "./mobile-canon.css";
 
 if (typeof window !== "undefined") {
   const phone = window.matchMedia("(max-width: 719px)");
@@ -21,7 +22,6 @@ if (typeof window !== "undefined") {
   };
   syncTouchAction();
   phone.addEventListener("change", syncTouchAction);
-  document.addEventListener("gesturestart", (event) => event.preventDefault());
 }
 
 createRoot(document.getElementById("root")!).render(
