@@ -1608,6 +1608,7 @@ export const postEntry = captureCommand("postEntry", function postEntry(househol
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
   if (input.swipeReviewed !== undefined) reviewedSwipeEntry(household, input);
+  if (input.source === "import" && input.sourceId && household.transactions.some(t => t.accountId === input.accountId && (t.importSourceIdentity === input.sourceId || (t.source === "import" && t.sourceId === input.sourceId)))) throw new ValidationError("This imported source identity is already accepted. Retain the existing transaction.");
   requireAccountScopeForWrite(household, input.accountId, actor);
   requireOpenPeriod(household, date);
   const subcategory = requireSubcategory(
@@ -1770,6 +1771,7 @@ export const postOpeningBalances = captureCommand("postOpeningBalances", functio
       },
     };
   }
+  if (household.accountOpeningCheckpoints?.length) throw new ValidationError("Opening checkpoints are already posted. Use a reviewed account history correction.");
   if (hasPostedOpeningTruth(household)) {
     throw new ValidationError("Opening truth is already posted. Reverse the complete opening batch before correcting it.");
   }
@@ -1843,6 +1845,7 @@ export const postTransfer = captureCommand("postTransfer", function postTransfer
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  if (input.source === "import" && input.sourceId && household.transactions.some(t => t.accountId === input.fromAccountId && (t.importSourceIdentity === input.sourceId || (t.source === "import" && t.sourceId === input.sourceId)))) throw new ValidationError("This imported transfer identity is already accepted. Retain the existing transfer.");
   requireAccountScopeForWrite(household, input.fromAccountId, actor);
   requireAccountScopeForWrite(household, input.toAccountId, actor);
   requireOpenPeriod(household, date);
@@ -4999,6 +5002,7 @@ export const postWorkShiftWithAttendanceReview = captureCommand("postWorkShiftWi
 export const reversePostedMoney = captureCommand("reversePostedMoney", function reversePostedMoney(household: Household, transactionId: string, input: ActorInput & { reversalDate?: string } = {}): CommitResult {
   const tx = household.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That row is already gone.");
+  if (tx.historyCorrectionId) throw new ValidationError("Review a new atomic history correction; this row cannot be reversed separately.");
   const pair = tx.transferPairId
     ? household.transactions.find((item) => item.id === tx.transferPairId)
     : undefined;
@@ -7555,3 +7559,5 @@ export function emptyHousehold(environment: Household["environment"] = "developm
 }
 
 export { DEFAULT_SHIFT_SETTINGS };
+
+export { acceptReviewedAccountHistory, approveAccountHistoryReview, submitAccountHistoryReview } from "./accountHistory.ts";

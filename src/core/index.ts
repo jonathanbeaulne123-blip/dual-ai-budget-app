@@ -254,3 +254,5 @@ export {
   type RestorePointImpact,
 } from "./restorePoints.ts";
 export type { RestorePoint } from "./types.ts";
+
+export * from "./accountHistory.ts";

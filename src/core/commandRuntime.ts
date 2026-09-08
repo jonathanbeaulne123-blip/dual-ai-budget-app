@@ -1,3 +1,5 @@
+import { capturedIntent } from "../ledgerSync/capture.ts";
+import { assertAccountHistoryTransition } from "./accountHistory.ts";
 import { assertAcceptableBooks, type IncrementalBooksGuard } from "./booksValidation.ts";
 import type { CompiledBooks } from "./journal.ts";
 import { ensureHouseholdShape } from "./sync.ts";
@@ -193,6 +195,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       throw new BooksRejectedError("Development and Production stay on separate books. Nothing was posted.", "validation-rejected");
     }
     const postedIds = input.postedIds ?? [];
+    if (previous) {
+      const step = capturedIntent(input.candidate)?.steps.slice().reverse().find(s => s.kind === input.commandKind);
+      assertAccountHistoryTransition(previous, candidate, input.commandKind, input.actingMemberId, step?.args);
+    }
     if (input.commandKind?.endsWith("HouseholdOnboarding")) {
       const incoming = acceptedHouseholdOnboarding(candidate);
       if (!previous

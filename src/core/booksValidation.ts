@@ -1,8 +1,10 @@
+import { assertAccountOpeningIntegrity } from "./accountHistory.ts";
 import { booksEquation, compileHousehold, trialBalance, type CompiledBooks } from "./journal.ts";
 import { BooksRejectedError } from "./commandOutcome.ts";
 import type { Household } from "./types.ts";
 
 export function assertAcceptableBooks(household: Household, compiled = compileHousehold(household)): CompiledBooks {
+  assertAccountOpeningIntegrity(household);
   for (const entry of compiled.entries) {
     const debit = entry.lines.reduce((sum, line) => sum + line.debitCents, 0);
     const credit = entry.lines.reduce((sum, line) => sum + line.creditCents, 0);

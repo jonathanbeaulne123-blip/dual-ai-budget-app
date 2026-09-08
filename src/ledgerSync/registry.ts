@@ -56,7 +56,7 @@ register(
   ["createdBy", "memberId"],
 );
 register(
-  `postEntry postOpeningBalances postTransfer settleWorkReceivable payDeferredWorkTipOut postCardInterest postCardRewards postSavingsInterest saveSitDownSession executeSitDownMoves adoptSitDownStandingOrders fundGoal purchaseGoal recordReconciliation closeBooksMonth postVisit openClaim settleClaim writeOffClaim configureHouseholdFund`,
+  `submitAccountHistoryReview acceptReviewedAccountHistory approveAccountHistoryReview postEntry postOpeningBalances postTransfer settleWorkReceivable payDeferredWorkTipOut postCardInterest postCardRewards postSavingsInterest saveSitDownSession executeSitDownMoves adoptSitDownStandingOrders fundGoal purchaseGoal recordReconciliation closeBooksMonth postVisit openClaim settleClaim writeOffClaim configureHouseholdFund`,
   ["createdBy"],
 );
 register(
@@ -173,7 +173,7 @@ export function executeIntent(
     for (const patch of args[0] as Array<{ memberId: string }>) {
       if (patch.memberId !== actor) throw new Error("ACTOR_MISMATCH");
     }
-  if (kind === "postOpeningBalances" && input) input.confirmationId = commandId;
+  if (["postOpeningBalances", "acceptReviewedAccountHistory"].includes(kind) && input) input.confirmationId = commandId;
   if (
     kind === "reconcileWorkWeekFromEvidence" &&
     Array.isArray(input?.replacements)

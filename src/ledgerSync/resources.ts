@@ -1,3 +1,4 @@
+import { accountHistoryState, type AccountHistoryReview } from "../core/accountHistory.ts";
 import {reviewedClaimInput} from "../core/claimSettlementReview.ts";
 import {dueOccurrenceReview,reviewedDueRequest} from "../core/dueOccurrenceReview.ts";
 import { reviewedSwipeEntry } from "../core/swipe.ts";
@@ -37,6 +38,10 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if (["acceptReviewedAccountHistory", "approveAccountHistoryReview", "submitAccountHistoryReview"].includes(kind)) {
+    const input = args[0] as { review: AccountHistoryReview };
+    return [{key: "account-history", value: accountHistoryState(household, input.review)}];
+  }
   if (["saveBoardTask", "removeBoardTask", "saveBoardMilestone", "removeBoardMilestone", "setBoardPhoto"].includes(kind)) {
     const input = args[0] as { id?: string; slot?: number };
     const boards = shapeSharedBoards(household.kitchen.boards);

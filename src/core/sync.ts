@@ -521,6 +521,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     workJobs: shaped.workJobs,
     shiftSettings: shaped.shiftSettings,
     lastCommittedAt: shaped.lastCommittedAt,
+    accountOpeningCheckpoints: (shaped.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "household"),
+    accountHistoryReviews: (shaped.accountHistoryReviews ?? []).filter(r => r.visibility === "household"),
+    accountHistoryApprovals: (shaped.accountHistoryApprovals ?? []).filter(r => r.visibility === "household"),
     transactions: sharedTx,
     shifts: sharedShifts,
     tombstones: shaped.tombstones,
@@ -567,6 +570,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
       : {}),
     accounts: personalAccounts,
     lastCommittedAt: shaped.lastCommittedAt,
+    accountOpeningCheckpoints: (shaped.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryReviews: (shaped.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryApprovals: (shaped.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
     transactions: personalTx,
     shifts: personalShifts,
     sevenShiftsSchedules: shaped.sevenShiftsSchedules?.filter((row) => row.memberId === memberId) ?? [],
@@ -649,6 +655,9 @@ export function personalEnvelopeFromPayload(
       ? row.fundCardAccountUpdatedAt
       : undefined,
     accounts,
+    accountOpeningCheckpoints: (row.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryReviews: (row.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryApprovals: (row.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
     transactions: Array.isArray(row.transactions)
       ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
       : [],
@@ -740,6 +749,9 @@ export function overlayPersonalReplica(
           : {}),
       };
     }),
+    accountOpeningCheckpoints: [...(household.accountOpeningCheckpoints ?? []).filter(r => !(r.visibility === "personal" && r.ownerMemberId === memberId)), ...(personal.accountOpeningCheckpoints ?? [])],
+    accountHistoryReviews: [...(household.accountHistoryReviews ?? []).filter(r => !(r.visibility === "personal" && r.ownerMemberId === memberId)), ...(personal.accountHistoryReviews ?? [])],
+    accountHistoryApprovals: [...(household.accountHistoryApprovals ?? []).filter(r => !(r.visibility === "personal" && r.ownerMemberId === memberId)), ...(personal.accountHistoryApprovals ?? [])],
     transactions: [
       ...household.transactions.filter((item) => !(
         (item.visibility === "personal" && item.createdBy === memberId) || personalTransactionIds.has(item.id)
@@ -835,6 +847,9 @@ export function assembleHousehold(
     revision: shared.revision,
     baseRevision: shared.revision,
     booksAcceptedHash: null,
+    accountOpeningCheckpoints: [...(shared.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "household"), ...(personal?.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
+    accountHistoryReviews: [...(shared.accountHistoryReviews ?? []).filter(r => r.visibility === "household"), ...(personal?.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
+    accountHistoryApprovals: [...(shared.accountHistoryApprovals ?? []).filter(r => r.visibility === "household"), ...(personal?.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
     commandReceipts: shared.commandReceipts ?? [],
     sharing: shapeSharing({ linked: options?.linked === true }),
     conflicts: shared.conflicts ?? [],
@@ -1017,6 +1032,9 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     ),
     shiftSettings: newer.shiftSettings,
     lastCommittedAt: newer.lastCommittedAt,
+    accountOpeningCheckpoints: mergeRecords(server.accountOpeningCheckpoints ?? [], client.accountOpeningCheckpoints ?? [], tombstones),
+    accountHistoryReviews: mergeRecords(server.accountHistoryReviews ?? [], client.accountHistoryReviews ?? [], tombstones),
+    accountHistoryApprovals: mergeRecords(server.accountHistoryApprovals ?? [], client.accountHistoryApprovals ?? [], tombstones),
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
     tombstones,
@@ -1117,6 +1135,9 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
         }
       : {}),
     lastCommittedAt: newer.lastCommittedAt,
+    accountOpeningCheckpoints: mergeRecords(server.accountOpeningCheckpoints ?? [], client.accountOpeningCheckpoints ?? [], tombstones),
+    accountHistoryReviews: mergeRecords(server.accountHistoryReviews ?? [], client.accountHistoryReviews ?? [], tombstones),
+    accountHistoryApprovals: mergeRecords(server.accountHistoryApprovals ?? [], client.accountHistoryApprovals ?? [], tombstones),
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     accounts: mergeRecords(server.accounts ?? [], client.accounts ?? [], tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),

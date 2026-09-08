@@ -84,6 +84,7 @@ export async function prepareCommand(
   let current = assembleHousehold(state.shared, personal, { linked: true });
   if (!current.members.some((m) => m.id === scope.memberId && m.active))
     throw new Error("MEMBERSHIP_CHANGED");
+  if ((current.accountOpeningCheckpoints?.length || current.transactions.some(t => t.openingSignedBalanceCents !== undefined)) && command.accountHistoryVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: This household uses reviewed account history. Reload Hearth before making changes.");
   const before = current,
     ids = new Map<string, string>();
   // Legacy receipts use another hash contract and do not bind an actor. They

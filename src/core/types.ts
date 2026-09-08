@@ -154,6 +154,11 @@ export type Transaction = {
   reversalOfId?: string;
   source: "manual" | "shift" | "recurring" | "import" | "visit" | "reversal" | "opening";
   sourceId?: string;
+  /** Explicit debit-side economic opening; omitted legacy rows use account kind. */
+  openingSignedBalanceCents?: number;
+  historyCorrectionId?: string;
+  importSourceIdentity?: string;
+  importSourceHash?: string;
   duplicateKey: string;
   potentialDuplicate: boolean;
   isDuplicate: boolean;
@@ -1225,6 +1230,9 @@ export type WeeklyDocumentStamp = {
 };
 
 export type Household = {
+  accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
+  accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
+  accountHistoryApprovals?: import("./accountHistory.ts").AccountHistoryApproval[];
   version: 1;
   householdId: string;
   inviteCode: string;
@@ -1316,6 +1324,9 @@ export type RestorePoint = {
 };
 
 export type SharedEnvelope = {
+  accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
+  accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
+  accountHistoryApprovals?: import("./accountHistory.ts").AccountHistoryApproval[];
   kind: "shared";
   revision: number;
   householdId: string;
@@ -1379,6 +1390,9 @@ export type SharedEnvelope = {
 };
 
 export type PersonalEnvelope = {
+  accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
+  accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
+  accountHistoryApprovals?: import("./accountHistory.ts").AccountHistoryApproval[];
   kind: "personal";
   memberId: string;
   /** Member-owned default surface. Legacy envelopes omit it and derive the calm default. */

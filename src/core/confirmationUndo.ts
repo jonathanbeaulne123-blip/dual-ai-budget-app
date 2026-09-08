@@ -14,6 +14,7 @@ function nowIso(): string {
  * Partner rows and later unrelated rows stay. Does not restore a whole snapshot.
  */
 export function undoLedgerConfirm(current: Household, token: UndoToken): CommitResult {
+  if (token.commandKind === "acceptReviewedAccountHistory" || current.transactions.some(t => token.postedIds?.includes(t.id) && t.historyCorrectionId)) throw new ValidationError("Review a new atomic history correction; generic Undo cannot split this group.");
   const postedIds = [...new Set((token.postedIds ?? []).filter(Boolean))];
   if (!postedIds.length) {
     throw new ValidationError("Nothing to undo for that change.");

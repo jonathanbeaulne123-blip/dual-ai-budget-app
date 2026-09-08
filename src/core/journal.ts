@@ -262,11 +262,13 @@ function compileOpening(
   const bank = household.accounts.find((account) => account.id === root.accountId);
   if (!bank) throw new ValidationError(`${tx.id} points at a missing opening account.`);
   const liability = isLiabilityKind(normalizeAccountKind(bank.kind));
+  const signedOpening = root.openingSignedBalanceCents ?? (liability ? -1 : 1) * root.amountCents;
+  if (!Number.isSafeInteger(signedOpening) || Math.abs(signedOpening) !== root.amountCents) throw new ValidationError("Invalid signed opening balance.");
   const direction = projection.multiplier;
   const party = root.splits[0]?.party || JOINT;
   const lines: Omit<JournalLine, "id" | "lineNo">[] = [];
-  pushSigned(lines, bank.id, (liability ? -1 : 1) * root.amountCents * direction, party, "");
-  pushSigned(lines, "EQ-OPENING", (liability ? 1 : -1) * root.amountCents * direction, party, "");
+  pushSigned(lines, bank.id, signedOpening * direction, party, "");
+  pushSigned(lines, "EQ-OPENING", -signedOpening * direction, party, "");
   return finishEntry({
     id: `JE-${tx.id}`,
     date: tx.date,

@@ -161,6 +161,8 @@ export function householdForHerculesContext(
     : household.kitchen.hercules;
   return {
     ...scoped,
+    accountHistoryReviews: [],
+    accountHistoryApprovals: [],
     activity: activitySafeForMember(household, memberId),
     commandReceipts: [],
     conflicts: [],
@@ -244,6 +246,10 @@ export function goalVisibleInView(goal: Goal, memberId: string, view: LedgerView
 export function householdForView(household: Household, memberId: string, view: LedgerView): Household {
   return {
     ...household,
+    accountOpeningCheckpoints: (household.accountOpeningCheckpoints ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
+    accountHistoryApprovals: (household.accountHistoryApprovals ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
+    accountHistoryReviews: (household.accountHistoryReviews ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
+
     accounts: (household.accounts ?? []).filter((account) => (
       account.scope !== "personal" || (view === "personal" && account.ownerMemberId === memberId)
     )),
