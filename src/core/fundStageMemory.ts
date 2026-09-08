@@ -13,4 +13,3 @@ export function storedFundStage(environment: Environment, householdId: string, m
     return "level";
   }
 }
-

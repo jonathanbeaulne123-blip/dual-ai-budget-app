@@ -31,4 +31,3 @@
   .spread-page .week-grid { grid-template-columns: 1fr; }
   .spread-page .week-day { display: flex; flex-wrap: wrap; gap: 6px; }
 }
-
