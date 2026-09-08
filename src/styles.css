@@ -3203,3 +3203,12 @@ input, select, textarea {
 .work-evidence-disclosure > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font: 11px var(--mono); }
 .work-evidence-disclosure > summary::before { content: "+"; margin-right: 8px; }
 .work-evidence-disclosure[open] > summary::before { content: "−"; }
+
+.ledger-source-amount { display: block; margin-left: auto; min-height: 44px; padding: 4px 0 4px 8px; border: 0; border-radius: 3px; background: transparent; color: inherit; font: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+.ledger-source-slot { flex: 1 0 100%; grid-column: 1 / -1; min-width: 0; }
+.ledger-row:has(.ledger-source-slot) { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.reading-receipt { margin-top: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper-2); font-size: 12px; overflow-wrap: anywhere; }
+.reading-receipt-heading { font: 10.5px var(--mono); }
+.reading-receipt dl { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr); gap: 6px 10px; }
+.reading-receipt dd { margin: 0; }
+.reading-receipt .chip { min-height: 44px; border-radius: 3px; }

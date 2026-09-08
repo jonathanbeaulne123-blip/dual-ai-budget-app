@@ -1,3 +1,5 @@
+import { ReadingReceipt } from "./ReadingReceipt.tsx";
+import { createReadingReceiptReader } from "./readingReceipt.ts";
 import { applyDuplicateReview } from "./core/duplicateReviewCommand.ts";
 import { createPortal } from "react-dom";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
@@ -72,7 +74,7 @@ function LedgerSession({
     setFailure("");if(reading.kind==="unavailable"){setNotice(reading.reason);return;}setNotice("");lastTarget.current=target.id;setReview({openingId:String(++reviewOpening.current),reading,token:scope.capture()});
   };
   useEffect(()=>{
-    if(previousReview.current&&!review){const token=scope.capture();queueMicrotask(()=>{if(!scope.isCurrent(token)||document.activeElement!==document.body)return;const row=[...document.querySelectorAll<HTMLElement>("[data-ledger-row-id]")].find(el=>el.dataset.ledgerRowId===lastTarget.current);const target=row?.querySelector<HTMLElement>("button:not([disabled])");(target??noticeRef.current)?.focus();});}
+    if(previousReview.current&&!review){const token=scope.capture();queueMicrotask(()=>{if(!scope.isCurrent(token)||document.activeElement!==document.body)return;const row=[...document.querySelectorAll<HTMLElement>("[data-ledger-row-id]")].find(el=>el.dataset.ledgerRowId===lastTarget.current);const target=row?.querySelector<HTMLElement>("[data-duplicate-review]:not([disabled])");(target??noticeRef.current)?.focus();});}
     previousReview.current=!!review;
   },[review]);
   const currentReview=review?prepareDuplicateReview(writeHousehold,review.reading.request):null;
@@ -89,6 +91,7 @@ function LedgerSession({
     }catch(error){if(scope.isCurrent(captured.token))setFailure(error instanceof Error?error.message:"The change was not accepted.");}
     finally{if(scope.isCurrent(captured.token))setPending(false);}
   };
+  const readReceipt = useMemo(() => createReadingReceiptReader(writeHousehold, memberId, view), [writeHousehold, memberId, view]);
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState("");
   const [showContrast, setShowContrast] = useState(false);
@@ -220,6 +223,7 @@ function LedgerSession({
             key={tx.id}
             household={household}
             transaction={tx}
+            readReceipt={readReceipt}
             duplicateBusy={busy||pending}
             onToggleDuplicate={() => openReview(tx)}
             onRemove={() => onRemove(tx)}
@@ -250,21 +254,27 @@ function ContrastSide({ household, tx }: { household: Household; tx: Transaction
 function LedgerRow({
   household,
   transaction,
+  readReceipt,
   onToggleDuplicate,
   duplicateBusy,
   onRemove,
 }: {
   household: Household;
   transaction: Transaction;
+  readReceipt: ReturnType<typeof createReadingReceiptReader>;
   onToggleDuplicate: () => void;
   duplicateBusy:boolean;
   onRemove: () => void;
 }) {
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const amountRef = useRef<HTMLButtonElement>(null);
+  const receiptId = `reading-receipt-${transaction.id}`;
+  const closeSource = () => { setSourceOpen(false); amountRef.current?.focus(); };
   const pair = transaction.transferPairId
     ? household.transactions.find((item) => item.id === transaction.transferPairId)
     : undefined;
   return (
-    <div className="ledger-row" data-ledger-row-id={transaction.id}>
+    <div className="ledger-row" data-ledger-row-id={transaction.id} onKeyDown={(event) => { if (sourceOpen && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSource(); } }}>
       <div>
         <strong>{transaction.note || transactionTypeLabel(transaction.type)}</strong>
         <div className="muted">
@@ -284,12 +294,13 @@ function LedgerRow({
         )}
       </div>
       <div className="right">
-        <div>{formatCad(transaction.amountCents)}</div>
+        <button type="button" ref={amountRef} className="ledger-source-amount" aria-label={`Source for ${formatCad(transaction.amountCents)}`} aria-expanded={sourceOpen} aria-controls={sourceOpen ? receiptId : undefined} onClick={() => setSourceOpen(open => !open)}>{formatCad(transaction.amountCents)}</button>
         {(transaction.potentialDuplicate||transaction.isDuplicate) && (
-          <button className="chip" disabled={duplicateBusy} onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
+          <button className="chip" data-duplicate-review disabled={duplicateBusy} onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
         )}
         <button className="chip" onClick={onRemove}>Reverse</button>
       </div>
+      {sourceOpen && <div id={receiptId} className="ledger-source-slot"><ReadingReceipt receipt={readReceipt(transaction)} onClose={closeSource}/></div>}
     </div>
   );
 }

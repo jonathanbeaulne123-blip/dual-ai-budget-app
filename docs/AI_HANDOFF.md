@@ -1,3 +1,7 @@
+## Mobile Proof seam (2026-09-08)
+
+Locally verified codex/mobile-proof-seam; base3a12133b02a487e71c4cba6018f22b1ed4df3e7c(C12 PR403); HEAD is this commit. Medium-High; Budget(5)+2; Engagement(3)+1. Existing amount opens exact accepted scoped source; actual compiler links and separate reversal history, no repeated money or write.98 selected tests plus TypeScript/AI/diff152.113s; final CSS refined then four widths/200%/focus passed. Independent money/UX reviews clear. [Evidence and repaired findings](worksessions/2026-09-08-mobile-proof-seam.md). Next Return, then integration. No hosted/merge/deploy.
+
 ## Mobile C12 — visible elapsed clock (2026-09-08)
 
 Locally verified codex/mobile-c12-visible-clock; base2d4d28e5e8075296a2775f089cea58feefa9a5eb(C11 PR402); HEAD is this commit. Medium; Budget(5)+0; Engagement(3)+1. Both hidden timers stop, return projects current wall time once. 88 selected assertions plus TypeScript/AI/diff155.287s; independent review clear. [Exact commands/fingerprint/limits](worksessions/2026-09-08-mobile-visible-clock.md). No layout or money change; no physical battery proof. Next Proof/Return additions and integration, no merge/deploy.

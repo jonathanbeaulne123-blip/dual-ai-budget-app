@@ -608,3 +608,7 @@ Claude's phone Today/Report/Jobs remains the peer navigation. Imported schedules
 ## Mobile C12 — time comes from timestamps (2026-09-08)
 
 Elapsed hint and quarter-preview schedulers stop while hidden and resume from wall time. The manual-hours callback remains unchanged and missed ticks never accumulate. Budget(5)+0; Engagement(3)+1.
+
+## Mobile Proof — provenance belongs to the amount (2026-09-08)
+
+Use Claude's existing Books row, with one amount and an optional paper source disclosure. Resolve against the full accepted privacy floor and compiler origin links; a shared transfer journal carries the same reversal history from either leg. Missing facts stay unavailable. Budget(5)+2; Engagement(3)+1.
