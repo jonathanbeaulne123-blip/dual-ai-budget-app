@@ -604,3 +604,7 @@ Keep connection setup within existing Jobs. The phone handoff carries only an al
 ## Mobile C11 — keep the Work hierarchy (2026-09-08)
 
 Claude's phone Today/Report/Jobs remains the peer navigation. Imported schedules and evidence stays reachable through one collapsed Jobs disclosure, preserving desktop navigation and existing Confirm controls. Scope changes close it; disappearing focus returns to Jobs. Budget(5)+0; Engagement(3)+1.
+
+## Mobile C12 — time comes from timestamps (2026-09-08)
+
+Elapsed hint and quarter-preview schedulers stop while hidden and resume from wall time. The manual-hours callback remains unchanged and missed ticks never accumulate. Budget(5)+0; Engagement(3)+1.

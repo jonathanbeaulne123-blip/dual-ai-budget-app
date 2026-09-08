@@ -1,3 +1,7 @@
+## Mobile C12 — visible elapsed clock (2026-09-08)
+
+Locally verified codex/mobile-c12-visible-clock; base2d4d28e5e8075296a2775f089cea58feefa9a5eb(C11 PR402); HEAD is this commit. Medium; Budget(5)+0; Engagement(3)+1. Both hidden timers stop, return projects current wall time once. 88 selected assertions plus TypeScript/AI/diff155.287s; independent review clear. [Exact commands/fingerprint/limits](worksessions/2026-09-08-mobile-visible-clock.md). No layout or money change; no physical battery proof. Next Proof/Return additions and integration, no merge/deploy.
+
 ## Mobile C11 — Evidence beneath Jobs (2026-09-08)
 
 Locally verified codex/mobile-c11-work-evidence; base1ee073f53f531b17039ca4a453d75266410eebb6(C10 PR401); HEAD is this commit. Medium; Budget(5)+0; Engagement(3)+1. Phone three-tab order, scoped deeper disclosure and both resize focus directions. 90-test quick gate169.828s precedes final focus repair, then two focused tests and four browser widths passed. Independent review clear. [Exact evidence/limits](worksessions/2026-09-08-mobile-work-evidence.md). Next C12; no merge/deploy/hosted proof.
