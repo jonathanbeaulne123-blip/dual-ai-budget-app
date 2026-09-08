@@ -118,6 +118,8 @@ export function householdForAiDisclosure(
     goals,
     kitchen: {
       ...contextual.kitchen,
+      // Shared keepsakes and tasks are not inputs to financial-model requests.
+      boards: undefined,
       hercules,
     },
   };

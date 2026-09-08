@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { catalogHousehold, saveBoardTask, removeBoardTask, saveBoardMilestone, setBoardPhoto, shapeSharedBoards, mergeKitchen, splitForSync, compileHousehold } from "../src/core/index.ts";
 import { executeIntent } from "../src/ledgerSync/registry.ts";
-import { capturedIntent } from "../src/ledgerSync/capture.ts";
+import { capturedIntent, clearCapturedIntent } from "../src/ledgerSync/capture.ts";
 import { commandFromCapture, type Scope } from "../src/ledgerSync/protocol.ts";
 import { prepareCommand, type AuthorityState } from "../src/ledgerSync/authority.ts";
 import { difference, project } from "../src/ledgerSync/patch.ts";
+import { householdForAiDisclosure } from "../src/core/visibility.ts";
 
 const task = (id="one", memberId="MEM-001") => ({ memberId, id:`BOARD-TASK-${id}`, title:"Feed Hercules", assigneeId:null, dueDate:null, completed:false, expectedVersion:0 });
 const mediaId="BM-00000000-0000-4000-8000-000000000001";
@@ -19,6 +20,7 @@ describe("shared boards", () => {
     expect(next.transactions).toEqual(h.transactions);
     expect(next.goalContributions).toEqual(h.goalContributions);
     expect(splitForSync(next,"MEM-002").shared.kitchen.boards).toEqual(next.kitchen.boards);
+    expect(householdForAiDisclosure(next,"MEM-001").kitchen.boards).toBeUndefined();
   });
   it("refuses stale edits and removed-item resurrection while preserving the caller's input", () => {
     const h=saveBoardTask(catalogHousehold(),task()).household;
@@ -62,6 +64,7 @@ describe("shared boards", () => {
   });
   it("refuses competing same-item authority edits and wrong households without changing accepted content", async () => {
     const h=saveBoardTask(catalogHousehold(),task()).household;
+    clearCapturedIntent(h); // This fixture represents the already accepted initial task.
     const one=splitForSync(h,"MEM-001"),two=splitForSync(h,"MEM-002");
     const state:AuthorityState={sequence:h.revision,shared:one.shared,personal:new Map([["MEM-001",one.personal],["MEM-002",two.personal]])};
     const scope:Scope={environment:h.environment,householdId:h.householdId,memberId:"MEM-001",subject:"one",role:"owner",expires:Date.now()+60000,aclEpoch:1};
