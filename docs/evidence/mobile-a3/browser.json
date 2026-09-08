@@ -1,0 +1,952 @@
+{
+  "rows": [
+    {
+      "width": 320,
+      "personal": false,
+      "state": "normal",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": false,
+      "state": "empty",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": false,
+      "state": "busy",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": false,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": false,
+      "state": "offline",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": false,
+      "state": "large",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": true,
+      "state": "normal",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": true,
+      "state": "empty",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": true,
+      "state": "busy",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": false,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": true,
+      "state": "offline",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 320,
+      "personal": true,
+      "state": "large",
+      "half": {
+        "detent": "half",
+        "top": 180
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 492
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": false,
+      "state": "normal",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": false,
+      "state": "empty",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": false,
+      "state": "busy",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": false,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": false,
+      "state": "offline",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": false,
+      "state": "large",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": true,
+      "state": "normal",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": true,
+      "state": "empty",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": true,
+      "state": "busy",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": false,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": true,
+      "state": "offline",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 390,
+      "personal": true,
+      "state": "large",
+      "half": {
+        "detent": "half",
+        "top": 304
+      },
+      "halfTrap": true,
+      "full": {
+        "detent": "full",
+        "top": 0,
+        "bottom": 768
+      },
+      "tabs": 6,
+      "focusedStage": true,
+      "recordVisible": true,
+      "stageOverflow": false,
+      "trap": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "collapsed": true,
+      "restored": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": false,
+      "state": "normal",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": false,
+      "state": "empty",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": false,
+      "state": "busy",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": false,
+      "state": "offline",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": false,
+      "state": "large",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": true,
+      "state": "normal",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": true,
+      "state": "empty",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": true,
+      "state": "busy",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": true,
+      "state": "offline",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 720,
+      "personal": true,
+      "state": "large",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": false,
+      "state": "normal",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": false,
+      "state": "empty",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": false,
+      "state": "busy",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": false,
+      "state": "offline",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": false,
+      "state": "large",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": true,
+      "state": "normal",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": true,
+      "state": "empty",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": true,
+      "state": "busy",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": true,
+      "state": "offline",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    },
+    {
+      "width": 1100,
+      "personal": true,
+      "state": "large",
+      "hidden": true,
+      "actions": [],
+      "overflow": false,
+      "faults": []
+    }
+  ],
+  "gestures": {
+    "tracking": {
+      "height": 344,
+      "tracking": true
+    },
+    "dragged": "half",
+    "cancelled": true,
+    "smallViewportRecord": true,
+    "wideCollapse": true,
+    "actions": []
+  },
+  "failures": []
+}

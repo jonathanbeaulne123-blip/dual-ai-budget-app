@@ -1,3 +1,4 @@
+import type { FundDestination } from "./FundStage.tsx";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import {
   INSTRUMENT_KIND,
@@ -151,6 +152,7 @@ export function Office({
   onAskStartJar,
   onSitDown,
   onOpenRegister,
+  onOpenFundDestination,
   onGo,
   integrityFindingCount = 0,
   integrityFindings = [],
@@ -193,6 +195,7 @@ export function Office({
   onAskStartJar: (appointmentId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
   onOpenRegister: () => void;
+  onOpenFundDestination?: (destination: FundDestination) => void;
   onGo: (tab: HearthTab) => void;
 }) {
   const breakpoint = useBreakpoint();
@@ -909,6 +912,7 @@ export function Office({
           onKitchen={onKitchen} onMarkPaid={onMarkPaid}
           onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
           onOpenRegister={onOpenRegister}
+          onOpenFundDestination={onOpenFundDestination}
           onGo={onGo} onClinkOn={onClinkOn}
         />
       ) : (

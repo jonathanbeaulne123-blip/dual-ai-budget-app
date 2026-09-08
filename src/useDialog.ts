@@ -11,7 +11,7 @@ const FOCUSABLE = [
 
 function focusable(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => {
-    if (el.hasAttribute("inert") || el.hasAttribute("hidden")) return false;
+    if (el.tabIndex < 0 || el.closest("[hidden]")) return false;
     if (el.closest("[inert]")) return false;
     // Prefer the platform's own answer. Fall back to "focusable" rather than a
     // layout measurement, so the trap still holds where layout is not computed.

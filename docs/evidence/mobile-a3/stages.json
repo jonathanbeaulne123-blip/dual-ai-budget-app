@@ -1,0 +1,324 @@
+[
+  {
+    "width": 320,
+    "id": "level",
+    "errors": [],
+    "text": "The Household Fund$1685.00today130September is covered.$0.00September is covered.Open the Fund register",
+    "overflow": false,
+    "viewBox": "0 0 344 148",
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "swipe",
+    "errors": [],
+    "text": "I spent somethingpost a swipe in two tapsOpen I spent somethingOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "contribute",
+    "errors": [],
+    "text": "I'll put inraise a contribution motionOpen I'll put inOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "waiting",
+    "errors": [],
+    "text": "Contribution motionsNothing has moved.Recent decisionsJonathan · $1685.00Confirmed Sep 8, 2026Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "next-out",
+    "errors": [],
+    "text": "Spoken for$1685.00 free$0.00 of $1685.00 is already claimed. Through the 30th, at month end.Next outNothing owed for the rest of the month.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "spoken-for",
+    "errors": [],
+    "text": "Spoken for$1685.00 free$0.00 of $1685.00 is already claimed. Through the 30th, at month end.Next outNothing owed for the rest of the month.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "week",
+    "errors": [],
+    "text": "This weekQuietNothing leaves this week and $1685.00 lands Tue.Sep 7 – Sep 13 · Copper is leaving, ink is already posted, felt is a payday or a shift. Nothing here is a task.Mon7Tue · today8Jonathan paid · $1685.00Wed9Thu10Fri11Sat12Sun13Open the Fund register",
+    "overflow": false,
+    "columns": "290px",
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "shape",
+    "errors": [],
+    "text": "The shapeNot enough yetEach category against its own trailing three months — never against another category, and never against the other person.Not enough history yet to draw a shape for anything.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "streams",
+    "errors": [],
+    "text": "The two streamsJonathan · not enough history yetJonathan gives not enough history yet. No confirmed contribution from anyone else yet.JonathanJonathan: Sep 8, 2026. not enough history yet.Jonathan · not enough history yetSix months of confirmed contributions. Never combined, never compared.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "seven-days",
+    "errors": [],
+    "text": "Last seven daysin and out around a baselineOpen activityOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "shelf",
+    "errors": [],
+    "text": "The shelfNothing yetNo shared goals yet.Nothing on the shelf yet.Shared goals. A claim on the pool, never a second envelope.Open The shelfOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "record",
+    "errors": [],
+    "text": "The recordhow fresh the books areOpen the Fund registerOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "minutes",
+    "errors": [],
+    "text": "The minute bookstamps, sit-downs, signaturesOpen MoreOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "ask",
+    "errors": [],
+    "text": "$0.00September is covered.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "DIV",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "accounts",
+    "errors": [],
+    "text": "Benefits owingSharedBenefits owing$0.00 book balanceShowing at a glanceCash / tips$0.00 book balanceShow at a glanceEveryday chequing$0.00 book balanceShow at a glanceGoals savings$0.00 book balanceShow at a glanceHigh-interest savings$0.00 book balanceShow at a glanceMastercard$0.00 owedShow at a glanceTFSA$0.00 cost basisShow at a glanceVisa$0.00 owedShow at a glanceShared accounts only. Personal account rooms stay on Personal Books, and balances are never added together.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 320,
+    "id": "settle",
+    "errors": [],
+    "text": "To settleNothing to transferThe card fronted it; the Fund settles it. These are account obligations, never a person's debt.The Fund owes back$0.00The Fund owes no shared account right now.Owed to the household$0.00No Shared claim is waiting to come back.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "level",
+    "errors": [],
+    "text": "The Household Fund$1685.00today130September is covered.$0.00September is covered.Open the Fund register",
+    "overflow": false,
+    "viewBox": "0 0 344 148",
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "swipe",
+    "errors": [],
+    "text": "I spent somethingpost a swipe in two tapsOpen I spent somethingOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "contribute",
+    "errors": [],
+    "text": "I'll put inraise a contribution motionOpen I'll put inOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "waiting",
+    "errors": [],
+    "text": "Contribution motionsNothing has moved.Recent decisionsJonathan · $1685.00Confirmed Sep 8, 2026Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "next-out",
+    "errors": [],
+    "text": "Spoken for$1685.00 free$0.00 of $1685.00 is already claimed. Through the 30th, at month end.Next outNothing owed for the rest of the month.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "spoken-for",
+    "errors": [],
+    "text": "Spoken for$1685.00 free$0.00 of $1685.00 is already claimed. Through the 30th, at month end.Next outNothing owed for the rest of the month.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "week",
+    "errors": [],
+    "text": "This weekQuietNothing leaves this week and $1685.00 lands Tue.Sep 7 – Sep 13 · Copper is leaving, ink is already posted, felt is a payday or a shift. Nothing here is a task.Mon7Tue · today8Jonathan paid · $1685.00Wed9Thu10Fri11Sat12Sun13Open the Fund register",
+    "overflow": false,
+    "columns": "48.8438px 48.8594px 48.8594px 48.8594px 48.8594px 48.8594px 48.8594px",
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "shape",
+    "errors": [],
+    "text": "The shapeNot enough yetEach category against its own trailing three months — never against another category, and never against the other person.Not enough history yet to draw a shape for anything.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "streams",
+    "errors": [],
+    "text": "The two streamsJonathan · not enough history yetJonathan gives not enough history yet. No confirmed contribution from anyone else yet.JonathanJonathan: Sep 8, 2026. not enough history yet.Jonathan · not enough history yetSix months of confirmed contributions. Never combined, never compared.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "seven-days",
+    "errors": [],
+    "text": "Last seven daysin and out around a baselineOpen activityOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "shelf",
+    "errors": [],
+    "text": "The shelfNothing yetNo shared goals yet.Nothing on the shelf yet.Shared goals. A claim on the pool, never a second envelope.Open The shelfOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "record",
+    "errors": [],
+    "text": "The recordhow fresh the books areOpen the Fund registerOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "minutes",
+    "errors": [],
+    "text": "The minute bookstamps, sit-downs, signaturesOpen MoreOpen the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "ask",
+    "errors": [],
+    "text": "$0.00September is covered.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "DIV",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "accounts",
+    "errors": [],
+    "text": "Benefits owingSharedBenefits owing$0.00 book balanceShowing at a glanceCash / tips$0.00 book balanceShow at a glanceEveryday chequing$0.00 book balanceShow at a glanceGoals savings$0.00 book balanceShow at a glanceHigh-interest savings$0.00 book balanceShow at a glanceMastercard$0.00 owedShow at a glanceTFSA$0.00 cost basisShow at a glanceVisa$0.00 owedShow at a glanceShared accounts only. Personal account rooms stay on Personal Books, and balances are never added together.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "id": "settle",
+    "errors": [],
+    "text": "To settleNothing to transferThe card fronted it; the Fund settles it. These are account obligations, never a person's debt.The Fund owes back$0.00The Fund owes no shared account right now.Owed to the household$0.00No Shared claim is waiting to come back.Open the Fund register",
+    "overflow": false,
+    "columns": null,
+    "focus": "H2",
+    "actions": []
+  }
+]

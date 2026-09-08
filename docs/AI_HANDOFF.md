@@ -1,3 +1,17 @@
+## Mobile A3 — full Ledge (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-a3-ledge-sheet`, stacked on A2 `565efd7` (PR#373). No merge or deployment.
+
+**Outcome:** Claude's rest/half/full sheet, six-slot phone board, shared desktop stage renderer, daily member selection memory, phone Level ruler and seven-column/seven-row week. Small viewports scroll the inner content. Explicit existing actions retain Confirm; queued callbacks now refuse changed household/member/environment/view/generation before execution.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+3; Engagement(3)+2. The queue scope repair is a correctness-required expansion from presentation work.
+
+**Verification:**146 quick-gate assertions, TypeScript and AI checks passed in102.601 seconds, no budget breach.72 component browser cases plus drag/cancel/focus/resize checks passed. Independent UX and money rechecks found no remaining blocker. [Worksession](worksessions/2026-09-08-mobile-ledge-sheet.md).
+
+**Evidence class:** Local fictional component Chromium, pure queue commands and full-App jsdom startup/rehearsal canaries. No hosted, physical-device, exhaustive, Production or authenticated full-App browser proof. Workspace-only entries remain existing navigation rather than invented chart models.
+
+**Next owner:** Codex opens the separate A3 draft PR and continues the original mobile program. A3 is not completion of Phase2.
+
 ## Mobile A2 — Fund grip at rest (2026-09-07)
 
 **Status:** Locally verified on `codex/mobile-a2-ledge-grip`, stacked on A1 `01ec730` (PR #372). No merge or deployment.

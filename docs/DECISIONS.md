@@ -453,3 +453,10 @@ Jonathan retained Claude's Apron Pocket design and exact style for the mobile bu
 ### Mobile Ledge at rest why-note — 2026-09-07
 
 A2 replaces the duplicate phone Home Fund card with Claude's persistent paper grip on Home, Calendar, Plan and More. Both approved rooms read the accepted Shared Fund through fundWalk/spokenFor, never the Personal dashboard; the grip visibly names Household Fund and its originating room. Activation explicitly enters the existing Shared Fund register. Existing nav labels and Add scope remain unchanged. Untied readings refuse a figure. Text enlargement may increase the nominal 84px height; measured clearance keeps the nav/content reachable. Jonathan waived G2's fortnight build gate with “just build it”; A3 may be built immediately, with its own verification. Risk Medium; Budget +1; Engagement +1. No money command, schema or deployment.
+
+
+## Mobile A3 — full Ledge, shared stages and reviewed command scope (2026-09-08)
+
+Jonathan's “just build it” waives the fortnight G2 build gate. Preserve Claude's rest/half/full sheet, fixed six-slot grid, printed-stock corners and pine selection edge. Use the same Fund stage renderer and member/civil-date selection memory as desktop, with a phone geometry ruler for the same Level walk. Inner vertical scrolling keeps the board and stage reachable at enlarged text and keyboard heights. No gesture submits money.
+
+A new entrance exposed an existing queued-command scope flaw: callbacks could run on another household after waiting. Capture the reviewed environment/household/member/view/generation and refuse before enqueue and execution when it changes. This necessary trust repair does not cancel an already submitted Confirm or freeze legitimate same-desk revisions. Risk Medium-High; Budget(5)+3 / Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-ledge-sheet.md). Local proof only; no merge, deployment, schema or hosted data change.

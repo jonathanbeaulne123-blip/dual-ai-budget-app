@@ -19,3 +19,12 @@ export function fundLedgeReading(walk: FundWalk) {
     refused: false,
   };
 }
+
+export type LedgeDetent = "rest" | "half" | "full";
+export function ledgeHeights(viewportHeight: number, navHeight: number, rest = 84): Record<LedgeDetent, number> {
+  const full = Math.max(rest, viewportHeight - navHeight);
+  return { rest, half: Math.max(rest, Math.min(full, Math.round(viewportHeight * .55))), full };
+}
+export function nearestLedgeDetent(height: number, heights: Record<LedgeDetent, number>): LedgeDetent {
+  return (["rest", "half", "full"] as const).reduce((best, candidate) => Math.abs(height - heights[candidate]) < Math.abs(height - heights[best]) ? candidate : best, "rest");
+}

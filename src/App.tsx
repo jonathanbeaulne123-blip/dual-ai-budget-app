@@ -1,3 +1,5 @@
+import type { FundDestination } from "./FundStage.tsx";
+import { enqueueScopedWrite } from "./core/scopedWrite.ts";
 import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
@@ -609,6 +611,7 @@ export function App() {
   const [adding, setAddingState] = useState(false);
   const draftGenerationRef = useRef(0);
   function setAdding(value: boolean) { if(value) draftGenerationRef.current++; setAddingState(value); }
+  const [fundLedgeExpanded, setFundLedgeExpanded] = useState(false);
   const [swipeOpen, setSwipeOpen] = useState(false);
   const [swipeError, setSwipeError] = useState("");
   const [swipeStrip, setSwipeStrip] = useState<SwipeUndoStrip | null>(null);
@@ -3277,10 +3280,7 @@ export function App() {
       || previous?.householdId !== remembered.householdId
       || previous?.view !== remembered.view
     ) {
-      if (
-        previous?.memberId !== remembered.memberId
-        || previous?.householdId !== remembered.householdId
-      ) replicaScopeGenerationRef.current += 1;
+      replicaScopeGenerationRef.current += 1;
       closeAdd();
       setSwipeOpen(false);
       setSwipeError("");
@@ -4492,8 +4492,21 @@ export function App() {
     });
   }
 
+  const reviewedKitchenScope = {
+    generation: replicaScopeGenerationRef.current,
+    environment,
+    householdId: household?.householdId ?? null,
+    memberId: session?.memberId ?? null,
+    view: session?.view ?? null,
+  };
   function runKitchen(fn: (current: Household) => CommitResult): Promise<CommandOutcome | null> {
-    return enqueueWrite(async () => {
+    return enqueueScopedWrite(enqueueWrite, reviewedKitchenScope, () => ({
+      generation: replicaScopeGenerationRef.current,
+      environment: environmentRef.current,
+      householdId: householdRef.current?.householdId ?? null,
+      memberId: sessionRef.current?.memberId ?? null,
+      view: sessionRef.current?.view ?? null,
+    }), async () => {
       const current = householdRef.current;
       if (!current) return null;
       try {
@@ -4516,7 +4529,7 @@ export function App() {
         setError(caught instanceof Error ? caught.message : String(caught));
         return null;
       }
-    });
+    }, () => setError("These books changed while this action was waiting. Review the current desk and try again."));
   }
 
   function requestClearThisPhone() {
@@ -5691,6 +5704,15 @@ export function App() {
     goTab("ledger");
   };
 
+  const openFundDestination = (destination: FundDestination = "record") => {
+    rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+    if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
+    if (destination === "shelf") { goTab("plan"); return; }
+    if (destination === "minutes") { goTab("more"); return; }
+    setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
+    goTab("ledger");
+  };
+
   const openWallet = (accountId: string) => {
     setFocusedAccountId(accountId);
     goTab("ledger");
@@ -6143,6 +6165,7 @@ export function App() {
           onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onSitDown={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+          onOpenFundDestination={openFundDestination}
           onOpenRegister={() => {
             setBooksPaneRequest("fund-register");
             goTab("ledger");
@@ -7508,7 +7531,7 @@ export function App() {
         adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded)}
         memberId={session.memberId}
         view={view}
         onGo={(next) => {
@@ -7615,12 +7638,13 @@ export function App() {
       {household.householdFund && ["home", "calendar", "plan", "more"].includes(tab)
         && !charterTakeoverVisible && !onboardingInviteVisible && !adding && !swipeOpen && !confirm && !guard && !commandOpen && !fabOpen ? (
         <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
-          household={household} today={today} view={view}
-          onOpen={() => {
+          household={household} today={today} view={view} memberId={session.memberId} busy={busy}
+          onExpandedChange={setFundLedgeExpanded} onKitchen={fn => { void runKitchen(fn); }}
+          onOpenAccount={accountId => {
             rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
-            setBooksPaneRequest("fund-register");
-            goTab("ledger");
-          }} />
+            openWallet(accountId);
+          }}
+          onOpen={openFundDestination} />
       ) : null}
 
       {!charterTakeoverVisible ? (

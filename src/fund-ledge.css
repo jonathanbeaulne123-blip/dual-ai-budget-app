@@ -5,7 +5,7 @@
   .fund-ledge-grip {
     position: fixed; z-index: 14; left: 0; right: 0; bottom: var(--nav);
     display: flex; flex-direction: column; gap: 4px; width: 100%; min-height: 84px;
-    border: 1px solid var(--line); border-bottom: 0; border-radius: 18px 18px 0 0;
+    border: 1px solid var(--line); border-bottom: 0; border-radius: 5px 5px 0 0;
     padding: 7px 14px 9px; background: var(--card); color: var(--ink);
     font-family: var(--font); text-align: left; cursor: pointer;
     box-shadow: 0 -10px 26px color-mix(in srgb, var(--ink) 12%, transparent);
@@ -26,4 +26,35 @@
   .app:has(.fund-ledge) .onboarding-return-bar { bottom: calc(var(--nav) + var(--fund-ledge-height, 0px)); }
   .app:has(.fund-ledge) .hercules-pill { bottom: calc(var(--nav) + var(--fund-ledge-height, 0px) + var(--fund-return-height, 0px) + 10px); }
   .app:has(.hercules-world.is-focus-open) .fund-ledge { display: none; }
+}
+
+.fund-ledge-modal { position: fixed; inset: 0; z-index: 50; }
+.fund-ledge-scrim { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; border-radius: 0; background: color-mix(in srgb, var(--ink) 18%, transparent); }
+.fund-ledge-sheet {
+  position: absolute; left: 0; right: 0; display: flex; flex-direction: column; min-height: 0;
+  border: 1px solid var(--line); border-bottom: 0; border-radius: 5px 5px 0 0;
+  background: var(--card); box-shadow: 0 -14px 34px color-mix(in srgb, var(--ink) 16%, transparent);
+  overflow: hidden; overscroll-behavior: contain;
+}
+.fund-ledge-sheet.is-settling { transition: height 240ms cubic-bezier(.22, 1, .36, 1); }
+.fund-ledge-grip { touch-action: none; }
+.fund-ledge-sheet .is-sheet-grip { position: relative; bottom: auto; flex: 0 0 auto; border: 0; box-shadow: none; }
+.fund-ledge-board { flex: 0 0 auto; padding: 8px 14px 0; }
+.fund-ledge-board[hidden] { display: none; }
+.fund-ledge-arrange, .fund-ledge-record { min-height: 44px; border: 0; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+.fund-ledge-arrange { display: block; margin-left: auto; font-size: 11.5px; }
+.fund-ledge-content { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-y; }
+.fund-ledge-stage { min-height: 0; padding: 8px 14px 16px; }
+.fund-ledge-stage:focus-visible, .fund-ledge-arrange:focus-visible, .fund-ledge-record:focus-visible { outline: 2px solid var(--pine); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .fund-ledge-sheet.is-settling { transition: none; } }
+
+.fund-ledge-stage > section { min-height: 0; border-radius: 5px; }
+.fund-ledge-stage .week-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.fund-ledge-stage .week-stage { padding: 10px 0; border: 0; background: transparent; box-shadow: none; }
+.fund-ledge-stage .week-day { display: block; padding: 3px; border-radius: 5px; }
+.fund-ledge-stage .week-day-name { font-size: 10.5px; overflow-wrap: anywhere; }
+.fund-ledge-stage .week-chip { padding: 2px; border-radius: 3px; font-size: 10.5px; overflow-wrap: anywhere; }
+@media (max-width: 359px) {
+  .fund-ledge-stage .week-grid { grid-template-columns: 1fr; }
+  .fund-ledge-stage .week-day { display: flex; flex-wrap: wrap; gap: 6px; }
 }

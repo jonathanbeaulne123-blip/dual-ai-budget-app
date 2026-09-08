@@ -169,3 +169,8 @@
     stroke: CanvasText;
   }
 }
+
+/* Same walk, redrawn on the phone ruler: the ending stays on the page. */
+.level.is-phone { min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.level.is-phone .level-label { font-size: 14px; }
+.level.is-phone .level-scroll { overflow: visible; }
