@@ -1384,3 +1384,8 @@
 :root[data-theme="newfoundland"] :is(.onboarding-shell,.onboarding-category-card,.onboarding-estimate-card,.onboarding-plan,.onboarding-ready) { border-radius: 2px; border-top: 5px solid var(--theme-accent); }
 :root[data-theme="newfoundland"] .onboarding-card { border-left: 3px solid var(--theme-accent); }
 @media(max-width:719px) { :is(.onboarding-category-card,.onboarding-estimate-card,.onboarding-plan,.onboarding-ready) { min-width: 0; padding-bottom: max(20px,env(safe-area-inset-bottom)); } }
+
+.onboarding-statement-points { margin-block: 16px; padding: 16px; border: 1px solid var(--line); background: var(--paper); border-radius: var(--world-r-card, 6px); }
+.onboarding-statement-points article { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.onboarding-statement-points p { line-height: 1.5; }
+.onboarding-statement-points button { min-height: 44px; }

@@ -574,6 +574,7 @@ function CalendarPageScope(props: CalendarProps) {
                     <button className="chip selected" disabled={props.busy} onClick={() => props.onCommand((current) => adoptRhythm(current, rhythm.key, today))}>
                       Adopt
                     </button>
+                    <button className="chip" disabled={props.busy} onClick={() => setRepeatingDraft({ ...blankRepeatingDraft(household, today), type: rhythm.type, note: rhythm.note, amount: (rhythm.amountCents / 100).toFixed(2), cadence: rhythm.cadence, nextDate: rhythm.nextDate, accountId: rhythm.accountId, subcategoryId: rhythm.subcategoryId, kind: rhythm.kind, kindLocked: true })}>Edit suggested reminder</button>
                     <button className="chip" disabled={props.busy} onClick={() => props.onCommand((current) => dismissRhythm(current, rhythm.key))}>
                       Not a bill
                     </button>

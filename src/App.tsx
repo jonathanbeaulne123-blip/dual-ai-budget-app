@@ -4773,7 +4773,7 @@ export function App() {
           result.household,
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
-          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent, onDefinitiveRejected },
+          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent, confirmationId: options?.confirmationId, onDefinitiveRejected },
         );
         if (!renderedWriteIsCurrent()) return outcome;
         if (outcome?.ok && memberPersonal && result.personalMemberId) {
@@ -4950,6 +4950,7 @@ export function App() {
   }
 
   function dismissWelcomeJoin() {
+    setFullHouseInvite(null);
     cancelAccountFlow();
     invitationTokenRef.current = null;
     setInvitationBusy(false);
@@ -5294,6 +5295,7 @@ export function App() {
           >
             {busy ? "Returning…" : "Back to Google sign-in"}
           </button>
+          {household && <button type="button" className="ghost" onClick={dismissWelcomeJoin}>Back to saved household</button>}
         </div>
       </div>
     );
@@ -5314,7 +5316,20 @@ export function App() {
     );
   }
 
-  if (!household && pendingDemo) {
+  const returnAuth = loadSupabaseSession(environment);
+  const returningToAnotherIdentity = household && session && !pendingAuthInvite && welcomeMode !== "join"
+    && supabaseAuthEnabled() && hostedContinuityAllowed(environment) && !localLedgerIdentity(session.memberId)
+    && household.google.links.some(link => link.memberId === session.memberId && link.active)
+    && (!returnAuth || continuityMemberId(household, { email: returnAuth.email, subject: returnAuth.googleSubject }) !== session.memberId);
+  if (returningToAnotherIdentity) {
+    return <div className="welcome"><ThemeSceneHeading /><section className="welcome-card"><h1>Confirm access to the saved books</h1><p>The saved ledger is still on this device. The current Google account belongs to a different person, so its contents are hidden.</p><button className="primary" type="button" onClick={() => {
+      cancelAccountFlow(); clearSupabaseSession(environment); clearGoogleSessions(environment);
+      rememberWelcomeGoogleIntent("login");
+      startSupabaseGoogleSignIn(environment, window.location.href, readHearthAuthConfig(), url => window.location.assign(url), { selectAccount: true });
+    }}>Use Google for these saved books</button></section></div>;
+  }
+
+  if (!household && pendingDemo && welcomeMode !== "join" && !pendingAuthInvite && !loadPendingAuthInvite()) {
     return (
       <div className="welcome">
         <ThemeSceneHeading />
@@ -6590,8 +6605,10 @@ export function App() {
           {onboardingCategoriesOnly ? (
             <div className="plan-wide onboarding-plan-focus">
               <OnboardingCategories
+                key={ledgerRenderScopeKey}
                 household={household}
                 memberId={memberId}
+                authUserId={localLedgerIdentity(memberId) ?? loadSupabaseSession(environment)?.userId ?? memberId}
                 busy={busy}
                 onCommit={(fn) => { void runKitchen(fn); }}
               />
@@ -6601,6 +6618,7 @@ export function App() {
               <OnboardingEstimates
                 household={household}
                 memberId={memberId}
+                authUserId={localLedgerIdentity(memberId) ?? loadSupabaseSession(environment)?.userId ?? memberId}
                 busy={busy}
                 onCommit={(fn) => { void runKitchen(fn); }}
               />
@@ -6778,6 +6796,7 @@ export function App() {
         <DeferredSurface label="Books">
         {onboardingReadyOnly ? (
           <OnboardingReady
+            key={`${ledgerRenderScopeKey}:${view}`}
             household={household}
             memberId={session.memberId}
             today={today}

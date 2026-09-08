@@ -49,7 +49,7 @@ export function OnboardingJourney({ household, memberId, onGo }: {
       <OnboardingPreparation />
       <h3>Shared and Personal</h3>
       <p>Shared accounts, accepted transactions, the household plan and boards are visible to both members. A Shared grocery expense is part of both people's household books.</p>
-      <p>Your Personal accounts, transactions and learning history stay in your Personal scope. A Personal purchase does not become Shared by appearing in a statement. Choose the scope before uploading; Shared suggestions are visible to your partner only after acceptance.</p>
+      <p>Your Personal accounts, transactions and learning history stay in your Personal scope. A Personal purchase does not become Shared by appearing in a statement. Choose the scope before uploading; An upload draft stays on this device. Sharing a reviewed correction makes its proposed rows and balances visible to your partner before Final Confirm; only Final Confirm posts money.</p>
     </details>
     <JourneyInterests key={`${household.environment}:${household.householdId}:${memberId}`} />
     <details className="journey-guidance"><summary>Learn more when you want</summary>
