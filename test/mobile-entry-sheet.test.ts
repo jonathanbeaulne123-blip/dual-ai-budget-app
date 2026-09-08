@@ -64,6 +64,7 @@ function Harness({
   observe = () => {},
   scoped = household,
   busy = false,
+  initialAccountId,
 }: {
   mode: AddMode;
   onPost: () => void;
@@ -80,6 +81,7 @@ function Harness({
   observe?: (form: AddFormFields) => void;
   scoped?: typeof household;
   busy?: boolean;
+  initialAccountId?: string;
 }) {
   const [form, setForm] = useState<AddFormFields>(() => splitProbe ? { ...emptyForm(), amount: "0.01", who: "split" } : { ...emptyForm(), ...initial });
   const [slideIndex, setSlideIndex] = useState(splitProbe ? 4 : 0);
@@ -91,6 +93,7 @@ function Harness({
   observe(form);
   return createElement(AddSlideshow, {
     open,
+    initialAccountId,
     recommendationHousehold: scoped,
     sheetRef: { current: null },
     mode,
@@ -210,6 +213,46 @@ describe("mobile entry sheet", () => {
     expect(host.querySelector(".add-confirm-summary")?.textContent).toContain("$12.50");
     act(() => host.querySelector<HTMLButtonElement>("[data-add-confirm]")!.click());
     expect(posts).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["expense", "income"] as const)("More requires deliberate %s account intent with eight eligible accounts", mode => {
+    const posts = vi.fn();
+    const accounts = household.accounts.filter(account => account.active).slice(0, 8);
+    while (accounts.length < 8) accounts.push({ ...accounts[0]!, id: `EXTRA-${accounts.length}`, name: `Extra account ${accounts.length}` });
+    const roster = { ...household, accounts };
+    act(() => root.render(createElement(Harness, { mode, onPost: posts, scoped: roster, roster,
+      initial: { amount: "12.50", subcategoryId: mode === "income" ? "SUB-INCOME-WAGES" : "SUB-FOOD-GROCERIES" }, duplicateReview: true })));
+    click("More");
+    expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
+    expect(button("Add anyway").disabled).toBe(true);
+    expect(host.querySelector('[data-entry-section="account"] [aria-pressed="true"]')).toBeNull();
+    // A desktop resize cannot turn a phone draft's inherited default into intent.
+    resize(1440);
+    for (let index = 0; index < 4; index++) {
+      const next = [...host.querySelectorAll<HTMLButtonElement>('button')].find(item => ["Enter", "Continue", "Skip"].includes(item.textContent?.trim() ?? ""));
+      act(() => next!.click());
+    }
+    expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
+    resize(390); click("Back"); click("More");
+    const visa = host.querySelector<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile[aria-label="Credit card Visa"]')
+      ?? [...host.querySelectorAll<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile')].find(item => item.textContent?.includes("Visa"))!;
+    act(() => visa.click());
+    expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(false);
+    expect(button("Add anyway").disabled).toBe(false);
+    expect(posts).not.toHaveBeenCalled();
+    act(() => host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
+    expect(posts).toHaveBeenCalledOnce();
+  });
+
+  it("honours an explicitly scoped account through More, Back, close and resize", () => {
+    const posts = vi.fn();
+    const render = (open = true) => act(() => root.render(createElement(Harness, { mode: "expense", onPost: posts,
+      initialAccountId: "ACC-VISA", initial: { amount: "12.50" }, open })));
+    render(); click("More");
+    expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(false);
+    click("Back"); click("More"); render(false); render(true); resize(1440); resize(390);
+    expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(false);
+    expect(posts).not.toHaveBeenCalled();
   });
 
   it("income recommends only income categories and transfers require an explicit distinct destination", () => {

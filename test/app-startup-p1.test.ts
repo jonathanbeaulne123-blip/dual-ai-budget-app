@@ -250,10 +250,10 @@ function walkExpenseToConfirm(container: HTMLElement, accountName = "Visa"): HTM
   const enter = [...container.querySelectorAll("button")].find((item) => item.textContent === "Enter") as HTMLButtonElement | undefined;
   if (!enter) throw new Error("Missing Enter");
   act(() => { enter.click(); });
-  const groceries = [...container.querySelectorAll("button.chip")].find((item) => item.textContent === "Groceries") as HTMLButtonElement | undefined;
+  const groceries = [...(container.querySelector('[data-entry-section="category"]')?.querySelectorAll("button.chip, button.swipe-cat") ?? [])].find((item) => item.textContent === "Groceries") as HTMLButtonElement | undefined;
   if (!groceries) throw new Error("Missing Groceries");
   act(() => { groceries.click(); });
-  const account = [...container.querySelectorAll(".wallet-tile")].find((item) => item.textContent?.includes(accountName)) as HTMLButtonElement | undefined;
+  const account = [...(container.querySelector('[data-entry-section="account"]')?.querySelectorAll(".wallet-tile, .swipe-cat") ?? [])].find((item) => item.textContent?.includes(accountName)) as HTMLButtonElement | undefined;
   if (!account) throw new Error(`Missing ${accountName} tile`);
   act(() => { account.click(); });
   const skip = [...container.querySelectorAll("button")].find((item) => item.textContent === "Skip") as HTMLButtonElement | undefined;

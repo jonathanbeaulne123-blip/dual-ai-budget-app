@@ -97,8 +97,12 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
   DeferredOffice: ({ onGo, onOpenFundDestination }: { onGo: (tab: string) => void; onOpenFundDestination: (destination: string) => void }) => createElement("div", null,
     createElement("button", { onClick: () => onGo("add") }, "Open entry"),
     createElement("button", { onClick: () => onGo("plan") }, "Open plan"),
+    createElement("button", { onClick: () => onGo("ledger") }, "Open books"),
     createElement("button", { onClick: () => onOpenFundDestination("ask") }, "Open Ask")),
-  DeferredBooksPage: ({ onAddToAccount }: { onAddToAccount: (account: null) => void }) => createElement("button", { onClick: () => onAddToAccount(null) }, "Open entry"),
+  DeferredBooksPage: ({ onAddToAccount, onFocusAccount }: { onAddToAccount: (account: Household["accounts"][number] | null) => void; onFocusAccount: (id: string) => void }) => createElement("div", null,
+    createElement("button", { onClick: () => onAddToAccount(null) }, "Open entry"),
+    createElement("button", { onClick: () => onFocusAccount("ACC-VISA") }, "Focus Visa"),
+    createElement("button", { onClick: () => onAddToAccount(writes.stored!.accounts.find(account => account.id === "ACC-VISA")!) }, "Open Visa entry")),
   DeferredCalendarPage: () => null,
   DeferredWorkShiftPage: () => null,
   DeferredPairingCard: () => null,
@@ -230,6 +234,8 @@ describe("five boards entry App integration", () => {
       const amount = entry === 0 ? '18.75' : '29.36';
       const note = `Acceptance lifecycle ${entry}`;
       input('#add-note', note); input('[data-entry-section="amount"] input', amount);
+      expect(container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
+      act(() => [...container.querySelectorAll<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile')].find(tile => tile.textContent?.includes("Visa"))!.click());
       await act(async () => container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
       await waitFor(() => expect(writes.confirmations).toHaveLength(entry + 1));
       if (queued) {
@@ -245,6 +251,27 @@ describe("five boards entry App integration", () => {
     expect(container.querySelector<HTMLInputElement>('#add-note')!.value).toBe("");
     expect(container.querySelector<HTMLInputElement>('[data-entry-section="amount"] input')!.value).toBe("");
     expect(writes.confirmations).toHaveLength(2);
+  }, 30000);
+
+  it("distinguishes an account-scoped launch from an inherited focused account", async () => {
+    mobile = true; await mount();
+    await act(async () => button("Open books").click());
+    const ordinary = [...container.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "Open ordinary Books");
+    if (ordinary) await act(async () => ordinary.click());
+    await waitFor(() => expect(container.textContent).toContain("Focus Visa"));
+    await act(async () => button("Focus Visa").click());
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
+    const more = () => [...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(item => item.textContent === "More")!;
+    act(() => more().click());
+    input('[data-entry-section="amount"] input', '12.50');
+    expect(container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
+    const sheet = container.querySelector<HTMLElement>('[data-add-slideshow]')!;
+    act(() => [...sheet.querySelectorAll<HTMLButtonElement>('button')].find(item => item.textContent === "Close")!.click());
+    await act(async () => button("Open Visa entry").click());
+    expect(container.querySelector('[data-add-slideshow]')).toBe(sheet);
+    expect(container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(false);
+    expect(container.querySelector('[data-entry-section="account"] [aria-pressed="true"]')?.textContent).toContain("Visa");
   }, 30000);
 
   it("Ask opens Home and requests the existing chalkboard without a ledger save", async () => {

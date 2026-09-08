@@ -55,6 +55,7 @@ export function AddSlideshow({
   sheetRef,
   open = true,
   recommendationHousehold,
+  initialAccountId,
   mode,
   onSwitchMode,
   form,
@@ -117,6 +118,8 @@ export function AddSlideshow({
   sheetRef: Ref<HTMLDivElement>;
   open?: boolean;
   recommendationHousehold?: Household;
+  /** An account explicitly supplied by this launch, never an inherited form default. */
+  initialAccountId?: string | null;
   mode: AddMode;
   onSwitchMode: (mode: AddMode) => void;
   form: AddFormFields;
@@ -178,6 +181,9 @@ export function AddSlideshow({
 }) {
   const mobile = useMobileEntry();
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const usedOnPhone = useRef(mobile);
+  if (mobile) usedOnPhone.current = true;
+  const [pickedAccounts, setPickedAccounts] = useState({ accountId: "", fromAccountId: "", toAccountId: "" });
   const [fullForm, setFullForm] = useState(false);
   const expanded = mobile && fullForm;
   const suggestions = recommendationHousehold;
@@ -220,16 +226,19 @@ export function AddSlideshow({
   }
 
   function pickAccount(accountId: string) {
+    setPickedAccounts(current => ({ ...current, accountId: accountId }));
     setForm((current) => ({ ...current, accountId }));
     if (!expanded) onSlideIndex(Math.min(index + 1, slides.length - 1));
   }
 
   function pickFrom(accountId: string) {
+    setPickedAccounts(current => ({ ...current, fromAccountId: accountId }));
     setForm((current) => ({ ...current, fromAccountId: accountId }));
     if (!expanded) onSlideIndex(Math.min(index + 1, slides.length - 1));
   }
 
   function pickTo(accountId: string) {
+    setPickedAccounts(current => ({ ...current, toAccountId: accountId }));
     setForm((current) => ({ ...current, toAccountId: accountId }));
     if (!expanded) onSlideIndex(Math.min(index + 1, slides.length - 1));
   }
@@ -252,12 +261,20 @@ export function AddSlideshow({
     catch (caught) { splitError = caught instanceof Error ? caught.message : "Review the split before Confirm."; }
   }
 
+  const explicitAccount = (field: "accountId" | "fromAccountId" | "toAccountId") =>
+    pickedAccounts[field] === form[field] || initialAccountId === form[field];
+  const singleAccount = pickerAccounts.filter(account => account.active).length === 1;
+  const accountIntent = !usedOnPhone.current || explicitAccount("accountId") || singleAccount;
+  const fromIntent = !usedOnPhone.current || explicitAccount("fromAccountId");
+  const toIntent = !usedOnPhone.current || explicitAccount("toAccountId");
+  const needsAccountChoice = mode === "transfer" ? !fromIntent || !toIntent : !accountIntent;
   let mobileInvalid = false;
-  if (mobile && !hidePost) {
+  if (usedOnPhone.current && !hidePost) {
     const hasAccount = (id: string) => pickerAccounts.some(account => account.active && account.id === id);
     mobileInvalid = mode === "transfer"
       ? !hasAccount(form.fromAccountId) || !hasAccount(form.toAccountId) || form.fromAccountId === form.toAccountId
       : !hasAccount(form.accountId) || (mode !== "shift" && !categories.some(category => category.active && category.id === form.subcategoryId));
+    mobileInvalid ||= needsAccountChoice;
     if (mode !== "shift") {
       try { mobileInvalid ||= parseAmount(form.amount) <= 0; } catch { mobileInvalid = true; }
     }
@@ -277,11 +294,11 @@ export function AddSlideshow({
       <div className="sheet-inner add-slideshow-inner">
         <div className="topbar">
           {index > 0 || expanded ? (
-            <button className="ghost" type="button" disabled={busy || !open} onClick={goBack}>Back</button>
+            <button className="ghost" type="button" disabled={!open || (mobile && busy)} onClick={goBack}>Back</button>
           ) : (
             <p className="muted add-slideshow-mode">{mode === "expense" ? "Expense" : mode === "income" ? "Income" : mode === "shift" ? "Shift" : "Transfer"}</p>
           )}
-          <button className="ghost" type="button" data-autofocus disabled={busy} onClick={onClose}>Close</button>
+          <button className="ghost" type="button" data-autofocus disabled={mobile && busy} onClick={onClose}>Close</button>
         </div>
         <h1 id="add-sheet-title" ref={headingRef} tabIndex={mobile ? -1 : undefined} className="add-slideshow-title">{expanded ? `Review ${mode}` : copy.title}</h1>
         <p className="muted add-slideshow-hint">{expanded ? "Your whole draft. Only Confirm posts." : copy.hint}</p>
@@ -296,7 +313,7 @@ export function AddSlideshow({
                   key={item}
                   type="button"
                   className={mode === item ? "active" : ""}
-                  disabled={busy || !open}
+                  disabled={!open || (mobile && busy)}
                   onClick={() => onSwitchMode(item)}
                 >
                   {item}
@@ -307,7 +324,7 @@ export function AddSlideshow({
         )}
 
         {mobile && !expanded && choiceSlide && enteredAmount && <p className="swipe-amount">{enteredAmount}</p>}
-        <fieldset className="entry-sheet-fields" disabled={busy || !open}>
+        <fieldset className="entry-sheet-fields" disabled={!open || (mobile && busy)}>
         {(expanded ? slides : [slide]).map((slide) => {
           const copy = addSlideCopy(mode, slide, shiftGate);
           const canAdvance = canAdvanceAddSlide(slide, form);
@@ -322,7 +339,7 @@ export function AddSlideshow({
               label={mode === "transfer" ? "Move" : "Amount"}
               onEnter={open ? goNext : undefined}
               enterLabel={copy.enterLabel}
-              enterDisabled={!canAdvance || busy}
+              enterDisabled={!canAdvance || (mobile && busy)}
             />}
             {mode === "expense" && (!mobile || expanded) && (
               <div className="chips">
@@ -413,13 +430,13 @@ export function AddSlideshow({
           <>
             {mobile && !expanded ? <MobileEntryChoices
               choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, mode, "accountId", today) : []}
-              label="Suggested accounts" selectedId={form.accountId} busy={busy} onPick={pickAccount} onMore={() => setFullForm(true)}
+              label="Suggested accounts" selectedId={accountIntent ? form.accountId : ""} busy={busy} onPick={pickAccount} onMore={() => setFullForm(true)}
 
             /> : <AddAccountTiles
               booksHousehold={booksHousehold}
               accounts={pickerAccounts}
               today={today}
-              selectedId={form.accountId}
+              selectedId={accountIntent ? form.accountId : ""}
               onSelect={pickAccount}
             />}
             <button type="button" className={`primary post-big${mobile ? " entry-step-continue" : ""}`} disabled={!canAdvance} onClick={goNext}>
@@ -432,13 +449,13 @@ export function AddSlideshow({
           <>
             {mobile && !expanded ? <MobileEntryChoices
               choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, mode, "accountId", today) : []}
-              label="Source accounts" selectedId={form.fromAccountId} busy={busy} onPick={pickFrom} onMore={() => setFullForm(true)}
+              label="Source accounts" selectedId={fromIntent ? form.fromAccountId : ""} busy={busy} onPick={pickFrom} onMore={() => setFullForm(true)}
 
             /> : <AddAccountTiles
               booksHousehold={booksHousehold}
               accounts={pickerAccounts}
               today={today}
-              selectedId={form.fromAccountId}
+              selectedId={fromIntent ? form.fromAccountId : ""}
               onSelect={pickFrom}
             />}
             <button type="button" className={`primary post-big${mobile ? " entry-step-continue" : ""}`} disabled={!canAdvance} onClick={goNext}>
@@ -451,13 +468,13 @@ export function AddSlideshow({
           <>
             {mobile && !expanded ? <MobileEntryChoices
               choices={suggestions ? entryRecommendations(pickerAccounts.filter(account => suggestions.accounts.some(item => item.id === account.id)), suggestions, mode, "accountId", today) : []}
-              label="Destination accounts" selectedId={form.toAccountId} busy={busy} onPick={pickTo} onMore={() => setFullForm(true)}
+              label="Destination accounts" selectedId={toIntent ? form.toAccountId : ""} busy={busy} onPick={pickTo} onMore={() => setFullForm(true)}
               excludeId={form.fromAccountId}
             /> : <AddAccountTiles
               booksHousehold={booksHousehold}
               accounts={pickerAccounts}
               today={today}
-              selectedId={form.toAccountId}
+              selectedId={toIntent ? form.toAccountId : ""}
               excludeId={form.fromAccountId}
               onSelect={pickTo}
             />}
@@ -518,7 +535,7 @@ export function AddSlideshow({
           <ShiftPadSlide
             slide={slide}
             fullForm={expanded}
-            open={open && !busy}
+            open={open && (!mobile || !busy)}
             form={form}
             setForm={setForm}
             shiftGate={shiftGate}
@@ -567,6 +584,9 @@ export function AddSlideshow({
         })}
         </fieldset>
 
+        {!hidePost && (last || expanded) && needsAccountChoice && (
+          <p role="status" data-add-account-intent>{mode === "transfer" ? "Choose the source and destination accounts before Confirm." : "Choose the account for this entry before Confirm."}</p>
+        )}
         <KitchenNotice message={error} onGoMore={onGoMore} onDismiss={onDismissError} />
         {confirm && (
           <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>

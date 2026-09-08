@@ -641,6 +641,7 @@ export function App() {
   const [onboardingInviteDismissedState, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
   const mobileEntry = useMobileEntry();
+  const [addLaunchAccountId, setAddLaunchAccountId] = useState<string | null>(null);
   const [addMobileDraft, setAddMobileDraft] = useState(false);
   const [pausedAddScope, setPausedAddScope] = useState<string | null>(null);
   const [addPresentationKey, setAddPresentationKey] = useState(0);
@@ -652,7 +653,7 @@ export function App() {
       draftGenerationRef.current++;
       punchReviewIntentRef.current++;
       setPausedAddScope(null);
-      if (!resume && !adding) { setAddPresentationKey(key => key + 1); setAddMobileDraft(mobileEntry); }
+      if (!resume && !adding) { setAddPresentationKey(key => key + 1); setAddMobileDraft(mobileEntry); setAddLaunchAccountId(null); }
     }
     setAddingState(value);
   }
@@ -681,6 +682,7 @@ export function App() {
   const closeAdd = () => {
     setPausedAddScope(null);
     setAddMobileDraft(false);
+    setAddLaunchAccountId(null);
     punchReviewIntentRef.current++;
     setSplitDraft(null);
     workShiftInputRef.current = null;
@@ -698,8 +700,9 @@ export function App() {
   };
   // Only an explicit Close/Escape may suspend the mounted mobile draft.
   const pauseAdd = () => {
-    if (!adding || busy || postingRef.current) return;
+    if (!adding) return;
     if (mobileEntry || addMobileDraft) {
+      if (busy || postingRef.current) return;
       punchReviewIntentRef.current++;
       setPausedAddScope(readAddScope());
       setAdding(false);
@@ -5696,6 +5699,7 @@ export function App() {
     setMode("expense");
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
+    setAddLaunchAccountId(card.kind === "ready" ? card.accountId : null);
     setAddSlide(0);
     setError("");
     setForm(formForAccount(accountId, {
@@ -5827,6 +5831,7 @@ export function App() {
     if (pausedAddScope === readAddScope() && (!nextMode || nextMode === mode) && (!account || account.id === focusedAccountId)) {
       leaveDesk();
       setAdding(true, true);
+      if (account) setAddLaunchAccountId(account.id);
       return;
     }
     leaveDesk();
@@ -5836,6 +5841,7 @@ export function App() {
     setMode(nextMode ?? defaults.suggestedMode);
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
+    setAddLaunchAccountId(account?.id ?? null);
     setAddSlide(0);
     setAddDetails(false);
     setError("");
@@ -5976,6 +5982,7 @@ export function App() {
     setMode("transfer");
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
+    setAddLaunchAccountId(account.id);
     setAddSlide(0);
     setAddDetails(false);
     setError("");
@@ -7253,6 +7260,7 @@ export function App() {
           key={addPresentationKey}
           open={adding}
           recommendationHousehold={displayHousehold}
+          initialAccountId={addLaunchAccountId}
           sheetRef={addSheetRef}
           mode={mode}
           onSwitchMode={switchAddMode}
