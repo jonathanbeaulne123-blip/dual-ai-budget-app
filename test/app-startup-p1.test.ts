@@ -1,3 +1,4 @@
+import { shapeWorkJob, upsertWorkJob, postWorkShiftWithAttendanceReview } from "../src/core/index.ts";
 import {dueOccurrenceReview} from "../src/core/dueOccurrenceReview.ts";
 import { applyDuplicateReview } from "../src/core/duplicateReviewCommand.ts";
 import { prepareDuplicateReview } from "../src/core/duplicateReview.ts";
@@ -33,8 +34,9 @@ const startup = vi.hoisted(() => ({
   dueProps:null as null | Parameters<typeof import("../src/DuePreviewSheet.tsx").DuePreviewSheet>[0],
   removeReview:null as null | ((transaction:import("../src/core/types.ts").Transaction)=>void),
   duplicateWriter:null as import("../src/Ledger.tsx").DuplicateCommand|null,
+  countProps: null as null | Parameters<typeof import("../src/WorkShiftPage.tsx").WorkShiftPage>[0],
   punchConfirm: null as null | ((candidate: Household) => Promise<import("../src/core/types.ts").CommitResult>),
-  officePunch: null as null | {onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till")=>void},
+  officePunch: null as null | {onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till"|"shift")=>void},
   scenarioSource: null as import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null,
   saveBarrier: null as {household: Household; promise: Promise<void>} | null,
   replicas: [] as import("../src/storage.ts").HouseholdReplicaSummary[],
@@ -201,14 +203,14 @@ vi.mock("../src/Swipe.tsx",()=>({Swipe:(props:NonNullable<typeof startup.swipePr
 
 vi.mock("../src/deferredSurfaces.tsx", () => ({
   DeferredSurface: ({ children }: { children: ReactNode }) => children,
-  DeferredOffice: ({scenarioSource,onAskSettle,...punch}: {onAskSettle:(id:string,summary:string)=>void;scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till")=>void}) => {
+  DeferredOffice: ({scenarioSource,onAskSettle,...punch}: {onAskSettle:(id:string,summary:string)=>void;scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till"|"shift")=>void}) => {
     startup.officePunch=punch;startup.claimReview=onAskSettle;
     startup.scenarioSource = scenarioSource ?? null;
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
   },
   DeferredBooksPage: (props:{onDuplicateCommand:import("../src/Ledger.tsx").DuplicateCommand;onRemove:(transaction:import("../src/core/types.ts").Transaction)=>void}) => {startup.removeReview=props.onRemove;startup.duplicateWriter=props.onDuplicateCommand;return null;},
   DeferredCalendarPage: () => null,
-  DeferredWorkShiftPage: () => createElement("div",{"data-testid":"shift-room-stub"}),
+  DeferredWorkShiftPage: (props: NonNullable<typeof startup.countProps>) => { startup.countProps=props; return createElement("div",{"data-testid":"shift-room-stub"}); },
   DeferredPairingCard: () => null,
   DeferredWelcomeJoin: () => null,
   DeferredWelcomeQrScanner: () => null,
@@ -329,12 +331,70 @@ async function acceptedScenarioFixture(): Promise<Household> {
   return h;
 }
 
+function countReleaseHousehold(householdId: string, memberId: string): Household {
+  const base = { ...catalogHousehold("development"), householdId };
+  const job = shapeWorkJob({
+    id: "JOB-SHARED",
+    memberId,
+    name: "Harbour",
+    color: "#a85a3d",
+    active: true,
+    timezone: "America/Toronto",
+    locationName: "Toronto",
+    gpsEnabled: false,
+    roles: [{
+      id: "ROLE-SERVER",
+      name: "Server",
+      tipped: true,
+      active: true,
+      rates: [{
+        id: "RATE-1",
+        effectiveDate: "2026-01-01",
+        grossHourlyRateCents: 1800,
+        takeHomeMode: "direct",
+        takeHomeHourlyRateCents: 1500,
+        deductions: [],
+        createdAt: "",
+        updatedAt: "",
+      }],
+      createdAt: "",
+      updatedAt: "",
+    }],
+    paidBreakRate: "role",
+    paidBreakHourlyRateCents: 0,
+    overtimeEnabled: false,
+    overtimeWeeklyThresholdHours: 44,
+    overtimeMultiplier: 1.5,
+    tipOutRules: [],
+    salesFields: [],
+    paySchedule: { cadence: "biweekly", anchorDate: "2026-01-02", weekday: 5, monthDays: [15, 30], customDates: [], reminderTime: "09:00" },
+    tipSchedule: { cadence: "weekly", anchorDate: "2026-01-02", weekday: 5, monthDays: [15, 30], customDates: [], reminderTime: "09:00" },
+    tipWeekStartsOn: 1,
+    defaults: {
+      wagesVisibility: "personal",
+      cashTipsVisibility: "personal",
+      cardTipsVisibility: "personal",
+      tipOutVisibility: "personal",
+      wagesDepositAccountId: "ACC-CHEQUING",
+      cashTipsAccountId: "ACC-CASH",
+      cardTipsDepositAccountId: "ACC-CASH",
+    },
+    wagesReceivableAccountId: "",
+    cardTipsReceivableAccountId: "",
+    note: "",
+    createdAt: "",
+    updatedAt: "",
+  });
+  return upsertWorkJob(base, { job }).household;
+}
+
 describe("cached-shell startup books gate", () => {
   let root: Root;
   let container: HTMLDivElement;
 
   beforeEach(async () => {
     startup.returnAcceptedResults=false;startup.acceptedResults.clear();
+    startup.countProps = null;
     startup.v2 = false;
     startup.v2AutoAdopt = true;
     startup.v2Clients = [];
@@ -1488,6 +1548,30 @@ describe("cached-shell startup books gate", () => {
 
 
   it('opens an allowlisted phone Work handoff without copying auth data into its return intent',async()=>{startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');startup.cached=await acceptedScenarioFixture();window.history.replaceState({},'', '/?open=shift');await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(container.querySelector('[data-testid=shift-room-stub]')).not.toBeNull(),4000);expect(new URL(window.location.href).searchParams.has('open')).toBe(false);expect(sessionStorage.getItem('hearth:open-shift:v1')).toBe('shift');sessionStorage.removeItem('hearth:open-shift:v1');window.history.replaceState({},'', '/');});
+
+  for (const mode of ["accepted", "stale-render", "late-room"] as const) it(`Count receipt stays in its rendered room (${mode})`, async () => {
+    startup.v2=true; vi.stubEnv("VITE_LEDGER_SYNC_V2","1"); vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH","1");
+    let h=countReleaseHousehold("HH-COUNT-RELEASE","MEM-002");
+    h={...h,linked:true};
+    h.booksAcceptedHash=await financialAuditHash(h); startup.cached=h;
+    localStorage.setItem("hearth:session:v1:development",JSON.stringify({memberId:"MEM-002",view:"household",householdId:h.householdId}));
+    const input={date:"2026-09-08",memberId:"MEM-002",jobId:h.workJobs[0]!.id,roleId:h.workJobs[0]!.roles[0]!.id,workedHours:6,paidBreakHours:0,cashTips:12.34,cardTips:100,customersServed:40,staffingCount:2,confirmDuplicate:true,confirmationId:"count-release-frozen"};
+    const actual=postWorkShiftWithAttendanceReview(h,input);
+    let release!:()=>void,calls=0; const barrier=new Promise<void>(resolve=>release=resolve);
+    startup.punchConfirm=async next=>{if(next.shifts.length<=h.shifts.length)return {...actual,household:next,postedIds:[]};calls++;if(mode==="late-room")await barrier;return {...actual,household:next};};
+    await act(async()=>root.render(createElement(App)));
+    await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);
+    await act(async()=>startup.officePunch!.onGo("shift"));
+    await waitForUi(()=>expect(startup.countProps).not.toBeNull(),3000);
+    const old=startup.countProps!, accepted=vi.fn(), rejected=vi.fn();
+    const switchRoom=async()=>act(async()=>container.querySelectorAll<HTMLButtonElement>(".view-switch button")[1]!.click());
+    if(mode==="stale-render")await switchRoom();
+    await act(async()=>{old.onConfirmShift(input,null,{scope:{environment:"development",householdId:h.householdId,memberId:"MEM-002"},onAccepted:accepted,onRejected:rejected});await Promise.resolve();});
+    if(mode==="stale-render"){await settleUi(100);expect(calls).toBe(0);expect(accepted).not.toHaveBeenCalled();return;}
+    await waitForUi(()=>expect(calls).toBe(1),3000);
+    if(mode==="late-room"){await switchRoom();await act(async()=>{release();await Promise.resolve();});await settleUi(150);expect(accepted).not.toHaveBeenCalled();expect(container.querySelector(".toast")).toBeNull();}
+    else await waitForUi(()=>expect(accepted).toHaveBeenCalledTimes(1),3000);
+  });
 
   for(const mode of ['expired','room-roundtrip','queued-expiry','late-acceptance'] as const)it(`Receipt Undo lifetime (${mode})`,async()=>{
     startup.returnAcceptedResults=true;startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');

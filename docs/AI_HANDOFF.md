@@ -1,3 +1,9 @@
+## Mobile Phase 2 — authorized Development release (2026-09-08)
+
+Jonathan explicitly requested push, merge, deploy and reversibility. PR 406 releases the complete Claude-led Phase 2 stack in one merge; pre-release source is tagged `mobile-phase2-before-20260908` at `6fb15c7`. Compatibility rollback is preserved on `codex/mobile-phase2-safe-rollback`, retaining current core/ledgerSync and Count recovery. A raw old-Worker rollback would remove required authority/privacy protections. No schema, ledger reset or Production activation.
+
+Release-wide 573-test quick gate passed, followed by the independently audited Count stale-room receipt fix and its focused high gate. Regression reproduced before and passed after. [Release worksession](worksessions/2026-09-08-mobile-phase2-release.md). Physical acceptance limits remain recorded. Exact deployed SHA/version and live proof belong to the release receipt; do not infer deployment from this pre-merge handoff.
+
 ## Mobile Phase 2 — implementation complete locally (2026-09-08)
 
 **Branch/base:** codex/mobile-phase2-integration; exact baseccd9304936479bf964ca8d0fe472e7a3ccdceaf5(Return PR405); HEAD is this commit. Fresh origin/main6fb15c7a98f3336862bb743b836aa96a358a35b9 remains unchanged.35 stacked draft slices; no merge/deploy/schema.
