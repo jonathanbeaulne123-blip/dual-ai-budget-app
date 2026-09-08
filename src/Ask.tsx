@@ -9,10 +9,11 @@ import {
   type AskRoutesDrawing,
 } from "./core/askView.ts";
 import type { DateKey } from "./core/calendar.ts";
-import type { Household } from "./core/types.ts";
+import type { Household, LedgerView } from "./core/types.ts";
 import "./ask.css";
 
 type AskProps = {
+  viewerRoom?: LedgerView;
   presentation?: "phone" | "desk";
   scenarioSource?: ScenarioSourceContext | null;
   household: Household;
@@ -22,7 +23,7 @@ type AskProps = {
   onMove: (alternative: AskAlternative) => void;
 };
 
-export function Ask({ household, today, memberId, busy, onMove, scenarioSource, presentation = "desk" }: AskProps) {
+export function Ask({ household, today, memberId, busy, onMove, scenarioSource, viewerRoom, presentation = "desk" }: AskProps) {
   const view = useMemo(
     () => askPanelView(household, today, memberId),
     [household, today, memberId],
@@ -59,7 +60,7 @@ export function Ask({ household, today, memberId, busy, onMove, scenarioSource, 
 
   return (
     <section ref={sectionRef} className={`ask${presentation === "phone" ? " is-phone-reach" : ""}`} aria-label="The ask" tabIndex={-1}>
-      {presentation === "phone" ? <Reach household={household} memberId={memberId} today={today} source={scenarioSource} /> : <>
+      {presentation === "phone" ? <Reach viewerRoom={viewerRoom} household={household} memberId={memberId} today={today} source={scenarioSource} /> : <>
       <p
         className={`ask-figure${view.covered ? " is-covered" : ""}`}
         data-ask-figure=""

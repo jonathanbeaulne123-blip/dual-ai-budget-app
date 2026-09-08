@@ -1,4 +1,7 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { SharedFundTrust, FundTrustControls, FundTrustFacts, useFundTrust } from "./FundTrust.tsx";
+import { fundTrustStorageKey } from "./core/fundTrust.ts";
+import { prepareFundHorizon } from "./core/fundHorizon.ts";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { addDays } from "./core/calendar.ts";
 import { formatCad } from "./core/money.ts";
 import { householdAsk } from "./core/ask.ts";
@@ -10,7 +13,7 @@ import { resolveCashAvailability } from "./core/cashAvailability.ts";
 import { reviewFundScenario, projectFundScenario, type FundScenarioResult, type FundScenarioReview, type ScenarioSourceAssumptions } from "./core/scenarioProjection.ts";
 import type { ContributionElection, FundScenarioRequest } from "./core/fundScenario.ts";
 import type { EarningsAvailability } from "./core/earningsAvailability.ts";
-import type { Household } from "./core/types.ts";
+import type { Household, LedgerView } from "./core/types.ts";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { ReachLevel, SharedReachLevel } from "./ReachLevel.tsx";
 import "./reach.css";
@@ -29,23 +32,23 @@ const dollars = (text: string): number | null => {
 const band = (low: number, expected: number) => low === expected ? formatCad(low) : `${formatCad(low)}–${formatCad(expected)}`;
 const namedDate = (date: string) => new Intl.DateTimeFormat('en-CA', {weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC'}).format(new Date(date+'T12:00:00Z'));
 
-export function Reach({ household, memberId, today, source, children }: {household: Household; memberId: string; today: string; source?: ScenarioSourceContext | null; children?: ReactNode}) {
+export function Reach({ household, memberId, today, source, children, viewerRoom = source?.accepted.scope.viewerRoom ?? "household" }: {viewerRoom?: LedgerView; household: Household; memberId: string; today: string; source?: ScenarioSourceContext | null; children?: ReactNode}) {
   if (!askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId)) return null;
   const scope = source?.accepted.scope;
   const usable = !!source && source.isCurrent() && source.accepted.ownBooks === 'ready'
-    && source.household === household && scope?.memberId === memberId && scope.householdId === household.householdId
+    && source.household === household && scope?.memberId === memberId && scope.householdId === household.householdId && scope.viewerRoom === viewerRoom
     && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
   const ask = householdAsk(household, today);
   const sharedDrawing=<SharedReachLevel household={household} today={today} through={addDays(today,30)} />;
   return <div className="reach" data-reach="">
     <p className="reach-kicker">Current Shared Ask</p><p className="reach-figure" data-ask-figure="">{formatCad(ask.askCents)}</p>
-    {usable ? <ReachSession key={JSON.stringify([source!.accepted.acceptedStateId, scope, today])} source={source!} today={today} sharedDrawing={sharedDrawing} />
-      : <><p className="reach-line">Your accepted Personal books are not available for this scenario yet.</p>{sharedDrawing}<label className="reach-kicker">Shifts you'd pick up<input aria-label="Shifts you'd pick up" type="range" min="0" max="4" value="0" disabled readOnly /></label></>}
+    {usable ? <ReachSession key={JSON.stringify([source!.accepted.acceptedStateId, scope, today])} viewerRoom={viewerRoom} source={source!} today={today} sharedDrawing={sharedDrawing} />
+      : <><p className="reach-line">Your accepted Personal books are not available for this scenario yet.</p><SharedFundTrust household={household} memberId={memberId} view={viewerRoom} today={today} /><label className="reach-kicker">Shifts you'd pick up<input aria-label="Shifts you'd pick up" type="range" min="0" max="4" value="0" disabled readOnly /></label></>}
     {children}
   </div>;
 }
 
-function ReachSession({source, today, sharedDrawing}: {source: ScenarioSourceContext; today: string; sharedDrawing: ReactNode}) {
+function ReachSession({source, today, sharedDrawing, viewerRoom}: {viewerRoom: LedgerView; source: ScenarioSourceContext; today: string; sharedDrawing: ReactNode}) {
   const [review, setReview] = useState<Review | null>(null), [error, setError] = useState('');
   const [count, setCount] = useState(0), [routeId, setRouteId] = useState('');
   const [dragCount, setDragCount] = useState<number | null>(null);
@@ -93,6 +96,12 @@ function ReachSession({source, today, sharedDrawing}: {source: ScenarioSourceCon
   const selectedKeys = new Set(named?.route.shifts.map(rowKey)??[]);
   const roster = [...(named?.route.shifts??[]), ...offered.filter(s=>!selectedKeys.has(rowKey(s)))].slice(0,4);
   const chartCapacity = Math.max(shown?.cash.cashCapacityLimitCents??0, ...forecast?.families.flatMap(f=>f.routes.map(r=>r.route.expectedCents))??[]);
+  const sharedHorizon = useMemo(() => prepareFundHorizon(source.household, today, through), [source.household, today, through]);
+  const trust = useFundTrust(fundTrustStorageKey(source.household.environment, source.household.householdId, source.accepted.scope.memberId, viewerRoom, today),
+    sharedHorizon.kind === "horizon" ? sharedHorizon : null,
+    shown && activeResult ? { scenario: activeResult, currentBasis: shown.cash.basis } : null);
+  const trustReading = trust.reading.kind === "trust-reading" ? trust.reading : null;
+  const displayedDeficit = trustReading ? band(trustReading.expected.terminalDeficitCents, trustReading.lower.terminalDeficitCents) : "—";
   const sourceName = (tranche: Available['tranches'][number]) => {
     if (receiptKind==='cash') return 'Assumed cash';
     const shift=selected?.route.shifts.find(s=>tranche.id===`forecast:${forecast?.jobId}:${forecast?.roleId}:${s.date}:${s.meal}`);
@@ -151,10 +160,11 @@ function ReachSession({source, today, sharedDrawing}: {source: ScenarioSourceCon
   const cancelDrag=()=>{const p=pointer.current;pointer.current=null;setDragCount(null);if(p?.target.hasPointerCapture(p.id))p.target.releasePointerCapture(p.id);};
   return <>
     <p className="reach-line">{previewCount ? 'These shifts would be extra work you choose. A Fund contribution is a separate choice.' : 'Nothing extra picked up. You can try a contribution below.'}</p>
-    {shown ? <ReachLevel horizon={shown.cash.horizon} scenario={activeResult} capacityCents={chartCapacity} /> : sharedDrawing}
+    {sharedHorizon.kind === "horizon" ? <ReachLevel horizon={sharedHorizon} scenario={activeResult} capacityCents={chartCapacity} reading={trustReading} /> : sharedDrawing}
+    <FundTrustControls control={trust} disabled={pending || dragCount !== null} />
     <div className="reach-scrub"><label className="reach-kicker" htmlFor={`${id}-rail`}>Shifts you'd pick up</label>
       <input id={`${id}-rail`} type="range" min="0" max="4" step="1" value={previewCount} disabled={!forecast || pending}
-        aria-valuetext={`${previewCount} shifts, ${named?.route.hours??0} hours${named ? ', '+band(named.route.safeCents,named.route.expectedCents)+' net tips; '+named.route.shifts.map(s=>namedDate(s.date)+' '+s.meal).join(', ') : ', no supported route'}. ${named ? (named.route.ceiling.kind==='within' ? 'Within '+named.route.ceiling.ceilingLabel+'.' : ceilingVerdictCopy(named.route.ceiling)??'No recorded work ceiling.') : ''} ${activeResult ? 'Model end deficit through '+through+': '+band(activeResult.expected.terminalDeficitCents,activeResult.lower.terminalDeficitCents)+'.' : 'No reviewed contribution scenario.'} Fund contribution chosen separately.`}
+        aria-valuetext={`${previewCount} shifts, ${named?.route.hours??0} hours${named ? ', '+band(named.route.safeCents,named.route.expectedCents)+' net tips; '+named.route.shifts.map(s=>namedDate(s.date)+' '+s.meal).join(', ') : ', no supported route'}. ${named ? (named.route.ceiling.kind==='within' ? 'Within '+named.route.ceiling.ceilingLabel+'.' : ceilingVerdictCopy(named.route.ceiling)??'No recorded work ceiling.') : ''} ${trustReading ? 'Model end deficit through '+through+': '+displayedDeficit+'.' : 'Forward reading unavailable.'} Fund contribution chosen separately.`}
         data-dialog-escape-boundary={dragCount!==null || undefined}
         onPointerDown={e=>{if(!valid()||!e.isPrimary||e.button!==0||pointer.current)return;const box=e.currentTarget.getBoundingClientRect(), thumb=box.left+8+(box.width-16)*count/4;pointer.current={id:e.pointerId,start:count,target:e.currentTarget,changed:Math.abs(e.clientX-thumb)>9,x:e.clientX};e.currentTarget.setPointerCapture(e.pointerId);setDragCount(count);}}
         onPointerMove={e=>{if(pointer.current?.id===e.pointerId && Math.abs(e.clientX-pointer.current.x)>2)pointer.current.changed=true;}}
@@ -170,10 +180,11 @@ function ReachSession({source, today, sharedDrawing}: {source: ScenarioSourceCon
     <div className="reach-list">{roster.map(s=><div className={`reach-row${selectedKeys.has(rowKey(s))?' on':''}`} key={rowKey(s)} aria-label={selectedKeys.has(rowKey(s))?'Selected shift':'Offered shift'}><time dateTime={s.date}>{namedDate(s.date)}</time><span>{s.meal} · {s.hours}h</span><strong>{band(s.safeCents,s.expectedCents)}</strong></div>)}</div>
     {named && named.route.ceiling.kind!=='none' ? <p className={`reach-line${named.route.ceiling.kind==='over'?' is-over':''}`}>{ceilingVerdictCopy(named.route.ceiling)}</p> : null}
     <div className={`reach-paperbox${named?.route.ceiling.kind==='over'?' is-over':''}`}>
-      <span className="reach-pill">Projection · lower to expected</span>
+      <span className="reach-pill">{trust.level === "estimated" ? "Projection · lower to expected" : trust.level === "observed" ? "Projection · observed sources" : "Projection · confirmed contributions"}</span>
+      <FundTrustFacts control={trust} />
       <dl className="reach-readings"><dt>Would earn · net tips</dt><dd>{named ? band(named.route.safeCents,named.route.expectedCents) : '—'}</dd>
-        <dt>Model end deficit · through {namedDate(through)}</dt><dd data-reach-deficit="">{activeResult ? band(activeResult.expected.terminalDeficitCents,activeResult.lower.terminalDeficitCents) : '—'}</dd></dl>
-      <p className="reach-line" role="status" aria-live="polite" aria-atomic="true">{pending ? 'Reviewing this choice…' : previewing ? 'Previewing other shifts. Review their receipt and contribution separately.' : error ? 'This choice needs review before drawing a scenario.' : activeResult?.contributions.length ? 'Your chosen hypothetical contributions are drawn above. Current Shared Ask is unchanged.' : 'No contribution chosen. The Fund follows its baseline.'}{activeResult ? <span className="sr-only"> Model end deficit through {namedDate(through)}: {band(activeResult.expected.terminalDeficitCents,activeResult.lower.terminalDeficitCents)}.</span> : null}</p>
+        <dt>Model end deficit · through {namedDate(through)}</dt><dd data-reach-deficit="">{displayedDeficit}</dd></dl>
+      <p className="reach-line" role="status" aria-live="polite" aria-atomic="true">{pending ? 'Reviewing this choice…' : previewing ? 'Previewing other shifts. Review their receipt and contribution separately.' : error ? 'This choice needs review before drawing a scenario.' : activeResult?.contributions.length ? (trust.level === 'estimated' ? 'Your chosen hypothetical contributions are drawn above. Current Shared Ask is unchanged.' : 'Your contribution choices are retained. Choose Estimated to include them in this drawing.') : 'No contribution chosen. Current Shared Ask is unchanged.'}{trustReading ? <span className="sr-only"> Model end deficit through {namedDate(through)}: {displayedDeficit}.</span> : null}</p>
       {error ? <p className="reach-line is-over" role="status">{error}</p> : !shown ? <p className="reach-line" role="status">Reviewing the accepted books…</p> : null}
       {shown ? <details><summary>Receipt and contribution</summary>
         <fieldset disabled={pending||dragCount!==null} className="reach-fields"><legend>Receipt assumption</legend>

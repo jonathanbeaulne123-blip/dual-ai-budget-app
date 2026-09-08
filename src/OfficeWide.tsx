@@ -599,7 +599,7 @@ export function OfficeWide({
               onClose={closeFundDrawer}
             />
           ) : spreadIsStage && fundConfigured ? (
-            <FundStage scenarioSource={scenarioSource} widgetId={activeFundWidget ?? "level"} household={booksHousehold}
+            <FundStage view={view} scenarioSource={scenarioSource} widgetId={activeFundWidget ?? "level"} household={booksHousehold}
               memberId={memberId} today={today} busy={busy} headingRef={fundStageHeadingRef}
               onKitchen={onKitchen} onOpenAccount={onOpenAccount} plate={selectedFundPlate}
               onOpenCabinet={plate => openPlateCabinet(plate.id)} onOpenDestination={onOpenFundDestination ?? (() => onGo("ledger"))} />

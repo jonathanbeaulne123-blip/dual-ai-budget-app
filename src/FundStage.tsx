@@ -1,3 +1,4 @@
+import { SharedFundTrust } from "./FundTrust.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import "./phone-fund-readings.css";
 import { useMemo, type Ref } from "react";
@@ -5,7 +6,7 @@ import {
   askBelongsOnDesk, categoryShape, fundPlates, fundWalk, fundWeek,
   fundWidgetIdForPlateId, monthKeyFromDateKey, moveAskGoalClaimToNextMonth,
   twoStreams, widgetAllowedFor,
-  type CommitResult, type DeskPlateModel, type FundWidgetId, type Household,
+  type CommitResult, type DeskPlateModel, type FundWidgetId, type Household, type LedgerView,
 } from "./core/index.ts";
 import { Level } from "./Level.tsx";
 import { Ask } from "./Ask.tsx";
@@ -22,9 +23,10 @@ import { FUND_WIDGET_CARD } from "./FundDrawer.tsx";
 export type FundDestination = "swipe" | "contribute" | "record" | "minutes" | "seven-days" | "shelf";
 
 /** One renderer for the desk and phone; detent motion is never an input. */
-export function FundStage({ widgetId, household, memberId, today, busy, headingRef,
+export function FundStage({ widgetId, household, memberId, today, busy, headingRef, view = "household",
   onKitchen, onOpenAccount, onOpenDestination, plate, onOpenCabinet, presentation = "desk", scenarioSource,
 }: {
+  view?: LedgerView;
   presentation?: "phone" | "desk";
   scenarioSource?: ScenarioSourceContext | null;
   widgetId: FundWidgetId; household: Household; memberId: string; today: string; busy: boolean;
@@ -45,12 +47,13 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
     ? plate ?? fundPlates({ household, memberId, today }).find(row => fundWidgetIdForPlateId(row.id) === widgetId)
     : null, [allowed, household, memberId, today, widgetId, plate]);
   const nameOf = (id: string | null | undefined) => household.members.find(member => member.id === id)?.name ?? "A member";
-  const ask = () => <Ask presentation={presentation} scenarioSource={scenarioSource} household={household} today={today} memberId={memberId} busy={busy}
+  const ask = () => <Ask viewerRoom={view} presentation={presentation} scenarioSource={scenarioSource} household={household} today={today} memberId={memberId} busy={busy}
     onMove={alternative => onKitchen(current => moveAskGoalClaimToNextMonth(current, {
       today, memberId, goalId: alternative.goalId, recurrenceId: alternative.recurrenceId, claimDate: alternative.claimDate,
     }))} />;
   if (!allowed) return <p className="desk-plate-empty">This reading is not available on this desk.</p>;
   if (widgetId === "level" && walk && presentation === "phone" && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId)) return ask();
+  if (widgetId === "level" && walk && presentation === "phone") return <SharedFundTrust household={household} memberId={memberId} view={view} today={today} headline headingRef={headingRef} />;
   if (widgetId === "level" && walk) return <><Level compact={presentation === "phone"} walk={walk} household={household} headingRef={headingRef} />{askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId) ? ask() : null}</>;
   if ((widgetId === "next-out" || widgetId === "spoken-for") && walk) return <NextOutStage walk={walk} today={today} headingRef={headingRef} />;
   if (widgetId === "week" && week) return <WeekStage week={week} nameOf={nameOf} headingRef={headingRef} />;

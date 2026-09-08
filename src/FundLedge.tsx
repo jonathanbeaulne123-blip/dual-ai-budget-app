@@ -173,7 +173,7 @@ export function FundLedge({ household, today, view, memberId, busy, onOpen, onKi
           <div ref={stage} className="fund-ledge-stage" id={`${sheetId}-stage`} role="tabpanel" aria-labelledby={detent === "full" && !drawer ? `${sheetId}-stage-tab-${selectedId}` : undefined} tabIndex={-1} inert={!expanded || busy || undefined}
             aria-label={drawer && detent === "full" ? "Arrange the Fund board" : FUND_WIDGET_CARD[shownId].name}>
             {drawer && detent === "full" ? <FundDrawer household={household} memberId={memberId} busy={busy} onKitchen={onKitchen} onClose={() => setDrawer(false)} />
-              : <FundStage scenarioSource={scenarioSource} presentation="phone" widgetId={shownId} household={household} memberId={memberId} today={today} busy={busy}
+              : <FundStage view={view} scenarioSource={scenarioSource} presentation="phone" widgetId={shownId} household={household} memberId={memberId} today={today} busy={busy}
                 headingRef={heading} onKitchen={onKitchen} onOpenDestination={openDestination}
                 onOpenAccount={accountId => { close(); onOpenAccount(accountId); }} />}
             <button type="button" className="fund-ledge-record" onClick={() => openDestination("record")}>Open the Fund register</button>

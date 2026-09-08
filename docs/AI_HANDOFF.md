@@ -1,3 +1,17 @@
+## Mobile B6 — the Trust (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b6-trust`; exact base/pre-commit HEAD`58fe84fdaf679a9cf901e8d7267793fac866ef6b` (B5, PR387). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's three Trust stops preserve accepted Fund/Ask and scheduled obligations, draw only reviewed ranges, and label the last included source without implying completeness. Scoped preferences fall back visibly; stale accepted identities immediately remove old scenarios. Original typography and one drawing/paperbox remain.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** Final High quick gate104/104 plus TypeScript/AI/diff passed90.816seconds; no five-minute breach. Fourteen browser layout/state cases, two sheet/keyboard cases and native scroll checks pass. Independent financial/UX/verifier reviews clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-trust.md).
+
+**Limits:** Fictional local component/model proof; no authenticated full-App browser, physical, exhaustive, hosted or release claim. No merge, deployment or schema. Existing user-zoom restriction remains for integration review.
+
+**Next owner:** Codex opens the separate stacked draft PR and builds Claude's retained B7 Punch within the original instrument grammar.
+
 ## Mobile B5 — the Fill (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b5-fill`; exact base/pre-commit HEAD `b0c094b407e9619c7440f3c973cbbd3ccbd6b074` (B4, PR386). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
