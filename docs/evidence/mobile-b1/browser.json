@@ -1,0 +1,324 @@
+{
+  "rows": [
+    {
+      "width": 320,
+      "state": "normal",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 320,
+      "state": "long",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 320,
+      "state": "figures",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        617283946,
+        617283945
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 320,
+      "state": "large",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 320,
+      "state": "three",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [],
+      "inputs": 3,
+      "sliders": 0,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 390,
+      "state": "normal",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 390,
+      "state": "long",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 390,
+      "state": "figures",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        617283946,
+        617283945
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 390,
+      "state": "large",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 390,
+      "state": "three",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [],
+      "inputs": 3,
+      "sliders": 0,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 720,
+      "state": "normal",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 720,
+      "state": "long",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 720,
+      "state": "figures",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        617283946,
+        617283945
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 720,
+      "state": "large",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 720,
+      "state": "three",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [],
+      "inputs": 3,
+      "sliders": 0,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 1100,
+      "state": "normal",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 1100,
+      "state": "long",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 1100,
+      "state": "figures",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        617283946,
+        617283945
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 1100,
+      "state": "large",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [
+        1,
+        0
+      ],
+      "inputs": 1,
+      "sliders": 1,
+      "disabled": false,
+      "actions": []
+    },
+    {
+      "width": 1100,
+      "state": "three",
+      "errors": [],
+      "overflow": false,
+      "screenOverflow": false,
+      "values": [],
+      "inputs": 3,
+      "sliders": 0,
+      "disabled": false,
+      "actions": []
+    }
+  ],
+  "failures": [],
+  "gestures": [
+    {
+      "width": 320,
+      "start": "0",
+      "blocked": true,
+      "moved": 19,
+      "dialogRemains": 1,
+      "cancelled": "0",
+      "endpoint": "100",
+      "thirty": "30",
+      "before": [],
+      "after": [
+        "post"
+      ]
+    },
+    {
+      "width": 390,
+      "start": "0",
+      "blocked": true,
+      "moved": 15,
+      "dialogRemains": 1,
+      "cancelled": "0",
+      "endpoint": "100",
+      "thirty": "30",
+      "before": [],
+      "after": [
+        "post"
+      ]
+    }
+  ],
+  "gestureFailures": []
+}

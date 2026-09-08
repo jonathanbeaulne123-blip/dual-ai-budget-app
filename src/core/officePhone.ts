@@ -82,3 +82,51 @@ export function phoneDrawerIds(rail: InstrumentId[]): PhoneShellId[] {
 export function phoneStoryIds(order: InstrumentId[]): InstrumentId[] {
   return order.filter((id) => id !== "chalkboard" && id !== "calculator").slice(0, 4);
 }
+
+/** Seals are an indivisible row of three objects, never one disguised slot. */
+export type PhoneFoldId = InstrumentId | "weather" | "needs" | "seals" | "apron";
+export type PhoneFoldItem = { id: PhoneFoldId; slots: number; wide: boolean };
+
+/** Presentation only. Urgency cannot be hidden by an old layout preference. */
+export function phoneFoldOrder(input: {
+  stories: InstrumentId[];
+  ownShift: boolean;
+  overdue: boolean;
+  health: boolean;
+  needs: boolean;
+  apron?: boolean;
+}): PhoneFoldItem[] {
+  const urgent: InstrumentId[] = [
+    ...(input.ownShift ? ["timesheet" as const] : []),
+    ...(input.health ? ["lamp" as const] : []),
+    ...(input.overdue ? ["mail" as const] : []),
+  ];
+  const ids: PhoneFoldId[] = [...(input.apron ? ["apron" as const] : []), ...urgent, ...(input.needs ? ["needs" as const] : []),
+    "weather", "seals", ...input.stories];
+  return [...new Set(ids)].map((id) => ({
+    id, slots: id === "seals" ? 3 : 1,
+    wide: id === "weather" || id === "needs" || id === "seals" || id === "apron",
+  }));
+}
+
+/** Admit a ranked prefix: four objects at most, and only whole measured rows. */
+export function phoneFoldCount(items: PhoneFoldItem[], heights?: ReadonlyMap<PhoneFoldId, number>, maxHeight = Infinity, gap = 12): number {
+  let slots = 0, used = 0, rowHeight = 0, halfRow = false, count = 0;
+  for (const item of items) {
+    if (slots + item.slots > 4) break;
+    const height = heights?.get(item.id) ?? 0;
+    let nextUsed = used, nextRow = rowHeight;
+    if (item.wide || !halfRow) {
+      nextUsed += (count ? gap : 0) + height;
+      nextRow = height;
+    } else {
+      nextUsed += Math.max(0, height - rowHeight);
+      nextRow = Math.max(rowHeight, height);
+    }
+    if (nextUsed > maxHeight) break;
+    used = nextUsed; rowHeight = nextRow;
+    halfRow = !item.wide && !halfRow;
+    slots += item.slots; count++;
+  }
+  return count;
+}

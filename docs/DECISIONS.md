@@ -445,3 +445,178 @@ Risk High; Budget +5; Engagement +3. Development publication is authorized in th
 ### Desktop Home scroll why-note — 2026-09-07
 
 Remove the desktop Home app's `max-height: 100dvh` and nested overflow scrolling so the document can carry the entire office past the fixed navigation. Jonathan reported the desk cutting off when scrolling on desktop. Low-risk presentation repair; budget delta (5): readable lower ledger cards; engagement delta (3): uninterrupted desk scrolling. Financial behavior is unchanged. Isolated Chromium checks using the actual stylesheet at 1100, 1440, 2048 and 390px reach the final content with no horizontal overflow; authenticated live household verification remains unperformed.
+
+### Mobile fold why-note — 2026-09-07
+
+Jonathan retained Claude's Apron Pocket design and exact style for the mobile build. A1 counts each seal and each paper tile as one visible object; the three seals remain an indivisible row. Weather and the needs sentence each count as one. A ranked prefix of at most four objects occupies the measured head; whole objects that exceed its height remain immediately below the dashed crease. The current member's active/confirming shift, integrity findings and overdue bills take precedence over ordinary stories. No layout preference may suppress an urgent object. This is a presentation selector, not a money command or a new persisted preference. Risk Medium; Budget 0; Engagement +2. See the mobile-fold worksession for measured evidence.
+
+### Mobile Ledge at rest why-note — 2026-09-07
+
+A2 replaces the duplicate phone Home Fund card with Claude's persistent paper grip on Home, Calendar, Plan and More. Both approved rooms read the accepted Shared Fund through fundWalk/spokenFor, never the Personal dashboard; the grip visibly names Household Fund and its originating room. Activation explicitly enters the existing Shared Fund register. Existing nav labels and Add scope remain unchanged. Untied readings refuse a figure. Text enlargement may increase the nominal 84px height; measured clearance keeps the nav/content reachable. Jonathan waived G2's fortnight build gate with “just build it”; A3 may be built immediately, with its own verification. Risk Medium; Budget +1; Engagement +1. No money command, schema or deployment.
+
+
+## Mobile A3 — full Ledge, shared stages and reviewed command scope (2026-09-08)
+
+Jonathan's “just build it” waives the fortnight G2 build gate. Preserve Claude's rest/half/full sheet, fixed six-slot grid, printed-stock corners and pine selection edge. Use the same Fund stage renderer and member/civil-date selection memory as desktop, with a phone geometry ruler for the same Level walk. Inner vertical scrolling keeps the board and stage reachable at enlarged text and keyboard heights. No gesture submits money.
+
+A new entrance exposed an existing queued-command scope flaw: callbacks could run on another household after waiting. Capture the reviewed environment/household/member/view/generation and refuse before enqueue and execution when it changes. This necessary trust repair does not cancel an already submitted Confirm or freeze legitimate same-desk revisions. Risk Medium-High; Budget(5)+3 / Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-ledge-sheet.md). Local proof only; no merge, deployment, schema or hosted data change.
+
+
+## Mobile A4 — original chapter spreads (2026-09-08)
+
+Claude's three existing seals open the original four/four/three-page chapters, without a second Home navigation surface. Shape uses words over its existing ranges; Streams shows confirmed dates and repeat counts in month/member rows. Explicit Shared scope and own-only, unreversed tip history preserve accepted-book boundaries. Paging is presentation only. The existing Ask confirmation handles Escape before its parent and discards unsubmitted review when its page leaves. Focus restoration resolves the current seal if the measured fold has reparented it. Risk Medium-High; Budget(5)+2; Engagement(3)+1. [Worksession](worksessions/2026-09-08-mobile-spread.md). No new financial model, command, deployment or schema.
+
+
+## Mobile A5 — accepted apron receipt (2026-09-08)
+
+Claude's felt apron is Home's first whole object for six hours after an accepted own contributor shift. Its four facts and original hierarchy remain. Jonathan's current instruction replaces causal Ask copy with a distinct Current Shared Ask. Historic cash received, card-after-withholding and the three tip-out timings come from the accepted shift; a later settlement never pretends to allocate that receipt. Signed card balances remain valid. Legacy timing is explicitly unknown. Expiry uses createdAt, never updatedAt; reversed rows and other members are excluded. Risk Medium-High; Budget(5)+1; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-apron.md). No command, schema, deployment or native Live Activity.
+
+
+## Mobile B1 — exact Cut ownership (2026-09-08)
+
+Claude's Cut uses the same percentSplits result for printed cents and Final Confirm. A one-cent50/50 review previously printed two cents; it now shows the first member's one cent and the final member's zero. The final member is named as filling the remainder after rounding. Current ordered active IDs replace the hardcoded seed; the draft binds desk/member/environment/generation and refuses stale queued ownership. Other roster sizes retain every field, with invalid totals and negative rounded residuals refused. Drag preview blocks both Confirm paths; cancellation restores the reviewed split. New entries reset defaults while duplicate/rejection retries retain review. Risk Medium-High; Budget(5)+2; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-cut.md). No financial kernel, command, schema or deployment change.
+
+
+## Mobile B2 — Claude's Count and recoverable Confirm (2026-09-08)
+
+The phone contributor money step uses Claude's three named rails, 29px take-home figure, 15px readings and history behind the card rail. Exact cents and hundredth-hour source values survive a stationary touch; deliberate duration edits snap to quarter-hours. Paid-break income appears once inside wages. Captured envelope duration remains immutable. Existing mandatory sales, customers, staffing, destinations, attendance and Confirm stay in the flow. Risk Medium-High; Budget(5)+2; Engagement(3)+3.
+
+Autosave requires full form and source recovery, not only three numbers. One member/household/environment-scoped session draft uses conditional revision writes. Final Confirm freezes a persisted command identity and exact payload; authoritative v2 receipt lookup distinguishes accepted, queued, rejected and missing submissions. Unknown transport results keep the frozen draft. Accepted and definitive rejection transitions reach remounted forms. Source/settings changes require review, and a stale editor cannot overwrite another form's saved or submitted version. These repairs expand the slice because existing callers discarded scan drafts and attendance before acceptance.
+
+Measured local tap counts are21→14 for blank entry and4→4 for populated source figures. The under-ten blank-entry G3 gate remains open; required fields are not omitted to claim completion. Physical phone proof also remains open. No merge, deployment, schema or accounting-kernel change. [Worksession](worksessions/2026-09-08-mobile-count.md).
+
+
+## Mobile SC01 — explicit scenario intent (2026-09-08)
+
+The new Fund scenario starts with a scoped, dated in-memory request. A contributor explicitly chooses fixed CAD or an optional up-to cap with exact source allocations. Scope separates the hosting room from the Shared Fund target and binds authenticated subject, generation, accepted revision and source digests. Zero cannot erase an observed estimate; replacements require distinct reviewed references. Validation checks intent only and returns no financial projection or posting authority. Account capacity and historical receipts are not proof of remaining available money: Fund contributions do not currently identify/debit a contributor source account. Later availability must preserve that unknown or use an explicitly labelled assumption. Risk High; Budget(5)+3; Engagement(3)+1. [Worksession](worksessions/2026-09-08-mobile-scenario-contract.md). Claude's Reach remains the intended consumer and original visual authority.
+
+
+## Mobile SC02 — one accepted Fund horizon (2026-09-08)
+
+The canonical daily comparator and future fold are shared without changing monthly FundWalk/With outputs. A separate31-day inclusive horizon starts once at the accepted end-of-today balance, enumerates all touched months, carries older outstanding purchases once and retains monthly buffer identities. Monthly clipped-deficit ties cannot prove coverage of older debt. Unsupported future settlements, goal movements, refunds, reversals and future goal progress affecting undated readers refuse explicitly. Repeated goal claims cannot exceed the same remaining target. The horizon is not current Ask or available cash. Risk High; Budget(5)+3; Engagement(3)0. [Worksession](worksessions/2026-09-08-mobile-fund-horizon.md).
+
+
+## Mobile SC03 — explicit available-cash assumptions (2026-09-08)
+
+An accepted Personal readiness marker and dedicated metadata/source digests precede every source review. Owned active CAD cash accounts supply recorded capacity; availableForFundCents remains unknown because prior Fund contributions lack source attribution. The member explicitly assumes an amount remains after spending, contributions, goals and commitments. Fixed elections cannot reuse tranche/account capacity. Known deferred liabilities reduce member-wide net cash once, including archived/missing-job records. Immediate and paid tip-outs stay in their account balances. Contradicted paid counters, future/unrecognized/re-reversed shift corrections and missing payment evidence refuse; no canonical Work or accounting semantics change. Aggregate payment checks are necessary evidence, never attribution proof. Risk High; Budget(5)+3; Engagement(3)+1. [Worksession](worksessions/2026-09-08-mobile-cash-availability.md).
+
+
+## Mobile SC04 — named routes and forecast receipt assumptions (2026-09-08)
+
+Claude's five Reach stops now have real cardinality families and stable named dated routes. The old askRoutes output is unchanged. Whole-pool coherent own single-job/role receipts and current policy support only explicit cash-on-shift-day or card-at-next-recorded-payout assumptions. Net forecast tip bands are not deducted twice; mixed channels, deferred policy, missing timing or incoherent permanent duration refuse. Payout destination must be active own CAD cash. One selected route supplies candidate identities, never contribution intent. Risk High; Budget(5)+3; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-forecast-availability.md).
+
+
+## Mobile SC05 — paired Fund scenario paths (2026-09-08)
+
+Fund simulation re-resolves accepted sources and explicit member elections; no UI array becomes money authority. Both residual paths constrain fixed choices, while up-to caps conserve each path independently. Exact reviewed own future observed estimates may be replaced once; effective zero leaves baseline intact. Common source slots preserve paired ordering even with zero deltas. Accepted Fund/monthly walk/current Ask stay unchanged; baseline and hypothetical terminal deficits are distinct core outputs. Smaller replacements may worsen baseline and fixed choices may have coincident bounds. Risk High; Budget(5)+3; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-paired-scenario.md). Claude's original Reach is the forthcoming consumer.
+
+
+## Mobile SC06 — accepted source lifetime (2026-09-08)
+
+App alone issues complete Shared plus own Personal scenario sources from validated pair publication. Cached uncertainty remains unavailable, never zero. Source identity binds accepted object/revision/hash, auth/session, member, household, environment and hosting room; identity changes invalidate pending work synchronously. A failed navigation must not kill subsequent accepted transport publication, and legacy responses retain their initiating authentication provenance. Token refresh preserves identity; A→B→A changes generation even within one render. Risk High; Budget(5)+3; Engagement(3)+1. [Worksession](worksessions/2026-09-08-mobile-scenario-source.md). No rendered change or new posting authority.
+
+
+## Mobile B3 — Claude's Reach (2026-09-08)
+
+The phone contributor keeps Claude's flat composition: current Shared Ask, one Level, five real count stops, named offered dates and one projection paperbox. Additional receipt and contribution choices fit inside its disclosure. Choosing a route or reviewing a receipt does not lift the Fund; only explicit dated fixed/up-to choices do. Current Ask remains the accepted reading, while model end deficit is separately labelled. Accepted history geometry stays fixed; actual paired bounds alone draw a cone. Custody, complete own sources and synchronous source lifetime guard every result. Risk High; Budget(5)+3; Engagement(3)+3. Native touch revealed a pre-existing body scroll-chain trap; document scrolling now works and the expanding sheet locks/restores the actual document scroller. [Evidence](worksessions/2026-09-08-mobile-reach.md). No accounting command, merge or deployment.
+
+
+## Mobile B4 — Claude's Weight (2026-09-08)
+
+The phone Calendar replaces its grid with Claude's compressed day rail and immediately readable day card. Copper means scheduled cash out; ink means posted cash out. The board lacked ordinary posted cash, so a dated extraction of the existing six cash-flow components supplies recognized receipts without changing statement totals. Signed corrections preserve cash leaving versus returned; card activity/internal transfers remain context. Exact occurrence IDs and dates prevent duplicate visits or Paid actions on a later recurrence. Corrected/excluded receipts remain unresolved and unplotted, with no silent repost. The existing Confirm path remains the writer. Risk High; Budget(5)+2; Engagement(3)+2.
+
+A missing shared --mono token caused utility text to fall back to Figtree; restoring the already-loaded Plex Mono family preserves Claude's typography across the mobile stack. The full application CSS, Reach and Weight were rechecked. [Worksession](worksessions/2026-09-08-mobile-weight.md). No merge or deployment.
+
+## Mobile B5 — Claude's Fill (2026-09-08)
+
+The phone bank becomes Claude's vertical jar: recorded progress, proposed addition, prospective total and remaining target move together. Exact typing stays one tap away, and only the existing Confirm boundary posts. kittyBankStep describes visual fullness, so CAD steps are explicitly25 dollars. The current pace helper cannot support an observed arrival forecast; the original thin-history fallback is used. Fund earmarks remain separate from recorded contributions. Risk High; Budget(5)+3; Engagement(3)+3.
+
+Connecting the control exposed an existing private-name leak and Shared cash subsidy through goal funding/purchase. Goal identity now determines write visibility and owner eligibility. A complete accessible pair/correction graph is validated before canonical per-scope vault capacity is read. Shared and owner-Personal cash cannot fund each other's purchases. Full accepted books, frozen date and scoped queued-confirmation guards protect the existing Office purchase path. No history rewrite, schema, merge or deployment. [Evidence](worksessions/2026-09-08-mobile-fill.md).
+
+
+## Mobile B6 — Claude's Trust (2026-09-08)
+
+The three phone stops change which supported future sources are visible, never today's Fund or Ask. Confirmed keeps confirmed contributions and scheduled obligations; Observed admits canonical observed contributions without inventing a range. Estimated requires a current, explicit reviewed contribution scenario and preserves its common paired order. The wall names the last included source rather than completeness; zero choices, equal dates, coincident bounds and an earlier replacement horizon remain truthful. Scope-specific enum preferences visibly fall back when unsupported. All facts fit Claude's existing drawing, typography and paperbox. Risk High; Budget(5)+3; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-trust.md). No financial command, merge or deployment.
+
+
+## Mobile B7 — Claude's Punch (2026-09-08)
+
+The tall downward edge handle reveals existing clock/break actions, with elapsed and break time derived from actual timestamps. Motion never starts or ends a break; release leaves actions open for a separate named activation under the instrument no-write law. Both clock views pause hidden and refresh on return. Exact member timeline-set guards prevent queued actions reaching replacement breaks/shifts or an unseen device conflict. Discard retains its supported confirming-state path. Pay review opens only after accepted clock-out and current scope/intent; keyed updates retain keyboard focus. High risk; Budget(5)+1; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-punch.md). No native Live Activity, merge or deployment.
+
+## Mobile B8 — Claude's Prise (2026-09-08)
+
+The two stuck cards part to expose actual differences. Computed similarity controls their initial overlap and remains fixed; motion never changes recognition. Named Include/Exclude opens the existing Confirm, describes exact linked eligibility effects, and uses the scoped accepted writer. The reviewed command binds the actor and a hashed semantic source precondition through authoritative replay, so changed comparisons, new links and closed months require a fresh review. Generic flags cannot repair Fund, goal, Work or claim auxiliary facts; those sources remain comparable with their own correction route identified. Original cards, typography and one horizontal handle remain, with readable screen-reader fields and ordinary stop buttons. High risk; Budget(5)+3; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-prise.md). Existing unreviewed primitive callers remain a separate compatibility path. No schema, merge or deployment.
+
+
+## Mobile B9 — Claude's Turn (2026-09-08)
+
+One date read-head replaces hover and nested sideways scrolling while preserving prepared source order and current Fund. Standalone custodian Trust uses its exact visible cross-month interval and existing paperbox; Reach retains its own single control. Recorded today and scheduled values remain separate. Course future aggregate reserves cannot become dated balances, so future time is undated and exact readings stop at available sources. Scope replacement cancels gestures; native scroll and two-stage Escape preserve the Ledge. Medium-High risk; Budget(5)+2; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-turn.md). Legacy MonthSpread gains no new mobile entrypoint. No financial writer, merge or deployment.
+
+
+## Mobile C1 — complete pad choices (2026-09-08)
+
+The first six accounts and eight categories retain their compact position, with named More/Fewer disclosures for every current eligible choice. Selected tail choices stay visible; missing choices prompt without silently changing IDs or looking into full books. Scope and mode reset disclosure, while exact amount and draft fields remain intact. Medium risk; Budget(5)+1; Engagement(3)+1. [Evidence](worksessions/2026-09-08-mobile-pad-choices.md). Existing Confirm remains unchanged.
+
+
+## Mobile C2 — honest household suggestions (2026-09-08)
+
+The Swipe grid keeps genuine observed categories first, then explicitly labelled incoming household suggestions up to six. Active parent eligibility is checked before truncating observed history; suggestions never invent counts or usage dates. Named Post binds its reviewed card/category/Fund/date, current desk and sheet intent through queue drain and authoritative replay using a hashed semantic resource on the existing postEntry kind. Late UI outcomes cannot affect a new sheet; accepted books retain their own adoption boundary and exact-ID toast cleanup survives normal sheet closure. High risk after necessary queue repair; Budget(5)+2; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-swipe-suggestions.md). Existing unreviewed primitive callers remain compatible; no schema, merge or deployment.
+
+
+## Mobile C3 — reveal is not acceptance (2026-09-08)
+
+Claude's slide remains a reading gesture under packet15.3: it reveals the existing named Confirm. Phone Cancel stays by the thumb. Explicit opening/current-source identities prevent stale reviews from silently rearming; transient rejection notices do not masquerade as changed source. Overflow fallback preserves enlarged explanations. Existing writer/authority contracts remain in force. Budget(5)+1; Engagement(3)+1; see C3 worksession for local proof and limits.
+
+
+## Mobile C4 — one exact occurrence, inline (2026-09-08)
+
+Preserve Claude’s row gesture and zero-sheet single-row flow within the no-write motion law: reveal then named inline Confirm. Scope local hiding per person/view/date/occurrence; it never advances a schedule. Reviewed postOneRecurrence carries exact occurrence identifiers and a hashed semantic resource, preventing a stale click from posting the next occurrence or changed amount/account. Actual Joint transfers are labelled honestly. Bulk remains in Calendar. Budget(5)+2; Engagement(3)+2; local proof/limits in C4 worksession.
+
+
+## Mobile C5 — review the actual claim transfer (2026-09-08)
+
+Claude's attached row action opens the existing named review. The person explicitly chooses where the money landed; the exact remainder and coherent Shared source history survive queue and authoritative replay. Unsupported private/corrected history refuses without guessing counters. Public card wording never becomes journal wording. Budget(5)+2; Engagement(3)+2. Proof and compatibility limits in C5 worksession.
+
+
+## Mobile C6 — an empty month is not zero net spend (2026-09-08)
+
+Till's standing and empty lines now require no nonduplicate month transaction and no active Fund operating movement. Confirmed contributions count even without journal rows; proposals do not. Spend totals retain their existing projection. Budget(5)+1; Engagement(3)+1. C6 worksession records focused proof and adjacent toast lifecycle gate failure for C7.
+
+
+## Mobile C7 — receipt time does not expire global Undo (2026-09-08)
+
+The paper's width shows ten seconds without moving its named action. Expiry, current receipt, exact supported purchase and LIFO are checked before enqueue and drain. Once the writer starts, accepted delivery is scope-bound rather than timer-bound. Global Undo retains its established lifetime. Managed toast timers close C6's observed unmount failure. Budget(5)+2; Engagement(3)+2. C7 worksession contains proof and limits.
+
+
+## Mobile C8 — keep existing oracle chips (2026-09-08)
+
+Shift already exposes Tonight?, Protect or chase?, and Tax milk?. Preserve that exact page-specific set and replace only the stray personal fallback text. No duplicate controls compete for Claude's space. Budget(5)+0; Engagement(3)+1; proof in C8 worksession.
+
+
+## Mobile C9 — capture uncertainty travels with the photo (2026-09-08)
+
+After two deliberate quality refusals, Capture anyway creates a flagged draft. Passive frames never unlock it. Every image warning reaches the current review or failure area; no warning is attributed to an older photo and no missing monetary field is invented. Camera modal owns only its own Escape, and switching source retires unfinished file/camera work. Budget(5)+1; Engagement(3)+2; C9 worksession proof/limits.
+
+## Mobile C10 — a QR opens a room, not a membership (2026-09-08)
+
+Keep connection setup within existing Jobs. The phone handoff carries only an allowlisted Shift route at the current origin; same-person ledger/environment access still comes from sign-in. Refresh and Open Timesheet are explicit and cannot clock out. Budget(5)+1; Engagement(3)+2. C10 worksession records proof.
+
+## Mobile C11 — keep the Work hierarchy (2026-09-08)
+
+Claude's phone Today/Report/Jobs remains the peer navigation. Imported schedules and evidence stays reachable through one collapsed Jobs disclosure, preserving desktop navigation and existing Confirm controls. Scope changes close it; disappearing focus returns to Jobs. Budget(5)+0; Engagement(3)+1.
+
+## Mobile C12 — time comes from timestamps (2026-09-08)
+
+Elapsed hint and quarter-preview schedulers stop while hidden and resume from wall time. The manual-hours callback remains unchanged and missed ticks never accumulate. Budget(5)+0; Engagement(3)+1.
+
+## Mobile Proof — provenance belongs to the amount (2026-09-08)
+
+Use Claude's existing Books row, with one amount and an optional paper source disclosure. Resolve against the full accepted privacy floor and compiler origin links; a shared transfer journal carries the same reversal history from either leg. Missing facts stay unavailable. Budget(5)+2; Engagement(3)+1.
+
+## Mobile Return — one place to resume (2026-09-08)
+
+Keep Claude's return bar and add one named action within it. Re-resolve the existing scoped bookmark and current chapter, then use the established room handler. Local bookmark changes publish immediately; external replacements refuse. Measured furniture clearance protects the last action. Budget(5)+1; Engagement(3)+2.
+
+## Mobile Phase 2 — preserve authored geometry, restore native zoom (2026-09-08)
+
+Normalize inherited conventional phone Work/Books furniture to Claude's5px cards,3px controls and44px targets without changing instrument handles or desktop. Remove global zoom restrictions and allow pinch within scrolling Spread/Fund/Timesheet content. Final local gate/build/browser evidence is in the integration worksession; physical acceptance is separate. Budget(5)+0; Engagement(3)+1.

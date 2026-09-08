@@ -4,10 +4,10 @@ import {
   projectedExpenseEffect,
   projectedIncomeEffect,
   projectedCountable,
-  transactionProjection,
   type CategoryActual,
 } from "./budget.ts";
-import { isCashLikeKind, isCreditKind, isInvestmentKind, isReceivableKind } from "./accountKinds.ts";
+import { isCashLikeKind } from "./accountKinds.ts";
+import { cashFlowRows } from "./cashFlowRows.ts";
 import { runHealthCheck } from "./health.ts";
 import {
   accountRegister,
@@ -262,66 +262,13 @@ export function incomeStatement(household: Household, monthKey: MonthKey): Incom
 export function cashFlowStatement(household: Household, monthKey: MonthKey): CashFlowStatement {
   const start = `${monthKey}-01`;
   const end = monthEndKey(monthKey);
-  const byId = new Map(household.accounts.map((account) => [account.id, account]));
-  const transactionById = new Map(household.transactions.map((tx) => [tx.id, tx]));
-  let operatingInCents = 0;
-  let operatingOutCents = 0;
-  let cardSpendCents = 0;
-  let debtPaydownCents = 0;
-  let investingInCents = 0;
-  let investingOutCents = 0;
-  const seen = new Set<string>();
-
-  for (const tx of household.transactions) {
-    if (!projectedCountable(tx, transactionById)) continue;
-    if (tx.date < start || tx.date > end) continue;
-    const { root, multiplier } = transactionProjection(tx, transactionById);
-    const account = byId.get(root.accountId);
-    if (!account) continue;
-    if (root.type === "income") {
-      if (isCashLikeKind(account.kind)) operatingInCents += root.amountCents * multiplier;
-      continue;
-    }
-    if (root.type === "expense") {
-      if (isCashLikeKind(account.kind)) operatingOutCents += root.amountCents * multiplier;
-      else if (isCreditKind(account.kind)) cardSpendCents += root.amountCents * multiplier;
-      continue;
-    }
-    if (root.type === "refund") {
-      if (isCashLikeKind(account.kind)) operatingInCents += root.amountCents * multiplier;
-      else if (isCreditKind(account.kind)) cardSpendCents -= root.amountCents * multiplier;
-      continue;
-    }
-    if (root.type === "transfer") {
-      const pairId = tx.transferPairId || tx.id;
-      if (seen.has(pairId) || seen.has(tx.id)) continue;
-      seen.add(tx.id);
-      if (tx.transferPairId) seen.add(tx.transferPairId);
-      const from = byId.get(root.transferFromAccountId || root.accountId);
-      const to = byId.get(root.transferToAccountId || "");
-      if (from && to && isCashLikeKind(from.kind) && isCreditKind(to.kind)) {
-        debtPaydownCents += root.amountCents * multiplier;
-      } else if (from && to && isCashLikeKind(from.kind) && isInvestmentKind(to.kind)) {
-        investingOutCents += root.amountCents * multiplier;
-      } else if (from && to && isInvestmentKind(from.kind) && isCashLikeKind(to.kind)) {
-        investingInCents += root.amountCents * multiplier;
-      } else if (from && to && isReceivableKind(from.kind) && isCashLikeKind(to.kind)) {
-        operatingInCents += root.amountCents * multiplier;
-      } else if (from && to && isCashLikeKind(from.kind) && isReceivableKind(to.kind)) {
-        operatingOutCents += root.amountCents * multiplier;
-      }
-    }
+  const totals = { operatingInCents: 0, operatingOutCents: 0, cardSpendCents: 0,
+    debtPaydownCents: 0, investingInCents: 0, investingOutCents: 0 };
+  for (const row of cashFlowRows(household, start, end)) {
+    if (row.component !== "other-transfer") totals[row.component] += row.amountCents;
   }
-
-  return {
-    monthKey,
-    operatingInCents,
-    operatingOutCents,
-    cardSpendCents,
-    debtPaydownCents,
-    investingInCents,
-    investingOutCents,
-    netCashCents: operatingInCents - operatingOutCents - debtPaydownCents - investingOutCents + investingInCents,
+  return { monthKey, ...totals,
+    netCashCents: totals.operatingInCents - totals.operatingOutCents - totals.debtPaydownCents - totals.investingOutCents + totals.investingInCents,
   };
 }
 

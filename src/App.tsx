@@ -1,3 +1,5 @@
+import { enqueueScopedWrite, sameWriteScope } from "./core/scopedWrite.ts";
+import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { isVisibleInView } from "./core/visibility.ts";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
 import { stageLedgerCreation, completeLedgerCreation } from './ledgerSync/creationStore.ts';
@@ -491,9 +493,12 @@ function presenceTab(tab: Tab): Exclude<Tab, "till"> {
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
 type CommitHouseholdOptions = {
+  isCurrent?: () => boolean;
+  scopeIsCurrent?: () => boolean;
   forceFlush?: boolean;
   confirmationId?: string;
   onRejected?: (message: string) => void;
+  onDefinitiveRejected?: () => void;
   suppressUndo?: boolean;
   onQueued?: () => void;
 };
@@ -612,6 +617,10 @@ export function App() {
   const [swipeOpen, setSwipeOpen] = useState(false);
   const [swipeError, setSwipeError] = useState("");
   const [swipeStrip, setSwipeStrip] = useState<SwipeUndoStrip | null>(null);
+  const appMountedRef=useRef(true),toastTimersRef=useRef(new Set<number>());
+  useEffect(()=>{appMountedRef.current=true;return()=>{appMountedRef.current=false;for(const id of toastTimersRef.current)window.clearTimeout(id);toastTimersRef.current.clear();};},[]);
+  function scheduleToastClear(tokenId:string,isCurrent?:()=>boolean){if(!appMountedRef.current)return;const id=window.setTimeout(()=>{toastTimersRef.current.delete(id);if(appMountedRef.current&&isCurrent?.()!==false)setToast(item=>item?.id===tokenId?null:item);},8000);toastTimersRef.current.add(id);}
+
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
@@ -1397,8 +1406,17 @@ export function App() {
     };
   }, []);
 
+  const authWriteIdentityRef = useRef<string | null>(null);
   useEffect(() => {
-    const refreshPresence = () => setSupabaseSessionPresent(Boolean(loadSupabaseSession(environment)));
+    const refreshPresence = () => {
+      const auth = loadSupabaseSession(environment);
+      const key = JSON.stringify([environment, auth?.userId ?? null, auth?.sessionId ?? null, auth?.googleSubject ?? null]);
+      if (authWriteIdentityRef.current !== null && authWriteIdentityRef.current !== key) {
+        replicaScopeGenerationRef.current += 1;
+      }
+      authWriteIdentityRef.current = key;
+      setSupabaseSessionPresent(Boolean(auth));
+    };
     const onSessionChanged = (event: Event) => {
       const changedEnvironment = (event as CustomEvent<{ environment?: Environment }>).detail?.environment;
       if (!changedEnvironment || changedEnvironment === environment) refreshPresence();
@@ -3277,10 +3295,7 @@ export function App() {
       || previous?.householdId !== remembered.householdId
       || previous?.view !== remembered.view
     ) {
-      if (
-        previous?.memberId !== remembered.memberId
-        || previous?.householdId !== remembered.householdId
-      ) replicaScopeGenerationRef.current += 1;
+      replicaScopeGenerationRef.current += 1;
       closeAdd();
       setSwipeOpen(false);
       setSwipeError("");
@@ -3750,6 +3765,15 @@ export function App() {
     actorId?: string,
     options?: CommitHouseholdOptions,
   ): Promise<CommandOutcome | null> {
+    if (options?.isCurrent?.() === false) return null;
+    const present = <A,>(write: (value: A) => void) => (value: A) => { if (options?.isCurrent?.() !== false) write(value); };
+    const presentSetError = present(setError);
+    const presentSetToast = present(setToast);
+    const presentRememberUndoHistory = present(rememberUndoHistory);
+    const presentSetCommandChrome = present(setCommandChrome);
+    const presentSetCommandProgressPhase = present(setCommandProgressPhase);
+    const presentSetLedgerCommandId = present(setLedgerCommandId);
+    const presentSetSyncState = present(setSyncState);
     const previous = householdRef.current;
     const creatingMember=actorId??session?.memberId;
     if(useLedgerSync&&creatingMember&&next.householdId!==previous?.householdId&&(next.linked||next.google.links.some(link=>link.active&&link.memberId===creatingMember))){
@@ -3763,38 +3787,39 @@ export function App() {
         await completeLedgerCreation(accepted,creatingMember,local??auth!.userId);
         adoptAcceptedHousehold(accepted,status);
         return {kind:'synchronized',ok:true,household:accepted,previous,postedIds:[],confirmationId:options?.confirmationId??crypto.randomUUID(),identityHash:null,revision:accepted.revision,sharingMode:'synchronized',errorClass:null,userMessage:null,retryable:false,postedExactlyOnce:true,postedNothing:false,recoveryAvailable:false};
-      }catch(error){setError(error instanceof Error?error.message:String(error));return null;}finally{setBusy(false);}
+      }catch(error){presentSetError(error instanceof Error?error.message:String(error));return null;}finally{setBusy(false);}
     }
     if (useLedgerSync && previous && (previous.linked || localLedgerIdentity(actorId ?? session?.memberId ?? ""))) {
-      if(next.householdId!==previous.householdId){setError("Choose the new ledger before submitting an entry.");return null;}
+      if(next.householdId!==previous.householdId){presentSetError("Choose the new ledger before submitting an entry.");return null;}
       const client = ledgerSyncRef.current;
-      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); setError(message); return null; }
+      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); presentSetError(message); return null; }
       const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
       confirmationRef.current = confirmationId;
-      setLedgerCommandId(confirmationId);
-      setBusy(true); setCommandProgressPhase("confirming");
+      presentSetLedgerCommandId(confirmationId);
+      setBusy(true); presentSetCommandProgressPhase("confirming");
       try {
         const accepted = await client.confirm(next, confirmationId, options?.onQueued);
-        confirmationRef.current = null;
+        if (confirmationRef.current === confirmationId) confirmationRef.current = null;
         if (isLedgerWrite(accepted.undo) && !options?.suppressUndo && accepted.postedIds.length) {
-          setToast(accepted.undo);
-          rememberUndoHistory([...historyRef.current, accepted.undo].slice(-20));
-          window.setTimeout(() => setToast(item => item?.id === accepted.undo.id ? null : item), 8000);
+          presentSetToast(accepted.undo);
+          presentRememberUndoHistory([...historyRef.current, accepted.undo].slice(-20));
+          scheduleToastClear(accepted.undo.id,options?.scopeIsCurrent);
         }
         const outcome: CommandOutcome = { kind:"synchronized",ok:true,household:accepted.household,previous,postedIds:accepted.postedIds,confirmationId,identityHash:null,revision:accepted.household.revision,sharingMode:"synchronized",errorClass:null,userMessage:null,retryable:false,postedExactlyOnce:true,postedNothing:false,recoveryAvailable:false };
-        setCommandChrome(renderCommandSurface(outcome,{offline:false,pendingCount:0,lastError:null,amountLabel:lastAmountLabelRef.current,ledgerName:accepted.household.name,autoMerged:false,ledgerWrite:isLedgerWrite(token)}));
-        setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome,true));
+        presentSetCommandChrome(renderCommandSurface(outcome,{offline:false,pendingCount:0,lastError:null,amountLabel:lastAmountLabelRef.current,ledgerName:accepted.household.name,autoMerged:false,ledgerWrite:isLedgerWrite(token)}));
+        presentSetCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome,true));
         return outcome;
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
-        if (caught instanceof LedgerCommandRejectedError || /BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) confirmationRef.current = null;
-        options?.onRejected?.(message); setError(message); return null;
+        if ((caught instanceof LedgerCommandRejectedError || /BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) && confirmationRef.current === confirmationId) confirmationRef.current = null;
+        if (caught instanceof LedgerCommandRejectedError) options?.onDefinitiveRejected?.();
+        options?.onRejected?.(message); presentSetError(message); return null;
       } finally { setBusy(false); }
     }
     if (previous && !booksGateRef.current.ready) {
       const message = booksGateRef.current.reason || "The local journal must finish validating before anything can change.";
       if (options?.onRejected) options.onRejected(message);
-      else setError(message);
+      else presentSetError(message);
       return null;
     }
     setBusy(true);
@@ -3811,17 +3836,18 @@ export function App() {
     const memberId = actorId ?? session?.memberId;
     const shareCapable = Boolean((previous?.linked || next.linked) && hostedContinuityAllowed(environment) && memberId);
     if (shareCapable && ledgerWrite) {
-      setCommandProgressPhase("confirming");
-      setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.saving, {
+      presentSetCommandProgressPhase("confirming");
+      presentSetCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.saving, {
         amountLabel: lastAmountLabelRef.current,
         ledgerName: previous?.name ?? null,
         ledgerWrite,
       }));
     } else {
-      setCommandProgressPhase("idle");
+      presentSetCommandProgressPhase("idle");
     }
     if (ledgerWrite) await afterNextPaint();
     try {
+      if (options?.isCurrent?.() === false) return null;
       const googleSession = memberId ? loadGoogleSession(environment, memberId, next.householdId) : null;
       const authRequired = supabaseAuthEnabled();
       const cachedAuthSession = authRequired ? loadSupabaseSession(environment) : null;
@@ -3878,6 +3904,7 @@ export function App() {
       // In launch mode the command compiler validates accounting facts first;
       // cloud acknowledgement is the commit boundary, then active PGlite advances.
       const flushTransport = options?.forceFlush === true || onlineGate.required;
+      if (options?.isCurrent?.() === false) return null;
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -3905,8 +3932,9 @@ export function App() {
         }),
       });
       if (!explicitConfirmationId && (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable))) {
-        confirmationRef.current = null;
+        if (confirmationRef.current === confirmationId) confirmationRef.current = null;
       }
+      if (options?.scopeIsCurrent?.() === false) return outcome;
       // A rejected first-household write has no last valid Household to return.
       // Keep the welcome screen mounted instead of storing CommandOutcome's
       // minimal no-previous sentinel as if it were readable books.
@@ -3923,8 +3951,8 @@ export function App() {
         autoMerged,
         ledgerWrite,
       });
-      setCommandChrome(chrome);
-      setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome, transportRequested));
+      presentSetCommandChrome(chrome);
+      presentSetCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome, transportRequested));
       if (outcome.ok) {
         traceSyncPilot("local-accepted", {
           household: outcome.household,
@@ -3960,7 +3988,7 @@ export function App() {
           pendingCount,
           transport: "outbox",
         });
-        setSyncState("syncing");
+        presentSetSyncState("syncing");
       }
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
@@ -4062,7 +4090,7 @@ export function App() {
                     if (!acceptedSync) return;
                     synced = acceptedSync;
                   } else {
-                    setSyncState("syncing");
+                    presentSetSyncState("syncing");
                     return;
                   }
                 }
@@ -4078,7 +4106,7 @@ export function App() {
             if (!finalized) return;
             synced = finalized;
             saveSyncAnchor(environment, synced);
-            setSyncState("synced");
+            presentSetSyncState("synced");
             traceSyncPilot("cloud-ack", {
               household: synced,
               confirmationId,
@@ -4086,8 +4114,8 @@ export function App() {
               pendingCount: 0,
               transport: "outbox",
             });
-            setCommandProgressPhase("cloud-ack");
-            setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
+            presentSetCommandProgressPhase("cloud-ack");
+            presentSetCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
               amountLabel: lastAmountLabelRef.current,
               ledgerName: synced.name,
               ledgerWrite: true,
@@ -4107,22 +4135,22 @@ export function App() {
           ...token,
           actorMemberId: token.actorMemberId ?? memberId,
         };
-        setToast(stamped);
-        rememberUndoHistory([...historyRef.current, stamped].slice(-20));
-        window.setTimeout(() => setToast((item) => (item?.id === stamped.id ? null : item)), 8000);
+        presentSetToast(stamped);
+        presentRememberUndoHistory([...historyRef.current, stamped].slice(-20));
+        scheduleToastClear(stamped.id,options?.scopeIsCurrent);
       } else if (!outcome.ok || outcome.kind === "conflict-needs-attention") {
-        setToast(null);
+        presentSetToast(null);
       }
       if (!outcome.ok && outcome.userMessage) {
         if (options?.onRejected) options.onRejected(outcome.userMessage);
-        else setError(outcome.userMessage);
+        else presentSetError(outcome.userMessage);
       } else if (outcome.ok && outcome.recoveryAvailable && outcome.userMessage) {
-        setError(outcome.userMessage);
+        presentSetError(outcome.userMessage);
       } else if (outcome.ok && outcome.kind !== "conflict-needs-attention") {
-        setError("");
+        presentSetError("");
       }
       if (outcome.kind === "synchronized") {
-        setSyncState("synced");
+        presentSetSyncState("synced");
         if (onlineGate.required && memberId) {
           setCloudReplicaReadyKey(onlineRequiredReplicaKey({
             environment: outcome.household.environment,
@@ -4153,13 +4181,13 @@ export function App() {
           memberId,
           revision: outcome.household.revision,
         }));
-        setSyncState("synced");
-      } else if (outcome.kind === "pending-transport") setSyncState("syncing");
+        presentSetSyncState("synced");
+      } else if (outcome.kind === "pending-transport") presentSetSyncState("syncing");
       else if (outcome.kind === "conflict-needs-attention") {
         setCloudReplicaReadyKey(null);
-        setSyncState("error");
+        presentSetSyncState("error");
       }
-      else if (outcome.ok) setSyncState("idle");
+      else if (outcome.ok) presentSetSyncState("idle");
       if (outcome.ok && !(outcome.recoveryAvailable && outcome.errorClass === "books-unavailable")) {
         const status: BooksStatus = {
           ok: true,
@@ -4204,11 +4232,11 @@ export function App() {
       }
       return outcome;
     } catch (caught) {
-      if (shareCapable && ledgerWrite) setCommandProgressPhase("failed");
+      if (shareCapable && ledgerWrite) presentSetCommandProgressPhase("failed");
       if (caught instanceof NeedsConfirmationError) throw caught;
       const message = classifyCommandError(caught).userMessage;
       if (options?.onRejected) options.onRejected(message);
-      else setError(message);
+      else presentSetError(message);
       return null;
     } finally {
       setBusy(false);
@@ -4312,7 +4340,9 @@ export function App() {
   }
 
   function applyUndo(token: UndoToken, swipeScope?: SwipeUndoStrip) {
+    if (!renderedWriteIsCurrent()) return Promise.resolve();
     return enqueueWrite(async () => {
+      if (!renderedWriteIsCurrent()) return;
       const current = householdRef.current;
       const who = session?.memberId;
       if (!current || !who) return;
@@ -4335,13 +4365,13 @@ export function App() {
         const outcome = await commitHousehold(result.household, {
           ...result.undo,
           actorMemberId: who,
-        }, who, { suppressUndo: Boolean(fundedTransactionId) });
-        if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
+        }, who, { suppressUndo: Boolean(fundedTransactionId), isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent });
+        if (!renderedWriteIsCurrent() || !outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
         rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
         setSwipeStrip((item) => (item?.token.id === token.id ? null : item));
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
+        if (renderedWriteIsCurrent()) setError(caught instanceof Error ? caught.message : String(caught));
       }
     });
   }
@@ -4376,18 +4406,40 @@ export function App() {
     }
   }
 
+  // A callback belongs to the desk that rendered it, including A→B→A changes.
+  const renderedWriteScope = {
+    generation: replicaScopeGenerationRef.current, environment,
+    householdId: household?.householdId ?? null,
+    memberId: session?.memberId ?? null, view: session?.view ?? null,
+  };
+  const renderedWriteIsCurrent = () => appMountedRef.current && !openingHouseholdRef.current && sameWriteScope(renderedWriteScope, {
+    generation: replicaScopeGenerationRef.current, environment: environmentRef.current,
+    householdId: householdRef.current?.householdId ?? null,
+    memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
+  });
+
   function run(fn: (current: Household) => CommitResult, options?: {
+    isCurrent?: () => boolean;
+    scopeIsCurrent?: () => boolean;
     closeAdd?: boolean;
+    confirmationId?: string;
+    onDefinitiveRejected?: () => void;
     onAccepted?: (result: CommitResult) => void;
     onConfirm?: (error: NeedsConfirmationError) => boolean;
     onError?: (message: string) => void;
   }) {
-    if (postingRef.current) return Promise.resolve();
+    const callerOptions = options;
+    options = {
+      ...callerOptions,
+      isCurrent: () => renderedWriteIsCurrent() && callerOptions?.isCurrent?.() !== false,
+      scopeIsCurrent: () => renderedWriteIsCurrent() && callerOptions?.scopeIsCurrent?.() !== false,
+    };
+    if (postingRef.current || options.isCurrent?.() === false) return Promise.resolve();
     postingRef.current = true;
     const submittedDraftGeneration=draftGenerationRef.current;
     return enqueueWrite(async () => {
       const current = householdRef.current;
-      if (!current) {
+      if (!current || options?.isCurrent?.() === false) {
         postingRef.current = false;
         return;
       }
@@ -4414,25 +4466,29 @@ export function App() {
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
           {
-            onRejected: message => { setError(message); if (options?.closeAdd !== false && adding && submittedDraftGeneration===draftGenerationRef.current) setAdding(true); options?.onError?.(message); },
-            onQueued: options?.closeAdd !== false && adding ? () => { if(submittedDraftGeneration!==draftGenerationRef.current)return;setAdding(false); setConfirm(null); setBooksPaneRequest("register"); goTab("ledger"); } : undefined,
+            isCurrent: options?.isCurrent,
+            scopeIsCurrent: options?.scopeIsCurrent,
+            confirmationId: options?.confirmationId,
+            onDefinitiveRejected: () => { if (options?.isCurrent?.() !== false) options?.onDefinitiveRejected?.(); },
+            onRejected: message => { if (options?.isCurrent?.() === false) return; setError(message); if (options?.closeAdd !== false && adding && submittedDraftGeneration===draftGenerationRef.current) setAdding(true); options?.onError?.(message); },
+            onQueued: options?.closeAdd !== false && adding ? () => { if(options?.isCurrent?.() === false || submittedDraftGeneration!==draftGenerationRef.current)return;setAdding(false); setConfirm(null); setBooksPaneRequest("register"); goTab("ledger"); } : undefined,
           },
         );
         const accepted =
           outcome?.postedExactlyOnce === true &&
           (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
-        if (!accepted) return;
+        if (!accepted || options?.isCurrent?.() === false) return;
         const canonicalResult = outcome ? ledgerSyncRef.current?.result(outcome.confirmationId) : undefined;
         if (canonicalResult) result = canonicalResult;
         if (memberPersonal && result.personalMemberId) {
           setPersonalReplica(personalReplicaForMember(outcome.household, result.personalMemberId));
         }
+        options?.onAccepted?.(result);
         if (options?.closeAdd === false) {
-          options?.onAccepted?.(result);
           if (result.warnings.length) setError(result.warnings.join(" "));
           return;
         }
-        if(submittedDraftGeneration!==draftGenerationRef.current){options?.onAccepted?.(result);return;}
+        if(submittedDraftGeneration!==draftGenerationRef.current)return;
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
@@ -4464,6 +4520,7 @@ export function App() {
           window.setTimeout(() => setVisorPop(false), 700);
         }
       } catch (caught) {
+        if (options?.isCurrent?.() === false) return;
         if (caught instanceof NeedsConfirmationError) {
           if (options?.onConfirm?.(caught)) return;
           const plan = resolveDuplicateRetry({
@@ -4492,8 +4549,21 @@ export function App() {
     });
   }
 
+  const reviewedKitchenScope = {
+    generation: replicaScopeGenerationRef.current,
+    environment,
+    householdId: household?.householdId ?? null,
+    memberId: session?.memberId ?? null,
+    view: session?.view ?? null,
+  };
   function runKitchen(fn: (current: Household) => CommitResult): Promise<CommandOutcome | null> {
-    return enqueueWrite(async () => {
+    return enqueueScopedWrite(enqueueWrite, reviewedKitchenScope, () => ({
+      generation: replicaScopeGenerationRef.current,
+      environment: environmentRef.current,
+      householdId: householdRef.current?.householdId ?? null,
+      memberId: sessionRef.current?.memberId ?? null,
+      view: sessionRef.current?.view ?? null,
+    }), async () => {
       const current = householdRef.current;
       if (!current) return null;
       try {
@@ -4507,16 +4577,18 @@ export function App() {
           result.household,
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
+          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent },
         );
+        if (!renderedWriteIsCurrent()) return outcome;
         if (outcome?.ok && memberPersonal && result.personalMemberId) {
           setPersonalReplica(personalReplicaForMember(outcome.household, result.personalMemberId));
         }
         return outcome;
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
+        if (renderedWriteIsCurrent()) setError(caught instanceof Error ? caught.message : String(caught));
         return null;
       }
-    });
+    }, () => setError("These books changed while this action was waiting. Review the current desk and try again."));
   }
 
   function requestClearThisPhone() {
@@ -5777,23 +5849,36 @@ export function App() {
     });
   }
 
-  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null) {
+  async function readWorkShiftSubmission(id: string): Promise<"accepted" | "pending" | "rejected" | "missing"> {
+    if (useLedgerSync && (household?.linked || localLedgerIdentity(session?.memberId ?? ""))) {
+      const client = ledgerSyncRef.current;
+      if (!client || client.options.scope.environment !== environment || client.options.scope.householdId !== household?.householdId || client.options.scope.memberId !== session?.memberId) throw new Error("SCOPE_CLOSED");
+      return client.submissionStatus(id);
+    }
+    return household?.commandReceipts.some(receipt => receipt.confirmationId === id) ? "accepted" : "missing";
+  }
+
+  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null, draftCallbacks?: WorkShiftDraftCallbacks) {
+    if (postingRef.current) { if (!confirmDuplicate) draftCallbacks?.onRejected(); return; }
     const current = householdRef.current;
     const currentMemberId = sessionRef.current?.memberId;
-    const shiftConfirmationId = confirmationRef.current ?? newConfirmationId();
+    const shiftConfirmationId = input.confirmationId ?? confirmationRef.current ?? newConfirmationId();
     if (!confirmationRef.current) confirmationRef.current = shiftConfirmationId;
     const pending = confirmDuplicate
       ? workShiftInputRef.current
       : current && currentMemberId
         ? {
             input: { ...input, confirmationId: shiftConfirmationId },
-            environment: current.environment,
-            householdId: current.householdId,
-            memberId: currentMemberId,
+            environment: draftCallbacks?.scope?.environment ?? current.environment,
+            householdId: draftCallbacks?.scope?.householdId ?? current.householdId,
+            memberId: draftCallbacks?.scope?.memberId ?? currentMemberId,
             attendanceReview,
+            draftCallbacks,
           }
         : null;
+    const rejectedDraftCallbacks = pending?.draftCallbacks;
     if (!workShiftScopeMatches(current, currentMemberId, pending)) {
+      rejectedDraftCallbacks?.onRejected();
       workShiftInputRef.current = null;
       setConfirm(null);
       setError(WORK_SHIFT_SCOPE_ERROR);
@@ -5802,17 +5887,20 @@ export function App() {
     workShiftInputRef.current = pending;
     void run((live) => {
       try {
-        return runScopedWorkShift(
-          live,
-          sessionRef.current?.memberId,
-          pending,
-          confirmDuplicate,
-          (safeInput, safeAttendanceReview) => postWorkShiftWithAttendanceReview(live, safeInput, safeAttendanceReview),
-        );
-      } catch (caught) {
-        workShiftInputRef.current = null;
-        throw caught;
+        return runScopedWorkShift(live, sessionRef.current?.memberId, pending, confirmDuplicate,
+          (safeInput, safeAttendanceReview) => postWorkShiftWithAttendanceReview(live, safeInput, safeAttendanceReview));
+      } catch (error) {
+        // No transport was entered. Duplicate review retains its original identity.
+        if (!(error instanceof NeedsConfirmationError) || error.code !== "sameShiftDay") pending.draftCallbacks?.onRejected();
+        throw error;
       }
+    }, { confirmationId: pending.input.confirmationId,
+      onDefinitiveRejected: () => pending.draftCallbacks?.onRejected(),
+      onError: message => setError(message),
+      onAccepted: () => {
+        pending.draftCallbacks?.onAccepted();
+        if (workShiftInputRef.current === pending) workShiftInputRef.current = null;
+      },
     });
   }
 
@@ -6278,6 +6366,7 @@ export function App() {
         <DeferredWorkShiftPage
           key={`${environment}:${household.householdId}:${session.memberId}`}
           household={experience && experience.ok ? experience.shiftHousehold : household}
+          fundCustodianMemberId={household.householdFund?.custodianMemberId}
           view={view}
           memberId={session.memberId}
           memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}
@@ -6290,7 +6379,8 @@ export function App() {
           onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
           onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
           onClockOut={clockOutStayOnShiftPage}
-          onConfirmShift={(input, attendanceReview) => submitWorkShift(input, false, attendanceReview)}
+          onConfirmShift={(input, attendanceReview, callbacks) => submitWorkShift(input, false, attendanceReview, callbacks)}
+          readSubmissionStatus={readWorkShiftSubmission}
           duplicateConfirm={
             confirm
             && workShiftInputRef.current
@@ -6947,6 +7037,7 @@ export function App() {
               <DeferredWorkShiftWithSevenShifts
                 key={`${environment}:${household.householdId}:${actorId}`}
                 household={displayHousehold}
+                fundCustodianMemberId={household.householdFund?.custodianMemberId}
                 memberId={actorId}
                 today={workShiftDateRef.current}
                 punch={activeOpenShift(household.kitchen, actorId)}
@@ -6958,11 +7049,8 @@ export function App() {
                   setShiftScanWarnings([]);
                   setShiftScanError("");
                 }}
-                onConfirm={(input) => {
-                  setWorkShiftDraft(null);
-                  setShiftScanWarnings([]);
-                  submitWorkShift(input);
-                }}
+                onConfirm={(input, attendanceReview, callbacks) => submitWorkShift(input, false, attendanceReview, callbacks)}
+                readSubmissionStatus={readWorkShiftSubmission}
               />
               </DeferredSurface>
             </>

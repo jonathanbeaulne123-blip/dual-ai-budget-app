@@ -1,3 +1,7 @@
+import {reviewedClaimInput,type ClaimSettlementRequest} from "./claimSettlementReview.ts";
+import {dueOccurrenceReview,reviewedDueRequest,type DueOccurrenceRequest} from "./dueOccurrenceReview.ts";
+import { reviewedSwipeEntry } from "./swipe.ts";
+import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewRequest } from "./duplicateReview.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
@@ -25,12 +29,12 @@ import {
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
 import { shapeTransactionLocation } from "./transactionLocation.ts";
-import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
+import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind, isCashLikeKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
 import { accountVisibleTo } from "./accountsWidget.ts";
 import { sitDownPreview } from "./insights.ts";
 import { leftoverProjection, leftoverSourceAccountId, jarParkingAccountId, plannedAllocation, shapeSitDownSessions, openSitDownSession } from "./sitDown.ts";
-import { goalsVaultAccount, vaultSpendableCents } from "./goalVault.ts";
+import { goalsVaultAccount, goalVaultCapacity } from "./goalVault.ts";
 import { savedCentsFromContributions, goalStatus } from "./goals.ts";
 import { touchDevicePresence } from "./devices.ts";
 import type { AllocationSlice } from "./allocate.ts";
@@ -1578,6 +1582,7 @@ function baseTx(household: Household, input: {
 }
 
 export const postEntry = captureCommand("postEntry", function postEntry(household: Household, input: {
+  swipeReviewed?: true;
   date: string;
   type: "expense" | "income" | "refund";
   amount: string | number;
@@ -1601,6 +1606,7 @@ export const postEntry = captureCommand("postEntry", function postEntry(househol
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  if (input.swipeReviewed !== undefined) reviewedSwipeEntry(household, input);
   requireAccountScopeForWrite(household, input.accountId, actor);
   requireOpenPeriod(household, date);
   const subcategory = requireSubcategory(
@@ -3997,6 +4003,14 @@ export const fundGoal = captureCommand("fundGoal", function fundGoal(household: 
   if (goalStatus(goal) === "retired") {
     throw new ValidationError("That jar already lives in the retirement home.");
   }
+  if (!goal.shared && goal.ownerMemberId !== actor.createdBy) throw new ValidationError("Only the owner can fund a private goal.");
+  const source = requireAccount(household, input.fromAccountId);
+  if (!isCashLikeKind(source.kind) || (goal.shared
+    ? source.scope === "personal"
+    : source.scope !== "personal" || source.ownerMemberId !== actor.createdBy)) {
+    throw new ValidationError(goal.shared ? "Choose Shared cash for a Shared bank." : "Choose your own Personal cash for a private goal.");
+  }
+  const visibility = goal.shared ? "household" : "personal";
   let working = household;
   const withVault = ensureGoalsVault(working);
   working = withVault.household;
@@ -4014,10 +4028,12 @@ export const fundGoal = captureCommand("fundGoal", function fundGoal(household: 
     note: `Fund goal · ${goal.name}`,
     confirmDuplicate: true,
     createdBy: actor.createdBy,
+    visibility,
   });
   const transferId = moved.postedIds[0] ?? null;
   const contributed = contributeToGoal(moved.household, goal.id, amountCents / 100, {
     createdBy: actor.createdBy,
+    visibility,
     date,
     transferId,
     markFunded: true,
@@ -4069,6 +4085,8 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
   if (goalStatus(goal) === "retired") {
     throw new ValidationError("That jar already lives in the retirement home.");
   }
+  if (!goal.shared && goal.ownerMemberId !== actor.createdBy) throw new ValidationError("Only the owner can purchase a private goal.");
+  const visibility = goal.shared ? "household" : "personal";
   if (!goal.funded) {
     throw new ValidationError("Fund this goal with a real transfer into Goals savings first. Envelope-only progress is unfunded.");
   }
@@ -4077,7 +4095,9 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
   }
   const vault = goalsVaultAccount(household);
   if (!vault) throw new ValidationError("Open Goals savings first. Sit-down Confirm can create one.");
-  const spendable = vaultSpendableCents(household, goal.id, date);
+  const capacity = goalVaultCapacity(household, goal.id, date);
+  if (capacity.kind === "unavailable") throw new ValidationError(capacity.reason);
+  const spendable = capacity.spendableCents;
   if (spentCents > spendable) {
     throw new ValidationError(
       `Goals savings can spare $${(spendable / 100).toFixed(2)} without raiding other goals. Transfer extra in, or spend less.`,
@@ -4109,6 +4129,7 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
       note: line.note || `Purchased ${goal.name}`,
       confirmDuplicate: true,
       createdBy: actor.createdBy,
+      visibility,
       source: "manual",
       sourceId: purchaseId,
     });
@@ -4383,8 +4404,9 @@ export const postOneRecurrence = captureCommand("postOneRecurrence", function po
   household: Household,
   recurrenceId: string,
   today: DateKey,
-  options: { allowNotDue?: boolean; createdBy?: string } = {},
+  options: { allowNotDue?: boolean; createdBy?: string; dueReview?:DueOccurrenceRequest } = {},
 ): CommitResult {
+  if(options.dueReview!==undefined){const request=reviewedDueRequest(options.dueReview,recurrenceId,today,options.createdBy,options.allowNotDue);const review=dueOccurrenceReview(household,request);if(review.kind!=="ready")throw new ValidationError(review.reason);}
   const item = household.recurrences.find((row) => row.id === recurrenceId && row.active);
   if (!item) throw new ValidationError("That repeating item is not active.");
   if (!options.allowNotDue && item.nextDate > today) throw new ValidationError("That item is not due yet.");
@@ -4487,7 +4509,11 @@ export const postDueRecurrences = captureCommand("postDueRecurrences", function 
   return commit(previous, next, "Post Recurring", `Posted ${due.length} recurring ${due.length === 1 ? "item" : "items"}`, postedIds);
 });
 
-export const markDuplicate = captureCommand("markDuplicate", function markDuplicate(household: Household, transactionId: string, isDuplicate: boolean): CommitResult {
+export const markDuplicate = captureCommand("markDuplicate", function markDuplicate(household: Household, transactionId: string, isDuplicate: boolean, review?:{request:DuplicateReviewRequest}): CommitResult {
+  if(review!==undefined){
+    const request=reviewedDuplicateRequest(review,transactionId,isDuplicate),reading=prepareDuplicateReview(household,request);
+    if(reading.kind!=="ready")throw new ValidationError(reading.reason);
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const tx = next.transactions.find((item) => item.id === transactionId);
@@ -5947,7 +5973,9 @@ export const settleClaim = captureCommand("settleClaim", function settleClaim(ho
   confirmDuplicate?: boolean;
   createdBy?: string;
   visibility?: Visibility;
+  claimReview?:ClaimSettlementRequest;
 }): CommitResult {
+  if(input.claimReview!==undefined)reviewedClaimInput(household,input);
   requireTimezone(household);
   const claim = household.claims.find((item) => item.id === input.claimId);
   if (!claim) throw new ValidationError("That claim is gone.");

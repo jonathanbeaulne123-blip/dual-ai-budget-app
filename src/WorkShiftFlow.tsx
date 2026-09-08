@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { ShiftCount } from "./ShiftCount.tsx";
+import { askBelongsOnDesk } from "./core/askView.ts";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CadPad } from "./CadPad.tsx";
 import {
   calculateWorkShift,
@@ -21,7 +23,7 @@ import {
   type WeatherGlass,
 } from "./core/index.ts";
 
-type MoneyKey = `sales:${string}` | "sales" | "cashTips" | "cardTips";
+export type MoneyKey = `sales:${string}` | "sales" | "cashTips" | "cardTips";
 
 const VISIBILITY: Array<{ id: Visibility; label: string }> = [
   { id: "personal", label: "Personal" },
@@ -66,6 +68,21 @@ export type WorkShiftDraft = {
   shiftBibleDraft?: ShiftBibleDraft;
 };
 
+export type WorkShiftFormState = {
+  step: number; date: string; jobId: string; roleId: string;
+  hoursDigits: string; paidBreakDigits: string; unpaidBreakDigits: string; hoursTouched: boolean;
+  money: Record<string, string>; activeMoney: MoneyKey;
+  customersServed: string; staffingCount: string; eventTag: ShiftEventTag; weatherGlass: WeatherGlass | "";
+  cashAccountId: string; wagesDepositAccountId: string; cardDepositAccountId: string;
+  wagesVisibility: Visibility; cashVisibility: Visibility; cardVisibility: Visibility; tipOutVisibility: Visibility;
+  note: string; attendance: Record<string, "scheduled-assumed" | "user-confirmed-present" | "user-confirmed-absent">;
+  surpriseName: string; surpriseHelpers: string[]; reviewedFingerprint: string; scheduleKey: string;
+};
+
+function useDraftField<K extends keyof WorkShiftFormState>(restored: WorkShiftFormState | undefined, key: K, fallback: WorkShiftFormState[K] | (() => WorkShiftFormState[K])) {
+  return useState<WorkShiftFormState[K]>(() => restored ? restored[key] : typeof fallback === "function" ? (fallback as () => WorkShiftFormState[K])() : fallback);
+}
+
 function dollars(digits: string): string {
   return dollarsFromCentsDigits(digits || "0");
 }
@@ -88,6 +105,7 @@ function explicitMoneyValue(digits: string | undefined): string | undefined {
 
 export function WorkShiftFlow({
   household,
+  fundCustodianMemberId = household.householdFund?.custodianMemberId,
   memberId,
   today,
   punch,
@@ -98,8 +116,11 @@ export function WorkShiftFlow({
   weatherGlassPrefill,
   scanWarnings,
   onClearDraft,
+  restored,
+  onDraftChange,
 }: {
   household: Household;
+  fundCustodianMemberId?: string | null;
   memberId: string;
   today: string;
   punch: OpenShift | null;
@@ -111,7 +132,12 @@ export function WorkShiftFlow({
   weatherGlassPrefill?: WeatherGlass | null;
   scanWarnings?: string[];
   onClearDraft?: () => void;
+  restored?: WorkShiftFormState;
+  onDraftChange?: (state: WorkShiftFormState) => void;
 }) {
+  const [phone, setPhone] = useState(() => typeof window !== "undefined" && window.innerWidth < 720);
+  const [countActive, setCountActive] = useState(false);
+  useEffect(() => { const resize = () => setPhone(window.innerWidth < 720); window.addEventListener("resize", resize); return () => window.removeEventListener("resize", resize); }, []);
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.active && job.memberId === memberId), [household.workJobs, memberId]);
   const cameraDraft = inboxDraft ? null : initialDraft;
   const approvedPunchDraft = cameraDraft?.sourceKind === "seven-shifts-approved-punch";
@@ -135,19 +161,22 @@ export function WorkShiftFlow({
       || cameraDraft.customersServed != null
       || cameraDraft.workedHours != null),
   );
-  const [step, setStep] = useState(() => (hasDraftTotals && !approvedPunchDraft ? 1 : 0));
-  const [date, setDate] = useState(inboxDraft?.date ?? cameraDraft?.date ?? today);
-  const [jobId, setJobId] = useState(() => inboxDraft?.jobId || cameraDraft?.jobId || jobs[0]?.id || "");
-  const job = jobs.find((row) => row.id === jobId) ?? jobs[0];
-  const [roleId, setRoleId] = useState(() => inboxDraft?.roleId || cameraDraft?.roleId || job?.roles.find((role) => role.active)?.id || "");
-  const role = job?.roles.find((row) => row.id === roleId && row.active) ?? job?.roles.find((row) => row.active);
+  const [step, setStep] = useDraftField(restored, "step", () => (hasDraftTotals && !approvedPunchDraft ? 1 : 0));
+  const [date, setDate] = useDraftField(restored, "date", inboxDraft?.date ?? cameraDraft?.date ?? today);
+  const [jobId, setJobId] = useDraftField(restored, "jobId", () => inboxDraft?.jobId || cameraDraft?.jobId || jobs[0]?.id || "");
+  const job = jobs.find((row) => row.id === jobId);
+  const [roleId, setRoleId] = useDraftField(restored, "roleId", () => inboxDraft?.roleId || cameraDraft?.roleId || job?.roles.find((role) => role.active)?.id || "");
+  const role = job?.roles.find((row) => row.id === roleId && row.active);
   const punchHours = punch ? workedHoursFromOpenShift(punch) : null;
-  const [hoursDigits, setHoursDigits] = useState(() => asDigitsFromDollars(inboxDraft?.workedHours ?? cameraDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
-  const [paidBreakDigits, setPaidBreakDigits] = useState(() => asExplicitDigitsFromDollars(inboxDraft?.paidBreakHours ?? cameraDraft?.paidBreakHours ?? punchHours?.paidBreakHours));
-  const [unpaidBreakDigits, setUnpaidBreakDigits] = useState(() => asExplicitDigitsFromDollars(cameraDraft?.unpaidBreakHours));
-  const [hoursTouched, setHoursTouched] = useState(Boolean(cameraDraft?.workedHours != null));
+  const [hoursDigits, setHoursDigits] = useDraftField(restored, "hoursDigits", () => asDigitsFromDollars(inboxDraft?.workedHours ?? cameraDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
+  const [paidBreakDigits, setPaidBreakDigits] = useDraftField(restored, "paidBreakDigits", () => asExplicitDigitsFromDollars(inboxDraft?.paidBreakHours ?? cameraDraft?.paidBreakHours ?? punchHours?.paidBreakHours));
+  const [unpaidBreakDigits, setUnpaidBreakDigits] = useDraftField(restored, "unpaidBreakDigits", () => asExplicitDigitsFromDollars(cameraDraft?.unpaidBreakHours));
+  const [hoursTouched, setHoursTouched] = useDraftField(restored, "hoursTouched", Boolean(cameraDraft?.workedHours != null));
+  const hoursTouchedRef = useRef(hoursTouched); hoursTouchedRef.current = hoursTouched;
+  const countTouchedBefore = useRef(hoursTouched);
+  const onCountActive = useCallback((active: boolean) => { if (active) countTouchedBefore.current = hoursTouchedRef.current; setCountActive(active); }, []);
   const draftSalesFields = job?.salesFields.filter((field) => field.requirement !== "off") ?? [];
-  const [money, setMoney] = useState<Record<string, string>>(() => {
+  const [money, setMoney] = useDraftField(restored, "money", () => {
     const salesDigits = asExplicitDigitsFromDollars(cameraDraft?.sales);
     const next: Record<string, string> = {
       sales: "",
@@ -178,7 +207,7 @@ export function WorkShiftFlow({
     }
     return next;
   });
-  const [activeMoney, setActiveMoney] = useState<MoneyKey>(() => (
+  const [activeMoney, setActiveMoney] = useDraftField(restored, "activeMoney", () => (
     draftSalesFields.length === 1
       ? `sales:${draftSalesFields[0]!.id}`
       : draftSalesFields.length > 1
@@ -192,18 +221,18 @@ export function WorkShiftFlow({
       .slice()
       .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))[0] ?? null;
   }, [household.shifts, job?.id, memberId]);
-  const [customersServed, setCustomersServed] = useState(() => String(cameraDraft?.customersServed ?? ""));
-  const [staffingCount, setStaffingCount] = useState(() => String(cameraDraft?.staffingCount ?? lastSameJob?.staffingCount ?? 1));
-  const [eventTag, setEventTag] = useState<ShiftEventTag>(() => cameraDraft?.eventTag ?? "regular");
-  const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | "">(() => cameraDraft?.weatherGlass ?? weatherGlassPrefill ?? "");
-  const [cashAccountId, setCashAccountId] = useState(() => job?.defaults.cashTipsAccountId ?? "");
-  const [wagesDepositAccountId, setWagesDepositAccountId] = useState(() => job?.defaults.wagesDepositAccountId ?? "");
-  const [cardDepositAccountId, setCardDepositAccountId] = useState(() => job?.defaults.cardTipsDepositAccountId ?? "");
-  const [wagesVisibility, setWagesVisibility] = useState<Visibility>(() => job?.defaults.wagesVisibility ?? "personal");
-  const [cashVisibility, setCashVisibility] = useState<Visibility>(() => job?.defaults.cashTipsVisibility ?? "personal");
-  const [cardVisibility, setCardVisibility] = useState<Visibility>(() => job?.defaults.cardTipsVisibility ?? "personal");
-  const [tipOutVisibility, setTipOutVisibility] = useState<Visibility>(() => job?.defaults.tipOutVisibility ?? "personal");
-  const [note, setNote] = useState(cameraDraft?.note ?? "");
+  const [customersServed, setCustomersServed] = useDraftField(restored, "customersServed", () => String(cameraDraft?.customersServed ?? ""));
+  const [staffingCount, setStaffingCount] = useDraftField(restored, "staffingCount", () => String(cameraDraft?.staffingCount ?? lastSameJob?.staffingCount ?? 1));
+  const [eventTag, setEventTag] = useDraftField(restored, "eventTag", () => cameraDraft?.eventTag ?? "regular");
+  const [weatherGlass, setWeatherGlass] = useDraftField(restored, "weatherGlass", () => cameraDraft?.weatherGlass ?? weatherGlassPrefill ?? "");
+  const [cashAccountId, setCashAccountId] = useDraftField(restored, "cashAccountId", () => job?.defaults.cashTipsAccountId ?? "");
+  const [wagesDepositAccountId, setWagesDepositAccountId] = useDraftField(restored, "wagesDepositAccountId", () => job?.defaults.wagesDepositAccountId ?? "");
+  const [cardDepositAccountId, setCardDepositAccountId] = useDraftField(restored, "cardDepositAccountId", () => job?.defaults.cardTipsDepositAccountId ?? "");
+  const [wagesVisibility, setWagesVisibility] = useDraftField(restored, "wagesVisibility", () => job?.defaults.wagesVisibility ?? "personal");
+  const [cashVisibility, setCashVisibility] = useDraftField(restored, "cashVisibility", () => job?.defaults.cashTipsVisibility ?? "personal");
+  const [cardVisibility, setCardVisibility] = useDraftField(restored, "cardVisibility", () => job?.defaults.cardTipsVisibility ?? "personal");
+  const [tipOutVisibility, setTipOutVisibility] = useDraftField(restored, "tipOutVisibility", () => job?.defaults.tipOutVisibility ?? "personal");
+  const [note, setNote] = useDraftField(restored, "note", cameraDraft?.note ?? "");
   const scheduleWindow = {
     startedAt: inboxDraft?.startedAt ?? cameraDraft?.startedAt ?? punch?.startedAt ?? null,
     endedAt: inboxDraft?.endedAt ?? cameraDraft?.endedAt ?? punch?.endedAt ?? null,
@@ -231,18 +260,23 @@ export function WorkShiftFlow({
     row.schedule.scheduledStart ?? "",
     row.schedule.scheduledEnd ?? "",
   ].join(":")).join("|");
-  const [attendance, setAttendance] = useState<Record<string, "scheduled-assumed" | "user-confirmed-present" | "user-confirmed-absent">>({});
-  const [surpriseName, setSurpriseName] = useState("");
-  const [surpriseHelpers, setSurpriseHelpers] = useState<string[]>([]);
+  const [attendance, setAttendance] = useDraftField(restored, "attendance", {});
+  const [surpriseName, setSurpriseName] = useDraftField(restored, "surpriseName", "");
+  const [surpriseHelpers, setSurpriseHelpers] = useDraftField(restored, "surpriseHelpers", []);
   const [stepError, setStepError] = useState("");
 
+  const restoreAttendance = useRef(Boolean(restored));
+  const restoreInbox = useRef(Boolean(restored));
+  const restoreJob = useRef(Boolean(restored));
   useEffect(() => {
+    if (restoreAttendance.current) { restoreAttendance.current = false; return; }
     setAttendance(Object.fromEntries(scheduledPeople.map((row) => [row.coworker.id, "scheduled-assumed"] as const)));
     setSurpriseHelpers([]);
     setSurpriseName("");
   }, [scheduledPeopleKey, memberId, job?.id, date]);
 
   useEffect(() => {
+    if (restoreInbox.current) { restoreInbox.current = false; return; }
     if (!inboxDraft) return;
     setDate(inboxDraft.date);
     setJobId(inboxDraft.jobId);
@@ -255,13 +289,14 @@ export function WorkShiftFlow({
   }, [inboxDraftVersion]);
 
   useEffect(() => {
-    if (inboxDraft || hoursTouched || !punch) return;
+    if (restored || inboxDraft || hoursTouched || !punch) return;
     const preview = workedHoursFromOpenShift(punch);
     setHoursDigits(centsDigitsFromDollars(String(preview.workedHours)));
-    setPaidBreakDigits(centsDigitsFromDollars(String(preview.paidBreakHours)));
+    setPaidBreakDigits(asExplicitDigitsFromDollars(preview.paidBreakHours));
   }, [punch, hoursTouched, inboxDraft]);
 
   useEffect(() => {
+    if (restoreJob.current) { restoreJob.current = false; return; }
     if (!job) return;
     if (inboxDraft && inboxDraft.jobId === job.id && job.roles.some((candidate) => candidate.id === inboxDraft.roleId && candidate.active)) {
       setRoleId(inboxDraft.roleId);
@@ -300,21 +335,36 @@ export function WorkShiftFlow({
       return null;
     }
   }, [household.shifts, job, role, date, memberId, hoursDigits, paidBreakDigits, salesCents, money.cashTips, money.cardTips]);
+  const showCount = phone && !!role?.tipped && household.members.some(member => member.id === memberId && member.active)
+    && askBelongsOnDesk(memberId, fundCustodianMemberId);
+  useEffect(() => { if (showCount && (activeMoney === "cashTips" || activeMoney === "cardTips")) setActiveMoney(salesFields[0] ? `sales:${salesFields[0].id}` : "sales"); }, [showCount, activeMoney, salesFields[0]?.id]);
+  const fingerprint = job && role ? workJobFingerprint(job, role.id, date) : "";
+  const [reviewedFingerprint, setReviewedFingerprint] = useDraftField(restored, "reviewedFingerprint", fingerprint);
+  const [scheduleKey, setScheduleKey] = useDraftField(restored, "scheduleKey", scheduledPeopleKey);
+  const rulesNeedReview = reviewedFingerprint !== fingerprint;
+  const attendanceNeedsReview = scheduleKey !== scheduledPeopleKey;
+  const requiresReview = rulesNeedReview || attendanceNeedsReview;
+  useLayoutEffect(() => { onDraftChange?.({ step, date, jobId, roleId, hoursDigits, paidBreakDigits, unpaidBreakDigits, hoursTouched, money, activeMoney, customersServed, staffingCount, eventTag, weatherGlass, cashAccountId, wagesDepositAccountId, cardDepositAccountId, wagesVisibility, cashVisibility, cardVisibility, tipOutVisibility, note, attendance, surpriseName, surpriseHelpers, reviewedFingerprint, scheduleKey }); });
   const accounts = household.accounts.filter((account) => account.active && (account.kind === "chequing" || account.kind === "savings" || account.kind === "other"));
 
   if (!job || !role) {
     return (
       <div className="work-shift-empty">
-        <h2>Add a job first</h2>
+        <h2>{jobs.length ? "Choose a current job and role" : "Add a job first"}</h2>
+        {jobs.length ? <label>Job<select value={jobId} onChange={event => { setJobId(event.target.value); setRoleId(jobs.find(row => row.id === event.target.value)?.roles.find(row => row.active)?.id ?? ""); setStep(0); }}><option value="">Choose a job</option>{jobs.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label> : null}
         <p className="muted">A job supplies the wage, break, tip-out, sales, and payday rules. Open Shift → Jobs, then come back to Today.</p>
       </div>
     );
   }
 
+  const countMoneyComplete = Number(dollars(hoursDigits)) > 0 && paidBreakDigits !== ""
+    && money.cashTips !== "" && money.cardTips !== ""
+    && salesFields.every(field => field.requirement !== "required" || (money[`sales:${field.id}`] ?? "") !== "")
+    && (!salesFields.length || salesFields.some(field => (money[`sales:${field.id}`] ?? "") !== ""));
   const moneyChoices: Array<{ id: MoneyKey; label: string }> = salesFields.length
     ? salesFields.map((field) => ({ id: `sales:${field.id}` as MoneyKey, label: field.label }))
     : [{ id: "sales", label: "Sales" }];
-  if (role.tipped) moneyChoices.push({ id: "cashTips", label: "Cash tips" }, { id: "cardTips", label: "Card tips" });
+  if (role.tipped && !showCount) moneyChoices.push({ id: "cashTips", label: "Cash tips" }, { id: "cardTips", label: "Card tips" });
   const selectedMoney = money[activeMoney] ?? "";
   const canContinue = Number(dollars(hoursDigits)) > 0;
 
@@ -341,6 +391,11 @@ export function WorkShiftFlow({
   };
 
   const confirm = () => {
+    if (countActive) return;
+    if (rulesNeedReview) { setStep(0); setStepError("The job rules changed. Review the clock and current rules before continuing."); return; }
+    if (attendanceNeedsReview) { setStep(3); setStepError("Attendance changed. Review the current attendance before Confirm."); return; }
+    const timeError = validateTimeStep();
+    if (timeError) { setStep(0); setStepError(timeError); return; }
     const error = validateSalesStep();
     if (error) {
       setStepError(error);
@@ -402,6 +457,7 @@ export function WorkShiftFlow({
 
   return (
     <section className="work-shift-flow" aria-label="Confirm work shift">
+      {requiresReview ? <p className="work-shift-draft-banner" role="status">The job rules or attendance changed. Your figures are saved. <button type="button" className="chip" onClick={() => setStep(rulesNeedReview ? 0 : 3)}>Review changes</button></p> : null}
       {cameraDraft && (
         <div className="work-shift-draft-banner" role="status">
           <p className="kicker">{approvedPunchDraft ? "Draft from approved 7shifts punch" : "Draft from camera"}</p>
@@ -410,7 +466,7 @@ export function WorkShiftFlow({
           {cameraDraft.sales != null && salesFields.length > 1 && !cameraDraft.salesByField && (
             <p className="muted">Camera saw a sales total — enter it across {salesFields.map((field) => field.label).join(" / ")} yourself. Hearth will not invent a split.</p>
           )}
-          {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
+          {(scanWarnings ?? []).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
           {onClearDraft && (
             <button type="button" className="chip" disabled={busy} onClick={onClearDraft}>Clear draft</button>
           )}
@@ -437,7 +493,7 @@ export function WorkShiftFlow({
           {approvedPunchDraft && <p className="muted">7shifts filled date, clock, and worked hours from {cameraDraft.sourceLabel ?? "an approved punch"}. Cash and card tips stay blank. Confirm remains the only writer.</p>}
           {punch && !inboxDraft && <p className="muted">Clocked {new Date(punch.startedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}{punch.endedAt ? `–${new Date(punch.endedAt).toLocaleTimeString([], { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })}` : ""}. Edit the totals below before Confirm if the clock was wrong.</p>}
           <div className="work-shift-pad-grid">
-            <CadPad digits={hoursDigits} onDigits={(digits) => { setHoursTouched(true); setHoursDigits(digits); }} label="Actual working hours" unit="hours" emptyDisplay="Not entered" />
+            {cameraDraft?.shiftEnvelopeId ? <p>Actual working hours <strong>{dollars(hoursDigits)}</strong><br /><span className="muted">Captured hours stay with the approved clock.</span></p> : <CadPad digits={hoursDigits} onDigits={(digits) => { setHoursTouched(true); setHoursDigits(digits); }} label="Actual working hours" unit="hours" emptyDisplay="Not entered" />}
             <CadPad digits={paidBreakDigits} onDigits={(digits) => { setHoursTouched(true); setPaidBreakDigits(digits); }} label="Paid-break hours" unit="hours" emptyDisplay="Not entered" />
             {cameraDraft?.shiftEnvelopeId ? <CadPad digits={unpaidBreakDigits} onDigits={setUnpaidBreakDigits} label="Unpaid-break hours" unit="hours" emptyDisplay="Not entered" /> : null}
           </div>
@@ -449,7 +505,16 @@ export function WorkShiftFlow({
       {step === 1 && (
         <div className="work-shift-step">
           <p className="kicker">{job.name} · {role.name}</p>
-          <h2>Sales and tips</h2>
+          {showCount ? <ShiftCount household={household} memberId={memberId} jobId={job.id}
+            hours={hoursDigits === "" ? null : Number(dollars(hoursDigits))}
+            cash={money.cashTips === "" ? null : Number(money.cashTips)} card={money.cardTips === "" ? null : Number(money.cardTips)}
+            hoursLocked={!!cameraDraft?.shiftEnvelopeId} calculation={calculation} completeReading={countMoneyComplete}
+            onActive={onCountActive} onCancel={() => setHoursTouched(countTouchedBefore.current)}
+            onChange={(field, value) => {
+              if (field === "hours") { setHoursTouched(true); setHoursDigits(value === null ? "" : asExplicitDigitsFromDollars(value)); }
+              else setMoney(current => ({ ...current, [field === "cash" ? "cashTips" : "cardTips"]: value === null ? "" : String(Math.round(value)) }));
+            }} /> : <h2>Sales and tips</h2>}
+          {showCount ? <h3>Sales</h3> : null}
           <div className="chips work-shift-metrics">
             {moneyChoices.map((choice) => <button key={choice.id} type="button" className={`chip ${activeMoney === choice.id ? "selected" : ""}`} onClick={() => setActiveMoney(choice.id)}>{choice.label} · {money[choice.id] === "" || money[choice.id] == null ? "Missing" : formatCad(Number(money[choice.id]))}</button>)}
           </div>
@@ -536,6 +601,7 @@ export function WorkShiftFlow({
             {role.tipped && <div><span>People on floor</span><strong>{staffingCount || "—"}</strong></div>}
             {role.tipped && <div><span>Event</span><strong>{EVENT_LABELS[eventTag]}</strong></div>}
           </div>
+          {stepError ? <p className="error" role="alert">{stepError}</p> : null}
           <section className="work-attendance-review" aria-label="Coworker attendance review">
             <p className="kicker">Who was actually there?</p>
             <h3>Scheduled coworkers</h3>
@@ -548,10 +614,10 @@ export function WorkShiftFlow({
                       <input
                         type="checkbox"
                         checked={present}
-                        onChange={(event) => setAttendance((current) => ({
+                        onChange={(event) => { setStepError(""); setScheduleKey(scheduledPeopleKey); setAttendance((current) => ({
                           ...current,
                           [coworker.id]: event.target.checked ? "user-confirmed-present" : "user-confirmed-absent",
-                        }))}
+                        })); }}
                       />
                       <span><strong>{coworker.displayName}</strong>{schedule.roleLabel ? ` · ${schedule.roleLabel}` : ""}</span>
                     </label>
@@ -571,6 +637,7 @@ export function WorkShiftFlow({
             {surpriseHelpers.length ? <div className="chips">{surpriseHelpers.map((name) => (
               <button key={name} type="button" className="chip selected" onClick={() => setSurpriseHelpers((current) => current.filter((row) => row !== name))}>{name} · remove</button>
             ))}</div> : null}
+            {attendanceNeedsReview ? <button type="button" className="chip" onClick={() => { setStepError(""); setScheduleKey(scheduledPeopleKey); }}>Keep this attendance</button> : null}
             <p className="muted">Scheduled people start present. Turn off anyone absent. This private review never changes people-on-floor, wages, tips, or sales.</p>
           </section>
           {calculation?.tipOuts.map((row) => <p className="muted" key={row.ruleId}>{row.label}: {formatCad(row.amountCents)} · {row.timing === "immediate" ? "paid from cash now" : row.timing === "deferred" ? "remind daily until paid" : "held from tip envelope"}</p>)}
@@ -584,7 +651,7 @@ export function WorkShiftFlow({
           <button
             type="button"
             className="primary"
-            disabled={busy || (step === 0 && !canContinue)}
+            disabled={busy || countActive || (step === 0 && !canContinue)}
             onClick={() => {
               if (step === 0) {
                 const error = validateTimeStep();
@@ -602,12 +669,13 @@ export function WorkShiftFlow({
                 }
                 setStepError("");
               }
+              if (step === 0) { setReviewedFingerprint(fingerprint); setScheduleKey(scheduledPeopleKey); }
               setStep((current) => current + 1);
             }}
           >
             Next
           </button>
-        ) : <button type="button" className="primary post-big" disabled={busy || !calculation} onClick={confirm}>Confirm shift</button>}
+        ) : <button type="button" className="primary post-big" disabled={busy || countActive || !calculation} onClick={confirm}>Confirm shift</button>}
       </div>
     </section>
   );
