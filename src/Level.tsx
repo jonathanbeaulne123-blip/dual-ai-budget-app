@@ -1,3 +1,5 @@
+import { DateTurn, TurnFocusBoundary, useTurnDate } from "./DateTurn.tsx";
+import { levelTurnReading } from "./core/turnReading.ts";
 import { LEVEL_PHONE_VIEW } from "./core/levelView.ts";
 import { useId, type Ref } from "react";
 import {
@@ -25,6 +27,7 @@ type LevelProps = {
   presentation?: LevelPresentation;
   headingRef?: Ref<HTMLHeadingElement>;
   compact?: boolean;
+  scopeKey?:string;
 };
 
 function ordinalDay(dateKey: string): string {
@@ -40,7 +43,9 @@ function ordinalDay(dateKey: string): string {
  * projected is dashed — fact and forecast never share a stroke. Everything
  * here reads `FundWalk`; nothing here recomputes a balance.
  */
-export function Level({ walk, household, presentation, headingRef, compact = false }: LevelProps) {
+export function Level({ walk, household, presentation, headingRef, compact = false, scopeKey = `${household.environment}:${household.householdId}` }: LevelProps) {
+  const turn=useTurnDate(scopeKey,JSON.stringify([walk,presentation]),walk.monthKey,walk.today);
+  const reading=levelTurnReading(walk,turn.date);
   const headingId = useId();
   const view = compact ? LEVEL_PHONE_VIEW : LEVEL_VIEW;
   const drawing = levelDrawing(walk, view);
@@ -82,6 +87,7 @@ export function Level({ walk, household, presentation, headingRef, compact = fal
       <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading level-figure">
         {formatCad(walk.todayBalanceCents)}
       </h2>
+      <TurnFocusBoundary scope={scopeKey}>
       <div className="level-scroll">
         <svg
           className="level-svg"
@@ -91,6 +97,7 @@ export function Level({ walk, household, presentation, headingRef, compact = fal
           role="img"
           aria-label={ariaLabel}
         >
+          {reading.kind==="ready"&&<line className="turn-readhead" x1={levelX(turn.date,walk.monthKey,view)} x2={levelX(turn.date,walk.monthKey,view)} y1={view.top} y2={view.axisY}/>}
           {drawing.bands.map((band, index) => (
             <rect
               key={`band-${index}`}
@@ -149,6 +156,15 @@ export function Level({ walk, household, presentation, headingRef, compact = fal
           <text className="level-label" x={view.right} y={view.labelY} textAnchor="end">{lastDay}</text>
         </svg>
       </div>
+      {shown!=="untied"&&reading.kind!=="unavailable"&&<DateTurn key={turn.key} day={turn.day} days={turn.days} date={turn.date} onChange={turn.setDay}/>}
+      {shown!=="untied"&&reading.kind==="ready"&&<div className={`turn-reading ${reading.phase==="projected"?"is-projected":""}`} aria-live="polite">
+        {reading.phase==="projected"&&<span className="reach-pill">Projection</span>}
+        <p className="turn-reading-kicker">{turn.date} · {reading.phase==="projected"?"Projection":"Recorded through this day"}</p>
+        <p>Fund <strong>{formatCad(reading.cents)}</strong></p>
+        {reading.todayProjection!==null&&<p>After today’s scheduled items · projection <strong>{formatCad(reading.todayProjection)}</strong></p>}
+        {reading.rows.length>0?<ol>{reading.rows.map((row,index)=><li key={index}>{row.label} · {row.actual?"recorded":row.estimated?"observed estimate":"scheduled"} · {formatCad(row.deltaCents)} → {formatCad(row.balanceCents)}</li>)}</ol>:<p>No dated movement. The last prepared reading carries forward.</p>}
+      </div>}
+      </TurnFocusBoundary>
       <p className="level-headline">{levelStageHeadline(walk)}</p>
       {levelSecondary(walk) ? <p className="level-secondary">{levelSecondary(walk)}</p> : null}
     </section>

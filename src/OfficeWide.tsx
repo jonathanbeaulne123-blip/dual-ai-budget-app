@@ -606,6 +606,7 @@ export function OfficeWide({
           ) : spreadIsStage && sharedStory ? (
             <>
               <MonthSpread
+                scopeKey={JSON.stringify([household.environment,household.householdId,memberId,view])}
                 story={sharedStory}
                 course={course}
                 household={booksHousehold}

@@ -11,7 +11,7 @@ import type { WalkPoint } from "./core/fundWalk.ts";
 
 type Point = {date: string; balanceCents: number};
 /** Drawing coordinates only. Every balance and scenario bound belongs to a core reader. */
-export function ReachLevel({ horizon, scenario, capacityCents, reading }: {reading?: FundTrustReading | null; capacityCents: number; horizon: FundHorizon; scenario: Extract<FundScenarioResult, {kind: "scenario"}> | null}) {
+export function ReachLevel({ horizon, scenario, capacityCents, reading, selectedDate }: {selectedDate?:string;reading?: FundTrustReading | null; capacityCents: number; horizon: FundHorizon; scenario: Extract<FundScenarioResult, {kind: "scenario"}> | null}) {
   const actual = horizon.acceptedMonthlyWalk.points.filter(p => p.actual && p.date <= horizon.asOf);
   const start = actual[0]?.date ?? horizon.asOf;
   const days = Math.max(1, calendarDaysBetween(start, horizon.through));
@@ -33,6 +33,7 @@ export function ReachLevel({ horizon, scenario, capacityCents, reading }: {readi
   const area = differs ? [...coordinates(lower), ...coordinates(expected).reverse()].map(([a,b],i)=>`${i?'L':'M'}${a},${b}`).join(' ')+' Z' : null;
   const labelledBuffer=horizon.monthlyBuffers.find(b=>b.bufferCents>0);
   return <svg className="reach-level" viewBox="0 0 344 148" role="img" aria-label={reading !== undefined ? `Shared Fund. Accepted today ${formatCad(horizon.anchorCents)}.${reading ? ` ${reading.level} projection. Last included source ${reading.lastSourceDate}. Lower end ${formatCad(reading.lower.endBalanceCents)}, expected end ${formatCad(reading.expected.endBalanceCents)}. Scheduled obligations are projections.` : " Forward reading unavailable."}` : `Shared Fund. Accepted today ${formatCad(horizon.anchorCents)}. Baseline end ${formatCad(horizon.endBalanceCents)} through ${horizon.through}.${scenario ? ` Chosen scenario end: lower ${formatCad(scenario.lower.endBalanceCents)}, expected ${formatCad(scenario.expected.endBalanceCents)}.` : ''}`}>
+    {selectedDate&&<line className="turn-readhead" x1={x(selectedDate)} x2={x(selectedDate)} y1="18" y2="124"/>}
     <line className="reach-zero" x1="12" x2="332" y1={y(0)} y2={y(0)} />
     {horizon.monthlyBuffers.map(b => {const from = b.monthKey+'-01'; const next = horizon.monthlyBuffers[horizon.monthlyBuffers.indexOf(b)+1]; const to = next ? next.monthKey+'-01' : horizon.through; return <line key={b.monthKey} className="reach-buffer" x1={x(from < start ? start : from)} x2={x(to && to < horizon.through ? to : horizon.through)} y1={y(b.bufferCents)} y2={y(b.bufferCents)} />;})}
     {labelledBuffer ? <text x={Math.min(290,Math.max(16,x(labelledBuffer.monthKey+"-01")+4))} y={Math.max(12,y(labelledBuffer.bufferCents)-4)}>buffer</text> : null}

@@ -54,7 +54,7 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
   if (!allowed) return <p className="desk-plate-empty">This reading is not available on this desk.</p>;
   if (widgetId === "level" && walk && presentation === "phone" && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId)) return ask();
   if (widgetId === "level" && walk && presentation === "phone") return <SharedFundTrust household={household} memberId={memberId} view={view} today={today} headline headingRef={headingRef} />;
-  if (widgetId === "level" && walk) return <><Level compact={presentation === "phone"} walk={walk} household={household} headingRef={headingRef} />{askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId) ? ask() : null}</>;
+  if (widgetId === "level" && walk) return <><Level scopeKey={JSON.stringify([household.environment,household.householdId,memberId,view])} compact={presentation === "phone"} walk={walk} household={household} headingRef={headingRef} />{askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId) ? ask() : null}</>;
   if ((widgetId === "next-out" || widgetId === "spoken-for") && walk) return <NextOutStage walk={walk} today={today} headingRef={headingRef} />;
   if (widgetId === "week" && week) return <WeekStage week={week} nameOf={nameOf} headingRef={headingRef} />;
   if (widgetId === "waiting") return <WaitingStage household={household} memberId={memberId} today={today} onKitchen={onKitchen} headingRef={headingRef} />;

@@ -1,3 +1,17 @@
+## Mobile B9 — the Turn (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b9-turn`; exact base/pre-commit HEAD`9c2646547f82f89c74eb72b199f58121610f567d` (B8, PR390). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's one date read-head fits its drawing, replaces hover and selects exact prepared facts. Current Fund remains fixed; today and projected values remain separate. Live custodian Trust retains one drawing/paperbox, Reach retains its own axis, and older Course future aggregates are visibly undated.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Final quick gate139/139 plus TypeScript/AI/diff passed231.304seconds, no five-minute breach. Twenty layout/state cases and four native/sheet gesture cases pass. Independent money/UX/verifier source reviews clear. [Exact commands, fingerprint and limits](worksessions/2026-09-08-mobile-turn.md).
+
+**Limits:** Fictional local component/model proof; older MonthSpread remains at existing hosts. No physical, authenticated full-App browser, exhaustive or hosted proof. Native user-zoom restriction remains an integration repair. No merge, deployment or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and implements the twelve original tweaks individually.
+
 ## Mobile B8 — the Prise (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b8-prise`; exact base/pre-commit HEAD`10d0e8d13ee07b5e4498579e71f1813f52cec26e` (B7, PR389). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.

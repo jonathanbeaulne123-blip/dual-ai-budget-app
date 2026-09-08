@@ -1,3 +1,5 @@
+import { DateTurn, TurnFocusBoundary, useTurnWindow } from "./DateTurn.tsx";
+import { trustTurnReading } from "./core/turnReading.ts";
 import { ReachLevel, SharedReachLevel } from "./ReachLevel.tsx";
 import { prepareFundHorizon } from "./core/fundHorizon.ts";
 import { addDays } from "./core/calendar.ts";
@@ -59,13 +61,30 @@ export function SharedFundTrust({ household, memberId, view, today, headline = f
   household: Household; memberId: string; view: LedgerView; today: string; headline?: boolean; headingRef?: Ref<HTMLHeadingElement>;
 }) {
   const through = addDays(today, 30);
+  const scope=JSON.stringify([household.environment,household.householdId,memberId,view]);
   const horizon = useMemo(() => prepareFundHorizon(household, today, through), [household, today, through]);
   const control = useFundTrust(fundTrustStorageKey(household.environment, household.householdId, memberId, view, today), horizon.kind === "horizon" ? horizon : null);
   const reading = control.reading.kind === "trust-reading" ? control.reading : null;
+  const walk=useMemo(()=>fundWalk(household,today.slice(0,7),today),[household,today]);
+  const from=horizon.kind==="horizon"?(horizon.acceptedMonthlyWalk.points.find(point=>point.actual&&point.date<=today)?.date??today):today;
+  const turn=useTurnWindow(scope,JSON.stringify([walk,reading]),from,through,today);
+  const inspection=reading?trustTurnReading(walk,reading,turn.date):null;
   return <section className={headline ? "level is-phone" : "trust-shared"}>
-    {headline && <><p className="desk-plate-kicker">The Household Fund</p><h2 ref={headingRef} tabIndex={-1} className="reach-figure">{formatCad(fundWalk(household, today.slice(0,7), today).todayBalanceCents)}</h2></>}
-    {horizon.kind === "horizon" ? <ReachLevel horizon={horizon} scenario={null} capacityCents={0} reading={reading} /> : <SharedReachLevel household={household} today={today} through={through} />}
+    {headline && <><p className="desk-plate-kicker">The Household Fund</p><h2 ref={headingRef} tabIndex={-1} className="reach-figure">{formatCad(walk.todayBalanceCents)}</h2></>}
+    <TurnFocusBoundary scope={scope}>
+    {horizon.kind === "horizon" ? <ReachLevel horizon={horizon} scenario={null} capacityCents={0} reading={reading} selectedDate={headline?turn.date:undefined} /> : <SharedReachLevel household={household} today={today} through={through} />}
+    {headline&&reading&&<DateTurn label="Days in this view" key={turn.key} day={turn.day} days={turn.days} date={turn.date} onChange={turn.setDay}/>}
+    </TurnFocusBoundary>
     <FundTrustControls control={control} />
-    <div className="trust-paperbox"><span className="reach-pill">{control.level === "observed" ? "Projection · observed sources" : "Projection · confirmed contributions"}</span><FundTrustFacts control={control} />{reading && <p className="trust-note">Projected end deficit · {formatCad(reading.lower.terminalDeficitCents)}</p>}</div>
+    <div className={`trust-paperbox ${headline&&(inspection?.kind==="trust-day"||inspection?.kind==="trust-today")?"is-date-projection":""}`}><span className="reach-pill">{control.level === "observed" ? "Projection · observed sources" : "Projection · confirmed contributions"}</span>{headline&&inspection&&<div className="trust-day-reading" aria-live="polite">
+      <p className="trust-note">{turn.date} · {inspection.kind==="ready"?"Recorded through this day":inspection.kind==="trust-today"?"Recorded and scheduled today":inspection.kind==="trust-day"?"Projection":"No dated projection"}</p>
+      {inspection.kind==="unavailable"?<p className="trust-note">{inspection.reason}</p>:<>
+        {inspection.kind==="ready"?<p className="trust-note">Fund {formatCad(inspection.cents)}</p>:<>
+          {inspection.kind==="trust-today"&&<p className="trust-note">Recorded Fund {formatCad(inspection.actualCents)}</p>}
+          <p className="trust-note">{inspection.kind==="trust-today"?"After today’s scheduled items · projection":"Fund"} {inspection.lowerCents===inspection.expectedCents?formatCad(inspection.lowerCents):`${formatCad(inspection.lowerCents)}–${formatCad(inspection.expectedCents)}`}</p>
+        </>}
+        {inspection.rows.length>0&&<ol className="trust-note">{inspection.rows.map((row,index)=><li key={index}>{row.label} · {row.actual?"recorded":row.estimated?"observed estimate":"scheduled"} · {formatCad(row.deltaCents)} → {formatCad(row.balanceCents)}</li>)}</ol>}
+      </>}
+    </div>}<FundTrustFacts control={control} />{reading && <p className="trust-note">Projected end deficit · {formatCad(reading.lower.terminalDeficitCents)}</p>}</div>
   </section>;
 }
