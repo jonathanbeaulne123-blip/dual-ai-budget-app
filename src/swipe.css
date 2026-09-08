@@ -153,3 +153,6 @@
     transition: none;
   }
 }
+
+.swipe-cat { flex-direction: column; gap: 4px; overflow-wrap: anywhere; min-width: 0; height: auto; }
+.swipe-cat small { font: 10.5px/1.3 var(--mono); color: var(--muted); }

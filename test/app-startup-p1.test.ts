@@ -4,7 +4,7 @@ import { prepareDuplicateReview } from "../src/core/duplicateReview.ts";
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addAccount, abandonOpenShift, clockInShift, clockOutShift, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
+import { startShiftBreak, addAccount, abandonOpenShift, clockInShift, clockOutShift, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 import { completedExistingBooksHousehold, existingBooksActivationAt } from "./fixtures/existing-books-onboarding.ts";
@@ -23,9 +23,11 @@ const startup = vi.hoisted(() => ({
   v2: false,
   v2AutoAdopt: true,
   v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
+  tillOpen:null as null | (()=>void),
+  swipeProps:null as null | {onPostCategory:(input:{amount:string;subcategoryId:string})=>void;onClose:()=>void;onMore:(amount:string)=>void;error?:string},
   duplicateWriter:null as import("../src/Ledger.tsx").DuplicateCommand|null,
   punchConfirm: null as null | ((candidate: Household) => Promise<import("../src/core/types.ts").CommitResult>),
-  officePunch: null as null | {onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger")=>void},
+  officePunch: null as null | {onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till")=>void},
   scenarioSource: null as import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null,
   saveBarrier: null as {household: Household; promise: Promise<void>} | null,
   replicas: [] as import("../src/storage.ts").HouseholdReplicaSummary[],
@@ -72,6 +74,7 @@ vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
       await this.options.adopt(result.household);
       return result;
     }
+    result(_id:string): import("../src/core/types.ts").CommitResult | undefined { return undefined; }
     async destroy() {}
   } };
 });
@@ -184,9 +187,13 @@ vi.mock("../src/api.ts", async (importOriginal) => {
   };
 });
 
+vi.mock("../src/Till.tsx",async importOriginal=>{const actual=await importOriginal<typeof import("../src/Till.tsx")>();return {...actual,Till:(props:import("react").ComponentProps<typeof actual.Till>)=>{startup.tillOpen=props.onOpenSwipe;return createElement(actual.Till,props);}};});
+
+vi.mock("../src/Swipe.tsx",()=>({Swipe:(props:NonNullable<typeof startup.swipeProps>)=>{startup.swipeProps=props;return createElement("div",{"data-testid":"swipe-stub"},props.error||"Swipe draft");}}));
+
 vi.mock("../src/deferredSurfaces.tsx", () => ({
   DeferredSurface: ({ children }: { children: ReactNode }) => children,
-  DeferredOffice: ({scenarioSource,...punch}: {scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger")=>void}) => {
+  DeferredOffice: ({scenarioSource,...punch}: {scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till")=>void}) => {
     startup.officePunch=punch;
     startup.scenarioSource = scenarioSource ?? null;
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
@@ -321,6 +328,8 @@ describe("cached-shell startup books gate", () => {
     startup.v2AutoAdopt = true;
     startup.v2Clients = [];
     startup.scenarioSource = null;
+    startup.tillOpen = null;
+    startup.swipeProps = null;
     startup.duplicateWriter = null;
     startup.punchConfirm = null;
     startup.officePunch = null;
@@ -1462,6 +1471,33 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
     expect(container.textContent).toContain("How much came in?");
   });
+
+
+  for(const mode of ['room','category'] as const)it(`Swipe rechecks a waiting purchase before queue drain (${mode})`,async()=>{
+    startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+    const h=clockInShift(await acceptedScenarioFixture(),{memberId:'MEM-002'}).household;h.householdFund={...h.householdFund!,custodianMemberId:'MEM-002'};h.members=h.members.map(m=>m.id==='MEM-002'?{...m,fundCardAccountId:'ACC-VISA'}:m);h.booksAcceptedHash=await financialAuditHash(h);startup.cached=h;
+    let release!:()=>void,calls=0;const barrier=new Promise<void>(resolve=>release=resolve),breakResult=startShiftBreak(h,{memberId:'MEM-002',kind:'unpaid'});
+    startup.punchConfirm=async next=>{calls++;await barrier;return {...breakResult,household:mode==='category'?{...next,categories:next.categories.map(c=>c.id==='SUB-FOOD-GROCERIES'?{...c,name:'Changed remotely'}:c)}:next};};
+    await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);const office=startup.officePunch!;await act(async()=>office.onGo('till'));await act(async()=>button('I spent something').click());const swipe=startup.swipeProps!;
+    await act(async()=>{office.onStartBreak('unpaid');await Promise.resolve();});await waitForUi(()=>expect(calls).toBe(1),2000);await act(async()=>swipe.onPostCategory({amount:'12.34',subcategoryId:'SUB-FOOD-GROCERIES'}));
+    if(mode==='room')await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[1]!.click());await act(async()=>{release();await Promise.resolve();});await settleUi(150);expect(calls).toBe(1);
+    if(mode==='category')expect(startup.swipeProps!.error).toContain('card, category or Fund changed');else expect(container.querySelector('[data-testid="swipe-stub"]')).toBeNull();
+  });
+  for(const mode of ['accepted','stale-render','late-reopen','late-rejected'] as const)it(`Swipe binds explicit Post and completion to its current sheet (${mode})`,async()=>{
+    const toastTimers:Array<()=>void>=[];if(mode==='accepted'){const timer=window.setTimeout.bind(window);vi.spyOn(window,'setTimeout').mockImplementation(((handler:TimerHandler,delay?:number,...args:unknown[])=>{if(delay===8000&&typeof handler==='function'){toastTimers.push(()=>handler(...args));return 0;}return timer(handler,delay,...args);}) as typeof window.setTimeout);}
+    startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+    const h=await acceptedScenarioFixture();h.householdFund={...h.householdFund!,custodianMemberId:'MEM-002'};h.members=h.members.map(m=>m.id==='MEM-002'?{...m,fundCardAccountId:'ACC-VISA'}:m);h.booksAcceptedHash=await financialAuditHash(h);startup.cached=h;
+    let release!:()=>void,candidate:Household|null=null;const barrier=new Promise<void>(resolve=>release=resolve);const actual=postEntry(h,{date:todayKey(),type:'expense',amount:'12.34',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:'MEM-002',visibility:'household',funding:{fundId:h.householdFund!.id,fundedCents:1234,destinationAccountId:'ACC-VISA'}});
+    startup.punchConfirm=async next=>{candidate=next;if(mode==='late-reopen'||mode==='late-rejected')await barrier;if(mode==='late-rejected')throw Error('Old purchase rejected');return {...actual,household:next};};
+    await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);await act(async()=>startup.officePunch!.onGo('till'));await act(async()=>button('I spent something').click());await waitForUi(()=>expect(startup.swipeProps).not.toBeNull(),2000);const old=startup.swipeProps!;
+    if(mode==='stale-render')await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[1]!.click());
+    await act(async()=>{old.onPostCategory({amount:'12.34',subcategoryId:'SUB-FOOD-GROCERIES'});await Promise.resolve();});
+    if(mode==='stale-render'){await settleUi(100);expect(candidate).toBeNull();return;}
+    await waitForUi(()=>expect(candidate).not.toBeNull(),4000);const added=candidate!.transactions.filter(tx=>!h.transactions.some(old=>old.id===tx.id));expect(added.some(tx=>tx.type==='expense'&&tx.amountCents===1234&&tx.subcategoryId==='SUB-FOOD-GROCERIES'&&tx.createdBy==='MEM-002')).toBe(true);
+    if(mode==='late-reopen'||mode==='late-rejected'){await act(async()=>old.onClose());await act(async()=>startup.tillOpen!());await act(async()=>{release();await Promise.resolve();});await settleUi(150);expect(container.querySelector('[data-testid="swipe-stub"]')).not.toBeNull();expect(startup.swipeProps!.error).toBe('');expect(container.textContent).not.toContain('Old purchase rejected');}
+    else {await waitForUi(()=>expect(container.querySelector('[data-testid="swipe-stub"]')).toBeNull(),3000);expect(container.querySelector('.toast')).not.toBeNull();expect(toastTimers.length).toBeGreaterThan(0);await act(async()=>toastTimers.forEach(clear=>clear()));expect(container.querySelector('.toast')).toBeNull();}
+  });
+
   for(const mode of ["accepted","room-changed"] as const)it(`Prise uses the scoped App writer (${mode})`,async()=>{
     startup.v2=true;vi.stubEnv("VITE_LEDGER_SYNC_V2","1");vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH","1");
     startup.cached=postEntry(await acceptedScenarioFixture(),{date:"2026-09-08",type:"expense",amount:"47.23",accountId:"ACC-VISA",subcategoryId:"SUB-FOOD-GROCERIES",note:"Prise test",createdBy:"MEM-002",confirmDuplicate:true}).household;

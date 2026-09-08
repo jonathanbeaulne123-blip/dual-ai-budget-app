@@ -1,3 +1,15 @@
+## Mobile C2 — honest household suggestions (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c2-swipe-suggestions`; exact base/pre-commit HEAD`0d8f3f2b272606b263233c305225b52e885f64b6` (C1, PR392). Implementation HEAD is the commit carrying this file. Phase2 continues.
+
+**Outcome:** Claude's six-slot grid supports first use with clearly labelled household suggestions. Observations stay truthful. Named Post preserves its exact reviewed sources through queue and authority, and old outcomes cannot affect a newer sheet.
+
+**Risk and Dual Course:** High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Final High quick gate136/136plus TypeScript/AI/diff passed53.385seconds, no five-minute breach. Six mounted App interleavings, actual command round trips and seven browser cases pass. Four base-App failures and toast regression reproduced and repaired. Independent money/UX/verifier clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-swipe-suggestions.md).
+
+**Limits and next owner:** Fictional local model/component/App/authority proof; mocked App transport, no physical/hosted/exhaustive claim. Existing unreviewed postEntry remains compatible. No merge/deployment/schema. Codex opens stacked draft PR and continues C3 destructive reveal with separate named Confirm.
+
 ## Mobile C1 — complete pad choices (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-c1-pad-choices`; exact base/pre-commit HEAD`56d516171cdf47f5b78cc920c0de0011f2acc935` (B9, PR391). Implementation HEAD is the commit carrying this file. Phase2 continues.

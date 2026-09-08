@@ -556,3 +556,8 @@ One date read-head replaces hover and nested sideways scrolling while preserving
 ## Mobile C1 — complete pad choices (2026-09-08)
 
 The first six accounts and eight categories retain their compact position, with named More/Fewer disclosures for every current eligible choice. Selected tail choices stay visible; missing choices prompt without silently changing IDs or looking into full books. Scope and mode reset disclosure, while exact amount and draft fields remain intact. Medium risk; Budget(5)+1; Engagement(3)+1. [Evidence](worksessions/2026-09-08-mobile-pad-choices.md). Existing Confirm remains unchanged.
+
+
+## Mobile C2 — honest household suggestions (2026-09-08)
+
+The Swipe grid keeps genuine observed categories first, then explicitly labelled incoming household suggestions up to six. Active parent eligibility is checked before truncating observed history; suggestions never invent counts or usage dates. Named Post binds its reviewed card/category/Fund/date, current desk and sheet intent through queue drain and authoritative replay using a hashed semantic resource on the existing postEntry kind. Late UI outcomes cannot affect a new sheet; accepted books retain their own adoption boundary and exact-ID toast cleanup survives normal sheet closure. High risk after necessary queue repair; Budget(5)+2; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-swipe-suggestions.md). Existing unreviewed primitive callers remain compatible; no schema, merge or deployment.

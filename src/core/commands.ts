@@ -1,3 +1,4 @@
+import { reviewedSwipeEntry } from "./swipe.ts";
 import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewRequest } from "./duplicateReview.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
@@ -1579,6 +1580,7 @@ function baseTx(household: Household, input: {
 }
 
 export const postEntry = captureCommand("postEntry", function postEntry(household: Household, input: {
+  swipeReviewed?: true;
   date: string;
   type: "expense" | "income" | "refund";
   amount: string | number;
@@ -1602,6 +1604,7 @@ export const postEntry = captureCommand("postEntry", function postEntry(househol
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  if (input.swipeReviewed !== undefined) reviewedSwipeEntry(household, input);
   requireAccountScopeForWrite(household, input.accountId, actor);
   requireOpenPeriod(household, date);
   const subcategory = requireSubcategory(
