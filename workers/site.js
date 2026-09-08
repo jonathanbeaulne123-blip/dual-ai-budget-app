@@ -1253,16 +1253,31 @@ For a shift-report (EMPLOYEE SHIFT REPORT, tip sheet, close-out, Toast/POS work 
 - staffingCount: only when the slip explicitly shows floor staff / people on floor / # servers working — never invent; omit when only Headcount is printed.
 - eventTag: only when clearly labeled; otherwise omit.
 Never invent amounts. Never return coworker/employee names or a free-text note. Add warnings for anything unclear.
-For a bill, return the amount due once. For a bank/card statement, return each clearly visible transaction. Never invent a missing date or amount; omit that row and add a short warning. Do not include card/account numbers beyond last four digits.`;
+For a bill, return the amount due once. For a bank/card statement, return each clearly visible transaction. Return statement metadata: periodStart/periodEnd, openingDate/openingBalanceCents and closingDate/closingBalanceCents only when printed, otherwise null. Balances are signed economic amounts: cash/assets positive, debt owed negative, a credit card overpayment positive. Opening date is the end of the day BEFORE the covered transactions begin; do not confuse it with the first transaction date. Set complete false and omittedRows to the number of known missing/unreadable transactions; never silently truncate a page. If there may be more transactions or unreadable rows, complete must be false. For other document kinds return statement null. Never invent a missing date or amount; omit that row and add a short warning. Do not include card/account numbers beyond last four digits.`;
 
 const DOCUMENT_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["documentKind", "currency", "accountLast4", "rows", "receiptNumbers", "shiftDraft", "ocrText", "warnings"],
+  required: ["documentKind", "currency", "accountLast4", "rows", "receiptNumbers", "shiftDraft", "ocrText", "warnings", "statement"],
   properties: {
     documentKind: { type: "string", enum: ["bank-statement", "credit-card-statement", "bill", "receipt", "shift-report", "unknown"] },
     currency: { type: "string" },
     accountLast4: { type: "string" },
+    statement: {
+      anyOf: [{ type: "null" }, {
+        type: "object", additionalProperties: false,
+        required: ["periodStart", "periodEnd", "openingDate", "openingBalanceCents", "closingDate", "closingBalanceCents", "complete", "omittedRows"],
+        properties: {
+          periodStart: { anyOf: [{type:"string"},{type:"null"}] },
+          periodEnd: { anyOf: [{type:"string"},{type:"null"}] },
+          openingDate: { anyOf: [{type:"string"},{type:"null"}] },
+          openingBalanceCents: { anyOf: [{type:"integer"},{type:"null"}] },
+          closingDate: { anyOf: [{type:"string"},{type:"null"}] },
+          closingBalanceCents: { anyOf: [{type:"integer"},{type:"null"}] },
+          complete: {type:"boolean"}, omittedRows: {type:"integer"},
+        },
+      }],
+    },
     ocrText: { type: "string" },
     rows: {
       type: "array",
@@ -1418,6 +1433,9 @@ function sanitizeDocumentResult(value, options = {}) {
       documentKind = "shift-report";
     }
   }
+  const statementDocument = documentKind === "bank-statement" || documentKind === "credit-card-statement";
+  // Oversized model output is rejected instead of silently dropping financial rows.
+  if (statementDocument && Array.isArray(value.rows) && value.rows.length > 250) return null;
   const rows = documentKind === "shift-report" ? [] : Array.isArray(value.rows) ? value.rows.slice(0, 250).map((row) => ({
     date: clip(row?.date, 10),
     amountCents: Number.isSafeInteger(Number(row?.amountCents)) ? Math.abs(Number(row.amountCents)) : 0,
@@ -1428,6 +1446,21 @@ function sanitizeDocumentResult(value, options = {}) {
     reference: documentKind === "receipt" ? "" : redactFinancialIdentifiers(row?.reference, 80),
     confidence: Math.max(0, Math.min(100, Math.round(Number(row?.confidence) || 0))),
   })).filter((row) => /^\d{4}-\d{2}-\d{2}$/.test(row.date) && row.amountCents > 0) : [];
+  const statementInput = value.statement && typeof value.statement === "object" ? value.statement : {};
+  const statementDate = value => {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0,10) === value ? value : null;
+  };
+  const statementCents = value => typeof value === "number" && Number.isSafeInteger(value) ? value : null;
+  const droppedStatementRows = statementDocument && Array.isArray(value.rows) ? value.rows.length - rows.length : 0;
+  const statement = statementDocument ? {
+    periodStart: statementDate(statementInput.periodStart), periodEnd: statementDate(statementInput.periodEnd),
+    openingDate: statementDate(statementInput.openingDate), openingBalanceCents: statementCents(statementInput.openingBalanceCents),
+    closingDate: statementDate(statementInput.closingDate), closingBalanceCents: statementCents(statementInput.closingBalanceCents),
+    complete: statementInput.complete === true && !(statementInput.omittedRows > 0) && droppedStatementRows === 0 && rows.length < 250,
+    omittedRows: Math.max(0, Number.isSafeInteger(statementInput.omittedRows) ? statementInput.omittedRows : 0) + droppedStatementRows,
+  } : null;
   const receiptInput = value.receiptNumbers && typeof value.receiptNumbers === "object" ? value.receiptNumbers : {};
   const receiptTotal = Number.isSafeInteger(Number(receiptInput.totalCents)) && Number(receiptInput.totalCents) > 0
     ? Math.abs(Number(receiptInput.totalCents))
@@ -1510,6 +1543,7 @@ function sanitizeDocumentResult(value, options = {}) {
     currency: clip(value.currency || "CAD", 8).toUpperCase(),
     accountLast4: String(value.accountLast4 || "").replace(/\D/g, "").slice(-4),
     rows: finalKind === "shift-report" ? [] : rows,
+    ...(statement ? { statement } : {}),
     receiptNumbers: finalKind === "shift-report" ? null : receiptNumbers,
     ...(finalShiftDraft ? { shiftDraft: finalShiftDraft } : {}),
     warnings: finalKind === "receipt" ? [] : warnings,

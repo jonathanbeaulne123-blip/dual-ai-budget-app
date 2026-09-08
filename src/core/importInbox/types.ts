@@ -68,6 +68,8 @@ export type ParsedOfxAccount = {
   openingBalanceCents: number | null;
   ledgerBalanceCents: number | null;
   ledgerBalanceDate: DateKey | null;
+  periodStart?: DateKey | null;
+  periodEnd?: DateKey | null;
 };
 
 export type ParsedOfxBatch = {
@@ -79,7 +81,15 @@ export type ParsedOfxBatch = {
   warnings: string[];
 };
 
+export type StatementVisionMetadata = {
+  periodStart: string | null; periodEnd: string | null;
+  openingDate: string | null; openingBalanceCents: number | null;
+  closingDate: string | null; closingBalanceCents: number | null;
+  complete: boolean; omittedRows: number;
+};
+
 export type VisionDocumentResult = {
+  statement?: StatementVisionMetadata | null;
   documentKind: ImportDocumentKind;
   currency: string;
   accountLast4: string;

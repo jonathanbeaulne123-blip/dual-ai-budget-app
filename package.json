@@ -48,6 +48,7 @@
     "@electric-sql/pglite": "^0.5.5",
     "@supabase/supabase-js": "^2.112.4",
     "jsqr": "1.4.0",
+    "pdfjs-dist": "^6.3.289",
     "postgres": "^3.4.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
