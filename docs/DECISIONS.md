@@ -431,3 +431,7 @@ Older Sheets-era rows, including superseded ones such as “stay on Sheets until
 ## D-239 — Invite a new person before roster membership (2026-09-07)
 
 An owner can issue an email or QR invitation without first adding a person to the household roster. Issuance reserves an inactive, unbound control-plane seat; Google-authenticated redemption activates it with the recipient’s chosen name. Replacing an invite invalidates the prior token, including role/channel changes; the household lock enforces the two-person limit. Current verified own-membership evidence may project an absent roster row without reviving inactive people or modifying frozen ledger snapshots. Migration 021 is authored only, not applied. Risk High; Budget +1 / Engagement +2. [Evidence](worksessions/2026-09-07-qr-invite-entry.md).
+
+### Desktop Home scroll why-note — 2026-09-07
+
+Remove the desktop Home app's `max-height: 100dvh` and nested overflow scrolling so the document can carry the entire office past the fixed navigation. Jonathan reported the desk cutting off when scrolling on desktop. Low-risk presentation repair; budget delta (5): readable lower ledger cards; engagement delta (3): uninterrupted desk scrolling. Financial behavior is unchanged. Isolated Chromium checks using the actual stylesheet at 1100, 1440, 2048 and 390px reach the final content with no horizontal overflow; authenticated live household verification remains unperformed.
