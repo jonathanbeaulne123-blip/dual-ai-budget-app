@@ -15,3 +15,11 @@ Photo reads and uploads require the existing authenticated household authorizati
 Pre-release active Worker version: `684d8d27-26b9-4fbd-9513-d364bd6fe9fa` (100%), created 2026-09-08T19:07:41.518Z. Before new board data is accepted this is the rollback reference; after board commands are accepted, preserve command/data compatibility and prefer a forward repair. Never delete the bucket to roll back presentation.
 
 Release checks: generated binding types, Worker dry run, focused High quick gate for media authorization/R2 and startup/rehearsal; PR CI and build before merge; main CI and Cloudflare deployment after merge; fresh live asset and unauthenticated media-boundary checks. Results and exact PR/merge/deployment identifiers are recorded with the release handoff. Hosted authenticated two-device, physical iOS/Android/Safari and real Google-return proof remain distinct from local browser evidence.
+
+## Pre-push receipt
+
+At clean `1193f6b87d44ff5f769d97236ce9110b065fdea8`, the focused High release gate passed **79 tests across five files in 52.779 seconds**, including 65 startup cases, real R2/browser media checks and month rehearsal. TypeScript, AI surface and diff checks passed. No time-budget breach. Base `e868652`; fingerprint `5bf60f1de250fbca58e09d72f0c2e17411d732279c16ff42b46952f4029d403a`. Subsequent release-receipt edits are documentation only.
+
+Command: `pnpm --config.manage-package-manager-versions=false --config.verify-deps-before-run=never test -- --risk=high --base=e868652 --focus=test/board-media-worker.test.ts --focus=test/board-media-r2.test.ts --focus=test/board-media-browser.test.ts --focus=test/app-startup-p1.test.ts --focus=test/month-rehearsal-mainline.test.ts --focus-reason='Authorized Development release: private BOARD_MEDIA binding, media authorization and immutable R2 operations, startup and rehearsal regression'`.
+
+Installed Wrangler 4.125.0 generated types with `BOARD_MEDIA: R2Bucket` and passed `deploy --dry-run`, reporting the intended dedicated bucket. Logs and generated types are ignored under `.artifacts/five-boards/release-*`. No application source changed after the previously reviewed integration acceptance.
