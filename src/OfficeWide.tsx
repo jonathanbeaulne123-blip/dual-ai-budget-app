@@ -391,7 +391,7 @@ export function OfficeWide({
       glance: <ClaimsGlance household={household} today={today} />,
       aria: "Claims.",
       body: (
-        <ClaimsBody
+        <ClaimsBody memberId={memberId} view={view}
           household={household}
           today={today}
           busy={busy}

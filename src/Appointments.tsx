@@ -1,3 +1,4 @@
+import {RowReveal} from "./RowReveal.tsx";
 import { useMemo, useState } from "react";
 import {
   APPOINTMENT_KINDS,
@@ -363,6 +364,7 @@ function PostVisitForm(props: {
 }
 
 export function AppointmentsPage(props: {
+  view?:"household"|"personal";
   household: Household;
   today: DateKey;
   memberId: string;
@@ -498,7 +500,7 @@ export function AppointmentsPage(props: {
       )}
 
       {screen === "owed" && (
-        <section className="card">
+        <section className="card" data-claim-focus tabIndex={-1}>
           <header>
             <h2>Owed to us</h2>
             <span className="muted">{owed.length ? `${owed.reduce((sum, group) => sum + group.rows.length, 0)} open` : "Clear"}</span>
@@ -514,16 +516,7 @@ export function AppointmentsPage(props: {
                   ? household.appointments.find((item) => item.id === row.claim.appointmentId)
                   : undefined;
                 return (
-                  <article className="visit-card" key={row.claim.id}>
-                    <div className="row">
-                      <span>
-                        {claimPublicLabel(household, row.claim, "card")}
-                        {appointment ? "" : ` · ${row.claim.kind}`}
-                      </span>
-                      <span>{formatCad(row.remainingCents)}</span>
-                    </div>
-                    <p className="muted">{formatAgingBucket(row.bucket)} · {formatClaimStatus(row.claim.status)}</p>
-                    <BillLinesList lines={row.claim.lines} />
+                  <RowReveal key={JSON.stringify([household.environment,household.householdId,props.memberId,props.view??"household",row.claim.id,row.claim.updatedAt,row.remainingCents])} label={claimPublicLabel(household,row.claim,'card')} busy={props.busy} right={(
                     <div className="chips">
                       {appointment && (
                         <button type="button" className="chip" onClick={() => openDetail(appointment.id)}>Visit</button>
@@ -537,9 +530,9 @@ export function AppointmentsPage(props: {
                         type="button"
                         className="chip selected"
                         disabled={props.busy}
-                        onClick={() => props.onAskSettle(row.claim.id, `This transfers ${formatCad(row.remainingCents)} from Benefits owing into chequing. Never income.`)}
+                        aria-label={`Review transfer for ${claimPublicLabel(household,row.claim,'card')}`} onClick={() => props.onAskSettle(row.claim.id, '')}
                       >
-                        Landed
+                        Landed · Review transfer
                       </button>
                       <button
                         type="button"
@@ -550,7 +543,17 @@ export function AppointmentsPage(props: {
                         Denied
                       </button>
                     </div>
-                  </article>
+                  )}>
+                    <div className="row">
+                      <span>
+                        {claimPublicLabel(household, row.claim, "card")}
+                        {appointment ? "" : ` · ${row.claim.kind}`}
+                      </span>
+                      <span>{formatCad(row.remainingCents)}</span>
+                    </div>
+                    <p className="muted">{formatAgingBucket(row.bucket)} · {formatClaimStatus(row.claim.status)}</p>
+                    <BillLinesList lines={row.claim.lines} />
+                  </RowReveal>
                 );
               })}
             </div>

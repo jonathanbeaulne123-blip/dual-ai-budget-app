@@ -28,10 +28,11 @@ function focusable(root: HTMLElement): HTMLElement[] {
  * behind it leaves the accessibility tree instead of staying tabbable. This is
  * presentation only — it never touches a command, a snapshot, or the journal.
  */
-export function useDialog(open: boolean, onClose?: () => void) {
+export function useDialog(open: boolean, onClose?: () => void, returnFocusFallback?: () => HTMLElement | null) {
   const ref = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const fallbackRef=useRef(returnFocusFallback);fallbackRef.current=returnFocusFallback;
 
   useEffect(() => {
     const node = ref.current;
@@ -87,6 +88,7 @@ export function useDialog(open: boolean, onClose?: () => void) {
         if (!had) el.removeAttribute("inert");
       }
       if (returnTo && document.contains(returnTo)) returnTo.focus();
+      else fallbackRef.current?.()?.focus({preventScroll:true});
     };
   }, [open]);
 

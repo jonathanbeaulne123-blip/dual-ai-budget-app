@@ -696,7 +696,7 @@ export function Office({
       "Claims",
       <ClaimsGlance household={household} today={today} />,
       `Claims tray. ${claimsTraySentence(household, today)}`,
-      <ClaimsBody
+      <ClaimsBody memberId={memberId} view={view}
         household={household}
         today={today}
         busy={busy}

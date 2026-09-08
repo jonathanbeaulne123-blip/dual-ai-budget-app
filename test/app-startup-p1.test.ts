@@ -5,7 +5,7 @@ import { prepareDuplicateReview } from "../src/core/duplicateReview.ts";
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addRecurrence, postOneRecurrence, startShiftBreak, addAccount, abandonOpenShift, clockInShift, clockOutShift, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
+import { postVisit, settleClaim, addRecurrence, postOneRecurrence, startShiftBreak, addAccount, abandonOpenShift, clockInShift, clockOutShift, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 import { completedExistingBooksHousehold, existingBooksActivationAt } from "./fixtures/existing-books-onboarding.ts";
@@ -26,6 +26,7 @@ const startup = vi.hoisted(() => ({
   v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
   tillOpen:null as null | (()=>void),
   swipeProps:null as null | {onPostCategory:(input:{amount:string;subcategoryId:string})=>void;onClose:()=>void;onMore:(amount:string)=>void;error?:string},
+  claimReview:null as null|((id:string,summary:string)=>void),
   dueProps:null as null | Parameters<typeof import("../src/DuePreviewSheet.tsx").DuePreviewSheet>[0],
   removeReview:null as null | ((transaction:import("../src/core/types.ts").Transaction)=>void),
   duplicateWriter:null as import("../src/Ledger.tsx").DuplicateCommand|null,
@@ -196,8 +197,8 @@ vi.mock("../src/Swipe.tsx",()=>({Swipe:(props:NonNullable<typeof startup.swipePr
 
 vi.mock("../src/deferredSurfaces.tsx", () => ({
   DeferredSurface: ({ children }: { children: ReactNode }) => children,
-  DeferredOffice: ({scenarioSource,...punch}: {scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till")=>void}) => {
-    startup.officePunch=punch;
+  DeferredOffice: ({scenarioSource,onAskSettle,...punch}: {onAskSettle:(id:string,summary:string)=>void;scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till")=>void}) => {
+    startup.officePunch=punch;startup.claimReview=onAskSettle;
     startup.scenarioSource = scenarioSource ?? null;
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
   },
@@ -337,6 +338,7 @@ describe("cached-shell startup books gate", () => {
     startup.swipeProps = null;
     startup.removeReview = null;
     startup.dueProps = null;
+    startup.claimReview = null;
     startup.duplicateWriter = null;
     startup.punchConfirm = null;
     startup.officePunch = null;
@@ -1505,6 +1507,16 @@ describe("cached-shell startup books gate", () => {
     else {await waitForUi(()=>expect(container.querySelector('[data-testid="swipe-stub"]')).toBeNull(),3000);expect(container.querySelector('.toast')).not.toBeNull();expect(toastTimers.length).toBeGreaterThan(0);await act(async()=>toastTimers.forEach(clear=>clear()));expect(container.querySelector('.toast')).toBeNull();}
   });
 
+
+  for(const mode of ['accepted','source','room'] as const)it(`Claim Confirm binds the displayed remainder and receiving account (${mode})`,async()=>{
+    startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+    const h=postVisit(await acceptedScenarioFixture(),{date:todayKey(),amount:248,note:'Claim proof',accountId:'ACC-VISA',subcategoryId:'SUB-HEALTH-DENTAL',expectedRecovery:180,confirmDuplicate:true,createdBy:'MEM-002'}).household;h.booksAcceptedHash=await financialAuditHash(h);startup.cached=h;const claim=h.claims.at(-1)!,actual=settleClaim(h,{claimId:claim.id,amount:180,toAccountId:'ACC-CHEQUING',date:todayKey(),createdBy:'MEM-002',confirmDuplicate:true});let calls=0,candidate:Household|null=null;startup.punchConfirm=async next=>{calls++;candidate=next;return {...actual,household:next};};
+    await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.claimReview).not.toBeNull(),4000);await act(async()=>startup.claimReview!(claim.id,'Old untrusted summary'));expect(container.textContent).not.toContain('Old untrusted summary');expect(button('Record the transfer').disabled).toBe(true);await act(async()=>{const select=container.querySelector<HTMLSelectElement>('[aria-label="Receiving account"]')!;select.value='ACC-CHEQUING';select.dispatchEvent(new Event('change',{bubbles:true}));});expect(container.textContent).toContain('$180.00');expect(button('Record the transfer').disabled).toBe(false);
+    if(mode==='source'){const partial=settleClaim(h,{claimId:claim.id,amount:25,toAccountId:'ACC-CHEQUING',date:todayKey(),createdBy:'MEM-002',confirmDuplicate:true}).household;await act(async()=>startup.v2Clients.at(-1)!.adopt(partial));}
+    if(mode==='room'){await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[1]!.click());await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[0]!.click());}
+    if(mode==='accepted'){await act(async()=>button('Record the transfer').click());await waitForUi(()=>expect(calls).toBe(1),3000);expect(candidate!.claims.find(c=>c.id===claim.id)!.receivedCents).toBe(18000);expect(candidate!.transactions.filter(t=>!h.transactions.some(old=>old.id===t.id)).every(t=>t.type==='transfer'&&t.amountCents===18000)).toBe(true);await waitForUi(()=>expect(container.querySelector('[aria-labelledby="guard-title"]')).toBeNull(),3000);}
+    else{expect(button('Record the transfer').disabled).toBe(true);expect(calls).toBe(0);await act(async()=>button('Cancel').click());}
+  });
 
   for(const mode of ['accepted','source','room'] as const)it(`Due inline Confirm preserves its occurrence and scope (${mode})`,async()=>{
     startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');

@@ -1,3 +1,4 @@
+import {reviewedClaimInput,type ClaimSettlementRequest} from "./claimSettlementReview.ts";
 import {dueOccurrenceReview,reviewedDueRequest,type DueOccurrenceRequest} from "./dueOccurrenceReview.ts";
 import { reviewedSwipeEntry } from "./swipe.ts";
 import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewRequest } from "./duplicateReview.ts";
@@ -5972,7 +5973,9 @@ export const settleClaim = captureCommand("settleClaim", function settleClaim(ho
   confirmDuplicate?: boolean;
   createdBy?: string;
   visibility?: Visibility;
+  claimReview?:ClaimSettlementRequest;
 }): CommitResult {
+  if(input.claimReview!==undefined)reviewedClaimInput(household,input);
   requireTimezone(household);
   const claim = household.claims.find((item) => item.id === input.claimId);
   if (!claim) throw new ValidationError("That claim is gone.");

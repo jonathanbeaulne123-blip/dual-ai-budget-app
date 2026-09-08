@@ -445,7 +445,7 @@ function CalendarPageScope(props: CalendarProps) {
       )}
 
       {pane === "visits" && (
-        <AppointmentsPage
+        <AppointmentsPage view={props.view}
           household={household}
           today={today}
           memberId={props.memberId}

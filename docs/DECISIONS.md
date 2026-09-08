@@ -571,3 +571,8 @@ Claude's slide remains a reading gesture under packet15.3: it reveals the existi
 ## Mobile C4 — one exact occurrence, inline (2026-09-08)
 
 Preserve Claude’s row gesture and zero-sheet single-row flow within the no-write motion law: reveal then named inline Confirm. Scope local hiding per person/view/date/occurrence; it never advances a schedule. Reviewed postOneRecurrence carries exact occurrence identifiers and a hashed semantic resource, preventing a stale click from posting the next occurrence or changed amount/account. Actual Joint transfers are labelled honestly. Bulk remains in Calendar. Budget(5)+2; Engagement(3)+2; local proof/limits in C4 worksession.
+
+
+## Mobile C5 — review the actual claim transfer (2026-09-08)
+
+Claude's attached row action opens the existing named review. The person explicitly chooses where the money landed; the exact remainder and coherent Shared source history survive queue and authoritative replay. Unsupported private/corrected history refuses without guessing counters. Public card wording never becomes journal wording. Budget(5)+2; Engagement(3)+2. Proof and compatibility limits in C5 worksession.

@@ -1,3 +1,4 @@
+import {claimSettlementReview,type ClaimSettlementReview} from "./core/claimSettlementReview.ts";
 import {dueOccurrenceReview,dueOccurrenceHidden} from "./core/dueOccurrenceReview.ts";
 import {canonical} from "./ledgerSync/patch.ts";
 import type {DestructiveReview} from "./DangerReveal.tsx";
@@ -540,7 +541,7 @@ type Guard =
   | { kind: "saveWorkJob"; job: WorkJob; summary: string }
   | { kind: "postDueAll"; summary: string; recurrenceIds: string[] }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
-  | { kind: "settleClaim"; claimId: string; summary: string }
+  | { kind: "settleClaim"; claimId:string; destinationId:string; reading:ClaimSettlementReview }
   | { kind: "writeOffClaim"; claimId: string; summary: string }
   | { kind: "acceptVisitGoal"; appointmentId: string; summary: string }
   | { kind: "acceptPreset"; key: string; summary: string }
@@ -700,8 +701,9 @@ export function App() {
   const [history, setHistory] = useState<UndoToken[]>([]);
   const [isHouseholdOwner, setIsHouseholdOwner] = useState(false);
   const [guard, storeGuard] = useState<Guard | null>(null);
-  const guardOpeningRef=useRef(0),guardIdentityRef=useRef('');
-  const setGuard=(next:Guard|null)=>{guardOpeningRef.current+=1;guardIdentityRef.current=next?readDangerIdentity(next):'';storeGuard(next);};
+  const claimReturnFocusRef=useRef<HTMLElement|null>(null);
+  const guardOpeningRef=useRef(0),guardIdentityRef=useRef(''),guardScopeIdentityRef=useRef('');
+  const setGuard=(next:Guard|null)=>{guardOpeningRef.current+=1;guardIdentityRef.current=next?readDangerIdentity(next):'';guardScopeIdentityRef.current=next?readGuardScopeIdentity():'';storeGuard(next);};
   const [demoSeed, setDemoSeed] = useState("");
   const [demoReport, setDemoReport] = useState<DemoRunReport | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
@@ -5097,14 +5099,15 @@ export function App() {
     const displayedTargetCurrent=target.kind==='remove'?!!tx&&target.reviewedSummaryBasis===canonical([tx.id,tx.amountCents,tx.type,tx.source,tx.note]):target.kind==='correctShift'?canonical(target.shift)===canonical(h?.shifts.find(row=>row.id===target.shift.id)??null):true;
     return {openingId,identity:displayedTargetCurrent?guardIdentityRef.current:canonical(['stale displayed target',guardIdentityRef.current]),readIdentity:()=>readDangerIdentity(target)};
   }
+  function readGuardScopeIdentity():string{const h=householdRef.current,auth=scenarioAuthRef.current;return canonical({environment:environmentRef.current,householdId:h?.householdId??null,memberId:sessionRef.current?.memberId??null,view:sessionRef.current?.view??null,generation:replicaScopeGenerationRef.current,authKey:auth.key,authGeneration:auth.generation});}
   function readDangerIdentity(target:Guard):string{
-      const h=householdRef.current,known=dangerSourcesRef.current,auth=scenarioAuthRef.current;
-      const scope={environment:environmentRef.current,householdId:h?.householdId??null,memberId:sessionRef.current?.memberId??null,view:sessionRef.current?.view??null,generation:replicaScopeGenerationRef.current,authKey:auth.key,authGeneration:auth.generation};
+      const h=householdRef.current,known=dangerSourcesRef.current,scope=readGuardScopeIdentity();
       const memberships=known.discoveredLedgers.map(item=>({householdId:item.household.householdId,name:item.household.name,memberId:item.memberId,members:item.household.members.map(member=>({id:member.id,active:member.active}))}));
       let source:unknown=null;
       if(target.kind==='delete-household')source={membership:memberships.find(item=>item.householdId===target.householdId)??null,replica:known.replicas.find(item=>item.householdId===target.householdId)??null,owner:known.isHouseholdOwner};
       else if(target.kind==='reset-development')source={memberships,replicas:known.replicas,owner:known.isHouseholdOwner};
       else if(target.kind==='duePreview')source=todayKey();
+      else if(target.kind==='settleClaim')source={date:todayKey(),reading:h&&target.reading.kind==='ready'?claimSettlementReview(h,target.reading.request):null};
       else if(target.kind==='erase-development')source=h?.revision??null;
       else if(target.kind==='restorePoint')source={revision:h?.revision??null,local:h?listRestorePoints(h).find(point=>point.id===target.pointId)??null:null,remote:known.ledgerRestorePoints.find(point=>point.id===target.pointId)??null};
       else if((target.kind==='remove'||target.kind==='correctShift')&&h){
@@ -5556,7 +5559,14 @@ export function App() {
     householdId: householdRef.current?.householdId ?? null, memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
   });
 
-  const dueOpening=guardOpeningRef.current,dueIdentity=guardIdentityRef.current;
+  function openClaimSettlement(claimId:string,destinationId=''){
+    if(!deskScopeIsCurrent())return;const h=householdRef.current;if(!h)return;
+    if(!destinationId)claimReturnFocusRef.current=(document.activeElement as HTMLElement|null)?.closest<HTMLElement>('[data-claim-focus]')??null;
+    const claim=h.claims.find(c=>c.id===claimId);
+    const reading=claim&&destinationId?claimSettlementReview(h,{environment:h.environment,householdId:h.householdId,memberId:actorId,view,claimId,toAccountId:destinationId,date:today,amountCents:claim.expectedCents-claim.receivedCents-claim.writtenOffCents}):{kind:'unavailable' as const,reason:destinationId?'This claim is no longer available.':h.accounts.some(a=>a.active&&a.scope!=='personal'&&a.currency==='CAD'&&a.kind!=='receivable')?'Choose the Shared account that received the money. Then review the exact transfer.':'Open a Shared receiving account in Books before recording this transfer.'};
+    setError('');setGuard({kind:'settleClaim',claimId,destinationId,reading});
+  }
+  const dueOpening=guardOpeningRef.current,dueIdentity=guardIdentityRef.current,openingScope=guardScopeIdentityRef.current;
   const dueIsCurrent=()=>guard?.kind==='duePreview'&&dueOpening===guardOpeningRef.current&&dueIdentity===guardIdentityRef.current&&readDangerIdentity(guard)===dueIdentity;
   const splitViewer = { memberId: actorId, view: session.view, generation: replicaScopeGenerationRef.current };
   const splitScopeValid = splitDraft?.scope === splitDraftScope(ledger, splitViewer);
@@ -6396,7 +6406,7 @@ export function App() {
           onOpenAccount={openWallet}
           onKitchen={(fn) => { void runKitchen(fn); }}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
-          onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
+          onAskSettle={claimId=>openClaimSettlement(claimId)}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onSitDown={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
           onOpenFundDestination={openFundDestination}
@@ -6504,7 +6514,7 @@ export function App() {
             setGuard({ kind: "saveRepeating", draft, summary });
           }}
           onAskVisit={(draft, summary) => setGuard({ kind: "postVisit", draft, summary })}
-          onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
+          onAskSettle={claimId=>openClaimSettlement(claimId)}
           onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onOpenPlan={() => goTab("plan")}
@@ -7607,28 +7617,17 @@ export function App() {
         />
       )}
       {guard?.kind === "settleClaim" && (
-        <ConfirmSheet
-          title="Did the money land?"
-          body={`${guard.summary}`}
-          confirmLabel="Record the transfer"
-          busy={busy}
-          onCancel={() => setGuard(null)}
-          onConfirm={() => {
-            const id = guard.claimId;
-            setGuard(null);
-            void run((current) => {
-              const chequing = current.accounts.find((account) => account.kind === "chequing" && account.active);
-              if (!chequing) throw new ValidationError("Open a chequing account to receive the settlement.");
-              return settleClaim(current, {
-                claimId: id,
-                toAccountId: chequing.id,
-                date: today,
-                createdBy: session.memberId,
-                confirmDuplicate: true,
-              });
-            });
-          }}
-        />
+        <ConfirmSheet returnFocusFallback={()=>claimReturnFocusRef.current?.isConnected?claimReturnFocusRef.current:null} className="claim-review-sheet" title="Did the money land?" notice={error||undefined} body={guard.reading.kind==='ready'?guard.reading.detail:guard.reading.reason}
+          confirmLabel='Record the transfer' confirmDisabled={guard.reading.kind!=='ready'} busy={busy}
+          content={<label className='claim-destination'>Receiving account<select aria-label='Receiving account' value={guard.destinationId} disabled={busy||openingScope!==readGuardScopeIdentity()} onChange={event=>{if(openingScope===readGuardScopeIdentity())openClaimSettlement(guard.claimId,event.currentTarget.value);}}><option value=''>Choose an account</option>{household.accounts.filter(a=>a.active&&a.scope!=='personal'&&a.currency==='CAD'&&a.kind!=='receivable').map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+          review={guard.reading.kind==='ready'?dangerReview(guard):undefined}
+          onCancel={()=>setGuard(null)}
+          onConfirm={()=>{
+            if(guard.reading.kind!=='ready')return;
+            const reviewed=guard.reading,opening=dueOpening,identity=dueIdentity;
+            const currentReview=()=>opening===guardOpeningRef.current&&identity===guardIdentityRef.current&&openingScope===readGuardScopeIdentity()&&todayKey()===reviewed.request.date&&deskScopeIsCurrent();
+            void run(current=>{const fresh=claimSettlementReview(current,reviewed.request);if(fresh.kind!=='ready'||fresh.basis!==reviewed.basis)throw new Error('The claim or receiving account changed. Review it again.');return settleClaim(current,{claimId:reviewed.request.claimId,amount:`${Math.floor(reviewed.request.amountCents/100)}.${String(reviewed.request.amountCents%100).padStart(2,'0')}`,toAccountId:reviewed.request.toAccountId,date:reviewed.request.date,createdBy:reviewed.request.memberId,visibility:'household',confirmDuplicate:true,claimReview:reviewed.request});},{isCurrent:currentReview,scopeIsCurrent:deskScopeIsCurrent,closeAdd:false,onAccepted:()=>setGuard(null)});
+          }}/>
       )}
       {guard?.kind === "writeOffClaim" && (
         <ConfirmSheet

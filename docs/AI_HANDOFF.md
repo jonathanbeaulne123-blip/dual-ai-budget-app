@@ -1,3 +1,15 @@
+## Mobile C5 — attached claim actions (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c5-claim-rows`, exact base`923ca35286724c47cb18c8ace0e0536a61f6dc6c` (C4, PR395); HEAD is the commit carrying this file.
+
+**Outcome:** Existing claim rows reveal their own action. Named review requires the actual receiving account and exact supported remainder; source/scope guards survive queue and authority. Focus and enlarged copy remain reachable.
+
+**Risk/deltas:** High; Budget(5)+2; Engagement(3)+2.
+
+**Proof:** 116 selected tests plus TypeScript/AI/diff123.569s; final CSS ten browser/two native gesture cases. Independent reviews clear. [Exact commands, fingerprint, repairs and limits](worksessions/2026-09-08-mobile-claim-rows.md).
+
+**Next/limits:** Codex opens stacked draft PR and continues C6. Fictional local/mocked App transport; no physical/hosted/exhaustive/merge/deployment/schema certification.
+
 ## Mobile C4 — inline Due occurrences (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-c4-due-rows`; exact base`1aee199d73cea6487d709fb128d44f7e49f921a8` (C3,PR394). HEAD is the commit carrying this file.

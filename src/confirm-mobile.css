@@ -19,3 +19,17 @@
  .phone-danger .confirm-copy p{font-size:14px;line-height:1.45}
 }
 @media(prefers-reduced-motion:reduce){.danger-reveal *{transition:none;animation:none}}
+
+.claim-destination{display:grid;gap:6px;font:12.5px/1.4 var(--font)}.claim-destination select{min-height:44px;border:1px solid var(--line);border-radius:3px;background:var(--card);color:var(--ink);max-width:100%;font:14px var(--font)}
+
+.sheet.guard.claim-review-sheet .sheet-inner{border-radius:5px}.claim-review-sheet button{min-height:44px;border-radius:3px}.claim-review-sheet .confirm-copy p{white-space:pre-line;overflow-wrap:anywhere}
+
+@media(max-width:719px){.visit-world button{min-height:44px;border-radius:3px}}
+@media(max-width:719px){
+ .sheet.guard.claim-review-sheet{padding:12px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+ .sheet.guard.claim-review-sheet .sheet-inner{width:min(100%,430px);margin:0;max-height:100%;min-height:0;padding:16px;overflow:auto}
+ .claim-review-sheet .topbar{flex-wrap:wrap;gap:8px}.claim-review-sheet h1{font:600 23px/1.15 var(--display);overflow-wrap:anywhere}
+ .claim-review-sheet button{white-space:normal;overflow-wrap:anywhere}
+ [data-claim-focus] .row{flex-wrap:wrap;gap:6px}[data-claim-focus] .row>span:last-child{white-space:nowrap}
+ [data-claim-focus]>.cabinet-handle{border-radius:3px}
+}

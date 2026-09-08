@@ -1,3 +1,4 @@
+import {reviewedClaimInput} from "../core/claimSettlementReview.ts";
 import {dueOccurrenceReview,reviewedDueRequest} from "../core/dueOccurrenceReview.ts";
 import { reviewedSwipeEntry } from "../core/swipe.ts";
 import { prepareDuplicateReview, reviewedDuplicateRequest } from "../core/duplicateReview.ts";
@@ -48,6 +49,7 @@ export function observedResources(
     try{const request=reviewedDueRequest(options.dueReview,args[0],args[1],options.createdBy,options.allowNotDue),reading=dueOccurrenceReview(household,request);value=reading.kind==='ready'?{kind:'ready',basis:reading.basis}:reading;}catch(e){value={kind:'unavailable',reason:e instanceof Error?e.message:String(e)};}
     return [{key:'due-occurrence-review',value}];
   }
+  if(kind==='settleClaim'&&args[0]&&typeof args[0]==='object'&&(args[0] as Record<string,unknown>).claimReview!==undefined){let value:unknown;try{value={kind:'ready',basis:reviewedClaimInput(household,args[0]).basis};}catch(e){value={kind:'unavailable',reason:e instanceof Error?e.message:String(e)};}return [{key:'claim-settlement-review',value}];}
   if (additive.has(kind)) return [];
   if (
     [
