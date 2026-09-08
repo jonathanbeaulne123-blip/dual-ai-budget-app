@@ -34,6 +34,8 @@ export type LedgerCommand = {
   steps: IntentStep[];
 };
 export type AcceptedEvent = {
+  /** Author-only correlation; stripped for every other member. */
+  confirmation?: { commandId: string; idMap: Record<string, string> };
   sequence: number;
   shared: ProjectionPatch;
   personal?: ProjectionPatch;

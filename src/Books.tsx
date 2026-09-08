@@ -1,3 +1,4 @@
+import type { PendingPreview } from "./ledgerSync/optimistic.ts";
 import { lazy, useEffect, useMemo, useState } from "react";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
@@ -80,6 +81,7 @@ const AUDIT_PANE_IDS = ["journal", "trial", "statements", "rec", "close", "accou
 type Pane = (typeof PANES)[number]["id"];
 
 export function BooksPage({
+  pendingRows,
   household,
   booksHousehold,
   memberId,
@@ -98,6 +100,7 @@ export function BooksPage({
   requestedPane,
   onConsumeRequestedPane,
 }: {
+  pendingRows?: PendingPreview[];
   household: Household;
   booksHousehold: Household;
   memberId: string;
@@ -392,6 +395,7 @@ export function BooksPage({
       )}
       {pane === "register" && (
         <LedgerPage
+          pendingRows={pendingRows}
           household={sharedTable ? household : walletHousehold}
           writeHousehold={booksHousehold}
           presentedTransactions={!sharedTable}

@@ -1,3 +1,4 @@
+import type { PendingPreview, RejectedEntry } from "./optimistic.ts";
 import type { LedgerCommand, Replica } from "./protocol.ts";
 export class LedgerStore {
   private constructor(private db: IDBDatabase) {}
@@ -10,11 +11,11 @@ export class LedgerStore {
     return new Promise((resolve, reject) => {
       const q = indexedDB.open(
         `hearth-ledger-sync-v2:${JSON.stringify([scope.environment, scope.householdId, scope.memberId, scope.subject])}`,
-        1,
+        2,
       );
       q.onupgradeneeded = () => {
-        for (const name of ["replica", "pending", "recovery"])
-          q.result.createObjectStore(name);
+        for (const name of ["replica", "pending", "recovery", "rejected"])
+          if (!q.result.objectStoreNames.contains(name)) q.result.createObjectStore(name);
       };
       q.onsuccess = () => {
         q.result.onversionchange = () => q.result.close();
@@ -43,7 +44,7 @@ export class LedgerStore {
       }
     });
   }
-  async load(): Promise<{ replica?: Replica; pending: LedgerCommand[] }> {
+  async load(): Promise<{ replica?: Replica; pending: LedgerCommand[]; previews: PendingPreview[] }> {
     return new Promise((resolve, reject) => {
       const tx = this.db.transaction(["replica", "pending"]),
         replica = tx.objectStore("replica").get("current"),
@@ -51,6 +52,7 @@ export class LedgerStore {
       tx.oncomplete = () =>
         resolve({
           replica: replica.result,
+          previews: pending.result.flatMap((r: { preview?: PendingPreview }) => r.preview ? [r.preview] : []),
           pending: pending.result
             .sort(
               (a: { ordinal: number }, b: { ordinal: number }) =>
@@ -64,7 +66,7 @@ export class LedgerStore {
       tx.onerror = tx.onabort = () => reject(tx.error);
     });
   }
-  enqueue(command: LedgerCommand) {
+  enqueue(command: LedgerCommand, preview?: PendingPreview) {
     return this.write(["pending", "replica"], (tx) => {
       const pending = tx.objectStore("pending"),
         metadata = tx.objectStore("replica"),
@@ -75,16 +77,36 @@ export class LedgerStore {
         counter.onsuccess = () => {
           const ordinal = Number(counter.result ?? 0) + 1;
           metadata.put(ordinal, "pendingOrdinal");
-          pending.put({ command, ordinal }, command.id);
+          pending.put({ command, ordinal, preview }, command.id);
         };
       };
     });
   }
-  save(replica: Replica) {
-    return this.write(["replica"], (tx) =>
-      tx.objectStore("replica").put(replica, "current"),
-    );
+  save(replica: Replica, acceptedCommands: string[] = []) {
+    return this.write(["replica", "pending"], (tx) => {
+      tx.objectStore("replica").put(replica, "current");
+      for (const id of acceptedCommands) {
+        const store = tx.objectStore("pending"), request = store.get(id);
+        request.onsuccess = () => {
+          const record = request.result;
+          if (record?.preview) store.put({ ...record, preview: { ...record.preview, acceptedSequence: replica.sequence } }, id);
+        };
+      }
+    });
   }
+  reject(id: string, message: string) {
+    return this.write(["pending", "rejected"], tx => {
+      const pending = tx.objectStore("pending"), request = pending.get(id);
+      request.onsuccess = () => {
+        if(request.result) tx.objectStore("rejected").put({ ...request.result, rejection: message }, id);
+        pending.delete(id);
+      };
+    });
+  }
+  rejected(): Promise<RejectedEntry[]> {
+    return new Promise((resolve,reject)=>{const tx=this.db.transaction("rejected"),q=tx.objectStore("rejected").getAll();tx.oncomplete=()=>resolve(q.result);tx.onerror=tx.onabort=()=>reject(tx.error);});
+  }
+  dismissRejected(id:string) { return this.write(["rejected"],tx=>{tx.objectStore("rejected").delete(id);}); }
   acknowledge(id: string) {
     return this.write(["pending"], (tx) =>
       tx.objectStore("pending").delete(id),
@@ -96,7 +118,7 @@ export class LedgerStore {
       store.put(replica, Date.now());
       const all = store.getAllKeys();
       all.onsuccess = () => {
-        for (const key of all.result.slice(0, -3)) store.delete(key);
+        for (const key of all.result.filter(key=>typeof key === "number").slice(0, -3)) store.delete(key);
       };
     });
   }

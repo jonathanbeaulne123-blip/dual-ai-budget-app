@@ -46,7 +46,7 @@ describe("household and personal visibility", () => {
     expect(jonathanPersonal.transactions.some((tx) => tx.note === "Bianca hair")).toBe(false);
   });
 
-  it("keeps a partner's personal rows out of the shared envelope", () => {
+  it("keeps each member's personal rows in only their own envelope", () => {
     let household = catalogHousehold();
     household = postEntry(household, grocery("MEM-001", "personal", "Bianca only")).household;
     household = postEntry(household, grocery("MEM-002", "personal", "Jonathan only")).household;
@@ -55,12 +55,15 @@ describe("household and personal visibility", () => {
     const { shared, personal } = splitForSync(household, "MEM-002");
     expect(shared.transactions.every((tx) => tx.visibility !== "personal")).toBe(true);
     expect(shared.transactions.map((tx) => tx.note)).toEqual(["Groceries"]);
-    expect(personal.transactions.map((tx) => tx.note).sort()).toEqual(["Bianca only", "Jonathan only"]);
+    expect(personal.transactions.map((tx) => tx.note)).toEqual(["Jonathan only"]);
 
     const assembled = assembleHousehold(shared, personal);
-    expect(assembled.transactions.map((tx) => tx.note).sort()).toEqual(["Bianca only", "Groceries", "Jonathan only"]);
+    expect(assembled.transactions.map((tx) => tx.note).sort()).toEqual(["Groceries", "Jonathan only"]);
     expect(householdForView(assembled, "MEM-002", "personal").transactions.map((tx) => tx.note)).toEqual(["Jonathan only"]);
-    expect(householdForView(assembled, "MEM-001", "personal").transactions.map((tx) => tx.note)).toEqual(["Bianca only"]);
+    expect(householdForView(assembled, "MEM-001", "personal").transactions).toEqual([]);
+    const bianca = splitForSync(household, "MEM-001");
+    expect(bianca.personal.transactions.map((tx) => tx.note)).toEqual(["Bianca only"]);
+    expect(householdForView(assembleHousehold(bianca.shared, bianca.personal), "MEM-001", "personal").transactions.map((tx) => tx.note)).toEqual(["Bianca only"]);
   });
 
   it("stores personal goals only in their owner's Personal envelope", () => {

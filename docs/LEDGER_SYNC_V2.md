@@ -1,5 +1,7 @@
 # Ledger sync v2 — D-235
 
+Current three-gap implementation and measured limits: [optimistic rows, incremental validation and importer parity](worksessions/2026-09-07-ledger-optimistic-parity.md). Jonathan subsequently authorized Development migration application and publication; historical commission restrictions below are preserved as context. Latency and physical-device certification remain open.
+
 ## Acceptance commission addendum — 2026-09-07
 
 Decision owner: Jonathan. Startup repair PR #366 is deployed in Development at main `27fdec0db192925fb225c825f9df0cadb2b199d5`, Worker `8e751f5d-4936-4e54-8248-125b5eeb7865`; migration 019 was applied during the earlier separately authorized PR #365 release. The pre-release status statements below are historical. This new commission prohibits further hosted schema application and Production deployment and requires G1–G4 in order; see [the acceptance worksession](worksessions/2026-09-07-ledger-sync-acceptance.md). The release does **not** meet the commission yet.

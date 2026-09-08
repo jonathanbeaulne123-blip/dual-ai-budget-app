@@ -1,3 +1,5 @@
+import { previewFor, visiblePreviews, type PendingPreview, type RejectedEntry } from "./optimistic.ts";
+import { IncrementalBooksGuard } from "../core/booksValidation.ts";
 import type { Household, CommitResult } from "../core/types.ts";
 import { assembleHousehold } from "../core/sync.ts";
 import { validatedLedgerBooksStatus } from "./validatedBooks.ts";
@@ -25,12 +27,18 @@ export type SyncStatus =
 export type ClientOptions = {
   scope: Pick<Scope, "environment" | "householdId" | "memberId" | "subject">;
   token: () => Promise<string>;
-  adopt: (household: Household, validatedStatus?: BooksStatus) => Promise<void>;
+  adopt: (household: Household, validatedStatus?: BooksStatus, pending?: PendingPreview[]) => Promise<void>;
   status: (status: SyncStatus, message?: string) => void;
+  pendingChanged?: (pending: PendingPreview[]) => void;
+  rejectedChanged?: (entries: RejectedEntry[]) => void;
 };
+export class LedgerCommandRejectedError extends Error {}
 export class LedgerSyncClient {
+  private booksGuard = new IncrementalBooksGuard();
   private verified = new WeakMap<Replica, { household: Household; status: BooksStatus }>();
   private store?: LedgerStore;
+  private localReady?: Promise<void>;
+  private previews = new Map<string, PendingPreview>();
   private replica?: Replica;
   private socket?: WebSocket;
   private generation = 0;
@@ -74,29 +82,41 @@ export class LedgerSyncClient {
     );
   };
   async start() {
+    this.localReady = this.initializeLocal();
+    await this.localReady;
+    if (this.stopped) return;
+    window.addEventListener("online", this.online);
+    window.addEventListener("offline", this.offline);
+    const initial = new Promise<void>((resolve, reject) => { this.initialResolve = resolve; this.initialReject = reject; });
+    void this.connect();
+    return initial;
+  }
+  private async initializeLocal() {
     this.store = await LedgerStore.open(this.options.scope);
     if (this.stopped) {
       this.store.close();
       return;
     }
     const saved = await this.store.load();
+    this.options.rejectedChanged?.(await this.store.rejected());
     this.replica = saved.replica;
+    for (const preview of saved.previews) this.previews.set(preview.commandId, preview);
     for (const command of saved.pending) this.pending.set(command.id, command);
     if (this.replica)
       try {
+        const accepted = await this.household(this.replica);
+        for (const preview of visiblePreviews(this.previews.values(), this.replica.sequence)) {
+          this.booksGuard.fork().validate({ ...accepted, transactions: [...accepted.transactions, ...preview.rows] });
+        }
         await this.publish(this.replica);
       } catch {
         this.replica = undefined;
       }
-    window.addEventListener("online", this.online);
-    window.addEventListener("offline", this.offline);
-    const initial = new Promise<void>((resolve, reject) => {
-      this.initialResolve = resolve;
-      this.initialReject = reject;
-    });
-    void this.connect();
-    return initial;
   }
+  private pendingRows() {
+    return visiblePreviews(this.previews.values(), this.replica?.sequence ?? 0);
+  }
+
   private async ticket() {
     const response = await fetch(this.path("ticket"), {
       method: "POST",
@@ -146,12 +166,15 @@ export class LedgerSyncClient {
               }
               if (message.type === "error") {
                 if (message.id) {
-                  const error = new Error(message.message ?? message.code);
+                  const error = message.definitive === true ? new LedgerCommandRejectedError(message.message ?? message.code) : new Error(message.message ?? message.code);
                   if (message.definitive === true) {
                     if (this.inFlight === message.id) this.inFlight = undefined;
+                    await this.store!.reject(message.id, error.message);
+                    this.options.rejectedChanged?.(await this.store!.rejected());
+                    this.previews.delete(message.id);
+                    this.options.pendingChanged?.(this.pendingRows());
                     this.waiters.get(message.id)?.reject(error);
                     this.waiters.delete(message.id);
-                    await this.store!.acknowledge(message.id);
                     this.pending.delete(message.id);
                     await this.sendPending();
                     this.options.status("error", error.message);
@@ -175,7 +198,9 @@ export class LedgerSyncClient {
                 await this.store!.recover(this.replica);
               this.validateScope(replica);
               await this.household(replica);
-              await this.store!.save(replica);
+              const covered = await this.resolveSnapshotPreviews(replica);
+              await this.store!.save(replica, covered);
+              for (const id of covered) { const preview = this.previews.get(id); if (preview) this.previews.set(id, {...preview, acceptedSequence: replica.sequence}); }
               await this.publish(replica);
               this.replica = replica;
             } else if (message.type === "event")
@@ -199,6 +224,8 @@ export class LedgerSyncClient {
                 throw new Error("SEQUENCE_GAP");
               await this.store!.acknowledge(receipt.id);
               this.pending.delete(receipt.id);
+              this.previews.delete(receipt.id);
+              this.options.pendingChanged?.(this.pendingRows());
               if (this.inFlight === receipt.id) this.inFlight = undefined;
               const household = await this.household(this.replica),
                 result: CommitResult = {
@@ -281,7 +308,7 @@ export class LedgerSyncClient {
       pending: false,
       lastError: null,
     };
-    const status = validatedLedgerBooksStatus(h);
+    const status = validatedLedgerBooksStatus(h, this.booksGuard);
     h.booksAcceptedHash = await financialAuditHash(h);
     clearCapturedIntent(h);
     this.verified.set(r, { household: h, status });
@@ -290,7 +317,7 @@ export class LedgerSyncClient {
   private async publish(r: Replica) {
     if (!this.stopped) {
       const household = await this.household(r);
-      if (!this.stopped) await this.options.adopt(household, this.verified.get(r)!.status);
+      if (!this.stopped) await this.options.adopt(household, this.verified.get(r)!.status, visiblePreviews(this.previews.values(), r.sequence));
     }
   }
   private async event(event: AcceptedEvent) {
@@ -309,7 +336,10 @@ export class LedgerSyncClient {
     };
     this.validateScope(next);
     await this.household(next);
-    await this.store!.save(next);
+    const commandId = event.confirmation?.commandId;
+    if (commandId && event.memberId !== this.options.scope.memberId) throw new Error("SCOPE_MISMATCH");
+    await this.store!.save(next, commandId ? [commandId] : []);
+    if (commandId) { const preview = this.previews.get(commandId); if (preview) this.previews.set(commandId, { ...preview, acceptedSequence: next.sequence }); }
     await this.publish(next);
     this.replica = next;
   }
@@ -342,7 +372,28 @@ export class LedgerSyncClient {
     this.inFlight = command.id;
     await this.send({ type: "command", command });
   }
-  async confirm(candidate: Household, id: string): Promise<CommitResult> {
+  private async resolveSnapshotPreviews(replica: Replica): Promise<string[]> {
+    const covered: string[] = [];
+    for (const [id, preview] of this.previews) {
+      if (preview.acceptedSequence !== undefined && preview.acceptedSequence <= replica.sequence) continue;
+      const response = await fetch(this.path(`receipt?id=${encodeURIComponent(id)}`), { headers: { Authorization: `Bearer ${await this.options.token()}` } });
+      const value = await response.json();
+      if (!response.ok) { if (value.error === "RECEIPT_NOT_FOUND") continue; throw new Error(value.error ?? "RECEIPT_RECOVERY_FAILED"); }
+      if (value.version === 1 && value.reserved === true && value.confirmationId === id) {
+        await this.store!.reject(id, "This confirmation identity belongs to an imported entry. Review the retained draft before a new Confirm.");
+        this.previews.delete(id); this.pending.delete(id);
+        this.waiters.get(id)?.reject(new LedgerCommandRejectedError("IMPORTED_CONFIRMATION_EXISTS"));this.waiters.delete(id);
+        this.options.rejectedChanged?.(await this.store!.rejected());
+        continue;
+      }
+      if (value.version !== 2 || value.receipt?.id !== id || value.receipt.actor !== this.options.scope.memberId) throw new Error("RECEIPT_RECOVERY_REQUIRED");
+      if (value.receipt.sequence <= replica.sequence) covered.push(id);
+    }
+    return covered;
+  }
+  async confirm(candidate: Household, id: string, onQueued?: () => void): Promise<CommitResult> {
+    await this.localReady;
+    if (this.stopped || !this.store || !this.replica) throw new Error("LOCAL_REPLICA_REQUIRED");
     const prior = this.accepted.get(id);
     if (prior) return prior;
     const capture = capturedIntent(candidate);
@@ -360,9 +411,16 @@ export class LedgerSyncClient {
         },
         id,
       ));
-    await this.store!.enqueue(command);
+    // Blocking accounting validation before either visibility or queue durability.
+    this.booksGuard.fork().validate(candidate);
+    const preview = this.previews.get(id) ?? previewFor(candidate, await this.household(this.replica), command, this.options.scope.memberId);
+    await this.store!.enqueue(command, preview);
+    if (this.stopped) throw new Error("SCOPE_CLOSED");
+    if (preview) this.previews.set(id, preview);
     this.pending.set(id, command);
     this.options.status("saving");
+    this.options.pendingChanged?.(this.pendingRows());
+    if (preview) onQueued?.();
     const result = new Promise<CommitResult>((resolve, reject) =>
       this.waiters.set(id, { resolve, reject }),
     );
@@ -375,6 +433,14 @@ export class LedgerSyncClient {
     )
       void this.connect();
     return result;
+  }
+  async verifyImport() {
+    const response=await fetch(this.path('parity'),{method:'POST',headers:{Authorization:`Bearer ${await this.options.token()}`}});
+    const report=await response.json();if(!response.ok)throw new Error(report.error??'IMPORT_PROOF_FAILED');return report;
+  }
+  async dismissRejected(id: string) {
+    await this.localReady; await this.store!.dismissRejected(id);
+    if(!this.stopped)this.options.rejectedChanged?.(await this.store!.rejected());
   }
   result(id: string) {
     return this.accepted.get(id);

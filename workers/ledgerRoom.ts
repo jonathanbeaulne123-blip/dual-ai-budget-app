@@ -1,4 +1,6 @@
 /// <reference path="./ledger-platform.d.ts" />
+import { compareImportParity } from "../src/ledgerSync/importParity.ts";
+import { IncrementalBooksGuard } from "../src/core/booksValidation.ts";
 import {
   seal,
   restoreArchive,
@@ -57,6 +59,7 @@ type Attachment = {
   presenceAt?: number;
 };
 export class LedgerRoom extends DurableObject<Env> {
+  private booksGuards = new Map<string, IncrementalBooksGuard>();
   private state?: AuthorityState;
   private tail: Promise<unknown> = Promise.resolve();
   private readers = new Map<WebSocket, MessageReader>();
@@ -90,6 +93,7 @@ export class LedgerRoom extends DurableObject<Env> {
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS archive(sequence INTEGER PRIMARY KEY,hash TEXT)",
     );
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS import_proof_outbox(key TEXT,part INTEGER,data TEXT,PRIMARY KEY(key,part))");
     ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS legacy_reservations(digest TEXT PRIMARY KEY)");
     for (const ws of ctx.getWebSockets()) ws.close(1012, "RECONNECT");
   }
@@ -137,6 +141,10 @@ export class LedgerRoom extends DurableObject<Env> {
       this.ctx.storage.sql.exec("INSERT OR IGNORE INTO legacy_reservations VALUES (?)", value);
     }
     this.set("importedReceiptsReady", "2");
+  }
+  private queueImportProof(key:string,value:unknown) {
+    const body=JSON.stringify(value);
+    for(let at=0;at<body.length;at+=60000)this.ctx.storage.sql.exec("INSERT OR REPLACE INTO import_proof_outbox VALUES (?,?,?)",key,at/60000,body.slice(at,at+60000));
   }
   private async collectReservations(scope: Scope, token: string, receipts: CommandReceipt[]) {
     const ring = await Promise.all(receipts.map(receipt => reservationDigest(scope, receipt.confirmationId)));
@@ -340,6 +348,7 @@ export class LedgerRoom extends DurableObject<Env> {
           "legacy_reservations",
           "archive",
           "checkpoint_outbox",
+          "import_proof_outbox",
           "tickets",
         ])
           this.ctx.storage.sql.exec(`DELETE FROM ${table}`);
@@ -484,10 +493,69 @@ export class LedgerRoom extends DurableObject<Env> {
             at: new Date().toISOString(),
           }),
         );
+        const persisted={shared:this.readProjection("shared") as SharedEnvelope,personal:this.readProjection(scope.memberId) as PersonalEnvelope};
+        this.queueImportProof(`imports/${encodeURIComponent(scope.memberId)}`,{scope:this.meta("scope"),authorityInstance:this.meta("authorityInstance"),sourceHash,sourceRevision:household.revision,...persisted});
+        if(!exists)this.queueImportProof('import-shared',{scope:this.meta("scope"),authorityInstance:this.meta("authorityInstance"),shared:persisted.shared});
       });
       await this.ctx.storage.sync();
       this.state = undefined;
       await this.archiveBarrier();
+    });
+  }
+  async importParity(scope: Scope, token: string, localSource?: Household) {
+    return this.serial(async () => {
+      this.check(scope);
+      if (!this.meta("initialized") || this.meta("importedReceiptsReady") !== "2") throw new Error("IMPORT_REQUIRED");
+      const binding = JSON.parse(this.meta(`import:${scope.memberId}`, "null")) as {sourceHash:string;sourceRevision:number} | null;
+      if(!binding)throw new Error("PERSONAL_IMPORT_REQUIRED");
+      let normalizationDifferences: string[] = [];
+      const sourceHousehold = localSource ?? await importLegacy(this.env,scope,token,this.meta("authorityInstance"), changes=>{normalizationDifferences=changes;});
+      const source = splitForSync(sourceHousehold,scope.memberId);
+      if(await digest(source)!==binding.sourceHash)throw new Error("IMPORT_SOURCE_CHANGED");
+      const prefix=encodeURIComponent(this.meta("scope"));
+      const ownObject=await this.env.LEDGER_ARCHIVE.get(`${prefix}/imports/${encodeURIComponent(scope.memberId)}`);
+      let target: {shared:SharedEnvelope;personal:PersonalEnvelope};
+      let evidence: string;
+      if(ownObject) {
+        const sealed=await ownObject.json<Sealed<{scope:string;authorityInstance:string;sourceHash:string;sourceRevision:number;shared:SharedEnvelope;personal:PersonalEnvelope}>>();
+        if(await digest(sealed.data)!==sealed.sha256 || sealed.data.scope!==this.meta("scope") || sealed.data.authorityInstance!==this.meta("authorityInstance") || sealed.data.sourceHash!==binding.sourceHash || sealed.data.sourceRevision!==binding.sourceRevision) throw new Error("IMPORT_ARCHIVE_MISMATCH");
+        target=sealed.data;evidence='SQLite import reread archived by member';
+      } else {
+        // Backfill evidence from a checksum-verified import-revision restore
+        // checkpoint. Never compare a later edited projection to frozen source.
+        const points=JSON.parse(this.meta("restorePoints","[]")) as RestorePointSummary[];
+        const point=points.find(p=>p.sourceRevision===binding.sourceRevision);
+        const object=point ? await this.env.LEDGER_ARCHIVE.get(`${prefix}/restore/${point.id}`) : null;
+        if(!object)throw new Error("IMPORT_BASELINE_UNAVAILABLE");
+        const sealed=await object.json<Sealed<Checkpoint>>();
+        if(await digest(sealed.data)!==sealed.sha256 || sealed.data.scope!==this.meta("scope") || sealed.data.authorityInstance!==this.meta("authorityInstance") || sealed.data.sequence!==binding.sourceRevision)throw new Error("IMPORT_ARCHIVE_MISMATCH");
+        const personal=sealed.data.personal.find(([id])=>id===scope.memberId)?.[1];
+        if(!personal)throw new Error("PERSONAL_IMPORT_BASELINE_UNAVAILABLE");
+        target={shared:{...sealed.data.shared,commandReceipts:[]},personal};evidence='Verified import-revision checkpoint';
+      }
+      // A late member imports their frozen Personal scope after Shared has
+      // advanced. Compare Shared at its own import boundary, not against edits.
+      if(target.shared.revision!==source.shared.revision){
+        const object=await this.env.LEDGER_ARCHIVE.get(`${prefix}/import-shared`);
+        if(!object)throw new Error("SHARED_IMPORT_BASELINE_UNAVAILABLE");
+        const sealed=await object.json<Sealed<{scope:string;authorityInstance:string;shared:SharedEnvelope}>>();
+        if(await digest(sealed.data)!==sealed.sha256||sealed.data.scope!==this.meta("scope")||sealed.data.authorityInstance!==this.meta("authorityInstance"))throw new Error("IMPORT_ARCHIVE_MISMATCH");
+        target={...target,shared:sealed.data.shared};
+      }
+      const expected=await this.collectReservations(scope,token,sourceHousehold.commandReceipts);
+      const stored=this.ctx.storage.sql.exec<{digest:string}>("SELECT digest FROM legacy_reservations ORDER BY digest").toArray().map(row=>row.digest);
+      const set=new Set(stored);
+      const report=await compareImportParity({source,target, importedReceipts:this.importedReceipts(), reserved:async id=>set.has(await reservationDigest(scope,id)),manifestCount:expected.length,manifestExact:JSON.stringify([...expected].sort())===JSON.stringify(stored),today:'2026-09-07'});
+      if(normalizationDifferences.length){report.pass=false;report.differences.push(...normalizationDifferences.map(field=>`normalization.${field}`));}
+      this.check(scope);
+      this.set(`parity:${scope.memberId}`,JSON.stringify({pass:report.pass,at:new Date().toISOString(),sourceHash:binding.sourceHash,sourceRevision:binding.sourceRevision}));
+      await this.ctx.storage.sync();this.check(scope);
+      const memberCoverage=this.load().shared.members.filter(member=>member.active).map(member=>{
+        const ownBinding=JSON.parse(this.meta(`import:${member.id}`,'null'));
+        const ownProof=JSON.parse(this.meta(`parity:${member.id}`,'null'));
+        return {memberId:member.id,checked:Boolean(ownProof&&ownBinding&&ownProof.sourceHash===ownBinding.sourceHash),pass:ownProof&&ownBinding&&ownProof.sourceHash===ownBinding.sourceHash?ownProof.pass:null};
+      });
+      return {...report,evidence,normalizationDifferences,memberCoverage,otherMemberScope:'requires-own-authenticated-report'};
     });
   }
   async reconcileMembers(
@@ -588,6 +656,7 @@ export class LedgerRoom extends DurableObject<Env> {
         .map((row) => JSON.parse(row.data)),
       ...(this.meta("importedReceiptsReady") === "2" ? { importedReceipts: this.importedReceipts(),
         reservationDigests: this.ctx.storage.sql.exec<{ digest: string }>("SELECT digest FROM legacy_reservations ORDER BY digest").toArray().map(row => row.digest) } : {}),
+      importBindings: Object.fromEntries(this.ctx.storage.sql.exec<{key:string;value:string}>("SELECT key,value FROM meta WHERE key LIKE 'import:%'").toArray().map(row=>[row.key.slice(7),JSON.parse(row.value)])),
       restorePoints: retained,
     };
     const body = JSON.stringify(await seal(data));
@@ -667,6 +736,7 @@ export class LedgerRoom extends DurableObject<Env> {
           if (receipt.undoOf) this.set(`undo:${receipt.undoOf}`, receipt.id);
         }
         this.set("restorePoints", JSON.stringify(restored.restorePoints ?? []));
+        for(const [member, binding] of Object.entries(restored.importBindings ?? {})) this.set(`import:${member}`, JSON.stringify(binding));
         this.set("scope", restored.scope);
         this.set("authorityInstance", restored.authorityInstance);
         this.set("sequence", String(restored.sequence));
@@ -998,6 +1068,7 @@ export class LedgerRoom extends DurableObject<Env> {
             return JSON.parse(original.data) as Receipt;
           },
           (id) => this.restorePoint(id),
+          this.booksGuards,
         );
         this.check(a.scope);
         const eventText = JSON.stringify(prepared.event),
@@ -1144,6 +1215,12 @@ export class LedgerRoom extends DurableObject<Env> {
   private async archiveBarrier() {
     if (this.meta("checkpointRequired")) await this.checkpoint();
     const prefix = encodeURIComponent(this.meta("scope"));
+    const proofKeys=this.ctx.storage.sql.exec<{key:string}>("SELECT DISTINCT key FROM import_proof_outbox").toArray();
+    for(const {key} of proofKeys){
+      const body=this.ctx.storage.sql.exec<{data:string}>("SELECT data FROM import_proof_outbox WHERE key=? ORDER BY part",key).toArray().map(row=>row.data).join('');
+      await this.env.LEDGER_ARCHIVE.put(`${prefix}/${key}`,JSON.stringify(await seal(JSON.parse(body))));
+      this.ctx.storage.sql.exec("DELETE FROM import_proof_outbox WHERE key=?",key);
+    }
     const checkpointId = this.ctx.storage.sql
       .exec<{ id: number }>("SELECT max(id) id FROM checkpoint_outbox")
       .toArray()[0]?.id;

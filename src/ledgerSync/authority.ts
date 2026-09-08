@@ -1,3 +1,4 @@
+import { IncrementalBooksGuard } from "../core/booksValidation.ts";
 import { applyRestorePoint } from "../core/restorePoints.ts";
 import {
   generateDemoSuite,
@@ -70,6 +71,7 @@ export async function prepareCommand(
   authorize: () => void,
   undoReceipt?: (id: string) => Receipt,
   restorePoint?: (id: string) => Promise<RestorePoint>,
+  booksGuards?: Map<string, IncrementalBooksGuard>,
 ): Promise<PreparedCommit> {
   const command = parseCommand(raw);
   if (
@@ -238,6 +240,11 @@ export async function prepareCommand(
     postedIds.push(...result.postedIds);
   }
   if (!result) throw new Error("INVALID_COMMAND");
+  const guardFor = (memberId: string) => {
+    let guard = booksGuards?.get(memberId);
+    if (!guard && booksGuards) { guard = new IncrementalBooksGuard(); booksGuards.set(memberId, guard); }
+    return guard;
+  };
   // Full existing Fund, onboarding and accounting transition rules still run.
   const accepted = await acceptHouseholdWrite({
     previous: ["eraseDevelopmentActivity", "restoreSharedPoint"].includes(
@@ -246,6 +253,7 @@ export async function prepareCommand(
       ? null
       : before,
     candidate: current,
+    booksGuard: guardFor(scope.memberId)?.fork(),
     confirmationId: command.id,
     commandKind: result.undo.commandKind ?? command.steps.at(-1)!.kind,
     postedIds: [...new Set(postedIds)],
@@ -262,12 +270,11 @@ export async function prepareCommand(
       baseRevision: state.sequence + 1,
     },
     split = splitForSync(household, scope.memberId);
-  assertAcceptableBooks(household);
+  (guardFor(scope.memberId)?.validate(assembleHousehold(split.shared, split.personal, { linked: true })) ?? assertAcceptableBooks(household));
   for (const [memberId, own] of state.personal)
     if (memberId !== scope.memberId)
-      assertAcceptableBooks(
-        assembleHousehold(split.shared, own, { linked: true }),
-      );
+      { const visible = assembleHousehold(split.shared, own, { linked: true });
+        guardFor(memberId)?.validate(visible) ?? assertAcceptableBooks(visible); }
   const fingerprint = await intentDigest(command, scope.memberId);
   authorize();
   const previousIds = new Set(
@@ -353,6 +360,7 @@ export async function prepareCommand(
       : {}),
   };
   const event: AcceptedEvent = {
+    confirmation: { commandId: command.id, idMap: Object.fromEntries(ids) },
     sequence: receipt.sequence,
     shared: difference(state.shared, split.shared),
     personal: difference(personal, split.personal),

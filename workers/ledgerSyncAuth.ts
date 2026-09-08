@@ -1,3 +1,4 @@
+import { canonical } from "../src/ledgerSync/patch.ts";
 import type { Scope } from "../src/ledgerSync/protocol.ts";
 import { decodeJsonPayload } from "../src/ledger/snapshotPayload.ts";
 import {
@@ -101,6 +102,7 @@ export async function importLegacy(
   scope: Scope,
   token: string,
   authorityInstance: string,
+  normalization?: (differences: string[]) => void,
 ): Promise<Household> {
   // This RPC takes the legacy snapshot row lock and permanently fences old writers.
   // No unfenced read/import fallback is permitted.
@@ -116,9 +118,9 @@ export async function importLegacy(
     },
   );
   if (!record?.shared) throw new Error("IMPORT_SOURCE_MISSING");
-  const shared = ensureHouseholdShape(
-    (await decodeJsonPayload(record.shared)) as Household,
-  );
+  const rawShared = await decodeJsonPayload(record.shared) as Household;
+  const shared = ensureHouseholdShape(rawShared);
+  const rawPersonal = record.personal ? await decodeJsonPayload(record.personal) : null;
   if (
     shared.environment !== scope.environment ||
     shared.householdId !== scope.householdId
@@ -126,14 +128,48 @@ export async function importLegacy(
     throw new Error("IMPORT_SCOPE_MISMATCH");
   const personal = record.personal
     ? personalEnvelopeFromPayload(
-        await decodeJsonPayload(record.personal),
+        rawPersonal,
         scope.memberId,
       )
     : splitForSync(shared, scope.memberId).personal;
   if (record.personal && !personal) throw new Error("INVALID_PERSONAL_IMPORT");
-  return assembleHousehold(
-    splitForSync(shared, scope.memberId).shared,
+  const changes: string[] = [];
+  for (const [label, raw, shaped] of [["shared", rawShared, shared], ["personal", rawPersonal, personal]] as const) {
+    if(!raw || !shaped) continue;
+    for(const [field, value] of Object.entries(raw)) {
+      // Envelope markers and absent legacy defaults are explicit schema changes.
+      if(["kind", "linked", "baseRevision", "booksAcceptedHash", "sharing"].includes(field)) continue;
+      const next=(shaped as any)[field];
+      const emptyCollectionDefault=value===null&&Array.isArray(next)&&next.length===0;
+      if(!emptyCollectionDefault && canonical(value) !== canonical(next)) changes.push(`${label}.${field}`);
+    }
+  }
+  const sharedProjection=splitForSync(shared,scope.memberId).shared;
+  for(const field of ['transactions','shifts'] as const) {
+    // A raw legacy whole-household payload can already contain caller Personal
+    // rows, but neither individual envelope nor assembled scope may collide.
+    for(const rows of [shared[field],personal?.[field]??[],[...sharedProjection[field],...(personal?.[field]??[])]])
+      if(new Set(rows.map(row=>row.id)).size!==rows.length)throw new Error('IMPORT_ROW_ID_COLLISION');
+  }
+  const assembled = assembleHousehold(
+    sharedProjection,
     personal,
     { linked: true },
   );
+  // These collections are intentionally projected to Shared + caller Personal;
+  // their exact wire sets are checked separately by the parity comparator.
+  const scopedFields=new Set(['members','accounts','transactions','shifts','goals','goalContributions','goalPurchases','activity','tombstones','fundPrivate','herculesProPermissions','sevenShiftsSchedules','coworkers','coworkerAttendance','coworkerSchedules','shiftEnvelopes','shiftBibles']);
+  for(const [field,value] of Object.entries(shared)) {
+    if(scopedFields.has(field)||['kind','linked','baseRevision','booksAcceptedHash','sharing'].includes(field))continue;
+    if(canonical(value)!==canonical((assembled as any)[field]))changes.push(`assembled.${field}`);
+  }
+  const finalPersonal=splitForSync(assembled,scope.memberId).personal;
+  for(const [field,value] of Object.entries(personal??{})) {
+    const next=(finalPersonal as any)[field];
+    if(field==='lastCommittedAt')continue; // Replica transport clock is the assembled tip.
+    if(value===null&&next===undefined&&['glanceAccountId','fundCardAccountId'].includes(field))continue;
+    if(canonical(value)!==canonical(next))changes.push(`personalRoundTrip.${field}`);
+  }
+  normalization?.([...new Set(changes)]);
+  return assembled;
 }

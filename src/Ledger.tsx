@@ -1,3 +1,4 @@
+import type { PendingPreview } from "./ledgerSync/optimistic.ts";
 import { useEffect, useMemo, useState } from "react";
 import {
   formatCad,
@@ -28,6 +29,7 @@ const SECTIONS: { id: LedgerSection; label: string }[] = [
 ];
 
 export function LedgerPage({
+  pendingRows = [],
   household,
   writeHousehold = household,
   presentedTransactions = false,
@@ -38,6 +40,7 @@ export function LedgerPage({
   onChange,
   onRemove,
 }: {
+  pendingRows?: PendingPreview[];
   household: Household;
   writeHousehold?: Household;
   presentedTransactions?: boolean;
@@ -162,6 +165,17 @@ export function LedgerPage({
       <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notes, place, category…" />
       {section === "other" && (
         <p className="muted">Transfers move money between accounts. Refunds undo spend. Neither is ordinary income.</p>
+      )}
+      {pendingRows.some(preview => preview.rows.some(tx => isVisibleInView(tx, memberId, view))) && (
+        <section className="card" aria-label="Pending entries">
+          <p className="muted">Pending · awaiting confirmation. Posted balances update when saved.</p>
+          {pendingRows.flatMap(preview => partitionLedger(transactionsForHerculesSource(preview.rows.filter(tx => isVisibleInView(tx, memberId, view)), sourceFocus))[section]
+            .filter(tx => !query.trim() || `${tx.note} ${tx.place} ${categoryName(household, tx.subcategoryId)} ${accountName(household, tx.accountId)}`.toLowerCase().includes(query.trim().toLowerCase()))
+            .map(tx => <div className="ledger-row" key={`${preview.commandId}:${tx.id}`} data-ledger-row-id={tx.id} data-command-id={preview.commandId} data-ledger-phase="pending">
+              <div><strong>{tx.note || transactionTypeLabel(tx.type)}</strong><div className="muted">{formatDateLabel(tx.date)} · Pending</div></div>
+              <strong>{formatCad(tx.amountCents)}</strong>
+            </div>))}
+        </section>
       )}
       <section className="card">
         {rows.length === 0 ? <p className="muted">Nothing in this list yet.</p> : rows.slice(0, rowLimit).map((tx) => (

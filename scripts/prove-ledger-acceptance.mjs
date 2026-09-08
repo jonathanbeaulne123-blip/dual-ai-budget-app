@@ -81,7 +81,9 @@ async function collect(author,partner,beforeIds){
   const completed=snapshots[author].commands[command.id];
   const matches=await pages[partner].locator(`[data-ledger-row-id="${rowId}"]`).count();
   const bytes=snapshots.flatMap(s=>s.frames).filter(f=>f.id===command.id||(f.sequence===command.sequence&&f.type==='event')).reduce((n,f)=>n+f.bytes,0);
-  samples.push({id:command.id,author:String(author),partner:String(partner),confirmAt:command.confirmAt,authorPaintAt:snapshots[author].rows[rowId]?.paintAt??null,
+  const pendingPaint=(completed.previewIds??[]).map(id=>snapshots[author].rows[id]).filter(row=>row?.phase==='pending'&&row.commandId===command.id&&row.paintAt).sort((a,b)=>a.paintAt-b.paintAt)[0];
+  samples.push({id:command.id,author:String(author),partner:String(partner),confirmAt:command.confirmAt,authorPaintAt:pendingPaint?.paintAt??snapshots[author].rows[rowId]?.paintAt??null,
+    authorPaintPhase:pendingPaint?"pending":"accepted",authorAcceptedPaintAt:snapshots[author].rows[rowId]?.paintAt??null,
     ackAt:command.ackAt,savedPaintAt:completed.savedPaintAt??null,partnerPaintAt:snapshots[partner].rows[rowId]?.paintAt??null,bytes,visibleRowMatches:matches,
     receiptMatches:completed.receiptValid?1:0,rowId});
 }
