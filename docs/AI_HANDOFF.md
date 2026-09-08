@@ -1,3 +1,13 @@
+## Mobile C8 — Hercules fallback (2026-09-08)
+
+**Status:** Locally verified on codex/mobile-c8-hercules-copy; basea4a7709a3c033c5be5cf7de9c53cc22f534ff02b(C7,PR398). HEAD is this commit.
+
+**Outcome/risk:** Stray fallback text replaced; existing Shift oracle chips preserved. Medium; Budget(5)+0; Engagement(3)+1.
+
+**Proof:**90 selected tests plus TypeScript/AI/diff134.521s; actual fallback four widths and phone chips verified. Independent source review clear. [Evidence](worksessions/2026-09-08-mobile-hercules-copy.md).
+
+**Next/limits:** Stacked draft PR then C9. Local fictional/component proof; no hosted/physical/exhaustive/merge/deploy/schema.
+
 ## Mobile C7 — receipt Undo (2026-09-08)
 
 **Status:** Locally verified on codex/mobile-c7-undo-window; baseadc44df6af82e6df6ad30032550f5b3e47b80025(C6,PR397). HEAD is this commit.

@@ -586,3 +586,8 @@ Till's standing and empty lines now require no nonduplicate month transaction an
 ## Mobile C7 — receipt time does not expire global Undo (2026-09-08)
 
 The paper's width shows ten seconds without moving its named action. Expiry, current receipt, exact supported purchase and LIFO are checked before enqueue and drain. Once the writer starts, accepted delivery is scope-bound rather than timer-bound. Global Undo retains its established lifetime. Managed toast timers close C6's observed unmount failure. Budget(5)+2; Engagement(3)+2. C7 worksession contains proof and limits.
+
+
+## Mobile C8 — keep existing oracle chips (2026-09-08)
+
+Shift already exposes Tonight?, Protect or chase?, and Tax milk?. Preserve that exact page-specific set and replace only the stray personal fallback text. No duplicate controls compete for Claude's space. Budget(5)+0; Engagement(3)+1; proof in C8 worksession.

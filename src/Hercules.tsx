@@ -104,7 +104,7 @@ import {
   wanderFly,
 } from "./HerculesFly.tsx";
 
-const HERCULES_WIDGET_PLACEHOLDER = "jonathan is not creative enough to make prompts right now";
+const HERCULES_WIDGET_PLACEHOLDER = "Ask me about this page.";
 
 type WidgetSnippet = { role: "user" | "hercules"; text: string; placeholder?: boolean };
 
