@@ -341,7 +341,7 @@ export function OfficeWide({
       aria: "Shifts.",
       body: (
         <>
-          <TimesheetBody
+          <TimesheetBody view={view}
             household={household} streak={streak} memberId={memberId} memberName={memberName} today={today} busy={busy}
             onClockIn={onClockIn} onAbandon={onAbandonShift}
             onStartBreak={onStartBreak} onEndBreak={onEndBreak}

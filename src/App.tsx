@@ -1,8 +1,9 @@
+import { openShiftReview, runReviewedOpenShift, runReviewedShiftChoice, runReviewedShiftDiscard } from "./openShiftReview.ts";
 import { acceptedScenarioPair, issueScenarioSource, scenarioAuthIdentityKey, scenarioPairScopeKey, type ScenarioPairLease, type ScenarioPairScope } from "./scenarioSourceContext.ts";
 import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { editSplitDraft, newSplitDraft, reviewedSplitPayload, splitDraftScope, type SplitDraft } from "./core/splitDraft.ts";
 import type { FundDestination } from "./FundStage.tsx";
-import { enqueueScopedWrite } from "./core/scopedWrite.ts";
+import { enqueueScopedWrite, sameWriteScope } from "./core/scopedWrite.ts";
 import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
@@ -627,7 +628,8 @@ export function App() {
   const [charterPageOpen, setCharterPageOpen] = useState(false);
   const [adding, setAddingState] = useState(false);
   const draftGenerationRef = useRef(0);
-  function setAdding(value: boolean) { if(value) draftGenerationRef.current++; setAddingState(value); }
+  const punchReviewIntentRef = useRef(0);
+  function setAdding(value: boolean) { if(value) { draftGenerationRef.current++; punchReviewIntentRef.current++; } setAddingState(value); }
   const [fundLedgeExpanded, setFundLedgeExpanded] = useState(false);
   const [swipeOpen, setSwipeOpen] = useState(false);
   const [swipeError, setSwipeError] = useState("");
@@ -640,6 +642,7 @@ export function App() {
   const lastAmountLabelRef = useRef<string | null>(null);
 
   const closeAdd = () => {
+    punchReviewIntentRef.current++;
     setSplitDraft(null);
     workShiftInputRef.current = null;
     shiftScanScopeRef.current.cancel();
@@ -5483,6 +5486,18 @@ export function App() {
 
   const ledger = household;
   const actorId = session.memberId;
+  const reviewedPunch = openShiftReview(ledger, actorId);
+  function runPunch(action: (current: Household) => CommitResult) {
+    return runKitchen(current => runReviewedOpenShift(current, actorId, reviewedPunch, action));
+  }
+  function runPunchDiscard() {
+    return runKitchen(current => runReviewedShiftDiscard(current, actorId, reviewedPunch, next => abandonOpenShift(next, { memberId: actorId })));
+  }
+  const punchScopeIsCurrent = () => sameWriteScope(reviewedKitchenScope, {
+    generation: replicaScopeGenerationRef.current, environment: environmentRef.current,
+    householdId: householdRef.current?.householdId ?? null, memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
+  });
+
   const splitViewer = { memberId: actorId, view: session.view, generation: replicaScopeGenerationRef.current };
   const splitScopeValid = splitDraft?.scope === splitDraftScope(ledger, splitViewer);
   const splitPercents = splitDraft?.percents ?? {};
@@ -5742,11 +5757,19 @@ export function App() {
     if (rendered !== current) window.history.replaceState({}, "", rendered);
   }
 
-  function beginSignOut() {
+  async function beginSignOut() {
+    const reviewIntent = ++punchReviewIntentRef.current;
+    let punch = activeOpenShift(ledger.kitchen, actorId);
+    if (punch?.status === "open") {
+      const outcome = await runPunch((current) => clockOutShift(current, { memberId: actorId }));
+      if (!outcome?.ok || !punchScopeIsCurrent() || reviewIntent !== punchReviewIntentRef.current) return;
+      const current = householdRef.current;
+      if (!current || openShiftReview(current, actorId) !== openShiftReview(outcome.household, actorId)) return;
+      punch = activeOpenShift(current.kitchen, actorId);
+    } else if (!punchScopeIsCurrent() || !householdRef.current || openShiftReview(householdRef.current, actorId) !== reviewedPunch) return;
+    if (!punch || punch.status !== "confirming") return;
     workShiftInputRef.current = null;
     workShiftDateRef.current = today;
-    const punch = activeOpenShift(ledger.kitchen, actorId);
-    if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
     setMode("shift");
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
@@ -5757,7 +5780,7 @@ export function App() {
     setShiftGate("signOut");
     setHoursDirty(false);
     setForm(formForAccount(null, {
-      hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
+      hours: formatPreviewHours(previewHoursQuarter(punch.startedAt, punch.endedAt ? Date.parse(punch.endedAt) : Date.now())),
       sales: "0",
       cashTips: "0",
       ccTips: "0",
@@ -5769,7 +5792,7 @@ export function App() {
     workShiftInputRef.current = null;
     workShiftDateRef.current = today;
     const punch = activeOpenShift(ledger.kitchen, actorId);
-    if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
+    if (punch?.status === "open") void runPunch((current) => clockOutShift(current, { memberId: actorId }));
     setAdding(false);
   }
 
@@ -6292,10 +6315,10 @@ export function App() {
             emitOfficeIntent({ type: "expand", id: "calculator" });
           }}
           onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
-          onAbandonShift={() => { void runKitchen((current) => abandonOpenShift(current, { memberId: actorId })); }}
-          onStartBreak={(kind) => { void runKitchen((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
-          onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
-          onChooseShiftTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
+          onAbandonShift={() => { void runPunchDiscard(); }}
+          onStartBreak={(kind) => { void runPunch((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
+          onEndBreak={() => { void runPunch((current) => endShiftBreak(current, { memberId: actorId })); }}
+          onChooseShiftTimeline={(keepId) => { void runKitchen((current) => runReviewedShiftChoice(current, actorId, reviewedPunch, keepId, next => chooseOpenShiftTimeline(next, { memberId: actorId, keepId }))); }}
           onSignOut={beginSignOut}
           onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
@@ -6435,10 +6458,10 @@ export function App() {
           environment={environment}
           busy={busy}
           onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
-          onAbandon={() => { void runKitchen((current) => abandonOpenShift(current, { memberId: actorId })); }}
-          onStartBreak={(kind) => { void runKitchen((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
-          onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
-          onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
+          onAbandon={() => { void runPunchDiscard(); }}
+          onStartBreak={(kind) => { void runPunch((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
+          onEndBreak={() => { void runPunch((current) => endShiftBreak(current, { memberId: actorId })); }}
+          onChooseTimeline={(keepId) => { void runKitchen((current) => runReviewedShiftChoice(current, actorId, reviewedPunch, keepId, next => chooseOpenShiftTimeline(next, { memberId: actorId, keepId }))); }}
           onClockOut={clockOutStayOnShiftPage}
           onConfirmShift={(input, attendanceReview, callbacks) => submitWorkShift(input, false, attendanceReview, callbacks)}
           readSubmissionStatus={readWorkShiftSubmission}
@@ -7126,7 +7149,7 @@ export function App() {
           onAlreadyOff={() => beginFinishedShift()}
           onSignOut={beginSignOut}
           onNeverMind={() => {
-            void runKitchen((current) => abandonOpenShift(current, { memberId: actorId }));
+            void runPunchDiscard();
             setAdding(false);
           }}
           punchStartedAt={activeOpenShift(household.kitchen, actorId)?.startedAt}

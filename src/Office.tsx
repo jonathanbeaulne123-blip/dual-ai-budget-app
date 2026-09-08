@@ -712,7 +712,7 @@ export function Office({
       "Shifts",
       <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
       `Timesheet. ${streak.spoken}`,
-      <TimesheetBody
+      <TimesheetBody view={view}
         household={household}
         streak={streak}
         memberId={memberId}

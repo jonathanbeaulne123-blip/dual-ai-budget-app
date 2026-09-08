@@ -2,7 +2,7 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addAccount, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
+import { addAccount, abandonOpenShift, clockInShift, clockOutShift, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 import { completedExistingBooksHousehold, existingBooksActivationAt } from "./fixtures/existing-books-onboarding.ts";
@@ -21,6 +21,8 @@ const startup = vi.hoisted(() => ({
   v2: false,
   v2AutoAdopt: true,
   v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
+  punchConfirm: null as null | ((candidate: Household) => Promise<import("../src/core/types.ts").CommitResult>),
+  officePunch: null as null | {onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger")=>void},
   scenarioSource: null as import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null,
   saveBarrier: null as {household: Household; promise: Promise<void>} | null,
   replicas: [] as import("../src/storage.ts").HouseholdReplicaSummary[],
@@ -60,6 +62,12 @@ vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
       // must not be a second commit authority for this already-accepted state.
       if (startup.v2AutoAdopt) await this.options.adopt(startup.cached!);
       this.options.status("ready");
+    }
+    async confirm(candidate: Household, _id: string, _onQueued?: () => void) {
+      if (!startup.punchConfirm) throw new Error("Unexpected test confirmation");
+      const result=await startup.punchConfirm(candidate);
+      await this.options.adopt(result.household);
+      return result;
     }
     async destroy() {}
   } };
@@ -175,7 +183,8 @@ vi.mock("../src/api.ts", async (importOriginal) => {
 
 vi.mock("../src/deferredSurfaces.tsx", () => ({
   DeferredSurface: ({ children }: { children: ReactNode }) => children,
-  DeferredOffice: ({scenarioSource}: {scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null}) => {
+  DeferredOffice: ({scenarioSource,...punch}: {scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger")=>void}) => {
+    startup.officePunch=punch;
     startup.scenarioSource = scenarioSource ?? null;
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
   },
@@ -309,6 +318,8 @@ describe("cached-shell startup books gate", () => {
     startup.v2AutoAdopt = true;
     startup.v2Clients = [];
     startup.scenarioSource = null;
+    startup.punchConfirm = null;
+    startup.officePunch = null;
     startup.saveBarrier = null;
     startup.replicas = [];
     setContinuityStore(createMemoryContinuityStore());
@@ -1447,6 +1458,40 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
     expect(container.textContent).toContain("How much came in?");
   });
+  it("Punch preserves Never mind for a confirming timeline opened through Add Shift", async () => {
+    startup.v2=true;vi.stubEnv("VITE_LEDGER_SYNC_V2","1");vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH","1");
+    startup.cached=clockOutShift(clockInShift(await acceptedScenarioFixture(),{memberId:"MEM-002"}).household,{memberId:"MEM-002"}).household;
+    startup.cached.booksAcceptedHash=await financialAuditHash(startup.cached);
+    const before=startup.cached,discarded=abandonOpenShift(before,{memberId:"MEM-002"});let candidate:Household|null=null;
+    startup.punchConfirm=async next=>{candidate=next;return {...discarded,household:next};};
+    await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);
+    act(()=>button("Add money").click());act(()=>button("Add shift").click());act(()=>button("Never mind").click());
+    await waitForUi(()=>expect(candidate).not.toBeNull(),1500);
+    expect(candidate!.kitchen.openShifts.find(row=>row.memberId==="MEM-002")!.status).toBe("cleared");
+    expect(candidate!.transactions).toEqual(before.transactions);expect(container.querySelector(".add-slideshow")).toBeNull();
+  });
+
+  for (const result of ["accepted", "rejected", "navigated"] as const) it(`Punch opens pay review only after an accepted clock-out in the same intent (${result})`, async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
+    startup.cached=clockInShift(await acceptedScenarioFixture(),{memberId:"MEM-002"}).household;
+    startup.cached.booksAcceptedHash=await financialAuditHash(startup.cached);
+    const before=startup.cached,original=clockOutShift(before,{memberId:"MEM-002"});
+    let release!:()=>void,candidate:Household|null=null;
+    const barrier=new Promise<void>(resolve=>release=resolve);
+    startup.punchConfirm=async next=>{candidate=next;await barrier;if(result==="rejected")throw Error("Clock-out was not accepted");return {...original,household:next};};
+    await act(async()=>root.render(createElement(App)));
+    await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);
+    let pending!:Promise<void>;await act(async()=>{pending=startup.officePunch!.onSignOut();await Promise.resolve();});
+    await waitForUi(()=>expect(candidate).not.toBeNull(),4000);expect(container.querySelector(".add-slideshow")).toBeNull();
+    if(result==="navigated")await act(async()=>startup.officePunch!.onGo("ledger"));
+    await act(async()=>{release();await pending;});
+    if(result==="accepted")expect(container.querySelector(".add-slideshow")).not.toBeNull();
+    else expect(container.querySelector(".add-slideshow")).toBeNull();
+    expect(candidate!.transactions).toEqual(before.transactions);expect(candidate!.shifts).toEqual(before.shifts);
+    expect(candidate!.kitchen.openShifts.find(row=>row.memberId==="MEM-002")!.status).toBe("confirming");
+  });
+
   it("issues an accepted cached V2 pair for the scenario without legacy SQL", async () => {
     startup.v2 = true;
     vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");

@@ -67,7 +67,8 @@ describe("UI P2 scheduling budgets", () => {
       memberId,
       streak: shiftPostingStreak(live, "2026-08-30"),
     })));
-    expect(interval).toHaveBeenCalledWith(expect.any(Function), 1_000);
+    expect(interval).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(1);
   });
 
   it("coalesces scroll and resize geometry reads to one publication per frame", () => {

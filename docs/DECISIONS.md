@@ -537,3 +537,8 @@ Connecting the control exposed an existing private-name leak and Shared cash sub
 ## Mobile B6 — Claude's Trust (2026-09-08)
 
 The three phone stops change which supported future sources are visible, never today's Fund or Ask. Confirmed keeps confirmed contributions and scheduled obligations; Observed admits canonical observed contributions without inventing a range. Estimated requires a current, explicit reviewed contribution scenario and preserves its common paired order. The wall names the last included source rather than completeness; zero choices, equal dates, coincident bounds and an earlier replacement horizon remain truthful. Scope-specific enum preferences visibly fall back when unsupported. All facts fit Claude's existing drawing, typography and paperbox. Risk High; Budget(5)+3; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-trust.md). No financial command, merge or deployment.
+
+
+## Mobile B7 — Claude's Punch (2026-09-08)
+
+The tall downward edge handle reveals existing clock/break actions, with elapsed and break time derived from actual timestamps. Motion never starts or ends a break; release leaves actions open for a separate named activation under the instrument no-write law. Both clock views pause hidden and refresh on return. Exact member timeline-set guards prevent queued actions reaching replacement breaks/shifts or an unseen device conflict. Discard retains its supported confirming-state path. Pay review opens only after accepted clock-out and current scope/intent; keyed updates retain keyboard focus. High risk; Budget(5)+1; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-punch.md). No native Live Activity, merge or deployment.

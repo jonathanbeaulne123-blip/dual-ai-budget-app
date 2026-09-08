@@ -1,3 +1,17 @@
+## Mobile B7 — the Punch (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b7-punch`; exact base/pre-commit HEAD`b873cb8afcb3dd96c7dbac2525f2d03c3cda2958` (B6, PR388). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's tall edge reveal preserves actual clock/break readings and separates motion from named actions. Scoped timeline guards protect queued actions and conflict choices; accepted clock-out controls pay-review navigation. Hidden timers pause and keyboard focus survives accepted updates.
+
+**Risk and Dual Course:** High; Budget(5)+1; Engagement(3)+2.
+
+**Verification:** Final High quick gate139/139 plus TypeScript/AI/diff passed103.633seconds; no five-minute breach. Eleven actual-component browser cases and native touch proof pass. Four mounted App action cases include a reproduced/repaired confirming-discard regression. Independent financial/UX/verifier reviews clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-punch.md).
+
+**Limits:** Fictional local App/component/command proof with mocked acceptance transport; no authenticated physical, exhaustive, hosted or native Live Activity claim. No merge, deployment or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and implements Claude's retained B8 Prise with fixed evidence and scoped Confirm.
+
 ## Mobile B6 — the Trust (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b6-trust`; exact base/pre-commit HEAD`58fe84fdaf679a9cf901e8d7267793fac866ef6b` (B5, PR387). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
