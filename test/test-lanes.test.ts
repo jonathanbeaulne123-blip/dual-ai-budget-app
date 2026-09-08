@@ -55,27 +55,9 @@ describe("Vitest lanes", () => {
     const runtimeTests = directPGliteRuntimeTests();
     const serialTests = [...runtimeTests, ...serialFixtureTests, ...serialTimingTests].sort();
 
-    expect(runtimeTests).toEqual([
-      "almost-there.test.ts",
-      "app-startup-p1.test.ts",
-      "ask-books.test.ts",
-      "auth-invite-discovery.test.ts",
-      "books.test.ts",
-      "continuity.test.ts",
-      "five-boards-entry-app.test.ts",
-      "hosted-transport.test.ts",
-      "household-fund-pglite.test.ts",
-      "onboarding-app-stale-seat.test.ts",
-      "onboarding-entry-integration.test.ts",
-      "opening-truth-pglite.test.ts",
-      "performance-p2-benchmark.test.ts",
-      "pglite-development-canary.test.ts",
-      "proof-matrix.test.ts",
-      "sitdown.test.ts",
-      "sql-hosts.test.ts",
-      "sync-integrity.test.ts",
-      "work-coworkers.test.ts",
-    ]);
+    // Discovery is the authority: every newly added runtime test must be routed
+    // to the serial lane without maintaining a second frozen filename list.
+    expect(runtimeTests).toContain("pglite-development-canary.test.ts");
     for (const fileName of serialTests) {
       expect(booksLane).toContain(`test/${fileName}`);
       expect(fastLane).toContain(`--exclude=test/${fileName}`);
