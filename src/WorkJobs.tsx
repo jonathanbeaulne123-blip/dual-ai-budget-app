@@ -250,7 +250,7 @@ export function EarningCadenceCard({ household, memberId, today, busy, onSave }:
   );
 }
 
-export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onArchive, onboardingCadenceOnly = false, onSaveCadence }: {
+export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onArchive, onboardingCadenceOnly = false, onSaveCadence, onOpenTimesheet }: {
   household: Household;
   memberId: string;
   today: string;
@@ -258,6 +258,7 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
   onAskSave: (job: WorkJob, summary: string) => void;
   onArchive: (jobId: string) => void;
   onboardingCadenceOnly?: boolean;
+  onOpenTimesheet?:()=>void;
   onSaveCadence?: (schedule: WorkPaySchedule) => void;
 }) {
   const jobs = useMemo(() => (household.workJobs ?? []).filter((job) => job.memberId === memberId), [household.workJobs, memberId]);
@@ -304,7 +305,7 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
             </div>
           );
         })}
-        <SevenShiftsConnectPanel
+        <SevenShiftsConnectPanel onOpenTimesheet={onOpenTimesheet} ledgerName={household.name}
           environment={household.environment}
           householdId={household.householdId}
           memberId={memberId}

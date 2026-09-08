@@ -1,0 +1,111 @@
+{
+  "baseline": "37c0cc9792df31c895ca5db0e84f4729c6e1c4d1",
+  "scope": "Actual WorkShiftFlow and real local commands with synthetic clock-out entry; no physical or full-App tap proof.",
+  "rows": [
+    {
+      "scenario": "blank",
+      "taps": 21,
+      "events": [
+        "Clock out",
+        "Paid-break explicit zero",
+        "Next: time",
+        "Sales key 1",
+        "Sales key 0",
+        "Sales key Add 00",
+        "Sales key Add 00",
+        "Select cash",
+        "Cash key 5",
+        "Cash key 0",
+        "Cash key Add 00",
+        "Select card",
+        "Card key 1",
+        "Card key Add 00",
+        "Card key Add 00",
+        "Select customers",
+        "Customers key 4",
+        "Customers key 0",
+        "Next: money",
+        "Next: destinations",
+        "Confirm shift"
+      ],
+      "errors": [],
+      "actions": [
+        "clock-out",
+        "accepted-shift"
+      ],
+      "payload": {
+        "date": "2026-09-08",
+        "memberId": "MEM-002",
+        "jobId": "JOB-CAF-NOLA",
+        "roleId": "ROLE-SERVER",
+        "workedHours": "4.00",
+        "paidBreakHours": "0.00",
+        "salesByField": {
+          "FOOD": "1000.00"
+        },
+        "cashTips": "50.00",
+        "cardTips": "100.00",
+        "customersServed": 40,
+        "staffingCount": 1,
+        "eventTag": "regular",
+        "cashTipsAccountId": "ACC-CASH",
+        "wagesDepositAccountId": "ACC-CHEQUING",
+        "cardTipsDepositAccountId": "ACC-CASH",
+        "wagesVisibility": "personal",
+        "cashTipsVisibility": "personal",
+        "cardTipsVisibility": "personal",
+        "tipOutVisibility": "personal",
+        "startedAt": "2026-09-08T01:34:40.361Z",
+        "endedAt": "2026-09-08T05:34:40.457Z",
+        "note": "",
+        "settingsFingerprint": "{\"v\":1,\"jobId\":\"JOB-CAF-NOLA\",\"roleId\":\"ROLE-SERVER\",\"rate\":{\"id\":\"RATE-NEW\",\"effectiveDate\":\"2026-09-01\",\"grossHourlyRateCents\":2000,\"takeHomeMode\":\"deductions\",\"takeHomeHourlyRateCents\":0,\"deductions\":[{\"id\":\"TAX\",\"label\":\"Tax\",\"percent\":20}],\"createdAt\":\"2026-08-01T00:00:00.000Z\",\"updatedAt\":\"2026-08-01T00:00:00.000Z\"},\"paidBreakRate\":\"role\",\"paidBreakHourlyRateCents\":0,\"overtimeEnabled\":true,\"overtimeWeeklyThresholdHours\":44,\"overtimeMultiplier\":1.5,\"tipOutRules\":[{\"id\":\"BAR\",\"label\":\"Bar\",\"basis\":\"total-sales\",\"value\":1,\"roundingCents\":500,\"roundingMode\":\"up\",\"timing\":\"immediate\",\"active\":true,\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"},{\"id\":\"FLOOR\",\"label\":\"Floor\",\"basis\":\"card-tips\",\"value\":2,\"roundingCents\":1,\"roundingMode\":\"nearest\",\"timing\":\"withheld\",\"active\":true,\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"}]}",
+        "createdBy": "MEM-002"
+      },
+      "error": ""
+    },
+    {
+      "scenario": "populated",
+      "taps": 4,
+      "events": [
+        "Clock out",
+        "Next: money",
+        "Next: destinations",
+        "Confirm shift"
+      ],
+      "errors": [],
+      "actions": [
+        "clock-out",
+        "accepted-shift"
+      ],
+      "payload": {
+        "date": "2026-09-08",
+        "memberId": "MEM-002",
+        "jobId": "JOB-CAF-NOLA",
+        "roleId": "ROLE-SERVER",
+        "workedHours": "4.00",
+        "paidBreakHours": "0.00",
+        "salesByField": {
+          "FOOD": "1000.00"
+        },
+        "cashTips": "50.00",
+        "cardTips": "100.00",
+        "customersServed": 40,
+        "staffingCount": 1,
+        "eventTag": "regular",
+        "cashTipsAccountId": "ACC-CASH",
+        "wagesDepositAccountId": "ACC-CHEQUING",
+        "cardTipsDepositAccountId": "ACC-CASH",
+        "wagesVisibility": "personal",
+        "cashTipsVisibility": "personal",
+        "cardTipsVisibility": "personal",
+        "tipOutVisibility": "personal",
+        "startedAt": "2026-09-08T01:34:41.500Z",
+        "endedAt": "2026-09-08T05:34:41.542Z",
+        "note": "",
+        "settingsFingerprint": "{\"v\":1,\"jobId\":\"JOB-CAF-NOLA\",\"roleId\":\"ROLE-SERVER\",\"rate\":{\"id\":\"RATE-NEW\",\"effectiveDate\":\"2026-09-01\",\"grossHourlyRateCents\":2000,\"takeHomeMode\":\"deductions\",\"takeHomeHourlyRateCents\":0,\"deductions\":[{\"id\":\"TAX\",\"label\":\"Tax\",\"percent\":20}],\"createdAt\":\"2026-08-01T00:00:00.000Z\",\"updatedAt\":\"2026-08-01T00:00:00.000Z\"},\"paidBreakRate\":\"role\",\"paidBreakHourlyRateCents\":0,\"overtimeEnabled\":true,\"overtimeWeeklyThresholdHours\":44,\"overtimeMultiplier\":1.5,\"tipOutRules\":[{\"id\":\"BAR\",\"label\":\"Bar\",\"basis\":\"total-sales\",\"value\":1,\"roundingCents\":500,\"roundingMode\":\"up\",\"timing\":\"immediate\",\"active\":true,\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"},{\"id\":\"FLOOR\",\"label\":\"Floor\",\"basis\":\"card-tips\",\"value\":2,\"roundingCents\":1,\"roundingMode\":\"nearest\",\"timing\":\"withheld\",\"active\":true,\"createdAt\":\"2026-01-01T00:00:00.000Z\",\"updatedAt\":\"2026-01-01T00:00:00.000Z\"}]}",
+        "createdBy": "MEM-002"
+      },
+      "error": ""
+    }
+  ]
+}

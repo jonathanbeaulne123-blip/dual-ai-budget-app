@@ -173,3 +173,11 @@ export function activeReturnMessage(
   if (returnMessageProbePassed(record, household)) return null;
   return record;
 }
+
+/** Resolve the existing bookmark against today's chapter, actor and accepted household. */
+export function resolveOnboardingResume(record: ReturnMessageRecord | null, household: Household, memberId: string) {
+  if (!record || record.memberId !== memberId || !household.members.some(member => member.id === memberId && member.active)) return null;
+  if (!activeReturnMessage(record, household)) return null;
+  const target = onboardingNavigationTarget(household, memberId);
+  return target?.chapterId === record.chapterId && target.target.tab === record.tab ? target : null;
+}

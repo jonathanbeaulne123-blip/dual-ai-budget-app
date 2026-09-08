@@ -1,0 +1,37 @@
+.weight { display: flex; flex-direction: column; gap: 5px; color: var(--ink); min-width: 0; }
+.weight p { margin: 0; }
+.weight-heading { font: 400 10.5px/1.5 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+.weight-rail { width: 100%; height: auto; display: block; }
+.weight-base { stroke: var(--line); stroke-width: 1; }
+.weight-bar.posted { fill: color-mix(in srgb, var(--ink) 55%, transparent); }
+.weight-bar.due { fill: color-mix(in srgb, var(--copper) 70%, transparent); }
+.weight-head { stroke: var(--pine); stroke-width: 1.5; }
+.weight-range { width: 100%; min-height: 44px; margin: 0; padding: 0; accent-color: var(--pine); touch-action: pan-y; background: transparent; border: 0; border-radius: 3px; }
+.weight-ends { display: flex; justify-content: space-between; gap: 4px; font: 10.5px/1.5 var(--mono); text-transform: uppercase; color: var(--muted); }
+.weight-legend { display: flex; gap: 12px; font: 10.5px/1.5 var(--mono); }
+.weight-legend span:last-child { color: var(--copper); }
+.weight-day { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+.weight-figure { font: 600 22px/1.05 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.weight-items { display: flex; flex-direction: column; gap: 3px; }
+.weight-item { padding: 5px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--card); min-width: 0; }
+.weight-item.due { border-color: color-mix(in srgb, var(--copper) 45%, var(--line)); }
+.weight-item-reading { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,auto); gap: 8px; font-size: 12px; overflow-wrap: anywhere; }
+.weight-item-reading strong { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.weight-note { font-size: 10.5px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
+.weight-item .row { padding: 0; border: 0; font-size: 12px; gap: 8px; align-items: center; flex-wrap: wrap; }
+.weight-item .row > span { min-width: 0; overflow-wrap: anywhere; }
+.weight-item .row > span:last-child { margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; }
+.weight .kind-pill { font-size: 10.5px; border-radius: 3px; }
+.weight .chip, .weight select, .weight summary { min-height: 44px; }
+.weight .chip { border-radius: 3px; }
+.weight-list { margin-top: 7px; font-size: 12px; }
+.weight-list summary { display: flex; align-items: center; cursor: pointer; }
+.weight-list label { display: flex; flex-direction: column; gap: 4px; }
+.weight select { width: 100%; max-width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 3px; background: var(--card); color: var(--ink); }
+.weight :is(input,select,button,summary):focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+@media (max-width: 719px) {
+  .calendar-card:has(.weight) { border-radius: 5px; }
+  .calendar-card:has(.weight) > header button { min-width: 44px; min-height: 44px; }
+}
+
+.calendar-month-tools > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 12px; }

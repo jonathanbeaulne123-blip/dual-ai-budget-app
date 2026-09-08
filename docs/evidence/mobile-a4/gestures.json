@@ -1,0 +1,24 @@
+[
+  {
+    "width": 320,
+    "coverReparented": true,
+    "swiped": "2 of 4: Next out",
+    "cancelled": "2 of 4: Next out",
+    "appInertWhenLedge": true,
+    "chapterAfterLedge": true,
+    "restoredToInvokingCover": true,
+    "offline": "Your tip spark",
+    "actions": []
+  },
+  {
+    "width": 390,
+    "coverReparented": true,
+    "swiped": "2 of 4: Next out",
+    "cancelled": "2 of 4: Next out",
+    "appInertWhenLedge": true,
+    "chapterAfterLedge": true,
+    "restoredToInvokingCover": true,
+    "offline": "Your tip spark",
+    "actions": []
+  }
+]

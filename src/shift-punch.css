@@ -1,0 +1,17 @@
+.shift-punch-instrument { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 12px; color: var(--ink); touch-action: pan-y pinch-zoom; }
+.shift-punch-handle { align-self: stretch; min-height: 104px; width: 44px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper-2); color: var(--ink); display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 8px 3px; font: 400 10.5px/1.5 var(--mono); touch-action: none; cursor: ns-resize; }
+.shift-punch-handle[aria-expanded="true"] { border-color: var(--pine); background: var(--card); }
+.shift-punch-grip { font-size: 22px; line-height: 1; }
+.shift-punch-reading { min-width: 0; padding: 4px 0; }
+.shift-punch-kicker { font: 400 10.5px/1.5 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 5px; }
+.shift-punch-figure { font: 600 29px/1.05 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; margin: 0 0 8px; }
+.shift-punch-line { font-size: 12.5px; line-height: 1.5; color: var(--muted); margin: 5px 0; overflow-wrap: anywhere; }
+.shift-punch-actions { grid-column: 1 / -1; padding: 11px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); }
+.shift-punch-actions[hidden] { display: none; }
+.shift-punch-buttons { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+.shift-punch-actions button { min-height: 44px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); padding: 7px 10px; font-size: 12.5px; overflow-wrap: anywhere; }
+.shift-punch-buttons button:last-child { grid-column: 1 / -1; border-color: var(--pine); }
+.shift-punch-discard, .shift-punch-close { margin-top: 8px; width: 100%; }
+.shift-punch-instrument button:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+@media (max-width: 719px) { .card.shift-punch { border-radius: 5px; } }
+.timesheet-focus-boundary:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }

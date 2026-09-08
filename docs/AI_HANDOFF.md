@@ -1,3 +1,419 @@
+## Mobile Phase 2 — authorized Development release (2026-09-08)
+
+Jonathan explicitly requested push, merge, deploy and reversibility. PR 406 releases the complete Claude-led Phase 2 stack in one merge; pre-release source is tagged `mobile-phase2-before-20260908` at `6fb15c7`. Compatibility rollback is preserved on `codex/mobile-phase2-safe-rollback`, retaining current core/ledgerSync and Count recovery. A raw old-Worker rollback would remove required authority/privacy protections. No schema, ledger reset or Production activation.
+
+Release-wide 573-test quick gate passed, followed by the independently audited Count stale-room receipt fix and its focused high gate. Regression reproduced before and passed after. [Release worksession](worksessions/2026-09-08-mobile-phase2-release.md). Physical acceptance limits remain recorded. Exact deployed SHA/version and live proof belong to the release receipt; do not infer deployment from this pre-merge handoff.
+
+## Mobile Phase 2 — implementation complete locally (2026-09-08)
+
+**Branch/base:** codex/mobile-phase2-integration; exact baseccd9304936479bf964ca8d0fe472e7a3ccdceaf5(Return PR405); HEAD is this commit. Fresh origin/main6fb15c7a98f3336862bb743b836aa96a358a35b9 remains unchanged.35 stacked draft slices; no merge/deploy/schema.
+
+**Outcome:** Claude's A1–A5, B1–B9, C1–C12 plus independently reviewed SC01–SC06 and compatible Proof/Return are implemented. His latest style/space authority wins; G2 was explicitly waived. Earned/received/contributed stay distinct; Apron receipt never claims to reduce the current Ask. Medium-High final integration; Budget(5)+0; Engagement(3)+1.
+
+**Proof:** Final133-test focused quick gate + TypeScript/AI/diff166.486s, no breach;570-module production build and Hercules Pro UI passed. Four browser widths and simulated native pinch1→1.6 at320/390 passed; independent final review clear. [Exact commands/fingerprint/limits](worksessions/2026-09-08-mobile-phase2-integration.md). [Full dependency-ordered PR/commit inventory](MOBILE_PHASE_2_REVIEW.md).
+
+**Acceptance/next owner:** Jonathan. Physical/device gates remain open, including B2 G3:14 blank-entry taps against under10 target. Real QR/OAuth, camera/OCR, physical background/pinch and pre-existing sync certification are not claimed. Earlier scoped timing failures remain honestly recorded in their worksessions. Local build and labelled fictional previews are available; Google sign-in needs environment configuration in the compiled preview. Release requires separate instruction.
+
+## Mobile Return stitch (2026-09-08)
+
+Locally verified codex/mobile-return-stitch; baseb4146b279c70792ce6a729ec71b7897c02b9726f(Proof PR404); HEAD is this commit. Medium-High; Budget(5)+1; Engagement(3)+2. Resume lives in the single existing bar, resolves current scope/chapter and existing destination, publishes its local bookmark for repeat use. Quick gate141.909s plus four browser widths, repeat Enter/click and measured last-action clearance passed. Independent review clear. [Exact evidence/limits](worksessions/2026-09-08-mobile-return-stitch.md). Next integration; no hosted/merge/deploy.
+
+## Mobile Proof seam (2026-09-08)
+
+Locally verified codex/mobile-proof-seam; base3a12133b02a487e71c4cba6018f22b1ed4df3e7c(C12 PR403); HEAD is this commit. Medium-High; Budget(5)+2; Engagement(3)+1. Existing amount opens exact accepted scoped source; actual compiler links and separate reversal history, no repeated money or write.98 selected tests plus TypeScript/AI/diff152.113s; final CSS refined then four widths/200%/focus passed. Independent money/UX reviews clear. [Evidence and repaired findings](worksessions/2026-09-08-mobile-proof-seam.md). Next Return, then integration. No hosted/merge/deploy.
+
+## Mobile C12 — visible elapsed clock (2026-09-08)
+
+Locally verified codex/mobile-c12-visible-clock; base2d4d28e5e8075296a2775f089cea58feefa9a5eb(C11 PR402); HEAD is this commit. Medium; Budget(5)+0; Engagement(3)+1. Both hidden timers stop, return projects current wall time once. 88 selected assertions plus TypeScript/AI/diff155.287s; independent review clear. [Exact commands/fingerprint/limits](worksessions/2026-09-08-mobile-visible-clock.md). No layout or money change; no physical battery proof. Next Proof/Return additions and integration, no merge/deploy.
+
+## Mobile C11 — Evidence beneath Jobs (2026-09-08)
+
+Locally verified codex/mobile-c11-work-evidence; base1ee073f53f531b17039ca4a453d75266410eebb6(C10 PR401); HEAD is this commit. Medium; Budget(5)+0; Engagement(3)+1. Phone three-tab order, scoped deeper disclosure and both resize focus directions. 90-test quick gate169.828s precedes final focus repair, then two focused tests and four browser widths passed. Independent review clear. [Exact evidence/limits](worksessions/2026-09-08-mobile-work-evidence.md). Next C12; no merge/deploy/hosted proof.
+
+## Mobile C10 — desk setup, phone Timesheet (2026-09-08)
+
+Locally verified on codex/mobile-c10-work-handoff; base 52817e70ce34f4ee590f9d3f7da883878f81f62e (C9 PR400); HEAD is this commit. Clean ordinary Shift handoff, scope-bound explicit connection refresh and deliberate Timesheet navigation. Medium-High; Budget(5)+1; Engagement(3)+2. Quick gate passed in 153.444s, four fictional browser widths, independent source review clear. [Commands, fingerprint and limits](worksessions/2026-09-08-mobile-work-handoff.md). Next C11. No physical/hosted/full-lane/merge/deploy proof.
+
+## Mobile C9 — flagged capture override (2026-09-08)
+
+**Status:** Locally verified on codex/mobile-c9-camera-override; base67985a04d6d96a178ecb7efb1cb4838f0da0e475(C8,PR399). HEAD is this commit.
+
+**Outcome/risk:** Two rejected user attempts unlock explicit capture override; all image warnings remain attached to the current draft/error review. Nested camera focus, Escape and source lifetime are guarded. Medium-High; Budget(5)+1; Engagement(3)+2.
+
+**Proof:**127 selected tests plus TypeScript/AI/diff110.096s; seven synthetic-camera browser cases, independent review clear. [Exact evidence and repaired findings](worksessions/2026-09-08-mobile-camera-override.md).
+
+**Next/limits:** Stacked draft PR then C10. Synthetic/local/mock proof; no physical camera, hosted OCR, exhaustive, merge/deploy/schema.
+
+## Mobile C8 — Hercules fallback (2026-09-08)
+
+**Status:** Locally verified on codex/mobile-c8-hercules-copy; basea4a7709a3c033c5be5cf7de9c53cc22f534ff02b(C7,PR398). HEAD is this commit.
+
+**Outcome/risk:** Stray fallback text replaced; existing Shift oracle chips preserved. Medium; Budget(5)+0; Engagement(3)+1.
+
+**Proof:**90 selected tests plus TypeScript/AI/diff134.521s; actual fallback four widths and phone chips verified. Independent source review clear. [Evidence](worksessions/2026-09-08-mobile-hercules-copy.md).
+
+**Next/limits:** Stacked draft PR then C9. Local fictional/component proof; no hosted/physical/exhaustive/merge/deploy/schema.
+
+## Mobile C7 — receipt Undo (2026-09-08)
+
+**Status:** Locally verified on codex/mobile-c7-undo-window; baseadc44df6af82e6df6ad30032550f5b3e47b80025(C6,PR397). HEAD is this commit.
+
+**Outcome/risk:** Claude's shrinking paper retains a stationary named44px Undo. Expiry/LIFO/purchase identity and scope survive queue; accepted delivery can finish after expiry. Global Undo remains available independently. High; Budget(5)+2; Engagement(3)+2.
+
+**Proof:** Final High quick gate152.988s clean pass including C6's previously failing test set; four new App cases, eight browser cases, independent reviews clear. [Commands/fingerprint/limits](worksessions/2026-09-08-mobile-undo-window.md).
+
+**Next/limits:** Stacked draft PR then C8. Local fictional/mocked transport only; no hosted/physical/exhaustive/merge/deploy/schema claim.
+
+## Mobile C6 — truthful Till empty state (2026-09-08)
+
+**Status:** Focused proof complete on codex/mobile-c6-till-empty; base1c724a2608f5b403c03e84d3c5159e5fd86e906f(C5,PR396). HEAD is this commit.
+
+**Outcome/risk:** Empty copy accounts for transaction and confirmed Fund activity without changing spend. Medium; Budget(5)+1; Engagement(3)+1.
+
+**Proof/limit:** Fourteen Till tests and eight layout cases pass; independent verifier clear. Quick gate TypeScript/AI/diff and87 assertions pass but overall gate fails121.713s on three pre-existing App toast timers after unmount. C7 must repair and rerun; no clean-gate claim. [Commands/fingerprint](worksessions/2026-09-08-mobile-till-empty.md).
+
+**Next:** Stacked draft PR; C7 Undo/timer lifecycle. Local fictional proof only, no merge/deployment/schema.
+
+## Mobile C5 — attached claim actions (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c5-claim-rows`, exact base`923ca35286724c47cb18c8ace0e0536a61f6dc6c` (C4, PR395); HEAD is the commit carrying this file.
+
+**Outcome:** Existing claim rows reveal their own action. Named review requires the actual receiving account and exact supported remainder; source/scope guards survive queue and authority. Focus and enlarged copy remain reachable.
+
+**Risk/deltas:** High; Budget(5)+2; Engagement(3)+2.
+
+**Proof:** 116 selected tests plus TypeScript/AI/diff123.569s; final CSS ten browser/two native gesture cases. Independent reviews clear. [Exact commands, fingerprint, repairs and limits](worksessions/2026-09-08-mobile-claim-rows.md).
+
+**Next/limits:** Codex opens stacked draft PR and continues C6. Fictional local/mocked App transport; no physical/hosted/exhaustive/merge/deployment/schema certification.
+
+## Mobile C4 — inline Due occurrences (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c4-due-rows`; exact base`1aee199d73cea6487d709fb128d44f7e49f921a8` (C3,PR394). HEAD is the commit carrying this file.
+
+**Outcome:** Claude’s row disclosure replaces two sheets with one inline named Confirm, displaying the exact occurrence. Local per-row deferral leaves schedule/Books unchanged; an arrival link keeps it reachable on long pages. Source/actor/date/scope meaning survives queue and authority.
+
+**Risk/deltas:** High; Budget(5)+2; Engagement(3)+2.
+
+**Proof:** Final quick gate151.667s, ten browser and two native touch cases, independent reviews clear. [Commands, fingerprint, corrections and limits](worksessions/2026-09-08-mobile-due-rows.md).
+
+**Limits/next:** Fictional local proof with mocked App transport; no physical/hosted/exhaustive certification. Certain Fund/closed-period/midnight cases source-reviewed only. No merge/deploy/schema. Codex opens stacked draft PR and continues C5.
+
+## Mobile C3 — destructive reveal (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c3-danger-reveal`; exact base`52f93983e7da7a003e53dba7618073409d930d09` (C2, PR393). Implementation HEAD is the commit carrying this file.
+
+**Outcome:** Claude's phone slide reveals a separate named destructive action. Cancel stays easy to reach; long explanations scroll; current source, displayed target, auth and opening fence stale reviews. Duplicate exclusion and same-source rejection retry remain reachable.
+
+**Risk/deltas:** Medium-High; Budget(5)+1; Engagement(3)+1.
+
+**Proof:** TypeScript/AI/diff/focused gate, seven layout cases, native touch/cancel/scroll and thirteen B8 regression cases passed. Independent reviews repaired four real lifecycle/layout issues. [Commands, fingerprints and limits](worksessions/2026-09-08-mobile-danger-reveal.md).
+
+**Limits/next:** Local fictional component/App proof with mocked transport; no physical/hosted/exhaustive or new legacy-writer certification. No merge/deployment/schema. Codex opens stacked draft PR and continues C4.
+
+## Mobile C2 — honest household suggestions (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c2-swipe-suggestions`; exact base/pre-commit HEAD`0d8f3f2b272606b263233c305225b52e885f64b6` (C1, PR392). Implementation HEAD is the commit carrying this file. Phase2 continues.
+
+**Outcome:** Claude's six-slot grid supports first use with clearly labelled household suggestions. Observations stay truthful. Named Post preserves its exact reviewed sources through queue and authority, and old outcomes cannot affect a newer sheet.
+
+**Risk and Dual Course:** High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Final High quick gate136/136plus TypeScript/AI/diff passed53.385seconds, no five-minute breach. Six mounted App interleavings, actual command round trips and seven browser cases pass. Four base-App failures and toast regression reproduced and repaired. Independent money/UX/verifier clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-swipe-suggestions.md).
+
+**Limits and next owner:** Fictional local model/component/App/authority proof; mocked App transport, no physical/hosted/exhaustive claim. Existing unreviewed postEntry remains compatible. No merge/deployment/schema. Codex opens stacked draft PR and continues C3 destructive reveal with separate named Confirm.
+
+## Mobile C1 — complete pad choices (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c1-pad-choices`; exact base/pre-commit HEAD`56d516171cdf47f5b78cc920c0de0011f2acc935` (B9, PR391). Implementation HEAD is the commit carrying this file. Phase2 continues.
+
+**Outcome:** Every current eligible account/category is reachable from the pad. Named disclosures preserve amount and exact IDs, retain selected tail items, and reset by viewer scope/mode.
+
+**Risk and Dual Course:** Medium; Budget(5)+1; Engagement(3)+1.
+
+**Verification:** Medium quick gate61/61plus TypeScript/AI/diff passed95.880seconds, no five-minute breach. Seven browser cases pass; independent UX/verifier reviews clear. [Exact commands and limits](worksessions/2026-09-08-mobile-pad-choices.md).
+
+**Limits and next owner:** Fictional local proof only; no physical, hosted or exhaustive claim. No merge/deployment/schema. Codex opens stacked draft PR and continues C2 household category suggestions.
+
+## Mobile B9 — the Turn (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b9-turn`; exact base/pre-commit HEAD`9c2646547f82f89c74eb72b199f58121610f567d` (B8, PR390). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's one date read-head fits its drawing, replaces hover and selects exact prepared facts. Current Fund remains fixed; today and projected values remain separate. Live custodian Trust retains one drawing/paperbox, Reach retains its own axis, and older Course future aggregates are visibly undated.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Final quick gate139/139 plus TypeScript/AI/diff passed231.304seconds, no five-minute breach. Twenty layout/state cases and four native/sheet gesture cases pass. Independent money/UX/verifier source reviews clear. [Exact commands, fingerprint and limits](worksessions/2026-09-08-mobile-turn.md).
+
+**Limits:** Fictional local component/model proof; older MonthSpread remains at existing hosts. No physical, authenticated full-App browser, exhaustive or hosted proof. Native user-zoom restriction remains an integration repair. No merge, deployment or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and implements the twelve original tweaks individually.
+
+## Mobile B8 — the Prise (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b8-prise`; exact base/pre-commit HEAD`10d0e8d13ee07b5e4498579e71f1813f52cec26e` (B7, PR389). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's two stuck cards reveal actual differences with fixed similarity. Scoped named Confirm describes linked recognition effects, protects auxiliary source records, binds authority generation and preserves a hashed review precondition through authoritative replay. Accessible fields, modal isolation, cancellation and focus survive review and acceptance.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** Final High quick gate157/157 plus TypeScript/AI/diff passed56.709seconds; no five-minute breach. Thirteen actual-component browser cases and native touch proof pass. Authority round-trip and mounted App tests cover stale sources and scoped writes; generation-only failure reproduced and repaired. Independent financial/UX/verifier reviews clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-prise.md).
+
+**Limits:** Fictional local component/App/actual-authority proof, mocked App acceptance transport; no authenticated physical, exhaustive, hosted or release claim. Existing unreviewed duplicate primitive remains a separate compatibility path. No merge, deployment or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and implements Claude's B9 Turn, fitting the month and replacing hover with one read-head.
+
+## Mobile B7 — the Punch (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b7-punch`; exact base/pre-commit HEAD`b873cb8afcb3dd96c7dbac2525f2d03c3cda2958` (B6, PR388). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's tall edge reveal preserves actual clock/break readings and separates motion from named actions. Scoped timeline guards protect queued actions and conflict choices; accepted clock-out controls pay-review navigation. Hidden timers pause and keyboard focus survives accepted updates.
+
+**Risk and Dual Course:** High; Budget(5)+1; Engagement(3)+2.
+
+**Verification:** Final High quick gate139/139 plus TypeScript/AI/diff passed103.633seconds; no five-minute breach. Eleven actual-component browser cases and native touch proof pass. Four mounted App action cases include a reproduced/repaired confirming-discard regression. Independent financial/UX/verifier reviews clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-punch.md).
+
+**Limits:** Fictional local App/component/command proof with mocked acceptance transport; no authenticated physical, exhaustive, hosted or native Live Activity claim. No merge, deployment or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and implements Claude's retained B8 Prise with fixed evidence and scoped Confirm.
+
+## Mobile B6 — the Trust (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b6-trust`; exact base/pre-commit HEAD`58fe84fdaf679a9cf901e8d7267793fac866ef6b` (B5, PR387). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's three Trust stops preserve accepted Fund/Ask and scheduled obligations, draw only reviewed ranges, and label the last included source without implying completeness. Scoped preferences fall back visibly; stale accepted identities immediately remove old scenarios. Original typography and one drawing/paperbox remain.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** Final High quick gate104/104 plus TypeScript/AI/diff passed90.816seconds; no five-minute breach. Fourteen browser layout/state cases, two sheet/keyboard cases and native scroll checks pass. Independent financial/UX/verifier reviews clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-trust.md).
+
+**Limits:** Fictional local component/model proof; no authenticated full-App browser, physical, exhaustive, hosted or release claim. No merge, deployment or schema. Existing user-zoom restriction remains for integration review.
+
+**Next owner:** Codex opens the separate stacked draft PR and builds Claude's retained B7 Punch within the original instrument grammar.
+
+## Mobile B5 — the Fill (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b5-fill`; exact base/pre-commit HEAD `b0c094b407e9619c7440f3c973cbbd3ccbd6b074` (B4, PR386). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's phone jar composes exact contribution drafts; recorded progress and Fund earmarks retain separate meanings. Shared/Personal funding and purchases now preserve ownership, private notes and partitioned vault cash. Reviewed source/date and accepted facts are rechecked inside queued Confirm. Desktop bank face remains.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+3.
+
+**Verification:** High quick gate148/148 plus TypeScript/AI/diff passed98.227seconds; no five-minute breach. Eight all-CSS browser cases and native drag/cancel/page-scroll proof. Independent money/UX/verifier reviews clear; original privacy failures reproduced. Final one-sentence copy refinement has separate seven-assertion UI and eight-case browser verification; the recorded High fingerprint predates that sentence. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-fill.md).
+
+**Limits:** Fictional actual-component/command proof; no observed arrival-date model, authenticated full-App browser, physical, exhaustive, hosted or release claim. No merge, deployment, history rewrite or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and builds Claude's B6 Trust. Current Fund/Ask remain accepted readings; three categorical stops include only supported sources and reviewed paired scenario bounds.
+
+## Mobile B4 — the Weight (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b4-weight`; exact base/pre-commit HEAD `92e5183c31c6ba31d2dd28a8f213f2dd9c3e98de` (B3, PR385). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's phone day rail replaces the two-tap grid below720. Posted and scheduled cash use exact dated provenance; card activity and cash returned retain their separate meaning. Corrections do not silently reopen Post. Desk grid and ordinary Confirm remain. Shared mono token restores Plex Mono utility type.
+
+**Risk and Dual Course:** High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Final High quick gate118/118 plus TypeScript/AI/diff passed118.615seconds. Eight Weight browser cases, twelve Reach cases and four touch/sheet cases passed with complete main CSS. Twenty-four captured original cash-flow statements unchanged. Independent source and UX reviews clear. [Exact commands, fingerprints, failures and limits](worksessions/2026-09-08-mobile-weight.md).
+
+**Limits:** Fictional actual components/commands; no authenticated full-App browser, physical, exhaustive, hosted or release claim. No merge, deployment or schema.
+
+**Next owner:** Codex creates the separate stacked draft PR and builds Claude's B5 Fill, preserving safe source and Confirm semantics.
+
+## Mobile B3 — the Reach (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b3-reach`; exact base/pre-commit HEAD `24469bd5b206efca912c4c3ff5ff40024a4ffcc7` (SC06, PR384). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's original phone composition consumes the reviewed Fund scenario. Native effort stops select true named route families. Receipt assumptions and separately elected contributions live inside the one paperbox. Current Ask and accepted history remain unchanged; paired model paths and dated terminal deficits stay hypothetical. Unavailable or stale own sources hide private choices while retaining the Shared reading. Native page and modal scrolling are repaired.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+3.
+
+**Verification:** Final High quick gate147/147, TypeScript/AI/diff passed124.450seconds within five minutes. Twelve browser layout/state cases, two sheet/keyboard cases and native touch page/scrim/inner-content checks passed. Independent G4 source and UX reviews clear. [Exact commands, fingerprints, earlier failures and evidence](worksessions/2026-09-08-mobile-reach.md).
+
+**Limits:** Fictional local actual-component browser proof; no authenticated full-App browser, physical, exhaustive, hosted or release claim. Earlier446.729second gate breach and timeout recovery retained. B2 physical/blank-entry G3 and B6 G4 remain open. No merge, deployment or schema.
+
+**Next owner:** Codex creates the separate stacked draft PR and builds Claude's B4 Weight.
+
+## Mobile SC06 — App-issued accepted scenario source (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc6-accepted-scenario-source`; exact base/current pre-commit HEAD `a13c6c4155707cb7d1f68d68bbe5c89078a49b80` (SC05, PR383). Phase2 remains in progress. Implementation HEAD is the commit carrying this handoff, resolved by Git/PR.
+
+**Outcome:** Validated own pair completeness, bounded accepted identity and synchronous auth/room invalidation. Delayed legacy and v2 responses cannot revive previous sign-in sources. Failed navigation preserves later accepted updates. Components receive scoped props and perform no auth/storage discovery.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+1.
+
+**Verification:** All130 selected assertions pass across the final gate and targeted recovery; TypeScript/AI/diff pass. Independent4 lifecycle regressions pass with no remaining bounded finding. Final gate181.621seconds timed out in concurrent demo entry; isolated2/2 and serial50/50 passed. Earlier352.728second gate breach retained. [Exact commands, fingerprints and failures](worksessions/2026-09-08-mobile-scenario-source.md).
+
+**Limits:** Actual App mounted with fictional fixtures and mocked providers. Optional props do not change rendered markup/CSS. No clean quick-gate, exhaustive, hosted, physical, merge, deployment or schema claim. G4 consumer proof remains open.
+
+**Next owner:** Codex opens the separate draft PR and integrates Claude's Reach within the original composition.
+
+## Mobile SC05 — paired scenario composition (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc5-paired-scenario`, stacked on SC04 `78b5f5e` (PR382). Phase2 remains in progress.
+
+**Outcome:** Re-resolved source choices, conserved fixed/up-to contributions, exact estimate replacements and aligned hypothetical paths. Accepted monthly walk, current Fund and Ask are preserved; terminal deficits are separate model outputs. The46-dollar fixture yields -50500 cents from the same168500 anchor and223600 dated claims.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** High quick gate106 assertions plus TypeScript/AI/diff passed in546.457seconds, with a five-minute TypeScript breach retained. Independent16/16 and no remaining financial/source blocker; two mutations killed. [Exact evidence](worksessions/2026-09-08-mobile-paired-scenario.md).
+
+**Limits:** Fictional local model only; no UI, accepted write, physical, hosted, exhaustive, merge, deployment or schema claim. G4 final consumer review remains open.
+
+**Next owner:** Codex opens the separate draft PR, then implements the App's accepted-pair source adapter before connecting Claude's Reach.
+
+## Mobile SC04 — forecast receipt assumptions and named route families (2026-09-08)
+
+**Status:** Implemented on `codex/mobile-sc4-forecast-availability`, stacked on SC03 `7fba9a8` (PR381). Phase2 remains in progress.
+
+**Outcome:** Five true0–4 count families, stable named route/candidate identities, narrow own single-channel forecast receipt assumptions, unchanged net bands and old Ask routes. Selection does not elect a contribution.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** All59 selected assertions pass across gate and targeted recovery. Independent source review found no remaining blocker. The quick gate itself failed the unchanged500ms benchmark under memory pressure; isolated rerun passed. TypeScript/AI/diff passed. Gate816.334seconds, five-minute breach retained. [Exact fingerprint, commands and results](worksessions/2026-09-08-mobile-forecast-availability.md).
+
+**Limits:** Fictional local coherent receipts; unsupported channels refuse. No UI, complete scenario, physical, hosted, exhaustive, merge or deployment claim. No clean quick-gate claim.
+
+**Next owner:** Codex opens the separate draft PR and proceeds to SC05 paired scenario output inside Claude's intended Reach.
+
+## Mobile SC03 — cash capacity and explicit assumptions (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc3-cash-availability`, stacked on SC02 `9c27a78` (PR380). Phase2 remains in progress.
+
+**Outcome:** Accepted own-source/readiness contract, dedicated digests, truthful unknown availability, explicit cash assumptions and conserved fixed elections. Recorded accounts never become receipt-specific available cash. Contradicted paid counters and unsupported shift corrections refuse without changing Work or ledger semantics.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+1.
+
+**Verification:** Final High quick gate88 assertions, TypeScript/AI/diff pass in241.261seconds, no breach. Independent20/20, no remaining blocker. A real future-shift-reversal regression failed before repair. [Exact evidence and boundaries](worksessions/2026-09-08-mobile-cash-availability.md).
+
+**Limits:** Pure fictional local command fixtures. Cash remains a declared assumption; aggregate payment checks do not prove attribution. No UI, complete scenario, physical-device, exhaustive, hosted, merge or deployment claim. App acceptance-marker integration remains later consumer work.
+
+**Next owner:** Codex opens the separate draft PR and continues SC04 forecast availability plus true route-count families, within Claude's original Reach.
+
+## Mobile SC02 — canonical Fund horizon (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc2-fund-horizon`, stacked on SC01 `4c070cf` (PR379). Phase2 remains in progress.
+
+**Outcome:** Exact legacy monthly fold parity and a separate inclusive horizon with one accepted anchor, every touched month, October1 obligations once, older outstanding claims and month-specific buffers. Future facts that distort undated position/goal readers refuse explicitly.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)0.
+
+**Verification:** High quick gate67 assertions plus TypeScript/AI/diff pass in162.870seconds, no breach. Independent final29/29, no remaining blocker. Comparator mutation was killed; future goal-progress regression failed before its repair. [Exact commands and evidence](worksessions/2026-09-08-mobile-fund-horizon.md).
+
+**Limits:** Pure fictional local command fixtures; no UI/browser, complete scenario/source availability, physical-device, exhaustive, hosted, merge or deployment claim.
+
+**Next owner:** Codex opens the separate draft PR then continues SC03 cash-capacity/election proof inside Claude's eventual Reach.
+
+## Mobile SC01 — scenario request contract (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc1-scenario-contract`, stacked on Count `246d4a4` (PR378). Phase2 remains in progress.
+
+**Outcome:** Explicit fixed/up-to CAD intent, dated source allocations, exact accepted scope/basis, distinct reviewed replacement references and typed refusals. Detached request review produces no projection or posting permission. The eventual consumer remains Claude's Reach.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+1.
+
+**Verification:** High quick gate68 assertions, TypeScript, AI and diff checks pass in43.095seconds; no breach. Independent trust review30/30, no SC01 blocker. [Exact commands, fingerprint and boundaries](worksessions/2026-09-08-mobile-scenario-contract.md).
+
+**Limits:** Pure local fictional fixtures. No UI or browser surface in this slice, no network/storage/command, no complete availability/model, hosted, exhaustive, merge or deployment claim.
+
+**Next owner:** Codex opens the separate draft PR and continues SC02 canonical horizon and shared fold, then availability and scenario composition with independent reviews.
+
+## Mobile B2 — the Count and draft recovery (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b2-count`, stacked on B1 `37c0cc9` (PR377). G3 remains open. No merge or deployment.
+
+**Outcome:** Claude's three rails and exact original hierarchy, preserved cents and captured hours, canonical take-home, own-job history and full scoped draft recovery. Confirm persists one exact command identity; authoritative receipts recover late acceptance, and uncertain transport retains the frozen draft. Attendance/source details survive both entry paths.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+3.
+
+**Verification:** Final quick gate148assertions, TypeScript and AI checks passed in239.180seconds, no breach. Independent recovery recheck28/28 with no remaining blocker; final selected attendance regression passes. Chromium18cases cover four widths,200% text, history, exact typing, cancellation, focus and frozen scale. [Exact evidence and commands](worksessions/2026-09-08-mobile-count.md).
+
+**Evidence class / limits:** Local fictional components and real commands; sync receipt API mocked in actual-client tests. Full-App startup/recovery canaries run in jsdom. Tap counts21→14blank and4→4populated exclude automated scrolling; no physical phone, human elapsed-time, authenticated browser, hosted or exhaustive proof. No under-ten blank-entry claim.
+
+**Next owner:** Codex creates the separate draft PR with G3 explicit, then continues independent Fund-scenario and mobile slices inside Claude's original surfaces. Phase2 remains in progress.
+
+## Mobile B1 — the Cut (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b1-cut`, stacked on A5 `cd97dfa` (PR376). No merge or deployment.
+
+**Outcome:** Claude's named split divider and detents, exact canonical cents, visible remainder owner, dynamic scoped defaults and stale queued ownership refusal. Preview blocks both Confirm paths until release/cancellation. Other roster sizes retain all owners.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Pre-fix mounted one-cent regression failed; repaired focused20/20 and independent rerun pass. Final quick gate102 assertions, TypeScript and AI checks passed in161.498seconds, no budget breach. Actual Add/useDialog Chromium:20 layout cases and2 gesture cases pass. [Exact commands and evidence](worksessions/2026-09-08-mobile-cut.md).
+
+**Evidence class:** Local fictional component browser, real command/queue fixtures and full-App jsdom startup/onboarding canaries. No authenticated full-App browser, hosted, physical-device or exhaustive proof.
+
+**Next owner:** Codex opens B1's draft PR and continues B2 Count. Phase2 remains in progress.
+
+## Mobile A5 — apron receipt (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-a5-apron`, stacked on A4 `c249f37` (PR375). No merge or deployment.
+
+**Outcome:** Claude's four-fact felt receipt, one fold slot, own contributor only, six-hour expiry and separate Current Shared Ask. Historic received/owed timing, signed card-after-withholding and all tip-out timings remain accurate after payouts.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+1; Engagement(3)+2.
+
+**Verification:** 112 quick-gate assertions, TypeScript and AI checks passed in 139.958 seconds. Final 48-case browser layout matrix follows a CSS-only restoration of the original four-fact row. Independent trust recheck passed 7/7 and found no remaining blocker. [Exact commands, evidence and limitations](worksessions/2026-09-08-mobile-apron.md).
+
+**Evidence class:** Local fictional component Chromium and full-App jsdom startup canaries; no native lock-screen, physical-device, authenticated full-App browser, hosted or exhaustive proof.
+
+**Next owner:** Codex opens A5's draft PR and continues B1, Claude's Cut. Phase 2 remains in progress.
+
+## Mobile A4 — chapter spreads (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-a4-spread`, stacked on A3 `9014a78` (PR#374). No merge or deployment.
+
+**Outcome:** Claude's original chapter order, shared compact Shape/Streams, own unreversed tip history, explicit scopes, keyboard/swipe paging, nested Confirm and seal focus restoration.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+1.
+
+**Verification:** 114 quick-gate assertions, TypeScript and AI checks passed in 89.835 seconds, no budget breach. 88 final component layout cases and two gesture/focus cases passed after refinement; 396 earlier broad cases are classified separately. Independent UX and trust rechecks found no remaining blocker. [Exact commands, source boundaries and evidence](worksessions/2026-09-08-mobile-spread.md).
+
+**Evidence class:** Local fictional component Chromium and full-App jsdom startup/rehearsal canaries; no hosted, physical-device, authenticated full-App browser or exhaustive proof.
+
+**Next owner:** Codex opens the separate A4 draft PR and continues A5. Phase 2 remains in progress.
+
+## Mobile A3 — full Ledge (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-a3-ledge-sheet`, stacked on A2 `565efd7` (PR#373). No merge or deployment.
+
+**Outcome:** Claude's rest/half/full sheet, six-slot phone board, shared desktop stage renderer, daily member selection memory, phone Level ruler and seven-column/seven-row week. Small viewports scroll the inner content. Explicit existing actions retain Confirm; queued callbacks now refuse changed household/member/environment/view/generation before execution.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+3; Engagement(3)+2. The queue scope repair is a correctness-required expansion from presentation work.
+
+**Verification:**146 quick-gate assertions, TypeScript and AI checks passed in102.601 seconds, no budget breach.72 component browser cases plus drag/cancel/focus/resize checks passed. Independent UX and money rechecks found no remaining blocker. [Worksession](worksessions/2026-09-08-mobile-ledge-sheet.md).
+
+**Evidence class:** Local fictional component Chromium, pure queue commands and full-App jsdom startup/rehearsal canaries. No hosted, physical-device, exhaustive, Production or authenticated full-App browser proof. Workspace-only entries remain existing navigation rather than invented chart models.
+
+**Next owner:** Codex opens the separate A3 draft PR and continues the original mobile program. A3 is not completion of Phase2.
+
+## Mobile A2 — Fund grip at rest (2026-09-07)
+
+**Status:** Locally verified on `codex/mobile-a2-ledge-grip`, stacked on A1 `01ec730` (PR #372). No merge or deployment.
+
+**Outcome:** Claude's labelled Household Fund grip replaces the duplicate mobile Fund card and opens the Shared register from either room. Existing navigation remains intact. Onboarding and Hercules share measured clearance; their focus/invitation modes suppress the grip.
+
+**Risk and Dual Course:** Medium; Budget (5) +1; Engagement (3) +1.
+
+**Verification:** Medium quick gate passed 83 assertions including startup/rehearsal canaries, TypeScript and AI surface in 124.298 seconds. Chromium passed 72 component/width/scope/state cases. Independent overlay findings were repaired and rechecked. [Worksession](worksessions/2026-09-07-mobile-ledge-grip.md).
+
+**Evidence class:** Local synthetic component browser and quick-gate proof. No full-App browser, physical-device, hosted, exhaustive or Production evidence; no money writer/schema/deployment change.
+
+**Next owner:** Codex creates A2's separate draft PR and builds A3's full sheet immediately, as Jonathan requested. This is not completion of the mobile program.
+
+## Mobile A1 — Claude's fold (2026-09-07)
+
+**Status:** Locally verified on `codex/mobile-a1-fold`, baseline `6fb15c7a98f3336862bb743b836aa96a358a35b9`; isolated slice, not merged or deployed.
+
+**Outcome:** At most four whole Home objects above Claude's dashed crease. Own active shift and warnings outrank ordinary stories. His outlined paper seals replace the old wax gradients; enlarged text spills/reflows without clipping amounts. Add remains inert and keyboard focus survives priority changes.
+
+**Risk and Dual Course:** Medium; Budget (5) 0, Engagement (3) +2.
+
+**Verification:** Medium quick gate passed 58 assertions, TypeScript and AI checks in 32.645 seconds. Actual-component Chromium passed 28 width/state cases, with keyboard focus and reduced motion. Independent UX findings were fixed and rechecked. [Worksession and evidence](worksessions/2026-09-07-mobile-fold.md).
+
+**Evidence class:** Local synthetic component and quick-gate proof. Wide widths force the phone component for stress testing; they are not full-App desktop screenshots. No physical phone, hosted recovery, exhaustive, live household or Production proof. No money or schema change.
+
+**Next owner:** Codex prepares the separate A1 PR and proceeds to A2/A3; Jonathan waived the Ledge's fortnight build gate with “just build it.” The mobile program remains in progress.
+
 # AI Task and Handoff Standard
 
 ## QR invitation entry (D-239) (2026-09-07)

@@ -1,0 +1,19 @@
+.shift-count { display: flex; flex-direction: column; gap: 14px; }
+.count-heading, .count-rail-head > label { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.count-heading { margin: 0 0 3px; }
+.count-total { font-family: var(--display); font-size: 29px; line-height: 1.05; letter-spacing: -.025em; font-weight: 600; margin: 0 0 6px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.count-components, .count-tipout { font-size: 12px; line-height: 1.5; margin: 0; }
+.count-components span, .count-tipout { color: var(--copper); }
+.count-rail { display: flex; flex-direction: column; gap: 2px; }
+.count-rail-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.count-rail-head > label { min-width: 0; margin: 0; }
+.count-value, .count-exact { min-height: 44px; font-family: var(--display); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+.count-value { min-width: 44px; border: 0; background: transparent; padding: 6px 0 6px 8px; text-align: right; }
+.count-value:disabled { opacity: 1; color: var(--ink); }
+.count-exact { width: 125px; max-width: 50%; padding: 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--card); }
+.count-rail-track { position: relative; }
+.count-rail-track input[type="range"] { position: relative; width: 100%; height: 44px; margin: 0; accent-color: var(--pine); touch-action: pan-y; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.count-history { position: absolute; left: 8px; bottom: 8px; width: calc(100% - 16px); height: 20px; pointer-events: none; fill: color-mix(in srgb, var(--pine) 25%, transparent); }
+.count-note { margin: 0; font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+.count-draft { border: 1px solid var(--line); border-radius: 5px; background: var(--card); padding: 10px; margin: 0; font-size: 12px; }
+.count-value:focus-visible, .count-exact:focus-visible, .count-rail-track input:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }

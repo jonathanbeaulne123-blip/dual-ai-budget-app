@@ -1,0 +1,33 @@
+/* Claude's paper album. One page, one reading; the fixed dots are its index. */
+.phone-spread { margin: 14px 0; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 5px; color: var(--ink); }
+.spread-head, .spread-foot { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.spread-head p, .spread-scope { font-family: var(--mono); font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+.spread-head p { text-transform: uppercase; letter-spacing: .1em; }
+.spread-head button { border: 0; background: transparent; font: inherit; color: var(--muted); }
+.spread-heading { margin: 12px 0; font-family: var(--display); font-size: 24px; line-height: 1.15; }
+.spread-page { max-height: 62dvh; min-height: 180px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y pinch-zoom; }
+.spread-page > div { will-change: transform; }
+.spread-page h3 { font-family: var(--display); font-size: 21px; line-height: 1.25; }
+.spread-page section { padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; min-height: 0; }
+.spread-foot { padding-top: 12px; gap: 0; }
+.spread-foot > button { flex: 0 0 44px; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; color: var(--ink); font-size: 20px; }
+.phone-spread button { min-width: 44px; min-height: 44px; cursor: pointer; }
+.phone-spread button:disabled { opacity: .4; cursor: default; }
+.phone-spread :focus-visible { outline: 2px solid var(--pine); outline-offset: -2px; }
+.spread-dots { display: flex; gap: 0; }
+.spread-dots button { padding: 0; display: grid; place-items: center; background: transparent; border: 0; }
+.spread-dots i { width: 6px; height: 6px; border-radius: 999px; background: var(--muted); opacity: .4; }
+.spread-dots [aria-selected="true"] i { opacity: 1; background: var(--ink); }
+.spread-contributions, .spread-deferrals { list-style: none; padding: 0; }
+.spread-contributions li { display: grid; grid-template-columns: 1fr auto; gap: 4px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.spread-contributions time { color: var(--muted); font-size: 11px; grid-column: 1; }
+.spread-contributions li > span { grid-column: 2; grid-row: 1 / 3; align-self: center; font-variant-numeric: tabular-nums; }
+.spread-deferrals li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.spread-page .week-grid { grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; }
+.spread-page .week-day { display: block; padding: 2px; border-radius: 5px; }
+.spread-page .week-day-name, .spread-page .week-chip { font-size: 10.5px; overflow-wrap: anywhere; }
+.spread-page .week-chip { padding: 2px; border-radius: 3px; }
+@media (max-width: 359px) {
+  .spread-page .week-grid { grid-template-columns: 1fr; }
+  .spread-page .week-day { display: flex; flex-wrap: wrap; gap: 6px; }
+}

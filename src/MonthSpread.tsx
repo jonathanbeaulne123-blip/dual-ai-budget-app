@@ -1,4 +1,7 @@
-import { useMemo, useState } from "react";
+import { DateTurn, TurnFocusBoundary, useTurnDate } from "./DateTurn.tsx";
+import { MonthCoursePhone } from "./MonthCoursePhone.tsx";
+import { courseTurnReading } from "./core/turnReading.ts";
+import { useEffect, useMemo, useState } from "react";
 import {
   COURSE_AXIS_DAYS,
   COURSE_VIEW,
@@ -161,6 +164,7 @@ export function MonthSpread({
   onOpenFund,
   onOpenRegister,
   onOpenHealth,
+  scopeKey = household ? `${household.environment}:${household.householdId}` : "shared-month",
 }: {
   story: SharedLedgerStoryModel;
   course: SharedMonthCourse;
@@ -170,8 +174,11 @@ export function MonthSpread({
   onOpenFund: () => void;
   onOpenRegister: () => void;
   onOpenHealth: () => void;
+  scopeKey?:string;
 }) {
-  const [readout, setReadout] = useState<{ when: string; body: string } | null>(null);
+  const [phone,setPhone]=useState(()=>window.innerWidth<720);
+  useEffect(()=>{const resize=()=>setPhone(window.innerWidth<720);window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[]);
+  const turn=useTurnDate(scopeKey,JSON.stringify(course),course.monthKey,course.today),reading=courseTurnReading(course,turn.date);
   const opening = story.opening;
   const monthLabel = `${monthName(course.monthKey)} ${course.monthKey.slice(0, 4)}`;
   const paths = useMemo(() => coursePaths(course), [course]);
@@ -187,17 +194,6 @@ export function MonthSpread({
   const conservationIndex = conservationPoint ? course.points.indexOf(conservationPoint) : -1;
   const beforeConservation = conservationIndex > 0 ? course.points[conservationIndex - 1]! : null;
 
-  const defaultReadout = useMemo(() => {
-    if (!course.configured) {
-      return { when: "", body: "The Fund opens at $0.00 and stays there until the custodian confirms it. Nothing is drawn until then." };
-    }
-    if (conservationPoint) return eventSentence(conservationPoint, nameOf);
-    const last = course.points[course.todayIndex];
-    if (last?.event) return eventSentence(last, nameOf);
-    return { when: "", body: "Nothing has been confirmed into the Fund this month yet. The first Confirm draws the first step." };
-  }, [course, conservationPoint, nameOf]);
-
-  const shown = readout ?? defaultReadout;
   const days = course.daysInMonth;
   const scale = paths.scale;
   const standing = course.points[course.todayIndex]?.operatingCents ?? 0;
@@ -287,8 +283,9 @@ export function MonthSpread({
       {/* ---------------- II · Course ---------------- */}
       <section className="ms-register ms-course">
         <p className="ms-mark"><span className="ms-numeral">II · Course</span><span>the month as one shape — every step is a Confirm someone gave</span></p>
+        <TurnFocusBoundary scope={scopeKey}>
         <div className="ms-plate">
-          <div className="ms-course-scroll">
+          {phone ? (reading.kind!=="unavailable"?<MonthCoursePhone course={course} date={turn.date} ticks={ticks}/>:<p className="ms-phone-status">{reading.reason}</p>) : <div className="ms-course-scroll">
             <svg
               className="ms-course-svg"
               viewBox={`0 0 ${COURSE_VIEW.width} ${drawable ? COURSE_VIEW.height : 132}`}
@@ -324,6 +321,7 @@ export function MonthSpread({
                     {course.transferDueCents > 0 ? <tspan className="ms-label-copper"> · {formatCad(course.transferDueCents)} still to clear</tspan> : null}
                   </text>
                   <line className="ms-rule" x1={COURSE_VIEW.left} y1={COURSE_VIEW.claimRule} x2={COURSE_VIEW.right} y2={COURSE_VIEW.claimRule} />
+                  <line className="turn-readhead" x1={courseX(dayOfDateKey(turn.date),days)} x2={courseX(dayOfDateKey(turn.date),days)} y1={18} y2={COURSE_VIEW.axisRule}/>
                   {course.claims.map((claim) => {
                     const x = courseX(dayOfDateKey(claim.date), days);
                     const h = claimTickHeight(claim.amountCents);
@@ -331,18 +329,11 @@ export function MonthSpread({
                     const body = up
                       ? `Fund-backed purchase ${formatCad(claim.amountCents)} — recorded, not yet cleared. It does not move the operating pool; it becomes a transfer due.`
                       : `Fund-backed refund ${formatCad(claim.amountCents)} — a credit back against the claims.`;
-                    const readout = { when: dayLabel(claim.date), body };
                     return (
                       <g
                         key={claim.id}
                         className="ms-event"
-                        role="button"
-                        tabIndex={0}
                         aria-label={body}
-                        onMouseEnter={() => setReadout(readout)}
-                        onFocus={() => setReadout(readout)}
-                        onMouseLeave={() => setReadout(null)}
-                        onBlur={() => setReadout(null)}
                       >
                         <line
                           className={up ? "ms-claim" : "ms-claim is-refund"}
@@ -355,9 +346,7 @@ export function MonthSpread({
                   })}
 
                   {/* future — hatched, never drawn as posted */}
-                  <path className="ms-future-area" d={paths.futureArea} data-posted="false" />
-                  <path className="ms-future-kitty" d={paths.futureKitty} data-posted="false" />
-                  <path className="ms-future-line" d={paths.future} data-posted="false" />
+                  <rect className="ms-future-area" x={xToday} y={18} width={Math.max(0,COURSE_VIEW.right-xToday)} height={COURSE_VIEW.axisRule-18} data-posted="false" />
 
                   {/* posted */}
                   <path className="ms-operating-area" d={paths.operatingArea} />
@@ -433,13 +422,7 @@ export function MonthSpread({
                       <g
                         key={point.event?.id ?? point.date}
                         className="ms-event"
-                        role="button"
-                        tabIndex={0}
                         aria-label={sentence.body}
-                        onMouseEnter={() => setReadout(sentence)}
-                        onFocus={() => setReadout(sentence)}
-                        onMouseLeave={() => setReadout(null)}
-                        onBlur={() => setReadout(null)}
                       >
                         <circle className={`ms-dot ${tone}`} cx={x} cy={y} r={3.6} />
                         <circle className="ms-hit" cx={x} cy={y} r={13} />
@@ -457,18 +440,7 @@ export function MonthSpread({
                   <text className="ms-label-kitty" x={COURSE_VIEW.left} y={courseBottom(course.peakKittyCents, scale) + 16}>
                     Kitty {formatCad(standingKitty)} — surplus rolled into the shared banks
                   </text>
-                  {paths.reserveDay ? (
-                    <>
-                      <line
-                        className="ms-reserve"
-                        x1={courseX(paths.reserveDay, days)} y1={courseTop(standing, scale)}
-                        x2={courseX(paths.reserveDay, days)} y2={courseTop(Math.max(0, standing - course.upcomingReserveCents), scale)}
-                      />
-                      <text className="ms-label" x={COURSE_VIEW.right} y={courseBottom(course.peakKittyCents, scale) + 16} textAnchor="end">
-                        still to come · Fund-backed bill −{formatCad(course.upcomingReserveCents)}
-                      </text>
-                    </>
-                  ) : null}
+
                 </>
               ) : null}
 
@@ -516,19 +488,26 @@ export function MonthSpread({
                 </>
               ) : null}
             </svg>
-          </div>
+          </div>}
         </div>
-        <p className="ms-course-hint">Drag the month sideways to see the rest of it.</p>
+        {reading.kind!=="unavailable"&&<DateTurn key={turn.key} day={turn.day} days={turn.days} date={turn.date} onChange={turn.setDay}/>}
+        </TurnFocusBoundary>
         <p className="ms-legend" aria-hidden="true">
           <span><i className="ms-swatch is-operating" /> Operating pool</span>
           <span><i className="ms-swatch is-kitty" /> Kitty, below the line</span>
-          <span><i className="ms-swatch is-claim" /> Claims waiting to clear</span>
-          <span><i className="ms-swatch is-future" /> Not posted yet</span>
+          <span><i className="ms-swatch is-claim" /> Recorded Fund claims</span>
+          <span><i className="ms-swatch is-future" /> Undated future</span>
           <span><i className="ms-swatch is-payday" /> Payday</span>
         </p>
-        <p className="ms-readout" aria-live="polite">
-          {shown.when ? <b>{shown.when}. </b> : null}{shown.body}
-        </p>
+        <div className={`ms-readout turn-reading ${reading.kind==="undated-future"?"is-projected":""}`} aria-live="polite">
+          <p className="turn-reading-kicker">{dayLabel(turn.date)} · {reading.kind==="undated-future"?"Future day":"Recorded through this day"}</p>
+          {reading.kind==="unavailable"?<p>{reading.reason}</p>:<>
+            {reading.kind==="ready"?<p>Operating <strong>{formatCad(reading.operatingCents)}</strong> · Kitty <strong>{formatCad(reading.kittyCents)}</strong></p>:<p>{reading.reason}</p>}
+            {reading.rows.length>0&&<ol>{reading.rows.map((point,index)=><li key={index}>{reading.kind==="undated-future"?`Accepted event dated ahead: ${point.event!.kind.replace(/-/g," ")} · ${formatCad(point.event!.amountCents)}`:eventSentence(point,nameOf).body}</li>)}</ol>}
+            {reading.claims.map(claim=><p key={claim.id}>{claim.kind==="purchase-funded"?"Fund-backed purchase":"Fund-backed refund"} · {formatCad(claim.amountCents)}. This claim does not itself move the operating pool.</p>)}
+            {reading.rows.length===0&&reading.claims.length===0&&<p>{reading.kind==="ready"?"No dated event. The last recorded pair carries forward.":"No accepted event dated on this day."}</p>}
+          </>}
+        </div>
       </section>
 
       {/* ---------------- III · Docket ---------------- */}

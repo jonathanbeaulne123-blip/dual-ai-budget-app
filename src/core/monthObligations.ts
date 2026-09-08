@@ -194,3 +194,23 @@ export function monthObligations(household: Household, monthKey: string, today: 
       && postedCents === projectedPostedCents,
   };
 }
+
+/**
+ * Positions predating this month cannot be recovered by concatenating monthly walks.
+ * Return dated source coverage as well as remaining cents; unknown source dates stay unknown.
+ */
+export function outstandingFundSources(household: Household, fundId: string, asOf: DateKey) {
+  const sources = postedPositionSources(household, fundId);
+  return projectHouseholdFund(household, asOf).transactionPositions
+    .filter(position => position.outstandingCents > 0)
+    .map(position => {
+      const source = sources.get(position.transactionId);
+      const visible = source?.transaction?.visibility === "personal" ? undefined : source?.transaction;
+      return {
+        id: `posted:${position.transactionId}`,
+        date: source?.date ?? null,
+        amountCents: position.outstandingCents,
+        label: visible ? labelForTransaction(household, visible) : "Household purchase",
+      };
+    });
+}

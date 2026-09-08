@@ -1,4 +1,6 @@
 import { bookBalanceAsOf } from "./statements.ts";
+import { parseVisibility } from "./visibility.ts";
+import type { Transaction } from "./types.ts";
 import { formatCad } from "./money.ts";
 import { goalIsFull, goalStatus } from "./goals.ts";
 import type { DateKey } from "./calendar.ts";
@@ -8,10 +10,10 @@ export const GOALS_VAULT_SEED_ID = "ACC-GOALS";
 
 export function goalsVaultAccount(household: Pick<Household, "accounts">): Account | null {
   const marked = household.accounts.find((account) => (
-    account.active && account.kind === "savings" && account.savings?.purpose === "goals"
+    account.active && account.scope !== "personal" && account.kind === "savings" && account.savings?.purpose === "goals"
   ));
   if (marked) return marked;
-  const seeded = household.accounts.find((account) => account.active && account.id === GOALS_VAULT_SEED_ID);
+  const seeded = household.accounts.find((account) => account.active && account.scope !== "personal" && account.id === GOALS_VAULT_SEED_ID);
   return seeded?.kind === "savings" ? seeded : null;
 }
 
@@ -36,17 +38,72 @@ export function unallocatedVaultCents(household: Household, asOf: DateKey): numb
   return Math.max(0, bookBalanceAsOf(household, vault.id, asOf) - allocatedVaultCents(household));
 }
 
-/** Cash this jar can spend without raiding other open pigs. */
-export function vaultSpendableCents(household: Household, goalId: string, asOf: DateKey): number {
+export type GoalVaultCapacity =
+  | { kind: "ready"; vaultId: string; cashCents: number; reservedCents: number; spendableCents: number }
+  | { kind: "unavailable"; reason: string };
+
+/** One vault account may hold Shared and private entries; neither partition can spend the other. */
+export function goalVaultCapacity(household: Household, goalId: string, asOf: DateKey): GoalVaultCapacity {
+  const refuse = (reason: string): GoalVaultCapacity => ({ kind: "unavailable", reason });
   const vault = goalsVaultAccount(household);
-  if (!vault) return 0;
-  const goal = household.goals.find((item) => item.id === goalId);
-  if (!goal || goalStatus(goal) !== "open") return 0;
-  const others = allocatedVaultCents({
-    goals: household.goals.filter((item) => item.id !== goalId),
-    goalContributions: household.goalContributions,
-  });
-  return Math.max(0, bookBalanceAsOf(household, vault.id, asOf) - others);
+  const goal = household.goals.find(item => item.id === goalId);
+  if (!vault || !goal || goalStatus(goal) !== "open") return refuse("Open and fund this goal before reviewing its spending cash.");
+  if (!goal.shared && !household.members.some(member => member.active && member.id === goal.ownerMemberId)) return refuse("The private goal's owner needs review.");
+  const belongs = (tx: Transaction) => goal.shared
+    ? parseVisibility(tx.visibility) !== "personal"
+    : parseVisibility(tx.visibility) === "personal" && tx.createdBy === goal.ownerMemberId;
+  const byId = new Map(household.transactions.map(tx => [tx.id, tx]));
+  if (byId.size !== household.transactions.length) return refuse("Goals cash has duplicate receipt identities. Review the books.");
+  const links = new Map<string, Set<string>>();
+  const link = (a: string, b: string) => {
+    if (!links.has(a)) links.set(a, new Set());
+    if (!links.has(b)) links.set(b, new Set());
+    links.get(a)!.add(b); links.get(b)!.add(a);
+  };
+  for (const tx of household.transactions) {
+    if (tx.transferPairId) link(tx.id, tx.transferPairId);
+    if (tx.reversalOfId) link(tx.id, tx.reversalOfId);
+  }
+  const touchesVault = (tx: Transaction) => tx.accountId === vault.id || tx.transferFromAccountId === vault.id || tx.transferToAccountId === vault.id;
+  const pending = household.transactions.filter(tx => belongs(tx) && touchesVault(tx)).map(tx => tx.id);
+  const seen = new Set<string>();
+  while (pending.length) {
+    const id = pending.pop()!;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const tx = byId.get(id);
+    if (!tx || !belongs(tx)) return refuse("Goals cash has missing or cross-scope receipt history. Review it before spending.");
+    if (tx.type === "transfer") {
+      const pair = tx.transferPairId ? byId.get(tx.transferPairId) : undefined;
+      if (!pair || pair.type !== "transfer" || pair.transferPairId !== tx.id
+        || pair.amountCents !== tx.amountCents || pair.date !== tx.date
+        || pair.transferFromAccountId !== tx.transferFromAccountId || pair.transferToAccountId !== tx.transferToAccountId
+        || Boolean(pair.isDuplicate) !== Boolean(tx.isDuplicate)) return refuse("Goals cash has an incomplete transfer pair. Review it before spending.");
+    }
+    const ancestors = new Set([tx.id]);
+    let ancestor = tx;
+    while (ancestor.reversalOfId) {
+      const prior = byId.get(ancestor.reversalOfId);
+      if (!prior || ancestors.has(prior.id)) return refuse("Goals cash has an incomplete correction chain. Review it before spending.");
+      ancestors.add(prior.id); ancestor = prior;
+    }
+    pending.push(...(links.get(id) ?? []));
+  }
+  const claims = openGoals(household).filter(other => other.id !== goal.id && (
+    goal.shared ? other.shared : !other.shared && other.ownerMemberId === goal.ownerMemberId
+  ));
+  const reservedCents = claims.reduce((sum, other) => sum + Math.max(0, other.savedCents), 0);
+  try {
+    const cashCents = bookBalanceAsOf({ ...household, transactions: household.transactions.filter(belongs) }, vault.id, asOf);
+    if (![cashCents, reservedCents, cashCents - reservedCents].every(Number.isSafeInteger)) return refuse("Goals cash is outside the supported exact-cent range.");
+    return { kind: "ready", vaultId: vault.id, cashCents, reservedCents, spendableCents: Math.max(0, cashCents - reservedCents) };
+  } catch { return refuse("Goals cash could not be validated. Review the books before spending."); }
+}
+
+/** Legacy numeric reading is conservative; the command preserves the explicit refusal reason. */
+export function vaultSpendableCents(household: Household, goalId: string, asOf: DateKey): number {
+  const reading = goalVaultCapacity(household, goalId, asOf);
+  return reading.kind === "ready" ? reading.spendableCents : 0;
 }
 
 export type GoalLedgerKind = "contribution" | "purchase" | "parking";

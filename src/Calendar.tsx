@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { CalendarWeight } from "./CalendarWeight.tsx";
+import { calendarWeight } from "./core/calendarWeight.ts";
+import { daysInMonthKey } from "./core/calendar.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   WEEKDAY_SHORT,
@@ -85,7 +88,7 @@ function downloadIcs(household: Household, today: DateKey) {
   URL.revokeObjectURL(url);
 }
 
-export function CalendarPage(props: {
+type CalendarProps = {
   household: Household;
   view?: LedgerView;
   today: DateKey;
@@ -103,8 +106,20 @@ export function CalendarPage(props: {
   onOpenPlan: () => void;
   onOpenShiftEnvelope: (envelopeId: string) => void;
   onboardingStandingFactOnly?: boolean;
-}) {
+};
+
+export function CalendarPage(props: CalendarProps) {
+  return <CalendarPageScope key={`${props.environment}:${props.household.householdId}:${props.memberId}:${props.view ?? "household"}`} {...props} />;
+}
+
+function CalendarPageScope(props: CalendarProps) {
   const { household, today, environment } = props;
+  const [phone, setPhone] = useState(() => window.innerWidth < 720);
+  useEffect(() => {
+    const resize = () => setPhone(window.innerWidth < 720);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
   const [monthKey, setMonthKey] = useState(() => monthKeyFromDateKey(today));
   const [selected, setSelected] = useState<DateKey>(today);
   const [dayOpen, setDayOpen] = useState(false);
@@ -115,13 +130,20 @@ export function CalendarPage(props: {
   const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
   const [repeatingDraft, setRepeatingDraft] = useState<RepeatingDraft | null>(null);
   const [workSettlement, setWorkSettlement] = useState<WorkOwedFact | null>(null);
-  const scopeKey = `${environment}:${household.householdId}:${props.memberId}`;
+  const scopeKey = `${environment}:${household.householdId}:${props.memberId}:${props.view ?? "household"}`;
   const asyncScope = useAsyncScope(scopeKey);
 
   const board = useMemo(
     () => buildMonthBoard(household, monthKey, today, overlays),
     [household, monthKey, today, overlays],
   );
+  const weightDays = useMemo(() => phone ? calendarWeight(household, board, today) : [], [phone, household, board, today]);
+  const changeMonth = (offset: number) => {
+    const next = shiftMonthKey(monthKey, offset);
+    setMonthKey(next);
+    setSelected(`${next}-${String(Math.min(Number(selected.slice(8)), daysInMonthKey(next))).padStart(2, "0")}`);
+    setDayOpen(false);
+  };
   const workFacts = useMemo(() => workOwedFacts(household, today), [household, today]);
   const selectedDay = board.days.find((day) => day.date === selected) ?? board.days.find((day) => day.isToday);
   const due = household.recurrences.filter((item) => item.active && item.nextDate <= today);
@@ -240,13 +262,37 @@ export function CalendarPage(props: {
     }
   }
 
+  const monthTools = (
+<div className="calendar-board-dock">
+              {!phone && <p className="calendar-week-net">
+                {(props.view ?? "household") === "personal" ? "My dates" : "Household dates"}
+                {" · this week "}
+                {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
+                {due.length ? ` · ${due.length} due` : ""}
+                {suggested.length ? ` · ${suggested.length} spotted` : ""}
+              </p>}
+              <div className="calendar-hero-actions">
+                <button className="ghost" type="button" onClick={props.onOpenPlan}>Open plan</button>
+                {due.length > 0 && !props.onboardingStandingFactOnly && (
+                  <button
+                    className="ghost"
+                    type="button"
+                    onClick={() => props.onAskPostDue(due.map((item) => item.id), `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}
+                  >
+                    Mark due paid
+                  </button>
+                )}
+              </div>
+            </div>
+  );
+
   return (
     <div
       className="calendar-stage"
       data-calendar-view={props.view ?? "household"}
       data-onboarding-standing-fact={props.onboardingStandingFactOnly ? "true" : undefined}
     >
-      {pane !== "visits" && board.clashes[0] && !(props.onboardingStandingFactOnly && pane === "bills") && (
+      {!(phone && pane === "board") && pane !== "visits" && board.clashes[0] && !(props.onboardingStandingFactOnly && pane === "bills") && (
         <article className="pulse-banner warn">{describeClash(board.clashes[0])}</article>
       )}
 
@@ -266,31 +312,26 @@ export function CalendarPage(props: {
           <div className="calendar-board-stack">
           <section className="card calendar-card">
             <header>
-              <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, -1))} aria-label="Previous month">‹</button>
+              <button className="chip" onClick={() => changeMonth(-1)} aria-label="Previous month">‹</button>
               <h2>{board.monthLabel}</h2>
-              <button className="chip" onClick={() => setMonthKey(shiftMonthKey(monthKey, 1))} aria-label="Next month">›</button>
+              <button className="chip" onClick={() => changeMonth(1)} aria-label="Next month">›</button>
             </header>
-            <div className="calendar-board-dock">
-              <p className="calendar-week-net">
-                {(props.view ?? "household") === "personal" ? "My dates" : "Household dates"}
-                {" · this week "}
-                {board.weekPressure ? formatCad(board.weekPressure.inCents - board.weekPressure.outCents) : formatCad(0)}
-                {due.length ? ` · ${due.length} due` : ""}
-                {suggested.length ? ` · ${suggested.length} spotted` : ""}
-              </p>
-              <div className="calendar-hero-actions">
-                <button className="ghost" type="button" onClick={props.onOpenPlan}>Open plan</button>
-                {due.length > 0 && !props.onboardingStandingFactOnly && (
-                  <button
-                    className="ghost"
-                    type="button"
-                    onClick={() => props.onAskPostDue(due.map((item) => item.id), `This posts ${due.length} due repeating ${due.length === 1 ? "item" : "items"} into the books.`)}
-                  >
-                    Mark due paid
-                  </button>
-                )}
-              </div>
-            </div>
+            {!phone && monthTools}
+            {phone && <p className="weight-note">{props.view === "personal" ? "My dates" : "Household dates"}</p>}
+            {phone ? <CalendarWeight key={`${scopeKey}:${monthKey}`} days={weightDays} selected={selected} onSelect={setSelected}
+              renderItem={({item, allowPost, scheduledDate}) => <DayRow
+                title={item.title} amountCents={item.amountCents} kind={item.kind}
+                due={item.due && (item.source === "recurrence" || item.source === "appointment" || item.source === "work-settlement")}
+                recurrenceId={allowPost && household.recurrences.some(row => row.id === item.recurrenceId && row.nextDate === item.date) ? item.recurrenceId : undefined}
+                appointmentId={allowPost ? item.appointmentId : undefined} rhythmKey={item.rhythmKey}
+                today={today} household={household} busy={props.busy}
+                onAdopt={key => props.onCommand(current => adoptRhythm(current, key, today))}
+                onAskPost={props.onAskPost} standingFactOnly={props.onboardingStandingFactOnly}
+                date={item.date} onAskVisit={(draft, summary) => props.onAskVisit(draft, scheduledDate ? `${summary} Scheduled for ${scheduledDate}; this records the visit on ${item.date}.` : summary)}
+                workSettlementId={item.source === "work-settlement" ? item.id : undefined}
+                onAskWork={id => setWorkSettlement(workFacts.find(fact => fact.id === id) ?? null)}
+                shiftEnvelopeId={item.shiftEnvelopeId} onOpenShiftEnvelope={props.onOpenShiftEnvelope}
+              />} /> : <>
             <div className="cal-weekdays">
               {WEEKDAY_SHORT.map((label) => <span key={label}>{label}</span>)}
             </div>
@@ -330,12 +371,16 @@ export function CalendarPage(props: {
                 );
               })}
             </div>
+            </>}
+            {phone && <details className="calendar-month-tools"><summary>Month tools</summary>
+              {board.clashes[0] && <p className="weight-note">{describeClash(board.clashes[0])}</p>}{monthTools}
+            </details>}
           </section>
 
-          {selectedDay && !dayOpen ? (
+          {!phone && selectedDay && !dayOpen ? (
             <p className="muted">Tap {formatDayLabel(selectedDay.date)} again for the day’s list.</p>
           ) : null}
-          {selectedDay && dayOpen && (
+          {!phone && selectedDay && dayOpen && (
             <section className="card">
               <header>
                 <h2>{formatDayLabel(selectedDay.date)}</h2>
@@ -400,7 +445,7 @@ export function CalendarPage(props: {
       )}
 
       {pane === "visits" && (
-        <AppointmentsPage
+        <AppointmentsPage view={props.view}
           household={household}
           today={today}
           memberId={props.memberId}

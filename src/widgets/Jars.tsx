@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   formatCad,
   formatDateLabel,
@@ -9,12 +9,17 @@ import {
   JARS_EMPTY,
   purchaseGoal,
   retiredGoals,
+  todayKey,
   unallocatedVaultCents,
   vaultReceiptBlurb,
 } from "../core/index.ts";
 import type { Dashboard } from "../core/insights.ts";
 import type { DateKey } from "../core/calendar.ts";
-import type { CommitResult, Household } from "../core/index.ts";
+import type { CommitResult, Household, LedgerView } from "../core/index.ts";
+
+import { ConfirmSheet } from "../Confirm.tsx";
+import { goalFundingBasis } from "../goalFundingReview.ts";
+import { useAsyncScope } from "../asyncScope.ts";
 
 function Piggy({ fill, late, clipId, retired }: { fill: number; late?: boolean; clipId: string; retired?: boolean }) {
   const level = Math.max(0, Math.min(1, fill));
@@ -50,19 +55,27 @@ export function JarsGlance({ dashboard }: { dashboard: Dashboard }) {
   return <span>{nearest.goal.name} · {Math.round(nearest.progress * 100)}%</span>;
 }
 
-export function PurchaseGoalSheet({
+export function PurchaseGoalSheet(props: PurchaseGoalProps) {
+  return <PurchaseGoalScope key={`${props.scopeKey}:${props.goalId}`} {...props} />;
+}
+type PurchaseGoalProps = {
+  household: Household; goalId: string; createdBy: string; scopeKey: string; busy: boolean;
+  onCommand: (fn: (current: Household) => CommitResult) => void; onClose: () => void;
+};
+function PurchaseGoalScope({
+  createdBy,
+  scopeKey,
   household,
   goalId,
   busy,
   onCommand,
   onClose,
-}: {
-  household: Household;
-  goalId: string;
-  busy: boolean;
-  onCommand: (fn: (current: Household) => CommitResult) => void;
-  onClose: () => void;
-}) {
+}: PurchaseGoalProps) {
+  const scope = useAsyncScope(scopeKey);
+  const latest = useRef(household); latest.current = household;
+  const [review, setReview] = useState<{ amount: string; lines: { note: string; amount: string }[]; basis: string; date: DateKey } | null>(null);
+  const basis = goalFundingBasis(household, goalId, "purchase");
+  useEffect(() => { if (review && review.basis !== basis) setReview(null); }, [review, basis]);
   const goal = household.goals.find((item) => item.id === goalId);
   const [total, setTotal] = useState(goal ? (goal.savedCents / 100).toFixed(2) : "");
   const [lineNote, setLineNote] = useState("");
@@ -104,27 +117,36 @@ export function PurchaseGoalSheet({
           className="primary"
           disabled={busy}
           onClick={() => {
-            try {
-              onCommand((current) => purchaseGoal(current, {
-                goalId,
-                amount: total,
-                lines: lines.length ? lines : undefined,
-              }));
-              onClose();
-              setError("");
-            } catch (caught) {
-              setError(caught instanceof Error ? caught.message : String(caught));
-            }
+            setReview({ amount: total, lines: lines.map(line => ({ ...line })), basis, date: todayKey() });
           }}
         >
-          Mark purchased
+          Review purchase
         </button>
       </div>
+      {review && review.basis === basis && <ConfirmSheet title={`Purchase ${goal.name}`}
+        body={`Record ${review.amount} CAD on ${review.date} from ${goalsVaultAccount(household)?.name ?? "Goals savings"}. ${goal.shared ? "Shared" : "Personal · only you"}. This posts the purchase expense and marks this bank completed.`}
+        extra={review.lines.length ? review.lines.map(line => `${line.note || "Receipt line"}: ${line.amount} CAD`).join(" · ") : "Hearth records the purchase; it does not move money at your bank."}
+        confirmLabel="Confirm purchase" busy={busy} onCancel={() => setReview(null)}
+        onConfirm={() => {
+          if (busy) return;
+          const next = review, token = scope.capture(); setReview(null);
+          try {
+            onCommand(current => {
+              if (!scope.isCurrent(token) || next.basis !== goalFundingBasis(latest.current, goalId, "purchase")
+                || next.basis !== goalFundingBasis(current, goalId, "purchase")) throw new Error("The bank or books changed. Review the purchase again.");
+              return purchaseGoal(current, { goalId, date: next.date, amount: next.amount, lines: next.lines.length ? next.lines : undefined, createdBy });
+            });
+            setError("");
+          } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
+        }} />}
     </div>
   );
 }
 
 export function JarsBody({
+  view,
+  memberId,
+  booksHousehold,
   dashboard,
   household,
   today,
@@ -132,6 +154,9 @@ export function JarsBody({
   onPlan,
   onCommand,
 }: {
+  memberId: string;
+  view: LedgerView;
+  booksHousehold: Household;
   dashboard: Dashboard;
   household: Household;
   today: DateKey;
@@ -183,8 +208,10 @@ export function JarsBody({
               {full && status !== "unfunded" && onCommand && (
                 buying === item.goal.id ? (
                   <PurchaseGoalSheet
-                    household={household}
+                    household={booksHousehold}
                     goalId={item.goal.id}
+                    createdBy={memberId}
+                    scopeKey={`${household.environment}:${household.householdId}:${memberId}:${view}`}
                     busy={Boolean(busy)}
                     onCommand={onCommand}
                     onClose={() => setBuying(null)}

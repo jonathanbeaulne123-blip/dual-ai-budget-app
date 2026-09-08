@@ -368,3 +368,56 @@
 .office-phone .ph-inst > *:not(.ph-pin) {
   padding-right: 46px;
 }
+
+/* The Apron Pocket fold: whole objects spill below the paper crease. */
+.office-phone .ph-fold { display: flex; flex-direction: column; gap: 12px; }
+.office-phone .ph-fold-head,
+.office-phone .ph-fold-below { gap: 12px; align-items: start; }
+.office-phone .ph-fold-head { max-height: clamp(160px, calc(100svh - 280px), 440px); }
+.office-phone .ph-fold-object { min-width: 0; }
+.office-phone .ph-fold-object.is-wide { grid-column: 1 / -1; }
+.office-phone .ph-fold-object > .hearth-paper-tile { width: 100%; height: 100%; }
+.office-phone .ph-fold .ph-needs { white-space: normal; overflow: visible; }
+.office-phone .ph-fold-line {
+  position: relative; width: 100%; border: 0; border-top: 1px dashed var(--line); margin: 3px 0;
+}
+.office-phone .ph-fold-line > span { position: absolute; right: 0; top: -8px;
+  background: var(--paper); padding: 0 5px; color: var(--muted);
+  font-family: var(--mono, ui-monospace, monospace); font-size: 10.5px;
+  letter-spacing: .13em; text-transform: uppercase;
+}
+
+/* Claude's plate seals: ink outlines on paper, with no wax gradients. */
+.office-phone .ph-seals { gap: 7px; }
+.office-phone .ph-seals .hearth-wax-seal {
+  min-height: 62px; padding: 8px 5px; gap: 1px; border: 2px solid var(--line);
+  border-radius: 9px; background: none; color: var(--muted); box-shadow: none; opacity: 1;
+}
+.office-phone .ph-seals .hearth-seal-label {
+  font-family: var(--mono, ui-monospace, monospace); font-size: 10.5px;
+  font-weight: 400; letter-spacing: .13em; opacity: 1;
+}
+.office-phone .ph-seals .hearth-seal-value {
+  font-size: 17px; letter-spacing: -.02em; color: var(--ink); white-space: normal;
+  overflow: visible; overflow-wrap: anywhere;
+}
+.office-phone .ph-seals .hearth-seal-sub {
+  font-size: 10.5px; line-height: 1.3; white-space: normal; overflow: visible; opacity: 1;
+}
+.office-phone .ph-fold-object .hearth-paper-tile { transform: none; }
+.office-phone .ph-fold .hearth-weather-ribbon { border-radius: 999px; box-shadow: none; }
+
+.office-phone.is-adding .ph-fold { opacity: .28; pointer-events: none; }
+.office-phone .ph-fold .hearth-seal-label { overflow-wrap: anywhere; }
+.office-phone .ph-fold .hearth-tile-value,
+.office-phone .ph-fold .hearth-tile-value * {
+  white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere;
+  -webkit-line-clamp: unset; line-clamp: unset;
+}
+.office-phone .ph-fold button:focus-visible { outline-offset: -2px; }
+/* At enlarged text sizes keep the seals intact as a group, with whole figures. */
+.office-phone .ph-seals {
+  font-size: 17px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 5em), 1fr));
+}
+.office-phone .ph-seals .hearth-seal-value { overflow-wrap: normal; }

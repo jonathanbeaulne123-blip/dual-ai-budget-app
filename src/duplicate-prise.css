@@ -1,0 +1,20 @@
+.duplicate-prise{padding:14px 0;border-top:1px solid var(--line);color:var(--ink)}
+.duplicate-prise p{margin:0 0 10px}.prise-signal{font:500 17px/1.25 var(--display)}
+.prise-help{font:400 12.5px/1.5 var(--font);color:var(--muted);overflow-wrap:anywhere}
+.prise-cards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:stretch;padding:6px 0}
+.prise-card{border:1px solid var(--line);border-radius:5px;background:var(--card);padding:10px;min-width:0;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:8px;font:400 12.5px/1.4 var(--font)}
+.prise-drag-card{transform:translateX(calc(-1 * var(--prise-overlap)));touch-action:pan-y;cursor:ew-resize;position:relative;z-index:1;user-select:none}
+.prise-drag-card:focus-visible{outline:2px solid var(--pine);outline-offset:2px}.prise-drag-card[aria-disabled=true]{cursor:default}
+.prise-field{display:grid;gap:2px;padding:3px;min-width:0}.prise-amount>span:last-child{font:500 22px/1.1 var(--display)}
+.prise-kicker,.prise-pull{font:400 10.5px/1.4 var(--mono);color:var(--muted)}.prise-pull{position:absolute;right:8px;top:8px;font-size:16px}
+.prise-difference{background:var(--paper-2);border-radius:3px;color:var(--ink)}
+.prise-stops,.prise-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.duplicate-prise button{min-height:44px;min-width:44px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--ink);font:400 10.5px/1.4 var(--mono);padding:8px 10px;white-space:normal;overflow-wrap:anywhere}
+.duplicate-prise button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.duplicate-review-dialog #guard-body,.duplicate-review-dialog #guard-extra{white-space:pre-line;overflow-wrap:anywhere}
+@media(max-width:719px){.card.duplicate-contrast{border-radius:5px;padding:12px}.duplicate-contrast header{display:block}.duplicate-contrast h2{font:500 22px/1.2 var(--display)}}
+
+.prise-part-handle{min-height:44px;min-width:44px;align-self:flex-end;display:grid;place-items:center;border:1px solid var(--line);border-radius:3px;background:var(--paper);font:400 16px/1 var(--mono)}
+.prise-part-handle:focus-visible{outline:2px solid var(--pine);outline-offset:2px}
+
+.prise-card{position:relative}.prise-card-heading{min-height:44px;display:flex;align-items:center;padding-right:44px}.prise-part-handle{position:absolute;right:8px;top:8px}

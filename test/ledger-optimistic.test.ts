@@ -15,7 +15,7 @@ async function setup(fail=false){
   const client=new LedgerSyncClient({scope:{environment:h.environment,householdId:h.householdId,memberId:'MEM-001',subject:'test'},token:async()=>'test',status:()=>{},pendingChanged:rows=>{preview=rows;},adopt:async(h,_status,rows)=>{adoptions.push({h,rows});}});
   const state=client as any;
   state.replica={sequence:h.revision,...split};
-  state.store={enqueue:vi.fn(async()=>{if(fail)throw new Error('LOCAL_SAVE_FAILED');committed=true;}),save:vi.fn(async()=>{}),acknowledge:vi.fn(),close:()=>{},reject:vi.fn()};
+  state.store={enqueue:vi.fn(async()=>{if(fail)throw new Error('LOCAL_SAVE_FAILED');committed=true;}),save:vi.fn(async()=>{}),acknowledge:vi.fn(),close:()=>{},reject:vi.fn(),rejected:vi.fn(async()=>[])};
   await state.household(state.replica);
   return {h,client,state,adoptions,get preview(){return preview;},get committed(){return committed;}};
 }
@@ -64,4 +64,20 @@ it('renders pending amounts with no money actions and isolates Personal rows',as
     await act(async()=>root.render(createElement(LedgerPage,{...props,view:'household'})));
     expect(host.querySelector('[data-ledger-phase="pending"]')).toBeNull();
   }finally{await act(async()=>root.unmount());host.remove();}
+});
+
+it('recovers a Count submission from the authenticated v2 receipt instead of empty replica receipts',async()=>{
+ const f=await setup(),id=crypto.randomUUID();expect(f.h.commandReceipts).toEqual([]);
+ const fetcher=vi.fn(async()=>new Response(JSON.stringify({version:2,receipt:{id,actor:'MEM-001',sequence:9}}),{status:200}));vi.stubGlobal('fetch',fetcher);
+ try{
+  expect(await f.client.submissionStatus(id)).toBe('accepted');
+  expect(fetcher).toHaveBeenCalledWith(expect.stringContaining(`/development/${f.h.householdId}/receipt?id=${id}`),{headers:{Authorization:'Bearer test'}});
+  fetcher.mockImplementation(async()=>new Response(JSON.stringify({error:'RECEIPT_NOT_FOUND'}),{status:404}));
+  f.state.pending.set(id,{id});expect(await f.client.submissionStatus(id)).toBe('pending');
+  f.state.pending.delete(id);f.state.store.rejected.mockResolvedValue([{command:{id},rejection:'BUSINESS_RULE'}]);expect(await f.client.submissionStatus(id)).toBe('rejected');
+  f.state.store.rejected.mockResolvedValue([]);expect(await f.client.submissionStatus(id)).toBe('missing');
+  fetcher.mockImplementation(async()=>new Response(JSON.stringify({version:2,receipt:{id,actor:'MEM-002',sequence:9}}),{status:200}));
+  await expect(f.client.submissionStatus(id)).rejects.toThrow('RECEIPT_RECOVERY_REQUIRED');
+  fetcher.mockImplementation(async()=>{throw new Error('DISCONNECTED');});await expect(f.client.submissionStatus(id)).rejects.toThrow('DISCONNECTED');
+ }finally{vi.unstubAllGlobals();await f.client.destroy();}
 });

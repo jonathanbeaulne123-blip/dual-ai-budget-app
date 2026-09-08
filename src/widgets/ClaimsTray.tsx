@@ -1,3 +1,4 @@
+import {RowReveal} from "../RowReveal.tsx";
 import { formatCad, CLAIMS_EMPTY, claimsTraySentence, claimPublicLabel, claimRemainingCents, formatClaimStatus } from "../core/index.ts";
 import type { Household } from "../core/types.ts";
 import type { DateKey } from "../core/calendar.ts";
@@ -9,6 +10,7 @@ export function ClaimsGlance({ household }: { household: Household; today: DateK
 }
 
 export function ClaimsBody({
+  memberId,view,
   household,
   today,
   busy,
@@ -16,6 +18,7 @@ export function ClaimsBody({
   onCalendar,
 }: {
   household: Household;
+  memberId:string;view:"household"|"personal";
   today: DateKey;
   busy: boolean;
   onAskSettle: (claimId: string, summary: string) => void;
@@ -26,33 +29,19 @@ export function ClaimsBody({
     .sort((left, right) => claimRemainingCents(right) - claimRemainingCents(left));
   if (!rows.length) {
     return (
-      <>
+      <div data-claim-focus tabIndex={-1}>
         <p className="muted">{CLAIMS_EMPTY}</p>
         <button type="button" className="cabinet-handle" onClick={onCalendar}>Appointments</button>
-      </>
+      </div>
     );
   }
   return (
-    <>
+    <div data-claim-focus tabIndex={-1}>
       <p className="muted">{claimsTraySentence(household, today)} Transfer when it lands. Never income.</p>
-      {rows.slice(0, 4).map((claim) => (
-        <div className="row" key={claim.id}>
-          <span>{claimPublicLabel(household, claim, "card")} · {formatClaimStatus(claim.status)}</span>
-          <span>{formatCad(claimRemainingCents(claim))}</span>
-        </div>
-      ))}
-      {rows.slice(0, 2).map((claim) => (
-        <button
-          key={`land-${claim.id}`}
-          type="button"
-          className="chip"
-          disabled={busy}
-          onClick={() => onAskSettle(claim.id, `This transfers ${formatCad(claimRemainingCents(claim))} from Benefits owing into chequing. Not income.`)}
-        >
-          Landed
-        </button>
-      ))}
+      {rows.slice(0,4).map(claim=><RowReveal key={JSON.stringify([household.environment,household.householdId,memberId,view,claim.id,claim.updatedAt,claimRemainingCents(claim)])} label={claimPublicLabel(household,claim,'card')} busy={busy} right={<button type='button' className='ghost' disabled={busy} aria-label={`Review transfer for ${claimPublicLabel(household,claim,'card')}`} onClick={()=>onAskSettle(claim.id,'')}>Landed · Review transfer</button>}>
+        <div className='row'><span>{claimPublicLabel(household,claim,'card')} · {formatClaimStatus(claim.status)}</span><span>{formatCad(claimRemainingCents(claim))}</span></div>
+      </RowReveal>)}
       <button type="button" className="cabinet-handle" onClick={onCalendar}>Appointments</button>
-    </>
+    </div>
   );
 }
