@@ -1,0 +1,6 @@
+.board-retained-draft { margin-block: 12px; padding: 16px; border-left: 3px solid var(--pine); background: var(--paper); color: var(--ink); min-width: 0; }
+.board-retained-draft textarea { display: block; box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; margin-block: 8px; font: inherit; color: inherit; background: transparent; white-space: pre-wrap; overflow-wrap: anywhere; }
+.board-retained-draft button { min-height: 44px; }
+.board-retained-draft :is(button,textarea):focus-visible { outline: 3px solid var(--pine); outline-offset: 3px; }
+[data-theme=taylor] .board-retained-draft { border-left-color: var(--scene-accent, #8d4868); border-radius: 12px 4px; background: var(--scene-paper, #fff5f8); }
+[data-theme=newfoundland] .board-retained-draft { border-left-color: var(--scene-accent, #376376); border-top: 1px dashed currentColor; border-radius: 2px; }

@@ -1,6 +1,6 @@
 import type { DuplicateCommand } from "./Ledger.tsx";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
-import { lazy, useEffect, useId, useMemo, useState } from "react";
+import { lazy, useEffect, useId, useMemo, useState, type ComponentProps } from "react";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
   ASK_SUGGESTIONS,
@@ -19,8 +19,9 @@ import {
   compileHousehold,
   contributionRegister,
   formatCad,
+  formatDateLabel,
+  transactionTypeLabel,
   householdWallet,
-  householdTableStory,
   herculesLedgerSourcePane,
   LEDGER_CUSTODY_DISCLOSURE,
   projectHouseholdFund,
@@ -55,6 +56,7 @@ import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./le
 import type { BooksStatus } from "./ledger/engine.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
+import "./books-household.css";
 import { DeferredSurface } from "./deferredSurfaces.tsx";
 import { Register } from "./Register.tsx";
 import { OpeningTruthCard } from "./OpeningTruthCard.tsx";
@@ -79,9 +81,13 @@ const PANES = [
 const TABLE_PANE_IDS = ["fund", "fund-register", "wallet", "register", "import"] as const;
 const AUDIT_PANE_IDS = ["journal", "trial", "statements", "rec", "close", "accounts", "query"] as const;
 
-type Pane = (typeof PANES)[number]["id"];
+type Pane = (typeof PANES)[number]["id"] | "overview";
 
-export function BooksPage({
+export function BooksPage(props: ComponentProps<typeof BooksSession>) {
+  return <BooksSession key={JSON.stringify([props.booksHousehold.environment, props.booksHousehold.householdId, props.memberId, props.view, props.duplicateAuthorityGeneration ?? 0])} {...props} />;
+}
+
+function BooksSession({
   pendingRows,
   household,
   booksHousehold,
@@ -126,7 +132,7 @@ export function BooksPage({
   requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | null;
   onConsumeRequestedPane?: () => void;
 }) {
-  const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "fund");
+  const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "overview");
   const [accountFormOpenRequest, setAccountFormOpenRequest] = useState(0);
   const [openingCardOpen, setOpeningCardOpen] = useState(false);
   const controlId = useId();
@@ -150,17 +156,21 @@ export function BooksPage({
   ), [sharedTable, walletHousehold, booksHousehold, today]);
   const fundProjection = useMemo(() => projectHouseholdFund(booksHousehold, today), [booksHousehold, today]);
   const showFundPane = sharedTable || booksHousehold.householdFund?.custodianMemberId === memberId;
-  const tableStory = sharedTable ? householdTableStory(wallet) : wallet.story;
-  const isAuditPane = (AUDIT_PANE_IDS as readonly string[]).includes(pane);
-  const [auditOpen, setAuditOpen] = useState(!trial.inBalance);
+  const tableStory = wallet.story;
+  const isAuditPane = (AUDIT_PANE_IDS as readonly string[]).includes(pane) || (sharedTable && pane === "import");
+  const [auditOpen, setAuditOpen] = useState(!sharedTable || !trial.inBalance);
   const tablePanes = PANES.filter((item) => (
     (TABLE_PANE_IDS as readonly string[]).includes(item.id)
     && (item.id !== "fund" || showFundPane)
     && (item.id !== "fund-register" || sharedTable)
   ));
-  const auditPanes = PANES.filter((item) => (AUDIT_PANE_IDS as readonly string[]).includes(item.id));
+  const auditPanes = PANES.filter((item) => (AUDIT_PANE_IDS as readonly string[]).includes(item.id) || (sharedTable && item.id === "import"));
   const fundConfigured = Boolean(booksHousehold.householdFund);
-  const sharedLeadCents = fundConfigured ? fundProjection.operatingBalanceCents : wallet.cashCents;
+  const sharedLeadCents = fundConfigured ? fundProjection.operatingBalanceCents : wallet.tiles.filter(tile => tile.kind === "chequing" || tile.kind === "other").reduce((sum, tile) => sum + tile.balanceCents, 0);
+  const savingsCents = wallet.tiles.filter(tile => tile.kind === "savings").reduce((sum, tile) => sum + tile.balanceCents, 0);
+  const recentActivity = useMemo(() => [...auditHousehold.transactions].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)).slice(0, 5), [auditHousehold.transactions]);
+  const [sharedFocus, setSharedFocus] = useState<string | null>(null);
+  const [activityFocus, setActivityFocus] = useState<HerculesNumberSource | null>(null);
   const monthKey = monthKeyFromDateKey(today);
   const fundRegister = useMemo(
     () => contributionRegister(booksHousehold, monthKey, today),
@@ -192,9 +202,9 @@ export function BooksPage({
     if (!focusedAccountId) return;
     if (!auditHousehold.accounts.some((account) => account.id === focusedAccountId)) return;
     setAccountId(focusedAccountId);
-    setPane(view === "household" ? "accounts" : "wallet");
-    if (view === "household") setAuditOpen(true);
-  }, [auditHousehold, focusedAccountId, view]);
+    setSharedFocus(focusedAccountId);
+    setPane("wallet");
+  }, [focusedAccountId, view]);
 
   useEffect(() => {
     if (auditHousehold.accounts.some((account) => account.id === accountId)) return;
@@ -207,17 +217,12 @@ export function BooksPage({
       setPane("register");
       return;
     }
-    if (sourceFocus.accountId) {
+    if (sourceFocus.accountId && auditHousehold.accounts.some(account => account.id === sourceFocus.accountId)) {
+      setSharedFocus(sourceFocus.accountId);
       setAccountId(sourceFocus.accountId);
     }
     setPane("wallet");
   }, [sourceFocus]);
-
-  useEffect(() => {
-    if (focusedAccountId || sourceFocus) return;
-    setPane(view === "personal" ? "wallet" : "fund");
-    setAuditOpen(view !== "household");
-  }, [view, focusedAccountId, sourceFocus]);
 
   useEffect(() => {
     if (requestedPane !== "fund" || !showFundPane) return;
@@ -232,7 +237,7 @@ export function BooksPage({
   }, [onConsumeRequestedPane, requestedPane, sharedTable]);
 
   useEffect(() => {
-    if (requestedPane !== "wallet" || sharedTable) return;
+    if (requestedPane !== "wallet") return;
     setPane("wallet");
     setAccountFormOpenRequest((current) => current + 1);
     onConsumeRequestedPane?.();
@@ -263,21 +268,11 @@ export function BooksPage({
   return (
     <div className={`books-theme-c${sharedTable ? "" : " books-floor"}`} data-books-face={sharedTable ? "household-table" : "personal-folio"}>
       {sharedTable ? (
-        <section className="hero">
-          <div className="label">Household table · CAD · {household.timezone}</div>
-          <div className={`money ${sharedLeadCents < 0 ? "negative" : ""}`}>{formatCad(sharedLeadCents)}</div>
-          <div className="sub">
-            {fundConfigured
-              ? `Fund operating. Kitty ${formatCad(fundProjection.kittyCents)}. ${LEDGER_CUSTODY_DISCLOSURE}`
-              : "Fund is not set up. This is household cash on the table — not net worth, not a P&L."}
-          </div>
-          <p className="muted books-table-job">Shared Fund, cash, and cards. Net worth, trial, and statements stay in Audit.</p>
-          {!trial.inBalance ? (
-            <p className="opinion-banner adverse">
-              Trial is off. Open Audit before treating the journal as closed.
-            </p>
-          ) : null}
-        </section>
+        <header className="household-books-heading">
+          <h2>Household table</h2>
+          <p>Shared books · CAD · {household.timezone}</p>
+          {!trial.inBalance && <p className="opinion-banner adverse">Trial is off. <button type="button" className="chip" onClick={() => setPane("trial")}>Review trial balance</button></p>}
+        </header>
       ) : (
         <section className="hero">
           <div className="label">My books · CAD · {household.timezone}</div>
@@ -290,7 +285,7 @@ export function BooksPage({
           ) : null}
         </section>
       )}
-      <StoryStrip heading={sharedTable ? "On the table" : "My accounts"}>
+      {!sharedTable && <StoryStrip heading="My accounts">
         {showFundPane && (
         <PaperTile
           kind="Fund"
@@ -317,26 +312,20 @@ export function BooksPage({
             ariaLabel={`${group.label} ${formatCad(group.tiles.reduce((sum, tile) => sum + tile.displayCents, 0))}`}
           />
         ))}
-      </StoryStrip>
+      </StoryStrip>}
       {!sharedTable ? (
         <CollapsibleCard title="On this phone" hint="Storage and sharing" defaultOpen={false}>
           <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
         </CollapsibleCard>
       ) : null}
+      {!sharedTable && <>
       <PaneSeals
-        ariaLabel={sharedTable ? "Household table rooms" : "My books rooms"}
-        items={sharedTable
-          ? [
-              ...(showFundPane ? [{ id: "fund" as const, label: "Fund" }] : []),
-              { id: "fund-register", label: "Register" },
-              { id: "wallet", label: "Wallet" },
-              { id: "register", label: "Activity" },
-            ]
-          : [
-              { id: "wallet", label: "Wallet" },
-              { id: "register", label: "Activity" },
-              { id: "close", label: "Close month" },
-            ]}
+        ariaLabel="My books rooms"
+        items={[
+          { id: "wallet", label: "Wallet" },
+          { id: "register", label: "Activity" },
+          { id: "close", label: "Close month" },
+        ]}
         active={pane}
         onPick={(id) => setPane(id as Pane)}
       />
@@ -347,6 +336,45 @@ export function BooksPage({
           </button>
         ))}
       </div>
+      </>}
+      {sharedTable && <>
+        <nav className="household-books-nav" aria-label="Household table">
+          {([{ id: "overview", label: "Overview" }, { id: "fund", label: "Fund" }, { id: "wallet", label: "Accounts" }, { id: "register", label: "Activity" }] as const).map(item => (
+            <button type="button" key={item.id} aria-current={pane === item.id || (item.id === "fund" && pane === "fund-register") ? "page" : undefined} onClick={() => { setPane(item.id); setAuditOpen(false); }}>{item.label}</button>
+          ))}
+        </nav>
+        {pane === "overview" && <section className="household-books-overview" aria-label="Shared overview">
+          <div className="household-books-readings">
+            <button type="button" className="household-books-reading" onClick={() => setPane(fundConfigured ? "fund" : "wallet")}>
+              <span>{fundConfigured ? "Fund operating money" : "Shared operating cash"}</span>
+              <strong>{formatCad(sharedLeadCents)}</strong>
+              <small>{fundConfigured ? "Confirmed Fund balance" : "Fund is not set up"}</small>
+            </button>
+            <button type="button" className="household-books-reading" onClick={() => { setSharedFocus(null); setPane("wallet"); }}>
+              <span>Shared savings</span><strong>{formatCad(savingsCents)}</strong><small>Accepted savings account balances</small>
+            </button>
+            {fundConfigured && <button type="button" className="household-books-reading" onClick={() => setPane("fund")}>
+              <span>Fund Kitty</span><strong>{formatCad(fundProjection.kittyCents)}</strong><small>Set aside within the Fund</small>
+            </button>}
+          </div>
+          <p className="muted">Accepted balances. Savings, Kitty and operating money are shown separately and are not added together. {LEDGER_CUSTODY_DISCLOSURE}</p>
+          <button type="button" className="household-books-obligations" onClick={() => setPane("fund-register")}>
+            <span><strong>Obligations · {monthKey}</strong><small>{fundRegister.rows.length} planned obligations · {formatCad(fundRegister.unfundedCents)} unfunded</small></span>
+            <strong>{formatCad(fundRegister.owedCents)} <span aria-hidden="true">→</span></strong>
+          </button>
+          <section className="household-books-recent" aria-label="Recent shared activity">
+            <header><h3>Recent activity</h3><button type="button" className="chip" onClick={() => setPane("register")}>View all activity</button></header>
+            {recentActivity.length === 0 && <p className="muted">No accepted shared entries yet.</p>}
+            {recentActivity.map(tx => <button type="button" key={tx.id} className="household-books-activity-link" onClick={() => { setActivityFocus({ route: "ledger", view, transactionId: tx.id, label: tx.note || transactionTypeLabel(tx.type) }); setPane("register"); }}>
+              <span><strong>{tx.note || transactionTypeLabel(tx.type)}</strong><small>{formatDateLabel(tx.date)} · {transactionTypeLabel(tx.type)}{tx.isDuplicate ? " · Excluded from totals" : ""}</small></span><strong>{formatCad(tx.amountCents)}</strong>
+            </button>)}
+          </section>
+        </section>}
+        {(pane === "fund" || pane === "fund-register") && <nav className="household-fund-tabs" aria-label="Fund views">
+          <button type="button" aria-current={pane === "fund" ? "page" : undefined} onClick={() => setPane("fund")}>Overview</button>
+          <button type="button" aria-current={pane === "fund-register" ? "page" : undefined} onClick={() => setPane("fund-register")}>Register</button>
+        </nav>}
+      </>}
       {!isAuditPane ? (
         <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
       ) : null}
@@ -364,29 +392,18 @@ export function BooksPage({
               onCancel={() => setOpeningCardOpen(false)}
             />
           ) : null}
-          <section className="card">
-            <header><h2>Shared pool</h2></header>
-            <p>Shared is one account. Kitty Banks are the sub-accounts. Room-by-room management lives on My books.</p>
-          </section>
-          <KittyBanks
-            household={household}
-            booksHousehold={booksHousehold}
-            view="household"
-            createdBy={memberId}
-            surface="home"
-            onCommand={onCommand}
-          />
         </>
       )}
-      {pane === "wallet" && !sharedTable && (
+      {pane === "wallet" && (
         <WalletPane
           household={walletHousehold}
           writeHousehold={booksHousehold}
           today={today}
           memberId={memberId}
-          focusedId={focusedAccountId}
+          focusedId={sharedTable ? sharedFocus : focusedAccountId}
           onFocus={(id) => {
             if (id) setAccountId(id);
+            setSharedFocus(id);
             onFocusAccount(id);
           }}
           onChange={onChange}
@@ -396,7 +413,10 @@ export function BooksPage({
         />
       )}
       {pane === "fund" && (
-        <HouseholdFundPanel household={booksHousehold} memberId={memberId} view={view} onCommand={onCommand} />
+        <>
+          <HouseholdFundPanel household={booksHousehold} memberId={memberId} view={view} onCommand={onCommand} />
+          {sharedTable && <KittyBanks household={household} booksHousehold={booksHousehold} view="household" createdBy={memberId} surface="home" onCommand={onCommand} />}
+        </>
       )}
       {pane === "fund-register" && sharedTable && (
         <Register register={fundRegister} members={registerMembers} />
@@ -404,13 +424,14 @@ export function BooksPage({
       {pane === "register" && (
         <LedgerPage
           pendingRows={pendingRows}
-          household={sharedTable ? household : walletHousehold}
+          household={walletHousehold}
           writeHousehold={booksHousehold}
-          presentedTransactions={!sharedTable}
+          presentedTransactions
+          activityFilters={sharedTable}
           memberId={memberId}
           view={view}
-          sourceFocus={sourceFocus?.route === "ledger" ? sourceFocus : null}
-          onClearSource={onClearSource}
+          sourceFocus={activityFocus ?? (sourceFocus?.route === "ledger" ? sourceFocus : null)}
+          onClearSource={() => { setActivityFocus(null); onClearSource(); }}
           onChange={onChange}
           onRemove={onRemove}
           onDuplicateCommand={onDuplicateCommand}
@@ -418,7 +439,7 @@ export function BooksPage({
           busy={duplicateBusy}
         />
       )}
-      {pane === "import" && (
+      {pane === "import" && !sharedTable && (
         <DeferredSurface label="Import">
         <DeferredBatchImportCard
           household={auditHousehold}
@@ -436,17 +457,17 @@ export function BooksPage({
         onToggle={(event) => {
           const next = event.currentTarget.open;
           setAuditOpen(next);
-          if (!next && isAuditPane) setPane(sharedTable ? "fund" : "wallet");
+          if (!next && isAuditPane) setPane(sharedTable ? "overview" : "wallet");
         }}
       >
-        <summary>Audit office — journal, trial, statements</summary>
+        <summary>{sharedTable ? "Tools & audit" : "Audit office — journal, trial, statements"}</summary>
         {sharedTable ? (
           <>
-            <p className="muted">The journal still exists. This is how Hearth proves the books — not the shared table opening.</p>
+            <p className="muted">Import entries, inspect the journal, reconcile accounts, and close the month.</p>
             <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
           </>
         ) : null}
-        <div className="tabs" role="group" aria-label="Audit office" data-books-tabs="audit">
+        <div className="tabs" role="group" aria-label={sharedTable ? "Tools & audit" : "Audit office"} data-books-tabs="audit">
           {auditPanes.map((item) => (
             <button key={item.id} aria-pressed={pane === item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
               {item.label}
@@ -456,6 +477,18 @@ export function BooksPage({
         {isAuditPane ? (
           <p className="muted books-pane-blurb">{PANES.find((item) => item.id === pane)?.blurb}</p>
         ) : null}
+      {pane === "import" && sharedTable && (
+        <DeferredSurface label="Import">
+        <DeferredBatchImportCard
+          household={auditHousehold}
+          writeHousehold={booksHousehold}
+          memberId={memberId}
+          view={view}
+          onCommit={(next, undo) => onChange(next, undo)}
+          onGoMore={onGoMore}
+        />
+        </DeferredSurface>
+      )}
       {pane === "journal" && (
         <section className="card">
           <header>
@@ -785,7 +818,7 @@ function BooksStorageNotes({
           <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
         )
       ) : (
-        <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
+        <p className="muted">Sign in with Google to find your cloud household on another device. This device keeps an offline copy; a Hearth Pass is a separate backup.</p>
       )}
     </>
   );

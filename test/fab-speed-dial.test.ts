@@ -17,8 +17,9 @@ describe("FAB add speed dial", () => {
     document.body.appendChild(host);
     const root = createRoot(host);
     const picks: string[] = [];
+    const focusAtLaunch: (Element | null)[] = [];
     act(() => {
-      root.render(createElement(FabSpeedDial, { onPick: (mode) => { picks.push(mode); } }));
+      root.render(createElement(FabSpeedDial, { onPick: (mode) => { picks.push(mode); focusAtLaunch.push(document.activeElement); } }));
     });
     const fab = host.querySelector("button.fab") as HTMLButtonElement;
     expect(fab).toBeTruthy();
@@ -40,6 +41,7 @@ describe("FAB add speed dial", () => {
     expect(picks).toEqual([]);
     act(() => { actions.find((button) => button.getAttribute("data-fab-action") === "expense")?.click(); });
     expect(picks).toEqual(["expense"]);
+    expect(focusAtLaunch).toEqual([fab]);
     expect(host.querySelector("[data-fab-dial]")?.getAttribute("data-fab-dial")).toBe("closed");
     act(() => root.unmount());
     host.remove();

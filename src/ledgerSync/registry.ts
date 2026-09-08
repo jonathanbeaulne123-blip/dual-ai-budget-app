@@ -64,6 +64,7 @@ register(
   ["memberId"],
 );
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
+register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
 register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);

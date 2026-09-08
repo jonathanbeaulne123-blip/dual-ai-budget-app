@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import type { FundDestination } from "./FundStage.tsx";
@@ -77,7 +78,7 @@ import {
 } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
-import type { Account, Category, CommitResult, UndoToken } from "./core/index.ts";
+import type { Account, Category, UndoToken } from "./core/index.ts";
 import { OfficePhone } from "./OfficePhone.tsx";
 import { OfficeWide } from "./OfficeWide.tsx";
 import { OfficeWindow } from "./widgets/OfficeWindow.tsx";
@@ -85,7 +86,9 @@ import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
-import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { SharedBoards } from "./widgets/SharedBoards.tsx";
+import { takeSharedBoardRequest, SHARED_BOARD_EVENT } from "./core/sharedBoardIntent.ts";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { ClaimsBody, ClaimsGlance } from "./widgets/ClaimsTray.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
@@ -193,7 +196,7 @@ export function Office({
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
   onAskStartJar: (appointmentId: string, summary: string) => void;
@@ -311,6 +314,17 @@ export function Office({
       }
     });
   }, [breakpoint, deskWidth]);
+
+  useEffect(() => {
+    const consume = () => {
+      if(takeSharedBoardRequest({environment,householdId:household.householdId,memberId})) {
+        setLayout(current => ({ ...current, expanded: "chalkboard", windowMinimized: false }));
+      }
+    };
+    consume(); // The request can precede this deferred Home's first mount.
+    window.addEventListener(SHARED_BOARD_EVENT, consume);
+    return () => window.removeEventListener(SHARED_BOARD_EVENT, consume);
+  }, [environment, household.householdId, memberId]);
 
   useEffect(() => {
     if (!household.google?.enabledServices?.includes("drive")) return;
@@ -855,12 +869,17 @@ export function Office({
       "chalkboard",
       "Notes",
       <span>{chalkboardGlance(household)}</span>,
-      "Notes. Draw or type a household note.",
-      <ChalkboardBody
-        household={household}
+      "Our boards. Notes, photos, tasks, goals and Shift Ask.",
+      <SharedBoards
+        key={`${household.environment}:${household.householdId}:${memberId}:${view}`}
+        household={booksHousehold}
         memberId={memberId}
+        today={today}
+        view={view}
+        scenarioSource={scenarioSource}
         busy={busy}
         onCommand={onKitchen}
+        onOpenGoals={() => onGo("plan")}
       />,
       { index, pair, extraClass: "instrument-chalkboard" },
     ),

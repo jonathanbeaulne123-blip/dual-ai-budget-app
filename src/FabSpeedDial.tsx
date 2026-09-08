@@ -82,6 +82,9 @@ export function FabSpeedDial({
               aria-label={action.aria}
               onClick={() => {
                 setDial(false);
+                // The menu item becomes hidden. Give the entry dialog a stable
+                // return target before it captures the current focus.
+                fabRef.current?.focus();
                 onPick(action.mode);
               }}
             >

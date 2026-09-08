@@ -1,3 +1,15 @@
+## Five shared boards — authorized Development release (2026-09-08)
+
+Jonathan subsequently instructed “push merge and deploy.” The dedicated private Development photo bucket is provisioned and bound in the release candidate. [Release worksession](worksessions/2026-09-08-five-shared-boards-release.md) records the authorization, storage verification, rollout checks and rollback reference. Production activation, schema changes and destructive cleanup remain outside scope. The local implementation receipt below is historical; its no-release instruction has been superseded.
+
+## Five shared boards — locally verified implementation (2026-09-08)
+
+Jonathan's approved plan is implemented on `codex/hearth-five-boards`, preserving main `5778a8d`. Final product source `f64f95a`; later handoff commits are documentation only. Mobile Till-style Add, traditional Calendar default, Shared Plan ordering, Household table navigation and all five boards have authored Classic/Taylor/Newfoundland treatments. The ongoing three-theme rule is in `AGENTS.md`.
+
+Risk High; Budget(5): clearer entry and household money navigation; Engagement(3): useful shared boards. Integration gate255tests and final focus gate110tests passed, with TypeScript/AI/diff, builds,129board/calendar/Books geometry cases,21axeviews and105entrybrowsercases. Independent financial/continuity and UX reviews are closed. [Exact acceptance receipt](worksessions/2026-09-08-five-shared-boards.md). [Durable handoff and release dependencies](briefs/FIVE_SHARED_BOARDS_HANDOFF.md).
+
+No push/merge/deploy/schema/Production action. Dedicated Development photo storage must be provisioned separately. Photo removal clears references while prior bytes stay private until coordinated garbage collection; physical deletion is disabled. Hosted OAuth, authenticated two-device and physical-device proof remain release work. Next owner: Jonathan for local review; release requires a separate instruction.
+
 ## Three worlds — authorized Development release (2026-09-08)
 
 Jonathan explicitly requested “push merge deploy.” Release the reviewed theme candidate `c25de23` on top of fresh mobile main `a17dc35`, preserving its delayed Count callback/receipt guards. Existing placeholder authorization and Safari/device limits remain. [Release worksession](worksessions/2026-09-08-theme-release.md) records current scope and verification; the earlier local handoff remains historical. No schema, household mutation or Production activation.

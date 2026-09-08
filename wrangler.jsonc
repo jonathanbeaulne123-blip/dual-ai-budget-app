@@ -97,6 +97,10 @@
   ],
   "r2_buckets": [
     {
+      "binding": "BOARD_MEDIA",
+      "bucket_name": "hearth-board-media-development"
+    },
+    {
       "binding": "EVIDENCE_RAW",
       "bucket_name": "hearth-evidence-raw-development"
     },

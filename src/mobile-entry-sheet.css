@@ -1,0 +1,56 @@
+/* Add shares Till's pad and tile grammar. Theme tokens follow the active world. */
+.add-slideshow[hidden] { display: none !important; }
+.entry-sheet-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+@media (max-width: 719px) {
+  .sheet.mobile-entry-sheet {
+    background: color-mix(in srgb, var(--ink) 28%, transparent);
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .sheet.mobile-entry-sheet .sheet-inner {
+    width: min(440px, 100%);
+    box-sizing: border-box;
+    min-height: 0;
+    max-height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 20px max(26px, env(safe-area-inset-bottom));
+    background: var(--paper);
+    color: var(--ink);
+    border-top: 3px solid var(--pine);
+    box-shadow: var(--lift-2);
+  }
+  .mobile-entry-sheet .topbar { align-items: center; gap: 8px; }
+  .mobile-entry-sheet .topbar button { min-height: 44px; min-width: 44px; }
+  .mobile-entry-sheet .add-slideshow-title { font: 600 25px/1.15 var(--display); text-wrap: balance; }
+  .mobile-entry-sheet .swipe-cat[aria-pressed="true"] { border-color: var(--pine); box-shadow: inset 0 -3px var(--pine); }
+  .mobile-entry-sheet .swipe-cat { overflow-wrap: anywhere; }
+  .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields .swipe-grid .swipe-cat { min-height: 72px; height: auto; }
+  .sheet.mobile-entry-sheet .cad-pad.is-giant .cad-pad-keys button { min-height: 72px; }
+  .sheet.mobile-entry-sheet .sheet-inner .add-slideshow-progress { background: transparent; border-radius: 0; }
+  .mobile-entry-sheet .entry-full-section { min-width: 0; padding-block: 16px; border-top: 1px solid var(--line); }
+  .mobile-entry-sheet .entry-full-section h2 { font: 600 20px/1.2 var(--display); margin: 0 0 12px; }
+  .mobile-entry-sheet .entry-full-section input { max-width: 100%; box-sizing: border-box; }
+  .mobile-entry-sheet .entry-step-continue { display: none; }
+  :root[data-theme="classic"] .mobile-entry-sheet .sheet-inner { border-top-color: var(--pine); }
+  :root[data-theme="taylor"] .mobile-entry-sheet .sheet-inner { border-top-color: var(--theme-second); border-bottom: 3px double var(--theme-accent); }
+  :root[data-theme="newfoundland"] .mobile-entry-sheet .sheet-inner { border-top-color: var(--theme-accent); border-inline-start: 3px solid var(--theme-accent); }
+}
+@media (max-width: 389px) {
+  .sheet.mobile-entry-sheet .cad-pad.is-giant .cad-pad-keys button { min-height: 56px; }
+}
+/* Shared Plan follows reading order at every width. */
+.plan-wide.five-boards-plan { display: flex; flex-direction: column; gap: 14px; }
+.plan-wide.five-boards-plan > * { width: 100%; min-width: 0; box-sizing: border-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  .add-slideshow,
+  .add-slideshow * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

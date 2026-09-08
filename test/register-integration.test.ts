@@ -30,7 +30,7 @@ function householdWithFund() {
 }
 
 describe("Register kitchen placement", () => {
-  it("opens a focused Shared account in its Chart register", () => {
+  it("opens a focused Shared account in its existing account details", () => {
     const household = householdWithFund();
     act(() => {
       root.render(createElement(BooksPage, {
@@ -51,10 +51,10 @@ describe("Register kitchen placement", () => {
       }));
     });
 
-    expect(host.textContent).toContain("Account register");
-    const account = host.querySelector("select") as HTMLSelectElement | null;
-    expect(account?.value).toBe("ACC-CHEQUING");
-    expect(account?.selectedOptions[0]?.textContent).toContain("Everyday chequing");
+    expect(host.querySelector('.household-books-nav [aria-current="page"]')?.textContent).toBe("Accounts");
+    expect(host.querySelector(".wallet-tile.selected")?.textContent).toContain("Everyday chequing");
+    expect(host.querySelector(".account-room")).not.toBeNull();
+    expect(host.textContent).not.toContain("Account register");
   });
 
   it("opens the shared Register room from the Month Spread request", () => {

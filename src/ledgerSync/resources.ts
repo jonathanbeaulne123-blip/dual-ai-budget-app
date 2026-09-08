@@ -4,6 +4,7 @@ import { reviewedSwipeEntry } from "../core/swipe.ts";
 import { prepareDuplicateReview, reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import type { Household } from "../core/types.ts";
 import { canonical } from "./patch.ts";
+import { shapeSharedBoards } from "../core/sharedBoards.ts";
 export type Resource = { key: string; value: unknown };
 const additive = new Set([
   "postEntry",
@@ -36,6 +37,13 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if (["saveBoardTask", "removeBoardTask", "saveBoardMilestone", "removeBoardMilestone", "setBoardPhoto"].includes(kind)) {
+    const input = args[0] as { id?: string; slot?: number };
+    const boards = shapeSharedBoards(household.kitchen.boards);
+    const field = kind === "setBoardPhoto" ? "photos" : kind.includes("Milestone") ? "milestones" : "tasks";
+    const id = field === "photos" ? `BOARD-PHOTO-${input?.slot}` : input?.id;
+    return [{ key: `boards/${field}/${id}`, value: { row: boards[field].find(r => r.id === id) ?? null, removed: household.tombstones.some(t => t.id === id) } }];
+  }
   if(kind==="markDuplicate"&&args.length>2){
     const request=reviewedDuplicateRequest(args[2],args[0],args[1]),review=prepareDuplicateReview(household,request);
     return [{key:"duplicate-review",value:review.kind==="ready"?{kind:review.kind,basis:review.basis}:{kind:review.kind,reason:review.reason}}];

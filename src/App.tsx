@@ -1,4 +1,7 @@
+import type { KitchenCommandOptions } from "./kitchenCommand.ts";
 import {rememberWorkHandoff,clearWorkHandoff} from "./workHandoff.ts";
+import { BoardRejectedDraft, isBoardDraft } from "./BoardRejectedDraft.tsx";
+import { requestSharedBoard } from "./core/sharedBoardIntent.ts";
 import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
 import {SwipeReceiptStrip} from './SwipeReceiptStrip.tsx';
 import {swipeUndoUnavailable,type SwipeUndoWindow} from './swipeUndoReview.ts';
@@ -441,6 +444,7 @@ import { useDialog } from "./useDialog.ts";
 import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
+import { useMobileEntry } from "./MobileEntryChoices.tsx";
 import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
 import { AddCategoryForm } from "./AddCategoryForm.tsx";
 import { defaultSubcategoryForMode } from "./addSlideshow.ts";
@@ -512,7 +516,7 @@ type CommitHouseholdOptions = {
   forceFlush?: boolean;
   confirmationId?: string;
   onRejected?: (message: string) => void;
-  onDefinitiveRejected?: () => void;
+  onDefinitiveRejected?: KitchenCommandOptions["onDefinitiveRejected"];
   suppressUndo?: boolean;
   onQueued?: () => void;
 };
@@ -639,10 +643,27 @@ export function App() {
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [onboardingInviteDismissedState, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
+  const mobileEntry = useMobileEntry();
+  const [addLaunchAccountId, setAddLaunchAccountId] = useState<string | null>(null);
+  const [addMobileDraft, setAddMobileDraft] = useState(false);
+  const [pausedAddScope, setPausedAddScope] = useState<string | null>(null);
+  const [addPresentationKey, setAddPresentationKey] = useState(0);
   const [adding, setAddingState] = useState(false);
   const draftGenerationRef = useRef(0);
   const punchReviewIntentRef = useRef(0);
-  function setAdding(value: boolean) { if(value) { draftGenerationRef.current++; punchReviewIntentRef.current++; } setAddingState(value); }
+  function setAdding(value: boolean, resume = false) {
+    if (value) {
+      draftGenerationRef.current++;
+      punchReviewIntentRef.current++;
+      setPausedAddScope(null);
+      if (!resume && !adding) { setAddPresentationKey(key => key + 1); setAddMobileDraft(mobileEntry); setAddLaunchAccountId(null); }
+    }
+    setAddingState(value);
+  }
+  function readAddScope() {
+    return JSON.stringify([environmentRef.current, householdRef.current?.householdId, sessionRef.current?.memberId,
+      sessionRef.current?.view, replicaScopeGenerationRef.current]);
+  }
   const [fundLedgeExpanded, setFundLedgeExpanded] = useState(false);
   const [swipeOpen, storeSwipeOpen] = useState(false);
   const swipeIntentRef = useRef(0);
@@ -660,7 +681,11 @@ export function App() {
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
 
+  // Internal navigation/acceptance always dismisses; it must never create a paused draft.
   const closeAdd = () => {
+    setPausedAddScope(null);
+    setAddMobileDraft(false);
+    setAddLaunchAccountId(null);
     punchReviewIntentRef.current++;
     setSplitDraft(null);
     workShiftInputRef.current = null;
@@ -676,7 +701,19 @@ export function App() {
     setDraftLocation(undefined);
     setLocationBusy(false);
   };
-  const addSheetRef = useDialog(adding, closeAdd);
+  // Only an explicit Close/Escape may suspend the mounted mobile draft.
+  const pauseAdd = () => {
+    if (!adding) return;
+    if (mobileEntry || addMobileDraft) {
+      if (busy || postingRef.current) return;
+      punchReviewIntentRef.current++;
+      setPausedAddScope(readAddScope());
+      setAdding(false);
+      return;
+    }
+    closeAdd();
+  };
+  const addSheetRef = useDialog(adding, pauseAdd);
   useEffect(() => {
     if (!swipeStrip) return;
     const timer = window.setTimeout(() => setSwipeStrip(item=>item?.token.id===swipeStrip.token.id&&item.expiresAt===swipeStrip.expiresAt?null:item), Math.max(0,swipeStrip.expiresAt-Date.now()));
@@ -737,6 +774,7 @@ export function App() {
     setSwipeOpen(false);
     setSwipeError("");
     setSwipeStrip(null);
+    setPausedAddScope(null);
   }, [environment, household?.householdId, session?.memberId, session?.view]);
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
@@ -3927,9 +3965,9 @@ export function App() {
       }catch(error){presentSetError(error instanceof Error?error.message:String(error));return null;}finally{setBusy(false);}
     }
     if (useLedgerSync && previous && (previous.linked || localLedgerIdentity(actorId ?? session?.memberId ?? ""))) {
-      if(next.householdId!==previous.householdId){presentSetError("Choose the new ledger before submitting an entry.");return null;}
+      if(next.householdId!==previous.householdId){options?.onDefinitiveRejected?.();presentSetError("Choose the new ledger before submitting an entry.");return null;}
       const client = ledgerSyncRef.current;
-      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); presentSetError(message); return null; }
+      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onDefinitiveRejected?.({ retryable: true }); options?.onRejected?.(message); presentSetError(message); return null; }
       const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
       confirmationRef.current = confirmationId;
       presentSetLedgerCommandId(confirmationId);
@@ -3955,6 +3993,7 @@ export function App() {
     }
     if (previous && !booksGateRef.current.ready) {
       const message = booksGateRef.current.reason || "The local journal must finish validating before anything can change.";
+      options?.onDefinitiveRejected?.({ retryable: true });
       if (options?.onRejected) options.onRejected(message);
       else presentSetError(message);
       return null;
@@ -4681,7 +4720,7 @@ export function App() {
     memberId: session?.memberId ?? null,
     view: session?.view ?? null,
   };
-  function runKitchen(fn: (current: Household) => CommitResult): Promise<CommandOutcome | null> {
+  function runKitchen(fn: (current: Household) => CommitResult, options?: KitchenCommandOptions): Promise<CommandOutcome | null> {
     return enqueueScopedWrite(enqueueWrite, reviewedKitchenScope, () => ({
       generation: replicaScopeGenerationRef.current,
       environment: environmentRef.current,
@@ -4691,6 +4730,8 @@ export function App() {
     }), async () => {
       const current = householdRef.current;
       if (!current) return null;
+      let handedToCommit = false;
+      const onDefinitiveRejected: NonNullable<KitchenCommandOptions["onDefinitiveRejected"]> = rejection => { if (renderedWriteIsCurrent()) options?.onDefinitiveRejected?.(rejection); };
       try {
         const result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
@@ -4698,11 +4739,12 @@ export function App() {
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) return null;
         }
+        handedToCommit = true;
         const outcome = await commitHousehold(
           result.household,
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
-          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent },
+          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent, onDefinitiveRejected },
         );
         if (!renderedWriteIsCurrent()) return outcome;
         if (outcome?.ok && memberPersonal && result.personalMemberId) {
@@ -4710,6 +4752,7 @@ export function App() {
         }
         return outcome;
       } catch (caught) {
+        if (!handedToCommit) onDefinitiveRejected();
         if (renderedWriteIsCurrent()) setError(caught instanceof Error ? caught.message : String(caught));
         return null;
       }
@@ -5664,6 +5707,7 @@ export function App() {
     setMode("expense");
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
+    setAddLaunchAccountId(card.kind === "ready" ? card.accountId : null);
     setAddSlide(0);
     setError("");
     setForm(formForAccount(accountId, {
@@ -5792,6 +5836,12 @@ export function App() {
   };
 
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
+    if (pausedAddScope === readAddScope() && (!nextMode || nextMode === mode) && (!account || account.id === focusedAccountId)) {
+      leaveDesk();
+      setAdding(true, true);
+      if (account) setAddLaunchAccountId(account.id);
+      return;
+    }
     leaveDesk();
     const id = account?.id ?? focusedAccountId;
     const defaults = addFormDefaults(displayHousehold, id);
@@ -5799,6 +5849,7 @@ export function App() {
     setMode(nextMode ?? defaults.suggestedMode);
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
+    setAddLaunchAccountId(account?.id ?? null);
     setAddSlide(0);
     setAddDetails(false);
     setError("");
@@ -5939,6 +5990,7 @@ export function App() {
     setMode("transfer");
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
+    setAddLaunchAccountId(account.id);
     setAddSlide(0);
     setAddDetails(false);
     setError("");
@@ -5980,9 +6032,10 @@ export function App() {
     goTab("ledger");
   };
 
-  const openFundDestination = (destination: FundDestination = "record") => {
+  const openFundDestination = (destination: FundDestination | "ask" = "record") => {
     rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
     if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
+    if (destination === "ask") { goTab("home"); emitOfficeIntent({ type: "expand", id: "chalkboard" }); return; }
     if (destination === "shelf") { goTab("plan"); return; }
     if (destination === "minutes") { goTab("more"); return; }
     setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
@@ -6243,12 +6296,15 @@ export function App() {
           onDismiss={() => setError("")}
         />
       ) : null}
-      {visibleLedgerRejected.length>0 && <section className="card" aria-label="Entries not posted">
-        <h2>Entries not posted</h2><p>Your entries are kept here for review. They are not in the posted balances.</p>
+      {visibleLedgerRejected.length>0 && <section className="card" aria-label="Changes needing review">
+        <h2>Changes needing review</h2><p>These changes are kept for review. They have not been saved to your books or boards.</p>
         {visibleLedgerRejected.map(entry=><article key={entry.command.id}>
           <p>{entry.rejection}</p>
           {entry.preview?.rows.filter(row=>isVisibleInView(row,memberId??'',view)).map(row=><p key={row.id}>{row.date} · {row.note} · {formatCad(row.amountCents)} · {row.splits.map(split=>`${split.party}: ${formatCad(split.amountCents)}`).join(', ')}</p>)}
-          <button type="button" className="chip" onClick={()=>openAddFor(null)}>Start a new entry</button>{" "}
+          {isBoardDraft(entry.command) ? <BoardRejectedDraft command={entry.command} household={household} onOpen={board=>{
+            requestSharedBoard({environment,householdId:household.householdId,memberId:actorId},board);
+            goTab("home");emitOfficeIntent({type:"expand",id:"chalkboard"});
+          }} /> : <button type="button" className="chip" onClick={()=>openAddFor(null)}>Start a new entry</button>}{" "}
           <button type="button" className="ghost" onClick={()=>{void ledgerSyncRef.current?.dismissRejected(entry.command.id);}}>Dismiss retained entry</button>
         </article>)}
       </section>}
@@ -6438,7 +6494,7 @@ export function App() {
           onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
           onOpenAccount={openWallet}
-          onKitchen={(fn) => { void runKitchen(fn); }}
+          onKitchen={runKitchen}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={claimId=>openClaimSettlement(claimId)}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
@@ -6491,13 +6547,18 @@ export function App() {
               />
             </div>
           ) : (
-          <div className="plan-wide">
-          <div className="plan-wide-lead">
+          <div className="plan-wide five-boards-plan">
           <section className="hero">
             <div className="label">{view === "household" ? "Household plan vs actual" : "My plan vs actual"}</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
+          <PlanCategories
+            household={household}
+            rows={dashboard.month.categories}
+            monthKey={monthKeyFromDateKey(today)}
+            onSave={(next, token) => persist(next, token)}
+          />
           <SitDownGuide
             household={household}
             displayHousehold={displayHousehold}
@@ -6518,13 +6579,7 @@ export function App() {
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
             onShowHome={() => goTab("home")}
           />
-          </div>
-          <PlanCategories
-            household={household}
-            rows={dashboard.month.categories}
-            monthKey={monthKeyFromDateKey(today)}
-            onSave={(next, token) => persist(next, token)}
-          />
+
           </div>
           )}
         </>
@@ -7211,8 +7266,12 @@ export function App() {
         />
       ) : null}
 
-      {adding && (
+      {(adding || pausedAddScope === readAddScope()) && (
         <AddSlideshow
+          key={addPresentationKey}
+          open={adding}
+          recommendationHousehold={displayHousehold}
+          initialAccountId={addLaunchAccountId}
           sheetRef={addSheetRef}
           mode={mode}
           onSwitchMode={switchAddMode}
@@ -7295,7 +7354,7 @@ export function App() {
           }}
           postLabel={addPostLabel()}
           onPost={() => submit()}
-          onClose={closeAdd}
+          onClose={pauseAdd}
           persistCategory={(next, token) => persist(next, token)}
           presetId={presetId}
           onPresetId={setPresetId}

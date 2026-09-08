@@ -6,6 +6,7 @@ import { nextId } from "./ids.ts";
 import { markConflicted, markPendingTransport, markSynchronized } from "./sharing.ts";
 import { belongsToSharedLedger } from "./visibility.ts";
 import { mergeDevices } from "./devices.ts";
+import { mergeSharedBoards } from "./sharedBoards.ts";
 import type {
   Claim,
   ConflictRecord,
@@ -116,6 +117,13 @@ export function absorbDisjointSharedMoney(
   const shared = {
     ...remoteParts.shared,
     revision,
+    // Legacy divergent-snapshot recovery only: retain board rows/versioned
+    // clears while preserving the existing remote policy for all other kitchen
+    // content. This remains pending CAS; v2 adopts its accepted replica directly.
+    kitchen: {
+      ...remoteParts.shared.kitchen,
+      boards: mergeSharedBoards(localParts.shared.kitchen.boards, remoteParts.shared.kitchen.boards, tombstones),
+    },
     transactions: mergeRecords(remoteParts.shared.transactions, localParts.shared.transactions, tombstones),
     shifts: mergeRecords(remoteParts.shared.shifts, localParts.shared.shifts, tombstones),
     claims: mergeRecords(remoteParts.shared.claims ?? [], localParts.shared.claims ?? [], tombstones),

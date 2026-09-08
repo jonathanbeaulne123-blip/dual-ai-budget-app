@@ -670,6 +670,8 @@ export type HouseholdGames = {
 };
 
 export type HouseholdKitchen = {
+  /** Shared companion content. Photo bytes live in authenticated object storage. */
+  boards?: import("./sharedBoards.ts").SharedBoardState;
   chalkboard: ChalkNote[];
   companion: HouseholdCompanion;
   books: HouseholdBooksDesk;

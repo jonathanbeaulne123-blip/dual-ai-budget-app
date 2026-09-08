@@ -3,6 +3,7 @@ import {dueOccurrenceReview,reviewedDueRequest,type DueOccurrenceRequest} from "
 import { reviewedSwipeEntry } from "./swipe.ts";
 import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewRequest } from "./duplicateReview.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
+import { BOARD_ITEM_LIMIT, BOARD_TITLE_LIMIT, shapeSharedBoards, type BoardTask, type BoardMilestone, type BoardPhoto } from "./sharedBoards.ts";
 import { TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
@@ -5173,6 +5174,70 @@ export function undo(current: Household, token: UndoToken): Household {
   restored.transactions = refreshDuplicateFlags(restored.transactions);
   return restored;
 }
+
+type BoardEdit = { memberId: string; id: string; expectedVersion: number };
+type BoardItemEdit = BoardEdit & { title: string; dueDate: string | null; completed: boolean };
+
+function requireBoardVersion(household: Household, input: BoardEdit, row?: { version: number }) {
+  requireMember(household, input.memberId);
+  if (!household.members.some(m => m.id === input.memberId && m.active)) throw new ValidationError("Open the boards as an active household member.");
+  if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0 || input.expectedVersion >= Number.MAX_SAFE_INTEGER || input.expectedVersion !== (row?.version ?? 0)
+    || household.tombstones.some(t => t.id === input.id)) throw new ValidationError("This item changed on another device. Review the latest version before saving your draft.");
+}
+function boardItemValues(input: BoardItemEdit) {
+  if (typeof input.title !== "string" || !input.title.trim() || input.title.trim().length > BOARD_TITLE_LIMIT) throw new ValidationError(`Use a title between 1 and ${BOARD_TITLE_LIMIT} characters.`);
+  if (typeof input.completed !== "boolean") throw new ValidationError("Choose whether the item is complete.");
+  return { title: input.title.trim(), dueDate: input.dueDate === null ? null : parseDate(input.dueDate), completed: input.completed };
+}
+export const saveBoardTask = captureCommand("saveBoardTask", function saveBoardTask(household: Household, input: BoardItemEdit & { assigneeId: string | null }): CommitResult {
+  if (!/^BOARD-TASK-[A-Za-z0-9_-]{1,80}$/.test(input.id)) throw new ValidationError("Choose a valid task identity.");
+  const boards = shapeSharedBoards(household.kitchen.boards), old = boards.tasks.find(r => r.id === input.id);
+  requireBoardVersion(household, input, old);
+  const values = boardItemValues(input);
+  if (input.assigneeId !== null && !household.members.some(m => m.id === input.assigneeId && m.active)) throw new ValidationError("Choose an active household member for this task.");
+  if (!old && boards.tasks.length >= BOARD_ITEM_LIMIT) throw new ValidationError("Remove a finished task before adding another.");
+  const at = nowIso(), row: BoardTask = { id: input.id, ...values, assigneeId: input.assigneeId, version: (old?.version ?? 0) + 1, createdBy: old?.createdBy ?? input.memberId, createdAt: old?.createdAt ?? at, updatedAt: at };
+  const next = cloneHousehold(household);
+  next.kitchen.boards = { ...boards, tasks: [...boards.tasks.filter(r => r.id !== row.id), row] };
+  return commit(cloneHousehold(household), next, "Shared boards", "Updated a shared task", []);
+});
+export const saveBoardMilestone = captureCommand("saveBoardMilestone", function saveBoardMilestone(household: Household, input: BoardItemEdit): CommitResult {
+  if (!/^BOARD-MILESTONE-[A-Za-z0-9_-]{1,80}$/.test(input.id)) throw new ValidationError("Choose a valid milestone identity.");
+  const boards = shapeSharedBoards(household.kitchen.boards), old = boards.milestones.find(r => r.id === input.id);
+  requireBoardVersion(household, input, old);
+  const values = boardItemValues(input);
+  if (!old && boards.milestones.length >= BOARD_ITEM_LIMIT) throw new ValidationError("Remove a finished milestone before adding another.");
+  const at = nowIso(), row: BoardMilestone = { id: input.id, ...values, version: (old?.version ?? 0) + 1, createdBy: old?.createdBy ?? input.memberId, createdAt: old?.createdAt ?? at, updatedAt: at };
+  const next = cloneHousehold(household);
+  next.kitchen.boards = { ...boards, milestones: [...boards.milestones.filter(r => r.id !== row.id), row] };
+  return commit(cloneHousehold(household), next, "Shared boards", "Updated a shared milestone", []);
+});
+function removeBoardItem(household: Household, input: BoardEdit, field: "tasks" | "milestones"): CommitResult {
+  const boards = shapeSharedBoards(household.kitchen.boards), old = boards[field].find(r => r.id === input.id);
+  requireBoardVersion(household, input, old);
+  if (!old) throw new ValidationError("This item is already gone.");
+  const next = cloneHousehold(household);
+  next.kitchen.boards = { ...boards, [field]: boards[field].filter(r => r.id !== input.id) };
+  next.tombstones = mergeTombstones(next.tombstones, [{ id: input.id, deletedAt: nowIso() }]);
+  return commit(cloneHousehold(household), next, "Shared boards", field === "tasks" ? "Removed a shared task" : "Removed a shared milestone", []);
+}
+export const removeBoardTask = captureCommand("removeBoardTask", (household: Household, input: BoardEdit) => removeBoardItem(household, input, "tasks"));
+export const removeBoardMilestone = captureCommand("removeBoardMilestone", (household: Household, input: BoardEdit) => removeBoardItem(household, input, "milestones"));
+export const setBoardPhoto = captureCommand("setBoardPhoto", function setBoardPhoto(household: Household, input: {
+  memberId: string; slot: 1 | 2 | 3; mediaId: string | null; caption: string; crop: BoardPhoto["crop"]; expectedVersion: number;
+}): CommitResult {
+  if (![1,2,3].includes(input.slot)) throw new ValidationError("Choose one of the three photo slots.");
+  const id = `BOARD-PHOTO-${input.slot}` as BoardPhoto["id"], boards = shapeSharedBoards(household.kitchen.boards), old = boards.photos.find(r => r.id === id);
+  requireBoardVersion(household, { ...input, id }, old);
+  if (input.mediaId !== null && !/^BM-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(input.mediaId)) throw new ValidationError("Upload the photo before attaching it to a board.");
+  if (typeof input.caption !== "string" || input.caption.length > BOARD_TITLE_LIMIT) throw new ValidationError(`Keep captions within ${BOARD_TITLE_LIMIT} characters.`);
+  const crop = input.crop;
+  if (!crop || !Number.isFinite(crop.x) || crop.x < 0 || crop.x > 100 || !Number.isFinite(crop.y) || crop.y < 0 || crop.y > 100 || !Number.isFinite(crop.zoom) || crop.zoom < 1 || crop.zoom > 3) throw new ValidationError("Choose a valid photo crop.");
+  const at=nowIso(), row:BoardPhoto={ id, mediaId:input.mediaId, caption:input.mediaId ? input.caption.trim() : "", crop:{x:crop.x,y:crop.y,zoom:crop.zoom}, version:(old?.version??0)+1, createdBy:old?.createdBy??input.memberId, createdAt:old?.createdAt??at, updatedAt:at };
+  const next=cloneHousehold(household);
+  next.kitchen.boards={...boards,photos:[...boards.photos.filter(r=>r.id!==id),row]};
+  return commit(cloneHousehold(household),next,"Shared boards",input.mediaId ? "Updated a shared photo" : "Removed a shared photo",[]);
+});
 
 export const scribbleChalk = captureCommand("scribbleChalk", function scribbleChalk(household: Household, input: { text?: string; author: string; ink?: ChalkInk | null }): CommitResult {
   const ink = shapeChalkInk(input.ink ?? null);

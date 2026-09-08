@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import { Memorabilia } from "./theme/Memorabilia.tsx";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
@@ -24,7 +25,7 @@ import {
   shiftPostingStreak,
   walletWarn,
 } from "./core/index.ts";
-import type { Household, Account, Category, CommitResult, Finding, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
+import type { Household, Account, Category, Finding, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { SillOverview } from "./core/sillOverview.ts";
@@ -32,7 +33,7 @@ import type { SillOverview } from "./core/sillOverview.ts";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
-import { ChalkboardBody } from "./widgets/ChalkboardDesk.tsx";
+import { SharedBoards } from "./widgets/SharedBoards.tsx";
 import { WeatherRibbon } from "./widgets/WeatherRibbon.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
@@ -99,12 +100,13 @@ export function OfficePhone({
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onGo: (tab: HearthTab) => void;
   integrityFindings?: Finding[];
 }) {
   const [chalkOpen, setChalkOpen] = useState(false);
+  useEffect(() => { if (layout.expanded === "chalkboard") setChalkOpen(true); }, [layout.expanded]);
   const receipt = useApronReceipt(booksHousehold, memberId);
   const [chapter, setChapter] = useState<PhoneChapter | null>(null);
   const cover = useRef<HTMLElement | null>(null);
@@ -330,14 +332,22 @@ export function OfficePhone({
       )}
 
       <Memorabilia scene={scene.id} location="phone-desk" />
-      <details className="ph-chalk" open={chalkOpen} onToggle={(event) => setChalkOpen(event.currentTarget.open)}>
-        <summary>Notes</summary>
+      <details className="ph-chalk" open={chalkOpen} onToggle={(event) => {
+        const open=event.currentTarget.open;setChalkOpen(open);
+        if(!open&&layout.expanded==="chalkboard")onLayout({...layout,expanded:null});
+      }}>
+        <summary>Our boards · Notes, photos & plans</summary>
         <div className={`ph-chalk-body ${adding ? "is-inert" : ""}`}>
-          <ChalkboardBody
-            household={household}
+          <SharedBoards
+            key={`${household.environment}:${household.householdId}:${memberId}:${view}`}
+            household={booksHousehold}
             memberId={memberId}
+            today={today}
+            view={view}
+            scenarioSource={scenarioSource}
             busy={busy}
             onCommand={onKitchen}
+            onOpenGoals={() => onGo("plan")}
           />
         </div>
       </details>

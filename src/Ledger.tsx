@@ -3,7 +3,7 @@ import { createReadingReceiptReader } from "./readingReceipt.ts";
 import { applyDuplicateReview } from "./core/duplicateReviewCommand.ts";
 import { createPortal } from "react-dom";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   formatCad,
   formatDateLabel,
@@ -38,15 +38,22 @@ const SECTIONS: { id: LedgerSection; label: string }[] = [
   { id: "other", label: "Other" },
 ];
 
+// UI-only bookmarks survive Books unmounting. Never retain rows or write authority.
+// Bounded and scoped to the exact reader; nothing is persisted to disk or cloud.
+type ActivityBookmark = { query: string; month: string; account: string; type: string; rowLimit: number; scroll: number };
+const activityBookmarks = new Map<string, ActivityBookmark>();
+const emptyBookmark = (): ActivityBookmark => ({ query: "", month: "", account: "", type: "", rowLimit: 50, scroll: 0 });
+
 export function LedgerPage(props:LedgerProps) {
   return <LedgerSession key={JSON.stringify([props.household.environment,props.household.householdId,props.memberId,props.view,props.authorityGeneration??0])} {...props}/>;
 }
 type LedgerProps = {
-  pendingRows?:PendingPreview[]; household:Household; writeHousehold?:Household; presentedTransactions?:boolean; memberId:string; view:LedgerView;
+  activityFilters?:boolean; pendingRows?:PendingPreview[]; household:Household; writeHousehold?:Household; presentedTransactions?:boolean; memberId:string; view:LedgerView;
   sourceFocus:HerculesNumberSource|null; onClearSource:()=>void; onChange:(household:Household,undo?:UndoToken)=>void; onRemove:(transaction:Transaction)=>void;
   onDuplicateCommand?:DuplicateCommand; busy?:boolean; authorityGeneration?:number;
 };
 function LedgerSession({
+  activityFilters = false,
   pendingRows = [],
   household,
   writeHousehold = household,
@@ -92,10 +99,38 @@ function LedgerSession({
     finally{if(scope.isCurrent(captured.token))setPending(false);}
   };
   const readReceipt = useMemo(() => createReadingReceiptReader(writeHousehold, memberId, view), [writeHousehold, memberId, view]);
+  const bookmarkKey = JSON.stringify([household.environment, household.householdId, memberId, view, authorityGeneration]);
+  const initialBookmark = useRef(activityFilters ? activityBookmarks.get(bookmarkKey) ?? emptyBookmark() : emptyBookmark()).current;
+  const activityRoot = useRef<HTMLDivElement>(null);
+  const [month, setMonth] = useState(initialBookmark.month);
+  const [account, setAccount] = useState(initialBookmark.account);
+  const [type, setType] = useState(initialBookmark.type);
   const [section, setSection] = useState<LedgerSection>("expenses");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialBookmark.query);
   const [showContrast, setShowContrast] = useState(false);
-  const [rowLimit, setRowLimit] = useState(50);
+  const [rowLimit, setRowLimit] = useState(initialBookmark.rowLimit);
+  const bookmark = useRef(initialBookmark);
+  bookmark.current = { ...bookmark.current, query, month, account, type, rowLimit };
+  useLayoutEffect(() => {
+    if (!activityFilters) return;
+    let parent = activityRoot.current?.parentElement ?? null;
+    while (parent && !/(auto|scroll)/.test(getComputedStyle(parent).overflowY)) parent = parent.parentElement;
+    const scrollParent = parent;
+    const remember = () => {
+      bookmark.current.scroll = scrollParent ? scrollParent.scrollTop : window.scrollY;
+      activityBookmarks.delete(bookmarkKey);
+      activityBookmarks.set(bookmarkKey, { ...bookmark.current });
+      if (activityBookmarks.size > 12) activityBookmarks.delete(activityBookmarks.keys().next().value!);
+    };
+    // Restore after the selected rows have laid out, including Show more rows.
+    const frame = requestAnimationFrame(() => {
+      if (scrollParent) scrollParent.scrollTop = initialBookmark.scroll;
+      else if (initialBookmark.scroll) window.scrollTo(0, initialBookmark.scroll);
+    });
+    const scrollTarget = scrollParent ?? window;
+    scrollTarget.addEventListener("scroll", remember, { passive: true });
+    return () => { cancelAnimationFrame(frame); scrollTarget.removeEventListener("scroll", remember); remember(); };
+  }, [activityFilters, bookmarkKey, initialBookmark]);
   const visible = useMemo(
     () => presentedTransactions
       ? household.transactions
@@ -111,7 +146,12 @@ function LedgerSession({
   // must not pay its quadratic cost while the review is closed.
   const contrasts = useMemo(() => showContrast ? duplicateContrastPairs(visible) : [], [visible, showContrast]);
 
-  useEffect(() => setRowLimit(50), [query, section, sourceFocus, memberId, view]);
+  const previousFilters = useRef([query, section, sourceFocus, month, account, type]);
+  useEffect(() => {
+    const next = [query, section, sourceFocus, month, account, type];
+    if (next.some((value, index) => value !== previousFilters.current[index])) setRowLimit(50);
+    previousFilters.current = next;
+  }, [query, section, sourceFocus, month, account, type]);
 
   useEffect(() => {
     if (!sourceFocus?.transactionId) return;
@@ -121,26 +161,34 @@ function LedgerSession({
     else if (transaction) setSection("other");
   }, [sourceFocus, visible]);
 
-  const rows = grouped[section].filter((tx) => {
+  const matchesFilters = (tx: Transaction) => {
+    if (activityFilters && !sourceFocus && ((month && !tx.date.startsWith(month)) || (account && tx.accountId !== account) || (type && tx.type !== type))) return false;
     if (!query.trim()) return true;
     const hay = `${tx.note} ${tx.place} ${categoryName(household, tx.subcategoryId)} ${accountName(household, tx.accountId)}`.toLowerCase();
-    return hay.includes(query.trim().toLowerCase());
-  });
+    return (activityFilters && !!sourceFocus) || hay.includes(query.trim().toLowerCase());
+  };
+  const activityRows = useMemo(() => activityFilters
+    ? [...sourceRows].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
+    : [], [activityFilters, sourceRows]);
+  const rows = (activityFilters ? activityRows : grouped[section]).filter(matchesFilters);
+  const months = [...new Set(visible.map(tx => tx.date.slice(0, 7)))].sort().reverse();
+  const visibleAccountIds = new Set(visible.map(tx => tx.accountId));
+  const accounts = household.accounts.filter(row => visibleAccountIds.has(row.id));
 
-  return (
+  const content = (
     <>
       <p ref={noticeRef} className="muted" role="status" tabIndex={-1}>{notice}</p>
       {review&&createPortal(<ConfirmSheet className="duplicate-review-dialog" title={stale&&!pending?"Entries changed":`${review.reading.request.isDuplicate?"Exclude":"Include"} this entry?`}
         body={stale&&!pending?"Return to the entries and review their current details.":`${view==="household"?"Shared":"Personal view · Shared and your Personal entries"}\n${review.reading.target.note||transactionTypeLabel(review.reading.target.type)} · ${formatCad(review.reading.target.amountCents)} · ${formatDateLabel(review.reading.target.date)}\n${accountName(household,review.reading.target.accountId)}\nID ${review.reading.target.id}`}
         notice={failure} extra={stale&&!pending?undefined:[review.reading.changes.length?`Eligibility for dated totals changes for ${review.reading.changes.length} ${review.reading.changes.length===1?"entry":"entries"}:\n${review.reading.changes.map(row=>`${row.date} · ${row.id} · ${row.willCount?"included":"excluded"}`).join("\n")}`:"No entry changes its eligibility for dated totals.",!review.reading.request.isDuplicate&&!review.reading.targetWillCount?"A linked exclusion still keeps this entry out of totals.":"", "Only this entry’s duplicate flag changes. Original entries stay in Books."].filter(Boolean).join("\n\n")}
         confirmLabel={stale?"Return to entries":`Confirm ${review.reading.request.isDuplicate?"exclusion":"inclusion"}`} review={stale&&!pending?undefined:{openingId:review.openingId,identity:review.reading.basis,readIdentity:()=>String(reviewOpening.current)===review.openingId&&scope.isCurrent(review.token)&&liveReview.current?.kind==="ready"?liveReview.current.basis:"retired"}} danger={review.reading.request.isDuplicate&&!stale} busy={pending||busy} onCancel={()=>setReview(null)} onConfirm={()=>void confirm()}/>,document.body)}
-      <section className="hero ledger-overview">
+      {!activityFilters && <section className="hero ledger-overview">
         <div className="label">{ledgerNameForView(household, memberId, view)}</div>
         <div className="money" style={{ fontSize: 36 }}>{rows.length}</div>
         <div className="sub">
           {grouped.expenses.length} expenses · {grouped.income.length} income · {grouped.other.length} transfers/refunds
         </div>
-      </section>
+      </section>}
       {flagged > 0 && (
         <article className="pulse ledger-repeat" style={{ marginTop: 0 }}>
           <article className="warn">
@@ -194,6 +242,13 @@ function LedgerSession({
           <button type="button" className="chip" onClick={onClearSource}>Show all activity</button>
         </p>
       )}
+      {activityFilters ? <section className="household-activity-filters" aria-label="Activity filters">
+        <label>Search activity<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Notes, place, category…" disabled={!!sourceFocus} /></label>
+        <label>Month<select value={month} onChange={event => setMonth(event.target.value)} disabled={!!sourceFocus}><option value="">All months</option>{months.map(value => <option key={value}>{value}</option>)}</select></label>
+        <label>Account<select value={account} onChange={event => setAccount(event.target.value)} disabled={!!sourceFocus}><option value="">All accounts</option>{accounts.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+        <label>Type<select value={type} onChange={event => setType(event.target.value)} disabled={!!sourceFocus}><option value="">All types</option>{(["expense", "income", "transfer", "refund", "opening"] as const).map(value => <option key={value} value={value}>{value === "opening" ? "Opening balance" : transactionTypeLabel(value)}</option>)}</select></label>
+        <p className="muted">{rows.length} accepted {rows.length === 1 ? "entry" : "entries"}{sourceFocus ? " · Clear the source to return to your filters." : ""}</p>
+      </section> : <>
       <div className="tabs ledger-tabs">
         {SECTIONS.map((item) => (
           <button key={item.id} className={section === item.id ? "active" : ""} onClick={() => setSection(item.id)}>
@@ -202,19 +257,21 @@ function LedgerSession({
           </button>
         ))}
       </div>
-      <input className="ledger-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notes, place, category…" />
-      {section === "other" && (
+      <input className="ledger-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notes, place, category…" aria-label="Search activity" />
+      </>}
+      {!activityFilters && section === "other" && (
         <p className="muted">Transfers move money between accounts. Refunds undo spend. Neither is ordinary income.</p>
       )}
       {pendingRows.some(preview => preview.rows.some(tx => isVisibleInView(tx, memberId, view))) && (
         <section className="card ledger-pending" aria-label="Pending entries">
           <p className="muted">Pending · awaiting confirmation. Posted balances update when saved.</p>
-          {pendingRows.flatMap(preview => partitionLedger(transactionsForHerculesSource(preview.rows.filter(tx => isVisibleInView(tx, memberId, view)), sourceFocus))[section]
-            .filter(tx => !query.trim() || `${tx.note} ${tx.place} ${categoryName(household, tx.subcategoryId)} ${accountName(household, tx.accountId)}`.toLowerCase().includes(query.trim().toLowerCase()))
+          {pendingRows.flatMap(preview => {
+            const pendingSource = transactionsForHerculesSource(preview.rows.filter(tx => isVisibleInView(tx, memberId, view)), sourceFocus);
+            return (activityFilters ? pendingSource : partitionLedger(pendingSource)[section]).filter(matchesFilters)
             .map(tx => <div className="ledger-row" key={`${preview.commandId}:${tx.id}`} data-ledger-row-id={tx.id} data-command-id={preview.commandId} data-ledger-phase="pending">
               <div><strong>{tx.note || transactionTypeLabel(tx.type)}</strong><div className="muted">{formatDateLabel(tx.date)} · Pending</div></div>
               <strong>{formatCad(tx.amountCents)}</strong>
-            </div>))}
+            </div>); })}
         </section>
       )}
       <section className="card ledger-entries">
@@ -237,6 +294,7 @@ function LedgerSession({
       </section>
     </>
   );
+  return activityFilters ? <div ref={activityRoot} className="household-activity">{content}</div> : content;
 }
 
 function ContrastSide({ household, tx }: { household: Household; tx: Transaction }) {
