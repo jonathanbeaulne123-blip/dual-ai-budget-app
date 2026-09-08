@@ -14,6 +14,9 @@ it('public legacy reconciliation preserves independent boards in either order wi
   const base = postEntry(catalogHousehold(), { date: '2026-09-07', type: 'expense', amount: '3.00', accountId: 'ACC-VISA', subcategoryId: 'SUB-FOOD-GROCERIES', createdBy: 'MEM-001', visibility: 'personal', note: 'Private money remains local', confirmDuplicate: true }).household;
   const local = divergent(saveBoardTask(base, task).household);
   const remote = divergent(saveBoardMilestone(base, milestone).household);
+  // Distinct accepted clocks make both merge directions deterministic.
+  local.lastCommittedAt = '2026-09-08T12:00:00.000Z';
+  remote.lastCommittedAt = '2026-09-08T12:00:01.000Z';
   local.kitchen.companion.name = 'Local companion';
   remote.kitchen.companion.name = 'Remote companion';
   local.kitchen.chalkboard = [{ id: 'CHALK-local', text: 'Local-only chalk', author: 'MEM-001', createdAt: '2026-09-08T12:00:00Z', updatedAt: '2026-09-08T12:00:00Z' }];
@@ -28,7 +31,12 @@ it('public legacy reconciliation preserves independent boards in either order wi
     expect(otherKitchen).toEqual(remoteKitchen);
     expect(merged.transactions).toEqual(base.transactions);
     expect(merged.goalContributions).toEqual(base.goalContributions);
-    expect(splitForSync(merged, 'MEM-001').personal).toEqual(splitForSync(a, 'MEM-001').personal);
+    // Personal payload stays local; the assembled envelope carries the latest
+    // accepted household clock, even when that clock came from a shared edit.
+    expect(splitForSync(merged, 'MEM-001').personal).toEqual({
+      ...splitForSync(a, 'MEM-001').personal,
+      lastCommittedAt: '2026-09-08T12:00:01.000Z',
+    });
     expect(merged.sharing?.mode).toBe('pending-transport');
     expect(merged.revision).toBe(2); expect(merged.baseRevision).toBe(1);
   }

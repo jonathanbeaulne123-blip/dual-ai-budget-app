@@ -18,6 +18,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install Chromium for real browser continuity and media tests
+        run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: pnpm check
         env:
           HEARTH_TEST_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
