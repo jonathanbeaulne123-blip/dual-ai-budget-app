@@ -214,7 +214,7 @@ describe("onboarding Slice 14 — Chapter 5 opening truth", () => {
     const acknowledged = recordChapterAcknowledgement(household, {
       memberId: BIANCA, chapterId: "ch-05-opening", createdBy: BIANCA,
     }).household;
-    expect(nextChapterFor(acknowledged, BIANCA)?.id).toBe("ch-06-fund");
+    expect(nextChapterFor(acknowledged, BIANCA)?.id).toBe("ch-09-categories");
   });
 
   it("opens the existing Shared-only card and carries the exact batch id into persistence", async () => {

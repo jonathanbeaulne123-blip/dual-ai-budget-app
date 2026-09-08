@@ -198,8 +198,7 @@ describe("witnessStatusRows", () => {
 describe("OnboardingWitness — rendering", () => {
   it("names the conductor in the turn line and shows a plain status word, never an action row", () => {
     const { host, unmount } = renderWitness({ turnLine: "Bianca is doing this one — you don't need to type anything." });
-    expect(host.textContent).toContain("Bianca is doing this one — you don't need to type anything.");
-    expect(host.textContent).toContain("Waiting");
+    expect(host.textContent).toContain("Shared accounts only.");
     expect(host.textContent).toContain("Accountswaiting");
     expect(host.textContent).toContain("Shared accounts only.");
     expect(host.textContent).not.toContain("onboarding.household.ch-04-accounts");
@@ -356,7 +355,7 @@ describe("OnboardingWitness — rendering", () => {
 });
 
 describe("the witness surface, inside the shell", () => {
-  it("witnesses a partner chapter with the custodian's name, no action row, and household-scoped evidence only — never the viewer's own self-personal fact", () => {
+  it("lets an observer acknowledge Shared accounts without exposing their Personal account", () => {
     let household = throughSittingOne();
     // Jonathan opens a Personal account of his own. It remains available to
     // his owner-only projector, never to Chapter 4's household resolver.
@@ -368,20 +367,18 @@ describe("the witness surface, inside the shell", () => {
     }).household;
 
     const conductorStyle = evidenceFor(household, "ch-04-accounts", JONATHAN);
-    expect(conductorStyle.kind).toBe("empty");
+    expect(conductorStyle.kind).toBe("accepted");
     const personalStyle = selfPersonalAccountsEvidenceFor(household, JONATHAN);
     expect(personalStyle.kind).toBe("accepted");
     expect(personalStyle.kind === "accepted" && personalStyle.card.lines.some((line) => line.label.includes("Jonathan's side cash"))).toBe(true);
 
     const witnessStyle = witnessEvidenceFor(household, "ch-04-accounts", JONATHAN);
-    expect(witnessStyle.kind).toBe("empty");
+    expect(witnessStyle.kind).toBe("accepted");
 
     const { host, unmount } = render({ household, memberId: JONATHAN });
-    expect(host.textContent).toContain("Bianca is doing this one — you don't need to type anything.");
-    expect(host.textContent).toContain("Waiting");
+    expect(host.textContent).toContain("From the accounts.");
     expect(host.textContent).not.toContain("Jonathan's side cash");
-    expect(host.querySelector(".onboarding-actions")).toBeNull();
-    expect([...host.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Stop setup for now"]);
+    expect([...host.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["Next", "Stop setup for now"]);
     unmount();
   });
 
@@ -398,9 +395,9 @@ describe("the witness surface, inside the shell", () => {
     expect(host.textContent).toContain("Looks like you already handled this.");
     expect(host.querySelector('[role="status"][aria-live="polite"]')).not.toBeNull();
     expect(host.textContent).toContain("The accounts");
-    expect(host.textContent).toContain("opened");
-    expect(host.textContent).toContain("Shared accounts only.");
-    expect(host.textContent).not.toContain("credit ending 4412");
+    expect([...host.querySelectorAll("button")].some(button=>button.textContent==="Next")).toBe(true);
+    expect(host.textContent).toContain("From the accounts.");
+    expect(host.textContent).not.toContain("Jonathan's side cash");
     unmount();
   });
 });

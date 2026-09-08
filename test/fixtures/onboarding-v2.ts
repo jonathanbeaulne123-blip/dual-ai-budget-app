@@ -51,3 +51,18 @@ export function readySetup(includePractice = false): Household {
   }
   return h;
 }
+
+/** Real accepted books/Charter facts, before either person authors the starter plan. */
+export function setupBooks(): Household {
+  const h = setupFacts();
+  delete h.onboardingSubmissions;delete h.onboardingCategoryMerges;delete h.onboardingCategoryProposals;
+  delete h.onboardingApprovals;h.budgetPlans=[];delete h.acceptedStarterPlans;
+  return h;
+}
+export function acknowledgeBefore(h: Household, chapterId: string): Household {
+  for (const chapter of requiredHouseholdChapters()) {
+    if (chapter.id === chapterId) break;
+    for (const memberId of [A,B]) h=acknowledge(h,memberId,chapter.id);
+  }
+  return h;
+}

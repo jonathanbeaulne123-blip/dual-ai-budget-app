@@ -1,6 +1,6 @@
+import { activeSetup } from "./fixtures/onboarding-v2.ts";
 import { describe, expect, it } from "vitest";
 import {
-  catalogHousehold,
   evidenceFor,
   memberProgress,
   recordChapterAcknowledgement,
@@ -21,7 +21,7 @@ const TOKEN = "PRIVATE-SUPABASE-TOKEN";
 const EMAIL = "bianca@example.test";
 
 function householdWithIdentity(): Household {
-  const household = catalogHousehold("development");
+  const household = activeSetup();
   household.google = shapeGoogle({
     ...household.google,
     links: [{
@@ -115,7 +115,7 @@ describe("Chapter 2 live household scope", () => {
   });
 
   it("uses the exact hosted membership as identity authority when the local Google bridge is empty", async () => {
-    const household = catalogHousehold("development");
+    const household = activeSetup();
     expect(household.google.links).toEqual([]);
 
     const observation = await probeHouseholdScope({ household, memberId: BIANCA }, adapters(household));
@@ -247,7 +247,9 @@ describe("Chapter 2 live household scope", () => {
       lastSafeResumePoint: "ch-02-household",
     });
     expect(row?.probeEvidenceKey).toContain(household.householdId);
-    expect(first).toMatchObject({ persistenceScope: "member-personal", personalMemberId: BIANCA, postedIds: [] });
+    expect(first.persistenceScope).not.toBe("member-personal");
+    expect(first.postedIds).toHaveLength(1);
+    expect(first.household.onboardingAttestations).toEqual([expect.objectContaining({memberId:BIANCA,requirementId:"ch-02-household"})]);
     expect(first.household.members.find((member) => member.id === JONATHAN)?.onboardingProgress).toBeUndefined();
 
     const switched = structuredClone(household);

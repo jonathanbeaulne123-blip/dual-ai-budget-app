@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { setupBooks, acknowledgeBefore } from "./fixtures/onboarding-v2.ts";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { act, createElement } from "react";
@@ -11,7 +12,6 @@ import {
   compileHousehold,
   copy,
   currentSubmission,
-  emptyMemberOnboardingProgress,
   evidenceFor,
   mergeShared,
   onboardingEstimateState,
@@ -40,7 +40,7 @@ const ESTIMATE_TWO_AT = "2026-09-04T18:04:00.000Z";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 function categoryReadyHousehold(): Household {
-  const first = submitOnboardingCategories(catalogHousehold("development"), {
+  const first = submitOnboardingCategories(setupBooks(), {
     memberId: BIANCA,
     createdBy: BIANCA,
     categoryIds: ["SUB-FOOD-GROCERIES", "SUB-HOUSING-RENT"],
@@ -85,23 +85,7 @@ function chapterTenHousehold(): Household {
     createdAt: CATEGORY_ONE_AT,
     updatedAt: CATEGORY_TWO_AT,
   };
-  const completedBeforeTen = new Set([
-    "ch-01-meet", "ch-02-household", "ch-03-charter", "ch-04-accounts", "ch-05-opening",
-    "ch-06-fund", "ch-07-recurrences", "ch-08-cadence", "ch-09-categories",
-  ]);
-  household.members = household.members.map((member) => {
-    const progress = emptyMemberOnboardingProgress({
-      environment: "development",
-      householdId: household.householdId,
-      memberId: member.id,
-    });
-    progress.rows = progress.rows.map((row) => completedBeforeTen.has(row.chapterId)
-      ? { ...row, acknowledgedAt: CATEGORY_TWO_AT, lastSafeResumePoint: row.chapterId }
-      : row);
-    progress.updatedAt = CATEGORY_TWO_AT;
-    return { ...member, onboardingProgress: progress };
-  });
-  return household;
+  return acknowledgeBefore(household, "ch-10-estimates");
 }
 
 function click(node: Element) {

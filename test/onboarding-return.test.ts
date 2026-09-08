@@ -1,17 +1,13 @@
+import { readySetup } from "./fixtures/onboarding-v2.ts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  addRecurrence,
-  approveHouseholdFundConfiguration,
   catalogHousehold,
-  configureHouseholdFund,
   confirmHouseholdOnboarding,
   foundHouseholdCharter,
-  postOpeningBalances,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
-  recordEarningCadence,
   recordObservedChapterCompletion,
   signHouseholdCharter,
   setFundCardAccount,
@@ -136,131 +132,7 @@ describe("onboardingNavigationTarget", () => {
       "ch-05-opening", "ch-06-fund", "ch-07-recurrences", "ch-08-cadence",
       "ch-09-categories", "ch-10-estimates", "ch-11-plan", "ch-12-ready",
     ];
-    let household = proposedActive();
-    for (const chapterId of HOUSEHOLD_CHAPTER_IDS) {
-      if (chapterId === "ch-03-charter") {
-        household = foundHouseholdCharter(household, {
-          memberId: JONATHAN,
-          custodianMemberId: BIANCA,
-          purpose: "Roof and groceries.",
-          splitRule: "remainder",
-          splitNote: "Bianca covers what she can, Jonathan closes the rest.",
-          ceilingKind: "none",
-          cadence: "weekly",
-          cadenceWeekday: 0,
-          date: TODAY,
-        }).household;
-        household = signHouseholdCharter(household, { memberId: BIANCA }).household;
-        household = signHouseholdCharter(household, { memberId: JONATHAN }).household;
-      }
-      if (chapterId === "ch-04-accounts") {
-        household = setFundCardAccount(household, {
-          memberId: BIANCA, accountId: "ACC-VISA", createdBy: BIANCA,
-        }).household;
-      }
-      if (chapterId === "ch-05-opening") {
-        const confirmationId = "OPEN-RETURN-TEST";
-        const posted = postOpeningBalances(household, {
-          asOfDate: TODAY,
-          createdBy: BIANCA,
-          confirmationId,
-          lines: household.accounts
-            .filter((account) => account.active && account.scope !== "personal")
-            .map((account, index) => ({ accountId: account.id, amountCents: (index + 1) * 100_00 })),
-        });
-        household = {
-          ...posted.household,
-          commandReceipts: [
-            ...(posted.household.commandReceipts ?? []),
-            {
-              confirmationId,
-              identityHash: `identity-${confirmationId}`,
-              auditHash: `audit-${confirmationId}`,
-              commandKind: "postOpeningBalances",
-              postedIds: posted.postedIds,
-              revision: 1,
-              acceptedAt: "2026-09-03T16:00:00.000Z",
-            },
-          ],
-        };
-      }
-      if (chapterId === "ch-06-fund") {
-        const revision = "2026-09-03T16:05:00.000Z";
-        household = configureHouseholdFund(household, {
-          custodianMemberId: BIANCA,
-          openedOn: TODAY,
-          createdBy: BIANCA,
-          at: revision,
-        }).household;
-        household = approveHouseholdFundConfiguration(household, {
-          memberId: JONATHAN,
-          createdBy: JONATHAN,
-          revision,
-          at: "2026-09-03T16:06:00.000Z",
-        }).household;
-      }
-      if (chapterId === "ch-07-recurrences") {
-        for (const recurrence of [
-          { note: "Rent", amount: "1850", subcategoryId: "SUB-HOUSING-RENT" },
-          { note: "Phone", amount: "95", subcategoryId: "SUB-LIFE-PHONE" },
-        ]) {
-          household = addRecurrence(household, {
-            cadence: "monthly",
-            nextDate: TODAY,
-            type: "expense",
-            amount: recurrence.amount,
-            accountId: "ACC-CHEQUING",
-            subcategoryId: recurrence.subcategoryId,
-            note: recurrence.note,
-            origin: "manual",
-          }).household;
-        }
-      }
-      if (chapterId === "ch-08-cadence") {
-        household = recordEarningCadence(household, {
-          memberId: BIANCA,
-          createdBy: BIANCA,
-          paySchedule: {
-            cadence: "irregular",
-            anchorDate: TODAY,
-            weekday: 0,
-            monthDays: [15, 30],
-            customDates: [],
-            reminderTime: "09:00",
-          },
-          detailAction: "skip",
-        }).household;
-      }
-      household = chapterId === "ch-11-plan" || chapterId === "ch-12-ready"
-        ? {
-            ...household,
-            members: household.members.map((member) => member.id === BIANCA && member.onboardingProgress
-              ? {
-                  ...member,
-                  onboardingProgress: {
-                    ...member.onboardingProgress,
-                    rows: member.onboardingProgress.rows.map((row) => row.chapterId === chapterId
-                      ? { ...row, acknowledgedAt: "2026-09-03T14:03:00.000Z", lastSafeResumePoint: chapterId }
-                      : row),
-                  },
-                }
-              : member),
-          }
-        : chapterId === "ch-02-household"
-        ? recordObservedChapterCompletion(household, {
-            memberId: BIANCA,
-            chapterId,
-            createdBy: BIANCA,
-            observation: {
-              kind: "resolved",
-              scope: { environment: household.environment, householdId: household.householdId, memberId: BIANCA },
-              currentMemberId: BIANCA,
-              seatMemberIds: [BIANCA, JONATHAN],
-              observedAt: "2026-09-03T14:02:00.000Z",
-            },
-          }).household
-        : recordChapterAcknowledgement(household, { memberId: BIANCA, chapterId, createdBy: BIANCA }).household;
-    }
+    const household = readySetup(true);
     expect(onboardingNavigationTarget(household, BIANCA)).toEqual({
       chapterId: "ch-12-ready",
       target: { tab: "ledger" },

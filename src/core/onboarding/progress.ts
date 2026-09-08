@@ -14,7 +14,7 @@ import type { CorrectionPracticeProof } from "../monthRehearsalPractice.ts";
 import type { ChapterId, OnboardingChapter } from "./types.ts";
 
 const MISSING_ISO = "1970-01-01T00:00:00.000Z";
-export const NEW_MEMBER_CATCH_UP_CHAPTER_IDS = ["ch-01-meet", "ch-02-household", "ch-08-cadence"] as const;
+export const NEW_MEMBER_CATCH_UP_CHAPTER_IDS = ["ch-01-meet", "ch-02-household"] as const;
 
 export type MemberChapterProgress = {
   chapterId: ChapterId;

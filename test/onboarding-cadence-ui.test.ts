@@ -100,7 +100,7 @@ describe("Chapter 8 earning cadence UI", () => {
     act(() => root.unmount());
   });
 
-  it("routes the self-owned chapter to the existing Shift surface and withholds Next until evidence exists", () => {
+  it("defers earning cadence from the required onboarding path", () => {
     const household = activeThroughChapterSeven();
     const onOpenEarningCadence = vi.fn();
     const host = document.createElement("div");
@@ -115,12 +115,8 @@ describe("Chapter 8 earning cadence UI", () => {
       onOpenEarningCadence,
     })));
 
-    expect(host.textContent).toContain("Set my earning rhythm");
-    expect(host.textContent).not.toContain("Next");
-    const open = [...host.querySelectorAll<HTMLButtonElement>("button")]
-      .find((button) => button.textContent?.includes("Set my earning rhythm"));
-    click(open!);
-    expect(onOpenEarningCadence).toHaveBeenCalledTimes(1);
+    expect(host.textContent).not.toContain("Set my earning rhythm");
+    expect(onOpenEarningCadence).not.toHaveBeenCalled();
     act(() => root.unmount());
   });
 

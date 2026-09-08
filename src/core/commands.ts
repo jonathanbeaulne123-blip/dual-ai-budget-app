@@ -571,7 +571,7 @@ export const recordChapterAcknowledgement = captureCommand("recordChapterAcknowl
       : row),
     updatedAt: at,
   }));
-  if (!chapter.contributesToFinalGate) return result;
+  if (!chapter.contributesToFinalGate || acceptedHouseholdOnboarding(household)?.state === "complete") return result;
   const at = memberProgress(result.household, input.memberId).updatedAt;
   const attested = appendChapterAttestation(result.household, input.memberId, chapter.id, at);
   const priorIds = new Set((household.onboardingAttestations ?? []).map(row => row.id));
@@ -619,6 +619,7 @@ export const recordObservedChapterCompletion = captureCommand("recordObservedCha
       : row),
     updatedAt: at,
   }));
+  if (acceptedHouseholdOnboarding(household)?.state === "complete") return result;
   const at = memberProgress(result.household, input.memberId).updatedAt;
   const attested = appendChapterAttestation(result.household, input.memberId, chapter.id, at);
   const priorIds = new Set((household.onboardingAttestations ?? []).map(row => row.id));

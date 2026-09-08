@@ -95,7 +95,7 @@ const SLICE_12_CHARTER_COPY: Record<string, { text: string; announce: CopyEntry[
 
 const SLICE_13_ACCOUNTS_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
   "onboarding.household.ch-04-accounts": {
-    text: "Tell me which accounts the household actually uses. Add at least one Shared account and choose one Shared credit card for the Fund.", announce: "none",
+    text: "Tell me which accounts the household actually uses. Add the Shared accounts you want to keep together; your own accounts stay Personal.", announce: "none",
   },
   "accounts.open": { text: "Open accounts", announce: "none" },
   "accounts.personal.offer": {
@@ -269,6 +269,8 @@ const SLICE_24_PLAN_COPY: Record<string, { text: string; announce: CopyEntry["an
 };
 
 const SLICE_25_READY_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "ready.practice.save": { text: "Save my Practice", announce: "none" },
+  "ready.practice.waiting": { text: "Your Practice is saved. Waiting for your partner to finish their setup checks.", announce: "polite" },
   "onboarding.household.ch-12-ready": { text: "Let's prove one ordinary entry will be easy tomorrow, then look over everything we set up.", announce: "none" },
   "ready.title": { text: "Ready for ordinary days", announce: "none" },
   "ready.subtitle": { text: "One small proof, one last look, and each of you gives your own yes.", announce: "none" },

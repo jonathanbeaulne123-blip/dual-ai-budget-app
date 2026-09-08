@@ -241,7 +241,7 @@ describe("the conductor shell — rendering", () => {
   });
 
   it("shows the Chapter 4 task and routes the conductor to accounts without offering Next", () => {
-    const { host, unmount } = render({ household: throughSittingOne(), memberId: BIANCA });
+    const { host, unmount } = render({ household: {...throughSittingOne(),accounts:[]}, memberId: BIANCA });
     expect(host.textContent).not.toContain("Looks like you already handled this.");
     expect(host.textContent).toContain("This is the long one — bills, balances, the fund. Worth a coffee.");
     expect(host.textContent).toContain("Tell me which accounts the household actually uses.");
@@ -251,13 +251,11 @@ describe("the conductor shell — rendering", () => {
     unmount();
   });
 
-  it("witnesses the same chapter with the partner's name, no action row at all, and a plain status word", () => {
+  it("lets the observer acknowledge accepted Shared accounts without another account entry", () => {
     const { host, unmount } = render({ household: throughSittingOne(), memberId: JONATHAN });
-    expect(host.textContent).toContain("Bianca is doing this one — you don't need to type anything.");
-    expect(host.textContent).toContain("Waiting");
-    expect(host.querySelector(".onboarding-actions")).toBeNull();
-    const buttons = [...host.querySelectorAll("button")];
-    expect(buttons.map((button) => button.textContent)).toEqual(["Stop setup for now"]);
+    expect(host.textContent).toContain("From the accounts.");
+    expect(host.textContent).not.toContain("Want to add your own accounts too?");
+    expect([...host.querySelectorAll("button")].map(button=>button.textContent)).toEqual(["Next","Stop setup for now"]);
     unmount();
   });
 
@@ -345,8 +343,9 @@ describe("the conductor shell — rendering", () => {
 
     // Jonathan's own progress is untouched — he still witnesses ch-04, not ch-05.
     const witnessAfter = render({ household, memberId: JONATHAN });
-    expect(witnessAfter.host.textContent).toContain("Household cardopened");
-    expect(witnessAfter.host.textContent).toContain("Shared accounts only.");
+    expect(witnessAfter.host.textContent).toContain("The accounts");
+    expect([...witnessAfter.host.querySelectorAll("button")].some(b=>b.textContent==="Next")).toBe(true);
+    expect(witnessAfter.host.textContent).toContain("From the accounts.");
     witnessAfter.unmount();
   });
 

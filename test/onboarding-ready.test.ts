@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { readySetup, acknowledge } from "./fixtures/onboarding-v2.ts";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   acceptHouseholdWrite,
   approveOnboardingReady,
   buildDashboard,
-  catalogHousehold,
   completeHouseholdOnboarding,
   compileHousehold,
   emptyMemberOnboardingProgress,
@@ -27,56 +27,21 @@ const JONATHAN = "MEM-002";
 const TODAY = "2026-09-05" as const;
 const AT = "2026-09-05T14:00:00.000Z";
 
-function activeRecord(household: Household) {
-  return {
-    id: `ONBOARDING-${household.environment}-${household.householdId}`,
-    environment: household.environment,
-    householdId: household.householdId,
-    registryVersion: 1,
-    state: "active" as const,
-    proposedByMemberId: BIANCA,
-    proposedAt: "2026-09-05T13:45:00.000Z",
-    handshakeExpiresAt: "2026-09-05T14:00:00.000Z",
-    confirmedByMemberIds: [BIANCA, JONATHAN],
-    startedAt: AT,
-    stoppedAt: null,
-    stoppedByMemberIds: [],
-    stoppedSolo: false,
-    forcedUnlock: false,
-    completedAt: null,
-    completionDigest: null,
-    createdAt: "2026-09-05T13:45:00.000Z",
-    updatedAt: AT,
-  };
-}
-
-function memberReadyView(memberId: string, readyComplete = true, source?: Household): Household {
-  const household = source ? structuredClone(source) : catalogHousehold("development");
-  household.householdOnboarding = activeRecord(household);
-  household.members = household.members.map((member) => {
-    if (source && member.id !== memberId) return member;
-    const progress = emptyMemberOnboardingProgress({
-      environment: household.environment,
-      householdId: household.householdId,
-      memberId: member.id,
-    });
-    progress.rows = progress.rows.map((row) => ({
-      ...row,
-      acknowledgedAt: row.chapterId === "ch-12-ready" && member.id === memberId && !readyComplete ? null : AT,
-      lastSafeResumePoint: row.chapterId === "ch-12-ready" && member.id === memberId && !readyComplete
-        ? "ch-11-plan"
-        : row.chapterId,
-    }));
-    progress.updatedAt = AT;
-    return { ...member, onboardingProgress: progress };
-  });
+function memberReadyView(memberId: string, readyComplete = true): Household {
+  let household = readySetup(false);
+  for (const actor of [BIANCA, JONATHAN]) {
+    if (actor !== memberId || readyComplete) household = acknowledge(household, actor, "ch-12-ready");
+  }
   return household;
 }
 
 describe("onboarding Chapter 12 Ready", () => {
+  beforeEach(() => { vi.useFakeTimers({toFake:["Date"]}); vi.setSystemTime(new Date("2026-09-08T15:00:00Z")); });
+  afterEach(() => vi.useRealTimers());
   it("keeps correction Practice outside every accepted projection and makes any copy a review-only draft", async () => {
     const household = memberReadyView(BIANCA, false);
     const transactions = structuredClone(household.transactions);
+    const sharedTransactions = structuredClone(splitForSync(household, BIANCA).shared.transactions);
     const journal = compileHousehold(household);
     const dashboard = buildDashboard(household, TODAY);
     const health = runHealthCheck(household);
@@ -93,14 +58,14 @@ describe("onboarding Chapter 12 Ready", () => {
     expect(shiftPostingStreak(household, TODAY)).toEqual(streak);
     expect(await financialAuditHash(household)).toBe(audit);
     expect(splitForSync(household, BIANCA).shared.transactions).toEqual(
-      splitForSync(memberReadyView(BIANCA, false), BIANCA).shared.transactions,
+      sharedTransactions,
     );
     expect(proof.persistedIds).toEqual([]);
     expect(draft).toMatchObject({ requiresReviewAndConfirm: true, amountCents: 4500, practiceReceiptId: proof.receiptId });
     expect(draft).not.toHaveProperty("id");
   });
 
-  it("accepts either privacy-safe real evidence or a valid discarded Practice proof", async () => {
+  it("requires a valid discarded Practice proof and shares only its acceptance", async () => {
     const household = memberReadyView(BIANCA, false);
     const proof = await runMonthRehearsalCorrectionPractice({ date: TODAY, memberId: BIANCA });
     const accepted = recordChapterAcknowledgement(household, {
@@ -111,7 +76,8 @@ describe("onboarding Chapter 12 Ready", () => {
       practiceProof: proof,
       at: AT,
     });
-    expect(accepted.persistenceScope).toBe("member-personal");
+    expect(accepted.persistenceScope).not.toBe("member-personal");
+    expect(JSON.stringify(splitForSync(accepted.household, BIANCA).shared)).not.toContain(proof.receiptId);
     expect(householdGatesOutstanding(accepted.household)).toEqual([]);
 
     const forged = { ...proof, persistedIds: ["TXN-FORGED"] } as never;
@@ -121,7 +87,7 @@ describe("onboarding Chapter 12 Ready", () => {
       chapterId: "ch-12-ready",
       today: TODAY,
       practiceProof: forged,
-    })).toThrow(/Post one real entry, or finish the discarded Practice correction/);
+    })).toThrow(/Practice entry and correction/);
   });
 
   it("shows one Ready approval as waiting-member and never includes Personal evidence in the digest", () => {
@@ -150,11 +116,10 @@ describe("onboarding Chapter 12 Ready", () => {
 
   it("blocks Ready and unlock while any household gate is outstanding", () => {
     const household = memberReadyView(BIANCA);
-    household.members[0]!.onboardingProgress!.rows = household.members[0]!.onboardingProgress!.rows.map((row) => (
-      row.chapterId === "ch-06-fund" ? { ...row, acknowledgedAt: null } : row
-    ));
+    household.onboardingAttestations = household.onboardingAttestations!.filter(fact =>
+      !(fact.memberId === BIANCA && fact.requirementId === "ch-04-accounts"));
     const digest = onboardingCompletionDigest(household);
-    expect(householdGatesOutstanding(household)).toEqual(["ch-06-fund"]);
+    expect(householdGatesOutstanding(household)).toEqual(["ch-04-accounts"]);
     expect(() => approveOnboardingReady(household, {
       memberId: BIANCA, createdBy: BIANCA, digest,
     })).toThrow(/Finish every setup check/);
@@ -165,20 +130,12 @@ describe("onboarding Chapter 12 Ready", () => {
 
   it("refuses Ready approval when the actor's Chapter 12 proof was invalidated", async () => {
     const previous = memberReadyView(BIANCA);
-    previous.householdOnboarding = {
-      ...previous.householdOnboarding!,
-      state: "complete",
-      completedAt: AT,
-      completionDigest: onboardingCompletionDigest(previous),
-    };
-    previous.members[0]!.onboardingProgress!.rows = previous.members[0]!.onboardingProgress!.rows.map((row) => (
-      row.chapterId === "ch-12-ready" ? { ...row, invalidatedAt: "2026-09-05T14:01:00.000Z" } : row
-    ));
     const candidate = approveOnboardingReady(previous, {
-      memberId: BIANCA,
-      createdBy: BIANCA,
-      digest: onboardingCompletionDigest(previous),
+      memberId: BIANCA, createdBy: BIANCA, digest: onboardingCompletionDigest(previous),
     });
+    const fact = previous.onboardingAttestations!.find(f => f.memberId === BIANCA && f.requirementId === "ch-12-ready")!;
+    previous.onboardingAttestationInvalidations = [{ attestationId: fact.id, invalidatedAt: new Date().toISOString() }];
+    candidate.household.onboardingAttestationInvalidations = previous.onboardingAttestationInvalidations;
     const outcome = await acceptHouseholdWrite({
       previous,
       candidate: candidate.household,
