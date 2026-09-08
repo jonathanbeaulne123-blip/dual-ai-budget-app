@@ -1,4 +1,4 @@
-import { isLiabilityKind } from "../accountKinds.ts";
+import { acceptedAccountOpeningCoverage } from "../accountHistory.ts";
 import {
   charterCeilingLabel,
   charterSignatureStatus,
@@ -17,12 +17,6 @@ import {
 } from "../householdFund.ts";
 import { formatCad } from "../money.ts";
 import { monthKeyFromDateKey, type DateKey } from "../calendar.ts";
-import {
-  hasOnlyOpeningCorrectionHistory,
-  hasPostedOpeningTruth,
-  householdHasAcceptedMoney,
-  openingBatchRows,
-} from "../openingTruth.ts";
 import { resolveSwipeCardAccount } from "../swipe.ts";
 import type { Account, Household, Transaction } from "../types.ts";
 import { acceptedHouseholdOnboarding, onboardingIsActive, shapeHouseholdOnboarding } from "./mode.ts";
@@ -278,75 +272,16 @@ function accountsEvidence(household: Household, chapterId: ChapterId, viewerMemb
   };
 }
 
-function activeOpeningRows(household: Household): Transaction[] {
-  const reversed = new Set(household.transactions
-    .filter((transaction) => transaction.source === "reversal" && transaction.reversalOfId)
-    .map((transaction) => transaction.reversalOfId!));
-  return household.transactions.filter((transaction) => (
-    transaction.source === "opening"
-    && !transaction.reversalOfId
-    && !reversed.has(transaction.id)
-  ));
-}
-
 function openingEvidence(household: Household, chapterId: ChapterId): Projection {
-  const sharedTransactions = household.transactions.filter((transaction) => transaction.visibility !== "personal");
-  const sharedHousehold = { ...household, transactions: sharedTransactions };
-  const sharedAccountIds = household.accounts
-    .filter((account) => account.active && account.scope !== "personal")
-    .map((account) => account.id)
-    .sort();
-  const rows = activeOpeningRows(sharedHousehold)
-    .filter((transaction) => household.accounts.some((account) => (
-      account.id === transaction.accountId && account.scope !== "personal"
-    )))
-    .sort((left, right) => left.createdAt.localeCompare(right.createdAt) || left.id.localeCompare(right.id));
-  if (!rows.length) {
-    if (householdHasAcceptedMoney(sharedHousehold) && !hasOnlyOpeningCorrectionHistory(sharedHousehold)) {
-      return { ...EMPTY, ineligible: "stale" };
-    }
-    return EMPTY;
-  }
-  const sourceId = rows[0]?.sourceId;
-  if (!sourceId || rows.some((row) => row.sourceId !== sourceId || row.date !== rows[0]?.date)) {
-    return { ...EMPTY, ineligible: "untied" };
-  }
-  const batchRows = openingBatchRows(sharedHousehold, sourceId)
-    .filter((transaction) => transaction.visibility !== "personal");
-  if (batchRows.length !== rows.length || !hasPostedOpeningTruth(sharedHousehold)) {
-    return { ...EMPTY, ineligible: "untied" };
-  }
-  const coveredAccountIds = new Set(rows.map((row) => row.accountId));
-  if (!sharedAccountIds.length || sharedAccountIds.some((accountId) => !coveredAccountIds.has(accountId))) {
-    // A partial opening is real accepted history, but it is not completion.
-    // The existing whole-batch reversal is the only correction path.
-    return EMPTY;
-  }
-  const receipt = household.commandReceipts.find((candidate) => (
-    candidate.commandKind === "postOpeningBalances"
-    && candidate.confirmationId === sourceId
-    && rows.every((row) => candidate.postedIds.includes(row.id))
-  ));
-  if (!receipt) return { ...EMPTY, ineligible: "untied" };
-  const equityCents = rows.reduce((sum, row) => {
-    const account = household.accounts.find((candidate) => candidate.id === row.accountId);
-    return sum + (account && isLiabilityKind(account.kind) ? -row.amountCents : row.amountCents);
-  }, 0);
-  return {
-    ...EMPTY,
-    household: {
-      chapterId,
-      scope: "household",
-      kind: "receipt",
-      sourceIds: [receipt.confirmationId, ...rows.map((row) => row.id)],
-      lines: [
-        { label: "Accounts covered", value: rows.map((row) => accountName(household, row.accountId)).join(", ") },
-        { label: "Civil date", value: rows[0]!.date },
-        { label: "Opening equity", value: formatCad(equityCents) },
-      ],
-      observedAt: receipt.acceptedAt,
-    },
-  };
+  const coverage = acceptedAccountOpeningCoverage(household, { visibility: "household" });
+  if (!coverage.complete) return EMPTY;
+  const checkpoints = [...coverage.checkpoints].sort((a, b) => a.accountId.localeCompare(b.accountId));
+  return { ...EMPTY, household: {
+    chapterId, scope: "household", kind: "receipt",
+    sourceIds: checkpoints.flatMap(point => [point.id, point.confirmationId]),
+    lines: checkpoints.map(point => ({ label: accountName(household, point.accountId), value: `${formatCad(point.signedBalanceCents)} · ${point.date}${point.signedBalanceCents === 0 ? " · confirmed zero" : ""}` })),
+    observedAt: checkpoints.map(point => point.createdAt).sort().at(-1)!,
+  } };
 }
 
 function fundEvidence(household: Household, chapterId: ChapterId): Projection {

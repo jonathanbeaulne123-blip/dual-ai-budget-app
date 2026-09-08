@@ -1,3 +1,4 @@
+import { OnboardingPreparation } from "./OnboardingJourney.tsx";
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { CommitResult, DateKey, EvidenceResult, Household, PersonalModuleOffer } from "./core/index.ts";
 import {
@@ -275,6 +276,7 @@ export function OnboardingChat({
         </p>
         <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
           <p className="onboarding-card-task">{copy("invite.explain")}</p>
+          <OnboardingPreparation />
         </section>
         <div className="onboarding-actions">
           <button
@@ -375,6 +377,7 @@ export function OnboardingChat({
         >
           {copy("invite.explain")}
         </p>
+        <OnboardingPreparation />
         <div className="onboarding-actions" style={{ marginBottom: SHELL_VIEW.actionToFoot }}>
           <button
             type="button"
