@@ -1,4 +1,6 @@
 import {rememberWorkHandoff,clearWorkHandoff} from "./workHandoff.ts";
+import { BoardRejectedDraft, isBoardDraft } from "./BoardRejectedDraft.tsx";
+import { requestSharedBoard } from "./core/sharedBoardIntent.ts";
 import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
 import {SwipeReceiptStrip} from './SwipeReceiptStrip.tsx';
 import {swipeUndoUnavailable,type SwipeUndoWindow} from './swipeUndoReview.ts';
@@ -6288,12 +6290,15 @@ export function App() {
           onDismiss={() => setError("")}
         />
       ) : null}
-      {visibleLedgerRejected.length>0 && <section className="card" aria-label="Entries not posted">
-        <h2>Entries not posted</h2><p>Your entries are kept here for review. They are not in the posted balances.</p>
+      {visibleLedgerRejected.length>0 && <section className="card" aria-label="Changes needing review">
+        <h2>Changes needing review</h2><p>These changes are kept for review. They have not been saved to your books or boards.</p>
         {visibleLedgerRejected.map(entry=><article key={entry.command.id}>
           <p>{entry.rejection}</p>
           {entry.preview?.rows.filter(row=>isVisibleInView(row,memberId??'',view)).map(row=><p key={row.id}>{row.date} · {row.note} · {formatCad(row.amountCents)} · {row.splits.map(split=>`${split.party}: ${formatCad(split.amountCents)}`).join(', ')}</p>)}
-          <button type="button" className="chip" onClick={()=>openAddFor(null)}>Start a new entry</button>{" "}
+          {isBoardDraft(entry.command) ? <BoardRejectedDraft command={entry.command} household={household} onOpen={board=>{
+            requestSharedBoard({environment,householdId:household.householdId,memberId:actorId},board);
+            goTab("home");emitOfficeIntent({type:"expand",id:"chalkboard"});
+          }} /> : <button type="button" className="chip" onClick={()=>openAddFor(null)}>Start a new entry</button>}{" "}
           <button type="button" className="ghost" onClick={()=>{void ledgerSyncRef.current?.dismissRejected(entry.command.id);}}>Dismiss retained entry</button>
         </article>)}
       </section>}

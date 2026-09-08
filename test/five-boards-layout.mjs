@@ -32,7 +32,7 @@ route==='calendar'?el(CalendarPage,{...shared,environment:'development',onAskPos
 el(BooksPage,{...shared,booksHousehold:h,booksStatus:null,focusedAccountId:account,sourceFocus:null,onFocusAccount:setAccount,onClearSource:noop,onChange:setH,onRemove:noop,onPayAccount:noop,onAddToAccount:noop,onGoMore:noop}));}
 window.proofActions=[];createRoot(document.getElementById('root')).render(el(App));`;
 const server=await createServer({configFile:false,cacheDir,server:{host:'127.0.0.1',port:0},plugins:[{name:'boards-proof',resolveId(id){if(id==='/boards-proof.js')return '\0boards-proof';},load(id){if(id==='\0boards-proof')return entry;},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(req.url?.split('?')[0]!=='/boards-proof')return next();res.setHeader('Content-Type','text/html');res.end(await server.transformIndexHtml('/boards-proof','<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/boards-proof.js"></script></body></html>'));});}}]});
-const records=[];let browser,page;const errors=[];
+const records=[],accessibility=[],focusChecks=[];let browser,page;const errors=[];
 try{
   await server.listen();browser=await chromium.launch({headless:true});const context=await browser.newContext({reducedMotion:'reduce'});page=await context.newPage();
   await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
@@ -76,13 +76,15 @@ try{
         if(label)await page.getByRole('tab',{name:label,exact:true}).click();
         const result=await new AxeBuilder({page}).include('main').withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
         assert.deepEqual(result.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[],JSON.stringify({theme,route,label}));
+        accessibility.push({theme,route,label,violations:0,zoom:2,reducedMotion:true});
       }
       await page.keyboard.press('Tab');
       const focus=await page.evaluate(()=>{const active=document.activeElement,s=active&&getComputedStyle(active);return !!active&&active!==document.body&&s.outlineStyle!=='none'&&parseFloat(s.outlineWidth)>0;});
       assert.ok(focus,JSON.stringify({theme,route,focus}));
+      focusChecks.push({theme,route,focus});
       await page.evaluate(()=>{document.documentElement.style.zoom='';});
     }
   }
-  assert.deepEqual(errors,[]);console.log('PASS '+records.length+' integrated theme/width/surface geometry cases. Fictional local components; no hosted proof.');
+  assert.deepEqual(errors,[]);console.log('PASS '+records.length+' geometry/zoom cases, '+accessibility.length+' axe views, '+focusChecks.length+' visible keyboard focus checks. Fictional local components; no hosted proof.');
 }catch(error){if(page)await page.screenshot({path:join(out,'failure.png'),fullPage:true}).catch(()=>{});throw error;}
-finally{writeFileSync(join(out,'report.json'),JSON.stringify({records,errors},null,2));await browser?.close();await server.close();rmSync(cacheDir,{recursive:true,force:true});}
+finally{writeFileSync(join(out,'report.json'),JSON.stringify({records,accessibility,focusChecks,errors},null,2));await browser?.close();await server.close();rmSync(cacheDir,{recursive:true,force:true});}
