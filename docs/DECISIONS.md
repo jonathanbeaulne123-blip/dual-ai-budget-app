@@ -551,3 +551,8 @@ The two stuck cards part to expose actual differences. Computed similarity contr
 ## Mobile B9 — Claude's Turn (2026-09-08)
 
 One date read-head replaces hover and nested sideways scrolling while preserving prepared source order and current Fund. Standalone custodian Trust uses its exact visible cross-month interval and existing paperbox; Reach retains its own single control. Recorded today and scheduled values remain separate. Course future aggregate reserves cannot become dated balances, so future time is undated and exact readings stop at available sources. Scope replacement cancels gestures; native scroll and two-stage Escape preserve the Ledge. Medium-High risk; Budget(5)+2; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-turn.md). Legacy MonthSpread gains no new mobile entrypoint. No financial writer, merge or deployment.
+
+
+## Mobile C1 — complete pad choices (2026-09-08)
+
+The first six accounts and eight categories retain their compact position, with named More/Fewer disclosures for every current eligible choice. Selected tail choices stay visible; missing choices prompt without silently changing IDs or looking into full books. Scope and mode reset disclosure, while exact amount and draft fields remain intact. Medium risk; Budget(5)+1; Engagement(3)+1. [Evidence](worksessions/2026-09-08-mobile-pad-choices.md). Existing Confirm remains unchanged.

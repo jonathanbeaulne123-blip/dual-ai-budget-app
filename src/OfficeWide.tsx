@@ -326,6 +326,7 @@ export function OfficeWide({
       aria: `Pad. ${form.note || "Post groceries."}`,
       body: (
         <CalculatorBody
+          scopeKey={JSON.stringify([household.environment, household.householdId, memberId, view])}
           form={form} setForm={onForm} mode={mode} household={household}
           accounts={household.accounts} categories={categories} postLabel={postLabel}
           error={error} busy={busy} onPost={onPost} onMore={onMore}

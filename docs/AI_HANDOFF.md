@@ -1,3 +1,15 @@
+## Mobile C1 — complete pad choices (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c1-pad-choices`; exact base/pre-commit HEAD`56d516171cdf47f5b78cc920c0de0011f2acc935` (B9, PR391). Implementation HEAD is the commit carrying this file. Phase2 continues.
+
+**Outcome:** Every current eligible account/category is reachable from the pad. Named disclosures preserve amount and exact IDs, retain selected tail items, and reset by viewer scope/mode.
+
+**Risk and Dual Course:** Medium; Budget(5)+1; Engagement(3)+1.
+
+**Verification:** Medium quick gate61/61plus TypeScript/AI/diff passed95.880seconds, no five-minute breach. Seven browser cases pass; independent UX/verifier reviews clear. [Exact commands and limits](worksessions/2026-09-08-mobile-pad-choices.md).
+
+**Limits and next owner:** Fictional local proof only; no physical, hosted or exhaustive claim. No merge/deployment/schema. Codex opens stacked draft PR and continues C2 household category suggestions.
+
 ## Mobile B9 — the Turn (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b9-turn`; exact base/pre-commit HEAD`9c2646547f82f89c74eb72b199f58121610f567d` (B8, PR390). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.

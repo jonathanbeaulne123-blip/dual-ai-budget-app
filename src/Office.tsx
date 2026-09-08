@@ -650,6 +650,7 @@ export function Office({
       <CalculatorGlance amount={form.amount} />,
       `Calculator. ${form.note || "Desk pad."}`,
       <CalculatorBody
+          scopeKey={JSON.stringify([household.environment, household.householdId, memberId, view])}
         form={form}
         setForm={onForm}
         mode={mode}
