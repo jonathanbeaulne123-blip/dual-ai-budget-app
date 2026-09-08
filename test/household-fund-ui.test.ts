@@ -15,8 +15,9 @@ describe("Household Fund experience fences", () => {
     expect(app).toContain("destinationAccountId: form.fundDestinationAccountId || form.accountId");
   });
 
-  it("adds a Home glance and dedicated books pane without changing the phone instrument model", () => {
-    expect(app).toContain("household-fund-glance");
+  it("adds the scoped Ledge and dedicated books pane without changing the phone instrument model", () => {
+    expect(app).toContain("<FundLedge");
+    expect(app).not.toContain("household-fund-glance");
     expect(books).toContain('{ id: "fund", label: "Household Fund"');
     expect(books).toContain("<HouseholdFundPanel");
     expect(app).not.toContain('emitOfficeIntent({ type: "expand", id: "fund"');

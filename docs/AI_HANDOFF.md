@@ -1,3 +1,17 @@
+## Mobile A2 — Fund grip at rest (2026-09-07)
+
+**Status:** Locally verified on `codex/mobile-a2-ledge-grip`, stacked on A1 `01ec730` (PR #372). No merge or deployment.
+
+**Outcome:** Claude's labelled Household Fund grip replaces the duplicate mobile Fund card and opens the Shared register from either room. Existing navigation remains intact. Onboarding and Hercules share measured clearance; their focus/invitation modes suppress the grip.
+
+**Risk and Dual Course:** Medium; Budget (5) +1; Engagement (3) +1.
+
+**Verification:** Medium quick gate passed 83 assertions including startup/rehearsal canaries, TypeScript and AI surface in 124.298 seconds. Chromium passed 72 component/width/scope/state cases. Independent overlay findings were repaired and rechecked. [Worksession](worksessions/2026-09-07-mobile-ledge-grip.md).
+
+**Evidence class:** Local synthetic component browser and quick-gate proof. No full-App browser, physical-device, hosted, exhaustive or Production evidence; no money writer/schema/deployment change.
+
+**Next owner:** Codex creates A2's separate draft PR and builds A3's full sheet immediately, as Jonathan requested. This is not completion of the mobile program.
+
 ## Mobile A1 — Claude's fold (2026-09-07)
 
 **Status:** Locally verified on `codex/mobile-a1-fold`, baseline `6fb15c7a98f3336862bb743b836aa96a358a35b9`; isolated slice, not merged or deployed.

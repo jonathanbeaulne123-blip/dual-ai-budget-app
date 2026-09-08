@@ -1,3 +1,4 @@
+import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
 import { stageLedgerCreation, completeLedgerCreation } from './ledgerSync/creationStore.ts';
@@ -58,7 +59,6 @@ import {
   memberNeedsGoogleStepUp,
   parseAmount,
   percentSplits,
-  projectHouseholdFund,
   postDueRecurrences,
   postEntry,
   postOneRecurrence,
@@ -6083,21 +6083,6 @@ export function App() {
             </a>
           </p>
         ) : null}
-        {view === "household" && household.householdFund && (() => {
-          const fund = projectHouseholdFund(household, today);
-          return (
-            <section className="card household-fund-glance is-phone-only" aria-label="Hearth Household Fund">
-              <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund</button></header>
-              <div className="grid">
-                <div className="stat"><span>Operating</span><strong>{formatCad(fund.operatingBalanceCents)}</strong></div>
-                <div className="stat"><span>Transfer due</span><strong>{formatCad(fund.transferDueCents)}</strong></div>
-                <div className="stat"><span>Upcoming</span><strong>{formatCad(fund.upcomingReserveCents)}</strong></div>
-                <div className="stat"><span>{fund.topUpNeededCents ? "Top-up needed" : "Fund free-to-spend"}</span><strong className={fund.topUpNeededCents ? "negative" : ""}>{formatCad(fund.topUpNeededCents || fund.freeToSpendCents)}</strong></div>
-              </div>
-              <p className="muted">The money remains in Bianca’s savings. Hearth cannot move it. Reconciliation: {fund.lastReconciledAt ? (fund.reconciliationTied ? "tied" : "needs review") : "not yet recorded"}.</p>
-            </section>
-          );
-        })()}
         {view === "household" ? (
           <MonthRehearsalAccess
             household={household}
@@ -7626,6 +7611,17 @@ export function App() {
         household={household}
         session={session}
       />
+
+      {household.householdFund && ["home", "calendar", "plan", "more"].includes(tab)
+        && !charterTakeoverVisible && !onboardingInviteVisible && !adding && !swipeOpen && !confirm && !guard && !commandOpen && !fabOpen ? (
+        <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
+          household={household} today={today} view={view}
+          onOpen={() => {
+            rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+            setBooksPaneRequest("fund-register");
+            goTab("ledger");
+          }} />
+      ) : null}
 
       {!charterTakeoverVisible ? (
       <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
