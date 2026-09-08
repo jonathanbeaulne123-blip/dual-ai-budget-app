@@ -1,4 +1,5 @@
 import { PhoneSpread } from "./PhoneSpread.tsx";
+import { ApronCard, useApronReceipt } from "./ApronCard.tsx";
 import type { PhoneChapter } from "./core/phoneSpread.ts";
 import type { FundDestination } from "./FundStage.tsx";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -98,6 +99,7 @@ export function OfficePhone({
   integrityFindings?: Finding[];
 }) {
   const [chalkOpen, setChalkOpen] = useState(false);
+  const receipt = useApronReceipt(booksHousehold, memberId);
   const [chapter, setChapter] = useState<PhoneChapter | null>(null);
   const cover = useRef<HTMLElement | null>(null);
   const officeRoot = useRef<HTMLDivElement>(null);
@@ -236,6 +238,7 @@ export function OfficePhone({
   const panelId = openId ? `ph-notebook-${openId}` : "ph-notebook";
 
   const foldItems = phoneFoldOrder({
+    apron: !!receipt,
     stories: storyIds,
     ownShift: !!activeOpenShift(household.kitchen, memberId),
     overdue: mailWarn,
@@ -243,6 +246,7 @@ export function OfficePhone({
     needs: !!sill.needsMe,
   });
   const foldContent = (id: typeof foldItems[number]["id"]) => {
+    if (id === "apron") return receipt ? <ApronCard receipt={receipt} household={booksHousehold} today={today} /> : null;
     if (id === "weather") return <WeatherRibbon reading={reading} />;
     if (id === "needs") return <div className="ph-sill"><span className="ph-needs">{sill.needsMe}</span></div>;
     if (id === "seals") return sealsContent;

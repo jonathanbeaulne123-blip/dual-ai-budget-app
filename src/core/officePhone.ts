@@ -84,7 +84,7 @@ export function phoneStoryIds(order: InstrumentId[]): InstrumentId[] {
 }
 
 /** Seals are an indivisible row of three objects, never one disguised slot. */
-export type PhoneFoldId = InstrumentId | "weather" | "needs" | "seals";
+export type PhoneFoldId = InstrumentId | "weather" | "needs" | "seals" | "apron";
 export type PhoneFoldItem = { id: PhoneFoldId; slots: number; wide: boolean };
 
 /** Presentation only. Urgency cannot be hidden by an old layout preference. */
@@ -94,17 +94,18 @@ export function phoneFoldOrder(input: {
   overdue: boolean;
   health: boolean;
   needs: boolean;
+  apron?: boolean;
 }): PhoneFoldItem[] {
   const urgent: InstrumentId[] = [
     ...(input.ownShift ? ["timesheet" as const] : []),
     ...(input.health ? ["lamp" as const] : []),
     ...(input.overdue ? ["mail" as const] : []),
   ];
-  const ids: PhoneFoldId[] = [...urgent, ...(input.needs ? ["needs" as const] : []),
+  const ids: PhoneFoldId[] = [...(input.apron ? ["apron" as const] : []), ...urgent, ...(input.needs ? ["needs" as const] : []),
     "weather", "seals", ...input.stories];
   return [...new Set(ids)].map((id) => ({
     id, slots: id === "seals" ? 3 : 1,
-    wide: id === "weather" || id === "needs" || id === "seals",
+    wide: id === "weather" || id === "needs" || id === "seals" || id === "apron",
   }));
 }
 

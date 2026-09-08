@@ -1,3 +1,17 @@
+## Mobile A5 — apron receipt (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-a5-apron`, stacked on A4 `c249f37` (PR375). No merge or deployment.
+
+**Outcome:** Claude's four-fact felt receipt, one fold slot, own contributor only, six-hour expiry and separate Current Shared Ask. Historic received/owed timing, signed card-after-withholding and all tip-out timings remain accurate after payouts.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+1; Engagement(3)+2.
+
+**Verification:** 112 quick-gate assertions, TypeScript and AI checks passed in 139.958 seconds. Final 48-case browser layout matrix follows a CSS-only restoration of the original four-fact row. Independent trust recheck passed 7/7 and found no remaining blocker. [Exact commands, evidence and limitations](worksessions/2026-09-08-mobile-apron.md).
+
+**Evidence class:** Local fictional component Chromium and full-App jsdom startup canaries; no native lock-screen, physical-device, authenticated full-App browser, hosted or exhaustive proof.
+
+**Next owner:** Codex opens A5's draft PR and continues B1, Claude's Cut. Phase 2 remains in progress.
+
 ## Mobile A4 — chapter spreads (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-a4-spread`, stacked on A3 `9014a78` (PR#374). No merge or deployment.

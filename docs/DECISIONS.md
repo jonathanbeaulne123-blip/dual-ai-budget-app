@@ -465,3 +465,8 @@ A new entrance exposed an existing queued-command scope flaw: callbacks could ru
 ## Mobile A4 — original chapter spreads (2026-09-08)
 
 Claude's three existing seals open the original four/four/three-page chapters, without a second Home navigation surface. Shape uses words over its existing ranges; Streams shows confirmed dates and repeat counts in month/member rows. Explicit Shared scope and own-only, unreversed tip history preserve accepted-book boundaries. Paging is presentation only. The existing Ask confirmation handles Escape before its parent and discards unsubmitted review when its page leaves. Focus restoration resolves the current seal if the measured fold has reparented it. Risk Medium-High; Budget(5)+2; Engagement(3)+1. [Worksession](worksessions/2026-09-08-mobile-spread.md). No new financial model, command, deployment or schema.
+
+
+## Mobile A5 — accepted apron receipt (2026-09-08)
+
+Claude's felt apron is Home's first whole object for six hours after an accepted own contributor shift. Its four facts and original hierarchy remain. Jonathan's current instruction replaces causal Ask copy with a distinct Current Shared Ask. Historic cash received, card-after-withholding and the three tip-out timings come from the accepted shift; a later settlement never pretends to allocate that receipt. Signed card balances remain valid. Legacy timing is explicitly unknown. Expiry uses createdAt, never updatedAt; reversed rows and other members are excluded. Risk Medium-High; Budget(5)+1; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-apron.md). No command, schema, deployment or native Live Activity.
