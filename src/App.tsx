@@ -1,3 +1,4 @@
+import {dueOccurrenceReview,dueOccurrenceHidden} from "./core/dueOccurrenceReview.ts";
 import {canonical} from "./ledgerSync/patch.ts";
 import type {DestructiveReview} from "./DangerReveal.tsx";
 import { swipePurchaseReview } from "./core/swipe.ts";
@@ -94,8 +95,6 @@ import {
   addPreset,
   archivePreset,
   dismissNotice,
-  dismissDuePreview,
-  duePreviewDismissed,
   dueRecurrencePreview,
   readClinkOn,
   requestShiftEnvelope,
@@ -3391,12 +3390,12 @@ export function App() {
     if (onboardingStandingFactOnly) return;
     if (unresolvedConflicts(household).length > 0) return;
 
-    const previewKey = `${environment}:${household.householdId}:${today}`;
+    const previewKey = `${environment}:${household.householdId}:${session?.memberId}:${session?.view}:${today}`;
     if (duePreviewOffered.current === previewKey) return;
-    if (duePreviewDismissed(environment, household.householdId, today)) return;
 
     if (!experience || !experience.ok) return;
-    const rows = dueRecurrencePreview(experience.scopedHousehold, today);
+    if(!session)return;
+    const rows = dueRecurrencePreview(experience.scopedHousehold, today).filter(row=>!dueOccurrenceHidden({environment,householdId:household.householdId,memberId:session.memberId,view:session.view,today,recurrenceId:row.recurrenceId,occurrenceDate:row.nextDate}));
     if (!rows.length) return;
     duePreviewOffered.current = previewKey;
     setGuard({ kind: "duePreview", rows });
@@ -5105,6 +5104,7 @@ export function App() {
       let source:unknown=null;
       if(target.kind==='delete-household')source={membership:memberships.find(item=>item.householdId===target.householdId)??null,replica:known.replicas.find(item=>item.householdId===target.householdId)??null,owner:known.isHouseholdOwner};
       else if(target.kind==='reset-development')source={memberships,replicas:known.replicas,owner:known.isHouseholdOwner};
+      else if(target.kind==='duePreview')source=todayKey();
       else if(target.kind==='erase-development')source=h?.revision??null;
       else if(target.kind==='restorePoint')source={revision:h?.revision??null,local:h?listRestorePoints(h).find(point=>point.id===target.pointId)??null:null,remote:known.ledgerRestorePoints.find(point=>point.id===target.pointId)??null};
       else if((target.kind==='remove'||target.kind==='correctShift')&&h){
@@ -5556,6 +5556,8 @@ export function App() {
     householdId: householdRef.current?.householdId ?? null, memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
   });
 
+  const dueOpening=guardOpeningRef.current,dueIdentity=guardIdentityRef.current;
+  const dueIsCurrent=()=>guard?.kind==='duePreview'&&dueOpening===guardOpeningRef.current&&dueIdentity===guardIdentityRef.current&&readDangerIdentity(guard)===dueIdentity;
   const splitViewer = { memberId: actorId, view: session.view, generation: replicaScopeGenerationRef.current };
   const splitScopeValid = splitDraft?.scope === splitDraftScope(ledger, splitViewer);
   const splitPercents = splitDraft?.percents ?? {};
@@ -6287,6 +6289,7 @@ export function App() {
           </button>
         ))}
       </div>
+      {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
@@ -7463,24 +7466,9 @@ export function App() {
         />
       )}
       {guard?.kind === "duePreview" && (
-        <DuePreviewSheet
-          rows={guard.rows}
-          onDismiss={() => {
-            dismissDuePreview(environment, household.householdId, today);
-            setGuard(null);
-          }}
-          onReview={(row) => {
-            dismissDuePreview(environment, household.householdId, today);
-            setGuard({ kind: "postRecurrence", recurrenceId: row.recurrenceId, summary: row.summary });
-          }}
-          onReviewAll={(rows) => {
-            dismissDuePreview(environment, household.householdId, today);
-            setGuard({
-              kind: "postDueAll",
-              recurrenceIds: rows.map((row) => row.recurrenceId),
-              summary: `This posts ${rows.length} due repeating ${rows.length === 1 ? "item" : "items"} into the books.`,
-            });
-          }}
+        <DuePreviewSheet key={dueOpening} rows={guard.rows} household={household} memberId={actorId} view={view} today={today} busy={busy} isCurrent={dueIsCurrent}
+          onDismiss={()=>setGuard(null)}
+          onPost={async reviewed=>{let accepted=false;await run(current=>{const fresh=dueOccurrenceReview(current,reviewed.request);if(fresh.kind!=='ready'||fresh.basis!==reviewed.basis)throw new Error('This occurrence changed. Review its current details.');return postOneRecurrence(current,reviewed.request.recurrenceId,reviewed.request.today,{createdBy:actorId,dueReview:reviewed.request});},{isCurrent:dueIsCurrent,scopeIsCurrent:deskScopeIsCurrent,closeAdd:false,onAccepted:()=>{accepted=true;}});return accepted;}}
         />
       )}
       {guard?.kind === "postRecurrence" && (

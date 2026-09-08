@@ -566,3 +566,8 @@ The Swipe grid keeps genuine observed categories first, then explicitly labelled
 ## Mobile C3 — reveal is not acceptance (2026-09-08)
 
 Claude's slide remains a reading gesture under packet15.3: it reveals the existing named Confirm. Phone Cancel stays by the thumb. Explicit opening/current-source identities prevent stale reviews from silently rearming; transient rejection notices do not masquerade as changed source. Overflow fallback preserves enlarged explanations. Existing writer/authority contracts remain in force. Budget(5)+1; Engagement(3)+1; see C3 worksession for local proof and limits.
+
+
+## Mobile C4 — one exact occurrence, inline (2026-09-08)
+
+Preserve Claude’s row gesture and zero-sheet single-row flow within the no-write motion law: reveal then named inline Confirm. Scope local hiding per person/view/date/occurrence; it never advances a schedule. Reviewed postOneRecurrence carries exact occurrence identifiers and a hashed semantic resource, preventing a stale click from posting the next occurrence or changed amount/account. Actual Joint transfers are labelled honestly. Bulk remains in Calendar. Budget(5)+2; Engagement(3)+2; local proof/limits in C4 worksession.

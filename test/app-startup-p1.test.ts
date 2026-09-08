@@ -1,10 +1,11 @@
+import {dueOccurrenceReview} from "../src/core/dueOccurrenceReview.ts";
 import { applyDuplicateReview } from "../src/core/duplicateReviewCommand.ts";
 import { prepareDuplicateReview } from "../src/core/duplicateReview.ts";
 // @vitest-environment jsdom
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { startShiftBreak, addAccount, abandonOpenShift, clockInShift, clockOutShift, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
+import { addRecurrence, postOneRecurrence, startShiftBreak, addAccount, abandonOpenShift, clockInShift, clockOutShift, catalogHousehold, financialAuditHash, linkGoogleIdentity, offerHouseholdOnboarding, postEntry, seedDemoHousehold, splitForSync, startMonthRehearsal, todayKey, type Household, type PersonalEnvelope } from "../src/core/index.ts";
 import { markSynchronized } from "../src/core/sharing.ts";
 import { createMemoryContinuityStore, enqueueContinuitySnapshot, listContinuityOutbox, setContinuityStore } from "../src/continuity.ts";
 import { completedExistingBooksHousehold, existingBooksActivationAt } from "./fixtures/existing-books-onboarding.ts";
@@ -25,6 +26,7 @@ const startup = vi.hoisted(() => ({
   v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
   tillOpen:null as null | (()=>void),
   swipeProps:null as null | {onPostCategory:(input:{amount:string;subcategoryId:string})=>void;onClose:()=>void;onMore:(amount:string)=>void;error?:string},
+  dueProps:null as null | Parameters<typeof import("../src/DuePreviewSheet.tsx").DuePreviewSheet>[0],
   removeReview:null as null | ((transaction:import("../src/core/types.ts").Transaction)=>void),
   duplicateWriter:null as import("../src/Ledger.tsx").DuplicateCommand|null,
   punchConfirm: null as null | ((candidate: Household) => Promise<import("../src/core/types.ts").CommitResult>),
@@ -213,6 +215,8 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
   loadWorkShiftSurface: vi.fn(async () => ({})),
 }));
 
+vi.mock("../src/DuePreviewSheet.tsx",async importOriginal=>{const actual=await importOriginal<typeof import("../src/DuePreviewSheet.tsx")>();return {...actual,DuePreviewSheet:(props:Parameters<typeof actual.DuePreviewSheet>[0])=>{startup.dueProps=props;return createElement(actual.DuePreviewSheet,props);}};});
+
 import { App } from "../src/App.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -332,6 +336,7 @@ describe("cached-shell startup books gate", () => {
     startup.tillOpen = null;
     startup.swipeProps = null;
     startup.removeReview = null;
+    startup.dueProps = null;
     startup.duplicateWriter = null;
     startup.punchConfirm = null;
     startup.officePunch = null;
@@ -1500,6 +1505,18 @@ describe("cached-shell startup books gate", () => {
     else {await waitForUi(()=>expect(container.querySelector('[data-testid="swipe-stub"]')).toBeNull(),3000);expect(container.querySelector('.toast')).not.toBeNull();expect(toastTimers.length).toBeGreaterThan(0);await act(async()=>toastTimers.forEach(clear=>clear()));expect(container.querySelector('.toast')).toBeNull();}
   });
 
+
+  for(const mode of ['accepted','source','room'] as const)it(`Due inline Confirm preserves its occurrence and scope (${mode})`,async()=>{
+    startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+    const h=addRecurrence(await acceptedScenarioFixture(),{cadence:'monthly',nextDate:todayKey(),type:'expense',amount:'75.25',accountId:'ACC-CHEQUING',subcategoryId:'SUB-FOOD-GROCERIES',note:'Due proof'}).household;h.booksAcceptedHash=await financialAuditHash(h);startup.cached=h;
+    const id=h.recurrences.at(-1)!.id,actual=postOneRecurrence(h,id,todayKey(),{createdBy:'MEM-002'});let calls=0,candidate:Household|null=null;startup.punchConfirm=async next=>{calls++;candidate=next;return {...actual,household:next};};
+    await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.dueProps).not.toBeNull(),4000);const old=startup.dueProps!,review=dueOccurrenceReview(h,{environment:h.environment,householdId:h.householdId,memberId:'MEM-002',view:'household',recurrenceId:id,occurrenceDate:todayKey(),today:todayKey()});if(review.kind!=='ready')throw Error(review.reason);
+    expect(container.querySelector('.due-preview-inline')).not.toBeNull();const arrival=container.querySelector<HTMLAnchorElement>('.due-arrival')!;expect(arrival.getAttribute('href')).toBe('#due-reminders');expect(arrival.compareDocumentPosition(container.querySelector('.due-preview-inline')!)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();expect(container.querySelector('.due-preview-inline [role=dialog]')).toBeNull();
+    if(mode==='source')await act(async()=>startup.v2Clients.at(-1)!.adopt({...h,recurrences:h.recurrences.map(r=>r.id===id?{...r,amountCents:9900}:r)}));
+    if(mode==='room'){await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[1]!.click());await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[0]!.click());}
+    if(mode==='accepted'){await act(async()=>button('Actions for Due proof').click());await act(async()=>button('Confirm payment · Due proof').click());await waitForUi(()=>expect(calls).toBe(1),3000);expect(candidate!.transactions.some(t=>t.sourceId===id&&t.amountCents===7525&&t.date===todayKey())).toBe(true);await waitForUi(()=>expect(container.textContent).toContain('1 occurrence posted'),3000);}
+    else{await act(async()=>{expect(await old.onPost(review)).toBe(false);});expect(calls).toBe(0);}
+  });
 
   for(const mode of ['source','room','opening-source'] as const)it(`Destructive phone review requires a fresh opening after current ${mode} changes`,async()=>{
     const width=window.innerWidth;Object.defineProperty(window,'innerWidth',{value:390,writable:true,configurable:true});try{

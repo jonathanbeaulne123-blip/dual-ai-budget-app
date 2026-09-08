@@ -1,3 +1,4 @@
+import {dueOccurrenceReview,reviewedDueRequest,type DueOccurrenceRequest} from "./dueOccurrenceReview.ts";
 import { reviewedSwipeEntry } from "./swipe.ts";
 import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewRequest } from "./duplicateReview.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
@@ -4402,8 +4403,9 @@ export const postOneRecurrence = captureCommand("postOneRecurrence", function po
   household: Household,
   recurrenceId: string,
   today: DateKey,
-  options: { allowNotDue?: boolean; createdBy?: string } = {},
+  options: { allowNotDue?: boolean; createdBy?: string; dueReview?:DueOccurrenceRequest } = {},
 ): CommitResult {
+  if(options.dueReview!==undefined){const request=reviewedDueRequest(options.dueReview,recurrenceId,today,options.createdBy,options.allowNotDue);const review=dueOccurrenceReview(household,request);if(review.kind!=="ready")throw new ValidationError(review.reason);}
   const item = household.recurrences.find((row) => row.id === recurrenceId && row.active);
   if (!item) throw new ValidationError("That repeating item is not active.");
   if (!options.allowNotDue && item.nextDate > today) throw new ValidationError("That item is not due yet.");

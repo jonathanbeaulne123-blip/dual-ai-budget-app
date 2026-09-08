@@ -1,3 +1,15 @@
+## Mobile C4 — inline Due occurrences (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c4-due-rows`; exact base`1aee199d73cea6487d709fb128d44f7e49f921a8` (C3,PR394). HEAD is the commit carrying this file.
+
+**Outcome:** Claude’s row disclosure replaces two sheets with one inline named Confirm, displaying the exact occurrence. Local per-row deferral leaves schedule/Books unchanged; an arrival link keeps it reachable on long pages. Source/actor/date/scope meaning survives queue and authority.
+
+**Risk/deltas:** High; Budget(5)+2; Engagement(3)+2.
+
+**Proof:** Final quick gate151.667s, ten browser and two native touch cases, independent reviews clear. [Commands, fingerprint, corrections and limits](worksessions/2026-09-08-mobile-due-rows.md).
+
+**Limits/next:** Fictional local proof with mocked App transport; no physical/hosted/exhaustive certification. Certain Fund/closed-period/midnight cases source-reviewed only. No merge/deploy/schema. Codex opens stacked draft PR and continues C5.
+
 ## Mobile C3 — destructive reveal (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-c3-danger-reveal`; exact base`52f93983e7da7a003e53dba7618073409d930d09` (C2, PR393). Implementation HEAD is the commit carrying this file.
