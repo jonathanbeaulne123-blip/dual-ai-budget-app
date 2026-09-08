@@ -85,7 +85,8 @@ import { DeskItem } from "./widgets/DeskItem.tsx";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
-import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { SharedBoards } from "./widgets/SharedBoards.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { ClaimsBody, ClaimsGlance } from "./widgets/ClaimsTray.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
@@ -855,12 +856,17 @@ export function Office({
       "chalkboard",
       "Notes",
       <span>{chalkboardGlance(household)}</span>,
-      "Notes. Draw or type a household note.",
-      <ChalkboardBody
-        household={household}
+      "Our boards. Notes, photos, tasks, goals and Shift Ask.",
+      <SharedBoards
+        key={`${household.environment}:${household.householdId}:${memberId}:${view}`}
+        household={booksHousehold}
         memberId={memberId}
+        today={today}
+        view={view}
+        scenarioSource={scenarioSource}
         busy={busy}
         onCommand={onKitchen}
+        onOpenGoals={() => onGo("plan")}
       />,
       { index, pair, extraClass: "instrument-chalkboard" },
     ),

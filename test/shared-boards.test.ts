@@ -60,4 +60,17 @@ describe("shared boards", () => {
     expect(second.receipt.postedIds).toEqual([]);
     expect(project(first.shared,difference(first.shared,second.shared))).toEqual(second.shared);
   });
+  it("refuses competing same-item authority edits and wrong households without changing accepted content", async () => {
+    const h=saveBoardTask(catalogHousehold(),task()).household;
+    const one=splitForSync(h,"MEM-001"),two=splitForSync(h,"MEM-002");
+    const state:AuthorityState={sequence:h.revision,shared:one.shared,personal:new Map([["MEM-001",one.personal],["MEM-002",two.personal]])};
+    const scope:Scope={environment:h.environment,householdId:h.householdId,memberId:"MEM-001",subject:"one",role:"owner",expires:Date.now()+60000,aclEpoch:1};
+    const a=await commandFromCapture(capturedIntent(saveBoardTask(h,{...task(),expectedVersion:1,completed:true}).household)!,scope,crypto.randomUUID());
+    const b=await commandFromCapture(capturedIntent(saveBoardTask(h,{...task(),expectedVersion:1,title:"Feed later"}).household)!,scope,crypto.randomUUID());
+    const accepted=await prepareCommand(state,a,scope,()=>{});
+    const changed={...state,sequence:accepted.receipt.sequence,shared:accepted.shared,personal:new Map([...state.personal,["MEM-001",accepted.personal]])};
+    await expect(prepareCommand(changed,b,scope,()=>{})).rejects.toThrow("BUSINESS_PRECONDITION_CHANGED");
+    await expect(prepareCommand(state,a,{...scope,householdId:"HH-another"},()=>{})).rejects.toThrow("SCOPE_MISMATCH");
+    expect(accepted.shared.kitchen.boards?.tasks[0]).toMatchObject({completed:true,title:"Feed Hercules"});
+  });
 });

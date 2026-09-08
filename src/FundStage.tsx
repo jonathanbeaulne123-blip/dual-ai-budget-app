@@ -4,12 +4,12 @@ import "./phone-fund-readings.css";
 import { useMemo, type Ref } from "react";
 import {
   askBelongsOnDesk, categoryShape, fundPlates, fundWalk, fundWeek,
-  fundWidgetIdForPlateId, monthKeyFromDateKey, moveAskGoalClaimToNextMonth,
+  fundWidgetIdForPlateId, monthKeyFromDateKey,
   twoStreams, widgetAllowedFor,
   type CommitResult, type DeskPlateModel, type FundWidgetId, type Household, type LedgerView,
 } from "./core/index.ts";
 import { Level } from "./Level.tsx";
-import { Ask } from "./Ask.tsx";
+import { requestSharedBoard } from "./widgets/SharedBoards.tsx";
 import { NextOutStage } from "./NextOutStage.tsx";
 import { WeekStage } from "./WeekStage.tsx";
 import { WaitingStage } from "./WaitingStage.tsx";
@@ -20,11 +20,11 @@ import { AccountsStage } from "./AccountsStage.tsx";
 import { PlateFigureView } from "./DeskPlates.tsx";
 import { FUND_WIDGET_CARD } from "./FundDrawer.tsx";
 
-export type FundDestination = "swipe" | "contribute" | "record" | "minutes" | "seven-days" | "shelf";
+export type FundDestination = "swipe" | "contribute" | "record" | "minutes" | "seven-days" | "shelf" | "ask";
 
 /** One renderer for the desk and phone; detent motion is never an input. */
 export function FundStage({ widgetId, household, memberId, today, busy, headingRef, view = "household",
-  onKitchen, onOpenAccount, onOpenDestination, plate, onOpenCabinet, presentation = "desk", scenarioSource,
+  onKitchen, onOpenAccount, onOpenDestination, plate, onOpenCabinet, presentation = "desk",
 }: {
   view?: LedgerView;
   presentation?: "phone" | "desk";
@@ -47,10 +47,14 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
     ? plate ?? fundPlates({ household, memberId, today }).find(row => fundWidgetIdForPlateId(row.id) === widgetId)
     : null, [allowed, household, memberId, today, widgetId, plate]);
   const nameOf = (id: string | null | undefined) => household.members.find(member => member.id === id)?.name ?? "A member";
-  const ask = () => <Ask viewerRoom={view} presentation={presentation} scenarioSource={scenarioSource} household={household} today={today} memberId={memberId} busy={busy}
-    onMove={alternative => onKitchen(current => moveAskGoalClaimToNextMonth(current, {
-      today, memberId, goalId: alternative.goalId, recurrenceId: alternative.recurrenceId, claimDate: alternative.claimDate,
-    }))} />;
+  const ask = () => <section className="fund-plate-stage" aria-label="Shift Ask board">
+    <h2 className="fund-stage-heading">Your Shift Ask</h2>
+    <p className="desk-plate-detail">A board for what the month still needs from you.</p>
+    <button className="desk-plate-handle" type="button" disabled={busy} onClick={() => {
+      requestSharedBoard({environment:household.environment,householdId:household.householdId,memberId}, "ask");
+      onOpenDestination("ask");
+    }}>Open Shift Ask · board 5</button>
+  </section>;
   if (!allowed) return <p className="desk-plate-empty">This reading is not available on this desk.</p>;
   if (widgetId === "level" && walk && presentation === "phone" && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId)) return ask();
   if (widgetId === "level" && walk && presentation === "phone") return <SharedFundTrust household={household} memberId={memberId} view={view} today={today} headline headingRef={headingRef} />;

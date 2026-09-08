@@ -23,10 +23,8 @@ import {
   cookOffScore,
   sitDownPostcard,
   sharedMonthCourse,
-  askBelongsOnDesk,
   fundWidgetIdForPlateId,
   railFor,
-  moveAskGoalClaimToNextMonth,
   type DeskPlateId,
   type FundWidgetId,
   type PersonalLedgerStory as PersonalLedgerStoryModel,
@@ -40,7 +38,8 @@ import { requestCalendarPane } from "./core/calendarIntent.ts";
 import { BlotterBody, BlotterGlance } from "./widgets/Blotter.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
-import { ChalkboardBody, chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
+import { SharedBoards } from "./widgets/SharedBoards.tsx";
 import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
@@ -55,7 +54,6 @@ import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
 import { NotebookBody, PaperBars, PaperSpark, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { MonthSpread } from "./MonthSpread.tsx";
-import { Ask } from "./Ask.tsx";
 import { DeskPlate } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
 import { FundStage, type FundDestination } from "./FundStage.tsx";
@@ -459,11 +457,11 @@ export function OfficeWide({
       body: <CookOffBody score={cook} />,
     },
     chalkboard: {
-      kind: "Notes",
-      name: "Notes",
+      kind: "Together",
+      name: "Our boards",
       glance: <span>{chalkboardGlance(household)}</span>,
-      aria: "Notes.",
-      body: <ChalkboardBody liveSurface household={household} memberId={memberId} busy={busy} onCommand={onKitchen} />,
+      aria: "Our boards. Notes, photos, tasks, goals and Shift Ask.",
+      body: <SharedBoards key={`${household.environment}:${household.householdId}:${memberId}:${view}`} household={booksHousehold} memberId={memberId} today={today} view={view} scenarioSource={scenarioSource} busy={busy} onCommand={onKitchen} onOpenGoals={() => onGo("plan")} />,
     },
     wardrobe: {
       kind: "Outfits",
@@ -502,9 +500,6 @@ export function OfficeWide({
   const openSpec = openId ? specs[openId] : null;
   /** Shared Home's default centre is the Month Spread. Left plates grow in the mosaic. */
   const spreadIsStage = view === "household" && !openSpec && !monthList;
-  const showAsk = spreadIsStage
-    && (!fundConfigured || fundWidgetIdForPlateId(selectedFundPlate?.id ?? "") === "level")
-    && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
   const panelId = monthList
     ? `wide-notebook-month-${monthList}`
     : `wide-notebook-${openId ?? "blotter"}`;
@@ -617,22 +612,6 @@ export function OfficeWide({
                 onOpenRegister={onOpenRegister}
                 onOpenHealth={() => onGo("more")}
               />
-              {showAsk ? (
-                <Ask
-                  household={booksHousehold}
-                  scenarioSource={scenarioSource}
-                  today={today}
-                  memberId={memberId}
-                  busy={busy}
-                  onMove={(alternative) => onKitchen((current) => moveAskGoalClaimToNextMonth(current, {
-                    today,
-                    memberId,
-                    goalId: alternative.goalId,
-                    recurrenceId: alternative.recurrenceId,
-                    claimDate: alternative.claimDate,
-                  }))}
-                />
-              ) : null}
             </>
           ) : (
           <NotebookBody
