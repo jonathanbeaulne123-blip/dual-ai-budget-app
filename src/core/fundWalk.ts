@@ -1,3 +1,4 @@
+import { foldFundMovements } from "./fundMovements.ts";
 import {
   addDays,
   monthEndKey,
@@ -139,7 +140,7 @@ export type FundWeekMovement = {
  * Inflows are found, never assumed. A pay cadence supplies a date; it never
  * supplies an amount. Below the observation threshold nothing is projected.
  */
-function projectedInflows(
+export function prepareFundInflows(
   household: Household,
   events: readonly HouseholdFundEvent[],
   from: DateKey,
@@ -184,7 +185,7 @@ function projectedInflows(
   return inflows;
 }
 
-function projectedObligations(
+export function prepareFundObligations(
   household: Household,
   monthKey: MonthKey,
   anchor: DateKey,
@@ -255,10 +256,10 @@ function foldWalk(
     });
   }
   const canonicalTodayBalanceCents = balance;
-  const { obligations, rows: allOutflows } = projectedObligations(household, monthKey, anchor);
+  const { obligations, rows: allOutflows } = prepareFundObligations(household, monthKey, anchor);
   const outflows = allOutflows.filter((row) => !deferred.has(row.sourceId));
 
-  const canonicalInflows = projectedInflows(household, events, anchor, end);
+  const canonicalInflows = prepareFundInflows(household, events, anchor, end);
   let inflows = [...canonicalInflows];
   const actionableMotions = new Map(householdFundContributionMotions(household, fundId)
     .filter((motion) => motion.status === "open" || motion.status === "held")
@@ -308,19 +309,10 @@ function foldWalk(
       kind: "obligation" as WalkPointKind, estimated: false,
       memberId: null as string | null, sourceId: row.sourceId,
     })),
-  ].sort((left, right) => left.date.localeCompare(right.date)
-    // On one day, money in lands before money out. Deterministic, and the charitable reading.
-    || Math.sign(right.deltaCents) - Math.sign(left.deltaCents)
-    || (left.sourceId ?? "").localeCompare(right.sourceId ?? ""));
-
-  for (const row of projected) {
-    balance += row.deltaCents;
-    points.push({
-      date: row.date, kind: row.kind, label: row.label, deltaCents: row.deltaCents,
-      balanceCents: balance, actual: false, estimated: row.estimated,
-      memberId: row.memberId, sourceId: row.sourceId,
-    });
-  }
+  ];
+  const folded = foldFundMovements(balance, projected);
+  points.push(...folded.points);
+  balance = folded.endBalanceCents;
 
   const plan = shapeHouseholdFundMonthPlans(household.fundMonthPlans)
     .find((row) => row.fundId === fundId && row.monthKey === monthKey);
@@ -436,7 +428,7 @@ export function fundWeekMovements(
   if (!config || through < today) return [];
   const events = activeHouseholdFundEvents(household, config.id || HOUSEHOLD_FUND_ID);
   const monthKeys = [...new Set([monthKeyFromDateKey(today), monthKeyFromDateKey(through)])];
-  const outflows = monthKeys.flatMap((monthKey) => projectedObligations(household, monthKey, today).rows)
+  const outflows = monthKeys.flatMap((monthKey) => prepareFundObligations(household, monthKey, today).rows)
     .filter((row) => row.date >= today && row.date <= through)
     .map((row) => ({
       date: row.date,
@@ -445,7 +437,7 @@ export function fundWeekMovements(
       deltaCents: -row.amountCents,
       estimated: false,
     }));
-  const inflows = projectedInflows(household, events, today, through).map((row) => ({
+  const inflows = prepareFundInflows(household, events, today, through).map((row) => ({
     date: row.date,
     kind: "contribution" as const,
     label: row.label,

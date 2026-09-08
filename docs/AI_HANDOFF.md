@@ -1,3 +1,17 @@
+## Mobile SC02 — canonical Fund horizon (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc2-fund-horizon`, stacked on SC01 `4c070cf` (PR379). Phase2 remains in progress.
+
+**Outcome:** Exact legacy monthly fold parity and a separate inclusive horizon with one accepted anchor, every touched month, October1 obligations once, older outstanding claims and month-specific buffers. Future facts that distort undated position/goal readers refuse explicitly.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)0.
+
+**Verification:** High quick gate67 assertions plus TypeScript/AI/diff pass in162.870seconds, no breach. Independent final29/29, no remaining blocker. Comparator mutation was killed; future goal-progress regression failed before its repair. [Exact commands and evidence](worksessions/2026-09-08-mobile-fund-horizon.md).
+
+**Limits:** Pure fictional local command fixtures; no UI/browser, complete scenario/source availability, physical-device, exhaustive, hosted, merge or deployment claim.
+
+**Next owner:** Codex opens the separate draft PR then continues SC03 cash-capacity/election proof inside Claude's eventual Reach.
+
 ## Mobile SC01 — scenario request contract (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-sc1-scenario-contract`, stacked on Count `246d4a4` (PR378). Phase2 remains in progress.
