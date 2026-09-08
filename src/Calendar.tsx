@@ -616,7 +616,7 @@ function CalendarPageScope(props: CalendarProps) {
             <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
           </header>
           <p className="muted">
-            Google never posts. Overlay and 9:00 Toronto reminders. Link in More.
+            See Google events here and send reminders for 9:00 Toronto time. Calendar connections never post money.
           </p>
           {household.members.filter((member) => member.active).sort((left, right) => {
             if (left.id === props.memberId) return -1;
@@ -655,7 +655,7 @@ function CalendarPageScope(props: CalendarProps) {
             <p className="muted">Calendar Google is off. Turn it on in More → Google household bridge.</p>
           )}
           {!configured && (
-            <p className="muted">Add <code>VITE_GOOGLE_CLIENT_ID</code> to this build (Google Cloud web client, this site as an authorized origin). Until then, download the calendar file.</p>
+            <p className="muted">Google connection isn’t available here yet. You can still download your calendar with reminders.</p>
           )}
           {googleError ? <KitchenNotice message={googleError} /> : null}
           <button className="primary" disabled={googleBusy || !calendarGoogleOn || !household.recurrences.some((item) => item.active)} onClick={() => void remindOnGoogle()}>

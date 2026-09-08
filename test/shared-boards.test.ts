@@ -21,6 +21,8 @@ describe("shared boards", () => {
     expect(next.goalContributions).toEqual(h.goalContributions);
     expect(splitForSync(next,"MEM-002").shared.kitchen.boards).toEqual(next.kitchen.boards);
     expect(householdForAiDisclosure(next,"MEM-001").kitchen.boards).toBeUndefined();
+    const photo=next.kitchen.boards!.photos[0]!;
+    expect(shapeSharedBoards({photos:[{...photo,crop:{...photo.crop,unexpected:"discard"} as typeof photo.crop}]}).photos[0]!.crop).toEqual({x:50,y:50,zoom:1});
   });
   it("refuses stale edits and removed-item resurrection while preserving the caller's input", () => {
     const h=saveBoardTask(catalogHousehold(),task()).household;

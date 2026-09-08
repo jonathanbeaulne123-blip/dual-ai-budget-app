@@ -43,7 +43,7 @@ function unique<T extends BoardRow>(items: T[]): T[] {
 }
 export function shapeSharedBoards(value?: Partial<SharedBoardState> | null): SharedBoardState {
   return {
-    photos: unique((Array.isArray(value?.photos) ? value.photos : []).filter(photo)).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, mediaId:r.mediaId, caption:r.caption, crop:{...r.crop} })),
+    photos: unique((Array.isArray(value?.photos) ? value.photos : []).filter(photo)).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, mediaId:r.mediaId, caption:r.caption, crop:{x:r.crop.x,y:r.crop.y,zoom:r.crop.zoom} })),
     tasks: unique((Array.isArray(value?.tasks) ? value.tasks : []).filter(r => item(r) && /^BOARD-TASK-[A-Za-z0-9_-]{1,80}$/.test(r.id) && (r.assigneeId === null || typeof r.assigneeId === "string"))).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, title:r.title, completed:r.completed, dueDate:r.dueDate, assigneeId:r.assigneeId })),
     milestones: unique((Array.isArray(value?.milestones) ? value.milestones : []).filter(r => item(r) && /^BOARD-MILESTONE-[A-Za-z0-9_-]{1,80}$/.test(r.id))).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, title:r.title, completed:r.completed, dueDate:r.dueDate })),
   };
