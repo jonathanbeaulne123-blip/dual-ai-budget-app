@@ -18,6 +18,8 @@ Release checks: generated binding types, Worker dry run, focused High quick gate
 
 ## Pre-push receipt
 
+Release PR: [#409 — Make daily entry quicker and add five themed shared boards](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/409). The PR contains the final hosted check and deployment receipt.
+
 At clean `1193f6b87d44ff5f769d97236ce9110b065fdea8`, the focused High release gate passed **79 tests across five files in 52.779 seconds**, including 65 startup cases, real R2/browser media checks and month rehearsal. TypeScript, AI surface and diff checks passed. No time-budget breach. Base `e868652`; fingerprint `5bf60f1de250fbca58e09d72f0c2e17411d732279c16ff42b46952f4029d403a`. Subsequent release-receipt edits are documentation only.
 
 Command: `pnpm --config.manage-package-manager-versions=false --config.verify-deps-before-run=never test -- --risk=high --base=e868652 --focus=test/board-media-worker.test.ts --focus=test/board-media-r2.test.ts --focus=test/board-media-browser.test.ts --focus=test/app-startup-p1.test.ts --focus=test/month-rehearsal-mainline.test.ts --focus-reason='Authorized Development release: private BOARD_MEDIA binding, media authorization and immutable R2 operations, startup and rehearsal regression'`.
