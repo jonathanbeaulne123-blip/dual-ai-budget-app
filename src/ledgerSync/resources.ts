@@ -1,4 +1,6 @@
 import { accountHistoryState, type AccountHistoryReview } from "../core/accountHistory.ts";
+import { requirementFingerprint } from "../core/onboarding/attestations.ts";
+import { onboardingCompletionDigest } from "../core/onboarding/ready.ts";
 import {reviewedClaimInput} from "../core/claimSettlementReview.ts";
 import {dueOccurrenceReview,reviewedDueRequest} from "../core/dueOccurrenceReview.ts";
 import { reviewedSwipeEntry } from "../core/swipe.ts";
@@ -41,6 +43,13 @@ export function observedResources(
   if (["acceptReviewedAccountHistory", "approveAccountHistoryReview", "submitAccountHistoryReview"].includes(kind)) {
     const input = args[0] as { review: AccountHistoryReview };
     return [{key: "account-history", value: accountHistoryState(household, input.review)}];
+  }
+  if (["recordChapterAcknowledgement", "recordObservedChapterCompletion"].includes(kind)) {
+    const input = args[0] as { chapterId?: string } | undefined;
+    return [{ key: `onboarding-requirement/${input?.chapterId}`, value: requirementFingerprint(household, input?.chapterId ?? "") }];
+  }
+  if (["approveOnboardingReady", "completeHouseholdOnboarding"].includes(kind)) {
+    return [{ key: "onboarding-ready-version", value: onboardingCompletionDigest(household) }];
   }
   if (["saveBoardTask", "removeBoardTask", "saveBoardMilestone", "removeBoardMilestone", "setBoardPhoto"].includes(kind)) {
     const input = args[0] as { id?: string; slot?: number };

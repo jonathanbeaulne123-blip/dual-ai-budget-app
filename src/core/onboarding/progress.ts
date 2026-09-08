@@ -5,9 +5,12 @@ import {
   ONBOARDING_REGISTRY_VERSION,
   chapterById,
   householdChapters,
+  requiredHouseholdChapters,
   personalModules,
 } from "./registry.ts";
 import { acceptedHouseholdOnboarding, onboardingIsActive } from "./mode.ts";
+import { memberRequirementSatisfied } from "./attestations.ts";
+import type { CorrectionPracticeProof } from "../monthRehearsalPractice.ts";
 import type { ChapterId, OnboardingChapter } from "./types.ts";
 
 const MISSING_ISO = "1970-01-01T00:00:00.000Z";
@@ -42,6 +45,7 @@ export type MemberOnboardingProgress = {
   declineMonthByModule: Record<ChapterId, string>;
   /** Member-Personal, append-only offer facts. They enforce cross-session caps without exposing a trigger fact. */
   personalOfferHistory: PersonalModuleOfferRecord[];
+  practiceProof?: CorrectionPracticeProof;
   updatedAt: string;
 };
 
@@ -115,11 +119,11 @@ function contextForValue(value: unknown, expected?: Partial<ProgressContext>): P
   const environments: Environment[] = expected?.environment
     ? [expected.environment]
     : ["development", "production"];
-  const environment = environments.find((candidate) => row.id === memberProgressId({
+  const environment = environments.find((candidate) => [memberProgressId({
     environment: candidate,
     householdId,
     memberId,
-  }));
+  }), `ONBOARDING-PROGRESS-${candidate}-${householdId}-${memberId}-v1`].includes(row.id ?? ""));
   return environment ? { environment, householdId, memberId } : null;
 }
 
@@ -192,7 +196,7 @@ export function shapeMemberOnboardingProgress(
   const context = contextForValue(value, expected);
   if (!context || !value || typeof value !== "object") return null;
   const row = value as Partial<MemberOnboardingProgress>;
-  if (row.registryVersion !== ONBOARDING_REGISTRY_VERSION) return null;
+  if (row.registryVersion !== ONBOARDING_REGISTRY_VERSION && row.registryVersion !== 1) return null;
   const rawRows = Array.isArray(row.rows) ? row.rows : [];
   const byChapter = new Map<ChapterId, Partial<MemberChapterProgress>>();
   for (const candidate of rawRows) {
@@ -240,6 +244,7 @@ export function shapeMemberOnboardingProgress(
     declineCountByModule,
     declineMonthByModule,
     personalOfferHistory: shapedPersonalOfferHistory(row.personalOfferHistory),
+    ...(row.practiceProof && typeof row.practiceProof === "object" ? { practiceProof: row.practiceProof } : {}),
     updatedAt: isoOrNull(row.updatedAt) ?? MISSING_ISO,
   };
 }
@@ -291,7 +296,10 @@ export function nextChapterFor(household: Household, memberId: string): Onboardi
   if (acceptedHouseholdOnboarding(household)?.forcedUnlock) {
     return nextEligible(personalModules(), progress);
   }
-  const householdChapter = nextEligible(householdChapters(), progress);
+  const isComplete = acceptedHouseholdOnboarding(household)?.state === "complete";
+  const householdChapter = isComplete
+    ? nextEligible(requiredHouseholdChapters(), progress)
+    : requiredHouseholdChapters().find((chapter) => !memberRequirementSatisfied(household, memberId, chapter.id)) ?? null;
   if (householdChapter) return householdChapter;
   // Chapter 12 remains the active finale after its proof is recorded. This
   // keeps the waiting-member and interrupted-unlock repair UI reachable until
@@ -307,8 +315,7 @@ export function householdGatesOutstanding(household: Household): ChapterId[] {
   return householdChapters()
     .filter((chapter) => chapter.contributesToFinalGate)
     .filter((chapter) => activeMembers.length === 0 || activeMembers.some((member) => {
-      const row = memberProgress(household, member.id).rows.find((candidate) => candidate.chapterId === chapter.id);
-      return !chapterProgressSatisfied(row);
+      return !memberRequirementSatisfied(household, member.id, chapter.id);
     }))
     .map((chapter) => chapter.id);
 }
@@ -317,17 +324,14 @@ export function mergeMemberProgress(
   serverValue: MemberOnboardingProgress,
   clientValue: MemberOnboardingProgress,
 ): MemberOnboardingProgress {
-  if (serverValue.id !== clientValue.id
-    || serverValue.householdId !== clientValue.householdId
-    || serverValue.memberId !== clientValue.memberId
-    || serverValue.registryVersion !== clientValue.registryVersion) {
+  const serverContext = contextForValue(serverValue);
+  const clientContext = contextForValue(clientValue);
+  const server = shapeMemberOnboardingProgress(serverValue, serverContext ?? undefined);
+  const client = shapeMemberOnboardingProgress(clientValue, clientContext ?? undefined);
+  if (!serverContext || !clientContext || !server || !client || server.id !== client.id
+    || server.householdId !== client.householdId || server.memberId !== client.memberId) {
     throw new ValidationError("Onboarding progress belongs to one member and household.");
   }
-  const context = contextForValue(serverValue);
-  if (!context) throw new ValidationError("Onboarding progress belongs to one member and household.");
-  const server = shapeMemberOnboardingProgress(serverValue, context);
-  const client = shapeMemberOnboardingProgress(clientValue, context);
-  if (!server || !client) throw new ValidationError("Onboarding progress belongs to one member and household.");
   const serverRows = new Map(server.rows.map((row) => [row.chapterId, row]));
   const clientRows = new Map(client.rows.map((row) => [row.chapterId, row]));
   const rows = ONBOARDING_REGISTRY.map((chapter): MemberChapterProgress => {
@@ -414,6 +418,7 @@ export function mergeMemberProgress(
   const offersMutedUpdatedAt = later(server.offersMutedUpdatedAt, client.offersMutedUpdatedAt);
   return {
     ...server,
+    ...(client.practiceProof && (!server.practiceProof || client.updatedAt >= server.updatedAt) ? { practiceProof: client.practiceProof } : {}),
     rows,
     offersMuted,
     offersMutedUpdatedAt,

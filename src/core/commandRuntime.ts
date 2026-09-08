@@ -1,5 +1,6 @@
 import { capturedIntent } from "../ledgerSync/capture.ts";
 import { assertAccountHistoryTransition } from "./accountHistory.ts";
+import { assertOnboardingAttestationTransition, deriveOnboardingAttestationInvalidations, canonicalOnboardingValue } from "./onboarding/attestations.ts";
 import { assertAcceptableBooks, type IncrementalBooksGuard } from "./booksValidation.ts";
 import type { CompiledBooks } from "./journal.ts";
 import { ensureHouseholdShape } from "./sync.ts";
@@ -299,9 +300,16 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       });
     }
 
+    if (!validSyntheticDemoCommand && canonicalOnboardingValue(previous?.onboardingAttestationInvalidations ?? [])
+      !== canonicalOnboardingValue(candidate.onboardingAttestationInvalidations ?? [])) {
+      throw new ValidationError("Setup acceptance revocations are authority-owned. Refresh this device before continuing.");
+    }
     // A validated synthetic replacement is a whole disposable fixture, not an
     // append-only edit of its previous seed. Candidate Fund integrity still runs.
     assertHouseholdFundTransition(validSyntheticDemoReplacement ? null : previous, candidate);
+    if (!validSyntheticDemoCommand) assertOnboardingAttestationTransition(previous, candidate, {
+      actorMemberId: input.actingMemberId, commandKind: input.commandKind, postedIds,
+    });
     const isOnboardingSubmissionCommand = input.commandKind === "submitOnboardingCategories"
       || input.commandKind === "submitOnboardingEstimates";
     const onboardingSubmissionStateChanged = JSON.stringify(previous?.onboardingSubmissions ?? [])
@@ -347,6 +355,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     if (input.commandKind === "completeHouseholdOnboarding" && previous) {
       assertOnboardingCompletionTransition(previous, candidate);
     }
+    if (!validSyntheticDemoCommand && input.commandKind !== ONBOARDING_ADOPTION_COMMAND_KIND
+      && JSON.stringify(previous?.acceptedStarterPlans ?? []) !== JSON.stringify(candidate.acceptedStarterPlans ?? [])) {
+      throw new ValidationError("Only an accepted first-plan adoption can record its proof.");
+    }
     if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND) {
       assertOnboardingAdoptionTransition(previous, candidate, {
         actorMemberId: input.actingMemberId,
@@ -367,6 +379,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     let accepted: Household = {
       ...candidate,
       revision,
+      ...(!validSyntheticDemoCommand ? { onboardingAttestationInvalidations: deriveOnboardingAttestationInvalidations(previous, candidate, acceptedAt) } : {}),
       lastCommittedAt: candidate.lastCommittedAt ?? acceptedAt,
       sharing: shapeSharing(candidate),
       conflicts: candidate.conflicts ?? previous?.conflicts ?? [],

@@ -178,6 +178,7 @@ import {
   type HouseholdOnboarding,
 } from "./onboarding/mode.ts";
 import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.ts";
+import { appendChapterAttestation, acceptedPracticeProof, memberRequirementSatisfied } from "./onboarding/attestations.ts";
 import { householdGatesOutstanding, memberProgress } from "./onboarding/progress.ts";
 import { personalModuleById, personalModuleOfferFor } from "./onboarding/personal.ts";
 import { evidenceFor, probeEvidenceKey } from "./onboarding/evidence.ts";
@@ -213,7 +214,6 @@ import {
 } from "./onboarding/approvals.ts";
 import {
   onboardingCompletionDigest,
-  readyPracticeProofAccepted,
   READY_CHAPTER_ID,
 } from "./onboarding/ready.ts";
 import type { CorrectionPracticeProof } from "./monthRehearsalPractice.ts";
@@ -510,7 +510,7 @@ export const recordChapterAcknowledgement = captureCommand("recordChapterAcknowl
     requireOnboardingProgressActor(household, input.memberId, input.createdBy);
     const projected = evidenceFor(household, chapter.id, input.memberId);
     if (projected.kind !== "accepted" || projected.card.scope !== "household") {
-      throw new ValidationError("Add a Shared account and choose one Shared credit card for the Fund before continuing.");
+      throw new ValidationError("Add the Shared accounts you want to use before continuing.");
     }
   }
   if (chapter.id === "ch-05-opening") {
@@ -553,27 +553,30 @@ export const recordChapterAcknowledgement = captureCommand("recordChapterAcknowl
   if (chapter.id === READY_CHAPTER_ID) {
     requireOnboardingProgressActor(household, input.memberId, input.createdBy);
     const today = input.today ?? todayKey(new Date(), household.timezone);
-    const projected = evidenceFor(household, chapter.id, input.memberId, { today });
-    const practiceAccepted = readyPracticeProofAccepted(input.practiceProof, input.memberId, today);
+    const practiceAccepted = acceptedPracticeProof(input.practiceProof, input.memberId, today);
     const priorGates = householdGatesOutstanding(household).filter((chapterId) => chapterId !== READY_CHAPTER_ID);
     if (priorGates.length > 0) {
       throw new ValidationError("Finish the remaining setup checks before the Ready chapter.");
     }
-    if (projected.kind !== "accepted" && !practiceAccepted) {
-      throw new ValidationError("Post one real entry, or finish the discarded Practice correction, before saying you're ready.");
+    if (!practiceAccepted) {
+      throw new ValidationError("Finish the discarded Practice entry and correction before saying you're ready.");
     }
   }
-  return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
+  const result = updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
+    ...(chapter.id === READY_CHAPTER_ID && input.practiceProof ? { practiceProof: input.practiceProof } : {}),
     rows: progress.rows.map((row) => row.chapterId === chapter.id
-      ? {
-          ...row,
-          acknowledgedAt: row.acknowledgedAt ?? at,
-          lastSafeResumePoint: chapter.id,
-        }
+      ? { ...row, acknowledgedAt: chapter.contributesToFinalGate || (row.invalidatedAt && (row.acknowledgedAt ?? "") <= row.invalidatedAt)
+          ? at : row.acknowledgedAt ?? at, lastSafeResumePoint: chapter.id }
       : row),
     updatedAt: at,
   }));
+  if (!chapter.contributesToFinalGate) return result;
+  const at = memberProgress(result.household, input.memberId).updatedAt;
+  const attested = appendChapterAttestation(result.household, input.memberId, chapter.id, at);
+  const priorIds = new Set((household.onboardingAttestations ?? []).map(row => row.id));
+  return commit(household, attested, "Onboarding", "Accepted your setup check",
+    (attested.onboardingAttestations ?? []).filter(row => !priorIds.has(row.id)).map(row => row.id), [], "recordChapterAcknowledgement");
 });
 
 /**
@@ -599,7 +602,7 @@ export const recordObservedChapterCompletion = captureCommand("recordObservedCha
     throw new ValidationError("That household check is no longer current.");
   }
   const evidenceKey = probeEvidenceKey(projected.card);
-  return updateMemberProgress(household, input, "Onboarding probe accepted", (progress, at) => ({
+  const result = updateMemberProgress(household, input, "Onboarding probe accepted", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
       ? {
@@ -610,14 +613,17 @@ export const recordObservedChapterCompletion = captureCommand("recordObservedCha
           probeEvidenceKey: row.invalidatedAt && (row.observedCompleteAt ?? "") <= row.invalidatedAt
             ? evidenceKey
             : row.probeEvidenceKey ?? evidenceKey,
-          acknowledgedAt: row.invalidatedAt && (row.acknowledgedAt ?? "") <= row.invalidatedAt
-            ? at
-            : row.acknowledgedAt ?? at,
+          acknowledgedAt: at,
           lastSafeResumePoint: chapter.id,
         }
       : row),
     updatedAt: at,
   }));
+  const at = memberProgress(result.household, input.memberId).updatedAt;
+  const attested = appendChapterAttestation(result.household, input.memberId, chapter.id, at);
+  const priorIds = new Set((household.onboardingAttestations ?? []).map(row => row.id));
+  return commit(household, attested, "Onboarding", "Accepted your household check",
+    (attested.onboardingAttestations ?? []).filter(row => !priorIds.has(row.id)).map(row => row.id), [], "recordObservedChapterCompletion");
 });
 
 /** Skip only a personal module whose registry policy explicitly permits it. */
@@ -1046,7 +1052,8 @@ export const approveOnboardingReady = captureCommand("approveOnboardingReady", f
   requireOnboardingProgressActor(household, input.memberId, input.createdBy);
   const expectedDigest = onboardingCompletionDigest(household);
   if (normalizeOnboardingApprovalDigest(input.digest) !== expectedDigest
-    || householdGatesOutstanding(household).length > 0) {
+    || householdGatesOutstanding(household).length > 0
+    || !memberRequirementSatisfied(household, input.memberId, READY_CHAPTER_ID)) {
     throw new ValidationError("Finish every setup check before saying you're ready.");
   }
   return appendOnboardingApproval(household, input, "ready");
@@ -3282,6 +3289,12 @@ export const adoptFirstBudget = captureCommand("adoptFirstBudget", function adop
     changedIds.push(plan.id);
   }
   next.budgetPlans = planned;
+  next.acceptedStarterPlans = [...(next.acceptedStarterPlans ?? []).filter(row => row.id !== confirmationId), {
+    id: confirmationId, proposalDigest: proposal.sourceDigest, monthKey: input.monthKey,
+    memberIds: household.members.filter(member => member.active).map(member => member.id).sort(),
+    plans: planned.filter(plan => changedIds.includes(plan.id)).map(plan => ({ ...plan })),
+    acceptedAt: approvedAt,
+  }];
   const result = commit(
     previous,
     next,

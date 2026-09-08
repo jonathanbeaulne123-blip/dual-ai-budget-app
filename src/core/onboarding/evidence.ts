@@ -33,6 +33,7 @@ import { onboardingCategoryState } from "./categories.ts";
 import { onboardingEstimateState } from "./estimates.ts";
 import { currentSubmission } from "./submissions.ts";
 import { buildProposal } from "./proposal.ts";
+import { currentAcceptedStarterPlan } from "./planAcceptance.ts";
 import { currentPlanAdoptionReceipt } from "./planView.ts";
 import {
   validateHouseholdScopeObservation,
@@ -240,23 +241,13 @@ function accountsEvidence(household: Household, chapterId: ChapterId, viewerMemb
   const own = household.accounts
     .filter((account) => account.active && account.scope === "personal" && account.ownerMemberId === viewerMemberId)
     .sort((left, right) => left.sortOrder - right.sortOrder || left.id.localeCompare(right.id));
-  const fundCardMemberId = household.charter?.custodianMemberId
-    ?? household.householdFund?.custodianMemberId
-    ?? viewerMemberId;
-  const cardResolution = resolveSwipeCardAccount(household, fundCardMemberId);
-  const fundCard = cardResolution.kind === "ready"
-    ? shared.find((account) => account.id === cardResolution.accountId) ?? null
-    : null;
-  const householdCard = shared.length && fundCard
+  const householdCard = shared.length
     ? {
         chapterId,
         scope: "household" as const,
         kind: "account" as const,
         sourceIds: shared.map((account) => account.id),
-        lines: [
-          { label: "Fund card", value: fundCard.name },
-          ...shared.map(accountLine),
-        ],
+        lines: shared.map(accountLine),
         observedAt: latestIso(shared.map((account) => account.updatedAt)) ?? "",
       }
     : null;
@@ -462,6 +453,11 @@ function cadenceEvidence(household: Household, chapterId: ChapterId, viewerMembe
 }
 
 function planEvidence(household: Household, chapterId: ChapterId, today?: DateKey): Projection {
+  const accepted = currentAcceptedStarterPlan(household);
+  if (accepted) return { ...EMPTY, household: {
+    chapterId, scope: "household", kind: "receipt", sourceIds: [accepted.id, ...accepted.plans.map(plan => plan.id)],
+    lines: [{ label: "Accepted plan", value: `${accepted.plans.length} plan rows` }], observedAt: accepted.acceptedAt,
+  } };
   if (!today) return EMPTY;
   let proposal;
   try {

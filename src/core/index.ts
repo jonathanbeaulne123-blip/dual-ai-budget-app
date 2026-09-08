@@ -256,3 +256,5 @@ export {
 export type { RestorePoint } from "./types.ts";
 
 export * from "./accountHistory.ts";
+export * from "./onboarding/attestations.ts";
+export * from "./onboarding/planAcceptance.ts";

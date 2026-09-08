@@ -556,7 +556,8 @@ export function OnboardingChat({
   // the shared evidence on their own device. This makes them an actor without
   // pretending they are leading the chapter.
   const recurrenceContributor = chapterId === "ch-07-recurrences" && baseRole === "witness";
-  const role = fundApprovalActor || recurrenceContributor ? "conductor" : baseRole;
+  const observerAcknowledges = ["ch-04-accounts", "ch-05-opening"].includes(chapterId);
+  const role = fundApprovalActor || recurrenceContributor || observerAcknowledges ? "conductor" : baseRole;
   const conductorName = baseRole === "witness"
     ? household.members.find((member) => member.id === custodianMemberId)?.name ?? "your partner"
     : null;
@@ -597,7 +598,7 @@ export function OnboardingChat({
   const personalAccountsEvidence = chapterId === "ch-04-accounts"
     ? selfPersonalAccountsEvidenceFor(household, memberId)
     : { kind: "empty" as const };
-  const personalAccountChoicePending = chapterId === "ch-04-accounts"
+  const personalAccountChoicePending = baseRole === "conductor" && chapterId === "ch-04-accounts"
     && evidence.kind === "accepted"
     && personalAccountsEvidence.kind === "empty"
     && !chapterProgress?.personalAccountSetupSkippedAt;

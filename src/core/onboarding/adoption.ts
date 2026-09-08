@@ -405,17 +405,30 @@ export function assertOnboardingAdoptionTransition(
   }
 
   const {
+    acceptedStarterPlans: _beforeAcceptedPlans,
     budgetPlans: _beforePlans,
     activity: _beforeActivity,
     lastCommittedAt: _beforeCommittedAt,
     ...beforeState
   } = previous;
   const {
+    acceptedStarterPlans: _afterAcceptedPlans,
     budgetPlans: _afterPlans,
     activity: _afterActivity,
     lastCommittedAt: _afterCommittedAt,
     ...afterState
   } = candidate;
+  const expectedAcceptance = {
+    id: onboardingAdoptionIdentity(proposal.monthKey, proposal.sourceDigest),
+    proposalDigest: proposal.sourceDigest, monthKey: proposal.monthKey,
+    memberIds: previous.members.filter(member => member.active).map(member => member.id).sort(),
+    plans: candidate.budgetPlans.filter(plan => input.postedIds.includes(plan.id)).map(plan => ({ ...plan })),
+    acceptedAt: onboardingAdoptionApprovedAt(previous, proposal.sourceDigest, proposal.monthKey),
+  };
+  const expectedAcceptances = [...(previous.acceptedStarterPlans ?? []).filter(row => row.id !== expectedAcceptance.id), expectedAcceptance];
+  if (!sameValue(candidate.acceptedStarterPlans, expectedAcceptances)) {
+    throw new ValidationError("The starter plan acceptance must bind the exact approved rows.");
+  }
   if (!sameValue(afterState, beforeState)) {
     throw new ValidationError("The first-plan adoption can change budget plans only.");
   }

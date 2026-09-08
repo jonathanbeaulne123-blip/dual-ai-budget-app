@@ -1283,6 +1283,9 @@ export type Household = {
   onboardingCategoryMerges?: import("./onboarding/categories.ts").OnboardingCategoryMerge[];
   /** Append-only, self-owned approvals of exact onboarding meaning digests. */
   onboardingApprovals?: import("./onboarding/approvals.ts").OnboardingApproval[];
+  onboardingAttestationInvalidations?: import("./onboarding/attestations.ts").OnboardingAttestationInvalidation[];
+  onboardingAttestations?: import("./onboarding/attestations.ts").OnboardingAttestation[];
+  acceptedStarterPlans?: import("./onboarding/planAcceptance.ts").AcceptedStarterPlan[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -1359,6 +1362,9 @@ export type SharedEnvelope = {
   onboardingCategoryMerges?: import("./onboarding/categories.ts").OnboardingCategoryMerge[];
   /** Shared approval history; each record belongs to its approving member. */
   onboardingApprovals?: import("./onboarding/approvals.ts").OnboardingApproval[];
+  onboardingAttestationInvalidations?: import("./onboarding/attestations.ts").OnboardingAttestationInvalidation[];
+  onboardingAttestations?: import("./onboarding/attestations.ts").OnboardingAttestation[];
+  acceptedStarterPlans?: import("./onboarding/planAcceptance.ts").AcceptedStarterPlan[];
   charter?: HouseholdCharter | null;
   householdFund?: HouseholdFundConfig | null;
   fundMonthPlans?: HouseholdFundMonthPlan[];

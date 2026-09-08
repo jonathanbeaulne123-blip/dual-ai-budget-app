@@ -1,3 +1,4 @@
+import { currentAcceptedStarterPlan } from "./planAcceptance.ts";
 import type { DateKey, MonthKey } from "../calendar.ts";
 import type { CommandReceipt, Household, RecurrenceCadence } from "../types.ts";
 import { approvalsFor, shapeOnboardingApprovals, type OnboardingApproval } from "./approvals.ts";
@@ -55,6 +56,12 @@ export function currentPlanAdoptionReceipt(
   monthKey: MonthKey,
   proposal: BudgetProposal,
 ): CommandReceipt | null {
+  const durable = currentAcceptedStarterPlan(household);
+  if (durable && durable.monthKey === monthKey && durable.proposalDigest === proposal.sourceDigest) return {
+    confirmationId: durable.id, commandKind: ONBOARDING_ADOPTION_COMMAND_KIND,
+    postedIds: durable.plans.map(plan => plan.id), acceptedAt: durable.acceptedAt,
+    identityHash: durable.proposalDigest, auditHash: durable.proposalDigest, revision: household.revision,
+  };
   const confirmationId = onboardingAdoptionIdentity(monthKey, proposal.sourceDigest);
   const receipt = household.commandReceipts.find((candidate) => (
     candidate.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND

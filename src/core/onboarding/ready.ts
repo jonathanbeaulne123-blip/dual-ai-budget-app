@@ -8,8 +8,9 @@ import { adoptionSha256 } from "./adoption.ts";
 import { approvalsFor, bothApproved } from "./approvals.ts";
 import { evidenceFor, type EvidenceResult } from "./evidence.ts";
 import { acceptedHouseholdOnboarding } from "./mode.ts";
-import { chapterProgressSatisfied, householdGatesOutstanding, memberProgress } from "./progress.ts";
-import { householdChapters, ONBOARDING_REGISTRY_VERSION } from "./registry.ts";
+import { householdGatesOutstanding } from "./progress.ts";
+import { acceptedPracticeProof, currentMemberAttestation, memberRequirementSatisfied, requirementFingerprint } from "./attestations.ts";
+import { requiredHouseholdChapters, ONBOARDING_REGISTRY_VERSION } from "./registry.ts";
 
 export const READY_CHAPTER_ID = "ch-12-ready";
 
@@ -18,23 +19,7 @@ export function readyPracticeProofAccepted(
   memberId: string,
   date: DateKey,
 ): value is CorrectionPracticeProof {
-  if (!value || typeof value !== "object") return false;
-  const row = value as Partial<CorrectionPracticeProof>;
-  return row.version === 1
-    && row.memberId === memberId
-    && row.date === date
-    && row.fictional === true
-    && row.discarded === true
-    && row.mistakeCents === 4500
-    && row.mistakeEntryCount === 1
-    && row.reversalEntryCount === 2
-    && row.trialInBalance === true
-    && row.equationHolds === true
-    && row.netIncomeCents === 0
-    && Array.isArray(row.persistedIds)
-    && row.persistedIds.length === 0
-    && typeof row.receiptId === "string"
-    && /^PRACTICE-[A-F0-9]{20}$/.test(row.receiptId);
+  return acceptedPracticeProof(value, memberId, date);
 }
 
 function canonicalReadyValue(value: unknown): unknown {
@@ -47,9 +32,6 @@ function canonicalReadyValue(value: unknown): unknown {
   return value;
 }
 
-function byId<T extends { id: string }>(rows: readonly T[]): T[] {
-  return [...rows].sort((left, right) => left.id.localeCompare(right.id));
-}
 
 /**
  * Exact shared meaning, without Personal evidence. The two devices can
@@ -58,61 +40,19 @@ function byId<T extends { id: string }>(rows: readonly T[]): T[] {
  */
 export function onboardingCompletionDigest(household: Household): string {
   const record = acceptedHouseholdOnboarding(household);
-  if (!record?.startedAt || record.forcedUnlock) {
-    throw new ValidationError("Household setup is not ready to finish.");
-  }
-  const activeMemberIds = household.members
-    .filter((member) => member.active)
-    .map((member) => member.id)
-    .sort((left, right) => left.localeCompare(right));
-  if (activeMemberIds.length !== 2) {
-    throw new ValidationError("Household setup needs exactly two active members to finish.");
-  }
-  const openingIds = new Set(household.transactions
-    .filter((row) => row.type === "opening" || row.source === "opening")
-    .map((row) => row.id));
-  const setupTransactions = household.transactions.filter((row) => openingIds.has(row.id)
-    || (typeof row.reversalOfId === "string" && openingIds.has(row.reversalOfId)));
+  if (record?.state === "complete" && record.completionDigest && !record.forcedUnlock) return record.completionDigest;
+  if (!record?.startedAt || record.forcedUnlock) throw new ValidationError("Household setup is not ready to finish.");
+  const memberIds = household.members.filter(member => member.active).map(member => member.id).sort();
+  if (memberIds.length !== 2) throw new ValidationError("Household setup needs exactly two active members to finish.");
   const facts = {
-    kind: "hearth-onboarding-completion",
-    version: 1,
-    environment: household.environment,
-    householdId: household.householdId,
-    onboardingId: record.id,
-    proposedAt: record.proposedAt,
-    registryVersion: ONBOARDING_REGISTRY_VERSION,
-    memberIds: activeMemberIds,
-    confirmedByMemberIds: [...record.confirmedByMemberIds].sort(),
-    startedAt: record.startedAt,
-    gateChapterIds: householdChapters()
-      .filter((chapter) => chapter.contributesToFinalGate)
-      .map((chapter) => chapter.id),
-    // Bind the shared setup facts established by Chapters 3–11. Ordinary
-    // ledger activity and member-Personal evidence are intentionally absent,
-    // so a new purchase while the other member is approving cannot strand the
-    // pair on different digests.
-    setup: {
-      charter: household.charter ?? null,
-      accounts: byId(household.accounts.filter((row) => row.active && row.scope !== "personal")),
-      openingTransactions: byId(setupTransactions),
-      householdFund: household.householdFund ?? null,
-      recurrences: byId(household.recurrences.filter((row) => row.active)),
-      earningCadences: household.members
-        .filter((member) => member.active)
-        .map((member) => ({
-          memberId: member.id,
-          earningCadence: member.earningCadence ?? null,
-          earningDetailSkippedAt: member.earningDetailSkippedAt ?? null,
-        }))
-        .sort((left, right) => left.memberId.localeCompare(right.memberId)),
-      categories: byId(household.categories.filter((row) => row.active)),
-      submissions: byId(household.onboardingSubmissions ?? []),
-      categoryProposals: byId(household.onboardingCategoryProposals ?? []),
-      categoryMerges: byId(household.onboardingCategoryMerges ?? []),
-      budgetPlans: byId(household.budgetPlans.filter((row) => row.active)),
-    },
+    kind: "hearth-onboarding-completion", version: ONBOARDING_REGISTRY_VERSION,
+    environment: household.environment, householdId: household.householdId, startedAt: record.startedAt,
+    memberIds, required: requiredHouseholdChapters().map(chapter => ({
+      id: chapter.id, fingerprint: requirementFingerprint(household, chapter.id),
+      acceptances: memberIds.map(memberId => currentMemberAttestation(household, memberId, chapter.id)),
+    })),
   };
-  return `ready-v1-${adoptionSha256(JSON.stringify(canonicalReadyValue(facts)))}`;
+  return `ready-v2-${adoptionSha256(JSON.stringify(canonicalReadyValue(facts)))}`;
 }
 
 export type ReadyChecklistItem = {
@@ -145,7 +85,8 @@ export function onboardingReadyPresentation(
 ): OnboardingReadyPresentation {
   const digest = onboardingCompletionDigest(household);
   const evidence = evidenceFor(household, READY_CHAPTER_ID, memberId, { today });
-  const practiceAccepted = readyPracticeProofAccepted(practiceProof, memberId, today);
+  const practiceAccepted = readyPracticeProofAccepted(practiceProof, memberId, today)
+    || memberRequirementSatisfied(household, memberId, READY_CHAPTER_ID);
   const outstanding = householdGatesOutstanding(household);
   const approvals = approvalsFor(household, "ready", digest);
   const approvedMemberIds = new Set(approvals.map((approval) => approval.memberId));
@@ -160,8 +101,8 @@ export function onboardingReadyPresentation(
     digest,
     evidence,
     practiceAccepted,
-    proofAccepted: evidence.kind === "accepted" || practiceAccepted,
-    checklist: householdChapters().map((chapter) => ({
+    proofAccepted: practiceAccepted,
+    checklist: requiredHouseholdChapters().map((chapter) => ({
       chapterId: chapter.id,
       copyKey: `ready.chapter.${String(chapter.order).padStart(2, "0")}`,
       complete: !outstanding.includes(chapter.id),
@@ -182,11 +123,8 @@ export function assertReadyApprovalPrerequisites(previous: Household, next: Hous
   const digest = onboardingCompletionDigest(previous);
   const beforeIds = new Set(approvalsFor(previous, "ready", digest).map((row) => row.id));
   const added = approvalsFor(next, "ready", digest).filter((row) => !beforeIds.has(row.id));
-  const readyRow = memberProgress(previous, actorMemberId).rows
-    .find((row) => row.chapterId === READY_CHAPTER_ID);
   if (householdGatesOutstanding(previous).length > 0
-    || !readyRow
-    || !chapterProgressSatisfied(readyRow)
+    || !memberRequirementSatisfied(previous, actorMemberId, READY_CHAPTER_ID)
     || added.length !== 1
     || added[0]!.memberId !== actorMemberId) {
     throw new ValidationError("Finish every setup check on your own device before saying you're ready.");

@@ -142,6 +142,9 @@ export function executeIntent(
     );
   const args = structuredClone(rawArgs);
   policy.bind(args, actor);
+  // Accepted Shared setup times belong to the authority, not a caller's clock.
+  if (["recordChapterAcknowledgement", "recordObservedChapterCompletion"].includes(kind)
+    && args[0] && typeof args[0] === "object") (args[0] as Record<string, unknown>).at = new Date().toISOString();
   privateReferences(household, args, actor);
   const input = args[0] as Record<string, unknown> | undefined;
   if (

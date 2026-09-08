@@ -255,7 +255,8 @@ export async function prepareCommand(
       : before,
     candidate: current,
     booksGuard: guardFor(scope.memberId)?.fork(),
-    confirmationId: command.id,
+    // Adoption has a proposal-bound domain identity; the transport receipt still uses the UUID.
+    confirmationId: result.undo.commandKind === "adoptFirstBudget" ? result.undo.id : command.id,
     commandKind: result.undo.commandKind ?? command.steps.at(-1)!.kind,
     postedIds: [...new Set(postedIds)],
     actingMemberId: scope.memberId,

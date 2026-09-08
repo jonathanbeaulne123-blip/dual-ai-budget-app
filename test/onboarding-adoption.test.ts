@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { capturedIntent, clearCapturedIntent } from "../src/ledgerSync/capture.ts";
+import { commandFromCapture, type Scope } from "../src/ledgerSync/protocol.ts";
+import { prepareCommand } from "../src/ledgerSync/authority.ts";
 import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -10,6 +12,7 @@ import {
   buildProposal,
   catalogHousehold,
   compileHousehold,
+  splitForSync,
   onboardingAdoptionIdentity,
   onboardingAdoptionPlanId,
   onboardingPlanApprovalPrefix,
@@ -692,13 +695,23 @@ describe("atomic first-budget adoption", () => {
       .toEqual({ confirmationId: "CONF-NEXT", pendingConfirmationId: "CONF-NEXT" });
   });
 
-  it("keeps the adoption path out of journal, transfer, schema, and provider code", () => {
-    const adoption = readFileSync("src/core/onboarding/adoption.ts", "utf8");
-    const commands = readFileSync("src/core/commands.ts", "utf8");
-    const app = readFileSync("src/App.tsx", "utf8");
-    expect(adoption).not.toMatch(/postEntry|postTransfer|journal|supabase|localStorage|fetch\s*\(/);
-    expect(commands).toContain("export function adoptFirstBudget");
-    expect(app).toContain('token?.commandKind === "adoptFirstBudget" ? token.id : undefined');
-    expect(app).toContain("confirmationRef.current = confirmation.pendingConfirmationId");
+  it("captures one adoption intent and accepts it through v2 authority without changing money", async () => {
+    const { household, digest } = approvedHousehold();
+    clearCapturedIntent(household);
+    const result = adopt(household, digest);
+    const intent = capturedIntent(result.household)!;
+    expect(intent.steps.map(step => step.kind)).toEqual(["adoptFirstBudget"]);
+    const one = splitForSync(household, BIANCA), two = splitForSync(household, JONATHAN);
+    const scope: Scope = { environment: household.environment, householdId: household.householdId,
+      memberId: BIANCA, subject: "bianca", role: "owner", expires: Date.now() + 60000, aclEpoch: 1 };
+    const command = await commandFromCapture(intent, scope, crypto.randomUUID());
+    const accepted = await prepareCommand({ sequence: household.revision, shared: one.shared,
+      personal: new Map([[BIANCA, one.personal], [JONATHAN, two.personal]]) }, command, scope, () => {});
+    expect(accepted.receipt.id).toBe(command.id);
+    expect(accepted.household.transactions).toEqual(household.transactions);
+    expect(compileHousehold(accepted.household).entries).toEqual(compileHousehold(household).entries);
+    expect(accepted.shared.budgetPlans).toEqual(result.household.budgetPlans);
+    expect(accepted.shared.acceptedStarterPlans).toHaveLength(1);
+    expect(accepted.shared.commandReceipts).toEqual([]);
   });
 });

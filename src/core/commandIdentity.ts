@@ -27,6 +27,8 @@ export function commandMaterializationFacts(input: {
   onboardingCategoryProposals?: Household["onboardingCategoryProposals"];
   onboardingCategoryMerges?: Household["onboardingCategoryMerges"];
   onboardingApprovals?: Household["onboardingApprovals"];
+  onboardingAttestations?: Household["onboardingAttestations"];
+  acceptedStarterPlans?: Household["acceptedStarterPlans"];
   categories?: Category[];
   budgetPlans?: BudgetPlan[];
 }): unknown {
@@ -40,6 +42,8 @@ export function commandMaterializationFacts(input: {
     ...(input.onboardingCategoryProposals?.length ? { onboardingCategoryProposals: byId(input.onboardingCategoryProposals) } : {}),
     ...(input.onboardingCategoryMerges?.length ? { onboardingCategoryMerges: byId(input.onboardingCategoryMerges) } : {}),
     ...(input.onboardingApprovals?.length ? { onboardingApprovals: byId(input.onboardingApprovals) } : {}),
+    ...(input.onboardingAttestations?.length ? { onboardingAttestations: byId(input.onboardingAttestations) } : {}),
+    ...(input.acceptedStarterPlans?.length ? { acceptedStarterPlans: byId(input.acceptedStarterPlans) } : {}),
     ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
     ...(input.budgetPlans?.length ? { budgetPlans: byId(input.budgetPlans) } : {}),
   });
@@ -243,6 +247,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const onboardingCategoryProposals = (next.onboardingCategoryProposals ?? []).filter((row) => posted.has(row.id));
   const onboardingCategoryMerges = (next.onboardingCategoryMerges ?? []).filter((row) => posted.has(row.id));
   const onboardingApprovals = (next.onboardingApprovals ?? []).filter((row) => posted.has(row.id));
+  const onboardingAttestations = (next.onboardingAttestations ?? []).filter((row) => posted.has(row.id));
   const postsCategory = next.categories.some((row) => posted.has(row.id));
   const budgetPlans = next.budgetPlans.filter((row) => (
     posted.has(row.id) && (row.id.includes("-ONB-") || !postsCategory)
@@ -325,6 +330,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     onboardingCategoryProposals,
     onboardingCategoryMerges,
     onboardingApprovals,
+    onboardingAttestations,
     budgetPlans,
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
