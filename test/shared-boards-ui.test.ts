@@ -3,6 +3,8 @@ import { act, createElement as h } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { seedDemoHousehold, saveBoardTask, saveBoardMilestone, type Household, type CommitResult } from "../src/core/index.ts";
+import { forecastReceiptHousehold } from "./fixtures/forecast-receipts.ts";
+import type { ScenarioSourceContext } from "../src/scenarioSourceContext.ts";
 import { SharedBoards, requestSharedBoard, SHARED_BOARD_EVENT, type SharedBoardsProps } from "../src/widgets/SharedBoards.tsx";
 vi.mock("../src/widgets/BoardPhotos.tsx", () => ({ BoardPhotos: () => h("p", null, "Photo spaces") }));
 let host: HTMLDivElement; let root: Root; let household: Household;
@@ -105,6 +107,21 @@ describe("shared household boards", () => {
     household = saveBoardMilestone(household, { memberId, id: "BOARD-MILESTONE-test", title: "A weekend away", dueDate: "2026-10-01", completed: false, expectedVersion: 0 }).household;
     const savings = structuredClone(household.goals); await render(); await click("Goals"); await click("Complete A weekend away"); household = commands[0]!(household).household; await render();
     expect(household.goals).toEqual(savings); expect(button("Completed (1) +").getAttribute("aria-expanded")).toBe("false"); await click("Completed (1) +"); expect(button("Reopen A weekend away")).toBeDefined();
+  });
+  it("retains the existing phone Reach controls and drafts with the accepted viewer source", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    household = forecastReceiptHousehold();
+    const source: ScenarioSourceContext = { household, isCurrent: () => true, accepted: { kind: "accepted", ownBooks: "ready", acceptedRevision: household.revision, acceptedStateId: `fictional:${household.revision}:shared-board`, scope: { environment: household.environment, householdId: household.householdId, memberId, subject: "fictional-own-user", viewerRoom: "personal", targetRoom: "household", fundId: household.householdFund!.id, authorityGeneration: "shared-board" } } };
+    await render({ view: "personal", scenarioSource: source }); await click("Shift Ask");
+    expect(host.querySelector('.ask.is-phone-reach')).not.toBeNull();
+    for (let attempt = 0; attempt < 150 && !host.querySelector('[aria-label="Receipt source"]'); attempt++) await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    expect(host.querySelector('[aria-label="Receipt source"]')).not.toBeNull();
+    const amount = host.querySelector<HTMLInputElement>('[aria-label="Assumed remaining CAD"]')!;
+    expect(amount).not.toBeNull(); await type(amount, "46");
+    await click("Goals"); document.documentElement.dataset.theme = "newfoundland";
+    await render({ view: "personal", scenarioSource: source }); await click("Shift Ask");
+    expect(host.querySelector('[aria-label="Assumed remaining CAD"]')).toBe(amount); expect(amount.value).toBe("46");
+    expect(button("Review receipt assumption")).toBeDefined(); expect(commands).toHaveLength(0);
   });
   it("cancels a queued live drawing save when the household is retired", async () => {
     vi.useFakeTimers(); await render(); const canvas = host.querySelector<HTMLCanvasElement>('.chalkboard-live-board > canvas')!;

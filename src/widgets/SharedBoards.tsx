@@ -41,6 +41,14 @@ function canSwipe(target: EventTarget | null) {
 function SharedBoardsSession({ scope, household, memberId, today, busy, view = "household", scenarioSource, onCommand, onOpenGoals }: SharedBoardsProps & { scope: SharedBoardScope }) {
   const allowedAsk = askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
   const available = pages;
+  const [phone, setPhone] = useState(() => typeof window !== "undefined" && window.innerWidth < 720);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const width = window.matchMedia("(min-width: 720px)");
+    const update = () => setPhone(!width.matches);
+    update(); width.addEventListener("change", update);
+    return () => width.removeEventListener("change", update);
+  }, []);
   const storageKey = `hearth:shared-board:${sharedBoardScopeKey(scope)}`;
   const [selected, setSelected] = useState<SharedBoard>(() => {
     const saved = readSharedBoardSelection(scope); return available.find(page => page.id === saved)?.id ?? "notes";
@@ -96,7 +104,7 @@ function SharedBoardsSession({ scope, household, memberId, today, busy, view = "
         {!household.goals.some(goal => goal.shared && goal.status !== "retired") && <p>Your shared savings goals will find a home here.</p>}
         <button type="button" onClick={onOpenGoals}>Manage shared goals</button>
       </section></>,
-    ask: allowedAsk ? <Ask presentation="desk" viewerRoom={view} scenarioSource={scenarioSource} household={household} memberId={memberId} today={today} busy={busy}
+    ask: allowedAsk ? <Ask presentation={phone ? "phone" : "desk"} viewerRoom={view} scenarioSource={scenarioSource} household={household} memberId={memberId} today={today} busy={busy}
       onMove={alternative => command(latest => {
         if (!askBelongsOnDesk(memberId, latest.householdFund?.custodianMemberId)) throw new Error("This reading is no longer available to this viewer.");
         return moveAskGoalClaimToNextMonth(latest, { today, memberId, goalId: alternative.goalId, recurrenceId: alternative.recurrenceId, claimDate: alternative.claimDate });
