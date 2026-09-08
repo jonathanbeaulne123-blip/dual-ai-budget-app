@@ -600,3 +600,7 @@ After two deliberate quality refusals, Capture anyway creates a flagged draft. P
 ## Mobile C10 — a QR opens a room, not a membership (2026-09-08)
 
 Keep connection setup within existing Jobs. The phone handoff carries only an allowlisted Shift route at the current origin; same-person ledger/environment access still comes from sign-in. Refresh and Open Timesheet are explicit and cannot clock out. Budget(5)+1; Engagement(3)+2. C10 worksession records proof.
+
+## Mobile C11 — keep the Work hierarchy (2026-09-08)
+
+Claude's phone Today/Report/Jobs remains the peer navigation. Imported schedules and evidence stays reachable through one collapsed Jobs disclosure, preserving desktop navigation and existing Confirm controls. Scope changes close it; disappearing focus returns to Jobs. Budget(5)+0; Engagement(3)+1.

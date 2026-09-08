@@ -1,3 +1,7 @@
+## Mobile C11 — Evidence beneath Jobs (2026-09-08)
+
+Locally verified codex/mobile-c11-work-evidence; base1ee073f53f531b17039ca4a453d75266410eebb6(C10 PR401); HEAD is this commit. Medium; Budget(5)+0; Engagement(3)+1. Phone three-tab order, scoped deeper disclosure and both resize focus directions. 90-test quick gate169.828s precedes final focus repair, then two focused tests and four browser widths passed. Independent review clear. [Exact evidence/limits](worksessions/2026-09-08-mobile-work-evidence.md). Next C12; no merge/deploy/hosted proof.
+
 ## Mobile C10 — desk setup, phone Timesheet (2026-09-08)
 
 Locally verified on codex/mobile-c10-work-handoff; base 52817e70ce34f4ee590f9d3f7da883878f81f62e (C9 PR400); HEAD is this commit. Clean ordinary Shift handoff, scope-bound explicit connection refresh and deliberate Timesheet navigation. Medium-High; Budget(5)+1; Engagement(3)+2. Quick gate passed in 153.444s, four fictional browser widths, independent source review clear. [Commands, fingerprint and limits](worksessions/2026-09-08-mobile-work-handoff.md). Next C11. No physical/hosted/full-lane/merge/deploy proof.
