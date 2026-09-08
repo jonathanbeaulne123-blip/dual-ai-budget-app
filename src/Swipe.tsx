@@ -6,7 +6,7 @@ import type { DateKey } from "./core/calendar.ts";
 import type { Household } from "./core/types.ts";
 import {
   SWIPE_COPY,
-  observedSwipeCategories,
+  swipeCategoryChoices,
   resolveSwipeCardAccount,
   swipeCategoryAccessibleName,
   swipeMoreAccessibleName,
@@ -39,7 +39,7 @@ export function Swipe({
   const amount = padToDollars(digits);
   const amountReady = Boolean(amount);
   const categories = useMemo(
-    () => observedSwipeCategories(household, memberId, today),
+    () => swipeCategoryChoices(household, memberId, today),
     [household, memberId, today],
   );
   const card = useMemo(
@@ -70,7 +70,7 @@ export function Swipe({
         <h2 id="swipe-title" className="swipe-title">{SWIPE_COPY.title}</h2>
         {error ? (
           <div className="swipe-error" role="alert">
-            <strong>Nothing was posted.</strong>
+            <strong>Purchase needs attention.</strong>
             <span>{error}</span>
             <span>Correct the amount, try the category again, or choose More to review it in Add.</span>
           </div>
@@ -97,10 +97,11 @@ export function Swipe({
                   type="button"
                   className="swipe-cat"
                   disabled={!canPost}
-                  aria-label={swipeCategoryAccessibleName(amountLabel, category.name)}
+                  aria-label={`${swipeCategoryAccessibleName(amountLabel, category.name)}${category.kind === "household-suggestion" ? " Household suggestion, not observed use." : ""}`}
                   onClick={() => onPostCategory({ amount, subcategoryId: category.subcategoryId })}
                 >
-                  {category.name}
+                  <span>{category.name}</span>
+                  {category.kind === "household-suggestion" ? <small>Household suggestion</small> : null}
                 </button>
               ))}
               <button

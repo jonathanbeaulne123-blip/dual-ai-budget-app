@@ -62,13 +62,12 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).toContain("restoreAcceptedSnapshot");
     expect(app).toContain("persistLedgerWrite");
     expect(app).toContain("booksHousehold={household}");
-    expect(app).toContain("projectHouseholdFund(household, today)");
+    expect(app).toContain("<FundLedge");
     expect(app).toContain("? experience.scopedHousehold.accounts.filter((account) => account.active)");
     expect(app).not.toContain("pickerAccounts = displayHousehold.accounts");
     expect(app).toContain("healthFindings");
     expect(app).toContain("experience.herculesHousehold");
     expect(app).toContain("Choose who is using this ledger before exporting.");
-    expect(app).toContain("Fund free-to-spend");
     expect(books).toContain("booksPresentationFloor(booksHousehold, memberId, view)");
     expect(books).toContain("compileHousehold(auditHousehold)");
     expect(books).not.toContain("compileHousehold(booksHousehold)");
@@ -83,7 +82,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(books).toContain("Power SQL stays off scoped floors");
     expect(books).not.toContain("Run query");
     expect(books).not.toContain("books.chart[0]");
-    expect(app).toContain("postDueRecurrences(current, today, ids)");
+    expect(app).toContain("postDueRecurrences(current, today, ids, {createdBy:session!.memberId})");
     expect(app).toContain("recurrenceIds");
     expect(office).toContain("integrityFindings");
     expect(office).toContain("buildSharedLedgerStory(booksHousehold");
@@ -148,7 +147,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).not.toContain("Zero plan");
     expect(app).toContain("budget-remove");
     expect(kitty).toContain("Kitty Banks");
-    expect(kitty).toContain("not a new envelope");
+    expect(kitty).toContain("Fund surplus earmarks are shown separately");
     expect(officeWide).toContain("is-shared-home");
     expect(officeWide).toContain("<KittyBanks");
     expect(officeWide).toContain("office-wide-stage");

@@ -1,3 +1,5 @@
+import { SplitCut } from "./SplitCut.tsx";
+import { splitReading } from "./core/splitDraft.ts";
 import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type Ref, type SetStateAction } from "react";
 import {
   JOINT,
@@ -89,6 +91,8 @@ export function AddSlideshow({
   codingHint,
   onCodingHint,
   splitPercents,
+  splitScopeValid = true,
+  onReviewSplit,
   onMemberPercent,
   addDetails,
   onAddDetails,
@@ -147,6 +151,8 @@ export function AddSlideshow({
   codingHint: string;
   onCodingHint: (hint: string) => void;
   splitPercents: Record<string, number>;
+  splitScopeValid?: boolean;
+  onReviewSplit?: () => void;
   onMemberPercent: (memberId: string, percent: number) => void;
   addDetails: boolean;
   onAddDetails: (open: boolean) => void;
@@ -170,6 +176,7 @@ export function AddSlideshow({
   const slide: AddSlideId = slides[index] ?? "amount";
   const copy = addSlideCopy(mode, slide, shiftGate);
   const canAdvance = canAdvanceAddSlide(slide, form);
+  const [cutPreviewActive, setCutPreviewActive] = useState(false);
   const [pictureName, setPictureName] = useState("");
   const [pictureUrl, setPictureUrl] = useState("");
 
@@ -216,6 +223,12 @@ export function AddSlideshow({
 
   const hidePost = mode === "shift" && (slide === "shift-choose" || slide === "shift-clocked" || slide === "shift-jobs");
   const last = index === slides.length - 1;
+  let splitError = "";
+  if (form.who === "split" && mode !== "shift" && mode !== "transfer") {
+    if (!splitScopeValid) splitError = "The members or desk changed. Review the split again.";
+    else try { splitReading(household.members.filter(member => member.active).map(member => member.id), splitPercents, parseAmount(form.amount)); }
+    catch (caught) { splitError = caught instanceof Error ? caught.message : "Review the split before Confirm."; }
+  }
 
   return (
     <div
@@ -466,6 +479,10 @@ export function AddSlideshow({
             pickerAccounts={pickerAccounts}
             categories={categories}
             splitPercents={splitPercents}
+            onCutPreview={setCutPreviewActive}
+            splitError={splitError}
+            splitScopeValid={splitScopeValid}
+            onReviewSplit={onReviewSplit}
             onMemberPercent={onMemberPercent}
             addDetails={addDetails}
             onAddDetails={onAddDetails}
@@ -493,7 +510,7 @@ export function AddSlideshow({
                 <span>{formatCad(tx.amountCents)}</span>
               </div>
             ))}
-            <button className="primary" type="button" onClick={onConfirmAnyway}>Add anyway</button>
+            <button className="primary" type="button" disabled={busy || !!splitError || cutPreviewActive} onClick={onConfirmAnyway}>Add anyway</button>
           </div>
         )}
         {!hidePost && last && (
@@ -502,7 +519,7 @@ export function AddSlideshow({
               {experienceLine}
               {mode === "expense" ? " Fund funding stays separate from Shared or Personal visibility." : ""}
             </p>
-            <button className="primary post-big" type="button" disabled={busy} onClick={onPost} data-add-confirm>
+            <button className="primary post-big" type="button" disabled={busy || !!splitError || cutPreviewActive} onClick={onPost} data-add-confirm>
               {postLabel}
             </button>
           </>
@@ -707,6 +724,10 @@ function ConfirmSlide({
   pickerAccounts,
   categories,
   splitPercents,
+  onCutPreview,
+  splitError,
+  splitScopeValid,
+  onReviewSplit,
   onMemberPercent,
   addDetails,
   onAddDetails,
@@ -729,6 +750,10 @@ function ConfirmSlide({
   pickerAccounts: Account[];
   categories: Category[];
   splitPercents: Record<string, number>;
+  onCutPreview: (active: boolean) => void;
+  splitError: string;
+  splitScopeValid: boolean;
+  onReviewSplit?: () => void;
   onMemberPercent: (memberId: string, percent: number) => void;
   addDetails: boolean;
   onAddDetails: (open: boolean) => void;
@@ -796,36 +821,9 @@ function ConfirmSlide({
               <button key={who.id} type="button" className={`chip ${form.who === who.id ? "selected" : ""}`} onClick={() => setForm((current) => ({ ...current, who: who.id }))}>{who.name}</button>
             ))}
           </div>
-          {form.who === "split" && (
-            <div className="split-card">
-              <p className="muted">Shares fill to 100%.</p>
-              {household.members.filter((member) => member.active).map((member) => {
-                const percent = splitPercents[member.id] ?? 0;
-                let share = "";
-                try {
-                  if (form.amount) share = formatCad(Math.round(parseAmount(form.amount) * percent / 100));
-                } catch {
-                  share = "";
-                }
-                return (
-                  <div className="row" key={member.id}>
-                    <span>{member.name}</span>
-                    <span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={percent}
-                        onChange={(event) => onMemberPercent(member.id, Number(event.target.value))}
-                      /> %
-                      <span className="muted"> {share}</span>
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {form.who === "split" && <SplitEditor household={household} percents={splitPercents} amount={form.amount}
+            onPreviewChange={onCutPreview} error={splitError} scopeValid={splitScopeValid} onReview={onReviewSplit} onChange={onMemberPercent} />}
+
         </>
       )}
       <button type="button" className="chip" onClick={() => onAddDetails(!addDetails)}>
@@ -978,4 +976,22 @@ function ConfirmSlide({
       )}
     </>
   );
+}
+
+function SplitEditor({ household, percents, amount, error, scopeValid, onReview, onChange, onPreviewChange }: {
+  household: Household; percents: Record<string, number>; amount: string; error: string; scopeValid: boolean;
+  onPreviewChange: (active: boolean) => void;
+  onReview?: () => void; onChange: (memberId: string, percent: number) => void;
+}) {
+  const members = household.members.filter(member => member.active);
+  let cents: Record<string, number> = {}, amountCents = 0;
+  try { amountCents = parseAmount(amount); cents = splitReading(members.map(member => member.id), percents, amountCents).cents; } catch { /* The shared error blocks Confirm. */ }
+  return <div className={`split-card ${scopeValid && members.length === 2 && !error ? "is-cut" : ""}`}>
+    {error ? <p role="status">{error}</p> : null}
+    {!scopeValid ? <button type="button" onClick={onReview}>Review current members</button>
+      : members.length === 2 && !error ? <SplitCut key={members.map(member => member.id).join(":")} members={[members[0]!, members[1]!]} percents={percents} amountCents={amountCents} onChange={onChange} onPreviewChange={onPreviewChange} />
+      : <>{members.map(member => <label className="row" key={member.id}>
+        <span>{member.name}</span><span><input aria-label={`${member.name}'s share`} type="number" min={0} max={100} step={1} value={percents[member.id] ?? 0} onChange={event => { if (event.currentTarget.value !== "") onChange(member.id, event.currentTarget.valueAsNumber); }} /> % <span>{cents[member.id] === undefined ? "" : formatCad(cents[member.id]!)}</span></span>
+      </label>)}{members.length ? <p className="cut-remainder">{members.at(-1)!.name} fills the remaining cents after rounding.</p> : null}</>}
+  </div>;
 }

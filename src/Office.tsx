@@ -1,4 +1,6 @@
 import { useAppearance } from "./theme/ThemeProvider.tsx";
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
+import type { FundDestination } from "./FundStage.tsx";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import {
   INSTRUMENT_KIND,
@@ -116,6 +118,7 @@ function useBreakpoint(): OfficeBreakpoint {
 }
 
 export function Office({
+  scenarioSource,
   household,
   booksHousehold,
   dashboard,
@@ -152,12 +155,14 @@ export function Office({
   onAskStartJar,
   onSitDown,
   onOpenRegister,
+  onOpenFundDestination,
   onGo,
   integrityFindingCount = 0,
   integrityFindings = [],
 }: {
   household: Household;
   booksHousehold: Household;
+  scenarioSource?: ScenarioSourceContext | null;
   dashboard: Dashboard;
   today: string;
   environment: Environment;
@@ -194,6 +199,7 @@ export function Office({
   onAskStartJar: (appointmentId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
   onOpenRegister: () => void;
+  onOpenFundDestination?: (destination: FundDestination) => void;
   onGo: (tab: HearthTab) => void;
 }) {
   const { scene } = useAppearance();
@@ -646,6 +652,7 @@ export function Office({
       <CalculatorGlance amount={form.amount} />,
       `Calculator. ${form.note || "Desk pad."}`,
       <CalculatorBody
+          scopeKey={JSON.stringify([household.environment, household.householdId, memberId, view])}
         form={form}
         setForm={onForm}
         mode={mode}
@@ -691,7 +698,7 @@ export function Office({
       "Claims",
       <ClaimsGlance household={household} today={today} />,
       `Claims tray. ${claimsTraySentence(household, today)}`,
-      <ClaimsBody
+      <ClaimsBody memberId={memberId} view={view}
         household={household}
         today={today}
         busy={busy}
@@ -708,7 +715,7 @@ export function Office({
       "Shifts",
       <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
       `Timesheet. ${streak.spoken}`,
-      <TimesheetBody
+      <TimesheetBody view={view}
         household={household}
         streak={streak}
         memberId={memberId}
@@ -779,6 +786,9 @@ export function Office({
       <JarsGlance dashboard={dashboard} />,
       `Goals. ${dashboard.goals[0]?.goal.name ?? "No goals yet."}`,
       <JarsBody
+        view={view}
+        booksHousehold={booksHousehold}
+        memberId={memberId}
         dashboard={dashboard}
         household={household}
         today={today}
@@ -860,7 +870,8 @@ export function Office({
   if (breakpoint === "phone") {
     return (
       <OfficePhone
-        household={household} dashboard={dashboard} sill={sill}
+        scenarioSource={scenarioSource}
+        household={household} booksHousehold={booksHousehold} view={view} onOpenFundDestination={onOpenFundDestination} dashboard={dashboard} sill={sill}
         reading={reading}
         layout={layout} onLayout={setLayout}
         today={today} memberId={memberId} busy={busy} adding={adding}
@@ -895,6 +906,7 @@ export function Office({
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       {face === "paper" ? (
         <OfficeWide
+          scenarioSource={scenarioSource}
           household={household} booksHousehold={booksHousehold} dashboard={dashboard}
           layout={layout} onLayout={setLayout}
           today={today} memberId={memberId} view={view} busy={busy} adding={adding}
@@ -911,6 +923,7 @@ export function Office({
           onKitchen={onKitchen} onMarkPaid={onMarkPaid}
           onAskSettle={onAskSettle} onAskStartJar={onAskStartJar} onSitDown={onSitDown}
           onOpenRegister={onOpenRegister}
+          onOpenFundDestination={onOpenFundDestination}
           onGo={onGo} onClinkOn={onClinkOn}
         />
       ) : (

@@ -272,3 +272,27 @@ export function askRoutes(household: Household, input: {
   const routes = selectRoutes(household, candidates, input.askCents, input.from);
   return { kind: "routes", askCents: input.askCents, routes, watchedShifts };
 }
+
+
+export type AskRouteCountFamily = { count: number; routes: AskRoute[] };
+/** Same candidates/rank, retained per cardinality for the Reach's five stops. */
+export function askRoutesByCount(household: Household, input: {askCents: number; memberId: string; from: DateKey; to: DateKey; unavailableDates?: readonly DateKey[]}):
+  | Extract<AskRoutesResult, {kind: "not-enough-data"}>
+  | {kind: "families"; watchedShifts: number; families: AskRouteCountFamily[]} {
+  assertAskCents(input.askCents); parseDateKey(input.from); parseDateKey(input.to);
+  const horizonDays = calendarDaysBetween(input.from, input.to) + 1;
+  if (horizonDays < 1 || horizonDays > ROUTE_MAX_DAYS) throw new Error("Choose at most31inclusive route days.");
+  const watchedShifts = observeTipShifts(household, input.memberId).length;
+  if (watchedShifts < SHIFT_ORACLE_MIN_SHIFTS) return {kind: "not-enough-data", askCents: input.askCents, watchedShifts, copy: `I've only watched ${watchedShifts} of your shifts. Ask me again in a few weeks — I'd be guessing.`};
+  const families: AskRouteCountFamily[] = Array.from({length: ROUTE_MAX_SHIFTS + 1}, (_, count) => ({count, routes: count === 0 ? [routeFrom(household, [], input.askCents, input.from)] : []}));
+  const unavailableDates = new Set(input.unavailableDates ?? []);
+  const candidates = pruneDominatedCandidates(candidateShifts(household, input.memberId, input.from, input.to).filter(shift => !unavailableDates.has(shift.date)));
+  const selected: RouteShift[] = [];
+  function visit(start: number) {
+    if (selected.length) insertLeadingRoute(families[selected.length]!.routes, routeFrom(household, [...selected], input.askCents, input.from));
+    if (selected.length === ROUTE_MAX_SHIFTS) return;
+    for (let index = start; index < candidates.length; index++) { selected.push(candidates[index]!); visit(index + 1); selected.pop(); }
+  }
+  visit(0);
+  return {kind: "families", watchedShifts, families};
+}

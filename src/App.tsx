@@ -1,3 +1,19 @@
+import {rememberWorkHandoff,clearWorkHandoff} from "./workHandoff.ts";
+import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
+import {SwipeReceiptStrip} from './SwipeReceiptStrip.tsx';
+import {swipeUndoUnavailable,type SwipeUndoWindow} from './swipeUndoReview.ts';
+import {claimSettlementReview,type ClaimSettlementReview} from "./core/claimSettlementReview.ts";
+import {dueOccurrenceReview,dueOccurrenceHidden} from "./core/dueOccurrenceReview.ts";
+import {canonical} from "./ledgerSync/patch.ts";
+import type {DestructiveReview} from "./DangerReveal.tsx";
+import { swipePurchaseReview } from "./core/swipe.ts";
+import { openShiftReview, runReviewedOpenShift, runReviewedShiftChoice, runReviewedShiftDiscard } from "./openShiftReview.ts";
+import { acceptedScenarioPair, issueScenarioSource, scenarioAuthIdentityKey, scenarioPairScopeKey, type ScenarioPairLease, type ScenarioPairScope } from "./scenarioSourceContext.ts";
+import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
+import { editSplitDraft, newSplitDraft, reviewedSplitPayload, splitDraftScope, type SplitDraft } from "./core/splitDraft.ts";
+import type { FundDestination } from "./FundStage.tsx";
+import { enqueueScopedWrite, sameWriteScope } from "./core/scopedWrite.ts";
+import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import { useAppearanceBinding } from "./theme/ThemeProvider.tsx";
 import { AppearancePicker } from "./theme/AppearancePicker.tsx";
@@ -62,8 +78,6 @@ import {
   jointSplit,
   memberNeedsGoogleStepUp,
   parseAmount,
-  percentSplits,
-  projectHouseholdFund,
   postDueRecurrences,
   postEntry,
   postOneRecurrence,
@@ -91,8 +105,6 @@ import {
   addPreset,
   archivePreset,
   dismissNotice,
-  dismissDuePreview,
-  duePreviewDismissed,
   dueRecurrencePreview,
   readClinkOn,
   requestShiftEnvelope,
@@ -161,7 +173,6 @@ import {
   type MonthKey,
   type MonthRehearsalTaskId,
   type Split,
-  type SwipeUndoStrip,
   type UndoToken,
   type Visibility,
   type Account,
@@ -496,9 +507,12 @@ function presenceTab(tab: Tab): Exclude<Tab, "till"> {
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
 type CommitHouseholdOptions = {
+  isCurrent?: () => boolean;
+  scopeIsCurrent?: () => boolean;
   forceFlush?: boolean;
   confirmationId?: string;
   onRejected?: (message: string) => void;
+  onDefinitiveRejected?: () => void;
   suppressUndo?: boolean;
   onQueued?: () => void;
 };
@@ -527,7 +541,7 @@ type Guard =
   | { kind: "erase-development" }
   | { kind: "clear-this-phone" }
   | { kind: "reset-development" }
-  | { kind: "remove"; transactionId: string; summary: string }
+  | { kind: "remove"; transactionId: string; summary: string; reviewedSummaryBasis:string }
   | { kind: "correctShift"; shift: Shift; transactionId: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
@@ -535,7 +549,7 @@ type Guard =
   | { kind: "saveWorkJob"; job: WorkJob; summary: string }
   | { kind: "postDueAll"; summary: string; recurrenceIds: string[] }
   | { kind: "postVisit"; draft: VisitPostDraft; summary: string }
-  | { kind: "settleClaim"; claimId: string; summary: string }
+  | { kind: "settleClaim"; claimId:string; destinationId:string; reading:ClaimSettlementReview }
   | { kind: "writeOffClaim"; claimId: string; summary: string }
   | { kind: "acceptVisitGoal"; appointmentId: string; summary: string }
   | { kind: "acceptPreset"; key: string; summary: string }
@@ -577,6 +591,13 @@ function emptyFormForZone(timeZone: string) {
   };
 }
 
+function scenarioAuthSnapshot(environment: Environment) {
+  const auth = loadSupabaseSession(environment);
+  return {environment, key: scenarioAuthIdentityKey(environment, auth), subject: auth?.userId ?? null};
+}
+
+type ScenarioAuthProvenance = Readonly<{key: string; generation: number}>;
+
 export function App() {
   const [initialStartup] = useState(() => {
     const environment: Environment = "development";
@@ -595,11 +616,18 @@ export function App() {
     if (environmentRef.current === next) return;
     replicaScopeGenerationRef.current += 1;
     environmentRef.current = next;
+    invalidateScenarioPair();
     setEnvironment(next);
   };
   const [supabaseSessionPresent, setSupabaseSessionPresent] = useState(() => (
     Boolean(loadSupabaseSession(initialStartup.environment))
   ));
+  const [scenarioAuthIdentity, setScenarioAuthIdentity] = useState(() => ({...scenarioAuthSnapshot(initialStartup.environment), generation: 0}));
+  const scenarioAuthRef = useRef(scenarioAuthIdentity);
+  const scenarioPairEpochRef = useRef(0);
+  const scenarioAcceptanceEpochRef = useRef(0);
+  const [scenarioPairLease, setScenarioPairLease] = useState<ScenarioPairLease | null>(null);
+  const scenarioPairLeaseRef = useRef<ScenarioPairLease | null>(null);
   const [herculesProRequest] = useState(() => herculesProAuthorizationRequest());
   const [household, setHousehold] = useState<Household | null>(initialStartup.household);
   const [booting, setBooting] = useState(!initialStartup.household);
@@ -613,10 +641,18 @@ export function App() {
   const [charterPageOpen, setCharterPageOpen] = useState(false);
   const [adding, setAddingState] = useState(false);
   const draftGenerationRef = useRef(0);
-  function setAdding(value: boolean) { if(value) draftGenerationRef.current++; setAddingState(value); }
-  const [swipeOpen, setSwipeOpen] = useState(false);
+  const punchReviewIntentRef = useRef(0);
+  function setAdding(value: boolean) { if(value) { draftGenerationRef.current++; punchReviewIntentRef.current++; } setAddingState(value); }
+  const [fundLedgeExpanded, setFundLedgeExpanded] = useState(false);
+  const [swipeOpen, storeSwipeOpen] = useState(false);
+  const swipeIntentRef = useRef(0);
+  const setSwipeOpen = (open: boolean) => { swipeIntentRef.current += 1; storeSwipeOpen(open); };
   const [swipeError, setSwipeError] = useState("");
-  const [swipeStrip, setSwipeStrip] = useState<SwipeUndoStrip | null>(null);
+  const [swipeStrip, setSwipeStrip] = useState<SwipeUndoWindow | null>(null);
+  const swipeStripRef=useRef(swipeStrip);swipeStripRef.current=swipeStrip;
+  const appMountedRef=useRef(true),toastTimersRef=useRef(new Set<number>());
+  useEffect(()=>{appMountedRef.current=true;return()=>{appMountedRef.current=false;for(const id of toastTimersRef.current)window.clearTimeout(id);toastTimersRef.current.clear();};},[]);
+  function scheduleToastClear(tokenId:string,isCurrent?:()=>boolean){if(!appMountedRef.current)return;const id=window.setTimeout(()=>{toastTimersRef.current.delete(id);if(appMountedRef.current&&isCurrent?.()!==false)setToast(item=>item?.id===tokenId?null:item);},8000);toastTimersRef.current.add(id);}
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
@@ -625,6 +661,8 @@ export function App() {
   const lastAmountLabelRef = useRef<string | null>(null);
 
   const closeAdd = () => {
+    punchReviewIntentRef.current++;
+    setSplitDraft(null);
     workShiftInputRef.current = null;
     shiftScanScopeRef.current.cancel();
     setWorkShiftDraft(null);
@@ -641,7 +679,7 @@ export function App() {
   const addSheetRef = useDialog(adding, closeAdd);
   useEffect(() => {
     if (!swipeStrip) return;
-    const timer = window.setTimeout(() => setSwipeStrip(null), SWIPE_UNDO_MS);
+    const timer = window.setTimeout(() => setSwipeStrip(item=>item?.token.id===swipeStrip.token.id&&item.expiresAt===swipeStrip.expiresAt?null:item), Math.max(0,swipeStrip.expiresAt-Date.now()));
     return () => window.clearTimeout(timer);
   }, [swipeStrip]);
   useEffect(() => {
@@ -651,6 +689,9 @@ export function App() {
     }
   }, [tab]);
   useEffect(() => {
+    const handoffUrl=new URL(window.location.href);
+    if(rememberWorkHandoff(handoffUrl,window.sessionStorage))setTab("shift");
+    if(handoffUrl.searchParams.get("open")==="shift"){handoffUrl.searchParams.delete("open");window.history.replaceState({},"",`${handoffUrl.pathname}${handoffUrl.search}${handoffUrl.hash}`);}
     const applyHash = () => {
       const hash = window.location.hash.replace(/^#/, "");
       if (hash === "till") setTab("till");
@@ -674,16 +715,24 @@ export function App() {
   const [toast, setToast] = useState<UndoToken | null>(null);
   const [history, setHistory] = useState<UndoToken[]>([]);
   const [isHouseholdOwner, setIsHouseholdOwner] = useState(false);
-  const [guard, setGuard] = useState<Guard | null>(null);
+  const [guard, storeGuard] = useState<Guard | null>(null);
+  const claimReturnFocusRef=useRef<HTMLElement|null>(null);
+  const guardOpeningRef=useRef(0),guardIdentityRef=useRef(''),guardScopeIdentityRef=useRef('');
+  const setGuard=(next:Guard|null)=>{guardOpeningRef.current+=1;guardIdentityRef.current=next?readDangerIdentity(next):'';guardScopeIdentityRef.current=next?readGuardScopeIdentity():'';storeGuard(next);};
   const [demoSeed, setDemoSeed] = useState("");
   const [demoReport, setDemoReport] = useState<DemoRunReport | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
+  const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
+  useEffect(() => {
+    if (adding && !splitDraft && household && session) {
+      setSplitDraft(newSplitDraft(household, { memberId: session.memberId, view: session.view, generation: replicaScopeGenerationRef.current }));
+    }
+  }, [adding, splitDraft, household, session]);
   useEffect(() => {
     setSwipeOpen(false);
     setSwipeError("");
@@ -765,6 +814,8 @@ export function App() {
   const ledgerSyncReady = useRef<Promise<void> | null>(null);
   const useLedgerSync = ledgerSyncEnabled(environment);
   const [ledgerRestorePoints,setLedgerRestorePoints]=useState<RestorePointSummary[]>([]);
+  const dangerSourcesRef=useRef({replicas,discoveredLedgers,ledgerRestorePoints,isHouseholdOwner});
+  dangerSourcesRef.current={replicas,discoveredLedgers,ledgerRestorePoints,isHouseholdOwner};
   const visibleRestorePoints=useLedgerSync?ledgerRestorePoints:(household?listRestorePoints(household):[]);
   useEffect(()=>{
     if(!useLedgerSync||!household?.linked||!session?.memberId||tab!=='more')return;
@@ -775,7 +826,43 @@ export function App() {
   },[useLedgerSync,environment,household?.householdId,session?.memberId,tab]);
 
 
+  function captureScenarioAuth(authSession: ReturnType<typeof loadSupabaseSession>, targetEnvironment: Environment): ScenarioAuthProvenance | null {
+    if (!authSession) return null;
+    const key = scenarioAuthIdentityKey(targetEnvironment, authSession);
+    if (scenarioAuthRef.current.key !== key) throw new Error("The Google sign-in changed before the cloud books could be reviewed.");
+    return {key, generation: scenarioAuthRef.current.generation};
+  }
+
+  function clearScenarioPairLease(): void {
+    scenarioPairLeaseRef.current = null;
+    setScenarioPairLease(null);
+  }
+
+  function invalidateScenarioPair(): void {
+    scenarioPairEpochRef.current += 1;
+    clearScenarioPairLease();
+  }
+
+  function currentScenarioPairScope(): ScenarioPairScope | null {
+    const current = householdRef.current, selected = sessionRef.current, auth = scenarioAuthRef.current;
+    if (!current || !selected?.memberId || auth.environment !== environmentRef.current || current.environment !== environmentRef.current) return null;
+    const subject = localLedgerIdentity(selected.memberId) ?? auth.subject;
+    if (!subject) return null;
+    return {environment: environmentRef.current, householdId: current.householdId, memberId: selected.memberId, subject,
+      authIdentityKey: auth.key, authorityMode: ledgerSyncEnabled(environmentRef.current) ? "v2" : "legacy", pairEpoch: scenarioPairEpochRef.current};
+  }
+
+  function stampCompleteScenarioPair(next: Household, expectedMemberId: string): void {
+    const scope = currentScenarioPairScope();
+    if (!scope || scope.memberId !== expectedMemberId || householdRef.current !== next || !booksGateRef.current.ready) return;
+    const lease = acceptedScenarioPair(next, scope, ++scenarioAcceptanceEpochRef.current);
+    scenarioPairLeaseRef.current = lease;
+    setScenarioPairLease(lease);
+  }
+
   function adoptAcceptedHousehold(next: Household, statusOverride?: BooksStatus): void {
+    // General acceptance proves books, not that an own Personal envelope was supplied.
+    clearScenarioPairLease();
     householdRef.current = next;
     setHousehold(next);
     const status = statusOverride ?? booksReadinessRef.current.status;
@@ -810,7 +897,10 @@ export function App() {
     ) {
       return false;
     }
+    const pair = scenarioPairLeaseRef.current, scope = currentScenarioPairScope();
+    const carryPair = pair?.household === live && scope && pair.scopeKey === scenarioPairScopeKey(scope);
     adoptAcceptedHousehold(next, current.status);
+    if (carryPair) stampCompleteScenarioPair(next, scope.memberId);
     return true;
   }
 
@@ -827,6 +917,7 @@ export function App() {
     personal: PersonalEnvelope;
     memberId: string;
     identity: ContinuityIdentity;
+    authProvenance: ScenarioAuthProvenance | null;
   }, expectedOutboxFingerprint?: string): Promise<Household> {
     const expectedScope = {
       generation: replicaScopeGenerationRef.current,
@@ -835,7 +926,10 @@ export function App() {
       memberId: input.memberId,
     };
     const scopeIsCurrent = () => (
-      replicaAdoptionScopeMatches(expectedScope, {
+      input.authProvenance !== null
+      && input.authProvenance.key === scenarioAuthRef.current.key
+      && input.authProvenance.generation === scenarioAuthRef.current.generation
+      && replicaAdoptionScopeMatches(expectedScope, {
         generation: replicaScopeGenerationRef.current,
         environment: environmentRef.current,
         householdId: householdRef.current?.householdId ?? null,
@@ -884,6 +978,7 @@ export function App() {
       throw new Error("The active ledger changed while saving cloud books.");
     }
     adoptAcceptedHousehold(canonical, status);
+    stampCompleteScenarioPair(canonical, input.memberId);
     setBooksStatus(status);
     return canonical;
   }
@@ -893,6 +988,7 @@ export function App() {
     personal: PersonalEnvelope;
     memberId: string;
     identity: ContinuityIdentity;
+    authProvenance: ScenarioAuthProvenance | null;
   }): Promise<Household> {
     const expectedHousehold = householdRef.current;
     const expectedScopeGeneration = replicaScopeGenerationRef.current;
@@ -1019,12 +1115,14 @@ export function App() {
   const [shiftScanError, setShiftScanError] = useState("");
   const [shiftScanWarnings, setShiftScanWarnings] = useState<string[]>([]);
 
-  async function applyShiftReportScan(file: File | undefined) {
+  async function applyShiftReportScan(file: File | undefined, quality?:CaptureQuality) {
     if (!file) return;
     const scan = shiftScanScopeRef.current.begin();
+    setWorkShiftDraft(null);
     setShiftScanBusy(true);
     setShiftScanError("");
-    setShiftScanWarnings([]);
+    const qualityWarnings=captureQualityWarnings(quality);
+    setShiftScanWarnings(qualityWarnings);
     try {
       const [{ scanShiftReportFile }, { loadDocumentVisionProvider }] = await Promise.all([
         import("./imports/shiftReportDraft.ts"),
@@ -1035,11 +1133,11 @@ export function App() {
       if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
-        setShiftScanWarnings(mapped.warnings);
+        setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
         return;
       }
       setWorkShiftDraft(mapped.draft);
-      setShiftScanWarnings(mapped.warnings);
+      setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
     } catch (caught) {
       if (!scan.isCurrent()) return;
       setShiftScanError(caught instanceof Error ? caught.message : String(caught));
@@ -1048,7 +1146,7 @@ export function App() {
     }
   }
 
-  const addScopeKey = `${environment}:${household?.householdId ?? ""}:${session?.memberId ?? ""}`;
+  const addScopeKey = `${environment}:${household?.householdId ?? ""}:${session?.memberId ?? ""}:${session?.view??""}:${scenarioAuthRef.current.generation}`;
   const previousAddScopeRef = useRef(addScopeKey);
 
   useEffect(() => {
@@ -1077,6 +1175,7 @@ export function App() {
     if (cloudLedgerOnlineRequiredEnabled(environment)) setCloudReplicaReadyKey(null);
     try {
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const authProvenance = captureScenarioAuth(authSession, environment);
       const google = loadGoogleSession(environment, who, current.householdId);
       if (supabaseAuthEnabled() && !authSession) {
         setError("Your secure session needs Google sign-in before Hearth can retry sharing.");
@@ -1125,6 +1224,7 @@ export function App() {
             return;
           }
           const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
             shared: remoteReplica.shared,
             personal: remoteReplica.personal,
             memberId: who,
@@ -1205,6 +1305,7 @@ export function App() {
             return;
           }
           const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
             shared: remoteReplica.shared,
             personal: remoteReplica.personal,
             memberId: who,
@@ -1370,6 +1471,7 @@ export function App() {
         booksReadinessRef.current = ready;
         booksGateRef.current = booksWriteGate(ready, restored);
         setBooksReadiness(ready);
+        stampCompleteScenarioPair(restored, expectedScope.memberId);
       });
       setSyncState("synced");
       setCommandChrome(null);
@@ -1403,7 +1505,18 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const refreshPresence = () => setSupabaseSessionPresent(Boolean(loadSupabaseSession(environment)));
+    const refreshPresence = () => {
+      const next = scenarioAuthSnapshot(environment);
+      setSupabaseSessionPresent(Boolean(next.subject));
+      if (scenarioAuthRef.current.key !== next.key) {
+        // Invalidate before React cleanup: an in-flight A callback cannot publish after sign-in B.
+        const advanced = {...next, generation: scenarioAuthRef.current.generation + 1};
+        scenarioAuthRef.current = advanced;
+        replicaScopeGenerationRef.current += 1;
+        invalidateScenarioPair();
+        setScenarioAuthIdentity(advanced);
+      }
+    };
     const onSessionChanged = (event: Event) => {
       const changedEnvironment = (event as CustomEvent<{ environment?: Environment }>).detail?.environment;
       if (!changedEnvironment || changedEnvironment === environment) refreshPresence();
@@ -1627,12 +1740,14 @@ export function App() {
         remote: Household;
         personal: PersonalEnvelope | null;
         identity: ContinuityIdentity | null;
+        authProvenance: ScenarioAuthProvenance | null;
       }> => {
         if (!cloudLedgerOnlineRequiredEnabled(candidate.environment)) {
           return {
             remote: await pullSharedHousehold(candidate.inviteCode, loadedSession.memberId, candidate.environment),
             personal: null,
             identity: null,
+            authProvenance: null,
           };
         }
         if (!supabaseAuthEnabled()) {
@@ -1640,6 +1755,7 @@ export function App() {
         }
         const authSession = await ensureSupabaseSession(candidate.environment);
         if (!authSession) throw new Error("Google sign-in is required before Hearth can refresh shared books.");
+        const authProvenance = captureScenarioAuth(authSession, candidate.environment);
         const identity = { email: authSession.email, subject: authSession.googleSubject };
         if (continuityMemberId(candidate, identity) !== loadedSession.memberId) {
           throw new Error("Google sign-in does not match the selected household member.");
@@ -1653,10 +1769,10 @@ export function App() {
           localHousehold: candidate,
         });
         if (!replica) throw new Error(CLOUD_LEDGER_REFRESH_MESSAGE);
-        return { remote: replica.shared, personal: replica.personal, identity };
+        return { remote: replica.shared, personal: replica.personal, identity, authProvenance };
       };
       void pullStartupHousehold()
-        .then(({ remote, personal, identity }) => enqueueWrite(async () => {
+        .then(({ remote, personal, identity, authProvenance }) => enqueueWrite(async () => {
           if (!live || startupGenerationRef.current !== generation) return;
           const current = householdRef.current;
           if (
@@ -1669,6 +1785,7 @@ export function App() {
             ? {
                 ok: true as const,
                 household: await installCanonicalCloudReplica({
+                  authProvenance,
                   shared: remote,
                   personal,
                   memberId: loadedSession.memberId,
@@ -2005,6 +2122,7 @@ export function App() {
       if (cloudLedgerOnlineRequiredEnabled(environment)) setCloudReplicaReadyKey(null);
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+        const authProvenance = captureScenarioAuth(authSession, environment);
         const expectedIdentity: ContinuityIdentity | null = storedAuthSession
           ? { email: storedAuthSession.email, subject: storedAuthSession.googleSubject }
           : continuityIdentityFromGoogle(googleSession);
@@ -2078,6 +2196,7 @@ export function App() {
                 return;
               }
               const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
                 shared: remoteReplica.shared,
                 personal: remoteReplica.personal,
                 memberId,
@@ -2313,6 +2432,7 @@ export function App() {
             ? {
                 ok: true as const,
                 household: await adoptCanonicalCloudReplica({
+                authProvenance,
                   shared: remoteReplica.shared,
                   personal: remoteReplica.personal,
                   memberId,
@@ -2380,6 +2500,7 @@ export function App() {
                   return;
                 }
                 const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
                   shared: stable.shared,
                   personal: stable.personal,
                   memberId,
@@ -2903,7 +3024,7 @@ export function App() {
     return attachLedgerPresence({environment,householdId:household.householdId,memberId,deviceId:localDeviceId(),advertise:!softPresenceOptOut,onPresence:setSoftPresenceLive,token:async()=>{
       if(local)return local;const fresh=await ensureSupabaseSession(environment);if(!fresh||fresh.userId!==auth!.userId)throw new Error('UNAUTHENTICATED');return fresh.accessToken;
     }});
-  },[environment,household?.householdId,session?.memberId,supabaseSessionPresent,softPresenceOptOut,useLedgerSync]);
+  },[environment,household?.householdId,session?.memberId,supabaseSessionPresent,scenarioAuthIdentity.key, scenarioAuthIdentity.generation,softPresenceOptOut,useLedgerSync]);
 
   useEffect(() => {
     const memberId = session?.memberId, current = householdRef.current;
@@ -2912,6 +3033,16 @@ export function App() {
     if (!local && (!auth || !current.linked)) return;
     let live = true;
     const scopeKey=JSON.stringify([environment,current.householdId,memberId,local??auth!.userId]);
+    const pairScope = currentScenarioPairScope();
+    if (!pairScope) return;
+    // A failed navigation invalidates scenario choices without stopping the current replica client.
+    const pairKey = scenarioPairScopeKey({...pairScope, pairEpoch: 0});
+    const authGeneration = scenarioAuthRef.current.generation;
+    const pairIsCurrent = () => {
+      const next = currentScenarioPairScope();
+      return live && next !== null && scenarioAuthRef.current.generation === authGeneration
+        && scenarioPairScopeKey({...next, pairEpoch: 0}) === pairKey;
+    };
     const client = new LedgerSyncClient({
       scope: { environment, householdId: current.householdId, memberId, subject: local ?? auth!.userId },
       token: async () => {
@@ -2923,16 +3054,17 @@ export function App() {
       pendingChanged: pending => { if (live) setLedgerPending({key:scopeKey,rows:pending}); },
       rejectedChanged: entries => { if(live) setLedgerRejected({key:scopeKey,entries}); },
       adopt: async (next, validatedStatus, pending = []) => {
-        if (!live || householdRef.current?.householdId !== next.householdId) return;
+        if (!pairIsCurrent() || householdRef.current?.householdId !== next.householdId) return;
         // The client has saved the scoped server replica. Validate before UI
         // publication; a legacy PGlite transaction cannot gate this authority.
         const status = validatedStatus ?? validatedLedgerBooksStatus(next);
         await saveHousehold(next, { operatingEnvironment: environment, memberId, indexedDbOnly: true });
-        if (!live || householdRef.current?.householdId !== next.householdId) return;
+        if (!pairIsCurrent() || householdRef.current?.householdId !== next.householdId) return;
         startupGenerationRef.current += 1;
         setBooksStatus(status);
         setLedgerPending({key:scopeKey,rows:pending});
         adoptAcceptedHousehold(next, status);
+        stampCompleteScenarioPair(next, memberId);
         setError("");
         setCloudReplicaReadyKey(onlineRequiredReplicaKey({environment:next.environment,householdId:next.householdId,memberId,revision:next.revision}));
         setPersonalReplica(personalReplicaForMember(next, memberId));
@@ -2949,7 +3081,7 @@ export function App() {
     ledgerSyncReady.current = client.start();
     void ledgerSyncReady.current.catch(error => { if (live) setError(error instanceof Error ? error.message : String(error)); });
     return () => { live = false; setLedgerPending(null);setLedgerRejected(null); if (ledgerSyncRef.current === client) ledgerSyncRef.current = null; void client.destroy(); };
-  }, [environment, household?.householdId, session?.memberId, supabaseSessionPresent, useLedgerSync]);
+  }, [environment, household?.householdId, session?.memberId, supabaseSessionPresent, scenarioAuthIdentity.key, scenarioAuthIdentity.generation, useLedgerSync]);
 
   useEffect(() => {
     let live = true;
@@ -3126,6 +3258,20 @@ export function App() {
   const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
   const visibleLedgerPending=useLedgerSync&&ledgerPending?.key===ledgerRenderScopeKey?ledgerPending.rows:[];
   const visibleLedgerRejected=useLedgerSync&&ledgerRejected?.key===ledgerRenderScopeKey?ledgerRejected.entries.filter(entry=>!entry.preview||entry.preview.rows.some(row=>isVisibleInView(row,memberId??'',view))):[];
+  const scenarioSource = useMemo(() => {
+    const scope = currentScenarioPairScope();
+    const pairKey = scope ? scenarioPairScopeKey(scope) : null;
+    const capturedHousehold = household, capturedLease = scenarioPairLeaseRef.current;
+    const roomGeneration = replicaScopeGenerationRef.current;
+    return issueScenarioSource({household, scope, viewerRoom: view, roomGeneration,
+      booksReady: activeBooksGate.ready, lease: scenarioPairLease,
+      isCurrent: () => {
+        const currentScope = currentScenarioPairScope();
+        return booksGateRef.current.ready && householdRef.current === capturedHousehold
+          && scenarioPairLeaseRef.current === capturedLease && replicaScopeGenerationRef.current === roomGeneration
+          && sessionRef.current?.view === view && currentScope !== null && scenarioPairScopeKey(currentScope) === pairKey;
+      }});
+  }, [household, environment, memberId, view, activeBooksGate.ready, scenarioPairLease, scenarioAuthIdentity.key, scenarioAuthIdentity.generation, useLedgerSync]);
   const personalSource = useMemo(() => {
     if (useLedgerSync) return household;
     return household && memberId && personalReplica?.memberId === memberId
@@ -3195,7 +3341,7 @@ export function App() {
       lastReconcileSource: lastReconcile?.source ?? null,
       pollIntervalMs: livePullIntervalMs(activeMembers),
     });
-  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent, booksReadiness, syncState]);
+  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent, scenarioAuthIdentity.key, scenarioAuthIdentity.generation, booksReadiness, syncState]);
   const syncFreshnessLine = useMemo(
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
@@ -3265,12 +3411,12 @@ export function App() {
     if (onboardingStandingFactOnly) return;
     if (unresolvedConflicts(household).length > 0) return;
 
-    const previewKey = `${environment}:${household.householdId}:${today}`;
+    const previewKey = `${environment}:${household.householdId}:${session?.memberId}:${session?.view}:${today}`;
     if (duePreviewOffered.current === previewKey) return;
-    if (duePreviewDismissed(environment, household.householdId, today)) return;
 
     if (!experience || !experience.ok) return;
-    const rows = dueRecurrencePreview(experience.scopedHousehold, today);
+    if(!session)return;
+    const rows = dueRecurrencePreview(experience.scopedHousehold, today).filter(row=>!dueOccurrenceHidden({environment,householdId:household.householdId,memberId:session.memberId,view:session.view,today,recurrenceId:row.recurrenceId,occurrenceDate:row.nextDate}));
     if (!rows.length) return;
     duePreviewOffered.current = previewKey;
     setGuard({ kind: "duePreview", rows });
@@ -3279,15 +3425,13 @@ export function App() {
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
     const previous = sessionRef.current;
+    if (previous?.memberId !== remembered.memberId || previous?.householdId !== remembered.householdId) invalidateScenarioPair();
     if (
       previous?.memberId !== remembered.memberId
       || previous?.householdId !== remembered.householdId
       || previous?.view !== remembered.view
     ) {
-      if (
-        previous?.memberId !== remembered.memberId
-        || previous?.householdId !== remembered.householdId
-      ) replicaScopeGenerationRef.current += 1;
+      replicaScopeGenerationRef.current += 1;
       closeAdd();
       setSwipeOpen(false);
       setSwipeError("");
@@ -3303,6 +3447,7 @@ export function App() {
     if (openingHouseholdRef.current) return;
     replicaScopeGenerationRef.current += 1;
     openingHouseholdRef.current = householdId;
+    invalidateScenarioPair();
     setSwipeOpen(false);
     setSwipeError("");
     setSwipeStrip(null);
@@ -3757,6 +3902,15 @@ export function App() {
     actorId?: string,
     options?: CommitHouseholdOptions,
   ): Promise<CommandOutcome | null> {
+    if (options?.isCurrent?.() === false) return null;
+    const present = <A,>(write: (value: A) => void) => (value: A) => { if (options?.isCurrent?.() !== false) write(value); };
+    const presentSetError = present(setError);
+    const presentSetToast = present(setToast);
+    const presentRememberUndoHistory = present(rememberUndoHistory);
+    const presentSetCommandChrome = present(setCommandChrome);
+    const presentSetCommandProgressPhase = present(setCommandProgressPhase);
+    const presentSetLedgerCommandId = present(setLedgerCommandId);
+    const presentSetSyncState = present(setSyncState);
     const previous = householdRef.current;
     const creatingMember=actorId??session?.memberId;
     if(useLedgerSync&&creatingMember&&next.householdId!==previous?.householdId&&(next.linked||next.google.links.some(link=>link.active&&link.memberId===creatingMember))){
@@ -3770,38 +3924,39 @@ export function App() {
         await completeLedgerCreation(accepted,creatingMember,local??auth!.userId);
         adoptAcceptedHousehold(accepted,status);
         return {kind:'synchronized',ok:true,household:accepted,previous,postedIds:[],confirmationId:options?.confirmationId??crypto.randomUUID(),identityHash:null,revision:accepted.revision,sharingMode:'synchronized',errorClass:null,userMessage:null,retryable:false,postedExactlyOnce:true,postedNothing:false,recoveryAvailable:false};
-      }catch(error){setError(error instanceof Error?error.message:String(error));return null;}finally{setBusy(false);}
+      }catch(error){presentSetError(error instanceof Error?error.message:String(error));return null;}finally{setBusy(false);}
     }
     if (useLedgerSync && previous && (previous.linked || localLedgerIdentity(actorId ?? session?.memberId ?? ""))) {
-      if(next.householdId!==previous.householdId){setError("Choose the new ledger before submitting an entry.");return null;}
+      if(next.householdId!==previous.householdId){presentSetError("Choose the new ledger before submitting an entry.");return null;}
       const client = ledgerSyncRef.current;
-      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); setError(message); return null; }
+      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); presentSetError(message); return null; }
       const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
       confirmationRef.current = confirmationId;
-      setLedgerCommandId(confirmationId);
-      setBusy(true); setCommandProgressPhase("confirming");
+      presentSetLedgerCommandId(confirmationId);
+      setBusy(true); presentSetCommandProgressPhase("confirming");
       try {
         const accepted = await client.confirm(next, confirmationId, options?.onQueued);
-        confirmationRef.current = null;
+        if (confirmationRef.current === confirmationId) confirmationRef.current = null;
         if (isLedgerWrite(accepted.undo) && !options?.suppressUndo && accepted.postedIds.length) {
-          setToast(accepted.undo);
-          rememberUndoHistory([...historyRef.current, accepted.undo].slice(-20));
-          window.setTimeout(() => setToast(item => item?.id === accepted.undo.id ? null : item), 8000);
+          presentSetToast(accepted.undo);
+          presentRememberUndoHistory([...historyRef.current, accepted.undo].slice(-20));
+          scheduleToastClear(accepted.undo.id,options?.scopeIsCurrent);
         }
         const outcome: CommandOutcome = { kind:"synchronized",ok:true,household:accepted.household,previous,postedIds:accepted.postedIds,confirmationId,identityHash:null,revision:accepted.household.revision,sharingMode:"synchronized",errorClass:null,userMessage:null,retryable:false,postedExactlyOnce:true,postedNothing:false,recoveryAvailable:false };
-        setCommandChrome(renderCommandSurface(outcome,{offline:false,pendingCount:0,lastError:null,amountLabel:lastAmountLabelRef.current,ledgerName:accepted.household.name,autoMerged:false,ledgerWrite:isLedgerWrite(token)}));
-        setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome,true));
+        presentSetCommandChrome(renderCommandSurface(outcome,{offline:false,pendingCount:0,lastError:null,amountLabel:lastAmountLabelRef.current,ledgerName:accepted.household.name,autoMerged:false,ledgerWrite:isLedgerWrite(token)}));
+        presentSetCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome,true));
         return outcome;
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
-        if (caught instanceof LedgerCommandRejectedError || /BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) confirmationRef.current = null;
-        options?.onRejected?.(message); setError(message); return null;
+        if ((caught instanceof LedgerCommandRejectedError || /BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) && confirmationRef.current === confirmationId) confirmationRef.current = null;
+        if (caught instanceof LedgerCommandRejectedError) options?.onDefinitiveRejected?.();
+        options?.onRejected?.(message); presentSetError(message); return null;
       } finally { setBusy(false); }
     }
     if (previous && !booksGateRef.current.ready) {
       const message = booksGateRef.current.reason || "The local journal must finish validating before anything can change.";
       if (options?.onRejected) options.onRejected(message);
-      else setError(message);
+      else presentSetError(message);
       return null;
     }
     setBusy(true);
@@ -3818,17 +3973,18 @@ export function App() {
     const memberId = actorId ?? session?.memberId;
     const shareCapable = Boolean((previous?.linked || next.linked) && hostedContinuityAllowed(environment) && memberId);
     if (shareCapable && ledgerWrite) {
-      setCommandProgressPhase("confirming");
-      setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.saving, {
+      presentSetCommandProgressPhase("confirming");
+      presentSetCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.saving, {
         amountLabel: lastAmountLabelRef.current,
         ledgerName: previous?.name ?? null,
         ledgerWrite,
       }));
     } else {
-      setCommandProgressPhase("idle");
+      presentSetCommandProgressPhase("idle");
     }
     if (ledgerWrite) await afterNextPaint();
     try {
+      if (options?.isCurrent?.() === false) return null;
       const googleSession = memberId ? loadGoogleSession(environment, memberId, next.householdId) : null;
       const authRequired = supabaseAuthEnabled();
       const cachedAuthSession = authRequired ? loadSupabaseSession(environment) : null;
@@ -3885,6 +4041,7 @@ export function App() {
       // In launch mode the command compiler validates accounting facts first;
       // cloud acknowledgement is the commit boundary, then active PGlite advances.
       const flushTransport = options?.forceFlush === true || onlineGate.required;
+      if (options?.isCurrent?.() === false) return null;
       const outcome = await acceptHouseholdWrite({
         previous,
         candidate: next,
@@ -3912,8 +4069,9 @@ export function App() {
         }),
       });
       if (!explicitConfirmationId && (outcome.postedExactlyOnce || (outcome.postedNothing && !outcome.retryable))) {
-        confirmationRef.current = null;
+        if (confirmationRef.current === confirmationId) confirmationRef.current = null;
       }
+      if (options?.scopeIsCurrent?.() === false) return outcome;
       // A rejected first-household write has no last valid Household to return.
       // Keep the welcome screen mounted instead of storing CommandOutcome's
       // minimal no-previous sentinel as if it were readable books.
@@ -3930,8 +4088,8 @@ export function App() {
         autoMerged,
         ledgerWrite,
       });
-      setCommandChrome(chrome);
-      setCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome, transportRequested));
+      presentSetCommandChrome(chrome);
+      presentSetCommandProgressPhase(commandProgressPhaseAfterOutcome(outcome, transportRequested));
       if (outcome.ok) {
         traceSyncPilot("local-accepted", {
           household: outcome.household,
@@ -3967,7 +4125,7 @@ export function App() {
           pendingCount,
           transport: "outbox",
         });
-        setSyncState("syncing");
+        presentSetSyncState("syncing");
       }
       if (outcome.kind === "synchronized") {
         saveSyncAnchor(environment, outcome.household);
@@ -4069,7 +4227,7 @@ export function App() {
                     if (!acceptedSync) return;
                     synced = acceptedSync;
                   } else {
-                    setSyncState("syncing");
+                    presentSetSyncState("syncing");
                     return;
                   }
                 }
@@ -4085,7 +4243,7 @@ export function App() {
             if (!finalized) return;
             synced = finalized;
             saveSyncAnchor(environment, synced);
-            setSyncState("synced");
+            presentSetSyncState("synced");
             traceSyncPilot("cloud-ack", {
               household: synced,
               confirmationId,
@@ -4093,8 +4251,8 @@ export function App() {
               pendingCount: 0,
               transport: "outbox",
             });
-            setCommandProgressPhase("cloud-ack");
-            setCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
+            presentSetCommandProgressPhase("cloud-ack");
+            presentSetCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.synchronized, {
               amountLabel: lastAmountLabelRef.current,
               ledgerName: synced.name,
               ledgerWrite: true,
@@ -4114,22 +4272,22 @@ export function App() {
           ...token,
           actorMemberId: token.actorMemberId ?? memberId,
         };
-        setToast(stamped);
-        rememberUndoHistory([...historyRef.current, stamped].slice(-20));
-        window.setTimeout(() => setToast((item) => (item?.id === stamped.id ? null : item)), 8000);
+        presentSetToast(stamped);
+        presentRememberUndoHistory([...historyRef.current, stamped].slice(-20));
+        scheduleToastClear(stamped.id,options?.scopeIsCurrent);
       } else if (!outcome.ok || outcome.kind === "conflict-needs-attention") {
-        setToast(null);
+        presentSetToast(null);
       }
       if (!outcome.ok && outcome.userMessage) {
         if (options?.onRejected) options.onRejected(outcome.userMessage);
-        else setError(outcome.userMessage);
+        else presentSetError(outcome.userMessage);
       } else if (outcome.ok && outcome.recoveryAvailable && outcome.userMessage) {
-        setError(outcome.userMessage);
+        presentSetError(outcome.userMessage);
       } else if (outcome.ok && outcome.kind !== "conflict-needs-attention") {
-        setError("");
+        presentSetError("");
       }
       if (outcome.kind === "synchronized") {
-        setSyncState("synced");
+        presentSetSyncState("synced");
         if (onlineGate.required && memberId) {
           setCloudReplicaReadyKey(onlineRequiredReplicaKey({
             environment: outcome.household.environment,
@@ -4160,13 +4318,13 @@ export function App() {
           memberId,
           revision: outcome.household.revision,
         }));
-        setSyncState("synced");
-      } else if (outcome.kind === "pending-transport") setSyncState("syncing");
+        presentSetSyncState("synced");
+      } else if (outcome.kind === "pending-transport") presentSetSyncState("syncing");
       else if (outcome.kind === "conflict-needs-attention") {
         setCloudReplicaReadyKey(null);
-        setSyncState("error");
+        presentSetSyncState("error");
       }
-      else if (outcome.ok) setSyncState("idle");
+      else if (outcome.ok) presentSetSyncState("idle");
       if (outcome.ok && !(outcome.recoveryAvailable && outcome.errorClass === "books-unavailable")) {
         const status: BooksStatus = {
           ok: true,
@@ -4211,11 +4369,11 @@ export function App() {
       }
       return outcome;
     } catch (caught) {
-      if (shareCapable && ledgerWrite) setCommandProgressPhase("failed");
+      if (shareCapable && ledgerWrite) presentSetCommandProgressPhase("failed");
       if (caught instanceof NeedsConfirmationError) throw caught;
       const message = classifyCommandError(caught).userMessage;
       if (options?.onRejected) options.onRejected(message);
-      else setError(message);
+      else presentSetError(message);
       return null;
     } finally {
       setBusy(false);
@@ -4318,38 +4476,28 @@ export function App() {
     }
   }
 
-  function applyUndo(token: UndoToken, swipeScope?: SwipeUndoStrip) {
+  function applyUndo(token: UndoToken, swipeScope?: SwipeUndoWindow) {
+    const scopeIdentity=renderedUndoScope;
+    const scopeIsCurrent=()=>appMountedRef.current&&!openingHouseholdRef.current&&scopeIdentity===readGuardScopeIdentity();
+    const eligible=()=>{const h=householdRef.current;return scopeIsCurrent()&&!!h&&(!swipeScope||(swipeUndoScopeMatches(swipeScope,environmentRef.current,h.householdId,sessionRef.current?.memberId??'')&&!swipeUndoUnavailable(h,historyRef.current,swipeScope,swipeStripRef.current,scopeIdentity)));};
+    if(!eligible())return Promise.resolve();
     return enqueueWrite(async () => {
-      const current = householdRef.current;
-      const who = session?.memberId;
+      if(!eligible())return;const current = householdRef.current,who=sessionRef.current?.memberId;
       if (!current || !who) return;
       try {
-        if (swipeScope && openingHouseholdRef.current) {
-          setSwipeStrip(null);
-          throw new ValidationError("That Swipe Undo closed while another ledger was opening. Nothing changed.");
-        }
-        if (swipeScope && !swipeUndoScopeMatches(swipeScope, environment, current.householdId, who)) {
-          setSwipeStrip(null);
-          throw new ValidationError("That Swipe Undo belongs to another ledger. Nothing changed.");
-        }
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
         const fundedTransactionId = fundedMoneyUndoTarget(current, token);
-        let result = fundedTransactionId
-          ? reversePostedMoney(current, fundedTransactionId, { createdBy: who })
-          : undoLedgerConfirm(current, token);
+        let result = fundedTransactionId ? reversePostedMoney(current, fundedTransactionId, { createdBy: who }) : undoLedgerConfirm(current, token);
         if (useLedgerSync && !fundedTransactionId) result = captureExplicit(current,result,'undoConfirm',[token.id]);
         lastAmountLabelRef.current = null;
-        const outcome = await commitHousehold(result.household, {
-          ...result.undo,
-          actorMemberId: who,
-        }, who, { suppressUndo: Boolean(fundedTransactionId) });
-        if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
+        // Starting the accepted writer ends the quick-window check. Delivery is
+        // still scoped even if the paper strip expires while acceptance waits.
+        const outcome = await commitHousehold(result.household, {...result.undo,actorMemberId:who},who,{suppressUndo: Boolean(fundedTransactionId),isCurrent:scopeIsCurrent,scopeIsCurrent});
+        if (!scopeIsCurrent()||!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
         rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
         setSwipeStrip((item) => (item?.token.id === token.id ? null : item));
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
-      }
+      } catch (caught) {if(scopeIsCurrent())setError(caught instanceof Error ? caught.message : String(caught));}
     });
   }
 
@@ -4384,17 +4532,21 @@ export function App() {
   }
 
   function run(fn: (current: Household) => CommitResult, options?: {
+    isCurrent?: () => boolean;
+    scopeIsCurrent?: () => boolean;
     closeAdd?: boolean;
+    confirmationId?: string;
+    onDefinitiveRejected?: () => void;
     onAccepted?: (result: CommitResult) => void;
     onConfirm?: (error: NeedsConfirmationError) => boolean;
     onError?: (message: string) => void;
   }) {
-    if (postingRef.current) return Promise.resolve();
+    if (postingRef.current || options?.isCurrent?.() === false) return Promise.resolve();
     postingRef.current = true;
     const submittedDraftGeneration=draftGenerationRef.current;
     return enqueueWrite(async () => {
       const current = householdRef.current;
-      if (!current) {
+      if (!current || options?.isCurrent?.() === false) {
         postingRef.current = false;
         return;
       }
@@ -4421,25 +4573,29 @@ export function App() {
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
           {
-            onRejected: message => { setError(message); if (options?.closeAdd !== false && adding && submittedDraftGeneration===draftGenerationRef.current) setAdding(true); options?.onError?.(message); },
-            onQueued: options?.closeAdd !== false && adding ? () => { if(submittedDraftGeneration!==draftGenerationRef.current)return;setAdding(false); setConfirm(null); setBooksPaneRequest("register"); goTab("ledger"); } : undefined,
+            isCurrent: options?.isCurrent,
+            scopeIsCurrent: options?.scopeIsCurrent,
+            confirmationId: options?.confirmationId,
+            onDefinitiveRejected: () => { if (options?.isCurrent?.() !== false) options?.onDefinitiveRejected?.(); },
+            onRejected: message => { if (options?.isCurrent?.() === false) return; setError(message); if (options?.closeAdd !== false && adding && submittedDraftGeneration===draftGenerationRef.current) setAdding(true); options?.onError?.(message); },
+            onQueued: options?.closeAdd !== false && adding ? () => { if(options?.isCurrent?.() === false || submittedDraftGeneration!==draftGenerationRef.current)return;setAdding(false); setConfirm(null); setBooksPaneRequest("register"); goTab("ledger"); } : undefined,
           },
         );
         const accepted =
           outcome?.postedExactlyOnce === true &&
           (outcome.kind === "accepted-local" || outcome.kind === "pending-transport" || outcome.kind === "synchronized");
-        if (!accepted) return;
+        if (!accepted || options?.isCurrent?.() === false) return;
         const canonicalResult = outcome ? ledgerSyncRef.current?.result(outcome.confirmationId) : undefined;
         if (canonicalResult) result = canonicalResult;
         if (memberPersonal && result.personalMemberId) {
           setPersonalReplica(personalReplicaForMember(outcome.household, result.personalMemberId));
         }
+        options?.onAccepted?.(result);
         if (options?.closeAdd === false) {
-          options?.onAccepted?.(result);
           if (result.warnings.length) setError(result.warnings.join(" "));
           return;
         }
-        if(submittedDraftGeneration!==draftGenerationRef.current){options?.onAccepted?.(result);return;}
+        if(submittedDraftGeneration!==draftGenerationRef.current)return;
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
@@ -4471,6 +4627,7 @@ export function App() {
           window.setTimeout(() => setVisorPop(false), 700);
         }
       } catch (caught) {
+        if (options?.isCurrent?.() === false) return;
         if (caught instanceof NeedsConfirmationError) {
           if (options?.onConfirm?.(caught)) return;
           const plan = resolveDuplicateRetry({
@@ -4499,8 +4656,21 @@ export function App() {
     });
   }
 
+  const reviewedKitchenScope = {
+    generation: replicaScopeGenerationRef.current,
+    environment,
+    householdId: household?.householdId ?? null,
+    memberId: session?.memberId ?? null,
+    view: session?.view ?? null,
+  };
   function runKitchen(fn: (current: Household) => CommitResult): Promise<CommandOutcome | null> {
-    return enqueueWrite(async () => {
+    return enqueueScopedWrite(enqueueWrite, reviewedKitchenScope, () => ({
+      generation: replicaScopeGenerationRef.current,
+      environment: environmentRef.current,
+      householdId: householdRef.current?.householdId ?? null,
+      memberId: sessionRef.current?.memberId ?? null,
+      view: sessionRef.current?.view ?? null,
+    }), async () => {
       const current = householdRef.current;
       if (!current) return null;
       try {
@@ -4523,7 +4693,7 @@ export function App() {
         setError(caught instanceof Error ? caught.message : String(caught));
         return null;
       }
-    });
+    }, () => setError("These books changed while this action was waiting. Review the current desk and try again."));
   }
 
   function requestClearThisPhone() {
@@ -4536,6 +4706,7 @@ export function App() {
   }
 
   async function clearThisPhoneNow() {
+    clearWorkHandoff(window.sessionStorage);
     if (clearThisPhoneInFlightRef.current) return;
     replicaScopeGenerationRef.current += 1;
     setCloudReplicaReadyKey(null);
@@ -4670,6 +4841,7 @@ export function App() {
   }
 
   function signOutWelcomeGoogle() {
+    clearWorkHandoff(window.sessionStorage);
     cancelAccountFlow();
     clearGoogleSessions(environment);
     clearSupabaseSession(environment);
@@ -4695,6 +4867,7 @@ export function App() {
   }
 
   function tryInviteWithAnotherGoogleAccount() {
+    clearWorkHandoff(window.sessionStorage);
     const token = pendingAuthInvite ?? loadPendingAuthInvite()?.token ?? authInviteTokenFromText(inviteInput);
     cancelAccountFlow();
     clearGoogleSessions(environment);
@@ -4717,6 +4890,7 @@ export function App() {
   }
 
   async function returnToGoogleEntryAfterFullHouse(): Promise<void> {
+    clearWorkHandoff(window.sessionStorage);
     setBusy(true);
     try {
       cancelAccountFlow();
@@ -4931,6 +5105,36 @@ export function App() {
     }
   }
 
+
+  function dangerReview(target:Guard):DestructiveReview{
+    const openingId=String(guardOpeningRef.current);
+    const h=householdRef.current,tx=target.kind==='remove'?h?.transactions.find(row=>row.id===target.transactionId):null;
+    const displayedTargetCurrent=target.kind==='remove'?!!tx&&target.reviewedSummaryBasis===canonical([tx.id,tx.amountCents,tx.type,tx.source,tx.note]):target.kind==='correctShift'?canonical(target.shift)===canonical(h?.shifts.find(row=>row.id===target.shift.id)??null):true;
+    return {openingId,identity:displayedTargetCurrent?guardIdentityRef.current:canonical(['stale displayed target',guardIdentityRef.current]),readIdentity:()=>readDangerIdentity(target)};
+  }
+  function readGuardScopeIdentity():string{const h=householdRef.current,auth=scenarioAuthRef.current;return canonical({environment:environmentRef.current,householdId:h?.householdId??null,memberId:sessionRef.current?.memberId??null,view:sessionRef.current?.view??null,generation:replicaScopeGenerationRef.current,authKey:auth.key,authGeneration:auth.generation});}
+  function readDangerIdentity(target:Guard):string{
+      const h=householdRef.current,known=dangerSourcesRef.current,scope=readGuardScopeIdentity();
+      const memberships=known.discoveredLedgers.map(item=>({householdId:item.household.householdId,name:item.household.name,memberId:item.memberId,members:item.household.members.map(member=>({id:member.id,active:member.active}))}));
+      let source:unknown=null;
+      if(target.kind==='delete-household')source={membership:memberships.find(item=>item.householdId===target.householdId)??null,replica:known.replicas.find(item=>item.householdId===target.householdId)??null,owner:known.isHouseholdOwner};
+      else if(target.kind==='reset-development')source={memberships,replicas:known.replicas,owner:known.isHouseholdOwner};
+      else if(target.kind==='duePreview')source=todayKey();
+      else if(target.kind==='settleClaim')source={date:todayKey(),reading:h&&target.reading.kind==='ready'?claimSettlementReview(h,target.reading.request):null};
+      else if(target.kind==='erase-development')source=h?.revision??null;
+      else if(target.kind==='restorePoint')source={revision:h?.revision??null,local:h?listRestorePoints(h).find(point=>point.id===target.pointId)??null:null,remote:known.ledgerRestorePoints.find(point=>point.id===target.pointId)??null};
+      else if((target.kind==='remove'||target.kind==='correctShift')&&h){
+        const neighbors=new Map<string,Set<string>>();
+        const connect=(a:string,b:string)=>{if(!neighbors.has(a))neighbors.set(a,new Set());neighbors.get(a)!.add(b);};
+        for(const tx of h.transactions)for(const id of [tx.transferPairId,tx.reversalOfId,tx.refundOfId])if(id){connect(tx.id,id);connect(id,tx.id);}
+        const ids=new Set([target.transactionId]),queue=[target.transactionId];
+        for(let i=0;i<queue.length;i++)for(const id of neighbors.get(queue[i]!)??[])if(!ids.has(id)){ids.add(id);queue.push(id);}
+        const rows=h.transactions.filter(tx=>ids.has(tx.id));
+        source={revision:h.revision,rows,closed:h.kitchen.books.closedMonths,shift:target.kind==='correctShift'?h.shifts.find(shift=>shift.id===target.shift.id)??null:null};
+      }
+      return canonical([guardOpeningRef.current,scope,target,source]);
+  }
+
   const householdResetGuards = (
     <>
       {guard?.kind === "delete-household" && (
@@ -4942,6 +5146,7 @@ export function App() {
           extra="Requires migration 015 in Supabase for cloud delete/leave. Production households cannot be deleted here."
           confirmLabel={guard.role === "owner" ? "Delete household" : "Leave household"}
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -4956,6 +5161,7 @@ export function App() {
           extra="Production is not touched. Partner phones keep their own copies until they refresh. Google stays signed in."
           confirmLabel="Delete all Development households"
           danger
+          review={dangerReview(guard)}
           busy={resetBusy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -5359,6 +5565,32 @@ export function App() {
 
   const ledger = household;
   const actorId = session.memberId;
+  const reviewedPunch = openShiftReview(ledger, actorId);
+  function runPunch(action: (current: Household) => CommitResult) {
+    return runKitchen(current => runReviewedOpenShift(current, actorId, reviewedPunch, action));
+  }
+  function runPunchDiscard() {
+    return runKitchen(current => runReviewedShiftDiscard(current, actorId, reviewedPunch, next => abandonOpenShift(next, { memberId: actorId })));
+  }
+  const deskScopeIsCurrent = () => sameWriteScope(reviewedKitchenScope, {
+    generation: replicaScopeGenerationRef.current, environment: environmentRef.current,
+    householdId: householdRef.current?.householdId ?? null, memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
+  });
+
+  function openClaimSettlement(claimId:string,destinationId=''){
+    if(!deskScopeIsCurrent())return;const h=householdRef.current;if(!h)return;
+    if(!destinationId)claimReturnFocusRef.current=(document.activeElement as HTMLElement|null)?.closest<HTMLElement>('[data-claim-focus]')??null;
+    const claim=h.claims.find(c=>c.id===claimId);
+    const reading=claim&&destinationId?claimSettlementReview(h,{environment:h.environment,householdId:h.householdId,memberId:actorId,view,claimId,toAccountId:destinationId,date:today,amountCents:claim.expectedCents-claim.receivedCents-claim.writtenOffCents}):{kind:'unavailable' as const,reason:destinationId?'This claim is no longer available.':h.accounts.some(a=>a.active&&a.scope!=='personal'&&a.currency==='CAD'&&a.kind!=='receivable')?'Choose the Shared account that received the money. Then review the exact transfer.':'Open a Shared receiving account in Books before recording this transfer.'};
+    setError('');setGuard({kind:'settleClaim',claimId,destinationId,reading});
+  }
+  const renderedUndoScope=readGuardScopeIdentity();
+  const dueOpening=guardOpeningRef.current,dueIdentity=guardIdentityRef.current,openingScope=guardScopeIdentityRef.current;
+  const dueIsCurrent=()=>guard?.kind==='duePreview'&&dueOpening===guardOpeningRef.current&&dueIdentity===guardIdentityRef.current&&readDangerIdentity(guard)===dueIdentity;
+  const splitViewer = { memberId: actorId, view: session.view, generation: replicaScopeGenerationRef.current };
+  const splitScopeValid = splitDraft?.scope === splitDraftScope(ledger, splitViewer);
+  const splitPercents = splitDraft?.percents ?? {};
+  const reviewSplit = () => setSplitDraft(newSplitDraft(ledger, splitViewer));
   const displayHousehold = experience && experience.ok ? experience.scopedHousehold : household;
   const pickerAccounts = experience && experience.ok
     ? experience.scopedHousehold.accounts.filter((account) => account.active)
@@ -5397,16 +5629,20 @@ export function App() {
     };
   };
 
+  const reviewedSwipeIntent = swipeIntentRef.current;
+  const swipeIsCurrent = () => reviewedSwipeIntent === swipeIntentRef.current && deskScopeIsCurrent() && sessionRef.current?.view === "household";
   const showSwipeAction = view === "household"
     && swipeBelongsOnSharedHome(actorId, household.householdFund?.custodianMemberId);
 
   const openSwipeIntoAdd = (amount: string, extra?: { subcategoryId?: string; confirm?: NeedsConfirmationError }) => {
+    if (!swipeIsCurrent()) return;
     const scopedBooks = experience && experience.ok ? experience.scopedHousehold : household;
     const card = resolveSwipeCardAccount(scopedBooks, actorId);
     const accountId = card.kind === "ready" ? card.accountId : focusedAccountId;
     setSwipeOpen(false);
     setSwipeError("");
     setMode("expense");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setError("");
@@ -5425,6 +5661,7 @@ export function App() {
   };
 
   const submitSwipePurchase = (amount: string, subcategoryId: string) => {
+    if (!swipeIsCurrent()) return;
     setSwipeError("");
     const scopedBooks = experience && experience.ok ? experience.scopedHousehold : household;
     const card = resolveSwipeCardAccount(scopedBooks, actorId);
@@ -5432,26 +5669,33 @@ export function App() {
       openSwipeIntoAdd(amount, { subcategoryId });
       return;
     }
-    const fund = household.householdFund;
+    let reviewed: ReturnType<typeof swipePurchaseReview>;
+    try { reviewed = swipePurchaseReview(scopedBooks, actorId, today, amount, subcategoryId); }
+    catch (caught) { setSwipeError(caught instanceof Error ? caught.message : String(caught)); return; }
     lastAmountLabelRef.current = formatCad(parseAmount(amount));
-    void run((current) => postEntry(current, {
+    void run((current) => {
+      const fresh = swipePurchaseReview(current, actorId, today, amount, subcategoryId);
+      if (fresh.basis !== reviewed.basis) throw new Error("The card, category or Fund changed. Review this purchase again.");
+      return postEntry(current, {
+      swipeReviewed: true,
       date: today,
       type: "expense",
       amount,
-      accountId: card.accountId,
+      accountId: reviewed.accountId,
       subcategoryId,
       createdBy: actorId,
       visibility: "household",
       splits: jointSplit(parseAmount(amount)),
-      funding: fund
-        ? { fundId: fund.id, fundedCents: parseAmount(amount), destinationAccountId: card.accountId }
-        : undefined,
-    }), {
+      funding: { fundId: reviewed.fundId, fundedCents: parseAmount(amount), destinationAccountId: reviewed.accountId },
+    }); }, {
+      isCurrent: swipeIsCurrent,
+      scopeIsCurrent: deskScopeIsCurrent,
       closeAdd: false,
       onAccepted: (result) => {
         setSwipeError("");
         setSwipeOpen(false);
         if (result.undo) setSwipeStrip({
+          expiresAt:Date.now()+SWIPE_UNDO_MS,scopeIdentity:readGuardScopeIdentity(),
           token: result.undo,
           environment,
           householdId: result.household.householdId,
@@ -5533,6 +5777,7 @@ export function App() {
     const defaults = addFormDefaults(displayHousehold, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5597,6 +5842,7 @@ export function App() {
   }
 
   function goTab(next: Tab) {
+    clearWorkHandoff(window.sessionStorage);
     preloadTab(next);
     leaveDesk();
     setTab(next);
@@ -5612,12 +5858,21 @@ export function App() {
     if (rendered !== current) window.history.replaceState({}, "", rendered);
   }
 
-  function beginSignOut() {
+  async function beginSignOut() {
+    const reviewIntent = ++punchReviewIntentRef.current;
+    let punch = activeOpenShift(ledger.kitchen, actorId);
+    if (punch?.status === "open") {
+      const outcome = await runPunch((current) => clockOutShift(current, { memberId: actorId }));
+      if (!outcome?.ok || !deskScopeIsCurrent() || reviewIntent !== punchReviewIntentRef.current) return;
+      const current = householdRef.current;
+      if (!current || openShiftReview(current, actorId) !== openShiftReview(outcome.household, actorId)) return;
+      punch = activeOpenShift(current.kitchen, actorId);
+    } else if (!deskScopeIsCurrent() || !householdRef.current || openShiftReview(householdRef.current, actorId) !== reviewedPunch) return;
+    if (!punch || punch.status !== "confirming") return;
     workShiftInputRef.current = null;
     workShiftDateRef.current = today;
-    const punch = activeOpenShift(ledger.kitchen, actorId);
-    if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
     setMode("shift");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5626,7 +5881,7 @@ export function App() {
     setShiftGate("signOut");
     setHoursDirty(false);
     setForm(formForAccount(null, {
-      hours: punch ? formatPreviewHours(previewHoursQuarter(punch.startedAt)) : "",
+      hours: formatPreviewHours(previewHoursQuarter(punch.startedAt, punch.endedAt ? Date.parse(punch.endedAt) : Date.now())),
       sales: "0",
       cashTips: "0",
       ccTips: "0",
@@ -5638,7 +5893,7 @@ export function App() {
     workShiftInputRef.current = null;
     workShiftDateRef.current = today;
     const punch = activeOpenShift(ledger.kitchen, actorId);
-    if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
+    if (punch?.status === "open") void runPunch((current) => clockOutShift(current, { memberId: actorId }));
     setAdding(false);
   }
 
@@ -5646,6 +5901,7 @@ export function App() {
     workShiftInputRef.current = null;
     workShiftDateRef.current = initialDate;
     setMode("shift");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5661,6 +5917,7 @@ export function App() {
     const amount = remaining > 0 ? remaining : card.minPaymentCents;
     setFocusedAccountId(account.id);
     setMode("transfer");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5703,33 +5960,33 @@ export function App() {
     goTab("ledger");
   };
 
+  const openFundDestination = (destination: FundDestination = "record") => {
+    rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+    if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
+    if (destination === "shelf") { goTab("plan"); return; }
+    if (destination === "minutes") { goTab("more"); return; }
+    setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
+    goTab("ledger");
+  };
+
   const openWallet = (accountId: string) => {
     setFocusedAccountId(accountId);
     goTab("ledger");
   };
 
   function splitsFor(amountCents: number, from: Household): Split[] {
-    const members = from.members.filter((member) => member.active);
     if (form.who === "split") {
-      return percentSplits(members.map((member) => ({
-        party: member.id,
-        percent: Number(splitPercents[member.id] ?? 0),
-      })), amountCents);
+      const currentSession = sessionRef.current;
+      if (!currentSession) throw new Error("Choose your desk before reviewing this split.");
+      return reviewedSplitPayload(splitDraft, from, { memberId: currentSession.memberId, view: currentSession.view, generation: replicaScopeGenerationRef.current }, amountCents);
     }
     if (form.who === JOINT) return jointSplit(amountCents);
     return [{ party: form.who, amountCents }];
   }
 
   function setMemberPercent(memberId: string, percent: number) {
-    const members = ledger.members.filter((member) => member.active);
-    const clamped = Math.max(0, Math.min(100, percent));
-    if (members.length === 2) {
-      const other = members.find((member) => member.id !== memberId);
-      if (!other) return;
-      setSplitPercents({ [memberId]: clamped, [other.id]: Math.round((100 - clamped) * 100) / 100 });
-      return;
-    }
-    setSplitPercents({ ...splitPercents, [memberId]: clamped });
+    if (!splitScopeValid || !splitDraft) return;
+    setSplitDraft(editSplitDraft(splitDraft, ledger.members.filter(member => member.active).map(member => member.id), memberId, percent));
   }
 
   function submit(flags: { confirmDuplicate?: boolean } = {}) {
@@ -5789,23 +6046,36 @@ export function App() {
     });
   }
 
-  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null) {
+  async function readWorkShiftSubmission(id: string): Promise<"accepted" | "pending" | "rejected" | "missing"> {
+    if (useLedgerSync && (household?.linked || localLedgerIdentity(session?.memberId ?? ""))) {
+      const client = ledgerSyncRef.current;
+      if (!client || client.options.scope.environment !== environment || client.options.scope.householdId !== household?.householdId || client.options.scope.memberId !== session?.memberId) throw new Error("SCOPE_CLOSED");
+      return client.submissionStatus(id);
+    }
+    return household?.commandReceipts.some(receipt => receipt.confirmationId === id) ? "accepted" : "missing";
+  }
+
+  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null, draftCallbacks?: WorkShiftDraftCallbacks) {
+    if (postingRef.current) { if (!confirmDuplicate) draftCallbacks?.onRejected(); return; }
     const current = householdRef.current;
     const currentMemberId = sessionRef.current?.memberId;
-    const shiftConfirmationId = confirmationRef.current ?? newConfirmationId();
+    const shiftConfirmationId = input.confirmationId ?? confirmationRef.current ?? newConfirmationId();
     if (!confirmationRef.current) confirmationRef.current = shiftConfirmationId;
     const pending = confirmDuplicate
       ? workShiftInputRef.current
       : current && currentMemberId
         ? {
             input: { ...input, confirmationId: shiftConfirmationId },
-            environment: current.environment,
-            householdId: current.householdId,
-            memberId: currentMemberId,
+            environment: draftCallbacks?.scope?.environment ?? current.environment,
+            householdId: draftCallbacks?.scope?.householdId ?? current.householdId,
+            memberId: draftCallbacks?.scope?.memberId ?? currentMemberId,
             attendanceReview,
+            draftCallbacks,
           }
         : null;
+    const rejectedDraftCallbacks = pending?.draftCallbacks;
     if (!workShiftScopeMatches(current, currentMemberId, pending)) {
+      rejectedDraftCallbacks?.onRejected();
       workShiftInputRef.current = null;
       setConfirm(null);
       setError(WORK_SHIFT_SCOPE_ERROR);
@@ -5814,17 +6084,20 @@ export function App() {
     workShiftInputRef.current = pending;
     void run((live) => {
       try {
-        return runScopedWorkShift(
-          live,
-          sessionRef.current?.memberId,
-          pending,
-          confirmDuplicate,
-          (safeInput, safeAttendanceReview) => postWorkShiftWithAttendanceReview(live, safeInput, safeAttendanceReview),
-        );
-      } catch (caught) {
-        workShiftInputRef.current = null;
-        throw caught;
+        return runScopedWorkShift(live, sessionRef.current?.memberId, pending, confirmDuplicate,
+          (safeInput, safeAttendanceReview) => postWorkShiftWithAttendanceReview(live, safeInput, safeAttendanceReview));
+      } catch (error) {
+        // No transport was entered. Duplicate review retains its original identity.
+        if (!(error instanceof NeedsConfirmationError) || error.code !== "sameShiftDay") pending.draftCallbacks?.onRejected();
+        throw error;
       }
+    }, { confirmationId: pending.input.confirmationId,
+      onDefinitiveRejected: () => pending.draftCallbacks?.onRejected(),
+      onError: message => setError(message),
+      onAccepted: () => {
+        pending.draftCallbacks?.onAccepted();
+        if (workShiftInputRef.current === pending) workShiftInputRef.current = null;
+      },
     });
   }
 
@@ -6047,6 +6320,7 @@ export function App() {
           </button>
         ))}
       </div>
+      {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
@@ -6064,17 +6338,7 @@ export function App() {
           offlinePending={offline && (household.sharing?.mode === "pending-transport" || Boolean(swipeStrip))}
           homeHref={TILL_DESK_HASH}
           strip={swipeStrip && swipeUndoScopeMatches(swipeStrip, environment, household.householdId, actorId) ? (
-            <div className="swipe-strip" role="status">
-              <span>{SWIPE_COPY.success}</span>
-              <button
-                type="button"
-                className="swipe-strip-undo"
-                disabled={busy}
-                onClick={() => void applyUndo(swipeStrip.token, swipeStrip)}
-              >
-                {SWIPE_COPY.undo}
-              </button>
-            </div>
+            <SwipeReceiptStrip message={SWIPE_COPY.success} key={`${swipeStrip.token.id}:${swipeStrip.expiresAt}`} strip={swipeStrip} disabled={busy} reason={swipeUndoUnavailable(household,history,swipeStrip,swipeStrip,renderedUndoScope)} onUndo={()=>void applyUndo(swipeStrip.token,swipeStrip)}/>
           ) : null}
           onOpenSwipe={() => { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); }}
           onSeeEverything={() => goTab("home")}
@@ -6098,21 +6362,6 @@ export function App() {
             </a>
           </p>
         ) : null}
-        {view === "household" && household.householdFund && (() => {
-          const fund = projectHouseholdFund(household, today);
-          return (
-            <section className="card household-fund-glance is-phone-only" aria-label="Hearth Household Fund">
-              <header><h2>Household Fund</h2><button className="ghost" type="button" onClick={() => goTab("ledger")}>Open Fund</button></header>
-              <div className="grid">
-                <div className="stat"><span>Operating</span><strong>{formatCad(fund.operatingBalanceCents)}</strong></div>
-                <div className="stat"><span>Transfer due</span><strong>{formatCad(fund.transferDueCents)}</strong></div>
-                <div className="stat"><span>Upcoming</span><strong>{formatCad(fund.upcomingReserveCents)}</strong></div>
-                <div className="stat"><span>{fund.topUpNeededCents ? "Top-up needed" : "Fund free-to-spend"}</span><strong className={fund.topUpNeededCents ? "negative" : ""}>{formatCad(fund.topUpNeededCents || fund.freeToSpendCents)}</strong></div>
-              </div>
-              <p className="muted">The money remains in Bianca’s savings. Hearth cannot move it. Reconciliation: {fund.lastReconciledAt ? (fund.reconciliationTied ? "tied" : "needs review") : "not yet recorded"}.</p>
-            </section>
-          );
-        })()}
         {view === "household" ? (
           <MonthRehearsalAccess
             household={household}
@@ -6125,6 +6374,7 @@ export function App() {
         ) : null}
         <DeferredSurface label="Office">
         <DeferredOffice
+          scenarioSource={scenarioSource}
           household={displayHousehold}
           booksHousehold={household}
           dashboard={dashboard}
@@ -6160,19 +6410,20 @@ export function App() {
             emitOfficeIntent({ type: "expand", id: "calculator" });
           }}
           onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
-          onAbandonShift={() => { void runKitchen((current) => abandonOpenShift(current, { memberId: actorId })); }}
-          onStartBreak={(kind) => { void runKitchen((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
-          onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
-          onChooseShiftTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
+          onAbandonShift={() => { void runPunchDiscard(); }}
+          onStartBreak={(kind) => { void runPunch((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
+          onEndBreak={() => { void runPunch((current) => endShiftBreak(current, { memberId: actorId })); }}
+          onChooseShiftTimeline={(keepId) => { void runKitchen((current) => runReviewedShiftChoice(current, actorId, reviewedPunch, keepId, next => chooseOpenShiftTimeline(next, { memberId: actorId, keepId }))); }}
           onSignOut={beginSignOut}
           onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
           onOpenAccount={openWallet}
           onKitchen={(fn) => { void runKitchen(fn); }}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
-          onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
+          onAskSettle={claimId=>openClaimSettlement(claimId)}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onSitDown={(next, token) => persistLedgerWrite(preserveCurrentPersonal(next), token)}
+          onOpenFundDestination={openFundDestination}
           onOpenRegister={() => {
             setBooksPaneRequest("fund-register");
             goTab("ledger");
@@ -6236,6 +6487,7 @@ export function App() {
             onApply={(next, token) => persist(next, token)}
           />
           <KittyBanks
+            environment={environment}
             household={displayHousehold}
             booksHousehold={household}
             view={view}
@@ -6276,7 +6528,7 @@ export function App() {
             setGuard({ kind: "saveRepeating", draft, summary });
           }}
           onAskVisit={(draft, summary) => setGuard({ kind: "postVisit", draft, summary })}
-          onAskSettle={(claimId, summary) => setGuard({ kind: "settleClaim", claimId, summary })}
+          onAskSettle={claimId=>openClaimSettlement(claimId)}
           onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
           onOpenPlan={() => goTab("plan")}
@@ -6291,8 +6543,9 @@ export function App() {
       {tab === "shift" && (
         <DeferredSurface label="Shift room">
         <DeferredWorkShiftPage
-          key={`${environment}:${household.householdId}:${session.memberId}`}
+          key={`${environment}:${household.householdId}:${session.memberId}:${view}:${scenarioAuthRef.current.generation}`}
           household={experience && experience.ok ? experience.shiftHousehold : household}
+          fundCustodianMemberId={household.householdFund?.custodianMemberId}
           view={view}
           memberId={session.memberId}
           memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}
@@ -6300,12 +6553,13 @@ export function App() {
           environment={environment}
           busy={busy}
           onClockIn={() => { void runKitchen((current) => clockInShift(current, { memberId: actorId })); }}
-          onAbandon={() => { void runKitchen((current) => abandonOpenShift(current, { memberId: actorId })); }}
-          onStartBreak={(kind) => { void runKitchen((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
-          onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
-          onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
+          onAbandon={() => { void runPunchDiscard(); }}
+          onStartBreak={(kind) => { void runPunch((current) => startShiftBreak(current, { memberId: actorId, kind })); }}
+          onEndBreak={() => { void runPunch((current) => endShiftBreak(current, { memberId: actorId })); }}
+          onChooseTimeline={(keepId) => { void runKitchen((current) => runReviewedShiftChoice(current, actorId, reviewedPunch, keepId, next => chooseOpenShiftTimeline(next, { memberId: actorId, keepId }))); }}
           onClockOut={clockOutStayOnShiftPage}
-          onConfirmShift={(input, attendanceReview) => submitWorkShift(input, false, attendanceReview)}
+          onConfirmShift={(input, attendanceReview, callbacks) => submitWorkShift(input, false, attendanceReview, callbacks)}
+          readSubmissionStatus={readWorkShiftSubmission}
           duplicateConfirm={
             confirm
             && workShiftInputRef.current
@@ -6390,6 +6644,9 @@ export function App() {
             )}
           />
         ) : <DeferredBooksPage
+          duplicateAuthorityGeneration={replicaScopeGenerationRef.current}
+          onDuplicateCommand={runKitchen}
+          duplicateBusy={busy}
           household={displayHousehold}
           booksHousehold={household}
           pendingRows={visibleLedgerPending}
@@ -6414,7 +6671,7 @@ export function App() {
               : transaction.type === "transfer"
                 ? `This posts a reversing transfer for ${dollars}. Both original legs stay.`
                 : `This posts a reversing entry for ${dollars}${transaction.note ? ` (${transaction.note})` : ""}. The original row stays.`;
-            setGuard({ kind: "remove", transactionId: transaction.id, summary });
+            setGuard({ kind: "remove", transactionId: transaction.id, summary, reviewedSummaryBasis:canonical([transaction.id,transaction.amountCents,transaction.type,transaction.source,transaction.note]) });
           }}
         />}
         </DeferredSurface>
@@ -6613,6 +6870,7 @@ export function App() {
               });
             }}
             onCurrentDeviceRevoked={() => {
+    clearWorkHandoff(window.sessionStorage);
               traceSyncPilot("auth-blocked", { household, transport: "outbox" });
               clearContinuityOutboxForHousehold(environment, household.householdId);
               void clearStagedHouseholdBooks(environment, household.householdId);
@@ -6921,7 +7179,7 @@ export function App() {
       )}
 
       {swipeOpen && experience && experience.ok ? (
-        <Swipe
+        <Swipe key={JSON.stringify([environment, household.householdId, actorId, view, reviewedKitchenScope.generation, reviewedSwipeIntent])}
           household={experience.scopedHousehold}
           memberId={actorId}
           today={today}
@@ -6952,17 +7210,19 @@ export function App() {
           shiftJobsPanel={(
             <>
               <DeferredSurface label="Tip sheet camera">
-              <DeferredShiftReportScanBar
+              <DeferredShiftReportScanBar key={`${environment}:${household.householdId}:${actorId}:${view}`}
                 busy={busy}
                 scanBusy={shiftScanBusy}
                 error={shiftScanError}
-                onFile={(file) => { void applyShiftReportScan(file); }}
+                warnings={shiftScanWarnings}
+                onFile={(file,quality) => { void applyShiftReportScan(file,quality); }}
               />
               </DeferredSurface>
               <DeferredSurface label="Timesheet">
               <DeferredWorkShiftWithSevenShifts
                 key={`${environment}:${household.householdId}:${actorId}`}
                 household={displayHousehold}
+                fundCustodianMemberId={household.householdFund?.custodianMemberId}
                 memberId={actorId}
                 today={workShiftDateRef.current}
                 punch={activeOpenShift(household.kitchen, actorId)}
@@ -6974,11 +7234,8 @@ export function App() {
                   setShiftScanWarnings([]);
                   setShiftScanError("");
                 }}
-                onConfirm={(input) => {
-                  setWorkShiftDraft(null);
-                  setShiftScanWarnings([]);
-                  submitWorkShift(input);
-                }}
+                onConfirm={(input, attendanceReview, callbacks) => submitWorkShift(input, false, attendanceReview, callbacks)}
+                readSubmissionStatus={readWorkShiftSubmission}
               />
               </DeferredSurface>
             </>
@@ -6993,7 +7250,7 @@ export function App() {
           onAlreadyOff={() => beginFinishedShift()}
           onSignOut={beginSignOut}
           onNeverMind={() => {
-            void runKitchen((current) => abandonOpenShift(current, { memberId: actorId }));
+            void runPunchDiscard();
             setAdding(false);
           }}
           punchStartedAt={activeOpenShift(household.kitchen, actorId)?.startedAt}
@@ -7046,6 +7303,8 @@ export function App() {
           codingHint={codingHint}
           onCodingHint={setCodingHint}
           splitPercents={splitPercents}
+          splitScopeValid={splitScopeValid}
+          onReviewSplit={reviewSplit}
           onMemberPercent={setMemberPercent}
           addDetails={addDetails}
           onAddDetails={setAddDetails}
@@ -7070,6 +7329,7 @@ export function App() {
           extra={`This cannot be undone. If this household synchronizes, the empty Development activity can replace the shared Development cloud copy. Production is not touched. ${googleStepUpExtra}`}
           confirmLabel="Erase all Development activity"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -7100,6 +7360,7 @@ export function App() {
           extra={googleStepUpExtra}
           confirmLabel="Sign out and clear this phone"
           danger
+          review={dangerReview(guard)}
           onCancel={() => setGuard(null)}
           onConfirm={clearThisPhoneNow}
         />
@@ -7174,6 +7435,7 @@ export function App() {
           body={`${guard.summary} Both the original and the reversing entry stay. Prefer Undo from the toast or More → Recent when it is your latest Confirm.`}
           confirmLabel="Reverse"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -7196,6 +7458,7 @@ export function App() {
           body={guard.summary}
           confirmLabel="Restore"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -7211,6 +7474,7 @@ export function App() {
           body={`Hearth will reverse the ${guard.shift.date} shift in the books, then open a fresh shift form with that date. The old evidence stays balanced underneath and Shifts worked will label it replaced.`}
           confirmLabel="Reverse & add correction"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -7229,24 +7493,9 @@ export function App() {
         />
       )}
       {guard?.kind === "duePreview" && (
-        <DuePreviewSheet
-          rows={guard.rows}
-          onDismiss={() => {
-            dismissDuePreview(environment, household.householdId, today);
-            setGuard(null);
-          }}
-          onReview={(row) => {
-            dismissDuePreview(environment, household.householdId, today);
-            setGuard({ kind: "postRecurrence", recurrenceId: row.recurrenceId, summary: row.summary });
-          }}
-          onReviewAll={(rows) => {
-            dismissDuePreview(environment, household.householdId, today);
-            setGuard({
-              kind: "postDueAll",
-              recurrenceIds: rows.map((row) => row.recurrenceId),
-              summary: `This posts ${rows.length} due repeating ${rows.length === 1 ? "item" : "items"} into the books.`,
-            });
-          }}
+        <DuePreviewSheet key={dueOpening} rows={guard.rows} household={household} memberId={actorId} view={view} today={today} busy={busy} isCurrent={dueIsCurrent}
+          onDismiss={()=>setGuard(null)}
+          onPost={async reviewed=>{let accepted=false;await run(current=>{const fresh=dueOccurrenceReview(current,reviewed.request);if(fresh.kind!=='ready'||fresh.basis!==reviewed.basis)throw new Error('This occurrence changed. Review its current details.');return postOneRecurrence(current,reviewed.request.recurrenceId,reviewed.request.today,{createdBy:actorId,dueReview:reviewed.request});},{isCurrent:dueIsCurrent,scopeIsCurrent:deskScopeIsCurrent,closeAdd:false,onAccepted:()=>{accepted=true;}});return accepted;}}
         />
       )}
       {guard?.kind === "postRecurrence" && (
@@ -7385,28 +7634,17 @@ export function App() {
         />
       )}
       {guard?.kind === "settleClaim" && (
-        <ConfirmSheet
-          title="Did the money land?"
-          body={`${guard.summary}`}
-          confirmLabel="Record the transfer"
-          busy={busy}
-          onCancel={() => setGuard(null)}
-          onConfirm={() => {
-            const id = guard.claimId;
-            setGuard(null);
-            void run((current) => {
-              const chequing = current.accounts.find((account) => account.kind === "chequing" && account.active);
-              if (!chequing) throw new ValidationError("Open a chequing account to receive the settlement.");
-              return settleClaim(current, {
-                claimId: id,
-                toAccountId: chequing.id,
-                date: today,
-                createdBy: session.memberId,
-                confirmDuplicate: true,
-              });
-            });
-          }}
-        />
+        <ConfirmSheet returnFocusFallback={()=>claimReturnFocusRef.current?.isConnected?claimReturnFocusRef.current:null} className="claim-review-sheet" title="Did the money land?" notice={error||undefined} body={guard.reading.kind==='ready'?guard.reading.detail:guard.reading.reason}
+          confirmLabel='Record the transfer' confirmDisabled={guard.reading.kind!=='ready'} busy={busy}
+          content={<label className='claim-destination'>Receiving account<select aria-label='Receiving account' value={guard.destinationId} disabled={busy||openingScope!==readGuardScopeIdentity()} onChange={event=>{if(openingScope===readGuardScopeIdentity())openClaimSettlement(guard.claimId,event.currentTarget.value);}}><option value=''>Choose an account</option>{household.accounts.filter(a=>a.active&&a.scope!=='personal'&&a.currency==='CAD'&&a.kind!=='receivable').map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>}
+          review={guard.reading.kind==='ready'?dangerReview(guard):undefined}
+          onCancel={()=>setGuard(null)}
+          onConfirm={()=>{
+            if(guard.reading.kind!=='ready')return;
+            const reviewed=guard.reading,opening=dueOpening,identity=dueIdentity;
+            const currentReview=()=>opening===guardOpeningRef.current&&identity===guardIdentityRef.current&&openingScope===readGuardScopeIdentity()&&todayKey()===reviewed.request.date&&deskScopeIsCurrent();
+            void run(current=>{const fresh=claimSettlementReview(current,reviewed.request);if(fresh.kind!=='ready'||fresh.basis!==reviewed.basis)throw new Error('The claim or receiving account changed. Review it again.');return settleClaim(current,{claimId:reviewed.request.claimId,amount:`${Math.floor(reviewed.request.amountCents/100)}.${String(reviewed.request.amountCents%100).padStart(2,'0')}`,toAccountId:reviewed.request.toAccountId,date:reviewed.request.date,createdBy:reviewed.request.memberId,visibility:'household',confirmDuplicate:true,claimReview:reviewed.request});},{isCurrent:currentReview,scopeIsCurrent:deskScopeIsCurrent,closeAdd:false,onAccepted:()=>setGuard(null)});
+          }}/>
       )}
       {guard?.kind === "writeOffClaim" && (
         <ConfirmSheet
@@ -7539,7 +7777,7 @@ export function App() {
         adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded)}
         memberId={session.memberId}
         view={view}
         onGo={(next) => {
@@ -7642,6 +7880,19 @@ export function App() {
         household={household}
         session={session}
       />
+
+      {household.householdFund && ["home", "calendar", "plan", "more"].includes(tab)
+        && !charterTakeoverVisible && !onboardingInviteVisible && !adding && !swipeOpen && !confirm && !guard && !commandOpen && !fabOpen ? (
+        <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
+          household={household} today={today} view={view} memberId={session.memberId} busy={busy}
+          scenarioSource={scenarioSource}
+          onExpandedChange={setFundLedgeExpanded} onKitchen={fn => { void runKitchen(fn); }}
+          onOpenAccount={accountId => {
+            rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
+            openWallet(accountId);
+          }}
+          onOpen={openFundDestination} />
+      ) : null}
 
       {!charterTakeoverVisible ? (
       <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">

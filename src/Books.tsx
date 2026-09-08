@@ -1,3 +1,4 @@
+import type { DuplicateCommand } from "./Ledger.tsx";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
 import { lazy, useEffect, useId, useMemo, useState } from "react";
 import { KitchenNotice } from "./KitchenNotice.tsx";
@@ -96,6 +97,9 @@ export function BooksPage({
   onPayAccount,
   onAddToAccount,
   onCommand,
+  onDuplicateCommand,
+  duplicateBusy,
+  duplicateAuthorityGeneration,
   onGoMore,
   requestedPane,
   onConsumeRequestedPane,
@@ -114,6 +118,9 @@ export function BooksPage({
   onRemove: (transaction: Household["transactions"][number]) => void;
   onPayAccount: (account: Account) => void;
   onAddToAccount: (account: Account) => void;
+  onDuplicateCommand?:DuplicateCommand;
+  duplicateBusy?:boolean;
+  duplicateAuthorityGeneration?:number;
   onCommand: (command: (current: Household) => CommitResult) => void;
   onGoMore?: () => void;
   requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | null;
@@ -406,6 +413,9 @@ export function BooksPage({
           onClearSource={onClearSource}
           onChange={onChange}
           onRemove={onRemove}
+          onDuplicateCommand={onDuplicateCommand}
+          authorityGeneration={duplicateAuthorityGeneration}
+          busy={duplicateBusy}
         />
       )}
       {pane === "import" && (

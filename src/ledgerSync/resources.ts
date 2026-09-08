@@ -1,3 +1,7 @@
+import {reviewedClaimInput} from "../core/claimSettlementReview.ts";
+import {dueOccurrenceReview,reviewedDueRequest} from "../core/dueOccurrenceReview.ts";
+import { reviewedSwipeEntry } from "../core/swipe.ts";
+import { prepareDuplicateReview, reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import type { Household } from "../core/types.ts";
 import { canonical } from "./patch.ts";
 export type Resource = { key: string; value: unknown };
@@ -32,6 +36,20 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if(kind==="markDuplicate"&&args.length>2){
+    const request=reviewedDuplicateRequest(args[2],args[0],args[1]),review=prepareDuplicateReview(household,request);
+    return [{key:"duplicate-review",value:review.kind==="ready"?{kind:review.kind,basis:review.basis}:{kind:review.kind,reason:review.reason}}];
+  }
+  if(kind==='postEntry'&&args[0]&&typeof args[0]==='object'&&(args[0] as Record<string,unknown>).swipeReviewed!==undefined){
+    let value:unknown;try{value={kind:'ready',basis:reviewedSwipeEntry(household,args[0]).basis};}catch(caught){value={kind:'unavailable',reason:caught instanceof Error?caught.message:String(caught)};}
+    return [{key:'swipe-review',value}];
+  }
+  if(kind==='postOneRecurrence'&&args[2]&&typeof args[2]==='object'&&(args[2] as Record<string,unknown>).dueReview!==undefined){
+    const options=args[2] as Record<string,unknown>;let value:unknown;
+    try{const request=reviewedDueRequest(options.dueReview,args[0],args[1],options.createdBy,options.allowNotDue),reading=dueOccurrenceReview(household,request);value=reading.kind==='ready'?{kind:'ready',basis:reading.basis}:reading;}catch(e){value={kind:'unavailable',reason:e instanceof Error?e.message:String(e)};}
+    return [{key:'due-occurrence-review',value}];
+  }
+  if(kind==='settleClaim'&&args[0]&&typeof args[0]==='object'&&(args[0] as Record<string,unknown>).claimReview!==undefined){let value:unknown;try{value={kind:'ready',basis:reviewedClaimInput(household,args[0]).basis};}catch(e){value={kind:'unavailable',reason:e instanceof Error?e.message:String(e)};}return [{key:'claim-settlement-review',value}];}
   if (additive.has(kind)) return [];
   if (
     [

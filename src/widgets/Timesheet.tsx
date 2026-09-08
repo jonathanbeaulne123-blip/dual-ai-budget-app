@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { ShiftPunch } from "../ShiftPunch.tsx";
+import { useVisibleClock } from "../useVisibleClock.ts";
+import { openShiftReview } from "../openShiftReview.ts";
+import { Component, createRef, useEffect, useState, type ReactNode } from "react";
 import {
   formatTorontoTime,
   TIMESHEET_EMPTY,
@@ -12,24 +15,34 @@ import {
   workedHoursFromOpenShift,
 } from "../core/index.ts";
 import type { ShiftStreak } from "../core/shiftStreak.ts";
-import type { Household } from "../core/types.ts";
+import type { Household, LedgerView } from "../core/types.ts";
 import { AnalogClockFace } from "./AnalogClock.tsx";
+
+/** Snapshot focus before a keyed timeline disappears; never carry focus across rooms. */
+class TimesheetFocusBoundary extends Component<{scope:string;children:ReactNode},object,boolean> {
+  root=createRef<HTMLDivElement>();
+  getSnapshotBeforeUpdate() { return !!this.root.current?.contains(document.activeElement); }
+  componentDidUpdate(previous:Readonly<{scope:string;children:ReactNode}>,_state:object,hadFocus:boolean) {
+    const root=this.root.current;
+    if(hadFocus && root && previous.scope===this.props.scope && (document.activeElement===document.body || document.activeElement===root)) {
+      const destination=root.querySelector<HTMLElement>(".shift-punch-handle:not(:disabled), .timesheet-status");
+      (destination??root).focus();
+    }
+  }
+  render(){return <div ref={this.root} tabIndex={-1} className="timesheet-focus-boundary">{this.props.children}</div>;}
+}
 
 export function TimesheetGlance({ household, streak, memberId }: { household: Household; streak: ShiftStreak; memberId: string }) {
   const punch = activeOpenShift(household.kitchen, memberId);
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!punch || punch.endedAt || punch.status !== "open") return;
-    const id = window.setInterval(() => setTick((n) => n + 1), 1_000);
-    return () => window.clearInterval(id);
-  }, [punch?.startedAt, punch?.endedAt, punch?.status]);
-  if (punch?.status === "confirming") return <span>{formatPreviewHours(openShiftElapsedHours(punch))} h · review</span>;
-  if (punch) return <span>{formatPreviewHours(openShiftElapsedHours(punch))} h · live</span>;
+  const now = useVisibleClock(punch?.status === "open" && !punch.endedAt ? 15_000 : null);
+  if (punch?.status === "confirming") return <span>{formatPreviewHours(openShiftElapsedHours(punch, now.getTime()))} h · review</span>;
+  if (punch) return <span>{formatPreviewHours(openShiftElapsedHours(punch, now.getTime()))} h · live</span>;
   if (timesheetEmpty(streak, household.kitchen, memberId)) return <span>clock</span>;
   return <span>{streak.count} · {streak.spoken}</span>;
 }
 
 export function TimesheetBody({
+  view = "household",
   household,
   streak,
   memberId,
@@ -48,6 +61,7 @@ export function TimesheetBody({
   inlineConfirm,
   hideIdleActions,
 }: {
+  view?: LedgerView;
   household: Household;
   streak: ShiftStreak;
   memberId: string;
@@ -70,24 +84,9 @@ export function TimesheetBody({
 }) {
   const punch = activeOpenShift(household.kitchen, memberId);
   const conflicts = openShiftConflicts(household.kitchen, memberId);
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    setNow(new Date());
-    if (punch && !punch.endedAt && punch.status === "open") {
-      const id = window.setInterval(() => setNow(new Date()), 1_000);
-      return () => window.clearInterval(id);
-    }
-    let interval: number | null = null;
-    const delay = 60_000 - (Date.now() % 60_000) + 1;
-    const first = window.setTimeout(() => {
-      setNow(new Date());
-      interval = window.setInterval(() => setNow(new Date()), 60_000);
-    }, delay);
-    return () => {
-      window.clearTimeout(first);
-      if (interval != null) window.clearInterval(interval);
-    };
-  }, [punch?.startedAt, punch?.endedAt, punch?.status]);
+  const now = useVisibleClock(punch?.status === "open" && !punch.endedAt ? 15_000 : 60_000);
+  const [phone, setPhone] = useState(() => window.innerWidth < 720);
+  useEffect(() => { const resize=()=>setPhone(window.innerWidth<720);window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize); }, []);
   const span = todayShiftSpan(household, today, now.getTime(), memberId);
   const previewSpan = punch && previewHours ? previewClockSpan(punch.startedAt, previewHours) : null;
   const hours = punch ? workedHoursFromOpenShift(punch, now.getTime()) : null;
@@ -102,7 +101,7 @@ export function TimesheetBody({
       : `Toronto clock ${formatTorontoTime(now)}.`;
 
   return (
-    <>
+    <TimesheetFocusBoundary scope={JSON.stringify([household.environment,household.householdId,memberId,view])}>
       <AnalogClockFace now={now} span={span} previewSpan={previewSpan} label={label} />
       {previewCaption ? <p className="shift-preview-caption">{previewCaption}</p> : null}
       {conflicts.length > 1 ? (
@@ -115,9 +114,12 @@ export function TimesheetBody({
             </button>
           ))}
         </div>
+      ) : phone && punch?.status === "open" ? (
+        <ShiftPunch key={JSON.stringify([view,openShiftReview(household,memberId),busy])} punch={punch} who={who} now={now} busy={busy}
+          onStartBreak={onStartBreak} onEndBreak={onEndBreak} onClockOut={onSignOut} onAbandon={onAbandon} />
       ) : punch ? (
         <>
-          <div className="timesheet-status" data-state={punch.status}>
+          <div className="timesheet-status" data-state={punch.status} tabIndex={-1}>
             <strong>{punch.status === "confirming" ? "Ready to review" : openBreak ? `${openBreak.label} in progress` : `${who} is on the clock`}</strong>
             <span>{formatPreviewHours(hours?.workedHours ?? 0)} h working</span>
           </div>
@@ -181,6 +183,6 @@ export function TimesheetBody({
           )}
         </>
       )}
-    </>
+    </TimesheetFocusBoundary>
   );
 }

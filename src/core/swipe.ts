@@ -1,7 +1,8 @@
+import { canonical } from "../ledgerSync/patch.ts";
 import { countable } from "./budget.ts";
 import { CURRENCY } from "./money.ts";
-import { monthKeyFromDateKey, type DateKey } from "./calendar.ts";
-import { activeAccounts, activeCategories } from "./catalog.ts";
+import { isValidDateKey, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
+import { activeAccounts, activeCategories, parseAmount } from "./catalog.ts";
 import { shapeHouseholdFundEvents } from "./householdFund.ts";
 import type { Account, Environment, Household, Transaction, UndoToken } from "./types.ts";
 
@@ -69,6 +70,7 @@ function eligibleExpenseSubcategory(household: Household, subcategoryId: string 
     && category.transactionType === "expense"
     && category.active
     && category.parentId
+    && household.categories.some(parent=>parent.id===category.parentId&&parent.active&&parent.recordType==="group"&&parent.transactionType==="expense")
   )) ?? null;
 }
 
@@ -155,4 +157,37 @@ export function swipeCategoryAccessibleName(amountLabel: string, categoryName: s
 
 export function swipeMoreAccessibleName(amountLabel: string): string {
   return `Open Add with ${amountLabel}. This does not post.`;
+}
+
+
+export type SwipeCategoryChoice = ({kind:"observed"} & ObservedSwipeCategory) | {kind:"household-suggestion";subcategoryId:string;name:string};
+/** Incoming household catalog suggestions never become fabricated personal observations. */
+export function swipeCategoryChoices(household:Household,memberId:string,today:DateKey):SwipeCategoryChoice[]{
+  if(!household.members.some(member=>member.id===memberId&&member.active))return [];
+  const eligible=activeCategories(household).filter(category=>category.recordType==='category'&&category.transactionType==='expense'&&category.parentId&&household.categories.some(parent=>parent.id===category.parentId&&parent.active&&parent.recordType==='group'&&parent.transactionType==='expense'));
+  const ids=new Set(eligible.map(category=>category.id));
+  const observed=observedSwipeCategories(household,memberId,today).filter(row=>ids.has(row.subcategoryId)).map(row=>({...row,kind:'observed' as const}));
+  const used=new Set(observed.map(row=>row.subcategoryId));
+  const suggested=eligible.filter(category=>{if(used.has(category.id))return false;used.add(category.id);return true;}).map(category=>({kind:'household-suggestion' as const,subcategoryId:category.id,name:category.name}));
+  return [...observed,...suggested].slice(0,SWIPE_CATEGORY_LIMIT);
+}
+
+/** Bind the named Post to its displayed card, category, Fund and date at queue drain. */
+export function swipePurchaseReview(household:Household,memberId:string,date:DateKey,amount:string,subcategoryId:string){
+  const member=household.members.find(row=>row.id===memberId&&row.active),fund=household.householdFund;
+  if(!member||!fund||fund.custodianMemberId!==memberId||!isValidDateKey(date)||parseAmount(amount)<=0)throw new Error('Review this purchase from the current Shared Till.');
+  const resolved=resolveSwipeCardAccount(household,memberId);if(resolved.kind!=='ready')throw new Error('Choose the card in Add.');
+  const account=household.accounts.find(row=>row.id===resolved.accountId),category=eligibleExpenseSubcategory(household,subcategoryId),parent=category&&household.categories.find(row=>row.id===category.parentId&&row.active&&row.recordType==='group'&&row.transactionType==='expense');
+  if(!account||!category||!parent)throw new Error('Choose a current household expense category.');
+  return {accountId:account.id,fundId:fund.id,basis:canonical([household.environment,household.householdId,memberId,date,amount,account,category,parent,fund])};
+}
+
+/** Existing Post input plus a marker; wire carries no names or source snapshots. */
+export function reviewedSwipeEntry(household:Household,value:unknown){
+  if(!value||typeof value!=='object'||Array.isArray(value))throw Error('INVALID_SWIPE_REVIEW');
+  const input=value as Record<string,unknown>,funding=input.funding as {fundId?:unknown;fundedCents?:unknown;destinationAccountId?:unknown}|undefined;
+  if(input.swipeReviewed!==true||input.type!=='expense'||input.visibility!=='household'||input.refundOfId||input.reversalOfId||!['createdBy','date','accountId','subcategoryId'].every(key=>typeof input[key]==='string'&&(input[key] as string).length<=512)||(typeof input.amount!=='string'&&typeof input.amount!=='number'))throw Error('INVALID_SWIPE_REVIEW');
+  const review=swipePurchaseReview(household,input.createdBy as string,input.date as string,String(input.amount),input.subcategoryId as string);
+  if(input.accountId!==review.accountId||funding?.fundId!==review.fundId||funding?.destinationAccountId!==review.accountId||funding?.fundedCents!==parseAmount(input.amount))throw Error('INVALID_SWIPE_REVIEW');
+  return review;
 }

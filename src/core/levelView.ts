@@ -38,6 +38,9 @@ export const LEVEL_VIEW = {
   markRadius: 4,
 } as const;
 
+export type LevelGeometry = { [Key in keyof typeof LEVEL_VIEW]: typeof LEVEL_VIEW[Key] extends number ? number : string };
+export const LEVEL_PHONE_VIEW: LevelGeometry = { ...LEVEL_VIEW, width: 344, height: 148, left: 12, right: 332, top: 26, axisY: 124, labelY: 145, markRadius: 3 };
+
 /**
  * A below-buffer run shorter than this doesn't earn a headline rung or a
  * shaded band — one bar, reused for both, so the drawing and the sentence
@@ -88,7 +91,7 @@ function monthNameOnly(monthKey: MonthKey): string {
  * tick — which needs the household `levelDrawing` never sees — can be
  * placed with the exact same ruler rather than a second, drifting one.
  */
-export function levelX(date: DateKey, monthKey: MonthKey): number {
+export function levelX(date: DateKey, monthKey: MonthKey, view: LevelGeometry = LEVEL_VIEW): number {
   const days = daysInMonthKey(monthKey);
   const span = Math.max(1, days - 1);
   // A day-of-month digit alone misreads a date one day past month end (the
@@ -97,7 +100,7 @@ export function levelX(date: DateKey, monthKey: MonthKey): number {
   // the same x as this month's last day, which is exactly where it belongs.
   const offset = calendarDaysBetween(monthStartKey(monthKey), date);
   const clamped = Math.min(Math.max(offset, 0), days - 1);
-  return LEVEL_VIEW.left + (clamped * (LEVEL_VIEW.right - LEVEL_VIEW.left)) / span;
+  return view.left + (clamped * (view.right - view.left)) / span;
 }
 
 /** A step, never a curve: flat at the previous balance until the new x, then a vertical jump. */
@@ -119,18 +122,18 @@ function corePresentation(walk: FundWalk): "ready" | "day-one" | "untied" {
 }
 
 /** The walk, drawn. Pure geometry — nothing here posts, mutates, or assumes an amount. */
-export function levelDrawing(walk: FundWalk): LevelDrawing {
+export function levelDrawing(walk: FundWalk, view: LevelGeometry = LEVEL_VIEW): LevelDrawing {
   const presentation = corePresentation(walk);
   const monthKey = walk.monthKey;
-  const todayX = levelX(walk.today, monthKey);
+  const todayX = levelX(walk.today, monthKey, view);
 
   const balances = walk.points.map((point) => point.balanceCents);
   const peakCents = Math.max(0, ...balances);
   const troughCents = Math.min(0, ...balances);
   const range = peakCents - troughCents;
-  const room = LEVEL_VIEW.axisY - LEVEL_VIEW.top;
+  const room = view.axisY - view.top;
   const pxPerCent = range > 0 ? room / range : 0;
-  const zeroY = pxPerCent > 0 ? LEVEL_VIEW.top + peakCents * pxPerCent : LEVEL_VIEW.axisY;
+  const zeroY = pxPerCent > 0 ? view.top + peakCents * pxPerCent : view.axisY;
   const y = (cents: number) => zeroY - cents * pxPerCent;
   const bufferY = walk.bufferCents > 0 ? y(walk.bufferCents) : zeroY;
 
@@ -145,8 +148,8 @@ export function levelDrawing(walk: FundWalk): LevelDrawing {
     if (actualPoints.length > 0) {
       const first = actualPoints[0]!;
       actualPath = stepPath(
-        actualPoints.slice(1).map((point) => ({ x: levelX(point.date, monthKey), y: y(point.balanceCents) })),
-        levelX(first.date, monthKey),
+        actualPoints.slice(1).map((point) => ({ x: levelX(point.date, monthKey, view), y: y(point.balanceCents) })),
+        levelX(first.date, monthKey, view),
         y(first.balanceCents),
         todayX,
       );
@@ -156,9 +159,9 @@ export function levelDrawing(walk: FundWalk): LevelDrawing {
   let projectedPath = "";
   if (showLine) {
     const projectedPoints = walk.points.filter((point) => !point.actual);
-    const monthEndX = levelX(monthEndKey(monthKey), monthKey);
+    const monthEndX = levelX(monthEndKey(monthKey), monthKey, view);
     projectedPath = stepPath(
-      projectedPoints.map((point) => ({ x: levelX(point.date, monthKey), y: y(point.balanceCents) })),
+      projectedPoints.map((point) => ({ x: levelX(point.date, monthKey, view), y: y(point.balanceCents) })),
       todayX,
       y(walk.todayBalanceCents),
       monthEndX,
@@ -169,8 +172,8 @@ export function levelDrawing(walk: FundWalk): LevelDrawing {
     ? walk.belowBufferRuns
       .filter((run) => run.days >= LEVEL_BAND_MIN_DAYS)
       .map((run) => {
-        const x = levelX(run.fromDate, monthKey);
-        return { x, width: levelX(addDays(run.toDate, 1), monthKey) - x };
+        const x = levelX(run.fromDate, monthKey, view);
+        return { x, width: levelX(addDays(run.toDate, 1), monthKey, view) - x };
       })
     : [];
 
@@ -178,14 +181,14 @@ export function levelDrawing(walk: FundWalk): LevelDrawing {
     ? walk.points
       .filter((point) => point.kind === "contribution")
       .map((point) => ({
-        x: levelX(point.date, monthKey),
+        x: levelX(point.date, monthKey, view),
         y: y(point.balanceCents),
         label: `+${formatCad(point.deltaCents)}`,
         estimated: point.estimated,
       }))
     : [];
 
-  const dryMark = showLine && walk.dryDate ? { x: levelX(walk.dryDate, monthKey), y: zeroY } : null;
+  const dryMark = showLine && walk.dryDate ? { x: levelX(walk.dryDate, monthKey, view), y: zeroY } : null;
 
   return {
     presentation, pxPerCent, zeroY, bufferY, todayX,

@@ -434,6 +434,24 @@ export class LedgerSyncClient {
       void this.connect();
     return result;
   }
+  /** Read a submitted draft's authority without recomputing or reposting its money. */
+  async submissionStatus(id: string): Promise<"accepted" | "pending" | "rejected" | "missing"> {
+    await this.localReady;
+    if (this.stopped || !this.store) throw new Error("SCOPE_CLOSED");
+    if (this.accepted.has(id)) return "accepted";
+    const response = await fetch(this.path(`receipt?id=${encodeURIComponent(id)}`), { headers: { Authorization: `Bearer ${await this.options.token()}` } });
+    const value = await response.json();
+    if (this.stopped) throw new Error("SCOPE_CLOSED");
+    if (response.ok) {
+      if (value.version !== 2 || value.receipt?.id !== id || value.receipt.actor !== this.options.scope.memberId) throw new Error("RECEIPT_RECOVERY_REQUIRED");
+      return "accepted";
+    }
+    if (value.error !== "RECEIPT_NOT_FOUND") throw new Error(value.error ?? "RECEIPT_RECOVERY_FAILED");
+    if (this.pending.has(id)) return "pending";
+    const rejected = await this.store.rejected();
+    if (this.stopped) throw new Error("SCOPE_CLOSED");
+    return rejected.some(row => row.command.id === id) ? "rejected" : "missing";
+  }
   async verifyImport() {
     const response=await fetch(this.path('parity'),{method:'POST',headers:{Authorization:`Bearer ${await this.options.token()}`}});
     const report=await response.json();if(!response.ok)throw new Error(report.error??'IMPORT_PROOF_FAILED');return report;

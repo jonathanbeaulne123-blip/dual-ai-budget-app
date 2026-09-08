@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { previewHoursLabel, previewHoursQuarter } from "./core/index.ts";
+
+import { useVisibleClock } from "./useVisibleClock.ts";
 
 const QUARTER_HOUR_MS = 15 * 60_000;
 const QUARTER_ROUNDING_MIDPOINT_MS = QUARTER_HOUR_MS / 2;
@@ -28,29 +30,31 @@ export function ShiftElapsedHint({
   prefix?: string;
   onQuarterHours?: (hours: number) => void;
 }) {
-  const [nowMs, setNowMs] = useState(() => Date.now());
+  const nowMs = useVisibleClock(1_000).getTime();
+  const hasQuarterCallback = Boolean(onQuarterHours);
   const quarterCallback = useRef(onQuarterHours);
   quarterCallback.current = onQuarterHours;
 
   useEffect(() => {
-    setNowMs(Date.now());
-    const id = window.setInterval(() => setNowMs(Date.now()), 1_000);
-    return () => window.clearInterval(id);
-  }, [startedAt]);
-
-  useEffect(() => {
-    if (!quarterCallback.current) return;
+    if (!hasQuarterCallback) return;
     let timer: number | null = null;
+    const clear = () => { if (timer !== null) window.clearTimeout(timer); timer = null; };
     const notifyAndSchedule = () => {
+      clear();
+      if (document.visibilityState === "hidden") return;
       const now = Date.now();
       quarterCallback.current?.(previewHoursQuarter(startedAt, now));
       timer = window.setTimeout(notifyAndSchedule, nextQuarterPreviewDelay(startedAt, now));
     };
     notifyAndSchedule();
+    document.addEventListener("visibilitychange", notifyAndSchedule);
+    window.addEventListener("pageshow", notifyAndSchedule);
     return () => {
-      if (timer != null) window.clearTimeout(timer);
+      clear();
+      document.removeEventListener("visibilitychange", notifyAndSchedule);
+      window.removeEventListener("pageshow", notifyAndSchedule);
     };
-  }, [startedAt]);
+  }, [startedAt, hasQuarterCallback]);
 
   return <p className="muted">{prefix}{previewHoursLabel(startedAt, nowMs)}</p>;
 }

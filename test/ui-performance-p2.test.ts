@@ -44,6 +44,30 @@ describe("UI P2 scheduling budgets", () => {
     expect(container.textContent).toContain("h since");
   });
 
+  it("stops both elapsed timers while hidden and resumes once from wall-clock time", () => {
+    let visibility: DocumentVisibilityState = "visible";
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility);
+    const onQuarterHours = vi.fn();
+    act(() => root.render(createElement(ShiftElapsedHint, { startedAt: "2026-08-30T11:00:00.000Z", onQuarterHours })));
+    expect(onQuarterHours).toHaveBeenLastCalledWith(1);
+    expect(vi.getTimerCount()).toBe(2);
+    act(() => { visibility = "hidden"; document.dispatchEvent(new Event("visibilitychange")); });
+    expect(vi.getTimerCount()).toBe(0);
+    const calls = onQuarterHours.mock.calls.length;
+    act(() => { vi.advanceTimersByTime(3 * 60 * 60_000); window.dispatchEvent(new Event("pageshow")); });
+    expect(onQuarterHours).toHaveBeenCalledTimes(calls);
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => { visibility = "visible"; document.dispatchEvent(new Event("visibilitychange")); });
+    expect(onQuarterHours).toHaveBeenCalledTimes(calls + 1);
+    expect(onQuarterHours).toHaveBeenLastCalledWith(4);
+    expect(container.textContent).toContain("4");
+    expect(vi.getTimerCount()).toBe(2);
+    act(() => root.render(createElement(ShiftElapsedHint, { startedAt: "2026-08-30T11:00:00.000Z" })));
+    expect(vi.getTimerCount()).toBe(1);
+    act(() => root.render(null));
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("schedules pad changes at the next quarter-hour rounding boundary", () => {
     const start = Date.parse("2026-08-30T11:52:31.000Z");
     const now = Date.parse("2026-08-30T12:00:00.000Z");
@@ -67,7 +91,8 @@ describe("UI P2 scheduling budgets", () => {
       memberId,
       streak: shiftPostingStreak(live, "2026-08-30"),
     })));
-    expect(interval).toHaveBeenCalledWith(expect.any(Function), 1_000);
+    expect(interval).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(1);
   });
 
   it("coalesces scroll and resize geometry reads to one publication per frame", () => {

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import { formatCad } from "../core/money.ts";
 import { paperBarPercents, type PaperBarRow, type PaperSparkPoint } from "../core/officeWide.ts";
 
@@ -56,7 +56,7 @@ export function WaxSeal({
   pending?: boolean;
   tone?: "post" | "due" | "close" | "tan";
   pressed?: boolean;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   ariaLabel?: string;
 }) {
   return (

@@ -1,4 +1,9 @@
-import { useMemo, useState, type ReactNode } from "react";
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
+import { PhoneSpread } from "./PhoneSpread.tsx";
+import { ApronCard, useApronReceipt } from "./ApronCard.tsx";
+import type { PhoneChapter } from "./core/phoneSpread.ts";
+import type { FundDestination } from "./FundStage.tsx";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   auditOpinion,
   formatCad,
@@ -8,6 +13,8 @@ import {
   phoneDrawerIds,
   phoneRailOrder,
   phoneStoryIds,
+  phoneFoldOrder,
+  activeOpenShift,
   instrumentIsOpen,
   revealPhoneInstrument,
   deskMonthSeals,
@@ -29,7 +36,8 @@ import { JarsBody, JarsGlance } from "./widgets/Jars.tsx";
 import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
-import { NotebookBody, PaperTile, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
+import { NotebookBody, PaperTile, WaxSeal } from "./theme/PaperTheme.tsx";
+import { PhoneFold } from "./PhoneFold.tsx";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 /**
@@ -47,14 +55,19 @@ type Spec = {
 };
 
 export function OfficePhone({
-  household, dashboard, sill, reading, layout, onLayout,
+  scenarioSource,
+  household, booksHousehold = household, view = "household", onOpenFundDestination, dashboard, sill, reading, layout, onLayout,
   today, memberId, busy, adding, form, mode, error, categories, postLabel,
   integrityFindings = [],
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
   onKitchen, onMarkPaid, onGo,
 }: {
+  scenarioSource?: ScenarioSourceContext | null;
   household: Household;
+  booksHousehold?: Household;
+  view?: "household" | "personal";
+  onOpenFundDestination?: (destination: FundDestination) => void;
   dashboard: Dashboard;
   sill: SillOverview;
   reading: WeatherReading;
@@ -89,6 +102,26 @@ export function OfficePhone({
   integrityFindings?: Finding[];
 }) {
   const [chalkOpen, setChalkOpen] = useState(false);
+  const receipt = useApronReceipt(booksHousehold, memberId);
+  const [chapter, setChapter] = useState<PhoneChapter | null>(null);
+  const cover = useRef<HTMLElement | null>(null);
+  const officeRoot = useRef<HTMLDivElement>(null);
+  const coverIndex = useRef(0);
+  const spreadScope = `${booksHousehold.environment}:${booksHousehold.householdId}:${memberId}:${view}`;
+  useEffect(() => { setChapter(null); }, [spreadScope, adding]);
+  const closeChapter = () => {
+    setChapter(null);
+    queueMicrotask(() => {
+      const current = cover.current?.isConnected ? cover.current : officeRoot.current?.querySelectorAll<HTMLButtonElement>(".ph-seals button")[coverIndex.current];
+      current?.focus();
+    });
+  };
+  const openChapter = (next: PhoneChapter, invokingCover: HTMLButtonElement) => {
+    cover.current = invokingCover;
+    coverIndex.current = next === "in" ? 0 : next === "out" ? 1 : 2;
+    onLayout({ ...layout, expanded: null });
+    setChapter(next);
+  };
   const opinion = useMemo(() => auditOpinion(household), [household]);
   const findings = integrityFindings;
   const streak = useMemo(() => shiftPostingStreak(household, today), [household, today]);
@@ -121,10 +154,6 @@ export function OfficePhone({
 
   const seals = deskMonthSeals(dashboard.month);
 
-  function tapSeal(go: InstrumentId) {
-    onLayout(revealPhoneInstrument(layout, go));
-  }
-
   const kindLabel: Partial<Record<InstrumentId, string>> = {
     blotter: "Month",
     wallet: "Wallet",
@@ -150,6 +179,7 @@ export function OfficePhone({
       aria: `Pad. ${form.note || "Post groceries."}`,
       body: (
         <CalculatorBody
+          scopeKey={JSON.stringify([household.environment, household.householdId, memberId, view])}
           form={form} setForm={onForm} mode={mode} household={household}
           accounts={household.accounts} categories={categories} postLabel={postLabel}
           error={error} busy={busy} onPost={onPost} onMore={onMore}
@@ -164,7 +194,7 @@ export function OfficePhone({
       glance: <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
       aria: "Shifts.",
       body: (
-        <TimesheetBody
+        <TimesheetBody view={view}
           household={household} streak={streak} memberId={memberId} memberName={memberName} today={today} busy={busy}
           onClockIn={onClockIn} onAbandon={onAbandonShift}
           onStartBreak={onStartBreak} onEndBreak={onEndBreak}
@@ -178,7 +208,7 @@ export function OfficePhone({
       name: "Goals",
       glance: <JarsGlance dashboard={dashboard} />,
       aria: "Goals.",
-      body: <JarsBody dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
+      body: <JarsBody view={view} booksHousehold={booksHousehold} memberId={memberId} dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
     },
     lamp: {
       kind: kindLabel.lamp ?? "Health",
@@ -211,61 +241,43 @@ export function OfficePhone({
   const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : null;
   const panelId = openId ? `ph-notebook-${openId}` : "ph-notebook";
 
+  const foldItems = phoneFoldOrder({
+    apron: !!receipt,
+    stories: storyIds,
+    ownShift: !!activeOpenShift(household.kitchen, memberId),
+    overdue: mailWarn,
+    health: lampLit,
+    needs: !!sill.needsMe,
+  });
+  const foldContent = (id: typeof foldItems[number]["id"]) => {
+    if (id === "apron") return receipt ? <ApronCard receipt={receipt} household={booksHousehold} today={today} /> : null;
+    if (id === "weather") return <WeatherRibbon reading={reading} />;
+    if (id === "needs") return <div className="ph-sill"><span className="ph-needs">{sill.needsMe}</span></div>;
+    if (id === "seals") return sealsContent;
+    const spec = specs[id];
+    if (!spec) return null;
+    return <PaperTile kind={spec.kind} name={spec.name} value={spec.glance}
+      warn={spec.warn} active={instrumentIsOpen(layout, id)}
+      onClick={() => setExpanded(id)} ariaLabel={spec.aria} />;
+  };
+  const sealsContent = (
+    <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
+      <WaxSeal label="Money in" tone="post" pending={seals.inCents === 0}
+        value={formatCad(seals.inCents)} sub="posted income this month" pressed={chapter === "in"} onClick={event => openChapter("in", event.currentTarget)} />
+      <WaxSeal label="Money out" tone="due" pending={seals.outCents === 0}
+        value={formatCad(seals.outCents)} sub="posted expenses only" pressed={chapter === "out"} onClick={event => openChapter("out", event.currentTarget)} />
+      <WaxSeal label="Leftover spend" tone="close" value={formatCad(seals.leftoverCents)}
+        sub="posted in minus posted expenses" pending={seals.inCents === 0 && seals.outCents === 0}
+        pressed={chapter === "leftover"} onClick={event => openChapter("leftover", event.currentTarget)} />
+    </div>
+  );
+
   return (
-    <div className={`office-phone office-phone-c ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
-      <WeatherRibbon reading={reading} />
+    <div ref={officeRoot} className={`office-phone office-phone-c ${adding ? "is-adding" : ""}`} data-desk={deskKey}>
+      <div inert={adding || undefined}><PhoneFold items={foldItems} render={foldContent} /></div>
 
-      {sill.needsMe && (
-        <div className="ph-sill">
-          <span className="ph-needs">{sill.needsMe}</span>
-        </div>
-      )}
-
-      <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
-        <WaxSeal
-          label="Money in"
-          tone="post"
-          pending={seals.inCents === 0}
-          value={formatCad(seals.inCents)}
-          sub="posted income this month"
-          onClick={() => tapSeal("blotter")}
-        />
-        <WaxSeal
-          label="Money out"
-          tone="due"
-          pending={seals.outCents === 0}
-          value={formatCad(seals.outCents)}
-          sub="posted expenses only"
-          onClick={() => tapSeal("blotter")}
-        />
-        <WaxSeal
-          label="Leftover spend"
-          tone="close"
-          value={formatCad(seals.leftoverCents)}
-          sub="posted in minus posted expenses"
-          pending={seals.inCents === 0 && seals.outCents === 0}
-          onClick={() => onGo("plan")}
-        />
-      </div>
-
-      <StoryStrip>
-        {storyIds.map((id) => {
-          const spec = specs[id];
-          if (!spec) return null;
-          return (
-            <PaperTile
-              key={id}
-              kind={spec.kind}
-              name={spec.name}
-              value={spec.glance}
-              warn={spec.warn}
-              active={instrumentIsOpen(layout, id)}
-              onClick={() => setExpanded(id)}
-              ariaLabel={spec.aria}
-            />
-          );
-        })}
-      </StoryStrip>
+      {chapter && !adding ? <PhoneSpread scenarioSource={scenarioSource} key={spreadScope} chapter={chapter} household={booksHousehold} memberId={memberId} view={view} today={today} busy={busy}
+        onClose={closeChapter} onKitchen={onKitchen} onOpen={destination => { setChapter(null); if (onOpenFundDestination) onOpenFundDestination(destination); else onGo(destination === "shelf" ? "plan" : "ledger"); }} /> : null}
 
       {openSpec && openId && (
         <NotebookBody
