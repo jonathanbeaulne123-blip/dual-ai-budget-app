@@ -19,6 +19,11 @@ type Inspection = {
 
 const startup = vi.hoisted(() => ({
   v2: false,
+  v2AutoAdopt: true,
+  v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
+  scenarioSource: null as import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null,
+  saveBarrier: null as {household: Household; promise: Promise<void>} | null,
+  replicas: [] as import("../src/storage.ts").HouseholdReplicaSummary[],
   cached: null as Household | null,
   inspections: [] as Array<Promise<Inspection> | Error>,
   inspectOptions: [] as Array<{ expectedAuditHash?: string }>,
@@ -48,11 +53,12 @@ vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
     constructor(options: import("../src/ledgerSync/client.ts").ClientOptions) {
       this.options = options;
       if (!startup.v2) return new actual.LedgerSyncClient(options);
+      startup.v2Clients.push(options);
     }
     async start() {
       // Models an authenticated, validated canonical snapshot. SQL readiness
       // must not be a second commit authority for this already-accepted state.
-      await this.options.adopt(startup.cached!);
+      if (startup.v2AutoAdopt) await this.options.adopt(startup.cached!);
       this.options.status("ready");
     }
     async destroy() {}
@@ -78,12 +84,13 @@ vi.mock("../src/storage.ts", async (importOriginal) => {
     ...actual,
     peekHousehold: vi.fn(() => startup.cached),
     loadHousehold: vi.fn(async () => startup.cached),
-    listHouseholdReplicas: vi.fn(async () => []),
+    listHouseholdReplicas: vi.fn(async () => startup.replicas),
     loadPersonalReplica: vi.fn(async () => null),
     saveHousehold: vi.fn(async (household: Household) => {
       startup.saveCalls += 1;
       startup.savedHouseholds.push(household);
       startup.lifecycle.push(`save:${household.transactions.length}`);
+      if (startup.saveBarrier?.household === household) await startup.saveBarrier.promise;
     }),
   };
 });
@@ -168,7 +175,10 @@ vi.mock("../src/api.ts", async (importOriginal) => {
 
 vi.mock("../src/deferredSurfaces.tsx", () => ({
   DeferredSurface: ({ children }: { children: ReactNode }) => children,
-  DeferredOffice: () => createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell"),
+  DeferredOffice: ({scenarioSource}: {scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null}) => {
+    startup.scenarioSource = scenarioSource ?? null;
+    return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
+  },
   DeferredBooksPage: () => null,
   DeferredCalendarPage: () => null,
   DeferredWorkShiftPage: () => null,
@@ -282,12 +292,25 @@ function storeAuthSession(identity: { email: string; subject: string }, expiresA
   }));
 }
 
+async function acceptedScenarioFixture(): Promise<Household> {
+  const h = markSynchronized({...completedExistingBooksHousehold(), linked: true});
+  h.booksAcceptedHash = await financialAuditHash(h);
+  const selected = JSON.parse(localStorage.getItem("hearth:session:v1:development")!);
+  localStorage.setItem("hearth:session:v1:development", JSON.stringify({...selected, householdId: h.householdId}));
+  return h;
+}
+
 describe("cached-shell startup books gate", () => {
   let root: Root;
   let container: HTMLDivElement;
 
   beforeEach(async () => {
     startup.v2 = false;
+    startup.v2AutoAdopt = true;
+    startup.v2Clients = [];
+    startup.scenarioSource = null;
+    startup.saveBarrier = null;
+    startup.replicas = [];
     setContinuityStore(createMemoryContinuityStore());
     localStorage.clear();
     sessionStorage.clear();
@@ -1424,4 +1447,189 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
     expect(container.textContent).toContain("How much came in?");
   });
+  it("issues an accepted cached V2 pair for the scenario without legacy SQL", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
+    startup.cached = await acceptedScenarioFixture();
+    const engine = await import("../src/ledger/engine.ts");
+    vi.spyOn(engine, "ingestHouseholdBooks").mockClear().mockImplementation(() => new Promise(() => {}));
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"), 4000);
+    const source = startup.scenarioSource!;
+    expect(source.household).toBe(startup.cached);
+    expect(source.accepted.scope).toMatchObject({memberId: "MEM-002", viewerRoom: "household", targetRoom: "household"});
+    expect(source.isCurrent()).toBe(true);
+    expect(source.accepted.acceptedStateId.length).toBeLessThanOrEqual(512);
+    expect(engine.ingestHouseholdBooks).not.toHaveBeenCalled();
+    expect(container.querySelector("[data-testid='cached-office-shell']")).not.toBeNull();
+  });
+
+  it("keeps proven Personal completeness across a room change but invalidates prior choices", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
+    startup.cached = await acceptedScenarioFixture();
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"), 4000);
+    const shared = startup.scenarioSource!;
+    const personal = container.querySelectorAll<HTMLButtonElement>(".view-switch button")[1]!;
+    act(() => personal.click());
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.scope.viewerRoom).toBe("personal"));
+    expect(shared.isCurrent()).toBe(false);
+    expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready");
+    expect(startup.scenarioSource?.accepted.scope.authorityGeneration).not.toBe(shared.accepted.scope.authorityGeneration);
+    expect(startup.v2Clients).toHaveLength(1);
+  });
+
+  it("leaves uncertain legacy Personal unavailable while keeping the accepted shell readable", async () => {
+    startup.cached = await acceptedScenarioFixture();
+    storeAuthSession({email: "jonathan@example.com", subject: "google-sub-jonathan"});
+    await act(async () => root.render(createElement(App)));
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+    expect(startup.scenarioSource?.accepted.ownBooks).toBe("unavailable");
+    expect(container.querySelector("[data-testid='cached-office-shell']")).not.toBeNull();
+    expect(startup.scenarioSource?.isCurrent()).toBe(true);
+  });
+
+  it("invalidates auth A immediately and refuses its delayed adoption after B accepts", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "0");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    storeAuthSession({email: "jonathan@example.com", subject: "google-sub-jonathan"});
+    startup.cached = await acceptedScenarioFixture();
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"), 4000);
+    const sourceA = startup.scenarioSource!, clientA = startup.v2Clients[0]!;
+    startup.v2AutoAdopt = false;
+    const lateA = {...startup.cached, revision: startup.cached.revision + 1};
+    let release!: () => void;
+    startup.saveBarrier = {household: lateA, promise: new Promise<void>(resolve => { release = resolve; })};
+    let pendingA!: Promise<void>;
+    act(() => { pendingA = Promise.resolve(clientA.adopt(lateA)); });
+    await waitForUi(() => expect(startup.savedHouseholds.includes(lateA)).toBe(true));
+    const stored = JSON.parse(localStorage.getItem("hearth:v1:supabase-auth:development")!);
+    act(() => {
+      localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({...stored, userId: "auth-user-b", sessionId: "22222222-2222-4222-8222-222222222222", googleSubject: "google-sub-b"}));
+      window.dispatchEvent(new CustomEvent("hearth:supabase-session-changed", {detail: {environment: "development"}}));
+      expect(sourceA.isCurrent()).toBe(false);
+    });
+    await waitForUi(() => expect(startup.v2Clients).toHaveLength(2));
+    expect(startup.scenarioSource?.accepted.ownBooks).not.toBe("ready");
+    const currentB = {...startup.cached, revision: startup.cached.revision + 2};
+    await act(async () => { await startup.v2Clients[1]!.adopt(currentB); });
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.scope.subject).toBe("auth-user-b"));
+    expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready");
+    await act(async () => { release(); await pendingA; });
+    expect(startup.scenarioSource?.household).toBe(currentB);
+    expect(startup.scenarioSource?.accepted.scope.subject).toBe("auth-user-b");
+    const saves = startup.saveCalls;
+    await act(async () => { await clientA.adopt({...lateA}); });
+    expect(startup.saveCalls).toBe(saves);
+  });
+
+  it("keeps the accepted scenario scope during a token-only refresh", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "0");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    storeAuthSession({email: "jonathan@example.com", subject: "google-sub-jonathan"});
+    startup.cached = await acceptedScenarioFixture();
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"), 4000);
+    const source = startup.scenarioSource!, stored = JSON.parse(localStorage.getItem("hearth:v1:supabase-auth:development")!);
+    act(() => {
+      localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({...stored, accessToken: "rotated-test-token", refreshToken: "rotated-test-refresh", expiresAt: stored.expiresAt + 1000}));
+      window.dispatchEvent(new CustomEvent("hearth:supabase-session-changed", {detail: {environment: "development"}}));
+    });
+    expect(source.isCurrent()).toBe(true);
+    expect(startup.v2Clients).toHaveLength(1);
+    expect(JSON.stringify(source.accepted)).not.toContain("rotated-test-token");
+  });
+
+  it("still adopts accepted V2 updates after a failed household switch", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
+    startup.cached = await acceptedScenarioFixture();
+    startup.replicas = [startup.cached.householdId, "missing-household"].map((id, index) => ({householdId: id, name: index ? "Unavailable house" : "Current house", environment: "development", revision: 1, memberIds: ["MEM-002"], updatedAt: null}));
+    const storage = await import("../src/storage.ts");
+    vi.spyOn(storage, "selectHouseholdReplica").mockRejectedValue(new Error("Fixture could not open that household"));
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"));
+    act(() => button("Open Unavailable house").click());
+    await waitForUi(() => expect(container.textContent).toContain("Fixture could not open that household"));
+    const next = {...startup.cached, revision: startup.cached.revision + 1};
+    await act(async () => { await startup.v2Clients[0]!.adopt(next); });
+    expect(startup.scenarioSource?.household).toBe(next);
+    expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready");
+  });
+
+  it.each([false, true])("binds a delayed legacy complete pair to its initiating auth (change=%s)", async changed => {
+    vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    const identity = {email: "jonathan@example.com", subject: "google-sub-jonathan"};
+    const base = await acceptedScenarioFixture();
+    const linked = linkGoogleIdentity(base, {memberId: "MEM-002", ...identity, displayName: "Jonathan", grantedScopes: ["openid", "email"]}).household;
+    startup.cached = markSynchronized({...linked, linked: true});
+    startup.cached.booksAcceptedHash = await financialAuditHash(startup.cached);
+    storeAuthSession(identity);
+    const remote = markSynchronized({...startup.cached, revision: startup.cached.revision + 1, baseRevision: startup.cached.revision + 1});
+    const emptyPersonal = splitForSync(catalogHousehold(), "MEM-002").personal;
+    expect(emptyPersonal.transactions).toEqual([]);
+    let release!: (value: PersonalEnvelope | null) => void;
+    startup.cloudRemote = Promise.resolve(remote);
+    startup.cloudPersonal = new Promise(resolve => { release = resolve; });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ok: true}), {status: 200}));
+    await act(async () => root.render(createElement(App)));
+    await startValidation();
+    await waitForUi(() => expect(startup.consistentPullCalls).toBeGreaterThan(0));
+    if (changed) {
+      const auth = JSON.parse(localStorage.getItem("hearth:v1:supabase-auth:development")!);
+      act(() => {
+        localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({...auth, userId: "auth-user-b", sessionId: "22222222-2222-4222-8222-222222222222", googleSubject: "google-sub-b"}));
+        window.dispatchEvent(new CustomEvent("hearth:supabase-session-changed", {detail: {environment: "development"}}));
+      });
+    }
+    await act(async () => { release(emptyPersonal); });
+    if (changed) {
+      await settleUi(200);
+      expect(startup.savedHouseholds.some(row => row.revision === remote.revision)).toBe(false);
+      expect(startup.scenarioSource?.accepted.ownBooks).not.toBe("ready");
+    } else {
+      await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"));
+      expect(startup.scenarioSource?.accepted.acceptedRevision).toBe(remote.revision);
+      expect(splitForSync(startup.scenarioSource!.household, "MEM-002").personal.transactions).toEqual([]);
+    }
+  });
+
+  it("does not revive the original V2 client after A to B to A in one render", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "0");
+    vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
+    storeAuthSession({email: "jonathan@example.com", subject: "google-sub-jonathan"});
+    startup.cached = await acceptedScenarioFixture();
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"));
+    const originalClient = startup.v2Clients[0]!, originalSource = startup.scenarioSource!;
+    startup.v2AutoAdopt = false;
+    const originalAuth = localStorage.getItem("hearth:v1:supabase-auth:development")!;
+    const parsed = JSON.parse(originalAuth);
+    act(() => {
+      localStorage.setItem("hearth:v1:supabase-auth:development", JSON.stringify({...parsed, userId: "auth-user-b", sessionId: "22222222-2222-4222-8222-222222222222", googleSubject: "google-sub-b"}));
+      window.dispatchEvent(new CustomEvent("hearth:supabase-session-changed", {detail: {environment: "development"}}));
+      localStorage.setItem("hearth:v1:supabase-auth:development", originalAuth);
+      window.dispatchEvent(new CustomEvent("hearth:supabase-session-changed", {detail: {environment: "development"}}));
+      expect(originalSource.isCurrent()).toBe(false);
+    });
+    await waitForUi(() => expect(startup.v2Clients).toHaveLength(2));
+    const saves = startup.saveCalls;
+    await act(async () => { await originalClient.adopt({...startup.cached, revision: startup.cached!.revision + 1} as Household); });
+    expect(startup.saveCalls).toBe(saves);
+    expect(startup.scenarioSource?.accepted.ownBooks).not.toBe("ready");
+  });
+
 });

@@ -1,3 +1,4 @@
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { fundStageStorageKey, storedFundStage } from "./core/fundStageMemory.ts";
 import { useMemo, useState, useEffect, useRef, type ReactNode } from "react";
 import {
@@ -111,7 +112,7 @@ type Spec = {
  * Seals span; mosaic plates | stage | Kitty Banks at laptop width.
  */
 export function OfficeWide({
-  household, booksHousehold, dashboard, layout, onLayout,
+  household, booksHousehold, dashboard, layout, onLayout, scenarioSource,
   today, memberId, view, busy, adding, form, mode, error, categories, postLabel,
   environment, clinkOn, integrityFindings = [],
   sharedStory = null,
@@ -121,6 +122,7 @@ export function OfficeWide({
 }: {
   household: Household;
   booksHousehold: Household;
+  scenarioSource?: ScenarioSourceContext | null;
   dashboard: Dashboard;
   layout: OfficeLayout;
   onLayout: (next: OfficeLayout) => void;
@@ -597,7 +599,7 @@ export function OfficeWide({
               onClose={closeFundDrawer}
             />
           ) : spreadIsStage && fundConfigured ? (
-            <FundStage widgetId={activeFundWidget ?? "level"} household={booksHousehold}
+            <FundStage scenarioSource={scenarioSource} widgetId={activeFundWidget ?? "level"} household={booksHousehold}
               memberId={memberId} today={today} busy={busy} headingRef={fundStageHeadingRef}
               onKitchen={onKitchen} onOpenAccount={onOpenAccount} plate={selectedFundPlate}
               onOpenCabinet={plate => openPlateCabinet(plate.id)} onOpenDestination={onOpenFundDestination ?? (() => onGo("ledger"))} />
@@ -616,6 +618,7 @@ export function OfficeWide({
               {showAsk ? (
                 <Ask
                   household={booksHousehold}
+                  scenarioSource={scenarioSource}
                   today={today}
                   memberId={memberId}
                   busy={busy}

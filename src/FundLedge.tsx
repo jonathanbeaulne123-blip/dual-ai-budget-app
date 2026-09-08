@@ -1,3 +1,4 @@
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { fundStageStorageKey, storedFundStage } from "./core/fundStageMemory.ts";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { fundWalk, phoneRail, railFor, type CommitResult, type FundWidgetId, type Household } from "./core/index.ts";
@@ -9,12 +10,13 @@ import { FundBoard } from "./FundBoard.tsx";
 import { FundDrawer, FUND_WIDGET_CARD } from "./FundDrawer.tsx";
 import { FundStage, type FundDestination } from "./FundStage.tsx";
 
-export function FundLedge({ household, today, view, memberId, busy, onOpen, onKitchen, onOpenAccount, onExpandedChange }: {
+export function FundLedge({ household, today, view, memberId, busy, onOpen, onKitchen, onOpenAccount, onExpandedChange, scenarioSource }: {
   household: Household; today: string; view: "household" | "personal"; memberId: string; busy: boolean;
   onOpen: (destination?: FundDestination) => void;
   onKitchen: (fn: (current: Household) => CommitResult) => void;
   onOpenAccount: (accountId: string) => void;
   onExpandedChange?: (expanded: boolean) => void;
+  scenarioSource?: ScenarioSourceContext | null;
 }) {
   const reading = useMemo(() => fundLedgeReading(fundWalk(household, today.slice(0, 7), today)), [household, today]);
   const grip = useRef<HTMLButtonElement>(null);
@@ -166,7 +168,7 @@ export function FundLedge({ household, today, view, memberId, busy, onOpen, onKi
           <div ref={stage} className="fund-ledge-stage" id={`${sheetId}-stage`} role="tabpanel" aria-labelledby={detent === "full" && !drawer ? `${sheetId}-stage-tab-${selectedId}` : undefined} tabIndex={-1} inert={!expanded || busy || undefined}
             aria-label={drawer && detent === "full" ? "Arrange the Fund board" : FUND_WIDGET_CARD[shownId].name}>
             {drawer && detent === "full" ? <FundDrawer household={household} memberId={memberId} busy={busy} onKitchen={onKitchen} onClose={() => setDrawer(false)} />
-              : <FundStage presentation="phone" widgetId={shownId} household={household} memberId={memberId} today={today} busy={busy}
+              : <FundStage scenarioSource={scenarioSource} presentation="phone" widgetId={shownId} household={household} memberId={memberId} today={today} busy={busy}
                 headingRef={heading} onKitchen={onKitchen} onOpenDestination={openDestination}
                 onOpenAccount={accountId => { close(); onOpenAccount(accountId); }} />}
             <button type="button" className="fund-ledge-record" onClick={() => openDestination("record")}>Open the Fund register</button>

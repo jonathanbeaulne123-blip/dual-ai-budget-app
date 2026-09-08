@@ -1,3 +1,4 @@
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ROUTE_VIEW,
@@ -11,6 +12,7 @@ import type { Household } from "./core/types.ts";
 import "./ask.css";
 
 type AskProps = {
+  scenarioSource?: ScenarioSourceContext | null;
   household: Household;
   today: DateKey;
   memberId: string;

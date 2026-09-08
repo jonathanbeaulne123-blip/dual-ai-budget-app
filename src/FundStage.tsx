@@ -1,3 +1,4 @@
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import "./phone-fund-readings.css";
 import { useMemo, type Ref } from "react";
 import {
@@ -22,9 +23,10 @@ export type FundDestination = "swipe" | "contribute" | "record" | "minutes" | "s
 
 /** One renderer for the desk and phone; detent motion is never an input. */
 export function FundStage({ widgetId, household, memberId, today, busy, headingRef,
-  onKitchen, onOpenAccount, onOpenDestination, plate, onOpenCabinet, presentation = "desk",
+  onKitchen, onOpenAccount, onOpenDestination, plate, onOpenCabinet, presentation = "desk", scenarioSource,
 }: {
   presentation?: "phone" | "desk";
+  scenarioSource?: ScenarioSourceContext | null;
   widgetId: FundWidgetId; household: Household; memberId: string; today: string; busy: boolean;
   headingRef?: Ref<HTMLHeadingElement>; plate?: DeskPlateModel | null;
   onKitchen: (fn: (current: Household) => CommitResult) => void;
@@ -43,7 +45,7 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
     ? plate ?? fundPlates({ household, memberId, today }).find(row => fundWidgetIdForPlateId(row.id) === widgetId)
     : null, [allowed, household, memberId, today, widgetId, plate]);
   const nameOf = (id: string | null | undefined) => household.members.find(member => member.id === id)?.name ?? "A member";
-  const ask = () => <Ask household={household} today={today} memberId={memberId} busy={busy}
+  const ask = () => <Ask scenarioSource={scenarioSource} household={household} today={today} memberId={memberId} busy={busy}
     onMove={alternative => onKitchen(current => moveAskGoalClaimToNextMonth(current, {
       today, memberId, goalId: alternative.goalId, recurrenceId: alternative.recurrenceId, claimDate: alternative.claimDate,
     }))} />;

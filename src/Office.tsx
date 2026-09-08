@@ -1,3 +1,4 @@
+import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import type { FundDestination } from "./FundStage.tsx";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import {
@@ -116,6 +117,7 @@ function useBreakpoint(): OfficeBreakpoint {
 }
 
 export function Office({
+  scenarioSource,
   household,
   booksHousehold,
   dashboard,
@@ -159,6 +161,7 @@ export function Office({
 }: {
   household: Household;
   booksHousehold: Household;
+  scenarioSource?: ScenarioSourceContext | null;
   dashboard: Dashboard;
   today: string;
   environment: Environment;
@@ -896,6 +899,7 @@ export function Office({
       <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       {face === "paper" ? (
         <OfficeWide
+          scenarioSource={scenarioSource}
           household={household} booksHousehold={booksHousehold} dashboard={dashboard}
           layout={layout} onLayout={setLayout}
           today={today} memberId={memberId} view={view} busy={busy} adding={adding}

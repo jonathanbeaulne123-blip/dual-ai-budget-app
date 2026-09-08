@@ -1,3 +1,4 @@
+import { acceptedScenarioPair, issueScenarioSource, scenarioAuthIdentityKey, scenarioPairScopeKey, type ScenarioPairLease, type ScenarioPairScope } from "./scenarioSourceContext.ts";
 import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { editSplitDraft, newSplitDraft, reviewedSplitPayload, splitDraftScope, type SplitDraft } from "./core/splitDraft.ts";
 import type { FundDestination } from "./FundStage.tsx";
@@ -576,6 +577,13 @@ function emptyFormForZone(timeZone: string) {
   };
 }
 
+function scenarioAuthSnapshot(environment: Environment) {
+  const auth = loadSupabaseSession(environment);
+  return {environment, key: scenarioAuthIdentityKey(environment, auth), subject: auth?.userId ?? null};
+}
+
+type ScenarioAuthProvenance = Readonly<{key: string; generation: number}>;
+
 export function App() {
   const [initialStartup] = useState(() => {
     const environment: Environment = "development";
@@ -594,11 +602,18 @@ export function App() {
     if (environmentRef.current === next) return;
     replicaScopeGenerationRef.current += 1;
     environmentRef.current = next;
+    invalidateScenarioPair();
     setEnvironment(next);
   };
   const [supabaseSessionPresent, setSupabaseSessionPresent] = useState(() => (
     Boolean(loadSupabaseSession(initialStartup.environment))
   ));
+  const [scenarioAuthIdentity, setScenarioAuthIdentity] = useState(() => ({...scenarioAuthSnapshot(initialStartup.environment), generation: 0}));
+  const scenarioAuthRef = useRef(scenarioAuthIdentity);
+  const scenarioPairEpochRef = useRef(0);
+  const scenarioAcceptanceEpochRef = useRef(0);
+  const [scenarioPairLease, setScenarioPairLease] = useState<ScenarioPairLease | null>(null);
+  const scenarioPairLeaseRef = useRef<ScenarioPairLease | null>(null);
   const [herculesProRequest] = useState(() => herculesProAuthorizationRequest());
   const [household, setHousehold] = useState<Household | null>(initialStartup.household);
   const [booting, setBooting] = useState(!initialStartup.household);
@@ -781,7 +796,43 @@ export function App() {
   },[useLedgerSync,environment,household?.householdId,session?.memberId,tab]);
 
 
+  function captureScenarioAuth(authSession: ReturnType<typeof loadSupabaseSession>, targetEnvironment: Environment): ScenarioAuthProvenance | null {
+    if (!authSession) return null;
+    const key = scenarioAuthIdentityKey(targetEnvironment, authSession);
+    if (scenarioAuthRef.current.key !== key) throw new Error("The Google sign-in changed before the cloud books could be reviewed.");
+    return {key, generation: scenarioAuthRef.current.generation};
+  }
+
+  function clearScenarioPairLease(): void {
+    scenarioPairLeaseRef.current = null;
+    setScenarioPairLease(null);
+  }
+
+  function invalidateScenarioPair(): void {
+    scenarioPairEpochRef.current += 1;
+    clearScenarioPairLease();
+  }
+
+  function currentScenarioPairScope(): ScenarioPairScope | null {
+    const current = householdRef.current, selected = sessionRef.current, auth = scenarioAuthRef.current;
+    if (!current || !selected?.memberId || auth.environment !== environmentRef.current || current.environment !== environmentRef.current) return null;
+    const subject = localLedgerIdentity(selected.memberId) ?? auth.subject;
+    if (!subject) return null;
+    return {environment: environmentRef.current, householdId: current.householdId, memberId: selected.memberId, subject,
+      authIdentityKey: auth.key, authorityMode: ledgerSyncEnabled(environmentRef.current) ? "v2" : "legacy", pairEpoch: scenarioPairEpochRef.current};
+  }
+
+  function stampCompleteScenarioPair(next: Household, expectedMemberId: string): void {
+    const scope = currentScenarioPairScope();
+    if (!scope || scope.memberId !== expectedMemberId || householdRef.current !== next || !booksGateRef.current.ready) return;
+    const lease = acceptedScenarioPair(next, scope, ++scenarioAcceptanceEpochRef.current);
+    scenarioPairLeaseRef.current = lease;
+    setScenarioPairLease(lease);
+  }
+
   function adoptAcceptedHousehold(next: Household, statusOverride?: BooksStatus): void {
+    // General acceptance proves books, not that an own Personal envelope was supplied.
+    clearScenarioPairLease();
     householdRef.current = next;
     setHousehold(next);
     const status = statusOverride ?? booksReadinessRef.current.status;
@@ -816,7 +867,10 @@ export function App() {
     ) {
       return false;
     }
+    const pair = scenarioPairLeaseRef.current, scope = currentScenarioPairScope();
+    const carryPair = pair?.household === live && scope && pair.scopeKey === scenarioPairScopeKey(scope);
     adoptAcceptedHousehold(next, current.status);
+    if (carryPair) stampCompleteScenarioPair(next, scope.memberId);
     return true;
   }
 
@@ -833,6 +887,7 @@ export function App() {
     personal: PersonalEnvelope;
     memberId: string;
     identity: ContinuityIdentity;
+    authProvenance: ScenarioAuthProvenance | null;
   }, expectedOutboxFingerprint?: string): Promise<Household> {
     const expectedScope = {
       generation: replicaScopeGenerationRef.current,
@@ -841,7 +896,10 @@ export function App() {
       memberId: input.memberId,
     };
     const scopeIsCurrent = () => (
-      replicaAdoptionScopeMatches(expectedScope, {
+      input.authProvenance !== null
+      && input.authProvenance.key === scenarioAuthRef.current.key
+      && input.authProvenance.generation === scenarioAuthRef.current.generation
+      && replicaAdoptionScopeMatches(expectedScope, {
         generation: replicaScopeGenerationRef.current,
         environment: environmentRef.current,
         householdId: householdRef.current?.householdId ?? null,
@@ -890,6 +948,7 @@ export function App() {
       throw new Error("The active ledger changed while saving cloud books.");
     }
     adoptAcceptedHousehold(canonical, status);
+    stampCompleteScenarioPair(canonical, input.memberId);
     setBooksStatus(status);
     return canonical;
   }
@@ -899,6 +958,7 @@ export function App() {
     personal: PersonalEnvelope;
     memberId: string;
     identity: ContinuityIdentity;
+    authProvenance: ScenarioAuthProvenance | null;
   }): Promise<Household> {
     const expectedHousehold = householdRef.current;
     const expectedScopeGeneration = replicaScopeGenerationRef.current;
@@ -1083,6 +1143,7 @@ export function App() {
     if (cloudLedgerOnlineRequiredEnabled(environment)) setCloudReplicaReadyKey(null);
     try {
       const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+      const authProvenance = captureScenarioAuth(authSession, environment);
       const google = loadGoogleSession(environment, who, current.householdId);
       if (supabaseAuthEnabled() && !authSession) {
         setError("Your secure session needs Google sign-in before Hearth can retry sharing.");
@@ -1131,6 +1192,7 @@ export function App() {
             return;
           }
           const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
             shared: remoteReplica.shared,
             personal: remoteReplica.personal,
             memberId: who,
@@ -1211,6 +1273,7 @@ export function App() {
             return;
           }
           const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
             shared: remoteReplica.shared,
             personal: remoteReplica.personal,
             memberId: who,
@@ -1376,6 +1439,7 @@ export function App() {
         booksReadinessRef.current = ready;
         booksGateRef.current = booksWriteGate(ready, restored);
         setBooksReadiness(ready);
+        stampCompleteScenarioPair(restored, expectedScope.memberId);
       });
       setSyncState("synced");
       setCommandChrome(null);
@@ -1409,7 +1473,18 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    const refreshPresence = () => setSupabaseSessionPresent(Boolean(loadSupabaseSession(environment)));
+    const refreshPresence = () => {
+      const next = scenarioAuthSnapshot(environment);
+      setSupabaseSessionPresent(Boolean(next.subject));
+      if (scenarioAuthRef.current.key !== next.key) {
+        // Invalidate before React cleanup: an in-flight A callback cannot publish after sign-in B.
+        const advanced = {...next, generation: scenarioAuthRef.current.generation + 1};
+        scenarioAuthRef.current = advanced;
+        replicaScopeGenerationRef.current += 1;
+        invalidateScenarioPair();
+        setScenarioAuthIdentity(advanced);
+      }
+    };
     const onSessionChanged = (event: Event) => {
       const changedEnvironment = (event as CustomEvent<{ environment?: Environment }>).detail?.environment;
       if (!changedEnvironment || changedEnvironment === environment) refreshPresence();
@@ -1633,12 +1708,14 @@ export function App() {
         remote: Household;
         personal: PersonalEnvelope | null;
         identity: ContinuityIdentity | null;
+        authProvenance: ScenarioAuthProvenance | null;
       }> => {
         if (!cloudLedgerOnlineRequiredEnabled(candidate.environment)) {
           return {
             remote: await pullSharedHousehold(candidate.inviteCode, loadedSession.memberId, candidate.environment),
             personal: null,
             identity: null,
+            authProvenance: null,
           };
         }
         if (!supabaseAuthEnabled()) {
@@ -1646,6 +1723,7 @@ export function App() {
         }
         const authSession = await ensureSupabaseSession(candidate.environment);
         if (!authSession) throw new Error("Google sign-in is required before Hearth can refresh shared books.");
+        const authProvenance = captureScenarioAuth(authSession, candidate.environment);
         const identity = { email: authSession.email, subject: authSession.googleSubject };
         if (continuityMemberId(candidate, identity) !== loadedSession.memberId) {
           throw new Error("Google sign-in does not match the selected household member.");
@@ -1659,10 +1737,10 @@ export function App() {
           localHousehold: candidate,
         });
         if (!replica) throw new Error(CLOUD_LEDGER_REFRESH_MESSAGE);
-        return { remote: replica.shared, personal: replica.personal, identity };
+        return { remote: replica.shared, personal: replica.personal, identity, authProvenance };
       };
       void pullStartupHousehold()
-        .then(({ remote, personal, identity }) => enqueueWrite(async () => {
+        .then(({ remote, personal, identity, authProvenance }) => enqueueWrite(async () => {
           if (!live || startupGenerationRef.current !== generation) return;
           const current = householdRef.current;
           if (
@@ -1675,6 +1753,7 @@ export function App() {
             ? {
                 ok: true as const,
                 household: await installCanonicalCloudReplica({
+                  authProvenance,
                   shared: remote,
                   personal,
                   memberId: loadedSession.memberId,
@@ -2011,6 +2090,7 @@ export function App() {
       if (cloudLedgerOnlineRequiredEnabled(environment)) setCloudReplicaReadyKey(null);
       try {
         const authSession = supabaseAuthEnabled() ? await ensureSupabaseSession(environment) : null;
+        const authProvenance = captureScenarioAuth(authSession, environment);
         const expectedIdentity: ContinuityIdentity | null = storedAuthSession
           ? { email: storedAuthSession.email, subject: storedAuthSession.googleSubject }
           : continuityIdentityFromGoogle(googleSession);
@@ -2084,6 +2164,7 @@ export function App() {
                 return;
               }
               const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
                 shared: remoteReplica.shared,
                 personal: remoteReplica.personal,
                 memberId,
@@ -2319,6 +2400,7 @@ export function App() {
             ? {
                 ok: true as const,
                 household: await adoptCanonicalCloudReplica({
+                authProvenance,
                   shared: remoteReplica.shared,
                   personal: remoteReplica.personal,
                   memberId,
@@ -2386,6 +2468,7 @@ export function App() {
                   return;
                 }
                 const canonical = await adoptCanonicalCloudReplica({
+                authProvenance,
                   shared: stable.shared,
                   personal: stable.personal,
                   memberId,
@@ -2909,7 +2992,7 @@ export function App() {
     return attachLedgerPresence({environment,householdId:household.householdId,memberId,deviceId:localDeviceId(),advertise:!softPresenceOptOut,onPresence:setSoftPresenceLive,token:async()=>{
       if(local)return local;const fresh=await ensureSupabaseSession(environment);if(!fresh||fresh.userId!==auth!.userId)throw new Error('UNAUTHENTICATED');return fresh.accessToken;
     }});
-  },[environment,household?.householdId,session?.memberId,supabaseSessionPresent,softPresenceOptOut,useLedgerSync]);
+  },[environment,household?.householdId,session?.memberId,supabaseSessionPresent,scenarioAuthIdentity.key, scenarioAuthIdentity.generation,softPresenceOptOut,useLedgerSync]);
 
   useEffect(() => {
     const memberId = session?.memberId, current = householdRef.current;
@@ -2918,6 +3001,16 @@ export function App() {
     if (!local && (!auth || !current.linked)) return;
     let live = true;
     const scopeKey=JSON.stringify([environment,current.householdId,memberId,local??auth!.userId]);
+    const pairScope = currentScenarioPairScope();
+    if (!pairScope) return;
+    // A failed navigation invalidates scenario choices without stopping the current replica client.
+    const pairKey = scenarioPairScopeKey({...pairScope, pairEpoch: 0});
+    const authGeneration = scenarioAuthRef.current.generation;
+    const pairIsCurrent = () => {
+      const next = currentScenarioPairScope();
+      return live && next !== null && scenarioAuthRef.current.generation === authGeneration
+        && scenarioPairScopeKey({...next, pairEpoch: 0}) === pairKey;
+    };
     const client = new LedgerSyncClient({
       scope: { environment, householdId: current.householdId, memberId, subject: local ?? auth!.userId },
       token: async () => {
@@ -2929,16 +3022,17 @@ export function App() {
       pendingChanged: pending => { if (live) setLedgerPending({key:scopeKey,rows:pending}); },
       rejectedChanged: entries => { if(live) setLedgerRejected({key:scopeKey,entries}); },
       adopt: async (next, validatedStatus, pending = []) => {
-        if (!live || householdRef.current?.householdId !== next.householdId) return;
+        if (!pairIsCurrent() || householdRef.current?.householdId !== next.householdId) return;
         // The client has saved the scoped server replica. Validate before UI
         // publication; a legacy PGlite transaction cannot gate this authority.
         const status = validatedStatus ?? validatedLedgerBooksStatus(next);
         await saveHousehold(next, { operatingEnvironment: environment, memberId, indexedDbOnly: true });
-        if (!live || householdRef.current?.householdId !== next.householdId) return;
+        if (!pairIsCurrent() || householdRef.current?.householdId !== next.householdId) return;
         startupGenerationRef.current += 1;
         setBooksStatus(status);
         setLedgerPending({key:scopeKey,rows:pending});
         adoptAcceptedHousehold(next, status);
+        stampCompleteScenarioPair(next, memberId);
         setError("");
         setCloudReplicaReadyKey(onlineRequiredReplicaKey({environment:next.environment,householdId:next.householdId,memberId,revision:next.revision}));
         setPersonalReplica(personalReplicaForMember(next, memberId));
@@ -2955,7 +3049,7 @@ export function App() {
     ledgerSyncReady.current = client.start();
     void ledgerSyncReady.current.catch(error => { if (live) setError(error instanceof Error ? error.message : String(error)); });
     return () => { live = false; setLedgerPending(null);setLedgerRejected(null); if (ledgerSyncRef.current === client) ledgerSyncRef.current = null; void client.destroy(); };
-  }, [environment, household?.householdId, session?.memberId, supabaseSessionPresent, useLedgerSync]);
+  }, [environment, household?.householdId, session?.memberId, supabaseSessionPresent, scenarioAuthIdentity.key, scenarioAuthIdentity.generation, useLedgerSync]);
 
   useEffect(() => {
     let live = true;
@@ -3130,6 +3224,20 @@ export function App() {
   const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
   const visibleLedgerPending=useLedgerSync&&ledgerPending?.key===ledgerRenderScopeKey?ledgerPending.rows:[];
   const visibleLedgerRejected=useLedgerSync&&ledgerRejected?.key===ledgerRenderScopeKey?ledgerRejected.entries.filter(entry=>!entry.preview||entry.preview.rows.some(row=>isVisibleInView(row,memberId??'',view))):[];
+  const scenarioSource = useMemo(() => {
+    const scope = currentScenarioPairScope();
+    const pairKey = scope ? scenarioPairScopeKey(scope) : null;
+    const capturedHousehold = household, capturedLease = scenarioPairLeaseRef.current;
+    const roomGeneration = replicaScopeGenerationRef.current;
+    return issueScenarioSource({household, scope, viewerRoom: view, roomGeneration,
+      booksReady: activeBooksGate.ready, lease: scenarioPairLease,
+      isCurrent: () => {
+        const currentScope = currentScenarioPairScope();
+        return booksGateRef.current.ready && householdRef.current === capturedHousehold
+          && scenarioPairLeaseRef.current === capturedLease && replicaScopeGenerationRef.current === roomGeneration
+          && sessionRef.current?.view === view && currentScope !== null && scenarioPairScopeKey(currentScope) === pairKey;
+      }});
+  }, [household, environment, memberId, view, activeBooksGate.ready, scenarioPairLease, scenarioAuthIdentity.key, scenarioAuthIdentity.generation, useLedgerSync]);
   const personalSource = useMemo(() => {
     if (useLedgerSync) return household;
     return household && memberId && personalReplica?.memberId === memberId
@@ -3199,7 +3307,7 @@ export function App() {
       lastReconcileSource: lastReconcile?.source ?? null,
       pollIntervalMs: livePullIntervalMs(activeMembers),
     });
-  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent, booksReadiness, syncState]);
+  }, [household, memberId, realtimeStatus, lastReconcile, environment, offline, supabaseSessionPresent, scenarioAuthIdentity.key, scenarioAuthIdentity.generation, booksReadiness, syncState]);
   const syncFreshnessLine = useMemo(
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
@@ -3283,6 +3391,7 @@ export function App() {
   function rememberSession(next: Session) {
     const remembered = { ...next, householdId: next.householdId ?? householdRef.current?.householdId };
     const previous = sessionRef.current;
+    if (previous?.memberId !== remembered.memberId || previous?.householdId !== remembered.householdId) invalidateScenarioPair();
     if (
       previous?.memberId !== remembered.memberId
       || previous?.householdId !== remembered.householdId
@@ -3304,6 +3413,7 @@ export function App() {
     if (openingHouseholdRef.current) return;
     replicaScopeGenerationRef.current += 1;
     openingHouseholdRef.current = householdId;
+    invalidateScenarioPair();
     setSwipeOpen(false);
     setSwipeError("");
     setSwipeStrip(null);
@@ -6146,6 +6256,7 @@ export function App() {
         ) : null}
         <DeferredSurface label="Office">
         <DeferredOffice
+          scenarioSource={scenarioSource}
           household={displayHousehold}
           booksHousehold={household}
           dashboard={dashboard}
@@ -7670,6 +7781,7 @@ export function App() {
         && !charterTakeoverVisible && !onboardingInviteVisible && !adding && !swipeOpen && !confirm && !guard && !commandOpen && !fabOpen ? (
         <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
           household={household} today={today} view={view} memberId={session.memberId} busy={busy}
+          scenarioSource={scenarioSource}
           onExpandedChange={setFundLedgeExpanded} onKitchen={fn => { void runKitchen(fn); }}
           onOpenAccount={accountId => {
             rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });

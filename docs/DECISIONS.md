@@ -509,3 +509,8 @@ Claude's five Reach stops now have real cardinality families and stable named da
 ## Mobile SC05 — paired Fund scenario paths (2026-09-08)
 
 Fund simulation re-resolves accepted sources and explicit member elections; no UI array becomes money authority. Both residual paths constrain fixed choices, while up-to caps conserve each path independently. Exact reviewed own future observed estimates may be replaced once; effective zero leaves baseline intact. Common source slots preserve paired ordering even with zero deltas. Accepted Fund/monthly walk/current Ask stay unchanged; baseline and hypothetical terminal deficits are distinct core outputs. Smaller replacements may worsen baseline and fixed choices may have coincident bounds. Risk High; Budget(5)+3; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-paired-scenario.md). Claude's original Reach is the forthcoming consumer.
+
+
+## Mobile SC06 — accepted source lifetime (2026-09-08)
+
+App alone issues complete Shared plus own Personal scenario sources from validated pair publication. Cached uncertainty remains unavailable, never zero. Source identity binds accepted object/revision/hash, auth/session, member, household, environment and hosting room; identity changes invalidate pending work synchronously. A failed navigation must not kill subsequent accepted transport publication, and legacy responses retain their initiating authentication provenance. Token refresh preserves identity; A→B→A changes generation even within one render. Risk High; Budget(5)+3; Engagement(3)+1. [Worksession](worksessions/2026-09-08-mobile-scenario-source.md). No rendered change or new posting authority.

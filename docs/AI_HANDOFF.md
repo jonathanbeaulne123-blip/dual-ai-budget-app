@@ -1,3 +1,17 @@
+## Mobile SC06 — App-issued accepted scenario source (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc6-accepted-scenario-source`; exact base/current pre-commit HEAD `a13c6c4155707cb7d1f68d68bbe5c89078a49b80` (SC05, PR383). Phase2 remains in progress. Implementation HEAD is the commit carrying this handoff, resolved by Git/PR.
+
+**Outcome:** Validated own pair completeness, bounded accepted identity and synchronous auth/room invalidation. Delayed legacy and v2 responses cannot revive previous sign-in sources. Failed navigation preserves later accepted updates. Components receive scoped props and perform no auth/storage discovery.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+1.
+
+**Verification:** All130 selected assertions pass across the final gate and targeted recovery; TypeScript/AI/diff pass. Independent4 lifecycle regressions pass with no remaining bounded finding. Final gate181.621seconds timed out in concurrent demo entry; isolated2/2 and serial50/50 passed. Earlier352.728second gate breach retained. [Exact commands, fingerprints and failures](worksessions/2026-09-08-mobile-scenario-source.md).
+
+**Limits:** Actual App mounted with fictional fixtures and mocked providers. Optional props do not change rendered markup/CSS. No clean quick-gate, exhaustive, hosted, physical, merge, deployment or schema claim. G4 consumer proof remains open.
+
+**Next owner:** Codex opens the separate draft PR and integrates Claude's Reach within the original composition.
+
 ## Mobile SC05 — paired scenario composition (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-sc5-paired-scenario`, stacked on SC04 `78b5f5e` (PR382). Phase2 remains in progress.
