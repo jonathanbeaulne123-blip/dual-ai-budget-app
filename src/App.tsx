@@ -4531,6 +4531,18 @@ export function App() {
     }
   }
 
+  // A callback belongs to the desk that rendered it, including A→B→A changes.
+  const renderedWriteScope = {
+    generation: replicaScopeGenerationRef.current, environment,
+    householdId: household?.householdId ?? null,
+    memberId: session?.memberId ?? null, view: session?.view ?? null,
+  };
+  const renderedWriteIsCurrent = () => appMountedRef.current && !openingHouseholdRef.current && sameWriteScope(renderedWriteScope, {
+    generation: replicaScopeGenerationRef.current, environment: environmentRef.current,
+    householdId: householdRef.current?.householdId ?? null,
+    memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
+  });
+
   function run(fn: (current: Household) => CommitResult, options?: {
     isCurrent?: () => boolean;
     scopeIsCurrent?: () => boolean;
@@ -4541,7 +4553,13 @@ export function App() {
     onConfirm?: (error: NeedsConfirmationError) => boolean;
     onError?: (message: string) => void;
   }) {
-    if (postingRef.current || options?.isCurrent?.() === false) return Promise.resolve();
+    const callerOptions = options;
+    options = {
+      ...callerOptions,
+      isCurrent: () => renderedWriteIsCurrent() && callerOptions?.isCurrent?.() !== false,
+      scopeIsCurrent: () => renderedWriteIsCurrent() && callerOptions?.scopeIsCurrent?.() !== false,
+    };
+    if (postingRef.current || options.isCurrent?.() === false) return Promise.resolve();
     postingRef.current = true;
     const submittedDraftGeneration=draftGenerationRef.current;
     return enqueueWrite(async () => {
@@ -4684,13 +4702,15 @@ export function App() {
           result.household,
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
+          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent },
         );
+        if (!renderedWriteIsCurrent()) return outcome;
         if (outcome?.ok && memberPersonal && result.personalMemberId) {
           setPersonalReplica(personalReplicaForMember(outcome.household, result.personalMemberId));
         }
         return outcome;
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
+        if (renderedWriteIsCurrent()) setError(caught instanceof Error ? caught.message : String(caught));
         return null;
       }
     }, () => setError("These books changed while this action was waiting. Review the current desk and try again."));
