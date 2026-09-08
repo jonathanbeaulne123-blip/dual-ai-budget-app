@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { FundContributionMotionCard } from "./HouseholdFundPanel.tsx";
 import {
   SWIPE_COPY,
+  countable,
   formatCad,
   monthKeyFromDateKey,
   monthSummary,
@@ -11,6 +12,7 @@ import {
   type DateKey,
   type Household,
 } from "./core/index.ts";
+import {activeHouseholdFundEvents,householdFundOperatingDelta} from "./core/householdFund.ts";
 import "./till.css";
 
 export const TILL_COPY = {
@@ -53,7 +55,10 @@ export function Till({
 }) {
   const isCustodian = swipeBelongsOnSharedHome(memberId, household.householdFund?.custodianMemberId);
   const motions = tillActionableMotions(household, memberId);
-  const spentCents = monthSummary(household, monthKeyFromDateKey(today)).expenseActualCents;
+  const month = monthKeyFromDateKey(today);
+  const hasActivity = household.transactions.some(tx => countable(tx) && tx.date.slice(0, 7) === month)
+    || activeHouseholdFundEvents(household,household.householdFund?.id).some(event=>event.date.slice(0,7)===month&&householdFundOperatingDelta(event)!==0);
+  const spentCents = monthSummary(household, month).expenseActualCents;
   const spentLine = TILL_COPY.spent(formatCad(spentCents));
 
   return (
@@ -85,9 +90,9 @@ export function Till({
           ))}
         </section>
       ) : null}
-      <p className="till-custody" data-till="custody">{TILL_COPY.nothingMoved}</p>
+      {!hasActivity && <p className="till-custody" data-till="custody">{TILL_COPY.nothingMoved}</p>}
       <p className="till-spend" data-till="spend">{spentLine}</p>
-      {spentCents === 0 ? (
+      {!hasActivity ? (
         <p className="till-empty" data-till="empty">{TILL_COPY.empty}</p>
       ) : null}
       {offlinePending ? (

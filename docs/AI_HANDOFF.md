@@ -1,3 +1,13 @@
+## Mobile C6 — truthful Till empty state (2026-09-08)
+
+**Status:** Focused proof complete on codex/mobile-c6-till-empty; base1c724a2608f5b403c03e84d3c5159e5fd86e906f(C5,PR396). HEAD is this commit.
+
+**Outcome/risk:** Empty copy accounts for transaction and confirmed Fund activity without changing spend. Medium; Budget(5)+1; Engagement(3)+1.
+
+**Proof/limit:** Fourteen Till tests and eight layout cases pass; independent verifier clear. Quick gate TypeScript/AI/diff and87 assertions pass but overall gate fails121.713s on three pre-existing App toast timers after unmount. C7 must repair and rerun; no clean-gate claim. [Commands/fingerprint](worksessions/2026-09-08-mobile-till-empty.md).
+
+**Next:** Stacked draft PR; C7 Undo/timer lifecycle. Local fictional proof only, no merge/deployment/schema.
+
 ## Mobile C5 — attached claim actions (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-c5-claim-rows`, exact base`923ca35286724c47cb18c8ace0e0536a61f6dc6c` (C4, PR395); HEAD is the commit carrying this file.

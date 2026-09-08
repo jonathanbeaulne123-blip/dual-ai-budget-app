@@ -576,3 +576,8 @@ Preserve Claude’s row gesture and zero-sheet single-row flow within the no-wri
 ## Mobile C5 — review the actual claim transfer (2026-09-08)
 
 Claude's attached row action opens the existing named review. The person explicitly chooses where the money landed; the exact remainder and coherent Shared source history survive queue and authoritative replay. Unsupported private/corrected history refuses without guessing counters. Public card wording never becomes journal wording. Budget(5)+2; Engagement(3)+2. Proof and compatibility limits in C5 worksession.
+
+
+## Mobile C6 — an empty month is not zero net spend (2026-09-08)
+
+Till's standing and empty lines now require no nonduplicate month transaction and no active Fund operating movement. Confirmed contributions count even without journal rows; proposals do not. Spend totals retain their existing projection. Budget(5)+1; Engagement(3)+1. C6 worksession records focused proof and adjacent toast lifecycle gate failure for C7.
