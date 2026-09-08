@@ -1,3 +1,17 @@
+## Mobile SC04 — forecast receipt assumptions and named route families (2026-09-08)
+
+**Status:** Implemented on `codex/mobile-sc4-forecast-availability`, stacked on SC03 `7fba9a8` (PR381). Phase2 remains in progress.
+
+**Outcome:** Five true0–4 count families, stable named route/candidate identities, narrow own single-channel forecast receipt assumptions, unchanged net bands and old Ask routes. Selection does not elect a contribution.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** All59 selected assertions pass across gate and targeted recovery. Independent source review found no remaining blocker. The quick gate itself failed the unchanged500ms benchmark under memory pressure; isolated rerun passed. TypeScript/AI/diff passed. Gate816.334seconds, five-minute breach retained. [Exact fingerprint, commands and results](worksessions/2026-09-08-mobile-forecast-availability.md).
+
+**Limits:** Fictional local coherent receipts; unsupported channels refuse. No UI, complete scenario, physical, hosted, exhaustive, merge or deployment claim. No clean quick-gate claim.
+
+**Next owner:** Codex opens the separate draft PR and proceeds to SC05 paired scenario output inside Claude's intended Reach.
+
 ## Mobile SC03 — cash capacity and explicit assumptions (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-sc3-cash-availability`, stacked on SC02 `9c27a78` (PR380). Phase2 remains in progress.
