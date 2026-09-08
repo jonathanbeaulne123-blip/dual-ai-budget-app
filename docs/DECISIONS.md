@@ -470,3 +470,8 @@ Claude's three existing seals open the original four/four/three-page chapters, w
 ## Mobile A5 — accepted apron receipt (2026-09-08)
 
 Claude's felt apron is Home's first whole object for six hours after an accepted own contributor shift. Its four facts and original hierarchy remain. Jonathan's current instruction replaces causal Ask copy with a distinct Current Shared Ask. Historic cash received, card-after-withholding and the three tip-out timings come from the accepted shift; a later settlement never pretends to allocate that receipt. Signed card balances remain valid. Legacy timing is explicitly unknown. Expiry uses createdAt, never updatedAt; reversed rows and other members are excluded. Risk Medium-High; Budget(5)+1; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-apron.md). No command, schema, deployment or native Live Activity.
+
+
+## Mobile B1 — exact Cut ownership (2026-09-08)
+
+Claude's Cut uses the same percentSplits result for printed cents and Final Confirm. A one-cent50/50 review previously printed two cents; it now shows the first member's one cent and the final member's zero. The final member is named as filling the remainder after rounding. Current ordered active IDs replace the hardcoded seed; the draft binds desk/member/environment/generation and refuses stale queued ownership. Other roster sizes retain every field, with invalid totals and negative rounded residuals refused. Drag preview blocks both Confirm paths; cancellation restores the reviewed split. New entries reset defaults while duplicate/rejection retries retain review. Risk Medium-High; Budget(5)+2; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-cut.md). No financial kernel, command, schema or deployment change.

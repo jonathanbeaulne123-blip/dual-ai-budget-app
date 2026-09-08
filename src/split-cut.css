@@ -1,0 +1,21 @@
+.split-card.is-cut { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.split-cut { display: flex; flex-direction: column; gap: 8px; }
+.cut-card { min-height: 96px; border: 1px solid var(--line); border-radius: 5px; background: var(--card); overflow: hidden; }
+.cut-readings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cut-reading { display: flex; flex-direction: column; min-width: 0; gap: 2px; padding: 10px; }
+.cut-reading.is-0 { background: color-mix(in srgb, var(--felt) 12%, transparent); }
+.cut-reading.is-1 { background: color-mix(in srgb, var(--brass) 16%, transparent); }
+.cut-name { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere; }
+.cut-reading strong { font-family: var(--display); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cut-percent, .cut-exact { min-height: 44px; display: flex; align-items: center; gap: 3px; color: var(--muted); font-size: 12px; }
+.split-card .cut-exact input[type="number"] { width: 66px; max-width: calc(100% - 16px); min-height: 44px; padding: 4px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--ink); font: inherit; }
+.cut-lane { position: relative; height: 44px; touch-action: pan-y; background: color-mix(in srgb, var(--brass) 16%, transparent); }
+.cut-tint { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--felt) 25%, var(--card)); }
+.cut-line { position: absolute; top: 0; bottom: 0; width: 2px; transform: translateX(-1px); background: var(--ink); }
+.cut-handle { position: absolute; top: 0; width: 44px; height: 44px; transform: translateX(-50%); display: grid; place-items: center; border: 0; padding: 0; background: transparent; cursor: ew-resize; touch-action: none; }
+.cut-handle span { width: 22px; height: 30px; border-radius: 3px; background: var(--ink); color: var(--paper); display: grid; place-items: center; font-size: 11px; }
+.cut-detents { display: flex; flex-wrap: wrap; gap: 5px; }
+.cut-detents button { min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 3px; padding: 6px 10px; background: var(--paper); color: var(--muted); font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10.5px; }
+.cut-detents button[aria-pressed="true"] { border-color: var(--pine); color: var(--ink); }
+.cut-remainder { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.cut-handle:focus-visible, .cut-detents button:focus-visible, .cut-exact input:focus-visible { outline: 2px solid var(--pine); outline-offset: -2px; }

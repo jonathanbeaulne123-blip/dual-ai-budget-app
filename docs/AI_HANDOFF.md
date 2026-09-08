@@ -1,3 +1,17 @@
+## Mobile B1 — the Cut (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b1-cut`, stacked on A5 `cd97dfa` (PR376). No merge or deployment.
+
+**Outcome:** Claude's named split divider and detents, exact canonical cents, visible remainder owner, dynamic scoped defaults and stale queued ownership refusal. Preview blocks both Confirm paths until release/cancellation. Other roster sizes retain all owners.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+2.
+
+**Verification:** Pre-fix mounted one-cent regression failed; repaired focused20/20 and independent rerun pass. Final quick gate102 assertions, TypeScript and AI checks passed in161.498seconds, no budget breach. Actual Add/useDialog Chromium:20 layout cases and2 gesture cases pass. [Exact commands and evidence](worksessions/2026-09-08-mobile-cut.md).
+
+**Evidence class:** Local fictional component browser, real command/queue fixtures and full-App jsdom startup/onboarding canaries. No authenticated full-App browser, hosted, physical-device or exhaustive proof.
+
+**Next owner:** Codex opens B1's draft PR and continues B2 Count. Phase2 remains in progress.
+
 ## Mobile A5 — apron receipt (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-a5-apron`, stacked on A4 `c249f37` (PR375). No merge or deployment.

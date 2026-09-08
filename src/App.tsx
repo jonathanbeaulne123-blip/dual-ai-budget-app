@@ -1,3 +1,4 @@
+import { editSplitDraft, newSplitDraft, reviewedSplitPayload, splitDraftScope, type SplitDraft } from "./core/splitDraft.ts";
 import type { FundDestination } from "./FundStage.tsx";
 import { enqueueScopedWrite } from "./core/scopedWrite.ts";
 import { FundLedge } from "./FundLedge.tsx";
@@ -60,7 +61,6 @@ import {
   jointSplit,
   memberNeedsGoogleStepUp,
   parseAmount,
-  percentSplits,
   postDueRecurrences,
   postEntry,
   postOneRecurrence,
@@ -623,6 +623,7 @@ export function App() {
   const lastAmountLabelRef = useRef<string | null>(null);
 
   const closeAdd = () => {
+    setSplitDraft(null);
     workShiftInputRef.current = null;
     shiftScanScopeRef.current.cancel();
     setWorkShiftDraft(null);
@@ -677,11 +678,16 @@ export function App() {
   const [demoReport, setDemoReport] = useState<DemoRunReport | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
-  const [splitPercents, setSplitPercents] = useState<Record<string, number>>({ "MEM-001": 50, "MEM-002": 50 });
+  const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
+  useEffect(() => {
+    if (adding && !splitDraft && household && session) {
+      setSplitDraft(newSplitDraft(household, { memberId: session.memberId, view: session.view, generation: replicaScopeGenerationRef.current }));
+    }
+  }, [adding, splitDraft, household, session]);
   useEffect(() => {
     setSwipeOpen(false);
     setSwipeError("");
@@ -5360,6 +5366,10 @@ export function App() {
 
   const ledger = household;
   const actorId = session.memberId;
+  const splitViewer = { memberId: actorId, view: session.view, generation: replicaScopeGenerationRef.current };
+  const splitScopeValid = splitDraft?.scope === splitDraftScope(ledger, splitViewer);
+  const splitPercents = splitDraft?.percents ?? {};
+  const reviewSplit = () => setSplitDraft(newSplitDraft(ledger, splitViewer));
   const displayHousehold = experience && experience.ok ? experience.scopedHousehold : household;
   const pickerAccounts = experience && experience.ok
     ? experience.scopedHousehold.accounts.filter((account) => account.active)
@@ -5408,6 +5418,7 @@ export function App() {
     setSwipeOpen(false);
     setSwipeError("");
     setMode("expense");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setError("");
@@ -5534,6 +5545,7 @@ export function App() {
     const defaults = addFormDefaults(displayHousehold, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5619,6 +5631,7 @@ export function App() {
     const punch = activeOpenShift(ledger.kitchen, actorId);
     if (punch?.status === "open") void runKitchen((current) => clockOutShift(current, { memberId: actorId }));
     setMode("shift");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5647,6 +5660,7 @@ export function App() {
     workShiftInputRef.current = null;
     workShiftDateRef.current = initialDate;
     setMode("shift");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5662,6 +5676,7 @@ export function App() {
     const amount = remaining > 0 ? remaining : card.minPaymentCents;
     setFocusedAccountId(account.id);
     setMode("transfer");
+    setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddSlide(0);
     setAddDetails(false);
@@ -5719,27 +5734,18 @@ export function App() {
   };
 
   function splitsFor(amountCents: number, from: Household): Split[] {
-    const members = from.members.filter((member) => member.active);
     if (form.who === "split") {
-      return percentSplits(members.map((member) => ({
-        party: member.id,
-        percent: Number(splitPercents[member.id] ?? 0),
-      })), amountCents);
+      const currentSession = sessionRef.current;
+      if (!currentSession) throw new Error("Choose your desk before reviewing this split.");
+      return reviewedSplitPayload(splitDraft, from, { memberId: currentSession.memberId, view: currentSession.view, generation: replicaScopeGenerationRef.current }, amountCents);
     }
     if (form.who === JOINT) return jointSplit(amountCents);
     return [{ party: form.who, amountCents }];
   }
 
   function setMemberPercent(memberId: string, percent: number) {
-    const members = ledger.members.filter((member) => member.active);
-    const clamped = Math.max(0, Math.min(100, percent));
-    if (members.length === 2) {
-      const other = members.find((member) => member.id !== memberId);
-      if (!other) return;
-      setSplitPercents({ [memberId]: clamped, [other.id]: Math.round((100 - clamped) * 100) / 100 });
-      return;
-    }
-    setSplitPercents({ ...splitPercents, [memberId]: clamped });
+    if (!splitScopeValid || !splitDraft) return;
+    setSplitDraft(editSplitDraft(splitDraft, ledger.members.filter(member => member.active).map(member => member.id), memberId, percent));
   }
 
   function submit(flags: { confirmDuplicate?: boolean } = {}) {
@@ -7038,6 +7044,8 @@ export function App() {
           codingHint={codingHint}
           onCodingHint={setCodingHint}
           splitPercents={splitPercents}
+          splitScopeValid={splitScopeValid}
+          onReviewSplit={reviewSplit}
           onMemberPercent={setMemberPercent}
           addDetails={addDetails}
           onAddDetails={setAddDetails}
