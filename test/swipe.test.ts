@@ -547,7 +547,11 @@ describe("swipe posting contract", () => {
     expect(commandsSource).toContain("requireFundCustodian");
     const appSource = readFileSync(resolve(process.cwd(), "src/App.tsx"), "utf8");
     const tillSource = readFileSync(resolve(process.cwd(), "src/Till.tsx"), "utf8");
-    const swipeMount = appSource.slice(appSource.indexOf("{swipeOpen"), appSource.indexOf("{adding &&"));
+    const swipeStart = appSource.indexOf("{swipeOpen");
+    const swipeEnd = appSource.indexOf(") : null}", swipeStart);
+    expect(swipeStart).toBeGreaterThan(-1);
+    expect(swipeEnd).toBeGreaterThan(swipeStart);
+    const swipeMount = appSource.slice(swipeStart, swipeEnd);
     expect(tillSource).toContain("SWIPE_COPY.action");
     expect(appSource).toContain("submitSwipePurchase");
     expect(appSource).toContain("SWIPE_COPY.success");

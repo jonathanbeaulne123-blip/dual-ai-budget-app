@@ -441,6 +441,7 @@ import { useDialog } from "./useDialog.ts";
 import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
+import { useMobileEntry } from "./MobileEntryChoices.tsx";
 import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
 import { AddCategoryForm } from "./AddCategoryForm.tsx";
 import { defaultSubcategoryForMode } from "./addSlideshow.ts";
@@ -639,10 +640,26 @@ export function App() {
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [onboardingInviteDismissedState, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
+  const mobileEntry = useMobileEntry();
+  const [addMobileDraft, setAddMobileDraft] = useState(false);
+  const [pausedAddScope, setPausedAddScope] = useState<string | null>(null);
+  const [addPresentationKey, setAddPresentationKey] = useState(0);
   const [adding, setAddingState] = useState(false);
   const draftGenerationRef = useRef(0);
   const punchReviewIntentRef = useRef(0);
-  function setAdding(value: boolean) { if(value) { draftGenerationRef.current++; punchReviewIntentRef.current++; } setAddingState(value); }
+  function setAdding(value: boolean, resume = false) {
+    if (value) {
+      draftGenerationRef.current++;
+      punchReviewIntentRef.current++;
+      setPausedAddScope(null);
+      if (!resume && !adding) { setAddPresentationKey(key => key + 1); setAddMobileDraft(mobileEntry); }
+    }
+    setAddingState(value);
+  }
+  function readAddScope() {
+    return JSON.stringify([environmentRef.current, householdRef.current?.householdId, sessionRef.current?.memberId,
+      sessionRef.current?.view, replicaScopeGenerationRef.current]);
+  }
   const [fundLedgeExpanded, setFundLedgeExpanded] = useState(false);
   const [swipeOpen, storeSwipeOpen] = useState(false);
   const swipeIntentRef = useRef(0);
@@ -661,6 +678,15 @@ export function App() {
   const lastAmountLabelRef = useRef<string | null>(null);
 
   const closeAdd = () => {
+    if (mobileEntry || addMobileDraft) {
+      if (busy) return;
+      // Suspend the same mounted draft, including local photo, split and job fields.
+      punchReviewIntentRef.current++;
+      setPausedAddScope(readAddScope());
+      setAdding(false);
+      return;
+    }
+    setPausedAddScope(null);
     punchReviewIntentRef.current++;
     setSplitDraft(null);
     workShiftInputRef.current = null;
@@ -737,6 +763,7 @@ export function App() {
     setSwipeOpen(false);
     setSwipeError("");
     setSwipeStrip(null);
+    setPausedAddScope(null);
   }, [environment, household?.householdId, session?.memberId, session?.view]);
   const [replicas, setReplicas] = useState<HouseholdReplicaSummary[]>([]);
   const [personalReplica, setPersonalReplica] = useState<PersonalEnvelope | null>(null);
@@ -5792,6 +5819,11 @@ export function App() {
   };
 
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
+    if (pausedAddScope === readAddScope() && (!nextMode || nextMode === mode) && (!account || account.id === focusedAccountId)) {
+      leaveDesk();
+      setAdding(true, true);
+      return;
+    }
     leaveDesk();
     const id = account?.id ?? focusedAccountId;
     const defaults = addFormDefaults(displayHousehold, id);
@@ -5980,9 +6012,10 @@ export function App() {
     goTab("ledger");
   };
 
-  const openFundDestination = (destination: FundDestination = "record") => {
+  const openFundDestination = (destination: FundDestination | "ask" = "record") => {
     rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
     if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
+    if (destination === "ask") { goTab("home"); emitOfficeIntent({ type: "expand", id: "chalkboard" }); return; }
     if (destination === "shelf") { goTab("plan"); return; }
     if (destination === "minutes") { goTab("more"); return; }
     setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
@@ -6491,13 +6524,18 @@ export function App() {
               />
             </div>
           ) : (
-          <div className="plan-wide">
-          <div className="plan-wide-lead">
+          <div className="plan-wide five-boards-plan">
           <section className="hero">
             <div className="label">{view === "household" ? "Household plan vs actual" : "My plan vs actual"}</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
+          <PlanCategories
+            household={household}
+            rows={dashboard.month.categories}
+            monthKey={monthKeyFromDateKey(today)}
+            onSave={(next, token) => persist(next, token)}
+          />
           <SitDownGuide
             household={household}
             displayHousehold={displayHousehold}
@@ -6518,13 +6556,7 @@ export function App() {
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
             onShowHome={() => goTab("home")}
           />
-          </div>
-          <PlanCategories
-            household={household}
-            rows={dashboard.month.categories}
-            monthKey={monthKeyFromDateKey(today)}
-            onSave={(next, token) => persist(next, token)}
-          />
+
           </div>
           )}
         </>
@@ -7211,8 +7243,11 @@ export function App() {
         />
       ) : null}
 
-      {adding && (
+      {(adding || pausedAddScope === readAddScope()) && (
         <AddSlideshow
+          key={addPresentationKey}
+          open={adding}
+          recommendationHousehold={displayHousehold}
           sheetRef={addSheetRef}
           mode={mode}
           onSwitchMode={switchAddMode}
