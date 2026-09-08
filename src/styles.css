@@ -361,9 +361,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 
 @media (min-width: 720px) {
   .app[data-ledger-tab="home"] {
-    max-height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: auto;
+    /* Let the document scroll the full desk instead of clipping Home to a
+       second viewport-sized scroll container above the fixed navigation. */
     display: flex;
     flex-direction: column;
   }
