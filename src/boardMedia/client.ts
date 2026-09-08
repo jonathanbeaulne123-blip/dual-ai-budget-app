@@ -21,7 +21,11 @@ function reference(record: PendingBoardPhoto): BoardPhotoReference {
   return { pendingId: record.pendingId, mediaId: record.mediaId, contentType: record.contentType, byteLength: record.byteLength, width: record.width, height: record.height };
 }
 export function createBoardMediaClient(options: BoardMediaClientOptions) {
-  const scope = Object.freeze({ ...options.scope });
+  // Runtime callers can pass structurally wider objects, including auth sessions.
+  const scope = Object.freeze({
+    environment: options.scope.environment, householdId: options.scope.householdId,
+    actorId: options.scope.actorId, authIdentity: options.scope.authIdentity,
+  });
   assertScope(scope);
   const store = options.store ?? new IndexedDbBoardPhotoStore();
   const fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
@@ -47,7 +51,7 @@ export function createBoardMediaClient(options: BoardMediaClientOptions) {
     }
     return auth;
   }
-  async function request(mediaId: string, method: 'GET' | 'PUT' | 'DELETE', blob?: Blob): Promise<Response> {
+  async function request(mediaId: string, method: 'GET' | 'PUT', blob?: Blob): Promise<Response> {
     assertMediaId(mediaId);
     const auth = await session();
     if (scope.environment !== 'development') throw new BoardMediaError('ENVIRONMENT_DISABLED', 'Board photos are enabled only in Development.');
@@ -80,7 +84,11 @@ export function createBoardMediaClient(options: BoardMediaClientOptions) {
   }
   async function queueBoardPhoto(file: Blob, intent?: BoardPhotoIntent): Promise<PendingBoardPhoto> {
     // Capture user intent before any async work; later edits must not retarget this upload.
-    const capturedIntent = intent ? structuredClone(intent) : undefined;
+    // Allowlist both levels: cloning/spreading can retain injected credentials.
+    const capturedIntent = intent ? {
+      slot: intent.slot, caption: intent.caption, expectedVersion: intent.expectedVersion,
+      crop: intent.crop ? { x: intent.crop.x, y: intent.crop.y, zoom: intent.crop.zoom } : undefined,
+    } : undefined;
     if (capturedIntent && (![1, 2, 3].includes(capturedIntent.slot) ||
       typeof capturedIntent.caption !== 'string' || capturedIntent.caption.length > 1000 ||
       !Number.isSafeInteger(capturedIntent.expectedVersion) || capturedIntent.expectedVersion < 0 ||
@@ -96,7 +104,9 @@ export function createBoardMediaClient(options: BoardMediaClientOptions) {
       throw new BoardMediaError('INVALID_IMAGE', 'Could not prepare this photo. Choose it again.');
     const id = crypto.randomUUID();
     const record: PendingBoardPhotoRecord = {
-      pendingId: id, mediaId: `BM-${id}`, scope, intent: capturedIntent, scopeKey: boardMediaScopeKey(scope),
+      pendingId: id, mediaId: `BM-${id}`, scope,
+      intent: capturedIntent ? { ...capturedIntent, crop: capturedIntent.crop! } : undefined,
+      scopeKey: boardMediaScopeKey(scope),
       contentType: 'image/jpeg', byteLength: prepared.blob.size, ...dimensions,
       createdAt: new Date().toISOString(), status: 'queued', attempts: 0, blob: prepared.blob,
     };
@@ -171,8 +181,10 @@ export function createBoardMediaClient(options: BoardMediaClientOptions) {
       const pending = await queueBoardPhoto(file, intent);
       return retryPendingBoardPhoto(pending.pendingId);
     },
-    /** Caller must ensure no accepted board slot references this mediaId before deleting. */
-    async deleteBoardPhoto(mediaId: string): Promise<void> { await request(mediaId, 'DELETE'); },
+    /** Disabled until accepted-authority coordinated GC exists. Remove only the accepted slot reference. */
+    async deleteBoardPhoto(_mediaId: string): Promise<void> {
+      throw new BoardMediaError('PHYSICAL_DELETE_DISABLED', 'Physical photo deletion is disabled. Remove the accepted board slot reference; private prior bytes remain until coordinated garbage collection is available.');
+    },
     queueBoardPhoto,
     async listPendingBoardPhotos(): Promise<PendingBoardPhoto[]> {
       await session();

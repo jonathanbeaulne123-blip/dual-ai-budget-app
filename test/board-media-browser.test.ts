@@ -61,11 +61,12 @@ it('real IndexedDB survives reload/offline, partitions all four scope fields, re
     await page.goto(origin);
     const pendingId = await page.evaluate(async () => {
       const { createBoardMediaClient } = window.BoardMedia;
-      const scope = { environment: 'development' as const, householdId: 'HH-ONE', actorId: 'MEM-ONE', authIdentity: 'auth-one' };
+      const scope = { environment: 'development' as const, householdId: 'HH-ONE', actorId: 'MEM-ONE', authIdentity: 'auth-one', accessToken: 'never-persist-me', unknown: { refreshToken: 'never-persist-me' } };
       const client = createBoardMediaClient({ scope, isCurrent: () => true, getSession: async () => ({ ...scope, accessToken: 'never-persist-me' }), fetch: async () => { throw new Error('offline'); } });
       const canvas = document.createElement('canvas'); canvas.width = 16; canvas.height = 8;
       const file = await new Promise<Blob>(resolve => canvas.toBlob(b => resolve(b!), 'image/png'));
-      try { await client.uploadBoardPhoto(file, { slot: 2, caption: 'A synthetic memory', crop: { x: .5, y: .5, zoom: 1 }, expectedVersion: 4 }); }
+      const intent = { slot: 2 as const, caption: 'A synthetic memory', crop: { x: .5, y: .5, zoom: 1, accessToken: 'never-persist-me' }, expectedVersion: 4, accessToken: 'never-persist-me', unknown: { refreshToken: 'never-persist-me' } };
+      try { await client.uploadBoardPhoto(file, intent); }
       catch (e) { if ((e as API.BoardMediaError).code !== 'NETWORK_UNAVAILABLE') throw e; }
       const pending = await client.listPendingBoardPhotos();
       if (pending.length !== 1 || pending[0]!.status !== 'queued' || pending[0]!.lastError !== 'NETWORK_UNAVAILABLE') throw new Error('Offline queue lost');
@@ -94,10 +95,12 @@ it('real IndexedDB survives reload/offline, partitions all four scope fields, re
       await client.retryPendingBoardPhoto(id);
       await client.acknowledgeBoardPhoto(id);
       const afterAck = await client.listPendingBoardPhotos();
-      return { intent: recovered.intent, deniedCounts, rawKeys, persistedSecret: JSON.stringify(raw).includes('never-persist-me'), uploads, sameRefs: concurrent[0]!.mediaId === concurrent[1]!.mediaId, status: stillPending[0]!.status, afterAck: afterAck.length };
+      return { intent: recovered.intent, scope: raw!.scope, deniedCounts, rawKeys, persistedSecret: JSON.stringify(raw).includes('never-persist-me'), uploads, sameRefs: concurrent[0]!.mediaId === concurrent[1]!.mediaId, status: stillPending[0]!.status, afterAck: afterAck.length };
     }, pendingId);
     expect(result).toMatchObject({ intent: { slot: 2, caption: 'A synthetic memory', crop: { x: .5, y: .5, zoom: 1 }, expectedVersion: 4 }, deniedCounts: [0,0,0,0], persistedSecret: false, uploads: 1, sameRefs: true, status: 'uploaded', afterAck: 0 });
     expect(result.rawKeys).not.toContain('accessToken');
+    expect(result.scope).toEqual({ environment: 'development', householdId: 'HH-ONE', actorId: 'MEM-ONE', authIdentity: 'auth-one' });
+    expect(result.intent).toEqual({ slot: 2, caption: 'A synthetic memory', crop: { x: .5, y: .5, zoom: 1 }, expectedVersion: 4 });
   } finally { await page.close(); }
 }, 60_000);
 
@@ -187,3 +190,21 @@ it('authenticated reads return only bounded current-scope blobs; unavailable sto
     expect(result).toMatchObject({ uploaded: false, storageFailure: 'LOCAL_STORAGE_UNAVAILABLE' });
   } finally { await page.close(); }
 }, 60_000);
+
+it('client physical deletion explicitly rejects without auth or network', async () => {
+  const page = await browser.newPage();
+  try {
+    await page.goto(origin);
+    const result = await page.evaluate(async () => {
+      let authCalls = 0; let requests = 0;
+      const scope = { environment: 'development' as const, householdId: 'HH-DELETE', actorId: 'MEM-ONE', authIdentity: 'auth-one' };
+      const client = window.BoardMedia.createBoardMediaClient({ scope, isCurrent: () => true,
+        getSession: async () => { authCalls++; return { ...scope, accessToken: 'token' }; },
+        fetch: async () => { requests++; return new Response(null, { status: 204 }); },
+      });
+      const code = await client.deleteBoardPhoto('BM-00000000-0000-4000-8000-000000000000').then(() => 'unexpected', (error: API.BoardMediaError) => error.code);
+      return { code, authCalls, requests };
+    });
+    expect(result).toEqual({ code: 'PHYSICAL_DELETE_DISABLED', authCalls: 0, requests: 0 });
+  } finally { await page.close(); }
+});

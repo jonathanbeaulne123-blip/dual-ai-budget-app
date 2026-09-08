@@ -47,7 +47,7 @@ Methods:
 | `retryPendingBoardPhoto(pendingId)` | Returns the same immutable media reference; duplicate concurrent calls coalesce. An already uploaded entry awaits metadata acceptance without re-uploading. |
 | `discardPendingBoardPhoto(pendingId)` | Durable local removal. Cannot delete accepted media or revive from an in-flight completion. |
 | `acknowledgeBoardPhoto(pendingId)` | Remove an uploaded pending entry **only after** the parent observes accepted metadata. Queued entries are not removed. |
-| `deleteBoardPhoto(mediaId)` | Explicit authenticated deletion, only when the caller has established no accepted slot needs this id. No automatic former-photo deletion. |
+| `deleteBoardPhoto(mediaId)` | Always rejects with `PHYSICAL_DELETE_DISABLED`, without auth/network calls. Remove uses an accepted slot-null command, not this method. |
 | `dispose()` | Permanently retire this client and abort network requests; retain its scoped pending records. |
 
 `BoardPhotoReference` contains `{mediaId, contentType:'image/jpeg', byteLength,
@@ -57,7 +57,7 @@ width, height, pendingId}`. IDs are `BM-<lowercase UUID v4>`.
 'uploaded'`, `attempts`, optional `lastError` (code only) and optional `intent`.
 
 `BoardPhotoIntent` is `{slot:1|2|3, caption:string, crop:{x,y,zoom},
-expectedVersion:number}`. Intent is cloned at invocation and saved atomically
+expectedVersion:number}`. Only the documented scope, intent and nested crop fields are copied at invocation and saved atomically
 with the prepared blob, so editing controls during conversion/upload cannot
 retarget it. The media client checks basic shape only; the parent metadata command
 owns caption/crop policy and version validation.
@@ -100,14 +100,23 @@ same-origin resource policy. UI crop remains metadata only.
 All methods require `Authorization: Bearer ...`, `X-Board-Actor` (member id), and
 `X-Board-Identity` (Auth user id). Every request calls existing
 `workers/ledgerSyncAuth.authorizeRequest`, then compares the expected actor/subject.
-Active household members may read/upload/delete shared photos. There are no public
+Active household members may read/upload shared photos. Authenticated DELETE returns
+405 `PHYSICAL_DELETE_DISABLED` (`Allow: GET, PUT`) before accessing any R2 binding,
+including when the binding is missing. There are no public
 URLs, anonymous reads, listing endpoints, signed URLs, CORS grants or bucket fallbacks.
 Production is refused even if a bucket is supplied.
 
 PUT accepts only processed JPEG bytes, returns 201 or an idempotent 200 with
 metadata, and uses R2 conditional create plus SHA-256 comparison. A different
-payload for an existing id returns 409. DELETE erases bytes with a zero-byte
-tombstone that permanently reserves the id, preventing delayed retry resurrection.
+payload for an existing id returns 409. Physical DELETE is disabled: membership and
+a client-side reference check cannot prevent a delayed deletion from erasing a photo
+concurrently attached by another device. Remove still clears the slot through the
+ordinary accepted slot-null command; replacement still waits for accepted metadata.
+Neither action erases private immutable prior bytes. Those bytes remain subject to
+the same authenticated household read rules; the UI must not claim they were erased.
+Accepted-authority coordinated garbage collection and a physical retention lifecycle
+are release dependencies, along with dedicated storage provisioning. No deletion
+queue or distributed transaction is provided by this bounded patch.
 Keys are `v1/development/<householdId>/<mediaId>` in **BOARD_MEDIA only**.
 No ledger data is stored in this bucket; Evidence and ledger archive bindings are
 never used for photos.
@@ -135,7 +144,8 @@ Tests use synthetic pixels, actual Chromium canvas/IndexedDB and fully local
 workerd/R2; no household or hosted data. They cover credentials/live membership,
 actor/subject mismatch, household and Production separation, missing binding,
 MIME/signature/size/dimension/metadata rejection, idempotent immutable uploads and
-delete tombstones; browser reload/offline recovery, all four local scope fields,
+disabled DELETE without R2 access and preserved reads; browser reload/offline recovery, all four local scope fields,
+allowlisted scope/intent/crop with injected credential fields excluded after reload,
 atomic slot intent, acceptance acknowledgement, concurrent retries, durable discard,
 and retired room/auth outcomes. The parent owns integrated TypeScript/High quick
 gate, UI/theme verification, and any later physical-browser or hosted acceptance.

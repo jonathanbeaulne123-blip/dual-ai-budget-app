@@ -86,7 +86,7 @@ describe('private board photo Worker', () => {
     ] as const) expect((await handleBoardMedia(request, env))?.status).toBe(status);
     expect(b.store.put).not.toHaveBeenCalled();
   });
-  it('idempotently uploads immutable bytes, separates households, streams private reads and tombstones deletion', async () => {
+  it('idempotently uploads immutable bytes, separates households, streams private reads', async () => {
     const b = bucket(); const env = { ...authEnv, BOARD_MEDIA: b.binding }; const valid = await jpeg();
     const first = await handleBoardMedia(req('PUT', valid), env);
     expect(first?.status).toBe(201);
@@ -99,10 +99,25 @@ describe('private board photo Worker', () => {
     expect(read?.headers.get('Cache-Control')).toBe('private, no-store');
     expect(read?.headers.get('X-Content-Type-Options')).toBe('nosniff');
     expect(new Uint8Array(await read!.arrayBuffer())).toEqual(valid);
-    expect((await handleBoardMedia(req('DELETE'), env))?.status).toBe(204);
-    expect((await handleBoardMedia(req('DELETE'), env))?.status).toBe(204);
-    expect((await handleBoardMedia(req(), env))?.status).toBe(404);
-    expect((await handleBoardMedia(req('PUT', valid), env))?.status).toBe(409);
-    expect(b.objects.get(`v1/development/HH-ONE/${mediaId}`)?.bytes.length).toBe(0);
+  });
+  it('refuses physical DELETE without any R2 access and preserves an active photo', async () => {
+    const b = bucket(); const env = { ...authEnv, BOARD_MEDIA: b.binding }; const valid = await jpeg();
+    await handleBoardMedia(req('PUT', valid), env);
+    for (const spy of [b.store.get, b.store.put, b.store.head]) spy.mockClear();
+    for (const target of [mediaId, 'BM-00000000-0000-4000-8000-000000000000']) {
+      const response = await handleBoardMedia(req('DELETE', undefined, {}, `/api/board-media/development/HH-ONE/${target}`), env);
+      expect(response?.status).toBe(405);
+      expect(await response?.json()).toMatchObject({ code: 'PHYSICAL_DELETE_DISABLED' });
+      expect(response?.headers.get('Allow')).toBe('GET, PUT');
+    }
+    expect(b.store.get).not.toHaveBeenCalled();
+    expect(b.store.put).not.toHaveBeenCalled();
+    expect(b.store.head).not.toHaveBeenCalled();
+    expect(b.objects.size).toBe(1);
+    const read = await handleBoardMedia(req(), env);
+    expect(read?.status).toBe(200);
+    expect(new Uint8Array(await read!.arrayBuffer())).toEqual(valid);
+    expect((await handleBoardMedia(req('PUT', valid), env))?.status).toBe(200);
+    expect((await handleBoardMedia(req('DELETE'), authEnv))?.status).toBe(405);
   });
 });

@@ -1,4 +1,4 @@
-import type { R2Bucket } from '@cloudflare/workers-types';
+import type { R2Bucket, R2ObjectBody } from '@cloudflare/workers-types';
 import { authorizeRequest, type AuthEnv } from './ledgerSyncAuth';
 import { BoardMediaError, DISPLAY_MAX_BYTES, assertMediaId } from '../src/boardMedia/types';
 import { displayJpegDimensions } from '../src/boardMedia/image';
@@ -40,14 +40,32 @@ async function boundedBody(request: Request): Promise<Uint8Array<ArrayBuffer>> {
   return bytes;
 }
 
-/** GET/PUT/DELETE /api/board-media/:environment/:householdId/:mediaId. No public URLs. */
+/** Bridge Workers stream types to the DOM Response without an unchecked BodyInit cast. */
+function photoBody(object: R2ObjectBody): ReadableStream<Uint8Array<ArrayBuffer>> {
+  const reader = object.body.getReader();
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const { done, value } = await reader.read();
+        if (done) { reader.releaseLock(); controller.close(); }
+        else controller.enqueue(new Uint8Array(value));
+      } catch (error) { reader.releaseLock(); controller.error(error); }
+    },
+    async cancel(reason) {
+      try { await reader.cancel(reason); } finally { reader.releaseLock(); }
+    },
+  });
+}
+
+/** GET/PUT /api/board-media/:environment/:householdId/:mediaId. Physical DELETE is disabled. */
 export async function handleBoardMedia(request: Request, env: BoardMediaEnv): Promise<Response | null> {
   const url = new URL(request.url);
   if (url.pathname !== '/api/board-media' && !url.pathname.startsWith('/api/board-media/')) return null;
   try {
     const match = /^\/api\/board-media\/([^/]+)\/(HH-[A-Za-z0-9_-]{1,96})\/([^/]+)$/.exec(url.pathname);
     if (!match || url.search) return json({ code: 'INVALID_SCOPE', message: 'Use a valid household photo path without query parameters.' }, 400);
-    const [, environment, householdId, mediaId] = match as [string, string, string, string];
+    // These three captures are mandatory in the matched expression.
+    const environment = match[1]!, householdId = match[2]!, mediaId = match[3]!;
     assertMediaId(mediaId);
     const { scope } = await authorizeRequest(request, env, environment, householdId);
     if (scope.environment !== environment || scope.householdId !== householdId ||
@@ -55,20 +73,16 @@ export async function handleBoardMedia(request: Request, env: BoardMediaEnv): Pr
         request.headers.get('X-Board-Identity') !== scope.subject)
       return json({ code: 'FORBIDDEN', message: 'Sign in as the active household member and try again.' }, 403);
     if (environment !== 'development') return json({ code: 'ENVIRONMENT_DISABLED', message: 'Board photos are enabled only in Development.' }, 403);
-    if (!['GET', 'PUT', 'DELETE'].includes(request.method))
-      return new Response(null, { status: 405, headers: { ...headers, Allow: 'GET, PUT, DELETE' } });
+    if (request.method === 'DELETE')
+      return Response.json({ code: 'PHYSICAL_DELETE_DISABLED', message: 'Physical photo deletion is disabled. Remove the accepted board slot reference; private prior bytes remain until coordinated garbage collection is available.' }, { status: 405, headers: { ...headers, Allow: 'GET, PUT' } });
+    if (!['GET', 'PUT'].includes(request.method))
+      return new Response(null, { status: 405, headers: { ...headers, Allow: 'GET, PUT' } });
     if (!env.BOARD_MEDIA) return json({ code: 'BOARD_MEDIA_UNAVAILABLE', message: 'Board photo storage is not configured. Ask the operator to bind the dedicated Development BOARD_MEDIA R2 bucket.' }, 503);
     const key = `v1/${scope.environment}/${scope.householdId}/${mediaId}`;
-    if (request.method === 'DELETE') {
-      // Zero-byte tombstones erase photo bytes and permanently reserve the id.
-      // A lost upload ACK or delayed retry can never resurrect a deleted photo.
-      await env.BOARD_MEDIA.put(key, new Uint8Array(0), { customMetadata: { deleted: 'true' } });
-      return new Response(null, { status: 204, headers });
-    }
     if (request.method === 'GET') {
       const object = await env.BOARD_MEDIA.get(key);
       if (!object || object.customMetadata?.deleted === 'true') return json({ code: 'PHOTO_NOT_FOUND', message: 'This board photo is no longer available.' }, 404);
-      return new Response(object.body, { headers: { ...headers, 'Content-Type': 'image/jpeg', 'Content-Length': String(object.size) } });
+      return new Response(photoBody(object), { headers: { ...headers, 'Content-Type': 'image/jpeg', 'Content-Length': String(object.size) } });
     }
     if (request.headers.get('Content-Type')?.toLowerCase() !== 'image/jpeg')
       return json({ code: 'UNSUPPORTED_IMAGE', message: 'Upload a prepared JPEG photo.' }, 415);
