@@ -1,3 +1,17 @@
+## Mobile SC01 — scenario request contract (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc1-scenario-contract`, stacked on Count `246d4a4` (PR378). Phase2 remains in progress.
+
+**Outcome:** Explicit fixed/up-to CAD intent, dated source allocations, exact accepted scope/basis, distinct reviewed replacement references and typed refusals. Detached request review produces no projection or posting permission. The eventual consumer remains Claude's Reach.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+1.
+
+**Verification:** High quick gate68 assertions, TypeScript, AI and diff checks pass in43.095seconds; no breach. Independent trust review30/30, no SC01 blocker. [Exact commands, fingerprint and boundaries](worksessions/2026-09-08-mobile-scenario-contract.md).
+
+**Limits:** Pure local fictional fixtures. No UI or browser surface in this slice, no network/storage/command, no complete availability/model, hosted, exhaustive, merge or deployment claim.
+
+**Next owner:** Codex opens the separate draft PR and continues SC02 canonical horizon and shared fold, then availability and scenario composition with independent reviews.
+
 ## Mobile B2 — the Count and draft recovery (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b2-count`, stacked on B1 `37c0cc9` (PR377). G3 remains open. No merge or deployment.
