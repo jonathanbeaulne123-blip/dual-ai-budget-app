@@ -1,3 +1,4 @@
+import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   activeOpenShift,
@@ -90,6 +91,7 @@ function FloorLampRings() {
 
 export function WorkShiftPage({
   household,
+  fundCustodianMemberId,
   view = "household",
   memberId,
   memberName,
@@ -103,6 +105,7 @@ export function WorkShiftPage({
   onChooseTimeline,
   onClockOut,
   onConfirmShift,
+  readSubmissionStatus,
   duplicateConfirm = null,
   onConfirmAnyway,
   onDismissDuplicate,
@@ -118,6 +121,7 @@ export function WorkShiftPage({
   onRecordEarningCadence,
 }: {
   household: Household;
+  fundCustodianMemberId?: string | null;
   view?: LedgerView;
   memberId: string;
   memberName: string;
@@ -130,7 +134,8 @@ export function WorkShiftPage({
   onEndBreak: () => void;
   onChooseTimeline: (openShiftId: string) => void;
   onClockOut: () => void;
-  onConfirmShift: (input: PostWorkShiftInput, attendanceReview?: import("./core/index.ts").ShiftAttendanceReviewDraft | null) => void;
+  onConfirmShift: (input: PostWorkShiftInput, attendanceReview?: import("./core/index.ts").ShiftAttendanceReviewDraft | null, callbacks?: WorkShiftDraftCallbacks) => void;
+  readSubmissionStatus?: (id: string) => Promise<"accepted" | "pending" | "rejected" | "missing">;
   duplicateConfirm?: { message: string } | null;
   onConfirmAnyway?: () => void;
   onDismissDuplicate?: () => void;
@@ -152,7 +157,6 @@ export function WorkShiftPage({
   const [breakdown, setBreakdown] = useState(false);
   const [weatherGlass, setWeatherGlass] = useState<WeatherGlass | undefined>(undefined);
   const [finishedReview, setFinishedReview] = useState(false);
-  const [shiftsWhenReviewOpened, setShiftsWhenReviewOpened] = useState(0);
   const [workShiftDraft, setWorkShiftDraft] = useState<WorkShiftDraft | null>(null);
   const [shiftScanBusy, setShiftScanBusy] = useState(false);
   const [shiftScanError, setShiftScanError] = useState("");
@@ -254,14 +258,7 @@ export function WorkShiftPage({
     clearScanDraft();
   }, [reviewing]);
 
-  useEffect(() => {
-    if (!finishedReview) return;
-    const count = household.shifts.filter((shift) => shift.memberId === memberId).length;
-    if (count > shiftsWhenReviewOpened) {
-      setFinishedReview(false);
-      clearScanDraft();
-    }
-  }, [finishedReview, household.shifts, memberId, shiftsWhenReviewOpened]);
+
 
   async function applyScan(file: File | undefined) {
     if (!file) return;
@@ -332,7 +329,7 @@ export function WorkShiftPage({
       "7shifts supplied worked time. Tips, sales, restaurant covers, and floor headcount remain blank until explicitly scanned or entered.",
     ]);
     setShiftScanError("");
-    setShiftsWhenReviewOpened(household.shifts.filter((shift) => shift.memberId === memberId).length);
+
     setFinishedReview(true);
     setSelectedEnvelopeId(envelope.id);
     void readHistoricalShiftWeather({
@@ -406,7 +403,7 @@ export function WorkShiftPage({
               onSignOut={onClockOut}
               onFinished={() => {
                 clearScanDraft();
-                setShiftsWhenReviewOpened(household.shifts.filter((shift) => shift.memberId === memberId).length);
+
                 setFinishedReview(true);
               }}
               previewHours={preview?.hours ?? null}
@@ -442,6 +439,7 @@ export function WorkShiftPage({
                 />
                 <WorkShiftWithSevenShifts
                   household={household}
+                  fundCustodianMemberId={fundCustodianMemberId}
                   memberId={memberId}
                   today={today}
                   punch={punch}
@@ -450,10 +448,9 @@ export function WorkShiftPage({
                   weatherGlassPrefill={weatherGlass}
                   scanWarnings={shiftScanWarnings}
                   onClearDraft={clearScanDraft}
-                  onConfirm={(input, attendanceReview) => {
-                    clearScanDraft();
-                    onConfirmShift(input, attendanceReview);
-                  }}
+                  onConfirm={onConfirmShift}
+                  readSubmissionStatus={readSubmissionStatus}
+                  onAccepted={() => setFinishedReview(false)}
                 />
               </>
             ) : null}
@@ -709,7 +706,7 @@ export function WorkShiftPage({
               setWorkShiftDraft(candidate.draft);
               setShiftScanWarnings(candidate.missingPaidBreak ? ["7shifts did not state paid-break minutes. Enter 0 only when there was no paid break."] : []);
               setShiftScanError("");
-              setShiftsWhenReviewOpened(household.shifts.filter((shift) => shift.memberId === memberId).length);
+
               setFinishedReview(true);
               setPane("today");
               window.requestAnimationFrame(() => document.getElementById("shift-tab-today")?.focus());

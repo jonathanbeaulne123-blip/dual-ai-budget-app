@@ -475,3 +475,12 @@ Claude's felt apron is Home's first whole object for six hours after an accepted
 ## Mobile B1 — exact Cut ownership (2026-09-08)
 
 Claude's Cut uses the same percentSplits result for printed cents and Final Confirm. A one-cent50/50 review previously printed two cents; it now shows the first member's one cent and the final member's zero. The final member is named as filling the remainder after rounding. Current ordered active IDs replace the hardcoded seed; the draft binds desk/member/environment/generation and refuses stale queued ownership. Other roster sizes retain every field, with invalid totals and negative rounded residuals refused. Drag preview blocks both Confirm paths; cancellation restores the reviewed split. New entries reset defaults while duplicate/rejection retries retain review. Risk Medium-High; Budget(5)+2; Engagement(3)+2. [Worksession](worksessions/2026-09-08-mobile-cut.md). No financial kernel, command, schema or deployment change.
+
+
+## Mobile B2 — Claude's Count and recoverable Confirm (2026-09-08)
+
+The phone contributor money step uses Claude's three named rails, 29px take-home figure, 15px readings and history behind the card rail. Exact cents and hundredth-hour source values survive a stationary touch; deliberate duration edits snap to quarter-hours. Paid-break income appears once inside wages. Captured envelope duration remains immutable. Existing mandatory sales, customers, staffing, destinations, attendance and Confirm stay in the flow. Risk Medium-High; Budget(5)+2; Engagement(3)+3.
+
+Autosave requires full form and source recovery, not only three numbers. One member/household/environment-scoped session draft uses conditional revision writes. Final Confirm freezes a persisted command identity and exact payload; authoritative v2 receipt lookup distinguishes accepted, queued, rejected and missing submissions. Unknown transport results keep the frozen draft. Accepted and definitive rejection transitions reach remounted forms. Source/settings changes require review, and a stale editor cannot overwrite another form's saved or submitted version. These repairs expand the slice because existing callers discarded scan drafts and attendance before acceptance.
+
+Measured local tap counts are21→14 for blank entry and4→4 for populated source figures. The under-ten blank-entry G3 gate remains open; required fields are not omitted to claim completion. Physical phone proof also remains open. No merge, deployment, schema or accounting-kernel change. [Worksession](worksessions/2026-09-08-mobile-count.md).

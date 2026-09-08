@@ -1,3 +1,4 @@
+import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   parseSevenShiftsInbox,
@@ -9,15 +10,19 @@ import {
   type SevenShiftsTimesheetDraft,
 } from "./core/index.ts";
 import { listSevenShiftsConnections, pullSevenShiftsPunches, type SevenShiftsScope } from "./imports/sevenShiftsClient.ts";
+import { RecoverableWorkShiftFlow } from "./RecoverableWorkShiftFlow.tsx";
 import { WorkShiftFlow } from "./WorkShiftFlow.tsx";
 
 type WorkShiftWithSevenShiftsProps = {
   household: Household;
+  fundCustodianMemberId?: string | null;
   memberId: string;
   today: string;
   punch: Parameters<typeof WorkShiftFlow>[0]["punch"];
   busy: boolean;
-  onConfirm: (input: PostWorkShiftInput, attendanceReview?: ShiftAttendanceReviewDraft | null) => void;
+  onConfirm: (input: PostWorkShiftInput, attendanceReview?: ShiftAttendanceReviewDraft | null, callbacks?: WorkShiftDraftCallbacks) => void;
+  onAccepted?: () => void;
+  readSubmissionStatus?: (id: string) => Promise<"accepted" | "pending" | "rejected" | "missing">;
   initialDraft?: Parameters<typeof WorkShiftFlow>[0]["initialDraft"];
   weatherGlassPrefill?: Parameters<typeof WorkShiftFlow>[0]["weatherGlassPrefill"];
   scanWarnings?: string[];
@@ -31,11 +36,14 @@ export function WorkShiftWithSevenShifts(props: WorkShiftWithSevenShiftsProps) {
 
 function ScopedWorkShiftWithSevenShifts({
   household,
+  fundCustodianMemberId,
   memberId,
   today,
   punch,
   busy,
   onConfirm,
+  onAccepted,
+  readSubmissionStatus,
   initialDraft,
   weatherGlassPrefill,
   scanWarnings,
@@ -121,15 +129,18 @@ function ScopedWorkShiftWithSevenShifts({
           </button>
         ))}
       </div>
-      <WorkShiftFlow
+      <RecoverableWorkShiftFlow
         key={flowKey}
         household={household}
+        fundCustodianMemberId={fundCustodianMemberId}
         memberId={memberId}
         today={today}
         punch={punch}
         inboxDraft={draft}
         busy={busy}
         onConfirm={onConfirm}
+        onAccepted={onAccepted}
+        readSubmissionStatus={readSubmissionStatus}
         initialDraft={initialDraft}
         weatherGlassPrefill={weatherGlassPrefill}
         scanWarnings={scanWarnings}

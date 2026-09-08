@@ -1,3 +1,4 @@
+import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import type { Environment, PostWorkShiftInput, ShiftAttendanceReviewDraft } from "./core/index.ts";
 
 export const WORK_SHIFT_SCOPE_ERROR = "That Timesheet draft belongs to another ledger or member. Pull it again.";
@@ -11,6 +12,8 @@ export type WorkShiftCommandScope = {
 export type ScopedWorkShiftInput = WorkShiftCommandScope & {
   input: PostWorkShiftInput;
   attendanceReview?: ShiftAttendanceReviewDraft | null;
+  /** Local UI acknowledgement only; never serialized into the posting command. */
+  draftCallbacks?: WorkShiftDraftCallbacks;
 };
 
 export function workShiftScopeMatches(

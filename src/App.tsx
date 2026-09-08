@@ -1,3 +1,4 @@
+import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { editSplitDraft, newSplitDraft, reviewedSplitPayload, splitDraftScope, type SplitDraft } from "./core/splitDraft.ts";
 import type { FundDestination } from "./FundStage.tsx";
 import { enqueueScopedWrite } from "./core/scopedWrite.ts";
@@ -496,6 +497,7 @@ type CommitHouseholdOptions = {
   forceFlush?: boolean;
   confirmationId?: string;
   onRejected?: (message: string) => void;
+  onDefinitiveRejected?: () => void;
   suppressUndo?: boolean;
   onQueued?: () => void;
 };
@@ -3794,6 +3796,7 @@ export function App() {
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
         if (caught instanceof LedgerCommandRejectedError || /BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) confirmationRef.current = null;
+        if (caught instanceof LedgerCommandRejectedError) options?.onDefinitiveRejected?.();
         options?.onRejected?.(message); setError(message); return null;
       } finally { setBusy(false); }
     }
@@ -4384,6 +4387,8 @@ export function App() {
 
   function run(fn: (current: Household) => CommitResult, options?: {
     closeAdd?: boolean;
+    confirmationId?: string;
+    onDefinitiveRejected?: () => void;
     onAccepted?: (result: CommitResult) => void;
     onConfirm?: (error: NeedsConfirmationError) => boolean;
     onError?: (message: string) => void;
@@ -4420,6 +4425,8 @@ export function App() {
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
           {
+            confirmationId: options?.confirmationId,
+            onDefinitiveRejected: options?.onDefinitiveRejected,
             onRejected: message => { setError(message); if (options?.closeAdd !== false && adding && submittedDraftGeneration===draftGenerationRef.current) setAdding(true); options?.onError?.(message); },
             onQueued: options?.closeAdd !== false && adding ? () => { if(submittedDraftGeneration!==draftGenerationRef.current)return;setAdding(false); setConfirm(null); setBooksPaneRequest("register"); goTab("ledger"); } : undefined,
           },
@@ -4433,12 +4440,12 @@ export function App() {
         if (memberPersonal && result.personalMemberId) {
           setPersonalReplica(personalReplicaForMember(outcome.household, result.personalMemberId));
         }
+        options?.onAccepted?.(result);
         if (options?.closeAdd === false) {
-          options?.onAccepted?.(result);
           if (result.warnings.length) setError(result.warnings.join(" "));
           return;
         }
-        if(submittedDraftGeneration!==draftGenerationRef.current){options?.onAccepted?.(result);return;}
+        if(submittedDraftGeneration!==draftGenerationRef.current)return;
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
@@ -5805,23 +5812,36 @@ export function App() {
     });
   }
 
-  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null) {
+  async function readWorkShiftSubmission(id: string): Promise<"accepted" | "pending" | "rejected" | "missing"> {
+    if (useLedgerSync && (household?.linked || localLedgerIdentity(session?.memberId ?? ""))) {
+      const client = ledgerSyncRef.current;
+      if (!client || client.options.scope.environment !== environment || client.options.scope.householdId !== household?.householdId || client.options.scope.memberId !== session?.memberId) throw new Error("SCOPE_CLOSED");
+      return client.submissionStatus(id);
+    }
+    return household?.commandReceipts.some(receipt => receipt.confirmationId === id) ? "accepted" : "missing";
+  }
+
+  function submitWorkShift(input: PostWorkShiftInput, confirmDuplicate = false, attendanceReview?: ShiftAttendanceReviewDraft | null, draftCallbacks?: WorkShiftDraftCallbacks) {
+    if (postingRef.current) { if (!confirmDuplicate) draftCallbacks?.onRejected(); return; }
     const current = householdRef.current;
     const currentMemberId = sessionRef.current?.memberId;
-    const shiftConfirmationId = confirmationRef.current ?? newConfirmationId();
+    const shiftConfirmationId = input.confirmationId ?? confirmationRef.current ?? newConfirmationId();
     if (!confirmationRef.current) confirmationRef.current = shiftConfirmationId;
     const pending = confirmDuplicate
       ? workShiftInputRef.current
       : current && currentMemberId
         ? {
             input: { ...input, confirmationId: shiftConfirmationId },
-            environment: current.environment,
-            householdId: current.householdId,
-            memberId: currentMemberId,
+            environment: draftCallbacks?.scope?.environment ?? current.environment,
+            householdId: draftCallbacks?.scope?.householdId ?? current.householdId,
+            memberId: draftCallbacks?.scope?.memberId ?? currentMemberId,
             attendanceReview,
+            draftCallbacks,
           }
         : null;
+    const rejectedDraftCallbacks = pending?.draftCallbacks;
     if (!workShiftScopeMatches(current, currentMemberId, pending)) {
+      rejectedDraftCallbacks?.onRejected();
       workShiftInputRef.current = null;
       setConfirm(null);
       setError(WORK_SHIFT_SCOPE_ERROR);
@@ -5830,17 +5850,20 @@ export function App() {
     workShiftInputRef.current = pending;
     void run((live) => {
       try {
-        return runScopedWorkShift(
-          live,
-          sessionRef.current?.memberId,
-          pending,
-          confirmDuplicate,
-          (safeInput, safeAttendanceReview) => postWorkShiftWithAttendanceReview(live, safeInput, safeAttendanceReview),
-        );
-      } catch (caught) {
-        workShiftInputRef.current = null;
-        throw caught;
+        return runScopedWorkShift(live, sessionRef.current?.memberId, pending, confirmDuplicate,
+          (safeInput, safeAttendanceReview) => postWorkShiftWithAttendanceReview(live, safeInput, safeAttendanceReview));
+      } catch (error) {
+        // No transport was entered. Duplicate review retains its original identity.
+        if (!(error instanceof NeedsConfirmationError) || error.code !== "sameShiftDay") pending.draftCallbacks?.onRejected();
+        throw error;
       }
+    }, { confirmationId: pending.input.confirmationId,
+      onDefinitiveRejected: () => pending.draftCallbacks?.onRejected(),
+      onError: message => setError(message),
+      onAccepted: () => {
+        pending.draftCallbacks?.onAccepted();
+        if (workShiftInputRef.current === pending) workShiftInputRef.current = null;
+      },
     });
   }
 
@@ -6292,6 +6315,7 @@ export function App() {
         <DeferredWorkShiftPage
           key={`${environment}:${household.householdId}:${session.memberId}`}
           household={experience && experience.ok ? experience.shiftHousehold : household}
+          fundCustodianMemberId={household.householdFund?.custodianMemberId}
           view={view}
           memberId={session.memberId}
           memberName={household.members.find((member) => member.id === session.memberId)?.name ?? "You"}
@@ -6304,7 +6328,8 @@ export function App() {
           onEndBreak={() => { void runKitchen((current) => endShiftBreak(current, { memberId: actorId })); }}
           onChooseTimeline={(keepId) => { void runKitchen((current) => chooseOpenShiftTimeline(current, { memberId: actorId, keepId })); }}
           onClockOut={clockOutStayOnShiftPage}
-          onConfirmShift={(input, attendanceReview) => submitWorkShift(input, false, attendanceReview)}
+          onConfirmShift={(input, attendanceReview, callbacks) => submitWorkShift(input, false, attendanceReview, callbacks)}
+          readSubmissionStatus={readWorkShiftSubmission}
           duplicateConfirm={
             confirm
             && workShiftInputRef.current
@@ -6961,6 +6986,7 @@ export function App() {
               <DeferredWorkShiftWithSevenShifts
                 key={`${environment}:${household.householdId}:${actorId}`}
                 household={displayHousehold}
+                fundCustodianMemberId={household.householdFund?.custodianMemberId}
                 memberId={actorId}
                 today={workShiftDateRef.current}
                 punch={activeOpenShift(household.kitchen, actorId)}
@@ -6972,11 +6998,8 @@ export function App() {
                   setShiftScanWarnings([]);
                   setShiftScanError("");
                 }}
-                onConfirm={(input) => {
-                  setWorkShiftDraft(null);
-                  setShiftScanWarnings([]);
-                  submitWorkShift(input);
-                }}
+                onConfirm={(input, attendanceReview, callbacks) => submitWorkShift(input, false, attendanceReview, callbacks)}
+                readSubmissionStatus={readWorkShiftSubmission}
               />
               </DeferredSurface>
             </>

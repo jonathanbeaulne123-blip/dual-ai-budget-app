@@ -1,3 +1,17 @@
+## Mobile B2 — the Count and draft recovery (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b2-count`, stacked on B1 `37c0cc9` (PR377). G3 remains open. No merge or deployment.
+
+**Outcome:** Claude's three rails and exact original hierarchy, preserved cents and captured hours, canonical take-home, own-job history and full scoped draft recovery. Confirm persists one exact command identity; authoritative receipts recover late acceptance, and uncertain transport retains the frozen draft. Attendance/source details survive both entry paths.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+3.
+
+**Verification:** Final quick gate148assertions, TypeScript and AI checks passed in239.180seconds, no breach. Independent recovery recheck28/28 with no remaining blocker; final selected attendance regression passes. Chromium18cases cover four widths,200% text, history, exact typing, cancellation, focus and frozen scale. [Exact evidence and commands](worksessions/2026-09-08-mobile-count.md).
+
+**Evidence class / limits:** Local fictional components and real commands; sync receipt API mocked in actual-client tests. Full-App startup/recovery canaries run in jsdom. Tap counts21→14blank and4→4populated exclude automated scrolling; no physical phone, human elapsed-time, authenticated browser, hosted or exhaustive proof. No under-ten blank-entry claim.
+
+**Next owner:** Codex creates the separate draft PR with G3 explicit, then continues independent Fund-scenario and mobile slices inside Claude's original surfaces. Phase2 remains in progress.
+
 ## Mobile B1 — the Cut (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b1-cut`, stacked on A5 `cd97dfa` (PR376). No merge or deployment.

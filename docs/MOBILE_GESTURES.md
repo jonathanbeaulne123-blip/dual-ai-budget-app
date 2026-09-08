@@ -31,3 +31,10 @@ A page-wide horizontal pager containing a horizontal rail fails G1 even if a loc
 ## Cut implementation proof (B1)
 
 The named readings sit in one card above a reserved 44px divider lane so endpoint movement cannot clip names or cross printed cents. The visible boundary remains exact; only its invisible hit area stays inside the lane at endpoints. Grabbing preserves the starting percentage, including fractional exact input. Intentional movement snaps near the original six stops; arrows change one point and Home/End reach the bounds. Pointer cancellation and first Escape discard the preview; ordinary document scrolling remains outside the handle. Final Confirm and duplicate Add anyway are disabled until the preview ends. Existing percentage allocation drives both displayed and posted cents. [Worksession](worksessions/2026-09-08-mobile-cut.md).
+
+
+### Count verification boundary (B2)
+
+The three rails are the explicit exception already listed above. Native range interaction, exact typing and ordinary vertical page scroll share the existing Shift flow. Touch targets are44px; one active rail freezes its scale and disables the others and Next. Escape, pointer cancellation and unmount restore the original draft value; exact typing returns focus to its named reading. Envelope duration is locked. Every action edits a draft until the separate Confirm.
+
+Actual component/command tap comparison: blank21→14; populated4→4. This is local synthetic evidence, not physical G3 certification. No under-ten claim for blank entry.
