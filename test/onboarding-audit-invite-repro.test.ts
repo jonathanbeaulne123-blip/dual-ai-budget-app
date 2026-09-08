@@ -13,6 +13,7 @@ vi.mock("../src/storage.ts", async (importOriginal) => {
     ...actual,
     peekHousehold: vi.fn(() => writes.stored),
     loadHousehold: vi.fn(async () => writes.stored),
+    loadHouseholdReplica: vi.fn(async () => writes.stored),
     listHouseholdReplicas: vi.fn(async () => []),
     loadPersonalReplica: vi.fn(async () => null),
     saveHousehold: vi.fn(async (household: Household) => {
@@ -106,14 +107,8 @@ vi.mock("../src/HerculesPro.tsx", async (importOriginal) => {
 
 import { App } from "../src/App.tsx";
 import { ledgerSyncEnabled } from "../src/ledgerSync/mode.ts";
-import { GuidedSetupPreview } from "../src/GuidedSetupPreview.tsx";
 import {
-  acceptHouseholdWrite,
-  acceptedHouseholdOnboarding,
   catalogHousehold,
-  householdNeedsCharterFounding,
-  newHouseholdTemplate,
-  seedDemoHousehold,
 } from "../src/core/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -159,6 +154,7 @@ import { redeemHouseholdInvite } from "../src/ledger/householdInvites.ts";
 describe("invitation entry with Development v2 and a retained replica", () => {
  let root: Root; let container: HTMLDivElement;
  beforeEach(() => {
+  vi.clearAllMocks();
   vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
   callbackAuth.userId = "auth-bianca";
   writes.stored = null; writes.candidates = [];
@@ -211,6 +207,19 @@ describe("invitation entry with Development v2 and a retained replica", () => {
   expect(container.textContent).not.toContain("Invitation expired");
  });
 
+ it("hides the retained Personal ledger after cancelling with a different Google account", async () => {
+  writes.stored = catalogHousehold("development");
+  writes.stored.google.links = [{memberId:"MEM-002",email:"jonathan@example.test",subject:"google-jonathan",displayName:"Jonathan",linkedAt:"2026-09-08T12:00:00Z",lastConfirmedAt:"2026-09-08T12:00:00Z",updatedAt:"2026-09-08T12:00:00Z",grantedScopes:["openid"],active:true}];
+  const selection = JSON.stringify({memberId:"MEM-002",view:"personal",householdId:writes.stored.householdId});
+  localStorage.setItem("hearth:session:v1:development",selection);
+  await act(async () => {root.render(createElement(App));});
+  await waitFor(() => expect(container.textContent).toContain("Your name"));
+  await act(async () => {button("Back to households").click();});
+  expect(container.textContent).toContain("Confirm access to the saved books");
+  expect(container.querySelector(".app-shell")).toBeNull();
+  expect(localStorage.getItem("hearth:session:v1:development")).toBe(selection);
+ });
+
  it("ignores an accepted invitation response after Google identity changes", async () => {
   let settle!: (value: Awaited<ReturnType<typeof redeemHouseholdInvite>>) => void;
   vi.mocked(redeemHouseholdInvite).mockImplementation(() => new Promise(resolve => { settle = resolve; }));
@@ -225,7 +234,8 @@ describe("invitation entry with Development v2 and a retained replica", () => {
   await waitFor(() => expect(redeemHouseholdInvite).toHaveBeenCalled());
   callbackAuth.userId = "another-google-account";
   await act(async () => { settle({ ok: true, environment: "development", householdId: "another-household", memberId: "new-member" } as Awaited<ReturnType<typeof redeemHouseholdInvite>>); });
-  expect(writes.candidates).toHaveLength(0);
+  expect(writes.candidates.some(h => h.householdId === "another-household")).toBe(false);
+  expect(localStorage.getItem("hearth:session:v1:development") ?? "").not.toContain("new-member");
   expect(container.textContent).toContain("The Google account changed during this invitation");
   expect(button("Try invitation again").disabled).toBe(false);
  });

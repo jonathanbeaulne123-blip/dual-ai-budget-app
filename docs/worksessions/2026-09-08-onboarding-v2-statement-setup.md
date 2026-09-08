@@ -51,3 +51,21 @@ No unexecuted path, theme or device check can be represented as passing. Full ex
 ## Boundaries
 
 Existing agreements, independent proposal formula/consent, Final Confirm and accepted write authority remain authoritative. No bank feeds, new sharing permissions, invented partner estimates, balancing income/expense, raw statement persistence, or independent financial writer. New receipts and opening lineage survive rollback; incompatible writers must refuse mutation.
+
+## Integrated implementation and review
+
+All five original failures now have positive regressions. The command-level v2 journey uses separate serialized member replicas and runs every required command, real discarded Practice, both independent Ready approvals and changed-evidence recovery without requiring Fund, credit card, recurring bills or work setup. Opening evidence now follows accepted per-account lineage and explicit zero checkpoints rather than requiring one legacy batch or transient transport receipt.
+
+Independent review reproduced and repaired retained-transfer provenance loss: both bank legs are now bound atomically, with reciprocal-pair and authority-level identity checks. It also reproduced and repaired Personal opening/reversal rows influencing Shared coverage, a leaf-import initialization cycle, editable source drafts under an old Confirm, and inaccessible Starting books after reaching Ready. Published Shared rebase proposals preserve both approvals of the exact review; accepted draft cleanup cannot turn a successful financial result into a failed financial result.
+
+Normalized owner-scoped drafts retain review decisions across reloads; the financial review stores one UUID and retries it after an ambiguous acknowledgement. Accepted exact statement inputs are cleared from draft storage; newer edits in another tab are retained. Raw statements are not stored. Rollback must preserve all new accepted receipts, correction groups and opening checkpoints. Legacy event replay cannot safely carry the new metadata; incompatible legacy transport must refuse these writes before staging instead of dropping or reinterpreting lineage.
+
+### Local visual and interaction evidence
+
+The synthetic local gallery mounted the real Journey, history review, Ready, category, estimate, proposal and preparation components with no hosted writes. History review retained the signed -$200 amount through all 15 theme/width combinations (Classic, Taylor, Newfoundland; 320/390/719/1100/1440). There was no horizontal overflow. The five teaching surfaces were checked at 390/1440 in all themes; one asynchronous viewport sample was rechecked at its actual requested size. All six surfaces also had no overflow at 320 with 200% root text and reduced motion enabled.
+
+Desktop and mobile screenshots were inspected. Keyboard focus moved into review, reached Final Confirm and returned to Review opening balance after Close. Ready approval rendered a named waiting status for Jonathan and survived landscape resizing (844×390). The intake review separately exercised selected multipage PDF rendering with the bundled worker and mocked scanner, reload, owner isolation and hash reattachment. These are synthetic browser results, not OAuth, physical-device, actual screen-reader speech or real scanning-service certification. Physical keyboard, mobile virtual-keyboard, rotation and assistive-technology use remain in the real-device gate.
+
+### Real Development rehearsal gate (not executed)
+
+Use two separate Google principals on two physical devices, including a previously used browser and a fresh browser. Check invitation precedence and cancellation, complete the five stages with at least two Shared accounts, interrupt during intake and after Confirm, reconnect offline drafts, reopen with the other device powered off, and complete staggered Ready approval. Exercise a fresh history import and a Shared two-approval rebase using disposable Development data. Record device/browser versions and actual acceptance receipts. No deployment or hosted migration was performed by this implementation task.

@@ -743,6 +743,7 @@ export function App() {
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
+  const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
   const [dismissedOnboardingCompletionDigest, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
@@ -3300,6 +3301,7 @@ export function App() {
     ),
   );
   const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
+  useEffect(() => { setOnboardingBooksOpen(false); }, [ledgerRenderScopeKey]);
   const visibleLedgerPending=useLedgerSync&&ledgerPending?.key===ledgerRenderScopeKey?ledgerPending.rows:[];
   const visibleLedgerRejected=useLedgerSync&&ledgerRejected?.key===ledgerRenderScopeKey?ledgerRejected.entries.filter(entry=>!entry.preview||entry.preview.rows.some(row=>isVisibleInView(row,memberId??'',view))):[];
   const scenarioSource = useMemo(() => {
@@ -6234,6 +6236,7 @@ export function App() {
   }
 
   function openJourneyDestination(destination: JourneyDestination) {
+    setOnboardingBooksOpen(destination === "books" || destination === "fund");
     rememberSession({ memberId: session!.memberId, view: destination === "personal" ? "personal" : "household", householdId: household!.householdId });
     if (destination === "people") {
       if (household!.charter) setCharterPageOpen(true); else setCharterFoundingOpen(true);
@@ -6794,7 +6797,8 @@ export function App() {
 
       {tab === "ledger" && (
         <DeferredSurface label="Books">
-        {onboardingReadyOnly ? (
+        {onboardingBooksOpen && onboardingReadyOnly && <button className="ghost" type="button" onClick={() => setOnboardingBooksOpen(false)}>Back to Ready together</button>}
+        {onboardingReadyOnly && !onboardingBooksOpen ? (
           <OnboardingReady
             key={`${ledgerRenderScopeKey}:${view}`}
             household={household}
@@ -7977,12 +7981,14 @@ export function App() {
           else setCharterFoundingOpen(true);
         }}
         onOpenAccounts={() => {
+          setOnboardingBooksOpen(true);
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           setFocusedAccountId(null);
           setBooksPaneRequest("wallet");
           goTab("ledger");
         }}
         onOpenOpeningBalances={(mode) => {
+          setOnboardingBooksOpen(true);
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           setFocusedAccountId(null);
           setBooksPaneRequest(mode === "entry" ? "opening" : "register");
@@ -8016,6 +8022,7 @@ export function App() {
           goTab("plan");
         }}
         onOpenReady={() => {
+          setOnboardingBooksOpen(false);
           rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
           setFocusedAccountId(null);
           goTab("ledger");

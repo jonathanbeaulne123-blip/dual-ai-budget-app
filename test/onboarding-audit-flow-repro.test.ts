@@ -135,13 +135,13 @@ describe("onboarding v2 audited flow regressions", () => {
     let state:AuthorityState={sequence:0,shared:one.shared,personal:new Map([[A,one.personal],[B,two.personal]])};
     for(const memberId of [A,B]) {
       const scope:Scope={environment:h.environment,householdId:h.householdId,memberId,subject:`test-${memberId}`,role:"owner",expires:Date.now()+60000,aclEpoch:1};
-      const own=assembleHousehold(state.shared,state.personal.get(memberId)); clearCapturedIntent(own);
+      const own=assembleHousehold(state.shared,state.personal.get(memberId) ?? null); clearCapturedIntent(own);
       const preview=recordChapterAcknowledgement(own,{memberId,createdBy:memberId,chapterId:"ch-01-meet"});
       const command=await commandFromCapture(capturedIntent(preview.household)!,scope,crypto.randomUUID());
       const accepted=await prepareCommand(state,command,scope,()=>{});
       state={sequence:accepted.receipt.sequence,shared:accepted.shared,personal:new Map([...state.personal,[memberId,accepted.personal]])};
     }
-    const device=assembleHousehold(state.shared,state.personal.get(A));
+    const device=assembleHousehold(state.shared,state.personal.get(A) ?? null);
     expect(memberRequirementSatisfied(device,A,"ch-01-meet")).toBe(true); expect(memberRequirementSatisfied(device,B,"ch-01-meet")).toBe(true);
   });
   it("migrates v1 identity-scoped progress without accepting old Ready or optional gates", () => {

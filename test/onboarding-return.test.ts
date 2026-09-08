@@ -127,11 +127,6 @@ describe("onboardingNavigationTarget", () => {
   });
 
   it("keeps the Chapter 12 Books target reachable until the shared unlock is accepted", () => {
-    const HOUSEHOLD_CHAPTER_IDS = [
-      "ch-01-meet", "ch-02-household", "ch-03-charter", "ch-04-accounts",
-      "ch-05-opening", "ch-06-fund", "ch-07-recurrences", "ch-08-cadence",
-      "ch-09-categories", "ch-10-estimates", "ch-11-plan", "ch-12-ready",
-    ];
     const household = readySetup(true);
     expect(onboardingNavigationTarget(household, BIANCA)).toEqual({
       chapterId: "ch-12-ready",

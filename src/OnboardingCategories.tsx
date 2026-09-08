@@ -97,7 +97,7 @@ export function OnboardingCategories({
       {!selfSubmission ? (
         <>
           <p className="onboarding-category-guide">{copy("categories.solo", { name: other?.name ?? "your partner" })}</p>
-          {startingPoints.selected.some(row => row.kind === "category") && <section className="onboarding-statement-points"><h3>Categories you reviewed from statements</h3><p>These remain your choices; your partner makes their own selection.</p>{startingPoints.selected.filter(row => row.kind === "category" && categories.some(category => category.id === row.categoryId)).map(row => <article key={row.id}><strong>{row.label}</strong><p>{row.reason}</p><button type="button" disabled={busy || selectedIds.includes(row.categoryId!)} onClick={() => setSelectedIds(current => [...new Set([...current, row.categoryId!])])}>Add to my starter selection</button></article>)}</section>}
+          {startingPoints.selected.some(row => row.kind === "category") && <section className="onboarding-statement-points"><h3>Categories you reviewed from statements</h3><p>{copy("categories.statement-help")}</p>{startingPoints.selected.filter(row => row.kind === "category" && categories.some(category => category.id === row.categoryId)).map(row => <article key={row.id}><strong>{row.label}</strong><p>{row.reason}</p><button type="button" disabled={busy || selectedIds.includes(row.categoryId!)} onClick={() => setSelectedIds(current => [...new Set([...current, row.categoryId!])])}>Add to my starter selection</button></article>)}</section>}
           <fieldset className="onboarding-category-picker">
             <legend>{copy("categories.existing")}</legend>
             {categoriesByGroup.map(({ group, categories: rows }) => (

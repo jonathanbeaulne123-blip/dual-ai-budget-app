@@ -274,11 +274,11 @@ function accountsEvidence(household: Household, chapterId: ChapterId, viewerMemb
 
 function openingEvidence(household: Household, chapterId: ChapterId): Projection {
   const coverage = acceptedAccountOpeningCoverage(household, { visibility: "household" });
-  if (!coverage.complete) return EMPTY;
+  if (!coverage.complete) return household.transactions.some(row => row.visibility !== "personal" && row.source !== "opening") ? { ...EMPTY, ineligible: "stale" } : EMPTY;
   const checkpoints = [...coverage.checkpoints].sort((a, b) => a.accountId.localeCompare(b.accountId));
   return { ...EMPTY, household: {
     chapterId, scope: "household", kind: "receipt",
-    sourceIds: checkpoints.flatMap(point => [point.id, point.confirmationId]),
+    sourceIds: [...new Set(checkpoints.flatMap(point => [point.id, point.confirmationId, ...(point.transactionId ? [point.transactionId] : [])]))].sort(),
     lines: checkpoints.map(point => ({ label: accountName(household, point.accountId), value: `${formatCad(point.signedBalanceCents)} · ${point.date}${point.signedBalanceCents === 0 ? " · confirmed zero" : ""}` })),
     observedAt: checkpoints.map(point => point.createdAt).sort().at(-1)!,
   } };

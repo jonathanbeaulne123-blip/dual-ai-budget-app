@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  acceptedHouseholdOnboarding, memberRequirementSatisfied, requiredHouseholdChapters,
+  copy, acceptedHouseholdOnboarding, memberRequirementSatisfied, requiredHouseholdChapters,
   type ChapterId, type Household,
 } from "./core/index.ts";
 import "./onboarding-journey.css";
@@ -18,11 +18,11 @@ export function OnboardingPreparation() {
   return <section className="journey-preparation" aria-label="Before we begin">
     <h3>A little preparation</h3>
     <ul>
-      <li>Each person uses their own Google account to join this household.</li>
-      <li>Bring balances for your Shared accounts, or PDF, OFX/QFX or image statements.</li>
-      <li>You can stop. Accepted checkpoints save your progress; unfinished learning stays unfinished.</li>
+      <li>{copy("journey.guidance.1")}</li>
+      <li>{copy("journey.guidance.2")}</li>
+      <li>{copy("journey.guidance.3")}</li>
     </ul>
-    <p>Five stages, {requiredHouseholdChapters().length} required learning checkpoints, then both Ready approvals. Statement review depends on your accounts and any questions in the source; there is no timed deadline.</p>
+    <p>{copy("journey.preparation-length", { count: String(requiredHouseholdChapters().length) })}</p>
   </section>;
 }
 
@@ -48,17 +48,17 @@ export function OnboardingJourney({ household, memberId, onGo }: {
     <details className="journey-guidance"><summary>Preparation and visibility</summary>
       <OnboardingPreparation />
       <h3>Shared and Personal</h3>
-      <p>Shared accounts, accepted transactions, the household plan and boards are visible to both members. A Shared grocery expense is part of both people's household books.</p>
-      <p>Your Personal accounts, transactions and learning history stay in your Personal scope. A Personal purchase does not become Shared by appearing in a statement. Choose the scope before uploading; An upload draft stays on this device. Sharing a reviewed correction makes its proposed rows and balances visible to your partner before Final Confirm; only Final Confirm posts money.</p>
+      <p>{copy("journey.guidance.4")}</p>
+      <p>{copy("journey.guidance.5")}</p>
     </details>
     <JourneyInterests key={`${household.environment}:${household.householdId}:${memberId}`} />
     <details className="journey-guidance"><summary>Learn more when you want</summary>
-      <p>Optional introductions can wait. Opening one does not mark its learning complete.</p>
+      <p>{copy("journey.guidance.6")}</p>
       <ul className="journey-followups">
         {([['fund', 'Fund setup'], ['bills', 'Bills in Calendar'], ['work', 'Shifts and tips'], ['personal', 'Personal books and planning'], ['boards', 'Try the To-do board'], ['hercules', 'Meet Hercules']] as const).map(([destination, title]) => <li key={destination}><button type="button" onClick={() => onGo(destination)}>{title}<span>Optional · continue learning</span></button></li>)}
       </ul>
-      <p>Notes hold thoughts; Photos share moments; To-do holds tasks; Goals hold milestones; Shift Ask helps with work planning. Board goals do not move money.</p>
-      <p>Hercules explains what you are seeing and can help prepare a draft. You review and confirm financial changes yourself.</p>
+      <p>{copy("journey.guidance.7")}</p>
+      <p>{copy("journey.guidance.8")}</p>
     </details>
   </aside>;
 }
@@ -66,7 +66,7 @@ export function OnboardingJourney({ household, memberId, onGo }: {
 // Optional interests guide this sitting; they are never Shared evidence or approval.
 function JourneyInterests() {
   const [interests, setInterests] = useState<string[]>([]);
-  return <details className="journey-guidance"><summary>What would you like help with?</summary><p>Optional. Choose what interests you for this visit.</p>
+  return <details className="journey-guidance"><summary>{copy("journey.guidance.9")}</summary><p>{copy("journey.guidance.10")}</p>
     <div className="journey-interests">{["Spending", "Bills", "Work", "Household routines"].map(interest => <label key={interest}><input type="checkbox" checked={interests.includes(interest)} onChange={event => setInterests(current => event.target.checked ? [...current, interest] : current.filter(value => value !== interest))} />{interest}</label>)}</div>
   </details>;
 }

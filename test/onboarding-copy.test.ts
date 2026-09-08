@@ -106,12 +106,12 @@ const SLICE_13_ACCOUNTS_COPY: Record<string, { text: string; announce: CopyEntry
 
 const SLICE_14_OPENING_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
   "onboarding.household.ch-05-opening": {
-    text: "Bring every Shared account to today with one opening batch. These are balances you already have — not income or spending.", announce: "none",
+    text: "Choose an end-of-day starting balance for each Shared account, including zero. Review any statement activity after that cutoff before confirming the books.", announce: "none",
   },
   "opening.open": { text: "Enter opening balances", announce: "none" },
   "opening.review": { text: "Review opening entries", announce: "none" },
   "opening.partial": {
-    text: "Some Shared accounts are missing from the opening batch. Reverse that batch, then confirm all of them together.", announce: "polite",
+    text: "Some Shared accounts still need opening evidence. Add their balances, or review a history correction for an existing account.", announce: "polite",
   },
   "opening.stale": {
     text: "There are already posted entries in the books, but no accepted opening balance. Review those entries before continuing.", announce: "polite",
@@ -179,6 +179,19 @@ const SLICE_17_CADENCE_COPY: Record<string, { text: string; announce: CopyEntry[
 };
 
 const SLICE_19_CATEGORIES_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "journey.guidance.1": { text: "Each person uses their own Google account to join this household.", announce: "none" },
+  "journey.guidance.2": { text: "Bring balances for your Shared accounts, or PDF, OFX/QFX or image statements.", announce: "none" },
+  "journey.guidance.3": { text: "You can stop. Accepted checkpoints save your progress; unfinished learning stays unfinished.", announce: "none" },
+  "journey.guidance.4": { text: "Shared accounts, accepted transactions, the household plan and boards are visible to both members. A Shared grocery expense is part of both people's household books.", announce: "none" },
+  "journey.guidance.5": { text: "Your Personal accounts, transactions and learning history stay in your Personal scope. A Personal purchase does not become Shared by appearing in a statement. Choose the scope before uploading; An upload draft stays on this device. Sharing a reviewed correction makes its proposed rows and balances visible to your partner before Final Confirm; only Final Confirm posts money.", announce: "none" },
+  "journey.guidance.6": { text: "Optional introductions can wait. Opening one does not mark its learning complete.", announce: "none" },
+  "journey.guidance.7": { text: "Notes hold thoughts; Photos share moments; To-do holds tasks; Goals hold milestones; Shift Ask helps with work planning. Board goals do not move money.", announce: "none" },
+  "journey.guidance.8": { text: "Hercules explains what you are seeing and can help prepare a draft. You review and confirm financial changes yourself.", announce: "none" },
+  "journey.guidance.9": { text: "What would you like help with?", announce: "none" },
+  "journey.guidance.10": { text: "Optional. Choose what interests you for this visit.", announce: "none" },
+  "journey.preparation-length": { text: "Five stages, {count} required learning checkpoints, then both Ready approvals. Statement review depends on your accounts and any questions in the source; there is no timed deadline.", announce: "none" },
+
+  "categories.statement-help": { text: "These remain your choices; your partner makes their own selection.", announce: "none" },
   "onboarding.household.ch-09-categories": {
     text: "Review the named household starter set on your own device. Keep what fits and suggest what's missing; your choices stay private until both lists are in.", announce: "none",
   },

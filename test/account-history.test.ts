@@ -32,11 +32,11 @@ it('shares exact pending review across isolated principals and records each own 
  const {h,i}=backfill();clearCapturedIntent(h);const review=prepareAccountHistoryReview(h,i),one=splitForSync(h,member),two=splitForSync(h,'MEM-002');
  let state={sequence:h.revision,shared:one.shared,personal:new Map([[member,one.personal],['MEM-002',two.personal]])};
  const scope={environment:h.environment,householdId:h.householdId,memberId:member,subject:'first',role:'owner' as const,expires:Date.now()+60000,aclEpoch:1};
- async function execute(result:ReturnType<typeof acceptReviewedAccountHistory>,actor:string){const actorScope={...scope,memberId:actor};const cmd=await commandFromCapture(capturedIntent(result.household)!,actorScope,crypto.randomUUID());const accepted=await prepareCommand(state,cmd,actorScope,()=>{});state={sequence:accepted.receipt.sequence,shared:accepted.shared,personal:new Map([...state.personal,[actor,accepted.personal]])};return assembleHousehold(state.shared,state.personal.get(actor));}
+ async function execute(result:ReturnType<typeof acceptReviewedAccountHistory>,actor:string){const actorScope={...scope,memberId:actor};const cmd=await commandFromCapture(capturedIntent(result.household)!,actorScope,crypto.randomUUID());const accepted=await prepareCommand(state,cmd,actorScope,()=>{});state={sequence:accepted.receipt.sequence,shared:accepted.shared,personal:new Map([...state.personal,[actor,accepted.personal]])};return assembleHousehold(state.shared,state.personal.get(actor) ?? null);}
  await execute(submitAccountHistoryReview(h,{createdBy:member,review}),member);
- let peer=assembleHousehold(state.shared,state.personal.get('MEM-002'));expect(pendingAccountHistoryReviews(peer,{visibility:'household'})[0]?.review).toEqual(review);
+ let peer=assembleHousehold(state.shared,state.personal.get('MEM-002') ?? null);expect(pendingAccountHistoryReviews(peer,{visibility:'household'})[0]?.review).toEqual(review);
  peer=await execute(approveAccountHistoryReview(peer,{createdBy:'MEM-002',review}),'MEM-002');
- let author=assembleHousehold(state.shared,state.personal.get(member));author=await execute(approveAccountHistoryReview(author,{createdBy:member,review}),member);
+ let author=assembleHousehold(state.shared,state.personal.get(member) ?? null);author=await execute(approveAccountHistoryReview(author,{createdBy:member,review}),member);
  const accepted=await execute(acceptReviewedAccountHistory(author,{createdBy:member,review,confirmationId:'preview-confirm'}),member);
  expect(economicAccountBalanceAsOf(accepted,'ACC-CHEQUING','2026-09-01')).toBe(100000);expect(pendingAccountHistoryReviews(accepted,{visibility:'household'})).toEqual([]);
 });

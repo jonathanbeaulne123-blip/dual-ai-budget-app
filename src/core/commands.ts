@@ -517,7 +517,7 @@ export const recordChapterAcknowledgement = captureCommand("recordChapterAcknowl
     requireOnboardingProgressActor(household, input.memberId, input.createdBy);
     const projected = evidenceFor(household, chapter.id, input.memberId);
     if (projected.kind !== "accepted" || projected.card.scope !== "household") {
-      throw new ValidationError("Confirm one complete opening batch for every Shared account before continuing.");
+      throw new ValidationError("Confirm an opening balance for every active Shared account, including zero balances, before continuing.");
     }
   }
   if (chapter.id === "ch-06-fund") {

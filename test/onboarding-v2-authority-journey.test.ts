@@ -45,7 +45,7 @@ function isolatedPrincipals() {
   // Every read is a fresh serialized replica containing only this actor's envelope.
   const reload = (memberId: string) => {
     const household = assembleHousehold(
-      structuredClone(state.shared), structuredClone(state.personal.get(memberId)), { linked: true },
+      structuredClone(state.shared), structuredClone(state.personal.get(memberId) ?? null), { linked: true },
     );
     expect(household.members.find(m => m.id !== memberId)?.onboardingProgress).toBeUndefined();
     clearCapturedIntent(household);

@@ -5,17 +5,23 @@ import {
   submitAccountHistoryReview, type AccountHistoryInput, type AccountHistoryReview, type Household, type LedgerView,
 } from "./core/index.ts";
 import type { KitchenCommand } from "./kitchenCommand.ts";
+import { discardStatementDraft, loadStatementDraft } from "./imports/statementSetup/drafts.ts";
+import { statementHistoryInput } from "./imports/statementSetup/intake.ts";
+import { canonical } from "./ledgerSync/patch.ts";
 import { StatementSetup } from "./StatementSetup.tsx";
 import "./account-history-setup.css";
 
 type Props = { household: Household; memberId: string; authUserId: string; view: LedgerView; today: string; busy: boolean; onCommand: KitchenCommand };
-type SavedReview = { review: AccountHistoryReview; confirmationId: string };
+type SavedReview = { review: AccountHistoryReview; confirmationId: string; statementDraftId?: string };
 
 export function AccountHistorySetup(props: Props) {
   const key = JSON.stringify([props.household.environment, props.household.householdId, props.authUserId, props.memberId, props.view]);
   return <AccountHistorySetupSession key={key} {...props} storageKey={`hearth:account-history-review:v1:${key}`} />;
 }
 function AccountHistorySetupSession({ household, memberId, authUserId, view, today, busy, onCommand, storageKey }: Props & { storageKey: string }) {
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
+  const reviewTrigger = useRef<HTMLElement | null>(null);
+  const hadReview = useRef(false);
   const [mode, setMode] = useState<"manual" | "statement">("manual");
   const [accountId, setAccountId] = useState("");
   const [date, setDate] = useState(today);
@@ -37,6 +43,11 @@ function AccountHistorySetupSession({ household, memberId, authUserId, view, tod
   const accounts = household.accounts.filter(a => a.active && (view === "personal" ? a.scope === "personal" && a.ownerMemberId === memberId : a.scope !== "personal"));
   const pending = pendingAccountHistoryReviews(household, scope);
   const review = saved?.review;
+  useEffect(() => {
+    if (review) { reviewHeading.current?.focus(); reviewHeading.current?.scrollIntoView?.({ block: "start" }); }
+    else if (hadReview.current && reviewTrigger.current?.isConnected) reviewTrigger.current.focus();
+    hadReview.current = Boolean(review);
+  }, [review?.digest]);
   let changed = false;
   if (review) { try { changed = prepareAccountHistoryReview(household, review).digest !== review.digest; } catch { changed = true; } }
   const approved = (id: string) => household.accountHistoryApprovals?.some(a => a.digest === review?.digest && a.memberId === id);
@@ -44,9 +55,10 @@ function AccountHistorySetupSession({ household, memberId, authUserId, view, tod
   const approvalsReady = !needsPartner || household.members.filter(m => m.active).every(m => approved(m.id));
   const accepted = saved && household.accountHistoryApprovals?.some(a => a.id === `HISTORY-ACCEPTED:${saved.confirmationId}` && a.digest === review?.digest);
 
-  function reviewInput(input: AccountHistoryInput) {
+  function reviewInput(input: AccountHistoryInput, statementDraftId?: string) {
     const next = prepareAccountHistoryReview(household, input);
-    setSaved(current => current?.review.digest === next.digest ? current : { review: next, confirmationId: crypto.randomUUID() });
+    reviewTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setSaved(current => current?.review.digest === next.digest ? current : { review: next, confirmationId: crypto.randomUUID(), statementDraftId });
     setError(""); setMessage("");
   }
   async function command(fn: Parameters<KitchenCommand>[0], success: string, confirmationId?: string) {
@@ -54,8 +66,26 @@ function AccountHistorySetupSession({ household, memberId, authUserId, view, tod
     try {
       const outcome = await onCommand(fn, { confirmationId });
       if (!live.current) return;
-      if (outcome?.ok) setMessage(success);
-      else setError(outcome && !outcome.ok ? outcome.userMessage : "Acceptance is not confirmed yet. Keep this draft and retry the same action after reconnecting.");
+      if (outcome?.ok) {
+        setMessage(success);
+        if (confirmationId && saved?.statementDraftId) {
+          const draftScope = { environment: household.environment, householdId: household.householdId, authUserId, memberId, view };
+          try {
+            const draft = await loadStatementDraft(draftScope);
+            if (draft?.id === saved.statementDraftId) {
+              const input = { createdBy: saved.review.createdBy, visibility: saved.review.visibility, accounts: saved.review.accounts, rows: saved.review.rows };
+              // Another tab may have edited this owner draft. Clear only the exact accepted input.
+              if (canonical(statementHistoryInput(draft)) === canonical(input)) {
+                await discardStatementDraft(draftScope);
+                if (live.current) setMode("manual");
+              }
+            }
+          } catch {
+            if (live.current) setMessage(`${success} The device draft could not be cleared; the accepted books are saved.`);
+          }
+        }
+      }
+      else setError(outcome && !outcome.ok ? (outcome.userMessage ?? "This change was not accepted. Review the current books and try again.") : "Acceptance is not confirmed yet. Keep this draft and retry the same action after reconnecting.");
     } catch (caught) { if (live.current) setError(caught instanceof Error ? caught.message : String(caught)); }
     finally { if (live.current) setWorking(false); }
   }
@@ -64,6 +94,8 @@ function AccountHistorySetupSession({ household, memberId, authUserId, view, tod
     <header><p className="kicker">{view === "personal" ? "Your Personal books" : "Shared books"}</p><h2 id="history-setup-title">Starting balances and statements</h2>
       <p>Opening balances describe what an account held at the end of a chosen day. Import only activity after that cutoff.</p></header>
     <p role="status">{coverage.complete ? "Every active account in this scope has accepted opening evidence." : `${coverage.missingAccountIds.length} active account${coverage.missingAccountIds.length === 1 ? " needs" : "s need"} an opening balance, including confirmed zero balances.`}</p>
+    {review && !accepted && <p>Close this review before editing the source draft. Changes need a new review and new approvals.</p>}
+    <fieldset className="history-inputs" disabled={Boolean(review) && !accepted}><legend>Prepare account evidence</legend>
     <div className="history-mode" role="group" aria-label="How to set up accounts">
       <button type="button" aria-pressed={mode === "manual"} onClick={() => setMode("manual")}>Enter a balance</button>
       <button type="button" aria-pressed={mode === "statement"} onClick={() => setMode("statement")}>Use statements</button>
@@ -83,11 +115,12 @@ function AccountHistorySetupSession({ household, memberId, authUserId, view, tod
       <label className="history-check history-full"><input type="checkbox" checked={confirmedBalance} onChange={event => setConfirmedBalance(event.target.checked)} />I checked this account's balance at this cutoff, including any explicit zero.</label>
       <button type="submit" disabled={busy || working || !accounts.length || !confirmedBalance}>Review opening balance</button>
       {!accounts.length && <p>Create an account in Accounts first, then return here.</p>}
-    </form> : <StatementSetup household={household} memberId={memberId} authUserId={authUserId} view={view} acceptedCoverage={coverage.checkpoints.flatMap(checkpoint => (checkpoint.statementCoverage ?? []).map(span => ({ accountId: checkpoint.accountId, from: span.start, through: span.end, sourceIds: [checkpoint.confirmationId] })))} onReviewHistory={async input => { reviewInput(input); }} onDone={() => setMode("manual")} />}
+    </form> : <StatementSetup household={household} memberId={memberId} authUserId={authUserId} view={view} acceptedCoverage={coverage.checkpoints.flatMap(checkpoint => (checkpoint.statementCoverage ?? []).map(span => ({ accountId: checkpoint.accountId, from: span.start, through: span.end, sourceIds: [checkpoint.confirmationId] })))} onReviewHistory={async (input, draftId) => { reviewInput(input, draftId); }} onDone={() => setMode("manual")} />}
 
+    </fieldset>
     {pending.length > 0 && <section aria-label="Shared history proposals"><h3>History waiting for review</h3>{pending.map(proposal => <button type="button" key={proposal.id} onClick={() => { setSaved({ review: proposal.review, confirmationId: crypto.randomUUID() }); setError(""); }}>{household.members.find(m => m.id === proposal.review.createdBy)?.name ?? "Your partner"}'s history correction · {proposal.review.accounts.length} accounts</button>)}</section>}
     {review && <section className="history-review" aria-labelledby="history-review-title">
-      <h3 id="history-review-title">{review.mode === "rebase" ? "Review history correction" : "Review starting books"}</h3>
+      <h3 id="history-review-title" ref={reviewHeading} tabIndex={-1}>{review.mode === "rebase" ? "Review history correction" : "Review starting books"}</h3>
       <p>{review.visibility === "household" ? "These accepted balances and activity will be Shared." : "These accepted balances and activity stay in your Personal books."} Nothing posts until Final Confirm.</p>
       <div className="history-checkpoints">{review.accounts.map(checkpoint => {
         const prior = coverage.checkpoints.find(p => p.accountId === checkpoint.accountId);

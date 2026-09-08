@@ -28,3 +28,6 @@
 :root[data-theme="newfoundland"] .account-history-setup { border-top: 5px solid var(--theme-accent); border-radius: 2px; }
 :root[data-theme="newfoundland"] .history-checkpoints article { border-left: 3px solid var(--theme-accent); }
 @media(max-width:719px) { .history-manual { grid-template-columns: minmax(0,1fr); } .account-history-setup { padding: 16px 12px max(20px,env(safe-area-inset-bottom)); } .history-mode button { flex: 1 1 120px; } .history-review > button { width: 100%; margin-inline: 0; } }
+
+.history-inputs { border: 0; margin: 0; padding: 0; min-width: 0; }
+.history-inputs > legend { font-weight: 600; }

@@ -1,5 +1,7 @@
 # Hearth living roadmap
 
+> **Onboarding v2 and statement-assisted setup — integration review, 2026-09-08:** Five required stages, independent Shared evidence, reviewed signed/zero openings and atomic reconciled history corrections. [Implementation and acceptance](worksessions/2026-09-08-onboarding-v2-statement-setup.md). Release, real two-device Development rehearsal and physical accessibility checks remain open.
+
 > **Five shared boards — implemented and verified locally, 2026-09-08:** Jonathan approved mobile Till-style Add, traditional Calendar default, Shared Plan ordering, Household table navigation and five functional shared boards across all three themes. [Worksession and acceptance](worksessions/2026-09-08-five-shared-boards.md). Local implementation is separate from hosted photo-storage provisioning, deployment and physical-device proof.
 
 > **D-235 replacement in development:** [Ledger sync v2](LEDGER_SYNC_V2.md) implements a separate command/event authority for the ordinary App. Its hosted migration and acceptance are not yet claimed. The older transport described below remains historical runtime context for households that have not cut over; it is not a fallback after cutover.
