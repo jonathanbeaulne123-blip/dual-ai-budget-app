@@ -78,6 +78,7 @@ export * from "./ics.ts";
 export * from "./recurrence.ts";
 export * from "./recurrencePreview.ts";
 export * from "./kitchen.ts";
+export * from "./sharedBoards.ts";
 export * from "./google.ts";
 export * from "./companion.ts";
 export * from "./askBooks.ts";

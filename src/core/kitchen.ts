@@ -1,4 +1,5 @@
 import { addDays, isValidDateKey, type DateKey } from "./calendar.ts";
+import { emptySharedBoards, shapeSharedBoards, mergeSharedBoards } from "./sharedBoards.ts";
 import type {
   ChalkNote,
   CosmeticSlot,
@@ -40,6 +41,7 @@ export const EMPTY_COMPANION: HouseholdCompanion = {
 };
 
 export const EMPTY_KITCHEN: HouseholdKitchen = {
+  boards: emptySharedBoards(),
   chalkboard: [],
   companion: { ...EMPTY_COMPANION },
   books: { reconciliations: [], closedMonths: [] },
@@ -188,6 +190,7 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
   return {
     chalkboard,
     companion: {
+      // Companion appearance is independent of the shared boards below.
       name,
       species: "maine-coon",
       equipped: {
@@ -206,6 +209,7 @@ export function shapeKitchen(input?: Partial<HouseholdKitchen> | null): Househol
     openShift: null,
     openShifts: shapeOpenShifts(input),
     games: shapeGames(input?.games),
+    boards: shapeSharedBoards(input?.boards),
   };
 }
 
@@ -267,6 +271,7 @@ export function mergeKitchen(
     openShift: null,
     openShifts: mergeOpenShifts(left.openShifts, right.openShifts),
     games: mergeGames(left.games, right.games),
+    boards: mergeSharedBoards(left.boards, right.boards, tombstones),
   };
 }
 
