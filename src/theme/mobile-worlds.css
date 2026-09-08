@@ -1,0 +1,164 @@
+/* Mobile world compositions — Codex reference and integration geometry.
+   Loaded after Claude's worlds and the finished mobile canon. The instruments,
+   gestures and financial statuses retain their production implementations. */
+:root[data-theme] .theme-memorabilia { display: block; max-width: 720px; margin: 22px auto; padding: 14px 12px; }
+:root[data-theme] .keepsake-heading { display: grid; gap: 3px; padding: 0 6px 12px; }
+:root[data-theme] .keepsake-heading > span { font: 23px/1.2 var(--theme-hand); color: var(--ink); }
+:root[data-theme] .keepsake-heading > small { font: 11px/1.45 var(--font); color: var(--muted); }
+:root[data-theme] .keepsake-mounts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 14px; align-items: start; padding: 12px 6px 6px; }
+:root[data-theme] .theme-memorabilia .keepsake-mounts > figure { position: relative; margin: 0; width: auto; max-width: none; min-width: 0; padding: 7px 7px 10px; background: var(--card); border: 1px solid var(--line); box-shadow: 0 3px 8px color-mix(in srgb,var(--ink) 10%,transparent); transform: rotate(-2deg); }
+:root[data-theme] .theme-memorabilia .keepsake-mounts > [data-keepsake="ticket"] { grid-column: 1/-1; width: 88%; justify-self: center; transform: rotate(2deg); }
+:root[data-theme] .theme-memorabilia .keepsake-mounts > [data-keepsake="portrait"] { transform: rotate(3deg); }
+:root[data-theme] .keepsake-mounts > figure::before { content: ''; position: absolute; pointer-events: none; z-index: 1; width: 42px; height: 15px; top: -8px; left: calc(50% - 21px); background: color-mix(in srgb,var(--theme-second) 27%,var(--card)); border-inline: 1px dashed var(--line); transform: rotate(-7deg); opacity: .85; }
+:root[data-theme] .theme-memorabilia img { display: block; width: 100%; height: auto; object-fit: contain; }
+:root[data-theme] .theme-memorabilia figcaption { margin: 7px 0 0; font: 19px/1.2 var(--theme-hand); color: var(--ink); text-align: center; }
+.theme-memorabilia--phone-desk { display: none !important; }
+
+@media (max-width: 719px) {
+  :root[data-theme] { --world-r-card: 5px; --world-r-control: 3px; --world-r-chip: 3px; --world-r-sheet: 5px; --world-phone-edge: color-mix(in srgb,var(--theme-accent) 32%,var(--line)); }
+  /* A compact illustrated title, with clear paper behind all readable copy. */
+  :root[data-theme] :is(.theme-scene-heading, .theme-studio .theme-scene-heading) {
+    position: relative; min-height: 112px; padding: 12px; margin: 10px 0 14px; border-radius: 5px;
+    display: grid; grid-template-columns: minmax(0,1fr) 110px; grid-template-rows: auto; gap: 4px 8px;
+    border: 1px solid var(--world-phone-edge); overflow: hidden; isolation: isolate;
+  }
+  :root[data-theme] .theme-scene-heading > .scene-artwork { width: 145px; left: auto; right: 0; opacity: .8; mask-image: linear-gradient(90deg,transparent,#000 35%); }
+  :root[data-theme] :is(.theme-scene-copy, .theme-studio .theme-scene-copy),
+  :root[data-theme] .theme-scene-heading[data-home-scene] .theme-scene-copy { grid-column: 1; grid-row: 1; align-self: center; z-index: 1; }
+  :root[data-theme] .theme-scene-kicker { font-size: 9px; line-height: 1.3; letter-spacing: .1em; }
+  :root[data-theme] :is(.theme-scene-title, .theme-studio .theme-scene-title) { font-size: 22px; line-height: 1.06; letter-spacing: -.5px; margin: 5px 0; overflow-wrap: normal; }
+  :root[data-theme] .theme-scene-caption { font-size: 12px; line-height: 1.3; margin: 4px 0 0; }
+  :root[data-theme="taylor"] .theme-scene-caption { font-size: 17px; }
+  :root[data-theme] :is(.theme-scene-heading, .theme-studio .theme-scene-heading) > .theme-atmosphere-toggle {
+    position: absolute; top: 0; right: 0; bottom: auto; left: auto; margin: 0; min-width: 44px; width: 44px; height: 44px;
+    min-height: 44px; padding: 0; display: grid; place-items: center; grid-area: auto; align-self: start; justify-self: auto; font-size: 0; border: 0; background: var(--card); color: var(--ink); z-index: 3; box-shadow: none;
+  }
+  :root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle > span { font-size: 22px; }
+  :root[data-theme] :is(.friendship-bracelets, .theme-studio .friendship-bracelets) { grid-column: 2; grid-row: 1; align-self: end; width: 130px; max-width: 130px; margin-left: -12px; margin-bottom: 0; z-index: 1; transform: rotate(-7deg); }
+  :root[data-theme="classic"] :is(.theme-scene-heading, .theme-studio .theme-scene-heading) { min-height: 90px; }
+  :root[data-theme="classic"] .theme-scene-kicker { display: none; }
+  :root[data-theme="taylor"] .theme-scene-heading { border-bottom: 2px solid var(--world-phone-edge); box-shadow: 0 3px 0 -1px var(--paper),0 4px 0 -1px var(--line); }
+  :root[data-theme="newfoundland"] .theme-scene-heading { border-inline-start: 4px solid var(--theme-accent); }
+  :root[data-theme] .app[data-ledger-tab="home"] .theme-memorabilia--page { display: none; }
+  :root[data-theme] .theme-memorabilia--phone-desk { display: block !important; width: 100%; margin: 10px 0 14px; }
+  :root[data-theme] .theme-memorabilia { padding: 10px 5px; }
+  /* No framed blank spacer behind the fixed Ledge. */
+  :root[data-theme] .fund-ledge { border: 0; background: transparent; box-shadow: none; }
+  :root[data-theme] .office-phone { background: transparent; overflow-x: clip; }
+  :root[data-theme] .office-phone .ph-fold { border-bottom: 0; }
+  :root[data-theme] .office-phone .ph-fold-head { max-height: var(--phone-fold-budget,clamp(160px,calc(100svh - 360px),440px)); }
+  :root[data-theme] .office-phone .ph-fold-line { margin-block: 5px; border-color: var(--world-phone-edge); }
+  :root[data-theme] .office-phone .ph-fold-line > span { font-size: 10px; letter-spacing: .14em; color: var(--muted); }
+  :root[data-theme] .office-phone .ph-fold .hearth-weather-ribbon { min-height: 34px; padding-block: 6px; background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal {
+    min-height: 62px; padding: 8px 5px; gap: 2px; border: 1px solid var(--world-phone-edge); border-top: 3px solid var(--theme-accent);
+    border-radius: 5px; background: var(--card); color: var(--ink); box-shadow: 0 2px 0 color-mix(in srgb,var(--ink) 7%,transparent); transform: none; opacity: 1;
+  }
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal::before,
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal::after { display: none; }
+  :root[data-theme] .office-phone .ph-seals .hearth-seal-label { font: 400 10px/1.35 var(--mono); letter-spacing: .06em; color: var(--muted); opacity: 1; }
+  :root[data-theme] .office-phone .ph-seals .hearth-seal-value { font: 600 19px/1.08 var(--display); letter-spacing: -.5px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+  :root[data-theme] .office-phone .ph-seals .hearth-seal-sub { font: 10.5px/1.3 var(--font); color: var(--muted); white-space: normal; opacity: 1; }
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal[aria-pressed="true"] { outline: 2px solid var(--theme-accent); outline-offset: -4px; background: color-mix(in srgb,var(--theme-accent) 8%,var(--card)); }
+  :root[data-theme] .office-phone .hearth-paper-tile { border-radius: 5px; padding: 11px 12px; gap: 4px; min-height: 80px; transform: none; box-shadow: 0 3px 8px color-mix(in srgb,var(--ink) 8%,transparent); }
+  :root[data-theme] .office-phone .hearth-tile-kind { font: 10px/1.3 var(--mono); letter-spacing: .1em; }
+  :root[data-theme] .office-phone .hearth-tile-name { font-size: 13px; }
+  :root[data-theme] .office-phone .hearth-tile-value { font: 600 21px/1.15 var(--display); font-variant-numeric: tabular-nums; }
+  :root[data-theme] :is(.phone-spread,.fund-ledge-sheet) { background: var(--card); border-color: var(--world-phone-edge); border-radius: 5px; }
+  :root[data-theme] .phone-spread { position: relative; border-inline-start: 3px solid var(--theme-accent); box-shadow: 3px 3px 0 -1px var(--paper),4px 4px 0 -1px var(--line); }
+  :root[data-theme] .spread-head { border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  :root[data-theme] .spread-head p { color: var(--muted); }
+  :root[data-theme] .spread-heading { font: 500 25px/1.15 var(--theme-display); }
+  :root[data-theme] .spread-foot { border-top: 1px solid var(--line); margin-top: 8px; }
+  :root[data-theme] .spread-dots i { background: var(--muted); }
+  :root[data-theme] .spread-dots [aria-selected="true"] i { background: var(--theme-accent); width: 16px; border-radius: 2px; }
+  :root[data-theme] .fund-ledge-grip { background: var(--card); border-top: 3px solid var(--theme-accent); border-radius: 5px 5px 0 0; box-shadow: 0 -6px 20px color-mix(in srgb,var(--ink) 10%,transparent); }
+  :root[data-theme] .fund-ledge-handle { background: var(--theme-accent); opacity: .65; }
+  :root[data-theme] .fund-ledge-sentence { color: var(--muted); font-size: 11px; }
+  :root[data-theme] .fund-ledge-scope { font-size: 10px; }
+  :root[data-theme] .fund-ledge-figure { font: 600 20px/1.1 var(--display); }
+  :root[data-theme] .fund-ledge-sheet .is-sheet-grip { border: 0; border-top: 3px solid var(--theme-accent); box-shadow: none; }
+  :root[data-theme] .fund-board-slot[aria-selected="true"] { border-color: var(--theme-accent); color: var(--ink); background: color-mix(in srgb,var(--theme-accent) 9%,var(--card)); box-shadow: inset 0 -3px var(--theme-accent); }
+  :root[data-theme] :is(.count-draft,.apron-card,.weight-day,.reach-paperbox,.trust-paperbox,.fill-reading) { border-radius: 5px; }
+  :root[data-theme] .apron-card { background: var(--card); border: 1px dashed var(--line); border-top: 3px solid var(--theme-accent); box-shadow: 0 3px 0 var(--paper-2); color: var(--ink); }
+  :root[data-theme] .apron-header { color: var(--muted); font-family: var(--mono); }
+  :root[data-theme] .apron-facts dt,:root[data-theme] .apron-timing { color: var(--muted); }
+  :root[data-theme] .apron-facts dd { color: var(--ink); }
+  :root[data-theme] .apron-ask { border-top: 1px solid var(--line); color: var(--ink); }
+  :root[data-theme] .apron-ask span { color: var(--muted); }
+  :root[data-theme] .count-history { fill: color-mix(in srgb,var(--theme-chart-positive) 30%,transparent); }
+  :root[data-theme] .cut-reading.is-0 { background: color-mix(in srgb,var(--theme-chart-neutral) 10%,var(--card)); }
+  :root[data-theme] .cut-reading.is-1 { background: color-mix(in srgb,var(--theme-chart-plan) 12%,var(--card)); }
+  :root[data-theme] :is(.count-exact,.count-value,.fill-paperbox,.shift-punch-figure,.fill-total) { font-family: var(--display); font-variant-numeric: tabular-nums; }
+  :root[data-theme] input[type="range"] { min-height: 44px; box-shadow: none; }
+  :root[data-theme] .shift-page > .tabs button,
+  :root[data-theme] .shift-page :is(.work-jobs-card,.work-job-editor,.work-cadence-card) :is(.chip,.primary,.ghost,.danger,.work-cadence-choice,input,select),
+  :root[data-theme] .work-evidence-disclosure :is(button,input,select),
+  :root[data-theme] :is(.ledger-tabs,.books-theme-c > .tabs) button,
+  :root[data-theme] .ledger-row .chip,
+  :root[data-theme] .ledger-search { border-radius: 3px; min-height: 44px; }
+  :root[data-theme] .reach-ends > span { color: var(--muted); }
+  :root[data-theme] :is(.work-jobs-card,.work-job-editor,.work-cadence-card,.ledger-overview,.ledger-entries,.ledger-pending,.duplicate-contrast) { border-radius: 5px; }
+  :root[data-theme] :is(.sheet.guard.phone-danger,.sheet.guard.claim-review-sheet) .sheet-inner { border-radius: 5px; }
+  :root[data-theme] .phone-danger .confirm-footer > button { border-radius: 3px; }
+  :root[data-theme] .nav button { border-radius: 3px; }
+  :root[data-theme] .nav button.active { box-shadow: inset 0 -3px var(--theme-accent); }
+  /* World materials: every physical object stays legible, with texture at edges. */
+  :root[data-theme="classic"] .office-phone .hearth-paper-tile { border-top: 2px solid var(--line); }
+  :root[data-theme="classic"] .fund-ledge-grip { border-top-color: var(--theme-accent); background: linear-gradient(0deg,var(--card),var(--paper)); }
+  :root[data-theme="taylor"] :is(.phone-spread,.fund-ledge-sheet,.apron-card) { border-inline-start: 3px solid var(--theme-second); }
+  :root[data-theme="taylor"] .office-phone .ph-seals .hearth-wax-seal { border-top-style: dotted; border-top-width: 3px; }
+  :root[data-theme="taylor"] .office-phone .hearth-paper-tile { background: linear-gradient(105deg,color-mix(in srgb,var(--theme-second) 6%,transparent),transparent 45%),var(--card); border-bottom: 2px solid var(--line); }
+  :root[data-theme="taylor"] .fund-ledge-grip { border-top-style: dashed; }
+  :root[data-theme="newfoundland"] .office-phone .ph-seals .hearth-wax-seal:nth-child(2) { border-top-color: var(--theme-second); }
+  :root[data-theme="newfoundland"] .office-phone .ph-seals .hearth-wax-seal:nth-child(3) { border-top-color: var(--brass); }
+  :root[data-theme="newfoundland"] .office-phone .hearth-paper-tile { border-inline-start: 3px solid var(--theme-second); }
+  :root[data-theme="newfoundland"] .fund-ledge-handle { width: 40px; height: 4px; background: var(--world-slicker); opacity: 1; box-shadow: 0 0 0 1px var(--world-slicker-ink); }
+  :root[data-scene="showgirl"] .phone-spread { border-inline-start-color: #85b1a0; }
+  :root[data-scene="lover"] .phone-spread { border-top: 2px dotted var(--theme-second); }
+  :root[data-scene="reputation"] :is(.ledger-overview,.ledger-entries) { border-inline-start: 3px double var(--theme-accent); }
+  :root[data-scene="poets"] .ledger-row { border-bottom-style: dashed; }
+  :root[data-scene="red"] .calendar-card { border-top: 4px solid var(--theme-accent); }
+  :root[data-scene="midnights"] .calendar-card { box-shadow: 0 0 0 1px var(--line),0 4px 18px #07102240; }
+  :root[data-scene="speak-now"] .shift-page > .tabs { border-bottom: 2px solid var(--theme-second); }
+  :root[data-scene="fearless"] .app[data-ledger-tab="plan"] .card { border-top: 2px dotted var(--theme-accent); }
+  :root[data-scene="1989"] .till-spend { border-bottom: 1px solid var(--line); }
+  :root[data-scene="debut"] .app[data-ledger-tab="plan"] .card { border-inline-start: 3px solid var(--theme-second); }
+  :root[data-scene="evermore"] .app[data-ledger-tab="more"] .card { border-bottom-style: dashed; }
+  :root[data-scene="folklore"] .app[data-ledger-tab="more"] .card { box-shadow: 1px 2px 0 var(--line); }
+  :root[data-scene="rain"] .theme-scene-heading { border-inline-start-color: var(--world-slicker); }
+  :root[data-scene="rain"] .fund-ledge-grip { border-top-color: var(--world-slicker); }
+  :root[data-scene="harbour"] .ledger-row { border-bottom: 1px solid var(--line); }
+  :root[data-scene="battery"] .ledger-overview { border-inline-start: 4px solid var(--theme-second); }
+  :root[data-scene="george-street"] .shift-page > .tabs { border-bottom: 2px solid var(--theme-accent); }
+  :root[data-scene="water-street"] .till-spend { border-bottom-style: dashed; }
+  :root[data-scene="jag-lobby"] .appearance-panel { border: 2px solid var(--theme-accent); border-radius: 3px; }
+  :root[data-scene="jag-music"] .appearance-panel { border: 3px double var(--theme-accent); border-radius: 3px; }
+}
+@media print {
+  :root[data-theme] .theme-memorabilia { display: none !important; }
+}
+@media (forced-colors: active) {
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure { border: 1px solid CanvasText; }
+  :root[data-theme] .keepsake-mounts > figure::before { display: none; }
+}
+
+/* The producer names narrative values; amounts and active shift hours keep display type. */
+@media (max-width: 719px) {
+  :root[data-theme] .office-phone .hearth-paper-tile[data-value-kind="sentence"] .hearth-tile-value { font-family: var(--font); font-size: 14px; line-height: 1.45; font-weight: 500; letter-spacing: 0; }
+}
+
+/* Reflow enlarged/narrow content without changing normal 320px phone geometry. */
+@media (max-width: 719px) {
+  :root[data-theme] .theme-scene-heading { container: hearth-scene / inline-size; }
+  :root[data-theme] .office-phone { container: hearth-phone / inline-size; }
+  @container hearth-scene (max-width: 240px) {
+    :root[data-theme] :is(.theme-scene-copy, .theme-studio .theme-scene-copy),
+    :root[data-theme] .theme-scene-heading[data-home-scene] .theme-scene-copy { grid-column: 1 / -1; padding-top: 32px; }
+    :root[data-theme] :is(.friendship-bracelets, .theme-studio .friendship-bracelets) { grid-column: 1 / -1; grid-row: 2; width: min(130px,100%); max-width: 100%; margin-left: 0; justify-self: end; }
+  }
+  @container hearth-phone (max-width: 240px) {
+    :root[data-theme] .office-phone .hearth-story-grid { grid-template-columns: minmax(0,1fr); }
+    :root[data-theme] .office-phone .ph-fold-object.is-wide { grid-column: 1; }
+  }
+}

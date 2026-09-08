@@ -1,3 +1,4 @@
+import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import type { FundDestination } from "./FundStage.tsx";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
@@ -201,6 +202,7 @@ export function Office({
   onOpenFundDestination?: (destination: FundDestination) => void;
   onGo: (tab: HearthTab) => void;
 }) {
+  const { scene } = useAppearance();
   const breakpoint = useBreakpoint();
   const [layout, setLayout] = useState<OfficeLayout>(() => loadOfficeLayout(environment, breakpoint, localStorage, memberId));
   const [rings, setRings] = useState<DeskRing[]>(() => loadOfficeRings(environment, localStorage));
@@ -890,7 +892,7 @@ export function Office({
   return (
     <div
       className={`office is-wide-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${face === "classic" && layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
-      data-stock={look.stock}
+      data-stock={scene.theme === "classic" ? look.stock : undefined}
       data-density={look.density}
       data-face={face}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
@@ -969,7 +971,7 @@ export function Office({
       )}
       {sheet === "look" && (
         <div className="desk-sheet">
-          <h3>Home theme</h3>
+          {scene.theme === "classic" && <><h3>Advanced · Desk finish</h3>
           <div className="desk-stock-row">
             {(Object.keys(STOCK_LABEL) as PaperStock[]).map((stock) => (
               <button
@@ -982,6 +984,7 @@ export function Office({
               </button>
             ))}
           </div>
+          </>}
           <h3>Names</h3>
           <div className="desk-stock-row">
             <button
@@ -1006,8 +1009,8 @@ export function Office({
               Large
             </button>
           </div>
-          <p className="muted">Large density is the WCAG-friendly alternative to pinch-zoom on the locked phone viewport.</p>
-          <p className="muted">Kitchen cream stays the house default. Other themes tint the widget board only.</p>
+          <p className="muted">Large density makes instrument names and controls easier to read. You can also zoom the page.</p>
+          <p className="muted">Your desk finish is kept for Classic Hearth. Choose your whole-app theme in More → Appearance.</p>
           <div className="desk-stock-row">
             <button
               type="button"
@@ -1091,7 +1094,7 @@ export function Office({
               Desks
             </button>
             <button type="button" className="desk-stock" onClick={() => setSheet("look")}>
-              Home theme
+              Desk appearance
             </button>
             {face === "classic" && (
               <button type="button" className="desk-stock" onClick={() => emitOfficeIntent({ type: "tidy" })}>

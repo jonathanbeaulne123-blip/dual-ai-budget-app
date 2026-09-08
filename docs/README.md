@@ -100,3 +100,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [reference/](reference/) | Sheets-era snapshot. Read to understand how we got here. Do not cite as the next build plan. |
 
 Start from the repository [README](../README.md) to run the app. Compatibility filenames such as `ROADMAP.md` and `PRODUCT_ROADMAP.md` point to the maintained roadmap.
+
+- [Three complete visual worlds](THREE_VISUAL_WORLDS.md) — approved Classic/Taylor/Newfoundland scene, account, asset and verification authority; implementation candidate in progress.
+
+- [Three worlds on the completed mobile UX](briefs/MOBILE_WORLDS_HANDOFF.md) — integrated candidate, Claude CSS provenance, fictional keepsakes, source-component/browser proof and release limits.

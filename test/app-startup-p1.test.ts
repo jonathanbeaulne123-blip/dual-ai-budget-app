@@ -1540,7 +1540,9 @@ describe("cached-shell startup books gate", () => {
     const start = incomeTask?.querySelector("button.primary") as HTMLButtonElement | null;
     if (!start) throw new Error("Missing Bianca Month income Start");
     act(() => start.click());
-    await settleUi(180);
+    // The mainline action stages asynchronously; wait for its actual UI result
+    // rather than assuming a machine can finish that work within 180 ms.
+    await waitForUi(() => expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull());
 
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
     expect(container.textContent).toContain("How much came in?");

@@ -32,19 +32,19 @@ function Piggy({ fill, late, clipId, retired }: { fill: number; late?: boolean; 
           <rect x="8" y={clipY} width="72" height="48" />
         </clipPath>
       </defs>
-      <ellipse cx="46" cy="42" rx="28" ry="20" fill="#fdfbf6" stroke="#1b1712" strokeWidth="1.6" />
-      <ellipse cx="46" cy="42" rx="28" ry="20" fill={retired ? "#c9a227" : "#c9a884"} opacity="0.35" clipPath={`url(#${clip})`} />
-      <rect x="42" y="16" width="10" height="5" rx="1.4" fill="#1b1712" />
-      <ellipse cx="22" cy="40" rx="8" ry="7" fill="#fdfbf6" stroke="#1b1712" strokeWidth="1.4" />
-      <circle cx="19" cy="38" r="1.1" fill="#1b1712" />
-      <circle cx="24" cy="38" r="1.1" fill="#1b1712" />
-      <ellipse cx="22" cy="43" rx="3.2" ry="2" fill="#e8d7c0" stroke="#1b1712" strokeWidth="0.8" />
-      <path d="M70 34c6 2 10 8 8 14" fill="none" stroke="#1b1712" strokeWidth="1.6" strokeLinecap="round" />
-      <ellipse cx="36" cy="60" rx="5" ry="3.2" fill="#e8d7c0" stroke="#1b1712" strokeWidth="1.1" />
-      <ellipse cx="56" cy="60" rx="5" ry="3.2" fill="#e8d7c0" stroke="#1b1712" strokeWidth="1.1" />
-      <circle cx="38" cy="36" r="3.2" fill="#c9a884" opacity="0.55" />
-      <circle cx="58" cy="46" r="2.4" fill="#c9a884" opacity="0.45" />
-      {late && <path d="M18 14h12l-2 8h-8z" fill="#c45c26" />}
+      <ellipse cx="46" cy="42" rx="28" ry="20" fill="var(--card, #fdfbf6)" stroke="var(--ink, #1b1712)" strokeWidth="1.6" />
+      <ellipse cx="46" cy="42" rx="28" ry="20" fill={retired ? "var(--gold, #c9a227)" : "var(--theme-second, #c9a884)"} opacity="0.35" clipPath={`url(#${clip})`} />
+      <rect x="42" y="16" width="10" height="5" rx="1.4" fill="var(--ink, #1b1712)" />
+      <ellipse cx="22" cy="40" rx="8" ry="7" fill="var(--card, #fdfbf6)" stroke="var(--ink, #1b1712)" strokeWidth="1.4" />
+      <circle cx="19" cy="38" r="1.1" fill="var(--ink, #1b1712)" />
+      <circle cx="24" cy="38" r="1.1" fill="var(--ink, #1b1712)" />
+      <ellipse cx="22" cy="43" rx="3.2" ry="2" fill="var(--paper-2, #e8d7c0)" stroke="var(--ink, #1b1712)" strokeWidth="0.8" />
+      <path d="M70 34c6 2 10 8 8 14" fill="none" stroke="var(--ink, #1b1712)" strokeWidth="1.6" strokeLinecap="round" />
+      <ellipse cx="36" cy="60" rx="5" ry="3.2" fill="var(--paper-2, #e8d7c0)" stroke="var(--ink, #1b1712)" strokeWidth="1.1" />
+      <ellipse cx="56" cy="60" rx="5" ry="3.2" fill="var(--paper-2, #e8d7c0)" stroke="var(--ink, #1b1712)" strokeWidth="1.1" />
+      <circle cx="38" cy="36" r="3.2" fill="var(--theme-second, #c9a884)" opacity="0.55" />
+      <circle cx="58" cy="46" r="2.4" fill="var(--theme-second, #c9a884)" opacity="0.45" />
+      {late && <path d="M18 14h12l-2 8h-8z" fill="var(--danger, #c45c26)" />}
     </svg>
   );
 }

@@ -1,0 +1,1419 @@
+/* ==========================================================================
+   Hearth · mobile-worlds-refinement.css
+   Additive softness and authored material for the mobile worlds.
+
+   LOAD ORDER — this file is LAST:
+     styles.css … component CSS … worlds.css … mobile-canon.css …
+     theme/mobile-worlds.css … mobile-worlds-refinement.css
+
+   AUTHORITY. `theme/mobile-worlds.css` owns geometry: the 112px heading
+   (90px Classic), 22px/1.06 title, 110px art pocket, 44px pause target,
+   62px seals, 5px cards, 3px controls, 44px floors, Fold budget, Ledge
+   detents and every drag handle. Nothing here changes a size, a position,
+   a z-index, a detent, a touch-action, a scroll body, a grid track or a
+   financial bar width. This file adds edges, grain, thread, tape, light
+   and per-place detail on top of that geometry.
+
+   BOUNDARIES OBSERVED
+     · `@media (max-width: 719px)` and `:root[data-theme]` specificity.
+     · `!important` appears only in accessibility and media policies
+       (pause, reduced motion, forced colours, print).
+     · The outer `.fund-ledge` stays a bare wrapper: no background, no
+       border, no shadow.
+     · The three Fold seals stay outlined paper. No wax circle returns.
+     · Every decorative layer is `pointer-events: none` and carries no
+       amount, no progress and no source/forecast meaning.
+     · Financial copy, labels, digits, tabular numerics, Fraunces figures,
+       semantic status carriers, gestures and Confirm are untouched.
+     · No new fixed object. No motion added to Confirm.
+
+   SECTIONS
+     0  Softness tokens
+     1  Shared softness primitives
+     2  Scene heading, pause control, bracelets
+     3  The Fold — crease, seals, tiles, ribbon, drawer, chalk
+     4  The Ledge — grip, handle, reading, sheet, board slots
+     5  The Spread — binding, thread, index
+     6  Work — apron, count, cut, punch
+     7  Instruments — weight, reach, trust, fill, turn, prise
+     8  Confirm and the danger reveal
+     9  Keepsakes — mounts, tape, honest placeholders
+    10  Empty, loading, nav, appearance
+    11  World materials — Classic, Taylor, Newfoundland
+    12  Per-scene authored detail — 24 places
+    13  Pause, reduced motion, forced colours, print
+   ========================================================================== */
+
+
+/* ==========================================================================
+   0 · SOFTNESS TOKENS
+   Derived from authored scene tokens only. No palette literal is introduced;
+   the two Newfoundland slicker values already live in worlds.css.
+   ========================================================================== */
+
+@media (max-width: 719px) {
+  :root[data-theme] {
+    /* Light. A single warm source above the page, felt as an edge highlight
+       on every physical object rather than as a gradient across it. */
+    --mw-lit: inset 0 1px 0 color-mix(in srgb, #ffffff 42%, transparent);
+    --mw-lit-soft: inset 0 1px 0 color-mix(in srgb, #ffffff 26%, transparent);
+
+    /* Bloom. Wide, low, warm — the shadow of paper resting on paper, not a
+       drop shadow. Always paired with the object's authored offset shadow. */
+    --mw-bloom: 0 6px 18px -8px color-mix(in srgb, var(--ink) 24%, transparent);
+    --mw-bloom-lift: 0 10px 26px -12px color-mix(in srgb, var(--ink) 30%, transparent);
+
+    /* Tooth. A paper grain fine enough to feel and too fine to read. Applied
+       only where the underlying rule paints a flat colour. */
+    --mw-tooth:
+      repeating-linear-gradient(101deg,
+        color-mix(in srgb, var(--ink) 2.2%, transparent) 0 1px,
+        transparent 1px 4px),
+      repeating-linear-gradient(7deg,
+        color-mix(in srgb, var(--ink) 1.6%, transparent) 0 1px,
+        transparent 1px 5px);
+
+    /* Thread and crease. */
+    --mw-thread: color-mix(in srgb, var(--theme-second) 46%, var(--line));
+    --mw-crease: color-mix(in srgb, var(--ink) 14%, transparent);
+
+    /* A rule that fades at both ends instead of hitting the edge. */
+    --mw-fade-rule: linear-gradient(90deg,
+      transparent 0, var(--line) 12%, var(--line) 88%, transparent 100%);
+
+    /* Letterpress for small mono labels on a light ground. Suppressed on
+       authored-dark scenes, where a light halo would fog the type. */
+    --mw-press: 0 1px 0 color-mix(in srgb, #ffffff 55%, transparent);
+  }
+  :root[data-scene-lighting="dark"] {
+    --mw-lit: inset 0 1px 0 color-mix(in srgb, #ffffff 10%, transparent);
+    --mw-lit-soft: inset 0 1px 0 color-mix(in srgb, #ffffff 6%, transparent);
+    --mw-bloom: 0 6px 18px -8px rgba(0, 0, 0, .5);
+    --mw-bloom-lift: 0 10px 26px -12px rgba(0, 0, 0, .58);
+    --mw-tooth:
+      repeating-linear-gradient(101deg,
+        color-mix(in srgb, #ffffff 2.4%, transparent) 0 1px,
+        transparent 1px 4px),
+      repeating-linear-gradient(7deg,
+        color-mix(in srgb, #ffffff 1.6%, transparent) 0 1px,
+        transparent 1px 5px);
+    --mw-press: none;
+  }
+
+
+/* ==========================================================================
+   1 · SHARED SOFTNESS PRIMITIVES
+   ========================================================================== */
+
+  /* Every decorative layer this file adds is inert, in one place. */
+  :root[data-theme] .office-phone .ph-fold-line::before,
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal::after,
+  :root[data-theme] .office-phone .hearth-paper-tile::after,
+  :root[data-theme] .phone-spread::after,
+  :root[data-theme] .fund-ledge-grip::after,
+  :root[data-theme] .spread-head::after,
+  :root[data-theme] .spread-foot::after,
+  :root[data-theme] .apron-ask::after,
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure::after,
+  :root[data-theme] .theme-scene-heading::after {
+    pointer-events: none;
+  }
+
+  /* Small mono labels sit into the paper rather than on it. */
+  :root[data-theme] :is(
+    .office-phone .ph-seals .hearth-seal-label,
+    .office-phone .hearth-tile-kind,
+    .fund-ledge-scope,
+    .spread-head p,
+    .spread-scope,
+    .apron-header,
+    .apron-facts dt,
+    .count-heading,
+    .reach-kicker,
+    .shift-punch-kicker,
+    .prise-kicker,
+    .weight-head,
+    .theme-scene-kicker
+  ) {
+    text-shadow: var(--mw-press);
+  }
+
+  /* Figures keep their authored face and tabular digits; only their optical
+     alignment is nudged, never their size. */
+  :root[data-theme] :is(
+    .office-phone .ph-seals .hearth-seal-value,
+    .office-phone .hearth-tile-value,
+    .fund-ledge-figure,
+    .apron-facts dd,
+    .apron-ask strong
+  ) {
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+
+/* ==========================================================================
+   2 · SCENE HEADING, PAUSE CONTROL, BRACELETS
+   Geometry from mobile-worlds. Added: a soft ground under the illustration,
+   a paper identity for the 44px pause target, and a settled bracelet edge.
+   ========================================================================== */
+
+  :root[data-theme] .theme-scene-heading {
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  /* A vignette that keeps the illustration from ending on a hard corner.
+     Behind the copy, above nothing — it never dims a readable line. */
+  :root[data-theme] .theme-scene-heading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      radial-gradient(120% 90% at 100% 0%,
+        color-mix(in srgb, var(--theme-second) 9%, transparent), transparent 62%),
+      linear-gradient(180deg, transparent 62%,
+        color-mix(in srgb, var(--ink) 5%, transparent) 100%);
+  }
+  :root[data-theme] .theme-scene-copy,
+  :root[data-theme] .friendship-bracelets,
+  :root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle {
+    z-index: 2;
+  }
+  :root[data-theme] .theme-scene-title { text-wrap: balance; }
+  :root[data-theme] .theme-scene-caption { text-wrap: pretty; }
+
+  /* The pause control was a blank 44px square of card. It becomes a small
+     pressed paper key: same target, same icon size, same place. */
+  :root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle {
+    border-radius: 0 5px 0 5px;
+    background: color-mix(in srgb, var(--card) 88%, var(--paper));
+    box-shadow:
+      var(--mw-lit),
+      inset 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent),
+      -2px 2px 10px -6px color-mix(in srgb, var(--ink) 34%, transparent);
+  }
+  :root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle:active {
+    background: color-mix(in srgb, var(--card) 70%, var(--paper));
+    box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 18%, transparent);
+  }
+  :root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle > span {
+    color: var(--theme-accent);
+    line-height: 1;
+  }
+  :root[data-atmosphere="paused"] .theme-scene-heading > .theme-atmosphere-toggle > span {
+    color: var(--muted);
+  }
+
+  /* Both complete names stay readable; the pair simply sits on the page
+     instead of floating. Width, rotation and placement are unchanged. */
+  :root[data-theme] .friendship-bracelets {
+    filter: drop-shadow(0 3px 3px color-mix(in srgb, var(--ink) 16%, transparent));
+  }
+
+
+/* ==========================================================================
+   3 · THE FOLD
+   The four-object composition, its crease, the three outlined paper seals and
+   the tiles. No spacing, no track, no budget and no max-height is touched.
+   ========================================================================== */
+
+  /* The crease. The authored dashed border stays; a soft shadow falls from it.
+     The budget may now measure to zero, leaving `.ph-fold-head` empty and the
+     crease at the top of the objects — the shadow is a gradient with no
+     content assumption, so it reads correctly either way. Nothing here adds
+     spacing inside the four-object composition. */
+  :root[data-theme] .office-phone .ph-fold-line::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 7px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--ink) 7%, transparent), transparent 85%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 10%, #000 72%, transparent 92%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 10%, #000 72%, transparent 92%);
+  }
+  :root[data-theme] .office-phone .ph-fold-line > span {
+    background: var(--paper);
+    text-shadow: var(--mw-press);
+  }
+
+  /* The seals. Outlined paper, 62px, unchanged. Added: a fine tooth on the
+     card face, a lit top edge, and a soft resting shadow under the authored
+     2px offset. The accent top border and pressed outline are preserved. */
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal {
+    background-image: var(--mw-tooth);
+    background-blend-mode: normal;
+    box-shadow:
+      var(--mw-lit),
+      0 2px 0 color-mix(in srgb, var(--ink) 7%, transparent),
+      var(--mw-bloom);
+  }
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal:active {
+    box-shadow:
+      inset 0 1px 3px color-mix(in srgb, var(--ink) 16%, transparent),
+      0 1px 0 color-mix(in srgb, var(--ink) 5%, transparent);
+  }
+  /* A torn lower edge, four pixels tall, drawn in the paper's own colour.
+     Purely material: it carries nothing and reads nothing. */
+  /* `overflow` is deliberately NOT set: the seal must grow with enlarged text
+     and long figures, so the tear is drawn inside the box instead of clipped. */
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal {
+    position: relative;
+  }
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal::after {
+    content: "";
+    display: block;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background:
+      radial-gradient(3px 4px at 3px 4px, transparent 62%, color-mix(in srgb, var(--paper) 92%, transparent) 63%)
+      0 0 / 7px 4px repeat-x;
+    opacity: .8;
+  }
+  /* The pressed carrier stays an outline, above the tear. */
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal[aria-pressed="true"] {
+    box-shadow:
+      var(--mw-lit),
+      0 2px 0 color-mix(in srgb, var(--theme-accent) 22%, transparent),
+      var(--mw-bloom);
+  }
+  :root[data-theme] .office-phone .ph-seals .hearth-seal-sub { text-wrap: pretty; }
+
+  /* The tiles. Bloom, lit edge, and a small turned corner at the top right.
+     No background is set here: several materials already paint the tile face
+     and must keep it. */
+  :root[data-theme] .office-phone .hearth-paper-tile {
+    position: relative;
+    box-shadow:
+      var(--mw-lit),
+      0 3px 8px color-mix(in srgb, var(--ink) 8%, transparent),
+      var(--mw-bloom);
+  }
+  :root[data-theme] .office-phone .hearth-paper-tile::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 13px;
+    height: 13px;
+    background: linear-gradient(225deg,
+      color-mix(in srgb, var(--paper) 88%, var(--ink) 3%) 50%, transparent 50%);
+    border-bottom-left-radius: 3px;
+    opacity: .85;
+  }
+  :root[data-theme] .office-phone .hearth-paper-tile.is-warn::after {
+    background: linear-gradient(225deg,
+      color-mix(in srgb, var(--gold) 34%, var(--paper)) 50%, transparent 50%);
+  }
+  /* A long sentence in the value slot wraps as prose rather than as a broken
+     figure. Size and family are the reference's, untouched. */
+  :root[data-theme] .office-phone .ph-fold .hearth-tile-value {
+    text-wrap: pretty;
+    hyphens: auto;
+  }
+  :root[data-theme] .office-phone .hearth-tile-name { text-wrap: balance; }
+
+  /* The weather ribbon is weather. Softer edge, no money token, no change of
+     shape or height. */
+  :root[data-theme] .office-phone .ph-fold .hearth-weather-ribbon {
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+    background-image: var(--mw-tooth);
+  }
+
+  /* The drawer summary and the chalk disclosure read as furniture, not bars. */
+  :root[data-theme] .office-phone .ph-drawer > summary,
+  :root[data-theme] .office-phone .ph-chalk > summary {
+    box-shadow: var(--mw-lit-soft);
+    text-shadow: var(--mw-press);
+  }
+  :root[data-theme] .office-phone .ph-drawer[open] > summary {
+    box-shadow: var(--mw-lit-soft), inset 0 -1px 0 var(--line);
+  }
+  /* Slate keeps the authored board and ink tokens; only its edge softens. */
+  :root[data-theme] .office-phone .ph-chalk-body {
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--theme-chalk-ink) 10%, transparent),
+      var(--mw-bloom);
+  }
+
+
+/* ==========================================================================
+   4 · THE LEDGE
+   The outer `.fund-ledge` stays bare. Decoration is on the grip, the handle,
+   the reading, the sheet and the board slots only. Position, z-index, height,
+   detents, touch-action, scroll bodies and the ground bar are untouched.
+   ========================================================================== */
+
+  :root[data-theme] .fund-ledge {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  :root[data-theme] .fund-ledge-grip {
+    /* Position is owned by fund-ledge.css: fixed when closed, relative in the sheet. */
+    background-image: var(--mw-tooth);
+    box-shadow:
+      var(--mw-lit),
+      0 -6px 20px color-mix(in srgb, var(--ink) 10%, transparent),
+      0 -18px 40px -20px color-mix(in srgb, var(--ink) 26%, transparent);
+  }
+  /* A thin lit lip along the top edge, so the pocket reads as an opening. */
+  :root[data-theme] .fund-ledge-grip::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 3px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, #ffffff 46%, transparent) 22%,
+      color-mix(in srgb, #ffffff 46%, transparent) 78%, transparent);
+  }
+  :root[data-scene-lighting="dark"] .fund-ledge-grip::after {
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, var(--theme-accent) 34%, transparent) 22%,
+      color-mix(in srgb, var(--theme-accent) 34%, transparent) 78%, transparent);
+  }
+  :root[data-theme] .fund-ledge-grip:active {
+    box-shadow:
+      inset 0 2px 6px color-mix(in srgb, var(--ink) 12%, transparent),
+      0 -4px 14px color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  /* The handle is a drawn thread, not a bar of colour. Width and height are
+     the authored ones. */
+  /* Light only. The handle's shape is authored in fund-ledge.css and this
+     file does not restate it. */
+  :root[data-theme] .fund-ledge-handle {
+    box-shadow: 0 1px 0 color-mix(in srgb, #ffffff 40%, transparent);
+  }
+  :root[data-theme] .fund-ledge-sentence { text-wrap: pretty; }
+  :root[data-theme] .fund-ledge-arrow { color: var(--muted); }
+
+  :root[data-theme] .fund-ledge-sheet {
+    background-image: var(--mw-tooth);
+    box-shadow:
+      var(--mw-lit),
+      0 -14px 34px color-mix(in srgb, var(--ink) 16%, transparent);
+  }
+  :root[data-theme] .fund-ledge-scrim {
+    background: radial-gradient(120% 80% at 50% 100%,
+      color-mix(in srgb, var(--ink) 10%, transparent),
+      color-mix(in srgb, var(--ink) 22%, transparent));
+  }
+  :root[data-theme] .fund-ledge-stage > section {
+    box-shadow: var(--mw-lit-soft);
+  }
+  /* The selected board slot keeps its inset underline carrier and gains a
+     soft tint. It never reads as a quantity. */
+  :root[data-theme] .fund-board-slot {
+    box-shadow: var(--mw-lit-soft);
+  }
+  :root[data-theme] .fund-board-slot[aria-selected="true"] {
+    box-shadow:
+      inset 0 -3px var(--theme-accent),
+      var(--mw-lit),
+      var(--mw-bloom);
+  }
+  :root[data-theme] .fund-ledge-arrange,
+  :root[data-theme] .fund-ledge-record { color: var(--muted); }
+
+
+/* ==========================================================================
+   5 · THE SPREAD
+   A paper album: a stitched binding at the inline start, a thread edge at the
+   foot, and an index that reads as a tab. Page key, state and scope are not
+   touched; the page body keeps its scroll and touch-action.
+   ========================================================================== */
+
+  :root[data-theme] .phone-spread {
+    background-image: var(--mw-tooth);
+    box-shadow:
+      var(--mw-lit),
+      3px 3px 0 -1px var(--paper),
+      4px 4px 0 -1px var(--line),
+      var(--mw-bloom);
+  }
+  /* The binding: three short stitches along the accent edge. */
+  :root[data-theme] .phone-spread::after {
+    content: "";
+    position: absolute;
+    left: -3px;
+    top: 16px;
+    bottom: 16px;
+    width: 3px;
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--card) 78%, transparent) 0 7px,
+      transparent 7px 17px);
+  }
+  :root[data-theme] .spread-head {
+    position: relative;
+    border-bottom-color: transparent;
+  }
+  :root[data-theme] .spread-head::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--mw-fade-rule);
+  }
+  :root[data-theme] .spread-foot {
+    position: relative;
+    border-top-color: transparent;
+  }
+  :root[data-theme] .spread-foot::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--mw-fade-rule);
+  }
+  :root[data-theme] .spread-heading { text-wrap: balance; }
+  :root[data-theme] .spread-foot > button {
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-theme] .spread-foot > button:active {
+    box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 16%, transparent);
+  }
+  /* The index tab. The selected 16px bar is the authored carrier; it simply
+     gains a soft end and a shadow so it reads as a paper tab. */
+  :root[data-theme] .spread-dots [aria-selected="true"] i {
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 18%, transparent);
+  }
+  :root[data-theme] .spread-contributions li,
+  :root[data-theme] .spread-deferrals li {
+    border-bottom-color: color-mix(in srgb, var(--line) 74%, transparent);
+  }
+
+
+/* ==========================================================================
+   6 · WORK — apron, count, cut, punch
+   Every state and amount pairs with its own surface. The two authored-dark
+   work scenes, Speak Now and George Street, are checked explicitly.
+   ========================================================================== */
+
+  /* The apron card is paper in a work apron: canvas tooth, a lit top edge,
+     and a fading rule above the Ask. The dashed border and 3px accent top
+     from the reference stay. */
+  :root[data-theme] .apron-card {
+    background-image: var(--mw-tooth);
+    box-shadow:
+      var(--mw-lit),
+      0 3px 0 var(--paper-2),
+      var(--mw-bloom);
+  }
+  :root[data-theme] .apron-card h2 { text-wrap: balance; }
+  :root[data-theme] .apron-timing { text-wrap: pretty; }
+  :root[data-theme] .apron-ask {
+    position: relative;
+    border-top-color: transparent;
+  }
+  :root[data-theme] .apron-ask::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--mw-fade-rule);
+  }
+  /* Speak Now and George Street are authored dark. Their apron text must
+     take its colour from the same surface it sits on, never from the light
+     assumption. Both re-state the pairing rather than inherit it. */
+  :root[data-scene="speak-now"] .apron-card,
+  :root[data-scene="george-street"] .apron-card,
+  :root[data-scene="reputation"] .apron-card,
+  :root[data-scene="midnights"] .apron-card,
+  :root[data-scene="jag-lobby"] .apron-card {
+    background-color: var(--card);
+    color: var(--ink);
+  }
+  :root[data-scene="speak-now"] .apron-facts dd,
+  :root[data-scene="george-street"] .apron-facts dd,
+  :root[data-scene="reputation"] .apron-facts dd,
+  :root[data-scene="midnights"] .apron-facts dd,
+  :root[data-scene="jag-lobby"] .apron-facts dd,
+  :root[data-scene="speak-now"] .apron-ask strong,
+  :root[data-scene="george-street"] .apron-ask strong { color: var(--ink); }
+  :root[data-scene="speak-now"] .apron-header,
+  :root[data-scene="george-street"] .apron-header,
+  :root[data-scene="speak-now"] .apron-facts dt,
+  :root[data-scene="george-street"] .apron-facts dt,
+  :root[data-scene="speak-now"] .apron-timing,
+  :root[data-scene="george-street"] .apron-timing { color: var(--muted); }
+
+  /* The Count. A shift entered at one in the morning, on paper that feels
+     like a docket. The history distribution stays a context layer and gains
+     no label, no target and no axis. */
+  :root[data-theme] .count-draft {
+    background-image: var(--mw-tooth);
+    box-shadow: var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-theme] .count-rail-head { text-shadow: var(--mw-press); }
+  :root[data-theme] .count-rail-track {
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+  :root[data-theme] .count-note { text-wrap: pretty; color: var(--muted); }
+  :root[data-theme] .count-total {
+    box-shadow: var(--mw-lit-soft);
+  }
+  /* `.count-tipout` and `.shift-punch-discard` keep their authored colours.
+     An accent on small text is exactly the pairing that failed on
+     `.reach-ends > span` in Lover and Fearless; this file does not repeat it. */
+
+  /* The Cut. Two named lanes; the divider is a physical handle. Neither lane
+     tint is allowed to read as a proportion of anything but its own share. */
+  :root[data-theme] .cut-card {
+    background-image: var(--mw-tooth);
+    box-shadow: var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-theme] .cut-handle {
+    box-shadow:
+      var(--mw-lit),
+      0 2px 6px -2px color-mix(in srgb, var(--ink) 40%, transparent);
+  }
+  :root[data-theme] .cut-line {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--card) 60%, transparent);
+  }
+  :root[data-theme] .cut-name { text-shadow: var(--mw-press); }
+  :root[data-theme] .cut-remainder { color: var(--muted); text-wrap: pretty; }
+
+  /* The Punch. Mid-shift, one-handed, in an apron pocket. The grip gets the
+     same lit lip as the Ledge so the two read as one family. */
+  :root[data-theme] .shift-punch-instrument {
+    box-shadow: var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-theme] .shift-punch-grip {
+    position: relative;
+    background-image: var(--mw-tooth);
+  }
+  /* Same rule: the punch handle keeps its authored shape. */
+  :root[data-theme] .shift-punch-handle {
+    box-shadow: 0 1px 0 color-mix(in srgb, #ffffff 40%, transparent);
+  }
+  :root[data-theme] .shift-punch-line { text-wrap: pretty; }
+  :root[data-theme] .shift-punch-reading {
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+  :root[data-theme] .shift-punch-buttons > button {
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-theme] .shift-punch-buttons > button:active {
+    box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 16%, transparent);
+  }
+
+
+/* ==========================================================================
+   7 · INSTRUMENTS — weight, reach, trust, fill, turn, prise
+   Hatching, dashed and solid strokes, and every semantic colour are the
+   components'. Nothing here re-paints a financial mark.
+   ========================================================================== */
+
+  :root[data-theme] :is(.weight, .reach, .goal-fill, .date-turn, .duplicate-prise, .fund-trust) {
+    box-shadow: var(--mw-lit-soft);
+  }
+  :root[data-theme] :is(.weight-reading, .reach-reading, .trust-reading, .fill-reading, .cut-reading) {
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-theme] :is(.weight-note, .trust-note, .reach-line, .fill-caption, .prise-help) {
+    text-wrap: pretty;
+  }
+  /* Weight — the day rail. The bars are the reading; the base is furniture. */
+  :root[data-theme] .weight-base {
+    box-shadow: 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent);
+  }
+  :root[data-theme] .weight-item { border-bottom-color: color-mix(in srgb, var(--line) 74%, transparent); }
+  :root[data-theme] .weight-head { letter-spacing: .1em; }
+  :root[data-theme] .weight-legend { color: var(--muted); }
+  /* Reach — the shift rail. The cone and the ceiling keep their own colours. */
+  :root[data-theme] .reach-row {
+    border-radius: 3px;
+    box-shadow: var(--mw-lit-soft);
+  }
+  :root[data-theme] .reach-row.on { box-shadow: var(--mw-lit), var(--mw-bloom); }
+  :root[data-theme] .reach-pill { box-shadow: var(--mw-lit-soft); }
+  /* Trust — three categorical stops, never a slider. */
+  :root[data-theme] .trust-stop { box-shadow: var(--mw-lit-soft); }
+  :root[data-theme] .trust-stop[aria-pressed="true"] {
+    box-shadow: var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-theme] .trust-title { text-wrap: balance; }
+  /* Fill — the jar. Glass gets a highlight; the liquid is the component's. */
+  :root[data-theme] .fill-glass { filter: drop-shadow(0 1px 0 color-mix(in srgb, #ffffff 30%, transparent)); }
+  :root[data-theme] .fill-paperbox { box-shadow: var(--mw-lit-soft), var(--mw-bloom); }
+  /* Turn — the read head. Projected past today stays the component's carrier. */
+  :root[data-theme] .date-turn { background-image: var(--mw-tooth); }
+  :root[data-theme] .turn-focus-boundary:focus-visible { outline-offset: -2px; }
+  /* Prise — two cards stuck together. The parting edge gains a torn feel. */
+  :root[data-theme] .prise-card {
+    background-image: var(--mw-tooth);
+    box-shadow: var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-theme] .prise-part-handle {
+    box-shadow: var(--mw-lit), 0 2px 6px -2px color-mix(in srgb, var(--ink) 40%, transparent);
+  }
+  :root[data-theme] .prise-card-heading { text-shadow: var(--mw-press); }
+
+
+/* ==========================================================================
+   8 · CONFIRM AND THE DANGER REVEAL
+   Anchored layout, scrolling copy, Cancel first, reveal separate from
+   posting, 44px targets and no motion — all preserved. Only the material of
+   the sheet and the reveal changes.
+   ========================================================================== */
+
+  :root[data-theme] .sheet.guard.phone-danger .sheet-inner {
+    background-image: var(--mw-tooth);
+    box-shadow:
+      var(--mw-lit),
+      0 -18px 44px -12px color-mix(in srgb, var(--ink) 40%, transparent);
+  }
+  :root[data-theme] .phone-danger h1 { text-wrap: balance; }
+  :root[data-theme] .phone-danger .confirm-copy p { text-wrap: pretty; }
+  :root[data-theme] .phone-danger .confirm-footer {
+    position: relative;
+    border-top-color: transparent;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--card) 0%, transparent),
+      color-mix(in srgb, var(--card) 92%, transparent) 14px);
+  }
+  :root[data-theme] .phone-danger .confirm-footer::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--mw-fade-rule);
+    pointer-events: none;
+  }
+  :root[data-theme] .phone-danger .confirm-footer > button {
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-theme] .phone-danger .confirm-footer > button:active {
+    box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 18%, transparent);
+  }
+  /* The reveal is a physical catch: a recessed track and a milled thumb. It
+     stays a separate act from posting and gains no motion. */
+  :root[data-theme] .danger-reveal {
+    background-image: var(--mw-tooth);
+    box-shadow: inset 0 1px 3px color-mix(in srgb, var(--ink) 12%, transparent);
+  }
+  :root[data-theme] .danger-reveal label { text-shadow: var(--mw-press); }
+  :root[data-theme] .danger-reveal input::-webkit-slider-thumb {
+    box-shadow:
+      var(--mw-lit),
+      0 1px 4px -1px color-mix(in srgb, var(--ink) 44%, transparent);
+    background-image: repeating-linear-gradient(90deg,
+      color-mix(in srgb, var(--ink) 10%, transparent) 0 1px, transparent 1px 4px);
+  }
+  :root[data-theme] .danger-reveal input::-moz-range-thumb {
+    box-shadow:
+      var(--mw-lit),
+      0 1px 4px -1px color-mix(in srgb, var(--ink) 44%, transparent);
+    background-image: repeating-linear-gradient(90deg,
+      color-mix(in srgb, var(--ink) 10%, transparent) 0 1px, transparent 1px 4px);
+  }
+  /* Danger keeps its own semantic, in every world and both lightings. */
+  :root[data-theme] .phone-danger .danger,
+  :root[data-theme] .danger-reveal button.danger {
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-theme] .row-reveal {
+    background-image: var(--mw-tooth);
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-theme] .row-reveal-actions {
+    position: relative;
+    border-top-color: transparent;
+  }
+  :root[data-theme] .row-reveal-actions::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0; height: 1px;
+    background: var(--mw-fade-rule);
+    pointer-events: none;
+  }
+  :root[data-theme] .due-preview-inline {
+    background-image: var(--mw-tooth);
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+
+
+/* ==========================================================================
+   9 · KEEPSAKES
+   Fictional stand-ins are authorised and must stay legible AS stand-ins.
+   Ticket first across the width, fabric and photograph beside each other —
+   that grid is the reference's. Only tape, mount and paper are tuned here.
+   ========================================================================== */
+
+  :root[data-theme] .theme-memorabilia .keepsake-heading > span { text-wrap: balance; }
+  :root[data-theme] .theme-memorabilia .keepsake-heading > small { text-wrap: pretty; }
+
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure {
+    background-image: var(--mw-tooth);
+    box-shadow:
+      var(--mw-lit),
+      0 3px 8px color-mix(in srgb, var(--ink) 10%, transparent),
+      var(--mw-bloom);
+  }
+  /* Two paper corner mounts, drawn in the album's own paper. Decorative. */
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    bottom: 24px;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(45deg,
+      color-mix(in srgb, var(--paper-2) 92%, transparent) 52%, transparent 52%);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
+    opacity: .9;
+  }
+  /* The tape gains a torn end and a little translucency. */
+  :root[data-theme] .keepsake-mounts > figure::before {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #ffffff 30%, transparent);
+    -webkit-mask-image: linear-gradient(90deg,
+      transparent 0, #000 8%, #000 92%, transparent 100%);
+    mask-image: linear-gradient(90deg,
+      transparent 0, #000 8%, #000 92%, transparent 100%);
+  }
+  :root[data-theme] .theme-memorabilia img {
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  :root[data-theme] .theme-memorabilia figcaption { text-wrap: balance; }
+
+  /* An illustrated stand-in is honestly a stand-in: a dashed mount edge and
+     a quieter caption. When a prepared derivative replaces it, the figure
+     loses `data-placeholder` and this treatment disappears on its own. */
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure[data-placeholder] {
+    border-style: dashed;
+    border-color: color-mix(in srgb, var(--line) 82%, var(--theme-second));
+  }
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure[data-placeholder] figcaption {
+    color: var(--muted);
+  }
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure[data-placeholder] img {
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent),
+      inset 0 0 0 2px color-mix(in srgb, var(--card) 60%, transparent);
+  }
+  /* A photograph is never wallpaper: it is one mounted object, contained. */
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > [data-keepsake="portrait"] img,
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > [data-keepsake="fabric"] img {
+    object-fit: contain;
+    background-repeat: no-repeat;
+  }
+
+
+/* ==========================================================================
+   10 · EMPTY, LOADING, NAV, APPEARANCE
+   ========================================================================== */
+
+  :root[data-theme] :is(.hearth-paper-empty, .desk-plate-empty, .prise-help, .count-note) {
+    text-wrap: pretty;
+  }
+  :root[data-theme] :is(.hearth-paper-empty, .desk-plate-empty) {
+    background-image: var(--mw-tooth);
+    box-shadow: inset 0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+  :root[data-theme] .nav {
+    box-shadow: 0 -1px 0 color-mix(in srgb, var(--line) 70%, transparent),
+                0 -14px 30px -22px color-mix(in srgb, var(--ink) 40%, transparent);
+  }
+  :root[data-theme] .nav button.active {
+    box-shadow: inset 0 -3px var(--theme-accent);
+    text-shadow: var(--mw-press);
+  }
+  :root[data-theme] .appearance-option {
+    background-image: var(--mw-tooth);
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-theme] .appearance-option[aria-pressed="true"] {
+    box-shadow: var(--mw-lit), var(--mw-bloom-lift);
+  }
+  :root[data-theme] .appearance-eyebrow { text-shadow: var(--mw-press); }
+  /* `.appearance-panel` is the real picker hook. The two JAG scene rules in
+     mobile-worlds.css target `.appearance-picker`, which the integrated
+     `AppearancePicker.tsx` never renders, so they match nothing today. The
+     same intent is restated here on the hook that exists. */
+  :root[data-theme] .appearance-panel {
+    background-image: var(--mw-tooth);
+    box-shadow: var(--mw-lit-soft), var(--mw-bloom);
+  }
+  :root[data-scene="jag-lobby"] .appearance-panel {
+    border: 2px solid var(--theme-accent);
+    border-radius: 3px;
+    background-image: repeating-linear-gradient(45deg, transparent 0 19px,
+      color-mix(in srgb, var(--theme-accent) 10%, transparent) 19px 20px);
+  }
+  :root[data-scene="jag-music"] .appearance-panel {
+    border: 3px double var(--theme-accent);
+    border-radius: 3px;
+    background-image: none;
+    box-shadow:
+      inset 0 0 0 5px color-mix(in srgb, var(--paper) 60%, var(--card)),
+      var(--mw-bloom);
+  }
+  :root[data-theme] .appearance-option-description { text-wrap: pretty; }
+
+
+/* ==========================================================================
+   11 · WORLD MATERIALS
+   Classic stays one confident warm paper. Taylor is a scrapbook of different
+   papers. Newfoundland is a series of painted, weathered places.
+   ========================================================================== */
+
+  /* — Classic — cream, pine, terracotta. Pressed brass, confident paper, and
+       nothing decorative that a kitchen table would not have. */
+  :root[data-theme="classic"] .office-phone .ph-seals .hearth-wax-seal {
+    background-image: var(--mw-tooth);
+    box-shadow:
+      var(--mw-lit),
+      0 2px 0 color-mix(in srgb, var(--brass) 20%, transparent),
+      var(--mw-bloom);
+  }
+  :root[data-theme="classic"] .office-phone .hearth-paper-tile::after {
+    background: linear-gradient(225deg,
+      color-mix(in srgb, var(--paper) 82%, var(--brass) 8%) 50%, transparent 50%);
+  }
+  :root[data-theme="classic"] .fund-ledge-handle {
+    background: color-mix(in srgb, var(--brass) 60%, var(--line));
+  }
+  :root[data-theme="classic"] .theme-scene-heading::after {
+    background:
+      radial-gradient(120% 90% at 100% 0%,
+        color-mix(in srgb, var(--gold) 12%, transparent), transparent 60%);
+  }
+  :root[data-theme="classic"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--brass) 40%, transparent) 0 6px,
+      transparent 6px 18px);
+  }
+
+  /* — Taylor — a scrapbook. Every era is a different paper, and the binding,
+       index and edge change with it. */
+  :root[data-theme="taylor"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      var(--mw-thread) 0 6px, transparent 6px 15px);
+  }
+  :root[data-theme="taylor"] .office-phone .hearth-paper-tile::after {
+    background: linear-gradient(225deg,
+      color-mix(in srgb, var(--theme-second) 20%, var(--paper)) 50%, transparent 50%);
+  }
+  :root[data-theme="taylor"] .fund-ledge-grip::after {
+    left: 22px;
+    right: 22px;
+    background: repeating-linear-gradient(90deg,
+      color-mix(in srgb, var(--theme-second) 46%, transparent) 0 5px,
+      transparent 5px 11px);
+  }
+  :root[data-theme="taylor"] .apron-card { border-style: dashed; }
+  :root[data-theme="taylor"] .theme-memorabilia .keepsake-mounts > figure {
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--card) 88%, var(--paper)),
+      var(--mw-lit),
+      var(--mw-bloom);
+  }
+
+  /* — Newfoundland — painted wood, weather and salt. Trim on the edge, never
+       across the reading. */
+  :root[data-theme="newfoundland"] .office-phone .hearth-paper-tile::after {
+    background: linear-gradient(225deg,
+      color-mix(in srgb, var(--theme-second) 22%, var(--paper)) 50%, transparent 50%);
+  }
+  :root[data-theme="newfoundland"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-accent) 52%, transparent) 0 9px,
+      transparent 9px 15px);
+  }
+  :root[data-theme="newfoundland"] .fund-ledge-grip {
+    background-image:
+      repeating-linear-gradient(0deg,
+        color-mix(in srgb, var(--ink) 3%, transparent) 0 13px,
+        transparent 13px 14px),
+      var(--mw-tooth);
+  }
+  :root[data-theme="newfoundland"] .apron-card {
+    background-image:
+      repeating-linear-gradient(0deg,
+        color-mix(in srgb, var(--ink) 2.5%, transparent) 0 15px,
+        transparent 15px 16px),
+      var(--mw-tooth);
+  }
+
+
+/* ==========================================================================
+   12 · PER-SCENE AUTHORED DETAIL — twenty-four places
+   Each rule targets a surface the reference does not already claim, so
+   nothing here overrides Codex's authored scene lines.
+   ========================================================================== */
+
+  /* ---- Taylor · Shared ------------------------------------------------ */
+
+  /* Lover · Home — vellum. A strip of tape across the heading corner, and a
+     paired-bracelet warmth under the art pocket. */
+  :root[data-scene="lover"] .theme-scene-heading::after {
+    background:
+      linear-gradient(118deg, transparent 0 62%,
+        color-mix(in srgb, var(--theme-accent) 13%, transparent) 62% 70%, transparent 70%),
+      radial-gradient(110% 90% at 100% 0%,
+        color-mix(in srgb, var(--theme-second) 12%, transparent), transparent 60%);
+  }
+  :root[data-scene="lover"] .office-phone .ph-seals .hearth-wax-seal { border-top-style: solid; }
+  :root[data-scene="lover"] .fund-ledge-grip::after {
+    background: repeating-linear-gradient(90deg,
+      color-mix(in srgb, var(--theme-accent) 40%, transparent) 0 3px,
+      transparent 3px 9px);
+  }
+
+  /* Red · Calendar — cloth. A stitched edge on the fold crease. */
+  :root[data-scene="red"] .office-phone .ph-fold-line { border-top-style: dashed; }
+  :root[data-scene="red"] .office-phone .ph-fold-line::before {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-accent) 12%, transparent), transparent 85%);
+  }
+  :root[data-scene="red"] .office-phone .hearth-paper-tile { border-bottom: 2px solid color-mix(in srgb, var(--theme-accent) 34%, var(--line)); }
+
+  /* Fearless · Plan — gold thread. A fine gilt line at every paper edge. */
+  :root[data-scene="fearless"] .office-phone .ph-seals .hearth-wax-seal {
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--gold) 34%, transparent),
+      var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-scene="fearless"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--gold) 52%, transparent) 0 4px,
+      transparent 4px 12px);
+  }
+
+  /* reputation · Books — newsprint. Square, printed, no bloom at all. */
+  :root[data-scene="reputation"] .office-phone .hearth-paper-tile::after,
+  :root[data-scene="reputation"] .office-phone .ph-seals .hearth-wax-seal::after { display: none; }
+  :root[data-scene="reputation"] .office-phone .ph-seals .hearth-wax-seal,
+  :root[data-scene="reputation"] .office-phone .hearth-paper-tile {
+    box-shadow: var(--mw-lit-soft);
+  }
+  :root[data-scene="reputation"] .office-phone .hearth-tile-kind { letter-spacing: .18em; }
+
+  /* evermore · More — plaid. A woven thread down the album binding. */
+  :root[data-scene="evermore"] .phone-spread::after {
+    background:
+      repeating-linear-gradient(180deg,
+        color-mix(in srgb, var(--theme-accent) 46%, transparent) 0 5px,
+        color-mix(in srgb, var(--theme-second) 40%, transparent) 5px 10px);
+  }
+  :root[data-scene="evermore"] .office-phone .ph-fold-line { border-top-style: dotted; }
+
+  /* 1989 · Till — instant photo. A white border on the paper objects. */
+  :root[data-scene="1989"] .office-phone .hearth-paper-tile {
+    box-shadow:
+      0 0 0 4px color-mix(in srgb, var(--card) 94%, #ffffff),
+      var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-scene="1989"] .office-phone .hearth-paper-tile::after { display: none; }
+
+  /* ---- Taylor · Personal ---------------------------------------------- */
+
+  /* The Life of a Showgirl · Home — satin. Orange sparkle, mint thread. */
+  :root[data-scene="showgirl"] .theme-scene-heading::after {
+    background:
+      linear-gradient(118deg, transparent 34%,
+        color-mix(in srgb, #ffffff 26%, transparent) 46%, transparent 58%),
+      radial-gradient(110% 90% at 100% 0%,
+        color-mix(in srgb, var(--theme-accent) 14%, transparent), transparent 62%);
+  }
+  :root[data-scene="showgirl"] .office-phone .ph-seals .hearth-wax-seal {
+    background-image:
+      linear-gradient(118deg, transparent 36%,
+        color-mix(in srgb, #ffffff 22%, transparent) 48%, transparent 60%),
+      var(--mw-tooth);
+  }
+  :root[data-scene="showgirl"] .fund-ledge-handle {
+    background: color-mix(in srgb, var(--theme-second) 70%, var(--line));
+  }
+  :root[data-scene="showgirl"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-second) 60%, transparent) 0 5px,
+      transparent 5px 12px);
+  }
+
+  /* Midnights · Calendar — midnight paper. A quiet star field at the edge. */
+  :root[data-scene="midnights"] .theme-scene-heading::after {
+    background:
+      radial-gradient(1px 1px at 18% 30%, color-mix(in srgb, var(--theme-accent) 60%, transparent), transparent 60%),
+      radial-gradient(1px 1px at 42% 68%, color-mix(in srgb, var(--theme-accent) 44%, transparent), transparent 60%),
+      radial-gradient(1.4px 1.4px at 63% 22%, color-mix(in srgb, var(--gold) 50%, transparent), transparent 60%),
+      radial-gradient(110% 90% at 100% 0%,
+        color-mix(in srgb, var(--theme-accent) 12%, transparent), transparent 64%);
+  }
+  :root[data-scene="midnights"] .fund-ledge-grip::after {
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, var(--theme-accent) 40%, transparent) 30%,
+      color-mix(in srgb, var(--theme-accent) 40%, transparent) 70%, transparent);
+  }
+
+  /* Speak Now · Shift — ribbon. A violet tail at the apron corner. */
+  :root[data-scene="speak-now"] .apron-card { border-inline-start: 3px solid var(--theme-accent); }
+  :root[data-scene="speak-now"] .shift-punch-grip {
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--theme-accent) 50%, transparent);
+  }
+
+  /* The Tortured Poets Department · Books — manuscript. Ruled and archival. */
+  :root[data-scene="poets"] .office-phone .hearth-paper-tile {
+    background-image: repeating-linear-gradient(0deg,
+      transparent 0 21px, color-mix(in srgb, var(--line) 60%, transparent) 21px 22px);
+  }
+  :root[data-scene="poets"] .office-phone .hearth-paper-tile::after { display: none; }
+  :root[data-scene="poets"] .spread-heading { letter-spacing: -.01em; }
+
+  /* Taylor Swift (debut) · Plan — botanical. A growing edge on the paper, and
+     a blue-green thread down the binding. */
+  :root[data-scene="debut"] .office-phone .hearth-paper-tile {
+    box-shadow:
+      inset 3px 0 0 color-mix(in srgb, var(--theme-second) 34%, transparent),
+      var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-scene="debut"] .office-phone .ph-seals .hearth-wax-seal { border-top-color: var(--theme-second); }
+  :root[data-scene="debut"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-second) 52%, transparent) 0 6px,
+      transparent 6px 13px);
+  }
+
+  /* folklore · More — linen. A woven ground, forest pencil at the edges. */
+  :root[data-scene="folklore"] .office-phone .ph-seals .hearth-wax-seal {
+    background-image:
+      repeating-linear-gradient(90deg, transparent 0 3px,
+        color-mix(in srgb, var(--ink) 2.5%, transparent) 3px 4px),
+      repeating-linear-gradient(0deg, transparent 0 3px,
+        color-mix(in srgb, var(--ink) 2%, transparent) 3px 4px);
+  }
+  :root[data-scene="folklore"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-second) 44%, transparent) 0 3px,
+      transparent 3px 8px);
+  }
+
+  /* ---- Newfoundland · Shared ------------------------------------------ */
+
+  /* Jellybean Row · Home — painted wood. Each seal takes a house colour on
+     its trim only; the reading stays ink on paper. */
+  :root[data-scene="jellybean"] .office-phone .ph-seals .hearth-wax-seal {
+    background-image:
+      repeating-linear-gradient(0deg,
+        color-mix(in srgb, var(--ink) 3%, transparent) 0 12px,
+        transparent 12px 13px),
+      var(--mw-tooth);
+  }
+  :root[data-scene="jellybean"] .theme-scene-heading::after {
+    background: linear-gradient(180deg, transparent 58%,
+      color-mix(in srgb, var(--theme-second) 10%, transparent) 100%);
+  }
+
+  /* Rainy St John's · Calendar — the slicker. A yellow seam on the controls,
+     always with dark ink. Warning colour is not touched anywhere here. */
+  :root[data-scene="rain"] .fund-ledge-handle {
+    background: var(--world-slicker);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--world-slicker-ink) 40%, transparent);
+  }
+  :root[data-scene="rain"] .office-phone .ph-seals .hearth-wax-seal[aria-pressed="true"] {
+    outline-color: var(--world-slicker);
+    background-color: color-mix(in srgb, var(--world-slicker) 12%, var(--card));
+    color: var(--ink);
+  }
+  :root[data-scene="rain"] .spread-foot > button:active,
+  :root[data-scene="rain"] .shift-punch-buttons > button:active {
+    background: var(--world-slicker);
+    color: var(--world-slicker-ink);
+  }
+  /* Rain runs down the crease, not across a reading. */
+  :root[data-scene="rain"] .office-phone .ph-fold-line::before {
+    background: repeating-linear-gradient(96deg,
+      color-mix(in srgb, var(--theme-second) 22%, transparent) 0 1px,
+      transparent 1px 9px);
+  }
+
+  /* The coastal way up · Plan — trail paper. Contours at the edges, and the
+     long approach felt as a slow diagonal rather than any depicted trip. */
+  :root[data-scene="trail"] .theme-scene-heading::after {
+    background:
+      repeating-linear-gradient(114deg, transparent 0 17px,
+        color-mix(in srgb, var(--theme-second) 7%, transparent) 17px 18px),
+      linear-gradient(180deg, transparent 66%,
+        color-mix(in srgb, var(--ink) 5%, transparent) 100%);
+  }
+  :root[data-scene="trail"] .office-phone .hearth-paper-tile {
+    background-image: repeating-linear-gradient(114deg, transparent 0 19px,
+      color-mix(in srgb, var(--theme-second) 6%, transparent) 19px 20px);
+  }
+  :root[data-scene="trail"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-second) 46%, transparent) 0 4px,
+      transparent 4px 14px);
+  }
+
+  /* St John's harbour · Books — dock ledger. Ruled paper, brass fittings. */
+  :root[data-scene="harbour"] .office-phone .hearth-paper-tile {
+    background-image: repeating-linear-gradient(0deg,
+      transparent 0 25px, color-mix(in srgb, var(--theme-accent) 8%, transparent) 25px 26px);
+  }
+  :root[data-scene="harbour"] .fund-ledge-handle { background: var(--brass); }
+
+  /* Back at JAG · More — metallic. The faceted wall rhythm, dark trim, and
+     content panels that stay smooth under text. */
+  :root[data-scene="jag-lobby"] .theme-scene-heading::after {
+    background:
+      repeating-linear-gradient(45deg, transparent 0 21px,
+        color-mix(in srgb, var(--theme-accent) 16%, transparent) 21px 22px),
+      repeating-linear-gradient(-45deg, transparent 0 21px,
+        color-mix(in srgb, var(--theme-accent) 16%, transparent) 21px 22px);
+  }
+  :root[data-scene="jag-lobby"] .office-phone .ph-seals .hearth-wax-seal,
+  :root[data-scene="jag-lobby"] .office-phone .hearth-paper-tile {
+    background-image: none;
+    box-shadow:
+      inset 0 0 0 3px var(--card),
+      inset 0 0 0 4px color-mix(in srgb, var(--theme-accent) 40%, var(--line)),
+      var(--mw-bloom);
+  }
+  :root[data-scene="jag-lobby"] .office-phone .hearth-paper-tile::after { display: none; }
+  :root[data-scene="jag-lobby"] .fund-ledge-grip {
+    background-image: repeating-linear-gradient(45deg, transparent 0 17px,
+      color-mix(in srgb, var(--theme-accent) 10%, transparent) 17px 18px);
+  }
+
+  /* Water Street · Till — receipt. A perforated foot on the paper objects. */
+  :root[data-scene="water-street"] .office-phone .ph-seals .hearth-wax-seal::after {
+    background:
+      radial-gradient(3px 4px at 4px 4px, transparent 60%,
+        color-mix(in srgb, var(--paper) 94%, transparent) 61%)
+      0 0 / 9px 4px repeat-x;
+    opacity: 1;
+  }
+  :root[data-scene="water-street"] .office-phone :is(.hearth-seal-value, .hearth-tile-value) {
+    letter-spacing: -.01em;
+  }
+
+  /* ---- Newfoundland · Personal ---------------------------------------- */
+
+  /* Quidi Vidi · Home — the kitchen. Painted wood and a berry cloth trim. */
+  :root[data-scene="quidi-vidi"] .office-phone .hearth-paper-tile {
+    border-bottom: 3px solid color-mix(in srgb, var(--theme-second) 40%, var(--line));
+  }
+  :root[data-scene="quidi-vidi"] .fund-ledge-grip::after {
+    background: repeating-linear-gradient(90deg,
+      color-mix(in srgb, var(--theme-second) 52%, transparent) 0 7px,
+      transparent 7px 14px);
+  }
+
+  /* Cape Spear · Calendar — the horizon. Almost no frame; open sky above. */
+  :root[data-scene="cape-spear"] .office-phone .hearth-paper-tile {
+    background-image: linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-second) 7%, transparent), transparent 44%);
+  }
+  :root[data-scene="cape-spear"] .office-phone .hearth-paper-tile::after { display: none; }
+  :root[data-scene="cape-spear"] .theme-scene-heading::after {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-second) 11%, transparent), transparent 52%);
+  }
+
+  /* George Street · Shift — the venue. Amber light at the edges only; every
+     reading keeps its own paired surface. */
+  :root[data-scene="george-street"] .shift-punch-instrument,
+  :root[data-scene="george-street"] .count-draft {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--theme-accent) 20%, transparent),
+      var(--mw-lit), var(--mw-bloom);
+  }
+  :root[data-scene="george-street"] .fund-ledge-grip::after {
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, var(--theme-accent) 46%, transparent) 26%,
+      color-mix(in srgb, var(--theme-accent) 46%, transparent) 74%, transparent);
+  }
+
+  /* The Battery · Books — clapboard. Stepped trims above the water. */
+  :root[data-scene="battery"] .office-phone .ph-seals .hearth-wax-seal {
+    background-image:
+      repeating-linear-gradient(0deg,
+        color-mix(in srgb, var(--ink) 3%, transparent) 0 11px,
+        transparent 11px 12px),
+      var(--mw-tooth);
+  }
+  :root[data-scene="battery"] .office-phone .ph-seals .hearth-wax-seal:nth-child(2) { margin-top: 0; }
+  :root[data-scene="battery"] .phone-spread::after {
+    background: repeating-linear-gradient(180deg,
+      color-mix(in srgb, var(--theme-second) 50%, transparent) 0 7px,
+      transparent 7px 13px);
+  }
+
+  /* At the summit · Plan — sky. The palest surfaces in the set, and the air
+     thinning toward the top of the heading. Nothing depicts the climb. */
+  :root[data-scene="summit"] .theme-scene-heading::after {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--card) 46%, transparent) 0,
+      transparent 46%,
+      color-mix(in srgb, var(--theme-second) 8%, transparent) 100%);
+  }
+  :root[data-scene="summit"] .office-phone .hearth-paper-tile,
+  :root[data-scene="summit"] .office-phone .ph-seals .hearth-wax-seal {
+    box-shadow: var(--mw-lit-soft), 0 4px 14px -8px color-mix(in srgb, var(--ink) 22%, transparent);
+  }
+  :root[data-scene="summit"] .fund-ledge-grip::after {
+    left: 26px;
+    right: 26px;
+  }
+
+  /* JAG, after hours · More — the music gallery. Warm brass frames, dark
+     trim, a print-hanging mood. */
+  :root[data-scene="jag-music"] .office-phone .hearth-paper-tile {
+    box-shadow:
+      inset 0 0 0 6px color-mix(in srgb, var(--paper) 62%, var(--card)),
+      0 0 0 1px color-mix(in srgb, var(--brass) 46%, var(--line)),
+      var(--mw-bloom);
+  }
+  :root[data-scene="jag-music"] .office-phone .hearth-paper-tile::after { display: none; }
+  :root[data-scene="jag-music"] .theme-scene-heading::after {
+    background:
+      repeating-linear-gradient(45deg, transparent 0 25px,
+        color-mix(in srgb, var(--brass) 10%, transparent) 25px 26px),
+      linear-gradient(180deg, transparent 62%,
+        color-mix(in srgb, var(--ink) 8%, transparent) 100%);
+  }
+  :root[data-scene="jag-music"] .fund-ledge-handle { background: var(--brass); }
+
+  /* ---- 320px: whole objects spill, nothing clips, no art over an action -- */
+  @media (max-width: 359px) {
+    :root[data-theme] .office-phone .hearth-paper-tile::after { width: 10px; height: 10px; }
+    :root[data-theme] .theme-memorabilia .keepsake-mounts > figure::after { display: none; }
+    :root[data-theme] .phone-spread::after { top: 10px; bottom: 10px; }
+    :root[data-theme] .fund-ledge-grip::after { left: 8px; right: 8px; }
+  }
+}
+
+
+/* ==========================================================================
+   13 · PAUSE, REDUCED MOTION, FORCED COLOURS, PRINT
+   This file adds no animation of its own. These blocks make sure the layers
+   it does add retire correctly with everything else.
+   ========================================================================== */
+
+/* Nothing here animates, so pause has nothing to stop — but the decorative
+   layers are marked inert in both states so a paused scene cannot be
+   interacted with by accident. Financial clocks and data refresh are
+   untouched by every rule in this file. */
+:root[data-atmosphere="paused"] .theme-scene-heading::after,
+:root[data-atmosphere="paused"] .office-phone .ph-fold-line::before,
+:root[data-atmosphere="paused"] .phone-spread::after,
+:root[data-atmosphere="paused"] .fund-ledge-grip::after {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The composition stays complete and still. No layer this file adds is
+     hidden, and no transition it relies on is required to read a value. */
+  :root[data-theme] :is(
+    .office-phone .ph-seals .hearth-wax-seal,
+    .office-phone .hearth-paper-tile,
+    .fund-ledge-grip,
+    .phone-spread,
+    .apron-card,
+    .prise-card
+  ) {
+    transition: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  /* Every decorative layer this file draws is removed; the semantic carriers
+     that survive are the ones that were never colour in the first place. */
+  :root[data-theme] .theme-scene-heading::after,
+  :root[data-theme] .office-phone .ph-fold-line::before,
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal::after,
+  :root[data-theme] .office-phone .hearth-paper-tile::after,
+  :root[data-theme] .phone-spread::after,
+  :root[data-theme] .spread-head::after,
+  :root[data-theme] .spread-foot::after,
+  :root[data-theme] .apron-ask::after,
+  :root[data-theme] .fund-ledge-grip::after,
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure::after,
+  :root[data-theme] .keepsake-mounts > figure::before,
+  :root[data-theme] .phone-danger .confirm-footer::before,
+  :root[data-theme] .row-reveal-actions::before {
+    display: none !important;
+  }
+  :root[data-theme] :is(
+    .office-phone .ph-seals .hearth-wax-seal,
+    .office-phone .hearth-paper-tile,
+    .fund-ledge-grip,
+    .fund-ledge-sheet,
+    .phone-spread,
+    .apron-card,
+    .count-draft,
+    .cut-card,
+    .prise-card,
+    .danger-reveal,
+    .row-reveal,
+    .due-preview-inline,
+    .appearance-option,
+    .theme-memorabilia .keepsake-mounts > figure
+  ) {
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border: 1px solid CanvasText !important;
+  }
+  :root[data-theme] .spread-head,
+  :root[data-theme] .spread-foot,
+  :root[data-theme] .apron-ask,
+  :root[data-theme] .phone-danger .confirm-footer,
+  :root[data-theme] .row-reveal-actions {
+    border-color: CanvasText !important;
+  }
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure[data-placeholder] {
+    border-style: dashed !important;
+  }
+  :root[data-theme] :is(.theme-scene-kicker, .apron-header, .apron-facts dt, .fund-ledge-scope) {
+    text-shadow: none !important;
+  }
+}
+
+@media print {
+  /* Scenery, keepsakes and every added layer leave the page. */
+  :root[data-theme] .theme-scene-heading::after,
+  :root[data-theme] .office-phone .ph-fold-line::before,
+  :root[data-theme] .office-phone .ph-seals .hearth-wax-seal::after,
+  :root[data-theme] .office-phone .hearth-paper-tile::after,
+  :root[data-theme] .phone-spread::after,
+  :root[data-theme] .fund-ledge-grip::after,
+  :root[data-theme] .theme-memorabilia .keepsake-mounts > figure::after {
+    display: none !important;
+  }
+  :root[data-theme] :is(
+    .office-phone .ph-seals .hearth-wax-seal,
+    .office-phone .hearth-paper-tile,
+    .phone-spread,
+    .apron-card,
+    .count-draft,
+    .cut-card,
+    .prise-card,
+    .row-reveal,
+    .due-preview-inline
+  ) {
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
+/* ===== END mobile-worlds-refinement.css =================================== */

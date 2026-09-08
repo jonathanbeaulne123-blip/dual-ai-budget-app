@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { HerculesPortrait } from "../Hercules.tsx";
 import {
   COSMETICS,
@@ -45,6 +46,8 @@ export function WardrobeBody({
 }) {
   const view = describeCompanion(household, today);
   const [petName, setPetName] = useState(view.name);
+  const nameId = useId();
+  const appearance = useAppearance();
   return (
     <div className="wardrobe-desk">
       <div className="wardrobe-still" aria-hidden="true">
@@ -58,6 +61,7 @@ export function WardrobeBody({
           size="stage"
         />
       </div>
+      {appearance.scene.theme !== "classic" && <p className="muted">The theme adds accessories to empty slots. Choose None to take them off.</p>}
       {SLOTS.map((slot) => (
         <div key={slot.id} className="wardrobe-slot">
           <span className="muted">{slot.label}</span>
@@ -65,7 +69,10 @@ export function WardrobeBody({
             <button
               className={`chip ${view.equipped[slot.id] == null ? "selected" : ""}`}
               disabled={busy}
-              onClick={() => onCommand((current) => equipCosmetic(current, { slot: slot.id, itemId: null, today }))}
+              onClick={() => {
+                if (slot.id !== "house") appearance.store?.setAccessoryHidden(slot.id === "hat" ? "hat" : "neck", true);
+                onCommand((current) => equipCosmetic(current, { slot: slot.id, itemId: null, today }));
+              }}
             >
               None
             </button>
@@ -86,9 +93,15 @@ export function WardrobeBody({
           </div>
         </div>
       ))}
-      <label>Rename {view.name}</label>
+      {appearance.scene.theme !== "classic" && (appearance.saved.hideThemeHat || appearance.saved.hideThemeNeck) && (
+        <button type="button" className="ghost" onClick={() => {
+          appearance.store?.setAccessoryHidden("hat", false);
+          appearance.store?.setAccessoryHidden("neck", false);
+        }}>Use theme accessories again</button>
+      )}
+      <label htmlFor={nameId}>Rename {view.name}</label>
       <div className="rename-row">
-        <input value={petName} onChange={(event) => setPetName(event.target.value)} maxLength={24} />
+        <input id={nameId} value={petName} onChange={(event) => setPetName(event.target.value)} maxLength={24} />
         <button className="chip" disabled={busy || petName.trim() === view.name} onClick={() => onCommand((current) => renameCompanion(current, petName))}>
           Save
         </button>

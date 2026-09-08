@@ -17,6 +17,7 @@ import { commandIdentityHash, financialAuditHash, findReceipt } from "../src/cor
 import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
 import { emptyPersonal, ensureHouseholdShape, overlayPersonalReplica, personalEnvelopeFromPayload, personalReplicaForMember, shapeHerculesProPermissions } from "../src/core/sync.ts";
 import { ledgerNameForView } from "../src/core/ledgerNames.ts";
+import { parseAppearance } from "../src/theme/scenes.ts";
 
 const DEFAULT_SUPABASE_URL = "https://tykhocwacaxwquhynkok.supabase.co";
 const DEFAULT_SUPABASE_KEY = "sb_publishable_8UAlkucmkTyh36yQGhnUbw_Orl9GkuS";
@@ -26,7 +27,7 @@ const AUTH_REQUEST_TTL_SECONDS = 10 * 60;
 const CODE_TTL_SECONDS = 5 * 60;
 const WRITE_PREVIEW_TTL_SECONDS = 10 * 60;
 // MCP Apps cache UI resources by URI. Bump this when the companion boot contract changes.
-const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v5.html";
+const HERCULES_COMPANION_URI = "ui://hearth/hercules-companion-v6.html";
 const HERCULES_COMPANION_MIME = "text/html;profile=mcp-app";
 const memoryCodes = new Set();
 
@@ -381,6 +382,19 @@ async function verifiedSupabaseUser(env, accessToken) {
   return { id: String(body.id), email: String(body.email).toLowerCase() };
 }
 
+/** Cosmetic only: no metadata, credentials, or arbitrary CSS reaches the widget. */
+async function companionAppearance(env, claims) {
+  try {
+    const user = await supabaseJson(env, "/auth/v1/user", claims.supabaseAccessToken);
+    if (user?.id !== claims.authUserId) return parseAppearance(null);
+    const { theme, atmosphere } = parseAppearance(user.user_metadata?.[`hearth_appearance_v1_${claims.environment}`]);
+    return { theme, atmosphere };
+  } catch {
+    // Appearance availability must not suppress the existing read-only companion.
+    return parseAppearance(null);
+  }
+}
+
 async function verifiedMembership(env, claims) {
   const query = new URLSearchParams({
     environment: `eq.${claims.environment}`,
@@ -622,6 +636,11 @@ function companionToolDefinition() {
         headline: { type: "string" },
         ledger: { anyOf: [{ type: "string", enum: ["personal", "household"] }, { type: "null" }] },
         readOnly: { type: "boolean", const: true },
+        appearance: {
+          type: "object",
+          properties: { theme: { type: "string", enum: ["classic", "taylor", "newfoundland"] }, atmosphere: { type: "boolean" } },
+          required: ["theme", "atmosphere"], additionalProperties: false,
+        },
       },
       required: ["status", "mood", "message", "headline", "ledger", "readOnly"],
       additionalProperties: false,
@@ -705,7 +724,7 @@ function htmlAttribute(value) {
 function companionResource(request) {
   const origin = originOf(request);
   const modelUrl = `${origin}/hercules-pro/hercules.pro.v1.glb`;
-  const scriptUrl = `${origin}/hercules-pro/companion.v1.js?v=5`;
+  const scriptUrl = `${origin}/hercules-pro/companion.v1.js?v=6`;
   const fallbackUrl = `${origin}/hercules-mark.svg`;
   const text = `<!doctype html>
 <html lang="en">
@@ -729,6 +748,14 @@ function companionResource(request) {
     .companion:hover .controls, .controls:focus-within { opacity: 1; pointer-events: auto; }
     .controls button { border: 1px solid rgba(255,255,255,.28); border-radius: 999px; padding: 5px 8px; color: white; background: rgba(28,22,18,.58); cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,.16); backdrop-filter: blur(8px); }
     .controls button:focus-visible { outline: 3px solid #d09a45; outline-offset: 2px; }
+    /* The same authored surfaces used by Claude's app controls; canvas stays transparent. */
+    .companion { --card: #fff9ee; --ink: #3f3329; --theme-accent: #a74d34; --theme-radius: 18px; }
+    .controls { opacity: 1; pointer-events: auto; flex-wrap: wrap; max-width: calc(100% - 18px); }
+    .controls button { min-height: 44px; color: var(--ink); background: var(--card); border: 1px solid var(--theme-accent); border-radius: var(--theme-radius); }
+    .controls button:focus-visible { outline-color: var(--theme-accent); }
+    .companion[data-theme="taylor"] .controls button { border-style: dashed; box-shadow: 2px 3px 0 color-mix(in srgb, var(--theme-second) 35%, transparent); }
+    .companion[data-theme="newfoundland"] .controls button { border-bottom: 3px solid var(--theme-accent); }
+    .companion[data-theme="newfoundland"] #hercules-motion { background: #f1ce63; color: #243b43; }
   </style>
 </head>
 <body>
@@ -816,7 +843,7 @@ function booksIdentity(books, claims, view) {
   };
 }
 
-function companionResult(args, identity = null) {
+function companionResult(args, identity = null, appearance = parseAppearance(null)) {
   const mood = companionMood(args?.mood);
   const defaultMessage = mood === "celebrating" ? "Prrrp. The books agree."
     : mood === "concerned" ? "Mrrp. Let’s inspect that before we trust it."
@@ -828,6 +855,7 @@ function companionResult(args, identity = null) {
     : identity?.ledgerView || null;
   return {
     status: "companion-ready",
+    appearance,
     mood,
     message: typeof args?.message === "string" && args.message.trim() ? args.message.trim().slice(0, 180) : defaultMessage,
     headline: typeof args?.headline === "string" && args.headline.trim() ? args.headline.trim().slice(0, 72) : "Hercules Pro",
@@ -1140,7 +1168,8 @@ async function handleMcp(request, env) {
       if (name === "summon_hercules") {
         const { books } = await loadBooks(env, claims);
         const view = args.ledger === "household" ? "household" : "personal";
-        return mcpSuccess(rpc.id, companionResult(args, booksIdentity(books, claims, view)));
+        const appearance = await companionAppearance(env, claims);
+        return mcpSuccess(rpc.id, companionResult(args, booksIdentity(books, claims, view), appearance));
       }
       if (name === "hercules_rig_dispatch") return mcpSuccess(rpc.id, await rigDispatchResult(env, args));
       if (name === "transaction_write_options") {
@@ -1761,4 +1790,4 @@ export async function handleHerculesPro(request, env) {
   return null;
 }
 
-export const herculesProTest = { seal, unseal, sealPrivate, unsealPrivate, sha256Base64Url, toolDefinitions, overlayPersonalReplica, personalEnvelopeFromPayload, booksIdentity };
+export const herculesProTest = { seal, unseal, sealPrivate, unsealPrivate, sha256Base64Url, toolDefinitions, overlayPersonalReplica, personalEnvelopeFromPayload, booksIdentity, companionAppearance };

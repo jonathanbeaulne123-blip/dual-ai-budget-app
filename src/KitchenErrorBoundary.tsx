@@ -57,7 +57,7 @@ export class KitchenErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (!this.state.error) return this.props.children;
     return (
-      <div className="welcome" data-kitchen-recovery="1">
+      <div className="welcome kitchen-error-fallback" data-kitchen-recovery="1">
         <div className="welcome-card">
           <p className="kicker">On this device</p>
           <h1>The kitchen could not open</h1>

@@ -358,7 +358,7 @@ function CalendarPageScope(props: CalendarProps) {
                     }
                   }}
                   aria-expanded={selected === day.date ? dayOpen : undefined}
-                  style={day.heat ? { background: `rgba(196, 92, 38, ${0.06 + day.heat * 0.22})` } : undefined}
+                  style={day.heat ? { background: `color-mix(in srgb, var(--theme-calendar-heat, var(--copper)) ${(0.06 + Math.min(1, day.heat) * 0.22) * 100}%, var(--card))` } : undefined}
                 >
                   <span className="num">{Number(day.date.slice(8))}</span>
                   <span className="cal-titles">

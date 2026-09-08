@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { addCategory, ValidationError, type Household, type UndoToken } from "./core/index.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import { CollapsibleCard } from "./theme/PaperTheme.tsx";
@@ -16,6 +16,7 @@ export function AddCategoryForm({
   inline?: boolean;
   transactionType?: "expense" | "income";
 }) {
+  const fieldId = useId();
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("CAT-LIFE");
   const [error, setError] = useState("");
@@ -28,13 +29,15 @@ export function AddCategoryForm({
     <>
       {embedded && !inline ? <h3>Add category</h3> : !inline ? <header><h2>Add category</h2></header> : null}
       <p className="muted">Same commit bar as money: one save creates the category{transactionType === "expense" ? " and can seed this month’s budget" : ""}.</p>
-      <input value={name} placeholder="Name" onChange={(event) => setName(event.target.value)} />
+      <label htmlFor={`${fieldId}-name`}>Category name</label>
+      <input id={`${fieldId}-name`} value={name} placeholder="Name" onChange={(event) => setName(event.target.value)} />
       {transactionType === "expense" ? (
-        <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
+        <><label htmlFor={`${fieldId}-group`}>Group</label>
+        <select id={`${fieldId}-group`} value={parentId} onChange={(event) => setParentId(event.target.value)}>
           {groups.map((group) => (
             <option key={group.id} value={group.id}>{group.name}</option>
           ))}
-        </select>
+        </select></>
       ) : null}
       <KitchenNotice message={error} />
       <button

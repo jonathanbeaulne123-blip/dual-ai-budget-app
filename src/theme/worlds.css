@@ -1,0 +1,2531 @@
+/* ==========================================================================
+   Hearth · worlds.css
+   Production stylesheet for the three visual worlds.
+
+   Owner: Jonathan · Design/integration: Codex · CSS: Claude
+   Baseline main 6fb15c7a98f3336862bb743b836aa96a358a35b9
+   Branch codex/three-visual-worlds
+   Integration target: src/theme/worlds.css — imported ONCE, AFTER all
+   existing static CSS. Lazy page CSS may still load later, which is why
+   every rule below carries a deliberate :root[data-*] scope rather than
+   relying on source order or on !important.
+
+   CONTRACT (from src/theme/scenes.ts — not changed here)
+     html[data-theme]          classic | taylor | newfoundland
+         [data-scene]          12 eras / 12 places / classic-<route>
+         [data-material]       paper + 12 Taylor + 12 Newfoundland materials
+         [data-scene-lighting] light | dark   (authored, NOT a user setting)
+         [data-atmosphere]     playing | paused
+   sceneTokens() writes --paper --paper-2 --card --ink --muted --line
+   --pine --pine-2 --copper --gold --good --danger --theme-accent
+   --theme-second --theme-on-accent --theme-decor --theme-glow
+   --theme-radius --theme-display --font --display --shadow --desk --brass
+   --felt --theme-chart-positive|negative|neutral|plan.
+   This file CONSUMES those. It never redefines them.
+
+   RULES OBSERVED
+     · No financial behaviour, copy, identity, layout order or geometry
+       changes. Scenery never encodes money or progress.
+     · Bracelets, houses, trails and every scene layer are inert decor.
+     · Sheets keep their position, z-index and overflow. Nothing covers a
+       Confirm control.
+     · Breakpoint 720 unchanged. Ledge / fold / nav / pointer hitboxes
+       unchanged. No new fixed heights on the document root.
+     · Decorative animation uses transform/opacity, keyframes are
+       world- prefixed, and all of it stops at data-atmosphere=paused
+       and under prefers-reduced-motion. Work timers and data progress
+       are never touched.
+     · forced-colors block is second-to-last; print is last.
+
+   SECTIONS
+     0  Foundations and derived semantic tokens
+     1  Global chrome: body, app shell, welcome, nav, FAB, switches
+     2  Controls: buttons, fields, tables, tabs, chips, focus
+     3  Sheets, dialogs, drawers, previews
+     4  Paper primitives: tiles, seals, notebook, bars, sparks
+     5  Office: phone, wide, instruments, furniture
+     6  Fund, desk plates, Level, register, ledger story
+     7  Calendar
+     8  Shift, work, evidence, and the incoming mobile surfaces
+     9  Books, import, audit, statements
+    10  More, charter, onboarding, Hercules, games, wardrobe
+    11  Scene heading, artwork, bracelets, Appearance picker
+    12  World: Classic
+    13  World: Taylor — 12 materials
+    14  World: Newfoundland — 12 materials
+    15  Motion system
+    16  Responsive: 320 / 390 / 720 / 1100 / 1440
+    17  Contrast and legibility safeguards
+    18  forced-colors
+    19  print
+   ========================================================================== */
+
+
+/* ==========================================================================
+   0 · FOUNDATIONS AND DERIVED SEMANTIC TOKENS
+   Paired foreground/background/border for every status the App shows, so no
+   surface has to guess whether the scene beneath it is light or dark.
+   ========================================================================== */
+
+:root[data-theme] {
+  /* Text that sits on --theme-second, mirroring --theme-on-accent. Authored
+     dark scenes carry LIGHT accents, so neither may assume a dark face. */
+  --world-on-second: var(--theme-on-second);
+
+  /* Surface ladder. --paper is the room, --card the object, --world-sunk a
+     recess (table heads, wells, inputs at rest). */
+  --world-sunk: color-mix(in srgb, var(--paper) 78%, var(--ink) 6%);
+  --world-raised: color-mix(in srgb, var(--card) 92%, #ffffff);
+  --world-veil: color-mix(in srgb, var(--card) 72%, transparent);
+  --world-hairline: color-mix(in srgb, var(--line) 70%, transparent);
+  --world-edge-strong: color-mix(in srgb, var(--line) 45%, var(--ink));
+
+  /* Depth. Authored-dark scenes get a deeper, less brown shadow. */
+  --world-lift-0: 0 1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
+  --world-lift-1: 0 4px 12px color-mix(in srgb, var(--ink) 12%, transparent);
+  --world-lift-2: 0 12px 30px color-mix(in srgb, var(--ink) 16%, transparent);
+  --world-inset-hi: inset 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent);
+  --world-press: inset 0 2px 4px color-mix(in srgb, var(--ink) 18%, transparent);
+
+  /* Control faces. A primary control has a face, an edge and a pressed
+     state; the depth is 3px and it is spent, not decorative. */
+  --world-face: var(--theme-accent);
+  --world-face-ink: var(--theme-on-accent);
+  --world-face-edge: color-mix(in srgb, var(--theme-accent) 68%, var(--ink));
+  --world-face-depth: 0 3px 0 color-mix(in srgb, var(--ink) 16%, transparent);
+
+  /* Status pairs. Foreground is always readable on its own background. */
+  --world-good-bg: color-mix(in srgb, var(--good) 16%, var(--card));
+  --world-good-fg: color-mix(in srgb, var(--good) 82%, var(--ink));
+  --world-good-edge: color-mix(in srgb, var(--good) 52%, var(--line));
+  --world-warn-bg: color-mix(in srgb, var(--gold) 20%, var(--card));
+  --world-warn-fg: color-mix(in srgb, var(--gold) 45%, var(--ink));
+  --world-warn-edge: color-mix(in srgb, var(--gold) 58%, var(--line));
+  --world-danger-bg: color-mix(in srgb, var(--danger) 15%, var(--card));
+  --world-danger-fg: color-mix(in srgb, var(--danger) 78%, var(--ink));
+  --world-danger-edge: color-mix(in srgb, var(--danger) 55%, var(--line));
+  --world-info-bg: color-mix(in srgb, var(--theme-second) 14%, var(--card));
+  --world-info-fg: color-mix(in srgb, var(--theme-second) 72%, var(--ink));
+  --world-info-edge: color-mix(in srgb, var(--theme-second) 48%, var(--line));
+  --world-quiet-bg: var(--world-sunk);
+  --world-quiet-fg: var(--muted);
+  --world-quiet-edge: var(--line);
+
+  /* Focus. One ring, every world, always visible against paper and card. */
+  --world-focus: var(--theme-accent);
+  --world-focus-halo: color-mix(in srgb, var(--card) 70%, transparent);
+
+  /* Radius ladder derived from the authored --theme-radius so a squared
+     material (newsprint, manuscript, metallic) squares the whole App. */
+  --world-r-card: var(--theme-radius);
+  --world-r-control: clamp(4px, calc(var(--theme-radius) * 0.62), 14px);
+  --world-r-chip: clamp(4px, calc(var(--theme-radius) * 0.8), 999px);
+  --world-r-sheet: clamp(8px, calc(var(--theme-radius) + 4px), 26px);
+
+  /* Decorative scene ornament. Never applied under running text. */
+  --world-scene-tint: color-mix(in srgb, var(--theme-second) 8%, transparent);
+  --world-scene-weave: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+
+  /* Motion. All decorative; timers and progress never read these. */
+  --world-motion-slow: 15s;
+  --world-motion-mid: 6s;
+  --world-motion-fast: 2s;
+  --world-ease: cubic-bezier(.2, .6, .2, 1);
+}
+
+/* An authored-dark scene needs a heavier shadow and a lighter hairline than
+   the same rule produces on paper. Lighting is authored, never a toggle. */
+:root[data-scene-lighting="dark"] {
+  --world-sunk: color-mix(in srgb, var(--paper) 82%, #000000);
+  --world-raised: color-mix(in srgb, var(--card) 88%, #ffffff 6%);
+  --world-lift-0: 0 1px 0 rgba(0, 0, 0, .45);
+  --world-lift-1: 0 4px 14px rgba(0, 0, 0, .42);
+  --world-lift-2: 0 14px 34px rgba(0, 0, 0, .5);
+  --world-inset-hi: inset 0 1px 0 color-mix(in srgb, #ffffff 12%, transparent);
+  --world-face-edge: color-mix(in srgb, var(--theme-accent) 74%, #000000);
+  --world-face-depth: 0 3px 0 rgba(0, 0, 0, .34);
+}
+
+/* Type. Figtree carries body and controls; Fraunces carries readable numeric
+   figures; scene headings follow the authored --theme-display. */
+:root[data-theme] body {
+  font-family: var(--font);
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+:root[data-theme] :is(h1, h2, h3, h4, .studio-brand > span:first-child) {
+  font-family: var(--theme-display);
+  line-height: 1.18;
+}
+/* Every financial digit is tabular, in every world, without exception. */
+:root[data-theme] :is(
+  .amount, .money, .num, .ph-val, .ph-value, .stat, .hearth-tile-value,
+  .hearth-seal-value, .desk-plate-figure, .fund-stage-figure, .level-figure,
+  .ask-figure, .register-value, .register-total, .register-total-strong,
+  .clerk-row-amount, .ms-figure, .ms-value, .ms-numeral, .weekly-ask-figure,
+  .weekly-register-amount, .month-posted-amount, .wallet-tile-money,
+  .accounts-stage-balance, .settle-row-summary strong, .studio-balance > strong,
+  .kitty-bank-pct, .work-history-money, .next-out-table td, .swipe-amount,
+  .instrument-glance, .sill-value, .cad-pad-display, .hearth-paper-bar-value
+) {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+:root[data-theme] :is(
+  .hearth-tile-value, .hearth-seal-value, .desk-plate-figure, .level-figure,
+  .fund-stage-figure, .ask-figure, .ms-figure, .weekly-ask-figure,
+  .studio-balance > strong, .register-total-strong
+) {
+  font-family: var(--display);
+  letter-spacing: -.02em;
+}
+/* No essential label under 12px. Decorative scene kickers may sit at 10px. */
+:root[data-theme] :is(.label, .kicker, .lab, .sub, .qsub, .muted, .eyebrow):not(.theme-scene-kicker) {
+  font-size: max(12px, 1em);
+}
+:root[data-theme] .sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+
+/* ==========================================================================
+   1 · GLOBAL CHROME
+   body, .app, .app-shell, welcome and entry, nav, FAB, scrim, view switch,
+   scope/member/environment labels, and every loading / error / offline /
+   recovery surface.
+   ========================================================================== */
+
+:root[data-theme] .app,
+:root[data-theme] .app-shell {
+  background: var(--paper);
+  color: var(--ink);
+}
+/* The room gets its scene tint from a fixed, inert backdrop layer. It sits
+   behind content, never scrolls independently, and adds no height. */
+:root[data-theme] .app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--world-room, none);
+  opacity: var(--world-room-opacity, 1);
+}
+:root[data-theme] .app { background-image: var(--world-room, none); }
+:root[data-theme] .app::before { display: none; }
+
+:root[data-theme] .topbar,
+:root[data-theme] .brand,
+:root[data-theme] .brand__identity {
+  color: var(--ink);
+}
+:root[data-theme] .brand__identity,
+:root[data-theme] .studio-scope,
+:root[data-theme] .scope,
+:root[data-theme] .ledger-switcher {
+  color: var(--muted);
+}
+:root[data-theme] .brand .studio-brand-dot,
+:root[data-theme] .brand span[aria-hidden="true"] { color: var(--theme-accent); }
+
+/* Environment and scope labels stay categorical, never scenic. */
+:root[data-theme] :is(.dev, .prod, .env, .lab) {
+  border: 1px solid var(--world-info-edge);
+  background: var(--world-info-bg);
+  color: var(--world-info-fg);
+  border-radius: var(--world-r-chip);
+  font-size: 12px;
+  letter-spacing: .04em;
+}
+:root[data-theme] :is(.prod) {
+  border-color: var(--world-warn-edge);
+  background: var(--world-warn-bg);
+  color: var(--world-warn-fg);
+}
+
+/* Welcome / entry / membership / invitation / QR. */
+:root[data-theme] .welcome { background: var(--paper); color: var(--ink); }
+:root[data-theme] :is(.welcome-card, .household-entry-card, .onboarding-card, .opening-truth-card) {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-1);
+  color: var(--ink);
+}
+:root[data-theme] .household-entry-card--current { border-color: var(--theme-accent); }
+:root[data-theme] .household-entry-card--highlighted { box-shadow: var(--world-lift-2), 0 0 0 2px var(--theme-accent); }
+:root[data-theme] .household-entry-card__name { color: var(--ink); }
+:root[data-theme] .household-entry-card__member,
+:root[data-theme] .household-entry-card__relative,
+:root[data-theme] .household-entry-card__exact { color: var(--muted); }
+:root[data-theme] .welcome-danger-zone {
+  border: 1px solid var(--world-danger-edge);
+  background: var(--world-danger-bg);
+  border-radius: var(--world-r-card);
+}
+:root[data-theme] :is(.welcome-qr, .auth-invite-qr, .welcome-qr__video) {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+}
+:root[data-theme] .invite-code,
+:root[data-theme] .join-url,
+:root[data-theme] .month-proof-code {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  background: var(--world-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  color: var(--ink);
+}
+:root[data-theme] .welcome-join__status,
+:root[data-theme] .desktop-qr-note,
+:root[data-theme] .mobile-qr-action { color: var(--muted); font-size: 13px; }
+
+/* Nav. Geometry, height, hitboxes and z-index are inherited untouched. */
+:root[data-theme] .nav {
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+:root[data-theme] .nav button { color: var(--muted); font-family: var(--font); }
+:root[data-theme] .nav button.active,
+:root[data-theme] .nav button[aria-current="page"] { color: var(--ink); }
+:root[data-theme] .nav button.active::after,
+:root[data-theme] .nav .dots .on { background: var(--theme-accent); }
+:root[data-theme] .fab {
+  background: var(--world-face);
+  color: var(--world-face-ink);
+  border: 1px solid var(--world-face-edge);
+  box-shadow: var(--world-lift-1), var(--world-inset-hi);
+}
+:root[data-theme] .fab-dial-scrim {
+  background: color-mix(in srgb, var(--ink) 34%, transparent);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+:root[data-theme] .fab-dial-action {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-chip);
+  box-shadow: var(--world-lift-1);
+}
+:root[data-theme] .view-switch {
+  background: var(--world-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-chip);
+}
+:root[data-theme] .view-switch button { color: var(--muted); font-family: var(--font); }
+:root[data-theme] .view-switch button[aria-pressed="true"],
+:root[data-theme] .view-switch button.on,
+:root[data-theme] .view-switch .selected {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--world-lift-0);
+}
+
+/* Loading, error, offline, recovery, skeletons. Every one is designed:
+   never a bare spinner, never a blank. */
+:root[data-theme] :is(.toast, .command-banner, .kitchen-notice, .pulse-banner, .opinion-banner) {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  box-shadow: var(--world-lift-1);
+}
+:root[data-theme] :is(.command-banner--warning, .kitchen-notice--warning) {
+  background: var(--world-warn-bg); border-color: var(--world-warn-edge); color: var(--world-warn-fg);
+}
+:root[data-theme] :is(.command-banner--danger, .kitchen-notice--danger) {
+  background: var(--world-danger-bg); border-color: var(--world-danger-edge); color: var(--world-danger-fg);
+}
+:root[data-theme] .command-chip--success { background: var(--world-good-bg); color: var(--world-good-fg); border-color: var(--world-good-edge); }
+:root[data-theme] .command-chip--warning { background: var(--world-warn-bg); color: var(--world-warn-fg); border-color: var(--world-warn-edge); }
+:root[data-theme] .command-chip--danger { background: var(--world-danger-bg); color: var(--world-danger-fg); border-color: var(--world-danger-edge); }
+:root[data-theme] .command-chip--neutral { background: var(--world-quiet-bg); color: var(--world-quiet-fg); border-color: var(--world-quiet-edge); }
+:root[data-theme] .command-progress__step { color: var(--muted); }
+:root[data-theme] .command-progress__step--active { color: var(--ink); }
+:root[data-theme] .command-progress__step--done { color: var(--world-good-fg); }
+:root[data-theme] .command-progress__step--failed { color: var(--world-danger-fg); }
+
+:root[data-theme] :is(.register-skeleton-rule, .level-skeleton, .placeholder) {
+  background: linear-gradient(90deg,
+    var(--world-sunk) 0%,
+    color-mix(in srgb, var(--world-sunk) 60%, var(--card)) 50%,
+    var(--world-sunk) 100%);
+  background-size: 200% 100%;
+  border-radius: var(--world-r-control);
+}
+:root[data-theme] :is(.empty, .till-empty, .onboarding-noticed, .hearth-paper-empty, .desk-plate-empty, .ms-empty-staff) {
+  color: var(--muted);
+  background: var(--world-sunk);
+  border: 1px dashed var(--line);
+  border-radius: var(--world-r-control);
+}
+:root[data-theme] :is(.till-offline, .register-offline, .onboarding-ready-offline) {
+  color: var(--world-info-fg);
+  background: var(--world-info-bg);
+  border: 1px solid var(--world-info-edge);
+  border-radius: var(--world-r-control);
+}
+
+/* Sync freshness keeps its own status vocabulary, re-toned per world. */
+:root[data-theme] .sync-freshness { color: var(--muted); border-radius: var(--world-r-chip); }
+:root[data-theme] .sync-freshness--live { color: var(--world-good-fg); }
+:root[data-theme] .sync-freshness--poll,
+:root[data-theme] .sync-freshness--connecting { color: var(--world-info-fg); }
+:root[data-theme] .sync-freshness--warning,
+:root[data-theme] .sync-freshness--auth-required { color: var(--world-warn-fg); }
+:root[data-theme] .sync-freshness--danger,
+:root[data-theme] .sync-freshness--offline { color: var(--world-danger-fg); }
+:root[data-theme] .sync-freshness--neutral { color: var(--muted); }
+
+
+/* ==========================================================================
+   2 · CONTROLS
+   Buttons, fields, tables, tabs, chips, pills, focus. Primary controls have a
+   face, an edge and a pressed depth; secondary is framed; ghost is quiet.
+   Every control keeps a 44px minimum target.
+   ========================================================================== */
+
+:root[data-theme] :is(button, .btn, .text-button, input, select, textarea) {
+  font-family: var(--font);
+}
+:root[data-theme] :is(button, .btn):not(.text-button):not(.link) {
+  min-height: 44px;
+  border-radius: var(--world-r-control);
+  transition: transform 120ms var(--world-ease), box-shadow 120ms var(--world-ease),
+              background-color 120ms var(--world-ease), border-color 120ms var(--world-ease);
+}
+
+/* Primary — the face carries the scene accent and its authored ink. Never a
+   blanket white: --theme-on-accent is dark on authored-dark scenes. */
+:root[data-theme] .primary {
+  background: var(--world-face);
+  color: var(--world-face-ink);
+  border: 1px solid var(--world-face-edge);
+  box-shadow: var(--world-inset-hi), var(--world-face-depth);
+  padding: 11px 18px;
+  font-weight: 600;
+}
+:root[data-theme] .primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--world-face) 88%, var(--card));
+}
+:root[data-theme] .primary:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--world-press);
+}
+:root[data-theme] .primary:disabled,
+:root[data-theme] .primary[aria-disabled="true"] {
+  background: var(--world-quiet-bg);
+  color: var(--muted);
+  border-color: var(--line);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Secondary — framed, holds its own weight without competing. */
+:root[data-theme] :is(.secondary, .outline, .quick-act, .preset-chip) {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--world-edge-strong);
+  box-shadow: var(--world-lift-0);
+  padding: 10px 16px;
+  font-weight: 600;
+}
+:root[data-theme] :is(.secondary, .outline):active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--world-press);
+}
+
+/* Ghost — quiet, framed only by a hairline. */
+:root[data-theme] .ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 10px 15px;
+}
+:root[data-theme] .ghost:hover:not(:disabled) { background: var(--world-veil); }
+:root[data-theme] .ghost:active:not(:disabled) { transform: translateY(1px); background: var(--world-sunk); }
+:root[data-theme] .ghost:disabled { color: var(--muted); border-color: var(--world-hairline); cursor: not-allowed; }
+
+/* Danger — unmistakable in every world, and never merely "the accent". */
+:root[data-theme] .danger,
+:root[data-theme] button.danger {
+  background: var(--world-danger-bg);
+  color: var(--world-danger-fg);
+  border: 1px solid var(--world-danger-edge);
+  font-weight: 600;
+}
+:root[data-theme] .danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 26%, var(--card));
+}
+:root[data-theme] .danger:active:not(:disabled) { transform: translateY(1px); box-shadow: var(--world-press); }
+
+/* Text buttons and links stay text, not chrome. */
+:root[data-theme] :is(.text-button, .link, .visit-link, .till-see-everything, .import-attention-link) {
+  color: var(--theme-accent);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 44px;
+}
+
+/* Busy labels and input blocking belong to the existing action component. */
+/* Fields. Resting state is recessed; focus lifts it to card. */
+:root[data-theme] :is(input, select, textarea):not([type="range"]):not([type="checkbox"]):not([type="radio"]) {
+  min-height: 44px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--world-edge-strong);
+  border-radius: var(--world-r-control);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--ink) 7%, transparent);
+  font-size: 16px; /* keeps iOS from zooming a money field */
+}
+:root[data-theme] :is(input, select, textarea)::placeholder { color: var(--muted); opacity: 1; }
+:root[data-theme] :is(input, select, textarea):disabled {
+  background: var(--world-sunk); color: var(--muted); cursor: not-allowed;
+}
+:root[data-theme] :is(input, select, textarea)[aria-invalid="true"],
+:root[data-theme] .invalid :is(input, textarea) {
+  border-color: var(--world-danger-edge);
+  background: var(--world-danger-bg);
+  color: var(--world-danger-fg);
+}
+:root[data-theme] select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+:root[data-theme] input[type="range"] {
+  accent-color: var(--theme-accent);
+  min-height: 44px;
+  background: transparent;
+}
+:root[data-theme] :is(input[type="checkbox"], input[type="radio"]) {
+  accent-color: var(--theme-accent);
+  width: 20px; height: 20px;
+  min-height: 20px;
+}
+:root[data-theme] label { color: var(--ink); }
+:root[data-theme] .field > label,
+:root[data-theme] .label { color: var(--muted); font-size: 12px; }
+
+/* Focus. One ring, drawn on the accent with a halo so it survives a busy
+   scene behind it. Never removed, never colour-only. */
+:root[data-theme] :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--world-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--world-focus-halo);
+  border-radius: var(--world-r-control);
+}
+
+/* Tables. Heads recess, rows rule, amounts stay right and tabular. */
+:root[data-theme] table { border-collapse: collapse; color: var(--ink); }
+:root[data-theme] :is(th, thead td) {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+}
+:root[data-theme] td { border-top: 1px solid var(--world-hairline); }
+:root[data-theme] :is(td, th).amount,
+:root[data-theme] .amount { text-align: right; white-space: nowrap; }
+:root[data-theme] tbody tr:hover td { background: var(--world-veil); }
+
+/* Chips, pills, tabs. Selected reads by fill AND weight, never colour alone. */
+:root[data-theme] :is(.chip, .pill, .desk-chip, .command-chip, .kind-pill, .preset-chip, .ph-chip) {
+  border-radius: var(--world-r-chip);
+  border: 1px solid var(--line);
+  background: var(--world-sunk);
+  color: var(--muted);
+  font-size: 12px;
+}
+:root[data-theme] :is(.chip, .desk-chip, .ph-chip)[aria-pressed="true"],
+:root[data-theme] :is(.chip, .desk-chip, .ph-chip).on,
+:root[data-theme] :is(.chip, .desk-chip, .ph-chip).is-selected,
+:root[data-theme] :is(.chip, .desk-chip, .ph-chip).selected {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--theme-accent);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--theme-accent);
+}
+:root[data-theme] .tabs { border-bottom: 1px solid var(--line); }
+:root[data-theme] .tabs button,
+:root[data-theme] [role="tab"] { color: var(--muted); border-radius: var(--world-r-control) var(--world-r-control) 0 0; }
+:root[data-theme] .tabs button.active,
+:root[data-theme] [role="tab"][aria-selected="true"] {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--theme-accent);
+  font-weight: 700;
+  box-shadow: inset 0 -3px 0 var(--theme-accent);
+}
+
+/* details / summary */
+:root[data-theme] details {
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  background: var(--card);
+}
+:root[data-theme] summary { min-height: 44px; color: var(--ink); cursor: pointer; }
+:root[data-theme] details[open] > summary { border-bottom: 1px solid var(--world-hairline); }
+
+/* Financial signs and categories stay distinct from scenery, always. */
+:root[data-theme] :is(.in, .is-in, .good, .is-posted, .tone-income) { color: var(--world-good-fg); }
+:root[data-theme] :is(.out, .is-out, .negative, .is-negative, .tone-expense) { color: var(--world-danger-fg); }
+:root[data-theme] :is(.is-projected, .proj, .is-estimated) { color: var(--theme-chart-plan); }
+:root[data-theme] :is(.is-unfunded, .register-unfunded, .weekly-unfunded) {
+  color: var(--copper);
+  border: 1px dashed var(--copper); /* dashed, so colour is never the only carrier */
+  border-radius: var(--world-r-control);
+}
+:root[data-theme] :is(.is-refund, .is-credit) { color: var(--world-info-fg); }
+:root[data-theme] :is(.is-warn, .warn, .attention, .needs-you, .is-overdue, .is-late) {
+  color: var(--world-warn-fg);
+}
+:root[data-theme] .adverse,
+:root[data-theme] .is-deficit { color: var(--world-danger-fg); font-weight: 600; }
+
+
+/* ==========================================================================
+   3 · SHEETS, DIALOGS, DRAWERS, PREVIEWS
+   Surface only. Position, z-index, overflow, stacking and hit geometry are
+   inherited untouched — nothing here may cover a Confirm control.
+   ========================================================================== */
+
+:root[data-theme] .sheet {
+  background: color-mix(in srgb, var(--ink) 38%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+:root[data-theme] .sheet.guard { background: color-mix(in srgb, var(--ink) 52%, transparent); }
+:root[data-theme] .sheet-inner,
+:root[data-theme] .swipe-sheet-inner,
+:root[data-theme] .doc-camera-sheet,
+:root[data-theme] .purchase-sheet {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-sheet);
+  box-shadow: var(--world-lift-2);
+}
+:root[data-theme] dialog {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-sheet);
+  box-shadow: var(--world-lift-2);
+}
+:root[data-theme] dialog::backdrop {
+  background: color-mix(in srgb, #101010 48%, transparent);
+}
+:root[data-theme] .sheet.add-slideshow .sheet-inner,
+:root[data-theme] .add-slideshow-inner { background: var(--card); }
+:root[data-theme] .add-slideshow-title { color: var(--ink); font-family: var(--theme-display); }
+:root[data-theme] .add-slideshow-hint { color: var(--muted); font-size: 12px; }
+:root[data-theme] .add-slideshow-progress { background: var(--world-sunk); border-radius: 999px; }
+:root[data-theme] .add-slideshow-progress > * { background: var(--theme-accent); border-radius: 999px; }
+:root[data-theme] .add-slideshow-switch,
+:root[data-theme] .add-slideshow-mode { border: 1px solid var(--line); border-radius: var(--world-r-chip); background: var(--world-sunk); }
+:root[data-theme] .add-slideshow-categories .cat {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control); color: var(--ink);
+}
+:root[data-theme] .add-slideshow-categories .cat.sel,
+:root[data-theme] .add-slideshow-categories .cat[aria-pressed="true"] {
+  border-color: var(--theme-accent); box-shadow: inset 0 0 0 2px var(--theme-accent); font-weight: 700;
+}
+:root[data-theme] .post-big {
+  background: var(--world-face);
+  color: var(--world-face-ink);
+  border: 1px solid var(--world-face-edge);
+  box-shadow: var(--world-inset-hi), var(--world-face-depth);
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+}
+:root[data-theme] .post-big:active { transform: translateY(2px); box-shadow: var(--world-press); }
+:root[data-theme] .add-confirm-summary {
+  background: var(--world-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  color: var(--ink);
+}
+:root[data-theme] .preview {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  color: var(--ink);
+}
+:root[data-theme] .preview.warn {
+  background: var(--world-warn-bg);
+  border-color: var(--world-warn-edge);
+  color: var(--ink);
+}
+:root[data-theme] :is(.due-preview-list, .due-preview-row, .settle-rows, .conflict-cards) {
+  background: var(--card); border-color: var(--line); color: var(--ink);
+}
+:root[data-theme] .swipe-strip {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-chip);
+  box-shadow: var(--world-lift-1);
+  color: var(--ink);
+}
+:root[data-theme] .swipe-strip-undo { color: var(--theme-accent); font-weight: 700; min-height: 44px; }
+:root[data-theme] .swipe-error { color: var(--world-danger-fg); background: var(--world-danger-bg); border-radius: var(--world-r-control); }
+:root[data-theme] :is(.account-room, .account-tile, .wallet-tile, .desk-sheet) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);
+}
+
+
+/* ==========================================================================
+   4 · PAPER PRIMITIVES
+   PaperTheme.tsx surfaces: tiles, wax seals and tones, notebook (including
+   bare/whisper), story grids, pane seals, bars and sparks. Chart geometry is
+   untouched; only stroke and fill tokens are re-toned.
+   ========================================================================== */
+
+:root[data-theme] .hearth-paper-tile {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-card);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+  min-height: 104px;
+  padding: 17px;
+}
+:root[data-theme] .hearth-paper-tile.is-warn { border-color: var(--world-warn-edge); background: var(--world-warn-bg); }
+:root[data-theme] .hearth-paper-tile.is-active { border-color: var(--theme-accent); box-shadow: inset 0 0 0 2px var(--theme-accent); }
+:root[data-theme] .hearth-tile-kind { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+:root[data-theme] .hearth-tile-name { color: var(--ink); margin: 5px 0; }
+:root[data-theme] .hearth-tile-value { font-size: 24px; color: var(--ink); }
+:root[data-theme] .hearth-story-heading { font-family: var(--theme-display); color: var(--ink); }
+:root[data-theme] .hearth-story-grid { gap: 12px; }
+
+:root[data-theme] .hearth-wax-seal {
+  min-height: 88px;
+  border: 0;
+  border-radius: 50% 46% 49% 45%;
+  background: var(--theme-second);
+  color: var(--world-on-second);
+  box-shadow: inset 0 2px 1px #ffffff50, inset 0 -4px 0 #00000014, 0 5px 12px #00000014;
+  font-family: var(--font);
+}
+:root[data-theme] .hearth-wax-seal.tone-post { background: var(--theme-accent); color: var(--theme-on-accent); }
+:root[data-theme] .hearth-wax-seal.tone-due { background: var(--theme-second); color: var(--world-on-second); }
+:root[data-theme] .hearth-wax-seal.tone-close,
+:root[data-theme] .hearth-wax-seal.tone-tan { background: var(--gold); color: var(--theme-on-gold); }
+:root[data-theme] .hearth-wax-seal.is-pending { box-shadow: inset 0 2px 1px #ffffff50, 0 0 0 2px var(--theme-accent); }
+:root[data-theme] .hearth-wax-seal.is-pressed,
+:root[data-theme] .hearth-wax-seal[aria-pressed="true"] { transform: translateY(1px); box-shadow: var(--world-press); }
+:root[data-theme] .hearth-seal-label { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; opacity: .9; }
+:root[data-theme] .hearth-seal-value { font-family: var(--display); }
+:root[data-theme] .hearth-seal-sub { font-size: 12px; opacity: .88; }
+:root[data-theme] .hearth-pane-seal {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control); color: var(--ink);
+}
+
+:root[data-theme] .hearth-notebook {
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-card);
+  box-shadow: var(--shadow);
+}
+:root[data-theme] .hearth-notebook-head { background: var(--paper-2); color: var(--ink); border-bottom: 1px solid var(--line); }
+:root[data-theme] .hearth-notebook-body { padding: 20px; }
+:root[data-theme] .hearth-notebook-close { color: var(--ink); min-height: 44px; }
+:root[data-theme] .hearth-notebook.is-bare { background: transparent; border-color: transparent; box-shadow: none; }
+:root[data-theme] .hearth-notebook-whisper {
+  color: var(--muted); background: var(--world-veil); border: 1px solid var(--world-hairline);
+  border-radius: 999px; min-height: 44px; min-width: 44px;
+}
+:root[data-theme] .hearth-collapse-title { color: var(--ink); font-family: var(--theme-display); }
+
+/* Bars and sparks — exact geometry, stable chart tokens. */
+:root[data-theme] .hearth-paper-bars { color: var(--ink); }
+:root[data-theme] .hearth-paper-caption { color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+:root[data-theme] .hearth-paper-bar-label { color: var(--muted); }
+:root[data-theme] .hearth-paper-bar-track { background: var(--world-sunk); border-radius: 999px; }
+:root[data-theme] .hearth-paper-bar-track > i { border-radius: 999px; }
+:root[data-theme] .hearth-paper-bar-track > .tone-pine { background: var(--theme-chart-positive); }
+:root[data-theme] .hearth-paper-bar-track > .tone-ink { background: var(--theme-chart-neutral); }
+:root[data-theme] .hearth-paper-bar-track > .tone-copper { background: var(--theme-chart-negative); }
+:root[data-theme] .hearth-paper-bar-value { color: var(--ink); }
+:root[data-theme] .hearth-paper-spark-stem { background: var(--theme-chart-neutral); }
+:root[data-theme] .hearth-paper-spark-label { color: var(--muted); font-size: 12px; }
+:root[data-theme] .hearth-weather-ribbon {
+  background: var(--world-veil); border: 1px solid var(--world-hairline);
+  border-radius: 999px; color: var(--muted);
+}
+:root[data-theme] .hearth-weather-temp { color: var(--ink); font-variant-numeric: tabular-nums; }
+/* Weather is weather. No money token ever renders on it. */
+:root[data-theme] .hearth-weather-dot { background: var(--muted); }
+
+
+/* ==========================================================================
+   5 · OFFICE
+   Phone office, wide office, movable instruments, furniture, window, sill,
+   glass, desk sheets and options. Board stocks are re-toned outside Classic;
+   density, spacing and layout are untouched.
+   ========================================================================== */
+
+:root[data-theme] .office { background: var(--desk); color: var(--ink); }
+:root[data-theme] .office-phone,
+:root[data-theme] .office-phone-c { background: var(--paper); color: var(--ink); }
+:root[data-theme] .ph-head { color: var(--ink); font-family: var(--theme-display); }
+:root[data-theme] .ph-sill { background: var(--world-veil); border-bottom: 1px solid var(--world-hairline); }
+:root[data-theme] .ph-seals { gap: inherit; }
+:root[data-theme] .ph-pin {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-0), var(--world-inset-hi);
+  color: var(--ink);
+}
+:root[data-theme] .ph-pin.is-warn { border-color: var(--world-warn-edge); }
+:root[data-theme] .ph-lbl,
+:root[data-theme] .ph-sub { color: var(--muted); font-size: 12px; }
+:root[data-theme] .ph-name { color: var(--ink); }
+:root[data-theme] .ph-val,
+:root[data-theme] .ph-value { color: var(--ink); font-family: var(--display); }
+:root[data-theme] .ph-needs { color: var(--world-warn-fg); }
+:root[data-theme] .ph-notebook-inner { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] .ph-chalk,
+:root[data-theme] .ph-chalk-body { background: var(--world-sunk); border-radius: var(--world-r-card); color: var(--ink); }
+:root[data-theme] .ph-drawer,
+:root[data-theme] .ph-drawer-grid { background: var(--paper-2); border-top: 1px solid var(--line); }
+:root[data-theme] .ph-rail { background: transparent; }
+:root[data-theme] .ph-stamp,
+:root[data-theme] .wax-stamp {
+  background: var(--theme-accent);
+  color: var(--theme-on-accent);
+  border-radius: 999px;
+  box-shadow: var(--world-inset-hi), var(--world-lift-0);
+}
+:root[data-theme] .ph-inst { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+
+:root[data-theme] .office-wide,
+:root[data-theme] .office-wide-desk { background: var(--desk); }
+:root[data-theme] .office-wide-hero,
+:root[data-theme] .office-wide-hero-wrap {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-1);
+}
+:root[data-theme] .office-wide-hero-net { font-family: var(--display); color: var(--ink); }
+:root[data-theme] .office-wide-stage {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-1); color: var(--ink);
+}
+:root[data-theme] .office-wide-drawer,
+:root[data-theme] .office-wide-drawer-grid { background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] .office-wide-mosaic,
+:root[data-theme] .office-wide-mosaic-wrap,
+:root[data-theme] .office-wide-plates,
+:root[data-theme] .office-wide-banks { background: transparent; }
+:root[data-theme] .office-wide-notebook,
+:root[data-theme] .office-wide-notebook-inner { background: var(--card); border-color: var(--line); }
+:root[data-theme] .office-wide-seals { background: transparent; }
+
+/* Instruments. One stock rule; each instrument keeps its own density. */
+:root[data-theme] .instrument {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-0), var(--world-inset-hi);
+  color: var(--ink);
+}
+:root[data-theme] .instrument-header,
+:root[data-theme] .instrument-name { color: var(--ink); font-family: var(--theme-display); }
+:root[data-theme] .instrument-glance { color: var(--ink); }
+:root[data-theme] .instrument-body { color: var(--ink); }
+:root[data-theme] .instrument.is-warn { border-color: var(--world-warn-edge); }
+:root[data-theme] .instrument.is-active,
+:root[data-theme] .instrument.is-open { box-shadow: inset 0 0 0 2px var(--theme-accent), var(--world-lift-1); }
+:root[data-theme] :is(
+  .instrument-blotter, .instrument-wallet, .instrument-calculator, .instrument-calendar,
+  .instrument-appointments, .instrument-mail, .instrument-timesheet, .instrument-postcard,
+  .instrument-cookoff, .instrument-jars, .instrument-lamp, .instrument-game,
+  .instrument-accounts, .instrument-wardrobe, .instrument-chalkboard
+) { background: var(--card); }
+:root[data-theme] .instrument-lamp { background: color-mix(in srgb, var(--gold) 10%, var(--card)); }
+:root[data-theme] .instrument-lamp.is-lit { box-shadow: 0 0 0 1px var(--gold), 0 10px 26px var(--theme-glow); }
+:root[data-theme] .lamp-shade { fill: var(--gold); }
+:root[data-theme] .instrument-jars .jar-fill { fill: var(--theme-second); }
+:root[data-theme] .instrument-jars .jar-lid { stroke: var(--ink); }
+:root[data-theme] .cabinet-row,
+:root[data-theme] .cabinet-handle { border-color: var(--line); color: var(--muted); }
+:root[data-theme] .desk-canvas { background: var(--desk); }
+:root[data-theme] :is(.desk-card, .desk-item, .desk-row, .desk-stock, .desk-stock-row) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .desk-item.is-dragging { box-shadow: var(--world-lift-2); }
+:root[data-theme] .desk-ring { box-shadow: inset 0 0 0 2px var(--theme-accent); }
+:root[data-theme] :is(.desk-sheet, .desk-customize, .desk-grid-opts, .desk-drawer-grid) {
+  background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--world-r-card);
+}
+:root[data-theme] .desk-toggle { border: 1px solid var(--line); border-radius: var(--world-r-chip); color: var(--muted); }
+:root[data-theme] .desk-toggle[aria-pressed="true"] { background: var(--card); color: var(--ink); border-color: var(--theme-accent); }
+
+/* Furniture: window, sill, glass. Weather only — never a money token. */
+:root[data-theme] .office-window { border: 1px solid var(--line); border-radius: var(--world-r-card); overflow: hidden; }
+:root[data-theme] .office-sill,
+:root[data-theme] .sill-plate { background: var(--paper-2); border-top: 1px solid var(--line); color: var(--ink); }
+:root[data-theme] .sill-label { color: var(--muted); font-size: 12px; }
+:root[data-theme] .sill-value { color: var(--ink); }
+:root[data-theme] .sill-needs { color: var(--world-warn-fg); }
+:root[data-theme] .office-glass { background: color-mix(in srgb, var(--theme-second) 18%, transparent); }
+:root[data-theme] .office-window.glass-clear .office-glass { background: color-mix(in srgb, var(--theme-second) 12%, transparent); }
+:root[data-theme] .office-window.glass-rain .office-glass { background: color-mix(in srgb, var(--theme-second) 26%, transparent); }
+:root[data-theme] .office-window.glass-night .office-glass { background: color-mix(in srgb, var(--ink) 62%, transparent); }
+:root[data-theme] .office-window.glass-snow .office-glass { background: color-mix(in srgb, var(--card) 76%, transparent); }
+:root[data-theme] .office-window.glass-humid .office-glass { background: color-mix(in srgb, var(--card) 44%, transparent); }
+/* Slate. Codex authors --theme-chalk-board and --theme-chalk-ink per scene
+   lighting; every slate surface binds to those two and to nothing else, so a
+   chalkboard reads the same in all twenty-five scenes. */
+:root[data-theme] :is(.office-chalk-band, .office-chalk-body, .chalkboard,
+  .chalkboard-surface, .chalkboard-stage, .chalkboard-live-board, .chalk-slate,
+  .chalk-slate--thumb, .chalk-canvas, .chalk-glass, .ph-chalk, .ph-chalk-body,
+  .chalk-thumb, .chalk-stamp-canvas) {
+  background: var(--theme-chalk-board);
+  color: var(--theme-chalk-ink);
+  border-radius: var(--world-r-card);
+}
+:root[data-theme] :is(.chalk-note, .chalk-reading, .chalk-typeset, .chalk-text-stamps,
+  .chalk-weather-word, .chalk-weather-temp, .chalk-input) {
+  color: var(--theme-chalk-ink);
+}
+:root[data-theme] :is(.chalk-empty, .chalk-rail-caption, .chalk-prompts) {
+  color: color-mix(in srgb, var(--theme-chalk-ink) 74%, transparent);
+}
+:root[data-theme] :is(.chalk-rail-item, .chalk-glass-line, .chalk-rail) {
+  border-color: color-mix(in srgb, var(--theme-chalk-ink) 30%, transparent);
+}
+:root[data-theme] .chalk-input {
+  background: color-mix(in srgb, var(--theme-chalk-ink) 8%, transparent);
+  border-color: color-mix(in srgb, var(--theme-chalk-ink) 34%, transparent);
+}
+:root[data-theme] :is(.chalk-save, .chalk-eraser, .chalk-actions button) {
+  color: var(--theme-chalk-ink);
+  border-color: color-mix(in srgb, var(--theme-chalk-ink) 40%, transparent);
+  background: transparent;
+}
+:root[data-theme] :is(.chalk-save, .chalk-eraser, .chalk-actions button):focus-visible {
+  outline-color: var(--theme-chalk-ink);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme-chalk-board) 70%, transparent);
+}
+
+
+/* ==========================================================================
+   6 · FUND, DESK PLATES, LEVEL, REGISTER, LEDGER STORY
+   Actual / projected / estimated / threshold distinctions and sign labels are
+   preserved exactly; only the ink they are drawn in changes.
+   ========================================================================== */
+
+:root[data-theme] .desk-plate {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-0), var(--world-inset-hi);
+  color: var(--ink);
+}
+:root[data-theme] .desk-plate.is-active,
+:root[data-theme] .desk-plate[aria-current="true"] { box-shadow: inset 3px 0 0 var(--theme-second), var(--world-lift-1); }
+:root[data-theme] .desk-plate.is-warn { border-color: var(--world-warn-edge); }
+:root[data-theme] .desk-plate-kicker { color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+:root[data-theme] .desk-plate-figure { color: var(--ink); }
+:root[data-theme] .desk-plate-detail,
+:root[data-theme] .desk-plate-caption,
+:root[data-theme] .desk-plate-footing { color: var(--muted); }
+:root[data-theme] .desk-plate-detail.is-copper { color: var(--copper); }
+:root[data-theme] .desk-plate-verdict.is-over { color: var(--world-danger-fg); }
+:root[data-theme] .desk-plate-verdict.is-in { color: var(--world-good-fg); }
+:root[data-theme] .desk-plate-well { background: var(--world-sunk); border-radius: var(--world-r-control); }
+:root[data-theme] .desk-plate-fill { fill: var(--theme-chart-neutral); }
+:root[data-theme] .desk-plate-spark { stroke: var(--theme-chart-neutral); fill: none; }
+:root[data-theme] .desk-plate-mark { fill: var(--ink); }
+:root[data-theme] .desk-plate-threshold { stroke: var(--brass); stroke-dasharray: 2 3; }
+:root[data-theme] .desk-plate-tick { stroke: var(--brass); }
+:root[data-theme] .desk-plate-pair-up { fill: var(--theme-chart-positive); }
+:root[data-theme] .desk-plate-pair-down { fill: var(--theme-chart-negative); }
+:root[data-theme] .desk-plate-handle { color: var(--theme-accent); min-height: 44px; }
+:root[data-theme] .desk-plate-rail { background: transparent; }
+
+/* The Level. Solid ink is fact; dashed accent is forecast. Never merged. */
+:root[data-theme] .level { color: var(--ink); }
+:root[data-theme] .level-actual { stroke: var(--ink); fill: none; }
+:root[data-theme] .level-projected { stroke: var(--copper); fill: none; stroke-dasharray: 5 4; }
+:root[data-theme] .level-zero,
+:root[data-theme] .level-axis { stroke: var(--line); }
+:root[data-theme] .level-band { fill: color-mix(in srgb, var(--line) 40%, transparent); }
+:root[data-theme] .level-buffer { stroke: var(--brass); stroke-dasharray: 2 3; }
+:root[data-theme] .level-buffer-label,
+:root[data-theme] .level-label { fill: var(--muted); }
+:root[data-theme] .level-mark { fill: var(--ink); }
+:root[data-theme] .level-mark.is-estimated { fill: none; stroke: var(--copper); }
+:root[data-theme] .level-today-line { stroke: var(--theme-second); }
+:root[data-theme] .level-today-dot { fill: var(--theme-second); }
+:root[data-theme] .level-dry-mark { fill: var(--copper); }
+:root[data-theme] .level-dry-label { fill: var(--copper); }
+:root[data-theme] .level-payday-tick { stroke: var(--brass); }
+:root[data-theme] .level-figure { color: var(--ink); }
+:root[data-theme] .level-headline { color: var(--ink); }
+:root[data-theme] .level-secondary,
+:root[data-theme] .level-status { color: var(--muted); }
+:root[data-theme] .level-skeleton { stroke: var(--line); }
+
+/* Fund rail, stage, drawer, and the stages: Next Out, Week, Waiting, Settle,
+   Shape, Streams, Accounts. */
+:root[data-theme] .fund-stage-heading { color: var(--ink); font-family: var(--theme-display); }
+:root[data-theme] .fund-stage-figure { color: var(--ink); }
+:root[data-theme] .fund-plate-stage,
+:root[data-theme] .fund-rail-list { background: transparent; }
+:root[data-theme] .fund-rail-arrange { color: var(--theme-accent); min-height: 44px; }
+:root[data-theme] :is(.fund-drawer, .fund-drawer-cards, .fund-drawer-slots) { background: transparent; }
+:root[data-theme] .fund-drawer-card,
+:root[data-theme] .fund-drawer-slot {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);
+  color: var(--ink); min-height: 44px;
+}
+:root[data-theme] .fund-drawer-card.is-on-rail { border-color: var(--theme-accent); }
+:root[data-theme] .fund-drawer-card-name { color: var(--ink); font-weight: 600; }
+:root[data-theme] .fund-drawer-card-line { color: var(--muted); font-size: 12px; }
+:root[data-theme] .fund-drawer-card-tag { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+:root[data-theme] .fund-drawer-card-tag.is-scope { color: var(--theme-accent); }
+:root[data-theme] .fund-drawer-slot-number { color: var(--muted); font-variant-numeric: tabular-nums; }
+:root[data-theme] .fund-drawer-slot-pinned { color: var(--brass); }
+:root[data-theme] .fund-drawer-intro,
+:root[data-theme] .fund-drawer-slots-lede { color: var(--muted); }
+:root[data-theme] .fund-motion-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] .fund-motion-status { color: var(--muted); font-size: 12px; }
+:root[data-theme] .household-fund-glance,
+:root[data-theme] .household-fund-panel .card { border-color: color-mix(in srgb, var(--brass) 60%, var(--line)); }
+
+:root[data-theme] .next-out-bar { background: var(--world-sunk); border-radius: 999px; }
+:root[data-theme] .next-out-bar-fill { background: var(--theme-chart-neutral); border-radius: 999px; }
+:root[data-theme] .next-out-bar-fill.is-over { background: var(--theme-chart-negative); }
+:root[data-theme] .next-out-table th { color: var(--muted); }
+:root[data-theme] .next-out-table tr.is-copper td,
+:root[data-theme] .next-out-break { color: var(--copper); }
+
+:root[data-theme] .week-day { border: 1px solid var(--line); border-radius: var(--world-r-control); background: var(--card); }
+:root[data-theme] .week-day.is-today { border-color: var(--theme-second); background: color-mix(in srgb, var(--theme-second) 8%, var(--card)); }
+:root[data-theme] .week-day-name,
+:root[data-theme] .week-range { color: var(--muted); font-size: 12px; }
+:root[data-theme] .week-day-number { color: var(--ink); font-family: var(--display); }
+:root[data-theme] .week-chip { border-radius: var(--world-r-chip); font-size: 12px; }
+:root[data-theme] .week-chip.is-due { background: var(--world-warn-bg); color: var(--world-warn-fg); }
+:root[data-theme] .week-chip.is-posted { background: var(--world-sunk); color: var(--ink); }
+:root[data-theme] .week-chip.is-payday { background: var(--world-good-bg); color: var(--world-good-fg); }
+:root[data-theme] .week-chip.is-shift { background: var(--world-info-bg); color: var(--world-info-fg); }
+:root[data-theme] .week-chip.is-sitdown { background: color-mix(in srgb, var(--brass) 20%, var(--card)); color: var(--ink); }
+
+:root[data-theme] .shape-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control); }
+:root[data-theme] .shape-band { fill: color-mix(in srgb, var(--brass) 26%, transparent); }
+:root[data-theme] .shape-dot { fill: var(--ink); }
+:root[data-theme] .shape-dot.is-over { fill: var(--theme-chart-negative); }
+:root[data-theme] .shape-dot.is-in { fill: var(--theme-chart-positive); }
+:root[data-theme] .shape-card-verdict.is-above { color: var(--world-danger-fg); }
+:root[data-theme] .shape-card-verdict.is-in-shape { color: var(--world-good-fg); }
+:root[data-theme] .shape-card-name { color: var(--ink); }
+
+:root[data-theme] .streams-baseline { stroke: var(--line); }
+:root[data-theme] .streams-mark { fill: var(--theme-second); }
+:root[data-theme] .streams-lane-label,
+:root[data-theme] .streams-legend-row { color: var(--muted); font-size: 12px; }
+:root[data-theme] .streams-swatch { border-radius: 3px; }
+
+:root[data-theme] .accounts-stage-row { border-bottom: 1px solid var(--world-hairline); }
+:root[data-theme] .accounts-stage-row.is-chosen { background: color-mix(in srgb, var(--theme-accent) 8%, transparent); }
+:root[data-theme] .accounts-stage-open { color: var(--ink); min-height: 44px; }
+:root[data-theme] .accounts-stage-balance { color: var(--ink); }
+:root[data-theme] .accounts-stage-badge {
+  background: var(--world-info-bg); color: var(--world-info-fg);
+  border: 1px solid var(--world-info-edge); border-radius: var(--world-r-chip); font-size: 12px;
+}
+:root[data-theme] .accounts-stage-gauge { background: var(--world-sunk); border-radius: 999px; }
+:root[data-theme] .accounts-stage-gauge-fill { background: var(--theme-chart-neutral); border-radius: 999px; }
+:root[data-theme] .settle-row { border-bottom: 1px solid var(--world-hairline); }
+:root[data-theme] .settle-direction-head { color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+:root[data-theme] .waiting-stage-kicker { color: var(--muted); }
+:root[data-theme] .waiting-decision { border: 1px solid var(--line); border-radius: var(--world-r-control); background: var(--card); }
+:root[data-theme] .waiting-consequence { color: var(--muted); font-size: 12px; }
+
+/* Register and ledger story. */
+:root[data-theme] .register { color: var(--ink); }
+:root[data-theme] .register-rule,
+:root[data-theme] .register-list-head { border-color: var(--line); }
+:root[data-theme] .register-list-item { border-top: 1px solid var(--world-hairline); }
+:root[data-theme] .register-title { color: var(--ink); font-family: var(--theme-display); }
+:root[data-theme] .register-date,
+:root[data-theme] .register-list-meta,
+:root[data-theme] .register-legend-label { color: var(--muted); font-size: 12px; }
+:root[data-theme] .register-value,
+:root[data-theme] .register-total { color: var(--ink); }
+:root[data-theme] .register-total-strong { color: var(--ink); font-weight: 700; }
+:root[data-theme] .register-status { color: var(--muted); }
+:root[data-theme] :is(.ledger-story-room, .ledger-story-sheet, .ledger-folio-room, .books-story-tile) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .ledger-purpose-banner {
+  background: var(--world-info-bg); border: 1px solid var(--world-info-edge);
+  border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .ledger-purpose-kicker { color: var(--world-info-fg); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+:root[data-theme] .ledger-flow-node { background: var(--world-sunk); border: 1px solid var(--line); border-radius: var(--world-r-control); }
+:root[data-theme] .ledger-action-item { border-bottom: 1px solid var(--world-hairline); }
+:root[data-theme] .ledger-week-ribbon { background: var(--world-veil); border-radius: 999px; color: var(--muted); }
+
+/* Month spread. Coordinates and hit targets untouched. */
+:root[data-theme] .ms-axis { stroke: var(--line); }
+:root[data-theme] .ms-axis-strong { stroke: var(--world-edge-strong); }
+:root[data-theme] .ms-baseline { stroke: var(--muted); }
+:root[data-theme] .ms-operating-line { stroke: var(--ink); fill: none; }
+:root[data-theme] .ms-operating-area { fill: color-mix(in srgb, var(--ink) 10%, transparent); }
+:root[data-theme] .ms-future-line { stroke: var(--copper); stroke-dasharray: 5 4; fill: none; }
+:root[data-theme] .ms-future-area { fill: url(#ms-hatch); }
+:root[data-theme] .ms-kitty-line { stroke: var(--theme-second); }
+:root[data-theme] .ms-kitty-area { fill: color-mix(in srgb, var(--theme-second) 14%, transparent); }
+:root[data-theme] .ms-future-kitty { fill: url(#ms-hatch); }
+:root[data-theme] .ms-payday-tick { stroke: var(--brass); }
+:root[data-theme] .ms-claim { stroke: var(--copper); }
+:root[data-theme] .ms-today,
+:root[data-theme] .ms-today-dot { fill: var(--theme-second); stroke: var(--theme-second); }
+:root[data-theme] .ms-label { fill: var(--muted); }
+:root[data-theme] .ms-label-copper { fill: var(--copper); }
+:root[data-theme] .ms-label-pine { fill: var(--theme-second); }
+:root[data-theme] .ms-label-kitty { fill: var(--theme-second); }
+:root[data-theme] .ms-hatch-line { stroke: var(--line); }
+:root[data-theme] .ms-slip { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control); }
+:root[data-theme] .ms-slip-amount { color: var(--ink); }
+:root[data-theme] .ms-slip-why,
+:root[data-theme] .ms-slip-who { color: var(--muted); font-size: 12px; }
+:root[data-theme] .ms-stamp { color: var(--brass); }
+:root[data-theme] .ms-readout { background: var(--world-sunk); border-radius: var(--world-r-control); color: var(--ink); }
+:root[data-theme] .ms-hit { fill: transparent; }
+
+/* One series map for the chart, event marks and its legend. */
+:root[data-theme] .month-spread {
+  --ms-river: var(--theme-chart-neutral); --ms-kitty: var(--theme-chart-plan);
+  --ms-river-fill: color-mix(in srgb, var(--theme-chart-neutral) 14%, transparent);
+  --ms-kitty-fill: color-mix(in srgb, var(--theme-chart-plan) 14%, transparent);
+  --ms-tick: var(--theme-chart-positive);
+}
+:root[data-theme] .ms-operating-line, :root[data-theme] .ms-future-line { stroke: var(--theme-chart-neutral); }
+:root[data-theme] .ms-kitty-line { stroke: var(--theme-chart-plan); }
+:root[data-theme] .ms-operating-area { fill: var(--ms-river-fill); }
+:root[data-theme] .ms-kitty-area { fill: var(--ms-kitty-fill); }
+:root[data-theme] .ms-payday-tick { stroke: var(--theme-chart-positive); }
+:root[data-theme] .ms-label-kitty { fill: var(--theme-chart-plan); }
+:root[data-theme] .ms-label-pine { fill: var(--theme-chart-positive); }
+:root[data-theme] .ms-claim.is-refund { stroke: var(--theme-chart-positive); }
+:root[data-theme] .ms-swatch.is-operating, :root[data-theme] .ms-swatch.is-future { background: var(--theme-chart-neutral); }
+:root[data-theme] .ms-swatch.is-future { background: repeating-linear-gradient(90deg, var(--theme-chart-neutral) 0 3px, transparent 3px 5px); }
+:root[data-theme] .ms-swatch.is-kitty { background: var(--theme-chart-plan); }
+:root[data-theme] .ms-swatch.is-payday { background: var(--theme-chart-positive); }
+
+/* The Ask. A shortfall is copper, never --danger. */
+:root[data-theme] .ask-figure { color: var(--copper); }
+:root[data-theme] .ask-sentence { color: var(--ink); }
+:root[data-theme] .ask-caveat,
+:root[data-theme] .ask-payday,
+:root[data-theme] .ask-ceiling { color: var(--muted); font-size: 12px; }
+:root[data-theme] .ask-rule { stroke: var(--line); }
+:root[data-theme] .ask-mark { fill: var(--copper); }
+:root[data-theme] .ask-mark-label { fill: var(--copper); }
+:root[data-theme] .ask-bar-clear { fill: var(--theme-chart-positive); }
+:root[data-theme] .ask-bar-short { fill: var(--theme-chart-negative); }
+:root[data-theme] .ask-whisker-clear { stroke: var(--theme-chart-positive); }
+:root[data-theme] .ask-whisker-short { stroke: var(--theme-chart-negative); }
+:root[data-theme] .ask-route-status-clear { color: var(--world-good-fg); }
+:root[data-theme] .ask-route-status-short { color: var(--world-danger-fg); }
+:root[data-theme] .ask-door { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] .ask-raise { min-height: 44px; }
+:root[data-theme] .ask-refusal { color: var(--muted); }
+
+
+/* ==========================================================================
+   7 · CALENDAR
+   Categories stay distinguishable by text, dot and edge — never colour alone.
+   No money is ever drawn on the weather layer.
+   ========================================================================== */
+
+:root[data-theme] .calendar-card,
+:root[data-theme] .calendar-stage,
+:root[data-theme] .cal-desk-grid {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .cal-weekdays,
+:root[data-theme] .weekday { color: var(--muted); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+:root[data-theme] .cal-day,
+:root[data-theme] .cal-desk-cell {
+  background: var(--card); border: 1px solid var(--world-hairline); border-radius: var(--world-r-control); color: var(--ink);
+}
+:root[data-theme] .cal-day.today,
+:root[data-theme] .cal-day.is-today {
+  border-color: var(--theme-second);
+  box-shadow: inset 0 0 0 2px var(--theme-second);
+  font-weight: 700;
+}
+:root[data-theme] .cal-day.selected,
+:root[data-theme] .cal-day.is-selected,
+:root[data-theme] .cal-day[aria-selected="true"] {
+  background: color-mix(in srgb, var(--theme-accent) 12%, var(--card));
+  border-color: var(--theme-accent);
+}
+:root[data-theme] .cal-day.outside,
+:root[data-theme] .cal-day.is-hidden-phone { color: var(--muted); background: var(--world-sunk); opacity: 1; }
+:root[data-theme] .cal-title { color: var(--ink); font-size: 12px; }
+:root[data-theme] .cal-titles { color: var(--muted); }
+/* Category identity: a dot, an edge and a label. Three carriers, not one. */
+:root[data-theme] .kind-pill {
+  border: 1px solid var(--line); border-radius: var(--world-r-chip);
+  background: var(--world-sunk); color: var(--ink); font-size: 12px;
+}
+:root[data-theme] .cal-title.kind-bill,
+:root[data-theme] .kind-pill.bill { border-left: 3px solid var(--copper); }
+:root[data-theme] .cal-title.kind-paycheck,
+:root[data-theme] .kind-pill.paycheck { border-left: 3px solid var(--theme-chart-positive); }
+:root[data-theme] .cal-title.kind-shift,
+:root[data-theme] .kind-pill.shift { border-left: 3px solid var(--theme-second); }
+:root[data-theme] .cal-title.kind-visit,
+:root[data-theme] .kind-pill.visit { border-left: 3px solid var(--theme-chart-neutral); }
+:root[data-theme] .cal-title.kind-claim,
+:root[data-theme] .kind-pill.claim { border-left: 3px solid var(--brass); }
+:root[data-theme] .cal-title.kind-subscription,
+:root[data-theme] .kind-pill.subscription { border-left: 3px solid var(--theme-chart-plan); }
+:root[data-theme] .cal-title.kind-google,
+:root[data-theme] .kind-pill.google { border-left: 3px dashed var(--muted); }
+:root[data-theme] .cal-title.kind-detected,
+:root[data-theme] .kind-pill.detected { border-left: 3px dotted var(--muted); }
+:root[data-theme] :is(.cal-title, .kind-pill):is(.kind-work-pay, .kind-work-tip, .kind-work-tipout, .work-pay, .work-tip, .work-tipout) {
+  border-left: 3px solid var(--theme-second);
+}
+:root[data-theme] .dots > * { border-radius: 999px; }
+:root[data-theme] .calendar-hero-actions .primary { min-height: 44px; }
+:root[data-theme] :is(.rhythm-card, .repeating-form, .visit-card, .visit-form) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);
+}
+:root[data-theme] .visit-card.is-due { border-color: var(--world-warn-edge); }
+:root[data-theme] .visit-disclosure,
+:root[data-theme] .visit-cadence-nth { color: var(--muted); font-size: 12px; }
+:root[data-theme] .calendar-week-net { color: var(--ink); font-variant-numeric: tabular-nums; }
+:root[data-theme] .claim { color: var(--brass); }
+
+
+/* ==========================================================================
+   8 · SHIFT, WORK, EVIDENCE, AND THE INCOMING MOBILE SURFACES
+   Incoming .apron-card, .cut-*, .count-*, .ph-fold*, .phone-spread /
+   .spread-page, .fund-ledge*, .fund-board-slot are styled for surface only:
+   their gesture geometry, hitboxes, fixed bounds and scroll behaviour come
+   from their own CSS and are not touched here.
+   ========================================================================== */
+
+:root[data-theme] .shift-page,
+:root[data-theme] .work-shift-flow { background: var(--paper); color: var(--ink); }
+:root[data-theme] :is(.work-jobs-card, .work-job-row, .work-cadence-card, .work-shift-review, .work-shift-step, .timesheet-status) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .work-shift-draft-banner {
+  background: var(--world-info-bg); border: 1px solid var(--world-info-edge);
+  color: var(--world-info-fg); border-radius: var(--world-r-control);
+}
+:root[data-theme] .work-shift-progress { background: var(--world-sunk); border-radius: 999px; }
+:root[data-theme] .work-shift-progress > * { background: var(--theme-accent); border-radius: 999px; }
+:root[data-theme] .work-shift-metrics,
+:root[data-theme] .work-report-metrics { color: var(--ink); font-variant-numeric: tabular-nums; }
+:root[data-theme] .work-history-money { color: var(--ink); }
+:root[data-theme] .work-check { color: var(--world-good-fg); }
+:root[data-theme] .timesheet-conflict { background: var(--world-warn-bg); border: 1px solid var(--world-warn-edge); color: var(--world-warn-fg); border-radius: var(--world-r-control); }
+:root[data-theme] .timesheet-never-mind { color: var(--muted); }
+:root[data-theme] .shift-kicker { color: var(--muted); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+:root[data-theme] .shift-owed { color: var(--brass); }
+:root[data-theme] .shift-climate-seal { border-radius: 999px; background: var(--world-sunk); color: var(--ink); }
+:root[data-theme] .shift-earn-bubble { background: var(--card); border: 1px solid var(--line); border-radius: 999px; }
+:root[data-theme] .shift-earn-bubble-label { color: var(--muted); font-size: 12px; }
+:root[data-theme] .shift-lamp-row { border-bottom: 1px solid var(--world-hairline); }
+:root[data-theme] .shift-preview-caption { color: var(--muted); font-size: 12px; }
+:root[data-theme] .shift-emergency { background: var(--world-danger-bg); border: 1px solid var(--world-danger-edge); color: var(--world-danger-fg); }
+:root[data-theme] :is(.doc-camera-sheet, .doc-camera-stage) {
+  background: color-mix(in srgb, var(--ink) 90%, var(--theme-second));
+  color: var(--card);
+  border-radius: var(--world-r-card);
+}
+:root[data-theme] .doc-camera-frame { background: transparent; }
+:root[data-theme] .doc-camera-hint { color: color-mix(in srgb, var(--card) 88%, transparent); font-size: 12px; }
+:root[data-theme] .doc-camera-meter { background: color-mix(in srgb, var(--card) 24%, transparent); border-radius: 999px; }
+:root[data-theme] .doc-camera-meter-fill { background: var(--theme-accent); border-radius: 999px; }
+:root[data-theme] .seven-shifts-panel,
+:root[data-theme] .seven-shifts-inbox { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] .seven-shifts-status { color: var(--muted); font-size: 12px; }
+:root[data-theme] .duplicate-contrast,
+:root[data-theme] .contrast-pair { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] .contrast-side { border: 1px solid var(--world-hairline); border-radius: var(--world-r-control); background: var(--world-sunk); }
+:root[data-theme] .cad-pad { background: var(--paper-2); border: 1px solid var(--line); border-radius: var(--world-r-sheet); box-shadow: var(--world-lift-2); }
+:root[data-theme] .cad-pad-display { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control); color: var(--ink); }
+:root[data-theme] .cad-pad-keys button { background: var(--card); border: 1px solid var(--line); color: var(--ink); min-height: 44px; }
+:root[data-theme] .cad-pad-enter { background: var(--world-face); color: var(--world-face-ink); border-color: var(--world-face-edge); }
+
+/* Incoming mobile surfaces — surface only, geometry untouched. */
+:root[data-theme] .apron-card {
+  background: color-mix(in srgb, var(--theme-second) 88%, var(--ink));
+  color: var(--card);
+  border: 1px solid color-mix(in srgb, var(--theme-second) 60%, var(--ink));
+  border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-1);
+}
+:root[data-theme] .apron-card :is(.k, .h) { color: color-mix(in srgb, var(--card) 78%, transparent); font-size: 12px; }
+:root[data-theme] .apron-card :is(.big, b) { font-family: var(--display); font-variant-numeric: tabular-nums; }
+:root[data-theme] .apron-card .act {
+  background: transparent; color: var(--card);
+  border: 1px solid color-mix(in srgb, var(--card) 45%, transparent); border-radius: 999px; min-height: 44px;
+}
+:root[data-theme] :is(.cut-motion, .cut-side, .cut-handle) { border-color: var(--line); }
+:root[data-theme] .cut-side.a { background: color-mix(in srgb, var(--theme-second) 12%, var(--card)); }
+:root[data-theme] .cut-side.b { background: color-mix(in srgb, var(--brass) 16%, var(--card)); }
+:root[data-theme] .cut-handle span { background: var(--ink); color: var(--card); border-radius: var(--world-r-control); }
+:root[data-theme] :is(.count-rail, .count-head, .count-note) { color: var(--ink); }
+:root[data-theme] .count-hist rect { fill: color-mix(in srgb, var(--muted) 36%, transparent); }
+/* .ph-fold is a four-object composition: colour and rule only, no spacing. */
+:root[data-theme] .ph-fold { border-bottom: 1px dashed var(--line); }
+:root[data-theme] .ph-fold::after { color: var(--line); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+:root[data-theme] .ph-fold-line { border-color: var(--line); }
+:root[data-theme] .phone-spread { background: transparent; }
+:root[data-theme] .spread-page { background: transparent; color: var(--ink); }
+:root[data-theme] .spread-page .sp-dots button i { background: var(--muted); }
+:root[data-theme] .spread-page .sp-dots button.on i { background: var(--ink); }
+:root[data-theme] .fund-ledge {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  box-shadow: 0 -12px 30px color-mix(in srgb, var(--ink) 14%, transparent);
+  color: var(--ink);
+}
+:root[data-theme] .fund-ledge-grip { color: var(--ink); }
+:root[data-theme] .fund-ledge-bar { background: var(--line); border-radius: 999px; }
+:root[data-theme] .fund-ledge-sub { color: var(--muted); font-size: 12px; }
+:root[data-theme] .fund-board-slot {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control); color: var(--muted);
+}
+:root[data-theme] .fund-board-slot.on { border-color: var(--theme-accent); color: var(--ink); font-weight: 700; }
+
+
+/* ==========================================================================
+   9 · BOOKS, IMPORT, AUDIT, STATEMENTS
+   Source and accepted panels remain visibly distinct. Confidence keeps its
+   three-step vocabulary with a shape as well as a colour.
+   ========================================================================== */
+
+:root[data-theme] :is(.books-floor, .books-audit-office, .books-scroll) { background: var(--paper); color: var(--ink); }
+:root[data-theme] .books-table th { color: var(--muted); }
+:root[data-theme] .books-table td { border-top: 1px solid var(--world-hairline); }
+:root[data-theme] .books-pane-blurb { color: var(--muted); }
+:root[data-theme] .journal-head { color: var(--ink); font-family: var(--theme-display); }
+:root[data-theme] .statement-note { color: var(--muted); font-size: 12px; }
+:root[data-theme] .power-sql,
+:root[data-theme] .sql-input {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  background: var(--world-sunk); border: 1px solid var(--line); border-radius: var(--world-r-control); color: var(--ink);
+}
+:root[data-theme] .wallet-strip { background: transparent; }
+:root[data-theme] .wallet-tile {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);
+  box-shadow: var(--world-lift-0), var(--world-inset-hi); color: var(--ink);
+}
+:root[data-theme] .wallet-tile.wallet-hot { border-color: var(--world-warn-edge); }
+:root[data-theme] .wallet-tile-kind { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+:root[data-theme] .wallet-tile-money { color: var(--ink); font-family: var(--display); }
+:root[data-theme] .wallet-tab[aria-selected="true"] { box-shadow: inset 0 -3px 0 var(--theme-accent); color: var(--ink); }
+:root[data-theme] .wallet-group-label { color: var(--muted); font-size: 12px; }
+
+/* Import review — the whole point is telling source from accepted. */
+:root[data-theme] .sheet.import-review .sheet-inner { background: var(--card); }
+:root[data-theme] .import-pair { border: 1px solid var(--line); border-radius: var(--world-r-card); background: var(--card); }
+:root[data-theme] .import-pair--undecided { border-style: dashed; border-color: var(--world-edge-strong); }
+:root[data-theme] .import-pair--attention { border-color: var(--world-warn-edge); background: var(--world-warn-bg); }
+:root[data-theme] .import-pair--cancel-import { border-color: var(--world-danger-edge); background: var(--world-danger-bg); }
+:root[data-theme] .import-edit-side { background: var(--world-sunk); border-radius: var(--world-r-control); }
+:root[data-theme] .contrast-cols > .contrast-side:first-child {
+  /* source: recessed, ruled, never mistakable for the accepted column */
+  background: var(--world-sunk);
+  border-style: dashed;
+}
+:root[data-theme] .contrast-cols > .contrast-side:last-child {
+  background: var(--card);
+  border-style: solid;
+  box-shadow: var(--world-lift-0);
+}
+:root[data-theme] .import-check--balanced { color: var(--world-good-fg); }
+:root[data-theme] .import-check--mismatch { color: var(--world-danger-fg); font-weight: 700; }
+:root[data-theme] .confidence.useful-green { color: var(--world-good-fg); border-bottom: 2px solid var(--world-good-edge); }
+:root[data-theme] .confidence.useful-yellow { color: var(--world-warn-fg); border-bottom: 2px dashed var(--world-warn-edge); }
+:root[data-theme] .confidence.useful-red { color: var(--world-danger-fg); border-bottom: 2px dotted var(--world-danger-edge); }
+:root[data-theme] .import-footer {
+  background: var(--card); border-top: 1px solid var(--line);
+}
+:root[data-theme] .import-tabs button[aria-selected="true"] { box-shadow: inset 0 -3px 0 var(--theme-accent); }
+:root[data-theme] .import-receipt-numbers { font-variant-numeric: tabular-nums; }
+:root[data-theme] .import-reconciliation { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+
+
+/* ==========================================================================
+   10 · MORE, CHARTER, ONBOARDING, HERCULES, GAMES, WARDROBE
+   Danger states stay unmistakable. Hercules keeps his rig, coat and safe-area
+   offsets — only his surroundings are re-toned.
+   ========================================================================== */
+
+:root[data-theme] .more { background: var(--paper); }
+:root[data-theme] :is(.charter-page, .charter-page-inner, .charter-founding-inner) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .charter-quote { color: var(--ink); font-family: var(--theme-display); }
+:root[data-theme] :is(.charter-rule, .charter-hr) { border-color: var(--line); }
+:root[data-theme] .charter-sig,
+:root[data-theme] .charter-sigblock { border-top: 1px solid var(--world-edge-strong); color: var(--muted); }
+:root[data-theme] .charter-num { color: var(--brass); font-variant-numeric: tabular-nums; }
+:root[data-theme] .charter-revoke { color: var(--world-danger-fg); border-color: var(--world-danger-edge); }
+:root[data-theme] :is(.onboarding-shell, .onboarding-card, .onboarding-ready, .guided-preview__shell) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .onboarding-rail { background: var(--world-sunk); border-radius: 999px; }
+:root[data-theme] .onboarding-rail-mark { background: var(--theme-accent); border-radius: 999px; }
+:root[data-theme] .onboarding-noticed { color: var(--muted); }
+:root[data-theme] .onboarding-card-provenance { color: var(--muted); font-size: 12px; }
+:root[data-theme] .onboarding-ready-error,
+:root[data-theme] .onboarding-estimate-error { color: var(--world-danger-fg); background: var(--world-danger-bg); border-radius: var(--world-r-control); }
+:root[data-theme] .onboarding-stop-link { color: var(--world-danger-fg); }
+:root[data-theme] .onboarding-return-bar { background: var(--card); border-top: 1px solid var(--line); }
+:root[data-theme] .onboarding-return-dot { background: var(--theme-accent); }
+:root[data-theme] :is(.month-card, .month-opening-card, .month-friction-card, .month-return-card, .month-playtest-card) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);
+}
+:root[data-theme] .month-stopped { color: var(--world-danger-fg); }
+:root[data-theme] .month-proof-pill { background: var(--world-good-bg); color: var(--world-good-fg); border-radius: var(--world-r-chip); }
+
+/* Rehearsal and privacy disclosures retain their own semantic states. */
+:root[data-theme] :is(.month-card, .month-opening-card, .month-friction-card, .month-return-card, .month-playtest-card) { color: var(--ink); }
+:root[data-theme] :is(.month-preflight, .month-checkpoint, .month-acknowledgements, .month-approval,
+  .month-shared-disclosure, .month-proof-grid > div, .month-opening-review, .month-receipt-proposal) {
+  background: var(--paper-2); color: var(--ink); border-color: var(--line);
+}
+ :root[data-theme] .month-invite { background: var(--card); color: var(--ink); border-color: var(--line); }
+:root[data-theme] :is(.month-hercules-line, .month-money-input, .month-task, .month-week-tabs button, .month-outcomes button) { background: var(--paper-2); color: var(--ink); border-color: var(--line); }
+:root[data-theme] .month-week-tabs button[aria-current="step"] { background: var(--theme-accent); color: var(--theme-on-accent); }
+:root[data-theme] .month-approval blockquote { background: var(--world-good-bg); color: var(--ink); border-color: var(--world-good-edge); }
+:root[data-theme] :is(.month-proof-grid dt, .month-disclosure, .month-dismiss) { color: var(--muted); }
+:root[data-theme] .month-error { color: var(--danger); }
+:root[data-theme] .month-proof-pill.attention { background: var(--world-warn-bg); color: var(--world-warn-fg); }
+:root[data-theme] .fund-disclosure { background: var(--world-warn-bg); color: var(--ink); border-color: var(--world-warn-edge); }
+:root[data-theme] :is(.hercules-snippet, .hercules-snippet.you, .visit-drift, .visit-hero) {
+  background: var(--paper-2); color: var(--ink); border-color: var(--line);
+}
+:root[data-theme] .analog-bezel { fill: var(--paper-2); stroke: var(--ink); }
+:root[data-theme] .analog-face { fill: var(--card); }
+:root[data-theme] :is(.analog-tick, .analog-hour, .analog-minute) { stroke: var(--ink); }
+:root[data-theme] .analog-cap { fill: var(--ink); }
+:root[data-theme] .analog-arc { stroke: var(--theme-chart-plan); }
+:root[data-theme] .analog-arc.live { stroke: var(--theme-chart-positive); }
+:root[data-theme] .analog-start { fill: var(--theme-accent); }
+
+:root[data-theme] .hercules-pill {
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+  box-shadow: var(--world-lift-1); color: var(--ink);
+}
+:root[data-theme] .hercules-pill-name { color: var(--ink); font-weight: 600; }
+:root[data-theme] .hercules-pill-note { color: var(--muted); font-size: 12px; }
+:root[data-theme] .hercules-bubble {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-sheet);
+  box-shadow: var(--world-lift-2); color: var(--ink);
+}
+:root[data-theme] .hercules-focus-shell { background: color-mix(in srgb, var(--ink) 46%, transparent); }
+:root[data-theme] .hercules-focus-body { background: var(--card); color: var(--ink); border-radius: var(--world-r-sheet); }
+:root[data-theme] .hercules-chat-log { background: var(--world-sunk); border-radius: var(--world-r-control); }
+:root[data-theme] .hercules-turn { border-bottom: 1px solid var(--world-hairline); }
+:root[data-theme] .hercules-typing { color: var(--muted); }
+:root[data-theme] .hercules-grounded-fact,
+:root[data-theme] .hercules-fact { background: var(--world-info-bg); color: var(--world-info-fg); border-radius: var(--world-r-chip); font-size: 12px; }
+:root[data-theme] .hercules-source { color: var(--muted); font-size: 12px; }
+:root[data-theme] .hercules-useful.useful-green { color: var(--world-good-fg); }
+:root[data-theme] .hercules-useful.useful-yellow { color: var(--world-warn-fg); }
+:root[data-theme] .hercules-useful.useful-red { color: var(--world-danger-fg); }
+:root[data-theme] .hercules-dismiss { color: var(--muted); min-height: 44px; }
+/* The rig itself is untouched: no blanket recolour of his coat or parts. */
+:root[data-theme] { --herc-ink: #2a2620; --herc-coat: #fdfbf6; --herc-spot: #c9a884; }
+:root[data-theme] .herc-root { color: inherit; }
+:root[data-theme] :is(.ttt-grid, .hangman-word, .hangman-letters) { color: var(--ink); }
+:root[data-theme] .ttt-cell { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control); min-height: 44px; }
+:root[data-theme] .wardrobe,
+:root[data-theme] .wardrobe-still { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] :is(.device-list, .soft-presence, .storage, .health) {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); color: var(--ink);
+}
+:root[data-theme] .soft-presence-opt-out { color: var(--muted); }
+
+
+/* ==========================================================================
+   11 · SCENE HEADING, ARTWORK, BRACELETS, APPEARANCE PICKER
+   Scene artwork is inert. The flow-layout integration below reserves at least
+   200px on desktop and 218px on phone in both App and Studio, and lets long
+   titles grow without colliding with the atmosphere control.
+   ========================================================================== */
+
+:root[data-theme] .theme-scene-heading {
+  position: relative;
+  isolation: isolate;
+  height: 160px;
+  border: 1px solid var(--line);
+  border-radius: 24px 24px 10px 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--paper) 75%, var(--card));
+  contain: paint;
+}
+:root[data-theme] .theme-studio .theme-scene-heading { height: 218px; }
+:root[data-theme] .scene-artwork {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+/* Decor layers are inert. Descendants are never blanket-recoloured — each
+   drawing already binds its own fills to --theme-* tokens. */
+:root[data-theme] .scene-artwork,
+:root[data-theme] .friendship-bracelets { user-select: none; }
+:root[data-theme] .theme-scene-copy { position: absolute; left: 34px; top: 30px; z-index: 1; max-width: 52%; }
+:root[data-theme] .theme-scene-kicker {
+  color: var(--muted); text-transform: uppercase; font: 600 10px/1.4 var(--font); letter-spacing: .15em;
+}
+:root[data-theme] .theme-scene-title {
+  font: 500 clamp(24px, 3.2vw, 38px)/1.1 var(--theme-display);
+  letter-spacing: -.8px; margin: 10px 0 6px; color: var(--ink);
+}
+:root[data-theme] .theme-scene-caption { font: 14px var(--font); margin: 0; color: var(--muted); }
+:root[data-theme] .theme-studio .theme-scene-copy { top: 36px; }
+:root[data-theme] .theme-studio .theme-scene-title { font-size: clamp(24px, 3.2vw, 42px); margin: 12px 0 8px; }
+
+:root[data-theme] .theme-atmosphere-toggle {
+  border: 1px solid var(--world-hairline);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+  padding: 7px 11px;
+  min-height: 44px;
+  border-radius: var(--world-r-chip);
+}
+:root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle {
+  position: absolute; bottom: 12px; left: 23px; z-index: 2; border: 0;
+}
+:root[data-theme] .theme-atmosphere-toggle[aria-pressed="true"] {
+  border: 1px solid var(--theme-accent);
+  box-shadow: inset 0 0 0 1px var(--theme-accent);
+}
+
+/* Bracelets. Decorative keepsake only: they carry no amount, no count and no
+   progress, and their bead ordering is fixed artwork. */
+:root[data-theme] .friendship-bracelets {
+  position: absolute; right: 22px; top: 14px; z-index: 1;
+  width: 240px; height: 122px;
+  transform: rotate(-4deg);
+  filter: drop-shadow(0 4px 3px #00000017);
+  pointer-events: none;
+}
+:root[data-theme] .theme-studio .friendship-bracelets {
+  right: 35px; top: 21px; width: 340px; height: 174px;
+}
+
+/* Appearance picker. Three previews stand for BOTH scopes, so each card shows
+   a Shared and a Personal miniature side by side. */
+:root[data-theme] .appearance-panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card); }
+:root[data-theme] .appearance-panel > header { display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; }
+:root[data-theme] .appearance-panel h2 { font: 500 26px var(--display); margin: 0; color: var(--ink); }
+:root[data-theme] .appearance-eyebrow,
+:root[data-theme] .studio-eyebrow {
+  font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--theme-accent); font-weight: 700; margin: 0 0 12px;
+}
+:root[data-theme] .appearance-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 24px 0; }
+:root[data-theme] .appearance-option {
+  display: flex; flex-direction: column; text-align: left; min-width: 0;
+  padding: 12px; border: 1px solid var(--line); border-radius: var(--world-r-card);
+  background: var(--card); color: var(--ink); cursor: pointer; min-height: 44px;
+}
+:root[data-theme] .appearance-option:hover { border-color: var(--world-edge-strong); }
+:root[data-theme] .appearance-option[aria-pressed="true"] {
+  outline: 2px solid var(--theme-accent);
+  outline-offset: 2px;
+  box-shadow: var(--world-lift-1);
+}
+/* Previewing but not yet applied: dashed, so the state is not colour-only. */
+:root[data-theme] .appearance-option[aria-pressed="true"][data-preview-pending="true"] { outline-style: dashed; }
+:root[data-theme] .appearance-option-name { font: 600 16px var(--font); margin: 15px 0 8px; color: var(--ink); }
+:root[data-theme] .appearance-option-description { font-size: 12px; line-height: 1.6; color: var(--muted); }
+:root[data-theme] .appearance-miniatures { display: flex; gap: 8px; width: 100%; }
+:root[data-theme] .appearance-miniature {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 5px; width: 50%; min-width: 0;
+  height: 85px; padding: 12px 8px; background: #eadac3; border-radius: 6px;
+}
+:root[data-theme] .appearance-miniature i { display: block; border-radius: 3px; background: #fff9ed; }
+:root[data-theme] .appearance-miniature i:first-child { grid-column: span 2; background: #ab583b; }
+:root[data-theme] [data-preview-theme="taylor"] .is-shared { background: #eed5e5; }
+:root[data-theme] [data-preview-theme="taylor"] .is-shared i:first-child { background: #b2608a; }
+:root[data-theme] [data-preview-theme="taylor"] .is-personal { background: #bcdfce; }
+:root[data-theme] [data-preview-theme="taylor"] .is-personal i:first-child { background: #c96030; }
+:root[data-theme] [data-preview-theme="newfoundland"] .is-shared {
+  background: repeating-linear-gradient(90deg, #b65950 0 20%, #559395 20% 40%, #d9b656 40% 60%);
+}
+:root[data-theme] [data-preview-theme="newfoundland"] .is-personal { background: #b8d3c5; }
+:root[data-theme] [data-preview-theme="newfoundland"] .is-personal i:first-child { background: #526b63; }
+:root[data-theme] .appearance-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+:root[data-theme] .appearance-status { font-size: 12px; min-height: 20px; color: var(--muted); }
+:root[data-theme] .appearance-status[data-status="error"] { color: var(--world-danger-fg); }
+:root[data-theme] .appearance-status[data-status="pending"] { color: var(--world-warn-fg); }
+:root[data-theme] .appearance-status[data-status="local"] { color: var(--world-info-fg); }
+
+
+/* ==========================================================================
+   12 · WORLD — CLASSIC
+   A richer uniform cream/pine/terracotta kitchen. 18px card corners, warm
+   raised paper, terracotta and pine highlights, subtle scene-specific
+   heading art. One material: paper.
+   ========================================================================== */
+
+:root[data-theme="classic"] {
+  --world-room:
+    radial-gradient(120% 70% at 50% -12%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 40%, transparent), transparent 340px);
+}
+:root[data-theme="classic"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .welcome-card, .appearance-option) {
+  border-radius: 18px;
+  background: linear-gradient(168deg, var(--world-raised) 0%, var(--card) 58%, color-mix(in srgb, var(--paper) 22%, var(--card)) 100%);
+  box-shadow: var(--world-lift-1), var(--world-inset-hi);
+}
+:root[data-theme="classic"] .card { border-color: color-mix(in srgb, var(--line) 88%, var(--copper)); }
+/* The lamp: a warm top edge on the primary reading surface. */
+:root[data-theme="classic"] .studio-overview::before,
+:root[data-theme="classic"] .office-wide-hero::before {
+  background: linear-gradient(90deg, var(--theme-accent), var(--theme-second));
+}
+:root[data-theme="classic"] :is(.hearth-wax-seal) { box-shadow: inset 0 2px 1px #ffffff66, inset 0 -4px 0 #00000018, 0 6px 14px #00000018; }
+:root[data-theme="classic"] :is(.tabs button.active, [role="tab"][aria-selected="true"]) { box-shadow: inset 0 -3px 0 var(--copper); }
+:root[data-theme="classic"] .theme-scene-heading {
+  background:
+    radial-gradient(90% 120% at 84% 8%, color-mix(in srgb, var(--theme-second) 12%, transparent), transparent 60%),
+    color-mix(in srgb, var(--paper) 72%, var(--card));
+  border-color: color-mix(in srgb, var(--line) 80%, var(--copper));
+}
+:root[data-theme="classic"] .primary { border-radius: 14px; }
+
+
+/* ==========================================================================
+   13 · WORLD — TAYLOR
+   An intimate scrapbook. Paper faces and mounted cards; every material
+   visibly changes controls, cards, tabs and widget framing, not just the
+   scene header. Twelve materials, one per era.
+   ========================================================================== */
+
+:root[data-theme="taylor"] {
+  --world-room:
+    radial-gradient(110% 60% at 78% -8%, color-mix(in srgb, var(--theme-second) 10%, transparent), transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 34%, transparent), transparent 300px);
+  --world-mount: color-mix(in srgb, var(--card) 88%, var(--paper));
+}
+/* Every Taylor card is mounted on a page: a paper face inside a wider mount. */
+:root[data-theme="taylor"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .welcome-card, .appearance-option, .fund-drawer-card) {
+  background: var(--card);
+  box-shadow: 0 0 0 5px var(--world-mount), var(--world-lift-1);
+}
+:root[data-theme="taylor"] .theme-scene-heading { border-radius: 20px 22px 12px 14px; }
+:root[data-theme="taylor"] .studio-overview,
+:root[data-theme="taylor"] .office-wide-hero { border-radius: 4px 17px 6px 16px; }
+:root[data-theme="taylor"] .hearth-wax-seal { border-radius: 50% 46% 49% 45%; }
+:root[data-theme="taylor"] :is(.tabs button.active, [role="tab"][aria-selected="true"]) { box-shadow: inset 0 -3px 0 var(--theme-accent); }
+
+/* — vellum · Lover — translucent tape, soft edges, nothing hard-cornered. */
+:root[data-material="vellum"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  -webkit-backdrop-filter: blur(1.5px);
+  backdrop-filter: blur(1.5px);
+  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+}
+:root[data-material="vellum"] .card { position: relative; }
+:root[data-material="vellum"] .card::after {
+  content: ""; position: absolute; top: -9px; left: 26px; width: 74px; height: 20px;
+  background: color-mix(in srgb, var(--theme-accent) 16%, #ffffff);
+  border-left: 1px solid color-mix(in srgb, var(--theme-accent) 26%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--theme-accent) 26%, transparent);
+  transform: rotate(-3deg); opacity: .85; pointer-events: none;
+}
+:root[data-material="vellum"] :is(.primary, .ghost, .chip) { border-radius: 999px; }
+:root[data-material="vellum"] .primary { box-shadow: var(--world-inset-hi), 0 3px 0 color-mix(in srgb, var(--theme-accent) 62%, var(--ink)); }
+
+/* — cloth · Red — stitched wine-red edges on every framed thing. */
+:root[data-material="cloth"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .appearance-option) {
+  border: 1.5px solid color-mix(in srgb, var(--theme-accent) 46%, var(--line));
+  box-shadow: 0 0 0 5px var(--world-mount), var(--world-lift-1),
+              inset 0 0 0 1px color-mix(in srgb, var(--card) 60%, transparent);
+  outline: 1.5px dashed color-mix(in srgb, var(--theme-accent) 52%, transparent);
+  outline-offset: -6px;
+}
+:root[data-material="cloth"] :is(.primary, .secondary) { outline: 1px dashed color-mix(in srgb, var(--card) 60%, transparent); outline-offset: -4px; }
+:root[data-material="cloth"] .chip { border-style: dashed; }
+:root[data-material="cloth"] .tabs button.active { box-shadow: inset 0 -3px 0 var(--theme-accent), inset 0 -5px 0 color-mix(in srgb, var(--theme-accent) 30%, transparent); }
+
+/* — gold-thread · Fearless — fine gold rules, nothing heavier. */
+:root[data-material="gold-thread"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  border-color: color-mix(in srgb, var(--gold) 52%, var(--line));
+  box-shadow: 0 0 0 5px var(--world-mount), inset 0 0 0 1px color-mix(in srgb, var(--gold) 40%, transparent), var(--world-lift-1);
+}
+:root[data-material="gold-thread"] :is(th, .hearth-paper-caption, .desk-plate-kicker) { border-bottom-color: color-mix(in srgb, var(--gold) 46%, var(--line)); }
+:root[data-material="gold-thread"] .primary { border-color: color-mix(in srgb, var(--gold) 62%, var(--theme-accent)); }
+:root[data-material="gold-thread"] .chip[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--gold); border-color: var(--gold); }
+:root[data-material="gold-thread"] .hearth-wax-seal { box-shadow: inset 0 2px 1px #ffffff50, 0 0 0 1px color-mix(in srgb, var(--gold) 60%, transparent), 0 5px 12px #00000014; }
+
+/* — newsprint · reputation — angular silver on dark paper. Authored dark. */
+:root[data-material="newsprint"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .appearance-option, .sheet-inner) {
+  border-radius: 2px;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--theme-accent) 40%, var(--line));
+  box-shadow: 0 0 0 3px var(--world-mount), var(--world-lift-1);
+}
+:root[data-material="newsprint"] :is(.primary, .ghost, .secondary, .chip, input, select, textarea) { border-radius: 2px; }
+:root[data-material="newsprint"] :is(h1, h2, h3, .theme-scene-title, .studio-main h1) {
+  font-family: "Figtree", sans-serif; font-weight: 700; letter-spacing: -.02em;
+}
+:root[data-material="newsprint"] :is(th, .desk-plate-kicker, .hearth-tile-kind) {
+  letter-spacing: .18em; text-transform: uppercase;
+}
+:root[data-material="newsprint"] .card { border-top: 3px solid color-mix(in srgb, var(--theme-accent) 70%, transparent); }
+:root[data-material="newsprint"] .tabs { border-bottom-width: 2px; }
+
+/* — plaid · evermore — woven rust edges, a real weave under the header. */
+:root[data-material="plaid"] .theme-scene-heading {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 28px, color-mix(in srgb, var(--theme-accent) 10%, transparent) 28px 32px),
+    repeating-linear-gradient(90deg, var(--paper) 0 28px, color-mix(in srgb, var(--theme-second) 16%, transparent) 28px 32px);
+}
+:root[data-material="plaid"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  border: 1.5px solid color-mix(in srgb, var(--theme-accent) 40%, var(--line));
+  box-shadow: 0 0 0 5px var(--world-mount), var(--world-lift-1);
+}
+:root[data-material="plaid"] .card::before {
+  content: ""; display: block; height: 4px; margin: -13px -13px 12px;
+  background: repeating-linear-gradient(90deg,
+    color-mix(in srgb, var(--theme-accent) 55%, transparent) 0 10px,
+    color-mix(in srgb, var(--theme-second) 55%, transparent) 10px 20px);
+}
+:root[data-material="plaid"] .chip { border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--line)); }
+
+/* — instant-photo · 1989 — crisp white framing and a sky-blue mount. */
+:root[data-material="instant-photo"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .appearance-option) {
+  background: var(--card);
+  border: 0;
+  border-radius: 3px;
+  box-shadow: 0 0 0 9px #fdfefb, 0 0 0 10px color-mix(in srgb, var(--theme-second) 30%, var(--line)), var(--world-lift-1);
+}
+:root[data-material="instant-photo"] .card { padding-bottom: 28px; }
+:root[data-material="instant-photo"] :is(h1, h2, h3, .theme-scene-title, .studio-main h1) {
+  font-family: "Figtree", sans-serif; font-weight: 600;
+}
+:root[data-material="instant-photo"] :is(.primary, .ghost, .chip) { border-radius: 4px; }
+:root[data-material="instant-photo"] .primary { box-shadow: var(--world-inset-hi), 0 3px 0 color-mix(in srgb, var(--theme-second) 60%, var(--ink)); }
+
+/* — satin · The Life of a Showgirl — mint and orange, a sparkle at the edge. */
+:root[data-material="satin"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  background:
+    linear-gradient(118deg, transparent 38%, color-mix(in srgb, #ffffff 34%, transparent) 47%, transparent 56%),
+    var(--card);
+  border-color: color-mix(in srgb, var(--theme-second) 40%, var(--line));
+  box-shadow: 0 0 0 5px var(--world-mount), var(--world-lift-1);
+}
+:root[data-material="satin"] .primary {
+  background:
+    linear-gradient(118deg, transparent 36%, color-mix(in srgb, #ffffff 30%, transparent) 48%, transparent 60%),
+    var(--theme-accent);
+}
+:root[data-material="satin"] .chip[aria-pressed="true"] { border-color: var(--theme-second); box-shadow: inset 0 0 0 1px var(--theme-second); }
+:root[data-material="satin"] .hearth-wax-seal { border-radius: 50%; }
+
+/* — midnight-paper · Midnights — navy and silver. Authored dark. */
+:root[data-material="midnight-paper"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--line));
+  box-shadow: 0 0 0 4px var(--world-mount),
+              inset 0 1px 0 color-mix(in srgb, var(--theme-accent) 22%, transparent),
+              var(--world-lift-1);
+}
+:root[data-material="midnight-paper"] .primary { border-color: color-mix(in srgb, var(--theme-accent) 70%, #000000); }
+:root[data-material="midnight-paper"] :is(th, .desk-plate-kicker) { color: color-mix(in srgb, var(--theme-accent) 60%, var(--muted)); }
+:root[data-material="midnight-paper"] .theme-scene-heading {
+  background: radial-gradient(80% 120% at 74% 4%, color-mix(in srgb, var(--theme-accent) 16%, transparent), transparent 62%), var(--paper);
+}
+
+/* — ribbon · Speak Now — violet flourishes at the corner of every frame. */
+:root[data-material="ribbon"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  position: relative;
+  border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--line));
+}
+:root[data-material="ribbon"] .card::after {
+  content: ""; position: absolute; right: -4px; top: 14px; width: 16px; height: 46px;
+  background: color-mix(in srgb, var(--theme-accent) 62%, transparent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+  pointer-events: none;
+}
+:root[data-material="ribbon"] :is(.primary, .chip, .ghost) { border-radius: 999px; }
+:root[data-material="ribbon"] .tabs button.active { box-shadow: inset 0 -4px 0 var(--theme-accent); }
+
+/* — manuscript · The Tortured Poets Department — ruled, archival, monospaced. */
+:root[data-material="manuscript"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .sheet-inner) {
+  border-radius: 5px;
+  background: repeating-linear-gradient(0deg, transparent 0 29px, var(--line) 29px 30px), var(--card);
+  box-shadow: 0 0 0 4px var(--world-mount), var(--world-lift-0);
+}
+:root[data-material="manuscript"] :is(h1, h2, h3, .theme-scene-title, .studio-main h1, .fund-stage-heading) {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  letter-spacing: -.01em;
+}
+:root[data-material="manuscript"] :is(.primary, .ghost, .secondary, .chip, input, select, textarea) { border-radius: 4px; }
+:root[data-material="manuscript"] .card > :is(h1, h2, h3, p, table) { background: var(--card); }
+:root[data-material="manuscript"] .hearth-wax-seal { border-radius: 6px; }
+
+/* — botanical · Taylor Swift (debut) — blue-green, a growing edge. */
+:root[data-material="botanical"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  border-color: color-mix(in srgb, var(--theme-second) 42%, var(--line));
+  box-shadow: 0 0 0 5px var(--world-mount), inset 3px 0 0 color-mix(in srgb, var(--theme-second) 40%, transparent), var(--world-lift-1);
+}
+:root[data-material="botanical"] .chip[aria-pressed="true"] { border-color: var(--theme-second); box-shadow: inset 0 0 0 1px var(--theme-second); }
+:root[data-material="botanical"] .primary { border-color: color-mix(in srgb, var(--theme-second) 40%, var(--theme-accent)); }
+
+/* — linen · folklore — forest pencil on a woven ground. */
+:root[data-material="linen"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 3px, color-mix(in srgb, var(--ink) 3%, transparent) 3px 4px),
+    repeating-linear-gradient(0deg, transparent 0 3px, color-mix(in srgb, var(--ink) 2%, transparent) 3px 4px),
+    var(--card);
+  border-color: color-mix(in srgb, var(--theme-second) 34%, var(--line));
+}
+:root[data-material="linen"] :is(.desk-plate-kicker, .hearth-tile-kind, th) { color: color-mix(in srgb, var(--theme-second) 40%, var(--muted)); }
+:root[data-material="linen"] .primary { box-shadow: var(--world-inset-hi), 0 3px 0 color-mix(in srgb, var(--theme-second) 55%, var(--ink)); }
+:root[data-material="linen"] .ghost { border-style: dashed; }
+
+
+/* ==========================================================================
+   14 · WORLD — NEWFOUNDLAND
+   Twelve places. Painted-wood architectural trims, raincoat yellow, trail
+   contours, dock ledgers, patterned JAG metal, shop receipts, painted kitchen,
+   open horizon, dark venue, stepped clapboard, summit sky, gallery frames.
+   ========================================================================== */
+
+:root[data-theme="newfoundland"] {
+  --world-room:
+    linear-gradient(180deg, color-mix(in srgb, var(--card) 55%, transparent), transparent 260px),
+    radial-gradient(120% 60% at 20% -6%, color-mix(in srgb, var(--theme-second) 8%, transparent), transparent 60%);
+  /* The slicker. A MARK colour: it may be a face or a seam, never body text
+     on paper, and anything wearing it takes dark ink. */
+  --world-slicker: #f2c230;
+  --world-slicker-ink: #2b2415;
+  --world-trim: color-mix(in srgb, var(--theme-accent) 70%, var(--ink));
+}
+:root[data-theme="newfoundland"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .welcome-card, .appearance-option) {
+  border-radius: var(--theme-radius);
+  border: 1.5px solid color-mix(in srgb, var(--line) 60%, var(--ink));
+  box-shadow: var(--world-lift-1), var(--world-inset-hi);
+}
+/* Painted architectural trim: a colour cap on the primary reading surface. */
+:root[data-theme="newfoundland"] :is(.studio-overview, .office-wide-hero, .calendar-card, .fund-plate-stage) {
+  border-top: 5px solid var(--theme-accent);
+}
+:root[data-theme="newfoundland"] .hearth-wax-seal { border-radius: 12px; }
+:root[data-theme="newfoundland"] :is(.tabs button.active, [role="tab"][aria-selected="true"]) {
+  box-shadow: inset 0 -4px 0 var(--theme-accent);
+}
+:root[data-theme="newfoundland"] .primary { box-shadow: var(--world-inset-hi), 0 3px 0 var(--world-trim); }
+/* Anything painted in slicker yellow gets dark ink, everywhere, always. */
+:root[data-theme="newfoundland"] [data-slicker],
+:root[data-theme="newfoundland"] .is-slicker { background: var(--world-slicker); color: var(--world-slicker-ink); }
+
+/* — painted-wood · Jellybean Row — clapboard trims and a painted sill. */
+:root[data-material="painted-wood"] :is(.card, .instrument, .desk-plate) {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 15px, color-mix(in srgb, var(--ink) 3%, transparent) 15px 16px),
+    var(--card);
+  border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--ink));
+}
+:root[data-material="painted-wood"] .card { border-left: 5px solid var(--theme-accent); }
+:root[data-material="painted-wood"] .hearth-paper-tile { border-top: 5px solid var(--theme-second); }
+:root[data-material="painted-wood"] .ph-pin { border-top: 4px solid var(--theme-accent); }
+
+/* — raincoat · Rainy St. John's — yellow seams, dark ink, wet-shine edges. */
+:root[data-material="raincoat"] :is(.card, .instrument, .desk-plate, .hearth-paper-tile) {
+  border-color: color-mix(in srgb, var(--world-slicker) 46%, var(--line));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--world-slicker) 34%, transparent), var(--world-lift-1);
+}
+:root[data-material="raincoat"] .card { border-bottom: 4px solid var(--world-slicker); }
+:root[data-material="raincoat"] .primary {
+  background: var(--world-slicker);
+  color: var(--world-slicker-ink);
+  border-color: color-mix(in srgb, var(--world-slicker) 60%, var(--ink));
+  box-shadow: var(--world-inset-hi), 0 3px 0 color-mix(in srgb, var(--world-slicker) 45%, var(--ink));
+}
+:root[data-material="raincoat"] .primary:hover:not(:disabled) { background: color-mix(in srgb, var(--world-slicker) 88%, #ffffff); }
+:root[data-material="raincoat"] .chip[aria-pressed="true"] {
+  background: var(--world-slicker); color: var(--world-slicker-ink); border-color: color-mix(in srgb, var(--world-slicker) 60%, var(--ink));
+  box-shadow: none;
+}
+:root[data-material="raincoat"] .wax-stamp,
+:root[data-material="raincoat"] .ph-stamp { background: var(--world-slicker); color: var(--world-slicker-ink); }
+/* Warning still means warning: it keeps its own token, not the slicker. */
+:root[data-material="raincoat"] :is(.command-banner--warning, .kitchen-notice--warning, .preview.warn) {
+  background: var(--world-warn-bg); border-color: var(--world-warn-edge); color: var(--world-warn-fg);
+}
+
+/* — trail-paper · the coastal way up — contour edges on every frame. */
+:root[data-material="trail-paper"] :is(.card, .instrument, .desk-plate) {
+  background:
+    repeating-linear-gradient(112deg, transparent 0 22px, color-mix(in srgb, var(--theme-second) 6%, transparent) 22px 23px),
+    var(--card);
+  border-color: color-mix(in srgb, var(--theme-second) 40%, var(--line));
+}
+:root[data-material="trail-paper"] .card { border-style: solid; box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--card) 70%, transparent), var(--world-lift-1); }
+:root[data-material="trail-paper"] .ghost { border-style: dashed; }
+
+/* — dock-ledger · the harbour — navy rules and brass fittings. */
+:root[data-material="dock-ledger"] :is(.card, .instrument, .desk-plate) {
+  background: repeating-linear-gradient(0deg, transparent 0 27px, color-mix(in srgb, var(--theme-accent) 9%, transparent) 27px 28px), var(--card);
+  border-color: color-mix(in srgb, var(--theme-accent) 46%, var(--ink));
+}
+:root[data-material="dock-ledger"] :is(th, .hearth-paper-caption) { border-bottom: 2px solid color-mix(in srgb, var(--theme-accent) 50%, var(--line)); }
+:root[data-material="dock-ledger"] .primary { border-color: var(--brass); box-shadow: var(--world-inset-hi), 0 3px 0 var(--brass); }
+:root[data-material="dock-ledger"] .chip[aria-pressed="true"] { border-color: var(--brass); box-shadow: inset 0 0 0 1px var(--brass); }
+
+/* — metallic · Back at JAG — geometric patterned ground, inset gold frames,
+     and smooth dark panels wherever text has to be read. Authored dark. */
+:root[data-material="metallic"] {
+  --world-room:
+    repeating-linear-gradient(45deg, transparent 0 41px, color-mix(in srgb, var(--theme-accent) 12%, transparent) 41px 42px),
+    repeating-linear-gradient(-45deg, transparent 0 41px, color-mix(in srgb, var(--theme-accent) 12%, transparent) 41px 42px),
+    var(--paper);
+}
+:root[data-material="metallic"] .theme-scene-heading {
+  background:
+    repeating-linear-gradient(45deg, transparent 0 34px, color-mix(in srgb, var(--theme-accent) 22%, transparent) 34px 35px),
+    repeating-linear-gradient(-45deg, transparent 0 34px, color-mix(in srgb, var(--theme-accent) 22%, transparent) 34px 35px),
+    var(--paper);
+}
+:root[data-material="metallic"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .appearance-option, .sheet-inner) {
+  border: 1px solid var(--theme-accent);
+  border-radius: 4px;
+  /* content panel stays smooth: no pattern under running text */
+  background: var(--card);
+  box-shadow: inset 0 0 0 5px var(--card), inset 0 0 0 6px var(--line), var(--shadow);
+}
+:root[data-material="metallic"] :is(.primary, .ghost, .secondary, .chip, input, select, textarea) { border-radius: 3px; }
+:root[data-material="metallic"] .primary { border-color: var(--theme-accent); }
+:root[data-material="metallic"] .tabs { border-bottom-color: var(--theme-accent); }
+
+/* — receipt · Water Street — warm shop counter, perforated sheet edge. */
+:root[data-material="receipt"] :is(.card, .instrument, .desk-plate) {
+  border-color: color-mix(in srgb, var(--line) 80%, var(--theme-accent));
+  border-radius: 3px;
+}
+:root[data-material="receipt"] .card {
+  -webkit-mask-image: radial-gradient(4px 4px at 6px 0, transparent 3.4px, #000 3.6px);
+  mask-image: radial-gradient(4px 4px at 6px 0, transparent 3.4px, #000 3.6px);
+  -webkit-mask-size: 12px 100%;
+  mask-size: 12px 100%;
+  -webkit-mask-repeat: repeat-x;
+  mask-repeat: repeat-x;
+}
+:root[data-material="receipt"] :is(th, td, .amount, .register-value) {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  letter-spacing: -.01em;
+}
+:root[data-material="receipt"] :is(.primary, .ghost, .chip, input, select, textarea) { border-radius: 3px; }
+
+/* — kitchen · Quidi Vidi — painted wood and a berry cloth trim. */
+:root[data-material="kitchen"] :is(.card, .instrument, .desk-plate, .hearth-paper-tile) {
+  border-color: color-mix(in srgb, var(--theme-second) 40%, var(--line));
+}
+:root[data-material="kitchen"] .card::before {
+  content: ""; display: block; height: 5px; margin: -13px -13px 13px;
+  background: repeating-linear-gradient(90deg,
+    color-mix(in srgb, var(--theme-second) 55%, transparent) 0 9px,
+    transparent 9px 18px);
+}
+:root[data-material="kitchen"] .primary { box-shadow: var(--world-inset-hi), 0 3px 0 color-mix(in srgb, var(--theme-second) 60%, var(--ink)); }
+:root[data-material="kitchen"] .hearth-wax-seal { border-radius: 10px; }
+
+/* — horizon · Cape Spear — open sky, almost no frame at all. */
+:root[data-material="horizon"] :is(.card, .instrument, .desk-plate) {
+  border-color: color-mix(in srgb, var(--line) 60%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-second) 7%, var(--card)), var(--card) 46%);
+  box-shadow: var(--world-lift-0);
+}
+:root[data-material="horizon"] .card { border-width: 1px; border-top-color: color-mix(in srgb, var(--theme-second) 45%, var(--line)); }
+:root[data-material="horizon"] .theme-scene-heading { border-radius: 26px 26px 10px 10px; }
+
+/* — venue · George Street — dark room, amber light. Authored dark. */
+:root[data-material="venue"] :is(.card, .instrument, .desk-plate, .hearth-paper-tile) {
+  border-color: color-mix(in srgb, var(--theme-accent) 30%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-accent) 14%, transparent), var(--world-lift-1);
+}
+:root[data-material="venue"] .primary {
+  background: var(--theme-accent); color: var(--theme-on-accent);
+  box-shadow: var(--world-inset-hi), 0 0 18px color-mix(in srgb, var(--theme-accent) 34%, transparent), var(--world-face-depth);
+}
+:root[data-material="venue"] .tabs button.active { box-shadow: inset 0 -3px 0 var(--theme-accent), 0 0 14px color-mix(in srgb, var(--theme-accent) 24%, transparent); }
+
+/* — clapboard · The Battery — stepped trims, houses above the water. */
+:root[data-material="clapboard"] :is(.card, .instrument, .desk-plate) {
+  background: repeating-linear-gradient(0deg, transparent 0 13px, color-mix(in srgb, var(--ink) 4%, transparent) 13px 14px), var(--card);
+  border-color: color-mix(in srgb, var(--theme-accent) 30%, var(--ink));
+}
+:root[data-material="clapboard"] .card { border-bottom: 5px solid color-mix(in srgb, var(--theme-second) 55%, transparent); }
+:root[data-material="clapboard"] .hearth-paper-tile:nth-child(odd) { border-top: 4px solid var(--theme-accent); }
+:root[data-material="clapboard"] .hearth-paper-tile:nth-child(even) { border-top: 4px solid var(--theme-second); }
+
+/* — sky · At the summit — pale open surfaces, the lightest frame in the set. */
+:root[data-material="sky"] :is(.card, .instrument, .desk-plate, .hearth-paper-tile) {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-second) 9%, var(--card)), var(--card) 52%);
+  border-color: color-mix(in srgb, var(--line) 66%, transparent);
+  box-shadow: var(--world-lift-0), var(--world-inset-hi);
+}
+:root[data-material="sky"] .ghost { border-color: color-mix(in srgb, var(--line) 72%, transparent); }
+:root[data-material="sky"] .primary { box-shadow: var(--world-inset-hi), 0 3px 0 color-mix(in srgb, var(--theme-accent) 55%, var(--ink)); }
+
+/* — gallery · JAG after hours — warm music frames, matted like a print. */
+:root[data-material="gallery"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) {
+  background: var(--card);
+  border: 2px solid color-mix(in srgb, var(--brass) 55%, var(--ink));
+  box-shadow: inset 0 0 0 8px color-mix(in srgb, var(--paper) 60%, var(--card)), var(--world-lift-1);
+  border-radius: 4px;
+}
+:root[data-material="gallery"] .card > :first-child { margin-top: 4px; }
+:root[data-material="gallery"] :is(.primary, .ghost, .chip) { border-radius: 4px; }
+:root[data-material="gallery"] .hearth-wax-seal { border-radius: 4px; }
+
+
+/* --------------------------------------------------------------------------
+   11b · KEEPSAKE DERIVATIVES
+   Codex renders real derivatives into .theme-memorabilia > figure[data-keepsake]
+   > img, always OUTSIDE a financial widget. No photographs have been supplied
+   to this commission, so nothing here fabricates one and there is no
+   missing-asset placeholder: an empty container simply occupies no space.
+   The mount is paper — the same scrapbook and gallery language as its world.
+   -------------------------------------------------------------------------- */
+
+:root[data-theme] .theme-memorabilia {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  margin: 0;
+}
+:root[data-theme] .theme-memorabilia:empty { display: none; }
+:root[data-theme] .theme-memorabilia > figure[data-keepsake] {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  padding: 10px 10px 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  box-shadow: var(--world-lift-1), var(--world-inset-hi);
+}
+:root[data-theme] .theme-memorabilia > figure[data-keepsake] > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  border-radius: 2px;
+  background: var(--world-sunk);
+  /* Intrinsic ratio is reserved so nothing reflows when a derivative loads.
+     The element's own width/height attributes remain authoritative. */
+  aspect-ratio: var(--keepsake-ratio, auto);
+  object-fit: cover;
+}
+:root[data-theme] .theme-memorabilia > figure[data-keepsake] > figcaption {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+/* Desktop maxima: a ticket stub reads wide, a portrait reads tall. */
+@media (min-width: 720px) {
+  :root[data-theme] .theme-memorabilia > figure[data-keepsake="ticket"] { max-width: 360px; }
+  :root[data-theme] .theme-memorabilia > figure[data-keepsake="portrait"] { max-width: 240px; }
+  :root[data-theme] .theme-memorabilia > figure[data-keepsake="ticket"] > img { --keepsake-ratio: 16 / 7; }
+  :root[data-theme] .theme-memorabilia > figure[data-keepsake="portrait"] > img { --keepsake-ratio: 3 / 4; }
+}
+/* Each world mounts its keepsakes in its own material. */
+:root[data-theme="taylor"] .theme-memorabilia > figure[data-keepsake] {
+  box-shadow: 0 0 0 5px var(--world-mount), var(--world-lift-1);
+  transform: rotate(-1.4deg);
+}
+:root[data-theme="taylor"] .theme-memorabilia > figure[data-keepsake]:nth-child(even) { transform: rotate(1.2deg); }
+:root[data-material="instant-photo"] .theme-memorabilia > figure[data-keepsake] {
+  padding: 10px 10px 30px; background: #fdfefb; border-color: color-mix(in srgb, var(--theme-second) 30%, var(--line));
+}
+:root[data-material="gallery"] .theme-memorabilia > figure[data-keepsake],
+:root[data-theme="newfoundland"] .theme-memorabilia > figure[data-keepsake] {
+  border: 2px solid color-mix(in srgb, var(--brass) 55%, var(--ink));
+  border-radius: 4px;
+  transform: none;
+}
+:root[data-material="metallic"] .theme-memorabilia > figure[data-keepsake] {
+  border-color: var(--theme-accent);
+  box-shadow: inset 0 0 0 4px var(--card), inset 0 0 0 5px var(--line), var(--world-lift-1);
+}
+
+/* ==========================================================================
+   15 · MOTION SYSTEM
+   Decorative only. Transform and opacity where possible. Every keyframe is
+   world- prefixed. All of it stops at data-atmosphere=paused and under
+   prefers-reduced-motion, which leave a still, complete composition. Work
+   timers, progress meters and data refresh are never touched by any rule here.
+   ========================================================================== */
+
+@keyframes world-drift { to { transform: translateX(20px); } }
+@keyframes world-breathe { to { opacity: .45; } }
+@keyframes world-sway { to { transform: rotate(2deg); } }
+@keyframes world-fog { from { transform: translateX(-14px); opacity: .22; } to { transform: translateX(22px); opacity: .34; } }
+@keyframes world-wave { to { transform: translateX(28px); } }
+@keyframes world-rain { from { transform: translate3d(0, -18px, 0); opacity: .2; } to { transform: translate3d(-8px, 26px, 0); opacity: .42; } }
+@keyframes world-sparkle { 0%, 100% { opacity: .35; transform: scale(.88); } 50% { opacity: 1; transform: scale(1.08); } }
+@keyframes world-ribbon { to { transform: translateY(-6px) rotate(1.4deg); } }
+@keyframes world-steam { from { transform: translateY(2px); opacity: .28; } to { transform: translateY(-7px); opacity: .7; } }
+@keyframes world-glow { 0%, 100% { opacity: .12; } 50% { opacity: .28; } }
+@keyframes world-beacon { 0%, 100% { opacity: .1; } 46% { opacity: .34; } 54% { opacity: .3; } }
+@keyframes world-grass { to { transform: rotate(-3deg); } }
+@keyframes world-gulls { 0% { transform: translate(0, 0); } 50% { transform: translate(14px, -6px); } 100% { transform: translate(28px, 2px); } }
+@keyframes world-metal { from { transform: translateX(-40px); opacity: .05; } to { transform: translateX(60px); opacity: .13; } }
+@keyframes world-boat { to { transform: translateY(-4px) rotate(1.2deg); } }
+@keyframes world-sun { 0%, 100% { opacity: .66; } 50% { opacity: .86; } }
+@keyframes world-forest { from { transform: rotate(-.7deg) translateY(0); } to { transform: rotate(.9deg) translateY(-3px); } }
+@keyframes world-butterflies { 0% { transform: translate(0, 0) rotate(0); } 40% { transform: translate(9px, -11px) rotate(4deg); } 100% { transform: translate(19px, -4px) rotate(-3deg); } }
+@keyframes world-busy { to { transform: rotate(360deg); } }
+
+:root[data-theme] .scene-artwork :is(.scene-fog, .scene-clouds, .scene-ocean, .scene-wave,
+  .scene-rain, .scene-sparkle, .scene-ribbon, .scene-steam, .scene-lamplight, .scene-beacon,
+  .scene-grass, .scene-gulls, .scene-metal-light, .scene-boat, .scene-sun, .scene-flag,
+  .scene-jag-pattern, .scene-forest, .scene-butterflies) {
+  will-change: transform, opacity;
+}
+:root[data-theme] .scene-clouds { animation: world-drift var(--world-motion-slow) ease-in-out infinite alternate; }
+:root[data-theme] .scene-fog { animation: world-fog 19s ease-in-out infinite alternate; }
+:root[data-theme] .scene-wave { animation: world-wave var(--world-motion-mid) ease-in-out infinite alternate; }
+:root[data-theme] .scene-wave-1 { animation-delay: -3s; animation-duration: 7.4s; }
+:root[data-theme] .scene-wave-2 { animation-delay: -1.4s; animation-duration: 8.6s; }
+:root[data-theme] .scene-rain { animation: world-rain var(--world-motion-fast) linear infinite; }
+:root[data-theme] .scene-sparkle { animation: world-sparkle 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+:root[data-theme] .scene-ribbon { animation: world-ribbon 7s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+:root[data-theme] .scene-steam { animation: world-steam 4.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: bottom; }
+:root[data-theme] .scene-lamplight { animation: world-glow 5.2s ease-in-out infinite; }
+:root[data-theme] .scene-beacon { animation: world-beacon 8s ease-in-out infinite; }
+:root[data-theme] .scene-grass { animation: world-grass 5.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: bottom; }
+:root[data-theme] .scene-gulls { animation: world-gulls 16s ease-in-out infinite alternate; transform-box: fill-box; }
+:root[data-theme] .scene-metal-light { animation: world-metal 11s ease-in-out infinite alternate; }
+:root[data-theme] .scene-boat { animation: world-boat 5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+:root[data-theme] .scene-sun { animation: world-sun 9s ease-in-out infinite; }
+:root[data-theme] .scene-flag { animation: world-sway 5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: left center; }
+:root[data-theme] .scene-jag-pattern { animation: world-breathe 12s ease-in-out infinite alternate; }
+:root[data-theme] .scene-forest { animation: world-forest 13s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: bottom center; }
+:root[data-theme] .scene-butterflies { animation: world-butterflies 14s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+/* The summit is its own composition: the air moves further and slower up
+   there than it does at the harbour, and the flag leads the fog. */
+:root[data-scene="summit"] .scene-fog { animation-duration: 26s; opacity: .34; }
+:root[data-scene="summit"] .scene-clouds { animation-duration: 22s; }
+:root[data-scene="summit"] .scene-grass { animation-duration: 7.4s; }
+:root[data-scene="summit"] .scene-flag { animation-duration: 3.6s; }
+/* Houses, towers and bracelets never animate: they are the still furniture
+   of the scene, and they carry no state. */
+
+/* Off-screen scenes stop too. Codex sets data-scene-visible on the heading;
+   false pauses every decorative descendant without unmounting the drawing, so
+   the composition is complete and still the moment it scrolls back. */
+:root[data-theme] .theme-scene-heading[data-scene-visible="false"] *,
+:root[data-theme] .theme-scene-heading[data-scene-visible="false"] .scene-artwork *,
+:root[data-theme] .theme-scene-heading[data-scene-visible="false"] .friendship-bracelets * {
+  animation-play-state: paused !important;
+}
+
+/* Pause. One switch, the whole scene, and nothing else in the App. */
+:root[data-atmosphere="paused"] .scene-artwork,
+:root[data-atmosphere="paused"] .scene-artwork *,
+:root[data-atmosphere="paused"] .friendship-bracelets * {
+  animation-play-state: paused !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .scene-artwork,
+  :root[data-theme] .scene-artwork *,
+  :root[data-theme] .friendship-bracelets * {
+    animation: none !important;
+    transition: none !important;
+  }
+  :root[data-theme] :is(button, .btn, .primary, .ghost, .secondary) { transition: none; }
+  /* The composition stays complete and still — nothing is hidden. */
+}
+
+
+/* ==========================================================================
+   16 · RESPONSIVE
+   Breakpoint 720 is unchanged. Checked at 320 / 390 / 720 / 1100 / 1440.
+   Scenery never displaces a financial control and never changes a root fixed
+   height or overflow. The mobile fold and ledge geometry are untouched: no
+   rule here adds spacing inside .ph-fold's four-object composition.
+   ========================================================================== */
+
+/* Phone — below the existing 720 breakpoint. App heading is 130px; the DEV
+   studio keeps its 235px reference so the supplied screenshots reproduce. */
+@media (max-width: 719px) {
+  :root[data-theme] .theme-scene-heading {
+    height: 130px;
+    border-radius: 18px 18px 8px 8px;
+  }
+  :root[data-theme] .theme-studio .theme-scene-heading { height: 235px; }
+
+  /* Home header at 130px: title left, bracelets right, caption under the
+     title, atmosphere control bottom left. */
+  :root[data-theme] .theme-scene-copy {
+    left: 16px; top: 14px; max-width: 56%;
+  }
+  :root[data-theme] .theme-scene-title { font-size: 25px; margin: 6px 0 4px; }
+  :root[data-theme] .theme-scene-caption { font-size: 12px; }
+  :root[data-theme] .theme-scene-kicker { font-size: 10px; letter-spacing: .13em; }
+  :root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle {
+    left: 10px; bottom: 8px; font-size: 12px; padding: 6px 10px;
+  }
+  :root[data-theme] .friendship-bracelets {
+    right: 8px; top: 50%; bottom: auto;
+    width: 150px; height: 78px;
+    transform: translateY(-50%) rotate(-4deg);
+  }
+  /* Home carries both bracelets, so the copy yields a little more width. */
+  :root[data-theme] .theme-scene-heading[data-home-scene] .theme-scene-copy { max-width: 52%; }
+  :root[data-theme] .theme-scene-heading[data-home-scene] .scene-artwork { opacity: .58; }
+
+  /* Studio reference values, re-asserted after the App phone rules above. */
+  :root[data-theme] .theme-studio .theme-scene-copy { left: 18px; top: 18px; max-width: 82%; }
+  :root[data-theme] .theme-studio .theme-scene-title { font-size: 29px; }
+  :root[data-theme] .theme-studio .theme-scene-heading > .theme-atmosphere-toggle { left: 8px; bottom: 6px; font-size: 12px; }
+  :root[data-theme] .theme-studio .friendship-bracelets {
+    width: 210px; height: 112px; top: auto; bottom: 5px; right: 5px; transform: rotate(-4deg);
+  }
+  :root[data-theme] .theme-studio .theme-scene-heading[data-home-scene] .scene-artwork { opacity: .5; }
+
+  :root[data-theme] .appearance-options { grid-template-columns: 1fr; }
+  :root[data-theme] .appearance-option { display: grid; grid-template-columns: 110px 1fr; gap: 0 15px; }
+  :root[data-theme] .appearance-miniatures { grid-row: span 2; }
+  :root[data-theme] .appearance-miniature { height: 95px; padding: 10px 5px; }
+  :root[data-theme] .appearance-option-name { margin: 4px 0 8px; }
+  :root[data-theme] .appearance-option-description { font-size: 12px; }
+
+  /* Cards lighten their frame on a phone so the material still reads without
+     eating the reading width. Padding and spacing are inherited, not set. */
+  :root[data-theme="taylor"] :is(.card, .hearth-paper-tile, .instrument, .desk-plate) { box-shadow: 0 0 0 3px var(--world-mount), var(--world-lift-0); }
+  :root[data-material="instant-photo"] :is(.card, .hearth-paper-tile, .instrument) {
+    box-shadow: 0 0 0 6px #fdfefb, 0 0 0 7px color-mix(in srgb, var(--theme-second) 30%, var(--line)), var(--world-lift-0);
+  }
+  :root[data-material="gallery"] :is(.card, .hearth-paper-tile, .instrument) { box-shadow: inset 0 0 0 5px color-mix(in srgb, var(--paper) 60%, var(--card)), var(--world-lift-0); }
+  :root[data-material="metallic"] :is(.card, .hearth-paper-tile, .instrument) { box-shadow: inset 0 0 0 3px var(--card), inset 0 0 0 4px var(--line), var(--world-lift-0); }
+}
+
+/* Compact phone — 320px. Title compacts to 21px, bracelets to 128px wide. */
+@media (max-width: 359px) {
+  :root[data-theme] .theme-scene-title { font-size: 21px; }
+  :root[data-theme] .theme-scene-caption { font-size: 12px; }
+  :root[data-theme] .theme-scene-copy { left: 12px; top: 12px; max-width: 58%; }
+  :root[data-theme] .friendship-bracelets { width: 128px; height: 67px; right: 5px; }
+  :root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle { left: 7px; bottom: 6px; }
+  :root[data-theme] .appearance-option { grid-template-columns: 96px 1fr; }
+  /* A long scene title never pushes a figure off the line. */
+  :root[data-theme] :is(.hearth-tile-value, .desk-plate-figure) { font-size: 20px; }
+}
+
+/* Tablet and small laptop. */
+@media (min-width: 720px) and (max-width: 1099px) {
+  :root[data-theme] .theme-scene-heading { height: 160px; }
+  :root[data-theme] .theme-scene-copy { left: 26px; top: 26px; max-width: 56%; }
+  :root[data-theme] .friendship-bracelets { width: 210px; height: 108px; right: 16px; }
+}
+
+/* Desktop reference width. */
+@media (min-width: 1100px) {
+  :root[data-theme] .theme-scene-copy { left: 34px; top: 30px; }
+  :root[data-theme] .friendship-bracelets { width: 260px; height: 132px; right: 26px; }
+}
+
+/* Wide desktop — the scene gets a little more air, the content does not
+   change column count or order. */
+@media (min-width: 1440px) {
+  :root[data-theme] .theme-scene-heading { height: 176px; }
+  :root[data-theme] .friendship-bracelets { width: 292px; height: 148px; top: 16px; }
+}
+
+/* Coarse pointers keep every target at 44px regardless of world. */
+@media (pointer: coarse) {
+  :root[data-theme] :is(button, .btn, summary, .chip, .desk-chip, [role="tab"]):not(.text-button) { min-height: 44px; }
+}
+
+
+/* ==========================================================================
+   17 · CONTRAST AND LEGIBILITY SAFEGUARDS
+   AA for normal text (4.5:1) and 3:1 for large text and UI boundaries. No
+   surface assumes pine is dark, and nothing sets white on a state background.
+   ========================================================================== */
+
+/* Any surface painted in an accent or second colour takes its authored ink. */
+:root[data-theme] :is(.primary, .post-big, .fab, .cad-pad-enter) { color: var(--world-face-ink); }
+:root[data-theme] .hearth-wax-seal:not(.tone-post):not(.tone-close):not(.tone-tan) { color: var(--world-on-second); }
+/* --muted is authored by Codex at >=4.6:1 against both paper and card, so it
+   is consumed as-is. Nothing here re-mixes it: doing so would double-darken
+   the very token that was corrected, and would duplicate a palette literal. */
+:root[data-theme] .muted { color: var(--muted); }
+/* Placeholder and disabled text stay above the 4.5:1 floor for real content
+   and are never used to carry a value. */
+:root[data-theme] :is(input, select, textarea):disabled { color: color-mix(in srgb, var(--muted) 70%, var(--ink)); }
+/* Decorative scene layers never sit above content. */
+:root[data-theme] .scene-artwork { z-index: 0; }
+:root[data-theme] .theme-scene-copy,
+:root[data-theme] .theme-scene-heading > .theme-atmosphere-toggle { position: absolute; }
+/* A scene heading's copy always has a ground behind it on a busy material.
+   A feathered scrim, not a panel: it lifts the type off a pattern without
+   drawing a second rectangle into the artwork. */
+:root[data-material="metallic"] .theme-scene-copy::before,
+:root[data-material="plaid"] .theme-scene-copy::before,
+:root[data-material="venue"] .theme-scene-copy::before,
+:root[data-material="newsprint"] .theme-scene-copy::before {
+  content: "";
+  position: absolute;
+  inset: -22px -46px -20px -38px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(115% 130% at 22% 52%,
+    color-mix(in srgb, var(--paper) 92%, transparent) 0 40%,
+    color-mix(in srgb, var(--paper) 58%, transparent) 62%,
+    transparent 84%);
+}
+/* Document zoom stays functional: nothing here sets a viewport unit as a
+   font size floor, and no container clips text at 200%. */
+:root[data-theme] .theme-scene-copy { overflow-wrap: anywhere; }
+@media (min-resolution: 0.001dpcm) {
+  :root[data-theme] .theme-scene-title { text-wrap: balance; }
+}
+
+
+/* Measured contrast corrections from the 36-scene axe pass. */
+:root[data-theme] .hearth-paper-tile.is-warn .hearth-tile-kind { color: var(--ink); }
+:root[data-theme] :is(.hearth-wax-seal.is-clear, .hearth-seal-label, .hearth-seal-sub) { opacity: 1; }
+:root[data-theme] :is(.chip, .pill, .desk-chip, .command-chip, .kind-pill, .preset-chip, .ph-chip) { color: var(--ink); }
+:root[data-theme] :is(.studio-eyebrow, .appearance-eyebrow) { color: var(--ink); }
+:root[data-material="raincoat"] { --world-face: var(--world-slicker); --world-face-ink: var(--world-slicker-ink); }
+
+:root[data-theme] .primary:hover:not(:disabled) { background: var(--world-face); }
+:root[data-theme] .month-preflight-status.good { background: var(--world-good-bg); color: var(--world-good-fg); }
+:root[data-theme] .month-preflight-status.attention { background: var(--world-warn-bg); color: var(--world-warn-fg); }
+:root[data-theme] .month-step-number { background: var(--paper-2); color: var(--ink); border-color: var(--line); }
+:root[data-theme] :is(.work-bible-detail, .work-destination) { background: var(--paper-2); color: var(--ink); border-color: var(--line); }
+:root[data-theme] .shift-saucer.filled { background: var(--theme-accent); color: var(--theme-on-accent); border-color: var(--theme-accent); }
+:root[data-theme] .paper-bank-coin { stroke: var(--theme-accent); }
+:root[data-theme] .kitchen-error-fallback .welcome-card { border-top: 4px solid var(--danger); }
+
+:root[data-theme] .view-switch button.active, :root[data-theme] .view-switch button[aria-pressed="true"] { background: var(--theme-accent); color: var(--theme-on-accent); }
+:root[data-theme] .hearth-weather-ribbon { background: var(--card); color: var(--muted); }
+:root[data-theme] .hearth-weather-ribbon .hearth-weather-temp { color: var(--ink); }
+:root[data-theme] .hearth-weather-place { color: var(--muted); opacity: 1; }
+:root[data-theme] .ph-chalk > summary { color: var(--theme-chalk-ink); }
+:root[data-theme] .hercules-replies button { color: var(--ink); }
+:root[data-theme] :is(.eyebrow, .kitchen-notice__steps, .ledger-purpose-kicker) { color: var(--ink); }
+
+:root[data-atmosphere="paused"] :is(.rain-a, .rain-b, .snow-drift, .cloud-drift),
+:root[data-theme] .office-window[data-atmosphere-visible="false"] :is(.rain-a, .rain-b, .snow-drift, .cloud-drift) { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] :is(.rain-a, .rain-b, .snow-drift, .cloud-drift) { animation: none !important; }
+}
+
+:root[data-theme="taylor"] .theme-scene-caption,
+:root[data-theme="taylor"] .theme-memorabilia figcaption { font-family: var(--theme-hand); font-size: 20px; line-height: 1.25; letter-spacing: 0; }
+
+:root[data-theme] .appearance-actions .primary[aria-disabled="true"] { opacity: .55; cursor: default; box-shadow: none; }
+/* Picker thumbnails use the same authored Home artwork and palette. */
+:root[data-theme] .appearance-miniature[data-miniature-scene] { position: relative; overflow: hidden; padding: 42px 7px 19px; gap: 4px; }
+:root[data-theme] .appearance-miniature[data-miniature-scene] > i { position: relative; background: var(--card); border: 1px solid var(--line); grid-column: auto; }
+:root[data-theme] .appearance-miniature[data-miniature-scene] > small { position: absolute; bottom: 3px; left: 5px; color: var(--ink); font-size: 9px; line-height: 1.2; background: var(--paper); }
+:root[data-theme] .appearance-miniature[data-miniature-scene] .scene-artwork * { animation: none; }
+
+/* Codex integration: copy and pause control participate in layout. The same
+   geometry is exercised in the studio and the App, including long era names. */
+:root[data-theme] :is(.theme-scene-heading, .theme-studio .theme-scene-heading) {
+  height: auto; min-height: 200px; padding: 24px 28px;
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-rows: auto auto; gap: 16px 24px; align-items: start;
+}
+:root[data-theme] :is(.theme-scene-copy, .theme-studio .theme-scene-copy),
+:root[data-theme] .theme-scene-heading[data-home-scene] .theme-scene-copy {
+  position: relative; left: auto; top: auto; max-width: none;
+  grid-column: 1; grid-row: 1;
+}
+:root[data-theme] :is(.theme-scene-heading, .theme-studio .theme-scene-heading) > .theme-atmosphere-toggle {
+  position: relative; left: auto; bottom: auto; grid-column: 1; grid-row: 2;
+  justify-self: start; align-self: end; max-width: 100%;
+}
+:root[data-theme] :is(.friendship-bracelets, .theme-studio .friendship-bracelets) {
+  position: relative; grid-column: 2; grid-row: 1 / 3;
+  top: auto; bottom: auto; right: auto; width: 100%; height: auto;
+  max-width: 340px; justify-self: center; align-self: center;
+  transform: rotate(-4deg);
+}
+@media (max-width: 719px) {
+  :root[data-theme] :is(.theme-scene-heading, .theme-studio .theme-scene-heading) {
+    padding: 18px 16px; min-height: 218px; gap: 18px 12px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  :root[data-theme] :is(.theme-scene-copy, .theme-studio .theme-scene-copy),
+  :root[data-theme] .theme-scene-heading[data-home-scene] .theme-scene-copy { grid-column: 1 / -1; }
+  :root[data-theme] :is(.theme-scene-title, .theme-studio .theme-scene-title) { font-size: 27px; }
+  :root[data-theme] :is(.friendship-bracelets, .theme-studio .friendship-bracelets) { grid-row: 2; max-width: 210px; }
+  :root[data-theme] :is(.theme-scene-heading, .theme-studio .theme-scene-heading) > .theme-atmosphere-toggle {
+    font-size: 11px; padding: 7px 9px; white-space: normal; align-self: center;
+  }
+}
+
+/* ==========================================================================
+   18 · FORCED COLOURS
+   Second to last. Decorative imagery is removed, system colours take over,
+   and every state keeps a non-colour carrier.
+   ========================================================================== */
+
+@media (forced-colors: active) {
+  :root[data-theme] .scene-artwork,
+  :root[data-theme] .friendship-bracelets,
+  :root[data-theme] .app::before { display: none !important; }
+  :root[data-theme] .theme-scene-heading {
+    background: Canvas !important;
+    border: 1px solid CanvasText !important;
+    height: auto !important;
+    min-height: 96px;
+  }
+  :root[data-theme] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .appearance-option,
+    .sheet-inner, .hearth-notebook, .preview, .welcome-card, .wallet-tile, .calendar-card) {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border: 1px solid CanvasText !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    background-image: none !important;
+  }
+  :root[data-theme] :is(.primary, .post-big, .fab, .cad-pad-enter, .hearth-wax-seal) {
+    background: ButtonFace !important;
+    color: ButtonText !important;
+    border: 1px solid ButtonText !important;
+    box-shadow: none !important;
+    background-image: none !important;
+  }
+  :root[data-theme] :is(button, .btn, input, select, textarea) { forced-color-adjust: auto; }
+  :root[data-theme] :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px;
+    box-shadow: none !important;
+  }
+  :root[data-theme] :is(.chip, .desk-chip, .ph-chip)[aria-pressed="true"],
+  :root[data-theme] :is(.appearance-option)[aria-pressed="true"],
+  :root[data-theme] [role="tab"][aria-selected="true"] {
+    outline: 2px solid Highlight !important;
+    outline-offset: -2px;
+    background: Highlight !important;
+    color: HighlightText !important;
+  }
+  :root[data-theme] :is(.is-unfunded, .register-unfunded, .confidence.useful-yellow) { border-style: dashed !important; }
+  :root[data-theme] .confidence.useful-red { border-style: dotted !important; }
+  :root[data-theme] :is(.cal-day.today, .cal-day.is-today) { outline: 2px solid Highlight; outline-offset: -2px; }
+  :root[data-theme] .level-projected,
+  :root[data-theme] .ms-future-line { stroke: CanvasText !important; stroke-dasharray: 5 4 !important; }
+  :root[data-theme] .level-actual,
+  :root[data-theme] .ms-operating-line { stroke: CanvasText !important; }
+  :root[data-theme] .theme-memorabilia > figure[data-keepsake] {
+    background: Canvas !important; border: 1px solid CanvasText !important; box-shadow: none !important;
+  }
+}
+
+
+/* ==========================================================================
+   19 · PRINT
+   Last. White ground, dark text, clear tables. No scenery, no navigation, no
+   picker, no atmosphere control. Amounts stay tabular and signed.
+   ========================================================================== */
+
+@media print {
+  :root[data-theme] {
+    /* Root scene tokens are inline; print must override those authored colours. */
+    --ink: #111111 !important; --muted: #444444 !important;
+    --paper: #ffffff !important; --paper-2: #ffffff !important; --card: #ffffff !important;
+    --line: #999999 !important; --pine: #222222 !important; --pine-2: #222222 !important;
+    --copper: #444444 !important; --brass: #555555 !important; --danger: #111111 !important;
+    --good: #111111 !important; --gold: #555555 !important; --theme-on-gold: #ffffff !important;
+    --theme-accent: #222222 !important; --theme-second: #444444 !important;
+    --theme-on-accent: #ffffff !important; --theme-on-second: #ffffff !important;
+    --theme-chart-positive: #222222 !important; --theme-chart-negative: #666666 !important;
+    --theme-chart-neutral: #444444 !important; --theme-chart-plan: #777777 !important;
+    color-scheme: light !important;
+    --world-lift-0: none; --world-lift-1: none; --world-lift-2: none;
+    --world-inset-hi: none; --world-face-depth: none; --hard: none;
+  }
+  :root[data-theme] body,
+  :root[data-theme] .app,
+  :root[data-theme] .app-shell,
+  :root[data-theme] .theme-studio {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+  :root[data-theme] .app::before { display: none !important; }
+  :root[data-theme] :is(
+    .scene-artwork, .friendship-bracelets, .theme-scene-heading,
+    .theme-atmosphere-toggle, .appearance-panel, .nav, .tabs, .hearth-pane-seals, .fab, .fab-dial,
+    .fab-dial-scrim, .view-switch, .studio-toolbar, .swipe-strip,
+    .sync-freshness, .hercules-pill, .hercules-bubble, .toast
+  ) { display: none !important; }
+  :root[data-theme] :is(.card, .hearth-paper-tile, .instrument, .desk-plate, .hearth-notebook,
+    .wallet-tile, .calendar-card, .preview, .sheet-inner) {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border: 1px solid #999999 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background-image: none !important;
+    break-inside: avoid;
+  }
+  :root[data-theme] :is(h1, h2, h3, .theme-scene-title) { color: #111111 !important; }
+  :root[data-theme] .muted,
+  :root[data-theme] :is(th, .desk-plate-kicker, .hearth-tile-kind) { color: #444444 !important; }
+  :root[data-theme] table { width: 100%; border-collapse: collapse; }
+  :root[data-theme] :is(th, td) {
+    border-bottom: 1px solid #bbbbbb !important;
+    border-top: 0 !important;
+    color: #111111 !important;
+    padding: 6px 8px;
+  }
+  :root[data-theme] :is(.amount, td.amount) { text-align: right; font-variant-numeric: tabular-nums; }
+  :root[data-theme] :is(.level-actual, .ms-operating-line) { stroke: #111111 !important; }
+  :root[data-theme] :is(.level-projected, .ms-future-line) { stroke: #555555 !important; stroke-dasharray: 5 4 !important; }
+  :root[data-theme] :is(.is-unfunded, .register-unfunded) { border: 1px dashed #555555 !important; color: #111111 !important; }
+  :root[data-theme] :is(.primary, .ghost, .secondary, .danger) {
+    background: none !important; color: #111111 !important; border: 1px solid #999999 !important;
+  }
+  :root[data-theme] a { color: #111111 !important; text-decoration: underline; }
+  :root[data-theme] .theme-memorabilia > figure[data-keepsake] {
+    background: #ffffff !important; border: 1px solid #999999 !important; box-shadow: none !important;
+    transform: none !important; break-inside: avoid;
+  }
+}
+
+/* ===== END worlds.css ===================================================== */

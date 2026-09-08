@@ -1,3 +1,4 @@
+import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
   detectChalkLetters,
@@ -34,13 +35,13 @@ export function WeatherBadge({ reading }: { reading: WeatherReading }) {
   );
 }
 
-function paintInk(canvas: HTMLCanvasElement, ink: ChalkInk, color = "#f4f1e6") {
+function paintInk(canvas: HTMLCanvasElement, ink: ChalkInk) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const w = canvas.width;
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = color;
+  ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue("--theme-chalk-ink").trim() || "#f4f1e6";
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.lineWidth = Math.max(2.2, w / 90);
@@ -68,6 +69,7 @@ function ChalkCanvas({
   fill?: boolean;
   tool?: "chalk" | "eraser";
 }) {
+  const { scene } = useAppearance();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const committed = useRef<ChalkStroke[]>(inkSeed?.strokes ?? []);
   const live = useRef<{ x: number; y: number }[] | null>(null);
@@ -90,6 +92,8 @@ function ChalkCanvas({
     }
     paintInk(canvas, ink);
   }
+
+  useEffect(() => { redraw(); }, [scene.id]);
 
   useEffect(() => {
     committed.current = inkSeed?.strokes ?? [];
@@ -211,14 +215,15 @@ function NoteThumb({
   onSave: (text: string, ink: ChalkInk | null) => void;
   onDelete: () => void;
 }) {
+  const { scene } = useAppearance();
   const ref = useRef<HTMLCanvasElement>(null);
   const [editText, setEditText] = useState(note.text);
   const [editInk, setEditInk] = useState<ChalkInk | null>(note.ink ?? null);
 
   useEffect(() => {
     if (!ref.current || !note.ink) return;
-    paintInk(ref.current, note.ink, "#e7f0e4");
-  }, [note.ink]);
+    paintInk(ref.current, note.ink);
+  }, [note.ink, scene.id]);
 
   useEffect(() => {
     if (expanded) {
@@ -363,11 +368,12 @@ function LiveChalkSurface({
 }
 
 function StampCanvas({ ink }: { ink: ChalkInk }) {
+  const { scene } = useAppearance();
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!ref.current) return;
-    paintInk(ref.current, ink, "#e7f0e4");
-  }, [ink]);
+    paintInk(ref.current, ink);
+  }, [ink, scene.id]);
   return <canvas ref={ref} className="chalk-stamp-canvas" width={160} height={90} aria-hidden="true" />;
 }
 

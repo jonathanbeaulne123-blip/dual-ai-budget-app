@@ -1,3 +1,12 @@
+## Three worlds — authorized Development release (2026-09-08)
+
+Jonathan explicitly requested “push merge deploy.” Release the reviewed theme candidate `c25de23` on top of fresh mobile main `a17dc35`, preserving its delayed Count callback/receipt guards. Existing placeholder authorization and Safari/device limits remain. [Release worksession](worksessions/2026-09-08-theme-release.md) records current scope and verification; the earlier local handoff remains historical. No schema, household mutation or Production activation.
+
+## Three worlds — completed mobile integration (2026-09-08)
+
+Themes14313c8 and finished mobilebf33c87 are integrated in `codex/three-visual-worlds` through local mergedf5328e. Main remains6fb15c7. Jonathan authorized fictional memorabilia until his photos are available. Classic, all twelve Taylor eras and all twelve Newfoundland scenes now use the actual phone Fold, Ledge, chapters and instruments, with compact headings and Claude-refined materials. No financial or Auth writer changed. Budget(5): readability and retained drafts/authority; Engagement(3): distinct authored phone worlds and reserved keepsakes. Medium-High.
+
+Current evidence, exact source commit lookup, Claude provenance, limits and rollback: [mobile worlds handoff](briefs/MOBILE_WORLDS_HANDOFF.md). Local synthetic proof is separate from Safari, physical-phone and authenticated account/device acceptance. No push/main merge/deploy/schema/hosted write. Next owner: Jonathan for review of this local candidate; release is separate.
 ## Mobile Phase 2 — authorized Development release (2026-09-08)
 
 Jonathan explicitly requested push, merge, deploy and reversibility. PR 406 releases the complete Claude-led Phase 2 stack in one merge; pre-release source is tagged `mobile-phase2-before-20260908` at `6fb15c7`. Compatibility rollback is preserved on `codex/mobile-phase2-safe-rollback`, retaining current core/ledgerSync and Count recovery. A raw old-Worker rollback would remove required authority/privacy protections. No schema, ledger reset or Production activation.

@@ -11,12 +11,27 @@ export function PhoneFold({ items, render }: { items: PhoneFoldItem[]; render: (
   useLayoutEffect(() => {
     const element = root.current;
     if (!element) return;
+    const head = element.querySelector<HTMLElement>(".ph-fold-head")!;
     const measure = () => {
-      const head = element.querySelector<HTMLElement>(".ph-fold-head")!;
       const heights = new Map<PhoneFoldItem["id"], number>();
       element.querySelectorAll<HTMLElement>("[data-fold-id]").forEach((node) => {
         heights.set(node.dataset.foldId as PhoneFoldItem["id"], node.getBoundingClientRect().height);
       });
+      // The authored heading and fixed furniture vary by scene and text size.
+      // Count the real space once at the top of the document, not the scroll position.
+      if (document.documentElement.dataset.theme && head.getBoundingClientRect().width > 0) {
+        const app = element.closest(".app");
+        let clearance = 76;
+        app?.querySelectorAll<HTMLElement>(".nav, .fund-ledge-grip, .onboarding-return-bar, .hercules-pill").forEach(node => {
+          const rect = node.getBoundingClientRect();
+          if (getComputedStyle(node).position === "fixed" && rect.height > 0 && rect.top >= 0) {
+            clearance = Math.max(clearance, window.innerHeight - rect.top);
+          }
+        });
+        const documentTop = head.getBoundingClientRect().top + window.scrollY;
+        const budget = `${Math.max(0, Math.min(440, window.innerHeight - documentTop - clearance - 24))}px`;
+        if (head.style.getPropertyValue("--phone-fold-budget") !== budget) head.style.setProperty("--phone-fold-budget", budget);
+      }
       const maxHeight = Number.parseFloat(getComputedStyle(head).maxHeight);
       if (!Number.isFinite(maxHeight)) return;
       const next = phoneFoldCount(items, heights, maxHeight);
@@ -25,6 +40,10 @@ export function PhoneFold({ items, render }: { items: PhoneFoldItem[]; render: (
     measure();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
     element.querySelectorAll<HTMLElement>("[data-fold-id]").forEach((node) => observer?.observe(node));
+    // Re-measure after a font/scene change, notice, or late fixed furniture arrival.
+    const app = element.closest(".app");
+    if (app) observer?.observe(app);
+    observer?.observe(head);
     window.addEventListener("resize", measure);
     return () => { observer?.disconnect(); window.removeEventListener("resize", measure); };
   }, [items]);

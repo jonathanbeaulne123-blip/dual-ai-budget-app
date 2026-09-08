@@ -1,3 +1,5 @@
+import { Memorabilia } from "./theme/Memorabilia.tsx";
+import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { PhoneSpread } from "./PhoneSpread.tsx";
 import { ApronCard, useApronReceipt } from "./ApronCard.tsx";
@@ -49,6 +51,7 @@ type Spec = {
   kind: string;
   name: string;
   glance: ReactNode;
+  valueKind?: "figure" | "sentence";
   aria: string;
   body: ReactNode;
   warn?: boolean;
@@ -191,6 +194,7 @@ export function OfficePhone({
       kind: kindLabel.timesheet ?? "Shifts",
       name: "Shifts",
       warn: streak.waiting,
+      valueKind: activeOpenShift(household.kitchen, memberId) ? "figure" : "sentence",
       glance: <TimesheetGlance household={household} streak={streak} memberId={memberId} />,
       aria: "Shifts.",
       body: (
@@ -206,6 +210,7 @@ export function OfficePhone({
     jars: {
       kind: kindLabel.jars ?? "Goals",
       name: "Goals",
+      valueKind: "sentence",
       glance: <JarsGlance dashboard={dashboard} />,
       aria: "Goals.",
       body: <JarsBody view={view} booksHousehold={booksHousehold} memberId={memberId} dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
@@ -222,6 +227,7 @@ export function OfficePhone({
       kind: kindLabel.mail ?? "Mail",
       name: "Next bill",
       warn: mailWarn,
+      valueKind: "sentence",
       glance: <MailGlance dashboard={dashboard} today={today} />,
       aria: "Next bill.",
       body: <MailBody dashboard={dashboard} today={today} onMarkPaid={onMarkPaid} onCalendar={() => onGo("calendar")} />,
@@ -239,6 +245,7 @@ export function OfficePhone({
   const drawer = phoneDrawerIds(order.filter((id) => id !== "chalkboard"));
   const openSpec = expanded && expanded !== "window" ? specs[expanded as InstrumentId] : undefined;
   const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : null;
+  const { scene } = useAppearance();
   const panelId = openId ? `ph-notebook-${openId}` : "ph-notebook";
 
   const foldItems = phoneFoldOrder({
@@ -256,7 +263,7 @@ export function OfficePhone({
     if (id === "seals") return sealsContent;
     const spec = specs[id];
     if (!spec) return null;
-    return <PaperTile kind={spec.kind} name={spec.name} value={spec.glance}
+    return <PaperTile kind={spec.kind} name={spec.name} value={spec.glance} valueKind={spec.valueKind}
       warn={spec.warn} active={instrumentIsOpen(layout, id)}
       onClick={() => setExpanded(id)} ariaLabel={spec.aria} />;
   };
@@ -322,6 +329,7 @@ export function OfficePhone({
         </details>
       )}
 
+      <Memorabilia scene={scene.id} location="phone-desk" />
       <details className="ph-chalk" open={chalkOpen} onToggle={(event) => setChalkOpen(event.currentTarget.open)}>
         <summary>Notes</summary>
         <div className={`ph-chalk-body ${adding ? "is-inert" : ""}`}>
