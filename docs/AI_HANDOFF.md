@@ -1,3 +1,17 @@
+## Mobile SC03 — cash capacity and explicit assumptions (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-sc3-cash-availability`, stacked on SC02 `9c27a78` (PR380). Phase2 remains in progress.
+
+**Outcome:** Accepted own-source/readiness contract, dedicated digests, truthful unknown availability, explicit cash assumptions and conserved fixed elections. Recorded accounts never become receipt-specific available cash. Contradicted paid counters and unsupported shift corrections refuse without changing Work or ledger semantics.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+1.
+
+**Verification:** Final High quick gate88 assertions, TypeScript/AI/diff pass in241.261seconds, no breach. Independent20/20, no remaining blocker. A real future-shift-reversal regression failed before repair. [Exact evidence and boundaries](worksessions/2026-09-08-mobile-cash-availability.md).
+
+**Limits:** Pure fictional local command fixtures. Cash remains a declared assumption; aggregate payment checks do not prove attribution. No UI, complete scenario, physical-device, exhaustive, hosted, merge or deployment claim. App acceptance-marker integration remains later consumer work.
+
+**Next owner:** Codex opens the separate draft PR and continues SC04 forecast availability plus true route-count families, within Claude's original Reach.
+
 ## Mobile SC02 — canonical Fund horizon (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-sc2-fund-horizon`, stacked on SC01 `4c070cf` (PR379). Phase2 remains in progress.

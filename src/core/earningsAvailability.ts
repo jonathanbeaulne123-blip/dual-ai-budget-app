@@ -40,3 +40,12 @@ export type EarningsAvailability =
       capacityGroups: readonly Readonly<{ id: string; lowerCents: number; expectedCents: number }>[];
       assumptions: readonly string[];
     }>;
+
+export type CashAvailabilityAssumption = Readonly<{
+  accountId: string;
+  reviewedFactsDigest: string;
+  chosenByMemberId: string;
+  availableCents: number;
+  /** Exact acknowledgement: after earlier contributions, spending, goals and other commitments. */
+  acknowledgesUnattributedCommitments: true;
+}>;
