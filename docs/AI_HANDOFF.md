@@ -1,3 +1,17 @@
+## Mobile B5 — the Fill (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b5-fill`; exact base/pre-commit HEAD `b0c094b407e9619c7440f3c973cbbd3ccbd6b074` (B4, PR386). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's phone jar composes exact contribution drafts; recorded progress and Fund earmarks retain separate meanings. Shared/Personal funding and purchases now preserve ownership, private notes and partitioned vault cash. Reviewed source/date and accepted facts are rechecked inside queued Confirm. Desktop bank face remains.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+3.
+
+**Verification:** High quick gate148/148 plus TypeScript/AI/diff passed98.227seconds; no five-minute breach. Eight all-CSS browser cases and native drag/cancel/page-scroll proof. Independent money/UX/verifier reviews clear; original privacy failures reproduced. Final one-sentence copy refinement has separate seven-assertion UI and eight-case browser verification; the recorded High fingerprint predates that sentence. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-fill.md).
+
+**Limits:** Fictional actual-component/command proof; no observed arrival-date model, authenticated full-App browser, physical, exhaustive, hosted or release claim. No merge, deployment, history rewrite or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and builds Claude's B6 Trust. Current Fund/Ask remain accepted readings; three categorical stops include only supported sources and reviewed paired scenario bounds.
+
 ## Mobile B4 — the Weight (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b4-weight`; exact base/pre-commit HEAD `92e5183c31c6ba31d2dd28a8f213f2dd9c3e98de` (B3, PR385). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.

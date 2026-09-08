@@ -6369,6 +6369,7 @@ export function App() {
             onApply={(next, token) => persist(next, token)}
           />
           <KittyBanks
+            environment={environment}
             household={displayHousehold}
             booksHousehold={household}
             view={view}

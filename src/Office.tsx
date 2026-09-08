@@ -783,6 +783,9 @@ export function Office({
       <JarsGlance dashboard={dashboard} />,
       `Goals. ${dashboard.goals[0]?.goal.name ?? "No goals yet."}`,
       <JarsBody
+        view={view}
+        booksHousehold={booksHousehold}
+        memberId={memberId}
         dashboard={dashboard}
         household={household}
         today={today}

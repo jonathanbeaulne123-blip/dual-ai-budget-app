@@ -357,7 +357,7 @@ export function OfficeWide({
       name: "Goals",
       glance: <JarsGlance dashboard={dashboard} />,
       aria: "Goals.",
-      body: <JarsBody dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
+      body: <JarsBody view={view} booksHousehold={booksHousehold} memberId={memberId} dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
     },
     lamp: {
       kind: "Health",
@@ -672,6 +672,7 @@ export function OfficeWide({
         </div>
         <div ref={noteRef} className="office-wide-notebook office-wide-banks">
           <KittyBanks
+            environment={environment}
             household={household}
             booksHousehold={booksHousehold}
             view={view}

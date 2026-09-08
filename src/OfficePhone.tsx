@@ -207,7 +207,7 @@ export function OfficePhone({
       name: "Goals",
       glance: <JarsGlance dashboard={dashboard} />,
       aria: "Goals.",
-      body: <JarsBody dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
+      body: <JarsBody view={view} booksHousehold={booksHousehold} memberId={memberId} dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
     },
     lamp: {
       kind: kindLabel.lamp ?? "Health",

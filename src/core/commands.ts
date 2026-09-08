@@ -25,12 +25,12 @@ import {
   validateOwnedAmount as catalogValidateOwned,
 } from "./catalog.ts";
 import { shapeTransactionLocation } from "./transactionLocation.ts";
-import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind } from "./accountKinds.ts";
+import { shapeAccount, normalizeAccountKind, emptyCreditDesk, isReceivableKind, isCashLikeKind } from "./accountKinds.ts";
 import { creditCardView, savingsView } from "./accounts.ts";
 import { accountVisibleTo } from "./accountsWidget.ts";
 import { sitDownPreview } from "./insights.ts";
 import { leftoverProjection, leftoverSourceAccountId, jarParkingAccountId, plannedAllocation, shapeSitDownSessions, openSitDownSession } from "./sitDown.ts";
-import { goalsVaultAccount, vaultSpendableCents } from "./goalVault.ts";
+import { goalsVaultAccount, goalVaultCapacity } from "./goalVault.ts";
 import { savedCentsFromContributions, goalStatus } from "./goals.ts";
 import { touchDevicePresence } from "./devices.ts";
 import type { AllocationSlice } from "./allocate.ts";
@@ -3997,6 +3997,14 @@ export const fundGoal = captureCommand("fundGoal", function fundGoal(household: 
   if (goalStatus(goal) === "retired") {
     throw new ValidationError("That jar already lives in the retirement home.");
   }
+  if (!goal.shared && goal.ownerMemberId !== actor.createdBy) throw new ValidationError("Only the owner can fund a private goal.");
+  const source = requireAccount(household, input.fromAccountId);
+  if (!isCashLikeKind(source.kind) || (goal.shared
+    ? source.scope === "personal"
+    : source.scope !== "personal" || source.ownerMemberId !== actor.createdBy)) {
+    throw new ValidationError(goal.shared ? "Choose Shared cash for a Shared bank." : "Choose your own Personal cash for a private goal.");
+  }
+  const visibility = goal.shared ? "household" : "personal";
   let working = household;
   const withVault = ensureGoalsVault(working);
   working = withVault.household;
@@ -4014,10 +4022,12 @@ export const fundGoal = captureCommand("fundGoal", function fundGoal(household: 
     note: `Fund goal · ${goal.name}`,
     confirmDuplicate: true,
     createdBy: actor.createdBy,
+    visibility,
   });
   const transferId = moved.postedIds[0] ?? null;
   const contributed = contributeToGoal(moved.household, goal.id, amountCents / 100, {
     createdBy: actor.createdBy,
+    visibility,
     date,
     transferId,
     markFunded: true,
@@ -4069,6 +4079,8 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
   if (goalStatus(goal) === "retired") {
     throw new ValidationError("That jar already lives in the retirement home.");
   }
+  if (!goal.shared && goal.ownerMemberId !== actor.createdBy) throw new ValidationError("Only the owner can purchase a private goal.");
+  const visibility = goal.shared ? "household" : "personal";
   if (!goal.funded) {
     throw new ValidationError("Fund this goal with a real transfer into Goals savings first. Envelope-only progress is unfunded.");
   }
@@ -4077,7 +4089,9 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
   }
   const vault = goalsVaultAccount(household);
   if (!vault) throw new ValidationError("Open Goals savings first. Sit-down Confirm can create one.");
-  const spendable = vaultSpendableCents(household, goal.id, date);
+  const capacity = goalVaultCapacity(household, goal.id, date);
+  if (capacity.kind === "unavailable") throw new ValidationError(capacity.reason);
+  const spendable = capacity.spendableCents;
   if (spentCents > spendable) {
     throw new ValidationError(
       `Goals savings can spare $${(spendable / 100).toFixed(2)} without raiding other goals. Transfer extra in, or spend less.`,
@@ -4109,6 +4123,7 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
       note: line.note || `Purchased ${goal.name}`,
       confirmDuplicate: true,
       createdBy: actor.createdBy,
+      visibility,
       source: "manual",
       sourceId: purchaseId,
     });
