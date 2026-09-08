@@ -1,11 +1,44 @@
 // @vitest-environment jsdom
-// Real mounted entry-path regression: welcome -> create -> invitation.
+// Mounted App entry lifecycle: navigation, draft dismissal, and acceptance.
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Household } from "../src/core/index.ts";
 
-const writes = vi.hoisted(() => ({ candidates: [] as Household[], stored: null as Household | null }));
+const writes = vi.hoisted(() => ({ candidates: [] as Household[], stored: null as Household | null,
+  sync: false, queue: false, confirmations: [] as Array<{ id: string; household: Household }>,
+  release: null as null | (() => void),
+}));
+
+vi.mock("../src/ledgerSync/presence.ts", () => ({ attachLedgerPresence: () => () => {} }));
+vi.mock("../src/ledgerSync/client.ts", async importOriginal => {
+  const actual = await importOriginal<typeof import("../src/ledgerSync/client.ts")>();
+  return { ...actual, LedgerSyncClient: class {
+    options: import("../src/ledgerSync/client.ts").ClientOptions;
+    constructor(options: import("../src/ledgerSync/client.ts").ClientOptions) {
+      this.options = options;
+      if (!writes.sync) return new actual.LedgerSyncClient(options);
+    }
+    async start() { await this.options.adopt(writes.stored!); this.options.status("ready"); }
+    async confirm(household: Household, id: string, onQueued?: () => void): Promise<import("../src/core/types.ts").CommitResult> {
+      const previous = writes.stored!;
+      writes.confirmations.push({ id, household });
+      if (writes.queue) {
+        const barrier = new Promise<void>(resolve => { writes.release = resolve; });
+        onQueued?.();
+        await barrier;
+      }
+      const postedIds = household.transactions.filter(tx => !previous.transactions.some(old => old.id === tx.id)).map(tx => tx.id);
+      const result = { household, warnings: [], postedIds,
+        undo: { id, label: "Post entry", snapshot: previous, postedIds, commandKind: "postEntry", actorMemberId: "MEM-002" } };
+      writes.stored = household;
+      await this.options.adopt(household);
+      return result;
+    }
+    result(_id: string): import("../src/core/types.ts").CommitResult | undefined { return undefined; }
+    async destroy() {}
+  } };
+});
 
 vi.mock("../src/storage.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/storage.ts")>();
@@ -65,7 +98,7 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
     createElement("button", { onClick: () => onGo("add") }, "Open entry"),
     createElement("button", { onClick: () => onGo("plan") }, "Open plan"),
     createElement("button", { onClick: () => onOpenFundDestination("ask") }, "Open Ask")),
-  DeferredBooksPage: () => null,
+  DeferredBooksPage: ({ onAddToAccount }: { onAddToAccount: (account: null) => void }) => createElement("button", { onClick: () => onAddToAccount(null) }, "Open entry"),
   DeferredCalendarPage: () => null,
   DeferredWorkShiftPage: () => null,
   DeferredPairingCard: () => null,
@@ -89,6 +122,7 @@ vi.mock("../src/HerculesPro.tsx", async (importOriginal) => {
 });
 
 import { App } from "../src/App.tsx";
+import { financialAuditHash } from "../src/core/index.ts";
 import { subscribeOfficeIntent } from "../src/core/officeLayout.ts";
 import { completedExistingBooksHousehold } from "./fixtures/existing-books-onboarding.ts";
 
@@ -122,6 +156,7 @@ let container: HTMLDivElement;
 let mobile = true;
 beforeEach(() => {
   writes.stored = completedExistingBooksHousehold(); writes.candidates = [];
+  writes.sync = false; writes.queue = false; writes.confirmations = []; writes.release = null;
   localStorage.clear(); sessionStorage.clear();
   localStorage.setItem("hearth:session:v1:development", JSON.stringify({ memberId: "MEM-002", view: "household", householdId: writes.stored.householdId }));
   vi.stubEnv("VITE_LEDGER_SYNC_V2", "0");
@@ -137,6 +172,7 @@ afterEach(() => { act(() => root.unmount()); container.remove(); localStorage.cl
 async function mount() {
   await act(async () => root.render(createElement(App)));
   await waitFor(() => expect(container.textContent).toContain("Open entry"), 15000);
+  await waitFor(() => expect(container.querySelector('[data-books-readiness="ready"]')).not.toBeNull());
 }
 function input(selector: string, value: string) {
   const field = container.querySelector<HTMLInputElement>(selector)!;
@@ -147,7 +183,7 @@ function input(selector: string, value: string) {
 }
 
 describe("five boards entry App integration", () => {
-  it("mobile close and same-kind Add reopen preserve the actual draft without acceptance or hosted writes", async () => {
+  it.each(["Close", "Escape"])("mobile %s and same-kind Add reopen preserve the actual draft without acceptance or hosted writes", async dismissal => {
     mobile = true; await mount();
     await act(async () => button("Open entry").click());
     const more = () => [...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(button => button.textContent === "More")!;
@@ -160,7 +196,10 @@ describe("five boards entry App integration", () => {
     const originalDate = date.value;
     const sheet = container.querySelector<HTMLElement>('[data-add-slideshow]')!;
     const writesBefore = writes.candidates.length;
-    act(() => [...sheet.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Close')!.click());
+    act(() => {
+      if (dismissal === "Escape") sheet.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      else [...sheet.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent === 'Close')!.click();
+    });
     expect(sheet.hidden).toBe(true);
     await act(async () => button("Open entry").click());
     expect(container.querySelector('[data-add-slideshow]')).toBe(sheet);
@@ -171,6 +210,43 @@ describe("five boards entry App integration", () => {
     expect(writes.candidates.length).toBe(writesBefore);
   }, 30000);
 
+  it.each([false, true])("accepted ordinary Add is cleared before same-kind reopen (queued=%s)", async queued => {
+    mobile = true; writes.sync = true; writes.queue = queued;
+    writes.stored = { ...writes.stored!, linked: true };
+    writes.stored.booksAcceptedHash = await financialAuditHash(writes.stored);
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1"); vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
+    await mount();
+    const openFullForm = async () => {
+      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
+      await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
+      const more = () => [...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(button => button.textContent === "More")!;
+      await waitFor(() => expect(more().disabled).toBe(false));
+      act(() => more().click());
+    };
+    for (let entry = 0; entry < 2; entry++) {
+      await openFullForm();
+      expect(container.querySelector<HTMLInputElement>('#add-note')!.value).toBe("");
+      expect(container.querySelector<HTMLInputElement>('[data-entry-section="amount"] input')!.value).toBe("");
+      const amount = entry === 0 ? '18.75' : '29.36';
+      const note = `Acceptance lifecycle ${entry}`;
+      input('#add-note', note); input('[data-entry-section="amount"] input', amount);
+      await act(async () => container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
+      await waitFor(() => expect(writes.confirmations).toHaveLength(entry + 1));
+      if (queued) {
+        expect(container.querySelector('[data-add-slideshow]')).toBeNull();
+        expect(container.querySelector('[data-ledger-tab="ledger"]')).not.toBeNull();
+        await act(async () => { writes.release!(); await Promise.resolve(); });
+      }
+      await waitFor(() => expect(container.querySelector('[data-add-slideshow]')).toBeNull());
+      expect(writes.confirmations[entry]!.household.transactions.filter(tx => tx.note === note)).toHaveLength(1);
+    }
+    expect(writes.confirmations[0]!.id).not.toBe(writes.confirmations[1]!.id);
+    await openFullForm();
+    expect(container.querySelector<HTMLInputElement>('#add-note')!.value).toBe("");
+    expect(container.querySelector<HTMLInputElement>('[data-entry-section="amount"] input')!.value).toBe("");
+    expect(writes.confirmations).toHaveLength(2);
+  }, 30000);
+
   it("Ask opens Home and requests the existing chalkboard without a ledger save", async () => {
     mobile = true; await mount();
     const intents: unknown[] = [];
@@ -179,6 +255,7 @@ describe("five boards entry App integration", () => {
     try {
       await act(async () => button("Open Ask").click());
       expect(container.querySelector('[data-ledger-tab="home"]')).not.toBeNull();
+      expect(container.querySelector("[data-add-slideshow]")).toBeNull();
       expect(intents).toContainEqual({ type: "expand", id: "chalkboard" });
       expect(writes.candidates.length).toBe(writesBefore);
     } finally { unsubscribe(); }
@@ -187,6 +264,7 @@ describe("five boards entry App integration", () => {
   it.each([true, false])("Plan uses hero, Categories, sit-down and Kitty Banks DOM order (mobile=%s)", async phone => {
     mobile = phone; await mount();
     await act(async () => button("Open plan").click());
+    expect(container.querySelector("[data-add-slideshow]")).toBeNull();
     const plan = container.querySelector('.five-boards-plan')!;
     expect(plan).not.toBeNull();
     expect(plan.children).toHaveLength(4);

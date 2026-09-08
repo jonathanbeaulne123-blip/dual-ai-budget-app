@@ -677,16 +677,10 @@ export function App() {
   const confirmPanelRef = useRef<HTMLDivElement | null>(null);
   const lastAmountLabelRef = useRef<string | null>(null);
 
+  // Internal navigation/acceptance always dismisses; it must never create a paused draft.
   const closeAdd = () => {
-    if (mobileEntry || addMobileDraft) {
-      if (busy) return;
-      // Suspend the same mounted draft, including local photo, split and job fields.
-      punchReviewIntentRef.current++;
-      setPausedAddScope(readAddScope());
-      setAdding(false);
-      return;
-    }
     setPausedAddScope(null);
+    setAddMobileDraft(false);
     punchReviewIntentRef.current++;
     setSplitDraft(null);
     workShiftInputRef.current = null;
@@ -702,7 +696,18 @@ export function App() {
     setDraftLocation(undefined);
     setLocationBusy(false);
   };
-  const addSheetRef = useDialog(adding, closeAdd);
+  // Only an explicit Close/Escape may suspend the mounted mobile draft.
+  const pauseAdd = () => {
+    if (!adding || busy || postingRef.current) return;
+    if (mobileEntry || addMobileDraft) {
+      punchReviewIntentRef.current++;
+      setPausedAddScope(readAddScope());
+      setAdding(false);
+      return;
+    }
+    closeAdd();
+  };
+  const addSheetRef = useDialog(adding, pauseAdd);
   useEffect(() => {
     if (!swipeStrip) return;
     const timer = window.setTimeout(() => setSwipeStrip(item=>item?.token.id===swipeStrip.token.id&&item.expiresAt===swipeStrip.expiresAt?null:item), Math.max(0,swipeStrip.expiresAt-Date.now()));
@@ -7330,7 +7335,7 @@ export function App() {
           }}
           postLabel={addPostLabel()}
           onPost={() => submit()}
-          onClose={closeAdd}
+          onClose={pauseAdd}
           persistCategory={(next, token) => persist(next, token)}
           presetId={presetId}
           onPresetId={setPresetId}
