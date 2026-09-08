@@ -49,7 +49,7 @@ export const TAYLOR_SCENES = {
 export const NEWFOUNDLAND_SCENES = {
   jellybean: scene("jellybean", "newfoundland", "Jellybean Row", "There’s a light on for you", "painted-wood", palette("#f5e7d5", "#fff9eb", "#394947", "#53625c", "#a34538", "#306c70", "#d4c5ac"), "houses"),
   rain: scene("rain", "newfoundland", "Rainy St. John’s", "A bright spot in a rainy day", "raincoat", palette("#dfe7e6", "#f6f8f0", "#314b53", "#4b6267", "#816318", "#346c7c", "#b8cdce"), "rain"),
-  trail: scene("trail", "newfoundland", "The coastal way up", "The long way to Signal Hill", "trail-paper", palette("#e7eadc", "#faf9ed", "#384d47", "#45564d", "#536b40", "#326f80", "#c3ccb4"), "trail"),
+  trail: scene("trail", "newfoundland", "The coastal way up", "Two hours of coastline, then the sky", "trail-paper", palette("#e7eadc", "#faf9ed", "#384d47", "#45564d", "#536b40", "#326f80", "#c3ccb4"), "trail"),
   harbour: scene("harbour", "newfoundland", "St. John’s harbour", "A place for everything coming and going", "dock-ledger", palette("#dae6e9", "#f7f5e9", "#244955", "#3d5258", "#286577", "#95682f", "#b4cbd0"), "harbour"),
   "jag-lobby": scene("jag-lobby", "newfoundland", "Back at JAG", "Make yourself at home", "metallic", palette("#202825", "#2c3530", "#f4ead6", "#c8bea9", "#ddbd79", "#a7c4af", "#68705c"), "jag", true),
   "water-street": scene("water-street", "newfoundland", "Water Street", "A little stop along the way", "receipt", palette("#f0e4d6", "#fff8ed", "#4e392f", "#6d5649", "#a74736", "#43766e", "#d4bba5"), "shop"),
@@ -89,7 +89,7 @@ export function resolveThemeScene(theme: ThemeId, route: SceneRoute, view: Ledge
 export function sceneTokens(value: ThemeScene): Record<string, string> {
   const p = value.palette;
   return {
-    "--paper": p.paper, "--paper-2": `color-mix(in srgb, ${p.paper} 85%, ${p.accent})`, "--card": p.card,
+    "--paper": p.paper, "--paper-2": `color-mix(in srgb, ${p.paper} 94%, ${p.accent})`, "--card": p.card,
     "--ink": p.ink, "--muted": p.muted, "--line": p.line, "--pine": value.dark ? "#9fd7bf" : "#356c55", "--pine-2": value.dark ? "#9fd7bf" : "#356c55",
     "--copper": value.dark ? "#f3aea3" : "#9d452f", "--gold": value.dark ? "#e2c68e" : "#927029",
     "--good": value.dark ? "#a3dfbc" : "#2c6a4e", "--danger": value.dark ? "#ffb6ab" : "#9b2c2c",

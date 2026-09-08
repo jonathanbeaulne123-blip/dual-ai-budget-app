@@ -3157,7 +3157,7 @@ export function App() {
   );
   const view: LedgerView = session?.view ?? "household";
   const appearance = useAppearance();
-  useAppearanceBinding(environment, household && session ? tab : "entry", view, adding || swipeOpen || Boolean(confirm) || Boolean(guard));
+  useAppearanceBinding(environment, household && session ? tab : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
     if (tab === "till" && view !== "household") setTab("home");
   }, [tab, view]);

@@ -39,15 +39,15 @@ This matrix distinguishes source review from rendered evidence. A themed selecto
 
 `scenes.ts` assigns all twelve natural Shared/Personal destinations without adding navigation. `capture-theme-references.mjs` renders the 36 theme/scope/route combinations at 320, 390, 720, 1100 and 1440px. These use actual React paper controls with synthetic facts, not full financial pages. Local evidence is under `.artifacts/three-worlds/` and is intentionally excluded from Git.
 
-Required scene and memorabilia manifests: `docs/theme-assets.json` and `src/theme/memorabilia.ts`. Actual bracelets, dress, concert ticket and selected photo remain missing. Development drawings and empty asset hooks do not satisfy that requirement.
+Required scene and memorabilia manifests: `docs/theme-assets.json` and `src/theme/memorabilia.ts`. Actual bracelets, dress, concert ticket and selected photo remain deferred. Jonathan explicitly authorized fictional stand-ins for the mobile integration on 2026-09-08. Reserved artwork is now present and labelled; real-photo completion remains a later asset task.
 
 ## Boundaries and pending integration
 
 - Provider-owned Google, bank, receipt/video pixels and QR payloads retain their content. Hearth-owned wrappers are themed.
 - The separately hosted Hercules Pro/ChatGPT widget now receives allowlisted cosmetic account preferences on summon, resolves its Shared/Personal Home palette, and applies themed controls without recolouring its model or opaque page framing. Hosted ChatGPT rendering remains unverified.
-- Incoming mobile PhoneFold, PhoneSpread, FundLedge, FundBoard, FundStage, ApronCard, SplitCut, ShiftCount and recoverable Count are absent from this baseline. CSS preparation is future compatibility only. Rebase/integration and actual markup verification remain required once that work is published.
+- Mobile integration now includes the completed `bf33c87` PhoneFold, PhoneSpread, FundLedge, FundBoard, FundStage, ApronCard, SplitCut, ShiftCount and recoverable Count. Actual hooks replace speculative selectors; see the current [mobile handoff](briefs/MOBILE_WORLDS_HANDOFF.md) for newer evidence.
 - The installed-Chrome actual-App tour uses the existing local PGlite fallback in an isolated browser, with synthetic demo data. It is not normal worker-path, Safari, authenticated cross-device or physical-phone proof. The demo routes Shared Books to its readiness gate; that gate is not audit-office evidence. A separate completed-onboarding fixture checks nested Books surfaces.
-- Release remains **no-go** until outstanding required assets, integration and proof are complete. No scope row is waived by this inventory.
+- Release is a separate step and has not been performed. The original complete-program claim still requires the remaining workflow and device proof; real assets are explicitly deferred for the current mobile scope. No pending workflow proof is silently waived.
 
 ## Latest measured evidence
 
@@ -63,3 +63,7 @@ Required scene and memorabilia manifests: `docs/theme-assets.json` and `src/them
 
 - Final combined follow-up: 45/45 tests passed in 58.92s (25 appearance, 20 companion). Explicit Wardrobe None suppresses only the corresponding automatic accessory; a separate account field preserves the other slot during initial preference loading.
 - Native Safari was attempted through the installed-app control surface, which returned timeoutReached. This provides no Safari visual evidence.
+
+## Mobile integration evidence (supersedes incoming-mobile notes above)
+
+Current exact baseline, per-component checks, screenshot paths and measured results: [MOBILE_WORLDS_HANDOFF.md](briefs/MOBILE_WORLDS_HANDOFF.md). This adds source-component specimens for Fold, Ledge full sheet, chapter spreads, Apron, Cut, Count, Reach, Weight, Fill, Trust, Punch, Prise, Turn, Till, Undo, Hercules, capture, Books source disclosures, Work and resume. Fictional fixtures are durable under `scripts/fixtures/mobile-worlds/`; they are development source entries and are absent from the built website.

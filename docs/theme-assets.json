@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "originalsPolicy": "Original personal photos stay outside git; commit optimized public derivatives only after metadata and identifier removal.",
   "personalAssetManifest": "src/theme/memorabilia.ts",
   "assets": [
@@ -14,9 +14,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -31,9 +31,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -48,9 +48,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -65,9 +65,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -82,9 +82,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -99,9 +99,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -116,9 +116,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -133,9 +133,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -150,9 +150,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -167,9 +167,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -184,9 +184,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -201,9 +201,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -218,9 +218,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -235,9 +235,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -252,9 +252,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -269,9 +269,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -286,9 +286,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -303,9 +303,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -320,9 +320,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -337,9 +337,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -354,9 +354,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -371,9 +371,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -388,9 +388,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -405,9 +405,9 @@
         280
       ],
       "placement": "Non-interactive scene header, behind authored title and controls",
-      "crop": "xMaxYMid slice; landmark stays in the phone crop; responsive flow, minimum 200px desktop / 218px phone",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
       "alt": "Decorative; aria-hidden. Visible scene title names the place or era.",
-      "mobile": "Minimum 218px, expands for text and keepsakes; separate from financial widgets",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold.",
       "desktop": "Minimum 200px, expands for text; separate from financial widgets",
       "status": "implemented; final full-App visual proof pending"
     },
@@ -422,7 +422,69 @@
       ],
       "placement": "Kitchen, pinboard, calendar and ledger scene header",
       "alt": "Decorative; visible caption supplies meaning",
-      "status": "implemented; full route treatment pending"
+      "status": "implemented; full route treatment pending",
+      "crop": "xMaxYMid slice in the right-hand mobile art pocket; complete wide illustration on desktop",
+      "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold."
+    },
+    {
+      "id": "placeholder-ticket",
+      "scene": [
+        "showgirl",
+        "red"
+      ],
+      "world": "taylor",
+      "source": "Original Codex SVG; Jonathan-approved fictional stand-in",
+      "file": "public/theme-art/placeholder-ticket.svg",
+      "dimensions": [
+        720,
+        360
+      ],
+      "placement": "Memorabilia mount after the mobile Home Fold/instruments; page mount on relevant non-Home destinations",
+      "crop": "contain; intrinsic aspect ratio reserved",
+      "alt": "fictional concert ticket with no dates, venues, barcode or identifiers",
+      "mobile": "Ticket across mount; fabric/photo side-by-side below",
+      "desktop": "Bounded mounted keepsake composition",
+      "status": "placeholder; real original deferred"
+    },
+    {
+      "id": "placeholder-concert",
+      "scene": [
+        "showgirl",
+        "1989"
+      ],
+      "world": "taylor",
+      "source": "Original Codex SVG; Jonathan-approved fictional stand-in",
+      "file": "public/theme-art/placeholder-concert.svg",
+      "dimensions": [
+        640,
+        800
+      ],
+      "placement": "Memorabilia mount after the mobile Home Fold/instruments; page mount on relevant non-Home destinations",
+      "crop": "contain; intrinsic aspect ratio reserved",
+      "alt": "original illustrated stage, not a personal photograph",
+      "mobile": "Ticket across mount; fabric/photo side-by-side below",
+      "desktop": "Bounded mounted keepsake composition",
+      "status": "placeholder; real original deferred"
+    },
+    {
+      "id": "placeholder-dress",
+      "scene": [
+        "showgirl"
+      ],
+      "world": "taylor",
+      "source": "Original Codex SVG; Jonathan-approved fictional stand-in",
+      "file": "public/theme-art/placeholder-dress.svg",
+      "dimensions": [
+        480,
+        640
+      ],
+      "placement": "Memorabilia mount after the mobile Home Fold/instruments; page mount on relevant non-Home destinations",
+      "crop": "contain; intrinsic aspect ratio reserved",
+      "alt": "sample sparkle and mint fabric, not Bianca’s actual outfit",
+      "mobile": "Ticket across mount; fabric/photo side-by-side below",
+      "desktop": "Bounded mounted keepsake composition",
+      "status": "placeholder; real original deferred"
     }
-  ]
+  ],
+  "placeholderPolicy": "Jonathan explicitly deferred memorabilia and authorised clearly fictional placeholders for the mobile integration on 2026-09-08. They never count as prepared personal assets."
 }

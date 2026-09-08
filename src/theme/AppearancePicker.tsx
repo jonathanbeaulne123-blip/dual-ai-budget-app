@@ -5,9 +5,9 @@ import { useAppearance } from "./ThemeProvider.tsx";
 
 export function AtmosphereControl() {
   const { store, saved } = useAppearance();
-  return <button className="theme-atmosphere-toggle ghost" type="button" aria-pressed={!saved.atmosphere}
+  return <button className="theme-atmosphere-toggle ghost" type="button" title={saved.atmosphere ? "Pause atmosphere" : "Resume atmosphere"} aria-pressed={!saved.atmosphere}
     onClick={() => store?.setAtmosphere(!saved.atmosphere)}>
-    <span aria-hidden="true">{saved.atmosphere ? "◌" : "◦"}</span> {saved.atmosphere ? "Pause atmosphere" : "Resume atmosphere"}
+    <span aria-hidden="true">{saved.atmosphere ? "Ⅱ" : "▶"}</span> {saved.atmosphere ? "Pause atmosphere" : "Resume atmosphere"}
   </button>;
 }
 function ThemeCardScene({ theme, personal }: { theme: ThemeId; personal: boolean }) {

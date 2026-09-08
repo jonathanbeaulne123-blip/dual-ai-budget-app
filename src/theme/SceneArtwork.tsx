@@ -93,18 +93,18 @@ export function FriendshipBracelets() {
   const prepared = MEMORABILIA.find(asset => asset.id === "bracelet-pair" && asset.status === "prepared" && asset.src);
   if (prepared) return <img className="friendship-bracelets" src={prepared.src!} alt={prepared.alt} width={prepared.width} height={prepared.height} decoding="async" />;
   const names = ["JONATHAN", "BIANCA"];
-  return <svg className="friendship-bracelets" viewBox="0 0 420 205" role="img" aria-label="Two friendship bracelets, Jonathan and Bianca">
-    {names.map((name, row) => <g key={name} transform={`translate(${row ? 232 : 146} ${row ? 119 : 83}) rotate(${row ? 12 : -12})`}>
-      <ellipse rx="113" ry="58" fill="none" stroke="var(--theme-second)" strokeOpacity=".45" strokeWidth="3" />
+  return <svg className="friendship-bracelets" viewBox="0 0 280 166" role="img" aria-label="Illustrated placeholder friendship bracelets for Jonathan and Bianca" data-placeholder="bracelets">
+    {names.map((name, row) => <g key={name} transform={`translate(${row ? 165 : 115} ${row ? 109 : 55}) rotate(${row ? 6 : -6})`}>
+      <ellipse rx="91" ry="34" fill="none" stroke="var(--theme-second)" strokeOpacity=".45" strokeWidth="3" />
       {Array.from({ length: 25 }, (_, i) => {
         const angle = (i / 25) * Math.PI * 2;
-        return <circle key={i} cx={Math.cos(angle) * 113} cy={Math.sin(angle) * 58} r={i % 3 === 0 ? 8 : 6.8} fill={i % 4 === 0 ? "#e4b976" : i % 3 === 0 ? "var(--theme-accent)" : i % 2 ? "var(--card)" : "var(--theme-second)"} stroke="var(--card)" strokeWidth="1.4" />;
+        return <circle key={i} cx={Math.cos(angle) * 91} cy={Math.sin(angle) * 34} r={i % 3 === 0 ? 6.8 : 5.5} fill={i % 4 === 0 ? "#e4b976" : i % 3 === 0 ? "var(--theme-accent)" : i % 2 ? "var(--card)" : "var(--theme-second)"} stroke="var(--card)" strokeWidth="1.4" />;
       })}
-      {name.split("").map((letter, i) => <g key={i} transform={`translate(${(i - (name.length - 1) / 2) * 20} 53)`}>
-        <rect x="-9" y="-10" width="18" height="21" rx="4" fill="#fffaf0" stroke="#d6bdad" />
-        <text x="0" y="5" fill="#533d43" textAnchor="middle" fontSize="13" fontFamily="Figtree, sans-serif" fontWeight="700">{letter}</text>
+      {name.split("").map((letter, i) => <g key={i} transform={`translate(${(i - (name.length - 1) / 2) * 18} 31)`}>
+        <rect x="-8.5" y="-11" width="17" height="23" rx="4" fill="#fffaf0" stroke="#d6bdad" />
+        <text x="0" y="5" fill="#533d43" textAnchor="middle" fontSize="17" fontFamily="Figtree, sans-serif" fontWeight="700">{letter}</text>
       </g>)}
-      <path d="M111 19 c-9 -9 -18 3 -2 14 c16 -11 7 -23 -2 -14Z" fill="#cba261" stroke="#fff1ce" />
+      <path d="M91 8 c-9 -9 -18 3 -2 14 c16 -11 7 -23 -2 -14Z" fill="#cba261" stroke="#fff1ce" />
     </g>)}
   </svg>;
 }

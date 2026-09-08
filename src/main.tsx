@@ -16,6 +16,8 @@ import "./hearth-theme.css";
 import "./hercules.css";
 import "./theme/worlds.css";
 import "./mobile-canon.css";
+import "./theme/mobile-worlds.css";
+import "./theme/mobile-worlds-refinement.css";
 
 if (typeof window !== "undefined") {
   const phone = window.matchMedia("(max-width: 719px)");

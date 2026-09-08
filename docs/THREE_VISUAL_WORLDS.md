@@ -1,6 +1,6 @@
 # Three complete visual worlds
 
-Authority: Jonathan’s approved implementation plan, 2026-09-08. This supersedes earlier single-theme, fixed-palette and no-dark-surface restrictions. It does not supersede identity, privacy, financial meanings, navigation behavior, or Final Confirm. Work remains open until all coverage and personal memorabilia requirements are verified.
+Authority: Jonathan’s approved implementation plan, 2026-09-08. This supersedes earlier single-theme, fixed-palette and no-dark-surface restrictions. It does not supersede identity, privacy, financial meanings, navigation behavior, or Final Confirm. The 2026-09-08 mobile integration instruction explicitly defers real memorabilia and authorises fictional placeholders. Full original-asset completion remains a later follow-up; it does not block the mobile integration.
 
 ## Scene direction
 
@@ -69,3 +69,10 @@ The Hercules Pro widget has its own document. On summon, its existing authorized
 The implementation follows the existing request path and the [Workers best-practices reference](https://developers.cloudflare.com/workers/best-practices/workers-best-practices/); it adds no platform bindings or background refresh loop.
 
 Wardrobe None takes precedence over automatic accessories. Optional account fields `hideThemeHat` and `hideThemeNeck` preserve that choice across devices. Wardrobe can restore them. These fields merge independently and never alter saved outfit items or ledger commands.
+
+
+## Mobile integration amendment — 2026-09-08
+
+Combine the finished mobile overhaul at bf33c87 with the theme candidate at14313c8 in the isolated theme branch. Main remains6fb15c7. Preserve the Fold priority order, chapter spreads, Ledge detents, Work instruments, source-aware readings and Final Confirm. Compact scene headings use a dedicated illustration pocket, full named bracelets and a44px atmosphere control. The Fold measures actual header/fixed-furniture space, admitting whole objects only. Conventional phone cards remain5px, controls3px, targets44px; texture and trim carry the visual world.
+
+Jonathan explicitly authorised fictional placeholders pending memorabilia access. Original SVG ticket, concert illustration and dress sample are labelled and served from public/theme-art. The Home mount is below the Fold/instruments and never takes a financial priority slot. Awaiting-original manifest entries stay unresolved; no invented venue/date or claim these are actual photos. Prepared public derivatives will replace samples without a management feature. This amendment supersedes the earlier real-photos-before-any-integration restriction for the current mobile task.

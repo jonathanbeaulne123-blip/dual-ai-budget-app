@@ -19,7 +19,8 @@ else if(name==='till'){await nav('Home');await page.getByRole('link',{name:'Till
 else await nav({home:'Home',calendar:'Calendar',plan:'Plan',more:'More',shift:'Shifts'}[name]);await settle();await page.evaluate(()=>window.scrollTo(0,0));}
 try{
  await page.goto(origin);await page.getByRole('button',{name:'Open the demo kitchen table',exact:true}).click();await page.getByRole('button',{name:'I am Jonathan',exact:true}).click();await page.locator('nav.nav').waitFor({timeout:90000});await settle();
- await page.locator('[aria-labelledby="due-preview-title"]').getByRole('button',{name:'Not now',exact:true}).click();
+ const reminders = page.getByRole('button',{name:'Not now',exact:true}); if(await reminders.isVisible()) await reminders.click();
+ const closeReminders=page.getByRole('button',{name:'Close reminders',exact:true}); if(await closeReminders.isVisible()) await closeReminders.click();
  for(const theme of ['classic','taylor','newfoundland']){
   await nav('More');await page.locator(`[data-preview-theme="${theme}"]`).click();await page.getByRole('button',{name:'Use theme',exact:true}).click();
   await page.waitForFunction(t=>document.documentElement.dataset.theme===t,theme);

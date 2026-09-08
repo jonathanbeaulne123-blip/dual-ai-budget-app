@@ -1,3 +1,9 @@
+## Three worlds — completed mobile integration (2026-09-08)
+
+Themes14313c8 and finished mobilebf33c87 are integrated in `codex/three-visual-worlds` through local mergedf5328e. Main remains6fb15c7. Jonathan authorized fictional memorabilia until his photos are available. Classic, all twelve Taylor eras and all twelve Newfoundland scenes now use the actual phone Fold, Ledge, chapters and instruments, with compact headings and Claude-refined materials. No financial or Auth writer changed. Budget(5): readability and retained drafts/authority; Engagement(3): distinct authored phone worlds and reserved keepsakes. Medium-High.
+
+Current evidence, exact source commit lookup, Claude provenance, limits and rollback: [mobile worlds handoff](briefs/MOBILE_WORLDS_HANDOFF.md). Local synthetic proof is separate from Safari, physical-phone and authenticated account/device acceptance. No push/main merge/deploy/schema/hosted write. Next owner: Jonathan for review of this local candidate; release is separate.
+
 ## Mobile Phase 2 — implementation complete locally (2026-09-08)
 
 **Branch/base:** codex/mobile-phase2-integration; exact baseccd9304936479bf964ca8d0fe472e7a3ccdceaf5(Return PR405); HEAD is this commit. Fresh origin/main6fb15c7a98f3336862bb743b836aa96a358a35b9 remains unchanged.35 stacked draft slices; no merge/deploy/schema.

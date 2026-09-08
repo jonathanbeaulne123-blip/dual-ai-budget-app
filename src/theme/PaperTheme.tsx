@@ -7,6 +7,7 @@ export function PaperTile({
   kind,
   name,
   value,
+  valueKind = "figure",
   figure,
   warn,
   active,
@@ -16,6 +17,7 @@ export function PaperTile({
   kind?: string;
   name: string;
   value: ReactNode;
+  valueKind?: "figure" | "sentence";
   figure?: ReactNode;
   warn?: boolean;
   active?: boolean;
@@ -27,6 +29,7 @@ export function PaperTile({
     <Tag
       type={onClick ? "button" : undefined}
       className={`hearth-paper-tile ${warn ? "is-warn" : ""} ${active ? "is-active" : ""} ${figure ? "has-figure" : ""}`}
+      data-value-kind={valueKind}
       onClick={onClick}
       aria-label={ariaLabel ?? `${name}. ${typeof value === "string" ? value : ""}`}
       aria-pressed={onClick ? active : undefined}

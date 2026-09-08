@@ -1,6 +1,6 @@
 # Three visual worlds — implementation checkpoint
 
-**Status: working candidate; release no-go.** All requirements in Jonathan's approved plan remain active. This checkpoint does not represent full theme completion.
+**Historical pre-mobile checkpoint.** Current mobile integration and the user-authorized memorabilia deferral are recorded in [MOBILE_WORLDS_HANDOFF.md](MOBILE_WORLDS_HANDOFF.md). The evidence below describes the earlier theme checkpoint and does not represent full program completion.
 
 Branch: `codex/three-visual-worlds`. Baseline and last verified GitHub main: `6fb15c7a98f3336862bb743b836aa96a358a35b9`. The implementation SHA is the commit containing this checkpoint; retrieve it with `git log -1 --format=%H -- docs/briefs/THREE_WORLDS_CHECKPOINT.md`.
 
@@ -29,8 +29,8 @@ Source and rendered coverage are distinguished in `docs/THREE_WORLDS_COVERAGE.md
 
 ## Required next work
 
-1. Obtain actual Jonathan/Bianca bracelet photos, dress reference, ticket and selected concert photographs. Prepare public derivatives; remove metadata/barcodes/order identifiers. Replace development artwork according to `src/theme/memorabilia.ts`. Originals never enter Git.
-2. Incorporate incoming mobile work after its stable publication. Last observed committed tip was `a13c6c4`, with additional App/Office/Fund source-context work still dirty. Integrate the scene composition deliberately with the four-object phone fold; do not copy or overwrite that checkout.
+1. Deferred by Jonathan for the mobile integration: obtain actual Jonathan/Bianca bracelet photos, dress reference, ticket and selected concert photographs. Prepare public derivatives; remove metadata/barcodes/order identifiers. Replace development artwork according to `src/theme/memorabilia.ts`. Originals never enter Git.
+2. Superseded: completed mobile `bf33c87` is integrated through local merge checkpoint `df5328e`; its worktree was not edited. See the current mobile handoff.
 3. Complete the expanded workflow/state inventory: Fund stages, imports/camera/duplicates, financial Confirm/Undo variants, onboarding/QR, desk instruments, Hercules chat/permissions and games/wardrobe. Existing source treatment is not complete visual or interaction proof.
 4. Verify authenticated account behavior across devices/environments, native Safari and a physical phone. Native Safari control currently times out. Hosted ChatGPT companion appearance remains unverified.
 5. Measure integrated-mobile performance, scrolling and artwork budget after the real assets arrive. No final 1 MB artwork-budget or physical performance certification is claimed.
