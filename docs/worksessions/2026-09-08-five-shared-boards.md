@@ -1,6 +1,6 @@
 # Five shared boards and clearer mobile navigation
 
-Status: implementation in progress. Jonathan approved the complete plan in this task on 2026-09-08.
+Status: implementation complete locally; focused acceptance passed. Deployment and storage provisioning remain separate. Jonathan approved the complete plan in this task on 2026-09-08.
 
 Base: origin/main 5778a8d32389e3db194cdb4d602025581f953539, verified against remote. Integration branch codex/hearth-five-boards; isolated worktrees each have one writer. Calendar, Books, entry, media and shared-board UI are bounded delegated patches; coordinator owns board commands, continuity integration, Office placement and final verification.
 
@@ -54,3 +54,29 @@ Earlier failed runs are not hidden: the initial startup helper expected legacy a
 Dedicated Development photo bucket provisioning, hosted membership/OAuth return, physical iOS/Android/Safari and authenticated two-device acceptance remain separate release steps. Existing sync latency gates are unchanged. Photo removal clears the accepted slot; obsolete private bytes remain until coordinated authority-aware garbage collection. No physical erasure claim is made. Recovery retains rejected board text for manual review/reapplication; it never auto-replays a stale edit.
 
 The [durable handoff](../briefs/FIVE_SHARED_BOARDS_HANDOFF.md) describes interfaces, data boundaries, release dependencies and compatibility-safe rollback. Local screenshots/logs contain fictional data and remain ignored under `.artifacts/`.
+
+## Final acceptance receipt
+
+Final product source is `f64f95a07e6be8252652ee66d0b10e21e1eb42c5`. Later handoff commits change documentation only. After the integration-wide 255-test gate, browser proof found an entry focus-order issue: the child heading took focus before the parent dialog captured its opener. The final repair defers heading focus with a cancelled-on-close animation frame, gives the Add menu a stable return target, and disables residual entry transitions under reduced motion. Real App regressions cover all four Add modes and the account launcher. Independent seven-test and real-browser recheck passed; no remaining scoped findings.
+
+The final incremental **High gate passed 110 tests across nine files in 63.203 seconds**, on a clean `f64f95a` tree, against `a45d6a8`. TypeScript, AI surface and diff checks passed; no five-minute budget breach. Fingerprint: `58b0c3d448c935b4a65aec7a556c65c38b08e6247df41ecc9c9188624cffd6aa`. Reproduction:
+
+```sh
+pnpm --config.manage-package-manager-versions=false --config.verify-deps-before-run=never test -- --risk=high --base=a45d6a8 \
+  --focus=test/mobile-entry-sheet.test.ts --focus=test/five-boards-entry-app.test.ts \
+  --focus=test/fab-speed-dial.test.ts --focus=test/app-startup-p1.test.ts \
+  --focus=test/month-rehearsal-mainline.test.ts \
+  --focus-reason='Final entry accessibility repair: stable FAB launch focus, cancellable heading focus, reduced-motion styling, full App dismissal and startup regressions; full integration already passed255tests at a45d6a8'
+node test/five-boards-entry-layout.mjs
+```
+
+One earlier incremental gate, running beside the browser matrix, reached the periodic refresh guard in the Personal cloud-refusal startup case instead of its intended transport-refusal branch. The unchanged test passed alone in 1.44 seconds; the complete incremental gate then passed without the concurrent browser workload. No assertion or financial behavior was weakened to obtain the pass.
+
+Final local browser proof:
+
+- **129 geometry/zoom cases**, including the five named boards, Calendar, Books and eligible-viewer Ask at 320/390/719/1100/1440 across Classic, Taylor and Newfoundland. **21 axe views and nine visible keyboard-focus checks** passed with reduced motion. Zero runtime errors. Report: `.artifacts/five-boards/report.json`.
+- **105/105 entry cases**, 603 inspected states, all four modes and three themes at the five target widths; More/back, deliberate accounts, full shift order and gates, retained picture/form drafts, Close/Escape, resize, focus, reduced motion and explicit Confirm callbacks. Zero failures, runtime errors or external requests. Source fingerprints matched at start/end (`f64f95a`). Report copied to `.artifacts/five-boards/entry/report.json`; twelve screenshots, with source and independent visual inspection.
+- Zoom proof means CSS zoom/reflow at supported layout widths. Native mobile pinch changes the visual viewport rather than halving CSS layout width; no claim of physical native-pinch certification is made.
+- Final Vite production and Hercules Pro UI builds passed after the focus repair. Existing dependency/bundle warnings remain as noted above.
+
+Independent financial/continuity, board UX, and final entry focus/reduced-motion reviews are closed. This is **go for local review/integration**, not a hosted-release or physical-device readiness claim. The all-three-theme rule is recorded in `AGENTS.md`. Main was rechecked at completion and remains `5778a8d`.
