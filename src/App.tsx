@@ -1,3 +1,5 @@
+import {canonical} from "./ledgerSync/patch.ts";
+import type {DestructiveReview} from "./DangerReveal.tsx";
 import { swipePurchaseReview } from "./core/swipe.ts";
 import { openShiftReview, runReviewedOpenShift, runReviewedShiftChoice, runReviewedShiftDiscard } from "./openShiftReview.ts";
 import { acceptedScenarioPair, issueScenarioSource, scenarioAuthIdentityKey, scenarioPairScopeKey, type ScenarioPairLease, type ScenarioPairScope } from "./scenarioSourceContext.ts";
@@ -531,7 +533,7 @@ type Guard =
   | { kind: "erase-development" }
   | { kind: "clear-this-phone" }
   | { kind: "reset-development" }
-  | { kind: "remove"; transactionId: string; summary: string }
+  | { kind: "remove"; transactionId: string; summary: string; reviewedSummaryBasis:string }
   | { kind: "correctShift"; shift: Shift; transactionId: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
@@ -698,7 +700,9 @@ export function App() {
   const [toast, setToast] = useState<UndoToken | null>(null);
   const [history, setHistory] = useState<UndoToken[]>([]);
   const [isHouseholdOwner, setIsHouseholdOwner] = useState(false);
-  const [guard, setGuard] = useState<Guard | null>(null);
+  const [guard, storeGuard] = useState<Guard | null>(null);
+  const guardOpeningRef=useRef(0),guardIdentityRef=useRef('');
+  const setGuard=(next:Guard|null)=>{guardOpeningRef.current+=1;guardIdentityRef.current=next?readDangerIdentity(next):'';storeGuard(next);};
   const [demoSeed, setDemoSeed] = useState("");
   const [demoReport, setDemoReport] = useState<DemoRunReport | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
@@ -794,6 +798,8 @@ export function App() {
   const ledgerSyncReady = useRef<Promise<void> | null>(null);
   const useLedgerSync = ledgerSyncEnabled(environment);
   const [ledgerRestorePoints,setLedgerRestorePoints]=useState<RestorePointSummary[]>([]);
+  const dangerSourcesRef=useRef({replicas,discoveredLedgers,ledgerRestorePoints,isHouseholdOwner});
+  dangerSourcesRef.current={replicas,discoveredLedgers,ledgerRestorePoints,isHouseholdOwner};
   const visibleRestorePoints=useLedgerSync?ledgerRestorePoints:(household?listRestorePoints(household):[]);
   useEffect(()=>{
     if(!useLedgerSync||!household?.linked||!session?.memberId||tab!=='more')return;
@@ -5085,6 +5091,34 @@ export function App() {
     }
   }
 
+
+  function dangerReview(target:Guard):DestructiveReview{
+    const openingId=String(guardOpeningRef.current);
+    const h=householdRef.current,tx=target.kind==='remove'?h?.transactions.find(row=>row.id===target.transactionId):null;
+    const displayedTargetCurrent=target.kind==='remove'?!!tx&&target.reviewedSummaryBasis===canonical([tx.id,tx.amountCents,tx.type,tx.source,tx.note]):target.kind==='correctShift'?canonical(target.shift)===canonical(h?.shifts.find(row=>row.id===target.shift.id)??null):true;
+    return {openingId,identity:displayedTargetCurrent?guardIdentityRef.current:canonical(['stale displayed target',guardIdentityRef.current]),readIdentity:()=>readDangerIdentity(target)};
+  }
+  function readDangerIdentity(target:Guard):string{
+      const h=householdRef.current,known=dangerSourcesRef.current,auth=scenarioAuthRef.current;
+      const scope={environment:environmentRef.current,householdId:h?.householdId??null,memberId:sessionRef.current?.memberId??null,view:sessionRef.current?.view??null,generation:replicaScopeGenerationRef.current,authKey:auth.key,authGeneration:auth.generation};
+      const memberships=known.discoveredLedgers.map(item=>({householdId:item.household.householdId,name:item.household.name,memberId:item.memberId,members:item.household.members.map(member=>({id:member.id,active:member.active}))}));
+      let source:unknown=null;
+      if(target.kind==='delete-household')source={membership:memberships.find(item=>item.householdId===target.householdId)??null,replica:known.replicas.find(item=>item.householdId===target.householdId)??null,owner:known.isHouseholdOwner};
+      else if(target.kind==='reset-development')source={memberships,replicas:known.replicas,owner:known.isHouseholdOwner};
+      else if(target.kind==='erase-development')source=h?.revision??null;
+      else if(target.kind==='restorePoint')source={revision:h?.revision??null,local:h?listRestorePoints(h).find(point=>point.id===target.pointId)??null:null,remote:known.ledgerRestorePoints.find(point=>point.id===target.pointId)??null};
+      else if((target.kind==='remove'||target.kind==='correctShift')&&h){
+        const neighbors=new Map<string,Set<string>>();
+        const connect=(a:string,b:string)=>{if(!neighbors.has(a))neighbors.set(a,new Set());neighbors.get(a)!.add(b);};
+        for(const tx of h.transactions)for(const id of [tx.transferPairId,tx.reversalOfId,tx.refundOfId])if(id){connect(tx.id,id);connect(id,tx.id);}
+        const ids=new Set([target.transactionId]),queue=[target.transactionId];
+        for(let i=0;i<queue.length;i++)for(const id of neighbors.get(queue[i]!)??[])if(!ids.has(id)){ids.add(id);queue.push(id);}
+        const rows=h.transactions.filter(tx=>ids.has(tx.id));
+        source={revision:h.revision,rows,closed:h.kitchen.books.closedMonths,shift:target.kind==='correctShift'?h.shifts.find(shift=>shift.id===target.shift.id)??null:null};
+      }
+      return canonical([guardOpeningRef.current,scope,target,source]);
+  }
+
   const householdResetGuards = (
     <>
       {guard?.kind === "delete-household" && (
@@ -5096,6 +5130,7 @@ export function App() {
           extra="Requires migration 015 in Supabase for cloud delete/leave. Production households cannot be deleted here."
           confirmLabel={guard.role === "owner" ? "Delete household" : "Leave household"}
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -5110,6 +5145,7 @@ export function App() {
           extra="Production is not touched. Partner phones keep their own copies until they refresh. Google stays signed in."
           confirmLabel="Delete all Development households"
           danger
+          review={dangerReview(guard)}
           busy={resetBusy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -6608,7 +6644,7 @@ export function App() {
               : transaction.type === "transfer"
                 ? `This posts a reversing transfer for ${dollars}. Both original legs stay.`
                 : `This posts a reversing entry for ${dollars}${transaction.note ? ` (${transaction.note})` : ""}. The original row stays.`;
-            setGuard({ kind: "remove", transactionId: transaction.id, summary });
+            setGuard({ kind: "remove", transactionId: transaction.id, summary, reviewedSummaryBasis:canonical([transaction.id,transaction.amountCents,transaction.type,transaction.source,transaction.note]) });
           }}
         />}
         </DeferredSurface>
@@ -7263,6 +7299,7 @@ export function App() {
           extra={`This cannot be undone. If this household synchronizes, the empty Development activity can replace the shared Development cloud copy. Production is not touched. ${googleStepUpExtra}`}
           confirmLabel="Erase all Development activity"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -7293,6 +7330,7 @@ export function App() {
           extra={googleStepUpExtra}
           confirmLabel="Sign out and clear this phone"
           danger
+          review={dangerReview(guard)}
           onCancel={() => setGuard(null)}
           onConfirm={clearThisPhoneNow}
         />
@@ -7367,6 +7405,7 @@ export function App() {
           body={`${guard.summary} Both the original and the reversing entry stay. Prefer Undo from the toast or More → Recent when it is your latest Confirm.`}
           confirmLabel="Reverse"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -7389,6 +7428,7 @@ export function App() {
           body={guard.summary}
           confirmLabel="Restore"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {
@@ -7404,6 +7444,7 @@ export function App() {
           body={`Hearth will reverse the ${guard.shift.date} shift in the books, then open a fresh shift form with that date. The old evidence stays balanced underneath and Shifts worked will label it replaced.`}
           confirmLabel="Reverse & add correction"
           danger
+          review={dangerReview(guard)}
           busy={busy}
           onCancel={() => setGuard(null)}
           onConfirm={() => {

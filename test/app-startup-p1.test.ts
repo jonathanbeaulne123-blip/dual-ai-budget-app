@@ -25,6 +25,7 @@ const startup = vi.hoisted(() => ({
   v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
   tillOpen:null as null | (()=>void),
   swipeProps:null as null | {onPostCategory:(input:{amount:string;subcategoryId:string})=>void;onClose:()=>void;onMore:(amount:string)=>void;error?:string},
+  removeReview:null as null | ((transaction:import("../src/core/types.ts").Transaction)=>void),
   duplicateWriter:null as import("../src/Ledger.tsx").DuplicateCommand|null,
   punchConfirm: null as null | ((candidate: Household) => Promise<import("../src/core/types.ts").CommitResult>),
   officePunch: null as null | {onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till")=>void},
@@ -198,7 +199,7 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
     startup.scenarioSource = scenarioSource ?? null;
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
   },
-  DeferredBooksPage: (props:{onDuplicateCommand:import("../src/Ledger.tsx").DuplicateCommand}) => {startup.duplicateWriter=props.onDuplicateCommand;return null;},
+  DeferredBooksPage: (props:{onDuplicateCommand:import("../src/Ledger.tsx").DuplicateCommand;onRemove:(transaction:import("../src/core/types.ts").Transaction)=>void}) => {startup.removeReview=props.onRemove;startup.duplicateWriter=props.onDuplicateCommand;return null;},
   DeferredCalendarPage: () => null,
   DeferredWorkShiftPage: () => null,
   DeferredPairingCard: () => null,
@@ -330,6 +331,7 @@ describe("cached-shell startup books gate", () => {
     startup.scenarioSource = null;
     startup.tillOpen = null;
     startup.swipeProps = null;
+    startup.removeReview = null;
     startup.duplicateWriter = null;
     startup.punchConfirm = null;
     startup.officePunch = null;
@@ -1496,6 +1498,20 @@ describe("cached-shell startup books gate", () => {
     await waitForUi(()=>expect(candidate).not.toBeNull(),4000);const added=candidate!.transactions.filter(tx=>!h.transactions.some(old=>old.id===tx.id));expect(added.some(tx=>tx.type==='expense'&&tx.amountCents===1234&&tx.subcategoryId==='SUB-FOOD-GROCERIES'&&tx.createdBy==='MEM-002')).toBe(true);
     if(mode==='late-reopen'||mode==='late-rejected'){await act(async()=>old.onClose());await act(async()=>startup.tillOpen!());await act(async()=>{release();await Promise.resolve();});await settleUi(150);expect(container.querySelector('[data-testid="swipe-stub"]')).not.toBeNull();expect(startup.swipeProps!.error).toBe('');expect(container.textContent).not.toContain('Old purchase rejected');}
     else {await waitForUi(()=>expect(container.querySelector('[data-testid="swipe-stub"]')).toBeNull(),3000);expect(container.querySelector('.toast')).not.toBeNull();expect(toastTimers.length).toBeGreaterThan(0);await act(async()=>toastTimers.forEach(clear=>clear()));expect(container.querySelector('.toast')).toBeNull();}
+  });
+
+
+  for(const mode of ['source','room','opening-source'] as const)it(`Destructive phone review requires a fresh opening after current ${mode} changes`,async()=>{
+    const width=window.innerWidth;Object.defineProperty(window,'innerWidth',{value:390,writable:true,configurable:true});try{
+      startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+      const result=postEntry(await acceptedScenarioFixture(),{date:'2026-09-08',type:'expense',amount:'47.23',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:'MEM-002',confirmDuplicate:true});startup.cached=result.household;startup.cached.booksAcceptedHash=await financialAuditHash(startup.cached);const h=startup.cached;let writes=0;startup.punchConfirm=async next=>{writes++;return {...result,household:next};};
+      await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);await act(async()=>startup.officePunch!.onGo('ledger'));const ordinary=[...container.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Open ordinary Books');if(ordinary)await act(async()=>ordinary.click());await waitForUi(()=>expect(startup.removeReview).not.toBeNull(),2000);
+      const tx=h.transactions.find(row=>row.id===result.postedIds[0])!;if(mode==='opening-source'){await act(async()=>startup.v2Clients.at(-1)!.adopt({...h,revision:h.revision+1,transactions:h.transactions.map(row=>row.id===tx.id?{...row,note:'Changed before opening'}:row)}));await act(async()=>startup.removeReview!(tx));expect(container.textContent).toContain('This review changed');expect(writes).toBe(0);return;}await act(async()=>startup.removeReview!(tx));expect(container.querySelector('.phone-danger')).not.toBeNull();await act(async()=>button('Show Reverse').click());expect(button('Reverse').disabled).toBe(false);
+      if(mode==='source'){const changed={...h,revision:h.revision+1,transactions:h.transactions.map(row=>row.id===tx.id?{...row,note:'New accepted detail'}:row)};await act(async()=>startup.v2Clients.at(-1)!.adopt(changed));}
+      else{await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[1]!.click());await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[0]!.click());}
+      expect(container.textContent).toContain('This review changed. Cancel and open it again.');expect([...container.querySelectorAll('button')].some(b=>b.textContent==='Reverse'&&!b.disabled)).toBe(false);expect(writes).toBe(0);
+      await act(async()=>button('Cancel').click());await act(async()=>startup.removeReview!(mode==='source'?{...tx,note:'New accepted detail'}:tx));expect(button('Show Reverse')).toBeDefined();expect(writes).toBe(0);
+    }finally{Object.defineProperty(window,'innerWidth',{value:width,writable:true,configurable:true});}
   });
 
   for(const mode of ["accepted","room-changed"] as const)it(`Prise uses the scoped App writer (${mode})`,async()=>{

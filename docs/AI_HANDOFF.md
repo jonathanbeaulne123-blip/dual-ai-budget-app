@@ -1,3 +1,15 @@
+## Mobile C3 — destructive reveal (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-c3-danger-reveal`; exact base`52f93983e7da7a003e53dba7618073409d930d09` (C2, PR393). Implementation HEAD is the commit carrying this file.
+
+**Outcome:** Claude's phone slide reveals a separate named destructive action. Cancel stays easy to reach; long explanations scroll; current source, displayed target, auth and opening fence stale reviews. Duplicate exclusion and same-source rejection retry remain reachable.
+
+**Risk/deltas:** Medium-High; Budget(5)+1; Engagement(3)+1.
+
+**Proof:** TypeScript/AI/diff/focused gate, seven layout cases, native touch/cancel/scroll and thirteen B8 regression cases passed. Independent reviews repaired four real lifecycle/layout issues. [Commands, fingerprints and limits](worksessions/2026-09-08-mobile-danger-reveal.md).
+
+**Limits/next:** Local fictional component/App proof with mocked transport; no physical/hosted/exhaustive or new legacy-writer certification. No merge/deployment/schema. Codex opens stacked draft PR and continues C4.
+
 ## Mobile C2 — honest household suggestions (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-c2-swipe-suggestions`; exact base/pre-commit HEAD`0d8f3f2b272606b263233c305225b52e885f64b6` (C1, PR392). Implementation HEAD is the commit carrying this file. Phase2 continues.

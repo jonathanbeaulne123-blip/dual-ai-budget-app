@@ -62,19 +62,21 @@ function LedgerSession({
   const noticeRef=useRef<HTMLParagraphElement>(null),previousReview=useRef(false),lastTarget=useRef<string|null>(null);
   const [phone,setPhone]=useState(()=>window.innerWidth<720);
   useEffect(()=>{const resize=()=>setPhone(window.innerWidth<720);window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[]);
-  const [review,setReview]=useState<{reading:Extract<DuplicateReview,{kind:"ready"}>;token:AsyncScopeToken}|null>(null);
+  const reviewOpening=useRef(0);
+  const [review,setReview]=useState<{openingId:string;reading:Extract<DuplicateReview,{kind:"ready"}>;token:AsyncScopeToken}|null>(null);
   const [notice,setNotice]=useState(""),[pending,setPending]=useState(false),[failure,setFailure]=useState("");
   const openReview=(target:Transaction,comparisonIds:string[]=[])=>{
     if(busy||pending)return;
     if(!onDuplicateCommand){setNotice("The accepted ledger writer is unavailable. Review is read-only.");return;}
     const reading=prepareDuplicateReview(writeHousehold,{environment:household.environment,householdId:household.householdId,memberId,view,targetId:target.id,isDuplicate:!target.isDuplicate,comparisonIds});
-    setFailure("");if(reading.kind==="unavailable"){setNotice(reading.reason);return;}setNotice("");lastTarget.current=target.id;setReview({reading,token:scope.capture()});
+    setFailure("");if(reading.kind==="unavailable"){setNotice(reading.reason);return;}setNotice("");lastTarget.current=target.id;setReview({openingId:String(++reviewOpening.current),reading,token:scope.capture()});
   };
   useEffect(()=>{
     if(previousReview.current&&!review){const token=scope.capture();queueMicrotask(()=>{if(!scope.isCurrent(token)||document.activeElement!==document.body)return;const row=[...document.querySelectorAll<HTMLElement>("[data-ledger-row-id]")].find(el=>el.dataset.ledgerRowId===lastTarget.current);const target=row?.querySelector<HTMLElement>("button:not([disabled])");(target??noticeRef.current)?.focus();});}
     previousReview.current=!!review;
   },[review]);
   const currentReview=review?prepareDuplicateReview(writeHousehold,review.reading.request):null;
+  const liveReview=useRef(currentReview);liveReview.current=currentReview;
   const stale=!!review&&(currentReview?.kind!=="ready"||currentReview.basis!==review.reading.basis);
   const confirm=async()=>{
     if(!review||pending||busy||!onDuplicateCommand)return;
@@ -127,8 +129,8 @@ function LedgerSession({
       <p ref={noticeRef} className="muted" role="status" tabIndex={-1}>{notice}</p>
       {review&&createPortal(<ConfirmSheet className="duplicate-review-dialog" title={stale&&!pending?"Entries changed":`${review.reading.request.isDuplicate?"Exclude":"Include"} this entry?`}
         body={stale&&!pending?"Return to the entries and review their current details.":`${view==="household"?"Shared":"Personal view · Shared and your Personal entries"}\n${review.reading.target.note||transactionTypeLabel(review.reading.target.type)} · ${formatCad(review.reading.target.amountCents)} · ${formatDateLabel(review.reading.target.date)}\n${accountName(household,review.reading.target.accountId)}\nID ${review.reading.target.id}`}
-        extra={stale&&!pending?failure:[review.reading.changes.length?`Eligibility for dated totals changes for ${review.reading.changes.length} ${review.reading.changes.length===1?"entry":"entries"}:\n${review.reading.changes.map(row=>`${row.date} · ${row.id} · ${row.willCount?"included":"excluded"}`).join("\n")}`:"No entry changes its eligibility for dated totals.",!review.reading.request.isDuplicate&&!review.reading.targetWillCount?"A linked exclusion still keeps this entry out of totals.":"", "Only this entry’s duplicate flag changes. Original entries stay in Books.",failure].filter(Boolean).join("\n\n")}
-        confirmLabel={pending?"Saving…":stale?"Return to entries":`Confirm ${review.reading.request.isDuplicate?"exclusion":"inclusion"}`} danger={review.reading.request.isDuplicate&&!stale} busy={pending||busy} onCancel={()=>setReview(null)} onConfirm={()=>void confirm()}/>,document.body)}
+        notice={failure} extra={stale&&!pending?undefined:[review.reading.changes.length?`Eligibility for dated totals changes for ${review.reading.changes.length} ${review.reading.changes.length===1?"entry":"entries"}:\n${review.reading.changes.map(row=>`${row.date} · ${row.id} · ${row.willCount?"included":"excluded"}`).join("\n")}`:"No entry changes its eligibility for dated totals.",!review.reading.request.isDuplicate&&!review.reading.targetWillCount?"A linked exclusion still keeps this entry out of totals.":"", "Only this entry’s duplicate flag changes. Original entries stay in Books."].filter(Boolean).join("\n\n")}
+        confirmLabel={stale?"Return to entries":`Confirm ${review.reading.request.isDuplicate?"exclusion":"inclusion"}`} review={{openingId:review.openingId,identity:review.reading.basis,readIdentity:()=>String(reviewOpening.current)===review.openingId&&scope.isCurrent(review.token)&&liveReview.current?.kind==="ready"?liveReview.current.basis:"retired"}} danger={review.reading.request.isDuplicate&&!stale} busy={pending||busy} onCancel={()=>setReview(null)} onConfirm={()=>void confirm()}/>,document.body)}
       <section className="hero">
         <div className="label">{ledgerNameForView(household, memberId, view)}</div>
         <div className="money" style={{ fontSize: 36 }}>{rows.length}</div>

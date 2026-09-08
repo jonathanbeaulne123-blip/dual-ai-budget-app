@@ -561,3 +561,8 @@ The first six accounts and eight categories retain their compact position, with 
 ## Mobile C2 — honest household suggestions (2026-09-08)
 
 The Swipe grid keeps genuine observed categories first, then explicitly labelled incoming household suggestions up to six. Active parent eligibility is checked before truncating observed history; suggestions never invent counts or usage dates. Named Post binds its reviewed card/category/Fund/date, current desk and sheet intent through queue drain and authoritative replay using a hashed semantic resource on the existing postEntry kind. Late UI outcomes cannot affect a new sheet; accepted books retain their own adoption boundary and exact-ID toast cleanup survives normal sheet closure. High risk after necessary queue repair; Budget(5)+2; Engagement(3)+2. [Evidence](worksessions/2026-09-08-mobile-swipe-suggestions.md). Existing unreviewed primitive callers remain compatible; no schema, merge or deployment.
+
+
+## Mobile C3 — reveal is not acceptance (2026-09-08)
+
+Claude's slide remains a reading gesture under packet15.3: it reveals the existing named Confirm. Phone Cancel stays by the thumb. Explicit opening/current-source identities prevent stale reviews from silently rearming; transient rejection notices do not masquerade as changed source. Overflow fallback preserves enlarged explanations. Existing writer/authority contracts remain in force. Budget(5)+1; Engagement(3)+1; see C3 worksession for local proof and limits.
