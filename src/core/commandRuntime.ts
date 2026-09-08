@@ -1,3 +1,4 @@
+import { assertLegacyOnboardingCompatible } from "./onboarding/legacyCompatibility.ts";
 import { capturedIntent } from "../ledgerSync/capture.ts";
 import { assertAccountHistoryTransition } from "./accountHistory.ts";
 import { assertOnboardingAttestationTransition, deriveOnboardingAttestationInvalidations, canonicalOnboardingValue } from "./onboarding/attestations.ts";
@@ -191,6 +192,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
   const confirmationId = input.confirmationId || newConfirmationId();
   const previous = input.previous ? ensureHouseholdShape(input.previous) : null;
   try {
+    if (input.transportRequested === true) assertLegacyOnboardingCompatible(input.previous, input.candidate);
     const candidate = ensureHouseholdShape(input.candidate);
     if (previous && candidate.environment !== previous.environment) {
       throw new BooksRejectedError("Development and Production stay on separate books. Nothing was posted.", "validation-rejected");
