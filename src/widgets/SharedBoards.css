@@ -13,7 +13,8 @@
 .shared-boards button { cursor: pointer; border: 1px solid var(--board-line); background: var(--board-paper); border-radius: 6px; padding: 9px 12px; white-space: normal; }
 /* Keep the primary label and its authored board background together, even when
    the surrounding scene supplies a different primary-button ink color. */
-:root[data-theme] .shared-boards button.primary { background: var(--board-accent); color: #fff; border-color: var(--board-accent); }
+:root[data-theme] .shared-boards button.primary,
+:root[data-theme] .shared-boards button.primary:hover:not(:disabled) { background: var(--board-accent); color: #fff; border-color: var(--board-accent); }
 .shared-boards button:disabled { cursor: default; opacity: .55; }
 .shared-boards button:focus-visible, .shared-boards :is(input, select, textarea, summary):focus-visible { outline: 3px solid var(--board-accent); outline-offset: 3px; }
 .shared-boards input, .shared-boards select, .shared-boards textarea { display: block; width: 100%; background: var(--board-paper); border: 1px solid var(--board-line); padding: 10px; border-radius: 5px; }
