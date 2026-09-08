@@ -1,3 +1,4 @@
+import { prepareDuplicateReview, reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import type { Household } from "../core/types.ts";
 import { canonical } from "./patch.ts";
 export type Resource = { key: string; value: unknown };
@@ -32,6 +33,10 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if(kind==="markDuplicate"&&args.length>2){
+    const request=reviewedDuplicateRequest(args[2],args[0],args[1]),review=prepareDuplicateReview(household,request);
+    return [{key:"duplicate-review",value:review.kind==="ready"?{kind:review.kind,basis:review.basis}:{kind:review.kind,reason:review.reason}}];
+  }
   if (additive.has(kind)) return [];
   if (
     [

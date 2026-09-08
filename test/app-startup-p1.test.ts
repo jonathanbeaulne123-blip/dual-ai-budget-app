@@ -1,3 +1,5 @@
+import { applyDuplicateReview } from "../src/core/duplicateReviewCommand.ts";
+import { prepareDuplicateReview } from "../src/core/duplicateReview.ts";
 // @vitest-environment jsdom
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -21,6 +23,7 @@ const startup = vi.hoisted(() => ({
   v2: false,
   v2AutoAdopt: true,
   v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
+  duplicateWriter:null as import("../src/Ledger.tsx").DuplicateCommand|null,
   punchConfirm: null as null | ((candidate: Household) => Promise<import("../src/core/types.ts").CommitResult>),
   officePunch: null as null | {onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger")=>void},
   scenarioSource: null as import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null,
@@ -188,7 +191,7 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
     startup.scenarioSource = scenarioSource ?? null;
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
   },
-  DeferredBooksPage: () => null,
+  DeferredBooksPage: (props:{onDuplicateCommand:import("../src/Ledger.tsx").DuplicateCommand}) => {startup.duplicateWriter=props.onDuplicateCommand;return null;},
   DeferredCalendarPage: () => null,
   DeferredWorkShiftPage: () => null,
   DeferredPairingCard: () => null,
@@ -318,6 +321,7 @@ describe("cached-shell startup books gate", () => {
     startup.v2AutoAdopt = true;
     startup.v2Clients = [];
     startup.scenarioSource = null;
+    startup.duplicateWriter = null;
     startup.punchConfirm = null;
     startup.officePunch = null;
     startup.saveBarrier = null;
@@ -1458,6 +1462,22 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).not.toBeNull();
     expect(container.textContent).toContain("How much came in?");
   });
+  for(const mode of ["accepted","room-changed"] as const)it(`Prise uses the scoped App writer (${mode})`,async()=>{
+    startup.v2=true;vi.stubEnv("VITE_LEDGER_SYNC_V2","1");vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH","1");
+    startup.cached=postEntry(await acceptedScenarioFixture(),{date:"2026-09-08",type:"expense",amount:"47.23",accountId:"ACC-VISA",subcategoryId:"SUB-FOOD-GROCERIES",note:"Prise test",createdBy:"MEM-002",confirmDuplicate:true}).household;
+    startup.cached.booksAcceptedHash=await financialAuditHash(startup.cached);
+    const h=startup.cached,review=prepareDuplicateReview(h,{environment:h.environment,householdId:h.householdId,memberId:"MEM-002",view:"household",targetId:h.transactions.at(-1)!.id,isDuplicate:true,comparisonIds:[]});if(review.kind!=="ready")throw Error(review.reason);
+    const result=applyDuplicateReview(h,review);let candidate:Household|null=null;startup.punchConfirm=async next=>{candidate=next;return {...result,household:next};};
+    await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);await act(async()=>startup.officePunch!.onGo("ledger"));
+    const openBooks=[...container.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent==="Open ordinary Books");if(openBooks)await act(async()=>openBooks.click());
+    await waitForUi(()=>expect(startup.duplicateWriter).not.toBeNull(),3000);
+    const writer=startup.duplicateWriter!;
+    if(mode==="room-changed")await act(async()=>container.querySelectorAll<HTMLButtonElement>(".view-switch button")[1]!.click());
+    let outcome:Awaited<ReturnType<typeof writer>>=null;await act(async()=>{outcome=await writer(current=>applyDuplicateReview(current,review));});
+    if(mode==="accepted"){expect(candidate).not.toBeNull();expect(candidate!.transactions.find(tx=>tx.id===review.target.id)!.isDuplicate).toBe(true);expect(outcome).toMatchObject({ok:true});}
+    else{expect(candidate).toBeNull();expect(outcome).toBeNull();}
+  });
+
   it("Punch preserves Never mind for a confirming timeline opened through Add Shift", async () => {
     startup.v2=true;vi.stubEnv("VITE_LEDGER_SYNC_V2","1");vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH","1");
     startup.cached=clockOutShift(clockInShift(await acceptedScenarioFixture(),{memberId:"MEM-002"}).household,{memberId:"MEM-002"}).household;

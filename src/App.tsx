@@ -6549,6 +6549,9 @@ export function App() {
             )}
           />
         ) : <DeferredBooksPage
+          duplicateAuthorityGeneration={replicaScopeGenerationRef.current}
+          onDuplicateCommand={runKitchen}
+          duplicateBusy={busy}
           household={displayHousehold}
           booksHousehold={household}
           pendingRows={visibleLedgerPending}

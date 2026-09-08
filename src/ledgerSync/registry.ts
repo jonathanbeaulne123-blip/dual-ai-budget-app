@@ -1,3 +1,4 @@
+import { reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import { eraseDevelopmentActivity, restoreSharedPoint } from "./lifecycle.ts";
 import type { Scope } from "./protocol.ts";
 import { buildBatchImport } from "../core/importInbox/command.ts";
@@ -91,6 +92,10 @@ for (const [name, index, path] of [
     fn: functions[name]!,
     bind: (args, actor) => bind(args, index, path, actor),
   });
+policies.set("markDuplicate",{
+  fn:functions.markDuplicate!,
+  bind:(args,actor)=>{if(args.length>2&&reviewedDuplicateRequest(args[2],args[0],args[1]).memberId!==actor)throw Error("ACTOR_MISMATCH");},
+});
 policies.set("buildBatchImport", {
   fn: ((household: Household, input: Parameters<typeof buildBatchImport>[0]) =>
     buildBatchImport({ ...input, household })) as Fn,

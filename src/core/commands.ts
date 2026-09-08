@@ -1,3 +1,4 @@
+import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewRequest } from "./duplicateReview.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
@@ -4502,7 +4503,11 @@ export const postDueRecurrences = captureCommand("postDueRecurrences", function 
   return commit(previous, next, "Post Recurring", `Posted ${due.length} recurring ${due.length === 1 ? "item" : "items"}`, postedIds);
 });
 
-export const markDuplicate = captureCommand("markDuplicate", function markDuplicate(household: Household, transactionId: string, isDuplicate: boolean): CommitResult {
+export const markDuplicate = captureCommand("markDuplicate", function markDuplicate(household: Household, transactionId: string, isDuplicate: boolean, review?:{request:DuplicateReviewRequest}): CommitResult {
+  if(review!==undefined){
+    const request=reviewedDuplicateRequest(review,transactionId,isDuplicate),reading=prepareDuplicateReview(household,request);
+    if(reading.kind!=="ready")throw new ValidationError(reading.reason);
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const tx = next.transactions.find((item) => item.id === transactionId);

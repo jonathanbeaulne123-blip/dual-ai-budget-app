@@ -1,9 +1,10 @@
+import { applyDuplicateReview } from "./core/duplicateReviewCommand.ts";
+import { createPortal } from "react-dom";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatCad,
   formatDateLabel,
-  markDuplicate,
   partitionLedger,
   accountName,
   categoryName,
@@ -14,6 +15,7 @@ import {
   isVisibleInView,
   ledgerNameForView,
   duplicateContrastPairs,
+  type CommitResult,
   type Household,
   type HerculesNumberSource,
   type LedgerSection,
@@ -22,13 +24,27 @@ import {
   type UndoToken,
 } from "./core/index.ts";
 
+import { ConfirmSheet } from "./Confirm.tsx";
+import { DuplicatePrise } from "./DuplicatePrise.tsx";
+import { prepareDuplicateReview, type DuplicateReview } from "./core/duplicateReview.ts";
+import { useAsyncScope, type AsyncScopeToken } from "./asyncScope.ts";
+export type DuplicateCommand = (command:(current:Household)=>CommitResult)=>Promise<{ok:boolean;userMessage?:string|null}|null>;
+
 const SECTIONS: { id: LedgerSection; label: string }[] = [
   { id: "expenses", label: "Expenses" },
   { id: "income", label: "Income" },
   { id: "other", label: "Other" },
 ];
 
-export function LedgerPage({
+export function LedgerPage(props:LedgerProps) {
+  return <LedgerSession key={JSON.stringify([props.household.environment,props.household.householdId,props.memberId,props.view,props.authorityGeneration??0])} {...props}/>;
+}
+type LedgerProps = {
+  pendingRows?:PendingPreview[]; household:Household; writeHousehold?:Household; presentedTransactions?:boolean; memberId:string; view:LedgerView;
+  sourceFocus:HerculesNumberSource|null; onClearSource:()=>void; onChange:(household:Household,undo?:UndoToken)=>void; onRemove:(transaction:Transaction)=>void;
+  onDuplicateCommand?:DuplicateCommand; busy?:boolean; authorityGeneration?:number;
+};
+function LedgerSession({
   pendingRows = [],
   household,
   writeHousehold = household,
@@ -37,20 +53,40 @@ export function LedgerPage({
   view,
   sourceFocus,
   onClearSource,
-  onChange,
   onRemove,
-}: {
-  pendingRows?: PendingPreview[];
-  household: Household;
-  writeHousehold?: Household;
-  presentedTransactions?: boolean;
-  memberId: string;
-  view: LedgerView;
-  sourceFocus: HerculesNumberSource | null;
-  onClearSource: () => void;
-  onChange: (household: Household, undo?: UndoToken) => void;
-  onRemove: (transaction: Transaction) => void;
-}) {
+  onDuplicateCommand,
+  busy=false,
+  authorityGeneration=0,
+}: LedgerProps) {
+  const scope=useAsyncScope(JSON.stringify([household.environment,household.householdId,memberId,view,authorityGeneration]));
+  const noticeRef=useRef<HTMLParagraphElement>(null),previousReview=useRef(false),lastTarget=useRef<string|null>(null);
+  const [phone,setPhone]=useState(()=>window.innerWidth<720);
+  useEffect(()=>{const resize=()=>setPhone(window.innerWidth<720);window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[]);
+  const [review,setReview]=useState<{reading:Extract<DuplicateReview,{kind:"ready"}>;token:AsyncScopeToken}|null>(null);
+  const [notice,setNotice]=useState(""),[pending,setPending]=useState(false),[failure,setFailure]=useState("");
+  const openReview=(target:Transaction,comparisonIds:string[]=[])=>{
+    if(busy||pending)return;
+    if(!onDuplicateCommand){setNotice("The accepted ledger writer is unavailable. Review is read-only.");return;}
+    const reading=prepareDuplicateReview(writeHousehold,{environment:household.environment,householdId:household.householdId,memberId,view,targetId:target.id,isDuplicate:!target.isDuplicate,comparisonIds});
+    setFailure("");if(reading.kind==="unavailable"){setNotice(reading.reason);return;}setNotice("");lastTarget.current=target.id;setReview({reading,token:scope.capture()});
+  };
+  useEffect(()=>{
+    if(previousReview.current&&!review){const token=scope.capture();queueMicrotask(()=>{if(!scope.isCurrent(token)||document.activeElement!==document.body)return;const row=[...document.querySelectorAll<HTMLElement>("[data-ledger-row-id]")].find(el=>el.dataset.ledgerRowId===lastTarget.current);const target=row?.querySelector<HTMLElement>("button:not([disabled])");(target??noticeRef.current)?.focus();});}
+    previousReview.current=!!review;
+  },[review]);
+  const currentReview=review?prepareDuplicateReview(writeHousehold,review.reading.request):null;
+  const stale=!!review&&(currentReview?.kind!=="ready"||currentReview.basis!==review.reading.basis);
+  const confirm=async()=>{
+    if(!review||pending||busy||!onDuplicateCommand)return;
+    if(stale){setReview(null);setNotice("Entries changed. Review their current details again.");return;}
+    const captured=review;setPending(true);setFailure("");
+    try{const result=await onDuplicateCommand(current=>{if(!scope.isCurrent(captured.token))throw Error("The ledger view changed. Review again.");return applyDuplicateReview(current,captured.reading);});
+      if(!scope.isCurrent(captured.token))return;
+      if(result?.ok){setReview(null);setNotice(captured.reading.request.isDuplicate?"Entry excluded. The original remains in Books.":"Duplicate flag removed. Linked exclusions still apply.");}
+      else setFailure(result?.userMessage||"The change was not accepted. Review the current entries before trying again.");
+    }catch(error){if(scope.isCurrent(captured.token))setFailure(error instanceof Error?error.message:"The change was not accepted.");}
+    finally{if(scope.isCurrent(captured.token))setPending(false);}
+  };
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState("");
   const [showContrast, setShowContrast] = useState(false);
@@ -88,6 +124,11 @@ export function LedgerPage({
 
   return (
     <>
+      <p ref={noticeRef} className="muted" role="status" tabIndex={-1}>{notice}</p>
+      {review&&createPortal(<ConfirmSheet className="duplicate-review-dialog" title={stale&&!pending?"Entries changed":`${review.reading.request.isDuplicate?"Exclude":"Include"} this entry?`}
+        body={stale&&!pending?"Return to the entries and review their current details.":`${view==="household"?"Shared":"Personal view · Shared and your Personal entries"}\n${review.reading.target.note||transactionTypeLabel(review.reading.target.type)} · ${formatCad(review.reading.target.amountCents)} · ${formatDateLabel(review.reading.target.date)}\n${accountName(household,review.reading.target.accountId)}\nID ${review.reading.target.id}`}
+        extra={stale&&!pending?failure:[review.reading.changes.length?`Eligibility for dated totals changes for ${review.reading.changes.length} ${review.reading.changes.length===1?"entry":"entries"}:\n${review.reading.changes.map(row=>`${row.date} · ${row.id} · ${row.willCount?"included":"excluded"}`).join("\n")}`:"No entry changes its eligibility for dated totals.",!review.reading.request.isDuplicate&&!review.reading.targetWillCount?"A linked exclusion still keeps this entry out of totals.":"", "Only this entry’s duplicate flag changes. Original entries stay in Books.",failure].filter(Boolean).join("\n\n")}
+        confirmLabel={pending?"Saving…":stale?"Return to entries":`Confirm ${review.reading.request.isDuplicate?"exclusion":"inclusion"}`} danger={review.reading.request.isDuplicate&&!stale} busy={pending||busy} onCancel={()=>setReview(null)} onConfirm={()=>void confirm()}/>,document.body)}
       <section className="hero">
         <div className="label">{ledgerNameForView(household, memberId, view)}</div>
         <div className="money" style={{ fontSize: 36 }}>{rows.length}</div>
@@ -110,12 +151,12 @@ export function LedgerPage({
         <section className="card duplicate-contrast">
           <header>
             <h2>Duplicate contrast</h2>
-            <span className="muted">{contrasts.length} pair{contrasts.length === 1 ? "" : "s"} · confidence first</span>
+            <span className="muted">{contrasts.length} pair{contrasts.length === 1 ? "" : "s"} · similarity signal first</span>
           </header>
-          {contrasts.slice(0, 12).map((pair) => (
+          {contrasts.slice(0, 12).map((pair) => phone ? <DuplicatePrise key={JSON.stringify([pair.left,pair.right])} household={household} {...pair} busy={busy||pending} onReview={target=>openReview(target,[pair.left.id,pair.right.id])}/> : (
             <article key={`${pair.left.id}-${pair.right.id}`} className="contrast-pair">
-              <div className={`confidence useful-${pair.confidence >= 70 ? "green" : pair.confidence >= 40 ? "yellow" : "red"}`}>
-                {pair.confidence}%
+              <div className="confidence">
+                Similarity {pair.confidence}/100
               </div>
               <div className="contrast-cols">
                 <ContrastSide household={household} tx={pair.left} />
@@ -126,20 +167,14 @@ export function LedgerPage({
                 <button
                   type="button"
                   className="chip"
-                  onClick={() => {
-                    const result = markDuplicate(writeHousehold, pair.left.id, true);
-                    onChange(result.household, result.undo);
-                  }}
+                  disabled={busy||pending} onClick={() => openReview(pair.left,[pair.left.id,pair.right.id])}
                 >
                   Exclude left
                 </button>
                 <button
                   type="button"
                   className="chip"
-                  onClick={() => {
-                    const result = markDuplicate(writeHousehold, pair.right.id, true);
-                    onChange(result.household, result.undo);
-                  }}
+                  disabled={busy||pending} onClick={() => openReview(pair.right,[pair.left.id,pair.right.id])}
                 >
                   Exclude right
                 </button>
@@ -183,10 +218,8 @@ export function LedgerPage({
             key={tx.id}
             household={household}
             transaction={tx}
-            onToggleDuplicate={() => {
-              const result = markDuplicate(writeHousehold, tx.id, !tx.isDuplicate);
-              onChange(result.household, result.undo);
-            }}
+            duplicateBusy={busy||pending}
+            onToggleDuplicate={() => openReview(tx)}
             onRemove={() => onRemove(tx)}
           />
         ))}
@@ -216,11 +249,13 @@ function LedgerRow({
   household,
   transaction,
   onToggleDuplicate,
+  duplicateBusy,
   onRemove,
 }: {
   household: Household;
   transaction: Transaction;
   onToggleDuplicate: () => void;
+  duplicateBusy:boolean;
   onRemove: () => void;
 }) {
   const pair = transaction.transferPairId
@@ -242,14 +277,14 @@ function LedgerRow({
           {" · "}
           {splitSummary(household, transaction)}
         </div>
-        {transaction.potentialDuplicate && (
+        {(transaction.potentialDuplicate||transaction.isDuplicate) && (
           <div className="muted">{transaction.isDuplicate ? "Excluded from totals" : "Looks like a repeat"}</div>
         )}
       </div>
       <div className="right">
         <div>{formatCad(transaction.amountCents)}</div>
-        {transaction.potentialDuplicate && (
-          <button className="chip" onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
+        {(transaction.potentialDuplicate||transaction.isDuplicate) && (
+          <button className="chip" disabled={duplicateBusy} onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
         )}
         <button className="chip" onClick={onRemove}>Reverse</button>
       </div>

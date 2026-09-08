@@ -1,3 +1,17 @@
+## Mobile B8 — the Prise (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-b8-prise`; exact base/pre-commit HEAD`10d0e8d13ee07b5e4498579e71f1813f52cec26e` (B7, PR389). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.
+
+**Outcome:** Claude's two stuck cards reveal actual differences with fixed similarity. Scoped named Confirm describes linked recognition effects, protects auxiliary source records, binds authority generation and preserves a hashed review precondition through authoritative replay. Accessible fields, modal isolation, cancellation and focus survive review and acceptance.
+
+**Risk and Dual Course:** High; Budget(5)+3; Engagement(3)+2.
+
+**Verification:** Final High quick gate157/157 plus TypeScript/AI/diff passed56.709seconds; no five-minute breach. Thirteen actual-component browser cases and native touch proof pass. Authority round-trip and mounted App tests cover stale sources and scoped writes; generation-only failure reproduced and repaired. Independent financial/UX/verifier reviews clear. [Exact commands, failures, fingerprints and limits](worksessions/2026-09-08-mobile-prise.md).
+
+**Limits:** Fictional local component/App/actual-authority proof, mocked App acceptance transport; no authenticated physical, exhaustive, hosted or release claim. Existing unreviewed duplicate primitive remains a separate compatibility path. No merge, deployment or schema.
+
+**Next owner:** Codex opens the separate stacked draft PR and implements Claude's B9 Turn, fitting the month and replacing hover with one read-head.
+
 ## Mobile B7 — the Punch (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-b7-punch`; exact base/pre-commit HEAD`b873cb8afcb3dd96c7dbac2525f2d03c3cda2958` (B6, PR388). Implementation HEAD is the commit carrying this handoff, resolved by Git/PR. Phase2 continues.

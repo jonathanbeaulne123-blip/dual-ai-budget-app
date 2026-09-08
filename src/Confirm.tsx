@@ -1,6 +1,7 @@
 import { useDialog } from "./useDialog.ts";
 
 export function ConfirmSheet({
+  className,
   title,
   body,
   extra,
@@ -11,6 +12,7 @@ export function ConfirmSheet({
   onCancel,
   onConfirm,
 }: {
+  className?:string;
   title: string;
   body: string;
   extra?: string;
@@ -35,7 +37,7 @@ export function ConfirmSheet({
 
   return (
     <div
-      className="sheet guard"
+      className={`sheet guard ${className??""}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="guard-title"
