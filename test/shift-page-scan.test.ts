@@ -8,7 +8,6 @@ import { SHIFT_REPORT_SCAN_COPY } from "../src/ShiftReportScan.tsx";
 import { WorkShiftFlow } from "../src/WorkShiftFlow.tsx";
 import { WorkShiftPage } from "../src/WorkShiftPage.tsx";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const today = "2026-08-27";
 
 describe("Shift Today camera draft", () => {
@@ -16,7 +15,6 @@ describe("Shift Today camera draft", () => {
   let root: Root;
 
   beforeEach(() => {
-    sessionStorage.clear();
     document.body.innerHTML = "";
     container = document.createElement("div");
     document.body.appendChild(container);

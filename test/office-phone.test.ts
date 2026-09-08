@@ -7,8 +7,6 @@ import {
   herculesBubbleBox,
   perchTarget,
   phoneDeskKey,
-  phoneFoldOrder,
-  phoneFoldCount,
   phoneDrawerIds,
   phoneDueBill,
   phoneRailOrder,
@@ -177,44 +175,8 @@ describe("phone CSS fence", () => {
     const phone = readFileSync("src/OfficePhone.tsx", "utf8");
     expect(phone).not.toMatch(/desk-wide/);
     expect(phone).toMatch(/revealPhoneInstrument/);
-    expect(phone).toMatch(/PhoneFold/);
+    expect(phone).toMatch(/StoryStrip/);
     expect(phone).toMatch(/WaxSeal/);
     expect(phone).toMatch(/WeatherRibbon/);
-  });
-});
-
-
-describe("Claude's phone fold", () => {
-  const base = { stories: ["blotter", "timesheet", "jars"] as InstrumentId[], ownShift: false, overdue: false, health: false, needs: false };
-  it("counts each seal and each tile, and keeps the fifth object below", () => {
-    const order = phoneFoldOrder(base);
-    const count = phoneFoldCount(order);
-    expect(order.slice(0, count).map(x => x.id)).toEqual(["weather", "seals"]);
-    expect(order.slice(0, count).reduce((n, x) => n + x.slots, 0)).toBe(4);
-    expect(order.slice(count).map(x => x.id)).toEqual(["blotter", "timesheet", "jars"]);
-  });
-  it("promotes own active shift, health and overdue evidence even outside the chosen rail", () => {
-    const order = phoneFoldOrder({ ...base, stories: ["jars"], ownShift: true, overdue: true, health: true, needs: true });
-    expect(order.slice(0, phoneFoldCount(order)).map(x => x.id)).toEqual(["timesheet", "lamp", "mail", "needs"]);
-    expect(order.map(x => x.id)).toEqual(["timesheet", "lamp", "mail", "needs", "weather", "seals", "jars"]);
-  });
-  it("does not promote another person's shift and never duplicates an urgent guest", () => {
-    const order = phoneFoldOrder({ ...base, ownShift: false, overdue: true, stories: ["mail", "jars"] });
-    expect(order[0]?.id).toBe("mail");
-    expect(order.filter(x => x.id === "mail")).toHaveLength(1);
-    expect(order.some(x => x.id === "timesheet")).toBe(false);
-  });
-  it("spills the intact seal row when height or enlarged text leaves insufficient room", () => {
-    const order = phoneFoldOrder(base);
-    const heights = new Map(order.map(x => [x.id, x.id === "seals" ? 120 : 50]));
-    expect(phoneFoldCount(order, heights, 181)).toBe(1);
-    expect(phoneFoldCount(order, heights, 182)).toBe(2);
-    expect(phoneFoldCount(order, heights, 40)).toBe(0);
-  });
-  it("packs two paper tiles per row without admitting a fifth object", () => {
-    const order = phoneFoldOrder({ ...base, ownShift: true, health: true, overdue: true });
-    const heights = new Map(order.map(x => [x.id, 100]));
-    expect(phoneFoldCount(order, heights, 212)).toBe(3);
-    expect(phoneFoldCount(order, heights, 324)).toBe(4);
   });
 });

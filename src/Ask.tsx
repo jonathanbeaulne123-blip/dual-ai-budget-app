@@ -1,5 +1,3 @@
-import { Reach } from "./Reach.tsx";
-import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ROUTE_VIEW,
@@ -9,13 +7,10 @@ import {
   type AskRoutesDrawing,
 } from "./core/askView.ts";
 import type { DateKey } from "./core/calendar.ts";
-import type { Household, LedgerView } from "./core/types.ts";
+import type { Household } from "./core/types.ts";
 import "./ask.css";
 
 type AskProps = {
-  viewerRoom?: LedgerView;
-  presentation?: "phone" | "desk";
-  scenarioSource?: ScenarioSourceContext | null;
   household: Household;
   today: DateKey;
   memberId: string;
@@ -23,7 +18,7 @@ type AskProps = {
   onMove: (alternative: AskAlternative) => void;
 };
 
-export function Ask({ household, today, memberId, busy, onMove, scenarioSource, viewerRoom, presentation = "desk" }: AskProps) {
+export function Ask({ household, today, memberId, busy, onMove }: AskProps) {
   const view = useMemo(
     () => askPanelView(household, today, memberId),
     [household, today, memberId],
@@ -59,8 +54,7 @@ export function Ask({ household, today, memberId, busy, onMove, scenarioSource, 
   }, [pendingRecurrenceId]);
 
   return (
-    <section ref={sectionRef} className={`ask${presentation === "phone" ? " is-phone-reach" : ""}`} aria-label="The ask" tabIndex={-1}>
-      {presentation === "phone" ? <Reach viewerRoom={viewerRoom} household={household} memberId={memberId} today={today} source={scenarioSource} /> : <>
+    <section ref={sectionRef} className="ask" aria-label="The ask" tabIndex={-1}>
       <p
         className={`ask-figure${view.covered ? " is-covered" : ""}`}
         data-ask-figure=""
@@ -75,7 +69,6 @@ export function Ask({ household, today, memberId, busy, onMove, scenarioSource, 
       {view.ceilingCopy ? (
         <p className="ask-ceiling" data-ask-ceiling="">{view.ceilingCopy}</p>
       ) : null}
-      </>}
       {view.showDoor ? (
         <ul className="ask-doors">
           {view.alternatives.map((alternative) => {
@@ -104,9 +97,8 @@ export function Ask({ household, today, memberId, busy, onMove, scenarioSource, 
                   className="ask-confirm"
                   id={confirmId}
                   data-ask-confirm=""
-                  data-dialog-escape-boundary=""
                   onKeyDown={(event) => {
-                    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeConfirmation("raise"); }
+                    if (event.key === "Escape") closeConfirmation("raise");
                   }}
                 >
                   <p>Move the date only. No money moves.</p>
@@ -141,7 +133,7 @@ export function Ask({ household, today, memberId, busy, onMove, scenarioSource, 
           })}
         </ul>
       ) : null}
-      {presentation !== "phone" && view.caveat ? (
+      {view.caveat ? (
         <p className="ask-caveat" data-ask-caveat="">{view.caveat}</p>
       ) : null}
     </section>

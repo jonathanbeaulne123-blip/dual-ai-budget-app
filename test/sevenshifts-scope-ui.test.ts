@@ -34,8 +34,6 @@ let container: HTMLDivElement;
 async function settleUntil(predicate: () => boolean) {
   for (let attempt = 0; attempt < 80; attempt += 1) {
     await act(async () => new Promise((resolve) => setTimeout(resolve, 2)));
-    const adopt = Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Use new source");
-    if (adopt) await act(async () => adopt.click());
     if (predicate()) return;
   }
   throw new Error(container.textContent || "UI did not settle.");
@@ -138,7 +136,6 @@ function renderTimesheet(
 }
 
 beforeEach(() => {
-  sessionStorage.clear();
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);

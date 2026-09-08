@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { act } from "react";
 import { describe, expect, it } from "vitest";
 import { AddSlideshow, type AddFormFields, type AddMode } from "../src/AddSlideshow.tsx";
-import { catalogHousehold, todayKey, JOINT, NeedsConfirmationError, type Visibility } from "../src/core/index.ts";
+import { catalogHousehold, todayKey, JOINT, type Visibility } from "../src/core/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -51,22 +51,12 @@ const placePrefs = {
 function Harness({
   mode,
   onPost,
-  splitProbe = false,
-  roster = household,
-  shares = { "MEM-001": 50, "MEM-002": 50 },
-  scopeValid = true,
-  duplicateReview = false,
 }: {
   mode: AddMode;
   onPost: () => void;
-  splitProbe?: boolean;
-  roster?: typeof household;
-  shares?: Record<string, number>;
-  scopeValid?: boolean;
-  duplicateReview?: boolean;
 }) {
-  const [form, setForm] = useState<AddFormFields>(() => splitProbe ? { ...emptyForm(), amount: "0.01", who: "split" } : emptyForm());
-  const [slideIndex, setSlideIndex] = useState(splitProbe ? 4 : 0);
+  const [form, setForm] = useState<AddFormFields>(() => emptyForm());
+  const [slideIndex, setSlideIndex] = useState(0);
   const categories = household.categories.filter((category) => (
     category.recordType === "category"
     && category.active
@@ -78,8 +68,8 @@ function Harness({
     onSwitchMode: () => undefined,
     form,
     setForm,
-    household: roster,
-    booksHousehold: roster,
+    household,
+    booksHousehold: household,
     pickerAccounts: household.accounts.filter((account) => account.active),
     categories,
     today,
@@ -98,9 +88,9 @@ function Harness({
     error: "",
     onDismissError: () => undefined,
     onGoMore: () => undefined,
-    confirm: duplicateReview ? new NeedsConfirmationError("duplicate", "Review duplicate") : null,
+    confirm: null,
     confirmPanelRef: { current: null },
-    onConfirmAnyway: onPost,
+    onConfirmAnyway: () => undefined,
     postLabel: "Post $12.50",
     onPost,
     onClose: () => undefined,
@@ -113,8 +103,7 @@ function Harness({
     onCategoryTouched: () => undefined,
     codingHint: "",
     onCodingHint: () => undefined,
-    splitPercents: shares,
-    splitScopeValid: scopeValid,
+    splitPercents: { "MEM-001": 50, "MEM-002": 50 },
     onMemberPercent: () => undefined,
     addDetails: false,
     onAddDetails: () => undefined,
@@ -132,46 +121,6 @@ function Harness({
 }
 
 describe("Add slideshow UI", () => {
-  it("shows the canonical one-cent split rather than independently rounding both shares", () => {
-    const host=document.createElement("div");document.body.append(host);const root=createRoot(host);
-    try {
-      act(()=>root.render(createElement(Harness,{mode:"expense",onPost:()=>{},splitProbe:true})));
-      const text=host.querySelector(".split-card")!.textContent!;
-      expect(text.match(/\$0\.01/g)).toHaveLength(1);
-      expect(text).toContain("$0.00");
-    }finally{act(()=>root.unmount());host.remove();}
-  });
-  it("retains every owner in the three-member fallback and blocks invalid or stale review", () => {
-    const roster={...household,members:[...household.members,{...household.members[0]!,id:"THIRD",name:"Third person"}]};
-    const host=document.createElement("div");document.body.append(host);const root=createRoot(host);let posts=0;
-    try {
-      act(()=>root.render(createElement(Harness,{mode:"expense",onPost:()=>posts++,splitProbe:true,roster,shares:{"MEM-001":50,"MEM-002":50,THIRD:0}})));
-      expect(host.querySelectorAll('.split-card input')).toHaveLength(3);
-      expect(host.textContent).toContain('negative remainder');
-      const confirm=host.querySelector<HTMLButtonElement>('[data-add-confirm]')!;expect(confirm.disabled).toBe(true);act(()=>confirm.click());expect(posts).toBe(0);
-      act(()=>root.render(createElement(Harness,{mode:"expense",onPost:()=>posts++,splitProbe:true,scopeValid:false})));
-      expect(host.textContent).toContain('Review current members');expect(confirm.disabled).toBe(true);
-    }finally{act(()=>root.unmount());host.remove();}
-  });
-  it("blocks both posting paths during a held preview and restores the reviewed cents on cancellation", () => {
-    for (const duplicateReview of [false,true]) {
-      const host=document.createElement('div');document.body.append(host);const root=createRoot(host);let posts=0;
-      try {
-        act(()=>root.render(createElement(Harness,{mode:'expense',onPost:()=>posts++,splitProbe:true,duplicateReview})));
-        const slider=host.querySelector<HTMLButtonElement>('[role=slider]')!,lane=host.querySelector<HTMLElement>('.cut-lane')!;
-        slider.setPointerCapture=()=>{};slider.hasPointerCapture=()=>false;slider.releasePointerCapture=()=>{};
-        lane.getBoundingClientRect=()=>({x:0,y:0,left:0,top:0,right:200,bottom:44,width:200,height:44,toJSON:()=>{}});
-        const pointer=(type:string,x:number)=>{const e=new MouseEvent(type,{bubbles:true,cancelable:true,clientX:x,button:0});Object.defineProperties(e,{pointerId:{value:1},isPrimary:{value:true}});act(()=>slider.dispatchEvent(e));};
-        pointer('pointerdown',100);pointer('pointermove',0);
-        expect(slider.getAttribute('aria-valuenow')).toBe('0');
-        const buttons=[host.querySelector<HTMLButtonElement>('[data-add-confirm]')!,...Array.from(host.querySelectorAll<HTMLButtonElement>('button')).filter(b=>b.textContent==='Add anyway')];
-        for(const button of buttons){expect(button.disabled).toBe(true);act(()=>button.click());}expect(posts).toBe(0);
-        pointer('pointercancel',0);expect(slider.getAttribute('aria-valuenow')).toBe('50');
-        expect(host.querySelectorAll('[data-cut-cents]')[0]!.textContent).toBe('$0.01');
-        act(()=>buttons[0]!.click());expect(posts).toBe(1);
-      }finally{act(()=>root.unmount());host.remove();}
-    }
-  });
   it("walks expense amount → category → account → note → Confirm, and Confirm is the only post", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);

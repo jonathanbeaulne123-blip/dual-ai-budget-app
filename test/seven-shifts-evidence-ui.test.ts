@@ -15,7 +15,6 @@ describe("7shifts Evidence Center surface", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    vi.stubGlobal("innerWidth", 1024);
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ok: true, available: false, environment: "development-only", productionAllowed: false, detail: "Evidence Mesh is not enabled for Development." })));
   });
 
@@ -49,34 +48,4 @@ describe("7shifts Evidence Center surface", () => {
     expect(container.textContent).toContain("Raw captures stay outside the household snapshot and books");
     expect(container.textContent).not.toMatch(/onboarding|required setup/i);
   });
-  it("keeps phone evidence under Jobs, wraps keyboard order, and collapses a resized desktop console", async () => {
-    const household = seedDemoHousehold({ today: "2026-08-28", environment: "development" });
-    const props = { household, memberId: "MEM-001", memberName: "Bianca", today: "2026-08-28", environment: "development" as const, busy: false,
-      onClockIn() {}, onAbandon() {}, onStartBreak() {}, onEndBreak() {}, onChooseTimeline() {}, onClockOut() {}, onConfirmShift() {}, onCorrect() {}, onAskSaveJob() {}, onArchiveJob() {}, onOpenCalendar() {} };
-    vi.stubGlobal("innerWidth", 390);
-    await act(async () => root.render(createElement(WorkShiftPage, props)));
-    expect([...container.querySelectorAll('[role="tab"]')].map(e => e.textContent)).toEqual(["Today", "Report", "Jobs"]);
-    await act(async () => (container.querySelector('#shift-tab-jobs') as HTMLElement).click());
-    const disclosure = container.querySelector('.work-evidence-disclosure') as HTMLDetailsElement;
-    expect(disclosure.open).toBe(false);
-    expect(container.textContent).not.toContain("7shifts Evidence Center");
-    await act(async () => { disclosure.open = true; disclosure.dispatchEvent(new Event('toggle')); });
-    expect(container.textContent).toContain("7shifts Evidence Center");
-    await act(async () => root.render(createElement(WorkShiftPage, {...props, memberId: "MEM-002"})));
-    expect((container.querySelector('.work-evidence-disclosure') as HTMLDetailsElement).open).toBe(false);
-    expect(container.textContent).not.toContain("7shifts Evidence Center");
-    await act(async () => { container.querySelector('#shift-tab-jobs')!.dispatchEvent(new KeyboardEvent('keydown', {key:'ArrowRight',bubbles:true})); });
-    expect(container.querySelector('#shift-tab-today')!.getAttribute('aria-selected')).toBe('true');
-    await act(async () => (container.querySelector('#shift-tab-jobs') as HTMLElement).click());
-    (container.querySelector('.work-evidence-disclosure summary') as HTMLElement).focus();
-    await act(async () => { vi.stubGlobal('innerWidth', 1100); window.dispatchEvent(new Event('resize')); await new Promise(resolve => requestAnimationFrame(resolve)); });
-    expect(document.activeElement?.id).toBe('shift-tab-jobs');
-    await act(async () => (container.querySelector('#shift-tab-evidence') as HTMLElement).click());
-    expect(container.textContent).toContain("7shifts Evidence Center");
-    await act(async () => { vi.stubGlobal('innerWidth', 320); window.dispatchEvent(new Event('resize')); await new Promise(resolve => requestAnimationFrame(resolve)); });
-    expect(container.querySelector('#shift-tab-evidence')).toBeNull();
-    expect(document.activeElement?.id).toBe('shift-tab-jobs');
-    expect((container.querySelector('.work-evidence-disclosure') as HTMLDetailsElement).open).toBe(false);
-  });
-
 });

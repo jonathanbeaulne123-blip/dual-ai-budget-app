@@ -1,12 +1,9 @@
-import { ReadingReceipt } from "./ReadingReceipt.tsx";
-import { createReadingReceiptReader } from "./readingReceipt.ts";
-import { applyDuplicateReview } from "./core/duplicateReviewCommand.ts";
-import { createPortal } from "react-dom";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   formatCad,
   formatDateLabel,
+  markDuplicate,
   partitionLedger,
   accountName,
   categoryName,
@@ -17,7 +14,6 @@ import {
   isVisibleInView,
   ledgerNameForView,
   duplicateContrastPairs,
-  type CommitResult,
   type Household,
   type HerculesNumberSource,
   type LedgerSection,
@@ -26,27 +22,13 @@ import {
   type UndoToken,
 } from "./core/index.ts";
 
-import { ConfirmSheet } from "./Confirm.tsx";
-import { DuplicatePrise } from "./DuplicatePrise.tsx";
-import { prepareDuplicateReview, type DuplicateReview } from "./core/duplicateReview.ts";
-import { useAsyncScope, type AsyncScopeToken } from "./asyncScope.ts";
-export type DuplicateCommand = (command:(current:Household)=>CommitResult)=>Promise<{ok:boolean;userMessage?:string|null}|null>;
-
 const SECTIONS: { id: LedgerSection; label: string }[] = [
   { id: "expenses", label: "Expenses" },
   { id: "income", label: "Income" },
   { id: "other", label: "Other" },
 ];
 
-export function LedgerPage(props:LedgerProps) {
-  return <LedgerSession key={JSON.stringify([props.household.environment,props.household.householdId,props.memberId,props.view,props.authorityGeneration??0])} {...props}/>;
-}
-type LedgerProps = {
-  pendingRows?:PendingPreview[]; household:Household; writeHousehold?:Household; presentedTransactions?:boolean; memberId:string; view:LedgerView;
-  sourceFocus:HerculesNumberSource|null; onClearSource:()=>void; onChange:(household:Household,undo?:UndoToken)=>void; onRemove:(transaction:Transaction)=>void;
-  onDuplicateCommand?:DuplicateCommand; busy?:boolean; authorityGeneration?:number;
-};
-function LedgerSession({
+export function LedgerPage({
   pendingRows = [],
   household,
   writeHousehold = household,
@@ -55,43 +37,20 @@ function LedgerSession({
   view,
   sourceFocus,
   onClearSource,
+  onChange,
   onRemove,
-  onDuplicateCommand,
-  busy=false,
-  authorityGeneration=0,
-}: LedgerProps) {
-  const scope=useAsyncScope(JSON.stringify([household.environment,household.householdId,memberId,view,authorityGeneration]));
-  const noticeRef=useRef<HTMLParagraphElement>(null),previousReview=useRef(false),lastTarget=useRef<string|null>(null);
-  const [phone,setPhone]=useState(()=>window.innerWidth<720);
-  useEffect(()=>{const resize=()=>setPhone(window.innerWidth<720);window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[]);
-  const reviewOpening=useRef(0);
-  const [review,setReview]=useState<{openingId:string;reading:Extract<DuplicateReview,{kind:"ready"}>;token:AsyncScopeToken}|null>(null);
-  const [notice,setNotice]=useState(""),[pending,setPending]=useState(false),[failure,setFailure]=useState("");
-  const openReview=(target:Transaction,comparisonIds:string[]=[])=>{
-    if(busy||pending)return;
-    if(!onDuplicateCommand){setNotice("The accepted ledger writer is unavailable. Review is read-only.");return;}
-    const reading=prepareDuplicateReview(writeHousehold,{environment:household.environment,householdId:household.householdId,memberId,view,targetId:target.id,isDuplicate:!target.isDuplicate,comparisonIds});
-    setFailure("");if(reading.kind==="unavailable"){setNotice(reading.reason);return;}setNotice("");lastTarget.current=target.id;setReview({openingId:String(++reviewOpening.current),reading,token:scope.capture()});
-  };
-  useEffect(()=>{
-    if(previousReview.current&&!review){const token=scope.capture();queueMicrotask(()=>{if(!scope.isCurrent(token)||document.activeElement!==document.body)return;const row=[...document.querySelectorAll<HTMLElement>("[data-ledger-row-id]")].find(el=>el.dataset.ledgerRowId===lastTarget.current);const target=row?.querySelector<HTMLElement>("[data-duplicate-review]:not([disabled])");(target??noticeRef.current)?.focus();});}
-    previousReview.current=!!review;
-  },[review]);
-  const currentReview=review?prepareDuplicateReview(writeHousehold,review.reading.request):null;
-  const liveReview=useRef(currentReview);liveReview.current=currentReview;
-  const stale=!!review&&(currentReview?.kind!=="ready"||currentReview.basis!==review.reading.basis);
-  const confirm=async()=>{
-    if(!review||pending||busy||!onDuplicateCommand)return;
-    if(stale){setReview(null);setNotice("Entries changed. Review their current details again.");return;}
-    const captured=review;setPending(true);setFailure("");
-    try{const result=await onDuplicateCommand(current=>{if(!scope.isCurrent(captured.token))throw Error("The ledger view changed. Review again.");return applyDuplicateReview(current,captured.reading);});
-      if(!scope.isCurrent(captured.token))return;
-      if(result?.ok){setReview(null);setNotice(captured.reading.request.isDuplicate?"Entry excluded. The original remains in Books.":"Duplicate flag removed. Linked exclusions still apply.");}
-      else setFailure(result?.userMessage||"The change was not accepted. Review the current entries before trying again.");
-    }catch(error){if(scope.isCurrent(captured.token))setFailure(error instanceof Error?error.message:"The change was not accepted.");}
-    finally{if(scope.isCurrent(captured.token))setPending(false);}
-  };
-  const readReceipt = useMemo(() => createReadingReceiptReader(writeHousehold, memberId, view), [writeHousehold, memberId, view]);
+}: {
+  pendingRows?: PendingPreview[];
+  household: Household;
+  writeHousehold?: Household;
+  presentedTransactions?: boolean;
+  memberId: string;
+  view: LedgerView;
+  sourceFocus: HerculesNumberSource | null;
+  onClearSource: () => void;
+  onChange: (household: Household, undo?: UndoToken) => void;
+  onRemove: (transaction: Transaction) => void;
+}) {
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState("");
   const [showContrast, setShowContrast] = useState(false);
@@ -129,12 +88,7 @@ function LedgerSession({
 
   return (
     <>
-      <p ref={noticeRef} className="muted" role="status" tabIndex={-1}>{notice}</p>
-      {review&&createPortal(<ConfirmSheet className="duplicate-review-dialog" title={stale&&!pending?"Entries changed":`${review.reading.request.isDuplicate?"Exclude":"Include"} this entry?`}
-        body={stale&&!pending?"Return to the entries and review their current details.":`${view==="household"?"Shared":"Personal view · Shared and your Personal entries"}\n${review.reading.target.note||transactionTypeLabel(review.reading.target.type)} · ${formatCad(review.reading.target.amountCents)} · ${formatDateLabel(review.reading.target.date)}\n${accountName(household,review.reading.target.accountId)}\nID ${review.reading.target.id}`}
-        notice={failure} extra={stale&&!pending?undefined:[review.reading.changes.length?`Eligibility for dated totals changes for ${review.reading.changes.length} ${review.reading.changes.length===1?"entry":"entries"}:\n${review.reading.changes.map(row=>`${row.date} · ${row.id} · ${row.willCount?"included":"excluded"}`).join("\n")}`:"No entry changes its eligibility for dated totals.",!review.reading.request.isDuplicate&&!review.reading.targetWillCount?"A linked exclusion still keeps this entry out of totals.":"", "Only this entry’s duplicate flag changes. Original entries stay in Books."].filter(Boolean).join("\n\n")}
-        confirmLabel={stale?"Return to entries":`Confirm ${review.reading.request.isDuplicate?"exclusion":"inclusion"}`} review={stale&&!pending?undefined:{openingId:review.openingId,identity:review.reading.basis,readIdentity:()=>String(reviewOpening.current)===review.openingId&&scope.isCurrent(review.token)&&liveReview.current?.kind==="ready"?liveReview.current.basis:"retired"}} danger={review.reading.request.isDuplicate&&!stale} busy={pending||busy} onCancel={()=>setReview(null)} onConfirm={()=>void confirm()}/>,document.body)}
-      <section className="hero ledger-overview">
+      <section className="hero">
         <div className="label">{ledgerNameForView(household, memberId, view)}</div>
         <div className="money" style={{ fontSize: 36 }}>{rows.length}</div>
         <div className="sub">
@@ -142,7 +96,7 @@ function LedgerSession({
         </div>
       </section>
       {flagged > 0 && (
-        <article className="pulse ledger-repeat" style={{ marginTop: 0 }}>
+        <article className="pulse" style={{ marginTop: 0 }}>
           <article className="warn">
             {flagged} {flagged === 1 ? "row looks" : "rows look"} like a repeat. Review the pairs before excluding an entry.
             {" "}
@@ -156,12 +110,12 @@ function LedgerSession({
         <section className="card duplicate-contrast">
           <header>
             <h2>Duplicate contrast</h2>
-            <span className="muted">{contrasts.length} pair{contrasts.length === 1 ? "" : "s"} · similarity signal first</span>
+            <span className="muted">{contrasts.length} pair{contrasts.length === 1 ? "" : "s"} · confidence first</span>
           </header>
-          {contrasts.slice(0, 12).map((pair) => phone ? <DuplicatePrise key={JSON.stringify([pair.left,pair.right])} household={household} {...pair} busy={busy||pending} onReview={target=>openReview(target,[pair.left.id,pair.right.id])}/> : (
+          {contrasts.slice(0, 12).map((pair) => (
             <article key={`${pair.left.id}-${pair.right.id}`} className="contrast-pair">
-              <div className="confidence">
-                Similarity {pair.confidence}/100
+              <div className={`confidence useful-${pair.confidence >= 70 ? "green" : pair.confidence >= 40 ? "yellow" : "red"}`}>
+                {pair.confidence}%
               </div>
               <div className="contrast-cols">
                 <ContrastSide household={household} tx={pair.left} />
@@ -172,14 +126,20 @@ function LedgerSession({
                 <button
                   type="button"
                   className="chip"
-                  disabled={busy||pending} onClick={() => openReview(pair.left,[pair.left.id,pair.right.id])}
+                  onClick={() => {
+                    const result = markDuplicate(writeHousehold, pair.left.id, true);
+                    onChange(result.household, result.undo);
+                  }}
                 >
                   Exclude left
                 </button>
                 <button
                   type="button"
                   className="chip"
-                  disabled={busy||pending} onClick={() => openReview(pair.right,[pair.left.id,pair.right.id])}
+                  onClick={() => {
+                    const result = markDuplicate(writeHousehold, pair.right.id, true);
+                    onChange(result.household, result.undo);
+                  }}
                 >
                   Exclude right
                 </button>
@@ -194,7 +154,7 @@ function LedgerSession({
           <button type="button" className="chip" onClick={onClearSource}>Show all activity</button>
         </p>
       )}
-      <div className="tabs ledger-tabs">
+      <div className="tabs">
         {SECTIONS.map((item) => (
           <button key={item.id} className={section === item.id ? "active" : ""} onClick={() => setSection(item.id)}>
             {item.label}
@@ -202,12 +162,12 @@ function LedgerSession({
           </button>
         ))}
       </div>
-      <input className="ledger-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notes, place, category…" />
+      <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search notes, place, category…" />
       {section === "other" && (
         <p className="muted">Transfers move money between accounts. Refunds undo spend. Neither is ordinary income.</p>
       )}
       {pendingRows.some(preview => preview.rows.some(tx => isVisibleInView(tx, memberId, view))) && (
-        <section className="card ledger-pending" aria-label="Pending entries">
+        <section className="card" aria-label="Pending entries">
           <p className="muted">Pending · awaiting confirmation. Posted balances update when saved.</p>
           {pendingRows.flatMap(preview => partitionLedger(transactionsForHerculesSource(preview.rows.filter(tx => isVisibleInView(tx, memberId, view)), sourceFocus))[section]
             .filter(tx => !query.trim() || `${tx.note} ${tx.place} ${categoryName(household, tx.subcategoryId)} ${accountName(household, tx.accountId)}`.toLowerCase().includes(query.trim().toLowerCase()))
@@ -217,15 +177,16 @@ function LedgerSession({
             </div>))}
         </section>
       )}
-      <section className="card ledger-entries">
+      <section className="card">
         {rows.length === 0 ? <p className="muted">Nothing in this list yet.</p> : rows.slice(0, rowLimit).map((tx) => (
           <LedgerRow
             key={tx.id}
             household={household}
             transaction={tx}
-            readReceipt={readReceipt}
-            duplicateBusy={busy||pending}
-            onToggleDuplicate={() => openReview(tx)}
+            onToggleDuplicate={() => {
+              const result = markDuplicate(writeHousehold, tx.id, !tx.isDuplicate);
+              onChange(result.household, result.undo);
+            }}
             onRemove={() => onRemove(tx)}
           />
         ))}
@@ -254,27 +215,19 @@ function ContrastSide({ household, tx }: { household: Household; tx: Transaction
 function LedgerRow({
   household,
   transaction,
-  readReceipt,
   onToggleDuplicate,
-  duplicateBusy,
   onRemove,
 }: {
   household: Household;
   transaction: Transaction;
-  readReceipt: ReturnType<typeof createReadingReceiptReader>;
   onToggleDuplicate: () => void;
-  duplicateBusy:boolean;
   onRemove: () => void;
 }) {
-  const [sourceOpen, setSourceOpen] = useState(false);
-  const amountRef = useRef<HTMLButtonElement>(null);
-  const receiptId = `reading-receipt-${transaction.id}`;
-  const closeSource = () => { setSourceOpen(false); amountRef.current?.focus(); };
   const pair = transaction.transferPairId
     ? household.transactions.find((item) => item.id === transaction.transferPairId)
     : undefined;
   return (
-    <div className="ledger-row" data-ledger-row-id={transaction.id} onKeyDown={(event) => { if (sourceOpen && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeSource(); } }}>
+    <div className="ledger-row" data-ledger-row-id={transaction.id}>
       <div>
         <strong>{transaction.note || transactionTypeLabel(transaction.type)}</strong>
         <div className="muted">
@@ -289,18 +242,17 @@ function LedgerRow({
           {" · "}
           {splitSummary(household, transaction)}
         </div>
-        {(transaction.potentialDuplicate||transaction.isDuplicate) && (
+        {transaction.potentialDuplicate && (
           <div className="muted">{transaction.isDuplicate ? "Excluded from totals" : "Looks like a repeat"}</div>
         )}
       </div>
       <div className="right">
-        <button type="button" ref={amountRef} className="ledger-source-amount" aria-label={`Source for ${formatCad(transaction.amountCents)}`} aria-expanded={sourceOpen} aria-controls={sourceOpen ? receiptId : undefined} onClick={() => setSourceOpen(open => !open)}>{formatCad(transaction.amountCents)}</button>
-        {(transaction.potentialDuplicate||transaction.isDuplicate) && (
-          <button className="chip" data-duplicate-review disabled={duplicateBusy} onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
+        <div>{formatCad(transaction.amountCents)}</div>
+        {transaction.potentialDuplicate && (
+          <button className="chip" onClick={onToggleDuplicate}>{transaction.isDuplicate ? "Include" : "Exclude"}</button>
         )}
         <button className="chip" onClick={onRemove}>Reverse</button>
       </div>
-      {sourceOpen && <div id={receiptId} className="ledger-source-slot"><ReadingReceipt receipt={readReceipt(transaction)} onClose={closeSource}/></div>}
     </div>
   );
 }

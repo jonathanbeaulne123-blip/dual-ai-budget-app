@@ -1,6 +1,3 @@
-import { DateTurn, TurnFocusBoundary, useTurnDate } from "./DateTurn.tsx";
-import { levelTurnReading } from "./core/turnReading.ts";
-import { LEVEL_PHONE_VIEW } from "./core/levelView.ts";
 import { useId, type Ref } from "react";
 import {
   LEVEL_UNTIED_LINE,
@@ -26,8 +23,6 @@ type LevelProps = {
   household: Household;
   presentation?: LevelPresentation;
   headingRef?: Ref<HTMLHeadingElement>;
-  compact?: boolean;
-  scopeKey?:string;
 };
 
 function ordinalDay(dateKey: string): string {
@@ -43,16 +38,13 @@ function ordinalDay(dateKey: string): string {
  * projected is dashed — fact and forecast never share a stroke. Everything
  * here reads `FundWalk`; nothing here recomputes a balance.
  */
-export function Level({ walk, household, presentation, headingRef, compact = false, scopeKey = `${household.environment}:${household.householdId}` }: LevelProps) {
-  const turn=useTurnDate(scopeKey,JSON.stringify([walk,presentation]),walk.monthKey,walk.today);
-  const reading=levelTurnReading(walk,turn.date);
+export function Level({ walk, household, presentation, headingRef }: LevelProps) {
   const headingId = useId();
-  const view = compact ? LEVEL_PHONE_VIEW : LEVEL_VIEW;
-  const drawing = levelDrawing(walk, view);
+  const drawing = levelDrawing(walk);
   const shown = presentation ?? drawing.presentation;
   const todayY = drawing.zeroY - walk.todayBalanceCents * drawing.pxPerCent;
   const rawTicks = shown === "ready" || shown === "day-one" ? paydayTicks(household, walk.monthKey) : [];
-  const ticks = rawTicks.map((tick) => ({ x: levelX(tick.date, walk.monthKey, view) }));
+  const ticks = rawTicks.map((tick) => ({ x: levelX(tick.date, walk.monthKey) }));
   const lastDay = daysInMonthKey(walk.monthKey);
   const ariaLabel = shown === "untied" ? LEVEL_UNTIED_LINE
     : shown === "loading" ? "The Household Fund, loading"
@@ -61,11 +53,11 @@ export function Level({ walk, household, presentation, headingRef, compact = fal
 
   if (shown === "loading") {
     return (
-      <section className={`level${compact ? " is-phone" : ""}`} aria-busy="true" aria-label="The Household Fund, loading">
+      <section className="level" aria-busy="true" aria-label="The Household Fund, loading">
         <p className="desk-plate-kicker">The Household Fund</p>
         <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading level-figure">···</h2>
-        <svg className="level-svg" viewBox={`0 0 ${view.width} ${view.height}`} aria-hidden="true" focusable="false">
-          <line className="level-skeleton" x1={view.left} y1={view.axisY} x2={view.right} y2={view.axisY} />
+        <svg className="level-svg" viewBox={`0 0 ${LEVEL_VIEW.width} ${LEVEL_VIEW.height}`} aria-hidden="true" focusable="false">
+          <line className="level-skeleton" x1={LEVEL_VIEW.left} y1={LEVEL_VIEW.axisY} x2={LEVEL_VIEW.right} y2={LEVEL_VIEW.axisY} />
         </svg>
       </section>
     );
@@ -73,7 +65,7 @@ export function Level({ walk, household, presentation, headingRef, compact = fal
 
   if (shown === "error") {
     return (
-      <section className={`level${compact ? " is-phone" : ""}`} aria-label="The Household Fund">
+      <section className="level" aria-label="The Household Fund">
         <p className="desk-plate-kicker">The Household Fund</p>
         <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading">The Level</h2>
         <p className="level-status" role="status">I couldn't draw the Level from these books.</p>
@@ -82,46 +74,44 @@ export function Level({ walk, household, presentation, headingRef, compact = fal
   }
 
   return (
-    <section className={`level${compact ? " is-phone" : ""}`} aria-labelledby={headingId}>
+    <section className="level" aria-labelledby={headingId}>
       <p className="desk-plate-kicker">The Household Fund</p>
       <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading level-figure">
         {formatCad(walk.todayBalanceCents)}
       </h2>
-      <TurnFocusBoundary scope={scopeKey}>
       <div className="level-scroll">
         <svg
           className="level-svg"
-          viewBox={`0 0 ${view.width} ${view.height}`}
-          width={view.width}
-          height={view.height}
+          viewBox={`0 0 ${LEVEL_VIEW.width} ${LEVEL_VIEW.height}`}
+          width={LEVEL_VIEW.width}
+          height={LEVEL_VIEW.height}
           role="img"
           aria-label={ariaLabel}
         >
-          {reading.kind==="ready"&&<line className="turn-readhead" x1={levelX(turn.date,walk.monthKey,view)} x2={levelX(turn.date,walk.monthKey,view)} y1={view.top} y2={view.axisY}/>}
           {drawing.bands.map((band, index) => (
             <rect
               key={`band-${index}`}
               className="level-band"
               x={band.x}
-              y={view.top}
+              y={LEVEL_VIEW.top}
               width={band.width}
-              height={view.axisY - view.top}
+              height={LEVEL_VIEW.axisY - LEVEL_VIEW.top}
             />
           ))}
-          <line className="level-zero" x1={view.left} y1={drawing.zeroY} x2={view.right} y2={drawing.zeroY} />
+          <line className="level-zero" x1={LEVEL_VIEW.left} y1={drawing.zeroY} x2={LEVEL_VIEW.right} y2={drawing.zeroY} />
           {walk.bufferCents > 0 ? (
             <>
-              <line className="level-buffer" x1={view.left} y1={drawing.bufferY} x2={view.right} y2={drawing.bufferY} />
-              <text className="level-label level-buffer-label" x={view.left + 4} y={drawing.bufferY - 6}>buffer</text>
+              <line className="level-buffer" x1={LEVEL_VIEW.left} y1={drawing.bufferY} x2={LEVEL_VIEW.right} y2={drawing.bufferY} />
+              <text className="level-label level-buffer-label" x={LEVEL_VIEW.left + 4} y={drawing.bufferY - 6}>buffer</text>
             </>
           ) : null}
           {drawing.actualPath ? <path className="level-actual" d={drawing.actualPath} /> : null}
           {drawing.projectedPath ? <path className="level-projected" d={drawing.projectedPath} /> : null}
           {shown !== "untied" ? (
             <>
-              <line className="level-today-line" x1={drawing.todayX} y1={view.top - 4} x2={drawing.todayX} y2={view.axisY} />
-              <circle className="level-today-dot" cx={drawing.todayX} cy={todayY} r={view.markRadius} />
-              <text className="level-label" x={drawing.todayX} y={view.top - 8} textAnchor="middle">today</text>
+              <line className="level-today-line" x1={drawing.todayX} y1={LEVEL_VIEW.top - 4} x2={drawing.todayX} y2={LEVEL_VIEW.axisY} />
+              <circle className="level-today-dot" cx={drawing.todayX} cy={todayY} r={LEVEL_VIEW.markRadius} />
+              <text className="level-label" x={drawing.todayX} y={LEVEL_VIEW.top - 8} textAnchor="middle">today</text>
             </>
           ) : null}
           {drawing.marks.map((mark, index) => (
@@ -146,25 +136,16 @@ export function Level({ walk, household, presentation, headingRef, compact = fal
               key={`tick-${index}`}
               className="level-payday-tick"
               x1={tick.x}
-              y1={view.axisY + 1}
+              y1={LEVEL_VIEW.axisY + 1}
               x2={tick.x}
-              y2={view.axisY + 9}
+              y2={LEVEL_VIEW.axisY + 9}
             />
           ))}
-          <line className="level-axis" x1={view.left} y1={view.axisY} x2={view.right} y2={view.axisY} />
-          <text className="level-label" x={view.left} y={view.labelY}>1</text>
-          <text className="level-label" x={view.right} y={view.labelY} textAnchor="end">{lastDay}</text>
+          <line className="level-axis" x1={LEVEL_VIEW.left} y1={LEVEL_VIEW.axisY} x2={LEVEL_VIEW.right} y2={LEVEL_VIEW.axisY} />
+          <text className="level-label" x={LEVEL_VIEW.left} y={LEVEL_VIEW.labelY}>1</text>
+          <text className="level-label" x={LEVEL_VIEW.right} y={LEVEL_VIEW.labelY} textAnchor="end">{lastDay}</text>
         </svg>
       </div>
-      {shown!=="untied"&&reading.kind!=="unavailable"&&<DateTurn key={turn.key} day={turn.day} days={turn.days} date={turn.date} onChange={turn.setDay}/>}
-      {shown!=="untied"&&reading.kind==="ready"&&<div className={`turn-reading ${reading.phase==="projected"?"is-projected":""}`} aria-live="polite">
-        {reading.phase==="projected"&&<span className="reach-pill">Projection</span>}
-        <p className="turn-reading-kicker">{turn.date} · {reading.phase==="projected"?"Projection":"Recorded through this day"}</p>
-        <p>Fund <strong>{formatCad(reading.cents)}</strong></p>
-        {reading.todayProjection!==null&&<p>After today’s scheduled items · projection <strong>{formatCad(reading.todayProjection)}</strong></p>}
-        {reading.rows.length>0?<ol>{reading.rows.map((row,index)=><li key={index}>{row.label} · {row.actual?"recorded":row.estimated?"observed estimate":"scheduled"} · {formatCad(row.deltaCents)} → {formatCad(row.balanceCents)}</li>)}</ol>:<p>No dated movement. The last prepared reading carries forward.</p>}
-      </div>}
-      </TurnFocusBoundary>
       <p className="level-headline">{levelStageHeadline(walk)}</p>
       {levelSecondary(walk) ? <p className="level-secondary">{levelSecondary(walk)}</p> : null}
     </section>

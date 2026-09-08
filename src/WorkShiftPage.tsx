@@ -1,4 +1,3 @@
-import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
 import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -152,33 +151,6 @@ export function WorkShiftPage({
   onRecordEarningCadence?: (schedule: WorkPaySchedule) => void;
 }) {
   const [pane, setPane] = useState<ShiftPane>("today");
-  const [phone, setPhone] = useState(() => window.innerWidth < 720);
-  const evidenceScope = `${environment}:${household.householdId}:${memberId}:${view}`;
-  const [disclosedEvidenceScope, setDisclosedEvidenceScope] = useState<string | null>(null);
-  const evidenceOpen = disclosedEvidenceScope === evidenceScope;
-  const evidenceDisclosureRef = useRef<HTMLDetailsElement>(null);
-  const paneRef = useRef(pane); paneRef.current = pane;
-  const paneOrder: ShiftPane[] = phone ? ["today", "report", "jobs"] : ["today", "report", "jobs", "evidence"];
-  useEffect(() => {
-    let frame: number | undefined;
-    const resize = () => {
-      const nextPhone = window.innerWidth < 720;
-      const leavingFocusedDisclosure = !nextPhone && Boolean(evidenceDisclosureRef.current?.contains(document.activeElement));
-      setPhone(nextPhone);
-      if (leavingFocusedDisclosure) {
-        frame = window.requestAnimationFrame(() => document.getElementById("shift-tab-jobs")?.focus());
-      }
-      if (nextPhone && paneRef.current === "evidence") {
-        paneRef.current = "jobs";
-        setPane("jobs");
-        setDisclosedEvidenceScope(null);
-        frame = window.requestAnimationFrame(() => document.getElementById("shift-tab-jobs")?.focus());
-      }
-    };
-    window.addEventListener("resize", resize);
-    return () => { window.removeEventListener("resize", resize); if (frame !== undefined) window.cancelAnimationFrame(frame); };
-  }, []);
-
   const [sealCaption, setSealCaption] = useState<string | null>(null);
   const [period, setPeriod] = useState<"month" | "all">("month");
   const [earningsPeriod, setEarningsPeriod] = useState<ShiftEarningsPeriod>("month");
@@ -288,24 +260,22 @@ export function WorkShiftPage({
 
 
 
-  async function applyScan(file: File | undefined, quality?:CaptureQuality) {
+  async function applyScan(file: File | undefined) {
     if (!file) return;
     const scan = shiftScanScopeRef.current.begin();
-    setWorkShiftDraft(null);
     setShiftScanBusy(true);
     setShiftScanError("");
-    const qualityWarnings=captureQualityWarnings(quality);
-    setShiftScanWarnings(qualityWarnings);
+    setShiftScanWarnings([]);
     try {
       const mapped = await scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider());
       if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
-        setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
+        setShiftScanWarnings(mapped.warnings);
         return;
       }
       setWorkShiftDraft(mapped.draft);
-      setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
+      setShiftScanWarnings(mapped.warnings);
     } catch (caught) {
       if (!scan.isCurrent()) return;
       setShiftScanError(caught instanceof Error ? caught.message : String(caught));
@@ -382,32 +352,10 @@ export function WorkShiftPage({
     });
   }
 
-  const evidenceCenter = (
-          <SevenShiftsEvidenceCenter
-            household={household}
-            memberId={memberId}
-            memberName={memberName}
-            today={today}
-            busy={busy}
-            onSaveSchedule={onSaveSevenShiftsSchedule}
-            onImportCoworkers={onImportCoworkers}
-            onUseShiftDraft={(candidate: ApprovedPunchShiftDraft) => {
-              shiftScanScopeRef.current.cancel();
-              setWorkShiftDraft(candidate.draft);
-              setShiftScanWarnings(candidate.missingPaidBreak ? ["7shifts did not state paid-break minutes. Enter 0 only when there was no paid break."] : []);
-              setShiftScanError("");
-
-              setFinishedReview(true);
-              setPane("today");
-              window.requestAnimationFrame(() => document.getElementById("shift-tab-today")?.focus());
-            }}
-          />
-  );
-
   return (
     <div className="shift-page" data-shift-mode={view} aria-label={view === "personal" ? "Shift is worker-centered. This Personal room is your work story." : "Shift is worker-centered, not a general Shared ledger page."}>
       <div className="tabs" role="tablist" aria-label="Shift panes">
-        {paneOrder.map((id) => (
+        {(["today", "report", "jobs", "evidence"] as const).map((id) => (
           <button
             key={id}
             type="button"
@@ -419,7 +367,7 @@ export function WorkShiftPage({
             className={pane === id ? "active" : ""}
             onClick={() => setPane(id)}
             onKeyDown={(event) => {
-              const order = paneOrder;
+              const order = ["today", "report", "jobs", "evidence"] as const;
               const index = order.indexOf(id);
               if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
               event.preventDefault();
@@ -436,7 +384,7 @@ export function WorkShiftPage({
       {pane === "today" && (
         <div className="shift-panel shift-today-wide" role="tabpanel" id="shift-panel-today" aria-labelledby="shift-tab-today">
           <section className="card shift-punch">
-            <TimesheetBody view={view}
+            <TimesheetBody
               household={household}
               streak={streak}
               memberId={memberId}
@@ -483,12 +431,11 @@ export function WorkShiftPage({
                     Back to clock
                   </button>
                 ) : null}
-                <ShiftReportScanBar key={`${environment}:${household.householdId}:${memberId}:${view}`}
+                <ShiftReportScanBar
                   busy={busy}
                   scanBusy={shiftScanBusy}
                   error={shiftScanError}
-                warnings={shiftScanWarnings}
-                  onFile={(file,quality) => { void applyScan(file,quality); }}
+                  onFile={(file) => { void applyScan(file); }}
                 />
                 <WorkShiftWithSevenShifts
                   household={household}
@@ -740,18 +687,31 @@ export function WorkShiftPage({
           onArchive={onArchiveJob}
           onboardingCadenceOnly={onboardingCadenceOnly}
           onSaveCadence={onRecordEarningCadence}
-          onOpenTimesheet={()=>{setFinishedReview(true);setPane("today");window.requestAnimationFrame(()=>document.getElementById("shift-tab-today")?.focus());}}
         />
-        {phone && <details ref={evidenceDisclosureRef} className="work-evidence-disclosure card" open={evidenceOpen} onToggle={(event) => setDisclosedEvidenceScope(event.currentTarget.open ? evidenceScope : null)}>
-          <summary>Imported schedules and evidence</summary>
-          {evidenceOpen && <div role="region" aria-label="Imported schedules and evidence">{evidenceCenter}</div>}
-        </details>}
         </div>
       )}
 
-      {!phone && pane === "evidence" && (
+      {pane === "evidence" && (
         <div className="shift-panel" role="tabpanel" id="shift-panel-evidence" aria-labelledby="shift-tab-evidence">
-          {evidenceCenter}
+          <SevenShiftsEvidenceCenter
+            household={household}
+            memberId={memberId}
+            memberName={memberName}
+            today={today}
+            busy={busy}
+            onSaveSchedule={onSaveSevenShiftsSchedule}
+            onImportCoworkers={onImportCoworkers}
+            onUseShiftDraft={(candidate: ApprovedPunchShiftDraft) => {
+              shiftScanScopeRef.current.cancel();
+              setWorkShiftDraft(candidate.draft);
+              setShiftScanWarnings(candidate.missingPaidBreak ? ["7shifts did not state paid-break minutes. Enter 0 only when there was no paid break."] : []);
+              setShiftScanError("");
+
+              setFinishedReview(true);
+              setPane("today");
+              window.requestAnimationFrame(() => document.getElementById("shift-tab-today")?.focus());
+            }}
+          />
         </div>
       )}
     </div>

@@ -58,7 +58,6 @@ import {
   loadReturnMessage,
   navTargetSurfaceLabel,
   onboardingNavigationTarget,
-  resolveOnboardingResume,
   saveReturnMessage,
   SHELL_VIEW,
   CAT,
@@ -105,7 +104,7 @@ import {
   wanderFly,
 } from "./HerculesFly.tsx";
 
-const HERCULES_WIDGET_PLACEHOLDER = "Ask me about this page.";
+const HERCULES_WIDGET_PLACEHOLDER = "jonathan is not creative enough to make prompts right now";
 
 type WidgetSnippet = { role: "user" | "hercules"; text: string; placeholder?: boolean };
 
@@ -396,17 +395,14 @@ export function HerculesPresence({
     () => (householdOnboardingShellActive ? onboardingNavigationTarget(household, memberId) : null),
     [householdOnboardingShellActive, household, memberId],
   );
-  const [returnBookmarkVersion, setReturnBookmarkVersion] = useState(0);
   const storedReturnMessage = useMemo(
     () => loadReturnMessage(household.environment, household.householdId, memberId),
-    [household.environment, household.householdId, memberId, household.revision, returnBookmarkVersion],
+    [household.environment, household.householdId, memberId, household.revision],
   );
   const activeReturn = useMemo(
     () => (activeMemberPresent ? activeReturnMessage(storedReturnMessage, household) : null),
     [activeMemberPresent, storedReturnMessage, household],
   );
-  const resumeTarget = resolveOnboardingResume(activeReturn, household, memberId);
-  const returnBarRef = useRef<HTMLDivElement>(null);
   // Desktop has no mobile-style focus-mode modal to swap into
   // (focusShellOpen requires phoneShell). "No new desktop surface" means
   // this reuses the same chat bubble desktop already opens on tap — only
@@ -850,37 +846,11 @@ export function HerculesPresence({
   // site now also records, phone-locally, which chapter sent the member
   // away, so activeReturnMessage can keep showing the instruction until
   // that chapter's own probe (nextChapterFor moving past it) says otherwise.
-  function publishReturnMessage(record: Parameters<typeof saveReturnMessage>[0]) {
-    saveReturnMessage(record);
-    setReturnBookmarkVersion(version => version + 1);
-  }
-
-  function resumeOnboardingReturn() {
-    if (adding || activityBlocked || busy) return;
-    const freshRecord = loadReturnMessage(household.environment, household.householdId, memberId);
-    if (!activeReturn || JSON.stringify(freshRecord) !== JSON.stringify(activeReturn)) return;
-    const fresh = resolveOnboardingResume(freshRecord, household, memberId);
-    if (!fresh) return;
-    switch (fresh.chapterId) {
-      case "ch-03-charter": openOnboardingCharter(); break;
-      case "ch-04-accounts": openOnboardingAccounts(); break;
-      case "ch-05-opening": openOnboardingOpeningBalances("entry"); break;
-      case "ch-06-fund": openOnboardingHouseholdFund(); break;
-      case "ch-07-recurrences": openOnboardingRecurrences(); break;
-      case "ch-08-cadence": openOnboardingEarningCadence(); break;
-      case "ch-09-categories": openOnboardingCategories(); break;
-      case "ch-10-estimates": openOnboardingEstimates(); break;
-      case "ch-11-plan": openOnboardingPlan(); break;
-      case "ch-12-ready": openOnboardingReady(); break;
-      default: goToOnboardingTarget();
-    }
-  }
-
   function goToOnboardingTarget() {
     if (!navTarget) return;
     onGo(navTarget.target.tab);
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -893,7 +863,7 @@ export function HerculesPresence({
   function openOnboardingCharter() {
     if (!onOpenCharter || navTarget?.chapterId !== "ch-03-charter") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -907,7 +877,7 @@ export function HerculesPresence({
   function openOnboardingAccounts() {
     if (!onOpenAccounts || navTarget?.chapterId !== "ch-04-accounts") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -921,7 +891,7 @@ export function HerculesPresence({
   function openOnboardingOpeningBalances(mode: "entry" | "correction") {
     if (!onOpenOpeningBalances || navTarget?.chapterId !== "ch-05-opening") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -935,7 +905,7 @@ export function HerculesPresence({
   function openOnboardingHouseholdFund() {
     if (!onOpenHouseholdFund || navTarget?.chapterId !== "ch-06-fund") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -949,7 +919,7 @@ export function HerculesPresence({
   function openOnboardingRecurrences() {
     if (!onOpenRecurrences || navTarget?.chapterId !== "ch-07-recurrences") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -963,7 +933,7 @@ export function HerculesPresence({
   function openOnboardingEarningCadence() {
     if (!onOpenEarningCadence || navTarget?.chapterId !== "ch-08-cadence") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -977,7 +947,7 @@ export function HerculesPresence({
   function openOnboardingCategories() {
     if (!onOpenCategories || navTarget?.chapterId !== "ch-09-categories") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -991,7 +961,7 @@ export function HerculesPresence({
   function openOnboardingEstimates() {
     if (!onOpenEstimates || navTarget?.chapterId !== "ch-10-estimates") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -1005,7 +975,7 @@ export function HerculesPresence({
   function openOnboardingPlan() {
     if (!onOpenPlan || navTarget?.chapterId !== "ch-11-plan") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -1019,7 +989,7 @@ export function HerculesPresence({
   function openOnboardingReady() {
     if (!onOpenReady || navTarget?.chapterId !== "ch-12-ready") return;
     closeChat();
-    publishReturnMessage({
+    saveReturnMessage({
       environment: household.environment,
       householdId: household.householdId,
       memberId,
@@ -1535,34 +1505,6 @@ export function HerculesPresence({
     </label>
   ) : null;
 
-  useEffect(() => {
-    const bar = returnBarRef.current;
-    const app = bar?.closest<HTMLElement>(".app");
-    if (!bar || !app) return;
-    const previous = app.style.getPropertyValue("--standalone-return-height");
-    const previousPill = app.style.getPropertyValue("--standalone-pill-clearance");
-    const measure = () => {
-      const pillHeight = app.querySelector(".hercules-pill")?.getBoundingClientRect().height ?? 0;
-      app.style.setProperty("--standalone-return-height", `${bar.getBoundingClientRect().height}px`);
-      app.style.setProperty("--standalone-pill-clearance", `${pillHeight ? pillHeight + 10 : 0}px`);
-    };
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    const observed = new Set<Element>();
-    const observe = () => {
-      const current = new Set<Element>([bar, ...app.querySelectorAll(".hercules-pill")]);
-      for (const node of observed) if (!current.has(node)) { observer?.unobserve(node); observed.delete(node); }
-      for (const node of current) if (!observed.has(node)) { observer?.observe(node); observed.add(node); }
-      measure();
-    };
-    observe();
-    const mutations = typeof MutationObserver === "undefined" ? null : new MutationObserver(observe);
-    mutations?.observe(app, {childList:true,subtree:true});
-    return () => {
-      observer?.disconnect(); mutations?.disconnect();
-      if (previous) app.style.setProperty("--standalone-return-height", previous); else app.style.removeProperty("--standalone-return-height");
-      if (previousPill) app.style.setProperty("--standalone-pill-clearance", previousPill); else app.style.removeProperty("--standalone-pill-clearance");
-    };
-  }, [phoneShell, focusShellOpen, activeReturn]);
   return (
     <HerculesRigProvider
       mood={look.view.mood}
@@ -1801,7 +1743,6 @@ export function HerculesPresence({
       )}
       {phoneShell && !focusShellOpen && activeReturn && (
         <div
-          ref={returnBarRef}
           className="onboarding-return-bar"
           role="status"
           aria-live="polite"
@@ -1809,7 +1750,6 @@ export function HerculesPresence({
         >
           <span className="onboarding-return-dot" aria-hidden="true" />
           <span>{copy("nav.return")}</span>
-          {resumeTarget && <button type="button" className="onboarding-resume" aria-label={`Resume in ${navTargetSurfaceLabel(resumeTarget.target.tab)}`} disabled={adding || activityBlocked || busy} onClick={resumeOnboardingReturn}>Resume</button>}
         </div>
       )}
       {(desktopOnboardingOpen || (showTalk && talk)) && !focusShellOpen && (

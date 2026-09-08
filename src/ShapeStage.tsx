@@ -28,7 +28,7 @@ function scaleY(cents: number, min: number, max: number): number {
   return CARD_HEIGHT - CARD_INSET - pct * (CARD_HEIGHT - CARD_INSET * 2);
 }
 
-function ShapeCard({ row, compact }: { row: CategoryShape; compact?: boolean }) {
+function ShapeCard({ row }: { row: CategoryShape }) {
   const hasBand = row.verdict === "above" || row.verdict === "in-shape" || row.verdict === "quiet";
   const min = hasBand ? Math.min(row.bandLowCents, row.monthToDateCents) : 0;
   const max = hasBand ? Math.max(row.bandHighCents, row.monthToDateCents) : Math.max(row.monthToDateCents, 1);
@@ -37,15 +37,6 @@ function ShapeCard({ row, compact }: { row: CategoryShape; compact?: boolean }) 
   const bandBottomY = hasBand ? scaleY(row.bandLowCents, min, max) : 0;
   const dotTone = row.verdict === "above" ? "is-over" : hasBand ? "is-in" : "is-unread";
 
-  if (compact) {
-    const x = (cents: number) => 4 + Math.max(0, Math.min(1, (cents - min) / (max - min || 1))) * 92;
-    return <li className={`shape-word-row${row.verdict === "above" ? " is-over" : ""}`}>
-      {hasBand ? <i className="shape-word-band" aria-hidden="true" style={{left:`${x(row.bandLowCents)}%`,width:`${x(row.bandHighCents)-x(row.bandLowCents)}%`,minWidth:1}} /> : null}
-      <i className="shape-word-dot" aria-hidden="true" style={{left:`${x(row.monthToDateCents)}%`}} />
-      <span className="shape-word-name">{row.label}</span><span className="shape-word-verdict">{verdictLabel(row)}</span>
-      <span className="sr-only">This month {formatCad(row.monthToDateCents)}{hasBand ? `, three-month range ${formatCad(row.bandLowCents)} to ${formatCad(row.bandHighCents)}` : ""}.</span>
-    </li>;
-  }
   return (
     <li className="shape-card">
       <p className="shape-card-name">{row.label}</p>
@@ -74,10 +65,9 @@ function ShapeCard({ row, compact }: { row: CategoryShape; compact?: boolean }) 
 }
 
 export function ShapeStage({
-  rows, headingRef, compact = false,
+  rows, headingRef,
 }: {
   rows: CategoryShape[];
-  compact?: boolean;
   headingRef?: Ref<HTMLHeadingElement>;
 }) {
   const headingId = useId();
@@ -99,8 +89,8 @@ export function ShapeStage({
       {rows.length === 0 ? (
         <p className="desk-plate-empty">Not enough history yet to draw a shape for anything.</p>
       ) : (
-        <ul className={compact ? "shape-word-rows" : "shape-grid"}>
-          {rows.map((row) => <ShapeCard key={row.subcategoryId} row={row} compact={compact} />)}
+        <ul className="shape-grid">
+          {rows.map((row) => <ShapeCard key={row.subcategoryId} row={row} />)}
         </ul>
       )}
     </section>

@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CadPad } from "../CadPad.tsx";
 import {
   calcShiftAmounts,
@@ -23,7 +23,6 @@ export function CalculatorGlance({ amount }: { amount: string }) {
 }
 
 export function CalculatorBody({
-  scopeKey,
   form,
   setForm,
   mode,
@@ -38,7 +37,6 @@ export function CalculatorBody({
   onMilk,
   onCoffee,
 }: {
-  scopeKey: string;
   form: DeskForm;
   setForm: (next: DeskForm) => void;
   mode: DeskMode;
@@ -122,13 +120,32 @@ export function CalculatorBody({
             onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
             label="Amount"
           />
-          <PadChoices key={`${scopeKey}:${mode}:accounts`} label="Account" plural="accounts" limit={6}
-            items={active} selected={form.accountId} disabled={busy}
-            onChoose={(accountId) => setForm({ ...form, accountId })}/>
-          <PadChoices key={`${scopeKey}:${mode}:categories`} label="Category" plural="categories" limit={8}
-            items={categories.filter(category => category.active)} selected={form.subcategoryId} disabled={busy}
-            onChoose={(subcategoryId) => setForm({ ...form, subcategoryId })}/>
-
+          <label>Account</label>
+          <div className="chips">
+            {active.slice(0, 6).map((account) => (
+              <button
+                key={account.id}
+                type="button"
+                className={`chip ${form.accountId === account.id ? "selected" : ""}`}
+                onClick={() => setForm({ ...form, accountId: account.id })}
+              >
+                {account.name}
+              </button>
+            ))}
+          </div>
+          <label>Category</label>
+          <div className="chips">
+            {categories.slice(0, 8).map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                className={`chip ${form.subcategoryId === category.id ? "selected" : ""}`}
+                onClick={() => setForm({ ...form, subcategoryId: category.id })}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
         </>
       )}
       {mode === "transfer" && (
@@ -149,21 +166,4 @@ export function CalculatorBody({
       <p className="muted" style={{ marginTop: 6 }}>Shift on this pad never posts. Start shift lives on the clock.</p>
     </div>
   );
-}
-
-/** Discloses only eligible incoming choices; opening a list never edits the draft. */
-function PadChoices({label,plural,limit,items,selected,disabled,onChoose}:{label:string;plural:string;limit:number;items:readonly {id:string;name:string}[];selected:string;disabled:boolean;onChoose:(id:string)=>void}) {
-  const [open,setOpen]=useState(false),id=useId();
-  const shown=open?items:items.filter((item,index)=>index<limit||item.id===selected);
-  return <div className="calculator-choices">
-    <span>{label}</span>
-    {!items.some(item=>item.id===selected)&&<p className="muted">Choose {label==='Account'?'an account':'a category'}.</p>}
-    <div id={id} className="chips">
-      {shown.map(item=><button key={item.id} type="button" className={`chip ${item.id===selected?'selected':''}`}
-        style={{minHeight:44,minWidth:44,maxWidth:'100%',whiteSpace:'normal',overflowWrap:'anywhere'}}
-        aria-pressed={item.id===selected} disabled={disabled} onClick={()=>onChoose(item.id)}>{item.name}</button>)}
-    </div>
-    {items.length>limit&&<button type="button" className="chip" style={{minHeight:44}} aria-expanded={open} aria-controls={id}
-      onClick={()=>setOpen(value=>!value)}>{open?'Fewer':'More'} {plural}</button>}
-  </div>;
 }

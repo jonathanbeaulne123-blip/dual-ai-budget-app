@@ -1,4 +1,3 @@
-import { swipeCategoryChoices, swipePurchaseReview } from "../src/core/swipe.ts";
 // @vitest-environment jsdom
 import { Fragment, act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -126,21 +125,6 @@ function tapPad(...labels: string[]) {
 }
 
 describe("swipe selectors", () => {
-  it("backfills only eligible incoming categories, without fabricated usage or missing/inactive parents",()=>{
-    const h=scoped(configuredFund());const first=swipeCategoryChoices(h,BIANCA,TODAY);expect(first).toHaveLength(6);expect(first.every(row=>row.kind==='household-suggestion'&&!('useCount' in row)&&!('lastUsedOn' in row))).toBe(true);
-    const denied=first[0]!.subcategoryId,parent=h.categories.find(c=>c.id===denied)!.parentId;h.categories=h.categories.map(c=>c.id===parent?{...c,active:false}:c);expect(swipeCategoryChoices(h,BIANCA,TODAY).some(row=>row.subcategoryId===denied)).toBe(false);
-    const tiny={...h,categories:h.categories.filter(c=>c.id==='SUB-FOOD-COFFEE'||c.recordType==='group')};expect(swipeCategoryChoices(tiny,BIANCA,TODAY).length).toBeLessThanOrEqual(1);expect(swipeCategoryChoices(h,'not-member',TODAY)).toEqual([]);
-    const used=buy(configuredFund(),{date:TODAY,amount:'12.34',subcategoryId:'SUB-FOOD-GROCERIES'});const choices=swipeCategoryChoices(scoped(used),BIANCA,TODAY);expect(choices[0]).toEqual({...observedSwipeCategories(scoped(used),BIANCA,TODAY)[0],kind:'observed'});expect(new Set(choices.map(row=>row.subcategoryId)).size).toBe(choices.length);
-  });
-
-  it("filters invalid parents before the observed six-item limit",()=>{
-    let h=configuredFund();const categories=h.categories.filter(c=>c.active&&c.recordType==='category'&&c.transactionType==='expense'&&c.parentId).slice(0,7);const first=categories[0]!;h.categories=h.categories.map(c=>c.id===first.id?{...c,parentId:'TEST-PARENT'}:c);h.categories.push({...h.categories.find(c=>c.recordType==='group')!,id:'TEST-PARENT',name:'Temporary group'});
-    for(let i=0;i<7;i++)h=buy(h,{date:`2026-09-${String(7-i).padStart(2,'0')}`,amount:String(i+1),subcategoryId:categories[i]!.id});h.categories=h.categories.map(c=>c.id==='TEST-PARENT'?{...c,active:false}:c);const result=swipeCategoryChoices(scoped(h),BIANCA,TODAY);expect(result).toHaveLength(6);expect(result.every(row=>row.kind==='observed')).toBe(true);expect(result.map(row=>row.subcategoryId)).toEqual(categories.slice(1).map(c=>c.id));
-  });
-  it("binds purchase review to exact eligible card/category/Fund and keeps non-custodians out",()=>{
-    const h=archiveAccount(configuredFund(),'ACC-MC').household;const read=()=>swipePurchaseReview(h,BIANCA,TODAY,'12.34','SUB-FOOD-GROCERIES');const before=read();expect(before.accountId).toBe('ACC-VISA');h.categories=h.categories.map(c=>c.id==='SUB-FOOD-GROCERIES'?{...c,name:'New meaning'}:c);expect(read().basis).not.toBe(before.basis);expect(()=>swipePurchaseReview(h,JONATHAN,TODAY,'12.34','SUB-FOOD-GROCERIES')).toThrow(/Shared Till/);h.categories=h.categories.map(c=>c.id==='SUB-FOOD-GROCERIES'?{...c,active:false}:c);expect(read).toThrow(/current household expense category/);
-  });
-
   it("ranks observed purchase-funded categories by use, recency, then id", () => {
     let household = configuredFund();
     household = buy(household, { date: "2026-09-02", amount: "10", subcategoryId: "SUB-FOOD-GROCERIES" });
@@ -271,15 +255,13 @@ describe("swipe sheet", () => {
     expect(posts).toEqual([{ amount: "1.00", subcategoryId: "SUB-FOOD-GROCERIES" }]);
   });
 
-  it("keeps More usable alongside explicitly labelled household suggestions with zero history", () => {
+  it("keeps More usable with zero history and does not invent categories", () => {
     const moreCalls: string[] = [];
     renderSwipe(archiveAccount(configuredFund(), "ACC-MC").household, { onMore: (amount) => moreCalls.push(amount) });
     tapPad("5", "Add 00");
     act(() => { enterButton().click(); });
     const labels = Array.from(container.querySelectorAll(".swipe-cat")).map((button) => button.textContent);
-    expect(labels).toHaveLength(7);
-    expect(labels.slice(0,6).every(label=>label?.includes("Household suggestion"))).toBe(true);
-    expect(observedSwipeCategories(scoped(configuredFund()), BIANCA, TODAY)).toEqual([]);
+    expect(labels).toEqual([SWIPE_COPY.more]);
     act(() => {
       const more = Array.from(container.querySelectorAll(".swipe-cat"))
         .find((button) => button.textContent === SWIPE_COPY.more) as HTMLButtonElement | undefined;
@@ -328,7 +310,7 @@ describe("swipe sheet", () => {
       error: "The local journal must finish validating before anything can change.",
     });
     const alert = container.querySelector<HTMLElement>("[role='alert']");
-    expect(alert?.textContent).toContain("Purchase needs attention.");
+    expect(alert?.textContent).toContain("Nothing was posted.");
     expect(alert?.textContent).toContain("local journal");
     expect(alert?.textContent).toContain("try the category again");
     expect(container.querySelector(".cad-pad-label")?.textContent).toBe("Amount");
@@ -563,7 +545,7 @@ describe("swipe posting contract", () => {
     expect(applyUndo).toContain("suppressUndo: Boolean(fundedTransactionId)");
     expect(applyUndo).toContain("swipeUndoScopeMatches");
     expect(appSource).toContain("!options?.suppressUndo");
-    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded)}");
+    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen)}");
     expect(readFileSync(resolve(process.cwd(), "src/swipe.css"), "utf8")).toContain("z-index: 32");
   });
 });

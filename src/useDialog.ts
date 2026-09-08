@@ -1,7 +1,5 @@
 import { useEffect, useRef } from "react";
 
-const dialogStack: HTMLElement[] = [];
-
 const FOCUSABLE = [
   "a[href]",
   "button:not([disabled])",
@@ -13,7 +11,7 @@ const FOCUSABLE = [
 
 function focusable(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => {
-    if (el.tabIndex < 0 || el.closest("[hidden]")) return false;
+    if (el.hasAttribute("inert") || el.hasAttribute("hidden")) return false;
     if (el.closest("[inert]")) return false;
     // Prefer the platform's own answer. Fall back to "focusable" rather than a
     // layout measurement, so the trap still holds where layout is not computed.
@@ -30,18 +28,16 @@ function focusable(root: HTMLElement): HTMLElement[] {
  * behind it leaves the accessibility tree instead of staying tabbable. This is
  * presentation only — it never touches a command, a snapshot, or the journal.
  */
-export function useDialog(open: boolean, onClose?: () => void, returnFocusFallback?: () => HTMLElement | null) {
+export function useDialog(open: boolean, onClose?: () => void) {
   const ref = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
-  const fallbackRef=useRef(returnFocusFallback);fallbackRef.current=returnFocusFallback;
 
   useEffect(() => {
     const node = ref.current;
     if (!open || !node) return;
 
     const returnTo = document.activeElement as HTMLElement | null;
-    dialogStack.push(node);
 
     const siblings: { el: HTMLElement; had: boolean }[] = [];
     const parent = node.parentElement;
@@ -59,12 +55,9 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
     target.focus();
 
     function onKeyDown(event: KeyboardEvent) {
-      if (dialogStack.at(-1) !== node) return;
       const el = ref.current;
       if (!el) return;
       if (event.key === "Escape") {
-        // An inline review gets the first Escape; its parent sheet stays open.
-        if ((event.target as Element | null)?.closest?.("[data-dialog-escape-boundary]")) return;
         event.stopPropagation();
         closeRef.current?.();
         return;
@@ -88,12 +81,10 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
     document.addEventListener("keydown", onKeyDown, true);
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
-      const index=dialogStack.lastIndexOf(node);if(index>=0)dialogStack.splice(index,1);
       for (const { el, had } of siblings) {
         if (!had) el.removeAttribute("inert");
       }
       if (returnTo && document.contains(returnTo)) returnTo.focus();
-      else fallbackRef.current?.()?.focus({preventScroll:true});
     };
   }, [open]);
 

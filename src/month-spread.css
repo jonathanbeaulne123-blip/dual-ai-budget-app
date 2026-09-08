@@ -207,13 +207,19 @@
   background: var(--card);
   padding: 10px 10px 6px;
 }
-.ms-course-scroll { overflow: visible; }
-.ms-course-svg { display:block;width:100%;height:auto; }
-.ms-phone-course svg{display:block;width:100%;height:auto}
-.ms-phone-course path,.ms-phone-course line{vector-effect:non-scaling-stroke}
-.ms-phone-axis{display:flex;justify-content:space-between;padding:0 3.5%;font:400 10.5px/1.4 var(--mono);color:var(--muted)}
-.ms-phone-status{font:400 12.5px/1.5 var(--font)}
-@media(max-width:719px){.month-spread .ms-plate{border-radius:5px;padding:10px}.ms-course .ms-legend{font-size:10.5px}.ms-course .turn-reading{border-radius:5px;font-size:12.5px}}
+.ms-course-scroll { overflow-x: auto; }
+/* Below 900px the Course keeps full-size type and scrolls inside its own plate
+   rather than shrinking labels under 10px. Say so, so the drag is discoverable. */
+.ms-course-hint { display: none; }
+@media (max-width: 899px) {
+  .ms-course-hint {
+    display: block;
+    margin: 6px 0 0;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+}
+.ms-course-svg { display: block; width: 100%; min-width: 660px; height: auto; }
 
 .ms-chip-bed { fill: var(--card); opacity: 0.9; }
 .ms-axis { font: 400 11px var(--font); fill: var(--muted); }

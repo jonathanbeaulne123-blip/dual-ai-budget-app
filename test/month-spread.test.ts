@@ -341,15 +341,15 @@ describe("Month Spread fences", () => {
   it("gives the drawing a prose alternative and a keyboard path", () => {
     expect(spread).toContain("courseAria(course, monthLabel, ticks)");
     expect(spread).toContain('role="figure"');
-    expect(spread).toContain("<DateTurn");
-    expect(spread).not.toContain("setReadout");
+    expect(spread).toContain('role="button"');
+    expect(spread).toContain("tabIndex={0}");
     expect(spread).toContain('aria-live="polite"');
     expect(css).toContain(".ms-event:focus-visible .ms-dot");
   });
 
-  it("keeps motion behind a reduced-motion guard and fits the full month", () => {
+  it("keeps motion behind a reduced-motion guard and scrolls wide content in its own box", () => {
     expect(css).toContain("@media (prefers-reduced-motion: no-preference)");
-    expect(css).toContain(".ms-course-scroll { overflow: visible; }");
+    expect(css).toContain(".ms-course-scroll { overflow-x: auto; }");
     expect(css).toContain("@media (forced-colors: active)");
   });
 

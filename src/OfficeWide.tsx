@@ -1,5 +1,3 @@
-import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
-import { fundStageStorageKey, storedFundStage } from "./core/fundStageMemory.ts";
 import { useMemo, useState, useEffect, useRef, type ReactNode } from "react";
 import {
   auditOpinion,
@@ -25,10 +23,20 @@ import {
   sharedMonthCourse,
   askBelongsOnDesk,
   fundWidgetIdForPlateId,
+  isFundWidgetId,
   railFor,
   moveAskGoalClaimToNextMonth,
+  fundWalk,
+  fundWeek,
+  categoryShape,
+  twoStreams,
+  monthKeyFromDateKey,
+  shapeHouseholdFundConfig,
+  type CategoryShape,
   type DeskPlateId,
+  type DeskPlateModel,
   type FundWidgetId,
+  type MemberStream,
   type PersonalLedgerStory as PersonalLedgerStoryModel,
   type SharedLedgerStory as SharedLedgerStoryModel,
 } from "./core/index.ts";
@@ -56,15 +64,34 @@ import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./wi
 import { NotebookBody, PaperBars, PaperSpark, StoryStrip, WaxSeal } from "./theme/PaperTheme.tsx";
 import { MonthSpread } from "./MonthSpread.tsx";
 import { Ask } from "./Ask.tsx";
-import { DeskPlate } from "./DeskPlates.tsx";
+import { DeskPlate, PlateFigureView } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
-import { FundStage, type FundDestination } from "./FundStage.tsx";
-import { FundBoard } from "./FundBoard.tsx";
+import { Level } from "./Level.tsx";
+import { NextOutStage } from "./NextOutStage.tsx";
+import { WeekStage } from "./WeekStage.tsx";
+import { WaitingStage } from "./WaitingStage.tsx";
+import { SettleStage } from "./SettleStage.tsx";
+import { ShapeStage } from "./ShapeStage.tsx";
+import { StreamsStage } from "./StreamsStage.tsx";
+import { AccountsStage } from "./AccountsStage.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
 
 type MonthListKind = "income" | "expenses";
+
+function fundStageStorageKey(environment: Environment, householdId: string, memberId: string, today: string): string {
+  return `hearth:fund-stage:${environment}:${householdId}:${memberId}:${today}`;
+}
+
+function storedFundStage(environment: Environment, householdId: string, memberId: string, today: string): FundWidgetId {
+  try {
+    const stored = sessionStorage.getItem(fundStageStorageKey(environment, householdId, memberId, today));
+    return isFundWidgetId(stored) ? stored : "level";
+  } catch {
+    return "level";
+  }
+}
 
 function MonthPostedList({
   household,
@@ -112,17 +139,16 @@ type Spec = {
  * Seals span; mosaic plates | stage | Kitty Banks at laptop width.
  */
 export function OfficeWide({
-  household, booksHousehold, dashboard, layout, onLayout, scenarioSource,
+  household, booksHousehold, dashboard, layout, onLayout,
   today, memberId, view, busy, adding, form, mode, error, categories, postLabel,
   environment, clinkOn, integrityFindings = [],
   sharedStory = null,
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
-  onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onOpenRegister, onOpenFundDestination, onGo, onClinkOn,
+  onKitchen, onMarkPaid, onAskSettle, onAskStartJar, onSitDown, onOpenRegister, onGo, onClinkOn,
 }: {
   household: Household;
   booksHousehold: Household;
-  scenarioSource?: ScenarioSourceContext | null;
   dashboard: Dashboard;
   layout: OfficeLayout;
   onLayout: (next: OfficeLayout) => void;
@@ -158,7 +184,6 @@ export function OfficeWide({
   onAskStartJar: (appointmentId: string, summary: string) => void;
   onSitDown: (next: Household, token?: UndoToken) => void;
   onOpenRegister: () => void;
-  onOpenFundDestination?: (destination: FundDestination) => void;
   onGo: (tab: HearthTab) => void;
   onClinkOn: (on: boolean) => void;
   integrityFindings?: Finding[];
@@ -219,12 +244,14 @@ export function OfficeWide({
       return id ? byWidget.has(id) : false;
     })];
   }, [fundConfigured, unarrangedPlates, household, memberId]);
-  const activeFundWidget = fundConfigured
-    ? railFor(household, memberId).includes(selectedFundWidget) ? selectedFundWidget : "level"
-    : null;
   const selectedFundPlate = useMemo(() => (
-    plates.find(plate => fundWidgetIdForPlateId(plate.id) === activeFundWidget) ?? null
-  ), [plates, activeFundWidget]);
+    plates.find((plate) => fundWidgetIdForPlateId(plate.id) === selectedFundWidget)
+    ?? plates.find((plate) => fundWidgetIdForPlateId(plate.id) === "level")
+    ?? null
+  ), [plates, selectedFundWidget]);
+  const activeFundWidget = selectedFundPlate
+    ? fundWidgetIdForPlateId(selectedFundPlate.id)
+    : null;
   const mosaicInstrumentIds = [...new Set(plates.map((plate) => plate.cabinet))];
   const drawer = wideDrawerIds(mosaicInstrumentIds, { includeHero: false });
 
@@ -262,7 +289,9 @@ export function OfficeWide({
     });
   }
 
-  function stageFundWidget(widgetId: FundWidgetId) {
+  function stageFundPlate(plate: DeskPlateModel) {
+    const widgetId = fundWidgetIdForPlateId(plate.id);
+    if (!widgetId) return;
     setMonthList(null);
     setFundDrawerOpen(false);
     if (layout.expanded && layout.expanded !== "window") onLayout({ ...layout, expanded: null });
@@ -326,7 +355,6 @@ export function OfficeWide({
       aria: `Pad. ${form.note || "Post groceries."}`,
       body: (
         <CalculatorBody
-          scopeKey={JSON.stringify([household.environment, household.householdId, memberId, view])}
           form={form} setForm={onForm} mode={mode} household={household}
           accounts={household.accounts} categories={categories} postLabel={postLabel}
           error={error} busy={busy} onPost={onPost} onMore={onMore}
@@ -342,7 +370,7 @@ export function OfficeWide({
       aria: "Shifts.",
       body: (
         <>
-          <TimesheetBody view={view}
+          <TimesheetBody
             household={household} streak={streak} memberId={memberId} memberName={memberName} today={today} busy={busy}
             onClockIn={onClockIn} onAbandon={onAbandonShift}
             onStartBreak={onStartBreak} onEndBreak={onEndBreak}
@@ -358,7 +386,7 @@ export function OfficeWide({
       name: "Goals",
       glance: <JarsGlance dashboard={dashboard} />,
       aria: "Goals.",
-      body: <JarsBody view={view} booksHousehold={booksHousehold} memberId={memberId} dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
+      body: <JarsBody dashboard={dashboard} household={household} today={today} busy={busy} onPlan={() => onGo("plan")} onCommand={onKitchen} />,
     },
     lamp: {
       kind: "Health",
@@ -391,7 +419,7 @@ export function OfficeWide({
       glance: <ClaimsGlance household={household} today={today} />,
       aria: "Claims.",
       body: (
-        <ClaimsBody memberId={memberId} view={view}
+        <ClaimsBody
           household={household}
           today={today}
           busy={busy}
@@ -502,6 +530,26 @@ export function OfficeWide({
   const openSpec = openId ? specs[openId] : null;
   /** Shared Home's default centre is the Month Spread. Left plates grow in the mosaic. */
   const spreadIsStage = view === "household" && !openSpec && !monthList;
+  const fundWalkToday = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && (activeFundWidget === "level" || activeFundWidget === "next-out" || activeFundWidget === "spoken-for") && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? fundWalk(booksHousehold, monthKeyFromDateKey(today), today)
+      : null
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
+  const fundWeekToday = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && activeFundWidget === "week" && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? fundWeek(booksHousehold, today)
+      : null
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
+  const categoryShapeToday: CategoryShape[] = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && activeFundWidget === "shape" && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? categoryShape(booksHousehold, monthKeyFromDateKey(today), today)
+      : []
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
+  const twoStreamsToday: MemberStream[] = useMemo(() => (
+    fundConfigured && spreadIsStage && !fundDrawerOpen && activeFundWidget === "streams" && shapeHouseholdFundConfig(booksHousehold.householdFund)
+      ? twoStreams(booksHousehold, today)
+      : []
+  ), [fundConfigured, spreadIsStage, fundDrawerOpen, activeFundWidget, booksHousehold, today]);
   const showAsk = spreadIsStage
     && (!fundConfigured || fundWidgetIdForPlateId(selectedFundPlate?.id ?? "") === "level")
     && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
@@ -551,11 +599,6 @@ export function OfficeWide({
         <div ref={mosaicRef} className="office-wide-mosaic-wrap">
           <StoryStrip heading="Today's stories" className="office-wide-mosaic office-wide-plates">
             <div className="fund-rail-list" role={fundConfigured && spreadIsStage ? "tablist" : undefined} aria-label={fundConfigured && spreadIsStage ? "Your Fund board" : undefined}>
-              {fundConfigured && spreadIsStage ? (
-                <FundBoard household={household} memberId={memberId} today={today} presentation="desk"
-                  selected={activeFundWidget ?? "level"} onSelect={stageFundWidget} plates={plates}
-                  onOpenCabinet={plate => openPlateCabinet(plate.id)} />
-              ) : (<>
               {plates.map((plate) => {
                 const active = fundConfigured && spreadIsStage && selectedFundPlate?.id === plate.id;
                 return (
@@ -565,12 +608,11 @@ export function OfficeWide({
                     active={active}
                     tab={fundConfigured && spreadIsStage}
                     open={!fundConfigured && openPlateIds.has(plate.id)}
-                    onSelect={() => fundConfigured ? stageFundWidget(fundWidgetIdForPlateId(plate.id) ?? "level") : togglePlate(plate.id)}
+                    onSelect={() => fundConfigured ? stageFundPlate(plate) : togglePlate(plate.id)}
                     onOpenCabinet={() => openPlateCabinet(plate.id)}
                   />
                 );
               })}
-              </>)}
             </div>
             {fundConfigured && spreadIsStage ? (
               <button
@@ -589,7 +631,7 @@ export function OfficeWide({
           className={`office-wide-stage ${adding ? "is-inert" : ""} ${chalkOpen ? "is-chalk" : ""}`}
           role={spreadIsStage && fundConfigured ? "tabpanel" : undefined}
           id={spreadIsStage && fundConfigured ? "fund-stage-panel" : undefined}
-          aria-labelledby={spreadIsStage && fundConfigured && !fundDrawerOpen ? `fund-rail-tab-${selectedFundPlate?.id ?? activeFundWidget}` : undefined}
+          aria-labelledby={spreadIsStage && fundConfigured && !fundDrawerOpen && selectedFundPlate ? `fund-rail-tab-${selectedFundPlate.id}` : undefined}
         >
           {spreadIsStage && fundConfigured && fundDrawerOpen ? (
             <FundDrawer
@@ -599,15 +641,78 @@ export function OfficeWide({
               onKitchen={onKitchen}
               onClose={closeFundDrawer}
             />
-          ) : spreadIsStage && fundConfigured ? (
-            <FundStage view={view} scenarioSource={scenarioSource} widgetId={activeFundWidget ?? "level"} household={booksHousehold}
-              memberId={memberId} today={today} busy={busy} headingRef={fundStageHeadingRef}
-              onKitchen={onKitchen} onOpenAccount={onOpenAccount} plate={selectedFundPlate}
-              onOpenCabinet={plate => openPlateCabinet(plate.id)} onOpenDestination={onOpenFundDestination ?? (() => onGo("ledger"))} />
+          ) : spreadIsStage && fundConfigured && fundWalkToday
+            && (activeFundWidget === "next-out" || activeFundWidget === "spoken-for") ? (
+            <NextOutStage walk={fundWalkToday} today={today} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && fundWeekToday && activeFundWidget === "week" ? (
+            <WeekStage week={fundWeekToday} nameOf={nameOf} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "waiting" ? (
+            <WaitingStage
+              household={booksHousehold}
+              memberId={memberId}
+              today={today}
+              onKitchen={onKitchen}
+              headingRef={fundStageHeadingRef}
+            />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "settle" ? (
+            <SettleStage
+              household={booksHousehold}
+              memberId={memberId}
+              today={today}
+              busy={busy}
+              onKitchen={onKitchen}
+              headingRef={fundStageHeadingRef}
+            />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "shape" ? (
+            <ShapeStage rows={categoryShapeToday} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "streams" ? (
+            <StreamsStage streams={twoStreamsToday} today={today} nameOf={nameOf} headingRef={fundStageHeadingRef} />
+          ) : spreadIsStage && fundConfigured && activeFundWidget === "accounts" ? (
+            <AccountsStage
+              household={booksHousehold}
+              memberId={memberId}
+              today={today}
+              onOpenAccount={onOpenAccount}
+              onKitchen={onKitchen}
+              headingRef={fundStageHeadingRef}
+            />
+          ) : spreadIsStage && fundConfigured && selectedFundPlate && fundWidgetIdForPlateId(selectedFundPlate.id) !== "level" ? (
+            <section className="fund-plate-stage" data-fund-stage={fundWidgetIdForPlateId(selectedFundPlate.id)}>
+              <p className="desk-plate-kicker">{selectedFundPlate.kicker}</p>
+              <h2 ref={fundStageHeadingRef} tabIndex={-1} className="fund-stage-heading">{selectedFundPlate.glance}</h2>
+              <p className={`desk-plate-detail${selectedFundPlate.copperVerdict ? " is-copper" : ""}`}>{selectedFundPlate.verdict}</p>
+              {selectedFundPlate.empty ? (
+                <p className="desk-plate-empty">{selectedFundPlate.empty}</p>
+              ) : (
+                <div className="fund-stage-figure"><PlateFigureView figure={selectedFundPlate.figure} /></div>
+              )}
+              <p className="desk-plate-foot">{selectedFundPlate.footing}</p>
+              <button type="button" className="desk-plate-handle" onClick={() => openPlateCabinet(selectedFundPlate.id)}>
+                Open {selectedFundPlate.cabinetName}
+              </button>
+            </section>
+          ) : spreadIsStage && fundConfigured && fundWalkToday && activeFundWidget === "level" ? (
+            <>
+              <Level walk={fundWalkToday} household={booksHousehold} headingRef={fundStageHeadingRef} />
+              {showAsk ? (
+                <Ask
+                  household={booksHousehold}
+                  today={today}
+                  memberId={memberId}
+                  busy={busy}
+                  onMove={(alternative) => onKitchen((current) => moveAskGoalClaimToNextMonth(current, {
+                    today,
+                    memberId,
+                    goalId: alternative.goalId,
+                    recurrenceId: alternative.recurrenceId,
+                    claimDate: alternative.claimDate,
+                  }))}
+                />
+              ) : null}
+            </>
           ) : spreadIsStage && sharedStory ? (
             <>
               <MonthSpread
-                scopeKey={JSON.stringify([household.environment,household.householdId,memberId,view])}
                 story={sharedStory}
                 course={course}
                 household={booksHousehold}
@@ -620,7 +725,6 @@ export function OfficeWide({
               {showAsk ? (
                 <Ask
                   household={booksHousehold}
-                  scenarioSource={scenarioSource}
                   today={today}
                   memberId={memberId}
                   busy={busy}
@@ -674,7 +778,6 @@ export function OfficeWide({
         </div>
         <div ref={noteRef} className="office-wide-notebook office-wide-banks">
           <KittyBanks
-            environment={environment}
             household={household}
             booksHousehold={booksHousehold}
             view={view}

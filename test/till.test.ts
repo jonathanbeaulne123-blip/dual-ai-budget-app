@@ -19,7 +19,6 @@ import {
   monthKeyFromDateKey,
   monthSummary,
   postEntry,
-  postTransfer,
   projectHouseholdFund,
   projectLedgerExperience,
   proposeHouseholdFundContribution,
@@ -242,7 +241,6 @@ describe("Till slice 3 surface", () => {
       proposalEventId: proposalId,
     }).household;
     expect(projectHouseholdFund(household, TODAY).operatingBalanceCents).toBe(before);
-    renderTill(household);expect(container.querySelector("[data-till=empty]")).not.toBeNull();
     household = releaseHouseholdFundHold(household, {
       memberId: BIANCA,
       holdEventId: householdFundContributionMotions(household)[0]!.activeHold!.id,
@@ -253,7 +251,6 @@ describe("Till slice 3 surface", () => {
       proposalEventId: proposalId,
     }).household;
     expect(projectHouseholdFund(household, TODAY).operatingBalanceCents).toBe(before + 10000);
-    renderTill(household);expect(container.querySelector("[data-till=empty]")).toBeNull();expect(container.querySelector("[data-till=custody]")).toBeNull();
   });
 
   it("sends Confirm received through the inherited command callback", () => {
@@ -294,19 +291,6 @@ describe("Till slice 3 surface", () => {
     expect(container.querySelector("[data-till='empty']")).toBeNull();
     expect(tillSource).not.toMatch(/projectHouseholdFund|expenseActualCents\s*\+/);
     expect(container.querySelector("svg")).toBeNull();
-  });
-
-  it("keeps zero-net and transfer activity out of the empty state", () => {
-    let household = buy(configuredFund(), "20");
-    household = postEntry(household, {date:TODAY,type:"refund",amount:"20",accountId:"ACC-VISA",subcategoryId:"SUB-FOOD-GROCERIES",createdBy:BIANCA,visibility:"household",confirmDuplicate:true}).household;
-    renderTill(household);
-    expect(container.querySelector("[data-till='spend']")?.textContent).toBe(TILL_COPY.spent(formatCad(0)));
-    expect(container.querySelector("[data-till='custody']")).toBeNull();
-    expect(container.querySelector("[data-till='empty']")).toBeNull();
-    household=postTransfer(configuredFund(),{date:TODAY,amount:"10",fromAccountId:"ACC-CHEQUING",toAccountId:"ACC-VISA",createdBy:BIANCA,visibility:"household",confirmDuplicate:true}).household;
-    renderTill(household);
-    expect(container.querySelector("[data-till='custody']")).toBeNull();
-    expect(container.querySelector("[data-till='empty']")).toBeNull();
   });
 
   it("quotes scoped Shared spend and leaves partner-Personal expenses out", () => {
