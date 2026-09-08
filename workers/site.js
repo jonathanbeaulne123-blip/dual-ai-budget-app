@@ -1,3 +1,4 @@
+import { handleBoardMedia } from "./boardMedia.ts";
 import { handleLedgerSync } from "./ledgerSync.ts";
 export { LedgerRoom } from "./ledgerRoom.ts";
 // Third-party keys are allowed (D-045): GEMINI_API_KEY / GROQ_API_KEY /
@@ -1823,6 +1824,8 @@ async function herculesRigPoll(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const boardMedia = await handleBoardMedia(request, env);
+    if (boardMedia) return boardMedia;
     const ledgerSync = await handleLedgerSync(request, env);
     if (ledgerSync) return ledgerSync;
     const toastOcr = await handleToastOcr(request, env);
