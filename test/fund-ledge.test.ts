@@ -63,8 +63,10 @@ describe("Fund ledge at rest", () => {
         for(const presentation of ['phone','desk'] as const){
           await act(async()=>root.render(createElement(FundStage,{widgetId:id,household:h,memberId:'MEM-002',today:'2026-09-08',busy:false,presentation,onKitchen:()=>actions++,onOpenAccount:()=>actions++,onOpenDestination:()=>actions++})));
           texts.push(host.textContent);expect(host.textContent?.length).toBeGreaterThan(0);
+          if(id==='streams' && presentation==='phone') expect(host.querySelector('time')?.getAttribute('aria-label')).toContain('Sep 8, 2026');
         }
-        expect(texts[0]).toBe(texts[1]);
+        if(id === 'streams') { expect(texts[0]).toContain('September 2026'); expect(texts[1]).toContain('Sep 8, 2026'); }
+        else expect(texts[0]).toBe(texts[1]);
       }
       for(const memberId of ['MEM-001','MEM-002'])for(const presentation of ['phone','desk'] as const){
         await act(async()=>root.render(createElement(FundBoard,{household:h,memberId,today:'2026-09-08',presentation,selected:'level',onSelect:()=>actions++})));

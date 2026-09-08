@@ -58,6 +58,8 @@ export function useDialog(open: boolean, onClose?: () => void) {
       const el = ref.current;
       if (!el) return;
       if (event.key === "Escape") {
+        // An inline review gets the first Escape; its parent sheet stays open.
+        if ((event.target as Element | null)?.closest?.("[data-dialog-escape-boundary]")) return;
         event.stopPropagation();
         closeRef.current?.();
         return;

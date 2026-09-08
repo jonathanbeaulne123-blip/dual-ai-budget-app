@@ -861,7 +861,7 @@ export function Office({
   if (breakpoint === "phone") {
     return (
       <OfficePhone
-        household={household} dashboard={dashboard} sill={sill}
+        household={household} booksHousehold={booksHousehold} view={view} onOpenFundDestination={onOpenFundDestination} dashboard={dashboard} sill={sill}
         reading={reading}
         layout={layout} onLayout={setLayout}
         today={today} memberId={memberId} busy={busy} adding={adding}

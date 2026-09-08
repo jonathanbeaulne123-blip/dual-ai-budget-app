@@ -1,3 +1,17 @@
+## Mobile A4 — chapter spreads (2026-09-08)
+
+**Status:** Locally verified on `codex/mobile-a4-spread`, stacked on A3 `9014a78` (PR#374). No merge or deployment.
+
+**Outcome:** Claude's original chapter order, shared compact Shape/Streams, own unreversed tip history, explicit scopes, keyboard/swipe paging, nested Confirm and seal focus restoration.
+
+**Risk and Dual Course:** Medium-High; Budget(5)+2; Engagement(3)+1.
+
+**Verification:** 114 quick-gate assertions, TypeScript and AI checks passed in 89.835 seconds, no budget breach. 88 final component layout cases and two gesture/focus cases passed after refinement; 396 earlier broad cases are classified separately. Independent UX and trust rechecks found no remaining blocker. [Exact commands, source boundaries and evidence](worksessions/2026-09-08-mobile-spread.md).
+
+**Evidence class:** Local fictional component Chromium and full-App jsdom startup/rehearsal canaries; no hosted, physical-device, authenticated full-App browser or exhaustive proof.
+
+**Next owner:** Codex opens the separate A4 draft PR and continues A5. Phase 2 remains in progress.
+
 ## Mobile A3 — full Ledge (2026-09-08)
 
 **Status:** Locally verified on `codex/mobile-a3-ledge-sheet`, stacked on A2 `565efd7` (PR#373). No merge or deployment.

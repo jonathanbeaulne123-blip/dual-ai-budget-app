@@ -1,3 +1,4 @@
+import "./phone-fund-readings.css";
 import { useMemo, type Ref } from "react";
 import {
   askBelongsOnDesk, categoryShape, fundPlates, fundWalk, fundWeek,
@@ -52,8 +53,8 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
   if (widgetId === "week" && week) return <WeekStage week={week} nameOf={nameOf} headingRef={headingRef} />;
   if (widgetId === "waiting") return <WaitingStage household={household} memberId={memberId} today={today} onKitchen={onKitchen} headingRef={headingRef} />;
   if (widgetId === "settle") return <SettleStage household={household} memberId={memberId} today={today} busy={busy} onKitchen={onKitchen} headingRef={headingRef} />;
-  if (widgetId === "shape") return <ShapeStage rows={shape} headingRef={headingRef} />;
-  if (widgetId === "streams") return <StreamsStage streams={streams} today={today} nameOf={nameOf} headingRef={headingRef} />;
+  if (widgetId === "shape") return <ShapeStage compact={presentation === "phone"} rows={shape} headingRef={headingRef} />;
+  if (widgetId === "streams") return <StreamsStage compact={presentation === "phone"} streams={streams} today={today} nameOf={nameOf} headingRef={headingRef} />;
   if (widgetId === "accounts") return <AccountsStage household={household} memberId={memberId} today={today} onKitchen={onKitchen} onOpenAccount={onOpenAccount} headingRef={headingRef} />;
   if (widgetId === "ask") return ask();
   if (fallbackPlate) return <section className="fund-plate-stage" data-fund-stage={widgetId}>

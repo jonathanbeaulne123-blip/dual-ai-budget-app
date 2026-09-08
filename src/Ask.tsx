@@ -97,8 +97,9 @@ export function Ask({ household, today, memberId, busy, onMove }: AskProps) {
                   className="ask-confirm"
                   id={confirmId}
                   data-ask-confirm=""
+                  data-dialog-escape-boundary=""
                   onKeyDown={(event) => {
-                    if (event.key === "Escape") closeConfirmation("raise");
+                    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeConfirmation("raise"); }
                   }}
                 >
                   <p>Move the date only. No money moves.</p>
