@@ -62,6 +62,7 @@ describe("Vitest lanes", () => {
       "auth-invite-discovery.test.ts",
       "books.test.ts",
       "continuity.test.ts",
+      "five-boards-entry-app.test.ts",
       "hosted-transport.test.ts",
       "household-fund-pglite.test.ts",
       "onboarding-app-stale-seat.test.ts",
