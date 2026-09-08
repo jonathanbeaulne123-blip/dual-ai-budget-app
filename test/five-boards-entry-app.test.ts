@@ -187,6 +187,46 @@ function input(selector: string, value: string) {
 }
 
 describe("five boards entry App integration", () => {
+  it.each(["expense", "income", "transfer", "shift"])("returns real App %s FAB entry focus to Add money across Close and resume", async mode => {
+    mobile = true; await mount();
+    const fab = container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!;
+    const writesBefore = writes.candidates.length;
+    for (const dismissal of ["Close", "Escape"]) {
+      await act(async () => { fab.focus(); fab.click(); });
+      const action = container.querySelector<HTMLButtonElement>(`[data-fab-action="${mode}"]`)!;
+      await act(async () => { action.focus(); action.click(); });
+      await waitFor(() => expect(document.activeElement?.id).toBe("add-sheet-title"));
+      const sheet = container.querySelector<HTMLElement>(`[data-add-slideshow="${mode}"]`)!;
+      expect(action.closest("[hidden]")).not.toBeNull();
+      await act(async () => {
+        if (dismissal === "Escape") sheet.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        else [...sheet.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "Close")!.click();
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      });
+      expect(sheet.hidden).toBe(true);
+      expect(document.activeElement).toBe(fab);
+      expect(fab.getAttribute("aria-label")).toBe("Add money");
+    }
+    expect(writes.candidates.length).toBe(writesBefore);
+  }, 30000);
+
+  it("keeps a connected account launcher as the actual Add return target", async () => {
+    mobile = true; await mount();
+    await act(async () => button("Open books").click());
+    const ordinary = [...container.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "Open ordinary Books");
+    if (ordinary) await act(async () => ordinary.click());
+    await waitFor(() => expect(container.textContent).toContain("Open Visa entry"));
+    const opener = button("Open Visa entry");
+    await act(async () => { opener.focus(); opener.click(); });
+    await waitFor(() => expect(document.activeElement?.id).toBe("add-sheet-title"));
+    await act(async () => {
+      const sheet = container.querySelector('[data-add-slideshow]')!;
+      [...sheet.querySelectorAll<HTMLButtonElement>("button")].find(item => item.textContent === "Close")!.click();
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+    });
+    expect(document.activeElement).toBe(opener);
+  }, 30000);
+
   it.each(["Close", "Escape"])("mobile %s and same-kind Add reopen preserve the actual draft without acceptance or hosted writes", async dismissal => {
     mobile = true; await mount();
     await act(async () => button("Open entry").click());
