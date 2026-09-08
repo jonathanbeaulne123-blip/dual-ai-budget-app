@@ -1,3 +1,13 @@
+## Mobile C7 — receipt Undo (2026-09-08)
+
+**Status:** Locally verified on codex/mobile-c7-undo-window; baseadc44df6af82e6df6ad30032550f5b3e47b80025(C6,PR397). HEAD is this commit.
+
+**Outcome/risk:** Claude's shrinking paper retains a stationary named44px Undo. Expiry/LIFO/purchase identity and scope survive queue; accepted delivery can finish after expiry. Global Undo remains available independently. High; Budget(5)+2; Engagement(3)+2.
+
+**Proof:** Final High quick gate152.988s clean pass including C6's previously failing test set; four new App cases, eight browser cases, independent reviews clear. [Commands/fingerprint/limits](worksessions/2026-09-08-mobile-undo-window.md).
+
+**Next/limits:** Stacked draft PR then C8. Local fictional/mocked transport only; no hosted/physical/exhaustive/merge/deploy/schema claim.
+
 ## Mobile C6 — truthful Till empty state (2026-09-08)
 
 **Status:** Focused proof complete on codex/mobile-c6-till-empty; base1c724a2608f5b403c03e84d3c5159e5fd86e906f(C5,PR396). HEAD is this commit.

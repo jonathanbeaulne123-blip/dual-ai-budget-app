@@ -22,9 +22,12 @@ type Inspection = {
 
 const startup = vi.hoisted(() => ({
   v2: false,
+  returnAcceptedResults:false,
+  acceptedResults:new Map<string,import("../src/core/types.ts").CommitResult>(),
   v2AutoAdopt: true,
   v2Clients: [] as import("../src/ledgerSync/client.ts").ClientOptions[],
   tillOpen:null as null | (()=>void),
+  receiptUndo:null as null|(()=>void),
   swipeProps:null as null | {onPostCategory:(input:{amount:string;subcategoryId:string})=>void;onClose:()=>void;onMore:(amount:string)=>void;error?:string},
   claimReview:null as null|((id:string,summary:string)=>void),
   dueProps:null as null | Parameters<typeof import("../src/DuePreviewSheet.tsx").DuePreviewSheet>[0],
@@ -75,10 +78,11 @@ vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
     async confirm(candidate: Household, _id: string, _onQueued?: () => void) {
       if (!startup.punchConfirm) throw new Error("Unexpected test confirmation");
       const result=await startup.punchConfirm(candidate);
+      startup.acceptedResults.set(_id,result);
       await this.options.adopt(result.household);
       return result;
     }
-    result(_id:string): import("../src/core/types.ts").CommitResult | undefined { return undefined; }
+    result(_id:string): import("../src/core/types.ts").CommitResult | undefined { return startup.returnAcceptedResults?startup.acceptedResults.get(_id):undefined; }
     async destroy() {}
   } };
 });
@@ -191,7 +195,7 @@ vi.mock("../src/api.ts", async (importOriginal) => {
   };
 });
 
-vi.mock("../src/Till.tsx",async importOriginal=>{const actual=await importOriginal<typeof import("../src/Till.tsx")>();return {...actual,Till:(props:import("react").ComponentProps<typeof actual.Till>)=>{startup.tillOpen=props.onOpenSwipe;return createElement(actual.Till,props);}};});
+vi.mock("../src/Till.tsx",async importOriginal=>{const actual=await importOriginal<typeof import("../src/Till.tsx")>();return {...actual,Till:(props:import("react").ComponentProps<typeof actual.Till>)=>{startup.tillOpen=props.onOpenSwipe;startup.receiptUndo=(props.strip as import("react").ReactElement<{onUndo?:()=>void}>|null)?.props?.onUndo??null;return createElement(actual.Till,props);}};});
 
 vi.mock("../src/Swipe.tsx",()=>({Swipe:(props:NonNullable<typeof startup.swipeProps>)=>{startup.swipeProps=props;return createElement("div",{"data-testid":"swipe-stub"},props.error||"Swipe draft");}}));
 
@@ -330,6 +334,7 @@ describe("cached-shell startup books gate", () => {
   let container: HTMLDivElement;
 
   beforeEach(async () => {
+    startup.returnAcceptedResults=false;startup.acceptedResults.clear();
     startup.v2 = false;
     startup.v2AutoAdopt = true;
     startup.v2Clients = [];
@@ -1481,6 +1486,19 @@ describe("cached-shell startup books gate", () => {
     expect(container.textContent).toContain("How much came in?");
   });
 
+
+  for(const mode of ['expired','room-roundtrip','queued-expiry','late-acceptance'] as const)it(`Receipt Undo lifetime (${mode})`,async()=>{
+    startup.returnAcceptedResults=true;startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+    const h=clockInShift(await acceptedScenarioFixture(),{memberId:'MEM-002'}).household;h.householdFund={...h.householdFund!,custodianMemberId:'MEM-002'};h.members=h.members.map(m=>m.id==='MEM-002'?{...m,fundCardAccountId:'ACC-VISA'}:m);h.booksAcceptedHash=await financialAuditHash(h);startup.cached=h;
+    const actual=postEntry(h,{date:todayKey(),type:'expense',amount:'12.34',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:'MEM-002',visibility:'household',funding:{fundId:h.householdFund!.id,fundedCents:1234,destinationAccountId:'ACC-VISA'}});
+    let calls=0,release!:()=>void;const barrier=new Promise<void>(resolve=>release=resolve);
+    startup.punchConfirm=async next=>{calls++;if(calls>1)await barrier;const postedIds=[...next.transactions.filter(t=>!h.transactions.some(old=>old.id===t.id)).map(t=>t.id),...(next.fundEvents??[]).filter(e=>!(h.fundEvents??[]).some(old=>old.id===e.id)).map(e=>e.id)];return {...actual,postedIds,undo:{...actual.undo,id:'accepted-'+calls,postedIds,commandKind:'postEntry',actorMemberId:'MEM-002'},household:next};};
+    await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);const office=startup.officePunch!;await act(async()=>office.onGo('till'));await act(async()=>button('I spent something').click());await act(async()=>startup.swipeProps!.onPostCategory({amount:'12.34',subcategoryId:'SUB-FOOD-GROCERIES'}));await waitForUi(()=>expect(startup.receiptUndo).not.toBeNull(),3000);const undo=startup.receiptUndo!,now=Date.now();
+    if(mode==='room-roundtrip'){await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[1]!.click());await act(async()=>container.querySelectorAll<HTMLButtonElement>('.view-switch button')[0]!.click());await act(async()=>undo());expect(calls).toBe(1);}
+    if(mode==='expired'){vi.spyOn(Date,'now').mockReturnValue(now+11000);await act(async()=>undo());expect(calls).toBe(1);}
+    if(mode==='queued-expiry'){await act(async()=>{office.onStartBreak('unpaid');await Promise.resolve();});await waitForUi(()=>expect(calls).toBe(2),2000);await act(async()=>undo());vi.spyOn(Date,'now').mockReturnValue(now+11000);await act(async()=>{release();await Promise.resolve();});await settleUi(150);expect(calls).toBe(2);}
+    if(mode==='late-acceptance'){expect(container.querySelector('.swipe-strip-reason')?.textContent).toBeUndefined();await act(async()=>{undo();await Promise.resolve();});await waitForUi(()=>expect(calls,container.textContent??'').toBe(2),2000);vi.spyOn(Date,'now').mockReturnValue(now+11000);await act(async()=>{release();await Promise.resolve();});await waitForUi(()=>expect(container.querySelector('.swipe-strip')).toBeNull(),2000);expect(container.querySelector('.toast')).toBeNull();}
+  });
 
   for(const mode of ['room','category'] as const)it(`Swipe rechecks a waiting purchase before queue drain (${mode})`,async()=>{
     startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');

@@ -1,3 +1,5 @@
+import {SwipeReceiptStrip} from './SwipeReceiptStrip.tsx';
+import {swipeUndoUnavailable,type SwipeUndoWindow} from './swipeUndoReview.ts';
 import {claimSettlementReview,type ClaimSettlementReview} from "./core/claimSettlementReview.ts";
 import {dueOccurrenceReview,dueOccurrenceHidden} from "./core/dueOccurrenceReview.ts";
 import {canonical} from "./ledgerSync/patch.ts";
@@ -164,7 +166,6 @@ import {
   type MonthKey,
   type MonthRehearsalTaskId,
   type Split,
-  type SwipeUndoStrip,
   type UndoToken,
   type Visibility,
   type Account,
@@ -640,7 +641,11 @@ export function App() {
   const swipeIntentRef = useRef(0);
   const setSwipeOpen = (open: boolean) => { swipeIntentRef.current += 1; storeSwipeOpen(open); };
   const [swipeError, setSwipeError] = useState("");
-  const [swipeStrip, setSwipeStrip] = useState<SwipeUndoStrip | null>(null);
+  const [swipeStrip, setSwipeStrip] = useState<SwipeUndoWindow | null>(null);
+  const swipeStripRef=useRef(swipeStrip);swipeStripRef.current=swipeStrip;
+  const appMountedRef=useRef(true),toastTimersRef=useRef(new Set<number>());
+  useEffect(()=>{appMountedRef.current=true;return()=>{appMountedRef.current=false;for(const id of toastTimersRef.current)window.clearTimeout(id);toastTimersRef.current.clear();};},[]);
+  function scheduleToastClear(tokenId:string,isCurrent?:()=>boolean){if(!appMountedRef.current)return;const id=window.setTimeout(()=>{toastTimersRef.current.delete(id);if(appMountedRef.current&&isCurrent?.()!==false)setToast(item=>item?.id===tokenId?null:item);},8000);toastTimersRef.current.add(id);}
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const workShiftInputRef = useRef<ScopedWorkShiftInput | null>(null);
@@ -667,7 +672,7 @@ export function App() {
   const addSheetRef = useDialog(adding, closeAdd);
   useEffect(() => {
     if (!swipeStrip) return;
-    const timer = window.setTimeout(() => setSwipeStrip(null), SWIPE_UNDO_MS);
+    const timer = window.setTimeout(() => setSwipeStrip(item=>item?.token.id===swipeStrip.token.id&&item.expiresAt===swipeStrip.expiresAt?null:item), Math.max(0,swipeStrip.expiresAt-Date.now()));
     return () => window.clearTimeout(timer);
   }, [swipeStrip]);
   useEffect(() => {
@@ -3921,7 +3926,7 @@ export function App() {
         if (isLedgerWrite(accepted.undo) && !options?.suppressUndo && accepted.postedIds.length) {
           presentSetToast(accepted.undo);
           presentRememberUndoHistory([...historyRef.current, accepted.undo].slice(-20));
-          window.setTimeout(() => { if (options?.scopeIsCurrent?.() !== false) setToast(item => item?.id === accepted.undo.id ? null : item); }, 8000);
+          scheduleToastClear(accepted.undo.id,options?.scopeIsCurrent);
         }
         const outcome: CommandOutcome = { kind:"synchronized",ok:true,household:accepted.household,previous,postedIds:accepted.postedIds,confirmationId,identityHash:null,revision:accepted.household.revision,sharingMode:"synchronized",errorClass:null,userMessage:null,retryable:false,postedExactlyOnce:true,postedNothing:false,recoveryAvailable:false };
         presentSetCommandChrome(renderCommandSurface(outcome,{offline:false,pendingCount:0,lastError:null,amountLabel:lastAmountLabelRef.current,ledgerName:accepted.household.name,autoMerged:false,ledgerWrite:isLedgerWrite(token)}));
@@ -4255,7 +4260,7 @@ export function App() {
         };
         presentSetToast(stamped);
         presentRememberUndoHistory([...historyRef.current, stamped].slice(-20));
-        window.setTimeout(() => { if (options?.scopeIsCurrent?.() !== false) setToast(item => item?.id === stamped.id ? null : item); }, 8000);
+        scheduleToastClear(stamped.id,options?.scopeIsCurrent);
       } else if (!outcome.ok || outcome.kind === "conflict-needs-attention") {
         presentSetToast(null);
       }
@@ -4457,38 +4462,28 @@ export function App() {
     }
   }
 
-  function applyUndo(token: UndoToken, swipeScope?: SwipeUndoStrip) {
+  function applyUndo(token: UndoToken, swipeScope?: SwipeUndoWindow) {
+    const scopeIdentity=renderedUndoScope;
+    const scopeIsCurrent=()=>appMountedRef.current&&!openingHouseholdRef.current&&scopeIdentity===readGuardScopeIdentity();
+    const eligible=()=>{const h=householdRef.current;return scopeIsCurrent()&&!!h&&(!swipeScope||(swipeUndoScopeMatches(swipeScope,environmentRef.current,h.householdId,sessionRef.current?.memberId??'')&&!swipeUndoUnavailable(h,historyRef.current,swipeScope,swipeStripRef.current,scopeIdentity)));};
+    if(!eligible())return Promise.resolve();
     return enqueueWrite(async () => {
-      const current = householdRef.current;
-      const who = session?.memberId;
+      if(!eligible())return;const current = householdRef.current,who=sessionRef.current?.memberId;
       if (!current || !who) return;
       try {
-        if (swipeScope && openingHouseholdRef.current) {
-          setSwipeStrip(null);
-          throw new ValidationError("That Swipe Undo closed while another ledger was opening. Nothing changed.");
-        }
-        if (swipeScope && !swipeUndoScopeMatches(swipeScope, environment, current.householdId, who)) {
-          setSwipeStrip(null);
-          throw new ValidationError("That Swipe Undo belongs to another ledger. Nothing changed.");
-        }
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
         const fundedTransactionId = fundedMoneyUndoTarget(current, token);
-        let result = fundedTransactionId
-          ? reversePostedMoney(current, fundedTransactionId, { createdBy: who })
-          : undoLedgerConfirm(current, token);
+        let result = fundedTransactionId ? reversePostedMoney(current, fundedTransactionId, { createdBy: who }) : undoLedgerConfirm(current, token);
         if (useLedgerSync && !fundedTransactionId) result = captureExplicit(current,result,'undoConfirm',[token.id]);
         lastAmountLabelRef.current = null;
-        const outcome = await commitHousehold(result.household, {
-          ...result.undo,
-          actorMemberId: who,
-        }, who, { suppressUndo: Boolean(fundedTransactionId) });
-        if (!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
+        // Starting the accepted writer ends the quick-window check. Delivery is
+        // still scoped even if the paper strip expires while acceptance waits.
+        const outcome = await commitHousehold(result.household, {...result.undo,actorMemberId:who},who,{suppressUndo: Boolean(fundedTransactionId),isCurrent:scopeIsCurrent,scopeIsCurrent});
+        if (!scopeIsCurrent()||!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
         rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
         setSwipeStrip((item) => (item?.token.id === token.id ? null : item));
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught));
-      }
+      } catch (caught) {if(scopeIsCurrent())setError(caught instanceof Error ? caught.message : String(caught));}
     });
   }
 
@@ -5566,6 +5561,7 @@ export function App() {
     const reading=claim&&destinationId?claimSettlementReview(h,{environment:h.environment,householdId:h.householdId,memberId:actorId,view,claimId,toAccountId:destinationId,date:today,amountCents:claim.expectedCents-claim.receivedCents-claim.writtenOffCents}):{kind:'unavailable' as const,reason:destinationId?'This claim is no longer available.':h.accounts.some(a=>a.active&&a.scope!=='personal'&&a.currency==='CAD'&&a.kind!=='receivable')?'Choose the Shared account that received the money. Then review the exact transfer.':'Open a Shared receiving account in Books before recording this transfer.'};
     setError('');setGuard({kind:'settleClaim',claimId,destinationId,reading});
   }
+  const renderedUndoScope=readGuardScopeIdentity();
   const dueOpening=guardOpeningRef.current,dueIdentity=guardIdentityRef.current,openingScope=guardScopeIdentityRef.current;
   const dueIsCurrent=()=>guard?.kind==='duePreview'&&dueOpening===guardOpeningRef.current&&dueIdentity===guardIdentityRef.current&&readDangerIdentity(guard)===dueIdentity;
   const splitViewer = { memberId: actorId, view: session.view, generation: replicaScopeGenerationRef.current };
@@ -5676,6 +5672,7 @@ export function App() {
         setSwipeError("");
         setSwipeOpen(false);
         if (result.undo) setSwipeStrip({
+          expiresAt:Date.now()+SWIPE_UNDO_MS,scopeIdentity:readGuardScopeIdentity(),
           token: result.undo,
           environment,
           householdId: result.household.householdId,
@@ -6314,17 +6311,7 @@ export function App() {
           offlinePending={offline && (household.sharing?.mode === "pending-transport" || Boolean(swipeStrip))}
           homeHref={TILL_DESK_HASH}
           strip={swipeStrip && swipeUndoScopeMatches(swipeStrip, environment, household.householdId, actorId) ? (
-            <div className="swipe-strip" role="status">
-              <span>{SWIPE_COPY.success}</span>
-              <button
-                type="button"
-                className="swipe-strip-undo"
-                disabled={busy}
-                onClick={() => void applyUndo(swipeStrip.token, swipeStrip)}
-              >
-                {SWIPE_COPY.undo}
-              </button>
-            </div>
+            <SwipeReceiptStrip message={SWIPE_COPY.success} key={`${swipeStrip.token.id}:${swipeStrip.expiresAt}`} strip={swipeStrip} disabled={busy} reason={swipeUndoUnavailable(household,history,swipeStrip,swipeStrip,renderedUndoScope)} onUndo={()=>void applyUndo(swipeStrip.token,swipeStrip)}/>
           ) : null}
           onOpenSwipe={() => { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); }}
           onSeeEverything={() => goTab("home")}

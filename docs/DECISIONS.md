@@ -581,3 +581,8 @@ Claude's attached row action opens the existing named review. The person explici
 ## Mobile C6 — an empty month is not zero net spend (2026-09-08)
 
 Till's standing and empty lines now require no nonduplicate month transaction and no active Fund operating movement. Confirmed contributions count even without journal rows; proposals do not. Spend totals retain their existing projection. Budget(5)+1; Engagement(3)+1. C6 worksession records focused proof and adjacent toast lifecycle gate failure for C7.
+
+
+## Mobile C7 — receipt time does not expire global Undo (2026-09-08)
+
+The paper's width shows ten seconds without moving its named action. Expiry, current receipt, exact supported purchase and LIFO are checked before enqueue and drain. Once the writer starts, accepted delivery is scope-bound rather than timer-bound. Global Undo retains its established lifetime. Managed toast timers close C6's observed unmount failure. Budget(5)+2; Engagement(3)+2. C7 worksession contains proof and limits.
