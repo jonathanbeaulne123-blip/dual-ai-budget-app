@@ -3,6 +3,7 @@ import { createElement, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useDialog } from "../src/useDialog.ts";
 import { AddSlideshow, type AddFormFields, type AddMode } from "../src/AddSlideshow.tsx";
 import { catalogHousehold, todayKey, JOINT, NeedsConfirmationError, type Visibility } from "../src/core/index.ts";
 
@@ -65,6 +66,7 @@ function Harness({
   scoped = household,
   busy = false,
   initialAccountId,
+  sheetRef = { current: null },
 }: {
   mode: AddMode;
   onPost: () => void;
@@ -82,6 +84,7 @@ function Harness({
   scoped?: typeof household;
   busy?: boolean;
   initialAccountId?: string;
+  sheetRef?: ReturnType<typeof useDialog>;
 }) {
   const [form, setForm] = useState<AddFormFields>(() => splitProbe ? { ...emptyForm(), amount: "0.01", who: "split" } : { ...emptyForm(), ...initial });
   const [slideIndex, setSlideIndex] = useState(splitProbe ? 4 : 0);
@@ -95,7 +98,7 @@ function Harness({
     open,
     initialAccountId,
     recommendationHousehold: scoped,
-    sheetRef: { current: null },
+    sheetRef,
     mode,
     onSwitchMode: () => undefined,
     form,
@@ -196,6 +199,41 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); host.remove(); document.documentElement.removeAttribute("data-theme"); vi.restoreAllMocks(); });
 
 describe("mobile entry sheet", () => {
+  it.each(["Close", "Escape"])("restores the real opener after %s and repeated paused-draft resumes", async dismissal => {
+    const posts = vi.fn();
+    function DialogHarness() {
+      const [open, setOpen] = useState(false);
+      const [mounted, setMounted] = useState(false);
+      const sheetRef = useDialog(open, () => setOpen(false));
+      return createElement("div", null,
+        createElement("button", { onClick: () => { setMounted(true); setOpen(true); } }, "Open entry"),
+        mounted ? createElement(Harness, { mode: "expense", onPost: posts, open, sheetRef,
+          initial: { amount: "12.50" }, close: () => setOpen(false) }) : null);
+    }
+    const frames = () => act(async () => {
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    });
+    const dismiss = () => dismissal === "Close" ? click("Close") : act(() => {
+      document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    act(() => root.render(createElement(DialogHarness)));
+    const opener = button("Open entry");
+    opener.focus(); click("Open entry"); await frames();
+    expect(host.querySelector('[role="dialog"]')!.contains(document.activeElement)).toBe(true);
+    click("More"); await frames(); edit("#add-note", "Preserve this resumed draft");
+    for (let cycle = 0; cycle < 3; cycle++) {
+      dismiss(); await frames();
+      expect(document.activeElement).toBe(opener);
+      click("Open entry"); await frames();
+      expect(document.activeElement?.id).toBe("add-sheet-title");
+      expect(host.querySelector<HTMLInputElement>("#add-note")!.value).toBe("Preserve this resumed draft");
+    }
+    // Closing before a pending heading-focus frame must not steal restored focus.
+    click("Back"); dismiss(); await frames();
+    expect(document.activeElement).toBe(opener);
+    expect(posts).not.toHaveBeenCalled();
+  });
+
   it.each(["classic", "taylor", "newfoundland"])("%s: amount and permission-filtered choices never post before review", theme => {
     document.documentElement.dataset.theme = theme;
     const posts = vi.fn();

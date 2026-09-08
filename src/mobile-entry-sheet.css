@@ -45,3 +45,12 @@
 /* Shared Plan follows reading order at every width. */
 .plan-wide.five-boards-plan { display: flex; flex-direction: column; gap: 14px; }
 .plan-wide.five-boards-plan > * { width: 100%; min-width: 0; box-sizing: border-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  .add-slideshow,
+  .add-slideshow * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -210,7 +210,10 @@ export function AddSlideshow({
   }, [mode]);
 
   useEffect(() => {
-    if (mobile && open) headingRef.current?.focus();
+    if (!mobile || !open) return;
+    // Let the parent dialog capture the opener before this child moves focus.
+    const frame = requestAnimationFrame(() => headingRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
   }, [mobile, open, index, expanded]);
 
   function goNext() {

@@ -3,7 +3,7 @@
  *   node test/five-boards-entry-layout.mjs
  * Optional: HEARTH_ARTIFACTS_DIR=/tmp/entry-proof ENTRY_CASE_FILTER='^flow/classic/expense/390'
  * Default: 60 mode/theme/width flows, 3 sign-out flows, 15 shift gates,
- * 24 half-width reflow checks, and 3 normal-motion checks. Exit 1 on any failure.
+ * 24 desktop half-width reflow checks, and 3 normal-motion checks. Exit 1 on any failure.
  * 200% reflow means half-size CSS viewports, not native browser chrome zoom.
  */
 import { createServer } from 'vite';
@@ -240,9 +240,10 @@ try {
     await button('Sign out').click();await slide('shift-hours');await inspect('shift-sign-out',meta);
     assert.equal(await posts(),0,'shift navigation called financial posting callback');
   });
-  // 200% browser zoom halves the CSS layout viewport. This is a reflow-equivalent
-  // viewport test, not a claim of native browser chrome zoom or pinch simulation.
-  for(const originalWidth of [390,1100])for(const theme of themes)for(const mode of modes) {
+  // Desktop 200% browser zoom halves the CSS layout viewport. This is a reflow-equivalent
+  // viewport test (1100→550, 1440→720), not native browser chrome zoom.
+  // Mobile pinch changes the visual viewport; it does not halve the CSS layout.
+  for(const originalWidth of [1100,1440])for(const theme of themes)for(const mode of modes) {
     const width=Math.floor(originalWidth/2);
     await runCase({label:'reflow-200',width,originalWidth,theme,mode,reducedMotion:true},async meta=>{
       await inspect('reflow-200-first',meta);
