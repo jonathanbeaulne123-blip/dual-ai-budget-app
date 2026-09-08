@@ -596,3 +596,7 @@ Shift already exposes Tonight?, Protect or chase?, and Tax milk?. Preserve that 
 ## Mobile C9 — capture uncertainty travels with the photo (2026-09-08)
 
 After two deliberate quality refusals, Capture anyway creates a flagged draft. Passive frames never unlock it. Every image warning reaches the current review or failure area; no warning is attributed to an older photo and no missing monetary field is invented. Camera modal owns only its own Escape, and switching source retires unfinished file/camera work. Budget(5)+1; Engagement(3)+2; C9 worksession proof/limits.
+
+## Mobile C10 — a QR opens a room, not a membership (2026-09-08)
+
+Keep connection setup within existing Jobs. The phone handoff carries only an allowlisted Shift route at the current origin; same-person ledger/environment access still comes from sign-in. Refresh and Open Timesheet are explicit and cannot clock out. Budget(5)+1; Engagement(3)+2. C10 worksession records proof.

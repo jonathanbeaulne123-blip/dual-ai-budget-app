@@ -1,3 +1,5 @@
+import {AuthJoinQr} from "./AuthJoinQr.tsx";
+import {workHandoffUrl} from "./workHandoff.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   parseSevenShiftsInbox,
@@ -27,6 +29,8 @@ type SevenShiftsConnectPanelProps = {
   jobs: WorkJob[];
   postedPunchDigests?: Iterable<string>;
   disabled: boolean;
+  onOpenTimesheet?:()=>void;
+  ledgerName?:string;
   onPulled?: (batch: ParsedSevenShiftsBatch) => void;
 };
 
@@ -43,7 +47,12 @@ function ScopedSevenShiftsConnectPanel({
   postedPunchDigests = [],
   disabled,
   onPulled,
+  onOpenTimesheet,ledgerName,
 }: SevenShiftsConnectPanelProps) {
+  const [phone,setPhone]=useState(()=>window.innerWidth<720);
+  const [manual,setManual]=useState(()=>window.innerWidth>=720);
+  useEffect(()=>{let wasPhone=window.innerWidth<720;const resize=()=>{const next=window.innerWidth<720;if(next!==wasPhone){wasPhone=next;setPhone(next);setManual(!next);}};window.addEventListener("resize",resize);return()=>window.removeEventListener("resize",resize);},[]);
+  const handoff=workHandoffUrl(window.location.href);
   const scope: SevenShiftsScope = { environment, householdId, memberId };
   const [state, setState] = useState<State>("idle");
   const [notice, setNotice] = useState("");
@@ -64,6 +73,7 @@ function ScopedSevenShiftsConnectPanel({
   }, [activeJobs, jobId]);
 
   useEffect(() => {
+    controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     void (async () => {
@@ -77,7 +87,8 @@ function ScopedSevenShiftsConnectPanel({
         }
         const existing = await listSevenShiftsConnections(scope, controller.signal);
         if (controller.signal.aborted) return;
-        setConnections(existing);
+        if(controller.signal.aborted)return;
+      setConnections(existing);
         if (existing.length) {
           setState("ready");
           setNotice("7shifts is connected. Fetch punches into Timesheet; tips stay blank.");
@@ -92,53 +103,65 @@ function ScopedSevenShiftsConnectPanel({
     return () => controller.abort();
   }, [environment, householdId, memberId]);
 
+  async function refreshConnections(){controllerRef.current?.abort();const controller=new AbortController();controllerRef.current=controller;try{const existing=await listSevenShiftsConnections(scope,controller.signal);if(controller.signal.aborted)return;setConnections(existing);setNotice(existing.length?'Connections refreshed. Open Timesheet to review punches.':'No connection for this person in this ledger yet.');}catch(error){if(!controller.signal.aborted)setNotice(error instanceof Error?error.message:String(error));}}
+
   async function probe() {
+    controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     setState("probing");
     setNotice("");
     try {
       const status = await readSevenShiftsStatus();
+      if(controller.signal.aborted)return;
       if (!status.available || status.environments?.[environment]?.available === false) {
         setState("error");
         setNotice(status.environments?.[environment]?.detail || status.detail);
         return;
       }
       const next = await probeSevenShifts(scope, token, controller.signal);
+      if(controller.signal.aborted)return;
       setCompanyName(next.companyName);
       setUsers(next.users);
       setUserDigest(next.users[0]?.userDigest ?? "");
       setState("idle");
       setNotice(`${next.companyName} · choose your 7shifts profile, then Connect. The token stays in this Worker, never the books.`);
     } catch (caught) {
+      if(controller.signal.aborted)return;
       setState("error");
       setNotice(caught instanceof Error ? caught.message : String(caught));
     }
   }
 
   async function connect() {
+    controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     setState("connecting");
     try {
       await connectSevenShifts(scope, { accessToken: token, userDigest, jobId }, controller.signal);
+      if(controller.signal.aborted)return;
       setToken("");
       const existing = await listSevenShiftsConnections(scope, controller.signal);
+      if(controller.signal.aborted)return;
       setConnections(existing);
       setUsers([]);
       setState("ready");
       setNotice("7shifts is connected. Fetch punches into Timesheet; cash and card tips stay for you to enter.");
     } catch (caught) {
+      if(controller.signal.aborted)return;
       setState("error");
       setNotice(caught instanceof Error ? caught.message : String(caught));
     }
   }
 
   async function pull(connectionId: string) {
+    controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     try {
       const result = await pullSevenShiftsPunches(scope, connectionId, controller.signal);
+      if(controller.signal.aborted)return;
       const batch = parseSevenShiftsInbox(result.payload, activeJobs, postedPunchDigests);
       setCoworkers(batch.coworkers);
       setTab("coworkers");
@@ -149,21 +172,25 @@ function ScopedSevenShiftsConnectPanel({
       const warning = batch.drafts.length ? batch.warnings[0] : "";
       setNotice([baseNotice, warning].filter(Boolean).join(" "));
     } catch (caught) {
+      if(controller.signal.aborted)return;
       setState("error");
       setNotice(caught instanceof Error ? caught.message : String(caught));
     }
   }
 
   async function disconnect(connectionId: string) {
+    controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
     try {
       await revokeSevenShiftsConnection(scope, connectionId, controller.signal);
+      if(controller.signal.aborted)return;
       setConnections((current) => current.filter((row) => row.connectionId !== connectionId));
       setCoworkers([]);
       setState(connections.length > 1 ? "ready" : "idle");
       setNotice("7shifts disconnected. The access token was wiped from Hearth.");
     } catch (caught) {
+      if(controller.signal.aborted)return;
       setState("error");
       setNotice(caught instanceof Error ? caught.message : String(caught));
     }
@@ -183,6 +210,7 @@ function ScopedSevenShiftsConnectPanel({
         ? <KitchenNotice message={notice} onDismiss={() => setNotice("")} />
         : notice ? <p className="muted seven-shifts-status" role="status">{notice}</p> : null}
 
+      <div className="work-handoff"><p className="muted">Set up 7shifts on the desk. On your phone, sign in as the same person and open {ledgerName||'the same ledger'} in {environment==='development'?'Development':'Production'}, then refresh connections.</p><div className="chips"><button type="button" className="chip" disabled={disabled} onClick={()=>void refreshConnections()}>Refresh connections</button>{onOpenTimesheet&&<button type="button" className="chip" disabled={disabled} onClick={onOpenTimesheet}>Open Timesheet</button>}</div>{!phone&&(handoff?<details><summary>Open Hearth on your phone</summary><AuthJoinQr joinUrl={handoff} label="QR code to open Hearth Shift"/><p className="muted">This opens Hearth. It does not share access or the 7shifts token.</p><a href={handoff}>Open Shift</a></details>:<p className="muted">Phone QR is available on the hosted app; this local address stays on this computer.</p>)}</div>
       {tab === "connect" && (
         <>
           {connections.map((connection) => (
@@ -197,6 +225,7 @@ function ScopedSevenShiftsConnectPanel({
               </div>
             </div>
           ))}
+          <details open={manual} onToggle={event=>setManual(event.currentTarget.open)} className="seven-shifts-manual"><summary>Set up with an access token on this device</summary>
           {activeJobs.length === 0 ? (
             <p>Add a job first, then paste a 7shifts access token.</p>
           ) : (
@@ -232,6 +261,7 @@ function ScopedSevenShiftsConnectPanel({
               <button type="button" className="primary" disabled={disabled || !userDigest || !jobId} onClick={() => void connect()}>Connect 7shifts</button>
             )}
           </div>
+          </details>
         </>
       )}
 

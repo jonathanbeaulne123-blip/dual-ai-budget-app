@@ -1,3 +1,4 @@
+import {rememberWorkHandoff,clearWorkHandoff} from "./workHandoff.ts";
 import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
 import {SwipeReceiptStrip} from './SwipeReceiptStrip.tsx';
 import {swipeUndoUnavailable,type SwipeUndoWindow} from './swipeUndoReview.ts';
@@ -683,6 +684,9 @@ export function App() {
     }
   }, [tab]);
   useEffect(() => {
+    const handoffUrl=new URL(window.location.href);
+    if(rememberWorkHandoff(handoffUrl,window.sessionStorage))setTab("shift");
+    if(handoffUrl.searchParams.get("open")==="shift"){handoffUrl.searchParams.delete("open");window.history.replaceState({},"",`${handoffUrl.pathname}${handoffUrl.search}${handoffUrl.hash}`);}
     const applyHash = () => {
       const hash = window.location.hash.replace(/^#/, "");
       if (hash === "till") setTab("till");
@@ -4695,6 +4699,7 @@ export function App() {
   }
 
   async function clearThisPhoneNow() {
+    clearWorkHandoff(window.sessionStorage);
     if (clearThisPhoneInFlightRef.current) return;
     replicaScopeGenerationRef.current += 1;
     setCloudReplicaReadyKey(null);
@@ -4829,6 +4834,7 @@ export function App() {
   }
 
   function signOutWelcomeGoogle() {
+    clearWorkHandoff(window.sessionStorage);
     cancelAccountFlow();
     clearGoogleSessions(environment);
     clearSupabaseSession(environment);
@@ -4854,6 +4860,7 @@ export function App() {
   }
 
   function tryInviteWithAnotherGoogleAccount() {
+    clearWorkHandoff(window.sessionStorage);
     const token = pendingAuthInvite ?? loadPendingAuthInvite()?.token ?? authInviteTokenFromText(inviteInput);
     cancelAccountFlow();
     clearGoogleSessions(environment);
@@ -4876,6 +4883,7 @@ export function App() {
   }
 
   async function returnToGoogleEntryAfterFullHouse(): Promise<void> {
+    clearWorkHandoff(window.sessionStorage);
     setBusy(true);
     try {
       cancelAccountFlow();
@@ -5822,6 +5830,7 @@ export function App() {
   }
 
   function goTab(next: Tab) {
+    clearWorkHandoff(window.sessionStorage);
     preloadTab(next);
     leaveDesk();
     setTab(next);
@@ -6845,6 +6854,7 @@ export function App() {
               });
             }}
             onCurrentDeviceRevoked={() => {
+    clearWorkHandoff(window.sessionStorage);
               traceSyncPilot("auth-blocked", { household, transport: "outbox" });
               clearContinuityOutboxForHousehold(environment, household.householdId);
               void clearStagedHouseholdBooks(environment, household.householdId);

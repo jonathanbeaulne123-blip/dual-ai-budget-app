@@ -1,3 +1,7 @@
+## Mobile C10 — desk setup, phone Timesheet (2026-09-08)
+
+Locally verified on codex/mobile-c10-work-handoff; base 52817e70ce34f4ee590f9d3f7da883878f81f62e (C9 PR400); HEAD is this commit. Clean ordinary Shift handoff, scope-bound explicit connection refresh and deliberate Timesheet navigation. Medium-High; Budget(5)+1; Engagement(3)+2. Quick gate passed in 153.444s, four fictional browser widths, independent source review clear. [Commands, fingerprint and limits](worksessions/2026-09-08-mobile-work-handoff.md). Next C11. No physical/hosted/full-lane/merge/deploy proof.
+
 ## Mobile C9 — flagged capture override (2026-09-08)
 
 **Status:** Locally verified on codex/mobile-c9-camera-override; base67985a04d6d96a178ecb7efb1cb4838f0da0e475(C8,PR399). HEAD is this commit.

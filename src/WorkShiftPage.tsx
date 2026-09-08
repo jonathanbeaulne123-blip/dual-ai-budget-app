@@ -691,6 +691,7 @@ export function WorkShiftPage({
           onArchive={onArchiveJob}
           onboardingCadenceOnly={onboardingCadenceOnly}
           onSaveCadence={onRecordEarningCadence}
+          onOpenTimesheet={()=>{setFinishedReview(true);setPane("today");window.requestAnimationFrame(()=>document.getElementById("shift-tab-today")?.focus());}}
         />
         </div>
       )}

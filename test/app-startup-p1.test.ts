@@ -208,7 +208,7 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
   },
   DeferredBooksPage: (props:{onDuplicateCommand:import("../src/Ledger.tsx").DuplicateCommand;onRemove:(transaction:import("../src/core/types.ts").Transaction)=>void}) => {startup.removeReview=props.onRemove;startup.duplicateWriter=props.onDuplicateCommand;return null;},
   DeferredCalendarPage: () => null,
-  DeferredWorkShiftPage: () => null,
+  DeferredWorkShiftPage: () => createElement("div",{"data-testid":"shift-room-stub"}),
   DeferredPairingCard: () => null,
   DeferredWelcomeJoin: () => null,
   DeferredWelcomeQrScanner: () => null,
@@ -1486,6 +1486,8 @@ describe("cached-shell startup books gate", () => {
     expect(container.textContent).toContain("How much came in?");
   });
 
+
+  it('opens an allowlisted phone Work handoff without copying auth data into its return intent',async()=>{startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');startup.cached=await acceptedScenarioFixture();window.history.replaceState({},'', '/?open=shift');await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(container.querySelector('[data-testid=shift-room-stub]')).not.toBeNull(),4000);expect(new URL(window.location.href).searchParams.has('open')).toBe(false);expect(sessionStorage.getItem('hearth:open-shift:v1')).toBe('shift');sessionStorage.removeItem('hearth:open-shift:v1');window.history.replaceState({},'', '/');});
 
   for(const mode of ['expired','room-roundtrip','queued-expiry','late-acceptance'] as const)it(`Receipt Undo lifetime (${mode})`,async()=>{
     startup.returnAcceptedResults=true;startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
