@@ -9,6 +9,13 @@ import { scanFinancialDocument } from '../documentScanner.ts';
 import type { StatementDraftScope, StatementHistoryInput, StatementSetupDraft, StatementSetupRow, StatementSource } from './types.ts';
 import type { StatementPdf } from './pdf.ts';
 
+/** Preserve incomplete typing in the UI; only positive, exact cents become normalized evidence. */
+export function statementAmountCents(text: string): number | null {
+  if (!/^\d+(?:\.\d{1,2})?$/.test(text.trim())) return null;
+  const cents = Math.round(Number(text) * 100);
+  return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
+}
+
 export async function statementFileHash(file: Blob): Promise<string> {
   if (!crypto.subtle) throw new Error('A secure browser is required to fingerprint statement files.');
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer()))].map(byte => byte.toString(16).padStart(2, '0')).join('');

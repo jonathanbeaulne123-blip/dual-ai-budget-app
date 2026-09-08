@@ -35,3 +35,7 @@ Suggestions reuse `suggestedRhythms` on visible accepted, non-reversed history. 
 ## Remaining integration proof
 
 Root must wire reviewed suggestion handoffs to category/estimate chapters and Calendar navigation; mount statement intake with current visible scope and authenticated owner; connect account-history domain review/approvals/Confirm; clear the normalized draft only after accepted completion. Integrated type/build, stale-scope callback, three-theme full-App journey and exact monetary acceptance are root gates. Physical Safari/mobile camera, hosted scanner and real Google two-device acceptance are not established here. No push, deploy, schema, hosted ledger mutation or Production action.
+
+## Follow-up truthful editing review
+
+Read-only integrated UI review found forced per-keystroke amount formatting, missing transfer direction correction, and ambiguous statement account labels. The follow-up keeps local amount text while normalizing only valid positive cents, blocks review for incomplete/invalid amounts, provides explicit in/out direction for transfers, and shows source filename, last4 and selected source account. Mounted regression tests cover clearing, partial decimals, normalized exact cents, review blocking, direction persistence and labels; root owns stale-review freezing and navigation/focus corrections. Scoped intake plus mounted UI tests passed15/15; no heavy TypeScript run.
