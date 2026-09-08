@@ -10,9 +10,9 @@ import { evidenceFor, type EvidenceResult } from "./evidence.ts";
 import { acceptedHouseholdOnboarding } from "./mode.ts";
 import { householdGatesOutstanding } from "./progress.ts";
 import { acceptedPracticeProof, currentMemberAttestation, memberRequirementSatisfied, requirementFingerprint } from "./attestations.ts";
-import { requiredHouseholdChapters, ONBOARDING_REGISTRY_VERSION } from "./registry.ts";
+import { READY_CHAPTER_ID, requiredHouseholdChapters, ONBOARDING_REGISTRY_VERSION } from "./registry.ts";
 
-export const READY_CHAPTER_ID = "ch-12-ready";
+export { READY_CHAPTER_ID } from "./registry.ts";
 
 export function readyPracticeProofAccepted(
   value: unknown,

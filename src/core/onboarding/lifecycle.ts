@@ -13,12 +13,10 @@ import {
   emptyMemberOnboardingProgress,
   chapterProgressSatisfied,
   memberProgress,
-  NEW_MEMBER_CATCH_UP_CHAPTER_IDS,
   shapeMemberOnboardingProgress,
   type MemberOnboardingProgress,
 } from "./progress.ts";
-import { ONBOARDING_REGISTRY, ONBOARDING_REGISTRY_VERSION, householdChapters } from "./registry.ts";
-import { READY_CHAPTER_ID } from "./ready.ts";
+import { NEW_MEMBER_CATCH_UP_CHAPTER_IDS, READY_CHAPTER_ID, ONBOARDING_REGISTRY, ONBOARDING_REGISTRY_VERSION, householdChapters } from "./registry.ts";
 import type { ChapterId } from "./types.ts";
 
 export { NEW_MEMBER_CATCH_UP_CHAPTER_IDS };

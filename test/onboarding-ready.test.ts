@@ -2,6 +2,9 @@ import { readySetup, acknowledge } from "./fixtures/onboarding-v2.ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   acceptHouseholdWrite,
+  acceptedAccountOpeningCoverage,
+  assembleHousehold,
+  postEntry,
   approveOnboardingReady,
   buildDashboard,
   completeHouseholdOnboarding,
@@ -104,6 +107,20 @@ describe("onboarding Chapter 12 Ready", () => {
     const withPrivateChange = structuredClone(biancaView);
     withPrivateChange.transactions.push({ ...withPrivateChange.transactions[0]!, id: "TXN-PRIVATE-ONLY", visibility: "personal", createdBy: BIANCA });
     expect(onboardingCompletionDigest(withPrivateChange)).toBe(digest);
+    const privatePurchase = postEntry(biancaView, { createdBy: BIANCA, visibility: "personal", date: TODAY,
+      type: "expense", amount: "2.00", accountId: "ACC-CHEQUING", subcategoryId: "SUB-FOOD-GROCERIES" }).household;
+    expect(onboardingCompletionDigest(privatePurchase)).toBe(digest);
+    for (const memberId of [BIANCA,JONATHAN]) {
+      const replica=splitForSync(privatePurchase,memberId);
+      expect(onboardingCompletionDigest(assembleHousehold(replica.shared,replica.personal))).toBe(digest);
+    }
+    const privateReversalReference = structuredClone(biancaView);
+    const opening = privateReversalReference.transactions.find(t=>t.type==="opening")!;
+    privateReversalReference.transactions.push({...opening,id:"TXN-PRIVATE-REFERENCE",source:"reversal",
+      visibility:"personal",createdBy:BIANCA,reversalOfId:opening.id});
+    expect(acceptedAccountOpeningCoverage(privateReversalReference,{visibility:"household"})).toEqual(
+      acceptedAccountOpeningCoverage(biancaView,{visibility:"household"}));
+    expect(onboardingCompletionDigest(privateReversalReference)).toBe(digest);
 
     const withRoutineSharedChange = structuredClone(biancaView);
     withRoutineSharedChange.transactions.push({ ...withRoutineSharedChange.transactions[0]!, id: "TXN-ROUTINE-SHARED", type: "expense", source: "manual" });

@@ -6,6 +6,8 @@ import type {
 } from "./types.ts";
 
 export const ONBOARDING_REGISTRY_VERSION = 2;
+export const NEW_MEMBER_CATCH_UP_CHAPTER_IDS = ["ch-01-meet", "ch-02-household"] as const;
+export const READY_CHAPTER_ID = "ch-12-ready";
 
 const householdChapter = (
   row: Omit<OnboardingChapter, "registryVersion" | "track" | "copyKey" | "flavorKeys" | "contributesToFinalGate">,

@@ -44,8 +44,14 @@ const fail = (text: string): never => { throw new ValidationError(text); };
 const inScope = (a: Household['accounts'][number], visibility: 'household' | 'personal', memberId?: string) =>
   visibility === 'personal' ? a.scope === 'personal' && a.ownerMemberId === memberId : a.scope !== 'personal';
 function activeOpeningRows(h: Household, accountId: string) {
-  const reversed = new Set(h.transactions.filter(t => t.reversalOfId).map(t => t.reversalOfId));
-  return h.transactions.filter(t => t.accountId === accountId && t.type === 'opening' && t.source === 'opening' && !t.reversalOfId && !t.isDuplicate && !reversed.has(t.id));
+  const account = h.accounts.find(a => a.id === accountId);
+  // Opening coverage is scoped evidence. A private row (including a private
+  // reversal reference) must never alter the Shared completion fact.
+  const scoped = h.transactions.filter(t => t.accountId === accountId && (account?.scope === 'personal'
+    ? t.visibility === 'personal' && t.createdBy === account.ownerMemberId
+    : t.visibility !== 'personal'));
+  const reversed = new Set(scoped.filter(t => t.reversalOfId).map(t => t.reversalOfId));
+  return scoped.filter(t => t.type === 'opening' && t.source === 'opening' && !t.reversalOfId && !t.isDuplicate && !reversed.has(t.id));
 }
 /** Positive is an asset; negative is a debt, independently of the account's usual side. */
 export function economicAccountBalanceAsOf(h: Household, accountId: string, date: string): number {

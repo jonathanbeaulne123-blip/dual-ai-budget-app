@@ -1,6 +1,7 @@
 import type { Environment, Household } from "../types.ts";
 import { ValidationError } from "../types.ts";
 import {
+  NEW_MEMBER_CATCH_UP_CHAPTER_IDS,
   ONBOARDING_REGISTRY,
   ONBOARDING_REGISTRY_VERSION,
   chapterById,
@@ -14,7 +15,7 @@ import type { CorrectionPracticeProof } from "../monthRehearsalPractice.ts";
 import type { ChapterId, OnboardingChapter } from "./types.ts";
 
 const MISSING_ISO = "1970-01-01T00:00:00.000Z";
-export const NEW_MEMBER_CATCH_UP_CHAPTER_IDS = ["ch-01-meet", "ch-02-household"] as const;
+export { NEW_MEMBER_CATCH_UP_CHAPTER_IDS } from "./registry.ts";
 
 export type MemberChapterProgress = {
   chapterId: ChapterId;
