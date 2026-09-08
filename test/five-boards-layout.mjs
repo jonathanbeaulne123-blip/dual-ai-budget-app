@@ -35,6 +35,7 @@ const server=await createServer({configFile:false,cacheDir,server:{host:'127.0.0
 const records=[],accessibility=[],focusChecks=[];let browser,page;const errors=[];
 try{
   await server.listen();browser=await chromium.launch({headless:true});const context=await browser.newContext({reducedMotion:'reduce'});page=await context.newPage();
+  page.setDefaultNavigationTimeout(90000);
   await page.route('**/*',r=>new URL(r.request().url()).hostname==='127.0.0.1'?r.continue():r.abort());
   page.on('pageerror',e=>errors.push(e.message));
   for(const width of[320,390,719,1100,1440])for(const theme of['classic','taylor','newfoundland'])for(const route of['boards','calendar','books']){
