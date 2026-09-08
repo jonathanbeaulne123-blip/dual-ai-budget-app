@@ -22,6 +22,7 @@ type Inspection = {
 };
 
 const startup = vi.hoisted(() => ({
+  officeKitchen: null as import("../src/kitchenCommand.ts").KitchenCommand | null,
   v2: false,
   returnAcceptedResults:false,
   acceptedResults:new Map<string,import("../src/core/types.ts").CommitResult>(),
@@ -64,7 +65,7 @@ const startup = vi.hoisted(() => ({
 vi.mock("../src/ledgerSync/presence.ts", () => ({ attachLedgerPresence: () => () => {} }));
 vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/ledgerSync/client.ts")>();
-  return { LedgerSyncClient: class {
+  return { ...actual, LedgerSyncClient: class {
     options: import("../src/ledgerSync/client.ts").ClientOptions;
     constructor(options: import("../src/ledgerSync/client.ts").ClientOptions) {
       this.options = options;
@@ -203,8 +204,8 @@ vi.mock("../src/Swipe.tsx",()=>({Swipe:(props:NonNullable<typeof startup.swipePr
 
 vi.mock("../src/deferredSurfaces.tsx", () => ({
   DeferredSurface: ({ children }: { children: ReactNode }) => children,
-  DeferredOffice: ({scenarioSource,onAskSettle,...punch}: {onAskSettle:(id:string,summary:string)=>void;scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till"|"shift")=>void}) => {
-    startup.officePunch=punch;startup.claimReview=onAskSettle;
+  DeferredOffice: ({scenarioSource,onAskSettle,onKitchen,...punch}: {onKitchen:import("../src/kitchenCommand.ts").KitchenCommand;onAskSettle:(id:string,summary:string)=>void;scenarioSource?: import("../src/scenarioSourceContext.ts").ScenarioSourceContext | null;onSignOut:()=>Promise<void>;onStartBreak:(kind:"paid"|"unpaid")=>void;onGo:(tab:"home"|"ledger"|"till"|"shift")=>void}) => {
+    startup.officeKitchen=onKitchen;startup.officePunch=punch;startup.claimReview=onAskSettle;
     startup.scenarioSource = scenarioSource ?? null;
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
   },
@@ -407,6 +408,7 @@ describe("cached-shell startup books gate", () => {
     startup.duplicateWriter = null;
     startup.punchConfirm = null;
     startup.officePunch = null;
+    startup.officeKitchen = null;
     startup.saveBarrier = null;
     startup.replicas = [];
     setContinuityStore(createMemoryContinuityStore());
@@ -1548,6 +1550,52 @@ describe("cached-shell startup books gate", () => {
     expect(container.textContent).toContain("How much came in?");
   });
 
+
+  it.each(['accepted', 'definitive rejection', 'ambiguous', 'pre-dispatch validation'] as const)('Notes App callback preserves %s', async mode => {
+    startup.v2 = true; vi.stubEnv('VITE_LEDGER_SYNC_V2', '1'); vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH', '1');
+    startup.cached = await acceptedScenarioFixture();
+    const { scribbleChalk } = await import('../src/core/index.ts');
+    const { LedgerCommandRejectedError } = await import('../src/ledgerSync/client.ts');
+    const actual = scribbleChalk(startup.cached, { text: 'Only one note', author: 'MEM-002' });
+    let calls = 0;
+    startup.punchConfirm = async next => {
+      calls++;
+      if (mode === 'definitive rejection') throw new LedgerCommandRejectedError('BUSINESS_REJECTED');
+      if (mode === 'ambiguous') throw new Error('Response lost');
+      return { ...actual, household: next };
+    };
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull(), 4000);
+    const rejected = vi.fn();
+    let outcome: import('../src/kitchenCommand.ts').KitchenCommandResult;
+    await act(async () => {
+      outcome = await startup.officeKitchen!(current => {
+        if (mode === 'pre-dispatch validation') throw new Error('Invalid note draft');
+        return scribbleChalk(current, { text: 'Only one note', author: 'MEM-002' });
+      }, { onDefinitiveRejected: rejected });
+    });
+    expect(calls).toBe(mode === 'pre-dispatch validation' ? 0 : 1);
+    if (mode === 'accepted') {
+      expect(outcome!.ok).toBe(true);
+      expect(outcome!.household.kitchen.chalkboard.filter(note => note.text === 'Only one note')).toHaveLength(1);
+    } else expect(outcome!).toBeNull();
+    expect(rejected).toHaveBeenCalledTimes(mode === 'definitive rejection' || mode === 'pre-dispatch validation' ? 1 : 0);
+  });
+
+  it('Notes App callback marks the unopened books gate as retryable no-write', async () => {
+    startup.cached = await acceptedScenarioFixture();
+    startup.inspections.push(new Promise(() => {}));
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.officeKitchen).not.toBeNull(), 4000);
+    const { scribbleChalk } = await import('../src/core/index.ts');
+    const rejected = vi.fn();
+    const before = startup.saveCalls;
+    await act(async () => {
+      expect(await startup.officeKitchen!(current => scribbleChalk(current, { text: 'Keep this note', author: 'MEM-002' }), { onDefinitiveRejected: rejected })).toBeNull();
+    });
+    expect(rejected).toHaveBeenCalledExactlyOnceWith({ retryable: true });
+    expect(startup.saveCalls).toBe(before);
+  });
 
   it('opens an allowlisted phone Work handoff without copying auth data into its return intent',async()=>{startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');startup.cached=await acceptedScenarioFixture();window.history.replaceState({},'', '/?open=shift');await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(container.querySelector('[data-testid=shift-room-stub]')).not.toBeNull(),4000);expect(new URL(window.location.href).searchParams.has('open')).toBe(false);expect(sessionStorage.getItem('hearth:open-shift:v1')).toBe('shift');sessionStorage.removeItem('hearth:open-shift:v1');window.history.replaceState({},'', '/');});
 

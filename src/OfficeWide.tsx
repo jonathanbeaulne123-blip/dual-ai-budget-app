@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { fundStageStorageKey, storedFundStage } from "./core/fundStageMemory.ts";
 import { useMemo, useState, useEffect, useRef, type ReactNode } from "react";
@@ -30,7 +31,7 @@ import {
   type PersonalLedgerStory as PersonalLedgerStoryModel,
   type SharedLedgerStory as SharedLedgerStoryModel,
 } from "./core/index.ts";
-import type { Account, Category, CommitResult, Environment, Finding, Household, InstrumentId, OfficeLayout, Transaction, UndoToken } from "./core/index.ts";
+import type { Account, Category, Environment, Finding, Household, InstrumentId, OfficeLayout, Transaction, UndoToken } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import { requestCalendarPane } from "./core/calendarIntent.ts";
@@ -150,7 +151,7 @@ export function OfficeWide({
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
   onAskStartJar: (appointmentId: string, summary: string) => void;

@@ -1,3 +1,4 @@
+import type { KitchenCommandOptions } from "./kitchenCommand.ts";
 import {rememberWorkHandoff,clearWorkHandoff} from "./workHandoff.ts";
 import { BoardRejectedDraft, isBoardDraft } from "./BoardRejectedDraft.tsx";
 import { requestSharedBoard } from "./core/sharedBoardIntent.ts";
@@ -515,7 +516,7 @@ type CommitHouseholdOptions = {
   forceFlush?: boolean;
   confirmationId?: string;
   onRejected?: (message: string) => void;
-  onDefinitiveRejected?: () => void;
+  onDefinitiveRejected?: KitchenCommandOptions["onDefinitiveRejected"];
   suppressUndo?: boolean;
   onQueued?: () => void;
 };
@@ -3964,9 +3965,9 @@ export function App() {
       }catch(error){presentSetError(error instanceof Error?error.message:String(error));return null;}finally{setBusy(false);}
     }
     if (useLedgerSync && previous && (previous.linked || localLedgerIdentity(actorId ?? session?.memberId ?? ""))) {
-      if(next.householdId!==previous.householdId){presentSetError("Choose the new ledger before submitting an entry.");return null;}
+      if(next.householdId!==previous.householdId){options?.onDefinitiveRejected?.();presentSetError("Choose the new ledger before submitting an entry.");return null;}
       const client = ledgerSyncRef.current;
-      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onRejected?.(message); presentSetError(message); return null; }
+      if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onDefinitiveRejected?.({ retryable: true }); options?.onRejected?.(message); presentSetError(message); return null; }
       const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
       confirmationRef.current = confirmationId;
       presentSetLedgerCommandId(confirmationId);
@@ -3992,6 +3993,7 @@ export function App() {
     }
     if (previous && !booksGateRef.current.ready) {
       const message = booksGateRef.current.reason || "The local journal must finish validating before anything can change.";
+      options?.onDefinitiveRejected?.({ retryable: true });
       if (options?.onRejected) options.onRejected(message);
       else presentSetError(message);
       return null;
@@ -4718,7 +4720,7 @@ export function App() {
     memberId: session?.memberId ?? null,
     view: session?.view ?? null,
   };
-  function runKitchen(fn: (current: Household) => CommitResult): Promise<CommandOutcome | null> {
+  function runKitchen(fn: (current: Household) => CommitResult, options?: KitchenCommandOptions): Promise<CommandOutcome | null> {
     return enqueueScopedWrite(enqueueWrite, reviewedKitchenScope, () => ({
       generation: replicaScopeGenerationRef.current,
       environment: environmentRef.current,
@@ -4728,6 +4730,8 @@ export function App() {
     }), async () => {
       const current = householdRef.current;
       if (!current) return null;
+      let handedToCommit = false;
+      const onDefinitiveRejected: NonNullable<KitchenCommandOptions["onDefinitiveRejected"]> = rejection => { if (renderedWriteIsCurrent()) options?.onDefinitiveRejected?.(rejection); };
       try {
         const result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
@@ -4735,11 +4739,12 @@ export function App() {
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) return null;
         }
+        handedToCommit = true;
         const outcome = await commitHousehold(
           result.household,
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
-          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent },
+          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent, onDefinitiveRejected },
         );
         if (!renderedWriteIsCurrent()) return outcome;
         if (outcome?.ok && memberPersonal && result.personalMemberId) {
@@ -4747,6 +4752,7 @@ export function App() {
         }
         return outcome;
       } catch (caught) {
+        if (!handedToCommit) onDefinitiveRejected();
         if (renderedWriteIsCurrent()) setError(caught instanceof Error ? caught.message : String(caught));
         return null;
       }
@@ -6488,7 +6494,7 @@ export function App() {
           onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
           onOpenAccount={openWallet}
-          onKitchen={(fn) => { void runKitchen(fn); }}
+          onKitchen={runKitchen}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={claimId=>openClaimSettlement(claimId)}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}

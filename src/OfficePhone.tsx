@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import { Memorabilia } from "./theme/Memorabilia.tsx";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
@@ -24,7 +25,7 @@ import {
   shiftPostingStreak,
   walletWarn,
 } from "./core/index.ts";
-import type { Household, Account, Category, CommitResult, Finding, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
+import type { Household, Account, Category, Finding, InstrumentId, OfficeLayout, WeatherReading } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
 import type { SillOverview } from "./core/sillOverview.ts";
@@ -99,7 +100,7 @@ export function OfficePhone({
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onGo: (tab: HearthTab) => void;
   integrityFindings?: Finding[];

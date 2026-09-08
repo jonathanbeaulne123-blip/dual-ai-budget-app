@@ -1,3 +1,6 @@
+import { useNoteSubmission } from "./useNoteSubmission.ts";
+import type { KitchenCommandOptions, KitchenCommandResult } from "../kitchenCommand.ts";
+import type { KitchenCommand } from "../kitchenCommand.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import {
@@ -14,7 +17,6 @@ import {
   type ChalkInk,
   type ChalkNote,
   type ChalkStroke,
-  type CommitResult,
   type Household,
   type WeatherReading,
 } from "../core/index.ts";
@@ -308,22 +310,21 @@ function LiveChalkSurface({
   busy: boolean;
   slate: number;
   onInk: (ink: ChalkInk | null) => void;
-  onSave: (ink: ChalkInk) => void;
+  onSave: (ink: ChalkInk, options: KitchenCommandOptions) => KitchenCommandResult | Promise<KitchenCommandResult>;
   onEraseNote: (noteId: string, point: { x: number; y: number }) => void;
 }) {
   const [tool, setTool] = useState<"chalk" | "eraser">("chalk");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawn = useRef<ChalkInk | null>(null);
-  const pending = useRef<{ ink: ChalkInk; previousIds: string[] } | null>(null);
-  const [awaitingAcceptance, setAwaitingAcceptance] = useState(false);
+  const submission = useNoteSubmission<{ ink: ChalkInk; previousIds: string[] }>();
+  const pending = submission.pending;
   const [acknowledgedInk, setAcknowledgedInk] = useState<ChalkInk | null>(null);
   useEffect(() => {
-    const submitted = pending.current;
+    const submitted = pending.current?.payload;
     if (!submitted) return;
     const normalized = JSON.stringify(shapeChalkInk(submitted.ink));
     if (notes.some(note => note.author === memberId && !submitted.previousIds.includes(note.id) && JSON.stringify(note.ink) === normalized)) {
-      pending.current = null;
-      setAwaitingAcceptance(false);
+      submission.finish();
       setAcknowledgedInk(submitted.ink);
     }
   }, [notes, memberId]);
@@ -344,13 +345,12 @@ function LiveChalkSurface({
       const payload = drawn.current;
       if (!payload || !hasChalkInk(payload) || pending.current) return;
       const submitted = structuredClone(payload);
-      pending.current = { ink: submitted, previousIds: notes.map(note => note.id) };
-      setAwaitingAcceptance(true);
-      onSave(submitted);
+      submission.submit({ ink: submitted, previousIds: notes.map(note => note.id) }, options => onSave(submitted, options));
     }, 500);
   }
 
   return (
+    <>
     <div className={`chalkboard-surface is-live ${tool === "eraser" ? "is-erasing" : ""}`}>
       <div className="chalkboard-live-board">
         {inkNotes.map((note) => {
@@ -397,9 +397,6 @@ function LiveChalkSurface({
         <ChalkCanvas key={slate} disabled={busy} fill tool={tool} onInk={queueSave} acknowledgedInk={acknowledgedInk}
           onStrokeStart={() => { if (saveTimer.current) clearTimeout(saveTimer.current); }} />
       </div>
-      {awaitingAcceptance && <button type="button" className="chalk-retry" disabled={busy} onClick={() => {
-        if (pending.current) onSave(pending.current.ink);
-      }}>Retry drawing</button>}
       <button
         type="button"
         className={`chalk-eraser ${tool === "eraser" ? "is-on" : ""}`}
@@ -410,6 +407,25 @@ function LiveChalkSurface({
         eraser
       </button>
     </div>
+    {pending.current && <div className="chalk-save-status">
+      {pending.current?.status === "waiting" && <p role="status">Waiting for your drawing to be saved. Your ink is kept here.</p>}
+      {pending.current?.status === "retryable" && <button type="button" className="chalk-retry" disabled={busy} onClick={() => {
+        const packet = pending.current;
+        if (!busy && packet?.status === "retryable") submission.submit(packet.payload, options => onSave(packet.payload.ink, options));
+      }}>Retry drawing</button>}
+      {pending.current?.status === "review" && <>
+        <p role="status">Your drawing wasn’t saved. Review and change it before saving again.</p>
+        <button type="button" disabled={busy || !drawn.current || JSON.stringify(drawn.current) === JSON.stringify(pending.current.payload.ink)} onClick={() => {
+          const packet = pending.current;
+          const next = drawn.current;
+          if (!busy && packet?.status === "review" && next && JSON.stringify(next) !== JSON.stringify(packet.payload.ink)) {
+            const ink = structuredClone(next);
+            submission.submit({ ink, previousIds: notes.map(note => note.id) }, options => onSave(ink, options));
+          }
+        }}>Save reviewed drawing</button>
+      </>}
+    </div>}
+    </>
   );
 }
 
@@ -438,7 +454,7 @@ export function ChalkboardBody({
   household: Household;
   memberId: string;
   busy: boolean;
-  onCommand: (fn: (current: Household) => CommitResult) => void;
+  onCommand: KitchenCommand;
   reading?: WeatherReading;
   shrinkable?: boolean;
   shrunk?: boolean;
@@ -447,7 +463,9 @@ export function ChalkboardBody({
   typingAlternative?: boolean;
 }) {
   const [draft, setDraft] = useState("");
-  const [typedPending, setTypedPending] = useState<{ text: string; previousIds: string[] } | null>(null);
+  const typedSubmission = useNoteSubmission<{ text: string; previousIds: string[] }>();
+  const typedPending = typedSubmission.pending.current?.payload;
+  const typedStatus = typedSubmission.pending.current?.status;
   const [ink, setInk] = useState<ChalkInk | null>(null);
   const [slate, setSlate] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -457,9 +475,13 @@ export function ChalkboardBody({
   useEffect(() => {
     if (typedPending && notes.some(note => !typedPending.previousIds.includes(note.id) && note.text === typedPending.text.trim() && note.author === memberId)) {
       setDraft(current => current === typedPending.text ? "" : current);
-      setTypedPending(null);
+      typedSubmission.finish();
     }
   }, [notes, typedPending, memberId]);
+
+  function submitTyped(text: string, previousIds = notes.map(note => note.id)) {
+    typedSubmission.submit({ text, previousIds }, options => onCommand(current => scribbleChalk(current, { text, author: memberId, ink: null }), options));
+  }
 
   function saveNote(text: string, nextInk: ChalkInk | null) {
     if (!liveSurface) setDraft("");
@@ -485,7 +507,7 @@ export function ChalkboardBody({
         slate={slate}
         busy={busy}
         onInk={setInk}
-        onSave={(nextInk) => onCommand(current => scribbleChalk(current, { text: "", author: memberId, ink: nextInk }))}
+        onSave={(nextInk, options) => onCommand(current => scribbleChalk(current, { text: "", author: memberId, ink: nextInk }), options)}
         onEraseNote={(noteId, point) => {
           const note = notes.find((row) => row.id === noteId);
           if (!note?.ink) return;
@@ -495,14 +517,21 @@ export function ChalkboardBody({
       />
       {typingAlternative && <form className="chalk-compose chalk-compose--live" onSubmit={(event) => {
         event.preventDefault();
-        if (!busy && draft.trim()) {
-          const text = draft;
-          setTypedPending({ text, previousIds: notes.map(note => note.id) });
-          onCommand((current) => scribbleChalk(current, { text, author: memberId, ink: null }));
+        const packet = typedSubmission.pending.current;
+        if (!busy && draft.trim() && !packet) {
+          submitTyped(draft);
+        } else if (!busy && draft.trim() && packet && packet.status !== "waiting" && draft.trim() !== packet.payload.text.trim()) {
+          submitTyped(draft);
         }
       }}>
         <label>Type a note<textarea className="chalk-input" rows={2} maxLength={160} placeholder={`${memberName}, leave a little note…`} value={draft} onChange={(event) => setDraft(event.target.value)} /></label>
-        <button type="submit" className="primary chalk-save" disabled={busy || !draft.trim()}>Save note</button>
+        <button type="submit" className="primary chalk-save" disabled={busy || !draft.trim() || typedStatus === "waiting" || (!!typedPending && draft.trim() === typedPending.text.trim())}>Save note</button>
+        {typedStatus === "waiting" && <p role="status">Waiting for your note to be saved. Your draft is kept here.</p>}
+        {typedStatus === "review" && <p role="status">Your note wasn’t saved. Review and change it before saving again.</p>}
+        {typedStatus === "retryable" && <button type="button" disabled={busy} onClick={() => {
+          const packet = typedSubmission.pending.current;
+          if (!busy && packet?.status === "retryable") submitTyped(packet.payload.text, packet.payload.previousIds);
+        }}>Retry note</button>}
       </form>}
       </>
     );

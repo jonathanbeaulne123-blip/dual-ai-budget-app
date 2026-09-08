@@ -10,7 +10,7 @@ vi.mock("../src/widgets/BoardPhotos.tsx", () => ({ BoardPhotos: () => h("p", nul
 let host: HTMLDivElement; let root: Root; let household: Household;
 let commands: ((current: Household) => CommitResult)[];
 const today = "2026-09-08"; const memberId = "MEM-002";
-function props(): SharedBoardsProps { return { household, memberId, today, busy: false, onCommand: fn => commands.push(fn), onOpenGoals: vi.fn() }; }
+function props(): SharedBoardsProps { return { household, memberId, today, busy: false, onCommand: fn => { commands.push(fn); }, onOpenGoals: vi.fn() }; }
 async function render(next: Partial<SharedBoardsProps> = {}) { await act(async () => root.render(h(SharedBoards, { ...props(), ...next }))); }
 function button(name: string) { const found = [...host.querySelectorAll<HTMLButtonElement>("button")].find(row => row.getAttribute("aria-label") === name || row.textContent === name); if (!found) throw new Error(`Missing ${name}`); return found; }
 async function click(name: string) { await act(async () => button(name).click()); }
@@ -90,10 +90,22 @@ describe("shared household boards", () => {
     });
     expect(selected()).toBe("Photos");
   });
-  it("keeps a rejected typed note until its accepted household note arrives", async () => {
+  it("keeps an unacknowledged typed note until its accepted household note arrives", async () => {
     await render(); const note = host.querySelector<HTMLTextAreaElement>('.chalk-compose--live textarea')!; await type(note, "Milk tomorrow"); await click("Save note");
     expect(commands).toHaveLength(1); await render(); expect(note.value).toBe("Milk tomorrow");
     household = commands[0]!(household).household; await render(); expect(note.value).toBe("");
+  });
+  it("forwards Notes receipt options through SharedBoards and preserves pending drafts across themes/pages", async () => {
+    let reject: ((rejection?: { retryable: boolean }) => void) | undefined;
+    const onCommand: SharedBoardsProps['onCommand'] = (fn, options) => { commands.push(fn); reject = options?.onDefinitiveRejected; return Promise.resolve(null); };
+    await render({ onCommand }); const note = host.querySelector<HTMLTextAreaElement>('.chalk-compose--live textarea')!;
+    await type(note, 'Keep this intent'); await click('Save note'); expect(button('Save note').disabled).toBe(true);
+    for (const theme of ['classic', 'taylor', 'newfoundland']) {
+      await click('Goals'); document.documentElement.dataset.theme = theme; await render({ onCommand }); await click('Notes');
+      expect(button('Save note').disabled).toBe(true); expect(note.value).toBe('Keep this intent');
+    }
+    await act(async () => reject?.({ retryable: true })); await click('Retry note'); expect(commands).toHaveLength(2);
+    household = commands[1]!(household).household; await render({ onCommand }); expect(note.value).toBe('');
   });
   it("freezes edit versions, retains collision drafts, and rejects callbacks from a retired A-B-A room", async () => {
     household = saveBoardTask(household, { memberId, id: "BOARD-TASK-test", title: "First", assigneeId: null, dueDate: null, completed: false, expectedVersion: 0 }).household;
@@ -123,18 +135,22 @@ describe("shared household boards", () => {
     expect(host.querySelector('[aria-label="Assumed remaining CAD"]')).toBe(amount); expect(amount.value).toBe("46");
     expect(button("Review receipt assumption")).toBeDefined(); expect(commands).toHaveLength(0);
   });
-  it("keeps rejected ink in the same canvas and retries only after explicit retry", async () => {
+  it("does not offer retry drawing before an outcome proves no write", async () => {
     vi.useFakeTimers(); await render(); const canvas = host.querySelector<HTMLCanvasElement>('.chalkboard-live-board > canvas')!;
-    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 320, bottom: 280, width: 320, height: 280, toJSON: () => ({}) });
     await act(async () => { pointer(canvas, "pointerdown", 20, 20); pointer(canvas, "pointermove", 80, 80); pointer(canvas, "pointerup", 80, 80); vi.advanceTimersByTime(600); });
     expect(commands).toHaveLength(1); expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
-    expect(() => commands[0]!({ ...household, householdId: "HH-REJECTED" })).toThrow(); await render();
-    expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
-    await click("Retry drawing"); expect(commands).toHaveLength(2);
-    household = commands[1]!(household).household; await render();
-    expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
     expect(host.querySelector('.chalk-retry')).toBeNull();
-    expect(household.kitchen.chalkboard.filter(note => note.author === memberId && note.ink)).toHaveLength(1);
+    await act(async () => vi.advanceTimersByTime(30000)); expect(commands).toHaveLength(1);
+  });
+  it("latches repeated typed submits immediately while acceptance is unknown", async () => {
+    await render(); const note = host.querySelector<HTMLTextAreaElement>('.chalk-compose--live textarea')!;
+    await type(note, "Only once");
+    const form = note.closest('form')!;
+    await act(async () => { for (let n = 0; n < 3; n++) form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(commands).toHaveLength(1); expect(button('Save note').disabled).toBe(true);
+    await type(note, "A newer draft"); await click('Save note'); expect(commands).toHaveLength(1);
+    household = commands[0]!(household).household; await render(); expect(note.value).toBe('A newer draft');
+    expect(button('Save note').disabled).toBe(false);
   });
   it.each([false, true])("preserves strokes drawn while awaiting acceptance, including active stroke %s", async activeStroke => {
     vi.useFakeTimers(); await render(); const canvas = host.querySelector<HTMLCanvasElement>('.chalkboard-live-board > canvas')!;

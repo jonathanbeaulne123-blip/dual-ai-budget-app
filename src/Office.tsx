@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import type { FundDestination } from "./FundStage.tsx";
@@ -77,7 +78,7 @@ import {
 } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import type { HearthTab } from "./core/hercules.ts";
-import type { Account, Category, CommitResult, UndoToken } from "./core/index.ts";
+import type { Account, Category, UndoToken } from "./core/index.ts";
 import { OfficePhone } from "./OfficePhone.tsx";
 import { OfficeWide } from "./OfficeWide.tsx";
 import { OfficeWindow } from "./widgets/OfficeWindow.tsx";
@@ -195,7 +196,7 @@ export function Office({
   onFinishedShift: () => void;
   onPayCard: (account: Account) => void;
   onOpenAccount: (accountId: string) => void;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
   onMarkPaid: (recurrenceId: string, summary: string) => void;
   onAskSettle: (claimId: string, summary: string) => void;
   onAskStartJar: (appointmentId: string, summary: string) => void;

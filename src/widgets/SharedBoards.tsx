@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "../kitchenCommand.ts";
 import { useEffect, useId, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { Ask } from "../Ask.tsx";
 import { ChalkboardBody } from "./ChalkboardDesk.tsx";
@@ -5,7 +6,7 @@ import { BoardPhotos } from "./BoardPhotos.tsx";
 import {
   askBelongsOnDesk, formatCad, moveAskGoalClaimToNextMonth,
   removeBoardMilestone, removeBoardTask, saveBoardMilestone, saveBoardTask, shapeSharedBoards,
-  type CommitResult, type Household, type LedgerView,
+  type Household, type LedgerView,
 } from "../core/index.ts";
 import type { BoardTask, BoardMilestone } from "../core/sharedBoards.ts";
 import type { ScenarioSourceContext } from "../scenarioSourceContext.ts";
@@ -22,7 +23,7 @@ const pages: { id: SharedBoard; label: string; subtitle: string }[] = [
 export type SharedBoardsProps = {
   household: Household; memberId: string; today: string; busy: boolean; view?: LedgerView;
   scenarioSource?: ScenarioSourceContext | null;
-  onCommand: (fn: (current: Household) => CommitResult) => void; onOpenGoals: () => void;
+  onCommand: KitchenCommand; onOpenGoals: () => void;
 };
 
 // A scope change retires drafts; a page/theme change deliberately does not.
@@ -74,11 +75,11 @@ function SharedBoardsSession({ scope, household, memberId, today, busy, view = "
     const index = available.findIndex(page => page.id === current.id);
     setSelected(available[(index + step + available.length) % available.length]!.id);
   }
-  const command: SharedBoardsProps["onCommand"] = fn => onCommand(latest => {
+  const command: SharedBoardsProps["onCommand"] = (fn, options) => onCommand(latest => {
     if (!live.current || latest.environment !== scope.environment || latest.householdId !== scope.householdId
       || !latest.members.some(member => member.id === memberId && member.active)) throw new Error("This household board is no longer open. Reopen it to make changes.");
     return fn(latest);
-  });
+  }, { onDefinitiveRejected: rejection => { if (live.current) options?.onDefinitiveRejected?.(rejection); } });
   function pointerDown(event: PointerEvent<HTMLElement>) {
     if (!event.isPrimary || event.pointerType === "pen" || event.button !== 0 || !canSwipe(event.target)) { gesture.current = null; return; }
     gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY };

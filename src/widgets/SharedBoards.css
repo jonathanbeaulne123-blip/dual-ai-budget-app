@@ -146,4 +146,5 @@
 .shared-board-photos > .shared-board-photo-notice { grid-column: 1 / -1; }
 .shared-boards .reach-check { display: flex; align-items: center; gap: 10px; }
 .shared-boards .reach-check input[type=checkbox] { width: 44px; min-height: 44px; flex: none; }
-.shared-boards .chalk-retry { position: absolute; bottom: 8px; left: 8px; z-index: 3; }
+.shared-boards .chalk-save-status { display: grid; gap: 8px; padding-top: 12px; color: var(--board-ink); }
+.shared-boards .chalk-compose--live > [role=status] { grid-column: 1 / -1; }
