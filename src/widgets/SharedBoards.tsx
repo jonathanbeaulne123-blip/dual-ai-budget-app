@@ -10,11 +10,8 @@ import {
 import type { BoardTask, BoardMilestone } from "../core/sharedBoards.ts";
 import type { ScenarioSourceContext } from "../scenarioSourceContext.ts";
 import "./SharedBoards.css";
-
-export type SharedBoard = "notes" | "photos" | "tasks" | "goals" | "ask";
-export type SharedBoardScope = { environment: string; householdId: string; memberId: string };
-export const SHARED_BOARD_EVENT = "hearth:shared-board";
-export const SHARED_BOARD_REQUEST_EVENT = SHARED_BOARD_EVENT;
+import { sharedBoardScopeKey, readSharedBoardSelection, rememberSharedBoard, SHARED_BOARD_REQUEST_EVENT, type SharedBoard, type SharedBoardScope } from "../core/sharedBoardIntent.ts";
+export { requestSharedBoard, sharedBoardScopeKey, SHARED_BOARD_EVENT, SHARED_BOARD_REQUEST_EVENT, type SharedBoard, type SharedBoardScope } from "../core/sharedBoardIntent.ts";
 const pages: { id: SharedBoard; label: string; subtitle: string }[] = [
   { id: "notes", label: "Notes", subtitle: "A little room for what’s on your mind." },
   { id: "photos", label: "Photos", subtitle: "Three small windows into your life together." },
@@ -22,16 +19,6 @@ const pages: { id: SharedBoard; label: string; subtitle: string }[] = [
   { id: "goals", label: "Goals", subtitle: "Things you’re looking forward to." },
   { id: "ask", label: "Shift Ask", subtitle: "A look at the shifts ahead." },
 ];
-export function sharedBoardScopeKey(scope: SharedBoardScope) {
-  return JSON.stringify([scope.environment, scope.householdId, scope.memberId]);
-}
-export function requestSharedBoard(scope: SharedBoardScope, board: SharedBoard) {
-  try {
-    sessionStorage.setItem(`hearth:shared-board:${sharedBoardScopeKey(scope)}`, board);
-    sessionStorage.setItem(`hearth:shared-board-open:${scope.environment}:${scope.householdId}:${scope.memberId}`, board);
-  } catch { /* SSR/private browsing */ }
-  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(SHARED_BOARD_REQUEST_EVENT, { detail: { scope, board } }));
-}
 export type SharedBoardsProps = {
   household: Household; memberId: string; today: string; busy: boolean; view?: LedgerView;
   scenarioSource?: ScenarioSourceContext | null;
@@ -56,7 +43,7 @@ function SharedBoardsSession({ scope, household, memberId, today, busy, view = "
   const available = pages.filter(page => page.id !== "ask" || allowedAsk);
   const storageKey = `hearth:shared-board:${sharedBoardScopeKey(scope)}`;
   const [selected, setSelected] = useState<SharedBoard>(() => {
-    try { const saved = sessionStorage.getItem(storageKey); return available.find(page => page.id === saved)?.id ?? "notes"; } catch { return "notes"; }
+    const saved = readSharedBoardSelection(scope); return available.find(page => page.id === saved)?.id ?? "notes";
   });
   const current = available.find(page => page.id === selected) ?? available[0]!;
   const uid = useId();
@@ -65,7 +52,7 @@ function SharedBoardsSession({ scope, household, memberId, today, busy, view = "
   const touchGesture = useRef<{ id: number; x: number; y: number } | null>(null);
   const live = useRef(true);
   useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
-  useEffect(() => { try { sessionStorage.setItem(storageKey, current.id); } catch { /* private browsing */ } }, [storageKey, current.id]);
+  useEffect(() => { rememberSharedBoard(scope,current.id); }, [storageKey, current.id]);
   useEffect(() => {
     function receive(event: Event) {
       const detail = (event as CustomEvent<{ scope?: SharedBoardScope; board?: SharedBoard }>).detail;

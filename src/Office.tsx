@@ -87,6 +87,7 @@ import { WalletBody, WalletGlance } from "./widgets/WalletTray.tsx";
 import { CalculatorBody, CalculatorGlance } from "./widgets/CalculatorPad.tsx";
 import { chalkboardGlance } from "./widgets/ChalkboardDesk.tsx";
 import { SharedBoards } from "./widgets/SharedBoards.tsx";
+import { takeSharedBoardRequest, SHARED_BOARD_EVENT } from "./core/sharedBoardIntent.ts";
 import { MailBody, MailGlance } from "./widgets/Mail.tsx";
 import { ClaimsBody, ClaimsGlance } from "./widgets/ClaimsTray.tsx";
 import { TimesheetBody, TimesheetGlance } from "./widgets/Timesheet.tsx";
@@ -312,6 +313,17 @@ export function Office({
       }
     });
   }, [breakpoint, deskWidth]);
+
+  useEffect(() => {
+    const consume = () => {
+      if(takeSharedBoardRequest({environment,householdId:household.householdId,memberId})) {
+        setLayout(current => ({ ...current, expanded: "chalkboard", windowMinimized: false }));
+      }
+    };
+    consume(); // The request can precede this deferred Home's first mount.
+    window.addEventListener(SHARED_BOARD_EVENT, consume);
+    return () => window.removeEventListener(SHARED_BOARD_EVENT, consume);
+  }, [environment, household.householdId, memberId]);
 
   useEffect(() => {
     if (!household.google?.enabledServices?.includes("drive")) return;

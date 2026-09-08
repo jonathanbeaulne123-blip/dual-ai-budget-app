@@ -818,7 +818,7 @@ function BooksStorageNotes({
           <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
         )
       ) : (
-        <p className="muted">This household stays on this phone until a signed-in Google member shares it. A Hearth Pass does not upload.</p>
+        <p className="muted">Sign in with Google to find your cloud household on another device. This device keeps an offline copy; a Hearth Pass is a separate backup.</p>
       )}
     </>
   );

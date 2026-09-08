@@ -331,7 +331,10 @@ export function OfficePhone({
       )}
 
       <Memorabilia scene={scene.id} location="phone-desk" />
-      <details className="ph-chalk" open={chalkOpen} onToggle={(event) => setChalkOpen(event.currentTarget.open)}>
+      <details className="ph-chalk" open={chalkOpen} onToggle={(event) => {
+        const open=event.currentTarget.open;setChalkOpen(open);
+        if(!open&&layout.expanded==="chalkboard")onLayout({...layout,expanded:null});
+      }}>
         <summary>Our boards · Notes, photos & plans</summary>
         <div className={`ph-chalk-body ${adding ? "is-inert" : ""}`}>
           <SharedBoards

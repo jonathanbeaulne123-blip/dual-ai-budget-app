@@ -55,7 +55,7 @@ describe("shared boards", () => {
     const state:AuthorityState={sequence:h.revision,shared:one.shared,personal:new Map([["MEM-001",one.personal],["MEM-002",two.personal]])};
     const scope:Scope={environment:h.environment,householdId:h.householdId,memberId:"MEM-001",subject:"test-one",role:"owner",expires:Date.now()+60000,aclEpoch:1};
     const a=await commandFromCapture(capturedIntent(saveBoardTask(h,task("a")).household)!,scope,crypto.randomUUID());
-    const b=await commandFromCapture(capturedIntent(saveBoardTask(h,task("b","MEM-002")).household)!,{...scope,memberId:"MEM-002",subject:"test-two"},crypto.randomUUID());
+    const b=await commandFromCapture(capturedIntent(saveBoardTask(h,task("b","MEM-002")).household)!,scope,crypto.randomUUID());
     const first=await prepareCommand(state,a,scope,()=>{});
     const second=await prepareCommand({...state,sequence:first.receipt.sequence,shared:first.shared,personal:new Map([...state.personal,["MEM-001",first.personal]])},b,{...scope,memberId:"MEM-002",subject:"test-two"},()=>{});
     expect(second.shared.kitchen.boards?.tasks.map(r=>r.id).sort()).toEqual(["BOARD-TASK-a","BOARD-TASK-b"]);

@@ -2,6 +2,14 @@
 
 Living product and architecture decisions for **Hearth**.
 
+## Five shared boards and daily navigation — approved 2026-09-08
+
+Jonathan approved implementing the full five-board plan from main `5778a8d`. Every UX change now includes authored Classic Hearth, Taylor’s Scrapbook, and Newfoundland treatments and verification. The Till interaction extends to mobile expense/income/transfer/shift entry, preserving the current shift order and all posting authority. Calendar restores the traditional grid as its default alongside Month, with Coming up then Google integration beneath. Shared Plan puts Categories directly beneath plan vs actual. Household table opens to a daily Overview with Fund, Accounts, Activity and Tools & audit destinations.
+
+Notes, Photos, To-do, Goals and Shift Ask form one looping shared-board component across phone and desktop. Only Notes draws; other boards have their own interactive compositions. Versioned commands carry tasks/milestones/photo references through existing continuity; shared goals remain accepted-book projections. Photo bytes use dedicated authenticated object storage and a scoped local upload queue. Shared keepsakes/tasks are excluded from financial-model disclosure. Existing Ask permissions remain in force. Storage provisioning and deployment remain separate from local implementation.
+
+Implementation and measured acceptance: [worksession](worksessions/2026-09-08-five-shared-boards.md). Budget (5): clearer entry and household money navigation. Engagement (3): useful shared boards in three distinctive themes. Risk: High; no Production activation.
+
 Older Sheets-era rows, including superseded ones such as “stay on Sheets until the feature set is stress-tested,” live in [reference/sheets-era/DECISIONS.md](reference/sheets-era/DECISIONS.md). Retired Cursor-era roadmaps (Chapters, Rings, launch essays) live in [nostalgia/](nostalgia/). Those folders are history. Jonathan’s latest instruction, [STRATEGY.md](STRATEGY.md), and the rows below win.
 
 | ID | Status | Decision | Reason |

@@ -5181,7 +5181,7 @@ type BoardItemEdit = BoardEdit & { title: string; dueDate: string | null; comple
 function requireBoardVersion(household: Household, input: BoardEdit, row?: { version: number }) {
   requireMember(household, input.memberId);
   if (!household.members.some(m => m.id === input.memberId && m.active)) throw new ValidationError("Open the boards as an active household member.");
-  if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0 || input.expectedVersion !== (row?.version ?? 0)
+  if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0 || input.expectedVersion >= Number.MAX_SAFE_INTEGER || input.expectedVersion !== (row?.version ?? 0)
     || household.tombstones.some(t => t.id === input.id)) throw new ValidationError("This item changed on another device. Review the latest version before saving your draft.");
 }
 function boardItemValues(input: BoardItemEdit) {
