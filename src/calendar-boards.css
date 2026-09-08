@@ -1,0 +1,48 @@
+/* The calendar and Month instrument inherit the active Classic, Taylor or
+   Newfoundland palette; layout and focus behave the same in all three. */
+.calendar-stage .calendar-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+}
+.calendar-stage .calendar-tabs button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 3px;
+  overflow-wrap: anywhere;
+}
+.calendar-stage .calendar-panel,
+.calendar-stage .calendar-board-stack,
+.calendar-stage .calendar-card { min-width: 0; }
+.calendar-stage .calendar-board-stack { display: grid; gap: 12px; }
+.calendar-stage .cal-grid,
+.calendar-stage .cal-weekdays { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.calendar-stage .cal-day { min-width: 0; color: var(--ink); }
+.calendar-stage .cal-titles { width: 100%; min-width: 0; }
+.calendar-stage .cal-title { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-stage .calendar-selected-day[hidden] { display: none; }
+.calendar-stage .calendar-selected-day .row,
+.calendar-stage .calendar-upcoming .row,
+.calendar-stage .calendar-integration .row { flex-wrap: wrap; gap: 8px; }
+.calendar-stage .row > span { min-width: 0; overflow-wrap: anywhere; }
+.calendar-stage .calendar-upcoming { margin-top: 12px; }
+.calendar-stage .calendar-upcoming summary { min-height: 44px; }
+.calendar-stage .calendar-integration { margin-top: 12px; scroll-margin-top: 24px; }
+.calendar-stage .calendar-integration button { min-height: 44px; }
+.calendar-stage .weight { max-width: 760px; margin-inline: auto; }
+.calendar-stage .weight-rail { max-height: 180px; }
+.calendar-stage :is(button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--theme-accent, var(--pine));
+  outline-offset: 2px;
+}
+@media (max-width: 719px) {
+  .calendar-stage .calendar-card { padding: 10px; }
+  .calendar-stage .calendar-card > header h2 { font-size: 18px; text-align: center; }
+  .calendar-stage .calendar-card > header button { min-width: 44px; min-height: 44px; }
+  .calendar-stage .cal-grid, .calendar-stage .cal-weekdays { gap: 2px; }
+  .calendar-stage .cal-weekdays { font-size: 10px; letter-spacing: 0; }
+  .calendar-stage .cal-day { min-height: 66px; padding: 5px 2px; border-radius: var(--world-r-control, 5px); }
+  .calendar-stage .cal-title { font-size: 9px; line-height: 1.25; }
+  .calendar-stage .calendar-board-dock { margin-bottom: 10px; }
+  .calendar-stage .calendar-hero-actions { flex-wrap: wrap; }
+}

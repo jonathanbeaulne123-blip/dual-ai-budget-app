@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import "./calendar-boards.css";
 import { CalendarWeight } from "./CalendarWeight.tsx";
 import { calendarWeight } from "./core/calendarWeight.ts";
 import { daysInMonthKey } from "./core/calendar.ts";
@@ -122,8 +123,11 @@ function CalendarPageScope(props: CalendarProps) {
   }, []);
   const [monthKey, setMonthKey] = useState(() => monthKeyFromDateKey(today));
   const [selected, setSelected] = useState<DateKey>(today);
-  const [dayOpen, setDayOpen] = useState(false);
-  const [pane, setPane] = useState<Pane>("board");
+  const [dayOpen, setDayOpen] = useState(true);
+  const [pane, setPane] = useState<Pane>("calendar");
+  const tabsId = useId();
+  const integrationRef = useRef<HTMLElement>(null);
+  const [focusIntegration, setFocusIntegration] = useState(false);
   const [accounts, setAccounts] = useState<GoogleAccount[]>([]);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
@@ -137,7 +141,7 @@ function CalendarPageScope(props: CalendarProps) {
     () => buildMonthBoard(household, monthKey, today, overlays),
     [household, monthKey, today, overlays],
   );
-  const weightDays = useMemo(() => phone ? calendarWeight(household, board, today) : [], [phone, household, board, today]);
+  const weightDays = useMemo(() => pane === "board" ? calendarWeight(household, board, today) : [], [pane, household, board, today]);
   const changeMonth = (offset: number) => {
     const next = shiftMonthKey(monthKey, offset);
     setMonthKey(next);
@@ -166,8 +170,18 @@ function CalendarPageScope(props: CalendarProps) {
 
   useEffect(() => {
     const next = takeCalendarPane(localStorage);
-    if (next) setPane(next);
+    if (next === "google") {
+      setPane("calendar");
+      setFocusIntegration(true);
+    } else if (next) setPane(next);
   }, []);
+
+  useEffect(() => {
+    if (!focusIntegration || pane !== "calendar") return;
+    integrationRef.current?.focus();
+    integrationRef.current?.scrollIntoView?.({ block: "start" });
+    setFocusIntegration(false);
+  }, [focusIntegration, pane]);
 
   useEffect(() => {
     let live = true;
@@ -231,7 +245,8 @@ function CalendarPageScope(props: CalendarProps) {
   async function remindOnGoogle() {
     const startedScope = asyncScope.capture();
     if (!accounts.length) {
-      setPane("google");
+      setPane("calendar");
+      setFocusIntegration(true);
       setGoogleError("Connect a Google account first, or download the .ics file.");
       return;
     }
@@ -292,22 +307,35 @@ function CalendarPageScope(props: CalendarProps) {
       data-calendar-view={props.view ?? "household"}
       data-onboarding-standing-fact={props.onboardingStandingFactOnly ? "true" : undefined}
     >
-      {!(phone && pane === "board") && pane !== "visits" && board.clashes[0] && !(props.onboardingStandingFactOnly && pane === "bills") && (
+      {pane !== "board" && pane !== "visits" && board.clashes[0] && !(props.onboardingStandingFactOnly && pane === "bills") && (
         <article className="pulse-banner warn">{describeClash(board.clashes[0])}</article>
       )}
 
-      <div className="tabs">
+      <div className="tabs calendar-tabs" role="tablist" aria-label="Calendar views">
         {([
+          ["calendar", "Calendar"],
           ["board", "Month"],
           ["visits", "Appointments"],
           ["bills", "Bills"],
-          ["google", "Google"],
-        ] as const).map(([id, label]) => (
-          <button key={id} className={pane === id ? "active" : ""} onClick={() => setPane(id)}>{label}</button>
+        ] as const).map(([id, label], index, tabs) => (
+          <button key={id} type="button" role="tab" id={`${tabsId}-tab-${id}`}
+            aria-selected={pane === id} aria-controls={`${tabsId}-panel`}
+            tabIndex={pane === id ? 0 : -1} className={pane === id ? "active" : ""}
+            onClick={() => { if (id === "board") setMonthKey(monthKeyFromDateKey(selected)); setPane(id); }} onKeyDown={event => {
+              const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
+                : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length
+                : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : null;
+              if (next === null) return;
+              event.preventDefault();
+              if (tabs[next]![0] === "board") setMonthKey(monthKeyFromDateKey(selected));
+              setPane(tabs[next]![0]);
+              document.getElementById(`${tabsId}-tab-${tabs[next]![0]}`)?.focus();
+            }}>{label}</button>
         ))}
       </div>
-
-      {pane === "board" && (
+      <div className="calendar-panel" role="tabpanel" id={`${tabsId}-panel`}
+        aria-labelledby={`${tabsId}-tab-${pane}`} tabIndex={0}>
+      {(pane === "calendar" || pane === "board") && (
         <>
           <div className="calendar-board-stack">
           <section className="card calendar-card">
@@ -316,9 +344,9 @@ function CalendarPageScope(props: CalendarProps) {
               <h2>{board.monthLabel}</h2>
               <button className="chip" onClick={() => changeMonth(1)} aria-label="Next month">›</button>
             </header>
-            {!phone && monthTools}
-            {phone && <p className="weight-note">{props.view === "personal" ? "My dates" : "Household dates"}</p>}
-            {phone ? <CalendarWeight key={`${scopeKey}:${monthKey}`} days={weightDays} selected={selected} onSelect={setSelected}
+            {pane === "calendar" && monthTools}
+            {pane === "board" && <p className="weight-note">{props.view === "personal" ? "My dates" : "Household dates"}</p>}
+            {pane === "board" ? <CalendarWeight key={`${scopeKey}:${monthKey}`} days={weightDays} selected={selected} onSelect={setSelected}
               renderItem={({item, allowPost, scheduledDate}) => <DayRow
                 title={item.title} amountCents={item.amountCents} kind={item.kind}
                 due={item.due && (item.source === "recurrence" || item.source === "appointment" || item.source === "work-settlement")}
@@ -336,12 +364,18 @@ function CalendarPageScope(props: CalendarProps) {
               {WEEKDAY_SHORT.map((label) => <span key={label}>{label}</span>)}
             </div>
             <div className="cal-grid">
-              {board.days.map((day) => {
+              {board.days.map((day, index) => {
                 const shown = day.items.slice(0, 3);
                 const extra = day.items.length - shown.length;
                 return (
                 <button
                   key={day.date}
+                  type="button" data-calendar-date={day.date}
+                  tabIndex={selected === day.date ? 0 : -1}
+                  aria-label={`${new Intl.DateTimeFormat("en-CA", { dateStyle: "full", timeZone: "America/Toronto" }).format(new Date(`${day.date}T12:00:00Z`))}${day.items.length ? ` · ${day.items.map(item => item.title).join("; ")}` : " · Nothing scheduled"}`}
+                  aria-current={day.isToday ? "date" : undefined}
+                  aria-pressed={selected === day.date}
+                  aria-controls={`${tabsId}-day`}
                   className={[
                     "cal-day",
                     day.inMonth ? "" : "outside",
@@ -351,13 +385,23 @@ function CalendarPageScope(props: CalendarProps) {
                     day.heat > 0.55 ? "hot" : "",
                   ].join(" ")}
                   onClick={() => {
-                    if (selected === day.date) setDayOpen((open) => !open);
-                    else {
-                      setSelected(day.date);
-                      setDayOpen(false);
-                    }
+                    setSelected(day.date);
+                    if (!day.inMonth) setMonthKey(monthKeyFromDateKey(day.date));
+                    setDayOpen(selected === day.date ? !dayOpen : true);
                   }}
-                  aria-expanded={selected === day.date ? dayOpen : undefined}
+                  onKeyDown={event => {
+                    const next = event.key === "ArrowRight" ? index + 1 : event.key === "ArrowLeft" ? index - 1
+                      : event.key === "ArrowDown" ? index + 7 : event.key === "ArrowUp" ? index - 7
+                      : event.key === "Home" ? index - index % 7 : event.key === "End" ? index + 6 - index % 7 : null;
+                    if (next === null) return;
+                    event.preventDefault();
+                    const target = board.days[Math.max(0, Math.min(board.days.length - 1, next))]!;
+                    setSelected(target.date);
+                    setDayOpen(true);
+                    // Keep the focused week mounted; Month follows the chosen civil date on entry.
+                    event.currentTarget.parentElement?.querySelector<HTMLButtonElement>(`[data-calendar-date="${target.date}"]`)?.focus();
+                  }}
+                  aria-expanded={selected === day.date && dayOpen}
                   style={day.heat ? { background: `color-mix(in srgb, var(--theme-calendar-heat, var(--copper)) ${(0.06 + Math.min(1, day.heat) * 0.22) * 100}%, var(--card))` } : undefined}
                 >
                   <span className="num">{Number(day.date.slice(8))}</span>
@@ -372,16 +416,16 @@ function CalendarPageScope(props: CalendarProps) {
               })}
             </div>
             </>}
-            {phone && <details className="calendar-month-tools"><summary>Month tools</summary>
+            {pane === "board" && <details className="calendar-month-tools"><summary>Month tools</summary>
               {board.clashes[0] && <p className="weight-note">{describeClash(board.clashes[0])}</p>}{monthTools}
             </details>}
           </section>
 
-          {!phone && selectedDay && !dayOpen ? (
-            <p className="muted">Tap {formatDayLabel(selectedDay.date)} again for the day’s list.</p>
+          {pane === "calendar" && selectedDay && !dayOpen ? (
+            <p className="muted">Select {formatDayLabel(selectedDay.date)} to reopen the day’s list.</p>
           ) : null}
-          {!phone && selectedDay && dayOpen && (
-            <section className="card">
+          {pane === "calendar" && selectedDay && (
+            <section className="card calendar-selected-day" hidden={!dayOpen} id={`${tabsId}-day`} aria-label="Selected day">
               <header>
                 <h2>{formatDayLabel(selectedDay.date)}</h2>
                 <span className="muted">
@@ -403,7 +447,7 @@ function CalendarPageScope(props: CalendarProps) {
                   amountCents={item.amountCents}
                   kind={item.kind}
                   due={item.due && (item.source === "recurrence" || item.source === "appointment" || item.source === "work-settlement")}
-                  recurrenceId={item.recurrenceId}
+                  recurrenceId={household.recurrences.some(row => row.id === item.recurrenceId && row.nextDate === item.date) ? item.recurrenceId : undefined}
                   appointmentId={item.appointmentId}
                   rhythmKey={item.rhythmKey}
                   today={today}
@@ -424,7 +468,7 @@ function CalendarPageScope(props: CalendarProps) {
           )}
           </div>
 
-          <details className="card hearth-collapse">
+          {pane === "calendar" && <details className="card hearth-collapse calendar-upcoming">
             <summary>
               <span className="hearth-collapse-title">Coming up</span>
               <span className="muted">{board.upcoming.length} in 21 days</span>
@@ -440,7 +484,7 @@ function CalendarPageScope(props: CalendarProps) {
                 <span className={item.direction === "out" ? "right" : "muted"}>{formatCad(item.amountCents)}</span>
               </div>
             ))}
-          </details>
+          </details>}
         </>
       )}
 
@@ -565,8 +609,8 @@ function CalendarPageScope(props: CalendarProps) {
         </>
       )}
 
-      {pane === "google" && (
-        <section className="card">
+      {pane === "calendar" && (
+        <section className="card calendar-integration" ref={integrationRef} tabIndex={-1} aria-label="Google calendar integration">
           <header>
             <h2>Google calendars</h2>
             <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
@@ -622,6 +666,7 @@ function CalendarPageScope(props: CalendarProps) {
           </button>
         </section>
       )}
+      </div>
       {workSettlement && (
         <WorkSettlementSheet
           household={household}

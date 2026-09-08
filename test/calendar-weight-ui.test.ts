@@ -15,6 +15,7 @@ async function mount(household: Household, width = 390) {
     onCommand: () => requests.push("write"), onAskPost: (id: string) => requests.push(id), onAskPostDue: noop,
     onAskSaveRepeating: noop, onAskVisit: noop, onAskSettle: noop, onAskWriteOff: noop, onAskStartJar: noop, onOpenPlan: noop, onOpenShiftEnvelope: noop };
   await act(async () => root.render(createElement(CalendarPage, props)));
+  await act(async () => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(button => button.textContent === "Month")!.click());
   return { host, root, props, requests, close: async () => { await act(async () => root.unmount()); host.remove(); } };
 }
 async function range(host: HTMLElement, value: number) {
@@ -22,8 +23,8 @@ async function range(host: HTMLElement, value: number) {
   await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, String(value)); input.dispatchEvent(new Event("input", { bubbles: true })); input.dispatchEvent(new Event("change", { bubbles: true })); });
 }
 function pointer(node: Element, type: string) { const event = new Event(type, { bubbles: true }); Object.defineProperties(event, { pointerId: { value: 1 }, isPrimary: { value: true }, button: { value: 0 } }); node.dispatchEvent(event); }
-describe("phone Calendar Weight", () => {
-  it("opens today's card with zero extra tap, preserves desk grid, and clamps31→February28", async () => {
+describe("Month Calendar Weight", () => {
+  it("opens today in Month at both widths and clamps31→February28", async () => {
     const m = await mount(catalogHousehold());
     try {
       expect(m.host.querySelector(".weight-day time")?.getAttribute("dateTime")).toBe(today);
@@ -34,7 +35,7 @@ describe("phone Calendar Weight", () => {
       expect(m.host.querySelector(".weight-day time")?.getAttribute("dateTime")).toBe("2027-02-28");
       expect(m.requests).toEqual([]);
       await act(async () => { Object.defineProperty(window, "innerWidth", { value: 720, configurable: true }); window.dispatchEvent(new Event("resize")); });
-      expect(m.host.querySelector(".weight-range")).toBeNull(); expect(m.host.querySelectorAll(".cal-day").length).toBeGreaterThanOrEqual(28);
+      expect(m.host.querySelector(".weight-range")).not.toBeNull(); expect(m.host.querySelector(".cal-grid")).toBeNull();
     } finally { await m.close(); }
   });
   it("offers Paid only for the exact next occurrence and enters the existing confirmation callback", async () => {
@@ -62,6 +63,8 @@ describe("phone Calendar Weight", () => {
       await act(async () => { list.value = "2026-09-22"; list.dispatchEvent(new Event("change", { bubbles: true })); });
       expect(input.value).toBe("22");
       await act(async () => m.root.render(createElement(CalendarPage, { ...m.props, view: "personal" })));
+      expect(m.host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Calendar");
+      await act(async () => [...m.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(button => button.textContent === "Month")!.click());
       expect(m.host.querySelector<HTMLInputElement>(".weight-range")?.value).toBe("8"); expect(m.requests).toEqual([]);
     } finally { await m.close(); }
   });
