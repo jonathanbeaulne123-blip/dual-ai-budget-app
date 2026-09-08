@@ -591,3 +591,8 @@ The paper's width shows ten seconds without moving its named action. Expiry, cur
 ## Mobile C8 — keep existing oracle chips (2026-09-08)
 
 Shift already exposes Tonight?, Protect or chase?, and Tax milk?. Preserve that exact page-specific set and replace only the stray personal fallback text. No duplicate controls compete for Claude's space. Budget(5)+0; Engagement(3)+1; proof in C8 worksession.
+
+
+## Mobile C9 — capture uncertainty travels with the photo (2026-09-08)
+
+After two deliberate quality refusals, Capture anyway creates a flagged draft. Passive frames never unlock it. Every image warning reaches the current review or failure area; no warning is attributed to an older photo and no missing monetary field is invented. Camera modal owns only its own Escape, and switching source retires unfinished file/camera work. Budget(5)+1; Engagement(3)+2; C9 worksession proof/limits.

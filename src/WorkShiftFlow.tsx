@@ -466,7 +466,7 @@ export function WorkShiftFlow({
           {cameraDraft.sales != null && salesFields.length > 1 && !cameraDraft.salesByField && (
             <p className="muted">Camera saw a sales total — enter it across {salesFields.map((field) => field.label).join(" / ")} yourself. Hearth will not invent a split.</p>
           )}
-          {(scanWarnings ?? []).slice(0, 4).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
+          {(scanWarnings ?? []).map((warning) => <p className="muted" key={warning}>{warning}</p>)}
           {onClearDraft && (
             <button type="button" className="chip" disabled={busy} onClick={onClearDraft}>Clear draft</button>
           )}

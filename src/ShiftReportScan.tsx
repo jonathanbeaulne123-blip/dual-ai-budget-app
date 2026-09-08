@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
 import { DocumentCamera } from "./imports/DocumentCamera.tsx";
 import { scoreDocumentClarityFromFile } from "./imports/documentClarity.ts";
 import {
@@ -14,13 +15,14 @@ export const SHIFT_REPORT_SCAN_COPY = {
   choose: "Choose tip sheet photo",
   scanning: "Scanning…",
   provider: "Vision provider",
-  muted: "Same document camera as receipts — drafts Confirm only. Invents nothing and never posts money. Capture waits until the tip sheet looks clear.",
+  muted: "Same document camera as receipts — drafts Confirm only. Invents nothing and never posts money. Image quality is checked before capture; an explicit override keeps its warnings.",
 };
 
 export function ShiftReportScanBar({
   busy,
   scanBusy,
   error,
+  warnings=[],
   onFile,
   provider,
   onProviderChange,
@@ -28,7 +30,8 @@ export function ShiftReportScanBar({
   busy: boolean;
   scanBusy: boolean;
   error: string;
-  onFile: (file: File | undefined) => void;
+  warnings?:string[];
+  onFile: (file: File | undefined, quality?:CaptureQuality) => void;
   /** Optional controlled provider; defaults to device preference. */
   provider?: DocumentVisionProvider;
   onProviderChange?: (provider: DocumentVisionProvider) => void;
@@ -38,6 +41,9 @@ export function ShiftReportScanBar({
   const [localProvider, setLocalProvider] = useState<DocumentVisionProvider>(() => loadDocumentVisionProvider());
   const [clarityError, setClarityError] = useState("");
   const blocked = busy || scanBusy;
+  const fileGeneration=useRef(0),mounted=useRef(true),blockedRef=useRef(blocked);blockedRef.current=blocked;
+  const [rejectedFile,setRejectedFile]=useState<{file:File;quality:CaptureQuality}|null>(null),[fileRejections,setFileRejections]=useState(0);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;fileGeneration.current++;};},[]);
   const activeProvider = provider ?? localProvider;
 
   useEffect(() => {
@@ -45,30 +51,20 @@ export function ShiftReportScanBar({
   }, [provider]);
 
   function setProvider(next: DocumentVisionProvider) {
+    fileGeneration.current++;setRejectedFile(null);setFileRejections(0);
     const saved = saveDocumentVisionProvider(next);
     setLocalProvider(saved);
     onProviderChange?.(saved);
   }
 
   async function acceptFile(file: File | undefined) {
-    setClarityError("");
-    if (!file) {
-      onFile(undefined);
-      return;
-    }
-    try {
-      const clarity = await scoreDocumentClarityFromFile(file);
-      if (!clarity.ready) {
-        setClarityError(
-          clarity.issues[0]
-            || "That photo is not clear enough to read. Retake with the tip sheet sharp and filling the frame."
-        );
-        return;
-      }
-    } catch {
-      // If scoring fails, still allow Choose-photo (live camera remains gated).
-    }
-    onFile(file);
+    const generation=++fileGeneration.current;setClarityError("");setRejectedFile(null);
+    if(!file||blockedRef.current)return;
+    const current=()=>mounted.current&&generation===fileGeneration.current&&!blockedRef.current;
+    try {const clarity=await scoreDocumentClarityFromFile(file);if(!current())return;
+      if(!clarity.ready){const quality={overridden:true,issues:clarity.issues.length?[...clarity.issues]:['The photo could not be checked for clarity.']};setFileRejections(n=>n+1);setRejectedFile({file,quality});setClarityError(quality.issues.join(' '));return;}
+    } catch {if(current()){onFile(file,{overridden:false,issues:['The photo quality could not be checked.']});return;}}
+    if(current()){setFileRejections(0);onFile(file);}
   }
 
   return (
@@ -102,7 +98,7 @@ export function ShiftReportScanBar({
           className="chip"
           disabled={blocked}
           onClick={() => {
-            setClarityError("");
+            fileGeneration.current++;setRejectedFile(null);setFileRejections(0);setClarityError("");
             setCameraOpen(true);
           }}
         >
@@ -131,14 +127,16 @@ export function ShiftReportScanBar({
       <DocumentCamera
         open={cameraOpen}
         onClose={() => setCameraOpen(false)}
-        onCapture={(file) => {
-          setClarityError("");
-          onFile(file);
+        onCapture={(file,quality) => {
+          if(!mounted.current||blockedRef.current)return;
+          fileGeneration.current++;setRejectedFile(null);setFileRejections(0);setClarityError("");
+          onFile(file,quality);
         }}
       />
       <p className="muted">{SHIFT_REPORT_SCAN_COPY.muted}</p>
+      {fileRejections>=2&&rejectedFile&&<button type="button" className="chip" disabled={blocked} onClick={()=>{if(!mounted.current||blockedRef.current)return;const saved=rejectedFile;fileGeneration.current++;setRejectedFile(null);setFileRejections(0);setClarityError(captureQualityWarnings(saved.quality).join(' '));onFile(saved.file,saved.quality);}}>Use this photo anyway</button>}
       {clarityError ? <p className="error" role="alert">{clarityError}</p> : null}
-      {error ? <p className="error" role="alert">{error}</p> : null}
+      {error ? <div role="alert"><p className="error">{error}</p>{warnings.length>0&&<ul className="doc-camera-issues">{warnings.map((warning,index)=><li key={`${index}:${warning}`}>{warning}</li>)}</ul>}</div> : null}
     </div>
   );
 }

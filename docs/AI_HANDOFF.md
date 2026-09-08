@@ -1,3 +1,13 @@
+## Mobile C9 — flagged capture override (2026-09-08)
+
+**Status:** Locally verified on codex/mobile-c9-camera-override; base67985a04d6d96a178ecb7efb1cb4838f0da0e475(C8,PR399). HEAD is this commit.
+
+**Outcome/risk:** Two rejected user attempts unlock explicit capture override; all image warnings remain attached to the current draft/error review. Nested camera focus, Escape and source lifetime are guarded. Medium-High; Budget(5)+1; Engagement(3)+2.
+
+**Proof:**127 selected tests plus TypeScript/AI/diff110.096s; seven synthetic-camera browser cases, independent review clear. [Exact evidence and repaired findings](worksessions/2026-09-08-mobile-camera-override.md).
+
+**Next/limits:** Stacked draft PR then C10. Synthetic/local/mock proof; no physical camera, hosted OCR, exhaustive, merge/deploy/schema.
+
 ## Mobile C8 — Hercules fallback (2026-09-08)
 
 **Status:** Locally verified on codex/mobile-c8-hercules-copy; basea4a7709a3c033c5be5cf7de9c53cc22f534ff02b(C7,PR398). HEAD is this commit.

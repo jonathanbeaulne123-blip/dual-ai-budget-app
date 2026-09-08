@@ -1,217 +1,27 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  CLARITY_READY_SCORE,
-  scoreDocumentFrame,
-  type DocumentClarityScore,
-} from "./documentClarity.ts";
-
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  onCapture: (file: File) => void | Promise<void>;
-  title?: string;
-};
-
-function readinessLabel(score: DocumentClarityScore | null): string {
-  if (!score) return "Hold tip sheet in frame";
-  if (score.ready) return "Looks clear — tap Capture";
-  if (score.issues[0]) return score.issues[0];
-  return "Keep steady until the tip sheet is sharp";
-}
-
-export function DocumentCamera({
-  open,
-  onClose,
-  onCapture,
-  title = "Scan tip sheet",
-}: Props) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const [score, setScore] = useState<DocumentClarityScore | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [capturing, setCapturing] = useState(false);
-  const [cameraReady, setCameraReady] = useState(false);
-
-  const stopCamera = useCallback(() => {
-    const stream = streamRef.current;
-    if (stream) {
-      for (const track of stream.getTracks()) track.stop();
-      streamRef.current = null;
-    }
-    const video = videoRef.current;
-    if (video) video.srcObject = null;
-    setCameraReady(false);
-  }, []);
-
-  useEffect(() => {
-    if (!open) {
-      stopCamera();
-      setScore(null);
-      setError(null);
-      setCapturing(false);
-      return;
-    }
-
-    let cancelled = false;
-    async function start() {
-      setError(null);
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setError("This browser cannot open the camera. Use Choose tip sheet photo instead.");
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1600 },
-            height: { ideal: 1200 },
-          },
-        });
-        if (cancelled) {
-          for (const track of stream.getTracks()) track.stop();
-          return;
-        }
-        streamRef.current = stream;
-        const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          await video.play();
-          setCameraReady(true);
-        }
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Could not open camera.";
-        setError(
-          /permission|notallowed|denied/i.test(message)
-            ? "Camera permission denied. Allow camera access, or use Choose tip sheet photo."
-            : "Could not open camera. Use Choose tip sheet photo instead."
-        );
-      }
-    }
-    void start();
-    return () => {
-      cancelled = true;
-      stopCamera();
-    };
-  }, [open, stopCamera]);
-
-  useEffect(() => {
-    if (!open || !cameraReady) return;
-    let cancelled = false;
-    let timer: number | null = null;
-
-    function tick() {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas || video.readyState < 2) {
-        timer = window.setTimeout(tick, 350);
-        return;
-      }
-      try {
-        const next = scoreDocumentFrame(video, canvas, { sampleWidth: 320 });
-        if (!cancelled) setScore(next);
-      } catch {
-        if (!cancelled) setScore(null);
-      }
-      if (!cancelled) {
-        timer = window.setTimeout(tick, 320);
-      }
-    }
-
-    timer = window.setTimeout(tick, 200);
-    return () => {
-      cancelled = true;
-      if (timer != null) window.clearTimeout(timer);
-    };
-  }, [open, cameraReady]);
-
-  const canCapture = Boolean(score?.ready) && !capturing && cameraReady && !error;
-
-  const handleCapture = useCallback(async () => {
-    if (!canCapture) return;
-    const video = videoRef.current;
-    if (!video || video.videoWidth < 8 || video.videoHeight < 8) return;
-    setCapturing(true);
-    try {
-      const canvas = document.createElement("canvas");
-      const maxEdge = 1600;
-      const scale = Math.min(1, maxEdge / Math.max(video.videoWidth, video.videoHeight));
-      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
-      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Could not capture frame.");
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error("Could not encode photo."))),
-          "image/jpeg",
-          0.88
-        );
-      });
-      const file = new File([blob], `tip-sheet-${Date.now()}.jpg`, {
-        type: "image/jpeg",
-      });
-      await onCapture(file);
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Capture failed.");
-    } finally {
-      setCapturing(false);
-    }
-  }, [canCapture, onCapture, onClose]);
-
-  const meterPct = useMemo(() => {
-    if (!score) return 0;
-    return Math.max(0, Math.min(100, Math.round((score.score / CLARITY_READY_SCORE) * 100)));
-  }, [score]);
-
-  if (!open) return null;
-
-  return (
-    <div className="doc-camera-overlay" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="doc-camera-sheet">
-        <div className="doc-camera-top">
-          <strong>{title}</strong>
-          <button type="button" className="ghost" onClick={onClose} disabled={capturing}>
-            Close
-          </button>
-        </div>
-        <div className="doc-camera-stage">
-          <video
-            ref={videoRef}
-            className="doc-camera-video"
-            playsInline
-            muted
-            autoPlay
-          />
-          <canvas ref={canvasRef} className="doc-camera-sample" aria-hidden="true" />
-          <div className={`doc-camera-frame${score?.ready ? " is-ready" : ""}`} />
-        </div>
-        <div className="doc-camera-meter" aria-hidden="true">
-          <div
-            className={`doc-camera-meter-fill${score?.ready ? " is-ready" : ""}`}
-            style={{ width: `${meterPct}%` }}
-          />
-        </div>
-        <p className={`doc-camera-hint${score?.ready ? " is-ready" : ""}`}>
-          {error || readinessLabel(score)}
-        </p>
-        <div className="doc-camera-actions">
-          <button
-            type="button"
-            className="primary"
-            disabled={!canCapture}
-            onClick={() => void handleCapture()}
-          >
-            {capturing ? "Capturing…" : score?.ready ? "Capture tip sheet" : "Waiting for clear tip sheet"}
-          </button>
-        </div>
-        <p className="muted tiny">
-          Capture stays locked until the tip sheet looks sharp and readable — like a QR scanner waiting for a clean code.
-        </p>
-      </div>
-    </div>
-  );
+import {createPortal} from 'react-dom';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {CLARITY_READY_SCORE,scoreDocumentFrame,type DocumentClarityScore} from './documentClarity.ts';
+import type {CaptureQuality} from './captureQuality.ts';
+import {useDialog} from '../useDialog.ts';
+type Props={open:boolean;onClose:()=>void;onCapture:(file:File,quality:CaptureQuality)=>void|Promise<void>;title?:string};
+export function DocumentCamera({open,onClose,onCapture,title='Scan tip sheet'}:Props){
+ const videoRef=useRef<HTMLVideoElement|null>(null),canvasRef=useRef<HTMLCanvasElement|null>(null),streamRef=useRef<MediaStream|null>(null),generation=useRef(0),openRef=useRef(open),captureRef=useRef(false);openRef.current=open;
+ const [score,setScore]=useState<DocumentClarityScore|null>(null),[error,setError]=useState<string|null>(null),[capturing,setCapturing]=useState(false),[cameraReady,setCameraReady]=useState(false),[rejections,setRejections]=useState(0);
+ const stopCamera=useCallback(()=>{for(const track of streamRef.current?.getTracks()??[])track.stop();streamRef.current=null;if(videoRef.current)videoRef.current.srcObject=null;},[]);
+ const close=()=>{generation.current++;captureRef.current=false;stopCamera();onClose();};
+ const dialog=useDialog(open,close);
+ useEffect(()=>{const epoch=++generation.current;setScore(null);setError(null);setCapturing(false);setCameraReady(false);setRejections(0);captureRef.current=false;const current=()=>openRef.current&&generation.current===epoch;
+  if(open)void(async()=>{if(!navigator.mediaDevices?.getUserMedia){setError('This browser cannot open the camera. Use Choose tip sheet photo instead.');return;}try{const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1600},height:{ideal:1200}}});if(!current()){for(const t of stream.getTracks())t.stop();return;}streamRef.current=stream;const video=videoRef.current;if(video){video.srcObject=stream;await video.play();if(current())setCameraReady(true);}}catch(err){if(current())setError(/permission|notallowed|denied/i.test(String(err))?'Camera permission denied. Allow access, or use Choose tip sheet photo.':'Could not open camera. Use Choose tip sheet photo instead.');}})();
+  return()=>{generation.current++;captureRef.current=false;stopCamera();};
+ },[open,stopCamera]);
+ useEffect(()=>{if(!open||!cameraReady)return;let stopped=false,timer:number|undefined;const tick=()=>{if(stopped)return;const video=videoRef.current,canvas=canvasRef.current;if(video&&canvas&&video.readyState>=2)try{setScore(scoreDocumentFrame(video,canvas,{sampleWidth:320}));}catch{setScore(null);}timer=window.setTimeout(tick,320);};timer=window.setTimeout(tick,200);return()=>{stopped=true;window.clearTimeout(timer);};},[open,cameraReady]);
+ const canCapture=cameraReady&&!capturing&&!error;
+ async function capture(override=false){if(!canCapture||captureRef.current||!openRef.current)return;const video=videoRef.current,sample=canvasRef.current;if(!video||!sample||video.videoWidth<8||video.videoHeight<8)return;const epoch=generation.current,current=()=>openRef.current&&generation.current===epoch;
+  try{const reading=scoreDocumentFrame(video,sample,{sampleWidth:320});setScore(reading);if(!reading.ready&&(!override||rejections<2)){setRejections(n=>n+1);return;}
+   const quality:CaptureQuality={overridden:!reading.ready,issues:[...reading.issues]};captureRef.current=true;setCapturing(true);const canvas=document.createElement('canvas'),scale=Math.min(1,1600/Math.max(video.videoWidth,video.videoHeight));canvas.width=Math.max(1,Math.round(video.videoWidth*scale));canvas.height=Math.max(1,Math.round(video.videoHeight*scale));const ctx=canvas.getContext('2d');if(!ctx)throw Error('Could not capture frame.');ctx.drawImage(video,0,0,canvas.width,canvas.height);const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('Could not encode photo.')),'image/jpeg',.88));if(!current())return;await onCapture(new File([blob],`tip-sheet-${Date.now()}.jpg`,{type:'image/jpeg'}),quality);if(current())close();
+  }catch(err){if(current())setError(err instanceof Error?err.message:'Capture failed.');}finally{if(current()){captureRef.current=false;setCapturing(false);}}
+ }
+ const meter=useMemo(()=>score?Math.max(0,Math.min(100,Math.round(score.score/CLARITY_READY_SCORE*100))):0,[score]);
+ if(!open)return null;
+ return createPortal(<div className='doc-camera-overlay' role='dialog' aria-modal='true' aria-label={title} ref={dialog}><div className='doc-camera-sheet'><div className='doc-camera-top'><strong>{title}</strong><button type='button' className='ghost' data-autofocus onClick={close}>Close</button></div><div className='doc-camera-stage'><video ref={videoRef} className='doc-camera-video' playsInline muted autoPlay/><canvas ref={canvasRef} className='doc-camera-sample' aria-hidden='true'/><div className={`doc-camera-frame${score?.ready?' is-ready':''}`}/></div><div className='doc-camera-meter' aria-hidden='true'><div className={`doc-camera-meter-fill${score?.ready?' is-ready':''}`} style={{width:`${meter}%`}}/></div><p className={`doc-camera-hint${score?.ready?' is-ready':''}`} role='status'>{error||(score?.ready?'Looks clear — tap Capture':rejections?'The image is still difficult to read. Adjust it and try again.':'Hold the tip sheet in frame, then try Capture.')}</p>{!error&&Boolean(score?.issues.length)&&<ul className='doc-camera-issues'>{score!.issues.map((issue,i)=><li key={`${i}:${issue}`}>{issue}</li>)}</ul>}<div className='doc-camera-actions'><button type='button' className='primary' disabled={!canCapture} onClick={()=>void capture()}>{capturing?'Capturing…':'Capture tip sheet'}</button>{rejections>=2&&!score?.ready&&!error&&<button type='button' className='ghost' disabled={!canCapture} onClick={()=>void capture(true)}>Capture anyway</button>}</div><p className='muted tiny'>A photo drafts a review. Unclear or missing amounts still need your review before Confirm.</p></div></div>,document.body);
 }

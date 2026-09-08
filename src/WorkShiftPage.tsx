@@ -1,3 +1,4 @@
+import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
 import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -260,22 +261,24 @@ export function WorkShiftPage({
 
 
 
-  async function applyScan(file: File | undefined) {
+  async function applyScan(file: File | undefined, quality?:CaptureQuality) {
     if (!file) return;
     const scan = shiftScanScopeRef.current.begin();
+    setWorkShiftDraft(null);
     setShiftScanBusy(true);
     setShiftScanError("");
-    setShiftScanWarnings([]);
+    const qualityWarnings=captureQualityWarnings(quality);
+    setShiftScanWarnings(qualityWarnings);
     try {
       const mapped = await scanShiftReportFile(file, fetch, scan.signal, loadDocumentVisionProvider());
       if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
-        setShiftScanWarnings(mapped.warnings);
+        setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
         return;
       }
       setWorkShiftDraft(mapped.draft);
-      setShiftScanWarnings(mapped.warnings);
+      setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
     } catch (caught) {
       if (!scan.isCurrent()) return;
       setShiftScanError(caught instanceof Error ? caught.message : String(caught));
@@ -431,11 +434,12 @@ export function WorkShiftPage({
                     Back to clock
                   </button>
                 ) : null}
-                <ShiftReportScanBar
+                <ShiftReportScanBar key={`${environment}:${household.householdId}:${memberId}:${view}`}
                   busy={busy}
                   scanBusy={shiftScanBusy}
                   error={shiftScanError}
-                  onFile={(file) => { void applyScan(file); }}
+                warnings={shiftScanWarnings}
+                  onFile={(file,quality) => { void applyScan(file,quality); }}
                 />
                 <WorkShiftWithSevenShifts
                   household={household}

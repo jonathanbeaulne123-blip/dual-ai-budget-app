@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 
+const dialogStack: HTMLElement[] = [];
+
 const FOCUSABLE = [
   "a[href]",
   "button:not([disabled])",
@@ -39,6 +41,7 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
     if (!open || !node) return;
 
     const returnTo = document.activeElement as HTMLElement | null;
+    dialogStack.push(node);
 
     const siblings: { el: HTMLElement; had: boolean }[] = [];
     const parent = node.parentElement;
@@ -56,6 +59,7 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
     target.focus();
 
     function onKeyDown(event: KeyboardEvent) {
+      if (dialogStack.at(-1) !== node) return;
       const el = ref.current;
       if (!el) return;
       if (event.key === "Escape") {
@@ -84,6 +88,7 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
     document.addEventListener("keydown", onKeyDown, true);
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
+      const index=dialogStack.lastIndexOf(node);if(index>=0)dialogStack.splice(index,1);
       for (const { el, had } of siblings) {
         if (!had) el.removeAttribute("inert");
       }

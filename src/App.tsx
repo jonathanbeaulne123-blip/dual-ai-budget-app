@@ -1,3 +1,4 @@
+import {captureQualityWarnings,type CaptureQuality} from "./imports/captureQuality.ts";
 import {SwipeReceiptStrip} from './SwipeReceiptStrip.tsx';
 import {swipeUndoUnavailable,type SwipeUndoWindow} from './swipeUndoReview.ts';
 import {claimSettlementReview,type ClaimSettlementReview} from "./core/claimSettlementReview.ts";
@@ -1105,12 +1106,14 @@ export function App() {
   const [shiftScanError, setShiftScanError] = useState("");
   const [shiftScanWarnings, setShiftScanWarnings] = useState<string[]>([]);
 
-  async function applyShiftReportScan(file: File | undefined) {
+  async function applyShiftReportScan(file: File | undefined, quality?:CaptureQuality) {
     if (!file) return;
     const scan = shiftScanScopeRef.current.begin();
+    setWorkShiftDraft(null);
     setShiftScanBusy(true);
     setShiftScanError("");
-    setShiftScanWarnings([]);
+    const qualityWarnings=captureQualityWarnings(quality);
+    setShiftScanWarnings(qualityWarnings);
     try {
       const [{ scanShiftReportFile }, { loadDocumentVisionProvider }] = await Promise.all([
         import("./imports/shiftReportDraft.ts"),
@@ -1121,11 +1124,11 @@ export function App() {
       if (!scan.isCurrent()) return;
       if (!mapped.draft) {
         setShiftScanError(mapped.error || "That photo could not draft a shift.");
-        setShiftScanWarnings(mapped.warnings);
+        setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
         return;
       }
       setWorkShiftDraft(mapped.draft);
-      setShiftScanWarnings(mapped.warnings);
+      setShiftScanWarnings([...qualityWarnings,...mapped.warnings]);
     } catch (caught) {
       if (!scan.isCurrent()) return;
       setShiftScanError(caught instanceof Error ? caught.message : String(caught));
@@ -1134,7 +1137,7 @@ export function App() {
     }
   }
 
-  const addScopeKey = `${environment}:${household?.householdId ?? ""}:${session?.memberId ?? ""}`;
+  const addScopeKey = `${environment}:${household?.householdId ?? ""}:${session?.memberId ?? ""}:${session?.view??""}:${scenarioAuthRef.current.generation}`;
   const previousAddScopeRef = useRef(addScopeKey);
 
   useEffect(() => {
@@ -6516,7 +6519,7 @@ export function App() {
       {tab === "shift" && (
         <DeferredSurface label="Shift room">
         <DeferredWorkShiftPage
-          key={`${environment}:${household.householdId}:${session.memberId}`}
+          key={`${environment}:${household.householdId}:${session.memberId}:${view}:${scenarioAuthRef.current.generation}`}
           household={experience && experience.ok ? experience.shiftHousehold : household}
           fundCustodianMemberId={household.householdFund?.custodianMemberId}
           view={view}
@@ -7181,11 +7184,12 @@ export function App() {
           shiftJobsPanel={(
             <>
               <DeferredSurface label="Tip sheet camera">
-              <DeferredShiftReportScanBar
+              <DeferredShiftReportScanBar key={`${environment}:${household.householdId}:${actorId}:${view}`}
                 busy={busy}
                 scanBusy={shiftScanBusy}
                 error={shiftScanError}
-                onFile={(file) => { void applyShiftReportScan(file); }}
+                warnings={shiftScanWarnings}
+                onFile={(file,quality) => { void applyShiftReportScan(file,quality); }}
               />
               </DeferredSurface>
               <DeferredSurface label="Timesheet">
