@@ -1,3 +1,7 @@
+## Five shared boards — authorized Development release (2026-09-08)
+
+Jonathan subsequently instructed “push merge and deploy.” The dedicated private Development photo bucket is provisioned and bound in the release candidate. [Release worksession](worksessions/2026-09-08-five-shared-boards-release.md) records the authorization, storage verification, rollout checks and rollback reference. Production activation, schema changes and destructive cleanup remain outside scope. The local implementation receipt below is historical; its no-release instruction has been superseded.
+
 ## Five shared boards — locally verified implementation (2026-09-08)
 
 Jonathan's approved plan is implemented on `codex/hearth-five-boards`, preserving main `5778a8d`. Final product source `f64f95a`; later handoff commits are documentation only. Mobile Till-style Add, traditional Calendar default, Shared Plan ordering, Household table navigation and all five boards have authored Classic/Taylor/Newfoundland treatments. The ongoing three-theme rule is in `AGENTS.md`.

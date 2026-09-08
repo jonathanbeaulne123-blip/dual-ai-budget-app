@@ -1,5 +1,7 @@
 # Five shared boards and daily money navigation
 
+Release update: Jonathan subsequently authorized “push merge and deploy.” The dedicated Development photo bucket has been provisioned with public access disabled; the release candidate binds it as `BOARD_MEDIA`. See the [release worksession](../worksessions/2026-09-08-five-shared-boards-release.md). The implementation-time boundary and undone provisioning below are historical. Physical cleanup and hosted/device certification remain separate.
+
 Owner: Jonathan. Target: a fresh Codex/Claude reviewer and the eventual release operator. Risk: High. Local integration branch: `codex/hearth-five-boards`, based on verified `origin/main` `5778a8d32389e3db194cdb4d602025581f953539`. Release is separate; this packet is not deployment authorization.
 
 ## Household outcome
