@@ -1,4 +1,5 @@
-import { booksEquation, compileHousehold, trialBalance, type CompiledBooks } from "./journal.ts";
+import { assertAcceptableBooks, type IncrementalBooksGuard } from "./booksValidation.ts";
+import type { CompiledBooks } from "./journal.ts";
 import { ensureHouseholdShape } from "./sync.ts";
 import {
   commandIdentityHash,
@@ -88,6 +89,8 @@ export type WriteAdapters = {
 export type AcceptWriteInput = {
   previous: Household | null;
   candidate: Household;
+  /** V2 scoped validator; transitions and command admission remain unchanged. */
+  booksGuard?: IncrementalBooksGuard;
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
@@ -100,39 +103,7 @@ export type AcceptWriteInput = {
   adapters: WriteAdapters;
 };
 
-export function assertAcceptableBooks(household: Household, compiled = compileHousehold(household)): CompiledBooks {
-  for (const entry of compiled.entries) {
-    const debit = entry.lines.reduce((sum, line) => sum + line.debitCents, 0);
-    const credit = entry.lines.reduce((sum, line) => sum + line.creditCents, 0);
-    if (debit !== credit) {
-      throw new BooksRejectedError(
-        `Journal ${entry.id} is unbalanced (${debit} debit / ${credit} credit). Nothing was posted.`,
-        "unbalanced-journal",
-      );
-    }
-    if (!Number.isSafeInteger(debit) || !Number.isSafeInteger(credit)
-      || entry.lines.some(line => !Number.isSafeInteger(line.debitCents) || !Number.isSafeInteger(line.creditCents))) {
-      throw new BooksRejectedError("Books only accept integer CAD cents. Nothing was posted.", "validation-rejected");
-    }
-  }
-  // Bound cumulative arithmetic before Number can silently discard a cent.
-  let totalDebit = 0n, totalCredit = 0n;
-  const limit = BigInt(Number.MAX_SAFE_INTEGER);
-  for (const entry of compiled.entries) for (const line of entry.lines) {
-    totalDebit += BigInt(Math.abs(line.debitCents));
-    totalCredit += BigInt(Math.abs(line.creditCents));
-    if (totalDebit > limit || totalCredit > limit) throw new BooksRejectedError("The ledger exceeds exact CAD-cent arithmetic limits. Nothing was posted.", "validation-rejected");
-  }
-  const tb = trialBalance(compiled);
-  const equation = booksEquation(compiled);
-  if (!tb.inBalance) {
-    throw new BooksRejectedError("The trial balance does not hold. Nothing was posted.", "unbalanced-journal");
-  }
-  if (!equation.holds) {
-    throw new BooksRejectedError("The accounting equation does not hold. Nothing was posted.", "unbalanced-journal");
-  }
-  return compiled;
-}
+export { assertAcceptableBooks } from "./booksValidation.ts";
 
 function failedOutcome(
   previous: Household | null,
@@ -380,7 +351,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     }
     const candidateCompiled = measureHearthSync(
       "hearth:command:compile",
-      () => assertAcceptableBooks(candidate),
+      () => input.booksGuard ? input.booksGuard.validate(candidate) : assertAcceptableBooks(candidate),
     );
 
     const bumped = (sameHousehold ? previous?.revision ?? 0 : candidate.revision ?? 0) + 1;

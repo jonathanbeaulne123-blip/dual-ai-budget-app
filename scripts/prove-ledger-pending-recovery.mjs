@@ -1,0 +1,35 @@
+import {chromium} from '@playwright/test';
+import assert from 'node:assert/strict';
+const url=process.env.HEARTH_LEDGER_APP_URL??'http://localhost:5194';
+if(!['localhost','127.0.0.1'].includes(new URL(url).hostname))throw new Error('Synthetic recovery proof is loopback-only.');
+const browser=await chromium.launch({headless:true});const context=await browser.newContext();const page=await context.newPage();
+const household=`HH-PENDING-PROOF-${crypto.randomUUID()}`;
+try{
+  await page.goto(`${url}/test/browser/ledger-client.html`);
+  await page.evaluate(id=>window.initialize(id,'MEM-001'),household);
+  await page.waitForFunction(()=>window.syncStatus==='ready');
+  await context.setOffline(true);
+  const id=await page.evaluate(()=>window.queue('Retained offline draft'));
+  await page.waitForFunction(id=>window.previews?.some(row=>row.commandId===id),id);
+  assert.equal(await page.evaluate(()=>window.replica.transactions.length),0);
+  await page.route('**/ledger-sync/**',route=>route.abort());
+  await page.addInitScript(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,value:false});});
+  await context.setOffline(false);
+  await page.reload();await page.evaluate(id=>window.initialize(id,'MEM-001'),household);
+  await page.waitForFunction(id=>window.previews?.some(row=>row.commandId===id),id);
+  assert.equal(await page.evaluate(()=>window.replica.transactions.length),0);
+  await page.evaluate(id=>window.rejectQueued(id),id);
+  await page.evaluate(()=>window.restart());
+  await page.waitForFunction(id=>window.rejectedEntries?.some(row=>row.command.id===id),id);
+  assert.equal(await page.evaluate(()=>window.previews.length),0);
+  await page.unroute('**/ledger-sync/**');
+  await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,value:true});window.retry();});await page.waitForFunction(()=>window.syncStatus==='ready');
+  const second=await page.evaluate(()=>window.queue('Canonical after reconnect',true));
+  assert.equal(await page.evaluate(()=>window.replica.transactions.filter(row=>row.note==='Canonical after reconnect').length),1);
+  assert.equal(await page.evaluate(()=>window.previews.length),0);
+  await page.reload();await page.evaluate(id=>window.initialize(id,'MEM-001'),household);await page.evaluate(()=>{Object.defineProperty(navigator,'onLine',{configurable:true,value:true});window.retry();});await page.waitForFunction(()=>window.syncStatus==='ready');
+  assert.equal(await page.evaluate(id=>window.rejectedEntries.filter(row=>row.command.id===id).length,id),1);
+  assert.equal(await page.evaluate(()=>window.replica.transactions.filter(row=>row.note==='Canonical after reconnect').length),1);
+  await page.evaluate(id=>window.dismissRejected(id),id);assert.equal(await page.evaluate(()=>window.rejectedEntries.length),0);
+  console.log(JSON.stringify({pass:true,evidence:'local Chromium real IndexedDB and Worker',cases:['durable offline preview','reload before acceptance','definitive refusal retained after reload','reconnect exactly once','explicit retained-entry dismissal'],commandCount:2,acceptedCommand:second.length===36}));
+}finally{await browser.close();}

@@ -539,3 +539,30 @@ it.skipIf(!base)(
   },
   30000,
 );
+
+it.skipIf(!base)('full importer parity uses actual SQLite and member-scoped archive for both synthetic members',async()=>{
+  const {seedDemoHousehold}=await import('../src/core/index.ts');
+  const h=seedDemoHousehold({today:'2026-08-21'});h.householdId=`HH-PARITY-${crypto.randomUUID()}`;
+  for(const member of ['MEM-001','MEM-002']){
+    const headers={Authorization:`Bearer local:${member}`,'Content-Type':'application/json'};
+    const imported=await fetch(`${base}/ledger-sync/v2/development/${h.householdId}/import`,{method:'POST',headers,body:JSON.stringify(h)});
+    expect(imported.status).toBe(200);
+    const response=await fetch(`${base}/ledger-sync/v2/development/${h.householdId}/parity`,{method:'POST',headers,body:JSON.stringify(h)});
+    const report=await response.json() as any;
+    expect(response.status,JSON.stringify(report)).toBe(200);expect(report.differences).toEqual([]);expect(report.pass).toBe(true);
+    expect(report.financial).toHaveLength(8);expect(report.memberId).toBe(member);
+    const other=h.transactions.find(row=>row.visibility==='personal'&&row.createdBy!==member)!;
+    const snapshot=await fetch(`${base}/ledger-sync/v2/development/${h.householdId}/snapshot`,{headers});expect(snapshot.status).toBe(200);expect(JSON.stringify(await snapshot.json())).not.toContain(other.id);
+    if(member==='MEM-001'){
+      // The second member imports after Shared has advanced; parity must use
+      // the archived import baseline rather than today's edited projection.
+      const live=await connection(h.householdId,member);
+      try {
+        const intent=capturedIntent(postEntry(h,{date:'2026-09-07',type:'expense',amount:'2.00',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:member,confirmDuplicate:true}).household)!;
+        const command=await commandFromCapture(intent,live.scope,crypto.randomUUID());
+        await live.send({type:'command',command});
+        expect((await live.next('ack')).receipt.sequence).toBeGreaterThan(h.revision??0);
+      } finally { live.ws.close(); }
+    }
+  }
+},30000);

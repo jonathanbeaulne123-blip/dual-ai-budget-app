@@ -36,7 +36,7 @@ export function installLedgerBrowserProbe({ prefix } = {}) {
       if (!visible(node)) continue;
       const id = node.dataset.ledgerRowId;
       if (!prefix || !node.textContent.includes(prefix)) continue;
-      const row = probe.rows[id] ??= {paintAt:null};
+      const row = probe.rows[id] ??= {paintAt:null,phase:node.dataset.ledgerPhase??"accepted",commandId:node.dataset.commandId??null};
       if (row.paintAt || row.scheduled) continue;
       row.domAt = now(); row.scheduled = true;
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -80,7 +80,7 @@ export function installLedgerBrowserProbe({ prefix } = {}) {
       // Background commands cannot consume an Add click: only this trial's note
       // in the submitted intent is eligible for correlation.
       if (prefix && JSON.stringify(message.command.steps).includes(prefix)) {
-        probe.commands[id] ??= {id,confirmAt:probe.clicks[nextClick++] ?? null,sentAt:at,bytes:0};
+        probe.commands[id] ??= {id,confirmAt:probe.clicks[nextClick++] ?? null,sentAt:at,bytes:0,previewIds:message.command.steps.flatMap(step=>step.previewIds)};
         probe.commands[id].bytes += bytes;
       }
     }

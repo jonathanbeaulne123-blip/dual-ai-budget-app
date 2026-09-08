@@ -1,3 +1,5 @@
+import { isVisibleInView } from "./core/visibility.ts";
+import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
 import { stageLedgerCreation, completeLedgerCreation } from './ledgerSync/creationStore.ts';
 import type { RestorePointSummary } from './ledgerSync/backup.ts';
 import { DEMO_SUITE_VERSION } from './core/demoSuite.ts';
@@ -7,7 +9,7 @@ import { clearLedgerStores } from './ledgerSync/localStore.ts';
 import { attachLedgerPresence } from "./ledgerSync/presence.ts";
 import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
-import { LedgerSyncClient } from "./ledgerSync/client.ts";
+import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -493,6 +495,7 @@ type CommitHouseholdOptions = {
   confirmationId?: string;
   onRejected?: (message: string) => void;
   suppressUndo?: boolean;
+  onQueued?: () => void;
 };
 const WELCOME_GOOGLE_INTENT_KEY = "hearth:welcome-google-intent:v1";
 
@@ -603,7 +606,9 @@ export function App() {
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [onboardingInviteDismissedState, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const [adding, setAddingState] = useState(false);
+  const draftGenerationRef = useRef(0);
+  function setAdding(value: boolean) { if(value) draftGenerationRef.current++; setAddingState(value); }
   const [swipeOpen, setSwipeOpen] = useState(false);
   const [swipeError, setSwipeError] = useState("");
   const [swipeStrip, setSwipeStrip] = useState<SwipeUndoStrip | null>(null);
@@ -695,6 +700,9 @@ export function App() {
     revision: number;
   } | null>(null);
   const [commandChrome, setCommandChrome] = useState<CommandChromeResult | null>(null);
+  const [ledgerPending, setLedgerPending] = useState<{key:string;rows:PendingPreview[]} | null>(null);
+  const [ledgerRejected, setLedgerRejected] = useState<{key:string;entries:RejectedEntry[]} | null>(null);
+  const [ledgerParity, setLedgerParity] = useState<{key:string;message:string} | null>(null);
   const [ledgerCommandId, setLedgerCommandId] = useState<string | undefined>();
   const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
   const [softPresenceLive, setSoftPresenceLive] = useState<SoftPresenceLiveRow[]>([]);
@@ -2898,6 +2906,7 @@ export function App() {
     const local = localLedgerIdentity(memberId), auth = loadSupabaseSession(environment);
     if (!local && (!auth || !current.linked)) return;
     let live = true;
+    const scopeKey=JSON.stringify([environment,current.householdId,memberId,local??auth!.userId]);
     const client = new LedgerSyncClient({
       scope: { environment, householdId: current.householdId, memberId, subject: local ?? auth!.userId },
       token: async () => {
@@ -2906,7 +2915,9 @@ export function App() {
         if (!fresh || fresh.userId !== auth!.userId) throw new Error("UNAUTHENTICATED");
         return fresh.accessToken;
       },
-      adopt: async (next, validatedStatus) => {
+      pendingChanged: pending => { if (live) setLedgerPending({key:scopeKey,rows:pending}); },
+      rejectedChanged: entries => { if(live) setLedgerRejected({key:scopeKey,entries}); },
+      adopt: async (next, validatedStatus, pending = []) => {
         if (!live || householdRef.current?.householdId !== next.householdId) return;
         // The client has saved the scoped server replica. Validate before UI
         // publication; a legacy PGlite transaction cannot gate this authority.
@@ -2915,6 +2926,7 @@ export function App() {
         if (!live || householdRef.current?.householdId !== next.householdId) return;
         startupGenerationRef.current += 1;
         setBooksStatus(status);
+        setLedgerPending({key:scopeKey,rows:pending});
         adoptAcceptedHousehold(next, status);
         setError("");
         setCloudReplicaReadyKey(onlineRequiredReplicaKey({environment:next.environment,householdId:next.householdId,memberId,revision:next.revision}));
@@ -2931,7 +2943,7 @@ export function App() {
     ledgerSyncRef.current = client;
     ledgerSyncReady.current = client.start();
     void ledgerSyncReady.current.catch(error => { if (live) setError(error instanceof Error ? error.message : String(error)); });
-    return () => { live = false; if (ledgerSyncRef.current === client) ledgerSyncRef.current = null; void client.destroy(); };
+    return () => { live = false; setLedgerPending(null);setLedgerRejected(null); if (ledgerSyncRef.current === client) ledgerSyncRef.current = null; void client.destroy(); };
   }, [environment, household?.householdId, session?.memberId, supabaseSessionPresent, useLedgerSync]);
 
   useEffect(() => {
@@ -3104,6 +3116,9 @@ export function App() {
         && onboardingInviteRecord.completionDigest !== dismissedOnboardingCompletionDigest)
     ),
   );
+  const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
+  const visibleLedgerPending=useLedgerSync&&ledgerPending?.key===ledgerRenderScopeKey?ledgerPending.rows:[];
+  const visibleLedgerRejected=useLedgerSync&&ledgerRejected?.key===ledgerRenderScopeKey?ledgerRejected.entries.filter(entry=>!entry.preview||entry.preview.rows.some(row=>isVisibleInView(row,memberId??'',view))):[];
   const personalSource = useMemo(() => {
     if (useLedgerSync) return household;
     return household && memberId && personalReplica?.memberId === memberId
@@ -3759,8 +3774,7 @@ export function App() {
       setLedgerCommandId(confirmationId);
       setBusy(true); setCommandProgressPhase("confirming");
       try {
-        await ledgerSyncReady.current;
-        const accepted = await client.confirm(next, confirmationId);
+        const accepted = await client.confirm(next, confirmationId, options?.onQueued);
         confirmationRef.current = null;
         if (isLedgerWrite(accepted.undo) && !options?.suppressUndo && accepted.postedIds.length) {
           setToast(accepted.undo);
@@ -3773,7 +3787,7 @@ export function App() {
         return outcome;
       } catch (caught) {
         const message = caught instanceof Error ? caught.message : String(caught);
-        if (/BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) confirmationRef.current = null;
+        if (caught instanceof LedgerCommandRejectedError || /BUSINESS_|ACTOR_|USE_REVERSAL|registered ledger command/.test(message)) confirmationRef.current = null;
         options?.onRejected?.(message); setError(message); return null;
       } finally { setBusy(false); }
     }
@@ -4370,6 +4384,7 @@ export function App() {
   }) {
     if (postingRef.current) return Promise.resolve();
     postingRef.current = true;
+    const submittedDraftGeneration=draftGenerationRef.current;
     return enqueueWrite(async () => {
       const current = householdRef.current;
       if (!current) {
@@ -4398,7 +4413,10 @@ export function App() {
           result.household,
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
-          options?.onError ? { onRejected: options.onError } : undefined,
+          {
+            onRejected: message => { setError(message); if (options?.closeAdd !== false && adding && submittedDraftGeneration===draftGenerationRef.current) setAdding(true); options?.onError?.(message); },
+            onQueued: options?.closeAdd !== false && adding ? () => { if(submittedDraftGeneration!==draftGenerationRef.current)return;setAdding(false); setConfirm(null); setBooksPaneRequest("register"); goTab("ledger"); } : undefined,
+          },
         );
         const accepted =
           outcome?.postedExactlyOnce === true &&
@@ -4414,18 +4432,19 @@ export function App() {
           if (result.warnings.length) setError(result.warnings.join(" "));
           return;
         }
+        if(submittedDraftGeneration!==draftGenerationRef.current){options?.onAccepted?.(result);return;}
         workShiftInputRef.current = null;
         setConfirm(null);
         setAdding(false);
         const nextExperience = session?.memberId
-          ? projectLedgerExperience(result.household, session.memberId, view, today)
+          ? householdForView(result.household, session.memberId, view)
           : null;
         setForm({
           ...emptyForm,
           date: today,
           visibility: defaultVisibilityForView(view),
           ...addFormDefaults(
-            nextExperience && nextExperience.ok ? nextExperience.scopedHousehold : result.household,
+            nextExperience ?? result.household,
             focusedAccountId,
           ),
         });
@@ -5919,6 +5938,20 @@ export function App() {
           onDismiss={() => setError("")}
         />
       ) : null}
+      {visibleLedgerRejected.length>0 && <section className="card" aria-label="Entries not posted">
+        <h2>Entries not posted</h2><p>Your entries are kept here for review. They are not in the posted balances.</p>
+        {visibleLedgerRejected.map(entry=><article key={entry.command.id}>
+          <p>{entry.rejection}</p>
+          {entry.preview?.rows.filter(row=>isVisibleInView(row,memberId??'',view)).map(row=><p key={row.id}>{row.date} · {row.note} · {formatCad(row.amountCents)} · {row.splits.map(split=>`${split.party}: ${formatCad(split.amountCents)}`).join(', ')}</p>)}
+          <button type="button" className="chip" onClick={()=>openAddFor(null)}>Start a new entry</button>{" "}
+          <button type="button" className="ghost" onClick={()=>{void ledgerSyncRef.current?.dismissRejected(entry.command.id);}}>Dismiss retained entry</button>
+        </article>)}
+      </section>}
+      {useLedgerSync && environment==='development' && tab==='more' && <section className="card">
+        <h2>Import verification</h2><p>Compare your frozen source with the imported books, including every field, account register and retained confirmation. Each person checks their own Personal ledger.</p>
+        <button type="button" className="chip" onClick={()=>{const key=ledgerRenderScopeKey;setLedgerParity({key,message:'Comparing imported books…'});void ledgerSyncRef.current?.verifyImport().then(report=>setLedgerParity({key,message:`${report.pass?'Your import matches.':'Differences need review: '+report.differences.join(', ')} ${report.memberCoverage.map((item:{memberId:string;checked:boolean;pass:boolean|null})=>`${household.members.find(member=>member.id===item.memberId)?.name??'Member'}: ${item.checked?(item.pass?'passed':'needs review'):'not checked'}`).join(' · ')}`})).catch(error=>setLedgerParity({key,message:error instanceof Error?error.message:String(error)}));}}>Verify my import</button>
+        {ledgerParity?.key===ledgerRenderScopeKey&&<p role="status">{ledgerParity.message}</p>}
+      </section>}
       <SoftPresenceStatus display={softPresenceDisplay} />
       <CommandProgressStatus display={commandProgressDisplay} commandId={useLedgerSync ? ledgerCommandId : undefined} />
       {commandChrome?.chip && !syncChromeSuppression.hideChip && (
@@ -6344,6 +6377,7 @@ export function App() {
         ) : <DeferredBooksPage
           household={displayHousehold}
           booksHousehold={household}
+          pendingRows={visibleLedgerPending}
           memberId={session.memberId}
           view={view}
           booksStatus={booksStatus}

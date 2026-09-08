@@ -1,4 +1,6 @@
-# Ledger acceptance — prepared migration and remaining work
+# Ledger acceptance — current status and remaining proof
+
+**September 7 follow-up:** reservation handling is released in PR #368; optimistic rows, incremental validation and full importer verification are implemented in the [current worksession](../worksessions/2026-09-07-ledger-optimistic-parity.md). That record supersedes the implementation to-do items below. The historical sequence is retained for traceability. Actual both-member parity and the latency/physical-device gates remain separate.
 
 **Migration 020 applied to Development on 2026-09-07 after Jonathan explicitly authorized Codex to apply it. CLI equivalent:**
 
@@ -43,6 +45,6 @@ HEARTH_LEDGER_SAMPLES=100 node scripts/prove-ledger-acceptance.mjs
 
 Use the same-origin deployed clock and actual served-build identity for hosted evidence. The evaluator exits nonzero when measurements are missing or budgets fail. Preserve failed attempts; never convert ACK, aggregate totals, offscreen rows or cached-shell marks into partner paint.
 
-## What is not yet safe to claim
+## Historical pre-follow-up limits (superseded by the current worksession)
 
 G1 is documented; G2/G3/G4 remain open. No complete actual-data import parity, incremental guard equivalence, safe optimistic posting, sub-250 ms LTE result, offline/reconnection burst certification, Production readiness or legacy deletion is established. With one more day, start with a production-compiled 5,000-row Confirm profile and remove redundant projection/cache work, then the correctly correlated pending overlay; do not spend that day tuning WebSocket intervals while main-thread rendering takes seconds.

@@ -41,7 +41,10 @@ target.initialize = async (id: string, memberId: string) => {
   client = new LedgerSyncClient({
     scope,
     token: async () => `local:${memberId}`,
-    adopt: async (next) => {
+    pendingChanged:rows=>{target.previews=rows;},
+    rejectedChanged:rows=>{target.rejectedEntries=rows;},
+    adopt: async (next,_status,rows) => {
+      target.previews=rows;
       household = next;
       target.replica = next;
     },
@@ -117,3 +120,7 @@ target.poisonCache = async () => {
     store.close();
   }
 };
+
+target.rejectQueued = async (id:string) => {const store=await LedgerStore.open(scope);try{await store.reject(id,'Synthetic definitive refusal');}finally{store.close();}};
+target.restart = async () => {await client.destroy();await target.initialize(scope.householdId,scope.memberId);};
+target.dismissRejected = (id:string)=>client.dismissRejected(id);

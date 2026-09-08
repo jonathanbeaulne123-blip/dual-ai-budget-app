@@ -22,6 +22,8 @@ export type Checkpoint = {
   /** Present only after the complete immutable legacy manifest was imported. */
   reservationDigests?: string[];
   restorePoints?: RestorePointSummary[];
+  /** Exact source binding for scoped import audit after authority recovery. */
+  importBindings?: Record<string, { sourceHash: string; sourceRevision: number; at: string }>;
 };
 export type ArchiveRecord = {
   scope: string;

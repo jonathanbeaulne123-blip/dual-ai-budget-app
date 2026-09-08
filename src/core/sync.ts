@@ -457,9 +457,9 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
 export function splitForSync(household: Household, memberId: string): { shared: SharedEnvelope; personal: PersonalEnvelope } {
   const shaped = ensureHouseholdShape(household);
   const sharedTx = shaped.transactions.filter((tx) => belongsToSharedLedger(tx));
-  const personalTx = shaped.transactions.filter((tx) => isPersonalOnly(tx));
+  const personalTx = shaped.transactions.filter((tx) => isPersonalOnly(tx) && tx.createdBy === memberId);
   const sharedShifts = shaped.shifts.filter((shift) => belongsToSharedLedger(shift)).map(withoutPrivateShiftBible);
-  const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift)).map(withoutPrivateShiftBible);
+  const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift) && shift.createdBy === memberId).map(withoutPrivateShiftBible);
   const memberShiftBibles = personalShiftBibles(shaped, memberId);
   const sharedGoals = shaped.goals.filter((goal) => goal.shared);
   const personalGoals = shaped.goals.filter((goal) => !goal.shared && goal.ownerMemberId === memberId);
