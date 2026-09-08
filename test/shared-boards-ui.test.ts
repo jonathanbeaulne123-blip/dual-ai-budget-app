@@ -123,6 +123,35 @@ describe("shared household boards", () => {
     expect(host.querySelector('[aria-label="Assumed remaining CAD"]')).toBe(amount); expect(amount.value).toBe("46");
     expect(button("Review receipt assumption")).toBeDefined(); expect(commands).toHaveLength(0);
   });
+  it("keeps rejected ink in the same canvas and retries only after explicit retry", async () => {
+    vi.useFakeTimers(); await render(); const canvas = host.querySelector<HTMLCanvasElement>('.chalkboard-live-board > canvas')!;
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 320, bottom: 280, width: 320, height: 280, toJSON: () => ({}) });
+    await act(async () => { pointer(canvas, "pointerdown", 20, 20); pointer(canvas, "pointermove", 80, 80); pointer(canvas, "pointerup", 80, 80); vi.advanceTimersByTime(600); });
+    expect(commands).toHaveLength(1); expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
+    expect(() => commands[0]!({ ...household, householdId: "HH-REJECTED" })).toThrow(); await render();
+    expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
+    await click("Retry drawing"); expect(commands).toHaveLength(2);
+    household = commands[1]!(household).household; await render();
+    expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
+    expect(host.querySelector('.chalk-retry')).toBeNull();
+    expect(household.kitchen.chalkboard.filter(note => note.author === memberId && note.ink)).toHaveLength(1);
+  });
+  it.each([false, true])("preserves strokes drawn while awaiting acceptance, including active stroke %s", async activeStroke => {
+    vi.useFakeTimers(); await render(); const canvas = host.querySelector<HTMLCanvasElement>('.chalkboard-live-board > canvas')!;
+    vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 320, bottom: 280, width: 320, height: 280, toJSON: () => ({}) });
+    await act(async () => { pointer(canvas, "pointerdown", 20, 20); pointer(canvas, "pointermove", 80, 80); pointer(canvas, "pointerup", 80, 80); vi.advanceTimersByTime(600); });
+    expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
+    await act(async () => { pointer(canvas, "pointerdown", 100, 100); pointer(canvas, "pointermove", 150, 150); if (!activeStroke) pointer(canvas, "pointerup", 150, 150); vi.advanceTimersByTime(600); });
+    expect(commands).toHaveLength(1);
+    household = commands[0]!(household).household; await render();
+    if (activeStroke) await act(async () => pointer(canvas, "pointerup", 150, 150));
+    await act(async () => vi.advanceTimersByTime(600)); expect(commands).toHaveLength(2);
+    household = commands[1]!(household).household; await render();
+    const saved = household.kitchen.chalkboard.filter(note => note.author === memberId && note.ink);
+    expect(saved).toHaveLength(2); expect(saved.every(note => note.ink!.strokes.length === 1)).toBe(true);
+    expect(saved.flatMap(note => note.ink!.strokes.map(stroke => stroke.points[0]!.x)).sort()).toEqual([20 / 320, 100 / 320]);
+    expect(host.querySelector('.chalkboard-live-board > canvas')).toBe(canvas);
+  });
   it("cancels a queued live drawing save when the household is retired", async () => {
     vi.useFakeTimers(); await render(); const canvas = host.querySelector<HTMLCanvasElement>('.chalkboard-live-board > canvas')!;
     vi.spyOn(canvas, "getBoundingClientRect").mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 320, bottom: 280, width: 320, height: 280, toJSON: () => ({}) });

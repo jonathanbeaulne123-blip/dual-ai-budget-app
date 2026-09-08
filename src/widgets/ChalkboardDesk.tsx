@@ -8,6 +8,7 @@ import {
   organizeChalkNotes,
   reviseChalkInk,
   scribbleChalk,
+  shapeChalkInk,
   wipeChalk,
   weatherChip,
   type ChalkInk,
@@ -61,6 +62,8 @@ function ChalkCanvas({
   tall,
   fill,
   tool = "chalk",
+  acknowledgedInk,
+  onStrokeStart,
 }: {
   disabled?: boolean;
   inkSeed?: ChalkInk | null;
@@ -68,6 +71,8 @@ function ChalkCanvas({
   tall?: boolean;
   fill?: boolean;
   tool?: "chalk" | "eraser";
+  acknowledgedInk?: ChalkInk | null;
+  onStrokeStart?: () => void;
 }) {
   const { scene } = useAppearance();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -92,6 +97,18 @@ function ChalkCanvas({
     }
     paintInk(canvas, ink);
   }
+
+  useEffect(() => {
+    if (!acknowledgedInk) return;
+    const count = acknowledgedInk.strokes.length;
+    if (JSON.stringify(committed.current.slice(0, count)) === JSON.stringify(acknowledgedInk.strokes)) {
+      committed.current = committed.current.slice(count);
+    }
+    redraw();
+    // A pointer that is still down keeps its in-progress stroke; pointerup will
+    // publish the remaining draft. Never replace the canvas to acknowledge ink.
+    if (!live.current) onInk(currentInk());
+  }, [acknowledgedInk]);
 
   useEffect(() => { redraw(); }, [scene.id]);
 
@@ -164,6 +181,7 @@ function ChalkCanvas({
           onInk(currentInk());
           return;
         }
+        onStrokeStart?.();
         live.current = [point];
       }}
       onPointerMove={(event) => {
@@ -278,6 +296,7 @@ function NoteThumb({
 
 function LiveChalkSurface({
   notes,
+  memberId,
   busy,
   slate,
   onInk,
@@ -285,6 +304,7 @@ function LiveChalkSurface({
   onEraseNote,
 }: {
   notes: ChalkNote[];
+  memberId: string;
   busy: boolean;
   slate: number;
   onInk: (ink: ChalkInk | null) => void;
@@ -294,6 +314,19 @@ function LiveChalkSurface({
   const [tool, setTool] = useState<"chalk" | "eraser">("chalk");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawn = useRef<ChalkInk | null>(null);
+  const pending = useRef<{ ink: ChalkInk; previousIds: string[] } | null>(null);
+  const [awaitingAcceptance, setAwaitingAcceptance] = useState(false);
+  const [acknowledgedInk, setAcknowledgedInk] = useState<ChalkInk | null>(null);
+  useEffect(() => {
+    const submitted = pending.current;
+    if (!submitted) return;
+    const normalized = JSON.stringify(shapeChalkInk(submitted.ink));
+    if (notes.some(note => note.author === memberId && !submitted.previousIds.includes(note.id) && JSON.stringify(note.ink) === normalized)) {
+      pending.current = null;
+      setAwaitingAcceptance(false);
+      setAcknowledgedInk(submitted.ink);
+    }
+  }, [notes, memberId]);
   useEffect(() => () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = null;
@@ -306,10 +339,14 @@ function LiveChalkSurface({
     drawn.current = next;
     onInk(next);
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    if (!next || !hasChalkInk(next)) return;
+    if (!next || !hasChalkInk(next) || pending.current) return;
     saveTimer.current = setTimeout(() => {
       const payload = drawn.current;
-      if (payload && hasChalkInk(payload)) onSave(payload);
+      if (!payload || !hasChalkInk(payload) || pending.current) return;
+      const submitted = structuredClone(payload);
+      pending.current = { ink: submitted, previousIds: notes.map(note => note.id) };
+      setAwaitingAcceptance(true);
+      onSave(submitted);
     }, 500);
   }
 
@@ -357,8 +394,12 @@ function LiveChalkSurface({
             ))}
           </ul>
         )}
-        <ChalkCanvas key={slate} disabled={busy} fill tool={tool} onInk={queueSave} />
+        <ChalkCanvas key={slate} disabled={busy} fill tool={tool} onInk={queueSave} acknowledgedInk={acknowledgedInk}
+          onStrokeStart={() => { if (saveTimer.current) clearTimeout(saveTimer.current); }} />
       </div>
+      {awaitingAcceptance && <button type="button" className="chalk-retry" disabled={busy} onClick={() => {
+        if (pending.current) onSave(pending.current.ink);
+      }}>Retry drawing</button>}
       <button
         type="button"
         className={`chalk-eraser ${tool === "eraser" ? "is-on" : ""}`}
@@ -440,10 +481,11 @@ export function ChalkboardBody({
       <>
       <LiveChalkSurface
         notes={notes}
+        memberId={memberId}
         slate={slate}
         busy={busy}
         onInk={setInk}
-        onSave={(nextInk) => saveNote("", nextInk)}
+        onSave={(nextInk) => onCommand(current => scribbleChalk(current, { text: "", author: memberId, ink: nextInk }))}
         onEraseNote={(noteId, point) => {
           const note = notes.find((row) => row.id === noteId);
           if (!note?.ink) return;

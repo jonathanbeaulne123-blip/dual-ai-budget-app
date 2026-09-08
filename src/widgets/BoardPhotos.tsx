@@ -96,14 +96,15 @@ function PhotoSession({ household, memberId, busy, onCommand, identity }: Props 
     return null;
   }
   async function retry(row: PendingBoardPhoto) {
-    if (!client || !row.intent || retired.current) return;
+    if (!client || !row.intent || retired.current) return null;
     // The original rendered version stays frozen through retries and reloads.
     const current = photos.find(photo => photo.id === `BOARD-PHOTO-${row.intent!.slot}`);
-    if ((current?.version ?? 0) !== row.intent.expectedVersion) { setNotice("That photo space changed while this upload was waiting. Keep the current photo, or discard this pending upload and choose it again."); return; }
+    if ((current?.version ?? 0) !== row.intent.expectedVersion) { setNotice("That photo space changed while this upload was waiting. Keep the current photo, or discard this pending upload and choose it again."); return null; }
     setWorking(true); setNotice("");
-    try { const reference = await client.retryPendingBoardPhoto(row.pendingId); if (!retired.current) { commit(row.intent, reference.mediaId); setNotice("Photo uploaded. Waiting for the board to save it."); } }
+    try { const reference = await client.retryPendingBoardPhoto(row.pendingId); if (!retired.current) { commit(row.intent, reference.mediaId); setNotice("Photo uploaded. Waiting for the board to save it."); return reference.mediaId; } }
     catch (error) { if (!retired.current) setNotice(message(error)); }
     finally { if (!retired.current) { setWorking(false); await refreshPending(); } }
+    return null;
   }
   async function discard(row: PendingBoardPhoto) {
     if (!client) return;
@@ -141,7 +142,7 @@ function cropStyle(crop: BoardPhoto["crop"]): CSSProperties {
 function PhotoSlot({ slot, photo, client, busy, pending, onUpload, onCommit, onRetry, onDiscard }: {
   slot: 1 | 2 | 3; photo?: BoardPhoto; client: BoardMediaClient | null; busy: boolean; pending: PendingBoardPhoto[];
   onUpload: (file: File, intent: BoardPhotoIntent) => Promise<string | null>; onCommit: (intent: BoardPhotoIntent, mediaId: string | null) => void;
-  onRetry: (row: PendingBoardPhoto) => Promise<void>; onDiscard: (row: PendingBoardPhoto) => Promise<void>;
+  onRetry: (row: PendingBoardPhoto) => Promise<string | null>; onDiscard: (row: PendingBoardPhoto) => Promise<void>;
 }) {
   const [editor, setEditor] = useState<(BoardPhotoIntent & { mediaId: string | null; file: File | null }) | null>(null);
   const [preview, setPreview] = useState("");
@@ -160,7 +161,13 @@ function PhotoSlot({ slot, photo, client, busy, pending, onUpload, onCommit, onR
   useEffect(() => {
     if (submitted && photo && photo.version > submitted.expectedVersion && photo.caption === submitted.caption.trim()
       && JSON.stringify(photo.crop) === JSON.stringify(submitted.crop) && (submitted.file ? !!uploadedMediaId && photo.mediaId === uploadedMediaId : photo.mediaId === submitted.mediaId)) {
-      setEditor(current => current === submitted ? null : current); setSubmitted(null);
+      setEditor(current => {
+        if (current === submitted) return null;
+        if (!current || current.expectedVersion !== submitted.expectedVersion) return current;
+        // These newer edits were made on our own pending replacement. Keep them,
+        // but advance their base to that accepted image so Save remains valid.
+        return { ...current, expectedVersion: photo.version, mediaId: photo.mediaId, file: current.file === submitted.file ? null : current.file };
+      }); setSubmitted(null);
     }
   }, [submitted, photo, uploadedMediaId]);
   useEffect(() => {
@@ -193,7 +200,7 @@ function PhotoSlot({ slot, photo, client, busy, pending, onUpload, onCommit, onR
       <div className="shared-board-actions"><button type="submit" disabled={busy || stale || !client || pending.length > 0 || (!editor.file && !editor.mediaId)}>Save photo {slot}</button><button type="button" disabled={busy} onClick={() => { setEditor(null); setSubmitted(null); }}>Cancel</button></div>
     </form>}
     {pending.map(row => <div key={row.pendingId} className="shared-board-photo-recovery" role="status"><p>{row.status === "uploaded" ? "Uploaded; waiting for this photo space to save." : "Your photo is waiting to upload."} {row.intent?.caption}</p>
-      <div className="shared-board-actions"><button type="button" disabled={busy || !client} onClick={() => void onRetry(row)}>Retry photo {slot}</button><button type="button" disabled={busy || !client} onClick={() => void onDiscard(row)}>Discard pending photo {slot}</button></div></div>)}
+      <div className="shared-board-actions"><button type="button" disabled={busy || !client} onClick={() => void onRetry(row).then(mediaId => { if (mediaId) setUploadedMediaId(mediaId); })}>Retry photo {slot}</button><button type="button" disabled={busy || !client} onClick={() => void onDiscard(row)}>Discard pending photo {slot}</button></div></div>)}
     {enlarged && <dialog ref={dialog} className="shared-board-photo-dialog" aria-label={`Enlarged photo ${slot}`} data-dialog-escape-boundary data-board-no-swipe onClose={() => setEnlarged(false)} onCancel={event => { event.stopPropagation(); }}>
       <button type="button" autoFocus onClick={() => { dialog.current?.close(); setEnlarged(false); }}>Close photo</button><img src={source.url} alt={photo?.caption || `Household photo ${slot}`} />{photo?.caption && <p>{photo.caption}</p>}
     </dialog>}

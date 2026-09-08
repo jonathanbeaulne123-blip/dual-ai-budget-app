@@ -129,3 +129,34 @@ it("removes only the accepted board reference and never deletes stored photo byt
   expect(household.kitchen.boards?.photos[0]!.mediaId).toBeNull();
   expect(clients[0]!.deleteBoardPhoto).not.toHaveBeenCalled(); expect(clients[0]!.discardPendingBoardPhoto).not.toHaveBeenCalled();
 });
+
+it.each(["same", "caption", "crop", "file"])("resolves an accepted upload retry without a false conflict, retaining a newer draft %s", async edit => {
+  const newerDraft = edit !== "same";
+  const newMediaId = "BM-33333333-3333-4333-8333-333333333333";
+  const newerFile = new File(["newer bytes"], "newer.webp", { type: "image/webp" });
+  household = setBoardPhoto(household, { memberId, slot: 1, mediaId: oldMediaId, caption: "Original", crop: { x: 50, y: 50, zoom: 1 }, expectedVersion: 0 }).household;
+  await render(); clients[0]!.uploadBoardPhoto.mockImplementation(async (_file, intent) => { rows = [{ ...pending(1, 1), intent }]; throw new Error("Offline upload"); });
+  clients[0]!.retryPendingBoardPhoto.mockImplementation(async () => { rows[0]!.status = "uploaded"; return { ...rows[0]! }; });
+  await click("Edit photo 1"); await value(host.querySelector<HTMLInputElement>('[aria-label="Photo 1 caption"]')!, "Replacement");
+  const input = host.querySelector<HTMLInputElement>('input[type=file]')!;
+  await act(async () => { Object.defineProperty(input, "files", { configurable: true, value: [new File(["fake source"], "retry.jpg", { type: "image/jpeg" })] }); input.dispatchEvent(new Event("change", { bubbles: true })); });
+  await click("Save photo 1"); expect(commands).toHaveLength(0);
+  if (edit === "caption") await value(host.querySelector<HTMLInputElement>('[aria-label="Photo 1 caption"]')!, "Newer caption, not yet saved");
+  if (edit === "crop") await value(host.querySelector<HTMLInputElement>('[aria-label="Photo 1 zoom"]')!, "1.7");
+  if (edit === "file") await act(async () => { Object.defineProperty(input, "files", { configurable: true, value: [newerFile] }); input.dispatchEvent(new Event("change", { bubbles: true })); });
+  await click("Retry photo 1"); expect(commands).toHaveLength(1);
+  household = commands[0]!(household).household; await render();
+  expect(rows).toHaveLength(0); expect(household.kitchen.boards!.photos[0]!.mediaId).toBe(mediaId);
+  expect(host.textContent).not.toContain("This photo space changed elsewhere");
+  if (newerDraft) {
+    const caption = edit === "caption" ? "Newer caption, not yet saved" : "Replacement";
+    expect(host.querySelector<HTMLInputElement>('[aria-label="Photo 1 caption"]')!.value).toBe(caption); expect(button("Save photo 1").disabled).toBe(false);
+    if (edit === "crop") expect(host.querySelector<HTMLInputElement>('[aria-label="Photo 1 zoom"]')!.value).toBe("1.7");
+    if (edit === "file") clients[0]!.uploadBoardPhoto.mockResolvedValueOnce({ mediaId: newMediaId, pendingId: "new-file" });
+    await click("Save photo 1"); expect(commands).toHaveLength(2);
+    if (edit === "file") expect(clients[0]!.uploadBoardPhoto).toHaveBeenLastCalledWith(newerFile, expect.objectContaining({ expectedVersion: 2 }));
+    household = commands[1]!(household).household; await render();
+    expect(household.kitchen.boards!.photos[0]).toMatchObject({ caption, mediaId: edit === "file" ? newMediaId : mediaId, version: 3 });
+  }
+  expect(host.querySelector('[aria-label="Photo 1 caption"]')).toBeNull();
+});
