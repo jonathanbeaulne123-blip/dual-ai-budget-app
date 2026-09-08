@@ -1,3 +1,4 @@
+import { useStatementStartingPoints } from "./statementStartingPoints.ts";
 import { useId, useState } from "react";
 import {
   copy,
@@ -14,6 +15,7 @@ import "./onboarding.css";
 type OnboardingEstimatesProps = {
   household: Household;
   memberId: string;
+  authUserId?: string;
   busy?: boolean;
   onCommit: (fn: (current: Household) => CommitResult) => void;
 };
@@ -27,17 +29,19 @@ function initialDraft(household: Household, memberId: string): Record<string, st
 }
 
 export function OnboardingEstimates(props: OnboardingEstimatesProps) {
-  const scopeKey = `${props.household.householdId}:${props.memberId}`;
+  const scopeKey = `${props.household.environment}:${props.household.householdId}:${props.memberId}:${props.authUserId ?? props.memberId}`;
   return <ScopedOnboardingEstimates key={scopeKey} {...props} />;
 }
 
 function ScopedOnboardingEstimates({
   household,
   memberId,
+  authUserId = memberId,
   busy,
   onCommit,
 }: OnboardingEstimatesProps) {
   const state = onboardingEstimateState(household);
+  const startingPoints = useStatementStartingPoints(household, memberId, authUserId);
   const fieldPrefix = useId();
   const helpId = `${fieldPrefix}-help`;
   const errorId = `${fieldPrefix}-error`;
@@ -116,6 +120,10 @@ function ScopedOnboardingEstimates({
           <p className="onboarding-estimate-guide">
             {copy(selfStale ? "estimates.changed" : "estimates.guide")}
           </p>
+          <section className="onboarding-statement-points" aria-label="Reviewed spending suggestions"><p>{startingPoints.estimateStatus}</p>
+            {startingPoints.loadError && <p role="status">{startingPoints.loadError}</p>}
+            {startingPoints.estimates.filter(row => row.categoryId && state.categoryIds.includes(row.categoryId)).map(row => <article key={row.id}><strong>{row.label} · {formatCad(row.amountCents ?? 0)}</strong><p>{row.reason}</p><button type="button" disabled={busy} onClick={() => setDraft(current => ({ ...current, [row.categoryId!]: ((row.amountCents ?? 0) / 100).toFixed(2) }))}>Use this amount as my estimate</button></article>)}
+          </section>
           <p className="onboarding-estimate-blank-help" id={helpId}>{copy("estimates.blank-help")}</p>
           <div className="onboarding-estimate-fields">
             {state.categoryIds.map((categoryId, index) => {

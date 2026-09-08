@@ -1376,3 +1376,16 @@
   .app:has(.onboarding-return-bar):not(:has(.fund-ledge)) { padding-bottom: calc(var(--nav) + var(--standalone-return-height, 44px) + var(--standalone-pill-clearance, 0px) + 28px); }
   .app:has(.onboarding-return-bar):not(:has(.fund-ledge)) .hercules-pill { bottom: calc(var(--nav) + var(--standalone-return-height, 44px) + 10px); }
 }
+
+/* Curriculum v2: the authored world follows every teaching/review card. */
+:root[data-theme="classic"] :is(.onboarding-shell,.onboarding-category-card,.onboarding-estimate-card,.onboarding-plan,.onboarding-ready) { border-top: 3px solid var(--pine); }
+:root[data-theme="taylor"] :is(.onboarding-shell,.onboarding-category-card,.onboarding-estimate-card,.onboarding-plan,.onboarding-ready) { border-style: dashed; box-shadow: 3px 3px 0 var(--card),4px 4px 0 var(--line); }
+:root[data-theme="taylor"] :is(.onboarding-card,.onboarding-ready-summary,.onboarding-practice) { border-radius: 10px; border-style: dashed; }
+:root[data-theme="newfoundland"] :is(.onboarding-shell,.onboarding-category-card,.onboarding-estimate-card,.onboarding-plan,.onboarding-ready) { border-radius: 2px; border-top: 5px solid var(--theme-accent); }
+:root[data-theme="newfoundland"] .onboarding-card { border-left: 3px solid var(--theme-accent); }
+@media(max-width:719px) { :is(.onboarding-category-card,.onboarding-estimate-card,.onboarding-plan,.onboarding-ready) { min-width: 0; padding-bottom: max(20px,env(safe-area-inset-bottom)); } }
+
+.onboarding-statement-points { margin-block: 16px; padding: 16px; border: 1px solid var(--line); background: var(--paper); border-radius: var(--world-r-card, 6px); }
+.onboarding-statement-points article { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.onboarding-statement-points p { line-height: 1.5; }
+.onboarding-statement-points button { min-height: 44px; }

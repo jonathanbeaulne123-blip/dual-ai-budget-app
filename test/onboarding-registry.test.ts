@@ -41,7 +41,7 @@ function codes(rows: readonly OnboardingChapter[]): RegistryProblemCode[] {
 describe("onboarding registry", () => {
   it("ships a valid versioned registry", () => {
     expect(validateRegistry(ONBOARDING_REGISTRY)).toEqual([]);
-    expect(ONBOARDING_REGISTRY_VERSION).toBe(1);
+    expect(ONBOARDING_REGISTRY_VERSION).toBe(2);
     expect(ONBOARDING_REGISTRY.every((chapter) => chapter.registryVersion === ONBOARDING_REGISTRY_VERSION)).toBe(true);
   });
 

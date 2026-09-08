@@ -178,6 +178,7 @@ import {
   type HouseholdOnboarding,
 } from "./onboarding/mode.ts";
 import { ONBOARDING_REGISTRY_VERSION, chapterById } from "./onboarding/registry.ts";
+import { appendChapterAttestation, acceptedPracticeProof, memberRequirementSatisfied } from "./onboarding/attestations.ts";
 import { householdGatesOutstanding, memberProgress } from "./onboarding/progress.ts";
 import { personalModuleById, personalModuleOfferFor } from "./onboarding/personal.ts";
 import { evidenceFor, probeEvidenceKey } from "./onboarding/evidence.ts";
@@ -213,7 +214,6 @@ import {
 } from "./onboarding/approvals.ts";
 import {
   onboardingCompletionDigest,
-  readyPracticeProofAccepted,
   READY_CHAPTER_ID,
 } from "./onboarding/ready.ts";
 import type { CorrectionPracticeProof } from "./monthRehearsalPractice.ts";
@@ -510,14 +510,14 @@ export const recordChapterAcknowledgement = captureCommand("recordChapterAcknowl
     requireOnboardingProgressActor(household, input.memberId, input.createdBy);
     const projected = evidenceFor(household, chapter.id, input.memberId);
     if (projected.kind !== "accepted" || projected.card.scope !== "household") {
-      throw new ValidationError("Add a Shared account and choose one Shared credit card for the Fund before continuing.");
+      throw new ValidationError("Add the Shared accounts you want to use before continuing.");
     }
   }
   if (chapter.id === "ch-05-opening") {
     requireOnboardingProgressActor(household, input.memberId, input.createdBy);
     const projected = evidenceFor(household, chapter.id, input.memberId);
     if (projected.kind !== "accepted" || projected.card.scope !== "household") {
-      throw new ValidationError("Confirm one complete opening batch for every Shared account before continuing.");
+      throw new ValidationError("Confirm an opening balance for every active Shared account, including zero balances, before continuing.");
     }
   }
   if (chapter.id === "ch-06-fund") {
@@ -553,27 +553,30 @@ export const recordChapterAcknowledgement = captureCommand("recordChapterAcknowl
   if (chapter.id === READY_CHAPTER_ID) {
     requireOnboardingProgressActor(household, input.memberId, input.createdBy);
     const today = input.today ?? todayKey(new Date(), household.timezone);
-    const projected = evidenceFor(household, chapter.id, input.memberId, { today });
-    const practiceAccepted = readyPracticeProofAccepted(input.practiceProof, input.memberId, today);
+    const practiceAccepted = acceptedPracticeProof(input.practiceProof, input.memberId, today);
     const priorGates = householdGatesOutstanding(household).filter((chapterId) => chapterId !== READY_CHAPTER_ID);
     if (priorGates.length > 0) {
       throw new ValidationError("Finish the remaining setup checks before the Ready chapter.");
     }
-    if (projected.kind !== "accepted" && !practiceAccepted) {
-      throw new ValidationError("Post one real entry, or finish the discarded Practice correction, before saying you're ready.");
+    if (!practiceAccepted) {
+      throw new ValidationError("Finish the discarded Practice entry and correction before saying you're ready.");
     }
   }
-  return updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
+  const result = updateMemberProgress(household, input, "Onboarding chapter acknowledged", (progress, at) => ({
     ...progress,
+    ...(chapter.id === READY_CHAPTER_ID && input.practiceProof ? { practiceProof: input.practiceProof } : {}),
     rows: progress.rows.map((row) => row.chapterId === chapter.id
-      ? {
-          ...row,
-          acknowledgedAt: row.acknowledgedAt ?? at,
-          lastSafeResumePoint: chapter.id,
-        }
+      ? { ...row, acknowledgedAt: chapter.contributesToFinalGate || (row.invalidatedAt && (row.acknowledgedAt ?? "") <= row.invalidatedAt)
+          ? at : row.acknowledgedAt ?? at, lastSafeResumePoint: chapter.id }
       : row),
     updatedAt: at,
   }));
+  if (!chapter.contributesToFinalGate || acceptedHouseholdOnboarding(household)?.state === "complete") return result;
+  const at = memberProgress(result.household, input.memberId).updatedAt;
+  const attested = appendChapterAttestation(result.household, input.memberId, chapter.id, at);
+  const priorIds = new Set((household.onboardingAttestations ?? []).map(row => row.id));
+  return commit(household, attested, "Onboarding", "Accepted your setup check",
+    (attested.onboardingAttestations ?? []).filter(row => !priorIds.has(row.id)).map(row => row.id), [], "recordChapterAcknowledgement");
 });
 
 /**
@@ -599,7 +602,7 @@ export const recordObservedChapterCompletion = captureCommand("recordObservedCha
     throw new ValidationError("That household check is no longer current.");
   }
   const evidenceKey = probeEvidenceKey(projected.card);
-  return updateMemberProgress(household, input, "Onboarding probe accepted", (progress, at) => ({
+  const result = updateMemberProgress(household, input, "Onboarding probe accepted", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
       ? {
@@ -610,14 +613,18 @@ export const recordObservedChapterCompletion = captureCommand("recordObservedCha
           probeEvidenceKey: row.invalidatedAt && (row.observedCompleteAt ?? "") <= row.invalidatedAt
             ? evidenceKey
             : row.probeEvidenceKey ?? evidenceKey,
-          acknowledgedAt: row.invalidatedAt && (row.acknowledgedAt ?? "") <= row.invalidatedAt
-            ? at
-            : row.acknowledgedAt ?? at,
+          acknowledgedAt: at,
           lastSafeResumePoint: chapter.id,
         }
       : row),
     updatedAt: at,
   }));
+  if (acceptedHouseholdOnboarding(household)?.state === "complete") return result;
+  const at = memberProgress(result.household, input.memberId).updatedAt;
+  const attested = appendChapterAttestation(result.household, input.memberId, chapter.id, at);
+  const priorIds = new Set((household.onboardingAttestations ?? []).map(row => row.id));
+  return commit(household, attested, "Onboarding", "Accepted your household check",
+    (attested.onboardingAttestations ?? []).filter(row => !priorIds.has(row.id)).map(row => row.id), [], "recordObservedChapterCompletion");
 });
 
 /** Skip only a personal module whose registry policy explicitly permits it. */
@@ -1046,7 +1053,8 @@ export const approveOnboardingReady = captureCommand("approveOnboardingReady", f
   requireOnboardingProgressActor(household, input.memberId, input.createdBy);
   const expectedDigest = onboardingCompletionDigest(household);
   if (normalizeOnboardingApprovalDigest(input.digest) !== expectedDigest
-    || householdGatesOutstanding(household).length > 0) {
+    || householdGatesOutstanding(household).length > 0
+    || !memberRequirementSatisfied(household, input.memberId, READY_CHAPTER_ID)) {
     throw new ValidationError("Finish every setup check before saying you're ready.");
   }
   return appendOnboardingApproval(household, input, "ready");
@@ -1608,6 +1616,7 @@ export const postEntry = captureCommand("postEntry", function postEntry(househol
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
   if (input.swipeReviewed !== undefined) reviewedSwipeEntry(household, input);
+  if (input.source === "import" && input.sourceId && household.transactions.some(t => t.accountId === input.accountId && (t.importSourceIdentity === input.sourceId || (t.source === "import" && t.sourceId === input.sourceId)))) throw new ValidationError("This imported source identity is already accepted. Retain the existing transaction.");
   requireAccountScopeForWrite(household, input.accountId, actor);
   requireOpenPeriod(household, date);
   const subcategory = requireSubcategory(
@@ -1770,6 +1779,7 @@ export const postOpeningBalances = captureCommand("postOpeningBalances", functio
       },
     };
   }
+  if (household.accountOpeningCheckpoints?.length) throw new ValidationError("Opening checkpoints are already posted. Use a reviewed account history correction.");
   if (hasPostedOpeningTruth(household)) {
     throw new ValidationError("Opening truth is already posted. Reverse the complete opening batch before correcting it.");
   }
@@ -1843,6 +1853,7 @@ export const postTransfer = captureCommand("postTransfer", function postTransfer
   const date = parseDate(input.date);
   const amountCents = parseAmount(input.amount);
   const actor = resolveActor(household, input);
+  if (input.source === "import" && input.sourceId && household.transactions.some(t => t.accountId === input.fromAccountId && (t.importSourceIdentity === input.sourceId || (t.source === "import" && t.sourceId === input.sourceId)))) throw new ValidationError("This imported transfer identity is already accepted. Retain the existing transfer.");
   requireAccountScopeForWrite(household, input.fromAccountId, actor);
   requireAccountScopeForWrite(household, input.toAccountId, actor);
   requireOpenPeriod(household, date);
@@ -3279,6 +3290,12 @@ export const adoptFirstBudget = captureCommand("adoptFirstBudget", function adop
     changedIds.push(plan.id);
   }
   next.budgetPlans = planned;
+  next.acceptedStarterPlans = [...(next.acceptedStarterPlans ?? []).filter(row => row.id !== confirmationId), {
+    id: confirmationId, proposalDigest: proposal.sourceDigest, monthKey: input.monthKey,
+    memberIds: household.members.filter(member => member.active).map(member => member.id).sort(),
+    plans: planned.filter(plan => changedIds.includes(plan.id)).map(plan => ({ ...plan })),
+    acceptedAt: approvedAt,
+  }];
   const result = commit(
     previous,
     next,
@@ -4999,6 +5016,7 @@ export const postWorkShiftWithAttendanceReview = captureCommand("postWorkShiftWi
 export const reversePostedMoney = captureCommand("reversePostedMoney", function reversePostedMoney(household: Household, transactionId: string, input: ActorInput & { reversalDate?: string } = {}): CommitResult {
   const tx = household.transactions.find((item) => item.id === transactionId);
   if (!tx) throw new ValidationError("That row is already gone.");
+  if (tx.historyCorrectionId) throw new ValidationError("Review a new atomic history correction; this row cannot be reversed separately.");
   const pair = tx.transferPairId
     ? household.transactions.find((item) => item.id === tx.transferPairId)
     : undefined;
@@ -7555,3 +7573,5 @@ export function emptyHousehold(environment: Household["environment"] = "developm
 }
 
 export { DEFAULT_SHIFT_SETTINGS };
+
+export { acceptReviewedAccountHistory, approveAccountHistoryReview, submitAccountHistoryReview } from "./accountHistory.ts";

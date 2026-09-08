@@ -1,3 +1,5 @@
+import { shapeOnboardingAttestationInvalidations, mergeOnboardingAttestationInvalidations, shapeOnboardingAttestations, mergeOnboardingAttestations } from "./onboarding/attestations.ts";
+import { shapeAcceptedStarterPlans, mergeAcceptedStarterPlans } from "./onboarding/planAcceptance.ts";
 import {
   cloneHousehold,
   isLandingSurface,
@@ -365,6 +367,9 @@ export function ensureHouseholdShape(household: Household): Household {
     onboardingCategoryProposals: shapeOnboardingCategoryProposals(household.onboardingCategoryProposals, household.householdId),
     onboardingCategoryMerges: shapeOnboardingCategoryMerges(household.onboardingCategoryMerges, household.householdId),
     onboardingApprovals: shapeOnboardingApprovals(household.onboardingApprovals, household.householdId),
+    onboardingAttestationInvalidations: shapeOnboardingAttestationInvalidations(household.onboardingAttestationInvalidations),
+    onboardingAttestations: shapeOnboardingAttestations(household.onboardingAttestations, household.householdId),
+    acceptedStarterPlans: shapeAcceptedStarterPlans(household.acceptedStarterPlans),
     charter: shapeHouseholdCharter(household.charter, { members, householdFund }),
     householdFund,
     fundMonthPlans: shapeHouseholdFundMonthPlans(household.fundMonthPlans),
@@ -506,6 +511,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     onboardingCategoryProposals: shaped.onboardingCategoryProposals ?? [],
     onboardingCategoryMerges: shaped.onboardingCategoryMerges ?? [],
     onboardingApprovals: shaped.onboardingApprovals ?? [],
+    onboardingAttestationInvalidations: shaped.onboardingAttestationInvalidations ?? [],
+    onboardingAttestations: shaped.onboardingAttestations ?? [],
+    acceptedStarterPlans: shaped.acceptedStarterPlans ?? [],
     charter: shaped.charter ?? null,
     householdFund: shaped.householdFund ?? null,
     fundMonthPlans: shaped.fundMonthPlans ?? [],
@@ -521,6 +529,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     workJobs: shaped.workJobs,
     shiftSettings: shaped.shiftSettings,
     lastCommittedAt: shaped.lastCommittedAt,
+    accountOpeningCheckpoints: (shaped.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "household"),
+    accountHistoryReviews: (shaped.accountHistoryReviews ?? []).filter(r => r.visibility === "household"),
+    accountHistoryApprovals: (shaped.accountHistoryApprovals ?? []).filter(r => r.visibility === "household"),
     transactions: sharedTx,
     shifts: sharedShifts,
     tombstones: shaped.tombstones,
@@ -567,6 +578,9 @@ export function splitForSync(household: Household, memberId: string): { shared: 
       : {}),
     accounts: personalAccounts,
     lastCommittedAt: shaped.lastCommittedAt,
+    accountOpeningCheckpoints: (shaped.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryReviews: (shaped.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryApprovals: (shaped.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
     transactions: personalTx,
     shifts: personalShifts,
     sevenShiftsSchedules: shaped.sevenShiftsSchedules?.filter((row) => row.memberId === memberId) ?? [],
@@ -649,6 +663,9 @@ export function personalEnvelopeFromPayload(
       ? row.fundCardAccountUpdatedAt
       : undefined,
     accounts,
+    accountOpeningCheckpoints: (row.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryReviews: (row.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
+    accountHistoryApprovals: (row.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
     transactions: Array.isArray(row.transactions)
       ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
       : [],
@@ -740,6 +757,9 @@ export function overlayPersonalReplica(
           : {}),
       };
     }),
+    accountOpeningCheckpoints: [...(household.accountOpeningCheckpoints ?? []).filter(r => !(r.visibility === "personal" && r.ownerMemberId === memberId)), ...(personal.accountOpeningCheckpoints ?? [])],
+    accountHistoryReviews: [...(household.accountHistoryReviews ?? []).filter(r => !(r.visibility === "personal" && r.ownerMemberId === memberId)), ...(personal.accountHistoryReviews ?? [])],
+    accountHistoryApprovals: [...(household.accountHistoryApprovals ?? []).filter(r => !(r.visibility === "personal" && r.ownerMemberId === memberId)), ...(personal.accountHistoryApprovals ?? [])],
     transactions: [
       ...household.transactions.filter((item) => !(
         (item.visibility === "personal" && item.createdBy === memberId) || personalTransactionIds.has(item.id)
@@ -835,6 +855,9 @@ export function assembleHousehold(
     revision: shared.revision,
     baseRevision: shared.revision,
     booksAcceptedHash: null,
+    accountOpeningCheckpoints: [...(shared.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "household"), ...(personal?.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
+    accountHistoryReviews: [...(shared.accountHistoryReviews ?? []).filter(r => r.visibility === "household"), ...(personal?.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
+    accountHistoryApprovals: [...(shared.accountHistoryApprovals ?? []).filter(r => r.visibility === "household"), ...(personal?.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
     commandReceipts: shared.commandReceipts ?? [],
     sharing: shapeSharing({ linked: options?.linked === true }),
     conflicts: shared.conflicts ?? [],
@@ -901,6 +924,9 @@ export function assembleHousehold(
     onboardingCategoryProposals: shapeOnboardingCategoryProposals(shared.onboardingCategoryProposals, shared.householdId),
     onboardingCategoryMerges: shapeOnboardingCategoryMerges(shared.onboardingCategoryMerges, shared.householdId),
     onboardingApprovals: shapeOnboardingApprovals(shared.onboardingApprovals, shared.householdId),
+    onboardingAttestationInvalidations: shapeOnboardingAttestationInvalidations(shared.onboardingAttestationInvalidations),
+    onboardingAttestations: shapeOnboardingAttestations(shared.onboardingAttestations, shared.householdId),
+    acceptedStarterPlans: shapeAcceptedStarterPlans(shared.acceptedStarterPlans),
     charter: shared.charter ?? null,
     householdFund: shared.householdFund ?? null,
     fundMonthPlans: shared.fundMonthPlans ?? [],
@@ -991,6 +1017,9 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     onboardingCategoryProposals,
     onboardingCategoryMerges,
     onboardingApprovals,
+    onboardingAttestationInvalidations: mergeOnboardingAttestationInvalidations(server.onboardingAttestationInvalidations, client.onboardingAttestationInvalidations),
+    onboardingAttestations: mergeOnboardingAttestations(server.onboardingAttestations, client.onboardingAttestations),
+    acceptedStarterPlans: mergeAcceptedStarterPlans(server.acceptedStarterPlans, client.acceptedStarterPlans),
     charter,
     householdFund,
     fundMonthPlans: mergeRecords(server.fundMonthPlans ?? [], client.fundMonthPlans ?? [], tombstones),
@@ -1017,6 +1046,9 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     ),
     shiftSettings: newer.shiftSettings,
     lastCommittedAt: newer.lastCommittedAt,
+    accountOpeningCheckpoints: mergeRecords(server.accountOpeningCheckpoints ?? [], client.accountOpeningCheckpoints ?? [], tombstones),
+    accountHistoryReviews: mergeRecords(server.accountHistoryReviews ?? [], client.accountHistoryReviews ?? [], tombstones),
+    accountHistoryApprovals: mergeRecords(server.accountHistoryApprovals ?? [], client.accountHistoryApprovals ?? [], tombstones),
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
     tombstones,
@@ -1117,6 +1149,9 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
         }
       : {}),
     lastCommittedAt: newer.lastCommittedAt,
+    accountOpeningCheckpoints: mergeRecords(server.accountOpeningCheckpoints ?? [], client.accountOpeningCheckpoints ?? [], tombstones),
+    accountHistoryReviews: mergeRecords(server.accountHistoryReviews ?? [], client.accountHistoryReviews ?? [], tombstones),
+    accountHistoryApprovals: mergeRecords(server.accountHistoryApprovals ?? [], client.accountHistoryApprovals ?? [], tombstones),
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     accounts: mergeRecords(server.accounts ?? [], client.accounts ?? [], tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),

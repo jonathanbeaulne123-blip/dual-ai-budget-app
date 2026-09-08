@@ -1,12 +1,11 @@
 // @vitest-environment jsdom
 
+import { readySetup, acknowledge } from "./fixtures/onboarding-v2.ts";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   approveOnboardingReady,
-  catalogHousehold,
-  emptyMemberOnboardingProgress,
   onboardingCompletionDigest,
   type Household,
 } from "../src/core/index.ts";
@@ -21,45 +20,9 @@ const AT = "2026-09-05T14:00:00.000Z";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 function readyHousehold(readyAcknowledged = false): Household {
-  const household = catalogHousehold("development");
-  household.transactions = [];
-  household.commandReceipts = [];
-  household.householdOnboarding = {
-    id: `ONBOARDING-${household.environment}-${household.householdId}`,
-    environment: household.environment,
-    householdId: household.householdId,
-    registryVersion: 1,
-    state: "active",
-    proposedByMemberId: BIANCA,
-    proposedAt: "2026-09-05T13:45:00.000Z",
-    handshakeExpiresAt: AT,
-    confirmedByMemberIds: [BIANCA, JONATHAN],
-    startedAt: AT,
-    stoppedAt: null,
-    stoppedByMemberIds: [],
-    stoppedSolo: false,
-    forcedUnlock: false,
-    completedAt: null,
-    completionDigest: null,
-    createdAt: "2026-09-05T13:45:00.000Z",
-    updatedAt: AT,
-  };
-  household.members = household.members.map((member) => {
-    const progress = emptyMemberOnboardingProgress({
-      environment: household.environment,
-      householdId: household.householdId,
-      memberId: member.id,
-    });
-    progress.rows = progress.rows.map((row) => ({
-      ...row,
-      acknowledgedAt: row.chapterId === "ch-12-ready" && member.id === BIANCA && !readyAcknowledged ? null : AT,
-      lastSafeResumePoint: row.chapterId === "ch-12-ready" && member.id === BIANCA && !readyAcknowledged
-        ? "ch-11-plan"
-        : row.chapterId,
-    }));
-    progress.updatedAt = AT;
-    return { ...member, onboardingProgress: progress };
-  });
+  let household = readySetup(false);
+  household = acknowledge(household, JONATHAN, "ch-12-ready");
+  if (readyAcknowledged) household = acknowledge(household, BIANCA, "ch-12-ready");
   return household;
 }
 

@@ -27,6 +27,8 @@ export type IntentStep = {
 };
 export type LedgerCommand = {
   version: 2;
+  /** Client understands signed openings and append-only account history lineage. */
+  accountHistoryVersion?: 1;
   id: string;
   householdId: string;
   environment: Environment;
@@ -75,6 +77,7 @@ export async function commandFromCapture(
 ): Promise<LedgerCommand> {
   const command: LedgerCommand = {
     version: 2,
+    accountHistoryVersion: 1,
     id,
     ...scope,
     observedSequence: input.observedRevision,

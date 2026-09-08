@@ -18,6 +18,8 @@ function stable(value: unknown): unknown {
 
 /** Bounded non-financial command facts that must survive command-event replay exactly. */
 export function commandMaterializationFacts(input: {
+  accountOpeningCheckpoints?: Household["accountOpeningCheckpoints"];
+  accountHistoryApprovals?: Household["accountHistoryApprovals"];
   recurrences?: Recurrence[];
   monthRehearsals?: MonthRehearsal[];
   householdOnboarding?: Household["householdOnboarding"];
@@ -25,10 +27,14 @@ export function commandMaterializationFacts(input: {
   onboardingCategoryProposals?: Household["onboardingCategoryProposals"];
   onboardingCategoryMerges?: Household["onboardingCategoryMerges"];
   onboardingApprovals?: Household["onboardingApprovals"];
+  onboardingAttestations?: Household["onboardingAttestations"];
+  acceptedStarterPlans?: Household["acceptedStarterPlans"];
   categories?: Category[];
   budgetPlans?: BudgetPlan[];
 }): unknown {
   return stable({
+    ...(input.accountOpeningCheckpoints?.length ? {accountOpeningCheckpoints: byId(input.accountOpeningCheckpoints)} : {}),
+    ...(input.accountHistoryApprovals?.length ? {accountHistoryApprovals: byId(input.accountHistoryApprovals)} : {}),
     ...(input.recurrences?.length ? { recurrences: byId(input.recurrences) } : {}),
     ...(input.monthRehearsals?.length ? { monthRehearsals: byId(input.monthRehearsals) } : {}),
     ...(input.householdOnboarding ? { householdOnboarding: input.householdOnboarding } : {}),
@@ -36,6 +42,8 @@ export function commandMaterializationFacts(input: {
     ...(input.onboardingCategoryProposals?.length ? { onboardingCategoryProposals: byId(input.onboardingCategoryProposals) } : {}),
     ...(input.onboardingCategoryMerges?.length ? { onboardingCategoryMerges: byId(input.onboardingCategoryMerges) } : {}),
     ...(input.onboardingApprovals?.length ? { onboardingApprovals: byId(input.onboardingApprovals) } : {}),
+    ...(input.onboardingAttestations?.length ? { onboardingAttestations: byId(input.onboardingAttestations) } : {}),
+    ...(input.acceptedStarterPlans?.length ? { acceptedStarterPlans: byId(input.acceptedStarterPlans) } : {}),
     ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
     ...(input.budgetPlans?.length ? { budgetPlans: byId(input.budgetPlans) } : {}),
   });
@@ -61,6 +69,8 @@ export function financialAuditFacts(household: Household) {
   return stable({
     householdId: household.householdId,
     environment: household.environment,
+    ...(household.accountOpeningCheckpoints?.length ? {accountOpeningCheckpoints: byId(household.accountOpeningCheckpoints)} : {}),
+    ...(household.accountHistoryApprovals?.length ? {accountHistoryApprovals: byId(household.accountHistoryApprovals)} : {}),
     transactions: byId(household.transactions).map((tx) => ({
       id: tx.id,
       date: tx.date,
@@ -79,6 +89,10 @@ export function financialAuditFacts(household: Household) {
       reversalOfId: tx.reversalOfId ?? null,
       source: tx.source,
       sourceId: tx.sourceId ?? null,
+      ...(tx.openingSignedBalanceCents !== undefined ? {openingSignedBalanceCents: tx.openingSignedBalanceCents} : {}),
+      ...(tx.historyCorrectionId !== undefined ? {historyCorrectionId: tx.historyCorrectionId} : {}),
+      ...(tx.importSourceIdentity !== undefined ? {importSourceIdentity: tx.importSourceIdentity} : {}),
+      ...(tx.importSourceHash !== undefined ? {importSourceHash: tx.importSourceHash} : {}),
       funding: tx.funding ?? null,
     })),
     shifts: byId(household.shifts).map((shift) => ({
@@ -180,6 +194,8 @@ export function financialAuditFactsForScope(
   const goalIds = scope === "shared" ? sharedGoalIds : personalGoalIds;
   return financialAuditFacts({
     ...household,
+    accountOpeningCheckpoints: (household.accountOpeningCheckpoints ?? []).filter(row => scope === "shared" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
+    accountHistoryApprovals: (household.accountHistoryApprovals ?? []).filter(row => scope === "shared" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
     transactions: household.transactions.filter((row) => scope === "shared"
       ? row.visibility !== "personal"
       : row.visibility === "personal" && row.createdBy === memberId),
@@ -231,6 +247,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const onboardingCategoryProposals = (next.onboardingCategoryProposals ?? []).filter((row) => posted.has(row.id));
   const onboardingCategoryMerges = (next.onboardingCategoryMerges ?? []).filter((row) => posted.has(row.id));
   const onboardingApprovals = (next.onboardingApprovals ?? []).filter((row) => posted.has(row.id));
+  const onboardingAttestations = (next.onboardingAttestations ?? []).filter((row) => posted.has(row.id));
   const postsCategory = next.categories.some((row) => posted.has(row.id));
   const budgetPlans = next.budgetPlans.filter((row) => (
     posted.has(row.id) && (row.id.includes("-ONB-") || !postsCategory)
@@ -240,6 +257,9 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     environment: next.environment,
     postedIds: [...postedIds].sort(),
     previousRevision: previous?.revision ?? 0,
+    ...((next.accountOpeningCheckpoints?.length ?? 0) > (previous?.accountOpeningCheckpoints?.length ?? 0) ? { accountOpeningCheckpoints: (next.accountOpeningCheckpoints ?? []).filter(row => !previous?.accountOpeningCheckpoints?.some(old => old.id === row.id)) } : {}),
+    ...((next.accountHistoryApprovals?.length ?? 0) > (previous?.accountHistoryApprovals?.length ?? 0) ? { accountHistoryApprovals: (next.accountHistoryApprovals ?? []).filter(row => !previous?.accountHistoryApprovals?.some(old => old.id === row.id)) } : {}),
+    ...((next.accountHistoryReviews?.length ?? 0) > (previous?.accountHistoryReviews?.length ?? 0) ? { accountHistoryReviews: (next.accountHistoryReviews ?? []).filter(row => !previous?.accountHistoryReviews?.some(old => old.id === row.id)) } : {}),
     transactions: tx.map((row) => identityTransaction(row)),
     shifts: shifts.map((shift) => ({
       id: shift.id,
@@ -310,6 +330,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     onboardingCategoryProposals,
     onboardingCategoryMerges,
     onboardingApprovals,
+    onboardingAttestations,
     budgetPlans,
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
@@ -335,6 +356,10 @@ function identityTransaction(tx: Transaction) {
     reversalOfId: tx.reversalOfId ?? null,
     source: tx.source,
     sourceId: tx.sourceId ?? null,
+      ...(tx.openingSignedBalanceCents !== undefined ? {openingSignedBalanceCents: tx.openingSignedBalanceCents} : {}),
+      ...(tx.historyCorrectionId !== undefined ? {historyCorrectionId: tx.historyCorrectionId} : {}),
+      ...(tx.importSourceIdentity !== undefined ? {importSourceIdentity: tx.importSourceIdentity} : {}),
+      ...(tx.importSourceHash !== undefined ? {importSourceHash: tx.importSourceHash} : {}),
     funding: tx.funding ?? null,
     note: tx.note,
     place: tx.place,

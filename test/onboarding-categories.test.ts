@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { setupBooks, acknowledgeBefore } from "./fixtures/onboarding-v2.ts";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { act, createElement } from "react";
@@ -10,7 +11,6 @@ import {
   acceptHouseholdWrite,
   compileHousehold,
   currentSubmission,
-  emptyMemberOnboardingProgress,
   evidenceFor,
   mergeOnboardingCategories,
   mergeShared,
@@ -46,7 +46,7 @@ function submit(
 }
 
 function chapterNineHousehold(): Household {
-  const household = catalogHousehold("development");
+  const household = setupBooks();
   household.householdOnboarding = {
     id: `ONBOARDING-development-${household.householdId}-v1`,
     environment: "development",
@@ -67,19 +67,7 @@ function chapterNineHousehold(): Household {
     createdAt: AT,
     updatedAt: AT,
   };
-  household.members = household.members.map((member) => {
-    const progress = emptyMemberOnboardingProgress({
-      environment: "development",
-      householdId: household.householdId,
-      memberId: member.id,
-    });
-    progress.rows = progress.rows.map((row) => row.chapterId <= "ch-08-cadence"
-      ? { ...row, acknowledgedAt: AT, lastSafeResumePoint: row.chapterId }
-      : row);
-    progress.updatedAt = AT;
-    return { ...member, onboardingProgress: progress };
-  });
-  return household;
+  return acknowledgeBefore(household, "ch-09-categories");
 }
 
 function click(node: Element) {

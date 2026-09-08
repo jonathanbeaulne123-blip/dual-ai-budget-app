@@ -1,3 +1,8 @@
+import * as commands from "../src/core/commands.ts";
+import { capturedIntent, clearCapturedIntent } from "../src/ledgerSync/capture.ts";
+import { commandFromCapture, type Scope } from "../src/ledgerSync/protocol.ts";
+import { prepareCommand } from "../src/ledgerSync/authority.ts";
+import { registeredCommands } from "../src/ledgerSync/registry.ts";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -166,19 +171,28 @@ describe("onboarding household mode", () => {
     expect(run().householdOnboarding?.state).not.toBe("active");
   });
 
-  it("keeps the single-member activation proof exhaustive over every mode command", () => {
-    const source = readFileSync(new URL("../src/core/commands.ts", import.meta.url), "utf8");
-    const commandNames = [...source.matchAll(/export function (\w*HouseholdOnboarding)\s*\(/g)]
-      .map((match) => match[1])
-      .sort();
+  it("registers every captured mode command and preserves the two-person handshake through authority", async () => {
+    const commandNames = Object.keys(commands).filter(name => name.endsWith("HouseholdOnboarding")).sort();
     expect(commandNames).toEqual([
-      "completeHouseholdOnboarding",
-      "confirmHouseholdOnboarding",
-      "offerHouseholdOnboarding",
-      "proposeHouseholdOnboarding",
-      "resumeHouseholdOnboarding",
-      "stopHouseholdOnboarding",
+      "completeHouseholdOnboarding", "confirmHouseholdOnboarding", "offerHouseholdOnboarding",
+      "proposeHouseholdOnboarding", "resumeHouseholdOnboarding", "stopHouseholdOnboarding",
     ]);
+    expect(commandNames.every(name => registeredCommands.includes(name))).toBe(true);
+    const household = catalogHousehold("development");
+    clearCapturedIntent(household);
+    const one = splitForSync(household, BIANCA), two = splitForSync(household, JONATHAN);
+    const scope: Scope = { environment: household.environment, householdId: household.householdId,
+      memberId: BIANCA, subject: "bianca", role: "owner", expires: Date.now() + 60000, aclEpoch: 1 };
+    const state = { sequence: household.revision, shared: one.shared,
+      personal: new Map([[BIANCA, one.personal], [JONATHAN, two.personal]]) };
+    const intent = capturedIntent(proposeHouseholdOnboarding(household, { memberId: BIANCA }).household)!;
+    expect(intent.steps.map(step => step.kind)).toEqual(["proposeHouseholdOnboarding"]);
+    const command = await commandFromCapture(intent, scope, crypto.randomUUID());
+    const accepted = await prepareCommand(state, command, scope, () => {});
+    expect(accepted.shared.householdOnboarding?.state).toBe("handshake-pending");
+    expect(accepted.shared.householdOnboarding?.confirmedByMemberIds).toEqual([BIANCA]);
+    await expect(prepareCommand(state, command, { ...scope, memberId: JONATHAN }, () => {}))
+      .rejects.toThrow("ACTOR_MISMATCH");
   });
 
   it("records an honest two-member stop without completion", () => {
@@ -384,7 +398,7 @@ describe("onboarding household mode", () => {
 
   it("keeps the required handshake copy byte-exact", () => {
     expect(ONBOARDING_MODE_COPY).toEqual({
-      "invite.explain": "This puts both of us in setup mode until we finish or stop. Three sittings, about an hour all in — we can stop between any of them.",
+      "invite.explain": "We’ll agree how to share, bring in the accounts, choose a starter plan, and practise one ordinary entry. Bills, the Fund, and work can wait. Stop whenever you need.",
       "invite.waiting": "Waiting for {name} to say yes on their device.",
       "invite.expired": "That invitation expired. Start it again whenever you're both ready.",
       "stop.recorded": "Setup stopped. Nothing was marked done — we can pick it up whenever.",

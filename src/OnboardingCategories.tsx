@@ -1,3 +1,4 @@
+import { useStatementStartingPoints } from "./statementStartingPoints.ts";
 import { useMemo, useState } from "react";
 import {
   copy,
@@ -16,15 +17,18 @@ type DraftIdea = { localId: string; name: string; parentId: string };
 export function OnboardingCategories({
   household,
   memberId,
+  authUserId = memberId,
   busy,
   onCommit,
 }: {
   household: Household;
   memberId: string;
+  authUserId?: string;
   busy?: boolean;
   onCommit: (fn: (current: Household) => CommitResult) => void;
 }) {
   const state = onboardingCategoryState(household);
+  const startingPoints = useStatementStartingPoints(household, memberId, authUserId);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<DraftIdea[]>([]);
   const [ideaName, setIdeaName] = useState("");
@@ -93,6 +97,7 @@ export function OnboardingCategories({
       {!selfSubmission ? (
         <>
           <p className="onboarding-category-guide">{copy("categories.solo", { name: other?.name ?? "your partner" })}</p>
+          {startingPoints.selected.some(row => row.kind === "category") && <section className="onboarding-statement-points"><h3>Categories you reviewed from statements</h3><p>{copy("categories.statement-help")}</p>{startingPoints.selected.filter(row => row.kind === "category" && categories.some(category => category.id === row.categoryId)).map(row => <article key={row.id}><strong>{row.label}</strong><p>{row.reason}</p><button type="button" disabled={busy || selectedIds.includes(row.categoryId!)} onClick={() => setSelectedIds(current => [...new Set([...current, row.categoryId!])])}>Add to my starter selection</button></article>)}</section>}
           <fieldset className="onboarding-category-picker">
             <legend>{copy("categories.existing")}</legend>
             {categoriesByGroup.map(({ group, categories: rows }) => (

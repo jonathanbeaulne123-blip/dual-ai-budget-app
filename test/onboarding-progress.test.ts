@@ -1,3 +1,4 @@
+import { readySetup } from "./fixtures/onboarding-v2.ts";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -96,7 +97,7 @@ describe("onboarding member progress", () => {
   });
 
   it("never lets acknowledgement or the progress core claim an accepted probe", () => {
-    const result = recordChapterAcknowledgement(catalogHousehold("development"), {
+    const result = recordChapterAcknowledgement(activeOnboarding(), {
       memberId: BIANCA,
       chapterId: "ch-01-meet",
       createdBy: BIANCA,
@@ -109,7 +110,9 @@ describe("onboarding member progress", () => {
       observedCompleteAt: null,
       probeEvidenceKey: null,
     });
-    expect(result).toMatchObject({ persistenceScope: "member-personal", personalMemberId: BIANCA, postedIds: [] });
+    expect(result.persistenceScope).toBeUndefined();
+    expect(result.household.onboardingAttestations).toHaveLength(1);
+    expect(result.postedIds[0]).toMatch(/^ONB-FACT-/);
 
     const source = readFileSync(new URL("../src/core/onboarding/progress.ts", import.meta.url), "utf8");
     expect(source).not.toContain(".tsx");
@@ -229,7 +232,8 @@ describe("onboarding member progress", () => {
           : row),
       updatedAt: AT_1,
     }));
-    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-02-household");
+    // Legacy/private acknowledgement alone cannot manufacture Shared acceptance.
+    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-01-meet");
 
     const personalChapter: OnboardingChapter = {
       id: "pm-test",
@@ -259,8 +263,7 @@ describe("onboarding member progress", () => {
       }).household;
       expect(nextChapterFor(forcedBeforeHouseholdProgress, BIANCA)?.id).toBe("pm-01-own-books");
 
-      let running = activeOnboarding();
-      running = acknowledgeEveryHouseholdChapter(running, BIANCA);
+      const running = readySetup();
       expect(nextChapterFor(running, BIANCA)?.id).toBe("ch-12-ready");
       const stopped = forceUnlockOnboarding(running, {
         memberId: BIANCA, createdBy: BIANCA, at: "2026-09-03T18:00:00.000Z",
@@ -287,22 +290,23 @@ describe("onboarding member progress", () => {
         ? { ...row, acknowledgedAt: null }
         : row),
     }));
-    expect(householdGatesOutstanding(household)).toEqual(["ch-06-fund"]);
+    expect(householdGatesOutstanding(household)).toEqual(ONBOARDING_REGISTRY.filter(chapter => chapter.contributesToFinalGate).map(chapter => chapter.id));
+    expect(householdGatesOutstanding(readySetup(true))).toEqual([]);
     expect(householdGatesOutstanding(catalogHousehold("development"))).toEqual(
-      ONBOARDING_REGISTRY.filter((chapter) => chapter.track === "household").map((chapter) => chapter.id),
+      ONBOARDING_REGISTRY.filter((chapter) => chapter.contributesToFinalGate).map((chapter) => chapter.id),
     );
 
     const onlySignedInMember = acknowledgeEveryHouseholdChapter(catalogHousehold("development"), BIANCA);
     const biancaReplica = splitForSync(onlySignedInMember, BIANCA);
     expect(biancaReplica.shared.members.every((member) => member.onboardingProgress === undefined)).toBe(true);
     expect(householdGatesOutstanding(assembleHousehold(biancaReplica.shared, biancaReplica.personal))).toEqual(
-      ONBOARDING_REGISTRY.filter((chapter) => chapter.track === "household").map((chapter) => chapter.id),
+      ONBOARDING_REGISTRY.filter((chapter) => chapter.contributesToFinalGate).map((chapter) => chapter.id),
     );
   });
 
   it("keeps members with missing or stale progress inside every finale gate", () => {
     const householdChapterIds = ONBOARDING_REGISTRY
-      .filter((chapter) => chapter.track === "household")
+      .filter((chapter) => chapter.contributesToFinalGate)
       .map((chapter) => chapter.id);
     const missing = acknowledgeEveryHouseholdChapter(catalogHousehold("development"), BIANCA);
     expect(missing.members.find((member) => member.id === JONATHAN)?.onboardingProgress).toBeUndefined();
@@ -392,7 +396,7 @@ describe("onboarding member progress", () => {
   });
 
   it("keeps progress in one member's Personal envelope and converges it there", () => {
-    const first = recordChapterAcknowledgement(catalogHousehold("development"), {
+    const first = recordChapterAcknowledgement(activeOnboarding(), {
       memberId: BIANCA, chapterId: "ch-01-meet", createdBy: BIANCA, at: AT_1,
     }).household;
     const muted = setOnboardingOffersMuted(first, {

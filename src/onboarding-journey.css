@@ -1,0 +1,44 @@
+.onboarding-workspace { min-width: 0; }
+.onboarding-detail { min-width: 0; }
+.onboarding-workspace.is-guided { display: grid; grid-template-columns: minmax(230px, 280px) minmax(0, 1fr); gap: clamp(18px, 3vw, 36px); align-items: start; }
+.onboarding-journey { position: sticky; top: 20px; padding: 20px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: var(--world-r-card, 10px); max-height: calc(100dvh - 120px); overflow: auto; scrollbar-gutter: stable; }
+.onboarding-journey h2 { font: 600 26px/1.2 var(--display); margin: 8px 0 20px; }
+.journey-stages { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
+.journey-stages li { border-left: 2px solid var(--line); padding-left: 12px; }
+.journey-stages li[aria-current] { border-color: var(--pine); background: color-mix(in srgb, var(--pine) 6%, transparent); }
+.journey-stages button { width: 100%; display: flex; align-items: start; gap: 8px; text-align: left; background: transparent; border: 0; color: inherit; padding: 8px 0; font: inherit; min-height: 44px; }
+.journey-number { flex-shrink: 0; font-variant-numeric: tabular-nums; color: var(--muted); }
+.journey-stages p, .journey-stages small { display: block; margin: 4px 0; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.journey-stages small { color: var(--muted); }
+.journey-guidance { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 8px; }
+.journey-guidance summary { padding-block: 12px; cursor: pointer; min-height: 44px; }
+.journey-guidance p, .journey-preparation p, .journey-preparation li { font-size: 14px; line-height: 1.55; }
+.journey-preparation { padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card, 8px); }
+.journey-preparation h3 { margin: 0 0 12px; font-family: var(--display); }
+.journey-preparation ul { padding-left: 20px; }
+.journey-followups { padding: 0; list-style: none; display: grid; gap: 8px; }
+.journey-followups button { width: 100%; min-height: 44px; text-align: left; padding: 10px; font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-control, 4px); }
+.journey-followups span { display: block; font-size: 12px; color: var(--muted); }
+.journey-interests { display: grid; gap: 6px; }
+.journey-interests label { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.journey-interests input { width: 18px; height: 18px; }
+.onboarding-journey :is(button, summary, input):focus-visible { outline: 3px solid var(--world-focus, var(--pine)); outline-offset: 3px; }
+:root[data-theme="classic"] .onboarding-journey { border-top: 4px solid var(--pine); box-shadow: 0 5px 18px color-mix(in srgb, var(--ink) 8%, transparent); }
+:root[data-theme="taylor"] .onboarding-journey { border-style: dashed; box-shadow: 4px 4px 0 var(--card), 5px 5px 0 var(--line); }
+:root[data-theme="taylor"] .journey-number { border: 1px dashed var(--theme-accent); border-radius: 50%; padding-inline: 5px; color: var(--ink); }
+:root[data-theme="newfoundland"] .onboarding-journey { border-radius: 2px; border-top: 5px solid var(--theme-accent); background: linear-gradient(90deg, color-mix(in srgb, var(--theme-accent) 5%, var(--paper)), var(--paper)); }
+:root[data-theme="newfoundland"] .journey-guidance { border-top-style: dashed; }
+@media (max-width: 1100px) { .onboarding-workspace.is-guided { grid-template-columns: minmax(205px, 240px) minmax(0, 1fr); gap: 18px; } .onboarding-journey { padding: 14px; } }
+@media (max-width: 719px) {
+  .onboarding-workspace.is-guided { display: block; }
+  .onboarding-journey { position: static; max-height: none; margin-bottom: 24px; padding: 16px; }
+  .journey-stages { gap: 12px; }
+  .journey-stages li:not([aria-current]) p { display: none; }
+  .onboarding-detail { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .onboarding-workspace * { scroll-behavior: auto; } }
+
+.journey-plan-heading { grid-column: 1/-1; margin-bottom: 20px; }
+.journey-plan-heading h2 { font: 600 30px/1.2 var(--display); }
+.journey-plan-heading ol { display: flex; flex-wrap: wrap; gap: 12px 30px; padding-left: 22px; }
+.journey-plan-heading [aria-current] { font-weight: 700; text-decoration: underline; text-underline-offset: 5px; }

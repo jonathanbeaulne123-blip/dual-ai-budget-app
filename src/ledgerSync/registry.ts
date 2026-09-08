@@ -56,7 +56,7 @@ register(
   ["createdBy", "memberId"],
 );
 register(
-  `postEntry postOpeningBalances postTransfer settleWorkReceivable payDeferredWorkTipOut postCardInterest postCardRewards postSavingsInterest saveSitDownSession executeSitDownMoves adoptSitDownStandingOrders fundGoal purchaseGoal recordReconciliation closeBooksMonth postVisit openClaim settleClaim writeOffClaim configureHouseholdFund`,
+  `submitAccountHistoryReview acceptReviewedAccountHistory approveAccountHistoryReview postEntry postOpeningBalances postTransfer settleWorkReceivable payDeferredWorkTipOut postCardInterest postCardRewards postSavingsInterest saveSitDownSession executeSitDownMoves adoptSitDownStandingOrders fundGoal purchaseGoal recordReconciliation closeBooksMonth postVisit openClaim settleClaim writeOffClaim configureHouseholdFund`,
   ["createdBy"],
 );
 register(
@@ -142,6 +142,9 @@ export function executeIntent(
     );
   const args = structuredClone(rawArgs);
   policy.bind(args, actor);
+  // Accepted Shared setup times belong to the authority, not a caller's clock.
+  if (["recordChapterAcknowledgement", "recordObservedChapterCompletion"].includes(kind)
+    && args[0] && typeof args[0] === "object") (args[0] as Record<string, unknown>).at = new Date().toISOString();
   privateReferences(household, args, actor);
   const input = args[0] as Record<string, unknown> | undefined;
   if (
@@ -173,7 +176,7 @@ export function executeIntent(
     for (const patch of args[0] as Array<{ memberId: string }>) {
       if (patch.memberId !== actor) throw new Error("ACTOR_MISMATCH");
     }
-  if (kind === "postOpeningBalances" && input) input.confirmationId = commandId;
+  if (["postOpeningBalances", "acceptReviewedAccountHistory"].includes(kind) && input) input.confirmationId = commandId;
   if (
     kind === "reconcileWorkWeekFromEvidence" &&
     Array.isArray(input?.replacements)

@@ -145,7 +145,7 @@ function renderChat(household: Household, onOpenOpeningBalances = vi.fn()) {
 }
 
 describe("onboarding Slice 14 — Chapter 5 opening truth", () => {
-  it("keeps a receipt-tied partial opening pending and routes it to whole-batch correction", () => {
+  it("keeps partial account coverage pending and routes it to reviewed correction", () => {
     const base = atChapterFive();
     const posted = postOpeningBalances(base, {
       asOfDate: TODAY,
@@ -158,10 +158,10 @@ describe("onboarding Slice 14 — Chapter 5 opening truth", () => {
     expect(evidenceFor(posted.household, "ch-05-opening", BIANCA)).toEqual({ kind: "empty" });
     expect(() => recordChapterAcknowledgement(posted.household, {
       memberId: BIANCA, chapterId: "ch-05-opening", createdBy: BIANCA,
-    })).toThrow("Confirm one complete opening batch for every Shared account before continuing.");
+    })).toThrow("Confirm an opening balance for every active Shared account, including zero balances, before continuing.");
 
     const rendered = renderChat(posted.household);
-    expect(rendered.host.textContent).toContain("Some Shared accounts are missing from the opening batch.");
+    expect(rendered.host.textContent).toContain("Some Shared accounts still need opening evidence.");
     const button = [...rendered.host.querySelectorAll("button")]
       .find((candidate) => candidate.textContent === "Review opening entries")!;
     act(() => button.click());
@@ -200,21 +200,21 @@ describe("onboarding Slice 14 — Chapter 5 opening truth", () => {
       card: {
         scope: "household",
         kind: "receipt",
-        lines: [
-          { label: "Accounts covered" },
-          { label: "Civil date", value: TODAY },
-          { label: "Opening equity" },
-        ],
+
       },
     });
     expect(result.kind === "accepted" && result.card.sourceIds).toContain("OPEN-ALL");
+    if (result.kind === "accepted") {
+      expect(result.card.lines).toHaveLength(sharedOpeningLines(household).length);
+      expect(result.card.lines.every(line => line.value.includes(TODAY))).toBe(true);
+    }
     expect(trialBalance(compileHousehold(household)).inBalance).toBe(true);
     expect(booksEquation(compileHousehold(household)).holds).toBe(true);
 
     const acknowledged = recordChapterAcknowledgement(household, {
       memberId: BIANCA, chapterId: "ch-05-opening", createdBy: BIANCA,
     }).household;
-    expect(nextChapterFor(acknowledged, BIANCA)?.id).toBe("ch-06-fund");
+    expect(nextChapterFor(acknowledged, BIANCA)?.id).toBe("ch-09-categories");
   });
 
   it("opens the existing Shared-only card and carries the exact batch id into persistence", async () => {

@@ -4,7 +4,7 @@ import { ONBOARDING_REGISTRY_VERSION } from "./registry.ts";
 export const HANDSHAKE_WINDOW_MINUTES = 15;
 
 export const ONBOARDING_MODE_COPY = {
-  "invite.explain": "This puts both of us in setup mode until we finish or stop. Three sittings, about an hour all in — we can stop between any of them.",
+  "invite.explain": "We’ll agree how to share, bring in the accounts, choose a starter plan, and practise one ordinary entry. Bills, the Fund, and work can wait. Stop whenever you need.",
   "invite.waiting": "Waiting for {name} to say yes on their device.",
   "invite.expired": "That invitation expired. Start it again whenever you're both ready.",
   "stop.recorded": "Setup stopped. Nothing was marked done — we can pick it up whenever.",
@@ -105,7 +105,9 @@ export function shapeHouseholdOnboarding(value: unknown): HouseholdOnboarding | 
   if (row.environment !== "development" && row.environment !== "production") return null;
   if (typeof row.householdId !== "string" || !row.householdId.trim()) return null;
 
-  const registryVersion = readOnboardingRegistryVersion(row.registryVersion);
+  const sourceRegistryVersion = readOnboardingRegistryVersion(row.registryVersion);
+  // Stable v1 chapter IDs migrate without inventing proof. Accepted completion is sticky.
+  const registryVersion = sourceRegistryVersion === 1 ? ONBOARDING_REGISTRY_VERSION : sourceRegistryVersion;
   const rawState = MODE_STATES.has(row.state as OnboardingModeState)
     ? row.state as OnboardingModeState
     : "blocked";
@@ -248,7 +250,7 @@ export function actorMayApplyHouseholdOnboardingTransition(input: {
       && incoming.completedAt
       && incoming.completedAt === incoming.updatedAt
       && typeof incoming.completionDigest === "string"
-      && /^ready-v1-[a-f0-9]{64}$/.test(incoming.completionDigest)
+      && /^ready-v2-[a-f0-9]{64}$/.test(incoming.completionDigest)
       && incoming.id === prior.id
       && incoming.proposedByMemberId === prior.proposedByMemberId
       && incoming.proposedAt === prior.proposedAt

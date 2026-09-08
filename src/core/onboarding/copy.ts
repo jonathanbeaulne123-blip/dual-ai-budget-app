@@ -37,6 +37,14 @@ function entry(row: CopyEntry): [string, CopyEntry] {
 }
 
 export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freeze(Object.fromEntries([
+  entry({
+    key: "ready.practice.waiting", speaker: "system", surface: "status", scope: "none", announce: "polite",
+    text: "Your Practice is saved. Waiting for your partner to finish their setup checks.", slots: [],
+  }),
+  entry({
+    key: "ready.practice.save", speaker: "system", surface: "button", scope: "none", announce: "none",
+    text: "Save my Practice", slots: [],
+  }),
   // E.1 Entry and the handshake
   entry({
     key: "invite.offer", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
@@ -206,7 +214,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "onboarding.household.ch-04-accounts", speaker: "hercules", surface: "card", scope: "none", announce: "none",
-    text: "Tell me which accounts the household actually uses. Add at least one Shared account and choose one Shared credit card for the Fund.", slots: [],
+    text: "Tell me which accounts the household actually uses. Add the Shared accounts you want to keep together; your own accounts stay Personal.", slots: [],
   }),
   entry({
     key: "accounts.open", speaker: "system", surface: "button", scope: "none", announce: "none",
@@ -222,7 +230,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "onboarding.household.ch-05-opening", speaker: "hercules", surface: "card", scope: "none", announce: "none",
-    text: "Bring every Shared account to today with one opening batch. These are balances you already have — not income or spending.", slots: [],
+    text: "Choose an end-of-day starting balance for each Shared account, including zero. Review any statement activity after that cutoff before confirming the books.", slots: [],
   }),
   entry({
     key: "opening.open", speaker: "system", surface: "button", scope: "none", announce: "none",
@@ -234,7 +242,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "opening.partial", speaker: "hercules", surface: "card", scope: "none", announce: "polite",
-    text: "Some Shared accounts are missing from the opening batch. Reverse that batch, then confirm all of them together.", slots: [],
+    text: "Some Shared accounts still need opening evidence. Add their balances, or review a history correction for an existing account.", slots: [],
   }),
   entry({
     key: "opening.stale", speaker: "hercules", surface: "card", scope: "none", announce: "polite",
@@ -397,6 +405,21 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   entry({
     key: "categories.solo", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
     text: "Curate our starter set: keep what fits and suggest what's missing. {name} is reviewing it too — we'll put the lists together after.", slots: ["name"],
+  }),
+  entry({ key: "journey.guidance.1", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Each person uses their own Google account to join this household.", slots: [] }),
+  entry({ key: "journey.guidance.2", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Bring balances for your Shared accounts, or PDF, OFX/QFX or image statements.", slots: [] }),
+  entry({ key: "journey.guidance.3", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "You can stop. Accepted checkpoints save your progress; unfinished learning stays unfinished.", slots: [] }),
+  entry({ key: "journey.guidance.4", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Shared accounts, accepted transactions, the household plan and boards are visible to both members. A Shared grocery expense is part of both people's household books.", slots: [] }),
+  entry({ key: "journey.guidance.5", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Your Personal accounts, transactions and learning history stay in your Personal scope. A Personal purchase does not become Shared by appearing in a statement. Choose the scope before uploading; An upload draft stays on this device. Sharing a reviewed correction makes its proposed rows and balances visible to your partner before Final Confirm; only Final Confirm posts money.", slots: [] }),
+  entry({ key: "journey.guidance.6", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Optional introductions can wait. Opening one does not mark its learning complete.", slots: [] }),
+  entry({ key: "journey.guidance.7", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Notes hold thoughts; Photos share moments; To-do holds tasks; Goals hold milestones; Shift Ask helps with work planning. Board goals do not move money.", slots: [] }),
+  entry({ key: "journey.guidance.8", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Hercules explains what you are seeing and can help prepare a draft. You review and confirm financial changes yourself.", slots: [] }),
+  entry({ key: "journey.guidance.9", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "What would you like help with?", slots: [] }),
+  entry({ key: "journey.guidance.10", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Optional. Choose what interests you for this visit.", slots: [] }),
+  entry({ key: "journey.preparation-length", speaker: "hercules", surface: "card", scope: "none", announce: "none", text: "Five stages, {count} required learning checkpoints, then both Ready approvals. Statement review depends on your accounts and any questions in the source; there is no timed deadline.", slots: ["count"] }),
+  entry({
+    key: "categories.statement-help", speaker: "hercules", surface: "card", scope: "none", announce: "none",
+    text: "These remain your choices; your partner makes their own selection.", slots: [],
   }),
   entry({
     key: "categories.open", speaker: "system", surface: "button", scope: "none", announce: "none",

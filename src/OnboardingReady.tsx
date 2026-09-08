@@ -1,13 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   approveOnboardingReady,
   completeHouseholdOnboarding,
   copy,
-  evidenceCardLabel,
-  evidenceProvenanceLabel,
-  onboardingCompletionDigest,
   onboardingReadyPresentation,
   recordChapterAcknowledgement,
+  memberRequirementSatisfied,
   runMonthRehearsalCorrectionPractice,
   type CommandOutcome,
   type CommitResult,
@@ -19,21 +17,21 @@ import "./onboarding.css";
 
 type ReadyCommit = (fn: (current: Household) => CommitResult) => Promise<CommandOutcome | null>;
 
-export function OnboardingReady({
-  household,
-  memberId,
-  today,
-  busy,
-  onCommit,
-  onDismiss,
-}: {
+type OnboardingReadyProps = {
   household: Household;
   memberId: string;
   today: DateKey;
   busy?: boolean;
   onCommit: ReadyCommit;
   onDismiss: () => void;
-}) {
+};
+export function OnboardingReady(props: OnboardingReadyProps) {
+  const { household, memberId, today } = props;
+  return <ScopedOnboardingReady key={`${household.environment}:${household.householdId}:${memberId}:${today}`} {...props} />;
+}
+function ScopedOnboardingReady({ household, memberId, today, busy, onCommit, onDismiss }: OnboardingReadyProps) {
+  const live = useRef(true);
+  useEffect(() => { live.current = true; return () => { live.current = false; }; }, []);
   const [practiceStep, setPracticeStep] = useState<0 | 1 | 2>(0);
   const [practiceProof, setPracticeProof] = useState<CorrectionPracticeProof | null>(null);
   const [working, setWorking] = useState(false);
@@ -51,12 +49,13 @@ export function OnboardingReady({
     setFailed(false);
     try {
       const proof = await runMonthRehearsalCorrectionPractice({ date: today, memberId });
+      if (!live.current) return;
       setPracticeProof(proof);
       setPracticeStep(2);
     } catch {
-      setFailed(true);
+      if (live.current) setFailed(true);
     } finally {
-      setWorking(false);
+      if (live.current) setWorking(false);
     }
   }
 
@@ -65,12 +64,13 @@ export function OnboardingReady({
       memberId,
       createdBy: memberId,
     }));
+    if (!live.current) return;
     if (!result?.ok) {
       setFailed(true);
       return;
     }
     setFailed(false);
-    requestAnimationFrame(() => outcomeRef.current?.focus());
+    requestAnimationFrame(() => { if (live.current) outcomeRef.current?.focus(); });
   }
 
   async function approve() {
@@ -78,9 +78,7 @@ export function OnboardingReady({
     setFailed(false);
     try {
       let current = household;
-      const readyRow = current.members.find((member) => member.id === memberId)?.onboardingProgress
-        ?.rows.find((row) => row.chapterId === "ch-12-ready");
-      if (!(readyRow?.acknowledgedAt || readyRow?.observedCompleteAt)) {
+      if (!memberRequirementSatisfied(current, memberId, "ch-12-ready")) {
         const proofResult = await onCommit((latest) => recordChapterAcknowledgement(latest, {
           memberId,
           createdBy: memberId,
@@ -88,19 +86,23 @@ export function OnboardingReady({
           today,
           ...(practiceProof ? { practiceProof } : {}),
         }));
+        if (!live.current) return;
         if (!proofResult?.ok) {
           setFailed(true);
           return;
         }
-        current = proofResult.household;
+        // Saving Practice and reviewing the final Ready facts are separate actions.
+        return;
       }
       const currentPresentation = onboardingReadyPresentation(current, memberId, today, practiceProof);
+      if (currentPresentation.outstanding.length > 0) return;
       if (!currentPresentation.viewerApproved) {
         const approval = await onCommit((latest) => approveOnboardingReady(latest, {
           memberId,
           createdBy: memberId,
-          digest: onboardingCompletionDigest(latest),
+          digest: presentation.digest,
         }));
+        if (!live.current) return;
         if (!approval?.ok) {
           setFailed(true);
           return;
@@ -111,7 +113,7 @@ export function OnboardingReady({
         await finish();
       }
     } finally {
-      setWorking(false);
+      if (live.current) setWorking(false);
     }
   }
 
@@ -139,18 +141,7 @@ export function OnboardingReady({
         <p>{copy("ready.subtitle")}</p>
       </header>
 
-      {presentation.evidence.kind === "accepted" ? (
-        <article className="onboarding-ready-proof" role="status">
-          <p className="onboarding-card-label">{copy("ready.accepted")}</p>
-          <strong>{evidenceCardLabel(presentation.evidence.card.kind)}</strong>
-          {presentation.evidence.card.lines.map((line) => (
-            <p className="onboarding-card-row" key={`${line.label}-${line.value}`}>
-              <span>{line.label}</span><strong>{line.value}</strong>
-            </p>
-          ))}
-          <small>{evidenceProvenanceLabel(presentation.evidence.card.kind)}</small>
-        </article>
-      ) : practiceProof ? (
+      {presentation.practiceAccepted ? (
         <article className="onboarding-ready-proof is-practice" role="status">
           <p className="onboarding-card-label">{copy("ready.practice.title")}</p>
           <p>{copy("ready.practice.done")}</p>
@@ -202,7 +193,9 @@ export function OnboardingReady({
 
       {offline ? <p className="onboarding-ready-offline" role="status">{copy("ready.offline")}</p> : null}
       {failed ? <p className="onboarding-ready-error" role="alert">{copy("ready.failure")}</p> : null}
-      {presentation.viewerApproved ? (
+      {memberRequirementSatisfied(household, memberId, "ch-12-ready") && presentation.outstanding.length > 0 ? (
+        <p role="status">{copy("ready.practice.waiting")}</p>
+      ) : presentation.viewerApproved ? (
         <div className="onboarding-ready-wait" role="status" aria-live="polite">
           <p>{copy("ready.current")}</p>
           {presentation.bothApproved ? (
@@ -216,7 +209,7 @@ export function OnboardingReady({
           disabled={locked || offline || !presentation.proofAccepted || presentation.outstanding.some((id) => id !== "ch-12-ready")}
           onClick={() => void approve()}
         >
-          {copy("ready.self")}
+          {copy(memberRequirementSatisfied(household, memberId, "ch-12-ready") ? "ready.self" : "ready.practice.save")}
         </button>
       )}
     </section>

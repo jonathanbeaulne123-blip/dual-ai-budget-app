@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { setupBooks, acknowledgeBefore } from "./fixtures/onboarding-v2.ts";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { act, createElement, useState } from "react";
@@ -11,9 +12,7 @@ import {
   adoptFirstBudget,
   approveOnboardingProposal,
   buildProposal,
-  catalogHousehold,
   currentPlanAdoptionReceipt,
-  emptyMemberOnboardingProgress,
   evidenceFor,
   firstPlanPresentation,
   onboardingAdoptionIdentity,
@@ -38,7 +37,7 @@ const CATEGORIES = ["SUB-FOOD-GROCERIES", "SUB-HOUSING-RENT"];
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 function chapterElevenHousehold(): Household {
-  let household = catalogHousehold("development");
+  let household = setupBooks();
   household.householdOnboarding = {
     id: `ONBOARDING-${household.environment}-${household.householdId}`,
     environment: household.environment,
@@ -98,23 +97,7 @@ function chapterElevenHousehold(): Household {
     subcategoryId: "SUB-HOUSING-RENT",
     note: "Rent anchor",
   }).household;
-  const completed = new Set([
-    "ch-01-meet", "ch-02-household", "ch-03-charter", "ch-04-accounts", "ch-05-opening",
-    "ch-06-fund", "ch-07-recurrences", "ch-08-cadence", "ch-09-categories", "ch-10-estimates",
-  ]);
-  household.members = household.members.map((member) => {
-    const progress = emptyMemberOnboardingProgress({
-      environment: household.environment,
-      householdId: household.householdId,
-      memberId: member.id,
-    });
-    progress.rows = progress.rows.map((row) => completed.has(row.chapterId)
-      ? { ...row, acknowledgedAt: AT, lastSafeResumePoint: row.chapterId }
-      : row);
-    progress.updatedAt = AT;
-    return { ...member, onboardingProgress: progress };
-  });
-  return household;
+  return acknowledgeBefore(household, "ch-11-plan");
 }
 
 function receiptAccepted(household: Household): Household {
@@ -458,14 +441,14 @@ describe("Chapter 11 first-plan contract", () => {
     act(() => root.unmount());
   });
 
-  it("accepts only the current exact receipt and matching active month rows", () => {
+  it("accepts the exact starter-plan receipt and matching rows across calendar rollover", () => {
     const adopted = receiptAccepted(chapterElevenHousehold());
     const proposal = buildProposal(adopted, MONTH, TODAY);
     expect(currentPlanAdoptionReceipt(adopted, MONTH, proposal)).toBeTruthy();
     const evidence = evidenceFor(adopted, "ch-11-plan", BIANCA, { today: TODAY });
     expect(evidence.kind).toBe("accepted");
     if (evidence.kind === "accepted") expect(evidence.card.kind).toBe("receipt");
-    expect(evidenceFor(adopted, "ch-11-plan", BIANCA, { today: "2026-10-05" }).kind).not.toBe("accepted");
+    expect(evidenceFor(adopted, "ch-11-plan", BIANCA, { today: "2026-10-05" }).kind).toBe("accepted");
     const inactive = {
       ...adopted,
       budgetPlans: adopted.budgetPlans.map((plan, index) => index === 0 ? { ...plan, active: false } : plan),
@@ -486,7 +469,7 @@ describe("Chapter 11 first-plan contract", () => {
       memberId: BIANCA,
       createdBy: BIANCA,
       chapterId: "ch-11-plan",
-    })).toThrow(/Adopt the current month's exact first plan/);
+    })).toThrow(/Adopt the current month/);
     const onOpenPlan = vi.fn();
     const host = document.createElement("div");
     document.body.append(host);
@@ -506,7 +489,7 @@ describe("Chapter 11 first-plan contract", () => {
     act(() => root.unmount());
   });
 
-  it("derives acknowledgement month from the current Toronto clock rather than a caller date", () => {
+  it("keeps the agreed starter plan valid when the calendar moves to the next month", () => {
     const adopted = receiptAccepted(chapterElevenHousehold());
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-05T15:00:00.000Z"));
@@ -515,7 +498,7 @@ describe("Chapter 11 first-plan contract", () => {
       createdBy: BIANCA,
       chapterId: "ch-11-plan",
       at: AT,
-    })).toThrow(/Adopt the current month's exact first plan/);
+    })).not.toThrow();
   });
 
   it("keeps the Plan surface fenced from unrelated guidance and ships responsive accessibility rules", () => {

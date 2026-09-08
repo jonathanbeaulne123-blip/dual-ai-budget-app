@@ -130,6 +130,8 @@ function parseAccountBlock(input: {
       kind: input.kind,
       currency: currency.toUpperCase(),
       openingBalanceCents,
+      periodStart: dateFromOfx(tagValue(input.block, "DTSTART")),
+      periodEnd: dateFromOfx(tagValue(input.block, "DTEND")),
       ledgerBalanceCents,
       ledgerBalanceDate,
     },

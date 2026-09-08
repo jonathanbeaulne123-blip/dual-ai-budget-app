@@ -1,3 +1,4 @@
+import { readySetup } from "./fixtures/onboarding-v2.ts";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -9,7 +10,6 @@ import {
   bothApproved,
   catalogHousehold,
   compileHousehold,
-  emptyMemberOnboardingProgress,
   mergeOnboardingApprovals,
   mergeShared,
   onboardingCompletionDigest,
@@ -40,39 +40,7 @@ const PROPOSAL_B = `proposal-v1-${"b".repeat(64)}`;
 const READY_A = `ready-v1-${"c".repeat(64)}`;
 
 function readyHousehold(): Household {
-  const household = catalogHousehold("development");
-  const at = "2026-09-05T02:00:00.000Z";
-  household.householdOnboarding = {
-    id: `ONBOARDING-${household.environment}-${household.householdId}`,
-    environment: household.environment,
-    householdId: household.householdId,
-    registryVersion: 1,
-    state: "active",
-    proposedByMemberId: BIANCA,
-    proposedAt: "2026-09-05T01:45:00.000Z",
-    handshakeExpiresAt: at,
-    confirmedByMemberIds: [BIANCA, JONATHAN],
-    startedAt: at,
-    stoppedAt: null,
-    stoppedByMemberIds: [],
-    stoppedSolo: false,
-    forcedUnlock: false,
-    completedAt: null,
-    completionDigest: null,
-    createdAt: "2026-09-05T01:45:00.000Z",
-    updatedAt: at,
-  };
-  household.members = household.members.map((member) => {
-    const progress = emptyMemberOnboardingProgress({
-      environment: household.environment,
-      householdId: household.householdId,
-      memberId: member.id,
-    });
-    progress.rows = progress.rows.map((row) => ({ ...row, acknowledgedAt: at, lastSafeResumePoint: row.chapterId }));
-    progress.updatedAt = at;
-    return { ...member, onboardingProgress: progress };
-  });
-  return household;
+  return readySetup(true);
 }
 
 function approveProposal(household: Household, memberId: string, digest = PROPOSAL_A) {

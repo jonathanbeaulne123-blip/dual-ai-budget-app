@@ -83,7 +83,7 @@ function atChapterFour(): Household {
 }
 
 describe("onboarding Slice 13 — Chapter 4 accounts", () => {
-  it("requires Shared accounts and a resolvable Shared credit card, never Personal evidence", () => {
+  it("requires Shared accounts, never Personal evidence", () => {
     let household = atChapterFour();
     household = {
       ...household,
@@ -104,26 +104,26 @@ describe("onboarding Slice 13 — Chapter 4 accounts", () => {
     expect(JSON.stringify(blocked)).not.toContain(JONATHAN);
   });
 
-  it("cites only Shared accounts once the custodian explicitly chooses the Fund card", () => {
+  it("cites only Shared accounts independently of the optional Fund card", () => {
     let household = atChapterFour();
-    expect(evidenceFor(household, "ch-04-accounts", BIANCA)).toEqual({ kind: "empty" });
+    expect(evidenceFor(household, "ch-04-accounts", BIANCA).kind).toBe("accepted");
     household = setFundCardAccount(household, {
       memberId: BIANCA, accountId: "ACC-MC", createdBy: BIANCA,
     }).household;
     const result = evidenceFor(household, "ch-04-accounts", BIANCA);
     expect(result).toMatchObject({ kind: "accepted", card: { scope: "household" } });
-    expect(result.kind === "accepted" && result.card.lines[0]).toEqual({ label: "Fund card", value: "Mastercard" });
+    expect(result.kind === "accepted" && result.card.lines.some(line=>line.label==="Fund card")).toBe(false);
     expect(result.kind === "accepted" && result.card.sourceIds.every((id) => (
       household.accounts.find((account) => account.id === id)?.scope !== "personal"
     ))).toBe(true);
     expect(evidenceFor(household, "ch-04-accounts", JONATHAN)).toEqual(result);
   });
 
-  it("refuses a bare acknowledgement, then accepts the same household probe after the Fund card choice", () => {
+  it("refuses acknowledgement without Shared accounts and accepts their current facts", () => {
     let household = atChapterFour();
-    expect(() => recordChapterAcknowledgement(household, {
+    expect(() => recordChapterAcknowledgement({...household,accounts:[]}, {
       memberId: BIANCA, chapterId: "ch-04-accounts", createdBy: BIANCA,
-    })).toThrow("Add a Shared account and choose one Shared credit card for the Fund before continuing.");
+    })).toThrow(/Add the Shared accounts/);
     household = setFundCardAccount(household, {
       memberId: BIANCA, accountId: "ACC-VISA", createdBy: BIANCA,
     }).household;

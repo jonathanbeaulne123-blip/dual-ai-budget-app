@@ -16,7 +16,7 @@ import {
   evidenceFor,
   financialAuditHash,
   householdGatesOutstanding,
-  householdChapters,
+  requiredHouseholdChapters,
   ONBOARDING_REGISTRY_VERSION,
   memberProgress,
   memberNeedsAcceptedOnboardingEvidenceAdoption,
@@ -157,11 +157,11 @@ describe("onboarding lifecycle", () => {
         observation: resolvedFor(walking, memberId, memberId === FIXTURE_BIANCA ? FIXTURE_JONATHAN : FIXTURE_BIANCA),
         at: new Date(Date.parse(activationAt) + 120_000).toISOString(),
       }).household;
-      expect(nextChapterFor(walking, memberId)?.id).toBe("ch-08-cadence");
+      expect(nextChapterFor(walking, memberId)?.id).toBe("ch-03-charter");
     }
   });
 
-  it("leaves a genuinely empty new household on the complete twelve-chapter path", () => {
+  it("leaves a genuinely empty household on the required path and refuses private timestamp shortcuts", () => {
     const activationAt = existingBooksActivationAt();
     let household = newHouseholdTemplate("development");
     household = proposeHouseholdOnboarding(household, {
@@ -172,26 +172,13 @@ describe("onboarding lifecycle", () => {
     const progress = adoptAcceptedOnboardingEvidence(household, BIANCA);
     expect(progress.rows.filter(chapterProgressSatisfied)).toEqual([]);
 
-    for (const [index, chapter] of householdChapters().entries()) {
-      const walked = {
-        ...household,
-        members: household.members.map((member) => member.id === BIANCA
-          ? {
-              ...member,
-              onboardingProgress: {
-                ...progress,
-                rows: progress.rows.map((row) => ({
-                  ...row,
-                  acknowledgedAt: householdChapters().slice(0, index).some((prior) => prior.id === row.chapterId)
-                    ? activationAt
-                    : null,
-                })),
-              },
-            }
-          : member),
-      };
-      expect(nextChapterFor(walked, BIANCA)?.id).toBe(chapter.id);
-    }
+    expect(requiredHouseholdChapters()).toHaveLength(9);
+    expect(requiredHouseholdChapters().some(c=>["ch-06-fund","ch-07-recurrences","ch-08-cadence"].includes(c.id))).toBe(false);
+    household.members.find(m=>m.id===BIANCA)!.onboardingProgress = {
+      ...progress, rows: progress.rows.map(row=>({...row,acknowledgedAt:activationAt})),
+    };
+    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-01-meet");
+
   });
 
   it("adopts a signed Charter but leaves missing recurrences to the live Chapter 7", () => {
@@ -334,7 +321,7 @@ describe("onboarding lifecycle", () => {
     }
   });
 
-  it("gives a replacement member only Chapters 1, 2, and 8 without relocking the existing member", () => {
+  it("gives a replacement member the two identity checks without relocking the existing member", () => {
     let household = completed();
     household.members = [
       household.members.find((member) => member.id === BIANCA)!,
@@ -367,7 +354,7 @@ describe("onboarding lifecycle", () => {
       observation: resolvedFor(household, ALEX, BIANCA),
       at: "2026-09-30T12:06:00.000Z",
     }).household;
-    expect(nextChapterFor(household, ALEX)?.id).toBe("ch-08-cadence");
+    expect(nextChapterFor(household, ALEX)?.id.startsWith("ch-")).not.toBe(true);
     expect(householdGatesOutstanding(household)).toEqual([]);
   });
 
@@ -388,7 +375,7 @@ describe("onboarding lifecycle", () => {
 
     const progress = memberProgress(household, ALEX);
     expect(progress.rows.every((row) => !chapterProgressSatisfied(row))).toBe(true);
-    expect(onboardingRegistryMigrationPlan(household)).toEqual({ kind: "repair", fromVersion: 0, toVersion: 1 });
+    expect(onboardingRegistryMigrationPlan(household)).toEqual({ kind: "repair", fromVersion: 0, toVersion: ONBOARDING_REGISTRY_VERSION });
   });
 
   it("does not inherit Development completion into Production", () => {
@@ -621,7 +608,7 @@ describe("onboarding lifecycle", () => {
     expect(refreshed.rows.find((row) => row.chapterId === "ch-01-meet")?.invalidatedAt).toBeNull();
     expect(refreshed.rows.find((row) => row.chapterId === "ch-02-household")?.invalidatedAt).toBe("2026-09-30T12:20:00.000Z");
     expect(refreshed.rows.find((row) => row.chapterId === "ch-03-charter")?.invalidatedAt).toBe("2026-09-30T12:20:00.000Z");
-    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-02-household");
+    expect(nextChapterFor(household, BIANCA)?.id).toBe("ch-01-meet");
 
     const converged = mergeMemberProgress(oldReplica, refreshed);
     const ch3 = converged.rows.find((row) => row.chapterId === "ch-03-charter")!;
@@ -643,7 +630,7 @@ describe("onboarding lifecycle", () => {
   it("routes version changes to repair and fails closed on an unknown chapter id", () => {
     const oldVersion = completed();
     oldVersion.householdOnboarding = { ...oldVersion.householdOnboarding!, registryVersion: 0 };
-    expect(onboardingRegistryMigrationPlan(oldVersion)).toEqual({ kind: "repair", fromVersion: 0, toVersion: 1 });
+    expect(onboardingRegistryMigrationPlan(oldVersion)).toEqual({ kind: "repair", fromVersion: 0, toVersion: ONBOARDING_REGISTRY_VERSION });
     expect(onboardingLifecycleState(oldVersion)).toBe("repair");
 
     const unknown = completed();

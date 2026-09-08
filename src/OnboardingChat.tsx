@@ -1,3 +1,4 @@
+import { OnboardingPreparation } from "./OnboardingJourney.tsx";
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { CommitResult, DateKey, EvidenceResult, Household, PersonalModuleOffer } from "./core/index.ts";
 import {
@@ -275,6 +276,7 @@ export function OnboardingChat({
         </p>
         <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
           <p className="onboarding-card-task">{copy("invite.explain")}</p>
+          <OnboardingPreparation />
         </section>
         <div className="onboarding-actions">
           <button
@@ -375,6 +377,7 @@ export function OnboardingChat({
         >
           {copy("invite.explain")}
         </p>
+        <OnboardingPreparation />
         <div className="onboarding-actions" style={{ marginBottom: SHELL_VIEW.actionToFoot }}>
           <button
             type="button"
@@ -556,7 +559,8 @@ export function OnboardingChat({
   // the shared evidence on their own device. This makes them an actor without
   // pretending they are leading the chapter.
   const recurrenceContributor = chapterId === "ch-07-recurrences" && baseRole === "witness";
-  const role = fundApprovalActor || recurrenceContributor ? "conductor" : baseRole;
+  const observerAcknowledges = ["ch-04-accounts", "ch-05-opening"].includes(chapterId);
+  const role = fundApprovalActor || recurrenceContributor || observerAcknowledges ? "conductor" : baseRole;
   const conductorName = baseRole === "witness"
     ? household.members.find((member) => member.id === custodianMemberId)?.name ?? "your partner"
     : null;
@@ -597,7 +601,7 @@ export function OnboardingChat({
   const personalAccountsEvidence = chapterId === "ch-04-accounts"
     ? selfPersonalAccountsEvidenceFor(household, memberId)
     : { kind: "empty" as const };
-  const personalAccountChoicePending = chapterId === "ch-04-accounts"
+  const personalAccountChoicePending = baseRole === "conductor" && chapterId === "ch-04-accounts"
     && evidence.kind === "accepted"
     && personalAccountsEvidence.kind === "empty"
     && !chapterProgress?.personalAccountSetupSkippedAt;

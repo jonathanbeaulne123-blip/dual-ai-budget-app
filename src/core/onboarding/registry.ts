@@ -5,7 +5,9 @@ import type {
   RegistryProblem,
 } from "./types.ts";
 
-export const ONBOARDING_REGISTRY_VERSION = 1;
+export const ONBOARDING_REGISTRY_VERSION = 2;
+export const NEW_MEMBER_CATCH_UP_CHAPTER_IDS = ["ch-01-meet", "ch-02-household"] as const;
+export const READY_CHAPTER_ID = "ch-12-ready";
 
 const householdChapter = (
   row: Omit<OnboardingChapter, "registryVersion" | "track" | "copyKey" | "flavorKeys" | "contributesToFinalGate">,
@@ -15,7 +17,7 @@ const householdChapter = (
   track: "household",
   copyKey: `onboarding.household.${row.id}`,
   flavorKeys: [1, 2, 3].map((index) => `onboarding.household.${row.id}.flavor-${index}`),
-  contributesToFinalGate: true,
+  contributesToFinalGate: !["ch-06-fund", "ch-07-recurrences", "ch-08-cadence"].includes(row.id),
 });
 
 const personalChapter = (
@@ -65,7 +67,7 @@ export const ONBOARDING_REGISTRY: readonly OnboardingChapter[] = [
   }),
   householdChapter({
     id: "ch-09-categories", order: 9, sitting: 3, target: { tab: "plan" }, conductor: "both", approval: "member",
-    skip: "household-required", timeBudgetSeconds: 300, pausePoints: [], actions: ["navigate", "edit", "submit", "approve", "continue"], dependsOn: ["ch-08-cadence"],
+    skip: "household-required", timeBudgetSeconds: 300, pausePoints: [], actions: ["navigate", "edit", "submit", "approve", "continue"], dependsOn: ["ch-05-opening"],
   }),
   householdChapter({
     id: "ch-10-estimates", order: 10, sitting: 3, target: { tab: "plan" }, conductor: "both", approval: "member",
@@ -220,4 +222,9 @@ export function personalModules(): OnboardingChapter[] {
   return ONBOARDING_REGISTRY
     .filter((chapter) => chapter.track === "personal")
     .sort((a, b) => a.order - b.order);
+}
+
+/** Required curriculum; optional household learning retains its original IDs. */
+export function requiredHouseholdChapters(): OnboardingChapter[] {
+  return householdChapters().filter((chapter) => chapter.contributesToFinalGate);
 }

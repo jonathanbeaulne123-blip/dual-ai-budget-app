@@ -1,3 +1,7 @@
+import { assertLegacyOnboardingCompatible } from "./onboarding/legacyCompatibility.ts";
+import { capturedIntent } from "../ledgerSync/capture.ts";
+import { assertAccountHistoryTransition } from "./accountHistory.ts";
+import { assertOnboardingAttestationTransition, deriveOnboardingAttestationInvalidations, canonicalOnboardingValue } from "./onboarding/attestations.ts";
 import { assertAcceptableBooks, type IncrementalBooksGuard } from "./booksValidation.ts";
 import type { CompiledBooks } from "./journal.ts";
 import { ensureHouseholdShape } from "./sync.ts";
@@ -188,11 +192,16 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
   const confirmationId = input.confirmationId || newConfirmationId();
   const previous = input.previous ? ensureHouseholdShape(input.previous) : null;
   try {
+    if (input.transportRequested === true) assertLegacyOnboardingCompatible(input.previous, input.candidate);
     const candidate = ensureHouseholdShape(input.candidate);
     if (previous && candidate.environment !== previous.environment) {
       throw new BooksRejectedError("Development and Production stay on separate books. Nothing was posted.", "validation-rejected");
     }
     const postedIds = input.postedIds ?? [];
+    if (previous) {
+      const step = capturedIntent(input.candidate)?.steps.slice().reverse().find(s => s.kind === input.commandKind);
+      assertAccountHistoryTransition(previous, candidate, input.commandKind, input.actingMemberId, step?.args);
+    }
     if (input.commandKind?.endsWith("HouseholdOnboarding")) {
       const incoming = acceptedHouseholdOnboarding(candidate);
       if (!previous
@@ -293,9 +302,16 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       });
     }
 
+    if (!validSyntheticDemoCommand && canonicalOnboardingValue(previous?.onboardingAttestationInvalidations ?? [])
+      !== canonicalOnboardingValue(candidate.onboardingAttestationInvalidations ?? [])) {
+      throw new ValidationError("Setup acceptance revocations are authority-owned. Refresh this device before continuing.");
+    }
     // A validated synthetic replacement is a whole disposable fixture, not an
     // append-only edit of its previous seed. Candidate Fund integrity still runs.
     assertHouseholdFundTransition(validSyntheticDemoReplacement ? null : previous, candidate);
+    if (!validSyntheticDemoCommand) assertOnboardingAttestationTransition(previous, candidate, {
+      actorMemberId: input.actingMemberId, commandKind: input.commandKind, postedIds,
+    });
     const isOnboardingSubmissionCommand = input.commandKind === "submitOnboardingCategories"
       || input.commandKind === "submitOnboardingEstimates";
     const onboardingSubmissionStateChanged = JSON.stringify(previous?.onboardingSubmissions ?? [])
@@ -341,6 +357,10 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     if (input.commandKind === "completeHouseholdOnboarding" && previous) {
       assertOnboardingCompletionTransition(previous, candidate);
     }
+    if (!validSyntheticDemoCommand && input.commandKind !== ONBOARDING_ADOPTION_COMMAND_KIND
+      && JSON.stringify(previous?.acceptedStarterPlans ?? []) !== JSON.stringify(candidate.acceptedStarterPlans ?? [])) {
+      throw new ValidationError("Only an accepted first-plan adoption can record its proof.");
+    }
     if (input.commandKind === ONBOARDING_ADOPTION_COMMAND_KIND) {
       assertOnboardingAdoptionTransition(previous, candidate, {
         actorMemberId: input.actingMemberId,
@@ -361,6 +381,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     let accepted: Household = {
       ...candidate,
       revision,
+      ...(!validSyntheticDemoCommand ? { onboardingAttestationInvalidations: deriveOnboardingAttestationInvalidations(previous, candidate, acceptedAt) } : {}),
       lastCommittedAt: candidate.lastCommittedAt ?? acceptedAt,
       sharing: shapeSharing(candidate),
       conflicts: candidate.conflicts ?? previous?.conflicts ?? [],

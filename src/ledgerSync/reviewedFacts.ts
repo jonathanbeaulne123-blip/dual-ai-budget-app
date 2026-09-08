@@ -8,6 +8,7 @@ export function reviewedFacts(result: CommitResult): unknown[] {
       type: t.type,
       date: t.date,
       amountCents: t.amountCents,
+      ...(t.openingSignedBalanceCents !== undefined ? {openingSignedBalanceCents: t.openingSignedBalanceCents} : {}),
       accountId: t.accountId,
       subcategoryId: t.subcategoryId,
       visibility: t.visibility,

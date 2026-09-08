@@ -1,3 +1,4 @@
+import { practiceProof } from "./onboarding-v2.ts";
 import {
   addRecurrence,
   adoptExistingOnboardingEvidence,
@@ -18,6 +19,7 @@ import {
   postOpeningBalances,
   proposeHouseholdOnboarding,
   recordChapterAcknowledgement,
+  requiredHouseholdChapters,
   recordEarningCadence,
   recordObservedChapterCompletion,
   setFundCardAccount,
@@ -271,11 +273,17 @@ export function completedExistingBooksHousehold(activationAt = existingBooksActi
       at: isoAfter(activationAt, 4),
     }).household;
   }
+  for (const chapter of requiredHouseholdChapters().filter(c=>!["ch-01-meet","ch-02-household","ch-12-ready"].includes(c.id))) {
+    for (const memberId of [BIANCA,JONATHAN]) household = recordChapterAcknowledgement(household, {
+      memberId,createdBy:memberId,chapterId:chapter.id,at:isoAfter(activationAt,4),
+    }).household;
+  }
   for (const memberId of [BIANCA, JONATHAN]) {
     household = recordChapterAcknowledgement(household, {
       memberId,
       createdBy: memberId,
       chapterId: "ch-12-ready",
+      practiceProof: { ...practiceProof(memberId), date: today },
       today,
       at: isoAfter(activationAt, 5),
     }).household;
