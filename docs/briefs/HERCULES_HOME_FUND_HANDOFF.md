@@ -10,7 +10,7 @@ Budget(5): conserve source allocations, preserve Personal privacy and exact Conf
 
 ## Repository and strategy
 
-Repository: jonathanbeaulne123-blip/dual-ai-budget-app. Branch: `codex/hercules-home-fund-repair`. Base: `76e486a142987ed5d6fbc065367fadf4c896de26`, fetched and rechecked during final verification. One integration **draft PR**; no readiness/merge/deployment claim while gates below remain open. Resolve the exact candidate with `git rev-parse HEAD`; consult the worksession for measured source fingerprints, rather than assuming old screenshots match later source.
+Repository: jonathanbeaulne123-blip/dual-ai-budget-app. Branch: `codex/hercules-home-fund-repair`. Base: `76e486a142987ed5d6fbc065367fadf4c896de26`, fetched and rechecked during final verification. Integration [draft PR411](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/411), implementation commit `2f7ad3807d345541bfb1552309d97427ebbaa5c0`; no readiness/merge/deployment claim while gates below remain open. Resolve the exact candidate with `git rev-parse HEAD`; consult the worksession for measured source fingerprints, rather than assuming old screenshots match later source.
 
 ## Implemented contracts
 

@@ -36,7 +36,7 @@ The user-approved implementation plan in this task is authority. Entries Not Pos
 - [x] Complete widget inventory and confirmed gap regressions; retained drawer routes (scoped local evidence; physical/hosted limits below)
 - [ ] All three themes at390/1440, boundaries320/719/1100, keyboard/focus/large text/reduced motion/mobile keyboard/rotation
 - [x] Focused High gate, TypeScript/build, startup and Bianca rehearsal (local;701tests passed)
-- [ ] Integration PR with review evidence
+- [x] Integration draft PR with review evidence: [#411](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/411)
 
 ## Evidence log
 
@@ -87,3 +87,5 @@ Final Fund storage-error browser follow-up:18/18cases (proposal, receipt, legacy
 Build passed with exit0: TypeScript, Vite (34.97seconds bundling), Hercules Pro UI, and no forbidden `_redirects`. Existing dependency eval/browser-external and large-chunk warnings remain visible in the local build log; they were not suppressed. No hosted schema, main merge or deployment was performed.
 
 Final delivery is a draft integration PR. This patch must remain unready until actual Claude compares the final source/render packet and the required physical/device/assistive-technology rehearsal is completed.
+
+Published [draft PR411](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/411). Implementation commit: `2f7ad3807d345541bfb1552309d97427ebbaa5c0`; the delivery-link follow-up is documentation only. Remote branch is pushed; no merge/deployment. Acceptance remains incomplete for the named Claude and physical/device gates.
