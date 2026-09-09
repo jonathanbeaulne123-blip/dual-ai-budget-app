@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { CalendarHeadingArtwork } from "./CalendarArtwork.tsx";
 import { HomeArtwork } from "./LivingArtwork.tsx";
 import { EraBracelet } from "./PageWorld.tsx";
 import { MEMORABILIA } from "./memorabilia.ts";
@@ -158,7 +159,7 @@ export function SceneArtwork({ scene }: { scene: ThemeScene }) {
     </>}
   </svg>;
 }
-export function ThemeSceneHeading({ home = false }: { home?: boolean }) {
+export function ThemeSceneHeading({ home = false, calendar = false }: { home?: boolean; calendar?: boolean }) {
   const { scene } = useAppearance();
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
@@ -168,11 +169,12 @@ export function ThemeSceneHeading({ home = false }: { home?: boolean }) {
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
-  return <section ref={ref} data-scene-visible={visible} className="theme-scene-heading" aria-label={`${scene.title} theme scene`} data-home-scene={home || undefined}>
-    {home ? <HomeArtwork scene={scene} /> : <SceneArtwork scene={scene} />}
+  return <section ref={ref} data-scene-visible={visible} className="theme-scene-heading" aria-label={`${scene.title} theme scene`} data-home-scene={home || undefined} data-calendar-scene={calendar || undefined}>
+    {home ? <HomeArtwork scene={scene} /> : calendar ? <CalendarHeadingArtwork scene={scene}/> : <SceneArtwork scene={scene} />}
+    {calendar && scene.id === "cape-spear" && <img className="calendar-couple" src="/theme-art/calendar-cape-couple.webp" alt="Clip-art illustration of Jonathan and Bianca at Cape Spear" />}
     <div className="theme-scene-copy"><span className="theme-scene-kicker">{scene.theme === "taylor" ? "A page from our scrapbook" : scene.theme === "newfoundland" ? "A little Newfoundland" : "Welcome home"}</span><p className="theme-scene-title">{scene.title}</p><p className="theme-scene-caption">{scene.caption}</p></div>
     <EraBracelet />
-    {home && <div className="desktop-title-bracelets"><FriendshipBracelets /><EraBracelet allThemes /></div>}
+    {(home || calendar) && <div className="desktop-title-bracelets"><FriendshipBracelets /><EraBracelet allThemes /></div>}
     <AtmosphereControl />
   </section>;
 }

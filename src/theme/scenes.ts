@@ -40,7 +40,7 @@ export const TAYLOR_SCENES = {
   evermore: scene("evermore", "taylor", "evermore", "Collected and kept", "plaid", palette("#eee3d3", "#fbf4e8", "#4a352a", "#6b5546", "#965238", "#5c6a4a", "#cdb9a0"), "leaves"),
   "1989": scene("1989", "taylor", "1989", "A moment, captured", "instant-photo", palette("#deecf3", "#fbfcf6", "#304856", "#4e626e", "#3c6989", "#9b624d", "#bad0db"), "gulls"),
   showgirl: scene("showgirl", "taylor", "The Life of a Showgirl", "A little sparkle in the everyday", "satin", palette("#def4e8", "#fffbed", "#293f39", "#52665c", "#ab3d0d", "#387566", "#b8d6c7"), "crystals"),
-  midnights: scene("midnights", "taylor", "Midnights", "Meet me in the quiet hours", "midnight-paper", palette("#172437", "#23354b", "#f1ede6", "#b7c6d8", "#c6d7ec", "#dfba79", "#516780"), "constellation", true),
+  midnights: scene("midnights", "taylor", "Midnights", "Meet me in the quiet hours", "midnight-paper", palette("#dfe5f0", "#f8f6fc", "#293c59", "#475770", "#496799", "#79609b", "#b8c5db"), "constellation"),
   "speak-now": scene("speak-now", "taylor", "Speak Now", "Make room for your own story", "ribbon", palette("#eee4f3", "#fbf6ff", "#4d375c", "#695577", "#795092", "#916d3e", "#cfbada"), "ribbon"),
   poets: scene("poets", "taylor", "The Tortured Poets Department", "Notes from a life in progress", "manuscript", palette("#e9e5dd", "#f8f5ed", "#373731", "#5a5a51", "#5c5a50", "#717562", "#c8c3b6"), "manuscript"),
   debut: scene("debut", "taylor", "Taylor Swift", "Every good thing begins somewhere", "botanical", palette("#e4efdf", "#f8fbef", "#304d42", "#4e6658", "#377665", "#4f7795", "#bfd2b8"), "butterflies"),

@@ -4,7 +4,7 @@ Execution instructions: [Page-theme execution standard](briefs/PAGE_THEME_EXECUT
 
 The original program proposed eight page-specific PRs on 2026-09-09: Home → Plan → Calendar → Books → Till → Shift → More → Entry. Every PR includes Classic, Taylor and Newfoundland plus applicable Shared/Personal scenes. No merge, deployment, schema or hosted household mutation is authorized.
 
-Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Resume later pages only after a new instruction.
+Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Jonathan subsequently resumed Calendar after #414 and approved its clip-art direction. Plan and the other pages remain paused.
 
 ## Desktop Home revision
 
@@ -42,3 +42,16 @@ Jellybean Row uses Jonathan's four supplied photographs as private reference: ra
 ## Verification and delivery
 
 Each page's worksession records exact gates and browser receipts. Local actual-App screenshots use synthetic completed-books data, not private ledgers. Chrome, Safari and physical-device evidence remain separately identified. Theme previews must preserve draft nodes, scope and authoritative financial values. Stacked PR bases isolate each page's diff; inherited foundation changes are named rather than re-counted as that page's implementation.
+
+## Calendar refinement
+
+Calendar is a wall-calendar composition; Month is a table planner. Appointments use rounded appointment cards and Bills pinned paper. The date grid is taller, with scene-specific binding ornaments and persistent date selection. Desktop outer containers reveal the full-scroll art while reading cards remain solid. The title retains the named bracelets and scene light; Cape Spear adds the user-approved couple clip art.
+
+Additional Calendar reference provenance:
+
+- Red: [official Red archive](https://tserasarchive.taylorswift.com/redtv), [official red vinyl packaging](https://store.taylorswift.com/products/red-taylors-version-red-vinyl), supplied Red collage, and [Pinterest fan collage](https://www.pinterest.com/pin/red-taylorswift-in-2025--792141021994209477/). Guitar, lipstick, heart glasses and condensed statement-shirt lettering are original interpretations; no copied lyrics or fan artwork.
+- Midnights: [official CD packaging](https://store.taylorswift.com/products/midnights-cd), supplied collage, and [Pinterest mood board](https://www.pinterest.com/pin/taylorswift-midnight-aesthetic-music-taylor-taylorswiftalbum--683139837242811709/). Lighter blue/lavender/silver, vinyl, clock and disco-ball shapes are authored interpretations. Pinterest image results were visible; direct board access was limited.
+- Newfoundland: private Cape Spear photographs and shipping-yard video stills inform the illustrations. Full video motion was not reviewed. Originals remain outside the repository.
+- `public/theme-art/calendar-cape-couple.webp`: generated with OpenAI image generation from the supplied couple reference, then redrawn with simple faces, chunky outlines and minimal detail. Jonathan explicitly approved the simplified result before integration. Optimized to WebP for a small title illustration; the original photograph is not distributed. The other Calendar artwork is original SVG in `src/theme/CalendarArtwork.tsx`.
+
+Exact implementation and validation: [Calendar worksession](worksessions/2026-09-09-calendar-worlds.md).

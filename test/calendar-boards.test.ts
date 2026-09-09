@@ -2,12 +2,15 @@
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
+import { ThemeProvider, useSceneBinding } from "../src/theme/ThemeProvider.tsx";
+import { AppearanceStore } from "../src/theme/appearanceStore.ts";
+import { parseAppearance } from "../src/theme/scenes.ts";
 import { CalendarPage } from "../src/Calendar.tsx";
 import { addRecurrence, catalogHousehold } from "../src/core/index.ts";
 import { CALENDAR_INTENT_KEY, requestCalendarPane, takeCalendarPane, type CalendarIntent } from "../src/core/calendarIntent.ts";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const today = "2026-09-08";
-async function mount(width = 390, intent?: CalendarIntent, standingFactOnly = false) {
+async function mount(width = 390, intent?: CalendarIntent, standingFactOnly = false, store?: AppearanceStore) {
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
   localStorage.clear();
   if (intent) requestCalendarPane(intent, localStorage);
@@ -15,7 +18,8 @@ async function mount(width = 390, intent?: CalendarIntent, standingFactOnly = fa
   const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
   const callbacks = { onCommand: vi.fn(), onAskPost: vi.fn(), onAskPostDue: vi.fn(), onAskSaveRepeating: vi.fn(), onAskVisit: vi.fn(), onAskSettle: vi.fn(), onAskWriteOff: vi.fn(), onAskStartJar: vi.fn(), onOpenPlan: vi.fn(), onOpenShiftEnvelope: vi.fn() };
   const props = { household, today, environment: "development" as const, memberId: "MEM-001", view: "household" as const, busy: false, onboardingStandingFactOnly: standingFactOnly, ...callbacks };
-  await act(async () => root.render(createElement(CalendarPage, props)));
+  function ThemedCalendar() { useSceneBinding("calendar", "household", false); return createElement(CalendarPage, props); }
+  await act(async () => root.render(store ? createElement(ThemeProvider, {store, children:createElement(ThemedCalendar)}) : createElement(CalendarPage, props)));
   const tab = (name: string) => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(button => button.textContent === name)!;
   const click = async (node: HTMLElement) => { await act(async () => node.click()); };
   return { host, household, callbacks, props, root, tab, click, close: async () => { await act(async () => root.unmount()); host.remove(); document.documentElement.removeAttribute("data-theme"); } };
@@ -136,4 +140,29 @@ describe("calendar intent storage", () => {
     expect(takeCalendarPane({ getItem() { throw Error("denied"); } })).toBeNull();
     expect(() => requestCalendarPane("calendar", { setItem() { throw Error("denied"); } })).not.toThrow();
   });
+});
+
+
+it("preserves a selected Calendar date and focused repeating draft through all theme previews", async () => {
+  vi.stubGlobal("matchMedia", () => ({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
+  const store = new AppearanceStore({read:async()=>parseAppearance(null),write:async()=>parseAppearance(null)},null);
+  const m = await mount(390,undefined,false,store);
+  try {
+    await m.click(m.host.querySelector('[data-calendar-date="2026-09-22"]')!);
+    await m.click(m.tab("Bills"));
+    const button = (text:string) => [...m.host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent===text)!;
+    await m.click(button("Add repeating"));
+    const input=m.host.querySelector<HTMLInputElement>('#repeating-note')!;
+    await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'Our unfinished bill draft');input.dispatchEvent(new Event('input',{bubbles:true}));input.focus();});
+    for(const theme of ["taylor","newfoundland","classic"] as const) {
+      await act(async()=>store.preview(theme));
+      expect(m.host.querySelector('#repeating-note')).toBe(input);
+      expect(input.value).toBe('Our unfinished bill draft');
+      expect(document.activeElement).toBe(input);
+      expect(m.tab('Bills').getAttribute('aria-selected')).toBe('true');
+    }
+    await m.click(button('Cancel'));await m.click(m.tab('Calendar'));
+    expect(m.host.querySelector('.cal-day[aria-pressed="true"]')?.getAttribute('data-calendar-date')).toBe('2026-09-22');
+    for(const callback of Object.values(m.callbacks))expect(callback).not.toHaveBeenCalled();
+  } finally {await m.close();vi.unstubAllGlobals();}
 });
