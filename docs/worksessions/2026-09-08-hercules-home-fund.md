@@ -89,3 +89,11 @@ Build passed with exit0: TypeScript, Vite (34.97seconds bundling), Hercules Pro 
 Final delivery is a draft integration PR. This patch must remain unready until actual Claude compares the final source/render packet and the required physical/device/assistive-technology rehearsal is completed.
 
 Published [draft PR411](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/411). Implementation commit: `2f7ad3807d345541bfb1552309d97427ebbaa5c0`; the delivery-link follow-up is documentation only. Remote branch is pushed; no merge/deployment. Acceptance remains incomplete for the named Claude and physical/device gates.
+
+## Authorized Development release —2026-09-08
+
+Jonathan explicitly instructed “ok push merge and deploy” after the remaining Claude, physical-device, screen-reader and two-device limitations were explained. This authorizes Development release with those limitations retained; it supersedes the earlier draft-only hold. It does not assert full acceptance or authorize Production activation, hosted schema application or destructive data changes.
+
+Release review: **CONDITIONAL**. Candidate06626c7 has successful hosted CI34307704371 and Cloudflare build34307704369. Local High701-test gate, build, Fund privacy/accounting/retry evidence and all authored-theme checks remain as recorded above. Main is still76e486a; working tree was clean. Runtime source is unchanged since the tested implementation apart from whitespace cleanup. Exhaustive verification and the named physical/Claude checks remain absent.
+
+Budget(5): conserve allocations and accepted receipts; Engagement(3): quiet cancellable setup, compact Home and focused entry. Deployment uses the established main-triggered Cloudflare workflow, with Production continuity explicitlyOFF. Final merge/deployment identifiers and live smoke evidence will be recorded in PR411. Preserve source-aware readers and schema9 lineage on rollback; do not downgrade accepted receipts.
