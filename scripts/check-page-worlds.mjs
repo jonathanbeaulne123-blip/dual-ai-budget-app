@@ -45,11 +45,32 @@ try {
   for(const scope of route==='till'?['household']:route==='shift'?['personal']:['household','personal']) {
    await page.locator('.view-switch button').nth(scope==='household'?0:1).click();await go(scope);
    const metrics=[];
-   for(const width of [320,390,720,1100,1440]) {
+   for(const width of [320,390,719,720,1100,1440,1920]) {
     await page.setViewportSize({width,height:1000});await settle();await page.evaluate(()=>window.scrollTo(0,0));
     await page.screenshot({path:out+'/'+theme+'-'+scope+'-'+width+'.png'});
+    if(width===1440) {
+     await page.screenshot({path:out+'/'+theme+'-'+scope+'-desktop-full.png',fullPage:true});
+     const desktopAxe=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations;
+     if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
+    }
+    if(route==='home' && width<720 && await page.locator('.desktop-title-bracelets').isVisible())errors.push('Desktop bracelets leaked into phone');
     metrics.push(await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,scene:document.documentElement.dataset.scene})));
    }
+   await page.setViewportSize({width:1440,height:1000});await settle();
+   if(route==='home') {
+    if(await page.locator('.home-rehearsal-entry').isVisible())errors.push('Desktop rehearsal duplicate visible');
+    if(!await page.locator('.desktop-title-bracelets').isVisible())errors.push('Desktop bracelets missing');
+    const weather=page.locator('.office-glass');
+    if(await weather.count()) {
+     await weather.click();if(!await page.locator('.office-forecast').isVisible())errors.push('Forecast failed to open');
+     await weather.click();if(!await page.locator('.office-window.is-minimized').count())errors.push('Weather failed to minimize');
+     await weather.click();if(await page.locator('.office-window.is-minimized').count())errors.push('Weather failed to restore');
+    }
+   }
+   await page.evaluate(()=>document.documentElement.style.zoom='2');
+   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))errors.push('Desktop enlarged overflow');
+   await page.screenshot({path:out+'/'+theme+'-'+scope+'-desktop-enlarged.png'});
+   await page.evaluate(()=>document.documentElement.style.zoom='');
    await page.setViewportSize({width:390,height:1000});await settle();
    const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));
    const special={};
@@ -80,6 +101,7 @@ try {
   }
  }
  if(route==='home'&&state==='normal') {
+  await page.setViewportSize({width:1440,height:1000});
   await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('.world-charm').focus();
   await page.locator('.theme-scene-heading').getByRole('button',{name:'Pause atmosphere',exact:true}).click();
   await page.waitForFunction(()=>document.documentElement.dataset.atmosphere==='paused');

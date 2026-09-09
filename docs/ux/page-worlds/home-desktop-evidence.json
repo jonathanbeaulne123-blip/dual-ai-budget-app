@@ -1,0 +1,1113 @@
+{
+  "revision": "Desktop follow-up to merged Home PR 412",
+  "viewports": [
+    320,
+    390,
+    719,
+    720,
+    1100,
+    1440,
+    1920
+  ],
+  "limits": "Installed Chrome with synthetic local books. Physical devices, Safari and authenticated cross-device flows not verified.",
+  "reports": [
+    {
+      "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+      "records": [
+        {
+          "theme": "classic",
+          "scope": "household",
+          "route": "home",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-home"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-home"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-home"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-home"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "classic",
+          "scope": "personal",
+          "route": "home",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-home"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-home"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-home"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-home"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "household",
+          "route": "home",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "lover"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "lover"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "lover"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "lover"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "lover"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "lover"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "lover"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "galleryCount": 1,
+            "galleryAfterOffice": true,
+            "gallerySecond": "Page 2 of 3",
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "personal",
+          "route": "home",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "showgirl"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "showgirl"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "showgirl"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "showgirl"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "galleryCount": 1,
+            "galleryAfterOffice": true,
+            "gallerySecond": "Page 2 of 3",
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "household",
+          "route": "home",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "jellybean"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "jellybean"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "jellybean"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "jellybean"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "personal",
+          "route": "home",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "quidi-vidi"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+      "records": [
+        {
+          "theme": "classic",
+          "scope": "household",
+          "route": "home",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-home"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-home"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-home"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-home"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "classic",
+          "scope": "personal",
+          "route": "home",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-home"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-home"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-home"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-home"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "household",
+          "route": "home",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "lover"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "lover"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "lover"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "lover"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "lover"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "lover"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "lover"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "galleryCount": 1,
+            "galleryAfterOffice": true,
+            "gallerySecond": "Page 2 of 3",
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "personal",
+          "route": "home",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "showgirl"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "showgirl"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "showgirl"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "showgirl"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "galleryCount": 1,
+            "galleryAfterOffice": true,
+            "gallerySecond": "Page 2 of 3",
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "household",
+          "route": "home",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "jellybean"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "jellybean"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "jellybean"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "jellybean"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "personal",
+          "route": "home",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "quidi-vidi"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        }
+      ],
+      "errors": []
+    },
+    {
+      "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+      "records": [
+        {
+          "theme": "classic",
+          "scope": "household",
+          "route": "home",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-home"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-home"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-home"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-home"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "classic",
+          "scope": "personal",
+          "route": "home",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-home"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-home"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-home"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-home"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-home"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "household",
+          "route": "home",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "lover"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "lover"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "lover"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "lover"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "lover"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "lover"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "lover"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "galleryCount": 1,
+            "galleryAfterOffice": true,
+            "gallerySecond": "Page 2 of 3",
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "personal",
+          "route": "home",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "showgirl"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "showgirl"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "showgirl"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "showgirl"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "showgirl"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "galleryCount": 1,
+            "galleryAfterOffice": true,
+            "gallerySecond": "Page 2 of 3",
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "household",
+          "route": "home",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "jellybean"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "jellybean"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "jellybean"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "jellybean"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "jellybean"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "personal",
+          "route": "home",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "quidi-vidi"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "quidi-vidi"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "fundPresent": 1,
+            "fundExpanded": true,
+            "fundFocusRestored": true,
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

@@ -87,3 +87,66 @@
 }
 @media print { .page-world-art,.world-charm-row,.era-light,.home-scrapbook { display:none!important; } }
 :root[data-atmosphere="paused"] .era-light-module { transition:none; }
+
+/* Desktop has its own scenery scale; the approved phone composition is unchanged. */
+.desktop-home-scenery,.desktop-title-bracelets { display:none; pointer-events:none; }
+@media(min-width:720px) {
+  :root[data-world-page="home"] .home-rehearsal-entry { display:none; }
+  .desktop-home-scenery { display:block; position:absolute; inset:240px 0 0; }
+  .desktop-scenery-panel { position:absolute; width:100%; height:680px; }
+  .desktop-scenery-panel svg { width:100%; height:100%; }
+  .desktop-scenery-panel-0 { top:0; }
+  .desktop-scenery-panel-1 { top:40%; transform:scaleX(-1); }
+  .desktop-scenery-panel-2 { bottom:0; }
+  :root[data-theme]:not([data-theme="classic"])[data-world-page="home"] .world-margin { display:none; }
+  :root[data-world-page="home"] .world-charm-row { margin:4px 0; }
+  :root[data-world-page="home"] .theme-scene-heading[data-home-scene]>.era-light { display:none; }
+  :root[data-theme] .desktop-title-bracelets { display:flex; align-items:center; position:relative; z-index:2; margin:12px 16px 0 auto; width:230px; flex-shrink:0; }
+  :root[data-theme] .desktop-title-bracelets .friendship-bracelets { position:static; width:170px; height:105px; transform:rotate(-8deg); margin:0; }
+  :root[data-theme] .desktop-title-bracelets .era-light { width:75px; height:48px; margin-left:-20px; margin-top:60px; }
+  :root[data-world-page="home"] .theme-scene-heading[data-home-scene] { flex-wrap:wrap; }
+  :root[data-world-page="home"] .office-window:not(.is-minimized) { height:90px; background:var(--card); }
+  :root[data-world-page="home"] .office-window:has(.office-forecast):not(.is-minimized) { height:160px; }
+  :root[data-world-page="home"] .office-window .office-glass { background:color-mix(in srgb,var(--theme-second) 14%,var(--card)); }
+  :root[data-world-page="home"] .office-window .chalk-glass-line { color:var(--ink); text-shadow:none; }
+  :root[data-world-page="home"] .office-window.glass-night .office-glass { background:var(--ink); }
+  :root[data-world-page="home"] .office-window.glass-night .chalk-glass-line { color:var(--card); }
+  :root[data-world-page="home"] .office-window .office-forecast { background:var(--card); color:var(--ink); }
+  :root[data-world-page="home"] .office-wide { padding:20px clamp(18px,4vw,64px) 80px; }
+  :root[data-world-page="home"] .office-wide-seals { margin-bottom:28px; }
+  :root[data-world-page="home"] .home-scrapbook { margin-inline:clamp(18px,4vw,64px); }
+  :root[data-scene="lover"][data-world-page="home"] .world-page { background:radial-gradient(ellipse at 0% 22%,#e6bce3 0,transparent 54%),radial-gradient(ellipse at 100% 54%,#b9dff3 0,transparent 57%),linear-gradient(160deg,#e7d7f3,#fce0ea 45%,#d4e6f5 75%,#e4caed); }
+  :root[data-scene="showgirl"][data-world-page="home"] .world-page { background:radial-gradient(ellipse at 0% 50%,#ffa66055,transparent 24%),radial-gradient(ellipse at 100% 70%,#ffab6755,transparent 24%),linear-gradient(#c4f1df,#e9f9e9 65%,#bce9dc); }
+  :root[data-scene="showgirl"][data-world-page="home"] .office-window { border:3px double #efab6d; box-shadow:0 0 0 4px #fff9e3,0 0 0 5px #d6af82; }
+  :root[data-scene="showgirl"][data-world-page="home"] .office-sill { background:radial-gradient(circle,#fffbd9 0 3px,#d9a470 4px,transparent 5px) 0 0/38px 12px,#f1a566; }
+  :root[data-scene="jellybean"][data-world-page="home"] .world-page { background:linear-gradient(#d5edfc,#e6f4fa 32%,#fff4cc 72%,#dcebcf); }
+  :root[data-scene="jellybean"][data-world-page="home"] .office-window { border:5px solid #fffdf0; box-shadow:0 3px 0 #edc744; }
+  :root[data-scene="quidi-vidi"][data-world-page="home"] .world-page { background:linear-gradient(#dcefe8,#e7f3e6 35%,#c5e4de 75%,#b8d9d0); }
+  :root[data-scene="quidi-vidi"][data-world-page="home"] .office-window { border:5px solid #fff9e9; box-shadow:0 4px 0 #ba9d79; }
+}
+@media(min-width:1100px) {
+  :root[data-theme] .desktop-title-bracelets { width:290px; }
+  :root[data-theme] .desktop-title-bracelets .friendship-bracelets { width:220px; height:132px; }
+}
+:root[data-atmosphere="paused"] .desktop-home-scenery *,
+:root:has(input:focus,textarea:focus,[contenteditable="true"]:focus) .desktop-home-scenery *,
+[data-scene-visible="false"] .desktop-title-bracelets * { animation-play-state:paused!important; }
+@media(prefers-reduced-motion:reduce) { .desktop-home-scenery * { animation:none!important; } }
+@media(min-width:720px) {
+  :root[data-world-page="home"] :is(.office-wide,.office-wide-desk) { background:transparent; }
+  :root[data-world-page="home"] .office-window .chalk-glass { background:transparent; inset:10px 18px; justify-content:center; }
+  :root[data-world-page="home"] .office-window .office-forecast { z-index:2; }
+}
+@media(min-width:720px) {
+  :root[data-world-page="home"] .office-window:has(.office-forecast) .office-glass { inset:0 0 auto; height:60px; }
+  :root[data-world-page="home"] .office-window .office-forecast { margin-top:64px; }
+  :root[data-world-page="home"] .office-window.is-minimized { height:44px; }
+  :root[data-world-page="home"] .office-window.is-minimized .office-glass { inset:0; min-height:44px; }
+  :root[data-world-page="home"] .office-window.is-minimized .office-sill { pointer-events:none; }
+}
+@media(min-width:720px) {
+  .desktop-scenery-panel { mask-image:linear-gradient(transparent,#000 8%,#000 90%,transparent); }
+}
+@media(min-width:720px) {
+  :root[data-world-page="home"] .hearth-story-head { background:var(--card); padding:8px 10px; border-radius:8px; }
+}
