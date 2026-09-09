@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { contributeToGoal, allocateHouseholdFundSurplus, addGoal, addRecurrence, catalogHousehold, configureHouseholdFund, confirmHouseholdFundContribution, confirmHouseholdFundSettlement, fundWalk, fundWalkWith, postEntry, proposeHouseholdFundContribution, reverseHouseholdFundEvent, setHouseholdFundMonthPlan, type Household, type WalkHypothetical } from "../src/core/index.ts";
@@ -6,8 +7,8 @@ import { foldFundMovements } from "../src/core/fundMovements.ts";
 const OWNER = "MEM-001", CONTRIBUTOR = "MEM-002";
 function configured() { return configureHouseholdFund(catalogHousehold(), {custodianMemberId: OWNER, openedOn: "2026-01-01", createdBy: OWNER}).household; }
 function contribution(h: Household, amount: string, date: string) {
-  const proposal = proposeHouseholdFundContribution(h, {memberId: CONTRIBUTOR, contributorMemberId: CONTRIBUTOR, amount, date});
-  return confirmHouseholdFundContribution(proposal.household, {memberId: OWNER, proposalEventId: proposal.postedIds[0]!});
+  const proposal = proposeHouseholdFundContribution(h, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},memberId: CONTRIBUTOR, contributorMemberId: CONTRIBUTOR, amount, date});
+  return confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!),memberId: OWNER, proposalEventId: proposal.postedIds[0]!});
 }
 function bill(h: Household, amount: string, date: string) { return addRecurrence(h, { cadence: "monthly", nextDate: date, type: "expense", amount, accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Dated claim", fundingDefault: {fundId: h.householdFund!.id, fundedCents: "full", destinationAccountId: "ACC-VISA"} }).household; }
 function purchase(h: Household, amount: string, date: string) { return postEntry(h, {date, type: "expense", amount, accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", createdBy: OWNER, visibility: "household", confirmDuplicate: true, funding: {fundId: h.householdFund!.id, fundedCents: Number(amount)*100, destinationAccountId: "ACC-VISA"}}).household; }

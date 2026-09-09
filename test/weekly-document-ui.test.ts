@@ -78,7 +78,7 @@ function weeklyHousehold(): Household {
     goalId: goal.postedIds[0]!,
     note: "Standing · jar · Halifax",
   }).household;
-  return proposeHouseholdFundContribution(household, {
+  return proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "40",

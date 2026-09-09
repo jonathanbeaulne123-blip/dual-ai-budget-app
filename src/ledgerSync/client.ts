@@ -6,7 +6,7 @@ import { validatedLedgerBooksStatus } from "./validatedBooks.ts";
 import type { BooksStatus } from "../ledger/engine.ts";
 import { financialAuditHash } from "../core/commandIdentity.ts";
 import { capturedIntent, clearCapturedIntent } from "./capture.ts";
-import { project, digest } from "./patch.ts";
+import { canonical, project, digest } from "./patch.ts";
 import {
   commandFromCapture,
   type Scope,
@@ -56,6 +56,8 @@ export class LedgerSyncClient {
     { resolve: (value: CommitResult) => void; reject: (error: Error) => void }
   >();
   private accepted = new Map<string, CommitResult>();
+  private confirmationIntents = new Map<string,string>();
+  private confirming = new Map<string,Promise<CommitResult>>();
   private ready = false;
   private initialResolve?: () => void;
   private initialReject?: (e: Error) => void;
@@ -223,6 +225,8 @@ export class LedgerSyncClient {
               if (!this.replica || receipt.sequence > this.replica.sequence)
                 throw new Error("SEQUENCE_GAP");
               await this.store!.acknowledge(receipt.id);
+              const acknowledgedCommand=this.pending.get(receipt.id);
+              if(acknowledgedCommand)this.confirmationIntents.set(receipt.id,canonical(acknowledgedCommand.steps.map(({kind,args})=>({kind,args}))));
               this.pending.delete(receipt.id);
               this.previews.delete(receipt.id);
               this.options.pendingChanged?.(this.pendingRows());
@@ -241,8 +245,10 @@ export class LedgerSyncClient {
                     : {}),
                 };
               this.accepted.set(receipt.id, result);
-              if (this.accepted.size > 100)
-                this.accepted.delete(this.accepted.keys().next().value!);
+              if (this.accepted.size > 100) {
+                const oldest=this.accepted.keys().next().value!;
+                this.accepted.delete(oldest);this.confirmationIntents.delete(oldest);
+              }
               this.waiters.get(receipt.id)?.resolve(result);
               this.waiters.delete(receipt.id);
               this.options.status(this.pending.size ? "saving" : "ready");
@@ -394,13 +400,25 @@ export class LedgerSyncClient {
   async confirm(candidate: Household, id: string, onQueued?: () => void): Promise<CommitResult> {
     await this.localReady;
     if (this.stopped || !this.store || !this.replica) throw new Error("LOCAL_REPLICA_REQUIRED");
-    const prior = this.accepted.get(id);
-    if (prior) return prior;
     const capture = capturedIntent(candidate);
-    if (!capture)
-      throw new Error(
-        "This action needs a registered ledger command. Nothing was posted.",
-      );
+    if (!capture) throw new Error("This action needs a registered ledger command. Nothing was posted.");
+    const intent=canonical(capture.steps.map(({kind,args})=>({kind,args})));
+    const pending=this.pending.get(id);
+    const existingIntent=this.confirmationIntents.get(id) ?? (pending ? canonical(pending.steps.map(({kind,args})=>({kind,args}))) : undefined);
+    if(existingIntent && existingIntent!==intent) throw new LedgerCommandRejectedError("CONFIRMATION_REVIEW_CHANGED");
+    const prior=this.accepted.get(id);
+    if(prior)return prior;
+    const inProgress=this.confirming.get(id);
+    if(inProgress)return inProgress;
+    this.confirmationIntents.set(id,intent);
+    const result=this.queueConfirmation(candidate,id,onQueued);
+    this.confirming.set(id,result);
+    try{return await result;}finally{if(this.confirming.get(id)===result)this.confirming.delete(id);}
+  }
+  private async queueConfirmation(candidate:Household,id:string,onQueued?:()=>void):Promise<CommitResult> {
+    const capture=capturedIntent(candidate)!;
+    const replica=this.replica;
+    if(!replica)throw new Error("LOCAL_REPLICA_REQUIRED");
     const command =
       this.pending.get(id) ??
       (await commandFromCapture(
@@ -413,7 +431,7 @@ export class LedgerSyncClient {
       ));
     // Blocking accounting validation before either visibility or queue durability.
     this.booksGuard.fork().validate(candidate);
-    const preview = this.previews.get(id) ?? previewFor(candidate, await this.household(this.replica), command, this.options.scope.memberId);
+    const preview = this.previews.get(id) ?? previewFor(candidate, await this.household(replica), command, this.options.scope.memberId);
     await this.store!.enqueue(command, preview);
     if (this.stopped) throw new Error("SCOPE_CLOSED");
     if (preview) this.previews.set(id, preview);

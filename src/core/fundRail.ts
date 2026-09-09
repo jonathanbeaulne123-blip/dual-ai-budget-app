@@ -70,20 +70,23 @@ function validStoredRail(household: Household, memberId: string): FundWidgetId[]
   return typed;
 }
 
-export function railFor(household: Household, memberId: string): FundWidgetId[] {
-  return validStoredRail(household, memberId) ?? defaultRailFor(household, memberId);
+export function railFor(household: Household, memberId: string, presentation: 'desk' | 'phone' = 'desk'): FundWidgetId[] {
+  const desk=validStoredRail(household, memberId) ?? defaultRailFor(household, memberId);
+  if(presentation==='desk')return desk;
+  const stored=shapeMemberRail(household.members.find(m=>m.id===memberId)?.fundRail,memberId)?.phoneSlots;
+  return stored && stored.every(id=>widgetAllowedFor(id,household,memberId)) ? stored : phoneRail(desk);
 }
 
 export function phoneRail(slots: readonly FundWidgetId[]): FundWidgetId[] {
   return slots.slice(0, RAIL_SLOTS_PHONE);
 }
 
-export function drawerFor(household: Household, memberId: string): Array<{
+export function drawerFor(household: Household, memberId: string, presentation: 'desk' | 'phone' = 'desk'): Array<{
   id: FundWidgetId;
   onRail: boolean;
   allowed: boolean;
 }> {
-  const rail = new Set(railFor(household, memberId));
+  const rail = new Set(railFor(household, memberId,presentation));
   return FUND_WIDGETS.map((id) => ({
     id,
     onRail: rail.has(id),
@@ -97,14 +100,15 @@ export function fundWidgetIdForPlateId(plateId: string): FundWidgetId | null {
   return canonicalFundWidgetId(plateId);
 }
 
-export function requireFundRail(slots: readonly unknown[], household: Household, memberId: string): FundWidgetId[] {
+export function requireFundRail(slots: readonly unknown[], household: Household, memberId: string, presentation: 'desk' | 'phone' = 'desk'): FundWidgetId[] {
+  const count=presentation==='phone'?RAIL_SLOTS_PHONE:RAIL_SLOTS_DESK;
   const canonical = slots.map(canonicalFundWidgetId);
-  if (canonical.length !== RAIL_SLOTS_DESK || canonical.some((slot): slot is null => slot === null)) {
-    throw new ValidationError("The Fund board has exactly eight places.");
+  if (canonical.length !== count || canonical.some((slot): slot is null => slot === null)) {
+    throw new ValidationError(`This Fund board has exactly ${count} places.`);
   }
   const typed = canonical as FundWidgetId[];
   if (typed[0] !== "level") throw new ValidationError("The Fund stays at the top of the board.");
-  if (new Set(typed).size !== RAIL_SLOTS_DESK) throw new ValidationError("Each Fund widget can appear only once.");
+  if (new Set(typed).size !== count) throw new ValidationError("Each Fund widget can appear only once.");
   if (typed.some((id) => !widgetAllowedFor(id, household, memberId))) {
     throw new ValidationError("That one only belongs on your own desk.");
   }
@@ -120,7 +124,9 @@ export function shapeMemberRail(value: unknown, memberId: string): MemberRail | 
   if (slots.length !== RAIL_SLOTS_DESK || slots.some((slot): slot is null => slot === null)) return null;
   const typed = slots as FundWidgetId[];
   if (typed[0] !== "level" || new Set(typed).size !== RAIL_SLOTS_DESK) return null;
-  return { memberId, slots: typed, updatedAt: row.updatedAt };
+  const phone=Array.isArray(row.phoneSlots)?row.phoneSlots.map(canonicalFundWidgetId):null;
+  if(phone && (phone.length!==RAIL_SLOTS_PHONE || phone.some(id=>id===null) || phone[0]!=='level' || new Set(phone).size!==RAIL_SLOTS_PHONE))return null;
+  return { memberId, slots: typed, ...(phone ? {phoneSlots:phone as FundWidgetId[]}:{}), updatedAt: row.updatedAt };
 }
 
 /** Fail closed unless the only household difference is this member's valid rail. */
@@ -131,7 +137,7 @@ export function fundRailPreferenceUpdateAllowed(current: Household, next: Househ
   const currentMember = current.members.find((member) => member.id === memberId && member.active);
   const nextMember = next.members.find((member) => member.id === memberId && member.active);
   const rail = shapeMemberRail(nextMember?.fundRail, memberId);
-  if (!currentMember || !nextMember || !rail || rail.slots.some((id) => !widgetAllowedFor(id, next, memberId))) return false;
+  if (!currentMember || !nextMember || !rail || [...rail.slots,...(rail.phoneSlots??[])].some((id) => !widgetAllowedFor(id, next, memberId))) return false;
 
   const normalized = structuredClone(next);
   normalized.members = normalized.members.map((member) => member.id === memberId

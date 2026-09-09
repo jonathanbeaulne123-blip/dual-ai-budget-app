@@ -52,7 +52,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "invite.explain", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
-    text: "This puts both of us in setup mode until we finish or stop. Three sittings, about an hour all in — we can stop between any of them.", slots: [],
+    text: "This puts both of us in setup mode until we finish or stop. Five stages, with progress saved at accepted checkpoints. We can pause whenever we need.", slots: [],
   }),
   entry({
     key: "invite.propose", speaker: "system", surface: "button", scope: "none", announce: "none",

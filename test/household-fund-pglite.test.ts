@@ -1,6 +1,9 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { describe, expect, it } from "vitest";
 import {
   addAccount,
+  splitForSync,
+  assembleHousehold,
   bindHouseholdFundBackingAccount,
   catalogHousehold,
   configureHouseholdFund,
@@ -21,7 +24,7 @@ describe("Household Fund PGlite projection", () => {
       createdBy: "MEM-001",
       openedOn: "2026-09-01",
     }).household;
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: "MEM-002",
       contributorMemberId: "MEM-002",
       amount: "1000",
@@ -33,7 +36,7 @@ describe("Household Fund PGlite projection", () => {
       note: "Check the rent total first.",
       date: "2026-09-01",
     }).household;
-    household = confirmHouseholdFundContribution(household, { memberId: "MEM-001", proposalEventId: proposal.postedIds[0]! }).household;
+    household = confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposal.postedIds[0]!), memberId: "MEM-001", proposalEventId: proposal.postedIds[0]! }).household;
     household = postEntry(household, {
       date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES",
       createdBy: "MEM-001", visibility: "household", confirmDuplicate: true,
@@ -56,10 +59,10 @@ describe("Household Fund PGlite projection", () => {
       ]);
       expect((await db.query("SELECT id FROM chart_accounts WHERE id = 'FUND-HOUSEHOLD'")).rows).toEqual([]);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE bank_account_id = $1", [privateSavings.id])).rows).toEqual([{ scope: "personal" }]);
-      expect((await db.query("SELECT id FROM schema_migrations WHERE id >= 3 ORDER BY id")).rows).toEqual([{ id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }]);
+      expect((await db.query("SELECT id FROM schema_migrations WHERE id >= 3 ORDER BY id")).rows).toEqual([{ id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }]);
 
       const previous = { ...household, booksAcceptedHash: await hashBooksSnapshot(household) };
-      const proposed = proposeHouseholdFundContribution(previous, {
+      const proposed = proposeHouseholdFundContribution(previous, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
         memberId: "MEM-002",
         contributorMemberId: "MEM-002",
         amount: "25",
@@ -88,6 +91,27 @@ describe("Household Fund PGlite projection", () => {
     }
   }, 30_000);
 
+  it("projects private source lineage only in the owner replica and preserves unchecked reconciliation", async () => {
+    let h=configureHouseholdFund(catalogHousehold(),{custodianMemberId:"MEM-001",createdBy:"MEM-001",openedOn:"2026-09-01"}).household;
+    h=addAccount(h,{name:"Owner source",kind:"savings",scope:"personal",ownerMemberId:"MEM-002"}).household;
+    const account=h.accounts.find(a=>a.name==="Owner source")!;
+    const income=postEntry(h,{createdBy:"MEM-002",visibility:"personal",type:"income",date:"2026-09-01",amount:"300",accountId:account.id,subcategoryId:"SUB-INCOME-WAGES"});
+    const proposed=proposeHouseholdFundContribution(income.household,{memberId:"MEM-002",contributorMemberId:"MEM-002",date:"2026-09-01",amount:"200",source:{version:1,kind:"recorded-movement",explanation:"Previously recorded savings receipt",sourceTransactionId:income.postedIds[0]!}});
+    h=confirmHouseholdFundContribution(proposed.household,{memberId:"MEM-001",proposalEventId:proposed.postedIds[0]!,received:true,expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!)}).household;
+    h=recordHouseholdFundReconciliation(h,{memberId:"MEM-001",date:"2026-09-02",bankTotal:"500"}).household;
+    const db=await openMemoryBooks();
+    try {
+      const own=splitForSync(h,"MEM-002");expect((await ingestBooks(db,assembleHousehold(own.shared,own.personal))).ok).toBe(true);
+      expect((await db.query("SELECT owner_member_id,source_transaction_id,amount_cents FROM fund_contribution_source_claims")).rows).toEqual([{owner_member_id:"MEM-002",source_transaction_id:income.postedIds[0],amount_cents:20000}]);
+      const peer=splitForSync(h,"MEM-001");expect((await ingestBooks(db,assembleHousehold(peer.shared,peer.personal))).ok).toBe(true);
+      expect((await db.query("SELECT * FROM fund_contribution_source_claims")).rows).toEqual([]);
+      const declarations=(await db.query<{source_declaration:string}>("SELECT source_declaration FROM fund_events WHERE kind='contribution-confirmed'")).rows;
+      expect(JSON.parse(declarations[0]!.source_declaration).kind).toBe("recorded-movement");
+      expect(JSON.stringify(declarations)).not.toContain(income.postedIds[0]!);
+      expect((await db.query("SELECT tied FROM fund_private_reconciliations")).rows).toEqual([{tied:null}]);
+    } finally {await db.close();}
+  },30_000);
+
   it("upgrades a persisted schema-2 account catalog before adding Fund tables", async () => {
     const { PGlite } = await import("@electric-sql/pglite");
     const db = await PGlite.create();
@@ -111,7 +135,7 @@ describe("Household Fund PGlite projection", () => {
       `);
       await migrateBooks(db);
       expect((await db.query("SELECT scope FROM chart_accounts WHERE id = 'CA-OLD'")).rows).toEqual([{ scope: "shared" }]);
-      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }]);
+      expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }]);
       expect((await db.query<{ table_name: string }>("SELECT table_name FROM information_schema.tables WHERE table_name IN ('household_funds','fund_events','fund_settlement_allocations','fund_private_reconciliations') ORDER BY table_name")).rows.map((row) => row.table_name)).toEqual([
         "fund_events", "fund_private_reconciliations", "fund_settlement_allocations", "household_funds",
       ]);
@@ -164,7 +188,7 @@ describe("Household Fund PGlite projection", () => {
       expect((await db.query("SELECT id, kind, note FROM fund_events WHERE id = 'FUND-EVT-HOLD'")).rows)
         .toEqual([{ id: "FUND-EVT-HOLD", kind: "contribution-held", note: "Check the rent total first." }]);
       expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows)
-        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }]);
+        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }]);
     } finally {
       await db.close();
     }
@@ -234,7 +258,7 @@ describe("Household Fund PGlite projection", () => {
         equity_cents: Number(row.equity_cents),
       }))).toEqual([{ net_worth_cents: 12345, net_income_cents: 0, equity_cents: 12345 }]);
       expect((await db.query("SELECT id FROM schema_migrations ORDER BY id")).rows)
-        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }]);
+        .toEqual([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 }, { id: 8 }, { id: 9 }]);
     } finally {
       await db.close();
     }

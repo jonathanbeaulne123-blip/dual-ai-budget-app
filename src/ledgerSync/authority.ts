@@ -1,3 +1,4 @@
+import { validateFundSourceClaim } from "../core/fundContributionSources.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
 import { applyRestorePoint } from "../core/restorePoints.ts";
 import {
@@ -246,6 +247,20 @@ export async function prepareCommand(
     if (!guard && booksGuards) { guard = new IncrementalBooksGuard(); booksGuards.set(memberId, guard); }
     return guard;
   };
+  // Validate a linked receipt in an isolated owner replica. Never overlay peer Personal into the actor's result.
+  const validatedFundSourceClaimIds = new Set<string>();
+  const priorFundIds = new Set((before.fundEvents ?? []).map(e => e.id));
+  for (const event of current.fundEvents ?? []) {
+    if (priorFundIds.has(event.id) || event.kind !== 'contribution-confirmed' || event.sourceDeclaration?.kind !== 'recorded-movement') continue;
+    const owner = event.sourceDeclaration.declaredByMemberId;
+    const ownerPersonal = owner === scope.memberId ? splitForSync(current, owner).personal : state.personal.get(owner);
+    if (!ownerPersonal) throw new Error('SOURCE_REVIEW_UNAVAILABLE');
+    const isolated = assembleHousehold(splitForSync(current, scope.memberId).shared, ownerPersonal, { linked:true });
+    const proposal = isolated.fundEvents?.find(e => e.id === event.relatedEventId);
+    if (!proposal) throw new Error('SOURCE_REVIEW_UNAVAILABLE');
+    validateFundSourceClaim(isolated, proposal);
+    validatedFundSourceClaimIds.add(event.sourceDeclaration.claimId!);
+  }
   // Full existing Fund, onboarding and accounting transition rules still run.
   const accepted = await acceptHouseholdWrite({
     previous: ["eraseDevelopmentActivity", "restoreSharedPoint"].includes(
@@ -254,6 +269,7 @@ export async function prepareCommand(
       ? null
       : before,
     candidate: current,
+    validatedFundSourceClaimIds,
     booksGuard: guardFor(scope.memberId)?.fork(),
     // Adoption has a proposal-bound domain identity; the transport receipt still uses the UUID.
     confirmationId: result.undo.commandKind === "adoptFirstBudget" ? result.undo.id : command.id,

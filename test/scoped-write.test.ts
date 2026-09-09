@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, it, expect } from "vitest";
 import { createWriteQueue } from "../src/core/writeQueue.ts";
@@ -5,8 +6,8 @@ import { enqueueScopedWrite, type WriteScope } from "../src/core/scopedWrite.ts"
 import { catalogHousehold, configureHouseholdFund, proposeHouseholdFundContribution, confirmHouseholdFundContribution, confirmHouseholdFundSettlement, postEntry, HOUSEHOLD_FUND_ID, setFundRailSlot } from "../src/core/index.ts";
 function fixture(id: string) {
   let h = configureHouseholdFund({...catalogHousehold(), householdId: id}, {custodianMemberId:"MEM-001",openedOn:"2026-08-01",createdBy:"MEM-001"}).household;
-  const p = proposeHouseholdFundContribution(h,{memberId:"MEM-002",contributorMemberId:"MEM-002",amount:"100",date:"2026-09-08"});
-  h = confirmHouseholdFundContribution(p.household,{memberId:"MEM-001",proposalEventId:p.postedIds[0]!}).household;
+  const p = proposeHouseholdFundContribution(h,{ source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},memberId:"MEM-002",contributorMemberId:"MEM-002",amount:"100",date:"2026-09-08"});
+  h = confirmHouseholdFundContribution(p.household,{ received:true, expectedProposalDigest:fundContributionReviewDigest(p.household,p.postedIds[0]!),memberId:"MEM-001",proposalEventId:p.postedIds[0]!}).household;
   return postEntry(h,{date:"2026-09-08",type:"expense",amount:"50",accountId:"ACC-VISA",subcategoryId:"SUB-HOUSING-ELECTRIC",note:"Fictional scope fixture",createdBy:"MEM-001",visibility:"household",confirmDuplicate:true,funding:{fundId:HOUSEHOLD_FUND_ID,fundedCents:5000,destinationAccountId:"ACC-VISA"}}).household;
 }
 const reviewed: WriteScope = {generation:1,environment:"development",householdId:"HH-A",memberId:"MEM-001",view:"household"};

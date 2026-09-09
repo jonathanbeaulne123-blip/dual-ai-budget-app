@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -221,13 +222,13 @@ describe("nothing right of today is drawn as posted", () => {
   });
 
   it("puts the reserve notch after today, never behind it", () => {
-    const proposed = proposeHouseholdFundContribution(demo(), {
+    const proposed = proposeHouseholdFundContribution(demo(), { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: 500,
       date: TODAY,
     });
-    const funded = confirmHouseholdFundContribution(proposed.household, {
+    const funded = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposed.postedIds[0]!,
     }).household;
@@ -467,7 +468,7 @@ describe("Standing contribution bars name each person's confirmed month", () => 
     expect(jonathan?.cents).toBe(53_500);
     expect(jonathan?.cents).not.toBe(53_500 + 27_000);
     expect(jonathan?.cents).not.toBe(53_500 + 27_500);
-    const pending = proposeHouseholdFundContribution(household, {
+    const pending = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: 50,

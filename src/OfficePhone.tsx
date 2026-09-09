@@ -65,8 +65,9 @@ export function OfficePhone({
   integrityFindings = [],
   onForm, onPost, onMore, onMilk, onCoffee, onClockIn, onAbandonShift,
   onStartBreak, onEndBreak, onChooseShiftTimeline, onSignOut, onFinishedShift, onPayCard, onOpenAccount,
-  onKitchen, onMarkPaid, onGo,
+  onKitchen, onMarkPaid, onGo, onOpenDrawer,
 }: {
+  onOpenDrawer?: () => void;
   scenarioSource?: ScenarioSourceContext | null;
   household: Household;
   booksHousehold?: Household;
@@ -309,6 +310,8 @@ export function OfficePhone({
         </NotebookBody>
       )}
 
+      <div className="ph-instrument-actions">
+      {onOpenDrawer && <button type="button" className="ghost ph-desk-drawer" onClick={onOpenDrawer}>Drawer</button>}
       {drawer.length > 0 && (
         <details className="ph-drawer">
           <summary>
@@ -330,6 +333,7 @@ export function OfficePhone({
           </div>
         </details>
       )}
+      </div>
 
       <Memorabilia scene={scene.id} location="phone-desk" />
       <details className="ph-chalk" open={chalkOpen} onToggle={(event) => {

@@ -53,6 +53,7 @@ function readDraft(household: Household, memberId: string): CharterFoundingDraft
 }
 
 type Props = {
+  embedded?: boolean;
   household: Household;
   memberId: string;
   today: DateKey;
@@ -61,7 +62,7 @@ type Props = {
   onDismiss: () => void;
 };
 
-export function CharterFounding({ household, memberId, today, busy, onCommit, onDismiss }: Props) {
+export function CharterFounding({ household, memberId, today, busy, onCommit, onDismiss, embedded = false }: Props) {
   const paperRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [draft, setDraft] = useState<CharterFoundingDraft>(() => (
@@ -84,10 +85,11 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
   const step = household.charter || draft.step === 5 ? 5 : draft.step;
 
   useEffect(() => {
-    titleRef.current?.focus();
+    if (!embedded) titleRef.current?.focus();
   }, [step]);
 
   useEffect(() => {
+    if (embedded) return;
     function trap(event: KeyboardEvent) {
       if (event.key !== "Tab") return;
       const paper = paperRef.current;
@@ -107,7 +109,7 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
     }
     window.addEventListener("keydown", trap, true);
     return () => window.removeEventListener("keydown", trap, true);
-  }, []);
+  }, [embedded]);
 
   function goNext() {
     if (draft.step >= 4) {
@@ -143,8 +145,8 @@ export function CharterFounding({ household, memberId, today, busy, onCommit, on
     <div
       ref={paperRef}
       className="charter-founding"
-      role="dialog"
-      aria-modal="true"
+      role={embedded ? "region" : "dialog"}
+      aria-modal={embedded ? undefined : true}
       aria-labelledby="charter-founding-title"
       onKeyDown={onKeyDown}
     >

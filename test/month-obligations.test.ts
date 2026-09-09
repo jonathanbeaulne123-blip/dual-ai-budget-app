@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -28,13 +29,13 @@ function configuredFund(): Household {
 }
 
 function fund(household: Household, amount = "1000"): Household {
-  const proposed = proposeHouseholdFundContribution(household, {
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount,
     date: "2026-09-01",
   });
-  return confirmHouseholdFundContribution(proposed.household, {
+  return confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposed.postedIds[0]!,
   }).household;

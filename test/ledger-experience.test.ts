@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { describe, expect, it } from "vitest";
 import {
   HOUSEHOLD_FUND_ID,
@@ -441,13 +442,13 @@ describe("ledgerRouteContract", () => {
 describe("Fund-funded personal visibility stays out of Shared presentation", () => {
   it("keeps a personal-visibility Fund purchase out of Jonathan Shared activity", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: BIANCA,
       contributorMemberId: BIANCA,
       amount: "100",
       date: DATE,
     });
-    household = confirmHouseholdFundContribution(proposal.household, {
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposal.postedIds[0]!,
     }).household;

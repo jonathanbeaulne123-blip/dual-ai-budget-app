@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { addAccount, addRecurrence, catalogHousehold, configureHouseholdFund, confirmHouseholdFundContribution, fundWalk, householdAsk, postEntry, proposeHouseholdFundContribution, setHouseholdFundMonthPlan, recordEarningCadence, type Household } from "../src/core/index.ts";
 import { reviewScenarioSources, type ScenarioAcceptedSource } from "../src/core/scenarioSources.ts";
@@ -11,8 +12,8 @@ import type { EarningsAvailability } from "../src/core/earningsAvailability.ts";
 const MEMBER = "MEM-002", AS_OF = "2026-09-08", THROUGH = "2026-10-01";
 function marker(h: Household): ScenarioAcceptedSource { return {kind: "accepted", scope: {environment: h.environment, householdId: h.householdId, memberId: MEMBER, subject: "fictional-member", viewerRoom: "personal", targetRoom: "household", fundId: h.householdFund!.id, authorityGeneration: "fixture-1"}, acceptedRevision: h.revision, acceptedStateId: `fictional-accepted:${h.revision}`, ownBooks: "ready"}; }
 function contribute(h: Household, amount: string, date: string, member = MEMBER) {
-  const p = proposeHouseholdFundContribution(h, {memberId: member, contributorMemberId: member, amount, date});
-  return confirmHouseholdFundContribution(p.household, {memberId: "MEM-001", proposalEventId: p.postedIds[0]!}).household;
+  const p = proposeHouseholdFundContribution(h, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},memberId: member, contributorMemberId: member, amount, date});
+  return confirmHouseholdFundContribution(p.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(p.household,p.postedIds[0]!),memberId: "MEM-001", proposalEventId: p.postedIds[0]!}).household;
 }
 function bill(h: Household, amount: string, date: string) { return addRecurrence(h, {cadence: "monthly", nextDate: date, type: "expense", amount, accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", fundingDefault: {fundId: h.householdFund!.id, fundedCents: "full", destinationAccountId: "ACC-VISA"}}).household; }
 function fixture() {

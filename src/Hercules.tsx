@@ -1,3 +1,5 @@
+import { useModalActive } from "./useDialog.ts";
+import { HerculesSetup, type HerculesSetupProps } from "./HerculesSetup.tsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
 import {
   attackStand,
@@ -13,14 +15,10 @@ import {
   herculesBriefing,
   herculesBubbleBox,
   widgetSnippetBubbleBox,
-  herculesIdle,
-  herculesMutters,
-  herculesNeedsCheck,
   herculesPageSurface,
   herculesProviderForDisplayedReply,
   herculesProviderLabel,
   herculesInstrumentSurface,
-  herculesTapIntent,
   herculesUsefulness,
   firstRunLesson,
   hourInToronto,
@@ -53,14 +51,10 @@ import {
   personalModuleOfferFor,
   recordPersonalModuleOffer,
   shouldShowOnboardingShell,
-  activeReturnMessage,
   copy,
-  loadReturnMessage,
   navTargetSurfaceLabel,
   onboardingNavigationTarget,
-  resolveOnboardingResume,
   saveReturnMessage,
-  SHELL_VIEW,
   CAT,
   NAV,
   WIDE_BREAKPOINT,
@@ -247,7 +241,9 @@ export function HerculesPresence({
   onOpenEstimates,
   onOpenPlan,
   onOpenReady,
+  setup,
 }: {
+  setup?: HerculesSetupProps;
   household: Household;
   today: string;
   tab: HearthTab;
@@ -277,15 +273,17 @@ export function HerculesPresence({
   onOpenPlan?: () => void;
   onOpenReady?: () => void;
 }) {
+  const [setupSelected,setSetupSelected]=useState(false);
+  const [documentVisible,setDocumentVisible]=useState(()=>!document.hidden);
+  useEffect(()=>{const update=()=>setDocumentVisible(!document.hidden);document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);},[]);
   const contextHousehold = useMemo(
     () => householdForHerculesContext(household, memberId, view),
     [household, memberId, view],
   );
   const look = useMemo(() => dressedLook(household, today, Boolean(visorPop)), [household, today, visorPop]);
   const five = useMemo(() => groceryHighFive(household, today), [household, today]);
-  const attention = useMemo(() => herculesNeedsCheck(household, today), [household, today]);
   const usefulness = useMemo(() => herculesUsefulness(household, today), [household, today]);
-  const mutters = useMemo(() => herculesMutters(household, today), [household, today]);
+
   const proposal = useMemo(() => bubbleNotice(household, today), [household, today]);
   const surface = useMemo(
     () => herculesPageSurface(adding ? "add" : tab, contextHousehold, today, new Date(), { memberId, view }),
@@ -333,10 +331,10 @@ export function HerculesPresence({
   const [perchPlay, setPerchPlay] = useState(false);
   const perchPlayFor = useRef<string | null>(null);
   const drag = useRef<{ x: number; y: number; px: number; py: number; moved: boolean; lastX: number; lastY: number; caughtFly: boolean } | null>(null);
-  const clickAt = useRef(0);
-  const sitTimer = useRef<number | null>(null);
+
+
   const idleAt = useRef(0);
-  const mutterAt = useRef(0);
+
   const chatGen = useRef(0);
   const chatRigUntilRef = useRef(0);
   const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}`;
@@ -368,11 +366,11 @@ export function HerculesPresence({
   const lastBump = useRef<{ id: string; at: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
-  const showProposal = Boolean(proposal && !adding && !open && !begging && !(tab === "home" && focusedWidget) && !(phoneShell && mobileFocus));
-  const showWidgetSnippets = Boolean(tab === "home" && focusedWidget && !adding && !(phoneShell && mobileFocus));
-  const showTalk = Boolean((open || talk || begging) && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
+  const showProposal = false; // Suggestions are available only after explicitly opening Hercules.
+  const showWidgetSnippets = Boolean(open && !setupSelected && tab === "home" && focusedWidget && !adding && !(phoneShell && mobileFocus));
+  const showTalk = Boolean(open && !setupSelected && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
-  const focusShellOpen = phoneShell && mobileFocus && !adding;
+  const focusShellOpen = phoneShell && mobileFocus && !adding && !setupSelected;
   const householdOnboardingShellActive = useMemo(
     () => activeMemberPresent && shouldShowOnboardingShell(household, memberId),
     [activeMemberPresent, household, memberId],
@@ -396,24 +394,14 @@ export function HerculesPresence({
     () => (householdOnboardingShellActive ? onboardingNavigationTarget(household, memberId) : null),
     [householdOnboardingShellActive, household, memberId],
   );
-  const [returnBookmarkVersion, setReturnBookmarkVersion] = useState(0);
-  const storedReturnMessage = useMemo(
-    () => loadReturnMessage(household.environment, household.householdId, memberId),
-    [household.environment, household.householdId, memberId, household.revision, returnBookmarkVersion],
-  );
-  const activeReturn = useMemo(
-    () => (activeMemberPresent ? activeReturnMessage(storedReturnMessage, household) : null),
-    [activeMemberPresent, storedReturnMessage, household],
-  );
-  const resumeTarget = resolveOnboardingResume(activeReturn, household, memberId);
-  const returnBarRef = useRef<HTMLDivElement>(null);
   // Desktop has no mobile-style focus-mode modal to swap into
   // (focusShellOpen requires phoneShell). "No new desktop surface" means
   // this reuses the same chat bubble desktop already opens on tap — only
   // what renders inside it changes while onboarding has the floor.
-  const desktopOnboardingOpen = Boolean(!phoneShell && open && onboardingShellActive);
-  const autonomyBlocked = adding || activityBlocked;
-  const homeAutonomy = tab === "home" && !autonomyBlocked;
+  const desktopOnboardingOpen = Boolean(!setup && !phoneShell && open && onboardingShellActive);
+  const modalActive=useModalActive();
+  const autonomyBlocked = adding || activityBlocked || modalActive;
+  const homeAutonomy = tab === "home" && !autonomyBlocked && documentVisible && !open && !setupSelected && !reducedMotion();
   idleCaptureAllowed.current = !(
     typeof document === "undefined"
     || document.hidden
@@ -545,7 +533,7 @@ export function HerculesPresence({
     setBubbleSize((prev) => (
       Math.abs(prev.w - next.w) < 2 && Math.abs(prev.h - next.h) < 2 ? prev : next
     ));
-  }, [showProposal, showTalk, showWidgetSnippets, talk?.spoken, proposal?.spoken, open, turns.length, snippets.length, busy, desktopOnboardingOpen, activeReturn?.chapterId]);
+  }, [showProposal, showTalk, showWidgetSnippets, talk?.spoken, proposal?.spoken, open, turns.length, snippets.length, busy, desktopOnboardingOpen]);
 
   useEffect(() => {
     const next = furnitureLand(adding, look.view.mood, today);
@@ -663,10 +651,6 @@ export function HerculesPresence({
           setMotion("attack");
           setFlip(stand.faceRight);
           setPos(automaticPoint({ x: stand.x, y: stand.y }));
-          if (!open) {
-            setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
-            later(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
-          }
           return;
         }
         setMotion("hide");
@@ -680,10 +664,6 @@ export function HerculesPresence({
         setMotion("attack");
         setFlip(stand.faceRight);
         setPos(automaticPoint({ x: stand.x, y: stand.y }));
-        if (!open) {
-          setTalk({ spoken: "mrrp", lesson: null, fact: null, replies: [], pose: "attack", topic: "attack", attention: false });
-          later(() => setTalk((current) => (current?.topic === "attack" ? null : current)), 1800);
-        }
         return;
       }
       if (phase === 0 || phase === 3) {
@@ -735,29 +715,6 @@ export function HerculesPresence({
     });
   }, [homeAutonomy, pinned, autonomyBlocked, open, look.view.mood, today]);
 
-  useEffect(() => {
-    if (autonomyBlocked || open || !mutters || proposal || (tab === "home" && !focusedWidget)) return;
-    let clearTalkTimer: number | null = null;
-    let mutterTimer: number | null = null;
-    const schedule = () => {
-      const now = Date.now();
-      const delay = Math.max(1_000, 45_000 - (now - mutterAt.current));
-      mutterTimer = window.setTimeout(() => {
-        mutterAt.current = Date.now();
-        const idle = herculesIdle(household, tab, today);
-        setTalk(idle);
-        setTopic(idle.topic);
-        setMotion(idle.pose);
-        clearTalkTimer = window.setTimeout(() => setTalk((current) => (current === idle ? null : current)), 5_000);
-        schedule();
-      }, delay);
-    };
-    schedule();
-    return () => {
-      if (mutterTimer != null) window.clearTimeout(mutterTimer);
-      if (clearTalkTimer != null) window.clearTimeout(clearTalkTimer);
-    };
-  }, [autonomyBlocked, open, mutters, household, tab, today, proposal]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -823,6 +780,7 @@ export function HerculesPresence({
   }
 
   function closeChat() {
+    setSetupSelected(false);
     chatGen.current += 1;
     setOpen(false);
     setHelpAsked(false);
@@ -852,28 +810,6 @@ export function HerculesPresence({
   // that chapter's own probe (nextChapterFor moving past it) says otherwise.
   function publishReturnMessage(record: Parameters<typeof saveReturnMessage>[0]) {
     saveReturnMessage(record);
-    setReturnBookmarkVersion(version => version + 1);
-  }
-
-  function resumeOnboardingReturn() {
-    if (adding || activityBlocked || busy) return;
-    const freshRecord = loadReturnMessage(household.environment, household.householdId, memberId);
-    if (!activeReturn || JSON.stringify(freshRecord) !== JSON.stringify(activeReturn)) return;
-    const fresh = resolveOnboardingResume(freshRecord, household, memberId);
-    if (!fresh) return;
-    switch (fresh.chapterId) {
-      case "ch-03-charter": openOnboardingCharter(); break;
-      case "ch-04-accounts": openOnboardingAccounts(); break;
-      case "ch-05-opening": openOnboardingOpeningBalances("entry"); break;
-      case "ch-06-fund": openOnboardingHouseholdFund(); break;
-      case "ch-07-recurrences": openOnboardingRecurrences(); break;
-      case "ch-08-cadence": openOnboardingEarningCadence(); break;
-      case "ch-09-categories": openOnboardingCategories(); break;
-      case "ch-10-estimates": openOnboardingEstimates(); break;
-      case "ch-11-plan": openOnboardingPlan(); break;
-      case "ch-12-ready": openOnboardingReady(); break;
-      default: goToOnboardingTarget();
-    }
   }
 
   function goToOnboardingTarget() {
@@ -1072,28 +1008,16 @@ export function HerculesPresence({
     }
   }
 
-  function beginBeg() {
-    setBegging(true);
-    setOpen(false);
-    setMotion(usefulness.animation > 0.55 ? "beg" : usefulness.animation > 0.25 ? "beg" : "sit");
-    setTalk({
-      spoken: usefulness.spoken,
-      lesson: null,
-      fact: usefulness.reasons[0] ? { label: "Useful?", value: usefulness.reasons[0] } : null,
-      replies: [],
-      pose: "beg",
-      topic: "beg",
-      attention: true,
-    });
-  }
-
-  function openChatFromBeg() {
+  function openChatFromBeg(helpOnly=false) {
+    if (!helpOnly && setup && setup.household.householdOnboarding?.state !== 'complete') {
+      setOpen(true);setSetupSelected(true);return;
+    }
     setBegging(false);
     if (activePersonalOffer) {
       setOpen(true);
       return;
     }
-    if (!householdOnboardingShellActive && personalOffer) {
+    if (!setup && !householdOnboardingShellActive && personalOffer) {
       const offeredAt = new Date().toISOString();
       setActivePersonalOffer(personalOffer);
       onLedger((current) => recordPersonalModuleOffer(current, {
@@ -1419,47 +1343,8 @@ export function HerculesPresence({
     if (!start) return;
     if (!start.moved) {
       setPurr(true);
-      const now = Date.now();
-      const doubleSit = now - clickAt.current < 420;
-      clickAt.current = now;
-      if (doubleSit) {
-        if (sitTimer.current) {
-          window.clearTimeout(sitTimer.current);
-          sitTimer.current = null;
-        }
-        sitWithBag();
-        return;
-      }
-      const intent = herculesTapIntent({
-        openHelpOnTap: usefulness.openHelpOnTap,
-        chatOpen: open,
-        begging,
-      });
-      if (intent === "close") {
-        closeChat();
-        setMotion(pinned ? "sit" : "loaf");
-        return;
-      }
-      if (intent === "open-help" && begging) {
-        openChatFromBeg();
-        return;
-      }
-      // Delay first tap so a second immediate click can become sit instead.
-      if (sitTimer.current) window.clearTimeout(sitTimer.current);
-      sitTimer.current = window.setTimeout(() => {
-        sitTimer.current = null;
-        if (focusedWidget && tab === "home") {
-          setOpen(true);
-          return;
-        }
-        const next = herculesTapIntent({
-          openHelpOnTap: usefulness.openHelpOnTap,
-          chatOpen: false,
-          begging: false,
-        });
-        if (next === "open-help") openChatFromBeg();
-        else beginBeg();
-      }, 280);
+      if (open) closeChat();
+      else openChatFromBeg();
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
     }
@@ -1535,43 +1420,16 @@ export function HerculesPresence({
     </label>
   ) : null;
 
-  useEffect(() => {
-    const bar = returnBarRef.current;
-    const app = bar?.closest<HTMLElement>(".app");
-    if (!bar || !app) return;
-    const previous = app.style.getPropertyValue("--standalone-return-height");
-    const previousPill = app.style.getPropertyValue("--standalone-pill-clearance");
-    const measure = () => {
-      const pillHeight = app.querySelector(".hercules-pill")?.getBoundingClientRect().height ?? 0;
-      app.style.setProperty("--standalone-return-height", `${bar.getBoundingClientRect().height}px`);
-      app.style.setProperty("--standalone-pill-clearance", `${pillHeight ? pillHeight + 10 : 0}px`);
-    };
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    const observed = new Set<Element>();
-    const observe = () => {
-      const current = new Set<Element>([bar, ...app.querySelectorAll(".hercules-pill")]);
-      for (const node of observed) if (!current.has(node)) { observer?.unobserve(node); observed.delete(node); }
-      for (const node of current) if (!observed.has(node)) { observer?.observe(node); observed.add(node); }
-      measure();
-    };
-    observe();
-    const mutations = typeof MutationObserver === "undefined" ? null : new MutationObserver(observe);
-    mutations?.observe(app, {childList:true,subtree:true});
-    return () => {
-      observer?.disconnect(); mutations?.disconnect();
-      if (previous) app.style.setProperty("--standalone-return-height", previous); else app.style.removeProperty("--standalone-return-height");
-      if (previousPill) app.style.setProperty("--standalone-pill-clearance", previousPill); else app.style.removeProperty("--standalone-pill-clearance");
-    };
-  }, [phoneShell, focusShellOpen, activeReturn]);
   return (
     <HerculesRigProvider
       mood={look.view.mood}
       reducedMotion={reducedMotion()}
-      visibilityProfile={autonomyBlocked ? "hidden" : phoneShell || tab !== "home" ? "compact" : "full"}
+      visibilityProfile={autonomyBlocked || !documentVisible || setupSelected ? "hidden" : phoneShell || tab !== "home" ? "compact" : "full"}
     >
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
     <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly && homeAutonomy ? "is-desktop-wander" : ""}`} aria-live="polite">
+      {setup && activeMemberPresent && <HerculesSetup {...setup} key={`${setup.household.environment}:${setup.household.householdId}:${setup.memberId}:${setup.authUserId}`} open={open && setupSelected} onClose={closeChat} onHelp={()=>{setSetupSelected(false);openChatFromBeg(true);}} onPlay={()=>{closeChat();sitWithBag();}} />}
       {desktopFly && homeAutonomy && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />
       )}
@@ -1595,6 +1453,7 @@ export function HerculesPresence({
           </div>
           {open && (
             <>
+
             {workplaceShareToggle()}
             <form
               className="hercules-chat-form"
@@ -1622,7 +1481,7 @@ export function HerculesPresence({
       {phoneShell && !adding && !mobileFocus && (
         <button
           type="button"
-          className={`hercules-pill ${attention || begging ? "needs-you" : ""} ${showProposal ? "has-note" : ""}`}
+          className="hercules-pill"
           aria-label={`Talk to ${look.view.name}. Opens focus mode.`}
           onClick={openMobileFocus}
         >
@@ -1635,7 +1494,7 @@ export function HerculesPresence({
             pose="loaf"
             size={40}
           />
-          <span className="hercules-pill-name">{look.view.name}</span>
+          <span className="hercules-pill-name">{look.view.name}</span>{(proposal || householdOnboardingShellActive) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
         </button>
       )}
       {focusShellOpen && (
@@ -1643,7 +1502,7 @@ export function HerculesPresence({
           <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
             Close
           </button>
-          {onboardingShellActive ? (
+          {!setup && onboardingShellActive ? (
             <OnboardingChat
               household={household}
               memberId={memberId}
@@ -1680,6 +1539,7 @@ export function HerculesPresence({
             />
           </div>
           <div className="hercules-focus-body">
+            {setup && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
             {talk ? (
               <>
             {open && turns.length > 0 ? (
@@ -1788,36 +1648,13 @@ export function HerculesPresence({
       {/* "Finish here, then open Hercules." Furniture, not an alert: no
           dismiss control and no timeout. Desktop reuses the existing status
           surface; mobile uses plate 13's bar above the nav. */}
-      {!phoneShell && !showProposal && !showTalk && activeReturn && (
-        <div
-          ref={bubbleRef}
-          className={`hercules-bubble ${bubbleSide}`}
-          style={bubbleStyle}
-          role="status"
-          aria-live="polite"
-        >
-          <p className="hercules-spoken">{copy("nav.return")}</p>
-        </div>
-      )}
-      {phoneShell && !focusShellOpen && activeReturn && (
-        <div
-          ref={returnBarRef}
-          className="onboarding-return-bar"
-          role="status"
-          aria-live="polite"
-          style={{ minHeight: SHELL_VIEW.returnBarHeight }}
-        >
-          <span className="onboarding-return-dot" aria-hidden="true" />
-          <span>{copy("nav.return")}</span>
-          {resumeTarget && <button type="button" className="onboarding-resume" aria-label={`Resume in ${navTargetSurfaceLabel(resumeTarget.target.tab)}`} disabled={adding || activityBlocked || busy} onClick={resumeOnboardingReturn}>Resume</button>}
-        </div>
-      )}
       {(desktopOnboardingOpen || (showTalk && talk)) && !focusShellOpen && (
         <div
           ref={bubbleRef}
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""}`}
           style={bubbleStyle}
         >
+          {open && setup && !setupSelected && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
           {desktopOnboardingOpen ? (
             <>
               <OnboardingChat
@@ -1956,7 +1793,7 @@ export function HerculesPresence({
           perchPlay ? `perch-play perch-${perchMove}` : "",
           purr ? "purr" : "",
           five.yes ? "high-five" : "",
-          attention || begging ? "needs-you" : "",
+          "",
           begging ? "is-begging" : "",
           bagPlay ? "is-bag" : "",
           flyPouncing ? "is-fly-pouncing" : "",
@@ -1966,15 +1803,8 @@ export function HerculesPresence({
           reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
-        aria-label={
-          begging
-            ? `${look.view.name} is begging — tap again for help`
-            : usefulness.openHelpOnTap
-              ? `Talk to ${look.view.name}. Tap for How can I help. Double-tap to sit.`
-              : attention
-                ? `${look.view.name} wants a check-in`
-                : `Talk to ${look.view.name}. Double-tap to sit.`
-        }
+        aria-label={`Open ${look.view.name}`}
+        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg();}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -1995,7 +1825,7 @@ export function HerculesPresence({
           size={size}
           flip={flip}
         />
-        <span className={`hercules-useful useful-${usefulness.light}`} aria-hidden="true">!</span>
+        {(proposal || householdOnboardingShellActive) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
       </button>
     </div>
     </HerculesRigProvider>

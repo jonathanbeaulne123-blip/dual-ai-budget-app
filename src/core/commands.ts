@@ -1,3 +1,4 @@
+import { fundSourceMovement, fundSourceReservedCents, fundContributionReviewDigest, shapeFundSourceDeclaration, type FundSourceInput } from "./fundContributionSources.ts";
 import {reviewedClaimInput,type ClaimSettlementRequest} from "./claimSettlementReview.ts";
 import {dueOccurrenceReview,reviewedDueRequest,type DueOccurrenceRequest} from "./dueOccurrenceReview.ts";
 import { reviewedSwipeEntry } from "./swipe.ts";
@@ -1202,11 +1203,12 @@ export const setFundRailSlot = captureCommand("setFundRailSlot", function setFun
   memberId: string;
   createdBy: string;
   slot: number;
+  presentation?: "desk" | "phone";
   widgetId: FundWidgetId;
 }): CommitResult {
   const member = requireFundRailActor(household, input.memberId, input.createdBy);
-  if (!Number.isInteger(input.slot) || input.slot < 1 || input.slot > 8) {
-    throw new ValidationError("The Fund board has exactly eight places.");
+  if (!Number.isInteger(input.slot) || input.slot < 1 || input.slot > (input.presentation === "phone" ? 6 : 8)) {
+    throw new ValidationError("Choose a visible place on this Fund board.");
   }
   if (!isFundWidgetId(input.widgetId)) throw new ValidationError("Choose a widget from the Fund library.");
   if ((input.slot === 1) !== (input.widgetId === "level")) {
@@ -1216,7 +1218,7 @@ export const setFundRailSlot = captureCommand("setFundRailSlot", function setFun
     throw new ValidationError("That one only belongs on your own desk.");
   }
 
-  const current = railFor(household, member.id);
+  const current = railFor(household, member.id,input.presentation);
   const index = input.slot - 1;
   const from = current.indexOf(input.widgetId);
   const nextSlots = [...current];
@@ -1225,7 +1227,7 @@ export const setFundRailSlot = captureCommand("setFundRailSlot", function setFun
   } else {
     nextSlots[index] = input.widgetId;
   }
-  const slots = requireFundRail(nextSlots, household, member.id);
+  const slots = requireFundRail(nextSlots, household, member.id,input.presentation);
   if (slots.every((id, place) => id === current[place])) {
     return {
       household,
@@ -1241,7 +1243,7 @@ export const setFundRailSlot = captureCommand("setFundRailSlot", function setFun
   const next = cloneHousehold(household);
   const updatedAt = nowIso();
   next.members = next.members.map((row) => row.id === member.id
-    ? { ...row, fundRail: { memberId: member.id, slots, updatedAt } }
+    ? { ...row, fundRail: { memberId: member.id, slots: input.presentation === "phone" ? railFor(household,member.id) : slots, ...(input.presentation === "phone" ? {phoneSlots:slots} : member.fundRail?.phoneSlots ? {phoneSlots:member.fundRail.phoneSlots} : {}), updatedAt } }
     : row);
   return commitFundRailPreference(previous, next, member.id, "Fund board arranged", updatedAt);
 });
@@ -7029,19 +7031,34 @@ export const proposeHouseholdFundContribution = captureCommand("proposeHousehold
   date: string;
   purpose?: string;
   note?: string;
+  source?: FundSourceInput;
 }): CommitResult {
   const fund = requireHouseholdFund(household);
   requireMember(household, input.memberId);
   requireMember(household, input.contributorMemberId);
+  if (input.memberId !== input.contributorMemberId) throw new ValidationError("Only the contributor can propose their own money.");
+  if (!input.source || input.source.version !== 1 || !['already-held','external-received','recorded-movement'].includes(input.source.kind)
+    || typeof input.source.explanation !== 'string' || !input.source.explanation.trim()) throw new ValidationError("Declare the source of this contribution.");
   const amountCents = parseAmount(input.amount);
+  const sourceReading = input.source.kind === 'recorded-movement'
+    ? fundSourceMovement(household, input.memberId, input.source.sourceTransactionId ?? '', parseDate(input.date)) : null;
+  if (sourceReading && fundSourceReservedCents(household, input.memberId, sourceReading.tx.id) + amountCents > sourceReading.tx.amountCents)
+    throw new ValidationError("That recorded movement is already allocated to contributions.");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const at = nextFundEventAt(next);
   const id = nextFundEventId(next);
+  const claimId = sourceReading ? crypto.randomUUID() : undefined;
+  const sourceDeclaration = shapeFundSourceDeclaration({ ...input.source, declaredByMemberId: input.memberId, amountCents, effectiveDate:parseDate(input.date), claimId })!;
+  if (sourceReading && claimId) next.fundContributionSourceClaims = [...(next.fundContributionSourceClaims ?? []), {
+    id:claimId, fundId:fund.id, proposalEventId:id, ownerMemberId:input.memberId, sourceTransactionId:sourceReading.tx.id,
+    sourceFingerprint:sourceReading.fingerprint, amountCents, createdAt:at, updatedAt:at,
+  }];
   next.fundEvents = [...shapeHouseholdFundEvents(next.fundEvents), {
     id,
     fundId: fund.id,
     kind: "contribution-proposed",
+    sourceDeclaration,
     amountCents,
     date: parseDate(input.date),
     createdBy: input.memberId,
@@ -7171,10 +7188,25 @@ export const withdrawHouseholdFundContribution = captureCommand("withdrawHouseho
   return commit(previous, next, "Household Fund", "Withdrew a contribution motion", [id], [], "withdrawHouseholdFundContribution");
 });
 
+export const replaceHouseholdFundContributionSource = captureCommand("replaceHouseholdFundContributionSource", function replaceHouseholdFundContributionSource(household: Household, input: {
+  memberId: string; proposalEventId: string; expectedProposalDigest: string; source: FundSourceInput;
+}): CommitResult {
+  const proposal = household.fundEvents?.find(e => e.id === input.proposalEventId && e.kind === 'contribution-proposed');
+  if (!proposal || proposal.createdBy !== input.memberId) throw new ValidationError('Only the contributor can replace this proposal.');
+  if (input.expectedProposalDigest !== fundContributionReviewDigest(household, proposal.id)) throw new ValidationError('Contribution changed. Review it again.');
+  const withdrawn = withdrawHouseholdFundContribution(household, {memberId:input.memberId,proposalEventId:proposal.id});
+  const replacement = proposeHouseholdFundContribution(withdrawn.household, {memberId:input.memberId,contributorMemberId:input.memberId,
+    amount:proposal.amountCents / 100,date:proposal.date,purpose:proposal.purpose,note:proposal.note,source:input.source});
+  return {...replacement, postedIds:[...withdrawn.postedIds,...replacement.postedIds], undo:{...replacement.undo,snapshot:household,
+    postedIds:[...withdrawn.postedIds,...replacement.postedIds],commandKind:'replaceHouseholdFundContributionSource'}};
+});
+
 export const confirmHouseholdFundContribution = captureCommand("confirmHouseholdFundContribution", function confirmHouseholdFundContribution(household: Household, input: {
   memberId: string;
   proposalEventId: string;
   date?: string;
+  expectedProposalDigest?: string;
+  received?: boolean;
 }): CommitResult {
   const fund = requireFundCustodian(household, input.memberId);
   const events = shapeHouseholdFundEvents(household.fundEvents);
@@ -7187,6 +7219,9 @@ export const confirmHouseholdFundContribution = captureCommand("confirmHousehold
   if (motion.status === "confirmed") {
     throw new ValidationError("That contribution was already confirmed.");
   }
+  if (!proposal.sourceDeclaration) throw new ValidationError("The contributor must replace this older proposal with a source declaration.");
+  if (input.received !== true) throw new ValidationError("Confirm that you received this contribution.");
+  if (input.expectedProposalDigest !== fundContributionReviewDigest(household, proposal.id)) throw new ValidationError("Contribution changed. Review its source and amount again.");
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const at = nextFundEventAt(next);
@@ -7417,6 +7452,8 @@ export const recordHouseholdFundReconciliation = captureCommand("recordHousehold
   const personalRemainderCents = input.personalRemainder === undefined
     ? computedPersonal
     : parseWholeCents(input.personalRemainder, "Personal remainder", { allowZero: true, allowNegative: true });
+  const independentlyChecked = input.personalRemainder !== undefined;
+  const tied = independentlyChecked && computedPersonal >= 0 && personalRemainderCents >= 0 && computedPersonal === personalRemainderCents;
   const differenceCents = computedPersonal - personalRemainderCents;
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -7426,7 +7463,7 @@ export const recordHouseholdFundReconciliation = captureCommand("recordHousehold
     id: eventId, fundId: fund.id, kind: "reconciliation-recorded", amountCents: 0, date,
     createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
     destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
-    reconciliationTied: differenceCents === 0, purpose: "", note: input.note?.trim().slice(0, 180) || "Weekly reconciliation",
+    reconciliationTied: computedPersonal < 0 || personalRemainderCents < 0 ? false : independentlyChecked ? tied : null, purpose: "", note: input.note?.trim().slice(0, 180) || "Weekly reconciliation",
     createdAt: at, updatedAt: at,
   }];
   const state = shapeHouseholdFundPrivate(next.fundPrivate, input.memberId);
@@ -7434,9 +7471,9 @@ export const recordHouseholdFundReconciliation = captureCommand("recordHousehold
   next.fundPrivate = { ...state, reconciliations: [...state.reconciliations, {
     id, fundId: fund.id, memberId: input.memberId, date, bankTotalCents,
     operatingFundCents: projection.operatingBalanceCents, kittyCents: projection.kittyCents,
-    personalRemainderCents, differenceCents, sharedEventId: eventId, createdAt: at, updatedAt: at,
+    personalRemainderCents, independentlyChecked, differenceCents, sharedEventId: eventId, createdAt: at, updatedAt: at,
   }] };
-  return commit(previous, next, "Household Fund", differenceCents === 0 ? "Household Fund reconciliation tied" : `Household Fund reconciliation is off by $${(Math.abs(differenceCents) / 100).toFixed(2)}`, [eventId, id], [], "recordHouseholdFundReconciliation");
+  return commit(previous, next, "Household Fund", tied ? "Household Fund reconciliation tied" : !independentlyChecked && computedPersonal >= 0 ? "Household Fund not independently checked" : `Household Fund reconciliation is off by $${(Math.abs(differenceCents) / 100).toFixed(2)}`, [eventId, id], [], "recordHouseholdFundReconciliation");
 });
 
 export const reverseHouseholdFundEvent = captureCommand("reverseHouseholdFundEvent", function reverseHouseholdFundEvent(household: Household, input: {

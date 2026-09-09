@@ -1,3 +1,4 @@
+import { entryDraftKey, loadEntryDraft, writeEntryLocal, clearEntryLocal, entryConfirmation, clearEntryConfirmation, readEntrySubmission, type EntrySubmission, type EntryDraft } from "./entryDraft.ts";
 import type { KitchenCommandOptions } from "./kitchenCommand.ts";
 import {rememberWorkHandoff,clearWorkHandoff} from "./workHandoff.ts";
 import { BoardRejectedDraft, isBoardDraft } from "./BoardRejectedDraft.tsx";
@@ -58,12 +59,8 @@ import {
   ledgerNameForView,
   ledgerRouteContract,
   kitchenPrimaryNav,
-  adoptExistingOnboardingEvidence,
-  offerHouseholdOnboarding,
   acceptedHouseholdOnboarding,
-  memberNeedsAcceptedOnboardingEvidenceAdoption,
   copy,
-  nextChapterFor,
   showsLedgerPurposeBanner,
   projectLedgerExperience,
   restoreAcceptedSnapshot,
@@ -444,7 +441,6 @@ import { useDialog } from "./useDialog.ts";
 import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
-import { useMobileEntry } from "./MobileEntryChoices.tsx";
 import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
 import { AddCategoryForm } from "./AddCategoryForm.tsx";
 import { defaultSubcategoryForMode } from "./addSlideshow.ts";
@@ -459,7 +455,7 @@ import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
 const AccountHistorySetup = lazy(() => import("./AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
-import { OnboardingJourney, type JourneyDestination } from "./OnboardingJourney.tsx";
+import { type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
@@ -643,11 +639,9 @@ export function App() {
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
-  const [onboardingInviteDismissedState, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
+  const [, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
-  const mobileEntry = useMobileEntry();
   const [addLaunchAccountId, setAddLaunchAccountId] = useState<string | null>(null);
-  const [addMobileDraft, setAddMobileDraft] = useState(false);
   const [pausedAddScope, setPausedAddScope] = useState<string | null>(null);
   const [addPresentationKey, setAddPresentationKey] = useState(0);
   const [adding, setAddingState] = useState(false);
@@ -658,7 +652,8 @@ export function App() {
       draftGenerationRef.current++;
       punchReviewIntentRef.current++;
       setPausedAddScope(null);
-      if (!resume && !adding) { setAddPresentationKey(key => key + 1); setAddMobileDraft(mobileEntry); setAddLaunchAccountId(null); }
+      if (!activeEntryKeyRef.current) activeEntryKeyRef.current = readEntryKey(mode);
+      if (!resume && !adding) { setAddPresentationKey(key => key + 1); setAddLaunchAccountId(null); }
     }
     setAddingState(value);
   }
@@ -686,7 +681,6 @@ export function App() {
   // Internal navigation/acceptance always dismisses; it must never create a paused draft.
   const closeAdd = () => {
     setPausedAddScope(null);
-    setAddMobileDraft(false);
     setAddLaunchAccountId(null);
     punchReviewIntentRef.current++;
     setSplitDraft(null);
@@ -703,17 +697,14 @@ export function App() {
     setDraftLocation(undefined);
     setLocationBusy(false);
   };
-  // Only an explicit Close/Escape may suspend the mounted mobile draft.
+  // Closing only pauses presentation; accepted or queued writes keep their identity.
   const pauseAdd = () => {
     if (!adding) return;
-    if (mobileEntry || addMobileDraft) {
-      if (busy || postingRef.current) return;
-      punchReviewIntentRef.current++;
-      setPausedAddScope(readAddScope());
-      setAdding(false);
-      return;
-    }
-    closeAdd();
+    punchReviewIntentRef.current++;
+    shiftScanScopeRef.current.cancel();
+    setShiftScanBusy(false);
+    setPausedAddScope(readAddScope());
+    setAdding(false);
   };
   const addSheetRef = useDialog(adding, pauseAdd);
   useEffect(() => {
@@ -745,7 +736,7 @@ export function App() {
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
   const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
-  const [dismissedOnboardingCompletionDigest, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
+  const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
@@ -1195,8 +1186,46 @@ export function App() {
   useEffect(() => {
     if (previousAddScopeRef.current === addScopeKey) return;
     previousAddScopeRef.current = addScopeKey;
+    activeEntryKeyRef.current = null;
     closeAdd();
   }, [addScopeKey]);
+
+  const activeEntryKeyRef = useRef<string | null>(null);
+  const [entryDraftVolatile,setEntryDraftVolatile]=useState(false);
+  const [entrySubmission,setEntrySubmission]=useState<EntrySubmission|null>(null);
+  function readEntryKey(kind: AddMode) {
+    const current = householdRef.current, selected = sessionRef.current;
+    return current && selected ? entryDraftKey(current.environment, current.householdId, selected.memberId, selected.view,
+      localLedgerIdentity(selected.memberId) ?? loadSupabaseSession(current.environment)?.userId ?? selected.memberId, kind) : null;
+  }
+  useEffect(() => {
+    const key = readEntryKey(mode);
+    if (!key || activeEntryKeyRef.current !== key || previousAddScopeRef.current !== addScopeKey
+      || (!adding && pausedAddScope !== readAddScope())) return;
+    const draft: EntryDraft = {version:1, mode, form, slide:addSlide, details:addDetails,
+      launchAccountId:addLaunchAccountId, focusedAccountId, categoryTouched, codingHint, presetId,
+      hoursDirty, shiftGate, workShiftDate:workShiftDateRef.current, workShiftDraft, location:draftLocation,
+      split:splitDraft && household ? {members:household.members.filter(m=>m.active).map(m=>m.id),percents:splitDraft.percents}:null};
+    setEntryDraftVolatile(!writeEntryLocal(key, draft));
+  }, [form, mode, addSlide, addDetails, addLaunchAccountId, focusedAccountId, categoryTouched, codingHint, presetId,
+    hoursDirty, shiftGate, workShiftDraft, draftLocation, splitDraft, adding, pausedAddScope, addScopeKey]);
+  function restoreEntryDraft(kind: AddMode) {
+    const key = readEntryKey(kind), draft = key ? loadEntryDraft(key) : null;
+    if (!key || !draft || !household || !session) return false;
+    activeEntryKeyRef.current = key;
+    setMode(kind); setForm({...emptyForm,...draft.form}); setAddSlide(draft.slide); setAddDetails(draft.details);
+    setAddLaunchAccountId(draft.launchAccountId); setFocusedAccountId(draft.focusedAccountId);
+    setCategoryTouched(draft.categoryTouched); setCodingHint(draft.codingHint); setPresetId(draft.presetId);
+    setHoursDirty(draft.hoursDirty); setShiftGate(draft.shiftGate); setWorkShiftDraft(draft.workShiftDraft);
+    workShiftDateRef.current=draft.workShiftDate; setDraftLocation(draft.location);
+    const members=household.members.filter(m=>m.active).map(m=>m.id);
+    const currentSplit=newSplitDraft(household,{memberId:session.memberId,view:session.view,generation:replicaScopeGenerationRef.current});
+    setSplitDraft(draft.split && JSON.stringify(members)===JSON.stringify(draft.split.members)
+      ? {...currentSplit,percents:draft.split.percents} : draft.split ? {scope:'review-required',percents:draft.split.percents}:currentSplit);
+    const pending=readEntrySubmission(key);setEntrySubmission(pending);
+    if(pending){try{const [,submittedForm,location,percents]=JSON.parse(pending.review);setForm(submittedForm);setDraftLocation(location);if(percents)setSplitDraft({scope:draft.split&&JSON.stringify(members)===JSON.stringify(draft.split.members)?currentSplit.scope:'review-required',percents});}catch{setError('The retained review needs recovery before a new Confirm.');}}
+    setAdding(true,true); setError(''); setConfirm(null); return true;
+  }
 
   function rememberUndoHistory(next: UndoToken[]) {
     setHistory(next);
@@ -3195,9 +3224,7 @@ export function App() {
   const today = todayKey(now, booksZone);
   const googleEntryAvailable = googleConfigured() || supabaseAuthEnabled();
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
-  const activeMemberSelected = Boolean(
-    household && memberId && household.members.some((member) => member.active && member.id === memberId),
-  );
+
   const view: LedgerView = session?.view ?? "household";
   const appearance = useAppearance();
   useAppearanceBinding(environment, household && session ? tab : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
@@ -3207,30 +3234,7 @@ export function App() {
   // Guided setup is available to every household, including books created
   // before onboarding existed. offerHouseholdOnboarding is itself idempotent,
   // and this accepted-state guard prevents this frequently re-fired effect
-  // from committing the same offer more than once.
-  useEffect(() => {
-    if (pendingAuthInvite || loadPendingAuthInvite() || !household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
-    const priorOnboarding = acceptedHouseholdOnboarding(household);
-    if (priorOnboarding && priorOnboarding.state !== "inactive") return;
-    void run(
-      (current) => offerHouseholdOnboarding(current, { memberId }),
-      { closeAdd: false },
-    );
-  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready, pendingAuthInvite]);
-  // Each member adopts only their own Personal progress, on their own device.
-  // The lifecycle projector considers accepted evidence that predates this
-  // run's start, so later setup work still needs its ordinary live chapter.
-  useEffect(() => {
-    if (pendingAuthInvite || loadPendingAuthInvite() || !household || !memberId || !activeMemberSelected || view !== "household" || !activeBooksGate.ready) return;
-    if (!memberNeedsAcceptedOnboardingEvidenceAdoption(household, memberId)) return;
-    void run(
-      (current) => adoptExistingOnboardingEvidence(current, {
-        memberId,
-        createdBy: memberId,
-      }),
-      { closeAdd: false },
-    );
-  }, [household, memberId, activeMemberSelected, view, activeBooksGate.ready, pendingAuthInvite]);
+  // Setup offering and evidence adoption now run only inside explicitly opened Hercules.
   const charterFoundingVisible = Boolean(household && session && view === "household" && charterFoundingOpen);
   const charterPageVisible = Boolean(household && session && view === "household" && charterPageOpen && household.charter);
   const charterTakeoverVisible = charterFoundingVisible || charterPageVisible;
@@ -3244,62 +3248,13 @@ export function App() {
   // "offered" screen never suppresses a later, genuinely new
   // "handshake-pending" screen (the partner proposing on their own device).
   const onboardingInviteRecord = household ? acceptedHouseholdOnboarding(household) : null;
-  const onboardingInviteVisible = Boolean(
-    household
-    && session
-    && activeMemberSelected
-    && view === "household"
-    && onboardingInviteRecord
-    && (onboardingInviteRecord.state === "offered" || onboardingInviteRecord.state === "handshake-pending")
-    && onboardingInviteDismissedState !== onboardingInviteRecord.state,
-  );
-  const guidedJourneyVisible = Boolean(view === "household" && onboardingInviteRecord
-    && ["active", "paused-safe", "waiting-member", "blocked", "adopting", "stopped-incomplete"].includes(onboardingInviteRecord.state));
-  const onboardingStandingFactOnly = Boolean(
-    household
-    && memberId
-    && activeMemberSelected
-    && nextChapterFor(household, memberId)?.id === "ch-07-recurrences",
-  );
-  const onboardingCadenceOnly = Boolean(
-    household
-    && memberId
-    && activeMemberSelected
-    && nextChapterFor(household, memberId)?.id === "ch-08-cadence",
-  );
-  const onboardingCategoriesOnly = Boolean(
-    household
-    && memberId
-    && activeMemberSelected
-    && view === "household"
-    && nextChapterFor(household, memberId)?.id === "ch-09-categories",
-  );
-  const onboardingEstimatesOnly = Boolean(
-    household
-    && memberId
-    && activeMemberSelected
-    && view === "household"
-    && nextChapterFor(household, memberId)?.id === "ch-10-estimates",
-  );
-  const onboardingPlanOnly = Boolean(
-    household
-    && memberId
-    && activeMemberSelected
-    && view === "household"
-    && nextChapterFor(household, memberId)?.id === "ch-11-plan",
-  );
-  const onboardingReadyOnly = Boolean(
-    household
-    && memberId
-    && activeMemberSelected
-    && view === "household"
-    && (
-      nextChapterFor(household, memberId)?.id === "ch-12-ready"
-      || (onboardingInviteRecord?.state === "complete"
-        && onboardingInviteRecord.completionDigest
-        && onboardingInviteRecord.completionDigest !== dismissedOnboardingCompletionDigest)
-    ),
-  );
+  const onboardingInviteVisible = false;
+  const onboardingStandingFactOnly = false;
+  const onboardingCadenceOnly = false;
+  const onboardingCategoriesOnly = false;
+  const onboardingEstimatesOnly = false;
+  const onboardingPlanOnly = false;
+  const onboardingReadyOnly = false;
   const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
   useEffect(() => { setOnboardingBooksOpen(false); }, [ledgerRenderScopeKey]);
   const visibleLedgerPending=useLedgerSync&&ledgerPending?.key===ledgerRenderScopeKey?ledgerPending.rows:[];
@@ -4000,7 +3955,7 @@ export function App() {
       const client = ledgerSyncRef.current;
       if (!client) { const message = "The authenticated ledger connection is opening. Your entry is still here."; options?.onDefinitiveRejected?.({ retryable: true }); options?.onRejected?.(message); presentSetError(message); return null; }
       const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
-      confirmationRef.current = confirmationId;
+      if (!options?.confirmationId) confirmationRef.current = confirmationId;
       presentSetLedgerCommandId(confirmationId);
       setBusy(true); presentSetCommandProgressPhase("confirming");
       try {
@@ -4038,7 +3993,7 @@ export function App() {
       newConfirmationId,
     );
     const confirmationId = confirmation.confirmationId;
-    confirmationRef.current = confirmation.pendingConfirmationId;
+    if (!explicitConfirmationId) confirmationRef.current = confirmation.pendingConfirmationId;
     const ledgerWrite = isLedgerWrite(token);
     const memberId = actorId ?? session?.memberId;
     const shareCapable = Boolean((previous?.linked || next.linked) && hostedContinuityAllowed(environment) && memberId);
@@ -5904,10 +5859,14 @@ export function App() {
       return;
     }
     leaveDesk();
+    const kind = nextMode ?? mode;
+    if (!account && restoreEntryDraft(kind)) return;
     const id = account?.id ?? focusedAccountId;
     const defaults = addFormDefaults(displayHousehold, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
+    activeEntryKeyRef.current = readEntryKey(nextMode ?? defaults.suggestedMode);
+    setEntrySubmission(activeEntryKeyRef.current?readEntrySubmission(activeEntryKeyRef.current):null);
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
     setAddLaunchAccountId(account?.id ?? null);
@@ -5944,6 +5903,9 @@ export function App() {
   };
 
   function switchAddMode(item: AddMode) {
+    if (restoreEntryDraft(item)) return;
+    activeEntryKeyRef.current = readEntryKey(item);
+    setEntrySubmission(activeEntryKeyRef.current?readEntrySubmission(activeEntryKeyRef.current):null);
     setMode(item);
     setAddSlide(0);
     setCategoryTouched(false);
@@ -6123,8 +6085,29 @@ export function App() {
     setSplitDraft(editSplitDraft(splitDraft, ledger.members.filter(member => member.active).map(member => member.id), memberId, percent));
   }
 
+  function entryReview() {
+    const live=householdRef.current;
+    return JSON.stringify([mode,form,draftLocation,splitDraft?.percents,{
+      members:live?.members.filter(member=>member.active).map(member=>member.id),
+      settings:mode==='shift'&&live?shiftSettingsFingerprint(live.shiftSettings):null,
+      fundId:form.useHouseholdFund?live?.householdFund?.id:null,
+    }]);
+  }
+
   function submit(flags: { confirmDuplicate?: boolean } = {}) {
+    const draftKey=readEntryKey(mode);
+    if (!draftKey) return;
+    const held=readEntrySubmission(draftKey);
+    if(confirm && held && held.review!==entryReview()){
+      clearEntryConfirmation(draftKey,held.id);setEntrySubmission(null);setConfirm(null);
+      setError('The draft changed. Review the current details, then Confirm again.');return;
+    }
+    let confirmationId:string;
+    try { confirmationId=entryConfirmation(draftKey,entryReview()); }
+    catch(caught) {setError(caught instanceof Error?caught.message:String(caught));return;}
+    setEntrySubmission(readEntrySubmission(draftKey));
     run((current) => {
+      try {
       if (mode === "transfer") {
         return postTransfer(current, {
           date: form.date,
@@ -6177,7 +6160,23 @@ export function App() {
             }
           : undefined,
       });
-    });
+      } catch(caught) {if(!(caught instanceof NeedsConfirmationError)){clearEntryConfirmation(draftKey,confirmationId);setEntrySubmission(null);}throw caught;}
+    }, {confirmationId, onDefinitiveRejected:()=>{clearEntryConfirmation(draftKey,confirmationId);if(activeEntryKeyRef.current===draftKey)setEntrySubmission(null);},
+      onAccepted:()=>{clearEntryConfirmation(draftKey,confirmationId);clearEntryLocal(draftKey);clearEntryLocal(draftKey+':presentation');if(activeEntryKeyRef.current===draftKey){setEntrySubmission(null);activeEntryKeyRef.current=null;setPausedAddScope(null);}}});
+  }
+
+  async function recoverEntryReceipt() {
+    const key=readEntryKey(mode), pending=entrySubmission, generation=draftGenerationRef.current;
+    if(!key||!pending)return;
+    try {
+      const status=await readWorkShiftSubmission(pending.id);
+      if(readEntryKey(mode)!==key || activeEntryKeyRef.current!==key || draftGenerationRef.current!==generation)return;
+      if(status==='accepted'){clearEntryConfirmation(key,pending.id);clearEntryLocal(key);clearEntryLocal(key+':presentation');setEntrySubmission(null);activeEntryKeyRef.current=null;closeAdd();}
+      else if(status==='rejected'){clearEntryConfirmation(key,pending.id);setEntrySubmission(null);setError('The entry was not accepted. Review the retained details before Confirm.');}
+      else if(status==='pending'){ledgerSyncRef.current?.retryPending();setError('This entry is still awaiting its receipt. You can close and check again.');}
+      else if(entryReview()!==pending.review){clearEntryConfirmation(key,pending.id);setEntrySubmission(null);setError('The books changed while this entry was paused. Review the accounts, split and current details before Confirm.');}
+      else submit();
+    }catch(caught){if(activeEntryKeyRef.current===key && draftGenerationRef.current===generation)setError(caught instanceof Error?caught.message:String(caught));}
   }
 
   async function readWorkShiftSubmission(id: string): Promise<"accepted" | "pending" | "rejected" | "missing"> {
@@ -6193,7 +6192,7 @@ export function App() {
     if (postingRef.current) { if (!confirmDuplicate) draftCallbacks?.onRejected(); return; }
     const current = householdRef.current;
     const currentMemberId = sessionRef.current?.memberId;
-    const shiftConfirmationId = input.confirmationId ?? confirmationRef.current ?? newConfirmationId();
+    const shiftConfirmationId = input.confirmationId ?? newConfirmationId();
     if (!confirmationRef.current) confirmationRef.current = shiftConfirmationId;
     const pending = confirmDuplicate
       ? workShiftInputRef.current
@@ -6478,9 +6477,8 @@ export function App() {
           </button>
         ))}
       </div>
-      <div className={`onboarding-workspace${guidedJourneyVisible ? " is-guided" : ""}`}>
-        {guidedJourneyVisible && <OnboardingJourney household={household} memberId={session.memberId} onGo={openJourneyDestination} />}
-        <div className="onboarding-detail">
+      <div>
+        <div>
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
@@ -6665,7 +6663,7 @@ export function App() {
             createdBy={memberId}
             busy={busy}
             surface="plan"
-            onCommand={(fn) => { void runKitchen(fn); }}
+            onCommand={runKitchen}
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
             onShowHome={() => goTab("home")}
           />
@@ -6826,7 +6824,7 @@ export function App() {
           onFocusAccount={setFocusedAccountId}
           onClearSource={() => setHerculesSourceFocus(null)}
           onChange={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
-          onCommand={(command) => { void run(command); }}
+          onCommand={runKitchen}
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onGoMore={() => goTab("more")}
@@ -7362,6 +7360,8 @@ export function App() {
       {(adding || pausedAddScope === readAddScope()) && (
         <AddSlideshow
           key={addPresentationKey}
+          draftStorageKey={readEntryKey(mode) ?? undefined}
+          recovery={<>{entryDraftVolatile && <p role="status">Browser storage is full or unavailable. Your latest draft is kept in this open tab; reloading may lose changes.</p>}{entrySubmission && !confirm ? <section className="entry-recovery" aria-label="Entry receipt"><p role="status">This reviewed entry is awaiting its receipt. Its details are kept here.</p><button type="button" className="ghost" onClick={()=>void recoverEntryReceipt()}>Check entry status</button></section> : null}</>}
           open={adding}
           recommendationHousehold={displayHousehold}
           initialAccountId={addLaunchAccountId}
@@ -7383,7 +7383,7 @@ export function App() {
             <>
               <DeferredSurface label="Tip sheet camera">
               <DeferredShiftReportScanBar key={`${environment}:${household.householdId}:${actorId}:${view}`}
-                busy={busy}
+                busy={busy || (!!entrySubmission && !confirm)}
                 scanBusy={shiftScanBusy}
                 error={shiftScanError}
                 warnings={shiftScanWarnings}
@@ -7426,7 +7426,8 @@ export function App() {
             setAdding(false);
           }}
           punchStartedAt={activeOpenShift(household.kitchen, actorId)?.startedAt}
-          busy={busy}
+          postingDisabled={busy}
+          busy={busyState || (!!entrySubmission && !confirm)}
           error={error}
           onDismissError={() => setError("")}
           onGoMore={() => { setAdding(false); goTab("more"); }}
@@ -7446,6 +7447,7 @@ export function App() {
             }
           }}
           postLabel={addPostLabel()}
+          onEditDuplicate={()=>{const key=readEntryKey(mode);if(key&&entrySubmission)clearEntryConfirmation(key,entrySubmission.id);setEntrySubmission(null);setConfirm(null);}}
           onPost={() => submit()}
           onClose={pauseAdd}
           persistCategory={(next, token) => persist(next, token)}
@@ -7945,6 +7947,8 @@ export function App() {
       </div>
       {!charterTakeoverVisible ? (
       <HerculesPresence
+        setup={{ household, memberId:session.memberId, authUserId:localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId,
+          today,busy,onCommand:runKitchen,onOptional:openJourneyDestination,onSave:(next,token)=>{void persistLedgerWrite(preserveCurrentPersonal(next),token);} }}
         household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
         today={today}
         tab={presenceTab(tab)}
@@ -8063,7 +8067,7 @@ export function App() {
         <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
           household={household} today={today} view={view} memberId={session.memberId} busy={busy}
           scenarioSource={scenarioSource}
-          onExpandedChange={setFundLedgeExpanded} onKitchen={fn => { void runKitchen(fn); }}
+          onExpandedChange={setFundLedgeExpanded} onKitchen={runKitchen}
           onOpenAccount={accountId => {
             rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
             openWallet(accountId);

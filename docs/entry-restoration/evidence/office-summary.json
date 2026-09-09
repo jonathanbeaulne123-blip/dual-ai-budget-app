@@ -1,0 +1,30 @@
+{
+  "automated": {
+    "broadScans": 114,
+    "postFixScans": 27,
+    "violations": 0,
+    "runtimePageErrors": 0,
+    "horizontalOverflow": 0
+  },
+  "postFix": {
+    "officeCases": 15,
+    "pointerParkRestoreCases": 3,
+    "motionCases": 12,
+    "runningAnimations": 0,
+    "drawerMissingAfterResize": 0,
+    "visibleFocusReturnCases": 6
+  },
+  "openFinding": null,
+  "limits": [
+    "Synthetic component fixtures",
+    "No authenticated cloud save/pull",
+    "No VoiceOver/NVDA",
+    "Computed text200 emulation, not browser zoom",
+    "Reduced viewport height, not OS keyboard"
+  ],
+  "sourceManifests": {
+    "source-snapshot.json": "9cfdc7366641d21c52bc2df588aad23e535cd93fd0ec8711efe7ec9564fe37bf",
+    "source-snapshot-before-office-fixes.json": "69e9270302cb17822beaeaa6e346f322b5f960a58df58497f69a2d1cb3dcb523"
+  },
+  "targetSizeCorrection": "Earlier minimum44 entry statement measured height only; More width29.88\u201331.06 in retrospective geometry."
+}

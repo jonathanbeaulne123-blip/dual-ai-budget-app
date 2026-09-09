@@ -253,6 +253,17 @@ describe("mobile entry sheet", () => {
     expect(posts).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["expense", "income"] as const)("does not silently accept the only %s account", mode => {
+    const account = household.accounts.find(row => row.active)!;
+    const roster = { ...household, accounts: [account] };
+    act(() => root.render(createElement(Harness, { mode, scoped: roster, roster, onPost: vi.fn(),
+      initial: { accountId: account.id, amount: "12.50", subcategoryId: mode === "income" ? "SUB-INCOME-WAGES" : "SUB-FOOD-GROCERIES" } })));
+    click("More");
+    expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
+    act(() => host.querySelector<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile')!.click());
+    expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(false);
+  });
+
   it.each(["expense", "income"] as const)("More requires deliberate %s account intent with eight eligible accounts", mode => {
     const posts = vi.fn();
     const accounts = household.accounts.filter(account => account.active).slice(0, 8);
@@ -330,7 +341,7 @@ describe("mobile entry sheet", () => {
     click("Back"); expect(slide()).toBe("amount"); click("More");
     render(false); expect(host.querySelector<HTMLElement>("[data-add-slideshow]")!.hidden).toBe(true);
     render(true); document.documentElement.dataset.theme = "newfoundland"; resize(1440);
-    expect(slide()).toBe("amount"); expect(host.querySelector(".mobile-entry-sheet")).toBeNull();
+    expect(slide()).toBe("full-form"); expect(host.querySelector(".mobile-entry-sheet")).toBeNull();
     resize(320); expect(slide()).toBe("full-form");
     expect(draft).toEqual(snapshot);
     expect(host.querySelector<HTMLInputElement>("#add-note")!.value).toBe("Edited note");

@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { describe, expect, it } from "vitest";
 import {
   HOUSEHOLD_FUND_ID,
@@ -85,13 +86,13 @@ describe("Household Fund run rate", () => {
       visibility: "household",
       confirmDuplicate: true,
     }).household;
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: 5000,
       date: "2026-01-29",
     });
-    household = confirmHouseholdFundContribution(proposal.household, {
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposal.postedIds[0]!,
     }).household;

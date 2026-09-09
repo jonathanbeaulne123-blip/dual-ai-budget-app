@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-09-09T03:22:19.942Z",
+  "browser": "151.0.7922.34",
+  "sourceSnapshot": "2026-09-09T03:14:39.865Z",
+  "sourceManifestSha256": "7db6f2a78fb3a62ae8f44ebedf5b5ef94712579a48b6474a2b93323edb109667",
+  "flowCount": 60,
+  "screenshotCount": 711,
+  "under44EitherAxis": [],
+  "horizontalOverflow": [],
+  "failedFlows": [],
+  "nonFontRequests": [],
+  "posts": 0,
+  "runningAnimations": [],
+  "scope": "Synthetic component fixture and exact App recovery JSX prop with synthetic flags/callback; not full App, receipt authority, storage reload, real device or final Claude comparison."
+}

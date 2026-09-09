@@ -15,7 +15,7 @@ export type LandingSurface = "desk" | "till";
 export type FundWidgetId =
   | "level" | "swipe" | "contribute" | "waiting" | "next-out" | "spoken-for" | "week" | "shape"
   | "streams" | "seven-days" | "shelf" | "record" | "minutes" | "ask" | "accounts" | "settle";
-export type MemberRail = { memberId: string; slots: FundWidgetId[]; updatedAt: string };
+export type MemberRail = { memberId: string; slots: FundWidgetId[]; phoneSlots?: FundWidgetId[]; updatedAt: string };
 export type Tombstone = { id: string; deletedAt: string };
 
 export type Member = {
@@ -868,6 +868,7 @@ export type HouseholdFundEventKind =
 
 /** Immutable operational fact. Corrections append a reversal and replacement; old rows are never edited. */
 export type HouseholdFundEvent = {
+  sourceDeclaration?: import("./fundContributionSources.ts").FundSourceDeclaration;
   id: string;
   fundId: string;
   kind: HouseholdFundEventKind;
@@ -929,6 +930,7 @@ export type HouseholdFundPrivateReconciliation = {
   operatingFundCents: number;
   kittyCents: number;
   personalRemainderCents: number;
+  independentlyChecked?: boolean;
   differenceCents: number;
   sharedEventId: string;
   createdAt: string;
@@ -1294,6 +1296,7 @@ export type Household = {
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   /** Active member overlay only. `splitForSync` removes it from Shared. */
   fundPrivate?: HouseholdFundPrivateState;
+  fundContributionSourceClaims?: import("./fundContributionSources.ts").FundContributionSourceClaim[];
   /** D-183 Development-only shared ritual metadata. Never journal or model context. */
   monthRehearsals?: MonthRehearsal[];
   /** Member-owned, append-only weekly acknowledgements. Never money or model context. */
@@ -1429,6 +1432,7 @@ export type PersonalEnvelope = {
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
   fundPrivate?: HouseholdFundPrivateState;
+  fundContributionSourceClaims?: import("./fundContributionSources.ts").FundContributionSourceClaim[];
   tombstones: Tombstone[];
   herculesProPermissions?: HerculesProPermissions;
 };

@@ -1,8 +1,11 @@
-import { readFileSync } from "node:fs";
+import { clearCapturedIntent, capturedIntent } from "../src/ledgerSync/capture.ts";
+import { commandFromCapture, type Scope } from "../src/ledgerSync/protocol.ts";
+import { prepareCommand } from "../src/ledgerSync/authority.ts";
 import { describe, expect, it } from "vitest";
 import {
   HOUSEHOLD_FUND_ID,
   ValidationError,
+  splitForSync,
   catalogHousehold,
   configureHouseholdFund,
   postEntry,
@@ -62,7 +65,7 @@ describe("Till slice 1 custody fence", () => {
   });
 
   it("keeps contribution proposals and shift posting available to the non-custodian", () => {
-    const proposal = proposeHouseholdFundContribution(configuredFund(), {
+    const proposal = proposeHouseholdFundContribution(configuredFund(), { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "25",
@@ -144,19 +147,14 @@ describe("Till slice 1 custody fence", () => {
     });
   });
 
-  it("keeps the custodian check in the purchase-funded path before cloning", () => {
-    const source = readFileSync(new URL("../src/core/commands.ts", import.meta.url), "utf8");
-    const postEntrySource = source.slice(
-      source.indexOf("export function postEntry"),
-      source.indexOf("export function postOpeningBalances"),
-    );
-    const classificationAt = postEntrySource.indexOf('fundingEventKind === "purchase-funded"');
-    const guardAt = postEntrySource.indexOf("requireFundCustodian(", classificationAt);
-    const cloneAt = postEntrySource.indexOf("const previous = cloneHousehold", classificationAt);
-
-    expect(classificationAt).toBeGreaterThanOrEqual(0);
-    expect(guardAt).toBeGreaterThan(classificationAt);
-    expect(guardAt).toBeLessThan(cloneAt);
-    expect(postEntrySource).toContain(REFUSAL);
+  it("refuses a captured custodian purchase submitted under the other principal", async () => {
+    const household=configuredFund();clearCapturedIntent(household);
+    const preview=postEntry(household,fundPurchase(BIANCA));
+    const scope:Scope={environment:household.environment,householdId:household.householdId,memberId:JONATHAN,subject:'synthetic-contributor',role:'owner',expires:Date.now()+60000,aclEpoch:1};
+    const command=await commandFromCapture(capturedIntent(preview.household)!,scope,crypto.randomUUID());
+    const state={sequence:household.revision,shared:splitForSync(household,JONATHAN).shared,personal:new Map([[JONATHAN,splitForSync(household,JONATHAN).personal],[BIANCA,splitForSync(household,BIANCA).personal]])};
+    const before=JSON.stringify(state.shared);
+    await expect(prepareCommand(state,command,scope,()=>{})).rejects.toThrow();
+    expect(JSON.stringify(state.shared)).toBe(before);
   });
 });

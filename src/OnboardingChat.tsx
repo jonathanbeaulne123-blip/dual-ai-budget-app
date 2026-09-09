@@ -58,26 +58,12 @@ import "./onboarding.css";
 //   yet. A richer "you already handled this outside the app" probe is a
 //   later slice's job.
 //
-// Onboarding slice 10 adds the pre-active "offered" / "handshake-pending"
-// screens below (the invitation and the handshake, HEARTH_UX_PACKET.md
-// §13.7-§13.8). App.tsx now mounts this component standalone — outside the
-// mobile focus surface and outside Hercules's desktop presence container,
-// with no enclosing ".hercules-focus-shell" — specifically so these two
-// screens can render before shouldShowOnboardingShell() would ever allow
-// this component's other two mount points to open. The keyboard-trap
-// fallback a few lines below ("standalone renders fall back to this
-// shell") already anticipated exactly this. Two judgment calls, disclosed
-// rather than silently decided: the "Not now" control on both new screens
-// reuses the existing personal.decline copy key ("Not now") rather than a
-// new invite-specific key, since Appendix E has no dedicated one and every
-// on-screen sentence must come from copy(); and the confirmer's screen
-// shows invite.explain's own "Three sittings, about an hour all in" line
-// rather than a per-sitting length table (plate 10's mockup) — Appendix E
-// has no row labels for that table and evidence.ts's card projector (the
-// only existing mechanism for a computed-data row) is outside this slice's
-// file list.
+// The offered and handshake screens are embedded in manually opened Hercules.
+// Embedded mode delegates focus containment to the enclosing dialog.
+// Preparation is optional to expand; accepted checkpoint progress remains intact.
 
 type Props = {
+  embedded?: boolean;
   household: Household;
   memberId: string;
   today: DateKey;
@@ -199,6 +185,7 @@ export function OnboardingChat({
   personalOffer,
   personalOfferSessionId,
   personalOfferRecorded = false,
+  embedded = false,
   onOpenPersonalModule,
   now,
 }: Props) {
@@ -206,10 +193,11 @@ export function OnboardingChat({
   const headingRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
-    headingRef.current?.focus();
+    if (!embedded) headingRef.current?.focus();
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     function trap(event: KeyboardEvent) {
       if (event.key !== "Tab") return;
       const shell = shellRef.current;
@@ -235,7 +223,7 @@ export function OnboardingChat({
     }
     window.addEventListener("keydown", trap, true);
     return () => window.removeEventListener("keydown", trap, true);
-  }, []);
+  }, [embedded]);
 
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
@@ -276,7 +264,7 @@ export function OnboardingChat({
         </p>
         <section className="onboarding-card" style={{ marginBottom: SHELL_VIEW.cardToAction }}>
           <p className="onboarding-card-task">{copy("invite.explain")}</p>
-          <OnboardingPreparation />
+          {embedded ? <details className="onboarding-preparation-disclosure"><summary>What to have ready</summary><OnboardingPreparation /></details> : <OnboardingPreparation />}
         </section>
         <div className="onboarding-actions">
           <button
@@ -377,7 +365,7 @@ export function OnboardingChat({
         >
           {copy("invite.explain")}
         </p>
-        <OnboardingPreparation />
+        {embedded ? <details className="onboarding-preparation-disclosure"><summary>What to have ready</summary><OnboardingPreparation /></details> : <OnboardingPreparation />}
         <div className="onboarding-actions" style={{ marginBottom: SHELL_VIEW.actionToFoot }}>
           <button
             type="button"

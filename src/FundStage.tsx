@@ -1,3 +1,5 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
+import { FundLibraryReading } from "./FundLibraryReading.tsx";
 import { SharedFundTrust } from "./FundTrust.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import "./phone-fund-readings.css";
@@ -6,7 +8,7 @@ import {
   askBelongsOnDesk, categoryShape, fundPlates, fundWalk, fundWeek,
   fundWidgetIdForPlateId, monthKeyFromDateKey,
   twoStreams, widgetAllowedFor,
-  type CommitResult, type DeskPlateModel, type FundWidgetId, type Household, type LedgerView,
+  type DeskPlateModel, type FundWidgetId, type Household, type LedgerView,
 } from "./core/index.ts";
 import { Level } from "./Level.tsx";
 import { requestSharedBoard } from "./widgets/SharedBoards.tsx";
@@ -31,7 +33,7 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
   scenarioSource?: ScenarioSourceContext | null;
   widgetId: FundWidgetId; household: Household; memberId: string; today: string; busy: boolean;
   headingRef?: Ref<HTMLHeadingElement>; plate?: DeskPlateModel | null;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
   onOpenAccount: (accountId: string) => void;
   onOpenDestination: (destination: FundDestination) => void;
   onOpenCabinet?: (plate: DeskPlateModel) => void;
@@ -59,7 +61,7 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
   if (widgetId === "level" && walk && presentation === "phone" && askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId)) return ask();
   if (widgetId === "level" && walk && presentation === "phone") return <SharedFundTrust household={household} memberId={memberId} view={view} today={today} headline headingRef={headingRef} />;
   if (widgetId === "level" && walk) return <><Level scopeKey={JSON.stringify([household.environment,household.householdId,memberId,view])} compact={presentation === "phone"} walk={walk} household={household} headingRef={headingRef} />{askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId) ? ask() : null}</>;
-  if ((widgetId === "next-out" || widgetId === "spoken-for") && walk) return <NextOutStage walk={walk} today={today} headingRef={headingRef} />;
+  if ((widgetId === "next-out" || widgetId === "spoken-for") && walk) return <NextOutStage mode={widgetId} walk={walk} today={today} headingRef={headingRef} />;
   if (widgetId === "week" && week) return <WeekStage week={week} nameOf={nameOf} headingRef={headingRef} />;
   if (widgetId === "waiting") return <WaitingStage household={household} memberId={memberId} today={today} onKitchen={onKitchen} headingRef={headingRef} />;
   if (widgetId === "settle") return <SettleStage household={household} memberId={memberId} today={today} busy={busy} onKitchen={onKitchen} headingRef={headingRef} />;
@@ -67,6 +69,7 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
   if (widgetId === "streams") return <StreamsStage compact={presentation === "phone"} streams={streams} today={today} nameOf={nameOf} headingRef={headingRef} />;
   if (widgetId === "accounts") return <AccountsStage household={household} memberId={memberId} today={today} onKitchen={onKitchen} onOpenAccount={onOpenAccount} headingRef={headingRef} />;
   if (widgetId === "ask") return ask();
+  if (widgetId === "seven-days" || widgetId === "record" || widgetId === "minutes") return <FundLibraryReading id={widgetId} household={household} today={today} headingRef={headingRef} onOpen={onOpenDestination} />;
   if (fallbackPlate) return <section className="fund-plate-stage" data-fund-stage={widgetId}>
     <p className="desk-plate-kicker">{fallbackPlate.kicker}</p>
     <h2 ref={headingRef} tabIndex={-1} className="fund-stage-heading">{fallbackPlate.glance}</h2>
@@ -76,9 +79,9 @@ export function FundStage({ widgetId, household, memberId, today, busy, headingR
     <button type="button" className="desk-plate-handle" onClick={() => onOpenCabinet ? onOpenCabinet(fallbackPlate) : onOpenDestination("shelf")}>Open {fallbackPlate.cabinetName}</button>
   </section>;
   // These library entries already name existing workspaces, not invented chart models.
-  const destination: FundDestination = widgetId === "swipe" || widgetId === "contribute" || widgetId === "minutes" || widgetId === "seven-days" ? widgetId : "record";
+  const destination: FundDestination = widgetId === "swipe" || widgetId === "contribute" ? widgetId : "record";
   const card = FUND_WIDGET_CARD[widgetId];
-  const destinationLabel = destination === "seven-days" ? "activity" : destination === "minutes" ? "More" : destination === "record" ? "the Fund register" : card.name;
+  const destinationLabel = destination === "record" ? "the Fund register" : card.name;
   return <section className="fund-plate-stage" data-fund-stage={widgetId}>
     <h2 ref={headingRef} tabIndex={-1} className="fund-stage-heading">{card.name}</h2>
     <p className="desk-plate-detail">{card.line}</p>

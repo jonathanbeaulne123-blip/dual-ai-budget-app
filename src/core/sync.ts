@@ -1,3 +1,4 @@
+import { shapeFundSourceClaims } from "./fundContributionSources.ts";
 import { shapeOnboardingAttestationInvalidations, mergeOnboardingAttestationInvalidations, shapeOnboardingAttestations, mergeOnboardingAttestations } from "./onboarding/attestations.ts";
 import { shapeAcceptedStarterPlans, mergeAcceptedStarterPlans } from "./onboarding/planAcceptance.ts";
 import {
@@ -377,6 +378,7 @@ export function ensureHouseholdShape(household: Household): Household {
     fundSettlementAllocations: shapeHouseholdFundSettlementAllocations(household.fundSettlementAllocations),
     fundKittyAllocations: shapeHouseholdFundKittyAllocations(household.fundKittyAllocations),
     fundPrivate: shapeHouseholdFundPrivate(household.fundPrivate),
+    fundContributionSourceClaims: shapeFundSourceClaims(household.fundContributionSourceClaims),
     monthRehearsals: shapeMonthRehearsals(household.monthRehearsals),
     weeklyDocumentStamps: shapeWeeklyDocumentStamps(household.weeklyDocumentStamps, members),
     transactions: household.transactions.map((tx) => ({
@@ -479,6 +481,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     ...(shaped.sevenShiftsSchedules ?? []).flatMap((row) => [row.id, row.provenanceId]),
     ...(shaped.shiftEnvelopes ?? []).flatMap((row) => [row.id, row.canonicalShiftKey]),
     ...(shaped.shiftBibles ?? []).map((row) => row.id),
+    ...(shaped.fundContributionSourceClaims ?? []).flatMap(row => [row.id, row.sourceTransactionId]),
     ...(shaped.fundPrivate?.bankBindings ?? []).map((row) => row.id),
     ...(shaped.fundPrivate?.reconciliations ?? []).map((row) => row.id),
   ].filter((token) => token.length >= 4);
@@ -592,6 +595,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     goals: personalGoals,
     goalContributions: shaped.goalContributions.filter((row) => personalGoalIds.has(row.goalId)),
     goalPurchases: shaped.goalPurchases.filter((row) => personalGoalIds.has(row.goalId)),
+    fundContributionSourceClaims: shapeFundSourceClaims(shaped.fundContributionSourceClaims, memberId),
     fundPrivate: shaped.householdFund?.custodianMemberId === memberId
       ? shapeHouseholdFundPrivate(shaped.fundPrivate, memberId)
       : { bankBindings: [], reconciliations: [] },
@@ -621,6 +625,7 @@ export function personalReplicaForMember(household: Household, memberId: string)
     goalContributions: personal.goalContributions ?? [],
     goalPurchases: personal.goalPurchases ?? [],
     fundPrivate: shapeHouseholdFundPrivate(personal.fundPrivate, memberId),
+    fundContributionSourceClaims: shapeFundSourceClaims(personal.fundContributionSourceClaims, memberId),
   };
 }
 
@@ -687,6 +692,7 @@ export function personalEnvelopeFromPayload(
       : [],
     tombstones: Array.isArray(row.tombstones) ? row.tombstones : [],
     fundPrivate: shapeHouseholdFundPrivate(row.fundPrivate, memberId),
+    fundContributionSourceClaims: shapeFundSourceClaims(row.fundContributionSourceClaims, memberId),
     ...(row.herculesProPermissions
       ? { herculesProPermissions: shapeHerculesProPermissions(row.herculesProPermissions) }
       : {}),
@@ -808,6 +814,7 @@ export function overlayPersonalReplica(
       ...(personal.goalPurchases ?? []),
     ],
     fundPrivate: shapeHouseholdFundPrivate(personal.fundPrivate, memberId),
+    fundContributionSourceClaims: shapeFundSourceClaims(personal.fundContributionSourceClaims, memberId),
     tombstones: [...tombstones.values()],
     ...(personal.herculesProPermissions
       ? { herculesProPermissions: shapeHerculesProPermissions(personal.herculesProPermissions) }
@@ -936,6 +943,7 @@ export function assembleHousehold(
     monthRehearsals: shapeMonthRehearsals(shared.monthRehearsals),
     weeklyDocumentStamps: shapeWeeklyDocumentStamps(shared.weeklyDocumentStamps, shared.members),
     fundPrivate: shapeHouseholdFundPrivate(personal?.fundPrivate, personal?.memberId),
+    fundContributionSourceClaims: shapeFundSourceClaims(personal?.fundContributionSourceClaims, personal?.memberId),
     budgetPlans: shared.budgetPlans,
     sitDownSessions: shared.sitDownSessions ?? [],
     activity: shared.activity,
@@ -1184,6 +1192,7 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     goals: mergeRecords(server.goals ?? [], client.goals ?? [], tombstones),
     goalContributions: mergeRecords(server.goalContributions ?? [], client.goalContributions ?? [], tombstones),
     goalPurchases: mergeRecords(server.goalPurchases ?? [], client.goalPurchases ?? [], tombstones),
+    fundContributionSourceClaims: mergeRecords(server.fundContributionSourceClaims ?? [], client.fundContributionSourceClaims ?? [], tombstones),
     fundPrivate: {
       bankBindings: mergeRecords(server.fundPrivate?.bankBindings ?? [], client.fundPrivate?.bankBindings ?? [], tombstones),
       reconciliations: mergeRecords(server.fundPrivate?.reconciliations ?? [], client.fundPrivate?.reconciliations ?? [], tombstones),

@@ -10,7 +10,7 @@ import * as sources from "../src/core/scenarioSources.ts";
 async function mount() {
   sessionStorage.clear(); const {h}=trustFixture();
   const host=document.createElement("div");document.body.append(host);const root=createRoot(host),writes:string[]=[];
-  const props={household:h,memberId:"MEM-001",today:"2026-09-08",view:"household" as const,presentation:"phone" as const,widgetId:"level" as const,busy:false,onKitchen:()=>writes.push("write"),onOpenAccount:()=>{},onOpenDestination:()=>{}};
+  const props={household:h,memberId:"MEM-001",today:"2026-09-08",view:"household" as const,presentation:"phone" as const,widgetId:"level" as const,busy:false,onKitchen:()=>{writes.push("write");},onOpenAccount:()=>{},onOpenDestination:()=>{}};
   await act(async()=>root.render(createElement(FundStage,props)));
   const button=(name:string)=>[...host.querySelectorAll<HTMLButtonElement>(".trust-stop")].find(button => button.getAttribute("aria-label")?.startsWith(name+"."))!;
   return {h,host,root,props,writes,button,close:async()=>{await act(async()=>root.unmount());host.remove();}};

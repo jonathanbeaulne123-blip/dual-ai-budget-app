@@ -1,6 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const dialogStack: HTMLElement[] = [];
+const modalListeners = new Set<() => void>();
+function notifyModals() { for (const listener of modalListeners) listener(); }
+export function useModalActive() {
+  const [active,setActive]=useState(()=>dialogStack.length > 0);
+  useEffect(()=>{const update=()=>setActive(dialogStack.length > 0);modalListeners.add(update);update();return()=>{modalListeners.delete(update);};},[]);
+  return active;
+}
 
 const FOCUSABLE = [
   "a[href]",
@@ -42,6 +49,7 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
 
     const returnTo = document.activeElement as HTMLElement | null;
     dialogStack.push(node);
+    notifyModals();
 
     const siblings: { el: HTMLElement; had: boolean }[] = [];
     const parent = node.parentElement;
@@ -89,11 +97,12 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
     return () => {
       document.removeEventListener("keydown", onKeyDown, true);
       const index=dialogStack.lastIndexOf(node);if(index>=0)dialogStack.splice(index,1);
+      notifyModals();
       for (const { el, had } of siblings) {
         if (!had) el.removeAttribute("inert");
       }
-      if (returnTo && document.contains(returnTo)) returnTo.focus();
-      else fallbackRef.current?.()?.focus({preventScroll:true});
+      if (returnTo && returnTo !== document.body && returnTo !== document.documentElement && document.contains(returnTo)) returnTo.focus();
+      else fallbackRef.current?.()?.focus();
     };
   }, [open]);
 

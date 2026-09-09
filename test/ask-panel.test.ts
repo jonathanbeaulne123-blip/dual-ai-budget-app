@@ -1,9 +1,11 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 // @vitest-environment jsdom
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { FundStage } from "../src/FundStage.tsx";
 import { Ask } from "../src/Ask.tsx";
 import {
   ASK_ROUTES_HEADER_COPY,
@@ -41,8 +43,6 @@ const TODAY = "2026-08-21";
 const viewSource = readFileSync(resolve(process.cwd(), "src/core/askView.ts"), "utf8");
 const componentSource = readFileSync(resolve(process.cwd(), "src/Ask.tsx"), "utf8");
 const cssSource = readFileSync(resolve(process.cwd(), "src/ask.css"), "utf8");
-const officeWide = readFileSync(resolve(process.cwd(), "src/OfficeWide.tsx"), "utf8");
-const officePhone = readFileSync(resolve(process.cwd(), "src/OfficePhone.tsx"), "utf8");
 
 let container: HTMLDivElement;
 let root: Root;
@@ -56,13 +56,13 @@ function configuredFund(openedOn = "2026-08-01"): Household {
 }
 
 function contribute(household: Household, contributorMemberId: string, amount: string, date: string): Household {
-  const proposed = proposeHouseholdFundContribution(household, {
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: contributorMemberId,
     contributorMemberId,
     amount,
     date,
   });
-  return confirmHouseholdFundContribution(proposed.household, {
+  return confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposed.postedIds[0]!,
   }).household;
@@ -291,12 +291,21 @@ describe("Ask placement and copy fences", () => {
     expect(askBelongsOnDesk(JONATHAN, BIANCA)).toBe(true);
     expect(askBelongsOnDesk(BIANCA, BIANCA)).toBe(false);
     expect(askBelongsOnDesk(JONATHAN, undefined)).toBe(false);
-    expect(officeWide).toContain("askBelongsOnDesk");
-    expect(officeWide).toMatch(/<Ask\s+household=\{booksHousehold\}/);
-    expect(officeWide).toContain("moveAskGoalClaimToNextMonth");
-    expect(officePhone).not.toMatch(/from "\.\/Ask/);
-    expect(officePhone).not.toContain("askPanelView");
-    expect(officePhone).not.toContain("askRoutes");
+    const household = configuredFund();
+    const destinations: string[] = [];
+    const render = (memberId: string) => act(() => root.render(createElement(FundStage, {
+      household, memberId, today: TODAY, busy: false, widgetId: "ask", onKitchen: () => undefined,
+      onOpenAccount: () => undefined, onOpenDestination: destination => destinations.push(destination),
+    })));
+    render(BIANCA);
+    expect(container.querySelector('button')).toBeNull();
+    expect(container.textContent).toContain('not available');
+    render(JONATHAN);
+    expect(destinations).toEqual([]);
+    act(() => container.querySelector('button')!.click());
+    expect(destinations).toEqual(['ask']);
+    render('missing-member');
+    expect(container.querySelector('button')).toBeNull();
   });
 
   it("never instructs, scores, or writes money", () => {

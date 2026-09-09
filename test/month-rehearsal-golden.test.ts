@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { shapeAccounts } from "../src/core/accountKinds.ts";
 import type { CommitResult, Household, MonthRehearsalTaskId, MonthRehearsalReceiptKind } from "../src/core/types.ts";
@@ -65,10 +66,11 @@ function goldenHousehold(): Household {
   return household;
 }
 
-async function accept(previous: Household, result: CommitResult, confirmationId: string, commandKind: string): Promise<Household> {
+async function accept(previous: Household, result: CommitResult, confirmationId: string, commandKind: string, actingMemberId = BIANCA): Promise<Household> {
   const outcome = await acceptHouseholdWrite({
     previous,
     candidate: result.household,
+    actingMemberId,
     confirmationId,
     commandKind,
     postedIds: result.postedIds,
@@ -172,7 +174,7 @@ describe("fictional September 2026 golden month", () => {
 
     task = beginTask(household, rehearsalId, "groceries", JONATHAN, "2026-09-03", "2026-09-03T12:00:00Z"); household = task.household;
     const groceries = postEntry(household, { date: "2026-09-03", type: "expense", amount: 100, accountId: "ACC-VISA", subcategoryId: "SUB-GROCERIES", createdBy: JONATHAN, visibility: "household", confirmDuplicate: true });
-    household = await accept(household, groceries, "C-GROCERIES", "postEntry");
+    household = await accept(household, groceries, "C-GROCERIES", "postEntry", JONATHAN);
     household = finishLinkedTask(household, { rehearsalId, taskId: "groceries", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-03", now: "2026-09-03T12:01:00Z", kind: "command", receiptId: "C-GROCERIES" });
 
     task = beginTask(household, rehearsalId, "fund-setup", BIANCA, "2026-09-04", "2026-09-04T12:00:00Z"); household = task.household;
@@ -181,9 +183,9 @@ describe("fictional September 2026 golden month", () => {
     household = finishLinkedTask(household, { rehearsalId, taskId: "fund-setup", attemptId: task.attemptId, memberId: BIANCA, today: "2026-09-04", now: "2026-09-04T12:01:00Z", kind: "command", receiptId: "C-FUND-SETUP" });
 
     task = beginTask(household, rehearsalId, "fund-contribution", JONATHAN, "2026-09-05", "2026-09-05T12:00:00Z"); household = task.household;
-    let fundCommand = proposeHouseholdFundContribution(household, { memberId: JONATHAN, contributorMemberId: JONATHAN, amount: 1000, date: "2026-09-05" });
-    household = await accept(household, fundCommand, "C-FUND-PROPOSAL", "proposeHouseholdFundContribution");
-    fundCommand = confirmHouseholdFundContribution(household, { memberId: BIANCA, proposalEventId: fundCommand.postedIds[0]!, date: "2026-09-05" });
+    let fundCommand = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: JONATHAN, contributorMemberId: JONATHAN, amount: 1000, date: "2026-09-05" });
+    household = await accept(household, fundCommand, "C-FUND-PROPOSAL", "proposeHouseholdFundContribution", JONATHAN);
+    fundCommand = confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,fundCommand.postedIds[0]!), memberId: BIANCA, proposalEventId: fundCommand.postedIds[0]!, date: "2026-09-05" });
     household = await accept(household, fundCommand, "C-FUND-CONTRIBUTION", "confirmHouseholdFundContribution");
     const contributionEventId = fundCommand.postedIds[0]!;
     household = finishLinkedTask(household, { rehearsalId, taskId: "fund-contribution", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-05", now: "2026-09-05T12:02:00Z", kind: "fund-event", receiptId: contributionEventId });
@@ -212,7 +214,7 @@ describe("fictional September 2026 golden month", () => {
 
     task = beginTask(household, rehearsalId, "card-payment", JONATHAN, "2026-09-09", "2026-09-09T12:00:00Z"); household = task.household;
     const card = postTransfer(household, { date: "2026-09-09", amount: 400, fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-VISA", createdBy: JONATHAN, visibility: "household", confirmDuplicate: true, note: "Visa payment" });
-    household = await accept(household, card, "C-CARD-PAYMENT", "postTransfer");
+    household = await accept(household, card, "C-CARD-PAYMENT", "postTransfer", JONATHAN);
     household = finishLinkedTask(household, { rehearsalId, taskId: "card-payment", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-09", now: "2026-09-09T12:01:00Z", kind: "command", receiptId: "C-CARD-PAYMENT" });
 
     task = beginTask(household, rehearsalId, "fund-partial-settlement", BIANCA, "2026-09-10", "2026-09-10T12:00:00Z"); household = task.household;
@@ -233,7 +235,7 @@ describe("fictional September 2026 golden month", () => {
 
     task = beginTask(household, rehearsalId, "refund", JONATHAN, "2026-09-15", "2026-09-15T12:00:00Z"); household = task.household;
     const refund = postEntry(household, { date: "2026-09-15", type: "refund", amount: 20, accountId: "ACC-VISA", subcategoryId: "SUB-GROCERIES", refundOfId: purchaseTransactionId, createdBy: JONATHAN, visibility: "household", confirmDuplicate: true });
-    household = await accept(household, refund, "C-REFUND", "postEntry");
+    household = await accept(household, refund, "C-REFUND", "postEntry", JONATHAN);
     household = finishLinkedTask(household, { rehearsalId, taskId: "refund", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-15", now: "2026-09-15T12:01:00Z", kind: "command", receiptId: "C-REFUND" });
 
     task = beginTask(household, rehearsalId, "correction-practice", BIANCA, "2026-09-16", "2026-09-16T12:00:00Z"); household = task.household;
@@ -276,7 +278,7 @@ describe("fictional September 2026 golden month", () => {
 
     task = beginTask(household, rehearsalId, "month-close", JONATHAN, "2026-09-30", "2026-09-30T12:00:00Z"); household = task.household;
     const closed = closeBooksMonth(household, { monthKey: "2026-09", createdBy: JONATHAN });
-    household = await accept(household, closed, "C-MONTH-CLOSE", "closeBooksMonth");
+    household = await accept(household, closed, "C-MONTH-CLOSE", "closeBooksMonth", JONATHAN);
     const closedPeriodId = household.kitchen.books.closedMonths.find((row) => row.monthKey === "2026-09")!.id;
     household = finishLinkedTask(household, { rehearsalId, taskId: "month-close", attemptId: task.attemptId, memberId: JONATHAN, today: "2026-09-30", now: "2026-09-30T12:01:00Z", kind: "month-close", receiptId: closedPeriodId });
 
@@ -307,16 +309,16 @@ describe("fictional September 2026 golden month", () => {
     const checkpointHashes = household.monthRehearsals![0]!.weeks.map((week) => week.checkpoint!.financialAuditHash);
     const receiptIdentities = household.monthRehearsals![0]!.weeks.map((week) => week.checkpoint!.linkedReceiptIds);
     expect(checkpointHashes).toEqual([
-      "eaa887405885ea48714d45d4bd1f0d69c64a66563e61309489a8bc414c907724",
-      "57db4d0e820d5bae5539fd4f2ae8765e6382c081f6a7b1dfa118ffd2ad23270f",
-      "6823ac1b531ff5196bc848728dd848096e0950e2bf0af16fde4d1a4425734929",
-      "d28d6ca0d352a379f801fbcfd822f4c2012bc05daf91a4c5e76d11832cf84483",
+      "09547ec0627543907f5ebd0a8ec31575fa0b9ac4e6eb86d0b164b80ed2adc923",
+      "79e9451e8a3798e69a0d30ca063a36ca88e8c808f1f51e53b0ac019d6de1064f",
+      "2ea6d8f8d651b91c6525c118426532792686de761daa100ca73607da5d5743bc",
+      "d080223fe9e3f97433c4dca568100f81e9d30d8c3a69b37a311a4827fe3c305d",
     ]);
     expect(weeklyFinancialHashes).toEqual([
-      "732c795dc4c12e07e5e55d2dc06c9f82861490de9b45de0124d984786899e765",
-      "4e149805257da9678563711ce29d86f2711ca2d1065e316123d3b0be2557b88b",
-      "274228db71069d343d5c905b0d9d838dfaa9a9ce745cf643bccc08efbc7d5358",
-      "6758c42a15533fd66b6a3c9f3b26888916f21a486e095d7b19ffb07c198264da",
+      "653c29b59a14f01b6f4da2e7f8234b82546e22b4d9791ce95f6c4da92574ffe2",
+      "e599445e9fe107f93cc89b82b22bb2f29fba884edec2d6c24524b0057340b0fc",
+      "600339f7e9b1d0663a8c1bdcfe8226daae36bae78c2385ccb7c0b8f8db414227",
+      "29c41c5d00efdf34ede399f6b7b385af5e760f1fec5cdb0908d47cf7074fb981",
     ]);
     expect(receiptIdentities).toEqual([
       ["C-FUND-SETUP", "C-GROCERIES", "C-INCOME", "C-OPENING", "FUND-EVT-53708daac7", "FUND-EVT-cae704213e", "FUND-HOUSEHOLD", "TXN-EX-7693b0cdea", "TXN-IN-102d4a6784", "TXN-OP-88a5c2dffc", "TXN-OP-99b6d3f00d", "TXN-OP-aac7e4011e"],

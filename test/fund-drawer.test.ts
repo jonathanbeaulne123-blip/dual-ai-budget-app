@@ -50,7 +50,7 @@ function renderDrawer(household: Household, handlers: {
 }
 
 function cardButtons(): HTMLButtonElement[] {
-  return Array.from(container.querySelectorAll(".fund-drawer-card"));
+  return Array.from(document.querySelectorAll(".fund-drawer-card"));
 }
 
 function cardButton(name: string): HTMLButtonElement {
@@ -60,7 +60,7 @@ function cardButton(name: string): HTMLButtonElement {
 }
 
 function slotButtons(): HTMLButtonElement[] {
-  return Array.from(container.querySelectorAll(".fund-drawer-slot"));
+  return Array.from(document.querySelectorAll(".fund-drawer-slot"));
 }
 
 describe("fundDrawerCards", () => {
@@ -88,6 +88,7 @@ describe("fundDrawerCards", () => {
 
 describe("the Fund drawer", () => {
   beforeEach(() => {
+    Object.defineProperty(window,"innerWidth",{configurable:true,value:1440});
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -100,7 +101,7 @@ describe("the Fund drawer", () => {
 
   it("opens on the card list with the exact first line, never locked or earned", () => {
     renderDrawer(configuredFund());
-    expect(container.querySelector(".fund-drawer-intro")?.textContent).toBe(FUND_DRAWER_INTRO);
+    expect(document.querySelector(".fund-drawer-intro")?.textContent).toBe(FUND_DRAWER_INTRO);
     expect(cardButtons()).toHaveLength(FUND_WIDGETS.length - 1);
   });
 
@@ -120,7 +121,7 @@ describe("the Fund drawer", () => {
       onKitchen: (fn) => { results.push(fn(household).household); },
     });
     act(() => { cardButton("The accounts").click(); });
-    expect(container.querySelector(".fund-drawer-slots-lede")?.textContent).toContain("The accounts");
+    expect(document.querySelector(".fund-drawer-slots-lede")?.textContent).toContain("The accounts");
     const slots = slotButtons();
     expect(slots).toHaveLength(8);
     expect(slots[0]?.textContent).toContain("pinned");
@@ -128,14 +129,14 @@ describe("the Fund drawer", () => {
     expect(results).toHaveLength(1);
     expect(railFor(results[0]!, BIANCA)[2]).toBe("accounts");
     // Two taps, then back to the library — no lingering slot picker.
-    expect(container.querySelector(".fund-drawer-slots-lede")).toBeNull();
+    expect(document.querySelector(".fund-drawer-slots-lede")).toBeNull();
   });
 
   it("lets 'choose a different widget' return to the card list without touching the household", () => {
     let calls = 0;
     renderDrawer(configuredFund(), { onKitchen: () => { calls += 1; } });
     act(() => { cardButton("This week").click(); });
-    const cancel = container.querySelector(".fund-drawer-slots-cancel") as HTMLButtonElement;
+    const cancel = document.querySelector(".fund-drawer-slots-cancel") as HTMLButtonElement;
     act(() => { cancel.click(); });
     expect(calls).toBe(0);
     expect(cardButtons().length).toBeGreaterThan(0);
@@ -144,7 +145,7 @@ describe("the Fund drawer", () => {
   it("returns to the board on 'Back to the board'", () => {
     let closed = false;
     renderDrawer(configuredFund(), { onClose: () => { closed = true; } });
-    const back = Array.from(container.querySelectorAll("button")).find((b) => b.textContent === "Back to the board");
+    const back = Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Back to the board");
     act(() => { back?.click(); });
     expect(closed).toBe(true);
   });
@@ -161,6 +162,16 @@ describe("the Fund drawer", () => {
     expect(() => setFundRailSlot(household, {
       memberId: BIANCA, createdBy: BIANCA, slot: 1, widgetId: "accounts",
     })).toThrow("The Fund stays at the top of the board.");
+  });
+
+  it("offers only six mobile slots, preserves desktop tail slots, and explains pinned restrictions",()=>{
+    Object.defineProperty(window,'innerWidth',{configurable:true,value:390});
+    const household=configuredFund(),tail=railFor(household,BIANCA).slice(6);let next=household;
+    renderDrawer(household,{onKitchen:fn=>{next=fn(household).household;}});
+    act(()=>cardButton('The accounts').click());
+    expect(slotButtons()).toHaveLength(6);expect(slotButtons()[0]!.disabled).toBe(true);
+    expect(document.querySelector('.fund-drawer')?.textContent).toContain('last two desktop places stay saved');
+    act(()=>slotButtons()[2]!.click());expect(railFor(next,BIANCA).slice(6)).toEqual(tail);expect(railFor(next,BIANCA,'phone')[2]).toBe('accounts');
   });
 
   it("reflects the member's actual rail order in the slot picker", () => {

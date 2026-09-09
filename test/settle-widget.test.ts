@@ -1,9 +1,11 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { FundStage } from "../src/FundStage.tsx";
 import { SettleStage } from "../src/SettleStage.tsx";
 import {
   HOUSEHOLD_FUND_ID,
@@ -27,7 +29,6 @@ const JONATHAN = "MEM-002";
 const TODAY = "2026-09-12";
 const viewSource = readFileSync(resolve(process.cwd(), "src/core/settleWidget.ts"), "utf8");
 const stageSource = readFileSync(resolve(process.cwd(), "src/SettleStage.tsx"), "utf8");
-const officeSource = readFileSync(resolve(process.cwd(), "src/OfficeWide.tsx"), "utf8");
 
 function configuredFund(): Household {
   return configureHouseholdFund(catalogHousehold(), {
@@ -38,13 +39,13 @@ function configuredFund(): Household {
 }
 
 function contribute(household: Household, amount: string): Household {
-  const proposed = proposeHouseholdFundContribution(household, {
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: BIANCA,
     contributorMemberId: BIANCA,
     amount,
     date: "2026-09-01",
   });
-  return confirmHouseholdFundContribution(proposed.household, {
+  return confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposed.postedIds[0]!,
   }).household;
@@ -379,9 +380,22 @@ describe("settlement fences", () => {
     expect(viewSource).not.toMatch(/confirmHouseholdFundSettlement|postEntry|postTransfer|commit\s*\(/);
   });
 
-  it("mounts only for the resolved Shared settle stage and receives scoped books", () => {
-    expect(officeSource).toContain('activeFundWidget === "settle"');
-    expect(officeSource).toContain("<SettleStage");
-    expect(officeSource).toContain("household={booksHousehold}");
-  });
-});
+  it("routes the resolved settlement through current member and custodian controls", () => {
+    const host = document.createElement('div'); document.body.append(host); const mounted = createRoot(host);
+    const household = owingHousehold();
+    const render = (memberId: string) => act(() => mounted.render(createElement(FundStage, {
+      household, memberId, today: TODAY, busy: false, widgetId: 'settle', onKitchen: () => undefined,
+      onOpenAccount: () => undefined, onOpenDestination: () => undefined,
+    })));
+    try {
+      render(JONATHAN);
+      expect(host.textContent).toContain('The Fund owes Visa $110.00.');
+      expect(host.querySelector('input')).toBeNull();
+      render(BIANCA);
+      expect(host.querySelector('input')).not.toBeNull();
+      expect(host.querySelector('button')!.disabled).toBe(true);
+      render('missing-member');
+      expect(host.textContent).toContain('not available');
+      expect(host.querySelector('input')).toBeNull();
+    } finally { act(() => mounted.unmount()); host.remove(); }
+  });});

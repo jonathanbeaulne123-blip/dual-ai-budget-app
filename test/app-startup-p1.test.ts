@@ -24,6 +24,9 @@ type Inspection = {
 const startup = vi.hoisted(() => ({
   officeKitchen: null as import("../src/kitchenCommand.ts").KitchenCommand | null,
   v2: false,
+  auditReceipt: "missing" as "accepted"|"missing"|"pending"|"rejected",
+  auditIds: [] as string[],
+  auditStatus: null as Promise<"accepted"|"missing"|"pending"|"rejected">|null,
   returnAcceptedResults:false,
   acceptedResults:new Map<string,import("../src/core/types.ts").CommitResult>(),
   v2AutoAdopt: true,
@@ -79,6 +82,7 @@ vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
       this.options.status("ready");
     }
     async confirm(candidate: Household, _id: string, _onQueued?: () => void) {
+      startup.auditIds.push(_id);
       if (!startup.punchConfirm) throw new Error("Unexpected test confirmation");
       const result=await startup.punchConfirm(candidate);
       startup.acceptedResults.set(_id,result);
@@ -86,6 +90,8 @@ vi.mock("../src/ledgerSync/client.ts", async (importOriginal) => {
       return result;
     }
     result(_id:string): import("../src/core/types.ts").CommitResult | undefined { return startup.returnAcceptedResults?startup.acceptedResults.get(_id):undefined; }
+    async submissionStatus(_id:string){return startup.auditStatus ?? startup.auditReceipt;}
+    retryPending(){}
     async destroy() {}
   } };
 });
@@ -124,6 +130,13 @@ vi.mock("../src/ledger/engine.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/ledger/engine.ts")>();
   return {
     ...actual,
+    // This fixture models the staged-books lifecycle; real PGlite has its own integration suite.
+    prewarmStagedHouseholdBooks: vi.fn(async (household: Household) => {
+      startup.lifecycle.push(`prewarm:${household.transactions.length}`);
+    }),
+    clearStagedHouseholdBooks: vi.fn(async (_environment: Household['environment'], householdId: string) => {
+      startup.lifecycle.push(`clear-stage:${householdId}`);
+    }),
     inspectBrowserBooks: vi.fn((household: Household, options: { expectedAuditHash?: string } = {}) => {
       startup.inspectCalls += 1;
       startup.inspectOptions.push(options);
@@ -1931,5 +1944,131 @@ describe("cached-shell startup books gate", () => {
     expect(startup.saveCalls).toBe(saves);
     expect(startup.scenarioSource?.accepted.ownBooks).not.toBe("ready");
   });
+
+
+  it('manually opens real Hercules under mounted App Development v2 and pauses it', async () => {
+    startup.v2=true; vi.stubEnv('VITE_LEDGER_SYNC_V2','1'); vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+    startup.cached={...catalogHousehold('development'),linked:true};
+    startup.cached.booksAcceptedHash=await financialAuditHash(startup.cached);
+    let calls=0;
+    startup.punchConfirm=async next=>{calls++;return {...offerHouseholdOnboarding(startup.cached!,{memberId:'MEM-002'}),household:next};};
+    await act(async()=>root.render(createElement(App)));
+    await waitForUi(()=>expect(container.querySelector('[data-books-readiness="ready"]')).not.toBeNull());
+    expect(calls).toBe(0);
+    expect(document.querySelector<HTMLElement>('.hercules-setup-backdrop')!.hidden).toBe(true);
+    const opener=container.querySelector<HTMLButtonElement>('button.hercules-live')!;
+    expect(opener).not.toBeNull();
+    await act(async()=>opener.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true})));
+    await waitForUi(()=>expect(document.querySelector<HTMLElement>('.hercules-setup-backdrop')!.hidden).toBe(false));
+    await waitForUi(()=>expect(calls).toBeGreaterThan(0));
+    expect(document.querySelector('.hercules-setup')!.textContent).toContain('Starting books');
+    const close=[...document.querySelectorAll<HTMLButtonElement>('.hercules-setup button')].find(b=>b.textContent==='Close')!;
+    await act(async()=>close.click());
+    expect(document.querySelector<HTMLElement>('.hercules-setup-backdrop')!.hidden).toBe(true);
+    expect(document.activeElement).toBe(opener);
+  });
+
+
+  async function auditMount(label:string, prepare?:(household:Household)=>Household) {
+    startup.v2=true;vi.stubEnv('VITE_LEDGER_SYNC_V2','1');vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
+    startup.auditIds=[];startup.auditReceipt='missing';startup.auditStatus=null;
+    startup.cached=await acceptedScenarioFixture();
+    startup.cached.householdId='ENTRY-RECOVERY-'+label+'-'+crypto.randomUUID();startup.cached.workJobs=[];
+    if(prepare)startup.cached=prepare(startup.cached);
+    startup.cached.booksAcceptedHash=await financialAuditHash(startup.cached);
+    localStorage.setItem('hearth:session:v1:development',JSON.stringify({memberId:'MEM-002',view:'household',householdId:startup.cached.householdId}));
+    await act(async()=>root.render(createElement(App)));
+    await waitForUi(()=>expect(container.querySelector('[data-books-readiness="ready"]')).not.toBeNull());
+  }
+  function auditOpen(kind:string) {
+    openExpenseSlideshow();
+    if(kind!=='expense')act(()=>{const b=[...container.querySelectorAll<HTMLButtonElement>('.add-slideshow-switch button')].find(b=>b.textContent===kind)!;expect(b).toBeTruthy();b.click();});
+  }
+  async function auditReload(){
+    await act(async()=>root.unmount());root=createRoot(container);
+    await act(async()=>root.render(createElement(App)));
+    await waitForUi(()=>expect(container.querySelector('[data-books-readiness="ready"]')).not.toBeNull());
+  }
+  it.each(['expense','income','transfer','shift'])('desktop %s retains edited draft across Close and reload',async kind=>{
+    await auditMount(kind);auditOpen(kind);
+    if(kind==='shift')act(()=>button('Already off? Post a finished shift').click());
+    const sheet=()=>container.querySelector<HTMLElement>('[data-add-slideshow]')!;
+    act(()=>[...sheet().querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='More')!.click());
+    const field=()=>sheet().querySelector<HTMLInputElement>('input[inputmode="decimal"]')!;
+    expect(field()).not.toBeNull();
+    act(()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(field(),'23.45');field().dispatchEvent(new Event('input',{bubbles:true}));});
+    expect(field().value).toBe('23.45');
+    act(()=>[...sheet().querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Close')!.click());
+    expect(sheet().hidden).toBe(true);
+    auditOpen(kind);expect(sheet().hidden).toBe(false);expect(field().value).toBe('23.45');
+    await auditReload();auditOpen(kind);
+    expect(sheet().getAttribute('data-add-slideshow')).toBe(kind);expect(sheet().getAttribute('data-add-slide')).toBe('full-form');
+    expect(field().value).toBe('23.45');expect(startup.auditIds).toHaveLength(0);
+  });
+  it.each(['accepted','missing'] as const)('uncertain entry %s receipt survives reload without changed confirmation identity',async receipt=>{
+    await auditMount(receipt);
+    let calls=0;
+    startup.punchConfirm=async next=>{calls++;if(calls===1)throw new Error('Response lost');return {household:next,postedIds:[],warnings:[],undo:undefined} as unknown as import('../src/core/types.ts').CommitResult;};
+    openExpenseSlideshow();const confirm=walkExpenseToConfirm(container);
+    await act(async()=>confirm.click());
+    await waitForUi(()=>expect(startup.auditIds).toHaveLength(1));
+    await waitForUi(()=>expect(container.querySelector('[aria-label="Entry receipt"]')).not.toBeNull());
+    const id=startup.auditIds[0];
+    await auditReload();openExpenseSlideshow();
+    expect(container.querySelector('[aria-label="Entry receipt"]')).not.toBeNull();
+    expect(container.querySelector<HTMLFieldSetElement>('.entry-sheet-fields')!.disabled).toBe(true);
+    startup.auditReceipt=receipt;
+    await act(async()=>button('Check entry status').click());
+    await waitForUi(()=>expect(container.querySelector('[data-add-slideshow]')).toBeNull());
+    expect(startup.auditIds).toEqual(receipt==='accepted'?[id]:[id,id]);
+  });
+
+
+  it('late old expense receipt must leave a newly opened shift draft intact',async()=>{
+    await auditMount('receipt-race');
+    startup.punchConfirm=async()=>{throw new Error('Response lost');};
+    openExpenseSlideshow();const reviewed=walkExpenseToConfirm(container);await act(async()=>reviewed.click());
+    await waitForUi(()=>expect(container.querySelector('[aria-label="Entry receipt"]')).not.toBeNull());
+    let resolve!:(value:'accepted')=>void;startup.auditStatus=new Promise(r=>{resolve=r;});
+    await act(async()=>button('Check entry status').click());
+    act(()=>[...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(b=>b.textContent==='Close')!.click());
+    act(()=>button('Add money').click());act(()=>button('Add shift').click());
+    expect(container.querySelector('[data-add-slideshow="shift"]')).not.toBeNull();
+    await act(async()=>{resolve('accepted');await Promise.resolve();});
+    expect(container.querySelector('[data-add-slideshow="shift"]')).not.toBeNull();
+    expect(container.querySelector<HTMLElement>('[data-add-slideshow="shift"]')!.hidden).toBe(false);
+  });
+
+
+  it('duplicate Back to edit releases unsent review and accepts corrected entry',async()=>{
+    Object.defineProperty(HTMLElement.prototype,'scrollIntoView',{configurable:true,value:()=>{}});
+    const {jointSplit}=await import('../src/core/index.ts');
+    await auditMount('duplicate-edit',h=>postEntry(h,{date:todayKey(),type:'expense',amount:'0.01',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',note:'',place:'',splits:jointSplit(1),createdBy:'MEM-002',visibility:'household'}).household);
+    startup.punchConfirm=async next=>({household:next,postedIds:[],warnings:[],undo:undefined} as unknown as import('../src/core/types.ts').CommitResult);
+    openExpenseSlideshow();const reviewed=walkExpenseToConfirm(container);await act(async()=>reviewed.click());
+    await waitForUi(()=>expect([...container.querySelectorAll('button')].some(b=>b.textContent==='Back to edit')).toBe(true));
+    expect(startup.auditIds).toHaveLength(0);
+    const key=Object.keys(sessionStorage).find(k=>k.includes('hearth:add:v1')&&k.endsWith(':confirmation'))!;
+    const first=JSON.parse(sessionStorage.getItem(key)!).id;
+    act(()=>button('Back to edit').click());expect(sessionStorage.getItem(key)).toBeNull();
+    const amount=container.querySelector<HTMLInputElement>('[data-entry-section="amount"] input')!;
+    act(()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(amount,'0.02');amount.dispatchEvent(new Event('input',{bubbles:true}));});
+    await act(async()=>container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
+    await waitForUi(()=>expect(startup.auditIds).toHaveLength(1));
+    expect(startup.auditIds[0]).not.toBe(first);
+  });
+  it('missing receipt after roster order changes requires review before resubmission',async()=>{
+    await auditMount('basis-drift');startup.punchConfirm=async()=>{throw new Error('Response lost');};
+    openExpenseSlideshow();const reviewed=walkExpenseToConfirm(container);await act(async()=>reviewed.click());
+    await waitForUi(()=>expect(container.querySelector('[aria-label="Entry receipt"]')).not.toBeNull());
+    const id=startup.auditIds[0];
+    await act(async()=>startup.v2Clients[0]!.adopt({...startup.cached!,members:[...startup.cached!.members].reverse()}));
+    await act(async()=>button('Check entry status').click());
+    expect(startup.auditIds).toEqual([id]);
+    expect(container.textContent).toContain('books changed while this entry was paused');
+    expect(container.querySelector('[aria-label="Entry receipt"]')).toBeNull();
+    expect(container.querySelector<HTMLFieldSetElement>('.entry-sheet-fields')!.disabled).toBe(false);
+  });
+
 
 });

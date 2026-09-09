@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -47,14 +48,14 @@ function contribute(
   date: string,
   purpose?: string,
 ): Household {
-  const proposed = proposeHouseholdFundContribution(household, {
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: contributorMemberId,
     contributorMemberId,
     amount,
     date,
     purpose,
   });
-  return confirmHouseholdFundContribution(proposed.household, {
+  return confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposed.postedIds[0]!,
   }).household;
@@ -151,7 +152,7 @@ function withoutPurposeValues(register: ContributionRegister): ContributionRegis
 
 describe("Household Fund contribution purpose", () => {
   it("shapes legacy purposes to blank and trims supplied purposes to 90 characters", () => {
-    const proposed = proposeHouseholdFundContribution(configuredFund(), {
+    const proposed = proposeHouseholdFundContribution(configuredFund(), { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "25",
@@ -164,7 +165,7 @@ describe("Household Fund contribution purpose", () => {
     expect(proposal.purpose).toBe("p".repeat(90));
     expect(shapeHouseholdFundEvents([legacy])[0]?.purpose).toBe("");
 
-    const confirmed = confirmHouseholdFundContribution(proposed.household, {
+    const confirmed = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposal.id),
       memberId: BIANCA,
       proposalEventId: proposal.id,
     });

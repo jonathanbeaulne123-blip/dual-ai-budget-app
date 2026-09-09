@@ -2,7 +2,7 @@ import type { CategoryActual, MonthSummary } from "./budget.ts";
 import { monthEndKey, monthKeyFromDateKey, monthStartKey, type DateKey } from "./calendar.ts";
 import type { TipWeather } from "./insights.ts";
 import { partitionLedger, type LedgerSection } from "./ledgerView.ts";
-import type { InstrumentId, DeskFace } from "./officeLayout.ts";
+import { INSTRUMENT_IDS, type InstrumentId, type DeskFace } from "./officeLayout.ts";
 import type { Household, Transaction } from "./types.ts";
 
 /** Hero instrument — always visible on the wide paper office. */
@@ -116,14 +116,7 @@ export function wideMosaicIds(input: {
 export function wideDrawerIds(mosaic: InstrumentId[], options?: { includeHero?: boolean }): InstrumentId[] {
   const shown = new Set<InstrumentId>(["calculator", ...mosaic]);
   if (options?.includeHero !== false) shown.add(WIDE_HERO_ID);
-  const extras: InstrumentId[] = [
-    WIDE_HERO_ID,
-    "chalkboard",
-    "wardrobe",
-    "tictactoe",
-    "hangman",
-    ...WIDE_MOSAIC_FILL,
-  ];
+  const extras: readonly InstrumentId[] = INSTRUMENT_IDS;
   return extras.filter((id, index) => extras.indexOf(id) === index && !shown.has(id));
 }
 

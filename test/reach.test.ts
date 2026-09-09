@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 // @vitest-environment jsdom
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -12,8 +13,8 @@ const TODAY='2026-09-08', MEMBER='MEM-002';
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
 function fixture() {
   let h=configureHouseholdFund(catalogHousehold(),{custodianMemberId:'MEM-001',openedOn:'2026-01-01',createdBy:'MEM-001'}).household;
-  const p=proposeHouseholdFundContribution(h,{memberId:MEMBER,contributorMemberId:MEMBER,amount:'1685',date:'2026-09-07'});
-  h=confirmHouseholdFundContribution(p.household,{memberId:'MEM-001',proposalEventId:p.postedIds[0]!}).household;
+  const p=proposeHouseholdFundContribution(h,{ source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},memberId:MEMBER,contributorMemberId:MEMBER,amount:'1685',date:'2026-09-07'});
+  h=confirmHouseholdFundContribution(p.household,{ received:true, expectedProposalDigest:fundContributionReviewDigest(p.household,p.postedIds[0]!),memberId:'MEM-001',proposalEventId:p.postedIds[0]!}).household;
   for(const [amount,date] of [['586','2026-09-30'],['1650','2026-10-01']] as const) h=addRecurrence(h,{cadence:'monthly',nextDate:date,type:'expense',amount,accountId:'ACC-VISA',subcategoryId:'SUB-HOUSING-ELECTRIC',fundingDefault:{fundId:h.householdFund!.id,fundedCents:'full',destinationAccountId:'ACC-VISA'}}).household;
   const a=addAccount(h,{name:'Own cash',kind:'other',scope:'personal',ownerMemberId:MEMBER}), accountId=a.postedIds[0]!;
   h=postEntry(a.household,{date:TODAY,type:'income',amount:'46',accountId,subcategoryId:'SUB-INCOME-TIPS',createdBy:MEMBER,visibility:'personal',confirmDuplicate:true}).household;
@@ -101,7 +102,7 @@ describe("Claude's Reach consumer",()=>{
   });
   it('keeps exact own estimate replacement unchecked and shows that replacing100 with46 can worsen the deficit',async()=>{
     const f=fixture();let h=recordEarningCadence(f.h,{memberId:MEMBER,createdBy:MEMBER,detailAction:'skip',paySchedule:{cadence:'custom',anchorDate:'2026-08-01',weekday:5,monthDays:[15,30],customDates:['2026-09-15'],reminderTime:'09:00'}}).household;
-    for(const date of ['2026-08-20','2026-08-27']) {const p=proposeHouseholdFundContribution(h,{memberId:MEMBER,contributorMemberId:MEMBER,amount:'100',date});h=confirmHouseholdFundContribution(p.household,{memberId:'MEM-001',proposalEventId:p.postedIds[0]!}).household;}
+    for(const date of ['2026-08-20','2026-08-27']) {const p=proposeHouseholdFundContribution(h,{ source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},memberId:MEMBER,contributorMemberId:MEMBER,amount:'100',date});h=confirmHouseholdFundContribution(p.household,{ received:true, expectedProposalDigest:fundContributionReviewDigest(p.household,p.postedIds[0]!),memberId:'MEM-001',proposalEventId:p.postedIds[0]!}).household;}
     const spy=vi.spyOn(projection,'projectFundScenario');await mount(h);await cashReceipt(f.accountId);
     const replacement=[...host.querySelectorAll<HTMLInputElement>('.reach-check input')].find(el=>el.parentElement?.textContent?.includes('$100.00'))!;expect(replacement).toBeDefined();expect(replacement.checked).toBe(false);
     await act(async()=>replacement.click());await contribution(`cash:${f.accountId}`,'46','2026-09-16');

@@ -177,6 +177,7 @@ export function financialAuditFacts(household: Household) {
     fundSettlementAllocations: byId(household.fundSettlementAllocations ?? []),
     fundKittyAllocations: byId(household.fundKittyAllocations ?? []),
     fundPrivate: household.fundPrivate ?? null,
+    ...(household.fundContributionSourceClaims?.length ? { fundContributionSourceClaims: byId(household.fundContributionSourceClaims) } : {}),
     tombstones: byId(household.tombstones).map((row) => ({ id: row.id, deletedAt: row.deletedAt })),
   });
 }
@@ -213,6 +214,7 @@ export function financialAuditFactsForScope(
     fundEvents: scope === "shared" ? household.fundEvents : [],
     fundSettlementAllocations: scope === "shared" ? household.fundSettlementAllocations : [],
     fundKittyAllocations: scope === "shared" ? household.fundKittyAllocations : [],
+    fundContributionSourceClaims: scope === "personal" ? household.fundContributionSourceClaims : [],
     fundPrivate: scope === "personal" ? household.fundPrivate : { bankBindings: [], reconciliations: [] },
   });
 }

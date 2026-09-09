@@ -41,7 +41,7 @@ export function MobileEntryChoices({ choices, selectedId, excludeId, label, busy
   onPick: (id: string) => void;
   onMore: () => void;
 }) {
-  return <div className="swipe-grid" aria-label={label}>
+  return <div className="swipe-grid" role="group" aria-label={label}>
     {choices.map(choice => <button key={choice.id} type="button" className="swipe-cat"
       aria-pressed={selectedId === choice.id} disabled={busy || choice.id === excludeId}
       onClick={() => onPick(choice.id)}>{choice.name}</button>)}

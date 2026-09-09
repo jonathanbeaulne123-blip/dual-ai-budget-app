@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -43,7 +44,7 @@ function configuredFund(): Household {
 }
 
 function proposal(household: Household, memberId = JONATHAN): CommitResult {
-  return proposeHouseholdFundContribution(household, {
+  return proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId,
     contributorMemberId: memberId,
     amount: "310",
@@ -80,7 +81,7 @@ describe("Held contribution motions", () => {
     expect(compileHousehold(held.household).entries).toEqual(beforeJournal);
     expect(await financialAuditHash(held.household)).not.toBe(beforeAudit);
 
-    const confirmed = confirmHouseholdFundContribution(held.household, {
+    const confirmed = confirmHouseholdFundContribution(held.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(held.household,proposed.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposed.postedIds[0]!,
       date: "2026-09-03",
@@ -143,12 +144,12 @@ describe("Held contribution motions", () => {
       confirmedContributionsCents: 0,
       operatingBalanceCents: 0,
     });
-    expect(() => confirmHouseholdFundContribution(withdrawn, {
+    expect(() => confirmHouseholdFundContribution(withdrawn, { received:true, expectedProposalDigest:fundContributionReviewDigest(withdrawn,proposed.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposed.postedIds[0]!,
     })).toThrow("That contribution motion was withdrawn.");
 
-    const confirmed = confirmHouseholdFundContribution(proposed.household, {
+    const confirmed = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposed.postedIds[0]!,
     }).household;
@@ -210,6 +211,7 @@ describe("Held contribution motions", () => {
       const accepted = await acceptHouseholdWrite({
         previous,
         candidate: committed.household,
+        actingMemberId: memberId,
         confirmationId,
         postedIds: committed.postedIds,
         commandKind,
@@ -238,7 +240,7 @@ describe("Held contribution motions", () => {
       date: "2026-09-02",
     });
     await accept("holdHouseholdFundContribution", firstHold, BIANCA);
-    await accept("confirmHouseholdFundContribution", confirmHouseholdFundContribution(current, {
+    await accept("confirmHouseholdFundContribution", confirmHouseholdFundContribution(current, { received:true, expectedProposalDigest:fundContributionReviewDigest(current,first.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: first.postedIds[0]!,
       date: "2026-09-03",

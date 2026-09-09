@@ -138,6 +138,11 @@ function button(label: string): HTMLButtonElement {
   return match as HTMLButtonElement;
 }
 
+async function openSetup() {
+  await waitFor(()=>expect(document.querySelector('button.hercules-live')).not.toBeNull());
+  await act(async()=>{document.querySelector('button.hercules-live')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));});
+  await waitFor(()=>expect(document.querySelector('.hercules-setup-backdrop:not([hidden])')).not.toBeNull());
+}
 describe("real household creation enters guided setup", () => {
   let root: Root;
   let container: HTMLDivElement;
@@ -240,12 +245,13 @@ describe("real household creation enters guided setup", () => {
       (container.querySelector("form") as HTMLFormElement).requestSubmit();
     });
 
-    await waitFor(() => expect(container.textContent).toContain("When you're both ready to set up the household together"));
-    expect(button("Start together")).not.toBeNull();
+    await openSetup();
+    await waitFor(() => expect(document.querySelector('.hercules-setup')?.textContent).toContain("When you're both ready to set up the household together"));
+    expect([...document.querySelectorAll(".hercules-setup button")].find(b=>b.textContent==="Start together")).not.toBeNull();
     expect(writes.candidates[0]?.accounts).toEqual([]);
     expect(acceptedHouseholdOnboarding(writes.candidates.at(-1)!)?.state).toBe("offered");
 
-    act(() => button("Not now").click());
+    act(() => ([...document.querySelectorAll<HTMLButtonElement>(".hercules-setup button")].find(b=>b.textContent==="Close"))!.click());
     act(() => button("More").click());
     await waitFor(() => expect(container.textContent).toContain("This is a later Development reliability exercise, not household setup"));
     expect(container.textContent).toContain("Preview guided setup");
@@ -267,6 +273,8 @@ describe("real household creation enters guided setup", () => {
     const offerReceiptIds = () => new Set(writes.candidates.flatMap((candidate) => candidate.commandReceipts
       .filter((receipt) => receipt.commandKind === "offerHouseholdOnboarding")
       .map((receipt) => receipt.confirmationId)));
+    expect(offerReceiptIds().size).toBe(0);
+    await openSetup();
     await waitFor(() => expect(offerReceiptIds().size).toBe(1));
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
     expect(offerReceiptIds().size).toBe(1);

@@ -67,6 +67,9 @@ export function receiptToCommandRef(input: {
   baseRevision: number;
 }): ContinuityCommandRef {
   const { household, receipt, baseRevision } = input;
+  if (household.fundEvents?.some(event => receipt.postedIds.includes(event.id) && event.sourceDeclaration?.kind === 'recorded-movement')) {
+    throw new Error('Linked Fund source reviews require current ledger sync. Reload before retrying this contribution.');
+  }
   const ledgerScope = inferLedgerScope(household, receipt.postedIds, receipt.commandKind);
   return {
     idempotencyKey: receipt.confirmationId,

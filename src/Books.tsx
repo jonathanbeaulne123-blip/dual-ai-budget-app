@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import type { DuplicateCommand } from "./Ledger.tsx";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
 import { lazy, useEffect, useId, useMemo, useState, type ComponentProps } from "react";
@@ -45,7 +46,6 @@ import {
   type LedgerView,
   type UndoToken,
   type Account,
-  type CommitResult,
   type HerculesNumberSource,
   type RegisterMemberView,
 } from "./core/index.ts";
@@ -129,7 +129,7 @@ function BooksSession({
   accountHistorySetup?: import("react").ReactNode;
   duplicateBusy?:boolean;
   duplicateAuthorityGeneration?:number;
-  onCommand: (command: (current: Household) => CommitResult) => void;
+  onCommand: KitchenCommand;
   onGoMore?: () => void;
   requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | null;
   onConsumeRequestedPane?: () => void;

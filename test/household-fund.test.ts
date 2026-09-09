@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { describe, expect, it } from "vitest";
 import {
   HOUSEHOLD_FUND_ID,
@@ -39,14 +40,14 @@ function configuredFund() {
 
 function fundedScenario() {
   let household = configuredFund();
-  const proposal = proposeHouseholdFundContribution(household, {
+  const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "1000",
     date: DATE,
   });
   household = proposal.household;
-  household = confirmHouseholdFundContribution(household, {
+  household = confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposal.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposal.postedIds[0]!,
   }).household;
@@ -85,7 +86,7 @@ function fundedScenario() {
 describe("Hearth Household Fund", () => {
   it("keeps proposals out of balance and proves the September clearing example", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "1000",
@@ -109,19 +110,19 @@ describe("Hearth Household Fund", () => {
 
   it("enforces custodian confirmation and preserves truthful shortfalls", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "25",
       date: DATE,
     });
     household = proposal.household;
-    expect(() => confirmHouseholdFundContribution(household, {
+    expect(() => confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposal.postedIds[0]!),
       memberId: JONATHAN,
       proposalEventId: proposal.postedIds[0]!,
     })).toThrow(/custodian/i);
 
-    household = confirmHouseholdFundContribution(household, {
+    household = confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposal.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposal.postedIds[0]!,
     }).household;
@@ -265,8 +266,8 @@ describe("Hearth Household Fund", () => {
 
   it("records a direct debit and its settlement behind one command result", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
-    household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     household = addAccount(household, { name: "Bianca debit savings", kind: "savings", scope: "personal", ownerMemberId: BIANCA }).household;
     const source = household.accounts.find((account) => account.name === "Bianca debit savings")!;
     const direct = postHouseholdFundDirectDebit(household, {
@@ -291,8 +292,8 @@ describe("Hearth Household Fund", () => {
 
   it("allows grouped verification only for an explicitly selected exact sum", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "200", date: DATE });
-    household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "200", date: DATE });
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     household = postEntry(household, { date: "2026-09-02", type: "expense", amount: "60", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 6000, destinationAccountId: "ACC-VISA" } }).household;
     const first = confirmHouseholdFundSettlement(household, { memberId: BIANCA, amount: "30", destinationAccountId: "ACC-VISA", date: "2026-09-03" });
     const second = confirmHouseholdFundSettlement(first.household, { memberId: BIANCA, amount: "30", destinationAccountId: "ACC-VISA", date: "2026-09-03" });
@@ -336,8 +337,8 @@ describe("Hearth Household Fund", () => {
 
   it("supports partial funding and independent settlement destinations", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
-    household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     household = postEntry(household, {
       date: "2026-09-02", type: "expense", amount: "80", accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, visibility: "personal", confirmDuplicate: true,
@@ -363,8 +364,8 @@ describe("Hearth Household Fund", () => {
 
   it("reserves due recurring bills and blocks only new planned commitments during a deficit", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
-    household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     household = addRecurrence(household, {
       cadence: "monthly", nextDate: "2026-09-20", type: "expense", amount: "25", accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES", note: "Fund-backed bill",
@@ -387,8 +388,8 @@ describe("Hearth Household Fund", () => {
 
   it("reserves every weekly, biweekly, and monthly occurrence still due this month", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
-    household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     for (const [cadence, nextDate] of [["weekly", "2026-09-12"], ["biweekly", "2026-09-11"], ["monthly", "2026-09-20"]] as const) {
       household = addRecurrence(household, {
         cadence, nextDate, type: "expense", amount: "10", accountId: "ACC-VISA",
@@ -402,8 +403,8 @@ describe("Hearth Household Fund", () => {
 
   it("uses append-only reversal lineage and refuses a second reversal", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "75", date: DATE });
-    const confirmed = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! });
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "75", date: DATE });
+    const confirmed = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: BIANCA, proposalEventId: proposal.postedIds[0]! });
     household = confirmed.household;
     const reversed = reverseHouseholdFundEvent(household, {
       memberId: BIANCA, eventId: confirmed.postedIds[0]!, date: "2026-09-02", reason: "Duplicate receipt",
@@ -417,8 +418,8 @@ describe("Hearth Household Fund", () => {
 
   it("turns a funded transaction reversal into an append-only refund allocation", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, { memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
-    household = confirmHouseholdFundContribution(proposal.household, { memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: BIANCA, contributorMemberId: BIANCA, amount: "100", date: DATE });
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: BIANCA, proposalEventId: proposal.postedIds[0]! }).household;
     const purchase = postEntry(household, {
       date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA",
       subcategoryId: "SUB-FOOD-GROCERIES", createdBy: BIANCA, visibility: "household", confirmDuplicate: true,

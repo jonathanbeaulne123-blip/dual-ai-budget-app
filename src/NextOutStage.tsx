@@ -16,8 +16,9 @@ function ordinal(date: DateKey): string {
 }
 
 export function NextOutStage({
-  walk, today, headingRef,
+  walk, today, headingRef, mode = "spoken-for",
 }: {
+  mode?: "next-out" | "spoken-for";
   walk: FundWalk;
   today: DateKey;
   headingRef?: Ref<HTMLHeadingElement>;
@@ -31,10 +32,11 @@ export function NextOutStage({
 
   return (
     <section className="next-out-stage" aria-labelledby={headingId}>
-      <p className="desk-plate-kicker">Spoken for</p>
+      <p className="desk-plate-kicker">{mode === "next-out" ? "Next out" : "Spoken for"}</p>
       <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading">
-        {claim.overCents > 0 ? `${formatCad(claim.overCents)} over` : `${formatCad(claim.freeCents)} free`}
+        {mode === "next-out" ? (table.rows[0] ? `${table.rows[0].label} · ${formatCad(table.rows[0].amountCents)}` : "Nothing due next") : claim.overCents > 0 ? `${formatCad(claim.overCents)} over` : `${formatCad(claim.freeCents)} free`}
       </h2>
+      {mode === "spoken-for" && <>
       <p className={`desk-plate-detail${claim.overCents > 0 ? " is-copper" : ""}`}>
         {claim.overCents > 0
           ? `Claims of ${formatCad(claim.claimedCents)} sit against ${formatCad(claim.poolCents)} in the pool.`
@@ -52,7 +54,9 @@ export function NextOutStage({
         />
       </div>
 
-      <p className="desk-plate-kicker next-out-table-kicker">Next out</p>
+      </>}
+      {mode === "next-out" && <p className="desk-plate-detail">Upcoming outflows from accepted bills and commitments. Dates and amounts come from the current Fund reading.</p>}
+      <p className="desk-plate-kicker next-out-table-kicker">{mode === "spoken-for" ? "Commitments behind this amount" : "Upcoming outflows"}</p>
       {table.rows.length === 0 ? (
         <p className="desk-plate-empty">Nothing owed for the rest of the month.</p>
       ) : (

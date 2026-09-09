@@ -93,7 +93,7 @@ describe("Fund slice 3 member rail", () => {
       createdBy: BIANCA,
       slot: 9,
       widgetId: "waiting",
-    })).toThrow("The Fund board has exactly eight places.");
+    })).toThrow("Choose a visible place on this Fund board.");
 
     const arranged = setFundRailSlot(household, {
       memberId: BIANCA,
@@ -232,6 +232,17 @@ describe("Fund slice 3 member rail", () => {
     expect(ref?.commandType).toBe("fund-rail-personal");
   });
 
+  it("keeps six phone positions owner scoped while preserving all eight desktop positions",()=>{
+    const h=configuredFund(),desk=railFor(h,JONATHAN);
+    const result=setFundRailSlot(h,{memberId:JONATHAN,createdBy:JONATHAN,slot:3,widgetId:'accounts',presentation:'phone'});
+    expect(railFor(result.household,JONATHAN)).toEqual(desk);expect(railFor(result.household,JONATHAN,'phone')).toHaveLength(6);
+    expect(railFor(result.household,JONATHAN,'phone')[2]).toBe('accounts');
+    const owner=splitForSync(result.household,JONATHAN),peer=splitForSync(result.household,BIANCA);
+    expect(owner.personal.fundRail?.phoneSlots).toHaveLength(6);expect(peer.personal.fundRail).toBeUndefined();
+    const reloaded=assembleHousehold(owner.shared,owner.personal,{linked:true});expect(railFor(reloaded,JONATHAN,'phone')).toEqual(railFor(result.household,JONATHAN,'phone'));
+    expect(()=>setFundRailSlot(h,{memberId:JONATHAN,createdBy:JONATHAN,slot:7,widgetId:'accounts',presentation:'phone'})).toThrow(/visible place/i);
+  });
+
   it("resets only the acting member to the role-derived default", () => {
     const arranged = setFundRailSlot(configuredFund(), {
       memberId: JONATHAN,
@@ -272,7 +283,7 @@ describe("Fund slice 3 member rail", () => {
     expect(office).toContain('role={spreadIsStage && fundConfigured ? "tabpanel" : undefined}');
     expect(office).toContain('role={fundConfigured && spreadIsStage ? "tablist" : undefined}');
     expect(office).toContain("onClose={closeFundDrawer}");
-    expect(office).toMatch(/function closeFundDrawer\(\)[\s\S]*setFundDrawerOpen\(false\)[\s\S]*fundStageHeadingRef\.current\?\.focus\(\)/);
+    // Focus return is measured by the mounted drawer regression, not a source-text check.
     expect(office).not.toContain("setFundRailSlot");
     expect(office).not.toMatch(/postEntry|confirmHouseholdFundContribution/);
     expect(plates).toContain('role={tab ? "tab" : undefined}');

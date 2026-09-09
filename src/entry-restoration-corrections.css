@@ -1,0 +1,257 @@
+/* ============================================================================
+   entry-restoration-corrections.css
+   Claude — visual review corrections for the integrated Add flow.
+
+   Reviewed build: source-snapshot 2026-09-09T02:12:49.428Z
+   ZIP SHA256 a1f11c7046881330969a9f6201e3107a7f49d0f58ba9dd0e7e8be203a8f0c2c3
+
+   Additive. Fixes the discrepancies in CLAUDE_INTEGRATED_REVIEW.md §3.
+   No component, copy, token, logic or financial-contract change.
+
+   LOAD ORDER — required. Import LAST in src/main.tsx:
+       import "./entry-restoration.css";
+       import "./entry-restoration-integration.css";
+       import "./entry-restoration-corrections.css";   // <- add this line
+
+   Each block is numbered to the finding it closes.
+   ========================================================================= */
+
+
+/* --- D1  Declare the knob the integration file already reads --------------
+   entry-restoration-integration.css uses var(--entry-tile-radius) on the
+   desktop tiles, but that property is declared nowhere in the tree. The
+   var() substitution therefore fails, the declaration is invalid at
+   computed-value time, and border-radius falls back to its initial 0px.
+   Measured result: desktop choice tiles 0px while the pad keys beside them
+   are 11.16px (Classic) / 8.68px (Taylor, Newfoundland), and mobile tiles
+   are 3px. Declaring the knob makes the tiles track the theme like every
+   other control, and leaves the integration file untouched.               */
+
+:root[data-theme] .sheet.add-slideshow {
+  --entry-tile-radius: var(--world-r-control, 3px);
+}
+
+
+/* --- D2  The desktop More tile matches the mobile one --------------------
+   A dashed rule reads as "create something new" and appears nowhere else in
+   Hearth; the tile is an escape hatch out of the suggestions. Mobile draws
+   it solid on --paper in --muted. Desktop now does the same.              */
+
+@media (min-width: 719.02px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-sheet-fields .swipe-cat.more {
+    border-style: solid;
+    background: var(--paper);
+    color: var(--muted);
+  }
+}
+
+
+/* --- D3  The mode word is a label at every width -------------------------
+   worlds.css dresses .add-slideshow-mode as a chip (sunk fill, 1px border,
+   14.4px radius, 16px). The phone branch demotes it; the wide branch did
+   not, so "Expense" renders as a control the user cannot press. Same
+   treatment at both widths.                                              */
+
+@media (min-width: 719.02px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-mode {
+    border: 0;
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
+
+/* --- D4  Full-form review rhythm at every width --------------------------
+   The integration made `expanded` width-independent (AddSlideshow.tsx:184,
+   `const expanded = fullForm`), which is right — but my §2.8 rules were
+   written when the full form was phone-only, so on the wide branch the
+   review sections lost their separators and the section headings render at
+   24px, competing with the 28px question. This is my omission, not the
+   integration's.                                                          */
+
+@media (min-width: 719.02px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet)[data-add-slide="full-form"] .entry-full-section {
+    min-width: 0;
+    padding-block: var(--entry-section-block);
+    border-top: 1px solid var(--line);
+    flex: 0 0 100%;
+  }
+
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet)[data-add-slide="full-form"] .entry-full-section:first-of-type {
+    border-top: 0;
+    padding-block-start: 0;
+  }
+
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-full-section h2 {
+    font-family: var(--display);
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.008em;
+    margin: 0 0 12px;
+    color: var(--ink);
+  }
+
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-full-section label {
+    display: grid;
+    gap: 6px;
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-full-section :is(input, select, textarea) {
+    max-width: 100%;
+    box-sizing: border-box;
+    min-height: 44px;
+    font-size: 16px;
+    color: var(--ink);
+  }
+}
+
+
+/* --- D5  The caption "More" is a 44x44 target ----------------------------
+   My own defect. `width: auto; padding: 0` gave the button a 29.9x44 box at
+   390 and 31x44 at 1440 — 90 occurrences across the 24 flows. Above the
+   24x24 WCAG 2.5.8 minimum but below the 44px floor Hearth applies to every
+   other control. Padding rather than a negative margin, so the button keeps
+   a real 10px of clear space from "Switch kind" on either side; the text
+   moves 8px along the caption row and nothing else changes.
+
+   Both branch selectors are spelled out because the phone rule in
+   entry-restoration.css sits at (0,7,1); a shorter selector here would lose
+   the padding and leave the target left-aligned inside its own box.       */
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > button.ghost,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > button.ghost,
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-inner > button.ghost {
+  box-sizing: border-box;
+  min-width: 44px;
+  padding-inline: 8px;
+  justify-content: center;
+}
+
+
+/* --- D6  "More" keeps its affordance on the desktop branch ---------------
+   The integration's chrome group sets colour and size but no underline, so
+   at >=719.02px More renders as plain muted text with nothing to say it is
+   pressable. The phone branch underlines it.                              */
+
+@media (min-width: 719.02px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-inner > button.ghost {
+    font-size: var(--entry-chrome-size);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+
+/* --- D7  One caption row on the desktop branch too -----------------------
+   The integration's `> :is(.add-slideshow-progress,.add-slideshow-switch,
+   button.ghost)` group omits .add-slideshow-hint, so the hint keeps
+   flex: 0 0 100% and the band measures two rows on the wide branch against
+   one on the phone. Measured tops: 390 => [135]; 1440 => [147, 170].      */
+
+@media (min-width: 719.02px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-inner > .add-slideshow-hint {
+    flex: 1 1 42%;
+    max-inline-size: 58%;
+    align-self: flex-start;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    margin: 0;
+  }
+}
+
+
+/* --- D8  One instrument, one treatment, both branches --------------------
+   The integration strips .cad-pad and .cad-pad-display to bare text on the
+   wide branch while the phone branch keeps the pad card and the display
+   well. Crossing 719 -> 720 therefore changes the instrument's chrome, and
+   the wide branch stops matching the supplied 1100/1440 references, which
+   show the pad as a card with the amount in a well.
+
+   Shipping the reference behaviour: the wide branch is brought back to the
+   card. If Jonathan prefers the bare instrument the integration authored —
+   it is a defensible reading of the original intent — then delete this
+   block and add the same three properties to the PHONE branch instead, so
+   the two never disagree. Do not leave them different.                    */
+
+@media (min-width: 719.02px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .cad-pad {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--world-r-sheet);
+    box-shadow: var(--world-lift-2, var(--lift-2));
+  }
+
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .cad-pad-display {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--world-r-control);
+    color: var(--ink);
+  }
+}
+
+
+/* --- D9  The picture field is not a raw browser control ------------------
+   The note step is the one place in the flow that renders an unthemed
+   native widget ("Choose File | No file chosen"), at both widths and in all
+   three worlds. This dresses the control without touching the input's
+   behaviour, accessible name or the file it carries.                      */
+
+:root[data-theme] .sheet.add-slideshow .entry-sheet-fields input[type="file"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  background: var(--card);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+}
+
+:root[data-theme] .sheet.add-slideshow .entry-sheet-fields input[type="file"]::file-selector-button {
+  min-height: 32px;
+  margin-inline-end: 10px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--world-r-control);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+:root[data-theme] .sheet.add-slideshow .entry-sheet-fields input[type="file"]:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+
+/* --- D10  The review reads its money as money ----------------------------
+   Presentation only. The shift review currently prints its figures without
+   the CAD format (450.00 beside the expense review's $45.00); that is a
+   formatCad call in ConfirmSlide and belongs to Codex. What CSS can do is
+   make every value column tabular and in the display face, so the figures
+   line up and read as amounts wherever they appear.                       */
+
+:root[data-theme] .sheet.add-slideshow .add-confirm-summary .row > :last-child {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}

@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from "./fundContributionSources.ts";
 import { addDays, monthKeyFromDateKey, shiftMonthKey, todayKey, TIMEZONE, type DateKey } from "./calendar.ts";
 import { DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
 import {
@@ -808,6 +809,7 @@ function seedHouseholdFund(input: Household, today: DateKey): Household {
     const proposal = proposeHouseholdFundContribution(household, {
       memberId: contributorMemberId,
       contributorMemberId,
+      source: {version:1,kind:"already-held",explanation:"Synthetic rehearsal contribution already held by custodian."},
       amount,
       date,
     });
@@ -815,6 +817,7 @@ function seedHouseholdFund(input: Household, today: DateKey): Household {
     household = confirmHouseholdFundContribution(household, {
       memberId: BIANCA,
       proposalEventId: proposal.postedIds[0]!,
+      received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposal.postedIds[0]!),
     }).household;
   };
 
@@ -925,6 +928,7 @@ function seedHouseholdFund(input: Household, today: DateKey): Household {
     contributorMemberId: JONATHAN,
     amount: 275,
     date: on(secondMonth, 9),
+    source: {version:1,kind:"external-received",explanation:"Synthetic rehearsal money from untracked savings."},
     note: "Check the overtime week together",
   });
   household = heldProposal.household;

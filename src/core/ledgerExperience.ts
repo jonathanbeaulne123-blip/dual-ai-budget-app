@@ -223,6 +223,7 @@ export function restoreAcceptedSnapshot(accepted: Household, next: Household): H
     claims: unionById(next.claims ?? [], accepted.claims ?? []),
     fundEvents: unionById(next.fundEvents ?? [], accepted.fundEvents ?? []),
     sevenShiftsSchedules: unionById(next.sevenShiftsSchedules ?? [], accepted.sevenShiftsSchedules ?? []),
+    fundContributionSourceClaims: unionById(next.fundContributionSourceClaims ?? [], accepted.fundContributionSourceClaims ?? []),
     fundPrivate: {
       bankBindings: unionById(next.fundPrivate?.bankBindings ?? [], accepted.fundPrivate?.bankBindings ?? []),
       reconciliations: unionById(next.fundPrivate?.reconciliations ?? [], accepted.fundPrivate?.reconciliations ?? []),
@@ -297,6 +298,7 @@ export function booksPresentationFloor(
     tombstones: [],
     commandReceipts: [],
     conflicts: [],
+    fundContributionSourceClaims: [],
     fundPrivate: custodian
       ? household.fundPrivate
       : { bankBindings: [], reconciliations: [] },
@@ -360,6 +362,7 @@ function sanitizeExport(household: Household, memberId: string, view: LedgerView
   return {
     ...scoped,
     kitchen: sanitizeKitchen(scoped, memberId),
+    fundContributionSourceClaims: view === "personal" ? (household.fundContributionSourceClaims ?? []).filter(c=>c.ownerMemberId===memberId) : [],
     fundPrivate: view === "personal" && household.householdFund?.custodianMemberId === memberId
       ? scoped.fundPrivate
       : { bankBindings: [], reconciliations: [] },
