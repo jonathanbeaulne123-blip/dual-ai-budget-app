@@ -172,6 +172,7 @@ export function ThemeSceneHeading({ home = false }: { home?: boolean }) {
     {home ? <HomeArtwork scene={scene} /> : <SceneArtwork scene={scene} />}
     <div className="theme-scene-copy"><span className="theme-scene-kicker">{scene.theme === "taylor" ? "A page from our scrapbook" : scene.theme === "newfoundland" ? "A little Newfoundland" : "Welcome home"}</span><p className="theme-scene-title">{scene.title}</p><p className="theme-scene-caption">{scene.caption}</p></div>
     <EraBracelet />
+    {home && <div className="desktop-title-bracelets"><FriendshipBracelets /><EraBracelet allThemes /></div>}
     <AtmosphereControl />
   </section>;
 }

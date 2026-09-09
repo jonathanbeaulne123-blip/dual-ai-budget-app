@@ -25,7 +25,7 @@ export function FundBoard({ household, memberId, today, presentation, selected, 
       : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1) + tabs.length) % tabs.length;
     event.preventDefault(); tabs[next]?.focus();
   };
-  return <div className={`fund-board is-${presentation}`} role={presentation === "phone" ? "tablist" : undefined} aria-label="Fund board">
+  return <div className={`fund-board is-${presentation}`} role="tablist" aria-label="Fund board">
     {slots.map(id => {
       const plate = byId.get(id);
       if (presentation === "desk" && plate) return <DeskPlate key={id} plate={plate} active={selected === id}

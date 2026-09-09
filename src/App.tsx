@@ -6524,6 +6524,7 @@ export function App() {
           </p>
         ) : null}
         {view === "household" ? (
+          <div className="home-rehearsal-entry">
           <MonthRehearsalAccess
             household={household}
             memberId={session.memberId}
@@ -6532,6 +6533,7 @@ export function App() {
             onApply={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
             onOpenTask={openMonthRehearsalTask}
           />
+          </div>
         ) : null}
         <DeferredSurface label="Office">
         <DeferredOffice

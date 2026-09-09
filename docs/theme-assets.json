@@ -470,6 +470,18 @@
       "source": "Original SVG; user-provided Jellybean Row and rose-pink dress references; official Taylor artwork links in PAGE_WORLD_REFINEMENT.md",
       "file": "src/theme/LivingArtwork.tsx",
       "status": "original illustration; reference photos not redistributed"
+    },
+    {
+      "id": "desktop-home-scenery",
+      "file": "src/theme/DesktopHomeScenery.tsx",
+      "source": "Original SVG geometry; same official album and private place references recorded in docs/PAGE_WORLD_REFINEMENT.md",
+      "dimensions": [
+        1600,
+        680
+      ],
+      "placement": "Desktop Home background, three individually observed panels; aria-hidden and pointer-events none",
+      "mobile": "Not displayed below 720px",
+      "status": "Actual-App Chrome proof at 720, 1100, 1440 and 1920px; private source photos not redistributed"
     }
   ],
   "placeholderPolicy": "Bianca chooses scrapbook photographs later. No ticket exists. Dress and Jellybean Row photographs are private illustration references only."

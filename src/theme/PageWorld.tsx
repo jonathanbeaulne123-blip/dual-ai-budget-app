@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react";
 import { useAppearance, useAtmosphereVisibility } from "./ThemeProvider.tsx";
 import { Crystal, Heart, Sprig } from "./LivingArtwork.tsx";
+import { DesktopHomeScenery } from "./DesktopHomeScenery.tsx";
 import type { SceneRoute } from "./scenes.ts";
 
 export const REFINED_PAGES: readonly SceneRoute[] = ["home"];
@@ -9,10 +10,10 @@ export const ERA_LIGHTS: Record<string,string> = {
   midnights:"#739be6",reputation:"#cedbd0",poets:"#dfd5c6","1989":"#8ac9f1",
   "speak-now":"#bd8eec",evermore:"#dd9c62",folklore:"#c7cfbc",
 };
-export function EraBracelet() {
+export function EraBracelet({ allThemes = false }: { allThemes?: boolean }) {
   const {scene}=useAppearance();
-  if(scene.theme!=="taylor") return null;
-  return <span className="era-light" role="img" aria-label={scene.title+" concert light-up bracelet"} style={{"--era-light":ERA_LIGHTS[scene.id]??"#eadcc7"} as CSSProperties}>
+  if(scene.theme!=="taylor" && !allThemes) return null;
+  return <span className="era-light" role="img" aria-label={scene.title+(scene.theme==="taylor"?" concert light-up bracelet":" illustrated light-up bracelet")} style={{"--era-light":ERA_LIGHTS[scene.id]??"var(--theme-accent)"} as CSSProperties}>
     <svg viewBox="0 0 150 80" aria-hidden="true" focusable="false"><ellipse cx="75" cy="43" rx="58" ry="23" fill="none" stroke="#d8ded9" strokeWidth="12"/><path d="M24 34Q75 0 126 34" fill="none" stroke="#fffaf1" strokeWidth="12"/><rect className="era-light-module" x="52" y="9" width="46" height="35" rx="10"/><path d="M60 16H90M60 21H90" stroke="#fff" opacity=".65" strokeWidth="2"/><circle cx="39" cy="58" r="2" fill="#8c9993"/></svg>
   </span>;
 }
@@ -28,7 +29,7 @@ export function PageWorld({page}:{page:SceneRoute}) {
   if(!REFINED_PAGES.includes(page)) return null;
   return <aside ref={ref} className="page-world-art" aria-hidden="true" data-world-page={page}>
     {[0,1,2,3].map(i=><MarginMotif key={i} index={i}/>)}
-    <div className="world-light-wash"/><div className="world-paper-grain"/>
+    <DesktopHomeScenery/><div className="world-light-wash"/><div className="world-paper-grain"/>
   </aside>;
 }
 export function WorldCharm({page}:{page:SceneRoute}) {

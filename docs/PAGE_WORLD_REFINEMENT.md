@@ -1,6 +1,14 @@
 # Living pages: implementation contract
 
-Jonathan approved eight page-specific PRs on 2026-09-09: Home → Plan → Calendar → Books → Till → Shift → More → Entry. Every PR includes Classic, Taylor and Newfoundland plus applicable Shared/Personal scenes. No merge, deployment, schema or hosted household mutation is authorized.
+The original program proposed eight page-specific PRs on 2026-09-09: Home → Plan → Calendar → Books → Till → Shift → More → Entry. Every PR includes Classic, Taylor and Newfoundland plus applicable Shared/Personal scenes. No merge, deployment, schema or hosted household mutation is authorized.
+
+Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Resume later pages only after a new instruction.
+
+## Desktop Home revision
+
+At 720px and wider, large original scenery panels continue the title character through the scroll: orange feather boas and steady theatre lights, pink/lilac/blue cloud banks, clapboard street margins and harbour cottages with water. Reading instruments retain solid surfaces; desktop gutters make room for the illustrations. Classic retains its restrained paper office. Each visible scenery panel observes its own viewport presence, with persistent pause, reduced motion and focused-entry quieting.
+
+Desktop titles show the named bracelets with a scene-coloured light bracelet in all themes. Phone bracelet placement stays unchanged. The Home rehearsal entry is hidden only on desktop; the existing More entry and its financial handlers remain intact. The desktop weather surface is shorter, readable and still cycles through forecast/minimized/restored states, with a 44px minimized control.
 
 ## Whole-page composition
 
