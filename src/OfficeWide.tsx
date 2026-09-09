@@ -1,3 +1,4 @@
+import { OFFICE_INSTRUMENT_PURPOSE } from "./core/widgetPurpose.ts";
 import type { KitchenCommand } from "./kitchenCommand.ts";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { fundStageStorageKey, storedFundStage } from "./core/fundStageMemory.ts";
@@ -271,7 +272,7 @@ export function OfficeWide({
     } catch {
       // A blocked storage surface still gets a correct in-session React state.
     }
-    queueMicrotask(() => fundStageHeadingRef.current?.focus());
+
   }
 
   function openPlateCabinet(id: DeskPlateId) {
@@ -285,12 +286,10 @@ export function OfficeWide({
     setMonthList(null);
     if (layout.expanded && layout.expanded !== "window") onLayout({ ...layout, expanded: null });
     setFundDrawerOpen(true);
-    queueMicrotask(() => fundStageHeadingRef.current?.focus());
   }
 
   function closeFundDrawer() {
     setFundDrawerOpen(false);
-    queueMicrotask(() => fundStageHeadingRef.current?.focus());
   }
 
   const spend = categorySpendBars(dashboard.month.categories);
@@ -545,7 +544,7 @@ export function OfficeWide({
           />
         </div>
         <div ref={mosaicRef} className="office-wide-mosaic-wrap">
-          <StoryStrip heading="Today's stories" className="office-wide-mosaic office-wide-plates">
+          <StoryStrip heading="Today's stories" className="office-wide-mosaic office-wide-plates" actions={fundConfigured && spreadIsStage ? <button type="button" className="fund-rail-arrange" aria-haspopup="dialog" aria-expanded={fundDrawerOpen} onClick={openFundDrawer}>Arrange widgets</button> : undefined}>
             <div className="fund-rail-list" role={fundConfigured && spreadIsStage ? "tablist" : undefined} aria-label={fundConfigured && spreadIsStage ? "Your Fund board" : undefined}>
               {fundConfigured && spreadIsStage ? (
                 <FundBoard household={household} memberId={memberId} today={today} presentation="desk"
@@ -568,16 +567,6 @@ export function OfficeWide({
               })}
               </>)}
             </div>
-            {fundConfigured && spreadIsStage ? (
-              <button
-                type="button"
-                className="fund-rail-arrange"
-                aria-current={fundDrawerOpen ? "true" : undefined}
-                onClick={openFundDrawer}
-              >
-                Arrange
-              </button>
-            ) : null}
           </StoryStrip>
         </div>
         <div
@@ -587,15 +576,8 @@ export function OfficeWide({
           id={spreadIsStage && fundConfigured ? "fund-stage-panel" : undefined}
           aria-labelledby={spreadIsStage && fundConfigured && !fundDrawerOpen ? `fund-rail-tab-${selectedFundPlate?.id ?? activeFundWidget}` : undefined}
         >
-          {spreadIsStage && fundConfigured && fundDrawerOpen ? (
-            <FundDrawer
-              household={household}
-              memberId={memberId}
-              busy={busy}
-              onKitchen={onKitchen}
-              onClose={closeFundDrawer}
-            />
-          ) : spreadIsStage && fundConfigured ? (
+          {spreadIsStage && fundConfigured && fundDrawerOpen && <FundDrawer household={household} memberId={memberId} busy={busy} onKitchen={onKitchen} onClose={closeFundDrawer} />}
+          {spreadIsStage && fundConfigured ? (
             <FundStage view={view} scenarioSource={scenarioSource} widgetId={activeFundWidget ?? "level"} household={booksHousehold}
               memberId={memberId} today={today} busy={busy} headingRef={fundStageHeadingRef}
               onKitchen={onKitchen} onOpenAccount={onOpenAccount} plate={selectedFundPlate}
@@ -686,7 +668,7 @@ export function OfficeWide({
                   onLayout(revealPhoneInstrument(layout, id));
                 }}
               >
-                <b>{specs[id]?.name ?? id}</b>
+                <b>{specs[id]?.name ?? id}</b><small>{OFFICE_INSTRUMENT_PURPOSE[id]}</small>
               </button>
             ))}
           </div>

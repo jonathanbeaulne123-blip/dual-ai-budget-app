@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import { type ReactNode } from "react";
 import { FundContributionMotionCard } from "./HouseholdFundPanel.tsx";
 import {
@@ -8,7 +9,6 @@ import {
   monthSummary,
   swipeBelongsOnSharedHome,
   tillActionableMotions,
-  type CommitResult,
   type DateKey,
   type Household,
 } from "./core/index.ts";
@@ -51,7 +51,7 @@ export function Till({
   strip?: ReactNode;
   onOpenSwipe: () => void;
   onSeeEverything: () => void;
-  onCommand: (command: (current: Household) => CommitResult) => void;
+  onCommand: KitchenCommand;
 }) {
   const isCustodian = swipeBelongsOnSharedHome(memberId, household.householdFund?.custodianMemberId);
   const motions = tillActionableMotions(household, memberId);

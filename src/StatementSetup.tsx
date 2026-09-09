@@ -11,7 +11,7 @@ import './statement-setup.css';
 export type { StatementSetupDraft, StatementSetupProps, StatementHistoryInput } from './imports/statementSetup/types.ts';
 
 type Attachment = { file: File; hash: string; pdf?: StatementPdf };
-export function StatementSetup({ household, memberId, authUserId, view, onReviewHistory, onUseSuggestions, acceptedCoverage, onDone }: StatementSetupProps) {
+export function StatementSetup({ active = true, household, memberId, authUserId, view, onReviewHistory, onUseSuggestions, acceptedCoverage, onDone }: StatementSetupProps) {
   const scope = { environment: household.environment, householdId: household.householdId, memberId, authUserId, view };
   const key = statementScopeKey(scope);
   const [draft, setDraft] = useState<StatementSetupDraft>(() => emptyStatementDraft(scope));
@@ -28,6 +28,7 @@ export function StatementSetup({ household, memberId, authUserId, view, onReview
   const attachments = useRef(new Map<string, Attachment>());
   const generation = useRef(0), renderedKey = useRef(key), abortRef = useRef<AbortController | null>(null);
   if (renderedKey.current !== key) { renderedKey.current = key; generation.current += 1; abortRef.current?.abort(); }
+  useEffect(()=>{if(!active)abortRef.current?.abort();},[active]);
   const activeKey = useRef(key); activeKey.current = key;
   const saves = useRef<Promise<void>>(Promise.resolve());
   const saveVersion = useRef(0);
@@ -86,6 +87,7 @@ export function StatementSetup({ household, memberId, authUserId, view, onReview
     finally { if (start === generation.current) setBusy(false); if (inputRef.current) inputRef.current.value = ''; if (reattachRef.current) reattachRef.current.value = ''; }
   }
   async function scan() {
+    if (!active) return;
     if (!attachment || !scopeChosen || busy) return;
     const start = generation.current, base = draftRef.current;
     const source = base.sources.find(item => item.hash === attachment.hash);

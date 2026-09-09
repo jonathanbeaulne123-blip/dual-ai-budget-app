@@ -1,0 +1,130 @@
+/* Actual Claude: Author the extension and measure, task cse_01JkPYxjPkc1GryEB4mgfHgt,
+   source snapshot 2026-09-09T02:49:31.478Z. Recovered from the visible tool record
+   after Claude reached its usage limit. Comments shortened; declarations retain
+   the authored wrapper and notice rules. See docs/entry-restoration/PROVENANCE.md.
+   Import after both original Claude packets. Final Claude comparison is pending. */
+@media (min-width: 719.02px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: flex-start;
+    column-gap: var(--entry-chrome-gap);
+    row-gap: 2px;
+    margin: 0 0 var(--entry-chrome-block);
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > * {
+    flex: 0 0 auto;
+    min-width: 0;
+    align-self: flex-start;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > .add-slideshow-hint {
+    flex: 1 1 42%;
+    max-inline-size: 58%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    line-height: var(--entry-chrome-lh);
+    color: var(--muted);
+    margin: 0;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > .add-slideshow-progress {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > button.ghost {
+    box-sizing: border-box;
+    min-height: 44px;
+    min-width: 44px;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-align: center;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > button.ghost:focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 2px;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > .add-slideshow-switch {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > .add-slideshow-switch > summary {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > .add-slideshow-switch[open] {
+    flex: 0 0 100%;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > .add-slideshow-switch .tabs {
+    margin: 6px 0 0;
+    gap: 6px;
+  }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .entry-chrome > .add-slideshow-switch .tabs button {
+    min-height: 44px;
+    font-size: 13px;
+    text-transform: capitalize;
+  }
+}
+@media (max-width: 719px) {
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > .add-slideshow-switch[open] {
+    flex: 0 0 100%;
+  }
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > .add-slideshow-switch .tabs {
+    margin: 6px 0 0;
+    gap: 6px;
+  }
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > .add-slideshow-switch .tabs button {
+    min-height: 44px;
+    font-size: 13px;
+    text-transform: capitalize;
+  }
+}
+/* Claude's notice rules were authored from markup; his probe did not establish
+   real receipt-notice rendering. The final local harness checks the actual prop. */
+:root[data-theme] .sheet.add-slideshow .sheet-inner > p[role="status"]:not([data-add-account-intent]) {
+  flex: 0 0 100%;
+  margin: 0 0 var(--entry-chrome-block);
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--entry-notice-size);
+  line-height: var(--entry-notice-lh);
+  text-wrap: pretty;
+}
+:root[data-theme] .sheet.add-slideshow .sheet-inner > p[role="status"][data-receipt-recovery] {
+  border-inline-start: var(--entry-notice-rule) solid color-mix(in srgb, var(--theme-accent) 55%, var(--line));
+  padding: var(--entry-notice-pad);
+  color: var(--ink);
+}

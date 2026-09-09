@@ -517,7 +517,7 @@ export function MonthSpread({
           <div className="ms-slip is-clear">
             <span className="ms-slip-title">Nothing is waiting on a person right now.</span>
             <span className="ms-slip-why">
-              {opening.lastReconciledAt ? `Shared slice ${opening.reconciliationTied ? "tied" : "needs review"} on ${dayLabel(opening.lastReconciledAt.slice(0, 10))}.` : "The shared slice has not been reconciled yet."}
+              {opening.lastReconciledAt ? `Shared slice ${opening.reconciliationTied === null ? "not independently checked" : opening.reconciliationTied ? "tied" : "needs review"} on ${dayLabel(opening.lastReconciledAt.slice(0, 10))}.` : "The shared slice has not been reconciled yet."}
             </span>
           </div>
         ) : (
@@ -548,7 +548,7 @@ export function MonthSpread({
         <span className="ms-custody">{story.trust.custodyDisclosure}</span>
         <span className="ms-fact">
           {story.trust.lastReconciledAt
-            ? `${story.trust.reconciliationTied ? "tied" : "needs review"} · ${dayLabel(story.trust.lastReconciledAt.slice(0, 10))}`
+            ? `${story.trust.reconciliationTied === null ? "not independently checked" : story.trust.reconciliationTied ? "tied" : "needs review"} · ${dayLabel(story.trust.lastReconciledAt.slice(0, 10))}`
             : "not yet reconciled"}
         </span>
         <span className="ms-fact">

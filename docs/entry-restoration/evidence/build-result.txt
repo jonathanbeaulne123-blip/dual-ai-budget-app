@@ -1,0 +1,4 @@
+pnpm --config.manage-package-manager-versions=false --config.verify-deps-before-run=never build
+Exit:0
+TypeScript, Vite, Hercules Pro UI and _redirects absence passed.
+Vite bundled in34.97seconds. Existing dependency eval/browser-external and large-chunk warnings were not suppressed.

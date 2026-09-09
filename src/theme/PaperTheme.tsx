@@ -82,14 +82,16 @@ export function StoryStrip({
   children,
   heading = "Today's stories",
   className,
+  actions,
 }: {
   children: ReactNode;
   heading?: string;
   className?: string;
+  actions?: ReactNode;
 }) {
   return (
     <section className={`hearth-story-strip ${className ?? ""}`.trim()} aria-label={heading}>
-      <h2 className="hearth-story-heading">{heading}</h2>
+      <header className="hearth-story-head"><h2 className="hearth-story-heading">{heading}</h2>{actions}</header>
       <div className="hearth-story-grid">{children}</div>
     </section>
   );

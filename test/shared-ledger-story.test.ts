@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -41,14 +42,14 @@ function configuredFund() {
 
 function fundedScenario() {
   let household = configuredFund();
-  const proposal = proposeHouseholdFundContribution(household, {
+  const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "1000",
     date: DATE,
   });
   household = proposal.household;
-  household = confirmHouseholdFundContribution(household, {
+  household = confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposal.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposal.postedIds[0]!,
   }).household;
@@ -105,13 +106,13 @@ describe("fundFlowDiagram", () => {
 
   it("turns the last node into exact top-up without erasing the purchase", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "25",
       date: DATE,
     });
-    household = confirmHouseholdFundContribution(proposal.household, {
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposal.postedIds[0]!,
     }).household;
@@ -172,14 +173,14 @@ describe("fundFlowDiagram", () => {
 describe("sharedActionQueue", () => {
   it("orders Health, top-up, due, then custodian confirmation without shame language", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "25",
       date: DATE,
     });
     household = proposal.household;
-    household = confirmHouseholdFundContribution(household, {
+    household = confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposal.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposal.postedIds[0]!,
     }).household;
@@ -206,7 +207,7 @@ describe("sharedActionQueue", () => {
   });
 
   it("uses the sealed contribution motion state for Held and withdrawn proposals", () => {
-    const proposal = proposeHouseholdFundContribution(configuredFund(), {
+    const proposal = proposeHouseholdFundContribution(configuredFund(), { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "25",

@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -32,10 +33,10 @@ function fund(): Household {
 }
 
 function contribute(household: Household, memberId: string, amount: string, date: string): Household {
-  const proposed = proposeHouseholdFundContribution(household, {
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId, contributorMemberId: memberId, amount, date,
   });
-  return confirmHouseholdFundContribution(proposed.household, {
+  return confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
     memberId: BIANCA, proposalEventId: proposed.postedIds[0]!,
   }).household;
 }
@@ -104,7 +105,7 @@ describe("the Fund's plates", () => {
   it("counts what is waiting without treating a hold as a refusal", () => {
     let household = fund();
     household = contribute(household, BIANCA, "980", "2026-09-02");
-    household = proposeHouseholdFundContribution(household, {
+    household = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN, contributorMemberId: JONATHAN, amount: "310", date: "2026-09-12",
     }).household;
 
@@ -118,7 +119,7 @@ describe("the Fund's plates", () => {
     let household = fund();
     household = contribute(household, BIANCA, "100", "2026-09-02");
     household = bill(household, "200", "2026-09-20", "Hydro");
-    household = proposeHouseholdFundContribution(household, {
+    household = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN, contributorMemberId: JONATHAN, amount: "200", date: TODAY,
     }).household;
 

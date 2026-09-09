@@ -1,0 +1,23 @@
+{
+  "sourceBuiltAt": "2026-09-09T03:17:44.103Z",
+  "sourceManifestSha256": "f04f35af4be94110497ccf89ae335d9732d9b9b312b8c82c082b38d5c1a549f5",
+  "cases": 21,
+  "screenshots": 57,
+  "axeViolations": 0,
+  "receiptActionPass": 21,
+  "closePass": 21,
+  "fieldsetOpacity": [
+    "1"
+  ],
+  "failures": [],
+  "sourceFiles": [
+    {
+      "file": "src/entry-restoration-integration.css",
+      "sha256": "8237fe038dcaedc5d468a06a96f015bc4cbfd87e88b6c0158cdbc8a252b122c1"
+    },
+    {
+      "file": "src/entry-restoration-extension.css",
+      "sha256": "21aea145f3996de0a580a178ebe400f0ec3688df3657d1e6a68776ccf8a5b135"
+    }
+  ]
+}

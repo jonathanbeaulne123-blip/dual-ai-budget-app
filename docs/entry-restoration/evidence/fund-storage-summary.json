@@ -1,0 +1,8 @@
+{
+  "cases": 18,
+  "failed": [],
+  "commands": 0,
+  "axeViolations": 0,
+  "sourceManifestSha256": "b212fcbce33cfbd99d1c464317c2eaa40cc3059f94b866c6111c05f5edc43853",
+  "scope": "Actual components with synthetic parent and failing localStorage.setItem; browser keyboard Enter, alerts, geometry; not physical-device or hosted acceptance."
+}

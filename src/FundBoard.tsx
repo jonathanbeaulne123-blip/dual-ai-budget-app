@@ -14,7 +14,7 @@ export function FundBoard({ household, memberId, today, presentation, selected, 
   const activeMember = household.members.some(member => member.id === memberId && member.active);
   const models = useMemo(() => activeMember ? plates ?? fundPlates({ household, memberId, today }) : [], [activeMember, plates, household, memberId, today]);
   const byId = new Map(models.map(plate => [fundWidgetIdForPlateId(plate.id), plate]));
-  const rail = railFor(household, memberId);
+  const rail = railFor(household, memberId,presentation);
   const slots = presentation === "phone" ? phoneRail(rail) : rail;
   if (!activeMember) return null;
   const navigate = (event: KeyboardEvent<HTMLButtonElement>) => {

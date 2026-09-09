@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { markDuplicate, addAccount, catalogHousehold, configureHouseholdFund, confirmHouseholdFundContribution, postEntry, proposeHouseholdFundContribution, reversePostedMoney, shapeWorkJob, upsertWorkJob, postWorkShift, payDeferredWorkTipOut, type Household, type WorkJob } from "../src/core/index.ts";
 import { reviewScenarioSources, type ScenarioAcceptedSource } from "../src/core/scenarioSources.ts";
@@ -71,8 +72,8 @@ describe("explicit available-cash assumption from accepted sources", () => {
   });
   it("does not infer available money from a contribution which never debited its source account", async () => {
     const {h, accountId} = fixture(), old = await inputs(h, accountId, 4600);
-    const proposed = proposeHouseholdFundContribution(h, {memberId: MEMBER, contributorMemberId: MEMBER, amount: "46", date: AS_OF});
-    const contributed = confirmHouseholdFundContribution(proposed.household, {memberId: "MEM-001", proposalEventId: proposed.postedIds[0]!}).household;
+    const proposed = proposeHouseholdFundContribution(h, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},memberId: MEMBER, contributorMemberId: MEMBER, amount: "46", date: AS_OF});
+    const contributed = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),memberId: "MEM-001", proposalEventId: proposed.postedIds[0]!}).household;
     const fresh = await inputs(contributed, accountId, 4600);
     expect(fresh.sources.cashAccounts.find(row => row.accountId === accountId)?.recordedCapacityCents).toBe(4600);
     expect(fresh.sources.cashAccounts.find(row => row.accountId === accountId)?.availableForFundCents).toBeNull();

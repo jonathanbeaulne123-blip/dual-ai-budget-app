@@ -1,3 +1,7 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
+import { FundSourceFields, emptyFundSource } from "./FundSourceFields.tsx";
+import { fundContributionReviewDigest } from "./core/fundContributionSources.ts";
+import { replaceHouseholdFundContributionSource } from "./core/commands.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   activeHouseholdFundEvents,
@@ -28,13 +32,35 @@ import {
   shapeHouseholdFundPrivate,
   todayKey,
   withdrawHouseholdFundContribution,
-  type CommitResult,
   type Household,
   type HouseholdFundContributionMotion,
   type LedgerView,
 } from "./core/index.ts";
 
-type FundCommand = (current: Household) => CommitResult;
+
+
+/** A durable owner-scoped retry identity must exist before any Fund send. */
+export function fundReviewConfirmation(household: Household, memberId: string, action: string, digest: string) {
+  const key=JSON.stringify(['hearth:fund-confirm:v1',household.environment,household.householdId,memberId,action]);
+  const unavailable = 'This browser cannot save a Fund recovery receipt. Allow browser storage, then review again. Nothing was sent.';
+  let raw: string | null;
+  try { raw=localStorage.getItem(key); } catch { throw new Error(unavailable); }
+  if (raw !== null) {
+    let previous: {digest:string;id:string};
+    try {
+      const parsed: unknown=JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object' || !('digest' in parsed) || typeof parsed.digest !== 'string'
+        || !('id' in parsed) || typeof parsed.id !== 'string' || !parsed.id.trim()) throw new Error('Invalid receipt');
+      previous=parsed as {digest:string;id:string};
+    } catch { throw new Error('The saved Fund recovery receipt is damaged. Check existing contributions before clearing it or trying again. Nothing was sent.'); }
+    if(previous.digest===digest)return previous.id;
+  }
+  const id=crypto.randomUUID();
+  const encoded=JSON.stringify({digest,id});
+  try { localStorage.setItem(key,encoded); if(localStorage.getItem(key)!==encoded)throw new Error('Receipt not retained'); }
+  catch { throw new Error(unavailable); }
+  return id;
+}
 
 const MOTION_ACTION_SIZE = { minHeight: 44, minWidth: 44 } as const;
 const FUND_RECORD_ONLY_KINDS = new Set([
@@ -63,12 +89,16 @@ export function FundContributionMotionCard({
   household: Household;
   memberId: string;
   isCustodian: boolean;
-  onCommand: (command: FundCommand) => void;
+  onCommand: KitchenCommand;
 }) {
   const [composingHold, setComposingHold] = useState(false);
   const [holdNote, setHoldNote] = useState("");
   const holdNoteRef = useRef("");
   const holdNoteInputRef = useRef<HTMLInputElement>(null);
+  const [replacementSource, setReplacementSource] = useState(emptyFundSource);
+  const [reviewingReceipt, setReviewingReceipt] = useState<string | null>(null);
+  const receiptIdentity=useRef("");
+  const [confirmationError,setConfirmationError]=useState("");
   const proposerId = motion.proposal.createdBy;
   const proposerName = memberName(household, motion.proposal.contributorMemberId ?? proposerId);
   const { canHold, canConfirm, canRelease, canWithdraw } = householdFundMotionActorActions(
@@ -99,6 +129,19 @@ export function FundContributionMotionCard({
         <time dateTime={motion.proposal.date}>{formatDateLabel(motion.proposal.date)}</time>
       </div>
       <p className="fund-motion-status" role="status">{statusLine}</p>
+      {confirmationError && <p role="alert">{confirmationError}</p>}
+      {motion.proposal.sourceDeclaration ? <div className="fund-declared-source"><strong>Declared source</strong><p>{motion.proposal.sourceDeclaration.explanation}</p><span className="muted">Declared by {proposerName}; not bank verification.</span></div> : <p className="muted">Legacy proposal — its contributor must declare a source before receipt can be confirmed.</p>}
+      {!motion.proposal.sourceDeclaration && proposerId === memberId && <details><summary>Replace with a source declaration</summary>
+        <FundSourceFields household={household} memberId={memberId} date={motion.proposal.date} value={replacementSource} onChange={setReplacementSource} />
+        <button type="button" onClick={()=>{setConfirmationError("");try {const expectedProposalDigest=fundContributionReviewDigest(household,motion.proposal.id);onCommand(current=>replaceHouseholdFundContributionSource(current,{memberId,proposalEventId:motion.proposal.id,expectedProposalDigest,source:replacementSource}),{confirmationId:fundReviewConfirmation(household,memberId,`replace:${motion.proposal.id}`,JSON.stringify([expectedProposalDigest,replacementSource]))});}catch(error){setConfirmationError(error instanceof Error ? error.message : "Could not complete this Fund request. Check contribution status before retrying.");}}}>Withdraw and replace proposal</button>
+      </details>}
+      {reviewingReceipt && <section className="fund-receipt-review" aria-label="Confirm contribution receipt">
+        <p>I confirm I received {formatCad(motion.proposal.amountCents)} from {proposerName} for the Fund.</p>
+        <p>{motion.proposal.sourceDeclaration?.explanation}</p>
+        <button type="button" className="primary" disabled={reviewingReceipt!==fundContributionReviewDigest(household,motion.proposal.id)} onClick={()=>{setConfirmationError("");try {const confirmationId=fundReviewConfirmation(household,memberId,`receipt:${motion.proposal.id}`,reviewingReceipt);if(confirmationId!==receiptIdentity.current)throw new Error("The saved receipt changed. Cancel and review the contribution again. Nothing was sent.");onCommand(current=>confirmHouseholdFundContribution(current,{memberId,proposalEventId:motion.proposal.id,received:true,expectedProposalDigest:reviewingReceipt}),{confirmationId});}catch(error){setConfirmationError(error instanceof Error ? error.message : "Could not complete this Fund request. Check contribution status before retrying.");}}}>Confirm received</button>
+        <button type="button" className="ghost" onClick={()=>setReviewingReceipt(null)}>Cancel</button>
+        {reviewingReceipt!==fundContributionReviewDigest(household,motion.proposal.id) && <p role="status">Contribution changed. Cancel and review again.</p>}
+      </section>}
       {motion.status === "held" && motion.activeHold ? (
         <p className="muted">
           {holderName} held this on {formatDateLabel(motion.activeHold.date)}.
@@ -121,17 +164,14 @@ export function FundContributionMotionCard({
         </div>
       ) : null}
       <div className="fund-motion-actions">
-        {canConfirm ? (
+        {canConfirm && motion.proposal.sourceDeclaration && !reviewingReceipt ? (
           <button
             className="primary"
             type="button"
             style={MOTION_ACTION_SIZE}
-            onClick={() => onCommand((current) => confirmHouseholdFundContribution(current, {
-              memberId,
-              proposalEventId: motion.proposal.id,
-            }))}
+            onClick={() => {setConfirmationError("");try {const digest=fundContributionReviewDigest(household,motion.proposal.id);receiptIdentity.current=fundReviewConfirmation(household,memberId,`receipt:${motion.proposal.id}`,digest);setReviewingReceipt(digest);}catch(error){setConfirmationError(error instanceof Error ? error.message : "Could not complete this Fund request. Check contribution status before retrying.");}}}
           >
-            Confirm received
+            Review receipt
           </button>
         ) : null}
         {canHold ? (
@@ -190,7 +230,10 @@ export function FundContributionMotionCard({
   );
 }
 
-export function HouseholdFundPanel({
+export function HouseholdFundPanel(props: {household:Household;memberId:string;view:LedgerView;onCommand:KitchenCommand}) {
+  return <HouseholdFundPanelSession key={`${props.household.environment}:${props.household.householdId}:${props.memberId}`} {...props} />;
+}
+function HouseholdFundPanelSession({
   household,
   memberId,
   view,
@@ -199,9 +242,11 @@ export function HouseholdFundPanel({
   household: Household;
   memberId: string;
   view: LedgerView;
-  onCommand: (command: FundCommand) => void;
+  onCommand: KitchenCommand;
 }) {
   const today = todayKey();
+  const [contributionSource, setContributionSource] = useState(emptyFundSource);
+  const [contributionDate, setContributionDate] = useState(today);
   const monthKey = monthKeyFromDateKey(today);
   const fund = shapeHouseholdFundConfig(household.householdFund);
   const projection = useMemo(() => projectHouseholdFund(household, today), [household, today]);
@@ -215,6 +260,23 @@ export function HouseholdFundPanel({
     row.memberId === memberId && row.revision === approvalState.revision
   ));
   const [contributionAmount, setContributionAmount] = useState("");
+  const [proposing,setProposing]=useState(false);
+  const [contributionError,setContributionError]=useState("");
+  async function submitContribution() {
+    if(proposing)return;
+    setContributionError('');
+    setProposing(true);
+    try {
+      const confirmationId=fundReviewConfirmation(household,memberId,'propose',JSON.stringify([contributionAmount,contributionDate,contributionSource]));
+      const result=await onCommand(current=>proposeHouseholdFundContribution(current,{memberId,contributorMemberId:memberId,amount:contributionAmount,date:contributionDate,source:contributionSource}),{confirmationId});
+      if(result?.ok){
+        const key=JSON.stringify(['hearth:fund-confirm:v1',household.environment,household.householdId,memberId,'propose']);
+        try {const saved=JSON.parse(localStorage.getItem(key)??'null');if(saved?.id===confirmationId)localStorage.removeItem(key);}catch{}
+        setContributionAmount('');setContributionSource(emptyFundSource());
+      }
+    } catch(error) {setContributionError(error instanceof Error ? error.message : "Could not complete this Fund request. Check contribution status before retrying.");}
+    finally {setProposing(false);}
+  }
   const [settlementAmount, setSettlementAmount] = useState("");
   const [allocationEdits, setAllocationEdits] = useState<Record<string, string>>({});
   const [target, setTarget] = useState("");
@@ -344,7 +406,7 @@ export function HouseholdFundPanel({
           <div className="stat"><span>{projection.topUpNeededCents ? "Top-up needed" : "Fund free-to-spend"}</span><strong className={projection.topUpNeededCents ? "negative" : ""}>{formatCad(projection.topUpNeededCents || projection.freeToSpendCents)}</strong></div>
         </div>
         <div className="row"><span>Monthly target</span><strong>{formatCad(projection.targetProgressCents)} / {formatCad(projection.monthlyTargetCents)}</strong></div>
-        <div className="row"><span>Reconciliation</span><strong>{projection.lastReconciledAt ? (projection.reconciliationTied ? "Tied" : "Needs review") : "Not yet reconciled"}</strong></div>
+        <div className="row"><span>Reconciliation</span><strong>{projection.lastReconciledAt ? (projection.reconciliationTied === null ? "Not independently checked" : projection.reconciliationTied ? "Tied" : "Needs review") : "Not yet reconciled"}</strong></div>
       </section>
 
       <section className="card">
@@ -353,9 +415,13 @@ export function HouseholdFundPanel({
         <header><h2>Contributions</h2><span className="muted">A proposal never creates money</span></header>
         <label htmlFor="fund-contribution-amount">Amount (CAD)</label>
         <input id="fund-contribution-amount" inputMode="decimal" value={contributionAmount} onChange={(event) => setContributionAmount(event.target.value)} placeholder="250.00" />
-        <button className="primary" type="button" onClick={() => onCommand((current) => proposeHouseholdFundContribution(current, { memberId, contributorMemberId: memberId, amount: contributionAmount, date: today }))}>
+        <label htmlFor="fund-contribution-date">Contribution date</label>
+        <input id="fund-contribution-date" type="date" value={contributionDate} onChange={e=>setContributionDate(e.target.value as typeof today)} />
+        <FundSourceFields household={household} memberId={memberId} date={contributionDate} value={contributionSource} onChange={setContributionSource} />
+        <button className="primary" type="button" disabled={proposing} onClick={()=>void submitContribution()}>
           Propose contribution
         </button>
+        {contributionError && <p role="alert">{contributionError}</p>}
         {waitingMotions.map((motion) => (
           <FundContributionMotionCard
             key={motion.proposal.id}
@@ -434,7 +500,7 @@ export function HouseholdFundPanel({
           <input id="fund-personal-remainder" inputMode="decimal" value={personalRemainder} onChange={(event) => setPersonalRemainder(event.target.value)} />
           <div className="row"><span>Fund amount</span><strong>{formatCad(projection.operatingBalanceCents)}</strong></div>
           <div className="row"><span>Kitty amount</span><strong>{formatCad(projection.kittyCents)}</strong></div>
-          {latestPrivate && <div className="row"><span>Last unexplained difference</span><strong className={latestPrivate.differenceCents ? "negative" : ""}>{formatCad(latestPrivate.differenceCents)}</strong></div>}
+          {latestPrivate && <div className="row"><span>{latestPrivate.independentlyChecked === false ? "Derived remainder · not independently checked" : "Last unexplained difference"}</span><strong className={latestPrivate.differenceCents ? "negative" : ""}>{formatCad(latestPrivate.differenceCents)}</strong></div>}
           <button className="primary" type="button" onClick={() => onCommand((current) => recordHouseholdFundReconciliation(current, { memberId, date: today, bankTotal, personalRemainder: personalRemainder || undefined }))}>Confirm reconciliation</button>
           <hr />
           <label htmlFor="fund-backing-account">Private savings account used for checking</label>
@@ -481,6 +547,7 @@ export function HouseholdFundPanel({
           <div className="row" key={event.id}>
             <span>{event.date} · {event.kind.replaceAll("-", " ")} · audit {event.id}{event.relatedEventId ? ` → ${event.relatedEventId}` : ""}</span>
             <strong>{fundEventAmountLabel(event.kind, event.amountCents)}</strong>
+            {event.kind==='contribution-confirmed' && <span>{event.sourceDeclaration ? `Confirmed received · declared source: ${event.sourceDeclaration.explanation}` : 'Legacy contribution · confirmed received without a source declaration'}</span>}
           </div>
         )) : <p className="muted">No Fund events yet.</p>}
       </section>

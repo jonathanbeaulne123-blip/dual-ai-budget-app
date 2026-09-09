@@ -1,3 +1,5 @@
+import { OFFICE_INSTRUMENT_PURPOSE } from "./core/widgetPurpose.ts";
+import { DrawerSurface } from "./DrawerSurface.tsx";
 import type { KitchenCommand } from "./kitchenCommand.ts";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
@@ -405,10 +407,11 @@ export function Office({
   function cycleSize(id: InstrumentId) {
     setLayout((current) => ({
       ...current,
+      restPositions: {},
       items: current.items.map((item) => {
-        if (item.id !== id) return item;
-        const next = cycleInstrumentSize(id, sizeOf(item));
-        return { ...item, size: next, x: undefined, y: undefined };
+        // Repack neighbours too: their old positions can overlap a newly larger card.
+        const size = item.id === id ? cycleInstrumentSize(id, sizeOf(item)) : item.size;
+        return { ...item, size, x: undefined, y: undefined };
       }),
     }));
   }
@@ -885,10 +888,19 @@ export function Office({
     ),
   };
 
-  /* Mobile shell (< 720px). Wide paper office is default; Classic desk is opt-in. */
-  if (breakpoint === "phone") {
-    return (
+  const face = deskFaceOf(layout);
+
+  return (
+    <div
+      className={`office ${breakpoint === "phone" ? "is-phone-room" : "is-wide-room"} glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${face === "classic" && layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
+      data-stock={scene.theme === "classic" ? look.stock : undefined}
+      data-density={look.density}
+      data-face={face}
+      style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
+    >
+      {breakpoint === "phone" ? (
       <OfficePhone
+        onOpenDrawer={() => setSheet("drawer")}
         scenarioSource={scenarioSource}
         household={household} booksHousehold={booksHousehold} view={view} onOpenFundDestination={onOpenFundDestination} dashboard={dashboard} sill={sill}
         reading={reading}
@@ -903,19 +915,7 @@ export function Office({
         onFinishedShift={onFinishedShift} onPayCard={onPayCard} onOpenAccount={onOpenAccount}
         onKitchen={onKitchen} onMarkPaid={onMarkPaid} onGo={onGo}
       />
-    );
-  }
-
-  const face = deskFaceOf(layout);
-
-  return (
-    <div
-      className={`office is-wide-room glass-${reading.glass} ${adding ? "is-adding" : ""} ${editing ? "is-editing" : ""} ${face === "classic" && layout.expanded && layout.expanded !== "window" ? "is-wide-dim" : ""}`}
-      data-stock={scene.theme === "classic" ? look.stock : undefined}
-      data-density={look.density}
-      data-face={face}
-      style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
-    >
+      ) : <>
       <OfficeWindow
         reading={reading}
         expanded={layout.expanded === "window"}
@@ -974,6 +974,9 @@ export function Office({
         }}
         onSheet={setSheet}
       />
+      </>}
+      {sheet && <DrawerSurface title="Your desk" onClose={()=>setSheet(null)} returnFocusFallback={()=>document.querySelector<HTMLElement>(".ph-desk-drawer, .cabinet-row button")}>
+      {sheet !== "drawer" && <button type="button" className="ghost" onClick={()=>setSheet("drawer")}>Back to drawer</button>}
       {sheet === "desks" && (
         <div className="desk-sheet">
           <h3>Desks — a starting point, not a cage</h3>
@@ -1035,8 +1038,8 @@ export function Office({
               type="button"
               className="desk-stock"
               onClick={() => {
-                const phone = loadOfficeLayout(environment, "phone", localStorage, memberId);
-                const wide = layout;
+                const phone = breakpoint === "phone" ? layout : loadOfficeLayout(environment, "phone", localStorage, memberId);
+                const wide = breakpoint === "wide" ? layout : loadOfficeLayout(environment, "wide", localStorage, memberId);
                 void pushDeskAppearance({
                   environment,
                   memberId,
@@ -1081,10 +1084,12 @@ export function Office({
       {sheet === "drawer" && (
         <div className="desk-sheet">
           <h3>Drawer</h3>
+          {breakpoint === "phone" && <p className="muted" id="desktop-desk-limit">Office modes, free placement and size controls apply on a larger screen. Your phone keeps its own layout. Desks and appearance are available here.</p>}
           <div className="desk-stock-row">
             <button
               type="button"
               className={`desk-stock ${face !== "classic" ? "is-on" : ""}`}
+              disabled={breakpoint === "phone"} aria-describedby={breakpoint === "phone" ? "desktop-desk-limit" : undefined}
               onClick={() => {
                 setLayout((current) => setDeskFace(current, "paper"));
                 setEditing(false);
@@ -1095,6 +1100,7 @@ export function Office({
             <button
               type="button"
               className={`desk-stock ${face === "classic" ? "is-on" : ""}`}
+              disabled={breakpoint === "phone"} aria-describedby={breakpoint === "phone" ? "desktop-desk-limit" : undefined}
               onClick={() => setLayout((current) => setDeskFace(current, "classic"))}
             >
               Classic desk
@@ -1102,6 +1108,7 @@ export function Office({
             <button
               type="button"
               className={`desk-stock ${editing ? "is-on" : ""}`}
+              disabled={breakpoint === "phone"} aria-describedby={breakpoint === "phone" ? "desktop-desk-limit" : undefined}
               onClick={() => {
                 setLayout((current) => deskFaceOf(current) === "paper" ? setDeskFace(current, "classic") : current);
                 setEditing((on) => !on);
@@ -1116,25 +1123,26 @@ export function Office({
               Desk appearance
             </button>
             {face === "classic" && (
-              <button type="button" className="desk-stock" onClick={() => emitOfficeIntent({ type: "tidy" })}>
+              <button type="button" className="desk-stock" disabled={breakpoint === "phone"} aria-describedby={breakpoint === "phone" ? "desktop-desk-limit" : undefined} onClick={() => emitOfficeIntent({ type: "tidy" })}>
                 Straighten
               </button>
             )}
           </div>
           <h3>Parked instruments</h3>
           {parked.length === 0 ? (
-            <p className="muted">Nothing parked. The desk has it all.</p>
+            <p className="muted">Nothing explicitly parked. More instruments are available from the Paper office library.</p>
           ) : (
             <div className="desk-drawer-grid">
               {parked.map((id) => (
                 <button key={id} type="button" className="desk-stamp" onClick={() => restore(id)}>
-                  {INSTRUMENT_LABEL[id]}
+                  <strong>{INSTRUMENT_LABEL[id]}</strong><small>{OFFICE_INSTRUMENT_PURPOSE[id]}</small>
                 </button>
               ))}
             </div>
           )}
         </div>
       )}
+      </DrawerSurface>}
     </div>
   );
 }

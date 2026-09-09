@@ -88,7 +88,7 @@ export function addSlideCopy(mode: AddMode, slide: AddSlideId, shiftGate: ShiftG
     if (mode === "income") {
       return { title: "What kind of income?", hint: "Wages, tips, or a new income category. Tap one to continue.", enterLabel: "Continue" };
     }
-    return { title: "In which category?", hint: "Tap a category to continue. Add a new one here if it is missing.", enterLabel: "Continue" };
+    return { title: "In which category?", hint: "Tap a category to continue. More shows all categories and lets you add one.", enterLabel: "Continue" };
   }
   if (slide === "account") {
     if (mode === "income") {

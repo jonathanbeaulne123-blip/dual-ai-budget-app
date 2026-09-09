@@ -1,0 +1,1005 @@
+/* ============================================================================
+   entry-restoration.css
+   Hearth — restore the original "I spent something" visual language across the
+   expense, income, transfer and shift Add flows.
+
+   Author:      Claude (visual author), for Jonathan.
+   Written against: current/src at 76e486a142987ed5d6fbc065367fadf4c896de26
+   Reference:   original/src at 33b41412b5a1df81539d70f67f080baeaa3e07f9
+                (Swipe.tsx + swipe.css + CadPad.tsx), measured in the supplied
+                harness at 320 / 390 / 719 / 1100 / 1440 CSS px, in Classic
+                Hearth, Taylor's Scrapbook (Lover) and Newfoundland (Jellybean).
+
+   LOAD ORDER — required.
+   Import LAST in src/main.tsx, after theme/mobile-worlds-refinement.css:
+
+       import "./theme/mobile-worlds-refinement.css";
+       import "./entry-restoration.css";          // <- add this line
+
+   This file is additive. It edits no business logic, no copy, no markup, and
+   no financial contract. It changes nothing outside the Add sheet
+   (.sheet.add-slideshow) and nothing about which fields are required, which
+   accounts are selectable, how splits are reviewed, or what Confirm posts.
+
+   SPECIFICITY CONTRACT.
+   theme/worlds.css reaches these elements at (0,4,1) and (0,2,1) — e.g.
+   `:root[data-theme] .sheet.add-slideshow .sheet-inner` and the generic
+   `:root[data-theme] :is(button, .btn):not(.text-button):not(.link)`. Every
+   rule here therefore carries its own floor of `:root[data-theme]` plus the
+   full `.sheet.add-slideshow` (and `.mobile-entry-sheet` on the phone
+   branch), so it wins by construction and NOT by source order. Nothing here
+   depends on being loaded after any particular stylesheet other than the
+   component CSS it restores. `!important` appears only in the reduced-motion,
+   forced-colors and print policy blocks.
+
+   EVERY NUMBER IS A KNOB. §1 declares the whole geometry as custom
+   properties. To match the supplied reference screenshots exactly, see the
+   three marked DEVIATION knobs in §1 and set them to their `ref` values.
+   ========================================================================= */
+
+
+/* ===========================================================================
+   §1  GEOMETRY KNOBS
+   Values are the measured original unless marked DEVIATION.
+   =========================================================================== */
+
+:root[data-theme] .sheet.add-slideshow {
+  /* --- sheet ------------------------------------------------------------ */
+  --entry-sheet-w: 390px;          /* original .swipe-sheet-inner width: min(390px, 100%) */
+  --entry-scrim: 28%;              /* original .swipe-sheet ink mix; current ships 38%     */
+  --entry-pad-top: 22px;           /* original padding 22px 20px 26px                      */
+  --entry-pad-side: 20px;
+  --entry-pad-bottom: 26px;
+
+  /* --- the four-object rhythm ------------------------------------------- */
+  --entry-close-gap: 18px;         /* original .swipe-close margin: 0 0 18px               */
+  --entry-title-size: 23px;        /* original .swipe-title                                */
+  /* 1.18, not swipe.css's declared 1.14: worlds.css's
+     `:root[data-theme] :is(h1,h2,h3,h4,...) { line-height: 1.18 }` outranks the
+     component at (0,2,1), so 1.18 is what the reference actually renders
+     (measured line box 27.14px on 23px). Pinned here so it is deliberate. */
+  --entry-title-lh: 1.18;
+  --entry-title-ls: -0.012em;
+  --entry-title-gap: 4px;          /* original .swipe-title margin: 0 0 4px                */
+
+  /* --- chrome (hint / step counter / More / Switch kind) ---------------- */
+  --entry-chrome-size: 12.5px;
+  --entry-chrome-lh: 1.35;
+  --entry-chrome-gap: 10px;        /* between chrome items on one line                     */
+  --entry-chrome-block: 12px;      /* space below the whole chrome line                    */
+
+  /* --- instrument: the cashpad ----------------------------------------- */
+  --entry-pad-margin-top: 8px;     /* original .cad-pad margin: 8px 0 16px                 */
+  --entry-pad-margin-bottom: 16px;
+  --entry-pad-label-size: 12px;
+  --entry-display-size: clamp(56px, 16vw, 88px);   /* original .is-giant display            */
+  --entry-display-gap-top: 8px;
+  --entry-display-gap-bottom: 18px;
+  --entry-key-gap: 10px;
+  --entry-enter-gap: 16px;
+
+  /* DEVIATION 1 — cashpad key height.
+     Reference screenshots measure 44px. That is not the original component's
+     intent: styles.css `.cad-pad.is-giant .cad-pad-keys button` declares 72px,
+     and worlds.css's generic button rule outranks it at (0,2,1), so the
+     reference shows the flattened value. The integrated mobile overhaul
+     (bf33c87) restored 72px deliberately. Keeping 72px here, pinned so it can
+     no longer be flattened by a generic rule.
+     ref: 44px                                                              */
+  --entry-key-min: 72px;
+
+  /* --- choice steps: the tile grid ------------------------------------- */
+  --entry-amount-size: 44px;       /* original .swipe-amount                               */
+  --entry-amount-ls: -0.028em;
+  --entry-amount-gap-top: 14px;
+  --entry-grid-gap: 10px;          /* original .swipe-grid gap                             */
+  --entry-grid-gap-top: 18px;      /* original .swipe-grid margin-top                      */
+  --entry-tile-size: 15px;         /* original .swipe-cat font-size                        */
+  --entry-tile-pad: 8px;
+
+  /* DEVIATION 2 — category / account tile height.
+     Reference measures a 44px floor with 58.14px intrinsic height, because the
+     original tiles carry a second line ("Household suggestion"). The current
+     tiles are single-line, so 56px is the closest single-line equivalent to
+     that 58.14px block, and it is above the 44px target floor. Current ships
+     72px, which reads as a much taller, emptier grid than the reference.
+     58px reproduces the reference grid height to within 0.5px.
+     ref-floor: 44px   ·   as-shipped-today: 72px                           */
+  --entry-tile-min: 58px;
+
+  --entry-more-min: 44px;          /* original .swipe-cat.more measured 44px               */
+
+  /* --- notice band ----------------------------------------------------- */
+  --entry-notice-rule: 3px;        /* original .swipe-error border-left                    */
+  --entry-notice-size: 14px;
+  --entry-notice-lh: 1.35;
+  --entry-notice-gap: 4px;
+  --entry-notice-pad: 10px 12px;
+
+  /* --- full-form review ------------------------------------------------ */
+  --entry-section-h2: 17px;        /* current ships 20px; 17px sits under the 23px question */
+  --entry-section-block: 16px;
+
+  /* DEVIATION 3 — wide-branch reading column.
+     The reference keeps a 390px column even at 1100 and 1440, because the
+     original quick-entry sheet was phone-shaped at every width. The wide Add
+     branch renders richer controls (preset chips, account tiles, the inline
+     category form) that need more room than 390px, so the column is capped
+     rather than fixed. Set both to 390px to match the reference literally.
+     ref: 390px / 390px                                                     */
+  --entry-wide-col: 560px;
+  --entry-wide-col-xl: 620px;
+}
+
+
+/* ===========================================================================
+   §2  PHONE BRANCH  (max-width: 719px)
+   MobileEntryChoices.MOBILE_ENTRY_QUERY is "(max-width: 719px)" — the same
+   breakpoint the component uses to decide `mobile`, so CSS and JS agree.
+   =========================================================================== */
+
+@media (max-width: 719px) {
+
+/* --- §2.1  sheet, scrim, safe area ---------------------------------------- */
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet {
+  background: color-mix(in srgb, var(--ink) var(--entry-scrim), transparent);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner {
+  /* The original sheet is a 390px sheet of paper standing on the bottom edge. */
+  width: min(var(--entry-sheet-w), 100%);
+  max-width: min(var(--entry-sheet-w), 100%);
+  box-sizing: border-box;
+  min-height: 0;
+  /* 100dvh already tracks the software keyboard; svh is the pre-keyboard floor. */
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* No scrollbar-gutter: it reserves ~15px and narrows the tile grid off the
+     reference's 169px column. */
+  -webkit-overflow-scrolling: touch;
+  padding:
+    var(--entry-pad-top)
+    max(var(--entry-pad-side), env(safe-area-inset-right))
+    max(var(--entry-pad-bottom), env(safe-area-inset-bottom))
+    max(var(--entry-pad-side), env(safe-area-inset-left));
+
+  /* Chrome that the original did not have, removed: the 3px pine/second/accent
+     slab across the top. The original edge is a single hairline. Theme
+     identity moves to a 1px lit inner edge in §5. */
+  border: 1px solid var(--line);
+  border-block-end: 0;
+  border-inline: 1px solid var(--line);
+
+  /* One row of chrome, laid out in DOM order, without a wrapper.
+     Grid/flex placement does not change DOM order, so focus order and reading
+     order are untouched (WCAG 2.4.3, 1.3.2). */
+  display: flex;
+  flex-flow: row wrap;
+  align-items: baseline;
+  column-gap: var(--entry-chrome-gap);
+  row-gap: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > * {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+/* --- §2.2  the Close / Back line ----------------------------------------- */
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 var(--entry-close-gap);
+}
+
+/* Close and Back stay full 44px targets and stay outside the fieldset, so they
+   remain reachable while the fields are disabled during a post. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .topbar button {
+  min-height: 44px;
+  min-width: 44px;
+  flex: 0 0 auto;
+}
+
+/* The mode word ("Expense") stands where Back will be. The original had
+   nothing here; a chip box makes it read as a control. Demote it to a label. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-mode {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--entry-chrome-size);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 0 1 auto;
+}
+
+/* --- §2.3  the question -------------------------------------------------- */
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-title {
+  font-family: var(--display);
+  font-size: var(--entry-title-size);
+  font-weight: 600;
+  line-height: var(--entry-title-lh);
+  letter-spacing: var(--entry-title-ls);
+  margin: 0 0 var(--entry-title-gap);
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* --- §2.4  chrome: one caption line, not five stacked objects ------------ */
+
+/* Tier A: no markup change. The four chrome elements are consecutive siblings
+   in the DOM, so flex-wrap flows them onto one line in their existing order.
+   Anything after them starts a new line because it is flex: 0 0 100%. */
+/* The step sentence takes the width that is left after the three utilities and
+   wraps inside it, so the whole band is ONE row instead of three stacked ones. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > .add-slideshow-hint {
+  flex: 1 1 42%;
+  /* Capped so a short sentence cannot grow and push "Switch kind" onto a
+     second line; a long one still wraps inside its own column. */
+  max-inline-size: 58%;
+  align-self: flex-start;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > .add-slideshow-progress,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > .add-slideshow-switch,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > button.ghost {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-hint,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-progress {
+  font-family: inherit;
+  font-size: var(--entry-chrome-size);
+  line-height: var(--entry-chrome-lh);
+  font-weight: 400;
+  color: var(--muted);
+  margin: 0;
+  /* worlds.css dresses .add-slideshow-progress as a progress pill and then
+     styles a `> *` fill that this text-only <p> never has. Undo the pill. */
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-progress {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* "More" is an escape hatch, not a step. Text weight, full 44px target. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > button.ghost {
+  min-height: 44px;
+  width: auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--entry-chrome-size);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-align: start;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > button.ghost:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+/* "Switch kind" collapses to the same caption tier. Strip worlds' chip box. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-switch {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-switch summary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--entry-chrome-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Open, the tabs get their own full-width line and do not squeeze the caption. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-switch[open] {
+  flex: 0 0 100%;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-switch .tabs {
+  margin: 6px 0 0;
+  gap: 6px;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-switch .tabs button {
+  min-height: 44px;
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+/* Tier B (optional, one wrapper — see the packet's markup contract). If Codex
+   wraps hint + counter + More + Switch kind in <div class="entry-chrome">, the
+   caption line becomes deterministic instead of wrap-dependent. These rules
+   are inert until that wrapper exists. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome {
+  flex: 0 0 100%;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  column-gap: var(--entry-chrome-gap);
+  row-gap: 2px;
+  /* No bottom margin: the element after the band supplies the gap, exactly as
+     it does without the wrapper, so both tiers measure the same. */
+  margin: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > * {
+  flex: 0 1 auto;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > .add-slideshow-hint {
+  /* Same share as Tier A: the sentence wraps inside the space left by the three
+     utilities instead of claiming a line of its own. */
+  flex: 1 1 42%;
+  max-inline-size: 58%;
+  align-self: flex-start;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > .add-slideshow-progress,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > .add-slideshow-switch,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > button.ghost {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+/* The Tier A rules above address `.sheet-inner > …`; with the wrapper present
+   those children are one level deeper, so repeat the demotion here. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-chrome > button.ghost {
+  min-height: 44px;
+  width: auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--entry-chrome-size);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-align: start;
+}
+
+
+
+/* Space below the chrome, whichever tier is in play. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > .add-slideshow-switch,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > .add-slideshow-progress {
+  margin-block-end: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields {
+  margin-block-start: var(--entry-chrome-block);
+}
+
+/* The amount readout keeps the original .swipe-amount lead-in exactly. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > .swipe-amount {
+  margin-block-start: var(--entry-amount-gap-top);
+}
+
+/* On a choice step the readout is the first thing under the question, so the
+   fieldset that follows it does not add a second gap. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner > .swipe-amount + .entry-sheet-fields {
+  margin-block-start: 0;
+}
+
+/* --- §2.5  the instrument: cashpad -------------------------------------- */
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields {
+  border: 0;
+  padding: 0;
+  margin-inline: 0;
+  margin-block-end: 0;
+  min-width: 0;
+  flex: 0 0 100%;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad {
+  margin: var(--entry-pad-margin-top) 0 var(--entry-pad-margin-bottom);
+  touch-action: manipulation;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad-label {
+  margin: 0;
+  font-size: var(--entry-pad-label-size);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad.is-giant .cad-pad-display {
+  font-family: var(--display);
+  font-size: var(--entry-display-size);
+  line-height: 1;
+  margin: var(--entry-display-gap-top) 0 var(--entry-display-gap-bottom);
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+  /* Long amounts shrink the box, never the sheet. */
+  overflow-wrap: normal;
+  min-width: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad-keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--entry-key-gap);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad.is-giant .cad-pad-keys button {
+  min-height: var(--entry-key-min);
+  font-size: 26px;
+  font-weight: 700;
+  /* Pinned: the generic `:root[data-theme] :is(button, .btn)` rule in
+     worlds.css flattens this to 44px at (0,2,1) if it is left unpinned. */
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad-keys .cad-pad-back {
+  font-size: 20px;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad-enter {
+  width: 100%;
+  margin-top: var(--entry-enter-gap);
+}
+
+/* --- §2.6  choice steps: amount readout + tile grid --------------------- */
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .swipe-amount {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--entry-amount-size);
+  letter-spacing: var(--entry-amount-ls);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  margin-block: var(--entry-amount-gap-top) 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .swipe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--entry-grid-gap);
+  margin-top: var(--entry-grid-gap-top);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields .swipe-grid .swipe-cat {
+  min-height: var(--entry-tile-min);
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--entry-tile-pad);
+  font-size: var(--entry-tile-size);
+  font-weight: 400;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields .swipe-grid .swipe-cat small {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+/* More sits under the grid as one full-width line, muted — an exit, not a peer
+   of the six choices. Reference height 44px. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields .swipe-grid .swipe-cat.more {
+  grid-column: 1 / -1;
+  min-height: var(--entry-more-min);
+  color: var(--muted);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .swipe-cat:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+/* The current sheet marks the chosen tile with aria-pressed. Keep that mark,
+   at hairline weight so it reads as a pencil tick, not a filled state. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .swipe-cat[aria-pressed="true"] {
+  border-color: var(--theme-accent, var(--pine));
+  box-shadow: inset 0 -3px var(--theme-accent, var(--pine));
+}
+
+/* --- §2.7  the commit ---------------------------------------------------- */
+
+/* The per-step Continue stays hidden on the phone: Enter on the pad and a tap
+   on a tile already advance. Confirm is the only button that posts. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-step-continue {
+  display: none;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet [data-ledger-confirm-purpose] {
+  font-size: var(--entry-chrome-size);
+  line-height: var(--entry-chrome-lh);
+  color: var(--muted);
+  margin: 16px 0 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet [data-add-confirm] {
+  width: 100%;
+  margin-top: 12px;
+}
+
+/* The account-intent notice is a condition on Confirm, so it reads as the
+   original's .swipe-note: quiet, directly above the button it governs. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet [data-add-account-intent] {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.35;
+  margin: 16px 0 0;
+}
+
+/* --- §2.8  full form / review (data-add-slide="full-form") -------------- */
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet[data-add-slide="full-form"] .entry-full-section {
+  min-width: 0;
+  padding-block: var(--entry-section-block);
+  border-top: 1px solid var(--line);
+  flex: 0 0 100%;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet[data-add-slide="full-form"] .entry-full-section:first-of-type {
+  border-top: 0;
+  padding-block-start: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-full-section h2 {
+  font-family: var(--display);
+  font-size: var(--entry-section-h2);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.008em;
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+
+/* Required fields keep full-size targets and 16px text so iOS does not zoom
+   the sheet when a field takes focus. See the packet: this is the one place
+   where the restoration is deliberately larger than the original quick flow,
+   because the original quick flow had no typed fields at all. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-full-section label {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-full-section :is(input, select, textarea) {
+  max-width: 100%;
+  box-sizing: border-box;
+  min-height: 44px;
+  font-size: 16px;
+  color: var(--ink);
+  scroll-margin-block: 24px;
+}
+
+/* --- §2.9  states: busy, notice, duplicate ------------------------------ */
+
+/* Busy. The component disables the fieldset; Close and Back live outside it and
+   stay live. Show the wait without hiding the amount. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields[disabled] {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields[disabled] .cad-pad-display,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields[disabled] .swipe-amount {
+  opacity: 1;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .swipe-cat:disabled,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad-keys button:disabled {
+  opacity: 0.5;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet [data-add-confirm]:disabled {
+  opacity: 0.5;
+}
+
+/* When a notice is on screen it competes with the instrument for the same sheet.
+   Rather than hide guidance or let the pad slide off the bottom, the pad gives
+   up 8px per key row — still well above the 44px target floor — so notice,
+   question, instrument and commit all stay visible without scrolling.
+   :has() is progressive: where it is unsupported the sheet simply scrolls.
+   Guarded to >=390px so it cannot raise the 56px narrow-phone key back up:
+   a knob set on .sheet-inner inherits past the ancestor's value regardless of
+   specificity, so the narrow branch must not be inside this rule's reach. */
+@media (min-width: 390px) {
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner:has(.kitchen-notice),
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner:has(.preview.warn) {
+    --entry-key-min: 64px;
+  }
+}
+
+/* Notice. The original's "needs attention" band was an amber left rule on a
+   tinted card, 14px/1.35, four lines of guidance — not a rounded toast.
+   KitchenNotice already carries the same amber in --warning; restore the rule
+   and the spacing, and keep its own tone colours. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .kitchen-notice {
+  flex: 0 0 100%;
+  border-radius: 0;
+  border-inline-start: var(--entry-notice-rule) solid currentColor;
+  padding: var(--entry-notice-pad);
+  margin: var(--entry-notice-gap) 0 0;
+  font-size: var(--entry-notice-size);
+  line-height: var(--entry-notice-lh);
+  align-items: flex-start;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .kitchen-notice__content {
+  gap: var(--entry-notice-gap);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .kitchen-notice__primary {
+  font-weight: 700;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .kitchen-notice__action,
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .kitchen-notice__close {
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 0;
+}
+
+/* Duplicate warning. Same band grammar, so the two never compete. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .preview.warn {
+  flex: 0 0 100%;
+  border-radius: 0;
+  border-inline-start: var(--entry-notice-rule) solid #e0cc7a;
+  padding: var(--entry-notice-pad);
+  margin: 14px 0 0;
+  font-size: var(--entry-notice-size);
+  line-height: var(--entry-notice-lh);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .preview.warn > p {
+  margin: 0 0 var(--entry-notice-gap);
+  font-weight: 700;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .preview.warn .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .preview.warn .primary {
+  min-height: 44px;
+  margin-top: 10px;
+}
+
+/* --- §2.10  shift flows share the same language ------------------------- */
+
+/* Shift has no amount on its first slides, so the instrument is a select or a
+   pair of buttons. They take the same rhythm the pad takes. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet[data-add-slideshow="shift"] .entry-sheet-fields > section > label {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet[data-add-slideshow="shift"] .entry-sheet-fields select {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet[data-add-slideshow="shift"] .entry-sheet-fields .post-big {
+  width: 100%;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet[data-add-slideshow="shift"] .entry-sheet-fields > section > .chip {
+  min-height: 44px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+} /* end @media (max-width: 719px) */
+
+
+/* ===========================================================================
+   §3  NARROW PHONES  (max-width: 389px)
+   The original harness at 320px measures a 56px display and a 320px sheet.
+   =========================================================================== */
+
+@media (max-width: 389px) {
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet {
+  --entry-key-min: 56px;
+  --entry-tile-min: 56px;
+  --entry-pad-side: 16px;
+  --entry-title-size: 22px;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad.is-giant .cad-pad-keys button {
+  min-height: var(--entry-key-min);
+  font-size: 22px;
+}
+
+/* At 320 the tile labels wrap to two lines; let the box grow instead of
+   clipping, exactly as the reference does (71.78px measured). */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .entry-sheet-fields .swipe-grid .swipe-cat {
+  height: auto;
+  font-size: 14.5px;
+}
+
+} /* end @media (max-width: 389px) */
+
+
+/* ===========================================================================
+   §4  WIDE BRANCH  (min-width: 720px)
+   Above 719px the component stops being `mobile`: it renders preset chips,
+   AddAccountTiles and the inline category form instead of the tile grid, and
+   the sheet is a normal .sheet, not .mobile-entry-sheet. The reference keeps a
+   390px column at 1100 and 1440; see DEVIATION 3.
+   =========================================================================== */
+
+/* 719.02px, not 720px: MobileEntryChoices asks matchMedia("(max-width: 719px)"),
+   which is false at a fractional width like 719.5px, so the component renders
+   the wide DOM there. A plain `min-width: 720px` would leave that sliver with
+   neither branch. The two queries now tile the axis exactly as the JS does. */
+@media (min-width: 719.02px) {
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .sheet-inner {
+  max-width: var(--entry-wide-col);
+  margin-inline: auto;
+  /* The original wide sheet did not stretch to the window height. */
+  min-height: 0;
+  padding-bottom: 24px;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-title {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: var(--entry-title-ls);
+  margin: 8px 0 var(--entry-title-gap);
+  text-wrap: balance;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-hint,
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-progress {
+  font-size: 13px;
+  line-height: var(--entry-chrome-lh);
+  color: var(--muted);
+  margin: 0 0 6px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-progress {
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-switch {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-switch summary {
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .cad-pad.is-giant .cad-pad-keys button {
+  min-height: var(--entry-key-min);
+  font-size: 26px;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .cad-pad.is-giant .cad-pad-display {
+  /* Off the phone the display sizes to the column, not the window: the
+     reference's 88px at 1440 comes from 16vw of a window the sheet ignores. */
+  font-size: clamp(56px, 22cqw, 88px);
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .add-slideshow-inner {
+  container-type: inline-size;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .swipe-amount {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--entry-amount-size);
+  letter-spacing: var(--entry-amount-ls);
+  font-variant-numeric: tabular-nums;
+  margin: var(--entry-amount-gap-top) 0 0;
+}
+
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) [data-ledger-confirm-purpose] {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 16px 0 0;
+}
+
+} /* end wide branch */
+
+@media (min-width: 1100px) {
+:root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .sheet-inner { max-width: var(--entry-wide-col-xl); }
+}
+
+
+/* ===========================================================================
+   §5  THEME IDENTITY AT REFERENCE WEIGHT
+   Each world stays unmistakable, but through the sheet's own material and a
+   1px lit edge — not a 3px slab that the original never had. Values are
+   tints of tokens already published by scenes.ts; no palette literals.
+   =========================================================================== */
+
+@media (max-width: 719px) {
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-accent) 26%, transparent),
+    var(--world-lift-2, var(--lift-2));
+}
+
+/* Classic Hearth — a pressed kitchen-paper edge, pine hairline. */
+:root[data-theme="classic"] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--pine) 30%, transparent),
+    var(--world-lift-2, var(--lift-2));
+}
+
+/* Taylor's Scrapbook — a vellum leaf tipped into an album: the lit edge is the
+   second colour, and a hairline rule sits under the question. */
+:root[data-theme="taylor"] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-second) 34%, transparent),
+    var(--world-lift-2, var(--lift-2));
+}
+
+:root[data-theme="taylor"] .sheet.add-slideshow.mobile-entry-sheet .add-slideshow-title {
+  padding-block-end: 6px;
+  border-block-end: 1px solid color-mix(in srgb, var(--theme-accent) 24%, transparent);
+}
+
+/* Newfoundland — painted wood: the lit edge is the door colour and the inline
+   start edge keeps a single painted stile. */
+:root[data-theme="newfoundland"] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner {
+  border-inline-start: 2px solid color-mix(in srgb, var(--theme-accent) 62%, var(--line));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--theme-accent) 34%, transparent),
+    var(--world-lift-2, var(--lift-2));
+}
+
+/* The chosen tile's tick takes the world's accent in all three. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .swipe-cat[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--theme-accent) 70%, var(--line));
+  box-shadow: inset 0 -3px color-mix(in srgb, var(--theme-accent) 82%, transparent);
+}
+
+}
+
+
+/* ===========================================================================
+   §6  KEYBOARD, FOCUS AND SCROLL
+   =========================================================================== */
+
+@media (max-width: 719px) {
+
+/* When the software keyboard opens, 100dvh shrinks and the sheet becomes the
+   scroller. Keep the focused field and the commit button reachable. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner :is(input, select, textarea, summary) {
+  scroll-margin-block: 24px 96px;
+}
+
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner :is(button, [tabindex]) {
+  scroll-margin-block: 16px 24px;
+}
+
+/* iOS zooms the page when a field under 16px takes focus; that would break the
+   390px column. Every typed field in the sheet stays at 16px. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet :is(input, select, textarea) {
+  font-size: max(16px, 1rem);
+}
+
+/* A visible focus ring on the paper, in every world. */
+:root[data-theme] .sheet.add-slideshow.mobile-entry-sheet :is(button, summary, input, select, textarea):focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+
+}
+
+
+/* ===========================================================================
+   §7  POLICY BLOCKS
+   The only place this file uses !important.
+   =========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .sheet.add-slideshow,
+  :root[data-theme] .sheet.add-slideshow * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* The house pause switch stops decoration everywhere; the Add sheet obeys it. */
+:root[data-atmosphere="paused"] .sheet.add-slideshow,
+:root[data-atmosphere="paused"] .sheet.add-slideshow * {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (forced-colors: active) {
+  :root[data-theme] .sheet.add-slideshow .sheet-inner,
+  :root[data-theme] .sheet.add-slideshow .cad-pad,
+  :root[data-theme] .sheet.add-slideshow .cad-pad-display,
+  :root[data-theme] .sheet.add-slideshow .cad-pad-keys button,
+  :root[data-theme] .sheet.add-slideshow .swipe-cat,
+  :root[data-theme] .sheet.add-slideshow .kitchen-notice,
+  :root[data-theme] .sheet.add-slideshow .preview.warn {
+    border: 1px solid CanvasText !important;
+    box-shadow: none !important;
+    background: Canvas !important;
+    color: CanvasText !important;
+  }
+  :root[data-theme] .sheet.add-slideshow .swipe-cat[aria-pressed="true"] {
+    outline: 2px solid Highlight !important;
+    outline-offset: -2px;
+  }
+}
+
+@media print {
+  :root[data-theme] .sheet.add-slideshow {
+    display: none !important;
+  }
+}

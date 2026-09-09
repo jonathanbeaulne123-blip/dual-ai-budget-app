@@ -1,3 +1,4 @@
+import { shapeFundSourceDeclaration } from "./fundContributionSources.ts";
 import { addDays, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import type {
   Household,
@@ -265,6 +266,7 @@ export function shapeHouseholdFundEvents(value: unknown): HouseholdFundEvent[] {
       evidenceDigests: Array.isArray(row.evidenceDigests)
         ? [...new Set(row.evidenceDigests.filter((id): id is string => typeof id === "string" && Boolean(id)))].sort()
         : [],
+      ...(shapeFundSourceDeclaration(row.sourceDeclaration) ? { sourceDeclaration: shapeFundSourceDeclaration(row.sourceDeclaration) } : {}),
       reconciliationTied: typeof row.reconciliationTied === "boolean" ? row.reconciliationTied : null,
       purpose: String(row.purpose ?? "").trim().slice(0, 90),
       note: String(row.note ?? "").trim().slice(0, 180),

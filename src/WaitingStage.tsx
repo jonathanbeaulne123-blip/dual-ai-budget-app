@@ -1,3 +1,4 @@
+import type { KitchenCommand } from "./kitchenCommand.ts";
 import { useId, type Ref } from "react";
 import { FundContributionMotionCard } from "./HouseholdFundPanel.tsx";
 import {
@@ -6,7 +7,6 @@ import {
   householdFundContributionMotions,
   monthKeyFromDateKey,
   motionConsequence,
-  type CommitResult,
   type DateKey,
   type Household,
   type HouseholdFundContributionMotion,
@@ -35,7 +35,7 @@ function MotionRow({
   isCustodian: boolean;
   monthKey: ReturnType<typeof monthKeyFromDateKey>;
   today: DateKey;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
 }) {
   // A preview only ever shows on the card of the member who could act on
   // it — never on the raiser's side, where it would read as pressure.
@@ -60,7 +60,7 @@ export function WaitingStage({
   household: Household;
   memberId: string;
   today: DateKey;
-  onKitchen: (fn: (current: Household) => CommitResult) => void;
+  onKitchen: KitchenCommand;
   headingRef?: Ref<HTMLHeadingElement>;
 }) {
   const headingId = useId();

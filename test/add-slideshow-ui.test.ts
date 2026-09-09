@@ -75,6 +75,8 @@ function Harness({
   return createElement(AddSlideshow, {
     sheetRef: { current: null },
     mode,
+    recommendationHousehold: roster,
+    initialAccountId: splitProbe ? "ACC-VISA" : undefined,
     onSwitchMode: () => undefined,
     form,
     setForm,
@@ -200,12 +202,13 @@ describe("Add slideshow UI", () => {
     act(() => { enterAfter.click(); });
     expect(host.querySelector("[data-add-slide]")?.getAttribute("data-add-slide")).toBe("category");
     expect(host.querySelector("#add-sheet-title")?.textContent).toBe("In which category?");
-    expect(host.querySelector("[data-add-category-toggle]")?.textContent).toBe("Add category");
-    const groceries = [...host.querySelectorAll("button.chip")].find((button) => button.textContent === "Groceries") as HTMLButtonElement;
+    expect(host.querySelector("[data-add-category-toggle]")).toBeNull();
+    expect(host.querySelector(".swipe-cat.more")?.textContent).toBe("More");
+    const groceries = [...host.querySelectorAll("button.swipe-cat")].find((button) => button.textContent === "Groceries") as HTMLButtonElement;
     act(() => { groceries.click(); });
     expect(host.querySelector("[data-add-slide]")?.getAttribute("data-add-slide")).toBe("account");
-    expect(host.querySelector("[data-add-account-tiles]")).toBeTruthy();
-    const visa = [...host.querySelectorAll(".wallet-tile")].find((button) => button.textContent?.includes("Visa")) as HTMLButtonElement;
+    expect(host.querySelector('[aria-label="Suggested accounts"]')).toBeTruthy();
+    const visa = [...host.querySelectorAll(".swipe-cat")].find((button) => button.textContent?.includes("Visa")) as HTMLButtonElement;
     act(() => { visa.click(); });
     expect(host.querySelector("[data-add-slide]")?.getAttribute("data-add-slide")).toBe("note");
     const skip = [...host.querySelectorAll("button")].find((button) => button.textContent === "Skip") as HTMLButtonElement;

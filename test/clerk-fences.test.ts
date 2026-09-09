@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -50,13 +51,13 @@ function postSyntheticFundMonth(): Household {
     openedOn: SINCE,
     createdBy: BIANCA,
   }).household;
-  const proposed = proposeHouseholdFundContribution(household, {
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "150",
     date: "2026-09-02",
   });
-  household = confirmHouseholdFundContribution(proposed.household, {
+  household = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposed.postedIds[0]!,
   }).household;
@@ -75,7 +76,7 @@ function postSyntheticFundMonth(): Household {
       destinationAccountId: "ACC-VISA",
     },
   }).household;
-  return proposeHouseholdFundContribution(household, {
+  return proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "40",

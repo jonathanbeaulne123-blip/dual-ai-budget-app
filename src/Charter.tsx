@@ -17,6 +17,7 @@ import {
 import "./charter.css";
 
 type Props = {
+  embedded?: boolean;
   household: Household;
   memberId: string;
   busy?: boolean;
@@ -24,16 +25,17 @@ type Props = {
   onDismiss: () => void;
 };
 
-export function Charter({ household, memberId, busy, onCommit, onDismiss }: Props) {
+export function Charter({ household, memberId, busy, onCommit, onDismiss, embedded = false }: Props) {
   const paperRef = useRef<HTMLDivElement>(null);
   const charter = household.charter;
   const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    titleRef.current?.focus();
+    if (!embedded) titleRef.current?.focus();
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     function trap(event: KeyboardEvent) {
       if (event.key !== "Tab") return;
       const paper = paperRef.current;
@@ -55,7 +57,7 @@ export function Charter({ household, memberId, busy, onCommit, onDismiss }: Prop
     }
     window.addEventListener("keydown", trap, true);
     return () => window.removeEventListener("keydown", trap, true);
-  }, []);
+  }, [embedded]);
 
   function onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.key === "Escape") {
@@ -69,8 +71,8 @@ export function Charter({ household, memberId, busy, onCommit, onDismiss }: Prop
       <div
         ref={paperRef}
         className="charter-page"
-        role="dialog"
-        aria-modal="true"
+        role={embedded ? "region" : "dialog"}
+        aria-modal={embedded ? undefined : true}
         aria-labelledby="charter-page-title"
         onKeyDown={onKeyDown}
       >
@@ -94,8 +96,8 @@ export function Charter({ household, memberId, busy, onCommit, onDismiss }: Prop
     <div
       ref={paperRef}
       className="charter-page"
-      role="dialog"
-      aria-modal="true"
+      role={embedded ? "region" : "dialog"}
+      aria-modal={embedded ? undefined : true}
       aria-labelledby="charter-page-title"
       onKeyDown={onKeyDown}
     >

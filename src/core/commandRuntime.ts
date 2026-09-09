@@ -1,3 +1,4 @@
+import { assertFundSourceTransition } from "./fundContributionSources.ts";
 import { assertLegacyOnboardingCompatible } from "./onboarding/legacyCompatibility.ts";
 import { capturedIntent } from "../ledgerSync/capture.ts";
 import { assertAccountHistoryTransition } from "./accountHistory.ts";
@@ -95,6 +96,8 @@ export type AcceptWriteInput = {
   candidate: Household;
   /** V2 scoped validator; transitions and command admission remain unchanged. */
   booksGuard?: IncrementalBooksGuard;
+  /** Server-only isolated owner-source validation; never populated from command input. */
+  validatedFundSourceClaimIds?: ReadonlySet<string>;
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
@@ -309,6 +312,14 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     // A validated synthetic replacement is a whole disposable fixture, not an
     // append-only edit of its previous seed. Candidate Fund integrity still runs.
     assertHouseholdFundTransition(validSyntheticDemoReplacement ? null : previous, candidate);
+    if (previous && !validSyntheticDemoReplacement) {
+      const newLinkedContribution = candidate.fundEvents?.some(event => event.sourceDeclaration?.kind === 'recorded-movement'
+        && !previous.fundEvents?.some(old => old.id === event.id));
+      if (newLinkedContribution && input.transportRequested && !input.validatedFundSourceClaimIds) {
+        throw new ValidationError('Reload Hearth with current ledger sync before linking a contribution to recorded activity. The older sync service cannot preserve this private source review.');
+      }
+      assertFundSourceTransition(previous, candidate, input.validatedFundSourceClaimIds, input.actingMemberId);
+    }
     if (!validSyntheticDemoCommand) assertOnboardingAttestationTransition(previous, candidate, {
       actorMemberId: input.actingMemberId, commandKind: input.commandKind, postedIds,
     });

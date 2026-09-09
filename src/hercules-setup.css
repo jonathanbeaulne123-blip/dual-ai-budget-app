@@ -1,0 +1,45 @@
+.hercules-setup-backdrop[hidden] { display:none; }
+.hercules-setup-backdrop { position:fixed; inset:0; z-index:1500; display:grid; place-items:center; background:color-mix(in srgb,var(--ink) 24%,transparent); padding:24px; }
+.hercules-setup { width:min(960px,100%); max-height:calc(100dvh - 48px); display:flex; flex-direction:column; background:var(--paper,var(--bg)); color:var(--ink); border:1px solid var(--line); border-radius:18px; box-shadow:0 20px 70px #0003; }
+.hercules-setup-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:14px 20px; border-bottom:1px solid var(--line); }
+.hercules-setup-toolbar h2 { flex:1; font-size:1.15rem; margin:0; }
+.hercules-setup button { min-height:44px; }
+.hercules-setup-body { overflow:auto; padding:20px; overscroll-behavior:contain; }
+.hercules-setup-body [hidden] { display:none!important; }
+.hercules-setup .onboarding-journey { position:static; width:auto; max-height:none; border:0; padding:0; background:transparent; }
+.hercules-setup .journey-stages { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.hercules-setup .journey-stages li { padding:12px; border:1px solid var(--line); border-radius:10px; }
+.hercules-setup .charter-founding, .hercules-setup .charter-page { position:relative; inset:auto; min-height:0; }
+:root[data-theme="taylor"] .hercules-setup { border-radius:6px 18px 12px 5px; box-shadow:5px 7px 0 color-mix(in srgb,var(--accent) 18%,transparent),0 20px 70px #0002; }
+:root[data-theme="newfoundland"] .hercules-setup { border-radius:5px; border-width:2px; }
+.fund-source-fields { display:grid; gap:8px; padding:14px; margin:12px 0; border:1px solid var(--line); border-radius:10px; min-width:0; }
+.fund-source-fields :is(input,select,textarea) { width:100%; min-width:0; min-height:44px; }
+.fund-source-fields textarea { min-height:80px; resize:vertical; }
+.fund-declared-source, .fund-receipt-review { padding:12px; margin-block:10px; border-inline-start:3px solid var(--accent); background:color-mix(in srgb,var(--accent) 5%,var(--card)); overflow-wrap:anywhere; }
+:root[data-theme="taylor"] .fund-source-fields { border-style:dashed; border-radius:5px 12px 8px 4px; }
+:root[data-theme="newfoundland"] .fund-source-fields { border-radius:3px; border-inline-start:3px solid var(--accent); }
+@media(max-width:719px) {
+ .hercules-setup-backdrop { padding:0; align-items:end; }
+ .hercules-setup { width:100%; max-height:100dvh; border-radius:16px 16px 0 0; }
+ .hercules-setup-toolbar { padding:calc(10px + env(safe-area-inset-top)) 12px 10px; }
+ .hercules-setup-toolbar h2 { font-size:1rem; min-width:110px; }
+ .hercules-setup-body { padding:14px 12px calc(18px + env(safe-area-inset-bottom)); }
+ .hercules-setup .journey-stages { grid-template-columns:1fr; }
+}
+@media(prefers-reduced-motion:reduce) { .hercules-setup *, .fund-source-fields * { scroll-behavior:auto; transition:none; animation:none; } }
+
+.hercules-setup-options { display:flex;gap:8px;margin-bottom:16px; }
+.hercules-setup-overview { display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.2fr);gap:20px;align-items:start; }
+.hercules-setup-overview > * { min-width:0; }
+.hercules-setup .journey-stages { grid-template-columns:1fr;gap:8px; }
+.hercules-setup .journey-stages li { padding:8px 10px; }
+.hercules-setup .journey-stages li p { margin-block:4px; }
+.hercules-setup .journey-stages li:not([aria-current="step"]) p { display:none; }
+.hercules-setup .onboarding-journey > h2 { font-size:1.25rem;margin-block:8px 14px; }
+.hercules-setup .journey-guidance { padding:8px;margin-block:8px; }
+.hercules-setup .journey-guidance summary { min-height:44px;display:list-item;align-content:center; }
+@media(max-width:719px) {
+ .hercules-setup-overview { display:flex;flex-direction:column-reverse;gap:16px; }
+ .hercules-setup-overview > * { width:100%; }
+ .hercules-setup .journey-stages li { padding:8px; }
+}

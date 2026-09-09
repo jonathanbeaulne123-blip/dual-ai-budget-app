@@ -11,14 +11,14 @@ import { canonical } from "./ledgerSync/patch.ts";
 import { StatementSetup } from "./StatementSetup.tsx";
 import "./account-history-setup.css";
 
-type Props = { household: Household; memberId: string; authUserId: string; view: LedgerView; today: string; busy: boolean; onCommand: KitchenCommand };
+type Props = { active?: boolean; household: Household; memberId: string; authUserId: string; view: LedgerView; today: string; busy: boolean; onCommand: KitchenCommand };
 type SavedReview = { review: AccountHistoryReview; confirmationId: string; statementDraftId?: string };
 
 export function AccountHistorySetup(props: Props) {
   const key = JSON.stringify([props.household.environment, props.household.householdId, props.authUserId, props.memberId, props.view]);
   return <AccountHistorySetupSession key={key} {...props} storageKey={`hearth:account-history-review:v1:${key}`} />;
 }
-function AccountHistorySetupSession({ household, memberId, authUserId, view, today, busy, onCommand, storageKey }: Props & { storageKey: string }) {
+function AccountHistorySetupSession({ household, memberId, authUserId, view, today, busy, onCommand, active=true, storageKey }: Props & { storageKey: string }) {
   const reviewHeading = useRef<HTMLHeadingElement>(null);
   const reviewTrigger = useRef<HTMLElement | null>(null);
   const hadReview = useRef(false);
@@ -115,7 +115,7 @@ function AccountHistorySetupSession({ household, memberId, authUserId, view, tod
       <label className="history-check history-full"><input type="checkbox" checked={confirmedBalance} onChange={event => setConfirmedBalance(event.target.checked)} />I checked this account's balance at this cutoff, including any explicit zero.</label>
       <button type="submit" disabled={busy || working || !accounts.length || !confirmedBalance}>Review opening balance</button>
       {!accounts.length && <p>Create an account in Accounts first, then return here.</p>}
-    </form> : <StatementSetup household={household} memberId={memberId} authUserId={authUserId} view={view} acceptedCoverage={coverage.checkpoints.flatMap(checkpoint => (checkpoint.statementCoverage ?? []).map(span => ({ accountId: checkpoint.accountId, from: span.start, through: span.end, sourceIds: [checkpoint.confirmationId] })))} onReviewHistory={async (input, draftId) => { reviewInput(input, draftId); }} onDone={() => setMode("manual")} />}
+    </form> : <StatementSetup active={active} household={household} memberId={memberId} authUserId={authUserId} view={view} acceptedCoverage={coverage.checkpoints.flatMap(checkpoint => (checkpoint.statementCoverage ?? []).map(span => ({ accountId: checkpoint.accountId, from: span.start, through: span.end, sourceIds: [checkpoint.confirmationId] })))} onReviewHistory={async (input, draftId) => { reviewInput(input, draftId); }} onDone={() => setMode("manual")} />}
 
     </fieldset>
     {pending.length > 0 && <section aria-label="Shared history proposals"><h3>History waiting for review</h3>{pending.map(proposal => <button type="button" key={proposal.id} onClick={() => { setSaved({ review: proposal.review, confirmationId: crypto.randomUUID() }); setError(""); }}>{household.members.find(m => m.id === proposal.review.createdBy)?.name ?? "Your partner"}'s history correction · {proposal.review.accounts.length} accounts</button>)}</section>}

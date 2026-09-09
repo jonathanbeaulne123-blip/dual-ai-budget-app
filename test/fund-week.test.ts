@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 // @vitest-environment node
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -28,8 +29,8 @@ function configuredFund(): Household {
   }).household;
 }
 function contribute(household: Household, memberId: string, amount: string, date: string): Household {
-  const proposed = proposeHouseholdFundContribution(household, { memberId, contributorMemberId: memberId, amount, date });
-  return confirmHouseholdFundContribution(proposed.household, { memberId: BIANCA, proposalEventId: proposed.postedIds[0]! }).household;
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId, contributorMemberId: memberId, amount, date });
+  return confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!), memberId: BIANCA, proposalEventId: proposed.postedIds[0]! }).household;
 }
 function bill(household: Household, amount: string, date: string, note: string): Household {
   return addRecurrence(household, {

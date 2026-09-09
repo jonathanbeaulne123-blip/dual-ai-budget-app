@@ -1,0 +1,459 @@
+{
+  "sourceBuiltAt": "2026-09-09T02:04:12.765Z",
+  "sourceManifestSha256": "86a818e23f2310356621bab3319a17623bddc6c0982ba674565f3f31f6449713",
+  "cases": 15,
+  "screenshots": 45,
+  "matrix": [
+    {
+      "theme": "classic",
+      "width": 320,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "classic",
+      "width": 390,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "classic",
+      "width": 719,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "classic",
+      "width": 1100,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 8,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "classic",
+      "width": 1440,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 8,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "taylor",
+      "width": 320,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "taylor",
+      "width": 390,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "taylor",
+      "width": 719,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "taylor",
+      "width": 1100,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 8,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "taylor",
+      "width": 1440,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 8,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "newfoundland",
+      "width": 320,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "newfoundland",
+      "width": 390,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "newfoundland",
+      "width": 719,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 6,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "newfoundland",
+      "width": 1100,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 8,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    },
+    {
+      "theme": "newfoundland",
+      "width": 1440,
+      "closedZero": true,
+      "closedCommands": 0,
+      "setupTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "fundTrap": {
+        "forward": true,
+        "backward": true
+      },
+      "focusReturned": true,
+      "fundFocusReturned": true,
+      "sentinelUnchanged": true,
+      "documentOverflow": 0,
+      "fundDocumentOverflow": 0,
+      "fundControlHorizontalOverflow": 0,
+      "slotButtons": 8,
+      "minSetupButtonHeight": 44,
+      "minFundButtonHeight": 44,
+      "pageErrors": 0,
+      "externalNonFontRequests": 0
+    }
+  ],
+  "latency": [
+    {
+      "version": "baseline",
+      "width": 390,
+      "n": 10,
+      "medianMs": 14.5,
+      "firstMs": 226.79999995231628,
+      "maxMs": 226.79999995231628,
+      "unsolicitedRequests": 0
+    },
+    {
+      "version": "baseline",
+      "width": 1440,
+      "n": 10,
+      "medianMs": 296.4499999284744,
+      "firstMs": 489.2999999523163,
+      "maxMs": 489.2999999523163,
+      "unsolicitedRequests": 0
+    },
+    {
+      "version": "current",
+      "width": 390,
+      "n": 10,
+      "medianMs": 14.350000023841858,
+      "firstMs": 157.09999990463257,
+      "maxMs": 157.09999990463257,
+      "unsolicitedRequests": 0
+    },
+    {
+      "version": "current",
+      "width": 1440,
+      "n": 10,
+      "medianMs": 10.450000047683716,
+      "firstMs": 310.39999985694885,
+      "maxMs": 310.39999985694885,
+      "unsolicitedRequests": 0
+    }
+  ],
+  "ambient": [
+    {
+      "version": "baseline",
+      "motion": "reduce",
+      "scheduled": 3,
+      "fired": 2,
+      "scheduledNineSecond": 1,
+      "requests": 0,
+      "visibleConversation": 0
+    },
+    {
+      "version": "baseline",
+      "motion": "no-preference",
+      "scheduled": 8,
+      "fired": 7,
+      "scheduledNineSecond": 1,
+      "requests": 0,
+      "visibleConversation": 0
+    },
+    {
+      "version": "current",
+      "motion": "reduce",
+      "scheduled": 2,
+      "fired": 1,
+      "scheduledNineSecond": 0,
+      "requests": 0,
+      "visibleConversation": 0
+    },
+    {
+      "version": "current",
+      "motion": "no-preference",
+      "scheduled": 8,
+      "fired": 7,
+      "scheduledNineSecond": 1,
+      "requests": 0,
+      "visibleConversation": 0
+    }
+  ]
+}

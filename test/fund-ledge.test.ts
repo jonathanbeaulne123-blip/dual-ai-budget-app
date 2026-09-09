@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 // @vitest-environment jsdom
 import { createElement, act } from "react";
 import { createRoot } from "react-dom/client";
@@ -13,8 +14,8 @@ import { catalogHousehold, configureHouseholdFund, proposeHouseholdFundContribut
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 function fixture() {
   const configured = configureHouseholdFund(catalogHousehold(), {custodianMemberId:"MEM-001",openedOn:"2026-08-01",createdBy:"MEM-001"}).household;
-  const proposal = proposeHouseholdFundContribution(configured,{memberId:"MEM-002",contributorMemberId:"MEM-002",amount:"1685",date:"2026-09-08"});
-  return confirmHouseholdFundContribution(proposal.household,{memberId:"MEM-001",proposalEventId:proposal.postedIds[0]!}).household;
+  const proposal = proposeHouseholdFundContribution(configured,{ source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},memberId:"MEM-002",contributorMemberId:"MEM-002",amount:"1685",date:"2026-09-08"});
+  return confirmHouseholdFundContribution(proposal.household,{ received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!),memberId:"MEM-001",proposalEventId:proposal.postedIds[0]!}).household;
 }
 describe("Fund ledge at rest", () => {
   it("cycles the original detents without writing and restores focus on Escape", async () => {
@@ -22,7 +23,7 @@ describe("Fund ledge at rest", () => {
     const household=fixture(); const before=JSON.stringify(household);
     const host=document.createElement("div");document.body.append(host);const root=createRoot(host);let opens=0,writes=0;
     try {
-      await act(async()=>root.render(createElement(FundLedge,{household,today:"2026-09-08",view:"personal",memberId:"MEM-002",busy:false,onOpen:()=>opens++,onKitchen:()=>writes++,onOpenAccount:()=>opens++})));
+      await act(async()=>root.render(createElement(FundLedge,{household,today:"2026-09-08",view:"personal",memberId:"MEM-002",busy:false,onOpen:()=>opens++,onKitchen:()=>{writes++;},onOpenAccount:()=>opens++})));
       const rest=host.querySelector<HTMLButtonElement>('.fund-ledge-grip')!;rest.focus();
       expect(rest.getAttribute("aria-expanded")).toBe("false");
       expect(rest.getAttribute("aria-label")).toContain("Shared money, from Personal");
@@ -49,7 +50,7 @@ describe("Fund ledge at rest", () => {
   it("collapses an open sheet on a scope change without carrying a draft or action", async () => {
     Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
     const host=document.createElement('div');document.body.append(host);const root=createRoot(host);let writes=0;
-    const props={household:fixture(),today:'2026-09-08',memberId:'MEM-002',busy:false,onOpen:()=>{},onKitchen:()=>writes++,onOpenAccount:()=>{}};
+    const props={household:fixture(),today:'2026-09-08',memberId:'MEM-002',busy:false,onOpen:()=>{},onKitchen:()=>{writes++;},onOpenAccount:()=>{}};
     try {
       await act(async()=>root.render(createElement(FundLedge,{...props,view:'household'})));
       await act(async()=>host.querySelector<HTMLButtonElement>('.fund-ledge-grip')!.click());
@@ -65,13 +66,13 @@ describe("Fund ledge at rest", () => {
       for(const id of FUND_WIDGETS){
         const texts=[];
         for(const presentation of ['phone','desk'] as const){
-          await act(async()=>root.render(createElement(FundStage,{widgetId:id,household:h,memberId:'MEM-002',today:'2026-09-08',busy:false,presentation,onKitchen:()=>actions++,onOpenAccount:()=>actions++,onOpenDestination:()=>actions++})));
+          await act(async()=>root.render(createElement(FundStage,{widgetId:id,household:h,memberId:'MEM-002',today:'2026-09-08',busy:false,presentation,onKitchen:()=>{actions++;},onOpenAccount:()=>actions++,onOpenDestination:()=>actions++})));
           texts.push(host.textContent);expect(host.textContent?.length).toBeGreaterThan(0);
-          if((id==='level'||id==='ask') && presentation==='phone') { expect(host.querySelectorAll('svg')).toHaveLength(1); expect(host.querySelector('[data-ask-figure]')?.textContent).toBe('$0.00'); expect(host.querySelector('svg')?.getAttribute('aria-label')).toContain('$1685.00'); }
+          if((id==='level'||id==='ask') && presentation==='phone') { expect(host.querySelector('[aria-label="Shift Ask board"]')).not.toBeNull();expect(host.textContent).toContain('Open Shift Ask · board 5'); }
           if(id==='streams' && presentation==='phone') expect(host.querySelector('time')?.getAttribute('aria-label')).toContain('Sep 8, 2026');
         }
         if(id === 'streams') { expect(texts[0]).toContain('September 2026'); expect(texts[1]).toContain('Sep 8, 2026'); }
-        else if(id==='level'||id==='ask') { expect(texts[0]).toContain('Current Shared Ask$0.00'); expect(texts[1]).toContain('$0.00'); }
+        else if(id==='level'||id==='ask') { expect(texts[0]).toContain('Your Shift Ask'); expect(texts[1]).toContain('Your Shift Ask'); }
         else expect(texts[0]).toBe(texts[1]);
       }
       for(const memberId of ['MEM-001','MEM-002'])for(const presentation of ['phone','desk'] as const){

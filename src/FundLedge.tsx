@@ -69,7 +69,7 @@ export function FundLedge({ household, today, view, memberId, busy, onOpen, onKi
   const dialog = useDialog(expanded, close);
   useLayoutEffect(() => { close(); setSelected(storedFundStage(household.environment, household.householdId, memberId, today)); }, [household.environment, household.householdId, memberId, view, today]);
   const heights = ledgeHeights(viewport.height, viewport.nav, grip.current?.getBoundingClientRect().height || 84);
-  const selectedId = phoneRail(railFor(household, memberId)).includes(selected) ? selected : "level";
+  const selectedId = phoneRail(railFor(household, memberId,"phone")).includes(selected) ? selected : "level";
   const shownId = detent === "half" ? "level" : selectedId;
   const selectWidget = (id: FundWidgetId) => {
     setSelected(id);
@@ -172,7 +172,7 @@ export function FundLedge({ household, today, view, memberId, busy, onOpen, onKi
           </div>
           <div ref={stage} className="fund-ledge-stage" id={`${sheetId}-stage`} role="tabpanel" aria-labelledby={detent === "full" && !drawer ? `${sheetId}-stage-tab-${selectedId}` : undefined} tabIndex={-1} inert={!expanded || busy || undefined}
             aria-label={drawer && detent === "full" ? "Arrange the Fund board" : FUND_WIDGET_CARD[shownId].name}>
-            {drawer && detent === "full" ? <FundDrawer household={household} memberId={memberId} busy={busy} onKitchen={onKitchen} onClose={() => setDrawer(false)} />
+            {drawer && detent === "full" ? <FundDrawer embedded household={household} memberId={memberId} busy={busy} onKitchen={onKitchen} onClose={() => setDrawer(false)} />
               : <FundStage view={view} scenarioSource={scenarioSource} presentation="phone" widgetId={shownId} household={household} memberId={memberId} today={today} busy={busy}
                 headingRef={heading} onKitchen={onKitchen} onOpenDestination={openDestination}
                 onOpenAccount={accountId => { close(); onOpenAccount(accountId); }} />}

@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -31,13 +32,13 @@ function configuredFund(): Household {
 }
 
 function contribute(household: Household, contributorMemberId: string, amount: string, date: string) {
-  const proposed = proposeHouseholdFundContribution(household, {
+  const proposed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: contributorMemberId,
     contributorMemberId,
     amount,
     date,
   });
-  const confirmed = confirmHouseholdFundContribution(proposed.household, {
+  const confirmed = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: proposed.postedIds[0]!,
   });
@@ -182,7 +183,7 @@ describe("contribution register", () => {
 
   it("excludes proposals and reversed confirmations", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "75",

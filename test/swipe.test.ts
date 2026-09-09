@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { swipeCategoryChoices, swipePurchaseReview } from "../src/core/swipe.ts";
 // @vitest-environment jsdom
 import { Fragment, act, createElement } from "react";
@@ -496,13 +497,13 @@ describe("swipe posting contract", () => {
 
   it("bounds funded Undo by command kind and preserves the explicit direct-debit route", () => {
     let household = configuredFund();
-    const proposal = proposeHouseholdFundContribution(household, {
+    const proposal = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: BIANCA,
       contributorMemberId: BIANCA,
       amount: "100",
       date: TODAY,
     });
-    household = confirmHouseholdFundContribution(proposal.household, {
+    household = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!),
       memberId: BIANCA,
       proposalEventId: proposal.postedIds[0]!,
     }).household;

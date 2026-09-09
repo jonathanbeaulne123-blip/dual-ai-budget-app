@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 import { describe, expect, it } from "vitest";
 import {
   HOUSEHOLD_FUND_ID,
@@ -29,11 +30,12 @@ describe("Household Fund command-log continuity", () => {
     let current = catalogHousehold();
     const events: ContinuityCommandEvent[] = [];
 
-    async function accept(kind: string, result: CommitResult, confirmationId: string) {
+    async function accept(kind: string, result: CommitResult, confirmationId: string, actingMemberId = "MEM-001") {
       const previous = current;
       const accepted = await acceptHouseholdWrite({
         previous,
         candidate: result.household,
+        actingMemberId,
         confirmationId,
         postedIds: result.postedIds,
         commandKind: kind,
@@ -47,7 +49,7 @@ describe("Household Fund command-log continuity", () => {
         id: `event-${events.length + 1}`,
         environment: current.environment,
         household_id: current.householdId,
-        member_id: "MEM-001",
+        member_id: actingMemberId,
         idempotency_key: confirmationId,
         confirmation_id: confirmationId,
         identity_hash: receipt.identityHash,
@@ -55,16 +57,16 @@ describe("Household Fund command-log continuity", () => {
         result_revision: current.revision,
         ledger_scope: "shared",
         command_type: kind,
-        payload_json: { ...ref.commandPayload, materializationFacts: extractMaterializationFacts(current, receipt.postedIds, { ledgerScope: "shared", memberId: "MEM-001" }) },
+        payload_json: { ...ref.commandPayload, materializationFacts: extractMaterializationFacts(current, receipt.postedIds, { ledgerScope: "shared", memberId: actingMemberId }) },
         created_at: `2026-09-0${events.length + 1}T12:00:00.000Z`,
       });
     }
 
     await accept("configureHouseholdFund", configureHouseholdFund(current, { custodianMemberId: "MEM-001", createdBy: "MEM-001", openedOn: "2026-09-01" }), "fund-1");
-    const proposed = proposeHouseholdFundContribution(current, { memberId: "MEM-002", contributorMemberId: "MEM-002", amount: "100", date: "2026-09-01" });
+    const proposed = proposeHouseholdFundContribution(current, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: "MEM-002", contributorMemberId: "MEM-002", amount: "100", date: "2026-09-01" });
     const proposalId = proposed.postedIds[0]!;
-    await accept("proposeHouseholdFundContribution", proposed, "fund-2");
-    await accept("confirmHouseholdFundContribution", confirmHouseholdFundContribution(current, { memberId: "MEM-001", proposalEventId: proposalId }), "fund-3");
+    await accept("proposeHouseholdFundContribution", proposed, "fund-2", "MEM-002");
+    await accept("confirmHouseholdFundContribution", confirmHouseholdFundContribution(current, { received:true, expectedProposalDigest:fundContributionReviewDigest(current,proposalId), memberId: "MEM-001", proposalEventId: proposalId }), "fund-3");
     await accept("postEntry", postEntry(current, { date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" } }), "fund-4");
     await accept("confirmHouseholdFundSettlement", confirmHouseholdFundSettlement(current, { memberId: "MEM-001", amount: "20", destinationAccountId: "ACC-VISA", date: "2026-09-03" }), "fund-5");
 
@@ -129,8 +131,8 @@ describe("Household Fund command-log continuity", () => {
 
   it("replays a direct debit as shared purchase and settlement facts without the Personal source", async () => {
     let previous = configureHouseholdFund(catalogHousehold(), { custodianMemberId: "MEM-001", createdBy: "MEM-001", openedOn: "2026-09-01" }).household;
-    const proposal = proposeHouseholdFundContribution(previous, { memberId: "MEM-001", contributorMemberId: "MEM-001", amount: "100", date: "2026-09-01" });
-    previous = confirmHouseholdFundContribution(proposal.household, { memberId: "MEM-001", proposalEventId: proposal.postedIds[0]! }).household;
+    const proposal = proposeHouseholdFundContribution(previous, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: "MEM-001", contributorMemberId: "MEM-001", amount: "100", date: "2026-09-01" });
+    previous = confirmHouseholdFundContribution(proposal.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposal.household,proposal.postedIds[0]!), memberId: "MEM-001", proposalEventId: proposal.postedIds[0]! }).household;
     previous = addAccount(previous, { name: "Private debit source", kind: "savings", scope: "personal", ownerMemberId: "MEM-001" }).household;
     const sourceId = previous.accounts.find((account) => account.name === "Private debit source")!.id;
     const direct = postHouseholdFundDirectDebit(previous, { memberId: "MEM-001", date: "2026-09-04", amount: "25", accountId: sourceId, subcategoryId: "SUB-FOOD-GROCERIES", confirmDuplicate: true });
@@ -163,8 +165,8 @@ describe("Household Fund command-log continuity", () => {
 
   it("rejects forged over-allocation before PGlite ingest or snapshot persistence", async () => {
     let previous = configureHouseholdFund(catalogHousehold(), { custodianMemberId: "MEM-001", createdBy: "MEM-001", openedOn: "2026-09-01" }).household;
-    const proposed = proposeHouseholdFundContribution(previous, { memberId: "MEM-001", contributorMemberId: "MEM-001", amount: "100", date: "2026-09-01" });
-    previous = confirmHouseholdFundContribution(proposed.household, { memberId: "MEM-001", proposalEventId: proposed.postedIds[0]! }).household;
+    const proposed = proposeHouseholdFundContribution(previous, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: "MEM-001", contributorMemberId: "MEM-001", amount: "100", date: "2026-09-01" });
+    previous = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!), memberId: "MEM-001", proposalEventId: proposed.postedIds[0]! }).household;
     previous = postEntry(previous, { date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" } }).household;
     const settlement = confirmHouseholdFundSettlement(previous, { memberId: "MEM-001", amount: "20", destinationAccountId: "ACC-VISA", date: "2026-09-03" });
     const settlementEventId = settlement.postedIds.find((id) => id.startsWith("FUND-EVT-"))!;
@@ -186,8 +188,8 @@ describe("Household Fund command-log continuity", () => {
 
   it("rejects a stale concurrent settlement instead of replacing the first device's allocation", async () => {
     let base = configureHouseholdFund(catalogHousehold(), { custodianMemberId: "MEM-001", createdBy: "MEM-001", openedOn: "2026-09-01" }).household;
-    const proposed = proposeHouseholdFundContribution(base, { memberId: "MEM-001", contributorMemberId: "MEM-001", amount: "100", date: "2026-09-01" });
-    base = confirmHouseholdFundContribution(proposed.household, { memberId: "MEM-001", proposalEventId: proposed.postedIds[0]! }).household;
+    const proposed = proposeHouseholdFundContribution(base, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: "MEM-001", contributorMemberId: "MEM-001", amount: "100", date: "2026-09-01" });
+    base = confirmHouseholdFundContribution(proposed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(proposed.household,proposed.postedIds[0]!), memberId: "MEM-001", proposalEventId: proposed.postedIds[0]! }).household;
     base = postEntry(base, { date: "2026-09-02", type: "expense", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true, funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 4000, destinationAccountId: "ACC-VISA" } }).household;
     const fromPhoneA = confirmHouseholdFundSettlement(base, { memberId: "MEM-001", amount: "25", destinationAccountId: "ACC-VISA", date: "2026-09-03" });
     const fromPhoneB = confirmHouseholdFundSettlement(base, { memberId: "MEM-001", amount: "20", destinationAccountId: "ACC-VISA", date: "2026-09-03" });

@@ -51,7 +51,7 @@ function configuredFund(): Household {
 }
 
 function openProposal(household = configuredFund()): Household {
-  return proposeHouseholdFundContribution(household, {
+  return proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: AMOUNT,
@@ -160,10 +160,10 @@ describe("Held contribution motion UI", () => {
     expect(panelSource).not.toMatch(/event\.kind === "contribution-proposed"/);
   });
 
-  it("shows equal Confirm received and Hold controls for an open custodian view", () => {
+  it("offers receipt review and Hold controls for an open custodian view", () => {
     renderPanel(openProposal(), BIANCA);
     const card = motionCard();
-    const confirm = buttonNamed("Confirm received", card)!;
+    const confirm = buttonNamed("Review receipt", card)!;
     const hold = buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, card)!;
     expect(confirm).toBeTruthy();
     expect(hold).toBeTruthy();
@@ -200,7 +200,7 @@ describe("Held contribution motion UI", () => {
     expect(card.textContent).toContain(HOUSEHOLD_FUND_HOLD_COPY.status);
     expect(card.textContent).toContain(`Bianca held this on ${formatDateLabel(todayKey())}.`);
     expect(card.textContent).toContain("Can we check the rent total first?");
-    expect(buttonNamed("Confirm received", card)).toBeTruthy();
+    expect(buttonNamed("Review receipt", card)).toBeTruthy();
     expect(projectHouseholdFund(householdRef.current, DATE)).toEqual(beforeProjection);
     expect(compileHousehold(householdRef.current).entries).toEqual(beforeJournal);
     expect(householdFundContributionMotions(householdRef.current)[0]?.status).toBe("held");
@@ -211,7 +211,7 @@ describe("Held contribution motion UI", () => {
     renderPanel(held, BIANCA);
     const biancaCard = motionCard();
     expect(buttonNamed("Release Hold", biancaCard)).toBeTruthy();
-    expect(buttonNamed("Confirm received", biancaCard)).toBeTruthy();
+    expect(buttonNamed("Review receipt", biancaCard)).toBeTruthy();
     expect(buttonNamed("Withdraw proposal", biancaCard)).toBeUndefined();
     expect(buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, biancaCard)).toBeUndefined();
 
@@ -220,7 +220,7 @@ describe("Held contribution motion UI", () => {
     expect(buttonNamed("Withdraw proposal", jonathanCard)).toBeTruthy();
     expect(buttonNamed("Release Hold", jonathanCard)).toBeUndefined();
     expect(buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, jonathanCard)).toBeUndefined();
-    expect(buttonNamed("Confirm received", jonathanCard)).toBeUndefined();
+    expect(buttonNamed("Review receipt", jonathanCard)).toBeUndefined();
     expect(jonathanCard.textContent).toContain(HOUSEHOLD_FUND_HOLD_COPY.status);
     expect(jonathanCard.textContent).not.toMatch(FORBIDDEN_COPY);
   });
@@ -250,6 +250,9 @@ describe("Held contribution motion UI", () => {
     const householdRef = { current: heldProposal() };
     const commandLog: Array<(current: Household) => CommitResult> = [];
     renderStateful(householdRef.current, BIANCA, householdRef, commandLog);
+    act(() => buttonNamed("Review receipt", motionCard())!.click());
+    expect(commandLog).toHaveLength(0);
+    expect(motionCard().textContent).toContain('Declared source');
     act(() => buttonNamed("Confirm received", motionCard())!.click());
     expect(commandLog).toHaveLength(1);
     expect(commandLog[0]!.toString()).toContain("confirmHouseholdFundContribution");
@@ -286,7 +289,7 @@ describe("Held contribution motion UI", () => {
     actions.style.width = "320px";
     expect(getComputedStyle(actions).flexWrap).toBe("wrap");
     expect(actions.scrollWidth).toBeLessThanOrEqual(Math.max(actions.clientWidth, 320));
-    expectMinTouch(buttonNamed("Confirm received", actions)!);
+    expectMinTouch(buttonNamed("Review receipt", actions)!);
     expectMinTouch(buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, actions)!);
   });
 
@@ -324,14 +327,14 @@ describe("Held contribution motion UI", () => {
   });
 
   it("does not offer Hold on the custodian's own proposal", () => {
-    const own = proposeHouseholdFundContribution(configuredFund(), {
+    const own = proposeHouseholdFundContribution(configuredFund(), { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: BIANCA,
       contributorMemberId: BIANCA,
       amount: AMOUNT,
       date: DATE,
     }).household;
     renderPanel(own, BIANCA);
-    expect(buttonNamed("Confirm received", motionCard())).toBeTruthy();
+    expect(buttonNamed("Review receipt", motionCard())).toBeTruthy();
     expect(buttonNamed(HOUSEHOLD_FUND_HOLD_COPY.action, motionCard())).toBeUndefined();
     expect(buttonNamed("Withdraw proposal", motionCard())).toBeTruthy();
   });

@@ -190,7 +190,7 @@ export function ceremonyCopy(gate: ShiftGate, field?: ShiftField): { title: stri
     }
     return {
       title: "Sign out",
-      hint: "Tip math uses the same postShift path. Confirm still writes.",
+      hint: "Review your sales and tips. Nothing is recorded until you confirm.",
     };
   }
   if (field === "hours") {

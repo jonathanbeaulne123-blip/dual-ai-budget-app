@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -32,13 +33,13 @@ function canonicalMonth() {
     openedOn: SINCE,
     createdBy: BIANCA,
   }).household;
-  const confirmed = proposeHouseholdFundContribution(household, {
+  const confirmed = proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "150",
     date: "2026-09-02",
   });
-  const confirmation = confirmHouseholdFundContribution(confirmed.household, {
+  const confirmation = confirmHouseholdFundContribution(confirmed.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(confirmed.household,confirmed.postedIds[0]!),
     memberId: BIANCA,
     proposalEventId: confirmed.postedIds[0]!,
   });
@@ -54,7 +55,7 @@ function canonicalMonth() {
     confirmDuplicate: true,
     funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 12000, destinationAccountId: "ACC-VISA" },
   });
-  const waiting = proposeHouseholdFundContribution(expense.household, {
+  const waiting = proposeHouseholdFundContribution(expense.household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "40",
@@ -242,7 +243,7 @@ describe("clerk citations", () => {
       confirmDuplicate: true,
       funding: { fundId: HOUSEHOLD_FUND_ID, fundedCents: 12000, destinationAccountId: "ACC-VISA" },
     });
-    const duplicateProposal = proposeHouseholdFundContribution(duplicateExpense.household, {
+    const duplicateProposal = proposeHouseholdFundContribution(duplicateExpense.household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
       memberId: JONATHAN,
       contributorMemberId: JONATHAN,
       amount: "40",

@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from '../src/core/fundContributionSources.ts';
 // @vitest-environment jsdom
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -73,7 +74,7 @@ function buy(household: Household, amount = "12.34"): Household {
 }
 
 function proposeFromJonathan(household: Household): Household {
-  return proposeHouseholdFundContribution(household, {
+  return proposeHouseholdFundContribution(household, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."},
     memberId: JONATHAN,
     contributorMemberId: JONATHAN,
     amount: "100",
@@ -215,7 +216,7 @@ describe("Till slice 3 surface", () => {
     renderTill(household);
     expect(container.querySelector("[data-till='waiting']")?.textContent).toContain(TILL_COPY.waiting);
     expect(container.textContent).toContain(HOUSEHOLD_FUND_HOLD_COPY.status);
-    expect(container.textContent).toContain("Confirm received");
+    expect(container.textContent).toContain("Review receipt");
     expect(container.textContent).toContain("Release Hold");
 
     household = releaseHouseholdFundHold(household, {
@@ -248,7 +249,7 @@ describe("Till slice 3 surface", () => {
       holdEventId: householdFundContributionMotions(household)[0]!.activeHold!.id,
     }).household;
     expect(projectHouseholdFund(household, TODAY).operatingBalanceCents).toBe(before);
-    household = confirmHouseholdFundContribution(household, {
+    household = confirmHouseholdFundContribution(household, { received:true, expectedProposalDigest:fundContributionReviewDigest(household,proposalId),
       memberId: BIANCA,
       proposalEventId: proposalId,
     }).household;
@@ -263,6 +264,10 @@ describe("Till slice 3 surface", () => {
     renderTill(household, {
       onCommand: (command) => { next = command(household).household; },
     });
+    const review = Array.from(container.querySelectorAll("button")).find(button => button.textContent === "Review receipt")!;
+    act(() => review.click());
+    expect(projectHouseholdFund(next, TODAY).operatingBalanceCents).toBe(before);
+    expect(container.textContent).toContain("Declared source");
     const confirm = Array.from(container.querySelectorAll("button"))
       .find((button) => button.textContent === "Confirm received") as HTMLButtonElement | undefined;
     if (!confirm) throw new Error("Missing Confirm received");

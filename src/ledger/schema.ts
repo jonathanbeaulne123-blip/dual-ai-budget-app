@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 8;
+export const BOOKS_SCHEMA_VERSION = 9;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -234,6 +234,15 @@ CREATE TABLE IF NOT EXISTS fund_events (
   updated_at TEXT NOT NULL
 );
 
+ALTER TABLE fund_events ADD COLUMN IF NOT EXISTS source_declaration TEXT;
+CREATE TABLE IF NOT EXISTS fund_contribution_source_claims (
+  id TEXT PRIMARY KEY, household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  fund_id TEXT NOT NULL REFERENCES household_funds(id) ON DELETE CASCADE,
+  owner_member_id TEXT NOT NULL, proposal_event_id TEXT NOT NULL,
+  source_transaction_id TEXT NOT NULL, amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+  source_fingerprint TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS fund_settlement_allocations (
   id TEXT PRIMARY KEY,
   household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
@@ -316,6 +325,7 @@ CREATE INDEX IF NOT EXISTS fund_settlement_transaction ON fund_settlement_alloca
 CREATE INDEX IF NOT EXISTS fund_kitty_event ON fund_kitty_allocations (event_id);
 CREATE INDEX IF NOT EXISTS fund_kitty_goal ON fund_kitty_allocations (household_id, goal_id);
 CREATE INDEX IF NOT EXISTS fund_bindings_member ON fund_bank_bindings (household_id, member_id);
+ALTER TABLE fund_private_reconciliations ALTER COLUMN tied DROP NOT NULL;
 CREATE INDEX IF NOT EXISTS fund_reconciliations_member_date ON fund_private_reconciliations (household_id, member_id, date_key);
 
 CREATE OR REPLACE VIEW v_unbalanced_entries AS

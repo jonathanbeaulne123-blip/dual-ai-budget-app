@@ -61,6 +61,7 @@ export const IMPORT_FIELD_POLICY = {
   fundEvents: 'exact',
   fundSettlementAllocations: 'exact',
   fundKittyAllocations: 'exact',
+  fundContributionSourceClaims: "exact",
   fundPrivate: 'exact',
   monthRehearsals: 'exact',
   weeklyDocumentStamps: 'exact',

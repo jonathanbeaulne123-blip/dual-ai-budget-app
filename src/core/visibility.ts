@@ -180,6 +180,7 @@ export function householdForHerculesContext(
     // Keep the requesting member's own Personal accounts here so their visible
     // Personal transactions still compile against a complete journal.
     accounts: scoped.accounts,
+    fundContributionSourceClaims: [],
     fundPrivate: { bankBindings: [], reconciliations: [] },
     shifts: scoped.shifts.map(shiftForHercules),
     sevenShiftsSchedules: (household.sevenShiftsSchedules ?? [])
@@ -256,6 +257,7 @@ export function householdForView(household: Household, memberId: string, view: L
     transactions: (household.transactions ?? []).filter((tx) => isVisibleInView(tx, memberId, view)),
     shifts: (household.shifts ?? []).filter((shift) => isVisibleInView(shift, memberId, view)),
     goals: (household.goals ?? []).filter((goal) => goalVisibleInView(goal, memberId, view)),
+    fundContributionSourceClaims: [],
     fundPrivate: view === "personal" && household.householdFund?.custodianMemberId === memberId
       ? household.fundPrivate
       : { bankBindings: [], reconciliations: [] },

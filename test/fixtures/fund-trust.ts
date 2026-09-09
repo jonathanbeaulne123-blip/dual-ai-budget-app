@@ -1,9 +1,10 @@
+import { fundContributionReviewDigest } from '../../src/core/fundContributionSources.ts';
 import { addRecurrence, catalogHousehold, configureHouseholdFund, confirmHouseholdFundContribution, proposeHouseholdFundContribution, recordEarningCadence, type Household } from "../../src/core/index.ts";
 import { prepareFundHorizon } from "../../src/core/fundHorizon.ts";
 const today = "2026-09-08", through = "2026-10-08", member = "MEM-002";
 function addCash(h: Household, amount: string, date: string) {
-  const p = proposeHouseholdFundContribution(h, { memberId: member, contributorMemberId: member, amount, date });
-  return confirmHouseholdFundContribution(p.household, { memberId: "MEM-001", proposalEventId: p.postedIds[0]! }).household;
+  const p = proposeHouseholdFundContribution(h, { source: {version:1,kind:"external-received",explanation:"Synthetic test contribution from untracked savings."}, memberId: member, contributorMemberId: member, amount, date });
+  return confirmHouseholdFundContribution(p.household, { received:true, expectedProposalDigest:fundContributionReviewDigest(p.household,p.postedIds[0]!), memberId: "MEM-001", proposalEventId: p.postedIds[0]! }).household;
 }
 export function trustFixture() {
   let h = configureHouseholdFund(catalogHousehold(), { custodianMemberId: "MEM-001", openedOn: "2026-01-01", createdBy: "MEM-001" }).household;

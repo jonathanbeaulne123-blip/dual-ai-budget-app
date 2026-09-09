@@ -132,7 +132,7 @@ export function SharedLedgerStory({
           <p className="ledger-purpose-kicker">Trust</p>
           <p className="fund-disclosure">{story.trust.custodyDisclosure}</p>
           <p>
-            Shared slice {story.trust.lastReconciledAt ? (story.trust.reconciliationTied ? "tied" : "needs review") : "not yet reconciled"}
+            Shared slice {story.trust.lastReconciledAt ? (story.trust.reconciliationTied === null ? "not independently checked" : story.trust.reconciliationTied ? "tied" : "needs review") : "not yet reconciled"}
             {story.trust.pendingProposalCount ? ` · ${story.trust.pendingProposalCount} proposal${story.trust.pendingProposalCount === 1 ? "" : "s"} waiting` : " · no open proposals"}
             {" · "}{story.trust.environment}
           </p>

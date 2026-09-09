@@ -1,3 +1,4 @@
+import { fundContributionReviewDigest } from "../core/fundContributionSources.ts";
 import { accountHistoryState, type AccountHistoryReview } from "../core/accountHistory.ts";
 import { requirementFingerprint } from "../core/onboarding/attestations.ts";
 import { onboardingCompletionDigest } from "../core/onboarding/ready.ts";
@@ -40,6 +41,14 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if (['proposeHouseholdFundContribution','replaceHouseholdFundContributionSource'].includes(kind)) {
+    return [{key:'fund-source-allocation',value:{fund:household.householdFund,events:household.fundEvents,claims:household.fundContributionSourceClaims,
+      transactions:household.transactions,accounts:household.accounts}}];
+  }
+  if (kind === 'confirmHouseholdFundContribution') {
+    const input = args[0] as {proposalEventId:string};
+    return [{key:'fund-contribution-review',value:fundContributionReviewDigest(household,input.proposalEventId)}];
+  }
   if (["acceptReviewedAccountHistory", "approveAccountHistoryReview", "submitAccountHistoryReview"].includes(kind)) {
     const input = args[0] as { review: AccountHistoryReview };
     return [{key: "account-history", value: accountHistoryState(household, input.review)}];
