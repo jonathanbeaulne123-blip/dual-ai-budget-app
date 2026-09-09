@@ -1,6 +1,4 @@
 import type { KitchenCommand } from "./kitchenCommand.ts";
-import { Memorabilia } from "./theme/Memorabilia.tsx";
-import { useAppearance } from "./theme/ThemeProvider.tsx";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { PhoneSpread } from "./PhoneSpread.tsx";
 import { ApronCard, useApronReceipt } from "./ApronCard.tsx";
@@ -248,7 +246,6 @@ export function OfficePhone({
   const drawer = phoneDrawerIds(order.filter((id) => id !== "chalkboard"));
   const openSpec = expanded && expanded !== "window" ? specs[expanded as InstrumentId] : undefined;
   const openId = expanded && expanded !== "window" ? (expanded as InstrumentId) : null;
-  const { scene } = useAppearance();
   const panelId = openId ? `ph-notebook-${openId}` : "ph-notebook";
 
   const foldItems = phoneFoldOrder({
@@ -335,7 +332,6 @@ export function OfficePhone({
       )}
       </div>
 
-      <Memorabilia scene={scene.id} location="phone-desk" />
       <details className="ph-chalk" open={chalkOpen} onToggle={(event) => {
         const open=event.currentTarget.open;setChalkOpen(open);
         if(!open&&layout.expanded==="chalkboard")onLayout({...layout,expanded:null});

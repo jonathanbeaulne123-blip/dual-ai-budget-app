@@ -427,26 +427,6 @@
       "mobile": "Compact 112px minimum heading (90px Classic), expands for text. Art is separated from readable copy; keepsakes below the Home Fold."
     },
     {
-      "id": "placeholder-ticket",
-      "scene": [
-        "showgirl",
-        "red"
-      ],
-      "world": "taylor",
-      "source": "Original Codex SVG; Jonathan-approved fictional stand-in",
-      "file": "public/theme-art/placeholder-ticket.svg",
-      "dimensions": [
-        720,
-        360
-      ],
-      "placement": "Memorabilia mount after the mobile Home Fold/instruments; page mount on relevant non-Home destinations",
-      "crop": "contain; intrinsic aspect ratio reserved",
-      "alt": "fictional concert ticket with no dates, venues, barcode or identifiers",
-      "mobile": "Ticket across mount; fabric/photo side-by-side below",
-      "desktop": "Bounded mounted keepsake composition",
-      "status": "placeholder; real original deferred"
-    },
-    {
       "id": "placeholder-concert",
       "scene": [
         "showgirl",
@@ -459,10 +439,10 @@
         640,
         800
       ],
-      "placement": "Memorabilia mount after the mobile Home Fold/instruments; page mount on relevant non-Home destinations",
+      "placement": "Closing album after all Home content and Notes",
       "crop": "contain; intrinsic aspect ratio reserved",
       "alt": "original illustrated stage, not a personal photograph",
-      "mobile": "Ticket across mount; fabric/photo side-by-side below",
+      "mobile": "Closing manually browsable Home album",
       "desktop": "Bounded mounted keepsake composition",
       "status": "placeholder; real original deferred"
     },
@@ -478,13 +458,19 @@
         480,
         640
       ],
-      "placement": "Memorabilia mount after the mobile Home Fold/instruments; page mount on relevant non-Home destinations",
+      "placement": "Closing album after all Home content and Notes",
       "crop": "contain; intrinsic aspect ratio reserved",
-      "alt": "sample sparkle and mint fabric, not Bianca’s actual outfit",
-      "mobile": "Ticket across mount; fabric/photo side-by-side below",
+      "alt": "original rose-pink sequin material illustration",
+      "mobile": "Closing manually browsable Home album",
       "desktop": "Bounded mounted keepsake composition",
       "status": "placeholder; real original deferred"
+    },
+    {
+      "id": "living-home-scenes",
+      "source": "Original SVG; user-provided Jellybean Row and rose-pink dress references; official Taylor artwork links in PAGE_WORLD_REFINEMENT.md",
+      "file": "src/theme/LivingArtwork.tsx",
+      "status": "original illustration; reference photos not redistributed"
     }
   ],
-  "placeholderPolicy": "Jonathan explicitly deferred memorabilia and authorised clearly fictional placeholders for the mobile integration on 2026-09-08. They never count as prepared personal assets."
+  "placeholderPolicy": "Bianca chooses scrapbook photographs later. No ticket exists. Dress and Jellybean Row photographs are private illustration references only."
 }

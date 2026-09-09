@@ -39,7 +39,7 @@ This matrix distinguishes source review from rendered evidence. A themed selecto
 
 `scenes.ts` assigns all twelve natural Shared/Personal destinations without adding navigation. `capture-theme-references.mjs` renders the 36 theme/scope/route combinations at 320, 390, 720, 1100 and 1440px. These use actual React paper controls with synthetic facts, not full financial pages. Local evidence is under `.artifacts/three-worlds/` and is intentionally excluded from Git.
 
-Required scene and memorabilia manifests: `docs/theme-assets.json` and `src/theme/memorabilia.ts`. Actual bracelets, dress, concert ticket and selected photo remain deferred. Jonathan explicitly authorized fictional stand-ins for the mobile integration on 2026-09-08. Reserved artwork is now present and labelled; real-photo completion remains a later asset task.
+Required scene and memorabilia manifests: `docs/theme-assets.json` and `src/theme/memorabilia.ts`. Bracelet photographs and Bianca’s selected scrapbook photos remain deferred. Dress and Jellybean Row references have been supplied privately. No ticket exists and none is required. Jonathan explicitly authorized fictional stand-ins for the mobile integration on 2026-09-08. Reserved artwork is now present and labelled; real-photo completion remains a later asset task.
 
 ## Boundaries and pending integration
 

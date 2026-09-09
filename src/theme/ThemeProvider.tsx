@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { Environment, LedgerView } from "../core/types.ts";
 import { loadSupabaseSession, SUPABASE_SESSION_CHANGED_EVENT } from "../auth/supabaseSession.ts";
 import { appearanceAccount } from "./appearanceAccount.ts";
@@ -54,16 +54,17 @@ export function ThemeProvider({ children, store: supplied }: { children: ReactNo
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme; root.dataset.scene = scene.id; root.dataset.material = scene.material;
+    root.dataset.worldPage = binding.route;
     root.dataset.sceneLighting = scene.dark ? "dark" : "light";
     root.dataset.atmosphere = paused ? "paused" : "playing";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", scene.palette.paper);
     root.style.colorScheme = scene.dark ? "dark" : "light";
     for (const [key, value] of Object.entries(sceneTokens(scene))) root.style.setProperty(key, value);
-  }, [scene, theme, paused]);
+  }, [scene, theme, paused, binding.route]);
   useEffect(() => () => {
     const root = document.documentElement;
     for (const key of Object.keys(sceneTokens(defaultScene))) root.style.removeProperty(key);
-    for (const key of ["theme", "scene", "material", "sceneLighting", "atmosphere"]) delete root.dataset[key];
+    for (const key of ["theme", "scene", "material", "sceneLighting", "atmosphere", "worldPage"]) delete root.dataset[key];
     root.style.removeProperty("color-scheme");
   }, []);
   return <ThemeContext.Provider value={useMemo(() => ({ store, scene, paused, bind }), [store, scene, paused])}>{children}</ThemeContext.Provider>;
@@ -101,15 +102,14 @@ export function useAppearanceBinding(environment: Environment, route: SceneRoute
 
 /** Decorative visibility writes only a DOM attribute; no financial component rerenders. */
 export function useAtmosphereVisibility() {
-  const ref = useRef<HTMLElement>(null);
+  const [element, setElement] = useState<HTMLElement | null>(null);
   useEffect(() => {
-    const element = ref.current;
     if (!element || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => {
       element.dataset.atmosphereVisible = String(entry?.isIntersecting ?? false);
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
-  return ref;
+  }, [element]);
+  return setElement;
 }
