@@ -43,7 +43,7 @@ export const TAYLOR_SCENES = {
   midnights: scene("midnights", "taylor", "Midnights", "Meet me in the quiet hours", "midnight-paper", palette("#dfe5f0", "#f8f6fc", "#293c59", "#475770", "#496799", "#79609b", "#b8c5db"), "constellation"),
   "speak-now": scene("speak-now", "taylor", "Speak Now", "Make room for your own story", "ribbon", palette("#eee4f3", "#fbf6ff", "#4d375c", "#695577", "#795092", "#916d3e", "#cfbada"), "ribbon"),
   poets: scene("poets", "taylor", "The Tortured Poets Department", "Notes from a life in progress", "manuscript", palette("#e9e5dd", "#f8f5ed", "#373731", "#5a5a51", "#5c5a50", "#717562", "#c8c3b6"), "manuscript"),
-  debut: scene("debut", "taylor", "Taylor Swift", "Every good thing begins somewhere", "botanical", palette("#e4efdf", "#f8fbef", "#304d42", "#4e6658", "#377665", "#4f7795", "#bfd2b8"), "butterflies"),
+  debut: scene("debut", "taylor", "Taylor Swift", "Every good thing begins somewhere", "botanical", palette("#d9eeec", "#fcfbef", "#294b53", "#476570", "#287478", "#4f7795", "#b4d4d1"), "butterflies"),
   folklore: scene("folklore", "taylor", "folklore", "The things we choose to keep", "linen", palette("#e7e9e1", "#f7f8f0", "#38473c", "#536155", "#4e6b52", "#817254", "#c3ccbd"), "forest"),
 } satisfies Record<string, ThemeScene>;
 export const NEWFOUNDLAND_SCENES = {

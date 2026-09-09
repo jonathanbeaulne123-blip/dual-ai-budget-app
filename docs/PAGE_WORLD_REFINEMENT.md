@@ -4,7 +4,7 @@ Execution instructions: [Page-theme execution standard](briefs/PAGE_THEME_EXECUT
 
 The original program proposed eight page-specific PRs on 2026-09-09: Home → Plan → Calendar → Books → Till → Shift → More → Entry. Every PR includes Classic, Taylor and Newfoundland plus applicable Shared/Personal scenes. No merge, deployment, schema or hosted household mutation is authorized.
 
-Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Jonathan subsequently resumed Calendar after #414 and approved its clip-art direction. Plan and the other pages remain paused.
+Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Jonathan subsequently resumed Calendar after #414 and approved its clip-art direction. Calendar was merged and deployed in #415. Jonathan subsequently resumed Plan, approved the two-column desktop workshop and cannon clip-art direction, and authorized PR publication. The other pages remain paused.
 
 ## Desktop Home revision
 
@@ -55,3 +55,11 @@ Additional Calendar reference provenance:
 - `public/theme-art/calendar-cape-couple.webp`: generated with OpenAI image generation from the supplied couple reference, then redrawn with simple faces, chunky outlines and minimal detail. Jonathan explicitly approved the simplified result before integration. Optimized to WebP for a small title illustration; the original photograph is not distributed. The other Calendar artwork is original SVG in `src/theme/CalendarArtwork.tsx`.
 
 Exact implementation and validation: [Calendar worksession](worksessions/2026-09-09-calendar-worlds.md).
+
+## Plan refinement
+
+Desktop (1100px+) uses a wider Categories column and a right column with Kitty Banks above Sit-down. Below1100px the existing single-column order remains Categories → Sit-down → Kitty Banks. CSS changes placement without remounting the financial components; keyboard traversal retains that semantic order. Budgeted net is labelled accurately, visible Actual / Budget labels clarify the pairs, budget edit/remove targets are44px, and closing the editor returns focus.
+
+Classic uses pinned cream sheets, coffee and trailing plants; Fearless uses gold concert-scrapbook fringe/lights, silver guitar, boots and restrained storybook paper; Debut uses blue-green/denim water washes, guitar, daisies and butterflies. Newfoundland follows the supplied Signal Hill sunny coast/summit references with one harbour opening and lower water, rock, plant and gull details. The original generated cannon sticker belongs to the summit title only. Individual panels observe visibility; global pause, reduced motion and focused-entry quieting apply.
+
+[Worksession and provenance](worksessions/2026-09-09-plan-worlds.md) · [Plan handoff](briefs/PLAN_THEME_HANDOFF.md). Private reference photographs, vision-board collages and original video are not shipped. No financial APIs, migrations, routing, identity or Confirm authority changed.
