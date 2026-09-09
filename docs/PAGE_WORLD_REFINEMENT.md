@@ -1,5 +1,7 @@
 # Living pages: implementation contract
 
+Execution instructions: [Page-theme execution standard](briefs/PAGE_THEME_EXECUTION_STANDARD.md). Jonathan approved the finished Home after #413 and requires the same level of finish for subsequent page PRs.
+
 The original program proposed eight page-specific PRs on 2026-09-09: Home → Plan → Calendar → Books → Till → Shift → More → Entry. Every PR includes Classic, Taylor and Newfoundland plus applicable Shared/Personal scenes. No merge, deployment, schema or hosted household mutation is authorized.
 
 Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Resume later pages only after a new instruction.
