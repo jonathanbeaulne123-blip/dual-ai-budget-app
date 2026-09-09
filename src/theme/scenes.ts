@@ -39,7 +39,7 @@ export const TAYLOR_SCENES = {
   reputation: scene("reputation", "taylor", "reputation", "Every line tells the truth", "newsprint", palette("#191c20", "#24282d", "#f1ede5", "#bdbab4", "#d1dacd", "#aebcd0", "#596168"), "serpent", true),
   evermore: scene("evermore", "taylor", "evermore", "Collected and kept", "plaid", palette("#eee3d3", "#fbf4e8", "#4a352a", "#6b5546", "#965238", "#5c6a4a", "#cdb9a0"), "leaves"),
   "1989": scene("1989", "taylor", "1989", "A moment, captured", "instant-photo", palette("#deecf3", "#fbfcf6", "#304856", "#4e626e", "#3c6989", "#9b624d", "#bad0db"), "gulls"),
-  showgirl: scene("showgirl", "taylor", "The Life of a Showgirl", "A little sparkle in the everyday", "satin", palette("#f9e6d7", "#fff9ed", "#4c382b", "#6e5746", "#b94920", "#447466", "#dfbd9c"), "crystals"),
+  showgirl: scene("showgirl", "taylor", "The Life of a Showgirl", "A little sparkle in the everyday", "satin", palette("#def4e8", "#fffbed", "#293f39", "#52665c", "#ab3d0d", "#387566", "#b8d6c7"), "crystals"),
   midnights: scene("midnights", "taylor", "Midnights", "Meet me in the quiet hours", "midnight-paper", palette("#172437", "#23354b", "#f1ede6", "#b7c6d8", "#c6d7ec", "#dfba79", "#516780"), "constellation", true),
   "speak-now": scene("speak-now", "taylor", "Speak Now", "Make room for your own story", "ribbon", palette("#eee4f3", "#fbf6ff", "#4d375c", "#695577", "#795092", "#916d3e", "#cfbada"), "ribbon"),
   poets: scene("poets", "taylor", "The Tortured Poets Department", "Notes from a life in progress", "manuscript", palette("#e9e5dd", "#f8f5ed", "#373731", "#5a5a51", "#5c5a50", "#717562", "#c8c3b6"), "manuscript"),
@@ -47,7 +47,7 @@ export const TAYLOR_SCENES = {
   folklore: scene("folklore", "taylor", "folklore", "The things we choose to keep", "linen", palette("#e7e9e1", "#f7f8f0", "#38473c", "#536155", "#4e6b52", "#817254", "#c3ccbd"), "forest"),
 } satisfies Record<string, ThemeScene>;
 export const NEWFOUNDLAND_SCENES = {
-  jellybean: scene("jellybean", "newfoundland", "Jellybean Row", "There’s a light on for you", "painted-wood", palette("#f5e7d5", "#fff9eb", "#394947", "#53625c", "#a34538", "#306c70", "#d4c5ac"), "houses"),
+  jellybean: scene("jellybean", "newfoundland", "Jellybean Row", "There’s a light on for you", "painted-wood", palette("#e9f3ef", "#fffdf0", "#283f50", "#50636b", "#a33751", "#26766f", "#bacecd"), "houses"),
   rain: scene("rain", "newfoundland", "Rainy St. John’s", "A bright spot in a rainy day", "raincoat", palette("#dfe7e6", "#f6f8f0", "#314b53", "#4b6267", "#816318", "#346c7c", "#b8cdce"), "rain"),
   trail: scene("trail", "newfoundland", "The coastal way up", "Two hours of coastline, then the sky", "trail-paper", palette("#e7eadc", "#faf9ed", "#384d47", "#45564d", "#536b40", "#326f80", "#c3ccb4"), "trail"),
   harbour: scene("harbour", "newfoundland", "St. John’s harbour", "A place for everything coming and going", "dock-ledger", palette("#dae6e9", "#f7f5e9", "#244955", "#3d5258", "#286577", "#95682f", "#b4cbd0"), "harbour"),

@@ -22,6 +22,7 @@ import { isVisibleInView } from "./core/visibility.ts";
 import { useAppearanceBinding } from "./theme/ThemeProvider.tsx";
 import { AppearancePicker } from "./theme/AppearancePicker.tsx";
 import { Memorabilia } from "./theme/Memorabilia.tsx";
+import { PageWorld, WorldCharm } from "./theme/PageWorld.tsx";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import { ThemeSceneHeading } from "./theme/SceneArtwork.tsx";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
@@ -6478,14 +6479,15 @@ export function App() {
         ))}
       </div>
       <div>
-        <div>
+        <div className="world-page">
+      <PageWorld page={tab} />
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
 
       <ThemeSceneHeading home={tab === "home"} />
-      <Memorabilia scene={appearance.scene.id} />
+      <WorldCharm page={tab} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
         <Till
@@ -6596,6 +6598,7 @@ export function App() {
           }}
         />
         </DeferredSurface>
+        <Memorabilia scene={appearance.scene.id} />
         </>
       )}
 

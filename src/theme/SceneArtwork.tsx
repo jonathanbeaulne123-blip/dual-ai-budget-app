@@ -1,4 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { HomeArtwork } from "./LivingArtwork.tsx";
+import { EraBracelet } from "./PageWorld.tsx";
 import { MEMORABILIA } from "./memorabilia.ts";
 import type { ThemeScene } from "./scenes.ts";
 import { useAppearance } from "./ThemeProvider.tsx";
@@ -167,9 +169,9 @@ export function ThemeSceneHeading({ home = false }: { home?: boolean }) {
     return () => observer.disconnect();
   }, []);
   return <section ref={ref} data-scene-visible={visible} className="theme-scene-heading" aria-label={`${scene.title} theme scene`} data-home-scene={home || undefined}>
-    <SceneArtwork scene={scene} />
+    {home ? <HomeArtwork scene={scene} /> : <SceneArtwork scene={scene} />}
     <div className="theme-scene-copy"><span className="theme-scene-kicker">{scene.theme === "taylor" ? "A page from our scrapbook" : scene.theme === "newfoundland" ? "A little Newfoundland" : "Welcome home"}</span><p className="theme-scene-title">{scene.title}</p><p className="theme-scene-caption">{scene.caption}</p></div>
-    {home && scene.theme === "taylor" && <FriendshipBracelets />}
+    <EraBracelet />
     <AtmosphereControl />
   </section>;
 }

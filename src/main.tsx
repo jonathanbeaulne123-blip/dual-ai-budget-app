@@ -18,6 +18,7 @@ import "./theme/worlds.css";
 import "./mobile-canon.css";
 import "./theme/mobile-worlds.css";
 import "./theme/mobile-worlds-refinement.css";
+import "./theme/page-worlds.css";
 import "./entry-restoration.css";
 import "./entry-restoration-integration.css";
 import "./entry-restoration-corrections.css";

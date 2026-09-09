@@ -37,7 +37,26 @@ it('preserves the real Count exact editor and unfinished cash draft through them
  await act(async()=>store.cancelPreview());expect(host.querySelector('.count-exact')).toBe(editor);expect(editor.value).toBe('137.42');expect(onCancel).not.toHaveBeenCalled();
  }finally{await act(async()=>root.unmount());host.remove();}
 });
-it('renders reserved fictional keepsakes without marking missing originals as prepared',async()=>{
+it('browses labelled placeholders at both Homes without inventing a ticket or marking photos prepared',async()=>{
  const host=document.createElement('div'),root=createRoot(host);
- try{await act(async()=>root.render(h(Memorabilia,{scene:'showgirl',location:'phone-desk'})));expect(host.querySelectorAll('figure[data-placeholder]')).toHaveLength(3);expect(host.querySelector('figure')?.getAttribute('data-asset')).toBe('concert-ticket');for(const img of host.querySelectorAll('img')){expect(img.alt).toContain('Illustrated placeholder');expect(img.getAttribute('width')).toBeTruthy();expect(img.getAttribute('height')).toBeTruthy();}expect(missingMemorabilia()).toHaveLength(MEMORABILIA.length);await act(async()=>root.render(h(Memorabilia,{scene:'jag-lobby'})));expect(host.innerHTML).toBe('');}finally{await act(async()=>root.unmount());}
+ try {
+  for(const scene of ['showgirl','lover']) {
+   await act(async()=>root.render(h(Memorabilia,{scene})));
+   expect(host.querySelector('.home-scrapbook')).not.toBeNull();
+   expect(host.textContent).toContain('Bianca will choose the photographs');
+   expect(host.textContent).not.toContain('ticket');
+   const next=host.querySelector<HTMLButtonElement>('[aria-label="Next scrapbook page"]')!;
+   const previous=host.querySelector<HTMLButtonElement>('[aria-label="Previous scrapbook page"]')!;
+   expect(previous.disabled).toBe(true);
+   await act(async()=>next.click());
+   expect(host.querySelector('[aria-live]')?.textContent).toBe('Page 2 of 3');
+   expect(host.querySelector('.scrapbook-sequins')).not.toBeNull();
+   await act(async()=>next.click());expect(next.disabled).toBe(true);
+   await act(async()=>previous.click());await act(async()=>previous.click());
+   expect(previous.disabled).toBe(true);
+  }
+  expect(MEMORABILIA.some(a=>a.id==='concert-ticket')).toBe(false);
+  expect(missingMemorabilia().every(a=>a.status==='awaiting-original')).toBe(true);
+  await act(async()=>root.render(h(Memorabilia,{scene:'jag-lobby'})));expect(host.innerHTML).toBe('');
+ } finally {await act(async()=>root.unmount());}
 });
