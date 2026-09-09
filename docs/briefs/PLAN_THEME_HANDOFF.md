@@ -1,6 +1,6 @@
 # Plan: authored worlds and desktop columns
 
-Jonathan approved the Plan workshop and asked to finish its PR. Publication is the delivery target; merge/deployment are separate.
+Jonathan approved the Plan workshop and asked to finish its PR. [PR #416](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/416) is published. Publication is the delivery target; merge/deployment are separate.
 
 Branch `codex/worlds-plan` starts from verified main `6905022927401eb2d435b6d280ea8469bc812be0` (Calendar #415). Risk Medium-High. Owner Jonathan; implementation/review coordinator Codex. No hosted writes, schema, API or Production changes.
 

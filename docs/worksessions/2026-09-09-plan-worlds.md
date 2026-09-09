@@ -1,6 +1,6 @@
 # Hearth worksession — Plan worlds
 
-- Status: IMPLEMENTED; publication checks underway; owner/decision owner Jonathan; assignee Codex.
+- Status: PUBLISHED; owner/decision owner Jonathan; assignee Codex.
 - Branch: `codex/worlds-plan`; verified baseline `6905022927401eb2d435b6d280ea8469bc812be0` (Calendar #415 merged).
 - Risk: Medium-High; environment impact: none until separate release authorization.
 - Authorization: Jonathan approved the workshop and instructed “finish this pr”. Publication only.
@@ -56,4 +56,7 @@ Final header crop and lower-coast recapture passed42 actual-page cases across al
 
 [Desktop](../ux/page-worlds/plan-desktop.png) · [Full mobile](../ux/page-worlds/plan-mobile-full.png) · [Empty](../ux/page-worlds/plan-empty-desktop.png) · [Long](../ux/page-worlds/plan-long-desktop.png) · [Machine-readable evidence](../ux/page-worlds/plan-evidence.json). Expanded/error captures retain the pre-final decorative crop; financial forms and their final styles are unchanged. Fixed navigation appears partway down browser full-page screenshots; actual viewport tests checked the live controls separately.
 
-Independent final source/visual review closed with no remaining concrete findings. Production build transformed638modules. PR publication pending below.
+Independent final source/visual review closed with no remaining concrete findings. Production build transformed638modules. PR publication recorded below.
+
+## Publication
+[PR #416 — Plan: desktop columns and complete themed scenery](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/416), implementation/evidence commit `c778362bf8d09f456d2565ea1cb7a355a5667d1f`, base `6905022927401eb2d435b6d280ea8469bc812be0`. This receipt adds no product changes. Hosted CI is reported separately from local validation. No merge or deployment.
