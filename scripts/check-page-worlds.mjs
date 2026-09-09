@@ -1,6 +1,7 @@
 // Actual App, synthetic local fixture only. Blocks every non-local request.
 import {chromium} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {checkMore} from './check-more-interactions.mjs';
 import {checkPlan} from './check-plan-interactions.mjs';
 import {checkCalendar} from './check-calendar-interactions.mjs';
 import {mkdir,writeFile} from 'node:fs/promises';
@@ -32,6 +33,7 @@ try {
   const {assertAcceptableBooks}=await import('/src/core/booksValidation.ts');const {financialAuditHash}=await import('/src/core/commandIdentity.ts');
   if(state==='empty') {h.transactions=[];h.shifts=[];h.goals=[];h.recurrences=[];if(route==='plan')h.budgetPlans=[];}
   if(state==='long') {
+   if(route==='more')h.members=h.members.map(m=>({...m,name:m.name+' with a very long illustrative member name'}));
    h.name='Our household with a wonderfully long name for narrow-screen verification';
    if(route==='plan')h.budgetPlans=h.budgetPlans.map(b=>({...b,amountCents:123456789}));
    if(route==='plan')h.categories=h.categories.map(c=>({...c,name:c.name+' — a longer illustrative category label'}));
@@ -40,16 +42,37 @@ try {
    h.recurrences=h.recurrences.map(r=>({...r,note:r.note+' — a long illustrative recurring payment with additional scheduling detail',amountCents:123456789}));
   }
   if(route==='plan'&&state!=='empty') { const {addGoal}=await import('/src/core/index.ts'); h=addGoal(h,{name:'A weekend by the water'+(state==='long'?' — something wonderful we are carefully saving toward together':''),target:'1500',shared:true}).household; if(state==='long'){ const {fundGoal}=await import('/src/core/index.ts'); h=addGoal(h,{name:'A little keepsake',target:'25',shared:true}).household; const goal=h.goals.find(g=>g.name==='A little keepsake'); h=fundGoal(h,{goalId:goal.id,amount:'25',fromAccountId:'ACC-CHEQUING',date:'2026-09-09',createdBy:'MEM-002'}).household; } h=addGoal(h,{name:'My next adventure',target:'800',shared:false,ownerMemberId:'MEM-002'}).household; }
+  if(route==='more'&&state==='long'){const {appendRestorePoint}=await import('/src/core/restorePoints.ts');h=await appendRestorePoint(h,'MEM-002');h.restorePoints=h.restorePoints.map(p=>({...p,label:'A deliberately long illustrative restore point label for the household books — September review'}));const {saveUndoHistory}=await import('/src/undoHistory.ts');saveUndoHistory('development',h.householdId,'MEM-002',[{id:'UNDO-VISUAL',label:'A long illustrative recent change description for the household review — groceries and supplies',postedIds:[h.transactions[0].id],snapshot:h,actorMemberId:'MEM-002'}]);}
   assertAcceptableBooks(h);h.booksAcceptedHash=await financialAuditHash(h);
   await saveHousehold(h,{memberId:'MEM-002',activate:true});saveSession('development',{householdId:h.householdId,memberId:'MEM-002',view:'household'});
  },{state,route});
  await page.goto(origin);await page.locator('nav.nav').waitFor({timeout:90000});await settle();await page.locator('.app[data-books-readiness=ready]').waitFor({timeout:90000});
  const due=page.locator('[aria-labelledby="due-preview-title"]');if(await due.isVisible())await due.getByRole('button',{name:'Not now',exact:true}).click();
  const closeReminders=page.getByRole('button',{name:'Close reminders',exact:true});if(await closeReminders.count())await closeReminders.click();
- for(const theme of (process.env.HEARTH_THEMES?.split(',')||['classic','taylor','newfoundland'])) {
+ if(route==='more'&&process.env.HEARTH_MORE_LOADING==='1') {
+  let release;const pending=new Promise(resolve=>release=resolve);
+  await page.route('**/src/Pairing.tsx',async request=>{await pending;await request.abort();});
+  await page.locator('nav.nav').getByRole('button',{name:'More',exact:true}).click();
+  await page.locator('.deferred-surface[aria-busy=true]').waitFor();
+  for(const phase of ['loading','error']) {
+   if(phase==='error'){release();await page.locator('.deferred-surface[role=alert]').waitFor();}
+   for(const theme of ['classic','taylor','newfoundland']) {
+    await page.locator('[data-preview-theme="'+theme+'"]').click();await page.getByRole('button',{name:'Use theme',exact:true}).click();
+    for(const scope of ['household','personal']) {
+     await page.locator('.view-switch button').nth(scope==='household'?0:1).click();
+     for(const width of [390,1440]){await page.setViewportSize({width,height:1000});await page.locator('.deferred-surface').scrollIntoViewIfNeeded();await page.screenshot({path:`${out}/${theme}-${scope}-${phase}-${width}.png`});}
+     const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations;
+     records.push({theme,scope,route,state:phase,metrics:[],violations,special:{zoom:{width:1440,scroll:await page.evaluate(()=>document.documentElement.scrollWidth)}}});
+    }
+   }
+  }
+  const unexpected=errors.filter(e=>!e.includes('Failed to fetch dynamically imported module'));errors.splice(0,errors.length,...unexpected);
+ }
+ if(process.env.HEARTH_MORE_LOADING!=='1') for(const theme of (process.env.HEARTH_THEMES?.split(',')||['classic','taylor','newfoundland'])) {
   await nav('More');await page.locator('[data-preview-theme="'+theme+'"]').click();await page.getByRole('button',{name:'Use theme',exact:true}).click();
   for(const scope of route==='till'?['household']:route==='shift'?['personal']:['household','personal']) {
    await page.locator('.view-switch button').nth(scope==='household'?0:1).click();await go(scope);
+   if(route==='more'&&theme==='newfoundland')await page.locator('.more-chair-sticker').evaluate(e=>{if(!e.complete||!e.naturalWidth)throw Error('Chair image not loaded');});
    const metrics=[];
    for(const width of (process.env.HEARTH_WIDTHS?.split(',').map(Number)||[320,390,719,720,1100,1440,1920])) {
     await page.setViewportSize({width,height:1000});await settle();await page.evaluate(()=>window.scrollTo(0,0));
@@ -61,6 +84,10 @@ try {
      if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
     }
     if(route==='home' && width<720 && await page.locator('.desktop-title-bracelets').isVisible())errors.push('Desktop bracelets leaked into phone');
+    if(route==='more'&&theme==='newfoundland') {
+     const contained=await page.locator('.more-chair-sticker').evaluate(e=>{const r=e.getBoundingClientRect(),p=e.closest('.theme-scene-heading').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom&&r.left>=p.left&&r.right<=p.right;});
+     if(!contained)errors.push('JAG chair clipped '+width);
+    }
     if(route==='plan') {
      const geometry=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.x,y:r.y,w:r.width};};return {categories:rect('.plan-categories'),banks:rect('.kitty-banks'),sit:rect('.sit-guide')};});
      if(width>=1100&&!(geometry.categories.x<geometry.banks.x&&geometry.banks.y<geometry.sit.y))errors.push('Plan desktop columns incorrect '+width);
@@ -86,6 +113,7 @@ try {
    await page.setViewportSize({width:390,height:1000});await settle();
    const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));
    const special={};
+   if(route==='more'&&process.env.HEARTH_SKIP_NESTED!=='1')special.more=await checkMore({page,out,theme,scope,state});
    if(route==='plan'&&process.env.HEARTH_SKIP_NESTED!=='1')special.plan=await checkPlan({page,out,theme,scope,state});
    if(route==='calendar'&&process.env.HEARTH_SKIP_NESTED!=='1')special.calendar=await checkCalendar({page,out,theme,scope,state});
    if(route==='home'&&theme==='taylor') {
@@ -114,14 +142,14 @@ try {
    await writeFile(out+'/report.json',JSON.stringify({records,errors},null,2));
   }
  }
- if(['home','calendar','plan'].includes(route)&&state==='normal') {
+ if(process.env.HEARTH_MORE_LOADING!=='1'&&['home','calendar','plan','more'].includes(route)&&state==='normal') {
   await page.setViewportSize({width:1440,height:1000});
   await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('.world-charm').focus();
   await page.locator('.theme-scene-heading').getByRole('button',{name:'Pause atmosphere',exact:true}).click();
   await page.waitForFunction(()=>document.documentElement.dataset.atmosphere==='paused');
-  const running=()=>page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art')).length);
-  if(await running())throw Error('Paused new atmosphere still running: '+JSON.stringify(await page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art')).map(a=>({target:a.effect.target.outerHTML.slice(0,160),type:a.constructor.name,style:getComputedStyle(a.effect.target).animationPlayState})))));
-  if(route==='calendar'||route==='plan') {
+  const running=()=>page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art')).length);
+  if(await running())throw Error('Paused new atmosphere still running: '+JSON.stringify(await page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art')).map(a=>({target:a.effect.target.outerHTML.slice(0,160),type:a.constructor.name,style:getComputedStyle(a.effect.target).animationPlayState})))));
+  if(route==='calendar'||route==='plan'||route==='more') {
    await page.reload({waitUntil:'domcontentloaded'});await page.locator('nav.nav').waitFor({timeout:90000});await settle();await go('personal');
    if(await page.locator('html').getAttribute('data-atmosphere')!=='paused')throw Error('Atmosphere pause did not persist');
    records.at(-1).special.motion={persistentPause:true};
@@ -137,6 +165,15 @@ try {
    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
    await page.waitForFunction(()=>Array.from(document.querySelectorAll('.calendar-scenery-panel')).some(e=>e.dataset.atmosphereVisible==='false'));
    records.at(-1).special.motion.offscreen=await page.locator('.calendar-scenery-panel[data-atmosphere-visible=false]').count();
+  }
+  if(route==='more') {
+   await page.getByRole('textbox',{name:'Category name',exact:true}).focus();
+   await page.waitForFunction(()=>document.documentElement.dataset.atmosphere==='paused');
+   if(await running())throw Error('More focus quiet failed');
+   await page.locator('.world-charm').focus();
+   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.more-scenery-panel')).some(e=>e.dataset.atmosphereVisible==='false'));
+   records.at(-1).special.motion={persistentPause:true,focusQuiet:true,offscreen:await page.locator('.more-scenery-panel[data-atmosphere-visible=false]').count()};
   }
   if(route==='plan') {
    await page.locator('.budget-edit-trigger').first().click();

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { MoreHeadingArtwork } from "./MoreArtwork.tsx";
 import { PlanHeadingArtwork } from "./PlanArtwork.tsx";
 import { CalendarHeadingArtwork } from "./CalendarArtwork.tsx";
 import { HomeArtwork } from "./LivingArtwork.tsx";
@@ -160,7 +161,7 @@ export function SceneArtwork({ scene }: { scene: ThemeScene }) {
     </>}
   </svg>;
 }
-export function ThemeSceneHeading({ home = false, calendar = false, plan = false }: { home?: boolean; calendar?: boolean; plan?: boolean }) {
+export function ThemeSceneHeading({ home = false, calendar = false, plan = false, more = false }: { home?: boolean; calendar?: boolean; plan?: boolean; more?: boolean }) {
   const { scene } = useAppearance();
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
@@ -171,12 +172,13 @@ export function ThemeSceneHeading({ home = false, calendar = false, plan = false
     return () => observer.disconnect();
   }, []);
   return <section ref={ref} data-scene-visible={visible} className="theme-scene-heading" aria-label={`${scene.title} theme scene`} data-home-scene={home || undefined} data-calendar-scene={calendar || undefined} data-plan-scene={plan || undefined}>
-    {home ? <HomeArtwork scene={scene} /> : calendar ? <CalendarHeadingArtwork scene={scene}/> : plan ? <PlanHeadingArtwork scene={scene}/> : <SceneArtwork scene={scene} />}
+    {more ? <MoreHeadingArtwork scene={scene}/> : home ? <HomeArtwork scene={scene} /> : calendar ? <CalendarHeadingArtwork scene={scene}/> : plan ? <PlanHeadingArtwork scene={scene}/> : <SceneArtwork scene={scene} />}
+    {more && scene.theme === "newfoundland" && <img className="more-chair-sticker" src="/theme-art/more-jag-couple.webp" alt="Clip-art couple sitting side by side in white sauna robes on a tall red JAG chair" width="160" height="240" />}
     {plan && scene.id === "summit" && <img className="plan-cannon-sticker" src="/theme-art/plan-cannon.webp" alt="Simple clip-art illustration of Jonathan sitting on the cannon at Signal Hill" width="240" height="160" />}
     {calendar && scene.id === "cape-spear" && <img className="calendar-couple" src="/theme-art/calendar-cape-couple.webp" alt="Clip-art illustration of Jonathan and Bianca at Cape Spear" />}
     <div className="theme-scene-copy"><span className="theme-scene-kicker">{scene.theme === "taylor" ? "A page from our scrapbook" : scene.theme === "newfoundland" ? "A little Newfoundland" : "Welcome home"}</span><p className="theme-scene-title">{scene.title}</p><p className="theme-scene-caption">{scene.caption}</p></div>
     <EraBracelet />
-    {(home || calendar || plan) && <div className="desktop-title-bracelets"><FriendshipBracelets /><EraBracelet allThemes /></div>}
+    {(home || calendar || plan || more) && <div className="desktop-title-bracelets"><FriendshipBracelets /><EraBracelet allThemes /></div>}
     <AtmosphereControl />
   </section>;
 }

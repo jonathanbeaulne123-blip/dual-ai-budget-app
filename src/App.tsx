@@ -6486,7 +6486,7 @@ export function App() {
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
 
-      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} />
+      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} />
       <WorldCharm page={tab} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
@@ -6849,7 +6849,7 @@ export function App() {
       )}
 
       {tab === "more" && (
-        <>
+        <div className="more-surfaces">
           <AppearancePicker />
           {view === "household" ? (
             <section className="card">
@@ -7346,7 +7346,7 @@ export function App() {
             )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
-        </>
+        </div>
       )}
 
       {swipeOpen && experience && experience.ok ? (

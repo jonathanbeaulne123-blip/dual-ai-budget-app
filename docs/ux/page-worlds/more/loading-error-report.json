@@ -1,0 +1,174 @@
+{
+  "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+  "records": [
+    {
+      "theme": "classic",
+      "scope": "household",
+      "route": "more",
+      "state": "loading",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "personal",
+      "route": "more",
+      "state": "loading",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "household",
+      "route": "more",
+      "state": "loading",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "personal",
+      "route": "more",
+      "state": "loading",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "household",
+      "route": "more",
+      "state": "loading",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "personal",
+      "route": "more",
+      "state": "loading",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "household",
+      "route": "more",
+      "state": "error",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "personal",
+      "route": "more",
+      "state": "error",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "household",
+      "route": "more",
+      "state": "error",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "personal",
+      "route": "more",
+      "state": "error",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "household",
+      "route": "more",
+      "state": "error",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "personal",
+      "route": "more",
+      "state": "error",
+      "metrics": [],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    }
+  ],
+  "errors": []
+}

@@ -51,14 +51,14 @@ export const NEWFOUNDLAND_SCENES = {
   rain: scene("rain", "newfoundland", "Rainy St. John’s", "A bright spot in a rainy day", "raincoat", palette("#dfe7e6", "#f6f8f0", "#314b53", "#4b6267", "#816318", "#346c7c", "#b8cdce"), "rain"),
   trail: scene("trail", "newfoundland", "The coastal way up", "Two hours of coastline, then the sky", "trail-paper", palette("#e7eadc", "#faf9ed", "#384d47", "#45564d", "#536b40", "#326f80", "#c3ccb4"), "trail"),
   harbour: scene("harbour", "newfoundland", "St. John’s harbour", "A place for everything coming and going", "dock-ledger", palette("#dae6e9", "#f7f5e9", "#244955", "#3d5258", "#286577", "#95682f", "#b4cbd0"), "harbour"),
-  "jag-lobby": scene("jag-lobby", "newfoundland", "Back at JAG", "Make yourself at home", "metallic", palette("#202825", "#2c3530", "#f4ead6", "#c8bea9", "#ddbd79", "#a7c4af", "#68705c"), "jag", true),
+  "jag-lobby": scene("jag-lobby", "newfoundland", "Back at JAG", "Make yourself at home", "metallic", palette("#dedbda", "#fff7ed", "#382c30", "#68565b", "#9b3044", "#796572", "#bca9a6"), "jag"),
   "water-street": scene("water-street", "newfoundland", "Water Street", "A little stop along the way", "receipt", palette("#f0e4d6", "#fff8ed", "#4e392f", "#6d5649", "#a74736", "#43766e", "#d4bba5"), "shop"),
   "quidi-vidi": scene("quidi-vidi", "newfoundland", "Quidi Vidi", "The kettle’s on by the harbour", "kitchen", palette("#e4eee8", "#fcf8e9", "#354c43", "#54655b", "#387666", "#985062", "#c0d0c1"), "cottage"),
   "cape-spear": scene("cape-spear", "newfoundland", "Cape Spear", "A little closer to the morning", "horizon", palette("#eee5e3", "#fff8ef", "#485465", "#5c626e", "#756286", "#aa603e", "#cdc4d1"), "lighthouse"),
   "george-street": scene("george-street", "newfoundland", "George Street", "When the street lights come on", "venue", palette("#272c36", "#353b45", "#f8edd9", "#e0d4c1", "#efc16e", "#b8c7d2", "#6c6e73"), "street", true),
   battery: scene("battery", "newfoundland", "The Battery", "Little houses above the water", "clapboard", palette("#e3e9e6", "#fcf8ed", "#35535a", "#506468", "#346f77", "#a85240", "#c1d0c7"), "battery"),
   summit: scene("summit", "newfoundland", "At the summit", "Look how far you’ve come", "sky", palette("#e5edf0", "#fbf9ed", "#3a515c", "#51656b", "#436d73", "#8b7243", "#c3d3d7"), "tower"),
-  "jag-music": scene("jag-music", "newfoundland", "JAG, after hours", "A familiar place to wind down", "gallery", palette("#e9dfcd", "#fbf4e5", "#443b31", "#605747", "#6e6144", "#4e7067", "#c9b99a"), "music"),
+  "jag-music": scene("jag-music", "newfoundland", "JAG, after hours", "A familiar place to wind down", "gallery", palette("#d7e0e5", "#fff7e9", "#263d4b", "#4d6170", "#326079", "#806025", "#b5b4a3"), "music"),
 } satisfies Record<string, ThemeScene>;
 const ERA_ROUTES = {
   household: { home: "lover", calendar: "red", plan: "fearless", ledger: "reputation", more: "evermore", till: "1989", shift: "speak-now", entry: "lover" },
