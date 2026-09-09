@@ -2,6 +2,8 @@
 
 ## Mission
 
+- For every page/theme refinement PR, read and apply [the page-theme execution standard](docs/briefs/PAGE_THEME_EXECUTION_STANDARD.md). The approved Home after #413 sets the quality bar for distinct phone and desktop compositions, whole-scroll scene identity, interaction preservation and actual-page validation (Jonathan, 2026-09-09).
+
 - Every UX implementation must include authored Classic Hearth, Taylor’s Scrapbook, and Newfoundland treatments and verification. Theme changes preserve drafts, scope, and financial meaning; no theme is an optional follow-up (Jonathan, 2026-09-08).
 
 Help Jonathan and Bianca run a dependable household budget **and** a companion kitchen they actually open. **Hearth** is Dual Course (D-048): family-office books weigh **5**; Hercules and other interactables weigh **3**. Each course must improve the other. When they conflict, the books win.
