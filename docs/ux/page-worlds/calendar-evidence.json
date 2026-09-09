@@ -1,0 +1,1813 @@
+{
+  "normal": {
+    "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+    "records": [
+      {
+        "theme": "classic",
+        "scope": "household",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "classic",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "household",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "red",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "red",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "red",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "red",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "red",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "red",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "red",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "midnights",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "midnights",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "midnights",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "midnights",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "midnights",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "midnights",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "midnights",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "household",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "rain",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "rain",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "rain",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "rain",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "rain",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "rain",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "rain",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "cape-spear",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "cape-spear",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "cape-spear",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "cape-spear",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "cape-spear",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "cape-spear",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "cape-spear",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          },
+          "motion": {
+            "persistentPause": true,
+            "focusQuiet": true,
+            "offscreen": 1
+          }
+        }
+      }
+    ],
+    "errors": []
+  },
+  "empty": {
+    "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+    "records": [
+      {
+        "theme": "classic",
+        "scope": "household",
+        "route": "calendar",
+        "state": "empty",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "classic",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "empty",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "household",
+        "route": "calendar",
+        "state": "empty",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "red",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "red",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "red",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "red",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "red",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "red",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "red",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "empty",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "midnights",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "midnights",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "midnights",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "midnights",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "midnights",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "midnights",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "midnights",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "household",
+        "route": "calendar",
+        "state": "empty",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "rain",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "rain",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "rain",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "rain",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "rain",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "rain",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "rain",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "empty",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "cape-spear",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "cape-spear",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "cape-spear",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "cape-spear",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "cape-spear",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "cape-spear",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "cape-spear",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      }
+    ],
+    "errors": []
+  },
+  "long": {
+    "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+    "records": [
+      {
+        "theme": "classic",
+        "scope": "household",
+        "route": "calendar",
+        "state": "long",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "classic",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "long",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "household",
+        "route": "calendar",
+        "state": "long",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "red",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "red",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "red",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "red",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "red",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "red",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "red",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "long",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "midnights",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "midnights",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "midnights",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "midnights",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "midnights",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "midnights",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "midnights",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "household",
+        "route": "calendar",
+        "state": "long",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "rain",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "rain",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "rain",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "rain",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "rain",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "rain",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "rain",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "long",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "cape-spear",
+            "dateWidth": 44.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "cape-spear",
+            "dateWidth": 47.421875,
+            "dateHeight": 88
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "cape-spear",
+            "dateWidth": 93.28125,
+            "dateHeight": 88
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "cape-spear",
+            "dateWidth": 79.703125,
+            "dateHeight": 112
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "cape-spear",
+            "dateWidth": 115.421875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "cape-spear",
+            "dateWidth": 157.1875,
+            "dateHeight": 112
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "cape-spear",
+            "dateWidth": 190.5625,
+            "dateHeight": 112
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      }
+    ],
+    "errors": []
+  },
+  "loading": {
+    "records": [
+      {
+        "theme": "classic",
+        "scope": "household",
+        "loading": true,
+        "error": true,
+        "recovered": true
+      },
+      {
+        "theme": "classic",
+        "scope": "personal",
+        "loading": true,
+        "error": true,
+        "recovered": true
+      },
+      {
+        "theme": "taylor",
+        "scope": "household",
+        "loading": true,
+        "error": true,
+        "recovered": true
+      },
+      {
+        "theme": "taylor",
+        "scope": "personal",
+        "loading": true,
+        "error": true,
+        "recovered": true
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "household",
+        "loading": true,
+        "error": true,
+        "recovered": true
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "personal",
+        "loading": true,
+        "error": true,
+        "recovered": true
+      }
+    ],
+    "expectedErrors": []
+  },
+  "nested": {
+    "records": [
+      {
+        "theme": "classic",
+        "scope": "household",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "calendar": {
+            "panes": [
+              "day-expanded",
+              "month",
+              "appointments",
+              "appointment-draft",
+              "medical-log",
+              "bills",
+              "bill-draft"
+            ],
+            "dateKeyboard": true,
+            "monthKeyboard": true,
+            "draftCancel": true
+          },
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "classic",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-calendar"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-calendar"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "calendar": {
+            "panes": [
+              "day-expanded",
+              "month",
+              "appointments",
+              "appointment-draft",
+              "medical-log",
+              "bills",
+              "bill-draft"
+            ],
+            "dateKeyboard": true,
+            "monthKeyboard": true,
+            "draftCancel": true
+          },
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "household",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "red",
+            "dateWidth": 44.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "red",
+            "dateWidth": 47.421875,
+            "dateHeight": 44
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "red",
+            "dateWidth": 93.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "red",
+            "dateWidth": 79.703125,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "red",
+            "dateWidth": 115.421875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "red",
+            "dateWidth": 157.1875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "red",
+            "dateWidth": 190.5625,
+            "dateHeight": 51.5
+          }
+        ],
+        "violations": [],
+        "special": {
+          "calendar": {
+            "panes": [
+              "day-expanded",
+              "month",
+              "appointments",
+              "appointment-draft",
+              "medical-log",
+              "bills",
+              "bill-draft"
+            ],
+            "dateKeyboard": true,
+            "monthKeyboard": true,
+            "draftCancel": true
+          },
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "midnights",
+            "dateWidth": 44.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "midnights",
+            "dateWidth": 47.421875,
+            "dateHeight": 44
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "midnights",
+            "dateWidth": 93.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "midnights",
+            "dateWidth": 79.703125,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "midnights",
+            "dateWidth": 115.421875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "midnights",
+            "dateWidth": 157.1875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "midnights",
+            "dateWidth": 190.5625,
+            "dateHeight": 51.5
+          }
+        ],
+        "violations": [],
+        "special": {
+          "calendar": {
+            "panes": [
+              "day-expanded",
+              "month",
+              "appointments",
+              "appointment-draft",
+              "medical-log",
+              "bills",
+              "bill-draft"
+            ],
+            "dateKeyboard": true,
+            "monthKeyboard": true,
+            "draftCancel": true
+          },
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "household",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "rain",
+            "dateWidth": 44.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "rain",
+            "dateWidth": 47.421875,
+            "dateHeight": 44
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "rain",
+            "dateWidth": 93.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "rain",
+            "dateWidth": 79.703125,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "rain",
+            "dateWidth": 115.421875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "rain",
+            "dateWidth": 157.1875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "rain",
+            "dateWidth": 190.5625,
+            "dateHeight": 51.5
+          }
+        ],
+        "violations": [],
+        "special": {
+          "calendar": {
+            "panes": [
+              "day-expanded",
+              "month",
+              "appointments",
+              "appointment-draft",
+              "medical-log",
+              "bills",
+              "bill-draft"
+            ],
+            "dateKeyboard": true,
+            "monthKeyboard": true,
+            "draftCancel": true
+          },
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "personal",
+        "route": "calendar",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "cape-spear",
+            "dateWidth": 44.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "cape-spear",
+            "dateWidth": 47.421875,
+            "dateHeight": 44
+          },
+          {
+            "width": 719,
+            "scroll": 719,
+            "scene": "cape-spear",
+            "dateWidth": 93.28125,
+            "dateHeight": 44
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "cape-spear",
+            "dateWidth": 79.703125,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "cape-spear",
+            "dateWidth": 115.421875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "cape-spear",
+            "dateWidth": 157.1875,
+            "dateHeight": 51.5
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "cape-spear",
+            "dateWidth": 190.5625,
+            "dateHeight": 51.5
+          }
+        ],
+        "violations": [],
+        "special": {
+          "calendar": {
+            "panes": [
+              "day-expanded",
+              "month",
+              "appointments",
+              "appointment-draft",
+              "medical-log",
+              "bills",
+              "bill-draft"
+            ],
+            "dateKeyboard": true,
+            "monthKeyboard": true,
+            "draftCancel": true
+          },
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      }
+    ],
+    "note": "Nested flows before final title/grid sizing polish; final dimensions are in normal, empty and long reports. Source financial behaviour unchanged."
+  }
+}

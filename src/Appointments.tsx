@@ -1,5 +1,5 @@
 import {RowReveal} from "./RowReveal.tsx";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   APPOINTMENT_KINDS,
   HOSTED_DISCLOSURE,
@@ -99,10 +99,11 @@ function CadenceFields(props: {
   onChange: (cadence: AppointmentCadence) => void;
 }) {
   const { cadence } = props;
+  const fieldId = useId();
   return (
     <>
-      <label>Cadence</label>
-      <select
+      <label htmlFor={`${fieldId}-cadence`}>Cadence</label>
+      <select id={`${fieldId}-cadence`}
         value={cadence.kind}
         onChange={(event) => props.onChange(shapeCadence({
           ...cadence,
@@ -119,8 +120,8 @@ function CadenceFields(props: {
       </select>
       {(cadence.kind === "weekly" || cadence.kind === "monthly" || cadence.kind === "days") && (
         <>
-          <label>{cadence.kind === "weekly" ? "Weeks" : cadence.kind === "monthly" ? "Months" : "Days"}</label>
-          <input
+          <label htmlFor={`${fieldId}-interval`}>{cadence.kind === "weekly" ? "Weeks" : cadence.kind === "monthly" ? "Months" : "Days"}</label>
+          <input id={`${fieldId}-interval`}
             type="number"
             min={1}
             value={cadence.interval}

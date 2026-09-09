@@ -1,3 +1,4 @@
+import { CalendarBinding } from "./theme/CalendarArtwork.tsx";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import "./calendar-boards.css";
 import { CalendarWeight } from "./CalendarWeight.tsx";
@@ -304,6 +305,7 @@ function CalendarPageScope(props: CalendarProps) {
   return (
     <div
       className="calendar-stage"
+      data-calendar-pane={pane}
       data-calendar-view={props.view ?? "household"}
       data-onboarding-standing-fact={props.onboardingStandingFactOnly ? "true" : undefined}
     >
@@ -339,6 +341,7 @@ function CalendarPageScope(props: CalendarProps) {
         <>
           <div className="calendar-board-stack">
           <section className="card calendar-card">
+            <CalendarBinding planner={pane === "board"}/>
             <header>
               <button className="chip" onClick={() => changeMonth(-1)} aria-label="Previous month">‹</button>
               <h2>{board.monthLabel}</h2>
