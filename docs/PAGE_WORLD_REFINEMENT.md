@@ -4,7 +4,7 @@ Execution instructions: [Page-theme execution standard](briefs/PAGE_THEME_EXECUT
 
 The original program proposed eight page-specific PRs on 2026-09-09: Home → Plan → Calendar → Books → Till → Shift → More → Entry. Every PR includes Classic, Taylor and Newfoundland plus applicable Shared/Personal scenes. No merge, deployment, schema or hosted household mutation is authorized.
 
-Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Jonathan subsequently resumed Calendar after #414 and approved its clip-art direction. Calendar was merged and deployed in #415. Jonathan subsequently resumed Plan, approved the two-column desktop workshop and cannon clip-art direction, and authorized PR publication. The other pages remain paused.
+Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Jonathan subsequently resumed Calendar after #414 and approved its clip-art direction. Calendar was merged and deployed in #415. Jonathan subsequently resumed Plan, approved the two-column desktop workshop and cannon clip-art direction, and authorized PR publication. Plan was merged and deployed in #416. Jonathan then resumed More, approved its theme-only scope and sauna-chair illustration, and authorized PR publication. Books, Till, Shift and Entry remain paused.
 
 ## Desktop Home revision
 
@@ -63,3 +63,11 @@ Desktop (1100px+) uses a wider Categories column and a right column with Kitty B
 Classic uses pinned cream sheets, coffee and trailing plants; Fearless uses gold concert-scrapbook fringe/lights, silver guitar, boots and restrained storybook paper; Debut uses blue-green/denim water washes, guitar, daisies and butterflies. Newfoundland follows the supplied Signal Hill sunny coast/summit references with one harbour opening and lower water, rock, plant and gull details. The original generated cannon sticker belongs to the summit title only. Individual panels observe visibility; global pause, reduced motion and focused-entry quieting apply.
 
 [Worksession and provenance](worksessions/2026-09-09-plan-worlds.md) · [Plan handoff](briefs/PLAN_THEME_HANDOFF.md). Private reference photographs, vision-board collages and original video are not shipped. No financial APIs, migrations, routing, identity or Confirm authority changed.
+
+## More — theme composition (2026-09-09)
+
+More keeps its existing section order, navigation, drafts and handlers. Jonathan deferred information architecture to a later implementation. Classic uses household shelves, coffee, books and trailing plants. Shared Taylor uses evermore plaid, warm parchment, cameras and autumn leaves; Personal uses folklore woodland, cream/moss and small lilac cabinet/envelope accents. Shared JAG uses crimson/silver stripes; Personal JAG uses cobalt/gold geometry and framed musical keepsakes. Both use the approved tall red-chair couple in sauna robes, with generic faces and long curly hair.
+
+Desktop has continuing wall/material backgrounds and six individually observed scenery panels; phone has quieter materials and section edges. The existing named title bracelets and light are retained. All added art is noninteractive except the separately named 44px keepsake charm. Original scene SVGs contain no financial state. Shared dialogs inherit scene tokens.
+
+[More worksession and provenance](worksessions/2026-09-09-more-worlds.md). Private photos and reference boards are not published. The generated chair is an ivory-backed illustrated print; the generator did not provide usable alpha, so no false transparency claim is made.

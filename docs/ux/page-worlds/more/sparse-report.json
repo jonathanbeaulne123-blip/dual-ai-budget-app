@@ -1,0 +1,342 @@
+{
+  "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+  "records": [
+    {
+      "theme": "classic",
+      "scope": "household",
+      "route": "more",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "classic-more"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "classic-more"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "classic-more"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "classic-more"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "classic-more"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "classic-more"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "classic-more"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "personal",
+      "route": "more",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "classic-more"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "classic-more"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "classic-more"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "classic-more"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "classic-more"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "classic-more"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "classic-more"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "household",
+      "route": "more",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "evermore"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "evermore"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "evermore"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "evermore"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "evermore"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "evermore"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "evermore"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "personal",
+      "route": "more",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "folklore"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "folklore"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "folklore"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "folklore"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "folklore"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "folklore"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "folklore"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "household",
+      "route": "more",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "jag-lobby"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "jag-lobby"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "jag-lobby"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "jag-lobby"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "jag-lobby"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "jag-lobby"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "jag-lobby"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "personal",
+      "route": "more",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "jag-music"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "jag-music"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "jag-music"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "jag-music"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "jag-music"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "jag-music"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "jag-music"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    }
+  ],
+  "errors": []
+}
