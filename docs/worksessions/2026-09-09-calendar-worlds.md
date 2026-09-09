@@ -68,3 +68,7 @@ Fixed navigation can appear midway through a browser full-page screenshot; live 
 Physical phones/tablets, Safari/VoiceOver, native text enlargement, real Google Calendar OAuth/sync and authenticated two-device flows were not exercised. No live financial write, schema, merge or deployment was performed. Full video motion was not reviewed; shipping-yard stills informed original illustrations. Home preservation is supported by scoped source review and the existing App/theme tests, not a new pixel comparison. Asset choice is complete for this Calendar PR; private originals remain unpublished.
 
 Jonathan owns review and release authorization. See [durable handoff](../briefs/CALENDAR_THEME_HANDOFF.md). PR and implementation commit are recorded below after publication.
+
+## Publication
+
+[PR #415 — Calendar: roomy themed pages and clip-art scenery](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/415) is open against main. Implementation/evidence commit: `a3b4d27c39ad58e4d63c2f4477ee4458f931ed01`. This publication receipt is documentation only. Local checks and browser results above apply to the implementation; hosted CI status is reported separately. No merge or deployment.
