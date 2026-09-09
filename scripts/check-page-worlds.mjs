@@ -1,6 +1,7 @@
 // Actual App, synthetic local fixture only. Blocks every non-local request.
 import {chromium} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {checkPlan} from './check-plan-interactions.mjs';
 import {checkCalendar} from './check-calendar-interactions.mjs';
 import {mkdir,writeFile} from 'node:fs/promises';
 const route=process.env.HEARTH_WORLD_PAGE||'home';
@@ -24,21 +25,24 @@ async function go(scope){
 }
 try {
  await page.goto(origin+'/?themeStudio=1');
- await page.evaluate(async(state)=>{
+ await page.evaluate(async({state,route})=>{
   const {completedExistingBooksHousehold}=await import('/test/fixtures/existing-books-onboarding.ts');
   const {saveHousehold}=await import('/src/storage.ts');const {saveSession}=await import('/src/session.ts');
   let h=completedExistingBooksHousehold('2026-09-09T12:00:00.000Z');
   const {assertAcceptableBooks}=await import('/src/core/booksValidation.ts');const {financialAuditHash}=await import('/src/core/commandIdentity.ts');
-  if(state==='empty') {h.transactions=[];h.shifts=[];h.goals=[];h.recurrences=[];}
+  if(state==='empty') {h.transactions=[];h.shifts=[];h.goals=[];h.recurrences=[];if(route==='plan')h.budgetPlans=[];}
   if(state==='long') {
    h.name='Our household with a wonderfully long name for narrow-screen verification';
+   if(route==='plan')h.budgetPlans=h.budgetPlans.map(b=>({...b,amountCents:123456789}));
+   if(route==='plan')h.categories=h.categories.map(c=>({...c,name:c.name+' — a longer illustrative category label'}));
    h.accounts=h.accounts.map(a=>({...a,name:a.name+' — a longer account label with additional details'}));
    h.goals=h.goals.map(g=>({...g,name:g.name+' — something wonderful we are carefully saving toward together'}));
    h.recurrences=h.recurrences.map(r=>({...r,note:r.note+' — a long illustrative recurring payment with additional scheduling detail',amountCents:123456789}));
   }
+  if(route==='plan'&&state!=='empty') { const {addGoal}=await import('/src/core/index.ts'); h=addGoal(h,{name:'A weekend by the water'+(state==='long'?' — something wonderful we are carefully saving toward together':''),target:'1500',shared:true}).household; if(state==='long'){ const {fundGoal}=await import('/src/core/index.ts'); h=addGoal(h,{name:'A little keepsake',target:'25',shared:true}).household; const goal=h.goals.find(g=>g.name==='A little keepsake'); h=fundGoal(h,{goalId:goal.id,amount:'25',fromAccountId:'ACC-CHEQUING',date:'2026-09-09',createdBy:'MEM-002'}).household; } h=addGoal(h,{name:'My next adventure',target:'800',shared:false,ownerMemberId:'MEM-002'}).household; }
   assertAcceptableBooks(h);h.booksAcceptedHash=await financialAuditHash(h);
   await saveHousehold(h,{memberId:'MEM-002',activate:true});saveSession('development',{householdId:h.householdId,memberId:'MEM-002',view:'household'});
- },state);
+ },{state,route});
  await page.goto(origin);await page.locator('nav.nav').waitFor({timeout:90000});await settle();await page.locator('.app[data-books-readiness=ready]').waitFor({timeout:90000});
  const due=page.locator('[aria-labelledby="due-preview-title"]');if(await due.isVisible())await due.getByRole('button',{name:'Not now',exact:true}).click();
  const closeReminders=page.getByRole('button',{name:'Close reminders',exact:true});if(await closeReminders.count())await closeReminders.click();
@@ -57,6 +61,11 @@ try {
      if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
     }
     if(route==='home' && width<720 && await page.locator('.desktop-title-bracelets').isVisible())errors.push('Desktop bracelets leaked into phone');
+    if(route==='plan') {
+     const geometry=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.x,y:r.y,w:r.width};};return {categories:rect('.plan-categories'),banks:rect('.kitty-banks'),sit:rect('.sit-guide')};});
+     if(width>=1100&&!(geometry.categories.x<geometry.banks.x&&geometry.banks.y<geometry.sit.y))errors.push('Plan desktop columns incorrect '+width);
+     if(width<1100&&!(geometry.categories.y<geometry.sit.y&&geometry.sit.y<geometry.banks.y))errors.push('Plan single-column order changed '+width);
+    }
     metrics.push(await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,scene:document.documentElement.dataset.scene,dateWidth:document.querySelector('.cal-day')?.getBoundingClientRect().width,dateHeight:document.querySelector('.cal-day')?.getBoundingClientRect().height})));
    }
    await page.setViewportSize({width:1440,height:1000});await settle();
@@ -77,6 +86,7 @@ try {
    await page.setViewportSize({width:390,height:1000});await settle();
    const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));
    const special={};
+   if(route==='plan'&&process.env.HEARTH_SKIP_NESTED!=='1')special.plan=await checkPlan({page,out,theme,scope,state});
    if(route==='calendar'&&process.env.HEARTH_SKIP_NESTED!=='1')special.calendar=await checkCalendar({page,out,theme,scope,state});
    if(route==='home'&&theme==='taylor') {
     special.galleryCount=await page.locator('.home-scrapbook').count();
@@ -104,14 +114,14 @@ try {
    await writeFile(out+'/report.json',JSON.stringify({records,errors},null,2));
   }
  }
- if(['home','calendar'].includes(route)&&state==='normal') {
+ if(['home','calendar','plan'].includes(route)&&state==='normal') {
   await page.setViewportSize({width:1440,height:1000});
   await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('.world-charm').focus();
   await page.locator('.theme-scene-heading').getByRole('button',{name:'Pause atmosphere',exact:true}).click();
   await page.waitForFunction(()=>document.documentElement.dataset.atmosphere==='paused');
-  const running=()=>page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding')).length);
-  if(await running())throw Error('Paused new atmosphere still running: '+JSON.stringify(await page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding')).map(a=>({target:a.effect.target.outerHTML.slice(0,160),type:a.constructor.name,style:getComputedStyle(a.effect.target).animationPlayState})))));
-  if(route==='calendar') {
+  const running=()=>page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art')).length);
+  if(await running())throw Error('Paused new atmosphere still running: '+JSON.stringify(await page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art')).map(a=>({target:a.effect.target.outerHTML.slice(0,160),type:a.constructor.name,style:getComputedStyle(a.effect.target).animationPlayState})))));
+  if(route==='calendar'||route==='plan') {
    await page.reload({waitUntil:'domcontentloaded'});await page.locator('nav.nav').waitFor({timeout:90000});await settle();await go('personal');
    if(await page.locator('html').getAttribute('data-atmosphere')!=='paused')throw Error('Atmosphere pause did not persist');
    records.at(-1).special.motion={persistentPause:true};
@@ -127,6 +137,15 @@ try {
    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
    await page.waitForFunction(()=>Array.from(document.querySelectorAll('.calendar-scenery-panel')).some(e=>e.dataset.atmosphereVisible==='false'));
    records.at(-1).special.motion.offscreen=await page.locator('.calendar-scenery-panel[data-atmosphere-visible=false]').count();
+  }
+  if(route==='plan') {
+   await page.locator('.budget-edit-trigger').first().click();
+   await page.waitForFunction(()=>document.documentElement.dataset.atmosphere==='paused');
+   if(await running())throw Error('Plan focused-entry atmosphere still running');
+   await page.keyboard.press('Escape');
+   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.plan-scenery-panel')).some(e=>e.dataset.atmosphereVisible==='false'));
+   records.at(-1).special.motion={persistentPause:true,focusQuiet:true,offscreen:await page.locator('.plan-scenery-panel[data-atmosphere-visible=false]').count()};
   }
   await page.emulateMedia({reducedMotion:'reduce'});if(await running())throw Error('Reduced motion still running');
  }

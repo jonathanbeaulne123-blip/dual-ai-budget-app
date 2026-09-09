@@ -395,7 +395,7 @@ function FactRow({
     .map((id) => household.transactions.find((tx) => tx.id === id))
     .filter((tx): tx is Household["transactions"][number] => Boolean(tx));
   return (
-    <button className={`sit-fact ${fact.tone}`} type="button" onClick={onToggle}>
+    <button className={`sit-fact ${fact.tone}`} type="button" aria-expanded={open} onClick={onToggle}>
       <strong>{fact.title}</strong>
       <span className="muted">{fact.detail}</span>
       {open && rows.length > 0 && (

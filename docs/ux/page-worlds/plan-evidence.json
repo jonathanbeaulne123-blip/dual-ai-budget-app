@@ -1,0 +1,1960 @@
+{
+  "browser": {
+    "plan": {
+      "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+      "records": [
+        {
+          "theme": "classic",
+          "scope": "household",
+          "route": "plan",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-plan"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft",
+                "bank-confirm",
+                "sit-expanded"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "confirmCancelled": true,
+              "targets": [
+                {
+                  "w": 105.125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 105.109375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "classic",
+          "scope": "personal",
+          "route": "plan",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-plan"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "targets": [
+                {
+                  "w": 105.125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 97.328125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "household",
+          "route": "plan",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "fearless"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "fearless"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "fearless"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "fearless"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "fearless"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "fearless"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "fearless"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "fearless"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft",
+                "bank-confirm",
+                "sit-expanded"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "confirmCancelled": true,
+              "targets": [
+                {
+                  "w": 105.125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 105.109375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "personal",
+          "route": "plan",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "debut"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "debut"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "debut"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "debut"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "debut"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "debut"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "debut"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "debut"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "targets": [
+                {
+                  "w": 105.125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 97.328125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "household",
+          "route": "plan",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "trail"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "trail"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "trail"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "trail"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "trail"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "trail"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "trail"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "trail"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft",
+                "bank-confirm",
+                "sit-expanded"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "confirmCancelled": true,
+              "targets": [
+                {
+                  "w": 105.125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 105.109375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "personal",
+          "route": "plan",
+          "state": "normal",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "summit"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "summit"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "summit"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "summit"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "summit"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "summit"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "summit"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "summit"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "targets": [
+                {
+                  "w": 105.125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 97.328125,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            },
+            "motion": {
+              "persistentPause": true,
+              "focusQuiet": true,
+              "offscreen": 1
+            }
+          }
+        }
+      ],
+      "errors": []
+    },
+    "plan-empty": {
+      "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+      "records": [
+        {
+          "theme": "classic",
+          "scope": "household",
+          "route": "plan",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-plan"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "bank-draft",
+                "sit-expanded"
+              ],
+              "budgetCancel": false,
+              "bankDraft": true,
+              "targets": []
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "classic",
+          "scope": "personal",
+          "route": "plan",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-plan"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "bank-draft"
+              ],
+              "budgetCancel": false,
+              "bankDraft": true,
+              "targets": []
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "household",
+          "route": "plan",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "fearless"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "fearless"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "fearless"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "fearless"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "fearless"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "fearless"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "fearless"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "fearless"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "bank-draft",
+                "sit-expanded"
+              ],
+              "budgetCancel": false,
+              "bankDraft": true,
+              "targets": []
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "personal",
+          "route": "plan",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "debut"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "debut"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "debut"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "debut"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "debut"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "debut"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "debut"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "debut"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "bank-draft"
+              ],
+              "budgetCancel": false,
+              "bankDraft": true,
+              "targets": []
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "household",
+          "route": "plan",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "trail"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "trail"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "trail"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "trail"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "trail"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "trail"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "trail"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "trail"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "bank-draft",
+                "sit-expanded"
+              ],
+              "budgetCancel": false,
+              "bankDraft": true,
+              "targets": []
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "personal",
+          "route": "plan",
+          "state": "empty",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "summit"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "summit"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "summit"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "summit"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "summit"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "summit"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "summit"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "summit"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "bank-draft"
+              ],
+              "budgetCancel": false,
+              "bankDraft": true,
+              "targets": []
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        }
+      ],
+      "errors": []
+    },
+    "plan-long": {
+      "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+      "records": [
+        {
+          "theme": "classic",
+          "scope": "household",
+          "route": "plan",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-plan"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft",
+                "bank-confirm",
+                "purchase-draft",
+                "purchase-confirm",
+                "sit-expanded"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "confirmCancelled": true,
+              "purchaseCancelled": true,
+              "targets": [
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 136.265625,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "classic",
+          "scope": "personal",
+          "route": "plan",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "classic-plan"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "classic-plan"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "targets": [
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "household",
+          "route": "plan",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "fearless"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "fearless"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "fearless"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "fearless"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "fearless"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "fearless"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "fearless"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "fearless"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft",
+                "bank-confirm",
+                "purchase-draft",
+                "purchase-confirm",
+                "sit-expanded"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "confirmCancelled": true,
+              "purchaseCancelled": true,
+              "targets": [
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 136.265625,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "taylor",
+          "scope": "personal",
+          "route": "plan",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "debut"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "debut"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "debut"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "debut"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "debut"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "debut"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "debut"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "debut"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "targets": [
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "household",
+          "route": "plan",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "trail"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "trail"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "trail"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "trail"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "trail"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "trail"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "trail"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "trail"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft",
+                "bank-confirm",
+                "purchase-draft",
+                "purchase-confirm",
+                "sit-expanded"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "confirmCancelled": true,
+              "purchaseCancelled": true,
+              "targets": [
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 136.265625,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        },
+        {
+          "theme": "newfoundland",
+          "scope": "personal",
+          "route": "plan",
+          "state": "long",
+          "metrics": [
+            {
+              "width": 320,
+              "scroll": 320,
+              "scene": "summit"
+            },
+            {
+              "width": 390,
+              "scroll": 390,
+              "scene": "summit"
+            },
+            {
+              "width": 719,
+              "scroll": 719,
+              "scene": "summit"
+            },
+            {
+              "width": 720,
+              "scroll": 720,
+              "scene": "summit"
+            },
+            {
+              "width": 1099,
+              "scroll": 1099,
+              "scene": "summit"
+            },
+            {
+              "width": 1100,
+              "scroll": 1100,
+              "scene": "summit"
+            },
+            {
+              "width": 1440,
+              "scroll": 1440,
+              "scene": "summit"
+            },
+            {
+              "width": 1920,
+              "scroll": 1920,
+              "scene": "summit"
+            }
+          ],
+          "violations": [],
+          "special": {
+            "plan": {
+              "states": [
+                "budget-draft",
+                "budget-error",
+                "category-draft",
+                "bank-draft"
+              ],
+              "budgetCancel": true,
+              "bankDraft": true,
+              "targets": [
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                },
+                {
+                  "w": 128.484375,
+                  "h": 44
+                },
+                {
+                  "w": 44,
+                  "h": 44
+                }
+              ]
+            },
+            "charm": {
+              "width": 44,
+              "height": 48,
+              "hit": true
+            },
+            "focus": "solid",
+            "zoom": {
+              "width": 390,
+              "scroll": 390
+            }
+          }
+        }
+      ],
+      "errors": []
+    }
+  },
+  "quickGate": {
+    "baseSha": "6905022927401eb2d435b6d280ea8469bc812be0",
+    "changeFingerprint": "8c483ca13cf5019360de45026652951260082faa9300c679d56a95c3f5bdf5f2",
+    "workingTreeClean": false,
+    "breachPhase": null,
+    "budgetMs": 300000,
+    "elapsedMs": 104516,
+    "slowestPhase": "vitest-serial",
+    "timeBudgetBreached": false,
+    "classification": "quick-gate-passed",
+    "focusReason": "Plan columns and themes retain category drafts and focus, reviewed goal contributions, budget commands and full App continuity",
+    "headSha": "6905022927401eb2d435b6d280ea8469bc812be0",
+    "phases": [
+      {
+        "elapsedMs": 53,
+        "name": "diff-check",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 504,
+        "name": "ai-surface",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 23783,
+        "name": "typescript",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 4164,
+        "name": "test-discovery",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 13639,
+        "name": "vitest-fast",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 62002,
+        "name": "vitest-serial",
+        "status": "passed"
+      }
+    ],
+    "risk": "medium-high",
+    "selectedTests": [
+      "test/app-startup-p1.test.ts",
+      "test/command-contract.test.ts",
+      "test/command-runtime.test.ts",
+      "test/goal-fill-ui.test.ts",
+      "test/goal-funding-scope.test.ts",
+      "test/goal-purchase-ui.test.ts",
+      "test/kitty-banks.test.ts",
+      "test/month-rehearsal-mainline.test.ts",
+      "test/page-worlds.test.ts",
+      "test/plan-worlds.test.ts",
+      "test/proof-matrix.test.ts",
+      "test/set-budget.test.ts",
+      "test/sitdown.test.ts"
+    ],
+    "uiProofRequired": true
+  },
+  "limits": [
+    "Local synthetic Chrome only",
+    "No physical devices, Safari, VoiceOver, native OS font enlargement or authenticated cross-device acceptance",
+    "Plan has no page-owned async loading surface; App startup regression tested",
+    "Private reference images and source video not shipped"
+  ],
+  "finalPresentation": {
+    "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+    "records": [
+      {
+        "theme": "classic",
+        "scope": "household",
+        "route": "plan",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1099,
+            "scroll": 1099,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-plan"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "classic",
+        "scope": "personal",
+        "route": "plan",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1099,
+            "scroll": 1099,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "classic-plan"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "classic-plan"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "household",
+        "route": "plan",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "fearless"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "fearless"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "fearless"
+          },
+          {
+            "width": 1099,
+            "scroll": 1099,
+            "scene": "fearless"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "fearless"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "fearless"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "fearless"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "taylor",
+        "scope": "personal",
+        "route": "plan",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "debut"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "debut"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "debut"
+          },
+          {
+            "width": 1099,
+            "scroll": 1099,
+            "scene": "debut"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "debut"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "debut"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "debut"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "household",
+        "route": "plan",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "trail"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "trail"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "trail"
+          },
+          {
+            "width": 1099,
+            "scroll": 1099,
+            "scene": "trail"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "trail"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "trail"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "trail"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          }
+        }
+      },
+      {
+        "theme": "newfoundland",
+        "scope": "personal",
+        "route": "plan",
+        "state": "normal",
+        "metrics": [
+          {
+            "width": 320,
+            "scroll": 320,
+            "scene": "summit"
+          },
+          {
+            "width": 390,
+            "scroll": 390,
+            "scene": "summit"
+          },
+          {
+            "width": 720,
+            "scroll": 720,
+            "scene": "summit"
+          },
+          {
+            "width": 1099,
+            "scroll": 1099,
+            "scene": "summit"
+          },
+          {
+            "width": 1100,
+            "scroll": 1100,
+            "scene": "summit"
+          },
+          {
+            "width": 1440,
+            "scroll": 1440,
+            "scene": "summit"
+          },
+          {
+            "width": 1920,
+            "scroll": 1920,
+            "scene": "summit"
+          }
+        ],
+        "violations": [],
+        "special": {
+          "charm": {
+            "width": 44,
+            "height": 48,
+            "hit": true
+          },
+          "focus": "solid",
+          "zoom": {
+            "width": 390,
+            "scroll": 390
+          },
+          "motion": {
+            "persistentPause": true,
+            "focusQuiet": true,
+            "offscreen": 1
+          }
+        }
+      }
+    ],
+    "errors": []
+  },
+  "productionBuild": {
+    "passed": true,
+    "modules": 638,
+    "viteSeconds": 54.49,
+    "note": "TypeScript plus Vite plus HerculesProUI; existing PGlite browser-external/eval and large-chunk warnings"
+  }
+}

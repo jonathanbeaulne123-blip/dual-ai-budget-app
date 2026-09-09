@@ -6486,7 +6486,7 @@ export function App() {
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
 
-      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} />
+      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} />
       <WorldCharm page={tab} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
@@ -6641,8 +6641,8 @@ export function App() {
             </div>
           ) : (
           <div className="plan-wide five-boards-plan">
-          <section className="hero">
-            <div className="label">{view === "household" ? "Household plan vs actual" : "My plan vs actual"}</div>
+          <section className="hero plan-summary">
+            <div className="label">{view === "household" ? "Household budgeted net" : "My budgeted net"}</div>
             <div className="money">{formatCad(dashboard.month.netBudgetedCents)}</div>
             <div className="sub">Budgeted net for {dashboard.monthLabel}</div>
           </section>
@@ -8158,7 +8158,7 @@ export function App() {
   );
 }
 
-function PlanCategories({
+export function PlanCategories({
   household,
   rows,
   monthKey,
@@ -8172,22 +8172,32 @@ function PlanCategories({
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
+  const editTriggers = useRef(new Map<string, HTMLButtonElement>());
+  const restoreEditFocus = useRef<string | null>(null);
+  useEffect(() => {
+    if (editId === null && restoreEditFocus.current) {
+      editTriggers.current.get(restoreEditFocus.current)?.focus();
+      restoreEditFocus.current = null;
+    }
+  }, [editId]);
+  function closeEditor() { restoreEditFocus.current = editId; setEditId(null); setError(""); }
   const visible = rows.filter((row) => row.budgetedCents || row.actualCents);
   function saveBudget(subcategoryId: string, amount: string) {
     try {
       const result = setBudget(household, { monthKey, subcategoryId, amount });
       onSave(result.household, result.undo);
-      setEditId(null);
+      closeEditor();
       setError("");
     } catch (caught) {
       setError(caught instanceof ValidationError ? caught.message : String(caught));
     }
   }
   return (
-    <section className="card">
+    <section className="card plan-categories">
       <header><h2>Categories</h2></header>
       <p className="muted">Add or adjust this month’s plan here. Posted actuals stay. Zeroing a budget does not hide history.</p>
       <KitchenNotice message={error} />
+      <div className="plan-amount-legend" aria-hidden="true"><span>Category</span><span>Actual / Budget</span></div>
       {visible.length === 0 ? <p className="muted">No budget plans or expense actuals this month yet.</p> : visible.map((row) => {
         const pct = row.budgetedCents ? Math.min(140, (row.actualCents / row.budgetedCents) * 100) : 0;
         return (
@@ -8204,17 +8214,18 @@ function PlanCategories({
                     aria-label={`Budget for ${row.name} in ${monthKey}`}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key === "Escape") setEditId(null);
+                      if (event.key === "Escape") closeEditor();
                       if (event.key === "Enter") saveBudget(row.subcategoryId, draft);
                     }}
                   />
                   <button type="button" className="chip" onClick={() => saveBudget(row.subcategoryId, draft)}>Save</button>
-                  <button type="button" className="chip quiet" onClick={() => setEditId(null)}>Cancel</button>
+                  <button type="button" className="chip quiet" onClick={closeEditor}>Cancel</button>
                 </span>
               ) : (
                 <span className="chips">
                   <button
                     type="button"
+                    ref={(node) => { if (node) editTriggers.current.set(row.subcategoryId, node); else editTriggers.current.delete(row.subcategoryId); }}
                     className={`budget-edit-trigger ${row.budgetedCents && row.actualCents > row.budgetedCents ? "over" : ""}`}
                     aria-label={`Edit ${row.name} budget. Actual ${formatCad(row.actualCents)}, budget ${formatCad(row.budgetedCents)}`}
                     onClick={() => {

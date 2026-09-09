@@ -1,0 +1,82 @@
+/* Plan keeps a single set of financial components at every width. */
+:root[data-world-page="plan"] .world-page { background:var(--paper); border-radius:16px; }
+.plan-scenery { display:none; }
+.plan-amount-legend { display:flex; justify-content:space-between; gap:16px; padding:10px 0; border-bottom:1px solid var(--line); font-size:12px; color:var(--muted); }
+:root[data-world-page="plan"] .plan-categories :is(.budget-edit-trigger,.budget-remove) { min-width:44px; min-height:44px; }
+:root[data-world-page="plan"] .plan-categories .budget-edit { flex-wrap:wrap; justify-content:flex-end; max-width:100%; }
+:root[data-world-page="plan"] .plan-categories .budget-edit input { width:144px; max-width:100%; min-height:44px; }
+:root[data-world-page="plan"] .plan-categories .row { flex-wrap:wrap; gap:8px; }
+:root[data-world-page="plan"] .five-boards-plan :is(.chips,.row) { min-width:0; }
+:root[data-world-page="plan"] .five-boards-plan :is(h2,h3,p,strong,.money,.row>span) { overflow-wrap:anywhere; }
+:root[data-world-page="plan"] .theme-scene-copy { max-width:55%; padding:10px 14px; background:var(--card); border-radius:4px; }
+:root[data-world-page="plan"] .plan-heading-art { opacity:1; }
+.plan-cannon-sticker { position:absolute; right:24%; bottom:8px; width:240px; height:160px; object-fit:contain; pointer-events:none; }
+:root[data-world-page="plan"] :is(.sheet,.drawer-surface) { background:var(--card); color:var(--ink); border-top:4px solid var(--theme-accent); }
+:root[data-scene="fearless"][data-world-page="plan"] .world-page { background:radial-gradient(ellipse at 2% 35%,#e0bd6880,transparent 45%),radial-gradient(ellipse at 96% 79%,#e5c66b75,transparent 40%),linear-gradient(130deg,#f3e6c1,#fff4d9 42%,#eddca9); }
+:root[data-scene="debut"][data-world-page="plan"] .world-page { background:radial-gradient(ellipse at 0% 30%,#71bec06b,transparent 45%),radial-gradient(ellipse at 100% 65%,#a2cba177,transparent 48%),linear-gradient(140deg,#cce5ed,#edf4df 45%,#b5dedb); }
+:root[data-theme="newfoundland"][data-world-page="plan"] .world-page { background:linear-gradient(#c1e2f4,#e3eee4 37%,#c1dfe4 70%,#dddcb6); }
+:root[data-scene="summit"][data-world-page="plan"] .world-page { background:linear-gradient(#c1e2f6,#e8f1eb 40%,#c4dfe4 74%,#e3e4d1); }
+:root[data-theme="classic"][data-world-page="plan"] .world-page { background:radial-gradient(circle,#a5916a20 1px,transparent 1px) 0 0/7px 9px,linear-gradient(125deg,#e8ddc2,#f3ebd7 55%,#dfe4cd); }
+.plan-fringe { animation:plan-fringe 7s ease-in-out infinite alternate; transform-origin:center top; }
+.plan-butterfly { animation:plan-wings 6s ease-in-out infinite alternate; transform-box:fill-box; transform-origin:center; }
+.plan-leaves { animation:living-sway 9s ease-in-out infinite alternate; transform-origin:bottom; }
+.plan-glimmer { animation:plan-glimmer 8s ease-in-out infinite alternate; }
+.plan-cloud,.plan-gulls { animation:living-drift 24s ease-in-out infinite alternate; }
+@keyframes plan-fringe { to{transform:skewX(2deg);} }
+@keyframes plan-wings { to{transform:scaleX(.84) rotate(3deg);} }
+@keyframes plan-glimmer { to{opacity:.55;} }
+@media(min-width:720px) {
+ .plan-scenery { display:block; position:absolute; inset:250px 0 0; }
+ .plan-scenery-panel { position:absolute; width:100%; height:clamp(340px,37.5vw,720px); mask-image:linear-gradient(transparent,#000 12%,#000 85%,transparent); }
+ .plan-scenery-panel svg { width:100%; height:100%; }
+ .plan-scenery-0 { top:0; } .plan-scenery-1 { top:38%; } .plan-scenery-2 { bottom:0; }
+ :root[data-world-page="plan"] .world-margin { display:none; }
+ :root[data-world-page="plan"] .five-boards-plan { padding:8px clamp(40px,7vw,130px) 85px; gap:28px; }
+ :root[data-world-page="plan"] .five-boards-plan>.card { position:relative; margin:0; padding:24px; background:var(--card); border:1px solid var(--line); border-radius:5px 10px 7px 4px; box-shadow:0 5px 0 color-mix(in srgb,var(--theme-second) 12%,var(--paper)),0 14px 24px #3b443415; }
+ :root[data-world-page="plan"] .five-boards-plan>.card::before { content:""; position:absolute; top:-8px; left:26px; height:17px; width:61px; background:color-mix(in srgb,var(--theme-second) 33%,var(--card)); border:1px solid var(--line); transform:rotate(-4deg); pointer-events:none; }
+ :root[data-world-page="plan"] .five-boards-plan>.kitty-banks::before { left:auto; right:34px; transform:rotate(5deg); }
+ :root[data-world-page="plan"] .plan-summary { display:grid; grid-template-columns:1fr auto; align-items:center; column-gap:20px; padding:18px 24px; margin:0; border-radius:6px; background:var(--card); border:1px solid var(--line); box-shadow:0 4px 0 color-mix(in srgb,var(--theme-accent) 18%,var(--paper)); }
+ :root[data-world-page="plan"] .plan-summary .money { grid-column:2; grid-row:1 / span 2; font-size:clamp(25px,3vw,40px); margin:0; text-align:right; }
+ :root[data-world-page="plan"] .plan-summary .sub { margin:5px 0 0; }
+ :root[data-world-page="plan"] .theme-scene-heading>.era-light { display:none; }
+ :root[data-world-page="plan"] .desktop-title-bracelets { display:flex; }
+ :root[data-world-page="plan"] .five-boards-plan :is(button,input,select,summary) { min-height:44px; }
+ :root[data-world-page="plan"] .kitty-banks-shelf { display:grid; grid-template-columns:1fr; }
+ :root[data-world-page="plan"] .kitty-bank { width:100%; box-sizing:border-box; display:grid; grid-template-columns:74px minmax(0,1fr); gap:12px; text-align:left; padding:16px; }
+ :root[data-world-page="plan"] .kitty-bank .paper-bank-shape { width:74px; max-width:100%; height:auto; }
+ :root[data-world-page="plan"] .kitty-bank :is(.goal-add,.primary,.purchase-sheet) { grid-column:1 / -1; }
+ :root[data-world-page="plan"] .kitty-bank :is(input,select) { max-width:100%; width:100%; }
+ :root[data-world-page="plan"] .sit-chart-row { min-width:0; }
+ :root[data-theme="classic"][data-world-page="plan"] .five-boards-plan>.card { border-top:5px solid #829078; }
+ :root[data-scene="fearless"][data-world-page="plan"] .five-boards-plan>.card { border-top:5px solid #c8a24f; background-image:linear-gradient(90deg,transparent 12px,#d7ba741c 13px,transparent 14px); }
+ :root[data-scene="debut"][data-world-page="plan"] .five-boards-plan>.card { border-top:5px solid #619799; }
+ :root[data-theme="newfoundland"][data-world-page="plan"] .five-boards-plan>.card { border-top:5px solid #86a8a4; }
+}
+/* A roomy pair of columns only where editors and charts have adequate space. */
+@media(min-width:1100px) {
+ :root[data-world-page="plan"] .five-boards-plan { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); grid-template-rows:auto auto auto; align-items:start; }
+ :root[data-world-page="plan"] .plan-summary { grid-column:1 / -1; }
+ :root[data-world-page="plan"] .plan-categories { grid-column:1; grid-row:2 / span 2; }
+ :root[data-world-page="plan"] .kitty-banks { grid-column:2; grid-row:2; }
+ :root[data-world-page="plan"] .sit-guide { grid-column:2; grid-row:3; }
+ :root[data-world-page="plan"] .five-boards-plan { padding-inline:clamp(45px,6vw,120px); }
+}
+@media(max-width:719px) {
+ .plan-heading-art .plan-title-objects { transform:translateX(390px); }
+ :root[data-world-page="plan"] .theme-scene-copy { max-width:64%; padding:7px 9px; }
+ :root[data-world-page="plan"] .plan-cannon-sticker { right:1%; bottom:5px; width:105px; height:100px; }
+ :root[data-world-page="plan"] .world-charm-row { margin:0; }
+ :root[data-world-page="plan"] .plan-amount-legend { font-size:11px; }
+}
+:root[data-atmosphere="paused"] :is(.plan-heading-art,.plan-scenery) *,
+:root:has(input:focus,textarea:focus,[contenteditable="true"]:focus) :is(.plan-heading-art,.plan-scenery) *,
+[data-scene-visible="false"] .plan-heading-art * { animation-play-state:paused!important; }
+@media(prefers-reduced-motion:reduce) { :is(.plan-heading-art,.plan-scenery) * { animation:none!important; } }
+@media print { .plan-scenery,.plan-cannon-sticker { display:none!important; } }
+@media(min-width:1100px) {
+ :root[data-world-page="plan"] .theme-scene-copy { max-width:43%; }
+ :root[data-world-page="plan"] .plan-cannon-sticker { right:27%; width:230px; height:180px; }
+}
+@media(min-width:720px) and (max-width:1099px) {
+ :root[data-world-page="plan"] .plan-cannon-sticker { right:27%; width:145px; height:125px; }
+}

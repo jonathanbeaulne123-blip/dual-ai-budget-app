@@ -94,8 +94,8 @@ function PurchaseGoalScope({
         <p key={`${line.note}-${index}`} className="muted">{line.note || "Line"} · {line.amount}</p>
       ))}
       <div className="row">
-        <input placeholder="Receipt line" value={lineNote} onChange={(event) => setLineNote(event.target.value)} />
-        <input inputMode="decimal" placeholder="0.00" value={lineAmount} onChange={(event) => setLineAmount(event.target.value)} />
+        <input aria-label="Receipt line description" placeholder="Receipt line" value={lineNote} onChange={(event) => setLineNote(event.target.value)} />
+        <input aria-label="Receipt line amount" inputMode="decimal" placeholder="0.00" value={lineAmount} onChange={(event) => setLineAmount(event.target.value)} />
         <button
           type="button"
           className="chip"

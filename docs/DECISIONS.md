@@ -668,3 +668,7 @@ Final Fund retry review reproduced a storage failure: a memory-only confirmation
 ## Page-world refinement — Jonathan, 2026-09-09
 
 Eight stacked page PRs refine all three themes and both supported scopes together. Whole-page art, pause-aware charms and an era-coloured light-up bracelet are presentation only. Funds/goals receive visual emphasis without changing financial priority or authority. Both Taylor Homes close with a manual scrapbook; Bianca chooses photos later. No ticket exists. Dress and Jellybean Row photos are private illustration references. See [implementation contract](PAGE_WORLD_REFINEMENT.md). Merge/deployment remain separate.
+
+## Plan desktop composition — 2026-09-09
+
+Jonathan approved a desktop two-column Plan, compact accurate budget summary and visible Actual / Budget labels while retaining mobile's single-column flow. Categories occupy the wider left column; Kitty Banks precedes Sit-down visually on the right. Existing DOM order is retained to avoid remounting drafts and preserve phone order. Original artwork spans Classic, Fearless/Debut and Signal Hill approach/summit; cannon clip art uses the supplied photograph only as reference. Publication is authorized; merge/deployment require a separate instruction. [Worksession](worksessions/2026-09-09-plan-worlds.md).
