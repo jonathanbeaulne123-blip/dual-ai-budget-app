@@ -72,3 +72,7 @@ Jonathan owns review and release authorization. See [durable handoff](../briefs/
 ## Publication
 
 [PR #415 — Calendar: roomy themed pages and clip-art scenery](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/415) is open against main. Implementation/evidence commit: `a3b4d27c39ad58e4d63c2f4477ee4458f931ed01`. This publication receipt is documentation only. Local checks and browser results above apply to the implementation; hosted CI status is reported separately. No merge or deployment.
+
+## Authorized Development release
+
+Jonathan explicitly instructed “merge and deploy” after publication. Release review confirmed no financial, API, schema, Auth or private-photo changes. The exact-head Cloudflare build passed, but CI's browser installation failed twice before tests on Google's Chrome apt mirror `Hash Sum mismatch` (run34385450191, attempts1/2). CI now excludes only that unused preinstalled Google Chrome `.list` source on its ephemeral Ubuntu runner. Playwright still installs pinned Chromium and dependencies; package hash/signature checks and the complete existing test command remain enabled. This is a runner preparation repair, not a test bypass or product change. The updated PR must pass before merge.

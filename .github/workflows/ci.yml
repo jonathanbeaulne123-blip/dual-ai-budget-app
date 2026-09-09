@@ -18,6 +18,15 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Exclude unused Google Chrome apt source
+        # Playwright supplies its pinned Chromium; this preinstalled runner source
+        # is unrelated and can fail apt update while Google's mirror is syncing.
+        run: |
+          for source in /etc/apt/sources.list.d/*.list; do
+            if [ -f "$source" ] && grep -q 'dl.google.com/linux/chrome' "$source"; then
+              sudo mv "$source" "$source.disabled"
+            fi
+          done
       - name: Install Chromium for real browser continuity and media tests
         run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: pnpm check
