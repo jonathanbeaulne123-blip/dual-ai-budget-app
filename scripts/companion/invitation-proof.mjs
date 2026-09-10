@@ -1,12 +1,14 @@
+const baseURL=process.env.HEARTH_COMPANION_BASE_URL||"http://127.0.0.1:5193";
+const smokeHost=new URL(baseURL).hostname;
 import {chromium,expect} from '@playwright/test';
 import {mkdir,writeFile} from 'node:fs/promises';
 const out='.artifacts/hercules-slice-6';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,channel:'chrome'}),context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),page=await context.newPage(),records=[],errors=[];
 page.on('pageerror',e=>errors.push(String(e)));page.setDefaultTimeout(60000);
 await page.addInitScript(()=>{delete Object.getPrototypeOf(navigator).locks;});
-await page.route('**/*',r=>['localhost','127.0.0.1'].includes(new URL(r.request().url()).hostname)?r.continue():r.abort());
+await page.route('**/*',r=>['localhost','127.0.0.1',smokeHost].includes(new URL(r.request().url()).hostname)&&r.request().method()==='GET'&&!new URL(r.request().url()).pathname.startsWith('/hercules/')?r.continue():r.abort());
 try{
- await page.goto('http://127.0.0.1:5193');await page.getByRole('button',{name:'Open the demo kitchen table',exact:true}).click();await page.getByRole('button',{name:'I am Jonathan',exact:true}).click();await page.locator('nav.nav').waitFor({timeout:90000});const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.isVisible())await close.click();
+ await page.goto(baseURL);await page.getByRole('button',{name:'Open the demo kitchen table',exact:true}).click();await page.getByRole('button',{name:'I am Jonathan',exact:true}).click();await page.locator('nav.nav').waitFor({timeout:90000});const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.isVisible())await close.click();
  for(const theme of ['classic','taylor','newfoundland']){
   await page.locator('nav.nav').getByRole('button',{name:'More',exact:true}).click();await page.locator(`[data-preview-theme="${theme}"]`).click();await page.getByRole('button',{name:'Use theme',exact:true}).click();await page.locator('nav.nav').getByRole('button',{name:'Home',exact:true}).click();
   for(const width of [1100,1440,1920]){

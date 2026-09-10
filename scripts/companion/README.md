@@ -11,3 +11,5 @@ Use the configured Node runtime from the repository root. All generated output s
 - Existing `scripts/wardrobe/proof/` runners cover the 3D fitting room, recovery and real-authority synthetic persistence. Their reports remain separately labelled slice 5 when rerun.
 
 The [Bianca packet](../../docs/briefs/HERCULES_BIANCA_ACCEPTANCE.md) is the manual acceptance protocol. No runner grants human acceptance or deployment permission.
+
+For an authorized deployed smoke, set `HEARTH_COMPANION_BASE_URL` on browser-integration, invitation-proof and wardrobe-access. They open a fresh synthetic demo, allow only GETs to the chosen site/local assets, and block model and mutation requests. These runners do not test authenticated household writes.

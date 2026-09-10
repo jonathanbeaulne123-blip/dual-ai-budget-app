@@ -1,11 +1,13 @@
+const baseURL=process.env.HEARTH_COMPANION_BASE_URL||"http://127.0.0.1:5193";
+const smokeHost=new URL(baseURL).hostname;
 import {chromium,expect} from '@playwright/test';import {writeFile,mkdir} from 'node:fs/promises';
 await mkdir('.artifacts/hercules-slice-6',{recursive:true});
 const browser=await chromium.launch({headless:true,channel:'chrome'}),context=await browser.newContext({viewport:{width:1100,height:1000},reducedMotion:'reduce'}),page=await context.newPage(),records=[],errors=[];page.on("pageerror",error=>errors.push(String(error)));
-const url='http://127.0.0.1:5193/';
+const url=baseURL;
 page.setDefaultTimeout(60000);
 const ready=async()=>{await page.locator('.fitting-webgl[data-state=ready]').waitFor({timeout:120000});await expect(page.getByRole('button',{name:'See the back',exact:true})).toBeEnabled({timeout:120000});};
 async function enter(){await page.goto(url,{timeout:120000});await page.waitForFunction(()=>document.querySelector('nav.nav')||[...document.querySelectorAll('button')].some(b=>b.textContent==='Open the demo kitchen table'));const demo=page.getByRole('button',{name:'Open the demo kitchen table',exact:true});if(await demo.isVisible()){await demo.click();await page.getByRole('button',{name:'I am Jonathan',exact:true}).click();}await page.locator('nav.nav').waitFor({timeout:120000});const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.isVisible())await close.click();await page.locator('nav.nav').getByRole('button',{name:'Home',exact:true}).click();const drawer=page.locator('.office-wide-drawer');if(!await drawer.getByRole('button',{name:/Hercules outfits/}).isVisible())await drawer.locator('summary').click();await drawer.getByRole('button',{name:/Hercules outfits/}).click();}
-await page.addInitScript(()=>{delete Object.getPrototypeOf(navigator).locks;});await page.route('**/*',route=>['localhost','127.0.0.1'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
+await page.addInitScript(()=>{delete Object.getPrototypeOf(navigator).locks;});await page.route('**/*',route=>['localhost','127.0.0.1',smokeHost].includes(new URL(route.request().url()).hostname)&&route.request().method()==='GET'&&!new URL(route.request().url()).pathname.startsWith('/hercules/')?route.continue():route.abort());
 try{
  await enter();await page.getByRole('button',{name:'Open dressing room',exact:true}).click();await ready();await page.setViewportSize({width:320,height:1000});
  await page.locator('.hercules-fitting-room').evaluate(room=>{const rows=[...room.querySelectorAll('h1,h2,h3,p,small,strong,button,label,span')].map(n=>[n,parseFloat(getComputedStyle(n).fontSize)]);for(const [n,size] of rows)n.style.fontSize=`${size*2}px`;});

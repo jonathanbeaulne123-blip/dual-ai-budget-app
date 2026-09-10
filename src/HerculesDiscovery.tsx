@@ -6,7 +6,7 @@ import type { CompanionSuggestionState } from "./core/herculesCompanionContracts
 import type { KitchenCommand } from "./kitchenCommand.ts";
 
 export function HerculesDiscovery({ input, onCommand, onNavigate, onContinueChat, blocked = false }: {
-  input: DiscoveryInput; onCommand?: KitchenCommand; onNavigate: (destination: DiscoveryDestination) => void; onContinueChat: () => void; blocked?: boolean;
+  input: DiscoveryInput; onCommand?: KitchenCommand; onNavigate: (destination: DiscoveryDestination) => void; onContinueChat?: () => void; blocked?: boolean;
 }) {
   const scope = discoveryScope(input), current = useRef(input); current.current = input;
   const liveScope = useRef(scope); liveScope.current = scope;
@@ -96,7 +96,7 @@ export function HerculesDiscovery({ input, onCommand, onNavigate, onContinueChat
     </section>}
     <section aria-label="Continue with me"><h3>Continue with me</h3>
       {selection.resume.length ? selection.resume.map(row => card(row, true)) : <p>Keep an activity for later and I’ll bring you back to its current state.</p>}
-      <button type="button" onClick={onContinueChat}>Continue our conversation</button>
+      {onContinueChat && <button type="button" onClick={onContinueChat}>Continue our conversation</button>}
     </section>
     {selection.disabled.size > 0 && <details><summary>Suggestion settings</summary><p>Activities you turned off stay available in Things we can do.</p>{[...selection.disabled].map(id => {
       const definition = HERCULES_CAPABILITIES.find(row => row.id === id)!;

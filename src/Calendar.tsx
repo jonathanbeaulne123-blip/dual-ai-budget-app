@@ -228,12 +228,14 @@ function CalendarPageScope(props: CalendarProps) {
   }, []);
 
   useEffect(() => {
+    if (props.openPotentialEditorId || potentialEditor) return;
     const source = props.sourceFocus;
     if (!source || source.route !== "calendar" || source.view !== (props.view ?? "household")) return;
     setPane("bills");
     if (source.from) { setMonthKey(monthKeyFromDateKey(source.from)); setSelected(source.from); }
   }, [props.sourceFocus]);
   useEffect(() => {
+    if (props.openPotentialEditorId || potentialEditor) return;
     const source = props.sourceFocus;
     if (pane !== "bills" || !source || source.view !== (props.view ?? "household")) return;
     const node = source.recurrenceId ? [...document.querySelectorAll<HTMLElement>("[data-recurrence-id]")].find(row => row.dataset.recurrenceId === source.recurrenceId) : document.getElementById(`${tabsId}-panel`);

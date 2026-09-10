@@ -5,6 +5,22 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      hercules_chat:
+        description: Hercules conversation presentation (compatible writer retained)
+        type: choice
+        options: ["1", "0"]
+        default: "1"
+      hercules_discovery:
+        description: Hercules suggestions presentation
+        type: choice
+        options: ["1", "0"]
+        default: "1"
+      hercules_wardrobe:
+        description: Hercules dressing room presentation
+        type: choice
+        options: ["1", "0"]
+        default: "1"
 
 concurrency:
   group: hearth-books-${{ github.event_name == 'pull_request' && github.run_id || 'production' }}
@@ -36,6 +52,9 @@ jobs:
           VITE_PGLITE_INCREMENTAL_DEV: "1"
           VITE_PRODUCTION_CONTINUITY: "0"
           VITE_SYNC_PILOT_DIAGNOSTICS: "1"
+          VITE_HERCULES_CHAT: ${{ inputs.hercules_chat || vars.VITE_HERCULES_CHAT || '1' }}
+          VITE_HERCULES_DISCOVERY: ${{ inputs.hercules_discovery || vars.VITE_HERCULES_DISCOVERY || '1' }}
+          VITE_HERCULES_DRESSING_ROOM: ${{ inputs.hercules_wardrobe || vars.VITE_HERCULES_DRESSING_ROOM || '1' }}
         run: |
           . scripts/sanitize-cloudflare-env.sh
           if [ -z "$VITE_GOOGLE_CLIENT_ID" ]; then
@@ -52,6 +71,10 @@ jobs:
           if [ "$VITE_CONTINUITY_COMMAND_LOG" = "1" ]; then
             echo "Tier 2 command-log transport is ON for this kitchen build (VITE_CONTINUITY_COMMAND_LOG=1; requires Migration 013)."
           fi
+          for flag in "$VITE_HERCULES_CHAT" "$VITE_HERCULES_DISCOVERY" "$VITE_HERCULES_DRESSING_ROOM"; do
+            case "$flag" in 0|1) ;; *) echo "::error::Invalid Hercules presentation switch"; exit 1;; esac
+          done
+          echo "Hercules presentation: chat=$VITE_HERCULES_CHAT discovery=$VITE_HERCULES_DISCOVERY wardrobe=$VITE_HERCULES_DRESSING_ROOM; compatible private writer retained."
           pnpm build
       - name: Deploy
         if: github.event_name != 'pull_request'

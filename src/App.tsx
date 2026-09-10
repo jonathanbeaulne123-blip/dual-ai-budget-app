@@ -8115,6 +8115,7 @@ export function App() {
         onQuickPotentialExpense={(planId) => setGuard({ kind: "quickPotential", planId })}
         onReviewPotentialExpense={openPotentialInAdd}
         onMovePotentialExpense={(planId) => {
+          setHerculesSourceFocus(null);
           setPotentialCalendarEditId(planId);
           requestCalendarPane("calendar", localStorage);
           goTab("calendar");

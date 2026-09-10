@@ -1,3 +1,7 @@
+## Hercules Development release controls — 2026-09-10
+
+Jonathan authorized release of the complete companion after reviewing slice-6 limits. Chat, discovery and dressing-room presentation can each be disabled by an independent build setting while compatible private profile/gallery writers and validators remain active. Memory review/forget remains reachable when conversation is paused. Never revert to a server that drops new private fields. Explicit Calendar Move takes precedence over a retained Hercules bill source. [Release record](worksessions/2026-09-10-hercules-release.md).
+
 ## 2026-09-10 — Integrated companion recovery and truthful acceptance
 
 Slice 6 retains unsaved conversation only in a bounded, generation-scoped mounted session, partitioned by ledger view and cleared on identity departure. Receipts are recovered before retries; expiry removes complete command groups. Follow-up freshness compares scoped source inputs rather than the global event sequence, which also advances for private conversation ACKs. Specific preference forget instructions become both a CAS operation and a retained conversation exchange. Grounded desktop and Calendar links use existing source routes without financial writes.

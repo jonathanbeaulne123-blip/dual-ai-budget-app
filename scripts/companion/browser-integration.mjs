@@ -1,3 +1,5 @@
+const baseURL=process.env.HEARTH_COMPANION_BASE_URL||"http://127.0.0.1:5193";
+const smokeHost=new URL(baseURL).hostname;
 import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { writeFile } from 'node:fs/promises';
@@ -7,10 +9,10 @@ const browser = await chromium.launch({ headless: true, channel: 'chrome' });
 const context = await browser.newContext({viewport:{width:390,height:1000},reducedMotion:'reduce'});
 await context.addInitScript(()=>{delete Object.getPrototypeOf(navigator).locks;});
 const page = await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(String(e)));
-await page.route('**/*',async route=>{const url=new URL(route.request().url());if(!['127.0.0.1','localhost'].includes(url.hostname))return route.abort();if(url.pathname.startsWith('/hercules/'))return route.fulfill({status:503,contentType:'application/json',body:'{"ok":false}'});return route.continue();});
+await page.route('**/*',async route=>{const url=new URL(route.request().url());if(!['127.0.0.1','localhost',smokeHost].includes(url.hostname)||route.request().method()!=='GET')return route.abort();if(url.pathname.startsWith('/hercules/'))return route.fulfill({status:503,contentType:'application/json',body:'{"ok":false}'});return route.continue();});
 const records=[];
 try {
- await page.goto('http://127.0.0.1:5193');
+ await page.goto(baseURL);
  await page.getByRole('button',{name:'Open the demo kitchen table',exact:true}).click();await page.getByRole('button',{name:'I am Jonathan',exact:true}).click();await page.locator('nav.nav').waitFor({timeout:90000});
  const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.isVisible())await close.click();
  await page.setViewportSize({width:1440,height:1000});

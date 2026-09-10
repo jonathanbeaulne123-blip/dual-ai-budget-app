@@ -1,3 +1,7 @@
+## Hercules — authorized Development release (2026-09-10)
+
+Jonathan authorized push, merge and Development deployment of all six local slices. The candidate now includes main's Books and potential-Calendar changes, independent presentation rollback and Calendar Move/source reconciliation. [Release scope, exact gate and compatible rollback](worksessions/2026-09-10-hercules-release.md). Verification and deployment receipts are tracked there; earlier local-only entries below remain historical evidence. Production/schema/secrets/provider settings are unchanged, and real user/device acceptance stays open.
+
 ## Hercules slice 6 — integrated local candidate (2026-09-10)
 
 Branch `codex/hercules-integration-acceptance`, reviewed predecessor `c902c4d43e3ab744ba6c1cd36f919577ea6c52ff`. Risk High. Budget (5): truthful confirmations, private scope and current source links. Engagement (3): continued conversation, clear help and integrated wardrobe access.

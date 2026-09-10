@@ -15,7 +15,7 @@ beforeEach(() => {
   Object.defineProperty(window, "matchMedia", { configurable: true, value: () => ({ matches: true, addEventListener() {}, removeEventListener() {} }) });
   host = document.createElement("div"); document.body.append(host); root = createRoot(host);
 });
-afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 async function send(text: string) {
   const input = host.querySelector('input[aria-label="Ask Hercules"]') as HTMLInputElement;
   await act(async () => {
@@ -153,4 +153,21 @@ it("moves focus into phone help, wraps Tab, and restores the launcher on Escape"
  const controls=[...dialog.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
  controls.at(-1)!.focus();await act(async()=>document.activeElement!.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));expect(document.activeElement).toBe(controls[0]);
  await act(async()=>document.activeElement!.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));expect(host.querySelector('[role="dialog"]')).toBeNull();expect(document.activeElement).toBe(host.querySelector('.hercules-pill'));
+});
+
+
+it.each([["0","1"],["1","0"],["0","0"]])("presentation rollback keeps the independent surface and private controls: chat=%s discovery=%s",async(chat,discovery)=>{
+ vi.stubEnv("VITE_HERCULES_CHAT",chat);vi.stubEnv("VITE_HERCULES_DISCOVERY",discovery);
+ const fetcher=vi.fn(),command=vi.fn().mockResolvedValue(null);vi.stubGlobal("fetch",fetcher);
+ await act(async()=>root.render(createElement(HerculesPresence,{household:catalogHousehold(),today:'2026-09-10',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onCompanionCommand:command,onOpenSource:vi.fn(),onDiscoveryNavigate:vi.fn()})));
+ await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
+ expect(Boolean(host.querySelector('.hercules-chat-form'))).toBe(chat==='1');
+ expect(Boolean(host.querySelector('.hercules-discovery'))).toBe(discovery==='1');
+ expect(host.querySelector('.companion-memory')).not.toBeNull();
+ if(chat==='0'){
+  expect(host.textContent).not.toContain('Continue our conversation');
+  expect(host.querySelector('.hercules-replies button')).toBeNull();
+  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Play')!.click());
+ }
+ expect(fetcher).not.toHaveBeenCalled();expect(command).not.toHaveBeenCalled();
 });
