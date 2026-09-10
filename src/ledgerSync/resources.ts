@@ -41,6 +41,7 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if (kind === "commitCompanion") return []; // Typed resource revisions and conversation generations are rechecked by the authority.
   if (['proposeHouseholdFundContribution','replaceHouseholdFundContributionSource'].includes(kind)) {
     return [{key:'fund-source-allocation',value:{fund:household.householdFund,events:household.fundEvents,claims:household.fundContributionSourceClaims,
       transactions:household.transactions,accounts:household.accounts}}];

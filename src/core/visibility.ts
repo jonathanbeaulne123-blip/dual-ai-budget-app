@@ -97,13 +97,14 @@ export function householdForAiDisclosure(
   const hercules = desk
     ? {
         ...desk,
-        memories: desk.memories.filter((row) => row.createdBy === memberId),
+        memories: [],
         // Chat history never goes to the model; keep the array empty in the projection.
         chats: [] as typeof desk.chats,
       }
     : desk;
   return {
     ...contextual,
+    companionProfile: undefined,
     // Personal account IDs remain available so the member's Personal journal
     // still compiles, but private bank/product metadata never enters the model
     // disclosure projection.
@@ -155,12 +156,13 @@ export function householdForHerculesContext(
   const hercules = household.kitchen.hercules
     ? {
         ...household.kitchen.hercules,
-        memories: (household.kitchen.hercules.memories ?? []).filter((row) => row.createdBy === memberId),
-        chats: (household.kitchen.hercules.chats ?? []).filter((row) => row.createdBy === memberId),
+        memories: [],
+        chats: [],
       }
     : household.kitchen.hercules;
   return {
     ...scoped,
+    companionProfile: undefined,
     accountHistoryReviews: [],
     accountHistoryApprovals: [],
     activity: activitySafeForMember(household, memberId),
@@ -247,6 +249,7 @@ export function goalVisibleInView(goal: Goal, memberId: string, view: LedgerView
 export function householdForView(household: Household, memberId: string, view: LedgerView): Household {
   return {
     ...household,
+    companionProfile: household.companionProfile?.scope.memberId === memberId ? household.companionProfile : undefined,
     accountOpeningCheckpoints: (household.accountOpeningCheckpoints ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
     accountHistoryApprovals: (household.accountHistoryApprovals ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
     accountHistoryReviews: (household.accountHistoryReviews ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),

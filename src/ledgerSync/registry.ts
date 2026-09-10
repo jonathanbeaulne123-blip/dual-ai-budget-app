@@ -2,6 +2,7 @@ import { reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import { eraseDevelopmentActivity, restoreSharedPoint } from "./lifecycle.ts";
 import type { Scope } from "./protocol.ts";
 import { buildBatchImport } from "../core/importInbox/command.ts";
+import { commitCompanion } from "../core/herculesCompanion.ts";
 import * as commands from "../core/commands.ts";
 import * as rehearsal from "../core/monthRehearsal.ts";
 import { stampWeeklyDocument } from "../core/weeklyDocumentStamp.ts";
@@ -14,6 +15,7 @@ type Policy = { fn: Fn; bind: (args: unknown[], actor: string) => void };
 const policies = new Map<string, Policy>();
 const functions = {
   ...commands,
+  commitCompanion,
   ...rehearsal,
   eraseDevelopmentActivity,
   restoreSharedPoint,
@@ -63,6 +65,7 @@ register(
   `offerHouseholdOnboarding proposeHouseholdOnboarding confirmHouseholdOnboarding stopHouseholdOnboarding resumeHouseholdOnboarding clockInShift clockOutShift startShiftBreak endShiftBreak updateOpenShiftTimeline abandonOpenShift chooseOpenShiftTimeline moveAskGoalClaimToNextMonth playTicTacToe guessHangman foundHouseholdCharter signHouseholdCharter grantCharterPermission revokeCharterPermission proposeCharterAmendment proposeCharterCeilingAmendment confirmCharterAmendment holdCharterAmendment bindHouseholdFundBackingAccount setHouseholdFundMonthPlan replaceHouseholdFundContributionSource proposeHouseholdFundContribution holdHouseholdFundContribution releaseHouseholdFundHold withdrawHouseholdFundContribution confirmHouseholdFundContribution confirmHouseholdFundSettlement allocateHouseholdFundSurplus releaseHouseholdFundKitty postHouseholdFundDirectDebit recordHouseholdFundReconciliation reverseHouseholdFundEvent activateHouseholdFundConnection recordHouseholdFundBankVerification commitCharterFounding startRehearsalTask recordRehearsalOutcome linkRehearsalReceipt archiveMonthRehearsal stampWeeklyDocument`,
   ["memberId"],
 );
+register("commitCompanion", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
 register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
@@ -140,6 +143,7 @@ export function executeIntent(
     throw new ValidationError(
       `This action needs its dedicated authority: ${kind}.`,
     );
+  if (["recordHerculesTalk", "forgetHerculesMemory", "wipeHerculesChat"].includes(kind)) throw new ValidationError("HERCULES_UPDATE_REQUIRED: The shared chat archive is read-only. Reload Hearth to use private conversations.");
   const args = structuredClone(rawArgs);
   policy.bind(args, actor);
   // Accepted Shared setup times belong to the authority, not a caller's clock.

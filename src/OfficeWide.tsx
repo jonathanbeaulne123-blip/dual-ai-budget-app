@@ -469,7 +469,7 @@ export function OfficeWide({
       glance: <span>{wardrobeGlance(household, today)}</span>,
       aria: "Hercules outfits.",
       body: (
-        <WardrobeBody
+        <WardrobeBody memberId={memberId} ledgerView={view}
           household={household}
           today={today}
           busy={busy}

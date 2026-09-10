@@ -1,3 +1,4 @@
+import { companionUpdateAllowed } from "./core/herculesCompanion.ts";
 import { entryDraftKey, loadEntryDraft, writeEntryLocal, clearEntryLocal, entryConfirmation, clearEntryConfirmation, readEntrySubmission, type EntrySubmission, type EntryDraft } from "./entryDraft.ts";
 import type { KitchenCommandOptions } from "./kitchenCommand.ts";
 import {rememberWorkHandoff,clearWorkHandoff} from "./workHandoff.ts";
@@ -1067,6 +1068,10 @@ export function App() {
     }
     if (result.household === current) return;
     const commandKind = result.undo.commandKind;
+    if (commandKind === "hercules-companion-personal") {
+      if (companionUpdateAllowed(current, result.household, who)) return;
+      throw new ValidationError("Only you can change your Hercules conversations and preferences.");
+    }
     if (commandKind === "fund-rail-personal") {
       if (fundRailPreferenceUpdateAllowed(current, result.household, who)) return;
       throw new ValidationError("Only you can arrange your own board.");
@@ -4599,6 +4604,7 @@ export function App() {
         let result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
         if (memberPersonal) {
+          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations and preferences.");
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) {
             options?.onAccepted?.(result);
@@ -4723,6 +4729,7 @@ export function App() {
         const result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
         if (memberPersonal) {
+          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations and preferences.");
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) return null;
         }
@@ -7983,6 +7990,7 @@ export function App() {
           if (card) openPayCard(card.account);
         }}
         onLedger={(fn) => { void runKitchen(fn); }}
+        onCompanionCommand={runKitchen}
         onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
         onDismissNotice={(key) => { void run((current) => dismissNotice(current, key)); }}
         onOpenCharter={() => {

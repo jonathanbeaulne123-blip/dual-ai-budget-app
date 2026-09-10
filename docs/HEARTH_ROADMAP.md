@@ -1,5 +1,7 @@
 # Hearth living roadmap
 
+**2026-09-10 — Hercules slice 2 implemented locally:** private profile continuity, Gemini character/history, explicit preference controls and guarded cues. [Worksession](worksessions/2026-09-10-hercules-slice-2.md). Not deployed; live model quality and physical-device proof remain open. Next implementation: slice 3 useful discovery.
+
 > **Onboarding v2 and statement-assisted setup — integration review, 2026-09-08:** Five required stages, independent Shared evidence, reviewed signed/zero openings and atomic reconciled history corrections. [Implementation and acceptance](worksessions/2026-09-08-onboarding-v2-statement-setup.md). Release, real two-device Development rehearsal and physical accessibility checks remain open.
 
 > **Five shared boards — implemented and verified locally, 2026-09-08:** Jonathan approved mobile Till-style Add, traditional Calendar default, Shared Plan ordering, Household table navigation and five functional shared boards across all three themes. [Worksession and acceptance](worksessions/2026-09-08-five-shared-boards.md). Local implementation is separate from hosted photo-storage provisioning, deployment and physical-device proof.

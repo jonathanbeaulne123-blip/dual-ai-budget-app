@@ -1,3 +1,4 @@
+vi.mock("../workers/ledgerRoom.ts", () => ({ LedgerRoom: class {} }));
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import worker from "../workers/site.js";

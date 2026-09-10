@@ -1,3 +1,9 @@
+## Hercules living companion slice 2 — local implementation (2026-09-10)
+
+Private profile persistence now spans shaping, personal split/decode/overlay/assembly, v2 command admission, event replay and backup. Chat uses the versioned affectionate-diva brief, scoped bounded history and explicit preference controls with acknowledged receipts and Undo. Conversations remain usable while unsaved; legacy shared history stays read-only and outside active context. All three themes have authored controls in the chat and wardrobe.
+
+Risk High. Budget (5): no financial writer or private-to-shared disclosure is added. Engagement (3): natural follow-ups, steady affection and controllable preference memory. [Worksession and verification](worksessions/2026-09-10-hercules-slice-2.md). Local implementation only; no push, merge, deployment, schema, secrets or live provider testing. Server-first compatibility rollout, physical two-device proof and the live dialogue quality rubric remain release gates. Slice 3 is useful discovery/predictive suggestions; the 3D wardrobe remains slice 4 onward.
+
 ## Hercules living companion slice 1 — local contracts (2026-09-10)
 
 Jonathan requested slice 1 of the [finalized companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md). Branch `codex/hercules-companion-contracts` starts at verified main `2e113f69d03872eddc22ac461378a0f3e33f6c55`. This slice adds closed executable profile/look/gallery/intent contracts, strict validators, resource preconditions, twelve capability declarations, a character brief and 24 synthetic dialogue scenarios. Production types, command registrations, Gemini prompts and UI are unchanged.

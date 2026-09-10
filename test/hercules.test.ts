@@ -1,3 +1,4 @@
+import { householdForHerculesContext } from "../src/core/visibility.ts";
 import { describe, expect, it } from "vitest";
 import {
   applySitDown,
@@ -466,7 +467,7 @@ describe("The Hercules Update", () => {
     expect(boundedPayload001).toMatch(/haircut/i);
     expect(boundedPayload001).toMatch(/ledgerLines/);
     expect(boundedPayload001).toMatch(/Recent transactions:/);
-    expect(herculesModelPayload(asMem001)).toMatch(/gym drop-in/i);
+    expect(herculesModelPayload(asMem001)).not.toMatch(/gym drop-in/i);
 
     const asMem002 = composeHerculesChatRequest(household, "what did I spend", briefing, today, "MEM-002", "", { view: "personal" });
     expect(asMem002.ledger.recent.some((row) => /haircut/i.test(row.note))).toBe(false);
@@ -510,7 +511,7 @@ describe("The Hercules Update", () => {
     expect(body).toMatch(/CAD/);
   });
 
-  it("sends memory kinds to the model and surfaces bill memories on bills talk", async () => {
+  it("keeps previously shared memories out of active chat and model context", async () => {
     let household = seedDemoHousehold({ today, environment: "development" });
     const remembered = planHerculesTurn(household, "remember hydro is due Friday", today, "home");
     expect(remembered.memory?.kind).toBe("bill");
@@ -524,15 +525,15 @@ describe("The Hercules Update", () => {
 
     const briefing = herculesBriefing(household, "home", today);
     const req = composeHerculesChatRequest(household, "which bill is due", briefing, today, "MEM-001");
-    expect(req.memories.some((row) => row.kind === "bill" && /hydro/i.test(row.label))).toBe(true);
+    expect(req.memories).toEqual([]);
 
     const payload = herculesModelPayload(req);
-    expect(payload).toMatch(/"kind":"bill"/);
-    expect(payload).toMatch(/hydro is due Friday/i);
-    expect(formatHerculesBriefing(briefing, req.memories)).toMatch(/kitchen memories: bill:/);
+    expect(payload).not.toMatch(/"kind":"bill"/);
+    expect(payload).not.toMatch(/hydro is due Friday/i);
+    expect(formatHerculesBriefing(briefing, req.memories)).not.toMatch(/kitchen memories: bill:/);
 
-    const billsTalk = talkHercules(household, "which bill is due", today, "home");
-    expect(billsTalk.fact?.label).toBe("bill");
-    expect(billsTalk.fact?.value).toMatch(/hydro/i);
+    const billsTalk = talkHercules(householdForHerculesContext(household, "MEM-001", "household"), "which bill is due", today, "home");
+    expect(JSON.stringify(billsTalk)).not.toMatch(/hydro is due Friday/i);
+    expect(household.kitchen.hercules?.memories[0]?.text).toMatch(/hydro/i);
   });
 });

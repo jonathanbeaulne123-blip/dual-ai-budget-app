@@ -3212,3 +3212,28 @@ input, select, textarea {
 .reading-receipt dl { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr); gap: 6px 10px; }
 .reading-receipt dd { margin: 0; }
 .reading-receipt .chip { min-height: 44px; border-radius: 3px; }
+
+/* Private Hercules keepsake card — shared controls, authored scene materials. */
+.hercules-turn { white-space: pre-wrap; overflow-wrap: anywhere; }
+.companion-memory { margin: 12px 0; border: 1px solid var(--line, #b9ac90); border-radius: 9px; background: var(--paper, #fff9ec); color: var(--ink, #342d25); text-align: left; }
+.companion-memory summary { padding: 12px 14px; min-height: 44px; cursor: pointer; font-weight: 650; }
+.companion-memory-inner { padding: 0 14px 14px; font-size: 13px; line-height: 1.55; }
+.companion-memory-intro { font-family: Georgia, serif; font-size: 17px; }
+.companion-memory-field { display: flex; align-items: end; gap: 8px; margin: 12px 0; }
+.companion-memory-field label { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.companion-memory select { width: 100%; min-height: 44px; font: inherit; background: var(--paper, #fff9ec); color: inherit; border: 1px solid currentColor; border-radius: 5px; padding: 8px; }
+.companion-memory button { min-height: 44px; white-space: normal; }
+.companion-memory-toggle { display: flex; align-items: start; gap: 9px; cursor: pointer; }
+.companion-memory-toggle input { flex: 0 0 auto; margin-top: 5px; }
+.companion-memory :is(button, select, summary, input):focus-visible { outline: 3px solid var(--ink, #342d25); outline-offset: 3px; }
+.companion-save-status { font-size: 12px; line-height: 1.4; }
+.companion-archive { max-height: 280px; overflow: auto; margin-block: 16px; }
+:root[data-theme="classic"] .companion-memory { border-top: 4px double #99774f; box-shadow: 2px 3px 0 #957e5520; }
+:root[data-theme="taylor"] .companion-memory { background: #fff7f6; color: #49323d; border: 1px dashed #b17c97; border-radius: 14px 5px 13px 5px; box-shadow: 3px 4px 0 #d6a8b526; }
+:root[data-theme="taylor"] .companion-memory-intro { color: #7b4463; font-style: italic; }
+:root[data-theme="newfoundland"] .companion-memory { background: #f7f7ed; color: #273e41; border: 2px solid #557e83; border-top: 5px solid #be7659; border-radius: 4px; }
+:root[data-theme="newfoundland"] .companion-memory-intro { color: #345a62; }
+@media (max-width: 380px) { .companion-memory-field { flex-wrap: wrap; } .companion-memory-field label { flex-basis: 100%; } }
+
+.hercules-bubble.chat { pointer-events: auto; max-height: min(680px, calc(100dvh - 120px)); overflow-y: auto; overscroll-behavior: contain; }
+.hercules-bubble .companion-memory { pointer-events: auto; }

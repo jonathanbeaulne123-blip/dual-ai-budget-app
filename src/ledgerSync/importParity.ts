@@ -11,6 +11,7 @@ export type FieldPolicy = 'exact' | 'transport' | 'receipt-relocation';
 // Exhaustive: adding a Household field requires an explicit parity decision.
 export const IMPORT_FIELD_POLICY = {
   version: 'exact',
+  companionProfile: 'exact',
   householdId: 'exact',
   inviteCode: 'exact',
   linked: 'transport',

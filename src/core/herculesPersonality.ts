@@ -149,10 +149,12 @@ export function formatHerculesBriefing(briefing: HerculesBriefing, memories: Arr
   return lines.join("\n");
 }
 
-function clipReply(text: string, max = 360): string {
-  const trimmed = text.replace(/\s+/g, " ").trim();
+function clipReply(text: string, max = 6000): string {
+  const trimmed = text.replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   if (trimmed.length <= max) return trimmed;
   const cut = trimmed.slice(0, max - 1);
+  const sentence = [...cut.matchAll(/[.!?](?=\s|$)/g)].at(-1)?.index;
+  if (sentence !== undefined && sentence > 80) return cut.slice(0, sentence + 1);
   const space = cut.lastIndexOf(" ");
   return `${cut.slice(0, space > 80 ? space : max - 1).replace(/[,:;.–-]$/, "")}…`;
 }
@@ -163,7 +165,7 @@ export function sanitizeHerculesReply(
   allowedFigures: string[] = [],
   asked = "",
 ): string {
-  let reply = String(text || "").replace(/\s+/g, " ").trim();
+  let reply = String(text || "").replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   if (!reply) {
     return clipReply(groundedSpeak) || "mrrp. Ask a number. I don't write.";
   }
@@ -213,7 +215,9 @@ export function localHerculesChat(
   message: string,
   briefing: HerculesBriefing,
   grounded: HerculesGrounded,
+  preferences: readonly { key: string; value: unknown }[] = [],
 ): string {
+  const quietHumour = preferences.some(row => row.key === "humour" && row.value === "off");
   const q = message.trim().toLowerCase().replace(/['’]/g, "");
   if (/\b(post (it|this|that)|log this|write it|insert into|pay it for me|save this (expense|row))\b/.test(q)) {
     return HERCULES_REFUSE_WRITE;
@@ -221,10 +225,15 @@ export function localHerculesChat(
   if (/\bwho spent\b/.test(q) || /\bwho paid more\b/.test(q) || /\b(bianca|jonathan) (spent|wasted)\b/.test(q)) {
     return HERCULES_REFUSE_SHAME;
   }
+  if (/\b(stressed|overwhelmed|scared|anxious|worried)\b/.test(q)) return "We can take this one step at a time. Would it help to look at what's due first, or would you like a moment to talk?";
+  if (/^(hi|hey|hello)( hercules)?[!. ]*$/.test(q)) return quietHumour ? "There you are. What's on your mind?" : "There you are. I was keeping your seat warm. What's on your mind?";
+  if (/\b(dont know what to do|how can you help|what can you do)\b/.test(q)) return "Come sit with me. You can ask me to explain a number, look at what's due, or talk through a plan. Or we can just chat. My schedule is mostly naps.";
+  if (/\b(outfit|dress|wardrobe|closet)\b/.test(q)) return "Finally. An appointment that respects my talents. You'll find my wardrobe in More on this desk, under Hercules outfits.";
+  if (/\b(thank you|thanks)\b/.test(q)) return "Any time. I'll be here, looking indispensable.";
   const spoken = grounded.spoken?.trim() || "I'm here. Scratch — say hi — or ask a number.";
   if (/^(mrrp|prrrp|from the counter|listen|tail flick)/i.test(spoken)) {
     return sanitizeHerculesReply(spoken, spoken);
   }
   const purr = LOCAL_FLAVOR[flavorIndex(`${q}|${briefing.mood}|${briefing.page}`, LOCAL_FLAVOR.length)]!;
-  return sanitizeHerculesReply(`${purr} ${spoken}`, spoken);
+  return sanitizeHerculesReply(!quietHumour && flavorIndex(q, 5) === 0 ? `${purr} ${spoken}` : spoken, spoken);
 }

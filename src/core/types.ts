@@ -1232,6 +1232,8 @@ export type WeeklyDocumentStamp = {
 };
 
 export type Household = {
+  /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
+  companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
   accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
   accountHistoryApprovals?: import("./accountHistory.ts").AccountHistoryApproval[];
@@ -1399,6 +1401,8 @@ export type SharedEnvelope = {
 };
 
 export type PersonalEnvelope = {
+  /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
+  companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
   accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
   accountHistoryApprovals?: import("./accountHistory.ts").AccountHistoryApproval[];

@@ -82,7 +82,7 @@ describe("Hercules science (D-057–D-060)", () => {
     expect(forgotten.household.presets[0]?.active).toBe(false);
   });
 
-  it("keeps quiet titles out of bounded context while the authorized synthetic full snapshot remains complete", async () => {
+  it("keeps quiet titles out of ordinary Development requests without a synthetic fixture marker", async () => {
     const household = seedDemoHousehold({ today, environment: "development" });
     const therapy = household.appointments.find((item) => item.kind === "therapy" && item.sensitivity === "quiet");
     expect(therapy?.title).toMatch(/Therapy/i);
@@ -116,7 +116,7 @@ describe("Hercules science (D-057–D-060)", () => {
     expect(boundedPayload).not.toMatch(/Dr\. Chen/);
     expect(boundedPayload).not.toMatch(/The Annex/);
     expect(boundedPayload).toMatch(/the .+ visit/i);
-    expect(herculesModelPayload(req)).toMatch(/Therapy|Dr\. Chen|The Annex/);
+    expect(herculesModelPayload(req)).not.toMatch(/Therapy|Dr\. Chen|The Annex/);
 
     let body = "";
     await chatHercules(req, {
@@ -128,7 +128,7 @@ describe("Hercules science (D-057–D-060)", () => {
         });
       },
     });
-    expect(body).toMatch(/Therapy|Dr\. Chen|The Annex/);
+    expect(body).not.toMatch(/Therapy|Dr\. Chen|The Annex/);
   });
 
   it("strips invented CAD and keeps a tap-before-write rule on a coffee habit", async () => {

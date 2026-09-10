@@ -2,7 +2,7 @@ import type { Environment, LedgerView, PersonalEnvelope } from "./types.ts";
 import { HERCULES_CAPABILITY_IDS, type HerculesCapabilityId } from "./herculesCapabilities.ts";
 import { COMPANION_EXPRESSIONS, COMPANION_GESTURES } from "./herculesCharacter.ts";
 
-/** Pure, unactivated contracts. No Household mutation, transport, registry or model access. */
+/** Pure contracts. Runtime mutation and disclosure live in the companion modules. */
 export const COMPANION_LIMITS = Object.freeze({
   preferences: 60, turnsPerView: 300, historyDays: 30, contextPairs: 6,
   contextCharacters: 8_000, modelPreferences: 12, textCharacters: 6_000,
@@ -60,7 +60,7 @@ export type CompanionProfileV1 = {
   wornLook: { revision: number; value: LookV1 | null };
   savedLooks: LookResourceV1[]; suggestions: CompanionSuggestionState[];
 };
-/** Do not add this field to production envelopes before the complete slice-2 round trip. */
+/** Compatibility alias; the member-personal envelope carries this profile in slice 2. */
 export type CompanionPersonalEnvelopeV1 = PersonalEnvelope & { companionProfile?: CompanionProfileV1 };
 export type CompanionChatRequestV2 = {
   version: 2; scope: CompanionScope; view: LedgerView; conversationGeneration: number;
@@ -468,4 +468,16 @@ export function decodeCompanionPresentation(value: unknown, allowedFactIds: Read
   const actionIds = unique(list(row.actionIds, 12, id), item => item);
   requireContract(factIds.every(item => allowedFactIds.has(item)) && actionIds.every(item => allowedActionIds.has(item)), "UNAVAILABLE_REFERENCE");
   return { version: 2, text: text(row.text, COMPANION_LIMITS.textCharacters), expression: literal(row.expression, COMPANION_EXPRESSIONS), gesture: literal(row.gesture, COMPANION_GESTURES), factIds, actionIds };
+}
+
+/** Strict provider-bound context; budgets also apply to forged HTTP payloads. */
+export function decodeCompanionChatRequest(value: unknown): CompanionChatRequestV2 {
+  const row = object(value, ["version", "scope", "view", "conversationGeneration", "context", "preferences", "currentFactIds", "availableActionIds"]);
+  requireContract(row.version === 2, "UNSUPPORTED_CHAT_VERSION");
+  const context = list(row.context, COMPANION_LIMITS.contextPairs * 2, turn);
+  requireContract(context.length % 2 === 0 && context.every((item, index) => item.role === (index % 2 === 0 ? "user" : "hercules")), "COMPLETE_CONTEXT_PAIRS_REQUIRED");
+  requireContract(context.reduce((sum, item) => sum + item.text.length, 0) <= COMPANION_LIMITS.contextCharacters, "CONTEXT_TOO_LARGE");
+  return { version: 2, scope: scope(row.scope), view: view(row.view), conversationGeneration: revision(row.conversationGeneration), context,
+    preferences: unique(list(row.preferences, COMPANION_LIMITS.modelPreferences, preference), item => item.key).filter(item => item.value !== null),
+    currentFactIds: list(row.currentFactIds, 80, id), availableActionIds: list(row.availableActionIds, 20, id) };
 }

@@ -102,13 +102,13 @@ export function companionMood(household: Household, today: DateKey, name = "Herc
   const overdue = overdueBills(household, today);
   const week = weekSummary(household, today);
   if (findings > 0) {
-    return { mood: "hiding", reason: `The books need a look. ${name} is under the table until Health is clean.` };
+    return { mood: "content", reason: `The books need a look. ${name} is right here with you; we can work through them one step at a time.` };
   }
   if (overdue.length) {
     const first = overdue[0]!;
     return {
       mood: "restless",
-      reason: `${first.note || "A bill"} was due ${first.nextDate}. ${name} will not fake a fee. Pay it, then post it.`,
+      reason: `${first.note || "A bill"} was due ${first.nextDate}. ${name} can help you look at what is due, one step at a time.`,
     };
   }
   const nextBill = household.recurrences
@@ -135,8 +135,8 @@ export function companionMood(household: Household, today: DateKey, name = "Herc
 const LINES: Record<CompanionMood, (name: string) => string> = {
   glowing: (name) => `${name} is loafing in a sunbeam. The books look kind.`,
   content: (name) => `${name} is on the counter, waiting for the next grocery.`,
-  restless: (name) => `${name} is pacing. A bill or a hot week wants a look.`,
-  hiding: (name) => `${name} is under the table. No fake fees. Fix Health, then come back.`,
+  restless: (name) => `${name} is keeping you company. A bill or a change in spending may need a look.`,
+  hiding: (name) => `${name} is close by. We can take the next step together.`,
 };
 
 export function describeCompanion(household: Household, today: DateKey): CompanionView {

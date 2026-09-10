@@ -841,7 +841,7 @@ export function Office({
       "Hercules outfits",
       <span>{wardrobeGlance(household, today)}</span>,
       `Hercules outfits. ${wardrobeGlance(household, today)}`,
-      <WardrobeBody
+      <WardrobeBody memberId={memberId} ledgerView={view}
         household={household}
         today={today}
         busy={busy}

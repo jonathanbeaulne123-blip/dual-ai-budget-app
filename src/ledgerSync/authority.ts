@@ -86,6 +86,7 @@ export async function prepareCommand(
   if (!current.members.some((m) => m.id === scope.memberId && m.active))
     throw new Error("MEMBERSHIP_CHANGED");
   if ((current.accountOpeningCheckpoints?.length || current.transactions.some(t => t.openingSignedBalanceCents !== undefined)) && command.accountHistoryVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: This household uses reviewed account history. Reload Hearth before making changes.");
+  if ((current.companionProfile || command.steps.some(step => step.kind === "commitCompanion")) && command.companionProfileVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth before changing Hercules preferences or conversations.");
   const before = current,
     ids = new Map<string, string>();
   // Legacy receipts use another hash contract and do not bind an actor. They

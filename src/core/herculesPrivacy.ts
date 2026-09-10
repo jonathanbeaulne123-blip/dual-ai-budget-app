@@ -1,3 +1,5 @@
+import { companionModelContext, redactCompanionText } from "./herculesCompanionContext.ts";
+import type { CompanionChatRequestV2 } from "./herculesCompanionContracts.ts";
 import { monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import { monthSummary } from "./budget.ts";
 import { formatCad } from "./money.ts";
@@ -8,7 +10,7 @@ import {
 import { composeNotices, type HerculesNotice } from "./notices.ts";
 import { herculesBriefing, type HerculesBriefing, type HerculesGrounded } from "./herculesPersonality.ts";
 import { talkHercules } from "./herculesTalk.ts";
-import { memoriesForModel, type HerculesMemoryView } from "./herculesLedger.ts";
+import { type HerculesMemoryView } from "./herculesLedger.ts";
 import type { Appointment, Claim, Household, LedgerView, Transaction } from "./types.ts";
 import { householdForAiDisclosure, visibleForDuplicateScan } from "./visibility.ts";
 
@@ -43,6 +45,7 @@ export type HerculesNoticeView = {
 };
 
 const MODEL_OPERATIONAL_KEYS = new Set([
+  "companionProfile", "chats", "memories",
   "inviteCode",
   "linked",
   "revision",
@@ -328,6 +331,7 @@ export function composeHerculesChatRequest(
   options: { shareCoordsWithModel?: boolean; view?: LedgerView; coworkerIdsForModel?: string[] } = {},
 ): {
   message: string;
+  companion: CompanionChatRequestV2;
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
   householdId: string;
@@ -368,7 +372,7 @@ export function composeHerculesChatRequest(
     ? workplaceContextForAiDisclosure(household, memberId, options.coworkerIdsForModel)
     : null;
   return {
-    message: scrubQuietText(message, secrets) || message.trim(),
+    message: redactCompanionText(scrubQuietText(message, secrets)) || "[private text removed]",
     householdId: household.householdId,
     memberId,
     briefing: scopedBriefing,
@@ -384,21 +388,17 @@ export function composeHerculesChatRequest(
           }
         : scopedGrounded.fact,
     },
-    memories: memoriesForModel(disclosed)
-      .map((row) => ({
-        ...row,
-        label: scrubQuietText(row.label, secrets) || row.label,
-      }))
-      .filter((row) => row.label),
+    memories: [], // The previously shared archive is never new private context.
+    companion: companionModelContext(household, memberId, options.view ?? "household", text => scrubQuietText(text, secrets)),
     notices,
     ledger,
     ledgerLines: formatLedgerExcerptForModel(ledger),
     figures,
     workplaceContext,
-    fullSyntheticContext: household.environment === "development"
+    fullSyntheticContext: household.environment === "development" && Boolean(household.syntheticFixture)
       ? formatFullSyntheticContextForModel(household)
       : undefined,
-    dataClassification: household.environment === "development" ? "synthetic" : undefined,
+    dataClassification: household.environment === "development" && Boolean(household.syntheticFixture) ? "synthetic" : undefined,
     environment: household.environment,
   };
 }

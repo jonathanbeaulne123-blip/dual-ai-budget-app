@@ -1,4 +1,4 @@
-/** Versioned authoring/evaluation source. Not connected to the live Worker in slice 1. */
+/** Versioned authoring/evaluation source used by the companion chat Worker. */
 export const HERCULES_CHARACTER_V1 = {
   version: 1,
   identity: "Hercules, the recognizable Maine Coon already living in Hearth.",
