@@ -1,53 +1,51 @@
 {
   "baseSha": "2e113f69d03872eddc22ac461378a0f3e33f6c55",
-  "changeFingerprint": "625cbfe6d4186f16ad63e70facd4be0e79dbc55387e50835cfde0edb0bb1dd5c",
+  "changeFingerprint": "71e0a042ec16cb7fd1e79a185ac881093f3db5930d45da60c8bb1410b40182b0",
   "workingTreeClean": false,
   "breachPhase": "typescript",
   "budgetMs": 300000,
-  "elapsedMs": 1512682,
+  "elapsedMs": 968659,
   "slowestPhase": "typescript",
   "timeBudgetBreached": true,
   "classification": "quick-gate-passed; time-budget-breached",
-  "focusReason": "Books scene revision preserves drafts, focus, theme and scope changes, account reads, and App confirmation boundaries",
-  "headSha": "8a185ac75ba147ff57fdb670d4ba39a9714da59d",
+  "focusReason": "Approved Books cartoon assets and title refinement preserve theme switching, drafts, focus, and existing App financial flows",
+  "headSha": "a3281496e23f3a0eddd93df20bbdfd7420f7d1ce",
   "phases": [
     {
-      "elapsedMs": 1180,
+      "elapsedMs": 924,
       "name": "diff-check",
       "status": "passed"
     },
     {
-      "elapsedMs": 7630,
+      "elapsedMs": 6712,
       "name": "ai-surface",
       "status": "passed"
     },
     {
-      "elapsedMs": 1005812,
+      "elapsedMs": 743438,
       "name": "typescript",
       "status": "passed"
     },
     {
-      "elapsedMs": 19739,
+      "elapsedMs": 28897,
       "name": "test-discovery",
       "status": "passed"
     },
     {
-      "elapsedMs": 196799,
+      "elapsedMs": 35365,
       "name": "vitest-fast",
       "status": "passed"
     },
     {
-      "elapsedMs": 276268,
+      "elapsedMs": 142430,
       "name": "vitest-serial",
       "status": "passed"
     }
   ],
   "risk": "medium",
   "selectedTests": [
-    "test/accounts-widget.test.ts",
     "test/app-startup-p1.test.ts",
     "test/appearance-provider.test.ts",
-    "test/books-household.test.ts",
     "test/books-worlds.test.ts",
     "test/command-contract.test.ts",
     "test/command-runtime.test.ts",

@@ -1,4 +1,5 @@
 {
+  "note": "Current cartoon artwork at 720px; subset of normal report. Prior 900/1099 captures are superseded.",
   "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
   "records": [
     {
@@ -11,20 +12,31 @@
           "width": 720,
           "scroll": 720,
           "scene": "reputation"
-        },
-        {
-          "width": 900,
-          "scroll": 900,
-          "scene": "reputation"
-        },
-        {
-          "width": 1099,
-          "scroll": 1099,
-          "scene": "reputation"
         }
       ],
       "violations": [],
       "special": {
+        "books": {
+          "states": [
+            "fund",
+            "fund-register",
+            "accounts",
+            "account-form-expanded",
+            "account-room",
+            "activity-empty",
+            "activity",
+            "source-expanded",
+            "journal",
+            "trial-balance",
+            "statements",
+            "reconcile",
+            "close-pack",
+            "chart",
+            "ask",
+            "import"
+          ],
+          "targets": true
+        },
         "charm": {
           "width": 44,
           "height": 48,
@@ -34,11 +46,6 @@
         "zoom": {
           "width": 390,
           "scroll": 390
-        },
-        "motion": {
-          "persistentPause": true,
-          "focusQuiet": true,
-          "offscreen": 2
         }
       }
     }
