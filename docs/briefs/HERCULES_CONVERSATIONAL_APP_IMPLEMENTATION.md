@@ -14,7 +14,7 @@ Jonathan explicitly requested implementation of the full plan on 2026-09-10. Loc
 Repository: `jonathanbeaulne123-blip/dual-ai-budget-app`.
 Branch: `codex/hercules-conversational-app`.
 Base and HEAD before implementation: `2db3da9fd3bff0c23beb78ceaf73295b19f2e34e`.
-Worktree: `.codex-work/hercules-conversational-app` beneath the project workspace. Changes are uncommitted; inspect the current diff and worktree before continuing. Do not replace it with an older audit checkout. No PR/release has been created for this work.
+Worktree: `.codex-work/hercules-conversational-app` beneath the project workspace. Implementation was committed for the explicitly authorized Development release; inspect the current diff and worktree before continuing. Do not replace it with an older audit checkout. See the worksession for current PR/deployment evidence.
 
 ## Current implementation
 

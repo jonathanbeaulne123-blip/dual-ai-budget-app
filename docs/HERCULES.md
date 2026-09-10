@@ -1,4 +1,4 @@
-> Current conversational implementation is OPEN and gated off by default. See [capability coverage](HERCULES_CAPABILITY_COVERAGE.md) and [confirmed execution contract](ARCHITECTURE.md). Historical shared-memory descriptions below are superseded by private companion continuity.
+> Whole-app conversational implementation remains OPEN. Implemented actions are enabled for the authorized Development release; Production and external Google writing remain disabled. See [capability coverage](HERCULES_CAPABILITY_COVERAGE.md) and [confirmed execution contract](ARCHITECTURE.md). Historical shared-memory descriptions below are superseded by private companion continuity.
 
 ## Integrated companion — slice 6 local candidate
 

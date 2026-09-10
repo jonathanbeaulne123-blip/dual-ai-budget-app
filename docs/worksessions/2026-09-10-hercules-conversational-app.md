@@ -66,3 +66,12 @@ Whole-app completion remains OPEN: complete jobs/attendance controls, imports/ac
 ### Checkpoint disposition
 
 Implementation remains OPEN and is not release-ready. The expanded gate was stopped after more than 35 minutes in TypeScript, on an already superseded source fingerprint; do not mark it passed. The prior intermediate typechecks and focused test results remain scoped evidence only. The local preview server was stopped after browser verification. No push, merge, deployment, schema application or activation occurred. Preserve the worktree and continue from the implementation packet; do not discard pending identities, accepted events or the current private draft schema during rollback.
+
+
+## Authorized Development release — 2026-09-10
+
+Jonathan explicitly instructed: "enable chat writes then push merge and deploy" after the incomplete scope and verification limits were disclosed. This authorizes releasing the implemented subset to Development. It does not certify whole-app completion, authorize Google event writing, apply hosted schema, change provider/data gates or activate Production.
+
+Client build defaults `VITE_HERCULES_ACTIONS=1`; server `HERCULES_ACTIONS_ENABLED=true`. Both restrict execution to Development. `HERCULES_EXTERNAL_CALENDAR_WRITES=false`; Production continuity remains off. Rolling back uses either presentation flag 0 or server execution flag false, retaining compatible fields, accepted receipts and pending cancellation/recovery.
+
+Integrated current main `caf625a` (mobile clearance and sync status changes); preserved both appended decisions. Risk High. Budget (5): user-reviewed existing command outcomes; engagement (3): enabled guided actions and persistent composer. Focused High gate, build, PR CI and live asset proof must be recorded below; full-suite/authenticated-device/live-model acceptance remains separate.

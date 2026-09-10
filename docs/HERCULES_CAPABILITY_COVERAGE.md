@@ -2,7 +2,7 @@
 
 Local implementation inventory; generated from the current registry. This is a coverage ledger, not a completion certificate.
 
-The requested whole-app outcome remains OPEN. Adapters listed below exist in code; only the explicitly listed test evidence in the worksession is verified. Chat actions default off and need both client and server enablement. Google event management and several dedicated workflows remain unimplemented.
+The requested whole-app outcome remains OPEN. Adapters listed below exist in code; only the explicitly listed test evidence in the worksession is verified. Implemented chat actions are enabled for the authorized Development release, with independent client/server pause controls. Production is denied by the server policy. Google event management and several dedicated workflows remain unimplemented.
 
 ## Common acceptance contract
 
