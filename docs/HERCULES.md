@@ -14,6 +14,10 @@ The local slice-2 branch now activates private member-personal profile support a
 
 The local discovery surface now offers For you now, Things we can do and Continue with me. Its catalogue is backed by current-scope evidence and existing source/review flows. Suggestions can be set aside, disabled/re-enabled or bookmarked, with acknowledged private persistence. Full wardrobe production remains later. [Implementation and verification](worksessions/2026-09-10-hercules-slice-3.md).
 
+## Slice 4 implementation
+
+A flagged local 3D fitting room now provides the first complete Cozy at home look, a shared skeleton, twelve authored reactions, real shelf/mirror presentation, camera controls, local undo/redo and matching lightweight layers. The room has authored Classic, Taylor and Newfoundland treatments in Shared and Personal. Three loads only on opening. `VITE_HERCULES_DRESSING_ROOM=1` enables the fitting preview; the default remains off pending likeness, fitting and physical-phone acceptance. This preview has no Wear, profile/gallery write or financial command. [Asset source and export](../scripts/wardrobe/README.md) · [Evidence and limitations](worksessions/2026-09-10-hercules-slice-4.md). The 36-item catalogue and personal/shared wardrobe continuity remain slice 5.
+
 ## Earlier runtime baseline (superseded by slice 2 where stated)
 
 **The product face:** a living Maine Coon who reads the household journal, keeps notes in the same snapshot as the milk, and never posts a cent.

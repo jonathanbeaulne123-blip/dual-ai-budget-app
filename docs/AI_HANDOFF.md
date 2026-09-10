@@ -1,3 +1,9 @@
+## Hercules living companion slice 4 — flagged local fitting (2026-09-10)
+
+One complete Cozy at home look now runs in a lazy 3D room with the canonical source rig, shared skin, twelve reaction clips, physical/keyboard shelf selection, mirror/camera controls, scoped local undo/redo and matching 2D layers. Classic, Taylor and Newfoundland have Shared/Personal treatments; phone keeps the room through breakpoint changes. Asset/WebGL failure retains fitting controls; failed room chunks offer an explicit reload. GPU resources and motion loops are released on close.
+
+Risk High. Budget (5): no financial/profile/gallery writer. Engagement (3): tangible fitting and character movement. [Source/export](../scripts/wardrobe/README.md) and [worksession/evidence](worksessions/2026-09-10-hercules-slice-4.md). Default flag remains off; likeness/fitting and physical phone are open gates. The full catalogue and acknowledged Wear/Save/share remain slice 5. Local only, no push/merge/deploy or hosted/provider changes.
+
 ## Hercules living companion slice 3 — local implementation (2026-09-10)
 
 Useful discovery now shares one local evidence/catalogue path with typed source/navigation actions. Help has For you now, Things we can do and Continue with me; acknowledged private snooze/disable/resume settings, scope epochs, exact predecessor CAS and current-state navigation checks protect continuity. Phone and desktop use all three authored themes. Existing outfits are reachable on phone; full 3D wardrobe remains slice 4.

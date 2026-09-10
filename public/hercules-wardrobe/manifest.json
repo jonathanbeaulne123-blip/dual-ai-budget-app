@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "source": "models/hercules.source.glb",
+  "sourceSha256": "4d669d8c3d9255ded4f52644f078fb6ee7f5a0c9649d2d2a5dae89039c62fde4",
+  "outputSha256": "91e9b04be18df3957c8250dcc90e6432768a15ab7fc05584c3d7c584c2ef6734",
+  "bytes": 5389228,
+  "compressedBytes": 1854980,
+  "compressedSha256": "ca3137a51f546a42e2829c801d106264891f1728d9bf3e6d807acca4b72a1b81",
+  "sourceMeshes": 2252,
+  "nodes": 58,
+  "meshes": 15,
+  "skins": 1,
+  "bones": 40,
+  "clips": [
+    {
+      "name": "breathe-blink",
+      "duration": 5
+    },
+    {
+      "name": "head-tilt",
+      "duration": 3
+    },
+    {
+      "name": "ear-perk",
+      "duration": 2
+    },
+    {
+      "name": "slow-blink",
+      "duration": 3.5
+    },
+    {
+      "name": "pleased",
+      "duration": 3
+    },
+    {
+      "name": "small-strut",
+      "duration": 2.8
+    },
+    {
+      "name": "over-shoulder",
+      "duration": 3
+    },
+    {
+      "name": "inspect-mirror",
+      "duration": 3
+    },
+    {
+      "name": "adjust-glasses",
+      "duration": 3
+    },
+    {
+      "name": "check-sleeve",
+      "duration": 3
+    },
+    {
+      "name": "admire-cape",
+      "duration": 3
+    },
+    {
+      "name": "portrait-pose",
+      "duration": 4
+    }
+  ],
+  "forelegBindDrop": 0.0500323437154293,
+  "rigidAnchors": [
+    "item_cozy_toque",
+    "item_cozy_glasses"
+  ],
+  "occludedRegions": [
+    "torso",
+    "crown"
+  ],
+  "provenance": "Hearth canonical stage export; original deterministic knit, hat, glasses and animation source in scripts/wardrobe/build.mjs. No external images or household data."
+}

@@ -34,6 +34,7 @@ export function HerculesFigure({
   size = 96,
   title,
   children,
+  bodyLayer, headLayer,
   rigSnapshot,
   rigTransitionMs,
 }: {
@@ -45,6 +46,8 @@ export function HerculesFigure({
   /** Only pass when the figure is the sole carrier of meaning; otherwise he stays aria-hidden. */
   title?: string;
   children?: ReactNode;
+  bodyLayer?: ReactNode;
+  headLayer?: ReactNode;
   /** When set, per-part transforms come from the rig engine instead of CSS pose classes. */
   rigSnapshot?: RigSnapshot;
   /** Browser interpolation window between engine-issued snapshots. */
@@ -118,6 +121,7 @@ export function HerculesFigure({
             </g>
             <path d="M112 120 C126 142 131 162 127 179" strokeWidth="1.3" opacity="0.35" />
             <path d="M146 100 C160 114 168 134 167 156" strokeWidth="1.1" opacity="0.3" />
+            {bodyLayer}
           </g>
 
           <g className="herc-ruff" data-herc-part="ruff" style={styles ? part("ruff", styles) : undefined}>
@@ -186,6 +190,7 @@ export function HerculesFigure({
                 opacity="0.45"
               />
             </g>
+            {headLayer}
           </g>
 
           <g className="herc-legs" data-herc-part="legs" style={styles ? part("legs", styles) : undefined}>

@@ -3267,3 +3267,6 @@ input, select, textarea {
 :root[data-theme="newfoundland"] .hercules-discovery { background: #f5f5e9; color: #263e43; border-top: 5px solid #a65c41; border-radius: 4px; }
 :root[data-theme="newfoundland"] .hercules-discovery-card { background: #fffdf1; border-left-color: #416f74; }
 @media (max-width: 380px) { .hercules-discovery { padding: 10px; } .hercules-discovery-card { padding: 10px; } }
+.wardrobe-fitting-entrance{padding:20px;margin-bottom:20px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(120deg,var(--card),color-mix(in srgb,var(--accent) 9%,var(--card)))}
+.wardrobe-fitting-entrance h3{font-family:Georgia,serif;font-size:24px;margin:0 0 8px}.wardrobe-fitting-entrance small{display:block;font-size:11px;margin-top:9px;color:var(--muted)}.wardrobe-fitting-entrance button{min-height:44px}
+.wardrobe-loading-room{position:fixed;z-index:1401;inset:max(20px,20vh) max(20px,calc((100vw - 550px)/2));padding:30px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;box-shadow:0 0 0 100vmax #201b18aa;max-height:75dvh;overflow:auto}.wardrobe-loading-room button{min-height:44px;margin:8px}

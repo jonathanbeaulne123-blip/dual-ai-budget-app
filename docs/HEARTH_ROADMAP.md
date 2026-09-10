@@ -1,6 +1,8 @@
 # Hearth living roadmap
 
-**2026-09-10 — Hercules slice 3 implemented locally:** useful discovery, explicit private suggestion controls and revalidated continuation. [Evidence](worksessions/2026-09-10-hercules-slice-3.md). Not deployed. Next implementation: slice 4, the 3D wardrobe vertical slice.
+**2026-09-10 — Hercules slice 4 implemented locally behind a flag:** one complete 3D fitting look, shared rig, authored reactions, three-theme room and local recovery. [Evidence](worksessions/2026-09-10-hercules-slice-4.md). Not deployed; likeness/fitting and physical-phone acceptance remain open. Full catalogue and Wear/Save/share are slice 5.
+
+**2026-09-10 — Hercules slice 3 implemented locally:** useful discovery, explicit private suggestion controls and revalidated continuation. [Evidence](worksessions/2026-09-10-hercules-slice-3.md). Not deployed. Advanced locally by slice 4 below its acceptance flag.
 
 **2026-09-10 — Hercules slice 2 implemented locally:** private profile continuity, Gemini character/history, explicit preference controls and guarded cues. [Worksession](worksessions/2026-09-10-hercules-slice-2.md). Not deployed; live model quality and physical-device proof remain open. Next implementation: slice 3 useful discovery.
 

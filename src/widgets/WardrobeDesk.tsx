@@ -13,6 +13,7 @@ import {
   type Household,
 } from "../core/index.ts";
 
+import { WardrobeEntrance } from '../wardrobe/WardrobeEntrance.tsx';
 const SLOTS = [
   { id: "hat" as const, label: "Hats" },
   { id: "chain" as const, label: "Chains" },
@@ -51,6 +52,7 @@ export function WardrobeBody({
   const appearance = useAppearance();
   return (
     <div className="wardrobe-desk">
+      {import.meta.env.VITE_HERCULES_DRESSING_ROOM === '1' && <WardrobeEntrance key={`${environment}:${household.householdId}:${memberId}`} environment={environment} householdId={household.householdId} memberId={memberId} view={ledgerView} busy={busy}/>}
       <div className="wardrobe-still" aria-hidden="true">
         <HerculesPortrait
           mood={view.mood}

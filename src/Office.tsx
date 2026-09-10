@@ -1,3 +1,4 @@
+import {WardrobeRoomHost} from './wardrobe/WardrobeEntrance.tsx';
 import { revealPhoneInstrument } from "./core/officePhone.ts";
 import { OFFICE_INSTRUMENT_PURPOSE } from "./core/widgetPurpose.ts";
 import { DrawerSurface } from "./DrawerSurface.tsx";
@@ -907,6 +908,7 @@ export function Office({
       data-face={face}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
     >
+      {import.meta.env.VITE_HERCULES_DRESSING_ROOM === '1' && <WardrobeRoomHost key={`${household.environment}:${household.householdId}:${memberId}`} environment={household.environment} householdId={household.householdId} memberId={memberId} view={view} busy={busy || adding}/>}
       {breakpoint === "phone" ? (
       <OfficePhone
         clinkOn={clinkOn} onClinkOn={onClinkOn}
