@@ -152,7 +152,7 @@ export type Transaction = {
   transferToAccountId?: string;
   refundOfId?: string;
   reversalOfId?: string;
-  source: "manual" | "shift" | "recurring" | "import" | "visit" | "reversal" | "opening";
+  source: "manual" | "shift" | "recurring" | "calendar" | "import" | "visit" | "reversal" | "opening";
   sourceId?: string;
   /** Explicit debit-side economic opening; omitted legacy rows use account kind. */
   openingSignedBalanceCents?: number;
@@ -406,6 +406,29 @@ export type HouseholdCalendar = {
   dismissedRhythmKeys: string[];
   /** On-device Hercules notices the household hid. Union-merged like rhythms (D-057). */
   dismissedNoticeKeys: string[];
+};
+
+export type PotentialExpenseStatus = "planned" | "posted" | "removed";
+
+/** A dated estimate on Calendar. It is planning state and never money until Final Confirm. */
+export type PotentialExpensePlan = {
+  id: string;
+  date: DateKey;
+  title: string;
+  expectedAmountCents: number;
+  accountId: string;
+  subcategoryId: string;
+  splits: Split[];
+  visibility: Visibility;
+  createdBy: string;
+  status: PotentialExpenseStatus;
+  transactionId: string | null;
+  postedAt: string | null;
+  removedAt: string | null;
+  /** The plan date whose Hercules prompt was dismissed. Moving to another date makes it eligible again. */
+  dismissedNoticeDate: DateKey | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type PresetOrigin = "manual" | "detected";
@@ -1269,6 +1292,7 @@ export type Household = {
   /** Non-work outcomes. Worked Bibles are embedded in their financial Shift. */
   shiftBibles?: import("./shiftEnvelope.ts").ShiftBible[];
   recurrences: Recurrence[];
+  potentialExpenses: PotentialExpensePlan[];
   appointments: Appointment[];
   claims: Claim[];
   presets: Preset[];
@@ -1350,6 +1374,8 @@ export type SharedEnvelope = {
   accounts: Account[];
   categories: Category[];
   recurrences: Recurrence[];
+  /** Optional only for envelopes written before one-time Calendar plans shipped. */
+  potentialExpenses?: PotentialExpensePlan[];
   appointments: Appointment[];
   claims: Claim[];
   presets: Preset[];
@@ -1426,6 +1452,8 @@ export type PersonalEnvelope = {
   accounts?: Account[];
   lastCommittedAt: string | null;
   transactions: Transaction[];
+  /** Acting member's Only-me Calendar plans. Legacy envelopes omit this collection. */
+  potentialExpenses?: PotentialExpensePlan[];
   shifts: Shift[];
   sevenShiftsSchedules?: import("./sevenShiftsCalendar.ts").SevenShiftsScheduledShift[];
   coworkers?: import("./coworkers.ts").Coworker[];

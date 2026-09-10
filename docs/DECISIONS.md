@@ -22,6 +22,10 @@ Risk High. Budget (5): truthful openings, reconciled history and completion auth
 
 Living product and architecture decisions for **Hearth**.
 
+## Books scene refinement — approved 2026-09-10
+
+Jonathan approved finishing the Shared household Books and Personal Books theme PR, keeping the existing structure and financial behavior. Personal Newfoundland Books changes from The Battery to The Merchant Tavern, using restaurant decor and scallops as original illustration references. Shared Newfoundland retains the working harbour. reputation requires gold and red snakes with newspaper styling; TTPD uses the supplied warm monochrome manuscript direction. Classic retains ledger, coffee and plant materials. This changes presentation metadata only, with no saved scene preference migration. Account labels and narrow reading surfaces receive the accessibility corrections found during actual-page checks. Publication is authorized; merge and deployment remain separate. [Handoff](briefs/BOOKS_THEME_HANDOFF.md).
+
 ## Five shared boards and daily navigation — approved 2026-09-08
 
 Jonathan approved implementing the full five-board plan from main `5778a8d`. Every UX change now includes authored Classic Hearth, Taylor’s Scrapbook, and Newfoundland treatments and verification. The Till interaction extends to mobile expense/income/transfer/shift entry, preserving the current shift order and all posting authority. Calendar restores the traditional grid as its default alongside Month, with Coming up then Google integration beneath. Shared Plan puts Categories directly beneath plan vs actual. Household table opens to a daily Overview with Fund, Accounts, Activity and Tools & audit destinations.

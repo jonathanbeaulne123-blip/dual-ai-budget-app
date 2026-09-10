@@ -30,7 +30,7 @@ One coherent PR per page; shared foundations are introduced by the earliest page
 | Home — accepted reference | Kitchen table | Lover / Showgirl | Jellybean Row / Quidi Vidi |
 | Plan | Planning pinboard, tabs, botanicals | Fearless / Debut | Coastal Signal Hill approach / windswept summit |
 | Calendar | Household wall calendar, seasonal paper | Red / Midnights | Rainy St. John's / Cape Spear morning |
-| Books | Bound ledger, ruled paper, brass | reputation / TTPD | Working harbour / Battery hillside |
+| Books | Bound ledger, ruled paper, brass | reputation / TTPD | Working harbour / Merchant Tavern |
 | Till | Ceramic, wood, counter paper | 1989 / Showgirl | Water Street / Quidi Vidi |
 | Shift | Workday notebook, kitchen clock | Speak Now / Speak Now | George Street after dusk / same |
 | More | Shelves, labelled drawers, collected objects | evermore / folklore | JAG lobby / music corner |

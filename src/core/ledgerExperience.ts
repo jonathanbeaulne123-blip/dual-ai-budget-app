@@ -202,10 +202,12 @@ export function restoreAcceptedSnapshot(accepted: Household, next: Household): H
   const nextAccountIds = new Set(next.accounts.map((row) => row.id));
   const nextTxIds = new Set(next.transactions.map((row) => row.id));
   const nextGoalIds = new Set(next.goals.map((row) => row.id));
+  const nextPotentialExpenseIds = new Set((next.potentialExpenses ?? []).map((row) => row.id));
   const missingAccounts = accepted.accounts.some((row) => !nextAccountIds.has(row.id));
   const missingTx = accepted.transactions.some((row) => !nextTxIds.has(row.id));
   const missingGoals = accepted.goals.some((row) => !nextGoalIds.has(row.id));
-  if (!missingAccounts && !missingTx && !missingGoals) return next;
+  const missingPotentialExpenses = (accepted.potentialExpenses ?? []).some((row) => !nextPotentialExpenseIds.has(row.id));
+  if (!missingAccounts && !missingTx && !missingGoals && !missingPotentialExpenses) return next;
   const goals = unionById(next.goals, accepted.goals);
   const goalIds = new Set(goals.map((goal) => goal.id));
   return {
@@ -219,6 +221,7 @@ export function restoreAcceptedSnapshot(accepted: Household, next: Household): H
     goalPurchases: unionById(next.goalPurchases ?? [], accepted.goalPurchases ?? [])
       .filter((row) => goalIds.has(row.goalId)),
     recurrences: unionById(next.recurrences ?? [], accepted.recurrences ?? []),
+    potentialExpenses: unionById(next.potentialExpenses ?? [], accepted.potentialExpenses ?? []),
     appointments: unionById(next.appointments ?? [], accepted.appointments ?? []),
     claims: unionById(next.claims ?? [], accepted.claims ?? []),
     fundEvents: unionById(next.fundEvents ?? [], accepted.fundEvents ?? []),

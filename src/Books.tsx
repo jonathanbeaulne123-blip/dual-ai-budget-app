@@ -1,3 +1,4 @@
+import { BooksDivider } from "./theme/BooksArtwork.tsx";
 import type { KitchenCommand } from "./kitchenCommand.ts";
 import type { DuplicateCommand } from "./Ledger.tsx";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
@@ -456,6 +457,7 @@ function BooksSession({
         />
         </DeferredSurface>
       )}
+      <BooksDivider />
       <details
         className="books-audit-office"
         open={auditOpen}
