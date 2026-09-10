@@ -1,5 +1,5 @@
-import {herculesActionsEnabled} from '../src/core/herculesActionPolicy.ts';
 /// <reference path="./ledger-platform.d.ts" />
+import {herculesActionsEnabled} from '../src/core/herculesActionPolicy.ts';
 import { compareImportParity } from "../src/ledgerSync/importParity.ts";
 import { IncrementalBooksGuard } from "../src/core/booksValidation.ts";
 import {
