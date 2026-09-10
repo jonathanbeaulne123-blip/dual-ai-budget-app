@@ -1,0 +1,47 @@
+{
+  "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+  "records": [
+    {
+      "theme": "taylor",
+      "scope": "household",
+      "route": "ledger",
+      "state": "normal",
+      "metrics": [
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "reputation"
+        },
+        {
+          "width": 900,
+          "scroll": 900,
+          "scene": "reputation"
+        },
+        {
+          "width": 1099,
+          "scroll": 1099,
+          "scene": "reputation"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        },
+        "motion": {
+          "persistentPause": true,
+          "focusQuiet": true,
+          "offscreen": 2
+        }
+      }
+    }
+  ],
+  "errors": []
+}

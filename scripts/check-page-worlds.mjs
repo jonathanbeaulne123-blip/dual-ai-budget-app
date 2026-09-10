@@ -176,7 +176,7 @@ try {
   const running=()=>page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art,.books-heading-art,.books-phone-art,.books-divider')).length);
   if(await running())throw Error('Paused new atmosphere still running: '+JSON.stringify(await page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art,.books-heading-art,.books-phone-art,.books-divider')).map(a=>({target:a.effect.target.outerHTML.slice(0,160),type:a.constructor.name,style:getComputedStyle(a.effect.target).animationPlayState})))));
   if(route==='calendar'||route==='plan'||route==='more'||route==='ledger') {
-   await page.reload({waitUntil:'domcontentloaded'});await page.locator('nav.nav').waitFor({timeout:90000});await settle();await go('personal');
+   await page.reload({waitUntil:'domcontentloaded'});await page.locator('nav.nav').waitFor({timeout:90000});await settle();await page.locator('.view-switch button').nth(1).click();await go('personal');
    if(await page.locator('html').getAttribute('data-atmosphere')!=='paused')throw Error('Atmosphere pause did not persist');
    records.at(-1).special.motion={persistentPause:true};
   }

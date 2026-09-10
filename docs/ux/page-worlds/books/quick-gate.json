@@ -1,43 +1,43 @@
 {
   "baseSha": "2e113f69d03872eddc22ac461378a0f3e33f6c55",
-  "changeFingerprint": "316821004cfcace628f88fb41c2e91504d435a0a0ea0cc3b5eb9466be58ed628",
+  "changeFingerprint": "625cbfe6d4186f16ad63e70facd4be0e79dbc55387e50835cfde0edb0bb1dd5c",
   "workingTreeClean": false,
-  "breachPhase": "vitest-serial",
+  "breachPhase": "typescript",
   "budgetMs": 300000,
-  "elapsedMs": 358066,
-  "slowestPhase": "vitest-serial",
+  "elapsedMs": 1512682,
+  "slowestPhase": "typescript",
   "timeBudgetBreached": true,
   "classification": "quick-gate-passed; time-budget-breached",
-  "focusReason": "Books themes preserve drafts and focus, nested account labels, shared/personal reads and existing App confirmation boundaries",
-  "headSha": "2e113f69d03872eddc22ac461378a0f3e33f6c55",
+  "focusReason": "Books scene revision preserves drafts, focus, theme and scope changes, account reads, and App confirmation boundaries",
+  "headSha": "8a185ac75ba147ff57fdb670d4ba39a9714da59d",
   "phases": [
     {
-      "elapsedMs": 80,
+      "elapsedMs": 1180,
       "name": "diff-check",
       "status": "passed"
     },
     {
-      "elapsedMs": 743,
+      "elapsedMs": 7630,
       "name": "ai-surface",
       "status": "passed"
     },
     {
-      "elapsedMs": 61666,
+      "elapsedMs": 1005812,
       "name": "typescript",
       "status": "passed"
     },
     {
-      "elapsedMs": 13467,
+      "elapsedMs": 19739,
       "name": "test-discovery",
       "status": "passed"
     },
     {
-      "elapsedMs": 33889,
+      "elapsedMs": 196799,
       "name": "vitest-fast",
       "status": "passed"
     },
     {
-      "elapsedMs": 246728,
+      "elapsedMs": 276268,
       "name": "vitest-serial",
       "status": "passed"
     }
@@ -53,7 +53,6 @@
     "test/command-runtime.test.ts",
     "test/month-rehearsal-mainline.test.ts",
     "test/page-worlds.test.ts",
-    "test/personal-books-privacy.test.ts",
     "test/proof-matrix.test.ts"
   ],
   "uiProofRequired": true
