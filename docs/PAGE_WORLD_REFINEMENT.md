@@ -4,7 +4,7 @@ Execution instructions: [Page-theme execution standard](briefs/PAGE_THEME_EXECUT
 
 The original program proposed eight page-specific PRs on 2026-09-09: Home → Plan → Calendar → Books → Till → Shift → More → Entry. Every PR includes Classic, Taylor and Newfoundland plus applicable Shared/Personal scenes. No merge, deployment, schema or hosted household mutation is authorized.
 
-Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Jonathan subsequently resumed Calendar after #414 and approved its clip-art direction. Calendar was merged and deployed in #415. Jonathan subsequently resumed Plan, approved the two-column desktop workshop and cannon clip-art direction, and authorized PR publication. Plan was merged and deployed in #416. Jonathan then resumed More, approved its theme-only scope and sauna-chair illustration, and authorized PR publication. Books, Till, Shift and Entry remain paused.
+Jonathan subsequently paused the remaining seven pages to revise desktop Home after PR #412. Mobile Home is the accepted baseline. Jonathan subsequently resumed Calendar after #414 and approved its clip-art direction. Calendar was merged and deployed in #415. Jonathan subsequently resumed Plan, approved the two-column desktop workshop and cannon clip-art direction, and authorized PR publication. Plan was merged and deployed in #416. Jonathan then resumed More, approved its theme-only scope and sauna-chair illustration, and authorized PR publication. More was merged and deployed in #417. Jonathan then resumed Books, clarified Shared and Personal Books only (not a separate Fund redesign), approved Merchant Tavern/scallops instead of Personal Battery and the reputation/TTPD references, and authorized publication. Till, Shift and Entry remain paused.
 
 ## Desktop Home revision
 
@@ -71,3 +71,11 @@ More keeps its existing section order, navigation, drafts and handlers. Jonathan
 Desktop has continuing wall/material backgrounds and six individually observed scenery panels; phone has quieter materials and section edges. The existing named title bracelets and light are retained. All added art is noninteractive except the separately named 44px keepsake charm. Original scene SVGs contain no financial state. Shared dialogs inherit scene tokens.
 
 [More worksession and provenance](worksessions/2026-09-09-more-worlds.md). Private photos and reference boards are not published. The generated chair is an ivory-backed illustrated print; the generator did not provide usable alpha, so no false transparency claim is made.
+
+## Books — 2026-09-10
+
+Shared and Personal Books retain their existing layout, navigation and financial flows. Classic gains bound paper, coffee and plants; Shared Taylor has newspaper margins, blackletter, gold and red snakes; Personal Taylor uses the supplied warm monochrome swatch with manuscript, pressed flower, moth, coffee and candle details. Newfoundland retains the working harbour for Shared and replaces Personal Battery with Merchant Tavern: framed coastal art, walnut/linen materials, blue glass and scallops.
+
+The scene heading has independently composed phone art and desktop bracelets. Individually observed margin panels continue below the title; a decorative divider closes the current pane. Solid reading sheets protect disclosures and amounts. Existing nested Fund/account/audit/import surfaces inherit the invoking palette. Account labels are associated with their inputs after an actual expanded-form accessibility finding; command handlers are unchanged.
+
+Original vectors: `src/theme/BooksArtwork.tsx`. No supplied reference images or photos are published. UnifrakturMaguntia is bundled unmodified from Google Fonts under the included SIL OFL, used only for decorative newspaper/title lettering. Official references and test evidence: [Books worksession](worksessions/2026-09-10-books-worlds.md).

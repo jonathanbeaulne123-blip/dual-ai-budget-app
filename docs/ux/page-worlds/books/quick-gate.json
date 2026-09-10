@@ -1,0 +1,60 @@
+{
+  "baseSha": "2e113f69d03872eddc22ac461378a0f3e33f6c55",
+  "changeFingerprint": "316821004cfcace628f88fb41c2e91504d435a0a0ea0cc3b5eb9466be58ed628",
+  "workingTreeClean": false,
+  "breachPhase": "vitest-serial",
+  "budgetMs": 300000,
+  "elapsedMs": 358066,
+  "slowestPhase": "vitest-serial",
+  "timeBudgetBreached": true,
+  "classification": "quick-gate-passed; time-budget-breached",
+  "focusReason": "Books themes preserve drafts and focus, nested account labels, shared/personal reads and existing App confirmation boundaries",
+  "headSha": "2e113f69d03872eddc22ac461378a0f3e33f6c55",
+  "phases": [
+    {
+      "elapsedMs": 80,
+      "name": "diff-check",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 743,
+      "name": "ai-surface",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 61666,
+      "name": "typescript",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 13467,
+      "name": "test-discovery",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 33889,
+      "name": "vitest-fast",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 246728,
+      "name": "vitest-serial",
+      "status": "passed"
+    }
+  ],
+  "risk": "medium",
+  "selectedTests": [
+    "test/accounts-widget.test.ts",
+    "test/app-startup-p1.test.ts",
+    "test/appearance-provider.test.ts",
+    "test/books-household.test.ts",
+    "test/books-worlds.test.ts",
+    "test/command-contract.test.ts",
+    "test/command-runtime.test.ts",
+    "test/month-rehearsal-mainline.test.ts",
+    "test/page-worlds.test.ts",
+    "test/personal-books-privacy.test.ts",
+    "test/proof-matrix.test.ts"
+  ],
+  "uiProofRequired": true
+}

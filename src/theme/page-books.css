@@ -1,0 +1,112 @@
+@font-face { font-family: "UnifrakturMaguntia"; src:url("/fonts/books/UnifrakturMaguntia-Book.ttf") format("truetype"); font-display:swap; }
+/* Books' existing layout and pane order remain intact. Art occupies its surrounding desk. */
+:root[data-world-page="ledger"] .world-page { background:repeating-linear-gradient(90deg,#a8875710 0 2px,transparent 2px 110px),linear-gradient(120deg,#e4d6bb,#f4ecdc 55%,#e1d6bd); border-radius:16px; }
+:root[data-world-page="ledger"] .books-theme-c { position:relative; padding:12px 8px 28px; }
+:root[data-world-page="ledger"] :is(.household-books-heading,.books-theme-c>.hero) { padding:18px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--theme-second); border-radius:5px; }
+:root[data-world-page="ledger"] :is(.household-books-nav,.books-theme-c>.tabs,.books-pane-blurb,.books-floor>.hearth-story-strip) { background:var(--card); border-radius:5px; }
+:root[data-world-page="ledger"] .household-books-nav { padding:6px; }
+:root[data-world-page="ledger"] :is(.books-theme-c .card,.books-audit-office,.household-books-activity-link,.household-books-disclosure,.household-books-balance-note) { background-color:var(--card); color:var(--ink); }
+:root[data-world-page="ledger"] .books-theme-c .card { border-top:3px solid var(--theme-second); box-shadow:0 3px 0 color-mix(in srgb,var(--theme-second) 18%,var(--card)),0 7px 18px #2d271b0c; }
+:root[data-world-page="ledger"] .books-audit-office { border:1px solid var(--line); border-top:4px double var(--theme-second); }
+:root[data-world-page="ledger"] .household-books-activity-link { padding:14px; margin-block:8px; border:1px solid var(--line); }
+:root[data-world-page="ledger"] .books-theme-c :is(button,summary,select,input:not([type="checkbox"]):not([type="radio"])) { min-height:44px; }
+:root[data-world-page="ledger"] .books-theme-c :is(button,summary) { min-width:44px; }
+:root[data-world-page="ledger"] .books-theme-c :is(button,summary,a,input,select,textarea):focus-visible { outline:3px solid var(--ink); outline-offset:3px; }
+:root[data-world-page="ledger"] .books-theme-c :is(h2,h3,p,.row>span,.household-books-activity-link strong) { overflow-wrap:anywhere; }
+:root[data-world-page="ledger"] :is(.sheet-inner,.drawer-surface,.duplicate-review-dialog) { background:var(--card); color:var(--ink); border-top:4px solid var(--theme-second); }
+:root[data-world-page="ledger"] .books-theme-c label:has(input[type="checkbox"]) { min-height:44px; display:flex; align-items:center; gap:8px; }
+:root[data-world-page="ledger"] .theme-scene-copy { background:var(--card); border:1px solid var(--line); border-radius:5px; padding:12px 16px; max-width:43%; }
+:root[data-world-page="ledger"] .books-heading-art { opacity:1; }
+.books-divider { display:flex; align-items:center; justify-content:center; gap:20px; height:76px; pointer-events:none; }
+.books-divider svg { width:52px; height:65px; }
+.books-divider span { width:28%; height:3px; border-block:1px solid var(--line); }
+.books-scenery { display:none; }
+/* A newspaper backdrop surrounds solid black reading panels. Red and gold stay ornamental. */
+:root[data-scene="reputation"][data-world-page="ledger"] .world-page { background:repeating-linear-gradient(0deg,transparent 0 10px,#302f2c08 11px 12px),repeating-linear-gradient(90deg,transparent 0 115px,#f9f5e780 116px 120px),linear-gradient(135deg,#bcbcb5,#e2ded2 48%,#b7b8b3); }
+:root[data-scene="reputation"][data-world-page="ledger"] .books-theme-c { --theme-second:#b99754; }
+:root[data-scene="reputation"][data-world-page="ledger"] .books-theme-c .card { border-top:3px double #ae9870; }
+:root[data-scene="reputation"][data-world-page="ledger"] .theme-scene-heading { background:#d8d5cd; }
+:root[data-scene="reputation"][data-world-page="ledger"] .theme-scene-title { font-family:"UnifrakturMaguntia",Georgia,serif; font-weight:400; letter-spacing:0; }
+:root[data-scene="reputation"][data-world-page="ledger"] .books-divider span { border-color:#686862; }
+/* Manuscript ivory, graphite and warm taupe come from Jonathan's supplied swatch. */
+:root[data-scene="poets"][data-world-page="ledger"] .world-page { background:radial-gradient(ellipse at 0 40%,#807e7a55,transparent 40%),linear-gradient(125deg,#b2b0aa,#ddd8d0 50%,#aaa39b); }
+:root[data-scene="poets"][data-world-page="ledger"] .books-theme-c .card { border-top:3px double #8e8274; background-image:linear-gradient(90deg,#70645c0b,transparent 13%); }
+:root[data-scene="poets"][data-world-page="ledger"] .theme-scene-heading { background:linear-gradient(120deg,#c7c4be,#ded9d1); }
+:root[data-scene="poets"][data-world-page="ledger"] .theme-scene-title { font-variant:small-caps; letter-spacing:.015em; }
+/* Tavern: linen and walnut, blue glass and scallops. Harbour: daylight, ropes and water. */
+:root[data-scene="merchant"][data-world-page="ledger"] .world-page { background:repeating-linear-gradient(90deg,#79563009 0 2px,transparent 2px 96px),linear-gradient(120deg,#c4b294,#e9dec9 45%,#c6cbb5); }
+:root[data-scene="merchant"][data-world-page="ledger"] .theme-scene-heading { background:linear-gradient(110deg,#e5d5b6,#d5dfcf); }
+:root[data-scene="merchant"][data-world-page="ledger"] .books-theme-c .card { border:3px double #b7a681; box-shadow:0 4px 0 #7e6a442b; }
+:root[data-scene="harbour"][data-world-page="ledger"] .world-page { background:repeating-linear-gradient(0deg,transparent 0 110px,#6c9d9e09 112px 115px),linear-gradient(#dfedf1,#d1e5e5 45%,#a7cbd1); }
+:root[data-scene="harbour"][data-world-page="ledger"] .theme-scene-heading { background:linear-gradient(#d6eaf0,#e7eddf); }
+:root[data-scene="harbour"][data-world-page="ledger"] .books-theme-c .card { border:3px solid #fcf8eb; outline:1px solid #abc5c7; border-top:5px solid #68939a; }
+.books-snake { animation:books-sway 16s ease-in-out infinite alternate; transform-origin:bottom; transform-box:fill-box; }
+.books-leaf { animation:books-sway 12s ease-in-out infinite alternate; transform-origin:bottom; transform-box:fill-box; }
+.books-steam { animation:living-steam 8s ease-in-out infinite; }
+.books-cloud,.books-water { animation:living-drift 24s ease-in-out infinite alternate; }
+.books-candle-glow { animation:books-warmth 12s ease-in-out infinite alternate; }
+@keyframes books-sway { to { transform:rotate(2deg); } }
+@keyframes books-warmth { to { opacity:.75; } }
+@media(min-width:720px) {
+ :root[data-world-page="ledger"] .books-theme-c { margin-inline:clamp(40px,9vw,175px); }
+ :root[data-world-page="ledger"] .world-margin { display:none; }
+ .books-scenery { display:block; position:absolute; inset:300px 0 80px; }
+ .books-scenery-panel { position:absolute; width:100%; height:clamp(270px,30vw,570px); }
+ .books-scenery-panel svg { width:100%; height:100%; }
+ :root[data-world-page="ledger"] .theme-scene-heading>.era-light { display:none; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets { display:flex; }
+ :root[data-world-page="ledger"] .theme-scene-copy { max-width:39%; }
+}
+@media(min-width:720px) and (max-width:1099px) {
+ :root[data-world-page="ledger"] .desktop-title-bracelets { width:140px; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets .friendship-bracelets { width:135px; }
+ .books-title-setting { opacity:.35; }
+}
+@media(max-width:719px) {
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading { min-height:228px; grid-template-columns:minmax(0,1fr) 90px; grid-template-rows:auto auto; padding:12px; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-copy { max-width:none; grid-column:1; grid-row:1; padding:8px; align-self:center; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { position:relative; inset:auto; grid-column:1; grid-row:2; width:auto; height:auto; font-size:10px; padding:6px 8px; justify-self:start; align-self:end; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle>span { display:none; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading::after { display:none; }
+ .books-title-objects { transform:translate(430px,0); }
+ .books-title-setting { display:none; }
+ :root[data-world-page="ledger"] .world-margin { opacity:.18; }
+ :root[data-world-page="ledger"] .books-theme-c { padding-inline:4px; }
+ :root[data-world-page="ledger"] .books-theme-c .card { margin-block:18px; }
+}
+:root[data-atmosphere="paused"] :is(.books-heading-art,.books-phone-art,.books-divider,.books-scenery) *,
+:root:has(input:focus,textarea:focus,[contenteditable="true"]:focus) :is(.books-heading-art,.books-phone-art,.books-divider,.books-scenery) *,
+[data-scene-visible="false"] .books-heading-art * { animation-play-state:paused!important; }
+@media(prefers-reduced-motion:reduce) { :is(.books-heading-art,.books-phone-art,.books-divider,.books-scenery) * { animation:none!important; } }
+@media print { .books-scenery,.books-divider { display:none!important; } }
+
+.books-phone-art { display:none; }
+@media(max-width:719px) {
+ :root[data-theme][data-world-page="ledger"] .books-heading-art { display:none; }
+ .books-phone-art { display:block; position:absolute; right:3px; bottom:8px; width:96px; height:190px; pointer-events:none; }
+}
+:root[data-atmosphere="paused"] .books-phone-art *,[data-scene-visible="false"] .books-phone-art * { animation-play-state:paused!important; }
+@media(prefers-reduced-motion:reduce) { .books-phone-art * { animation:none!important; } }
+/* Financial copy always sits on a continuous reading sheet, including disclosure text. */
+:root[data-world-page="ledger"] .books-theme-c { background:var(--card); border:1px solid var(--line); border-inline-start:5px solid var(--theme-second); border-radius:7px; padding:16px; box-shadow:4px 5px 0 color-mix(in srgb,var(--theme-second) 20%,transparent); }
+:root[data-world-page="ledger"] .brand { background:var(--card); border-radius:5px; }
+:root[data-world-page="ledger"] :is(.brand__identity,.wallet-group-label) { color:var(--ink); }
+@media(max-width:719px) { :root[data-world-page="ledger"] .books-theme-c { padding:8px; border-inline-start-width:3px; } }
+
+:root[data-world-page="ledger"] .theme-scene-heading::before { display:none; }
+/* Keep Fund disclosure labels readable beside long account lists on narrow screens. */
+:root[data-world-page="ledger"] .household-fund-panel .row { display:grid; grid-template-columns:minmax(78px,1fr) minmax(0,2fr); gap:12px; align-items:start; }
+:root[data-world-page="ledger"] .household-fund-panel .row>span:first-child { overflow-wrap:normal; }
+@media(max-width:719px) { :root[data-world-page="ledger"] .household-fund-panel .card>header { display:block; } }
+
+/* Table headings stay legible on the manuscript palette as well as dark scenes. */
+:root[data-world-page="ledger"] .books-theme-c th { color:var(--ink); background:var(--card); }
+/* Manuscript ruling belongs around the accounts, never through their amounts. */
+:root[data-scene="poets"][data-world-page="ledger"] :is(.hearth-paper-tile,.instrument,.desk-plate,.sheet-inner) { background:var(--card); }
+:root[data-scene="poets"][data-world-page="ledger"] .books-theme-c :is(.muted,.kicker) { color:var(--ink); }
+
+@media(max-width:719px) { :root[data-world-page="ledger"] .wallet-strip>header { display:block; } }
+:root[data-world-page="ledger"] .books-theme-c .books-table .muted { color:var(--ink); }
+:root[data-world-page="ledger"] .account-room>.row { align-items:start; }
+:root[data-world-page="ledger"] .account-room>.row>span:first-child { flex:1; min-width:0; }
+:root[data-world-page="ledger"] .account-room>.row>span:last-child { flex-shrink:0; white-space:nowrap; }

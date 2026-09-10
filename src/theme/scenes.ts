@@ -42,7 +42,7 @@ export const TAYLOR_SCENES = {
   showgirl: scene("showgirl", "taylor", "The Life of a Showgirl", "A little sparkle in the everyday", "satin", palette("#def4e8", "#fffbed", "#293f39", "#52665c", "#ab3d0d", "#387566", "#b8d6c7"), "crystals"),
   midnights: scene("midnights", "taylor", "Midnights", "Meet me in the quiet hours", "midnight-paper", palette("#dfe5f0", "#f8f6fc", "#293c59", "#475770", "#496799", "#79609b", "#b8c5db"), "constellation"),
   "speak-now": scene("speak-now", "taylor", "Speak Now", "Make room for your own story", "ribbon", palette("#eee4f3", "#fbf6ff", "#4d375c", "#695577", "#795092", "#916d3e", "#cfbada"), "ribbon"),
-  poets: scene("poets", "taylor", "The Tortured Poets Department", "Notes from a life in progress", "manuscript", palette("#e9e5dd", "#f8f5ed", "#373731", "#5a5a51", "#5c5a50", "#717562", "#c8c3b6"), "manuscript"),
+  poets: scene("poets", "taylor", "The Tortured Poets Department", "Notes from a life in progress", "manuscript", palette("#aaa7a1", "#e8e3db", "#282727", "#57524d", "#534c45", "#75634b", "#aca399"), "manuscript"),
   debut: scene("debut", "taylor", "Taylor Swift", "Every good thing begins somewhere", "botanical", palette("#d9eeec", "#fcfbef", "#294b53", "#476570", "#287478", "#4f7795", "#b4d4d1"), "butterflies"),
   folklore: scene("folklore", "taylor", "folklore", "The things we choose to keep", "linen", palette("#e7e9e1", "#f7f8f0", "#38473c", "#536155", "#4e6b52", "#817254", "#c3ccbd"), "forest"),
 } satisfies Record<string, ThemeScene>;
@@ -56,7 +56,7 @@ export const NEWFOUNDLAND_SCENES = {
   "quidi-vidi": scene("quidi-vidi", "newfoundland", "Quidi Vidi", "The kettle’s on by the harbour", "kitchen", palette("#e4eee8", "#fcf8e9", "#354c43", "#54655b", "#387666", "#985062", "#c0d0c1"), "cottage"),
   "cape-spear": scene("cape-spear", "newfoundland", "Cape Spear", "A little closer to the morning", "horizon", palette("#eee5e3", "#fff8ef", "#485465", "#5c626e", "#756286", "#aa603e", "#cdc4d1"), "lighthouse"),
   "george-street": scene("george-street", "newfoundland", "George Street", "When the street lights come on", "venue", palette("#272c36", "#353b45", "#f8edd9", "#e0d4c1", "#efc16e", "#b8c7d2", "#6c6e73"), "street", true),
-  battery: scene("battery", "newfoundland", "The Battery", "Little houses above the water", "clapboard", palette("#e3e9e6", "#fcf8ed", "#35535a", "#506468", "#346f77", "#a85240", "#c1d0c7"), "battery"),
+  merchant: scene("merchant", "newfoundland", "The Merchant Tavern", "Good food, good company, a little bookkeeping", "dining-paper", palette("#e3dac8", "#fff9e9", "#3e4539", "#5e6352", "#526a5a", "#886832", "#bcb39b"), "merchant"),
   summit: scene("summit", "newfoundland", "At the summit", "Look how far you’ve come", "sky", palette("#e5edf0", "#fbf9ed", "#3a515c", "#51656b", "#436d73", "#8b7243", "#c3d3d7"), "tower"),
   "jag-music": scene("jag-music", "newfoundland", "JAG, after hours", "A familiar place to wind down", "gallery", palette("#d7e0e5", "#fff7e9", "#263d4b", "#4d6170", "#326079", "#806025", "#b5b4a3"), "music"),
 } satisfies Record<string, ThemeScene>;
@@ -66,7 +66,7 @@ const ERA_ROUTES = {
 } as const;
 const PLACE_ROUTES = {
   household: { home: "jellybean", calendar: "rain", plan: "trail", ledger: "harbour", more: "jag-lobby", till: "water-street", shift: "george-street", entry: "jellybean" },
-  personal: { home: "quidi-vidi", calendar: "cape-spear", plan: "summit", ledger: "battery", more: "jag-music", till: "quidi-vidi", shift: "george-street", entry: "quidi-vidi" },
+  personal: { home: "quidi-vidi", calendar: "cape-spear", plan: "summit", ledger: "merchant", more: "jag-music", till: "quidi-vidi", shift: "george-street", entry: "quidi-vidi" },
 } as const;
 export function resolveThemeScene(theme: ThemeId, route: SceneRoute, view: LedgerView): ThemeScene {
   if (theme === "taylor") return TAYLOR_SCENES[ERA_ROUTES[view][route]];

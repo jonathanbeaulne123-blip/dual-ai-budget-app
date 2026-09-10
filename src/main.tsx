@@ -22,6 +22,7 @@ import "./theme/page-worlds.css";
 import "./theme/page-calendar.css";
 import "./theme/page-plan.css";
 import "./theme/page-more.css";
+import "./theme/page-books.css";
 import "./entry-restoration.css";
 import "./entry-restoration-integration.css";
 import "./entry-restoration-corrections.css";

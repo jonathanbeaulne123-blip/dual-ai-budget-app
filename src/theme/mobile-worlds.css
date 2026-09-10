@@ -129,7 +129,7 @@
   :root[data-scene="rain"] .theme-scene-heading { border-inline-start-color: var(--world-slicker); }
   :root[data-scene="rain"] .fund-ledge-grip { border-top-color: var(--world-slicker); }
   :root[data-scene="harbour"] .ledger-row { border-bottom: 1px solid var(--line); }
-  :root[data-scene="battery"] .ledger-overview { border-inline-start: 4px solid var(--theme-second); }
+  :root[data-scene="merchant"] .ledger-overview { border-inline-start: 4px solid var(--theme-second); }
   :root[data-scene="george-street"] .shift-page > .tabs { border-bottom: 2px solid var(--theme-accent); }
   :root[data-scene="water-street"] .till-spend { border-bottom-style: dashed; }
   :root[data-scene="jag-lobby"] .appearance-panel { border: 2px solid var(--theme-accent); border-radius: 3px; }

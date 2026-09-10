@@ -1,0 +1,343 @@
+{
+  "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+  "records": [
+    {
+      "theme": "classic",
+      "scope": "household",
+      "route": "ledger",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "classic-ledger"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "classic-ledger"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "classic-ledger"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "household",
+      "route": "ledger",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "reputation"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "reputation"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "reputation"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "reputation"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "reputation"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "reputation"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "reputation"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "poets"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "poets"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "poets"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "poets"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "poets"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "poets"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "poets"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "household",
+      "route": "ledger",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "harbour"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "harbour"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "harbour"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "harbour"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "harbour"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "harbour"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "harbour"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "empty",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320,
+          "scene": "merchant"
+        },
+        {
+          "width": 390,
+          "scroll": 390,
+          "scene": "merchant"
+        },
+        {
+          "width": 719,
+          "scroll": 719,
+          "scene": "merchant"
+        },
+        {
+          "width": 720,
+          "scroll": 720,
+          "scene": "merchant"
+        },
+        {
+          "width": 1100,
+          "scroll": 1100,
+          "scene": "merchant"
+        },
+        {
+          "width": 1440,
+          "scroll": 1440,
+          "scene": "merchant"
+        },
+        {
+          "width": 1920,
+          "scroll": 1920,
+          "scene": "merchant"
+        }
+      ],
+      "violations": [],
+      "special": {
+        "charm": {
+          "width": 44,
+          "height": 48,
+          "hit": true
+        },
+        "focus": "solid",
+        "zoom": {
+          "width": 390,
+          "scroll": 390
+        }
+      }
+    }
+  ],
+  "errors": [],
+  "note": "TTPD Personal recaptured after final reading-surface corrections; other scenes retain the complete original passing run."
+}
