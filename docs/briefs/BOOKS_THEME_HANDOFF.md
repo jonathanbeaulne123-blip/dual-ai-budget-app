@@ -2,7 +2,7 @@
 
 ## Delivered composition
 
-The existing Shared household Books and Personal Books now carry their scene through the title, reading surfaces, lower-page margins, audit tools and nested panels. Following Jonathan’s visual review, the desktop canvas is a continuous richly illustrated setting with believable materials, depth and light. Phones show the complete scene in a compact composition. The first repeated clip-art treatment is superseded. The existing page structure and financial components remain in place.
+The existing Shared household Books and Personal Books now carry their scene through the title, reading surfaces, lower-page margins, audit tools and nested panels. Following Jonathan’s approved style previews, the desktop canvas is a continuous cartoon setting with clean drawn shapes, simplified materials, depth and soft light. The gold and crimson snakes intentionally retain a more metallic, realistic finish. Phones show the complete scene in a compact composition. The first repeated clip-art treatment is superseded. The existing page structure and financial components remain in place.
 
 | Scope | Classic | Taylor | Newfoundland |
 | --- | --- | --- | --- |
@@ -19,7 +19,7 @@ Actual-page accessibility checks exposed unassociated account-form labels and na
 
 ## Verification
 
-Verification receipts and selected synthetic screenshots are in `docs/ux/page-worlds/books/`. Revision commands and outcomes are recorded in `docs/worksessions/2026-09-10-books-composition-revision.md`; the first-pass worksession is historical.
+Verification receipts and selected synthetic screenshots are in `docs/ux/page-worlds/books/`. Revision commands and outcomes are recorded in `docs/worksessions/2026-09-10-books-cartoon-integration.md`; the first-pass worksession is historical.
 
 The browser harness uses the real App with an isolated synthetic fixture and blocks non-local requests. Normal, empty and long-content coverage uses 320, 390, 719, 720, 1100, 1440 and 1920 pixels. Expanded panes and lazy loading/error coverage use 320, 390, 720, 1100 and 1440 pixels. Screenshot widths and scopes are encoded in filenames.
 
@@ -31,6 +31,6 @@ Chrome browser evidence is not physical-device, Safari, VoiceOver or authenticat
 
 ## Provenance
 
-The five original scene illustrations were produced with built-in image generation, then delivered as responsive WebP assets. Small embossed seals and localized atmosphere remain SVG/CSS. The [asset manifest](BOOKS_ART_PROVENANCE.md) records the prompt set, official references and limitations. UnifrakturMaguntia is distributed unmodified under the included OFL license in `public/fonts/books/`; it is loaded locally only for decorative reputation lettering.
+The five original scene illustrations were redrawn with built-in image generation in the approved Merchant cartoon style, then delivered as responsive `-cartoon.webp` assets. Earlier realistic public assets are removed. Small embossed seals and localized atmosphere remain SVG/CSS. The [asset manifest](BOOKS_ART_PROVENANCE.md) records the prompt set, official references and limitations. UnifrakturMaguntia is distributed unmodified under the included OFL license in `public/fonts/books/`; it is loaded locally only for decorative reputation lettering.
 
 Publication is the delivery target. Merge and deployment require the next explicit release instruction.

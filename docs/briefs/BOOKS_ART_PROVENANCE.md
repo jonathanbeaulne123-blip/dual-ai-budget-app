@@ -1,18 +1,18 @@
 # Books illustrated environments
 
-Created September 10, 2026 with the built-in OpenAI image-generation tool. Five original illustrations replace the rejected repeated clip-art treatment. No user photographs, moodboards, album covers or restaurant photographs are distributed. These are authored interpretations, not documentary depictions, exact restaurant floorplans or current-menu promises.
+Created September 10, 2026 with the built-in OpenAI image-generation tool. Five original cartoon illustrations preserve the atmosphere of the detailed revision while matching the approved Home style. Jonathan approved Merchant and reputation previews, then requested more metallic/realistic snakes only. These supersede the realistic assets. No user photographs, moodboards, album covers or restaurant photographs are distributed. These are authored interpretations, not documentary depictions, exact restaurant floorplans or current-menu promises.
 
 ## Delivered files
 
-All paths below are under `public/art/books/`. Each scene has a 1536×1024 `.webp` and a 768×512 `-phone.webp`; approximately 2.4 MB total across ten files. Only the current scene is rendered. WebP encoding uses quality 86 for desktop and 82 for phone. SVG seals and localized CSS/SVG atmosphere are authored in `BooksArtwork.tsx`.
+All paths below are under `public/art/books/`. Each scene has a 1536×1024 `-cartoon.webp` and a 768×512 `-cartoon-phone.webp`. Only the current scene is rendered. WebP encoding uses quality 86 for desktop and 82 for phone. SVG seals and localized CSS/SVG atmosphere are authored in `BooksArtwork.tsx`.
 
 | Scene | Asset stem | Selected generation artifact |
 | --- | --- | --- |
-| Classic, both scopes | classic | exec-0d151184-059a-4b41-9770-cd9aa2fd528e.png |
-| reputation, Shared | reputation | exec-16d479dc-5b2a-4107-a016-c8d48110ff18.png |
-| TTPD, Personal | poets | exec-18847fb8-052a-4232-b101-46e76d252461.png |
-| St. John’s harbour, Shared | harbour | exec-3a2b4f88-7032-40b6-b163-b70af0feeace.png |
-| Merchant Tavern, Personal | merchant | exec-d76a17a7-0f1c-43c1-a74a-843003a799ae.png |
+| Classic, both scopes | classic | exec-dc720ca2-1a1a-4a19-bdd0-65627f61a553.png |
+| reputation, Shared | reputation | exec-df76c3b0-a1d6-495c-9cc4-7a88091600cc.png |
+| TTPD, Personal | poets | exec-e780a2c3-3761-4bcf-81e0-407e8d5b6cfe.png |
+| St. John’s harbour, Shared | harbour | exec-7f2c5736-f11d-4a1a-9bef-33278812e506.png |
+| Merchant Tavern, Personal | merchant | exec-a4747c8f-8ffc-4aa7-82d1-2eb86aba74ee.png |
 
 Generation sources remain local under `/Users/jonathanbeaulne/.codex/generated_images/01a0869d-2cdc-7de0-a2ee-652e682f89ad/`. The product uses the repository assets, not these local paths.
 
@@ -26,7 +26,23 @@ Generation sources remain local under `/Users/jonathanbeaulne/.codex/generated_i
 - Earlier supplied Newfoundland travel photographs inform coastal light, rocky geography and harbour colour. They are illustration references only.
 - Accepted Home Jellybean Row and Showgirl pages establish the composition standard: a coherent place throughout the scroll, materials and small atmospheric details around readable functional surfaces.
 
-## Prompt set
+## Final style-transfer prompt set
+
+Shared direction: redraw the corresponding prior scene in the approved Merchant cartoon preview and Hearth Home Jellybean/Showgirl visual language. Preserve composition, atmosphere and distinguishing objects. Clean vector-like shapes, fine consistent outlines, flat colour areas, two-tone shadows and gentle gradients. Remove photographic grain, microscopic surface noise, realistic optical reflections, painterly realism and 3D rendering. No readable text, people, logos or UI. Merchant is the style-only reference for other scenes; its objects and colours do not transfer into them.
+
+Merchant: preserve the warm room, brass lights, cream/walnut, coastal pictures, blue glasses, linen and THREE scallops. Simplify wood grain, glass highlights and food into intentional drawn marks and shapes.
+
+reputation: preserve newspaper layers, notebook, record and chain in the approved cartoon rendering. Final targeted edit changes ONLY the two snakes: polished warm gold and rich crimson metallic enamel, refined overlapping scales, more natural heads/eyes and controlled specular highlights. Preserve poses, sizes and visible heads. Everything else stays as approved. Selected intermediate cartoon preview: `exec-e4de7aa7-5270-4263-985d-90421dec63d2.png`; final targeted edit is listed above.
+
+Classic: retain open ledger, pottery coffee, trailing pothos, herb, kitchen shelves, linen and sunny oak; simplify leaves, grain, pottery patterns and page edges. Cream/sage/honey/terracotta.
+
+TTPD: retain typewriter, layered letters, pressed flowers, coffee, books, candles, misty window and moth. Ivory/taupe/graphite; clean keys, sprigs, folds and abstract manuscript marks.
+
+Harbour: retain wharf, ropes/bollards, red boat, cream wheelhouse, Narrows cliffs, houses and distant tower. Simplified clapboard/white trim, layered rock shapes, rounded clouds and broad blue/teal water bands with delicate ripples.
+
+## Prior scene-content prompts
+
+These establish the preserved composition; their realistic rendering language is superseded by the final style-transfer prompts above.
 
 Generation direction shared by the scenes: landscape 1536×1024 original editorial illustration for a themed ledger website; richly detailed semi-realistic gouache and fine ink, subtle brushwork, coherent lighting, believable scale and material detail. Full bleed, no UI mockup, logos, watermark or legible text. One coherent setting with rich upper/right detail and a quieter lower-left reading surface. Avoid flat clip art, floating icon collections and artificial CGI.
 

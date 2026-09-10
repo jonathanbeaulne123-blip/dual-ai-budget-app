@@ -70,10 +70,10 @@
 .books-water { animation:living-drift 24s ease-in-out infinite alternate; }
 .books-steam { animation:living-steam 9s ease-in-out infinite; }
 @keyframes books-warmth { to { opacity:.45; } }
-:root[data-theme][data-world-page="ledger"] .theme-scene-heading { height:440px; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; display:block; }
+:root[data-theme][data-world-page="ledger"] .theme-scene-heading { height:380px; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; display:block; }
 :root[data-world-page="ledger"] .theme-scene-heading::before,
 :root[data-world-page="ledger"] .theme-scene-heading::after { display:none; }
-:root[data-theme][data-world-page="ledger"] .theme-scene-copy { position:absolute; left:34px; top:auto; bottom:32px; max-width:48%; padding:20px 26px; background:var(--card); border:1px solid var(--line); border-radius:2px; box-shadow:3px 4px 0 #fff7e447,0 12px 35px #16110b40; }
+:root[data-theme][data-world-page="ledger"] .theme-scene-copy { position:absolute; left:34px; top:auto; bottom:32px; max-width:48%; padding:20px 26px; background:var(--card); border:1px solid var(--line); border-radius:7px; box-shadow:2px 3px 0 #fff7e447,0 6px 16px #16110b25; }
 :root[data-world-page="ledger"] .theme-scene-title { font-size:clamp(27px,3.2vw,44px); margin:12px 0; }
 :root[data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { top:20px; bottom:auto; left:24px; background:var(--card); border:1px solid var(--line); box-shadow:0 3px 14px #18120b30; }
 :root[data-world-page="ledger"] .desktop-title-bracelets { display:flex; position:absolute; right:22px; top:18px; margin:0; width:285px; padding:6px 12px; background:#fff8e6ed; border:1px solid #bcaa86; border-radius:3px; box-shadow:0 8px 20px #18120b30; transform:rotate(3deg); }
@@ -115,7 +115,7 @@
 @media print { .books-scenery,.books-heading-art,.books-divider { display:none!important; } }
 
 /* The dinner's plated scallops remain visible beside the title, above the ledger. */
-.books-dinner-detail { position:absolute; right:28px; bottom:22px; width:320px; height:184px; overflow:hidden; border:7px solid #f5eddb; box-shadow:0 8px 24px #1e140f70; transform:rotate(-2deg); }
+.books-dinner-detail { position:absolute; right:28px; bottom:22px; width:270px; height:160px; overflow:hidden; border:5px solid #f5eddb; border-radius:6px; box-shadow:0 4px 12px #1e140f40; transform:rotate(-2deg); }
 .books-dinner-detail img { position:absolute; right:0; bottom:0; width:230%; max-width:none; height:auto; }
 .theme-studio .books-heading-art { display:block; position:absolute; inset:0; }
 .theme-studio .books-heading-art img { width:100%; height:100%; object-fit:cover; }

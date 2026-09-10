@@ -1,5 +1,7 @@
 # Books actual-page evidence
 
+Cartoon integration is in progress: this directory’s images and receipts currently document the preceding realistic revision until the fresh capture pass is copied in. The approved cartoon product assets are listed in the artwork provenance document.
+
 September 10 composition revision: these captures replace the rejected first treatment. Real App pages use isolated synthetic completed-books fixtures in installed Chrome, with non-local requests blocked. No personal photographs or real ledger data are included.
 
 ![Six desktop scenes](desktop-scenes.webp)

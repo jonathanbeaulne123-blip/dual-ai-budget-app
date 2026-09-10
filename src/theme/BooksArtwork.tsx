@@ -7,7 +7,7 @@ export function booksSceneAsset(scene: ThemeScene) {
   return scene.theme === 'classic' ? 'classic' : scene.id;
 }
 function SceneImage({ scene }: { scene: ThemeScene }) {
-  const name = booksSceneAsset(scene);
+  const name = `${booksSceneAsset(scene)}-cartoon`;
   return <img src={`/art/books/${name}.webp`} srcSet={`/art/books/${name}-phone.webp 768w, /art/books/${name}.webp 1536w`} sizes="100vw" alt="" width="1536" height="1024" decoding="async" />;
 }
 
