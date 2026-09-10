@@ -3,7 +3,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HerculesPresence } from "../src/Hercules.tsx";
-import { catalogHousehold } from "../src/core/index.ts";
+import { addPotentialExpense, catalogHousehold } from "../src/core/index.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -124,5 +124,27 @@ describe("Hercules human-idle fly pounce", () => {
     timerSpy.mockClear();
     renderHercules();
     expect(timerSpy.mock.calls.some(([, delay]) => delay === 10_000 || delay === 1_000)).toBe(false);
+  });
+
+  it("offers every due-plan recovery path without posting on its own", () => {
+    household = addPotentialExpense(household, {
+      date: "2026-08-30", title: "Wedding travel", amount: "600", accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-LIFE-FUN", createdBy: "MEM-001", visibility: "household",
+    }).household;
+    const id = household.potentialExpenses[0]!.id;
+    const quick = vi.fn(), review = vi.fn(), move = vi.fn(), remove = vi.fn(), dismiss = vi.fn(), ledger = vi.fn();
+    act(() => root.render(createElement(HerculesPresence, {
+      household, today: "2026-08-30", tab: "home", adding: false, memberId: "MEM-001", view: "household",
+      onOpenAdd: vi.fn(), onGo: vi.fn(), onLedger: ledger, onOpenSource: vi.fn(),
+      onQuickPotentialExpense: quick, onReviewPotentialExpense: review, onMovePotentialExpense: move,
+      onRemovePotentialExpense: remove, onDismissNotice: dismiss,
+    })));
+    const action = (label: string) => [...container.querySelectorAll<HTMLButtonElement>(".hercules-proposal button")].find((button) => button.textContent === label)!;
+    act(() => action("Quick Confirm").click()); expect(quick).toHaveBeenCalledWith(id);
+    act(() => action("Review in Add").click()); expect(review).toHaveBeenCalledWith(id);
+    act(() => action("Move").click()); expect(move).toHaveBeenCalledWith(id);
+    act(() => action("Remove").click()); expect(remove).toHaveBeenCalledWith(id);
+    act(() => action("Not now").click()); expect(dismiss).toHaveBeenCalledWith(`potential:${id}:2026-08-30`);
+    expect(ledger).not.toHaveBeenCalled();
   });
 });

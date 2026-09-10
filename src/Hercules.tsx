@@ -230,6 +230,10 @@ export function HerculesPresence({
   onPayCard,
   onAcceptPreset,
   onDismissNotice,
+  onQuickPotentialExpense,
+  onReviewPotentialExpense,
+  onMovePotentialExpense,
+  onRemovePotentialExpense,
   onOpenSource,
   onOpenCharter,
   onOpenAccounts,
@@ -261,6 +265,10 @@ export function HerculesPresence({
   onPayCard?: () => void;
   onAcceptPreset?: (key: string, summary: string) => void;
   onDismissNotice?: (key: string) => void;
+  onQuickPotentialExpense?: (planId: string) => void;
+  onReviewPotentialExpense?: (planId: string) => void;
+  onMovePotentialExpense?: (planId: string) => void;
+  onRemovePotentialExpense?: (planId: string) => void;
   onOpenSource: (source: HerculesNumberSource) => void;
   onOpenCharter?: () => void;
   onOpenAccounts?: () => void;
@@ -366,7 +374,7 @@ export function HerculesPresence({
   const lastBump = useRef<{ id: string; at: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
-  const showProposal = false; // Suggestions are available only after explicitly opening Hercules.
+  const showProposal = Boolean(proposal?.potentialExpenseId && !adding && !activityBlocked && !setupSelected);
   const showWidgetSnippets = Boolean(open && !setupSelected && tab === "home" && focusedWidget && !adding && !(phoneShell && mobileFocus));
   const showTalk = Boolean(open && !setupSelected && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
@@ -1615,6 +1623,14 @@ export function HerculesPresence({
         <div className="hercules-pill-note" role="status">
           <p>{proposal.spoken}</p>
           <div className="hercules-replies">
+            {proposal.potentialExpenseId && (
+              <>
+                <button type="button" onClick={() => onQuickPotentialExpense?.(proposal.potentialExpenseId!)}>Quick Confirm</button>
+                <button type="button" onClick={() => onReviewPotentialExpense?.(proposal.potentialExpenseId!)}>Review in Add</button>
+                <button type="button" onClick={() => onMovePotentialExpense?.(proposal.potentialExpenseId!)}>Move</button>
+                <button type="button" onClick={() => onRemovePotentialExpense?.(proposal.potentialExpenseId!)}>Remove</button>
+              </>
+            )}
             {proposal.habitKey && (
               <button type="button" onClick={() => onAcceptPreset?.(proposal.habitKey!, proposal.spoken)}>
                 Save as preset
@@ -1633,6 +1649,14 @@ export function HerculesPresence({
           <p className="hercules-spoken">{proposal.spoken}</p>
           <p className="hercules-lesson">{proposal.lesson}</p>
           <div className="hercules-replies">
+            {proposal.potentialExpenseId && (
+              <>
+                <button type="button" onClick={() => onQuickPotentialExpense?.(proposal.potentialExpenseId!)}>Quick Confirm</button>
+                <button type="button" onClick={() => onReviewPotentialExpense?.(proposal.potentialExpenseId!)}>Review in Add</button>
+                <button type="button" onClick={() => onMovePotentialExpense?.(proposal.potentialExpenseId!)}>Move</button>
+                <button type="button" onClick={() => onRemovePotentialExpense?.(proposal.potentialExpenseId!)}>Remove</button>
+              </>
+            )}
             {proposal.habitKey && (
               <button
                 type="button"

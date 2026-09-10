@@ -60,6 +60,7 @@ export function visibleForDuplicateScan(
 function activitySafeForMember(household: Household, memberId: string) {
   const partnerPrivateTokens = [
     ...household.transactions.filter((row) => row.visibility === "personal" && row.createdBy !== memberId).map((row) => row.id),
+    ...(household.potentialExpenses ?? []).filter((row) => row.visibility === "personal" && row.createdBy !== memberId).flatMap((row) => [row.id, row.title]),
     ...household.accounts.filter((row) => row.scope === "personal" && row.ownerMemberId !== memberId).flatMap((row) => [row.id, row.name]),
     ...household.goals.filter((row) => !row.shared && row.ownerMemberId !== memberId).flatMap((row) => [row.id, row.name]),
     ...(household.sevenShiftsSchedules ?? []).filter((row) => row.memberId !== memberId).flatMap((row) => [row.id, row.provenanceId]),
@@ -255,6 +256,7 @@ export function householdForView(household: Household, memberId: string, view: L
       account.scope !== "personal" || (view === "personal" && account.ownerMemberId === memberId)
     )),
     transactions: (household.transactions ?? []).filter((tx) => isVisibleInView(tx, memberId, view)),
+    potentialExpenses: (household.potentialExpenses ?? []).filter((row) => isVisibleInView(row, memberId, view)),
     shifts: (household.shifts ?? []).filter((shift) => isVisibleInView(shift, memberId, view)),
     goals: (household.goals ?? []).filter((goal) => goalVisibleInView(goal, memberId, view)),
     fundContributionSourceClaims: [],

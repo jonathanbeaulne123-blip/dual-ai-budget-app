@@ -130,6 +130,7 @@ import type {
   InvestmentVehicle,
   Preset,
   PresetOrigin,
+  PotentialExpensePlan,
   Recurrence,
   RecurrenceKind,
   RecurrenceOrigin,
@@ -1737,6 +1738,220 @@ export const postEntry = captureCommand("postEntry", function postEntry(househol
   }
   const warnings = matches.length ? ["Saved with a duplicate fingerprint. Review it when you have a moment."] : [];
   return commit(previous, next, input.type === "income" ? "Add Income" : input.type === "refund" ? "Add Refund" : "Add Expense", `${draft.id}: ${input.type} $${(amountCents / 100).toFixed(2)} (${subcategory.name}) on ${date}`, postedIds, warnings, "postEntry");
+});
+
+function potentialExpenseActor(
+  household: Household,
+  plan: PotentialExpensePlan,
+  createdBy: string,
+): { createdBy: string; visibility: Visibility } {
+  const actor = resolveActor(household, { createdBy, visibility: plan.visibility });
+  if (plan.visibility === "personal" && plan.createdBy !== actor.createdBy) {
+    throw new ValidationError("Only the owner can change this Personal calendar plan.");
+  }
+  return actor;
+}
+
+function potentialExpenseResult(result: CommitResult, plan: PotentialExpensePlan): CommitResult {
+  return plan.visibility === "personal"
+    ? { ...result, persistenceScope: "member-personal", personalMemberId: plan.createdBy }
+    : result;
+}
+
+function potentialExpenseSplits(amountCents: number, actor: { createdBy: string; visibility: Visibility }): Split[] {
+  return actor.visibility === "personal"
+    ? [{ party: actor.createdBy, amountCents }]
+    : jointSplit(amountCents);
+}
+
+function resizedPotentialSplits(existing: Split[], oldAmountCents: number, amountCents: number): Split[] {
+  if (oldAmountCents === amountCents) return existing;
+  let assigned = 0;
+  return existing.map((split, index) => {
+    const next = index === existing.length - 1
+      ? amountCents - assigned
+      : Math.round(amountCents * split.amountCents / oldAmountCents);
+    assigned += next;
+    return { ...split, amountCents: next };
+  });
+}
+
+export const addPotentialExpense = captureCommand("addPotentialExpense", function addPotentialExpense(household: Household, input: {
+  date: string;
+  title: string;
+  amount: string | number;
+  accountId: string;
+  subcategoryId: string;
+  splits?: Split[];
+  createdBy: string;
+  visibility: Visibility;
+}): CommitResult {
+  const date = parseDate(input.date);
+  const amountCents = parseAmount(input.amount);
+  const actor = resolveActor(household, input);
+  requireAccountScopeForWrite(household, input.accountId, actor);
+  requireSubcategory(household, input.subcategoryId, "expense");
+  const title = input.title.trim();
+  if (!title) throw new ValidationError("Name the potential expense.");
+  if (title.length > 120) throw new ValidationError("Keep the potential expense name under 120 characters.");
+  const splits = catalogValidateOwned(input.splits ?? potentialExpenseSplits(amountCents, actor), amountCents, household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const at = nowIso();
+  const id = `PLAN-EX-${crypto.randomUUID()}`;
+  const plan: PotentialExpensePlan = {
+    id,
+    date,
+    title,
+    expectedAmountCents: amountCents,
+    accountId: input.accountId,
+    subcategoryId: input.subcategoryId,
+    splits,
+    visibility: actor.visibility,
+    createdBy: actor.createdBy,
+    status: "planned",
+    transactionId: null,
+    postedAt: null,
+    removedAt: null,
+    dismissedNoticeDate: null,
+    createdAt: at,
+    updatedAt: at,
+  };
+  next.potentialExpenses.push(plan);
+  return potentialExpenseResult(commit(previous, next, "Calendar", `Planned ${title} for ${date}`, [id], [], "addPotentialExpense"), plan);
+});
+
+export const updatePotentialExpense = captureCommand("updatePotentialExpense", function updatePotentialExpense(household: Household, input: {
+  id: string;
+  date: string;
+  title: string;
+  amount: string | number;
+  accountId: string;
+  subcategoryId: string;
+  splits?: Split[];
+  createdBy: string;
+}): CommitResult {
+  const existing = household.potentialExpenses.find((row) => row.id === input.id);
+  if (!existing || existing.status !== "planned") throw new ValidationError("That potential expense is no longer open.");
+  const actor = potentialExpenseActor(household, existing, input.createdBy);
+  const date = parseDate(input.date);
+  const amountCents = parseAmount(input.amount);
+  requireAccountScopeForWrite(household, input.accountId, actor);
+  requireSubcategory(household, input.subcategoryId, "expense");
+  const title = input.title.trim();
+  if (!title) throw new ValidationError("Name the potential expense.");
+  if (title.length > 120) throw new ValidationError("Keep the potential expense name under 120 characters.");
+  const splits = catalogValidateOwned(input.splits ?? resizedPotentialSplits(existing.splits, existing.expectedAmountCents, amountCents), amountCents, household);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const row = next.potentialExpenses.find((item) => item.id === input.id)!;
+  Object.assign(row, { date, title, expectedAmountCents: amountCents, accountId: input.accountId, subcategoryId: input.subcategoryId, splits, updatedAt: nowIso() });
+  return potentialExpenseResult(commit(previous, next, "Calendar", `Updated ${title}`, [row.id], [], "updatePotentialExpense"), row);
+});
+
+export const movePotentialExpense = captureCommand("movePotentialExpense", function movePotentialExpense(household: Household, input: {
+  id: string;
+  date: string;
+  createdBy: string;
+}): CommitResult {
+  const existing = household.potentialExpenses.find((row) => row.id === input.id);
+  if (!existing || existing.status !== "planned") throw new ValidationError("That potential expense is no longer open.");
+  potentialExpenseActor(household, existing, input.createdBy);
+  const date = parseDate(input.date);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const row = next.potentialExpenses.find((item) => item.id === input.id)!;
+  row.date = date;
+  row.updatedAt = nowIso();
+  return potentialExpenseResult(commit(previous, next, "Calendar", `Moved ${row.title} to ${date}`, [row.id], [], "movePotentialExpense"), row);
+});
+
+export const removePotentialExpense = captureCommand("removePotentialExpense", function removePotentialExpense(household: Household, input: {
+  id: string;
+  createdBy: string;
+}): CommitResult {
+  const existing = household.potentialExpenses.find((row) => row.id === input.id);
+  if (!existing || existing.status !== "planned") throw new ValidationError("That potential expense is no longer open.");
+  potentialExpenseActor(household, existing, input.createdBy);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const row = next.potentialExpenses.find((item) => item.id === input.id)!;
+  const at = nowIso();
+  row.status = "removed";
+  row.removedAt = at;
+  row.updatedAt = at;
+  return potentialExpenseResult(commit(previous, next, "Calendar", `Removed ${row.title}`, [row.id], [], "removePotentialExpense"), row);
+});
+
+export const dismissPotentialExpenseNotice = captureCommand("dismissPotentialExpenseNotice", function dismissPotentialExpenseNotice(household: Household, input: {
+  id: string;
+  date: string;
+  createdBy: string;
+}): CommitResult {
+  const existing = household.potentialExpenses.find((row) => row.id === input.id);
+  if (!existing || existing.status !== "planned" || existing.date !== input.date) {
+    throw new ValidationError("That potential expense prompt is no longer current.");
+  }
+  potentialExpenseActor(household, existing, input.createdBy);
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const row = next.potentialExpenses.find((item) => item.id === input.id)!;
+  row.dismissedNoticeDate = row.date;
+  row.updatedAt = nowIso();
+  return potentialExpenseResult(commit(previous, next, "Hercules", `Hid ${row.title} for ${row.date}`, [row.id], [], "dismissPotentialExpenseNotice"), row);
+});
+
+export const postPotentialExpense = captureCommand("postPotentialExpense", function postPotentialExpense(household: Household, input: {
+  id: string;
+  createdBy: string;
+  date?: string;
+  amount?: string | number;
+  accountId?: string;
+  subcategoryId?: string;
+  note?: string;
+  place?: string;
+  occurredAt?: string;
+  location?: Transaction["location"];
+  splits?: Split[];
+  confirmDuplicate?: boolean;
+  funding?: HouseholdFundTransactionFunding;
+}): CommitResult {
+  const plan = household.potentialExpenses.find((row) => row.id === input.id);
+  if (!plan || plan.status !== "planned") throw new ValidationError("That potential expense was already resolved.");
+  potentialExpenseActor(household, plan, input.createdBy);
+  const previous = cloneHousehold(household);
+  const posted = postEntry(household, {
+    date: input.date ?? plan.date,
+    type: "expense",
+    amount: input.amount ?? plan.expectedAmountCents / 100,
+    accountId: input.accountId ?? plan.accountId,
+    subcategoryId: input.subcategoryId ?? plan.subcategoryId,
+    note: input.note ?? plan.title,
+    place: input.place,
+    occurredAt: input.occurredAt,
+    location: input.location,
+    splits: input.splits ?? plan.splits,
+    confirmDuplicate: input.confirmDuplicate,
+    createdBy: input.createdBy,
+    visibility: plan.visibility,
+    source: "calendar",
+    sourceId: plan.id,
+    funding: input.funding,
+  });
+  const next = cloneHousehold(posted.household);
+  const row = next.potentialExpenses.find((item) => item.id === plan.id);
+  if (!row || row.status !== "planned") throw new ValidationError("That potential expense changed before Confirm.");
+  const transactionId = posted.postedIds.find((id) => id.startsWith("TXN-"));
+  if (!transactionId) throw new ValidationError("The expense was not posted.");
+  const at = nowIso();
+  row.status = "posted";
+  row.transactionId = transactionId;
+  row.postedAt = at;
+  row.updatedAt = at;
+  return potentialExpenseResult(
+    commit(previous, next, "Calendar", `Posted ${row.title}`, posted.postedIds, posted.warnings, "postPotentialExpense"),
+    row,
+  );
 });
 
 /**
@@ -7573,6 +7788,7 @@ export function emptyHousehold(environment: Household["environment"] = "developm
     transactions: [],
     shifts: [],
     recurrences: [],
+    potentialExpenses: [],
     appointments: [],
     claims: [],
     presets: [],

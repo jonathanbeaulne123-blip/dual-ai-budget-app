@@ -13,6 +13,7 @@ import { mergeGoogle, shapeGoogle } from "./google.ts";
 import { mergeKitchen, shapeKitchen } from "./kitchen.ts";
 import { shapeSitDownSessions } from "./sitDown.ts";
 import { mergeCalendars, shapeCalendar, shapeRecurrence } from "./recurrence.ts";
+import { mergePotentialExpenses, shapePotentialExpenses } from "./potentialExpenses.ts";
 import { applyGoalSavings, shapeGoalProgress, shapeGoalPurchases } from "./goals.ts";
 import { shapeAppointments, shapeClaims } from "./appointments.ts";
 import { shapeAccounts } from "./accountKinds.ts";
@@ -346,6 +347,7 @@ export function ensureHouseholdShape(household: Household): Household {
     timezone: isValidIanaTimeZone(household.timezone) ? household.timezone.trim() : DEFAULT_TIMEZONE,
     ledgerNames: shapeLedgerNames(household.ledgerNames, household.members),
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
+    potentialExpenses: shapePotentialExpenses(household.potentialExpenses, fallbackIso),
     appointments: shapeAppointments(household.appointments, fallbackIso),
     claims: shapeClaims(household.claims, fallbackIso),
     presets: shapePresets(household.presets, fallbackIso),
@@ -440,6 +442,7 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
     memberId,
     lastCommittedAt: null,
     transactions: [],
+    potentialExpenses: [],
     accounts: [],
     shifts: [],
     sevenShiftsSchedules: [],
@@ -465,6 +468,8 @@ export function splitForSync(household: Household, memberId: string): { shared: 
   const shaped = ensureHouseholdShape(household);
   const sharedTx = shaped.transactions.filter((tx) => belongsToSharedLedger(tx));
   const personalTx = shaped.transactions.filter((tx) => isPersonalOnly(tx) && tx.createdBy === memberId);
+  const sharedPotentialExpenses = shaped.potentialExpenses.filter((row) => !isPersonalOnly(row));
+  const personalPotentialExpenses = shaped.potentialExpenses.filter((row) => isPersonalOnly(row) && row.createdBy === memberId);
   const sharedShifts = shaped.shifts.filter((shift) => belongsToSharedLedger(shift)).map(withoutPrivateShiftBible);
   const personalShifts = shaped.shifts.filter((shift) => isPersonalOnly(shift) && shift.createdBy === memberId).map(withoutPrivateShiftBible);
   const memberShiftBibles = personalShiftBibles(shaped, memberId);
@@ -476,6 +481,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
   const personalAccounts = shaped.accounts.filter((account) => account.scope === "personal" && account.ownerMemberId === memberId);
   const privateActivityTokens = [
     ...shaped.transactions.filter(isPersonalOnly).map((row) => row.id),
+    ...shaped.potentialExpenses.filter(isPersonalOnly).flatMap((row) => [row.id, row.title]),
     ...shaped.accounts.filter((row) => row.scope === "personal").flatMap((row) => [row.id, row.name]),
     ...shaped.goals.filter((row) => !row.shared).flatMap((row) => [row.id, row.name]),
     ...(shaped.sevenShiftsSchedules ?? []).flatMap((row) => [row.id, row.provenanceId]),
@@ -500,6 +506,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     accounts: sharedAccounts,
     categories: shaped.categories,
     recurrences: shaped.recurrences,
+    potentialExpenses: sharedPotentialExpenses,
     appointments: shaped.appointments,
     claims: shaped.claims,
     presets: shaped.presets,
@@ -585,6 +592,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     accountHistoryReviews: (shaped.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
     accountHistoryApprovals: (shaped.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === memberId),
     transactions: personalTx,
+    potentialExpenses: personalPotentialExpenses,
     shifts: personalShifts,
     sevenShiftsSchedules: shaped.sevenShiftsSchedules?.filter((row) => row.memberId === memberId) ?? [],
     coworkers: shapeCoworkers(shaped.coworkers, shaped.lastCommittedAt ?? MISSING_ISO, memberId),
@@ -612,6 +620,7 @@ export function personalReplicaForMember(household: Household, memberId: string)
   return {
     ...personal,
     transactions: personal.transactions.filter((tx) => tx.createdBy === memberId),
+    potentialExpenses: (personal.potentialExpenses ?? []).filter((row) => row.createdBy === memberId && row.visibility === "personal"),
     shifts: personal.shifts.filter((shift) => shift.createdBy === memberId),
     sevenShiftsSchedules: shapeSevenShiftsSchedules(personal.sevenShiftsSchedules, memberId),
     coworkers: shapeCoworkers(personal.coworkers, personal.lastCommittedAt ?? MISSING_ISO, memberId),
@@ -674,6 +683,8 @@ export function personalEnvelopeFromPayload(
     transactions: Array.isArray(row.transactions)
       ? row.transactions.filter((item) => item.createdBy === memberId && item.visibility === "personal")
       : [],
+    potentialExpenses: shapePotentialExpenses(row.potentialExpenses, row.lastCommittedAt ?? MISSING_ISO)
+      .filter((item) => item.createdBy === memberId && item.visibility === "personal"),
     shifts: Array.isArray(row.shifts)
       ? row.shifts.filter((item) => item.createdBy === memberId && item.visibility === "personal")
       : [],
@@ -772,6 +783,11 @@ export function overlayPersonalReplica(
       )),
       ...personal.transactions,
     ],
+    potentialExpenses: mergePotentialExpenses(
+      household.potentialExpenses.filter((item) => !(item.visibility === "personal" && item.createdBy === memberId)),
+      personal.potentialExpenses,
+      personal.lastCommittedAt ?? household.lastCommittedAt ?? MISSING_ISO,
+    ),
     accounts: [
       ...household.accounts.filter((item) => !(item.scope === "personal" && item.ownerMemberId === memberId)),
       ...(personal.accounts ?? []),
@@ -917,6 +933,11 @@ export function assembleHousehold(
     accounts: [...shared.accounts, ...personalAccounts],
     categories: shared.categories,
     recurrences: shared.recurrences,
+    potentialExpenses: mergePotentialExpenses(
+      shared.potentialExpenses,
+      personal?.potentialExpenses,
+      personal?.lastCommittedAt ?? shared.lastCommittedAt ?? MISSING_ISO,
+    ),
     appointments: shared.appointments ?? [],
     claims: shared.claims ?? [],
     presets: shared.presets ?? [],
@@ -1011,6 +1032,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     accounts: mergeRecords(server.accounts, client.accounts, []),
     categories: mergeRecords(server.categories, client.categories, []),
     recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
+    potentialExpenses: mergePotentialExpenses(server.potentialExpenses, client.potentialExpenses, newer.lastCommittedAt ?? MISSING_ISO),
     appointments: mergeRecords(server.appointments ?? [], client.appointments ?? [], tombstones),
     claims: mergeRecords(server.claims ?? [], client.claims ?? [], tombstones),
     presets: mergeRecords(server.presets ?? [], client.presets ?? [], tombstones),
@@ -1161,6 +1183,8 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     accountHistoryReviews: mergeRecords(server.accountHistoryReviews ?? [], client.accountHistoryReviews ?? [], tombstones),
     accountHistoryApprovals: mergeRecords(server.accountHistoryApprovals ?? [], client.accountHistoryApprovals ?? [], tombstones),
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
+    potentialExpenses: mergePotentialExpenses(server.potentialExpenses, client.potentialExpenses, newer.lastCommittedAt ?? MISSING_ISO)
+      .filter((row) => row.createdBy === memberId && row.visibility === "personal"),
     accounts: mergeRecords(server.accounts ?? [], client.accounts ?? [], tombstones),
     shifts: mergeRecords(server.shifts, client.shifts, tombstones),
     sevenShiftsSchedules: shapeSevenShiftsSchedules(scheduleSource, client.memberId || server.memberId),

@@ -61,6 +61,8 @@ export function AddSlideshow({
   initialAccountId,
   mode,
   onSwitchMode,
+  lockedMode = false,
+  lockedVisibility,
   form,
   setForm,
   household,
@@ -129,6 +131,8 @@ export function AddSlideshow({
   initialAccountId?: string | null;
   mode: AddMode;
   onSwitchMode: (mode: AddMode) => void;
+  lockedMode?: boolean;
+  lockedVisibility?: Visibility;
   form: AddFormFields;
   setForm: Dispatch<SetStateAction<AddFormFields>>;
   household: Household;
@@ -327,7 +331,7 @@ export function AddSlideshow({
         <p className="muted add-slideshow-hint">{expanded ? "Your whole draft. Only Confirm posts." : copy.hint}</p>
         {!expanded && <p className="muted add-slideshow-progress" aria-live="polite">{index + 1} of {slides.length}</p>}
         {!expanded && !hidePost && !choiceSlide && <button type="button" className="ghost" disabled={busy} onClick={() => setFullForm(true)}>More</button>}
-        {slide !== "confirm" && (
+        {slide !== "confirm" && !lockedMode && (
           <details className="add-slideshow-switch">
             <summary>Switch kind</summary>
             <div className="tabs">
@@ -604,6 +608,7 @@ export function AddSlideshow({
             draftLocation={draftLocation}
             displayZone={displayZone}
             pictureName={pictureName}
+            lockedVisibility={lockedVisibility}
           />
         )}
 
@@ -865,6 +870,7 @@ function ConfirmSlide({
   draftLocation,
   displayZone,
   pictureName,
+  lockedVisibility,
 }: {
   fullForm?: boolean;
   mode: AddMode;
@@ -892,6 +898,7 @@ function ConfirmSlide({
   draftLocation?: TransactionLocation;
   displayZone: string;
   pictureName: string;
+  lockedVisibility?: Visibility;
 }) {
   const categoryName = categories.find((category) => category.id === form.subcategoryId)?.name
     ?? household.categories.find((category) => category.id === form.subcategoryId)?.name
@@ -969,12 +976,14 @@ function ConfirmSlide({
                 key={item.id}
                 type="button"
                 className={`chip ${form.visibility === item.id ? "selected" : ""}`}
+                disabled={Boolean(lockedVisibility)}
                 onClick={() => setForm((current) => ({ ...current, visibility: item.id }))}
               >
                 {item.name}
               </button>
             ))}
           </div>
+          {lockedVisibility && <p className="muted">Visibility stays {lockedVisibility === "household" ? "Shared" : lockedVisibility === "personal" ? "Personal" : "Both"} for this planned expense.</p>}
           {mode === "expense" && household.householdFund && (
             <section className="preview" aria-label="Household Fund allocation">
               <div className="row">
