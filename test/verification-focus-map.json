@@ -3,6 +3,22 @@
   "mappings": [
     {
       "sources": [
+        "scripts/check-page-worlds.mjs",
+        "src/Hercules.tsx",
+        "src/theme/PageWorld.tsx",
+        "src/theme/SceneArtwork.tsx",
+        "src/theme/page-books.css",
+        "src/theme/page-more.css",
+        "src/theme/page-worlds.css"
+      ],
+      "tests": [
+        "test/onboarding-entry-integration.test.ts",
+        "test/page-worlds.test.ts"
+      ],
+      "reason": "Theme-heading keepsake composition, Taylor-only concert light, mobile artwork clearance, and Hercules setup compatibility"
+    },
+    {
+      "sources": [
         "src/CadPad.tsx",
         "src/calendar-boards.css",
         "src/confirm-mobile.css",
