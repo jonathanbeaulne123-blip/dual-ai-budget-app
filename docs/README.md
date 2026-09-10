@@ -40,6 +40,7 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [AI_SETUP_FOR_JONATHAN.md](AI_SETUP_FOR_JONATHAN.md) | Click-by-click activation and verification for the repository AI configuration |
 | [GOOGLE.md](GOOGLE.md) | Household Google bridge: identity, Calendar, opt-in suite; never posts money |
 | [HERCULES.md](HERCULES.md) | Companion laws and product guidance |
+| [Hercules living companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md) | Approved six-slice personality, guidance, personal memory and 3D wardrobe plan; slice 1 contracts are unactivated |
 | [HERCULES_MARK.md](HERCULES_MARK.md) | Mark and runtime asset guidance |
 | [HERCULES_RIG.md](HERCULES_RIG.md) | Part-level animation engine — AI command API for head, tail, legs |
 | [HERCULES_AI.md](HERCULES_AI.md) | Resident data-scientist boundary, payload, notices, and memory guidance; reconcile with current decisions when stale |

@@ -672,3 +672,14 @@ Eight stacked page PRs refine all three themes and both supported scopes togethe
 ## Plan desktop composition — 2026-09-09
 
 Jonathan approved a desktop two-column Plan, compact accurate budget summary and visible Actual / Budget labels while retaining mobile's single-column flow. Categories occupy the wider left column; Kitty Banks precedes Sit-down visually on the right. Existing DOM order is retained to avoid remounting drafts and preserve phone order. Original artwork spans Classic, Fearless/Debut and Signal Hill approach/summit; cannon clip art uses the supplied photograph only as reference. Publication is authorized; merge/deployment require a separate instruction. [Worksession](worksessions/2026-09-09-plan-worlds.md).
+
+
+## Hercules living companion slice 1 — 2026-09-10
+
+Jonathan authorized the first slice of the finalized Hercules plan. The character is an affectionate little diva, quietly proactive and consistently kind. Helpful preferences and outfits will be member-owned across devices within each household, with explicit shared gallery copies. Existing in-app Hercules remains the likeness reference for the future 3D dressing room. No financial success is required to dress or receive affection.
+
+Slice 1 implements versioned closed contracts, strict pure validators, resource-specific intent preconditions, explicit gallery projection, non-destructive legacy preview mapping, twelve capability declarations and 24 synthetic dialogue evaluation scenarios. New intents are deliberately absent from the production command registry; character definitions do not replace the live Worker prompt. Numeric/source validation remains mandatory when presentation contracts are later used.
+
+The complete private persistence unit moves together in slice 2: production envelope fields, shape/split/overlay, actor binding, resource revisions, import parity, server compatibility and private event routing. Partial field adoption would risk losing profile data when the current authority reassembles and re-splits on an unrelated command. Legacy chats remain previously shared data and are not silently imported into private model history. No schema, provider, hosted data or deployment change occurs here.
+
+Budget (5): grounded capability contracts and exclusion of money execution. Engagement (3): reusable character, wardrobe and personal continuity foundations. Risk Medium-High for closed privacy-sensitive contracts; activation will be High. [Plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md) · [Evidence](worksessions/2026-09-10-hercules-slice-1.md).

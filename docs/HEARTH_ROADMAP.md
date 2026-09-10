@@ -422,6 +422,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Exit condition:** delight increases completion and shared understanding without creating pressure, distraction, or financial side effects.
 
+- [ ] Complete the six-slice [Hercules living companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md): affectionate personality, useful discovery, private helpful preferences, personal wardrobe, shared look gallery and full 3D closet in all three themes. Slice 1 defines closed contracts and synthetic evaluation; it is not live behaviour or persistence activation. [Current evidence](worksessions/2026-09-10-hercules-slice-1.md).
 - [ ] Unlock short, human-reviewed lessons after real workflow wins; lessons simulate but never post.
 - [ ] **Future financial-education academy (not implemented):** design a Fabulous/Duolingo-style interactive quest path that can begin with age-five concepts such as “what is money?” and “what is a bank account?”, then grow through household budgeting, credit, investing, bookkeeping, and CPA-level topics such as efficient tax filing. Keep difficulty, language, and pacing adaptable to the learner; label jurisdiction, tax year, sources, and professional-advice boundaries. Quests may teach and simulate, but never post money, file a return, or imply a credential.
 - [ ] Add cooperative household quests tied to safe actions such as reconcile/review, never spending or partner comparison.

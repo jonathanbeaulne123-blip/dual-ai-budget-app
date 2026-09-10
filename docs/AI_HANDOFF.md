@@ -1,3 +1,11 @@
+## Hercules living companion slice 1 — local contracts (2026-09-10)
+
+Jonathan requested slice 1 of the [finalized companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md). Branch `codex/hercules-companion-contracts` starts at verified main `2e113f69d03872eddc22ac461378a0f3e33f6c55`. This slice adds closed executable profile/look/gallery/intent contracts, strict validators, resource preconditions, twelve capability declarations, a character brief and 24 synthetic dialogue scenarios. Production types, command registrations, Gemini prompts and UI are unchanged.
+
+Risk Medium-High; Budget (5): grounded capabilities and exclusion of money execution; Engagement (3): coherent personality, wardrobe and member-owned continuity foundations. Independent read-only review is closed after fixing automatic-memory cancellation, versioned wear validation and opaque legacy preservation. The focused suite passed 46 tests; the repository quick gate passed 84 tests plus TypeScript/AI/diff checks in 115.907 seconds without a budget breach. [Exact evidence and build status](worksessions/2026-09-10-hercules-slice-1.md).
+
+Next: slice 2 must deliver the complete private envelope/shape/split/overlay/actor/resources/import-parity/server-compatibility unit before writing new profile state, then connect personality and memory. Partial envelope support can lose data on an unrelated authority command. The model request context is still a declaration, and no live model-quality, retained-memory or cross-device success is claimed. No push, merge, deployment, schema or provider/data change occurred.
+
 ## Five shared boards — authorized Development release (2026-09-08)
 
 Jonathan subsequently instructed “push merge and deploy.” The dedicated private Development photo bucket is provisioned and bound in the release candidate. [Release worksession](worksessions/2026-09-08-five-shared-boards-release.md) records the authorization, storage verification, rollout checks and rollback reference. Production activation, schema changes and destructive cleanup remain outside scope. The local implementation receipt below is historical; its no-release instruction has been superseded.

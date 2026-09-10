@@ -1,5 +1,13 @@
 # Hercules
 
+## Living companion direction — 2026-09-10
+
+Jonathan approved an affectionate little diva with contextual guidance, helpful preference memory and a full 3D dressing room based on the existing cat. Personal looks belong to each person across devices within a household; sharing publishes an explicit gallery copy. All clothing is available for play without financial achievement requirements. Affection does not depend on money results. This direction supersedes older earned-only, financial-mood-punishment, forced-money-conversation and shared-new-memory assumptions below as those slices are implemented.
+
+[Implementation plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md). Slice 1 supplies closed versioned contracts, capability/character definitions and synthetic evaluation fixtures. It does not activate new storage, model history, wardrobe UI, unlock behaviour or production commands. The whole private envelope/authority round trip must land together in slice 2. [Slice 1 evidence](worksessions/2026-09-10-hercules-slice-1.md).
+
+## Current runtime baseline
+
 **The product face:** a living Maine Coon who reads the household journal, keeps notes in the same snapshot as the milk, and never posts a cent.
 
 The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
