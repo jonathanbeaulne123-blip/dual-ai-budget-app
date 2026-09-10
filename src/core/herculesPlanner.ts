@@ -94,3 +94,11 @@ export async function planHerculesReadTools(
   }
   return deterministicHerculesReadFallback(request.message);
 }
+
+/** Resolve a short follow-up from the last disclosed user question, then re-run current read tools. */
+export function resolveHerculesFollowUp(message: string, history: readonly { role: string; text: string }[]): string {
+  if (!/^(?:why[?!.]?|how (?:so|come)[?!.]?|what about .{1,100}|and .{1,100}|explain (?:that|it)(?: .{0,80})?[?!.]?)$/i.test(message.trim())) return message;
+  const last = [...history].reverse().find(row => row.role === "user");
+  if (!last || !shouldPlanHerculesTools(last.text) || !plannerAllowed(last.text)) return message;
+  return `Earlier question: ${last.text.slice(0, 250)}. Follow-up: ${message.slice(0, 100)}`;
+}

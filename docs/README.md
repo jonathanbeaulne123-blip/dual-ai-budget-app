@@ -1,3 +1,7 @@
+Local Hercules work: [slice 6 integrated companion and evidence](worksessions/2026-09-10-hercules-slice-6.md); [Bianca product trials](briefs/HERCULES_BIANCA_ACCEPTANCE.md).
+
+Local Hercules work: [slice 5 complete wardrobe and verification](worksessions/2026-09-10-hercules-slice-5.md).
+
 # Current docs
 
 Current sync replacement: [Ledger sync v2 — D-235](LEDGER_SYNC_V2.md), implementation and activation contract; see its explicit local-versus-hosted evidence boundary.
@@ -40,6 +44,10 @@ Hearth is the product. Current planning and build canon is in this folder, led b
 | [AI_SETUP_FOR_JONATHAN.md](AI_SETUP_FOR_JONATHAN.md) | Click-by-click activation and verification for the repository AI configuration |
 | [GOOGLE.md](GOOGLE.md) | Household Google bridge: identity, Calendar, opt-in suite; never posts money |
 | [HERCULES.md](HERCULES.md) | Companion laws and product guidance |
+| [Hercules living companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md) | Approved six-slice personality, guidance, personal memory and 3D wardrobe plan; six slices implemented locally; product acceptance and deployment remain pending |
+| [Hercules slice 4 evidence](worksessions/2026-09-10-hercules-slice-4.md) | First 3D fitting look, reproducible asset, responsive closet and local recovery; acceptance gates remain |
+| [Hercules slice 3 evidence](worksessions/2026-09-10-hercules-slice-3.md) | Useful discovery, private suggestion controls, current-task navigation and local verification |
+| [Hercules slice 2 evidence](worksessions/2026-09-10-hercules-slice-2.md) | Private conversation continuity, character, preference controls and local validation; remaining live-model/device gates |
 | [HERCULES_MARK.md](HERCULES_MARK.md) | Mark and runtime asset guidance |
 | [HERCULES_RIG.md](HERCULES_RIG.md) | Part-level animation engine — AI command API for head, tail, legs |
 | [HERCULES_AI.md](HERCULES_AI.md) | Resident data-scientist boundary, payload, notices, and memory guidance; reconcile with current decisions when stale |

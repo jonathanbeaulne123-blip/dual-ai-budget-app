@@ -29,6 +29,8 @@ export type LedgerCommand = {
   version: 2;
   /** Client understands signed openings and append-only account history lineage. */
   accountHistoryVersion?: 1;
+  companionProfileVersion?: 1;
+  companionWardrobeVersion?: 1;
   id: string;
   householdId: string;
   environment: Environment;
@@ -78,6 +80,8 @@ export async function commandFromCapture(
   const command: LedgerCommand = {
     version: 2,
     accountHistoryVersion: 1,
+    companionProfileVersion: 1,
+    companionWardrobeVersion: 1,
     id,
     ...scope,
     observedSequence: input.observedRevision,
@@ -103,6 +107,7 @@ export function parseCommand(value: unknown): LedgerCommand {
   if (
     !c ||
     c.version !== 2 ||
+    (c.companionWardrobeVersion !== undefined && c.companionWardrobeVersion !== 1) ||
     !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(c.id) ||
     !["development", "production"].includes(c.environment) ||
     typeof c.householdId !== "string" ||

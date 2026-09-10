@@ -59,6 +59,9 @@ export class LedgerSyncClient {
   private confirmationIntents = new Map<string,string>();
   private confirming = new Map<string,Promise<CommitResult>>();
   private ready = false;
+  private companionProfileVersion = 0;
+  private companionDiscoveryVersion = 0;
+  private companionWardrobeVersion = 0;
   private initialResolve?: () => void;
   private initialReject?: (e: Error) => void;
   constructor(readonly options: ClientOptions) {}
@@ -214,6 +217,9 @@ export class LedgerSyncClient {
                 this.replica = undefined;
                 throw new Error("REPLICA_CHECKSUM");
               }
+              this.companionProfileVersion = message.companionProfileVersion === 1 ? 1 : 0;
+              this.companionDiscoveryVersion = message.companionDiscoveryVersion === 1 ? 1 : 0;
+              this.companionWardrobeVersion = message.companionWardrobeVersion === 1 ? 1 : 0;
               this.ready = true;
               this.attempt = 0;
               this.options.status(this.pending.size ? "saving" : "ready");
@@ -417,6 +423,13 @@ export class LedgerSyncClient {
   }
   private async queueConfirmation(candidate:Household,id:string,onQueued?:()=>void):Promise<CommitResult> {
     const capture=capturedIntent(candidate)!;
+    if(capture.steps.some(step=>step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')))&&(!this.ready||this.companionWardrobeVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving or sharing looks.');
+    if (capture.steps.some(step => step.kind === "commitCompanion") && (!this.ready || this.companionProfileVersion !== 1)) {
+      throw new LedgerCommandRejectedError("HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving Hercules preferences or conversations.");
+    }
+    if (capture.steps.some(step => step.kind === "commitCompanion" && (step.args[0] as { operation?: { kind?: string } })?.operation?.kind === "suggestion.set") && this.companionDiscoveryVersion !== 1) {
+      throw new LedgerCommandRejectedError("HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving suggestions.");
+    }
     const replica=this.replica;
     if(!replica)throw new Error("LOCAL_REPLICA_REQUIRED");
     const command =

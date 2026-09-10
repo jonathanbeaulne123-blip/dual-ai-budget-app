@@ -21,6 +21,7 @@ export const PHONE_SHELL_IDS = [
   "lamp",
   "mail",
   "wallet",
+  "wardrobe",
 ] as const satisfies readonly InstrumentId[];
 
 export type PhoneShellId = (typeof PHONE_SHELL_IDS)[number];

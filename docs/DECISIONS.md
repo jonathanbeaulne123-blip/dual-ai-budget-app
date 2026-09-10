@@ -1,3 +1,17 @@
+## Hercules Development release controls — 2026-09-10
+
+Jonathan authorized release of the complete companion after reviewing slice-6 limits. Chat, discovery and dressing-room presentation can each be disabled by an independent build setting while compatible private profile/gallery writers and validators remain active. Memory review/forget remains reachable when conversation is paused. Never revert to a server that drops new private fields. Explicit Calendar Move takes precedence over a retained Hercules bill source. [Release record](worksessions/2026-09-10-hercules-release.md).
+
+## 2026-09-10 — Integrated companion recovery and truthful acceptance
+
+Slice 6 retains unsaved conversation only in a bounded, generation-scoped mounted session, partitioned by ledger view and cleared on identity departure. Receipts are recovered before retries; expiry removes complete command groups. Follow-up freshness compares scoped source inputs rather than the global event sequence, which also advances for private conversation ACKs. Specific preference forget instructions become both a CAS operation and a retained conversation exchange. Grounded desktop and Calendar links use existing source routes without financial writes.
+
+Local text rehearsal, synthetic authority tests and browser proof do not certify Gemini voice, physical devices or Bianca's acceptance. The [six-trial packet](briefs/HERCULES_BIANCA_ACCEPTANCE.md) records those as pending. [Worksession](worksessions/2026-09-10-hercules-slice-6.md).
+
+## 2026-09-10 — Complete Hercules wardrobe and explicit look authority
+
+Jonathan requested slice 5 of the approved companion plan. Expand the verified rig with small original collection packs, retain every legacy wearable without financial unlocks, and keep unknown IDs in storage. Private worn/preset resources and explicit shared-gallery resources use existing command authority with CAS/tombstones and wardrobe-version capability admission. A lost acknowledgement is checked before rerunning a stale mutation; books restore and activity-reset helpers preserve current companion resources. Reconnect does not start a new Wear/Save/Share action. These are local changes behind the existing off-by-default room flag; likeness, physical-device acceptance and any hosted release remain separately gated. [Worksession](worksessions/2026-09-10-hercules-slice-5.md).
+
 ## Curriculum v2 and statement-assisted starting books — implementation (2026-09-08)
 
 Jonathan explicitly approved one coherent onboarding repair patch on audited main `a1215b2`. Five stages replace mandatory Fund/card, detailed bills and work cadence: People and agreement, Starting books, Our first plan, Using Hearth day to day, Ready together. Existing household agreement and spending authority remain. Both members complete discarded expense/correction Practice and independently approve current Shared foundation evidence. Optional lessons remain resumable and unfinished until actually completed.
@@ -676,3 +690,48 @@ Eight stacked page PRs refine all three themes and both supported scopes togethe
 ## Plan desktop composition — 2026-09-09
 
 Jonathan approved a desktop two-column Plan, compact accurate budget summary and visible Actual / Budget labels while retaining mobile's single-column flow. Categories occupy the wider left column; Kitty Banks precedes Sit-down visually on the right. Existing DOM order is retained to avoid remounting drafts and preserve phone order. Original artwork spans Classic, Fearless/Debut and Signal Hill approach/summit; cannon clip art uses the supplied photograph only as reference. Publication is authorized; merge/deployment require a separate instruction. [Worksession](worksessions/2026-09-09-plan-worlds.md).
+
+
+## Hercules living companion slice 1 — 2026-09-10
+
+Jonathan authorized the first slice of the finalized Hercules plan. The character is an affectionate little diva, quietly proactive and consistently kind. Helpful preferences and outfits will be member-owned across devices within each household, with explicit shared gallery copies. Existing in-app Hercules remains the likeness reference for the future 3D dressing room. No financial success is required to dress or receive affection.
+
+Slice 1 implements versioned closed contracts, strict pure validators, resource-specific intent preconditions, explicit gallery projection, non-destructive legacy preview mapping, twelve capability declarations and 24 synthetic dialogue evaluation scenarios. New intents are deliberately absent from the production command registry; character definitions do not replace the live Worker prompt. Numeric/source validation remains mandatory when presentation contracts are later used.
+
+The complete private persistence unit moves together in slice 2: production envelope fields, shape/split/overlay, actor binding, resource revisions, import parity, server compatibility and private event routing. Partial field adoption would risk losing profile data when the current authority reassembles and re-splits on an unrelated command. Legacy chats remain previously shared data and are not silently imported into private model history. No schema, provider, hosted data or deployment change occurs here.
+
+Budget (5): grounded capability contracts and exclusion of money execution. Engagement (3): reusable character, wardrobe and personal continuity foundations. Risk Medium-High for closed privacy-sensitive contracts; activation will be High. [Plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md) · [Evidence](worksessions/2026-09-10-hercules-slice-1.md).
+
+## Hercules private conversation and character — slice 2 (2026-09-10)
+
+Jonathan authorized implementing the second living-companion slice. The runtime now carries one strictly scoped CompanionProfileV1 through the member-personal envelope and v2 authority. Paired conversation messages are one acknowledged command; preferences use resource revisions, and clearing a view advances its generation. No new table, binding, financial command or money authority is introduced. Legacy shared memories/chat are read-only archive material, excluded from every active answer and new provider context. Old clients with private profiles must reload; new companion writes require the server's companion capability. Deployment must be server-first with profile-compatible rollback; this local implementation is not activation.
+
+The versioned affectionate-diva brief now supplies the chat prompt. Bounded current-view context includes complete acknowledged and still-unsaved session exchanges; source visibility and quiet/credential redaction are reapplied. Prior amounts are not current financial authority. Optional presentation cues are allowlisted and scope/request guarded, paragraphs are preserved, and casual companion narration uses lower Gemini thinking while the separate read-tool planner retains its reasoning. Ordinary Development households no longer qualify for bulk synthetic context merely because of environment; an actual synthetic fixture marker is required. Provider gates and secrets remain unchanged.
+
+Preference controls in chat and the wardrobe provide manual edit, forget, remembering off and clear-conversation. Explicit low-sensitivity conversational preferences get a Remembered receipt and revision-guarded Undo only after ACK. Ambiguous saves retain the same ID; definitively invalidated preference/Undo actions leave the queue without blocking later messages. Offline chat stays available as an unsaved session draft. Limits are 300 turns per view / 30 days, with durable pruning on the next private mutation and immediate context expiry.
+
+Budget (5): private evidence and fresh figures preserve Personal/Shared and Confirm boundaries. Engagement (3): warmer contextual conversation, constant affection through Health findings, and visible controllable memory. Wardrobe catalogue/3D customization and predictive discovery remain later slices. Evidence and remaining live-provider/device gates: [slice 2 worksession](worksessions/2026-09-10-hercules-slice-2.md).
+
+
+## Hercules useful discovery — slice 3 (2026-09-10)
+
+Jonathan authorized the third companion slice. One-tap help now opens For you now, Things we can do and Continue with me, with the ordinary chat composer and explicit Play. Local typed capability evidence chooses at most three current recommendations, ordered by unfinished/blocked work, urgency, current page, then exploration. Underlying Health items are deduplicated; empty households receive page explanation, an entry walkthrough and outfits. No automatic model request or interrupting invitation is added.
+
+Cards explain their reason, source/input and concrete action. The supported catalogue uses existing read tools and review flows. Payday is explicitly selected (next recorded recurring occurrences through a date within 90 days). Comparisons name actual full calendar-month ranges, including future-dated recorded entries and incomplete coverage. Personal hides unsupported Shared projection/audit/bill tools. Duplicate comparison opens the exact visible pair; an own shift opens its existing workflow without clocking out. Fund detail uses only public rows from the same accepted-book register projection and renderability gates. No capability posts money.
+
+Private suggestion controls use the existing member-personal v2 command. Not now lasts 24 hours; disabled activities stay manually available and can be re-enabled across views. Resume bookmarks contain an issue identity, never a financial draft, and disappear when their current task is gone/completed. ACK is required before claiming a setting saved. Retries retain UUID and exact predecessor. Canonical capability/bookmark tombstones retain revisions; expired occurrence snoozes can be reclaimed because both revision and exact predecessor are checked, preventing revision-reuse ABA overwrites. Old servers must advertise the discovery capability before new clients enqueue suggestion writes. No new table or profile version.
+
+Integration repairs are necessary for actual capability completion: retain the owner-scoped profile for the local Hercules UI while keeping model disclosure separate; preserve ledger view in entry/source navigation; focus selected goal/Fund/Health content; clear stale Books activity focus; deliver wardrobe requests through deferred Office mount and clear competing desktop money lists. The existing wardrobe is now available in the phone desk drawer as well. This remains the existing accessory selector, not the later 3D dressing room.
+
+Budget delta (5): discoverable, scoped explanations lead to recorded sources and existing Confirm flows. Engagement delta (3): useful quiet guidance, controllable reminders and dependable continuation. Risk High; local-only implementation, with [verification and remaining release gates](worksessions/2026-09-10-hercules-slice-3.md).
+
+
+## Hercules 3D fitting room — slice 4 (2026-09-10)
+
+Jonathan authorized the fourth companion slice. The first complete look is Cozy at home: cable-knit sweater, pom-pom toque and round glasses. The original stage geometry is retained as source and exported reproducibly into one 40-bone skin, region-based coat occlusion, skinned clothing, head-bound rigid attachments and twelve authored reactions. This establishes the fit/export contract before multiplying the catalogue. Hat/body/eyewear have shared IDs and colour tokens across 3D, original vector thumbnails and layers inside the existing SVG head/body groups.
+
+The room is lazy, local and opt-in through `VITE_HERCULES_DRESSING_ROOM=1`; the default entrance is off. It has physical shelf selection plus equivalent keyboard controls, a real mirror, orbit/zoom, poses, pause, reduced motion, hidden/offscreen suspension, explicit disposal and a matching 2D failure path. Failed asset/WebGL loading can retry with the current look. A failed JavaScript chunk offers explicit Reload Hearth because the browser retains its rejected module import; Close keeps the desk available. A stable Office owner preserves an open fitting across breakpoints, and return-focus recovery targets the current layout.
+
+The fitting draft is device-local and keyed by environment/household/member; it is not the worn profile. Guarded storage, bounded undo/redo and identity remounts cannot call money, profile or gallery commands. Existing worn appearance stays on the established path until slice 5 provides the whole catalogue and acknowledged Wear/Save/share flow. Classic uses wood/brass/linen; Taylor uses the More-page cottage/woodland mappings; Newfoundland uses dressing-lounge/music-room materials. No fictional personal memorabilia is introduced.
+
+Budget delta (5): visual play stays outside accepted books and disclosure authority. Engagement delta (3): a tangible dress-up fitting with a recognizable source rig, material variation and responsive reactions. Risk High for Office integration. [Local evidence](worksessions/2026-09-10-hercules-slice-4.md); physical phone, subjective likeness/fitting and release acceptance are separate gates. No push, merge, deployment, hosted schema/data, secrets or provider activation.

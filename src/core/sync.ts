@@ -1,3 +1,5 @@
+import {decodeCompanionGallery} from './herculesCompanionContracts.ts';
+import { decodeCompanionProfile } from "./herculesCompanionContracts.ts";
 import { shapeFundSourceClaims } from "./fundContributionSources.ts";
 import { shapeOnboardingAttestationInvalidations, mergeOnboardingAttestationInvalidations, shapeOnboardingAttestations, mergeOnboardingAttestations } from "./onboarding/attestations.ts";
 import { shapeAcceptedStarterPlans, mergeAcceptedStarterPlans } from "./onboarding/planAcceptance.ts";
@@ -328,6 +330,13 @@ function shapePresets(list: Preset[] | undefined, fallbackIso: string): Preset[]
   });
 }
 
+function scopedCompanion(profile: Household["companionProfile"], household: Pick<Household, "environment" | "householdId">, memberId?: string) {
+  return profile === undefined ? undefined : decodeCompanionProfile(profile, {
+    environment: household.environment, householdId: household.householdId,
+    memberId: memberId ?? profile.scope.memberId,
+  });
+}
+
 export function ensureHouseholdShape(household: Household): Household {
   assertSyntheticFixtureEnvironment(household);
   const fallback = household.members.find((member) => member.active)?.id ?? household.members[0]?.id ?? "";
@@ -337,6 +346,8 @@ export function ensureHouseholdShape(household: Household): Household {
   const householdFund = shapeHouseholdFundConfig(household.householdFund);
   return {
     ...household,
+    companionProfile: scopedCompanion(household.companionProfile, household),
+    ...(household.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(household.companionGallery,household)}:{}),
     householdId: household.householdId || randomHouseholdId(),
     inviteCode: normalizeInviteCode(household.inviteCode) || randomInviteCode(),
     linked: Boolean(household.linked),
@@ -511,6 +522,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     claims: shaped.claims,
     presets: shaped.presets,
     calendar: shaped.calendar,
+    ...(shaped.companionGallery!==undefined?{companionGallery:shaped.companionGallery}:{}),
     kitchen: shaped.kitchen,
     google: shaped.google,
     goals: sharedGoals,
@@ -556,6 +568,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     memberId,
   });
   const personal: PersonalEnvelope = {
+    ...(shaped.companionProfile?.scope.memberId === memberId ? { companionProfile: scopedCompanion(shaped.companionProfile, shaped, memberId) } : {}),
     kind: "personal",
     memberId,
     ...(isLandingSurface(personalMember?.landingSurface)
@@ -654,6 +667,7 @@ export function personalEnvelopeFromPayload(
     .filter((item) => item.scope === "personal" && item.ownerMemberId === memberId);
   return {
     ...row,
+    companionProfile: row.companionProfile === undefined ? undefined : decodeCompanionProfile(row.companionProfile, { ...row.companionProfile.scope, memberId }),
     ...(isLandingSurface(row.landingSurface)
       ? {
           landingSurface: row.landingSurface,
@@ -716,7 +730,7 @@ export function overlayPersonalReplica(
   personal: PersonalEnvelope | null | undefined,
   memberId: string,
 ): Household {
-  if (!personal || personal.kind !== "personal" || personal.memberId !== memberId) return household;
+  if (!personal || personal.kind !== "personal" || personal.memberId !== memberId) return { ...household, companionProfile: undefined };
   const personalTransactionIds = new Set(personal.transactions.map((item) => item.id));
   const personalShiftIds = new Set(personal.shifts.map((item) => item.id));
   const personalScheduleIds = new Set((personal.sevenShiftsSchedules ?? []).map((item) => item.id));
@@ -736,6 +750,7 @@ export function overlayPersonalReplica(
   ], memberBibles, memberId);
   return ensureHouseholdShape({
     ...household,
+    companionProfile: scopedCompanion(personal.companionProfile, household, memberId),
     members: household.members.map((member) => {
       if (member.id !== memberId) return memberWithoutLandingSurface(member);
       const fundRail = shapeMemberRail(personal.fundRail, memberId);
@@ -942,6 +957,7 @@ export function assembleHousehold(
     claims: shared.claims ?? [],
     presets: shared.presets ?? [],
     calendar: shared.calendar,
+    ...(shared.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(shared.companionGallery,shared)}:{}),
     kitchen: shared.kitchen,
     google: shared.google,
     goals: [...shared.goals, ...personalGoals],
@@ -963,6 +979,7 @@ export function assembleHousehold(
     fundKittyAllocations: shared.fundKittyAllocations ?? [],
     monthRehearsals: shapeMonthRehearsals(shared.monthRehearsals),
     weeklyDocumentStamps: shapeWeeklyDocumentStamps(shared.weeklyDocumentStamps, shared.members),
+    companionProfile: scopedCompanion(personal?.companionProfile, shared, personal?.memberId),
     fundPrivate: shapeHouseholdFundPrivate(personal?.fundPrivate, personal?.memberId),
     fundContributionSourceClaims: shapeFundSourceClaims(personal?.fundContributionSourceClaims, personal?.memberId),
     budgetPlans: shared.budgetPlans,
@@ -1037,6 +1054,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     claims: mergeRecords(server.claims ?? [], client.claims ?? [], tombstones),
     presets: mergeRecords(server.presets ?? [], client.presets ?? [], tombstones),
     calendar: mergeCalendars(server.calendar, client.calendar),
+    ...mergeCompanionGallery(server,client),
     kitchen: mergeKitchen(server.kitchen, client.kitchen, tombstones),
     google: mergeGoogle(server.google, client.google, tombstones),
     goals,
@@ -1088,6 +1106,11 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
 }
 
 export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope): PersonalEnvelope {
+  // Companion mutations belong exclusively to the serialized v2 authority.
+  // Legacy reconciliation may preserve identical state, never choose by clock.
+  if ((server.companionProfile || client.companionProfile) && JSON.stringify(server.companionProfile) !== JSON.stringify(client.companionProfile)) {
+    throw new Error("COMPANION_REQUIRES_AUTHORITY_REFRESH");
+  }
   const tombstones = mergeTombstones(server.tombstones, client.tombstones);
   const newer = laterEnvelope(server, client);
   const memberId = client.memberId || server.memberId;
@@ -1151,6 +1174,7 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
   const fundCardAccountId = shapeGlanceAccountId(fundCardSource.fundCardAccountId);
   return {
     kind: "personal",
+    ...(server.companionProfile ? { companionProfile: structuredClone(server.companionProfile) } : {}),
     memberId,
     ...(landingSurface
       ? {
@@ -1232,4 +1256,9 @@ export function displayInviteCode(household: Household): string {
 
 export function cloneAndShape(household: Household): Household {
   return ensureHouseholdShape(cloneHousehold(household));
+}
+
+function mergeCompanionGallery(server:SharedEnvelope,client:SharedEnvelope):Pick<SharedEnvelope,'companionGallery'>{
+ if(JSON.stringify(server.companionGallery??[])!==JSON.stringify(client.companionGallery??[]))throw new Error('COMPANION_GALLERY_REQUIRES_AUTHORITY');
+ return server.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(server.companionGallery,server)}:{};
 }

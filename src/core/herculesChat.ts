@@ -1,3 +1,5 @@
+import { readCompanionPresentation } from "./herculesPresentation.ts";
+import { decodeCompanionChatRequest, type CompanionChatRequestV2, type CompanionPresentationV2 } from "./herculesCompanionContracts.ts";
 import {
   formatHerculesBriefing,
   localHerculesChat,
@@ -15,6 +17,7 @@ export type HerculesChatTurn = {
 };
 
 export type HerculesChatRequest = {
+  companion?: CompanionChatRequestV2;
   message: string;
   briefing: HerculesBriefing;
   grounded: HerculesGrounded;
@@ -38,6 +41,7 @@ export type HerculesChatRequest = {
 export type HerculesChatResult = {
   text: string;
   source: "ai" | "local";
+  presentation?: CompanionPresentationV2;
   provider: HerculesChatProvider;
 };
 
@@ -64,6 +68,9 @@ export type HerculesReplyContext = {
   householdId: string;
   memberId: string;
   requestId: number;
+  view?: "household" | "personal";
+  conversationGeneration?: number;
+  basis?: string;
 };
 
 /**
@@ -78,7 +85,10 @@ export function isCurrentHerculesReply(
   return started.requestId === current.requestId
     && started.environment === current.environment
     && started.householdId === current.householdId
-    && started.memberId === current.memberId;
+    && started.memberId === current.memberId
+    && started.view === current.view
+    && started.conversationGeneration === current.conversationGeneration
+    && started.basis === current.basis;
 }
 
 export const HERCULES_CHAT_PATH = "/hercules/chat";
@@ -96,10 +106,10 @@ function chatUrls(): string[] {
   return urls;
 }
 
-async function readAiReply(res: Response): Promise<{ reply: string; provider: HerculesChatProvider } | null> {
+async function readAiReply(res: Response): Promise<{ reply: string; provider: HerculesChatProvider; presentation?: CompanionPresentationV2 } | null> {
   const type = res.headers.get("content-type") || "";
   if (!res.ok || !type.includes("json")) return null;
-  const data = (await res.json()) as { ok?: boolean; reply?: unknown; provider?: unknown };
+  const data = (await res.json()) as { ok?: boolean; reply?: unknown; provider?: unknown; presentation?: unknown };
   if (!data?.ok || typeof data.reply !== "string") return null;
   const reply = data.reply.trim();
   if (!reply) return null;
@@ -109,11 +119,12 @@ async function readAiReply(res: Response): Promise<{ reply: string; provider: He
     || data.provider === "workers-ai"
     ? data.provider
     : "ai";
-  return { reply, provider };
+  return { reply, provider, presentation: readCompanionPresentation(data.presentation) };
 }
 
 export function herculesModelPayload(req: HerculesChatRequest): string {
   return JSON.stringify({
+    companion: req.companion ? decodeCompanionChatRequest(req.companion) : undefined,
     householdId: req.householdId ? String(req.householdId).slice(0, 64) : undefined,
     message: req.message.trim().slice(0, 400),
     briefing: formatHerculesBriefing(req.briefing, req.memories ?? []).slice(0, 800),
@@ -168,7 +179,7 @@ export async function chatHercules(
   deps?: { fetch?: ChatFetch; timeoutMs?: number },
 ): Promise<HerculesChatResult> {
   const local = (): HerculesChatResult => ({
-    text: localHerculesChat(req.message, req.briefing, req.grounded),
+    text: localHerculesChat(req.message, req.briefing, req.grounded, req.companion?.preferences, req.companion?.context),
     source: "local",
     provider: "local",
   });
@@ -195,6 +206,7 @@ export async function chatHercules(
           text: sanitizeHerculesReply(result.reply, req.grounded.spoken, req.figures ?? [], req.message),
           source: "ai",
           provider: result.provider,
+          presentation: result.presentation?.text === sanitizeHerculesReply(result.reply, req.grounded.spoken, req.figures ?? [], req.message) ? result.presentation : undefined,
         };
       }
     } catch {

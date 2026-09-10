@@ -1,3 +1,7 @@
+## Living companion authority update — 2026-09-10
+
+The approved [living-companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md) supersedes earlier financial cosmetic unlocks and punitive Health-driven withdrawal. Slice 6 integrates locally verified companion behaviour; Bianca’s product trials remain pending. The wardrobe remains behind the default-off dressing-room flag; deployment, owner likeness, physical performance and authenticated two-device acceptance remain open. Historical shipping entries below are not release evidence for this work.
+
 # Dual Course Strategy
 
 This is the living product law for **Hearth**, the household company Jonathan and Bianca run from a Toronto kitchen: family-office books, and a companion who makes those books a habit.
@@ -119,8 +123,8 @@ How to run the app: repository [README](../README.md). How the layers fit: [ARCH
 |---|---|---|---|
 | **Cash App** | Giant cents pad. Type 1250 → $12.50. | Mouse-wheel CAD. Tiny decimal fields. | Add is a CAD pad (D-050). Digits are cents. Wheel blocked. Confirm still posts. |
 | **Typeform** | One question per screen. | Quizzes that block posting. | Sit-down is three acts (positives, books, leftover jobs). Pause/resume. Confirm still writes. |
-| **Tamagotchi** | Three buttons. Check-on loop. Care is physical and tiny. | The pet dies. Pay to revive. Care disconnected from real life. | Three care acts: **post**, **rec**, **sit-down**. He hides when Health is dirty. Vacation does not kill him. |
-| **Finch** | Pet health = *your* real habits. Glanceable. Tens of millions in ARR because care is a creature. | Paywalls to keep the pet alive. Self-care detached from money truth. | Hercules’s mood is Health, bills, groceries, goals. Unlocks are posted facts. Never a shop for his heartbeat. |
+| **Tamagotchi** | Three buttons. Check-on loop. Care is physical and tiny. | The pet dies. Pay to revive. Care disconnected from real life. | Posted facts can inform helpful suggestions. Affection and clothing access never depend on Health, streaks, or financial activity; Hercules does not hide to punish a difficult week. |
+| **Finch** | Pet health = *your* real habits. Glanceable. Tens of millions in ARR because care is a creature. | Paywalls to keep the pet alive. Self-care detached from money truth. | Hercules responds to scoped facts without shame. Every wardrobe piece is available immediately; money never earns affection or unlocks clothing. |
 | **Pokémon Sleep** | The daily act *is* the game. Sleep research *is* play. You do not grind a second loop. | Turning money into a gacha. Research that ignores the journal. | Posting milk, tying rec, closing a month **are** the research log. Hercules’s day is made of journal facts. No separate hunger meter. |
 | **Neko / oneko** | No chrome. He lives *on* the screen. You drag him. | Chasing the cursor across Add. | Borderless wander. Loaf on Add. Kill criterion: if he blocks a grocery, shrink him. |
 | **Animal Crossing** | One or two sentences, then they walk away. | Paragraphs. Help-desk transcripts. | Compact bubble. Two or three replies. |
@@ -173,10 +177,10 @@ A kitchen that could sit beside a small family office without lying:
 A creature and a kitchen that teach the books by living on them:
 
 - Hercules as auditor-teacher: opinion, working capital, “what’s on the Visa,” “why was that a transfer?”
-- Chat and memories in `kitchen.hercules` (D-049). The notebook is the snapshot. The model may receive a redacted retrieval (D-059), never chat history, never a quiet title.
+- Current local companion continuity uses a member-owned personal profile through `commitCompanion`. Legacy `kitchen.hercules` history remains read-only and excluded from active context; only bounded, redacted, same-person conversation context and explicit preferences may reach the character prompt.
 - Pokémon Sleep analog: the day’s posts **are** the research. His idle day is compiled from the journal, not a second sim.
 - Tamagotchi analog: post / rec / sit-down are the three buttons. Everything else is a look.
-- Wardrobe earned from facts (already shipping). New cosmetics must map to a new honest fact — never a shop.
+- Wardrobe: the approved living-companion plan supersedes financial unlocks. All 36 new pieces and legacy choices are immediately available in the flagged local implementation; private Wear/Save and explicit household sharing never post money.
 - Wallet tiles as literacy: tap chequing, a card, the TFSA, learn the object
 - Sit-down as the household close, with a postcard, not jargon
 - Cook-off, Sunday envelope, grocery-from-chalkboard — household totals only
@@ -204,7 +208,7 @@ A creature and a kitchen that teach the books by living on them:
 | **Due-on-open preview** | Recurring literacy before `postEntry`. | Kettle whistle that matches a real due row. | Confirm still posts |
 | **Statement inbox** | D-011/D-130 import path. Family-office mail. | Mail on the counter. “There’s a statement. You still confirm.” | **Selected QFX/OFX and selected document images are active locally (D-130).** Gmail/Drive automation, PDF archives, and connected feeds remain gated. |
 | **Opening balances** | Equity has a beginning. | Chalkboard: “we started here.” | Money meaning; Jonathan approves |
-| **Rec matching rules** | Rec that scales. | Spectacles stay earned; partial rec can earn a look, not a post. | No feed |
+| **Rec matching rules** | Rec that scales. | Spectacles stay available; partial rec can receive a grounded explanation, without unlocking clothes or posting money. | No feed |
 | **Hash-chained log** | Commands become evidence. | Spectacles fog if the chain and the journal disagree. | Journal still wins |
 | **Tax milk** | Shift → reserve transfer. CRA literacy. | “Set aside the tax milk.” Never an auto-sweep to a bank. | Local transfer needs no bank; any rail needs Auth |
 | **Safe to spend** | Runway from books. | Home number + Hercules line. Widget last. | Do not ship a lying glance |

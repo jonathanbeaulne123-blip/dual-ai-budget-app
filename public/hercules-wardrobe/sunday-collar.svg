@@ -1,0 +1,1 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="--piece:#c5b99c"><g fill="var(--piece)" stroke="#514537" stroke-width="1.8" stroke-linejoin="round"><path d="M8 30Q50 42 92 30V46Q50 58 8 46Z" /><circle cx="50" cy="50" r="10"/><path d="M44 44L56 56M56 44L44 56" fill="none" stroke="var(--trim,#7d6b50)"/></g></svg>

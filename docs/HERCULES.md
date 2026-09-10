@@ -1,4 +1,34 @@
+## Integrated companion — slice 6 local candidate
+
+Conversation and suggestion retries recover the original receipt before applying anything again. Unconfirmed conversation stays in its original view for this mounted session; identity changes and conversation clears invalidate old replies and drafts. Expiry keeps complete receipt groups. Explicit preference correction and forget are ordered and retained in private conversation. Source changes invalidate pending answers, while ordinary conversation ACKs do not. Desktop help now has a visible, accessible invitation and the same source buttons as phone; Calendar opens the selected bill even when already mounted. Local fallback follows simple casual context and gives useful guidance when the provider is unavailable.
+
+[Slice 6 evidence](worksessions/2026-09-10-hercules-slice-6.md) and [Bianca acceptance packet](briefs/HERCULES_BIANCA_ACCEPTANCE.md). This is local implementation, not completed product acceptance or release.
+
+## Complete wardrobe — slice 5
+
+The flagged dressing room now contains six complete collections, original favourites and a Keepsakes shelf. Try-on, category/favourite filters, slot locks, Surprise me, undo/redo and local drafts remain available offline. Wear/Save wait for account confirmation; only explicit Share to household publishes a copy. The normal app renders the acknowledged personal look with matching item and colour IDs, including explicit None. See [slice 5](worksessions/2026-09-10-hercules-slice-5.md) for contracts and verification boundaries.
+
 # Hercules
+
+## Living companion direction — 2026-09-10
+
+Jonathan approved an affectionate little diva with contextual guidance, helpful preference memory and a full 3D dressing room based on the existing cat. Personal looks belong to each person across devices within a household; sharing publishes an explicit gallery copy. All clothing is available for play without financial achievement requirements. Affection does not depend on money results. This direction supersedes older earned-only, financial-mood-punishment, forced-money-conversation and shared-new-memory assumptions below as those slices are implemented.
+
+[Implementation plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md). Slice 1 supplies closed versioned contracts, capability/character definitions and synthetic evaluation fixtures. It does not activate new storage, model history, wardrobe UI, unlock behaviour or production commands. The whole private envelope/authority round trip must land together in slice 2. [Slice 1 evidence](worksessions/2026-09-10-hercules-slice-1.md).
+
+## Slice 2 implementation
+
+The local slice-2 branch now activates private member-personal profile support and the versioned voice in source. Recent conversation is partitioned by member, household, environment and ledger view; preference controls are available from conversation and wardrobe. New writes require v2 server capability and ACK. The previous shared transcript/notes are archive-only. Details and deployment limitations: [slice 2 evidence](worksessions/2026-09-10-hercules-slice-2.md).
+
+## Slice 3 implementation
+
+The local discovery surface now offers For you now, Things we can do and Continue with me. Its catalogue is backed by current-scope evidence and existing source/review flows. Suggestions can be set aside, disabled/re-enabled or bookmarked, with acknowledged private persistence. Full wardrobe production remains later. [Implementation and verification](worksessions/2026-09-10-hercules-slice-3.md).
+
+## Slice 4 implementation
+
+A flagged local 3D fitting room now provides the first complete Cozy at home look, a shared skeleton, twelve authored reactions, real shelf/mirror presentation, camera controls, local undo/redo and matching lightweight layers. The room has authored Classic, Taylor and Newfoundland treatments in Shared and Personal. Three loads only on opening. `VITE_HERCULES_DRESSING_ROOM=1` enables the fitting preview; the default remains off pending likeness, fitting and physical-phone acceptance. This preview has no Wear, profile/gallery write or financial command. [Asset source and export](../scripts/wardrobe/README.md) · [Evidence and limitations](worksessions/2026-09-10-hercules-slice-4.md). The 36-item catalogue and personal/shared wardrobe continuity remain slice 5.
+
+## Earlier runtime baseline (superseded by slice 2 where stated)
 
 **The product face:** a living Maine Coon who reads the household journal, keeps notes in the same snapshot as the milk, and never posts a cent.
 

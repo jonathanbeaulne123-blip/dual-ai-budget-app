@@ -1,3 +1,45 @@
+## Hercules — authorized Development release (2026-09-10)
+
+Jonathan authorized push, merge and Development deployment of all six local slices. The candidate now includes main's Books and potential-Calendar changes, independent presentation rollback and Calendar Move/source reconciliation. [Release scope, exact gate and compatible rollback](worksessions/2026-09-10-hercules-release.md). Verification and deployment receipts are tracked there; earlier local-only entries below remain historical evidence. Production/schema/secrets/provider settings are unchanged, and real user/device acceptance stays open.
+
+## Hercules slice 6 — integrated local candidate (2026-09-10)
+
+Branch `codex/hercules-integration-acceptance`, reviewed predecessor `c902c4d43e3ab744ba6c1cd36f919577ea6c52ff`. Risk High. Budget (5): truthful confirmations, private scope and current source links. Engagement (3): continued conversation, clear help and integrated wardrobe access.
+
+Recover lost acknowledgement before retrying chat/memory/suggestions; preserve view-local session drafts without identity leakage; retain ordered correction/forget exchanges; cancel stale source replies without cancelling on ordinary chat ACKs. Calendar bill links and desktop sources now work through existing navigation. Local fallback offers specific help and simple casual continuity. Phone focus is contained and restored, with the focused rig active while ambient movement pauses. The visible desktop invitation sits above the portrait. Original assets are unchanged from slice 5.
+
+[Exact commands, results, audit findings and limits](worksessions/2026-09-10-hercules-slice-6.md). [Reproducible runners](../scripts/companion/README.md). [Bianca acceptance packet](briefs/HERCULES_BIANCA_ACCEPTANCE.md). Local synthetic evidence only: all 327 selected tests passed in serial recovery, build and 72-case browser matrix passed. The standard concurrent quick gate failed on four test timeouts and two worker RPC timeouts after TypeScript passed; preserve this open gate before a later release. This is scoped evidence, not exhaustive release proof. No push/merge/deploy/schema/secrets/provider activation or real-household writes. Next owner: Jonathan for product review and remaining trials; independent release authorization remains necessary. Compatible presentation rollback and authenticated/physical acceptance remain release gates.
+
+## Hercules slice 5 — complete wardrobe, locally verified
+
+High quick gate passed 236 tests in 220.715 seconds; separate serial import parity passed 5 tests. The 36-case browser matrix, 200% text, recovery and synthetic two-member persistence passed. Full likeness/fit, physical performance, VoiceOver and authenticated two-device acceptance remain open. All 36 new pieces and 12 legacy wearables now use collection assets, shared SVG IDs, personal Wear/Save and an explicit household gallery. Receipt recovery precedes stale mutation preflight; resource revisions, tombstones, actor binding and protocol capability guards protect continuity. All three rooms retain their scene mapping. Risk High; Budget (5): no financial writer, private scope and truthful acknowledgements; Engagement (3): complete fitting, named looks and shared inspiration. Default flag off. No push/merge/deploy, hosted mutation, schema or provider activation. [Worksession](worksessions/2026-09-10-hercules-slice-5.md).
+
+## Hercules living companion slice 4 — flagged local fitting (2026-09-10)
+
+One complete Cozy at home look now runs in a lazy 3D room with the canonical source rig, shared skin, twelve reaction clips, physical/keyboard shelf selection, mirror/camera controls, scoped local undo/redo and matching 2D layers. Classic, Taylor and Newfoundland have Shared/Personal treatments; phone keeps the room through breakpoint changes. Asset/WebGL failure retains fitting controls; failed room chunks offer an explicit reload. GPU resources and motion loops are released on close.
+
+Risk High. Budget (5): no financial/profile/gallery writer. Engagement (3): tangible fitting and character movement. [Source/export](../scripts/wardrobe/README.md) and [worksession/evidence](worksessions/2026-09-10-hercules-slice-4.md). Default flag remains off; likeness/fitting and physical phone are open gates. The full catalogue and acknowledged Wear/Save/share remain slice 5. Local only, no push/merge/deploy or hosted/provider changes.
+
+## Hercules living companion slice 3 — local implementation (2026-09-10)
+
+Useful discovery now shares one local evidence/catalogue path with typed source/navigation actions. Help has For you now, Things we can do and Continue with me; acknowledged private snooze/disable/resume settings, scope epochs, exact predecessor CAS and current-state navigation checks protect continuity. Phone and desktop use all three authored themes. Existing outfits are reachable on phone; full 3D wardrobe remains slice 4.
+
+Risk High. Budget (5): grounded explanations and existing Confirm/source workflows. Engagement (3): useful suggestions and resumable tasks without interruptions. [Worksession/evidence](worksessions/2026-09-10-hercules-slice-3.md). No push, merge, deployment, schema, secrets or real provider-data test. Server-first compatible release and authenticated two-device proof remain separate gates.
+
+## Hercules living companion slice 2 — local implementation (2026-09-10)
+
+Private profile persistence now spans shaping, personal split/decode/overlay/assembly, v2 command admission, event replay and backup. Chat uses the versioned affectionate-diva brief, scoped bounded history and explicit preference controls with acknowledged receipts and Undo. Conversations remain usable while unsaved; legacy shared history stays read-only and outside active context. All three themes have authored controls in the chat and wardrobe.
+
+Risk High. Budget (5): no financial writer or private-to-shared disclosure is added. Engagement (3): natural follow-ups, steady affection and controllable preference memory. [Worksession and verification](worksessions/2026-09-10-hercules-slice-2.md). Local implementation only; no push, merge, deployment, schema, secrets or live provider testing. Server-first compatibility rollout, physical two-device proof and the live dialogue quality rubric remain release gates. Slice 3 is useful discovery/predictive suggestions; the 3D wardrobe remains slice 4 onward.
+
+## Hercules living companion slice 1 — local contracts (2026-09-10)
+
+Jonathan requested slice 1 of the [finalized companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md). Branch `codex/hercules-companion-contracts` starts at verified main `2e113f69d03872eddc22ac461378a0f3e33f6c55`. This slice adds closed executable profile/look/gallery/intent contracts, strict validators, resource preconditions, twelve capability declarations, a character brief and 24 synthetic dialogue scenarios. Production types, command registrations, Gemini prompts and UI are unchanged.
+
+Risk Medium-High; Budget (5): grounded capabilities and exclusion of money execution; Engagement (3): coherent personality, wardrobe and member-owned continuity foundations. Independent read-only review is closed after fixing automatic-memory cancellation, versioned wear validation and opaque legacy preservation. The focused suite passed 46 tests; the repository quick gate passed 84 tests plus TypeScript/AI/diff checks in 115.907 seconds without a budget breach. [Exact evidence and build status](worksessions/2026-09-10-hercules-slice-1.md).
+
+Next: slice 2 must deliver the complete private envelope/shape/split/overlay/actor/resources/import-parity/server-compatibility unit before writing new profile state, then connect personality and memory. Partial envelope support can lose data on an unrelated authority command. The model request context is still a declaration, and no live model-quality, retained-memory or cross-device success is claimed. No push, merge, deployment, schema or provider/data change occurred.
+
 ## Five shared boards — authorized Development release (2026-09-08)
 
 Jonathan subsequently instructed “push merge and deploy.” The dedicated private Development photo bucket is provisioned and bound in the release candidate. [Release worksession](worksessions/2026-09-08-five-shared-boards-release.md) records the authorization, storage verification, rollout checks and rollback reference. Production activation, schema changes and destructive cleanup remain outside scope. The local implementation receipt below is historical; its no-release instruction has been superseded.

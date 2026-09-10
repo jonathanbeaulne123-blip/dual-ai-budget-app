@@ -834,6 +834,8 @@ export function preserveDemoShowcaseContinuity(current: Household, generated: Ho
   assertDemoReplacementAllowed(current);
   const preserved = {
     ...generated,
+    companionProfile: current.companionProfile,
+    companionGallery: current.companionGallery,
     householdId: current.householdId,
     inviteCode: current.inviteCode,
     linked: current.linked,

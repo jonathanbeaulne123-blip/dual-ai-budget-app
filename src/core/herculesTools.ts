@@ -637,7 +637,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "account_balance") {
     const accounts = herculesAccounts(household);
     const accountQuery = cleanString(call.args.account);
-    const target = fuzzy(accounts, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+    const target = accounts.find(row => row.id === accountQuery) ?? fuzzy(accounts, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
     if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
     const rows = target ? [target] : accounts;
     if (!rows.length) return empty(call, "I cannot see an account in this ledger.");
@@ -776,7 +776,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   }
 
   if (call.name === "goal_progress") {
-    const target = fuzzy(household.goals, cleanString(call.args.goal), (row) => row.name);
+    const target = household.goals.find(row => row.id === call.args.goal) ?? fuzzy(household.goals, cleanString(call.args.goal), (row) => row.name);
     const goalQuery = cleanString(call.args.goal);
     if (goalQuery && !target) return empty(call, `I cannot match visible goal “${goalQuery}” in this ledger.`);
     const rows = target ? [target] : household.goals.slice(0, 8);
@@ -986,7 +986,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const books = compileHousehold(household);
     const range = periodRange(today, cleanPeriod(call.args.period), call.args);
     const accountQuery = cleanString(call.args.account);
-    const account = fuzzy(herculesChartAccounts(household, books), accountQuery, (row) => row.name);
+    const chart = herculesChartAccounts(household, books);
+    const account = (accountQuery ? chart.find(row => row.id === accountQuery || row.bankAccountId === accountQuery) : undefined) ?? fuzzy(chart, accountQuery, (row) => row.name);
     if (accountQuery && !account) return empty(call, `I cannot match journal account “${accountQuery}” in this ledger.`);
     const memberQuery = cleanString(call.args.member);
     const member = resolveMember(household, memberQuery, context);
@@ -1004,7 +1005,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
   if (call.name === "account_activity" || call.name === "explain_balance") {
     const books = compileHousehold(household);
     const accountQuery = cleanString(call.args.account);
-    const account = fuzzy(herculesChartAccounts(household, books), accountQuery, (row) => row.name);
+    const chart = herculesChartAccounts(household, books);
+    const account = (accountQuery ? chart.find(row => row.id === accountQuery || row.bankAccountId === accountQuery) : undefined) ?? fuzzy(chart, accountQuery, (row) => row.name);
     if (!account) return empty(call, accountQuery ? `I cannot match account “${accountQuery}” in this ledger.` : "Name the account you want me to trace.");
     const range = periodRange(today, cleanPeriod(call.args.period), call.args);
     const fullRegister = accountRegister(books, account.id, { recognizedOnly: true });
@@ -1061,7 +1063,7 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     if (context.view !== "household") return { callId: call.id, name: call.name, status: "unavailable", sentence: "Bank-reconciliation controls live in the Household ledger.", facts: [] };
     const accounts = herculesAccounts(household);
     const accountQuery = cleanString(call.args.account);
-    const target = fuzzy(accounts, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
+    const target = accounts.find(row => row.id === accountQuery) ?? fuzzy(accounts, accountQuery, (row) => `${row.name} ${row.institution} ${row.last4}`);
     if (accountQuery && !target) return empty(call, `I cannot match visible account “${accountQuery}” in this ledger.`);
     const selected = target ? [target] : accounts;
     const facts = selected.slice(0, 8).map((account, index) => {
@@ -1326,7 +1328,8 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const accountQuery = cleanString(call.args.account);
     if (!accountQuery) return empty(call, "Name the bank, liability, income, or expense account you want explained.");
     const books = compileHousehold(household);
-    const account = fuzzy(herculesChartAccounts(household, books), accountQuery, (row) => row.name);
+    const chart = herculesChartAccounts(household, books);
+    const account = (accountQuery ? chart.find(row => row.id === accountQuery || row.bankAccountId === accountQuery) : undefined) ?? fuzzy(chart, accountQuery, (row) => row.name);
     if (!account) return empty(call, `I cannot match chart account “${accountQuery}” in this ledger.`);
     const trial = trialBalance(books, { recognizedOnly: true }).rows.find((row) => row.id === account.id);
     const balance = trial ? (account.normalBalance === "debit" ? trial.netCents : -trial.netCents) : 0;

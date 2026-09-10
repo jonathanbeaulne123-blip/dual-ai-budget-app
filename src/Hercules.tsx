@@ -1,4 +1,16 @@
-import { useModalActive } from "./useDialog.ts";
+import {trimCompanionPending} from "./core/herculesSessionDraft.ts";
+import {useWornLook} from './wardrobe/Appearance.tsx';
+import {fittingLayers} from './wardrobe/FittingFigure.tsx';
+import { HerculesDiscovery } from "./HerculesDiscovery.tsx";
+import { discoveryCandidates, discoveryScope, type DiscoveryDestination, type DiscoveryFund } from "./core/herculesDiscovery.ts";
+import { HERCULES_CAPABILITIES } from "./core/herculesCapabilities.ts";
+import { companionCueCommands } from "./core/herculesPresentation.ts";
+import { resolveHerculesFollowUp } from "./core/herculesPlanner.ts";
+import { CompanionMemoryControls } from "./CompanionMemoryControls.tsx";
+import type { KitchenCommand } from "./kitchenCommand.ts";
+import { companionFor, companionConversation, commitCompanion, explicitCompanionPreference } from "./core/herculesCompanion.ts";
+import type { CompanionIntentV1, CompanionOperation, CompanionPreferenceValue, CompanionSourceReference } from "./core/herculesCompanionContracts.ts";
+import { useDialog, useModalActive } from "./useDialog.ts";
 import { HerculesSetup, type HerculesSetupProps } from "./HerculesSetup.tsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
 import {
@@ -20,12 +32,11 @@ import {
   herculesProviderLabel,
   herculesInstrumentSurface,
   herculesUsefulness,
-  firstRunLesson,
   hourInToronto,
   isCurrentHerculesReply,
   kettlePhase,
   kitchenSeason,
-  ledgerChats,
+
   listFurniture,
   perchOnFurniture,
   perchTarget,
@@ -33,7 +44,7 @@ import {
   planHerculesReadTools,
   shouldPlanHerculesTools,
   executeHerculesReadToolPlan,
-  recordHerculesTalk,
+
   sanitizeGroundedNumerals,
   requestCalendarPane,
   subscribeFurniture,
@@ -165,11 +176,12 @@ export function HerculesPortrait({
   rigSnapshot?: import("./herculesRig/types.ts").RigSnapshot;
   rigTransitionMs?: number;
 }) {
+  const wornLook=useWornLook();
   const px = typeof size === "number" ? size : size === "stage" ? 120 : 96;
   return (
     <div className={`hercules-stage size-${size} mood-${mood}`} aria-hidden="true">
-      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot} rigTransitionMs={rigTransitionMs}>
-        <HerculesDress hat={hat} chain={chain} house={house} collar={collar} />
+      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot} rigTransitionMs={rigTransitionMs} {...(wornLook?fittingLayers(wornLook):{})}>
+        {!wornLook&&<HerculesDress hat={hat} chain={chain} house={house} collar={collar} />}
       </HerculesFigure>
       {pose === "sleep" && <span className="hercules-zzz">z</span>}
     </div>
@@ -223,9 +235,9 @@ export function HerculesPresence({
   activityBlocked = false,
   memberId,
   view,
-  onOpenAdd,
+  onOpenAdd, onDiscoveryNavigate, discoveryAccountId, discoveryFund,
   onGo,
-  onLedger,
+  onLedger, onCompanionCommand,
   onDraft,
   onPayCard,
   onAcceptPreset,
@@ -258,9 +270,13 @@ export function HerculesPresence({
   activityBlocked?: boolean;
   memberId: string;
   view: LedgerView;
+  onDiscoveryNavigate?: (destination: DiscoveryDestination) => void;
+  discoveryAccountId?: string | null;
+  discoveryFund?: DiscoveryFund | null;
   onOpenAdd: (note?: string) => void;
   onGo: (tab: HearthTab) => void;
   onLedger: (fn: (current: Household) => CommitResult) => void;
+  onCompanionCommand?: KitchenCommand;
   onDraft?: (draft: HerculesDraft) => void;
   onPayCard?: () => void;
   onAcceptPreset?: (key: string, summary: string) => void;
@@ -297,6 +313,8 @@ export function HerculesPresence({
     () => herculesPageSurface(adding ? "add" : tab, contextHousehold, today, new Date(), { memberId, view }),
     [adding, tab, contextHousehold, today, memberId, view],
   );
+  const chatEnabled = import.meta.env.VITE_HERCULES_CHAT !== '0';
+  const discoveryEnabled = import.meta.env.VITE_HERCULES_DISCOVERY !== '0';
   const [pos, setPos] = useState({ x: 12, y: 120 });
   const posRef = useRef(pos);
   posRef.current = pos;
@@ -307,6 +325,7 @@ export function HerculesPresence({
   const [open, setOpen] = useState(false);
   const [activePersonalOffer, setActivePersonalOffer] = useState<PersonalModuleOffer | null>(null);
   const [helpAsked, setHelpAsked] = useState(false);
+  const [invitationDismissed, setInvitationDismissed] = useState(false);
   const [begging, setBegging] = useState(false);
   const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
@@ -322,8 +341,16 @@ export function HerculesPresence({
   const [topic, setTopic] = useState("idle");
   const [purr, setPurr] = useState(false);
   const [turns, setTurns] = useState<HerculesChatTurn[]>(() =>
-    ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })),
+    companionConversation(household, memberId, view).turns.slice(-12).map((row) => ({ role: row.role, text: row.text })),
   );
+  const [privateSaveStatus, setPrivateSaveStatus] = useState("");
+  const [privateSaving, setPrivateSaving] = useState(false);
+  const privateSavingRef = useRef(false);
+  const pendingExchange = useRef<CompanionIntentV1[] | null>(null);
+  const preferenceBefore = useRef(new Map<string, CompanionPreferenceValue | null>());
+  const attemptedPrivate = useRef(new Set<string>());
+  const privateDrafts = useRef(new Map<string, { pending: CompanionIntentV1[]; before: Map<string, CompanionPreferenceValue | null>; attempted: Set<string>; question: string }>());
+  const [preferenceUndo, setPreferenceUndo] = useState<CompanionOperation | null>(null);
   const [focusedWidget, setFocusedWidget] = useState<InstrumentId | "window" | null>(null);
   const [snippets, setSnippets] = useState<WidgetSnippet[]>([]);
   const [busy, setBusy] = useState(false);
@@ -345,7 +372,11 @@ export function HerculesPresence({
 
   const chatGen = useRef(0);
   const chatRigUntilRef = useRef(0);
-  const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}`;
+  const chatRigTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const conversationGeneration = companionConversation(household, memberId, view).generation;
+  const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}\u001f${view}\u001f${conversationGeneration}`;
+  const privateEpoch = useRef(0), observedPrivateScope = useRef(chatScope);
+  if (observedPrivateScope.current !== chatScope) { observedPrivateScope.current = chatScope; privateEpoch.current += 1; }
   const personalOfferSessionId = useMemo(createPersonalOfferSessionId, [chatScope]);
   const activeMemberPresent = useMemo(
     () => household.members.some((member) => member.active && member.id === memberId),
@@ -355,15 +386,34 @@ export function HerculesPresence({
     setActivePersonalOffer(null);
   }, [chatScope, activeMemberPresent]);
   const previousChatScope = useRef(chatScope);
+  useEffect(() => () => { previousChatScope.current = "closed"; privateEpoch.current += 1; privateDrafts.current.clear(); chatGen.current += 1; if (chatRigTimer.current) clearTimeout(chatRigTimer.current); }, []);
+  // Receipt/replica revisions also advance for private chat saves. Compare the
+  // scoped source inputs instead, without persisting or transmitting this key.
+  const sourceBasis = useMemo(() => {
+    const { revision, baseRevision, booksAcceptedHash, lastCommittedAt, activity, commandReceipts,
+      companionProfile, companionGallery, devices, conflicts, restorePoints, sharing, google,
+      herculesProPermissions, kitchen, ...sources } = contextHousehold;
+    return JSON.stringify({ ...sources, kitchen: { books: kitchen.books, openShift: kitchen.openShift, openShifts: kitchen.openShifts } });
+  }, [contextHousehold]);
+  const replyBasis = `${today}:${tab}:${adding}:${sourceBasis}`;
+  const priorReplyBasis = useRef(replyBasis);
+  useEffect(() => {
+    if (priorReplyBasis.current === replyBasis) return; priorReplyBasis.current = replyBasis;
+    if (!busy) return;
+    chatGen.current += 1; setBusy(false); setReplyProvider(null);
+    const message = "The page or books changed while I was answering. Ask again and I’ll use the current view.";
+    setTalk({ ...surface, spoken: message, lesson: null, fact: null, facts: [], replies: [], pose: "loaf", topic: "updated", attention: false });
+    setTurns(previous => [...previous, { role: "hercules" as const, text: message }].slice(-12));
+  }, [replyBasis]);
   const activeChatIdentity = useRef<Omit<HerculesReplyContext, "requestId">>({
     environment: household.environment,
     householdId: household.householdId,
-    memberId,
+    memberId, view, conversationGeneration, basis: replyBasis,
   });
   activeChatIdentity.current = {
     environment: household.environment,
     householdId: household.householdId,
-    memberId,
+    memberId, view, conversationGeneration, basis: replyBasis,
   };
   const logRef = useRef<HTMLDivElement | null>(null);
   const perchedOn = useRef<string | null>(null);
@@ -379,6 +429,7 @@ export function HerculesPresence({
   const showTalk = Boolean(open && !setupSelected && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding && !setupSelected;
+  const focusDialogRef = useDialog(focusShellOpen, closeChat, () => document.querySelector<HTMLButtonElement>(".hercules-pill"));
   const householdOnboardingShellActive = useMemo(
     () => activeMemberPresent && shouldShowOnboardingShell(household, memberId),
     [activeMemberPresent, household, memberId],
@@ -407,8 +458,9 @@ export function HerculesPresence({
   // this reuses the same chat bubble desktop already opens on tap — only
   // what renders inside it changes while onboarding has the floor.
   const desktopOnboardingOpen = Boolean(!setup && !phoneShell && open && onboardingShellActive);
-  const modalActive=useModalActive();
-  const autonomyBlocked = adding || activityBlocked || modalActive;
+  const modalActive=useModalActive(focusDialogRef);
+  const rigBlocked = adding || activityBlocked || modalActive;
+  const autonomyBlocked = rigBlocked || focusShellOpen;
   const homeAutonomy = tab === "home" && !autonomyBlocked && documentVisible && !open && !setupSelected && !reducedMotion();
   idleCaptureAllowed.current = !(
     typeof document === "undefined"
@@ -537,10 +589,14 @@ export function HerculesPresence({
   useLayoutEffect(() => {
     const node = bubbleRef.current;
     if (!node) return;
-    const next = { w: Math.ceil(node.offsetWidth), h: Math.ceil(node.offsetHeight) };
-    setBubbleSize((prev) => (
-      Math.abs(prev.w - next.w) < 2 && Math.abs(prev.h - next.h) < 2 ? prev : next
-    ));
+    const measure = () => {
+      const next = { w: Math.ceil(node.offsetWidth), h: Math.ceil(node.offsetHeight) };
+      setBubbleSize(prev => Math.abs(prev.w - next.w) < 2 && Math.abs(prev.h - next.h) < 2 ? prev : next);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure); observer.observe(node);
+    return () => observer.disconnect();
   }, [showProposal, showTalk, showWidgetSnippets, talk?.spoken, proposal?.spoken, open, turns.length, snippets.length, busy, desktopOnboardingOpen]);
 
   useEffect(() => {
@@ -561,7 +617,14 @@ export function HerculesPresence({
   }, [tab, adding, look.view.mood, five.yes, spark, today]);
 
   useEffect(() => {
-    const onResize = () => setDesktopFly(window.innerWidth >= WIDE_BREAKPOINT);
+    const onResize = () => {
+      setDesktopFly(window.innerWidth >= WIDE_BREAKPOINT);
+      // Keep the whole launcher reachable after a narrower or shorter viewport.
+      setPos(current => ({
+        x: Math.max(4, Math.min(window.innerWidth - CAT - 4, current.x)),
+        y: Math.max(4, Math.min(window.innerHeight - CAT - NAV, current.y)),
+      }));
+    };
     window.addEventListener("resize", onResize);
     onResize();
     return () => window.removeEventListener("resize", onResize);
@@ -730,34 +793,159 @@ export function HerculesPresence({
 
   useEffect(() => {
     if (previousChatScope.current === chatScope) return;
+    const prior = previousChatScope.current, identity = chatScope.split("\u001f").slice(0, 3).join("\u001f");
+    if (prior.split("\u001f").slice(0, 3).join("\u001f") !== identity) privateDrafts.current.clear();
+    else if (prior.split("\u001f")[3] !== view) privateDrafts.current.set(prior, { pending: pendingExchange.current ?? [], before: new Map(preferenceBefore.current), attempted: new Set(attemptedPrivate.current), question });
+    for (const key of privateDrafts.current.keys()) if (key.startsWith(`${identity}\u001f${view}\u001f`) && key !== chatScope) privateDrafts.current.delete(key);
+    const draft = privateDrafts.current.get(chatScope); privateDrafts.current.delete(chatScope);
     previousChatScope.current = chatScope;
     chatGen.current += 1;
+    chatRigUntilRef.current = 0;
+    if (chatRigTimer.current) clearTimeout(chatRigTimer.current);
+    dispatchHerculesRig({ type: "clearOverrides" });
     setBusy(false);
     setReplyProvider(null);
-    setQuestion("");
+    setQuestion(draft?.question ?? "");
     setTalk(null);
-    setTurns(ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })));
+    pendingExchange.current = draft?.pending.length ? trimCompanionPending(draft.pending) : null;
+    if (!pendingExchange.current?.length) pendingExchange.current = null;
+    preferenceBefore.current = draft?.before ?? new Map(); attemptedPrivate.current = draft?.attempted ?? new Set(); setPreferenceUndo(null);
+    setPrivateSaving(false);
+    privateSavingRef.current = false;
+    setPrivateSaveStatus(pendingExchange.current ? "Your unsaved conversation is here. Retry when connected." : "");
+    const restored = companionConversation(conversationHousehold(), memberId, view).turns.slice(-12).map(row => ({ role: row.role, text: row.text }));
+    setTurns(restored);
+    const lastReply = [...restored].reverse().find(row => row.role === "hercules");
+    if (lastReply) setTalk({ spoken: lastReply.text, lesson: null, fact: null, facts: [], replies: [], pose: "loaf", topic: "conversation", attention: false });
     setSnippets(focusedWidget
       ? [{ role: "hercules", text: HERCULES_WIDGET_PLACEHOLDER, placeholder: true }]
       : []);
   }, [chatScope, focusedWidget, household]);
 
   useEffect(() => {
-    if (busy) return;
-    setTurns(ledgerChats(household).slice(-12).map((row) => ({ role: row.role, text: row.text })));
+    if (busy || pendingExchange.current || ephemeralWorkplaceTurn) return;
+    setTurns(companionConversation(household, memberId, view).turns.slice(-12).map((row) => ({ role: row.role, text: row.text })));
   }, [household, busy]);
 
-  function keepTalk(userText: string | undefined, herculesText: string, source: "journal" | "memory" | "local" | "ai", memory?: { kind: "note" | "payday" | "bill" | "habit" | "preference"; text: string; label: string } | null, ephemeral = false) {
-    // A one-reply workplace disclosure must not copy names from the model
-    // answer into the Shared kitchen chat ledger.
-    if (ephemeral) return;
-    onLedger((current) => recordHerculesTalk(current, {
-      author: memberId,
-      userText,
-      herculesText,
-      source,
-      memory: memory ?? null,
-    }));
+  async function savePrivateExchange(_retry?: CompanionIntentV1[]) {
+    if (privateSavingRef.current) return;
+    const intents = trimCompanionPending(pendingExchange.current ?? []);
+    pendingExchange.current = intents.length ? intents : null;
+    if (!intents.length) { setPrivateSaveStatus("Older unsaved messages expired. Start a fresh conversation."); return; }
+    privateSavingRef.current = true;
+    let failed = false, remembered = false, discardedPreference = false, undone = false;
+    const started = chatScope, epoch = privateEpoch.current;
+    setPrivateSaving(true); setPrivateSaveStatus("Saving this conversation…");
+    try {
+      if (!onCompanionCommand) throw new Error("unavailable");
+      for (const id of [...new Set(intents.map(row => row.id))]) {
+        const group = intents.filter(row => row.id === id);
+        const intent = group[0]!;
+        let definitivelyRejected = false, recovered = false;
+        const recovering = attemptedPrivate.current.has(intent.id); attemptedPrivate.current.add(intent.id);
+        const outcome = await onCompanionCommand(current => {
+          let result = commitCompanion(current, group[0]!);
+          for (const item of group.slice(1)) result = commitCompanion(result.household, item);
+          return result;
+        }, { confirmationId: intent.id, recoverConfirmation: recovering, onRecoveredConfirmation: () => { recovered = true; }, onDefinitiveRejected: () => { definitivelyRejected = true; } });
+        if (previousChatScope.current !== started || privateEpoch.current !== epoch) return;
+        if (!recovered && (!outcome?.ok || outcome.kind !== "synchronized") && !(definitivelyRejected && (intent.operation.kind === "preference.set" || intent.operation.kind === "preference.forget"))) throw new Error("unconfirmed");
+        if (outcome?.ok && outcome.kind === "synchronized" && intent.operation.kind === "preference.set" && intent.operation.origin.kind === "conversation") {
+          remembered = true;
+          const op = intent.operation, previous = preferenceBefore.current.get(intent.id) ?? null;
+          setPreferenceUndo(previous === null ? { kind: "preference.forget", key: op.key, expectedRevision: op.expectedRevision + 1 } : { kind: "preference.set", key: op.key, value: previous, expectedRevision: op.expectedRevision + 1, origin: { kind: "manual" } });
+        }
+        if (definitivelyRejected && (intent.operation.kind === "preference.set" || intent.operation.kind === "preference.forget")) discardedPreference = true;
+        if ((outcome?.ok || recovered) && (intent.operation.kind === "preference.forget" || (intent.operation.kind === "preference.set" && intent.operation.origin.kind === "manual"))) { undone = true; setPreferenceUndo(null); }
+        attemptedPrivate.current.delete(intent.id);
+        preferenceBefore.current.delete(intent.id);
+        pendingExchange.current = pendingExchange.current?.filter(row => row.id !== intent.id) ?? null;
+      }
+      if (!pendingExchange.current?.length) pendingExchange.current = null;
+      setPrivateSaveStatus(discardedPreference ? "The preference changed before saving; your last preference change was not applied. Review the current choices below." : undone ? "Preference change saved." : remembered ? "Remembered for you. You can undo this below." : "Conversation saved privately.");
+    } catch {
+      failed = true;
+      if (previousChatScope.current === started && privateEpoch.current === epoch) setPrivateSaveStatus("This conversation's save is not confirmed. Reconnect and retry.");
+    } finally {
+      if (previousChatScope.current === started && privateEpoch.current === epoch) {
+        privateSavingRef.current = false; setPrivateSaving(false);
+        if (!failed && pendingExchange.current?.length) void savePrivateExchange();
+      }
+    }
+  }
+
+  function keepTalk(userText: string | undefined, herculesText: string, _source: "journal" | "memory" | "local" | "ai", _memory?: unknown, ephemeral = false, facts: HerculesTalk["facts"] = []) {
+    if (!chatEnabled || ephemeral) return;
+    if ((pendingExchange.current?.length ?? 0) >= 60) { setPrivateSaveStatus("The unsaved conversation is full. You can keep chatting; retry saving before keeping more messages."); return; }
+    const profile = companionFor(household, memberId);
+    const generation = profile.conversations.find(row => row.view === view)!.generation;
+    const userId = crypto.randomUUID();
+    const messages = [...(userText ? [{ id: userId, role: "user" as const, text: userText }] : []), { id: crypto.randomUUID(), role: "hercules" as const, text: herculesText }];
+    const references: CompanionSourceReference[] = [];
+    for (const fact of facts ?? []) {
+      for (const [kind, id] of [["account", fact.source.accountId], ["transaction", fact.source.transactionId], ["goal", fact.source.goalId], ["shift", fact.source.shiftId]] as const) {
+        if (id && !references.some(row => row.kind === kind && row.id === id)) references.push({ kind, id });
+      }
+    }
+    const exchangeId = crypto.randomUUID();
+    const intents: CompanionIntentV1[] = messages.map(row => ({ version: 1, id: exchangeId, scope: profile.scope,
+      operation: { kind: "conversation.append", view, generation, turn: { ...row, text: row.text.slice(0, 6000), createdAt: new Date().toISOString(), sourceReferences: row.role === "hercules" ? references.slice(0, 20) : [] } } }));
+    const candidate = userText && profile.remembering.enabled ? explicitCompanionPreference(userText) : null;
+    const stored = candidate ? profile.preferences.find(row => row.key === candidate.key) : undefined;
+    const queued = candidate ? [...(pendingExchange.current ?? [])].reverse().map(row => row.operation).find(op => (op.kind === "preference.set" || op.kind === "preference.forget") && op.key === candidate.key) : undefined;
+    const existing = queued && (queued.kind === "preference.set" || queued.kind === "preference.forget") ? { revision: queued.expectedRevision + 1, value: queued.kind === "preference.set" ? queued.value : null } : stored;
+    if (candidate && JSON.stringify(existing?.value) !== JSON.stringify(candidate.value)) intents.push({ version: 1, id: crypto.randomUUID(), scope: profile.scope,
+      operation: { kind: "preference.set", ...candidate, expectedRevision: existing?.revision ?? 0, origin: { kind: "conversation", view, generation, rememberingRevision: profile.remembering.revision, sourceTurnId: userId } } });
+    for (const intent of intents) if (intent.operation.kind === "preference.set") preferenceBefore.current.set(intent.id, existing?.value ?? null);
+    pendingExchange.current = [...(pendingExchange.current ?? []), ...intents];
+    void savePrivateExchange();
+  }
+
+  function conversationHousehold(): Household {
+    const profile = companionFor(household, memberId);
+    const partition = profile.conversations.find(row => row.view === view)!;
+    const known = new Set(partition.turns.map(row => row.id));
+    for (const intent of pendingExchange.current ?? []) {
+      const op = intent.operation;
+      if (intent.scope.environment === household.environment && intent.scope.householdId === household.householdId && intent.scope.memberId === memberId
+        && op.kind === "conversation.append" && op.view === view && op.generation === partition.generation && !known.has(op.turn.id)) {
+        partition.turns.push(op.turn); known.add(op.turn.id);
+      }
+    }
+    partition.turns = partition.turns.slice(-300);
+    return { ...household, companionProfile: profile };
+  }
+
+  function undoRememberedPreference() {
+    if (!preferenceUndo) return;
+    const intent: CompanionIntentV1 = { version: 1, id: crypto.randomUUID(), scope: companionFor(household, memberId).scope, operation: preferenceUndo };
+    setPreferenceUndo(null); pendingExchange.current = [...(pendingExchange.current ?? []), intent]; void savePrivateExchange();
+  }
+
+  function preferenceTurn(text: string): boolean {
+    if (!explicitCompanionPreference(text) && !/^(?:forget\b|remember\b|what (?:do you|did you) remember|what have you remembered)/i.test(text)) return false;
+    const candidate = explicitCompanionPreference(text);
+    if (/^forget\b/i.test(text)) {
+      const priorPreference = [...turns].reverse().filter(turn => turn.role === "user").map(turn => explicitCompanionPreference(turn.text)).find(Boolean);
+      const queued = [...(pendingExchange.current ?? [])].reverse().map(row => row.operation).find(op => op.kind === "preference.set" || op.kind === "preference.forget");
+      const key = priorPreference?.key ?? (queued && (queued.kind === "preference.set" || queued.kind === "preference.forget") ? queued.key : undefined);
+      if (key && /^forget (?:that|this)(?: preference)?[.! ]*$/i.test(text.trim())) {
+        if ((pendingExchange.current?.length ?? 0) >= 60) { setPrivateSaveStatus("The unsaved conversation is full. Retry saving, then ask me to forget this preference again. I have not applied this request."); return true; }
+        const profile = companionFor(household, memberId), previous = profile.preferences.find(row => row.key === key);
+        const last = [...(pendingExchange.current ?? [])].reverse().map(row => row.operation).find(op => (op.kind === "preference.set" || op.kind === "preference.forget") && op.key === key);
+        const expectedRevision = last && (last.kind === "preference.set" || last.kind === "preference.forget") ? last.expectedRevision + 1 : previous?.revision ?? 0;
+        const answer = "I’ll ask to forget that preference. It is not forgotten until the save is confirmed.";
+        applyTalk({ ...surface, spoken: answer, lesson: null, replies: [], pose: "loaf", topic: "preferences", attention: false } as HerculesTalk, text);
+        keepTalk(text, answer, "local");
+        pendingExchange.current = [...(pendingExchange.current ?? []), { version: 1, id: crypto.randomUUID(), scope: profile.scope, operation: { kind: "preference.forget", key, expectedRevision } }];
+        setPreferenceUndo(null); setReplyProvider(null); void savePrivateExchange(); return true;
+      }
+    }
+    const answer = /^forget\b/i.test(text) ? "You can choose exactly what to forget under ‘What Hercules remembers’ below. Use Forget beside that preference; I have not removed anything yet." : candidate
+      ? "Of course. I can do that. You can review your preferences under ‘What Hercules remembers’."
+      : "I remember a few helpful preferences, like how you like explanations or your favourite colour. You can choose them under ‘What Hercules remembers’.";
+    const next = { ...surface, spoken: answer, lesson: null, replies: [], pose: "loaf" as const, topic: "preferences", attention: false } as HerculesTalk;
+    applyTalk(next, text); keepTalk(text, answer, "local"); setReplyProvider(null); return true;
   }
 
   function isWideDesk(): boolean {
@@ -999,6 +1187,7 @@ export function HerculesPresence({
   }
 
   function sitWithBag() {
+    closeChat();
     setPinned(true);
     setBegging(false);
     setOpen(false);
@@ -1016,16 +1205,19 @@ export function HerculesPresence({
     }
   }
 
-  function openChatFromBeg(helpOnly=false) {
+  function openChatFromBeg(helpOnly=true) {
     if (!helpOnly && setup && setup.household.householdOnboarding?.state !== 'complete') {
       setOpen(true);setSetupSelected(true);return;
     }
     setBegging(false);
-    if (activePersonalOffer) {
+    setFocusedWidget(null);
+    setHelpAsked(true);
+    setInvitationDismissed(true);
+    if (!helpOnly && activePersonalOffer) {
       setOpen(true);
       return;
     }
-    if (!setup && !householdOnboardingShellActive && personalOffer) {
+    if (!helpOnly && !setup && !householdOnboardingShellActive && personalOffer) {
       const offeredAt = new Date().toISOString();
       setActivePersonalOffer(personalOffer);
       onLedger((current) => recordPersonalModuleOffer(current, {
@@ -1042,26 +1234,42 @@ export function HerculesPresence({
     const page = adding ? "add" : tab;
     const instrument = currentInstrument();
     const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
-    const lesson = firstRunLesson(`page:${page}`, surface.lesson);
     applyTalk({
-      spoken: help.spoken,
-      lesson,
+      spoken: "I can help you understand the books, pick up a task, or choose something excellent to wear. What shall we do?",
+      lesson: null,
       fact: surface.fact,
-      replies: help.replies,
+      replies: discoveryEnabled && onDiscoveryNavigate ? [] : help.replies,
       pose: usefulness.light === "green" ? "celebrate" : "perch",
       topic: instrument ?? topic,
       attention: false,
     });
   }
 
+  function showCompanionCue(presentation: import("./core/herculesCompanionContracts.ts").CompanionPresentationV2) {
+    const commands = companionCueCommands(presentation, reducedMotion());
+    if (!commands.length) return;
+    if (chatRigTimer.current) clearTimeout(chatRigTimer.current);
+    const scope = chatScope, request = chatGen.current;
+    chatRigUntilRef.current = performance.now() + 1500;
+    commands.forEach(command => dispatchHerculesRig(command));
+    chatRigTimer.current = setTimeout(() => {
+      if (previousChatScope.current !== scope || chatGen.current !== request) return;
+      chatRigUntilRef.current = 0; dispatchHerculesRig({ type: "playPose", pose: "loaf" });
+    }, 1500);
+  }
+
   function reactToChatText(...texts: Array<string | undefined | null>) {
+    if (reducedMotion() || texts.some(text => /\b(stress|overwhelm|scared|anxious|worried|can.t afford)\b/i.test(text ?? ""))) return;
     let fired = false;
     for (const text of texts) {
       if (text?.trim() && dispatchChatRigTriggers(text)) fired = true;
     }
     if (!fired) return;
     chatRigUntilRef.current = performance.now() + 1500;
-    window.setTimeout(() => {
+    const rigScope = chatScope, rigRequest = chatGen.current;
+    if (chatRigTimer.current) clearTimeout(chatRigTimer.current);
+    chatRigTimer.current = setTimeout(() => {
+      if (previousChatScope.current !== rigScope || chatGen.current !== rigRequest) return;
       chatRigUntilRef.current = 0;
       const target = (bagPlay ? "bag" : begging ? "beg" : motion) as HerculesRigPose;
       dispatchHerculesRig({ type: "playPose", pose: target === "sleep" ? "loaf" : target });
@@ -1077,7 +1285,6 @@ export function HerculesPresence({
     setOpen(true);
     if (focusedWidget && tab === "home") {
       pushSnippet(userText, next.spoken);
-      return;
     }
     setTurns((prev) => {
       if (!userText && !prev.some((turn) => turn.role === "user")) {
@@ -1147,9 +1354,11 @@ export function HerculesPresence({
   }
 
   function speak(raw: string) {
+    if (!chatEnabled) return;
     const text = raw.trim();
     if (!text || busy) return;
     const requestedCoworkerIds = consumeWorkplaceRosterConsent();
+    if (preferenceTurn(text)) return;
     const helpCmd = matchHelpCommand(
       helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today, view }),
       text,
@@ -1157,7 +1366,7 @@ export function HerculesPresence({
     if (helpCmd) applyHelpNav(helpCmd);
     if (goShortcut(helpCmd?.prompt ?? text)) return;
     if (calendarEventIntent(text)) directToCalendar();
-    const plan = planHerculesTurn(household, helpCmd?.prompt ?? text, today, adding ? "add" : tab, topic, { memberId, view });
+    const plan = planHerculesTurn(contextHousehold, helpCmd?.prompt ?? text, today, adding ? "add" : tab, topic, { memberId, view });
     if (plan.draft) {
       onDraft?.(plan.draft);
       keepTalk(text, plan.talk.spoken, "journal");
@@ -1174,11 +1383,13 @@ export function HerculesPresence({
   }
 
   async function sendChat(raw: string, preconsumedCoworkerIds?: string[]) {
+    if (!chatEnabled) return;
     const message = raw.trim();
     if (!message || busy) return;
     // Consume consent on every Send. `speak` passes its already-consumed value
     // so suggested local replies cannot leak consent into a later turn.
     const requestedCoworkerIds = preconsumedCoworkerIds ?? consumeWorkplaceRosterConsent();
+    if (preferenceTurn(message)) return;
     setEphemeralWorkplaceTurn(false);
     const helpCmd = matchHelpCommand(
       helpCommands({ tab: adding ? "add" : tab, instrument: currentInstrument(), household, today, view }),
@@ -1189,7 +1400,7 @@ export function HerculesPresence({
     if (goShortcut(text)) return;
     if (calendarEventIntent(message) || calendarEventIntent(text)) directToCalendar();
     const page = adding ? "add" : tab;
-    const plan = planHerculesTurn(household, text, today, page, topic, { memberId, view });
+    const plan = planHerculesTurn(contextHousehold, text, today, page, topic, { memberId, view });
     if (plan.draft) {
       onDraft?.(plan.draft);
       keepTalk(message, plan.talk.spoken, "journal");
@@ -1222,8 +1433,10 @@ export function HerculesPresence({
     setTalk(grounded);
     setTopic(grounded.topic);
     setMotion("pounce");
-    const toolPlan = shouldPlanHerculesTools(text)
-      ? await planHerculesReadTools({ message: text, page, view })
+    const disclosedContext = composeHerculesChatRequest(conversationHousehold(), text, briefing, today, memberId, topic, { view, availableActionIds: availableDiscoveryActions() }).companion;
+    const plannerMessage = resolveHerculesFollowUp(text, disclosedContext.context);
+    const toolPlan = shouldPlanHerculesTools(plannerMessage)
+      ? await planHerculesReadTools({ message: plannerMessage, page, view })
       : { calls: [] };
     if (!isCurrentHerculesReply(replyContext, {
       ...activeChatIdentity.current,
@@ -1232,7 +1445,8 @@ export function HerculesPresence({
     if (toolPlan.calls.length) {
       const investigation = executeHerculesReadToolPlan(household, toolPlan, today, { memberId, view });
       const groundedAnswer = investigation.talk;
-      const voicedRequest = composeHerculesChatRequest(household, text, briefing, today, memberId, topic, {
+      const voicedRequest = composeHerculesChatRequest(conversationHousehold(), text, briefing, today, memberId, topic, {
+        availableActionIds: availableDiscoveryActions(),
         shareCoordsWithModel: loadPhonePlacePrefs(household.environment).shareCoordsWithModel,
         view,
         coworkerIdsForModel,
@@ -1265,7 +1479,8 @@ export function HerculesPresence({
       setTalk(answer);
       setTopic(answer.topic);
       setTurns((prev) => [...prev, { role: "hercules" as const, text: answer.spoken }].slice(-12));
-      reactToChatText(answer.spoken);
+      if (voiced.presentation) showCompanionCue(voiced.presentation);
+      else reactToChatText(answer.spoken);
       if (focusedWidget && tab === "home") {
         setSnippets((prev) => {
           const trimmed = prev.filter((row) => row.text !== "mrrp…");
@@ -1275,11 +1490,12 @@ export function HerculesPresence({
       setMotion(answer.pose);
       setBusy(false);
       setReplyProvider(herculesProviderForDisplayedReply(voiced, usedModelVoice));
-      keepTalk(message, answer.spoken, usedModelVoice ? "ai" : "journal", null, coworkerIdsForModel.length > 0);
+      keepTalk(message, answer.spoken, usedModelVoice ? "ai" : "journal", null, coworkerIdsForModel.length > 0, groundedAnswer.facts);
       return;
     }
     const result = await chatHercules(
-      composeHerculesChatRequest(household, message, briefing, today, memberId, topic, {
+      composeHerculesChatRequest(conversationHousehold(), message, briefing, today, memberId, topic, {
+        availableActionIds: availableDiscoveryActions(),
         shareCoordsWithModel: loadPhonePlacePrefs(household.environment).shareCoordsWithModel,
         view,
         coworkerIdsForModel,
@@ -1292,7 +1508,8 @@ export function HerculesPresence({
     const usedModelVoice = result.source === "ai" && result.text !== grounded.spoken;
     setTalk({ ...grounded, spoken: result.text });
     setTurns((prev) => [...prev, { role: "hercules" as const, text: result.text }].slice(-12));
-    reactToChatText(result.text);
+    if (result.presentation) showCompanionCue(result.presentation);
+    else reactToChatText(result.text);
     if (focusedWidget && tab === "home") {
       setSnippets((prev) => {
         const trimmed = prev.filter((row) => row.text !== "mrrp…");
@@ -1303,7 +1520,7 @@ export function HerculesPresence({
     setMotion(grounded.pose === "sleep" ? "loaf" : grounded.pose);
     setBusy(false);
     setReplyProvider(herculesProviderForDisplayedReply(result, usedModelVoice));
-    keepTalk(message, result.text, usedModelVoice ? "ai" : "local", null, coworkerIdsForModel.length > 0);
+    keepTalk(message, result.text, usedModelVoice ? "ai" : "local", null, coworkerIdsForModel.length > 0, grounded.facts);
   }
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
@@ -1352,7 +1569,7 @@ export function HerculesPresence({
     if (!start.moved) {
       setPurr(true);
       if (open) closeChat();
-      else openChatFromBeg();
+      else openChatFromBeg(true);
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
     }
@@ -1416,6 +1633,11 @@ export function HerculesPresence({
     : talk?.fact?.source
       ? [{ id: `fact:${talk.fact.label}:${talk.fact.value}`, label: talk.fact.label, value: talk.fact.value, source: talk.fact.source, basis: "journal" as const }]
       : [];
+  const discoveryInput = { household, memberId, view, tab: adding ? "add" as const : tab, today, accountId: discoveryAccountId, fund: discoveryFund };
+  const availableDiscoveryActions = () => discoveryEnabled && onDiscoveryNavigate ? [...new Set(discoveryCandidates(discoveryInput).map(row => HERCULES_CAPABILITIES.find(definition => definition.id === row.capabilityId)!.action))] : [];
+  const discoveryPanel = () => discoveryEnabled && onDiscoveryNavigate ? <HerculesDiscovery key={discoveryScope(discoveryInput)} input={discoveryInput} onCommand={onCompanionCommand}
+    blocked={adding || busy} onNavigate={destination => { closeChat(); onDiscoveryNavigate(destination); }}
+    onContinueChat={chatEnabled ? () => { const input = document.querySelector<HTMLInputElement>(`.hercules-focus-shell input[aria-label="Ask ${look.view.name}"], .hercules-bubble input[aria-label="Ask ${look.view.name}"]`); input?.focus(); input?.scrollIntoView({ block: "nearest" }); } : undefined} /> : null;
   const workplaceShareToggle = () => view === "personal" && selectableWorkplaceCoworkerIds.length > 0 ? (
     <label className="hercules-workplace-share">
       <input
@@ -1432,7 +1654,7 @@ export function HerculesPresence({
     <HerculesRigProvider
       mood={look.view.mood}
       reducedMotion={reducedMotion()}
-      visibilityProfile={autonomyBlocked || !documentVisible || setupSelected ? "hidden" : phoneShell || tab !== "home" ? "compact" : "full"}
+      visibilityProfile={rigBlocked || !documentVisible || setupSelected ? "hidden" : phoneShell || tab !== "home" ? "compact" : "full"}
     >
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
@@ -1459,11 +1681,16 @@ export function HerculesPresence({
             ))}
             {busy && <p className="hercules-snippet cat">mrrp…</p>}
           </div>
+          {open && <button type="button" onClick={() => { setFocusedWidget(null); setOpen(true); }}>Read full conversation</button>}
           {open && (
             <>
 
             {workplaceShareToggle()}
-            <form
+            <p role="status">{privateSaveStatus}</p>
+            {preferenceUndo && <button type="button" onClick={undoRememberedPreference}>Undo remembered preference</button>}
+            {pendingExchange.current && !privateSaving && <button type="button" onClick={() => { if (pendingExchange.current) void savePrivateExchange([...pendingExchange.current]); }}>Retry conversation save</button>}
+            <CompanionMemoryControls household={household} memberId={memberId} view={view} onCommand={onCompanionCommand} />
+            {chatEnabled && <form
               className="hercules-chat-form"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -1481,7 +1708,7 @@ export function HerculesPresence({
                 }}
               />
               <button type="submit" disabled={busy || !question.trim()}>send</button>
-            </form>
+            </form>}
             </>
           )}
         </div>
@@ -1502,11 +1729,11 @@ export function HerculesPresence({
             pose="loaf"
             size={40}
           />
-          <span className="hercules-pill-name">{look.view.name}</span>{(proposal || householdOnboardingShellActive) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
+          <span className="hercules-pill-name">How can I help?</span>{(!invitationDismissed && !autonomyBlocked && discoveryEnabled && onDiscoveryNavigate) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
         </button>
       )}
       {focusShellOpen && (
-        <div className="hercules-focus-shell" role="dialog" aria-modal="true" aria-label={`${look.view.name} focus`}>
+        <div ref={focusDialogRef} className="hercules-focus-shell" role="dialog" aria-modal="true" aria-label={`${look.view.name} focus`}>
           <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
             Close
           </button>
@@ -1547,6 +1774,13 @@ export function HerculesPresence({
             />
           </div>
           <div className="hercules-focus-body">
+            {discoveryPanel()}
+            {!chatEnabled && <p role="status">Conversation is taking a break. Your saved preferences are still available.</p>}
+            {!setup && <button type="button" onClick={sitWithBag}>Play</button>}
+            {<><p className="companion-save-status" role="status">{privateSaveStatus}</p>
+            {preferenceUndo && <button type="button" onClick={undoRememberedPreference}>Undo remembered preference</button>}
+            {pendingExchange.current && !privateSaving && <button type="button" onClick={() => { if (pendingExchange.current) void savePrivateExchange([...pendingExchange.current]); }}>Retry conversation save</button>}
+            <CompanionMemoryControls household={household} memberId={memberId} view={view} onCommand={onCompanionCommand} /></>}
             {setup && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
             {talk ? (
               <>
@@ -1588,13 +1822,13 @@ export function HerculesPresence({
             )}
             {!busy && (
               <div className="hercules-replies">
-                {talk.replies.map((item) => (
+                {chatEnabled && talk.replies.map((item) => (
                   <button key={item} type="button" onClick={() => speak(item)}>{item}</button>
                 ))}
               </div>
             )}
             {workplaceShareToggle()}
-            <form
+            {chatEnabled && <form
               className="hercules-chat-form"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -1609,7 +1843,7 @@ export function HerculesPresence({
                 onChange={(event) => setQuestion(event.target.value)}
               />
               <button type="submit" disabled={busy || !question.trim()}>send</button>
-            </form>
+            </form>}
               </>
             ) : (
               <p className="hercules-spoken">mrrp…</p>
@@ -1711,29 +1945,9 @@ export function HerculesPresence({
             </>
           ) : talk ? (
           <>
-          {open && !begging && (
-            <button
-              type="button"
-              className="hercules-help"
-              onClick={() => {
-                const page = adding ? "add" : tab;
-                const instrument = currentInstrument();
-                const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
-                setHelpAsked(true);
-                applyTalk({
-                  spoken: help.spoken,
-                  lesson: null,
-                  fact: surface.fact,
-                  replies: help.replies,
-                  pose: "perch",
-                  topic: instrument ?? topic,
-                  attention: false,
-                });
-              }}
-            >
-              How can I help
-            </button>
-          )}
+          {open && !begging && discoveryPanel()}
+          {open && !chatEnabled && <p role="status">Conversation is taking a break. Your saved preferences are still available.</p>}
+          {open && !setup && <button type="button" onClick={sitWithBag}>Play</button>}
           {open && !begging && turns.length > 0 ? (
             <div className="hercules-chat-log" ref={logRef}>
               {turns.slice(-6).map((turn, index) => (
@@ -1755,9 +1969,13 @@ export function HerculesPresence({
               {herculesProviderLabel(replyProvider)}
             </p>
           )}
-          {open && !busy && !ephemeralWorkplaceTurn && !replyProvider && turns.some((turn) => turn.role === "user") && (
-            <p className="hercules-source">Kept in the kitchen ledger. Same door as the books.</p>
-          )}
+          {open && <>
+            <p className="companion-save-status" role="status">{privateSaveStatus}</p>
+            {pendingExchange.current && !privateSaving && <button type="button" onClick={() => void savePrivateExchange()}>Retry conversation save</button>}
+            {preferenceUndo && <button type="button" onClick={undoRememberedPreference}>Undo remembered preference</button>}
+            <CompanionMemoryControls household={household} memberId={memberId} view={view} onCommand={onCompanionCommand} />
+          </>}
+          {open && !busy && groundedFacts.length > 0 && <div className="hercules-grounded-facts" aria-label="Numbers pulled from the books">{groundedFacts.slice(0, 5).map(fact => <button key={fact.id} type="button" className="hercules-grounded-fact" onClick={() => { closeChat(); onOpenSource(fact.source); }}><span>{fact.label}</span><strong>{fact.value}</strong></button>)}</div>}
           {open && !busy && groundedFacts.length === 0 && talk.fact && (
             <p className="hercules-fact"><span>{talk.fact.label}</span> {talk.fact.value}</p>
           )}
@@ -1765,13 +1983,13 @@ export function HerculesPresence({
             <>
               {!busy && helpAsked && (
                 <div className="hercules-replies">
-                  {talk.replies.map((item) => (
+                  {chatEnabled && talk.replies.map((item) => (
                     <button key={item} type="button" onClick={() => speak(item)}>{item}</button>
                   ))}
                 </div>
               )}
               {workplaceShareToggle()}
-              <form
+              {chatEnabled && <form
                 className="hercules-chat-form"
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -1789,7 +2007,7 @@ export function HerculesPresence({
                   }}
                 />
                 <button type="submit" disabled={busy || !question.trim()}>send</button>
-              </form>
+              </form>}
               <button
                 type="button"
                 className="hercules-pro-quiet"
@@ -1827,8 +2045,8 @@ export function HerculesPresence({
           reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
-        aria-label={`Open ${look.view.name}`}
-        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg();}}}
+        aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? " — How can I help?" : ""}`}
+        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg(true);}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -1839,6 +2057,7 @@ export function HerculesPresence({
           setPinned((value) => !value);
         }}
       >
+        {!phoneShell && !open && !adding && !activityBlocked && <span className="hercules-help-label" aria-hidden="true">How can I help?</span>}
         <HerculesLivePortrait
           mood={look.view.mood}
           hat={look.hat}
@@ -1849,7 +2068,7 @@ export function HerculesPresence({
           size={size}
           flip={flip}
         />
-        {(proposal || householdOnboardingShellActive) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
+        {(!invitationDismissed && !autonomyBlocked && discoveryEnabled && onDiscoveryNavigate) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
       </button>
     </div>
     </HerculesRigProvider>

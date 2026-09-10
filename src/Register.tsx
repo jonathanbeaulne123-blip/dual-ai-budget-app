@@ -239,7 +239,7 @@ function RegisterList({
           return `${name} ${registerCad(segment.amountCents)}`;
         }).filter((part): part is string => Boolean(part));
         return (
-          <li className="register-list-item" key={row.obligationId}>
+          <li className="register-list-item" data-fund-obligation-id={row.obligationId} tabIndex={-1} key={row.obligationId}>
             <div className="register-list-head">
               <span>{row.label}</span>
               <span>{registerCad(row.amountCents)}</span>

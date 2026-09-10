@@ -1,3 +1,5 @@
+import {WardrobeRoomHost} from './wardrobe/WardrobeEntrance.tsx';
+import { revealPhoneInstrument } from "./core/officePhone.ts";
 import { OFFICE_INSTRUMENT_PURPOSE } from "./core/widgetPurpose.ts";
 import { DrawerSurface } from "./DrawerSurface.tsx";
 import type { KitchenCommand } from "./kitchenCommand.ts";
@@ -123,7 +125,7 @@ function useBreakpoint(): OfficeBreakpoint {
 }
 
 export function Office({
-  scenarioSource,
+  scenarioSource, wardrobeRequest, onWardrobeOpened, wardrobeConnected=false,
   household,
   booksHousehold,
   dashboard,
@@ -165,6 +167,9 @@ export function Office({
   integrityFindingCount = 0,
   integrityFindings = [],
 }: {
+  wardrobeConnected?: boolean;
+  wardrobeRequest?: string | null;
+  onWardrobeOpened?: () => void;
   household: Household;
   booksHousehold: Household;
   scenarioSource?: ScenarioSourceContext | null;
@@ -298,6 +303,12 @@ export function Office({
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
+
+  useEffect(() => {
+    if (!wardrobeRequest) return;
+    setLayout(current => revealPhoneInstrument(current, "wardrobe"));
+    onWardrobeOpened?.();
+  }, [wardrobeRequest, onWardrobeOpened]);
 
   useEffect(() => {
     return subscribeOfficeIntent((intent) => {
@@ -841,7 +852,7 @@ export function Office({
       "Hercules outfits",
       <span>{wardrobeGlance(household, today)}</span>,
       `Hercules outfits. ${wardrobeGlance(household, today)}`,
-      <WardrobeBody
+      <WardrobeBody memberId={memberId} ledgerView={view}
         household={household}
         today={today}
         busy={busy}
@@ -898,8 +909,10 @@ export function Office({
       data-face={face}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
     >
+      {import.meta.env.VITE_HERCULES_DRESSING_ROOM === '1' && <WardrobeRoomHost household={household} onCommand={onKitchen} connected={wardrobeConnected} key={`${household.environment}:${household.householdId}:${memberId}`} environment={household.environment} householdId={household.householdId} memberId={memberId} view={view} busy={busy || adding}/>}
       {breakpoint === "phone" ? (
       <OfficePhone
+        clinkOn={clinkOn} onClinkOn={onClinkOn}
         onOpenDrawer={() => setSheet("drawer")}
         scenarioSource={scenarioSource}
         household={household} booksHousehold={booksHousehold} view={view} onOpenFundDestination={onOpenFundDestination} dashboard={dashboard} sill={sill}

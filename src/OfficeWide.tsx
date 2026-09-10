@@ -175,6 +175,7 @@ export function OfficeWide({
     storedFundStage(environment, household.householdId, memberId, today)
   ));
   const [fundDrawerOpen, setFundDrawerOpen] = useState(false);
+  useEffect(() => { if (layout.expanded === "wardrobe") { setMonthList(null); setFundDrawerOpen(false); } }, [layout.expanded]);
   const fundStageHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const opinion = useMemo(() => auditOpinion(household), [household]);
@@ -469,7 +470,7 @@ export function OfficeWide({
       glance: <span>{wardrobeGlance(household, today)}</span>,
       aria: "Hercules outfits.",
       body: (
-        <WardrobeBody
+        <WardrobeBody memberId={memberId} ledgerView={view}
           household={household}
           today={today}
           busy={busy}

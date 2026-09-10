@@ -24,7 +24,6 @@ import {
   wipeHerculesChat,
 } from "../src/core/index.ts";
 import { COSMETIC_BY_ID } from "../src/core/companion.ts";
-import { ValidationError } from "../src/core/types.ts";
 
 const today = "2026-08-21";
 
@@ -52,12 +51,11 @@ describe("daily kitchen cosmetics", () => {
     expect(wiped.household.tombstones.some((tombstone) => tombstone.id.startsWith("CHALK-"))).toBe(true);
   });
 
-  it("refuses a locked cosmetic and equips one that is earned", () => {
+  it("makes legacy cosmetics available without posting money", () => {
     const empty = catalogHousehold();
     const gold = COSMETIC_BY_ID.get("gold")!;
-    expect(isCosmeticUnlocked(empty, gold, today)).toBe(false);
-    expect(() => equipCosmetic(empty, { slot: "chain", itemId: "gold", today })).toThrow(ValidationError);
-    expect(() => equipCosmetic(empty, { slot: "chain", itemId: "gold", today })).toThrow(/still locked/);
+    expect(isCosmeticUnlocked(empty, gold, today)).toBe(true);
+    expect(equipCosmetic(empty, { slot: "chain", itemId: "gold", today }).household.kitchen.companion.equipped.chain).toBe("gold");
     expect(empty.transactions).toHaveLength(0);
 
     let household = postEntry(empty, {
@@ -78,7 +76,7 @@ describe("daily kitchen cosmetics", () => {
     expect(chain.household.kitchen.companion.equipped.chain).toBe("gold");
   });
 
-  it("unlocks the visor after a repeating bill is posted, never from a reminder", () => {
+  it("keeps the visor available before and after a repeating bill is posted", () => {
     let household = catalogHousehold();
     household = addRecurrence(household, {
       cadence: "monthly",
@@ -89,12 +87,12 @@ describe("daily kitchen cosmetics", () => {
       subcategoryId: "SUB-HOUSING-ELECTRIC",
       note: "Hydro",
     }).household;
-    expect(isCosmeticUnlocked(household, COSMETIC_BY_ID.get("visor")!, today)).toBe(false);
+    expect(isCosmeticUnlocked(household, COSMETIC_BY_ID.get("visor")!, today)).toBe(true);
     household = postOneRecurrence(household, household.recurrences[0]!.id, today).household;
     expect(isCosmeticUnlocked(household, COSMETIC_BY_ID.get("visor")!, today)).toBe(true);
   });
 
-  it("renames Hercules and computes hiding when Health is dirty", () => {
+  it("renames Hercules and stays present when Health is dirty", () => {
     const named = renameCompanion(catalogHousehold(), "Kettle");
     expect(named.household.kitchen.companion.name).toBe("Kettle");
     const view = describeCompanion(named.household, today);
@@ -102,7 +100,7 @@ describe("daily kitchen cosmetics", () => {
 
     const broken = catalogHousehold();
     broken.timezone = "America/Vancouver" as typeof broken.timezone;
-    expect(describeCompanion(broken, today).mood).toBe("hiding");
+    expect(describeCompanion(broken, today).mood).not.toBe("hiding");
   });
 
   it("carries chalkboard notes on a Hearth Pass and merge", () => {

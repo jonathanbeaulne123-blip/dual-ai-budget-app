@@ -1951,7 +1951,8 @@ describe("cached-shell startup books gate", () => {
   });
 
 
-  it('manually opens real Hercules under mounted App Development v2 and pauses it', async () => {
+  it('opens useful Hercules help first, then explicitly starts and pauses setup under App Development v2', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', { configurable: true, value: vi.fn() });
     startup.v2=true; vi.stubEnv('VITE_LEDGER_SYNC_V2','1'); vi.stubEnv('VITE_LEDGER_SYNC_LOCAL_AUTH','1');
     startup.cached={...catalogHousehold('development'),linked:true};
     startup.cached.booksAcceptedHash=await financialAuditHash(startup.cached);
@@ -1964,6 +1965,12 @@ describe("cached-shell startup books gate", () => {
     const opener=container.querySelector<HTMLButtonElement>('button.hercules-live')!;
     expect(opener).not.toBeNull();
     await act(async()=>opener.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true})));
+    await waitForUi(()=>expect(document.querySelector('.hercules-discovery')).not.toBeNull());
+    expect(document.querySelector<HTMLElement>('.hercules-setup-backdrop')!.hidden).toBe(true);
+    expect(calls).toBe(0);
+    const setupButton = [...document.querySelectorAll<HTMLButtonElement>('.hercules-manual-actions button')].find(button => button.textContent === 'Set up Hearth')!;
+    expect(setupButton).toBeDefined();
+    await act(async()=>setupButton.click());
     await waitForUi(()=>expect(document.querySelector<HTMLElement>('.hercules-setup-backdrop')!.hidden).toBe(false));
     await waitForUi(()=>expect(calls).toBeGreaterThan(0));
     expect(document.querySelector('.hercules-setup')!.textContent).toContain('Starting books');

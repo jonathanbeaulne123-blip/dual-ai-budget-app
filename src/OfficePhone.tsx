@@ -1,3 +1,4 @@
+import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import type { KitchenCommand } from "./kitchenCommand.ts";
 import type { ScenarioSourceContext } from "./scenarioSourceContext.ts";
 import { PhoneSpread } from "./PhoneSpread.tsx";
@@ -57,7 +58,7 @@ type Spec = {
 };
 
 export function OfficePhone({
-  scenarioSource,
+  scenarioSource, clinkOn = false, onClinkOn = () => {},
   household, booksHousehold = household, view = "household", onOpenFundDestination, dashboard, sill, reading, layout, onLayout,
   today, memberId, busy, adding, form, mode, error, categories, postLabel,
   integrityFindings = [],
@@ -66,6 +67,8 @@ export function OfficePhone({
   onKitchen, onMarkPaid, onGo, onOpenDrawer,
 }: {
   onOpenDrawer?: () => void;
+  clinkOn?: boolean;
+  onClinkOn?: (on: boolean) => void;
   scenarioSource?: ScenarioSourceContext | null;
   household: Household;
   booksHousehold?: Household;
@@ -169,6 +172,8 @@ export function OfficePhone({
   };
 
   const specs: Partial<Record<InstrumentId, Spec>> = {
+    wardrobe: { kind: "Outfits", name: "Hercules outfits", glance: <span>{wardrobeGlance(household,today)}</span>, aria: "Hercules outfits.",
+      body: <WardrobeBody household={household} memberId={memberId} ledgerView={view} today={today} busy={busy} environment={household.environment} clinkOn={clinkOn} onClinkOn={onClinkOn} onCommand={onKitchen} /> },
     blotter: {
       kind: kindLabel.blotter ?? "Month",
       name: "Month net",

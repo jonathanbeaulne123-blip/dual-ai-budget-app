@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("../workers/ledgerRoom.ts", () => ({ LedgerRoom: class {} }));
 import worker from "../workers/site.js";
 import { resetChatRateMemory } from "../workers/herculesGuard.js";
 
@@ -292,5 +293,40 @@ describe("Hercules in-app chat provider chain", () => {
     const response = await worker.fetch(chatRequest("Anyone there?", "203.0.113.96"), {});
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ ok: false, error: "ai quiet" });
+  });
+});
+
+describe("private companion Gemini conversation", () => {
+  const companion = {
+    version: 2, scope: { environment: "development", householdId: "HH-SYNTHETIC", memberId: "MEM-001" }, view: "household", conversationGeneration: 0,
+    context: [
+      { id: "turn-one", role: "user", text: "I am learning to bake bread.", createdAt: "2026-09-10T12:00:00.000Z", sourceReferences: [] },
+      { id: "turn-two", role: "hercules", text: "I volunteer for crumb inspection.", createdAt: "2026-09-10T12:00:01.000Z", sourceReferences: [] },
+    ], preferences: [], currentFactIds: [], availableActionIds: [],
+  };
+  it("sends ordered multi-turn context with the versioned voice and preserves paragraphs/cues", async () => {
+    const reply = "Of course. Let the dough have its quiet moment.\n\nI understand the importance of resting. It is practically my profession.";
+    const upstream = vi.fn(async (url: string, init?: RequestInit) => {
+      const rows = providerMessages(url, init);
+      const system = rows.filter(row => row.role === "system").map(row => row.content).join(" ");
+      expect(system).toContain("affectionate little diva");
+      expect(system).not.toMatch(/do not receive prior chat|steer back to the books|one or two kitchen sentences/i);
+      expect(rows.filter(row => row.role !== "system").map(row => row.content)).toEqual([companion.context[0]!.text, companion.context[1]!.text, "Should I let it rest?"]);
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ version: 2, text: reply, expression: "warm", gesture: "slow-blink", factIds: [], actionIds: [] }) }] } }] }), { headers: { "Content-Type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(chatRequest("Should I let it rest?", "203.0.113.180", { companion }), { ...externalSyntheticEnv, GEMINI_API_KEY: "synthetic-gemini-key" });
+    expect(await response.json()).toMatchObject({ ok: true, provider: "gemini", reply, presentation: { expression: "warm", gesture: "slow-blink" } });
+  });
+  it("rejects oversized context before calling a model", async () => {
+    const upstream = vi.fn(); vi.stubGlobal("fetch", upstream);
+    const response = await worker.fetch(chatRequest("hello", "203.0.113.181", { companion: { ...companion, context: Array(14).fill(companion.context[0]) } }), { ...externalSyntheticEnv, GEMINI_API_KEY: "synthetic" });
+    expect(response.status).toBe(400); expect(upstream).not.toHaveBeenCalled();
+  });
+  it("clamps invented money even inside a valid presentation", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ version: 2, text: "You have $9988.77 left.", expression: "pleased", gesture: "pleased-posture", factIds: [], actionIds: [] }) }] } }] }), { headers: { "Content-Type": "application/json" } })));
+    const response = await worker.fetch(chatRequest("What is left?", "203.0.113.182", { companion }), { ...externalSyntheticEnv, GEMINI_API_KEY: "synthetic" });
+    const result = await response.json() as { reply: string; presentation?: unknown };
+    expect(result.reply).not.toContain("9988"); expect(result.presentation).toBeUndefined();
   });
 });

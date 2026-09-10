@@ -108,6 +108,7 @@ function LedgerSession({
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState(initialBookmark.query);
   const [showContrast, setShowContrast] = useState(false);
+  useEffect(() => { if (sourceFocus?.duplicateTransactionIds) setShowContrast(true); }, [sourceFocus]);
   const [rowLimit, setRowLimit] = useState(initialBookmark.rowLimit);
   const bookmark = useRef(initialBookmark);
   bookmark.current = { ...bookmark.current, query, month, account, type, rowLimit };
@@ -144,7 +145,7 @@ function LedgerSession({
   const flagged = visible.filter((tx) => tx.potentialDuplicate && !tx.isDuplicate).length;
   // Pair scoring is review work; ordinary activity and every inbound posting
   // must not pay its quadratic cost while the review is closed.
-  const contrasts = useMemo(() => showContrast ? duplicateContrastPairs(visible) : [], [visible, showContrast]);
+  const contrasts = useMemo(() => showContrast ? duplicateContrastPairs(sourceFocus?.duplicateTransactionIds ? sourceRows : visible) : [], [visible, sourceRows, sourceFocus, showContrast]);
 
   const previousFilters = useRef([query, section, sourceFocus, month, account, type]);
   useEffect(() => {

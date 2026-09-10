@@ -1,4 +1,4 @@
-import { addDays, kitchenSeason, parseDateKey, type DateKey } from "./calendar.ts";
+import { addDays, type DateKey } from "./calendar.ts";
 import { weekSummary } from "./budget.ts";
 import { runHealthCheck } from "./health.ts";
 import { formatCad } from "./money.ts";
@@ -56,37 +56,7 @@ function overdueBills(household: Household, today: DateKey) {
   return household.recurrences.filter((item) => item.active && item.type === "expense" && item.nextDate < today);
 }
 
-function paidRecurringCount(household: Household): number {
-  return household.transactions.filter((tx) => tx.source === "recurring" && !tx.isDuplicate).length;
-}
-
-function cosmeticUnlocked(household: Household, item: CosmeticItem, today: DateKey, healthClean: () => boolean): boolean {
-  if (item.id === "toque") return household.transactions.some((tx) => tx.type === "expense" && !tx.isDuplicate);
-  if (item.id === "visor") return paidRecurringCount(household) > 0;
-  if (item.id === "chef") return household.activity.some((row) => row.action === "Monthly Sit-Down");
-  if (item.id === "specs") return household.kitchen.books?.reconciliations?.some((row) => row.status === "tied") ?? false;
-  if (item.id === "ink") return (household.kitchen.books?.closedMonths?.length ?? 0) > 0;
-  if (item.id === "copper") return postingDates(household).length >= 3;
-  if (item.id === "gold") {
-    return household.goals.some((goal) => goal.targetCents > 0 && goal.savedCents >= goal.targetCents);
-  }
-  if (item.id === "cottage") return healthClean();
-  if (item.id === "townhouse") {
-    return healthClean() && overdueBills(household, today).length === 0 && household.recurrences.some((item) => item.active);
-  }
-  if (item.id === "patio") {
-    return kitchenSeason(today) === "patio" || household.transactions.some((tx) => !tx.isDuplicate && [6, 7, 8].includes(parseDateKey(tx.date).month));
-  }
-  if (item.id === "ruff") {
-    return kitchenSeason(today) === "ruff" || household.transactions.some((tx) => !tx.isDuplicate && [11, 12, 1, 2, 3].includes(parseDateKey(tx.date).month));
-  }
-  if (item.id === "bell") return household.transactions.some((tx) => tx.type === "transfer" && !tx.isDuplicate);
-  if (item.id === "clip") return household.accounts.filter((account) => account.active && account.kind === "credit").length >= 2;
-  if (item.id === "yarn") return household.activity.filter((row) => row.action === "Chalkboard").length >= 3;
-  if (item.id === "fish") return household.shifts.length > 0;
-  if (item.id === "tooth") return household.transactions.some((tx) => tx.source === "visit" && tx.type === "expense" && !tx.isDuplicate);
-  return false;
-}
+function cosmeticUnlocked(_household:Household,_item:CosmeticItem,_today:DateKey,_healthClean:()=>boolean):boolean{return true;}
 
 export function isCosmeticUnlocked(household: Household, item: CosmeticItem, today: DateKey): boolean {
   return cosmeticUnlocked(household, item, today, () => runHealthCheck(household).length === 0);
@@ -102,13 +72,13 @@ export function companionMood(household: Household, today: DateKey, name = "Herc
   const overdue = overdueBills(household, today);
   const week = weekSummary(household, today);
   if (findings > 0) {
-    return { mood: "hiding", reason: `The books need a look. ${name} is under the table until Health is clean.` };
+    return { mood: "content", reason: `The books need a look. ${name} is right here with you; we can work through them one step at a time.` };
   }
   if (overdue.length) {
     const first = overdue[0]!;
     return {
       mood: "restless",
-      reason: `${first.note || "A bill"} was due ${first.nextDate}. ${name} will not fake a fee. Pay it, then post it.`,
+      reason: `${first.note || "A bill"} was due ${first.nextDate}. ${name} can help you look at what is due, one step at a time.`,
     };
   }
   const nextBill = household.recurrences
@@ -135,8 +105,8 @@ export function companionMood(household: Household, today: DateKey, name = "Herc
 const LINES: Record<CompanionMood, (name: string) => string> = {
   glowing: (name) => `${name} is loafing in a sunbeam. The books look kind.`,
   content: (name) => `${name} is on the counter, waiting for the next grocery.`,
-  restless: (name) => `${name} is pacing. A bill or a hot week wants a look.`,
-  hiding: (name) => `${name} is under the table. No fake fees. Fix Health, then come back.`,
+  restless: (name) => `${name} is keeping you company. A bill or a change in spending may need a look.`,
+  hiding: (name) => `${name} is close by. We can take the next step together.`,
 };
 
 export function describeCompanion(household: Household, today: DateKey): CompanionView {

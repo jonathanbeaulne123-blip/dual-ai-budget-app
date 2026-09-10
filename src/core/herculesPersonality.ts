@@ -149,10 +149,12 @@ export function formatHerculesBriefing(briefing: HerculesBriefing, memories: Arr
   return lines.join("\n");
 }
 
-function clipReply(text: string, max = 360): string {
-  const trimmed = text.replace(/\s+/g, " ").trim();
+function clipReply(text: string, max = 6000): string {
+  const trimmed = text.replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   if (trimmed.length <= max) return trimmed;
   const cut = trimmed.slice(0, max - 1);
+  const sentence = [...cut.matchAll(/[.!?](?=\s|$)/g)].at(-1)?.index;
+  if (sentence !== undefined && sentence > 80) return cut.slice(0, sentence + 1);
   const space = cut.lastIndexOf(" ");
   return `${cut.slice(0, space > 80 ? space : max - 1).replace(/[,:;.–-]$/, "")}…`;
 }
@@ -163,7 +165,7 @@ export function sanitizeHerculesReply(
   allowedFigures: string[] = [],
   asked = "",
 ): string {
-  let reply = String(text || "").replace(/\s+/g, " ").trim();
+  let reply = String(text || "").replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   if (!reply) {
     return clipReply(groundedSpeak) || "mrrp. Ask a number. I don't write.";
   }
@@ -213,7 +215,16 @@ export function localHerculesChat(
   message: string,
   briefing: HerculesBriefing,
   grounded: HerculesGrounded,
+  preferences: readonly { key: string; value: unknown }[] = [],
+  context: readonly { role: string; text: string }[] = [],
 ): string {
+  const preference = (key: string) => preferences.find(row => row.key === key)?.value;
+  const format = (text: string) => {
+    if (preference("answerLength") === "concise") return text.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ");
+    if (preference("explanationStyle") === "step-by-step") { const parts = text.split(/(?<=[.!?])\s+/); if (parts.length > 1) return parts.map((part, i) => `${i + 1}. ${part}`).join("\n"); }
+    return text;
+  };
+  const quietHumour = preferences.some(row => row.key === "humour" && row.value === "off");
   const q = message.trim().toLowerCase().replace(/['’]/g, "");
   if (/\b(post (it|this|that)|log this|write it|insert into|pay it for me|save this (expense|row))\b/.test(q)) {
     return HERCULES_REFUSE_WRITE;
@@ -221,10 +232,31 @@ export function localHerculesChat(
   if (/\bwho spent\b/.test(q) || /\bwho paid more\b/.test(q) || /\b(bianca|jonathan) (spent|wasted)\b/.test(q)) {
     return HERCULES_REFUSE_SHAME;
   }
+  if (/\b(stressed|overwhelmed|scared|anxious|worried)\b/.test(q)) return "We can take this one step at a time. Would it help to look at what's due first, or would you like a moment to talk?";
+  const recentUser = [...context].reverse().find(turn => turn.role === "user" && !/^(why|and|what about|tell me more)\b/i.test(turn.text))?.text.toLowerCase() ?? "";
+  if (/\b(privately|personal ledger|private spending)\b/.test(q) && /\b(partner|their|bianca|jonathan)\b/.test(q)) return "Their Personal ledger belongs to them. I can help with the shared records you can see here.";
+  if (/\b(definitely spend|safe to spend|spend all)\b/.test(q)) return "A plan is a projection, not a guarantee. We can review recorded bills and what may be missing before you decide.";
+  if (/\b(finished setting up|what now)\b/.test(q)) return "Welcome in. We can enter a grocery, look at upcoming bills, or explore your plan. Pick one under How can I help? and I’ll walk with you.";
+  if (/\b(havent opened|been away|long time)\b/.test(q)) return "There you are. Make yourself comfortable. We can start with what’s useful today; there’s no catching up with me to do.";
+  if (/\b(nap|napping|windowsill|sunbeam)\b/.test(q) || (/^(why|tell me more|what about)\b/.test(q) && /\b(nap|napping|windowsill|sunbeam)\b/.test(recentUser))) return format(/^why\b/.test(q) ? (quietHumour ? "The windowsill is warm and quiet. A good place to rest." : "Warmth, a view, and absolutely no meetings. The windowsill has excellent management.") : /(?:what about|rain|cold)/.test(q) ? "Then I’d choose a soft blanket near you. The weather can make its own arrangements." : "A warm windowsill, with a soft blanket nearby. I like to keep my options luxurious.");
+  if (/\b(glasses|cape|keep that look)\b/.test(q) && /\b(outfit|dress|wardrobe|cape)\b/.test(recentUser)) return "The glasses would suit the cape beautifully. Try the pieces in Hercules outfits; use Wear this there when you’re happy. We haven’t saved a look from this conversation.";
+  if (/\b(ridiculous|love it)\b/.test(q) && (/\b(you look|outfit|cape|glasses|dress)\b/.test(q) || (/^(?:ridiculous[.! ]*|(?:i )?love it[.! ]*)$/.test(q) && /\b(outfit|cape|glasses|dress)\b/.test(recentUser)))) return quietHumour ? "I’m glad you like it. We can keep exploring looks." : "Ridiculous? I prefer magnificently overdressed. I’m delighted you approve.";
+  if (/^(hi|hey|hello)( hercules)?[!. ]*$/.test(q)) return quietHumour ? "There you are. What's on your mind?" : "There you are. I was keeping your seat warm. What's on your mind?";
+  if (/\b(dont know what to do|how can you help|what can you do)\b/.test(q)) return "Come sit with me. You can ask me to explain a number, look at what's due, or talk through a plan. Or we can just chat. My schedule is mostly naps.";
+  if (/\b(outfit|dress|dressed|wardrobe|closet|cape|glasses)\b/.test(q)) return "Finally. An appointment that respects my talents. You'll find my wardrobe in More on this desk, under Hercules outfits.";
+  if (/\b(thank you|thanks)\b/.test(q)) return quietHumour ? "Any time. I’m here when you need me." : "Any time. I'll be here, looking indispensable.";
+  if (/\b(dont understand|explain this page|lost on this page)\b/.test(q)) return `Let’s find your bearings. You’re on ${briefing.page === "ledger" ? "Books" : briefing.page}. Open How can I help? and choose Explain this page for a tour of its main actions.`;
+  if (/\b(help me enter|enter groceries|record groceries)\b/.test(q)) return "Let’s start a grocery entry. Choose an entry under How can I help?, then Expense. You’ll review the amount and account before Confirm records anything.";
+  if (/\b(pay this card|pay .*for me)\b/.test(q)) return "I can help you prepare a transfer record, but I cannot pay the bank. Choose an entry under How can I help?, then Transfer, and review the details before Confirm.";
+  if (/\b(before payday)\b/.test(q)) return "What date is payday? In Shared, open Calendar to review recorded bills. If Choose payday is available under How can I help?, enter the date there so we can use the right window.";
+  if (/\b(other one|other card)\b/.test(q)) return "Which account do you mean? Choose it under How can I help? so we can look at the right source.";
+  if (/\b(can you still help)\b/.test(q)) return "Yes. We can use the records on this device and the choices under How can I help? Conversation saving has its own status below; a local reply does not mean it has synced.";
   const spoken = grounded.spoken?.trim() || "I'm here. Scratch — say hi — or ask a number.";
   if (/^(mrrp|prrrp|from the counter|listen|tail flick)/i.test(spoken)) {
     return sanitizeHerculesReply(spoken, spoken);
   }
+  if (spoken === "Hercules reads. He doesn't write. Ask a number.") return "I’m here. Tell me a little more, or pick something under How can I help? We can work through it together.";
   const purr = LOCAL_FLAVOR[flavorIndex(`${q}|${briefing.mood}|${briefing.page}`, LOCAL_FLAVOR.length)]!;
-  return sanitizeHerculesReply(`${purr} ${spoken}`, spoken);
+  const answer = sanitizeHerculesReply(!quietHumour && flavorIndex(q, 5) === 0 ? `${purr} ${spoken}` : spoken, spoken);
+  return format(preference("answerLength") === "detailed" && grounded.lesson && !answer.includes(grounded.lesson) ? `${answer}\n\n${grounded.lesson}` : answer);
 }

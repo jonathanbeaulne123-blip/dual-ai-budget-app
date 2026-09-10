@@ -1,4 +1,18 @@
+## Hercules slice 6 — local integration; product trials pending (2026-09-10)
+
+Integration repairs cover private acknowledgement recovery, view-preserved session drafts, corrected/forgotten preferences, current-source navigation and useful offline replies. Three-theme browser and protected App/authority verification are recorded in the [worksession](worksessions/2026-09-10-hercules-slice-6.md). [Bianca's six actual trials](briefs/HERCULES_BIANCA_ACCEPTANCE.md), live voice ratings, likeness, physical devices and authenticated continuity remain acceptance work. No hosted release or activation is implied.
+
+## Hercules slice 5 — locally verified implementation (2026-09-10)
+
+Complete wardrobe implementation is in verification: 36 original pieces plus legacy compatibility; on-demand 3D collection packs and matching normal-app looks; personal Wear/Save; explicit gallery share/copy/rename/remove; all three themes. Owner likeness, physical phone and authenticated cross-device acceptance remain separate gates. [Evidence](worksessions/2026-09-10-hercules-slice-5.md).
+
 # Hearth living roadmap
+
+**2026-09-10 — Hercules slice 4 implemented locally behind a flag:** one complete 3D fitting look, shared rig, authored reactions, three-theme room and local recovery. [Evidence](worksessions/2026-09-10-hercules-slice-4.md). Not deployed; likeness/fitting and physical-phone acceptance remain open. Full catalogue and Wear/Save/share are slice 5.
+
+**2026-09-10 — Hercules slice 3 implemented locally:** useful discovery, explicit private suggestion controls and revalidated continuation. [Evidence](worksessions/2026-09-10-hercules-slice-3.md). Not deployed. Advanced locally by slice 4 below its acceptance flag.
+
+**2026-09-10 — Hercules slice 2 implemented locally:** private profile continuity, Gemini character/history, explicit preference controls and guarded cues. [Worksession](worksessions/2026-09-10-hercules-slice-2.md). Not deployed; live model quality and physical-device proof remain open. Next implementation: slice 3 useful discovery.
 
 > **Onboarding v2 and statement-assisted setup — integration review, 2026-09-08:** Five required stages, independent Shared evidence, reviewed signed/zero openings and atomic reconciled history corrections. [Implementation and acceptance](worksessions/2026-09-08-onboarding-v2-statement-setup.md). Release, real two-device Development rehearsal and physical accessibility checks remain open.
 
@@ -422,6 +436,7 @@ Phases are dependency-ordered, not date-boxed. A later phase can be researched o
 
 **Exit condition:** delight increases completion and shared understanding without creating pressure, distraction, or financial side effects.
 
+- [ ] Complete the six-slice [Hercules living companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md): affectionate personality, useful discovery, private helpful preferences, personal wardrobe, shared look gallery and full 3D closet in all three themes. Slice 1 defines closed contracts and synthetic evaluation; it is not live behaviour or persistence activation. [Current evidence](worksessions/2026-09-10-hercules-slice-1.md).
 - [ ] Unlock short, human-reviewed lessons after real workflow wins; lessons simulate but never post.
 - [ ] **Future financial-education academy (not implemented):** design a Fabulous/Duolingo-style interactive quest path that can begin with age-five concepts such as “what is money?” and “what is a bank account?”, then grow through household budgeting, credit, investing, bookkeeping, and CPA-level topics such as efficient tax filing. Keep difficulty, language, and pacing adaptable to the learner; label jurisdiction, tax year, sources, and professional-advice boundaries. Quests may teach and simulate, but never post money, file a return, or imply a credential.
 - [ ] Add cooperative household quests tied to safe actions such as reconcile/review, never spending or partner comparison.

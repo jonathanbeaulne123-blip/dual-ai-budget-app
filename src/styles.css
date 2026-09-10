@@ -3212,3 +3212,61 @@ input, select, textarea {
 .reading-receipt dl { display: grid; grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr); gap: 6px 10px; }
 .reading-receipt dd { margin: 0; }
 .reading-receipt .chip { min-height: 44px; border-radius: 3px; }
+
+/* Private Hercules keepsake card — shared controls, authored scene materials. */
+.hercules-turn { white-space: pre-wrap; overflow-wrap: anywhere; }
+.companion-memory { margin: 12px 0; border: 1px solid var(--line, #b9ac90); border-radius: 9px; background: var(--paper, #fff9ec); color: var(--ink, #342d25); text-align: left; }
+.companion-memory summary { padding: 12px 14px; min-height: 44px; cursor: pointer; font-weight: 650; }
+.companion-memory-inner { padding: 0 14px 14px; font-size: 13px; line-height: 1.55; }
+.companion-memory-intro { font-family: Georgia, serif; font-size: 17px; }
+.companion-memory-field { display: flex; align-items: end; gap: 8px; margin: 12px 0; }
+.companion-memory-field label { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.companion-memory select { width: 100%; min-height: 44px; font: inherit; background: var(--paper, #fff9ec); color: inherit; border: 1px solid currentColor; border-radius: 5px; padding: 8px; }
+.companion-memory button { min-height: 44px; white-space: normal; }
+.companion-memory-toggle { display: flex; align-items: start; gap: 9px; cursor: pointer; }
+.companion-memory-toggle input { flex: 0 0 auto; margin-top: 5px; }
+.companion-memory :is(button, select, summary, input):focus-visible { outline: 3px solid var(--ink, #342d25); outline-offset: 3px; }
+.companion-save-status { font-size: 12px; line-height: 1.4; }
+.companion-archive { max-height: 280px; overflow: auto; margin-block: 16px; }
+:root[data-theme="classic"] .companion-memory { border-top: 4px double #99774f; box-shadow: 2px 3px 0 #957e5520; }
+:root[data-theme="taylor"] .companion-memory { background: #fff7f6; color: #49323d; border: 1px dashed #b17c97; border-radius: 14px 5px 13px 5px; box-shadow: 3px 4px 0 #d6a8b526; }
+:root[data-theme="taylor"] .companion-memory-intro { color: #7b4463; font-style: italic; }
+:root[data-theme="newfoundland"] .companion-memory { background: #f7f7ed; color: #273e41; border: 2px solid #557e83; border-top: 5px solid #be7659; border-radius: 4px; }
+:root[data-theme="newfoundland"] .companion-memory-intro { color: #345a62; }
+@media (max-width: 380px) { .companion-memory-field { flex-wrap: wrap; } .companion-memory-field label { flex-basis: 100%; } }
+
+.hercules-bubble.chat { pointer-events: auto; max-height: min(680px, calc(100dvh - 120px)); overflow-y: auto; overscroll-behavior: contain; }
+.hercules-bubble .companion-memory { pointer-events: auto; }
+
+/* Hercules's help desk: a compact set of useful invitations, with a browsable catalogue. */
+.hercules-bubble.chat:has(.hercules-discovery) { width: min(440px, calc(100vw - 24px)); }
+.hercules-discovery { text-align: left; color: var(--ink); padding: 12px; border: 1px solid var(--line); background: var(--paper); border-radius: 12px; }
+.hercules-discovery header { display: block; }
+.hercules-discovery h2 { font-family: Georgia, serif; font-size: 24px; margin: 0 0 8px; }
+.hercules-discovery h3 { font-size: 17px; margin: 22px 0 8px; }
+.hercules-discovery h4 { font-size: 15px; margin: 0 0 6px; }
+.hercules-discovery p { line-height: 1.5; margin: 7px 0 12px; }
+.hercules-discovery small, .hercules-discovery-caption { display: block; font-size: 12px; line-height: 1.5; }
+.hercules-discovery-card { padding: 14px; margin: 10px 0; border: 1px solid var(--line); border-left: 4px solid var(--accent, #775538); background: var(--paper); border-radius: 6px; }
+.hercules-discovery :is(button, select, input, summary) { min-height: 44px; max-width: 100%; font: inherit; }
+.hercules-discovery button { display: inline-block; padding: 9px 12px; margin: 8px 6px 0 0; white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.hercules-discovery-card > button { font-weight: 650; }
+.hercules-discovery-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.hercules-discovery-choices button { background: transparent; font-size: 12px; text-decoration: underline; border-color: transparent; padding: 6px; margin: 0; }
+.hercules-discovery summary { cursor: pointer; font-weight: 650; padding: 12px 0; }
+.hercules-discovery select, .hercules-discovery input { width: 100%; background: var(--paper); color: inherit; border: 1px solid currentColor; border-radius: 4px; padding: 8px; }
+.hercules-capability { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.hercules-discovery-answer { padding: 14px; border: 2px solid var(--accent, #775538); margin-top: 12px; border-radius: 8px; }
+.hercules-discovery-answer p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.hercules-discovery :is(button, select, input, summary):focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+:root[data-theme="classic"] .hercules-discovery { background: #faf5e9; color: #382f25; border-top: 5px double #947746; box-shadow: 3px 4px 0 #9b815622; }
+:root[data-theme="classic"] .hercules-discovery-card { background: #fffcf4; border-left-color: #806132; }
+:root[data-theme="taylor"] .hercules-discovery { background: #fff6f6; color: #4b3042; border: 1px dashed #9b6685; border-radius: 15px 5px 16px 6px; }
+:root[data-theme="taylor"] .hercules-discovery h2 { font-style: italic; }
+:root[data-theme="taylor"] .hercules-discovery-card { background: #fffaf9; border-left-color: #9b557c; box-shadow: 2px 3px 0 #c798b22b; }
+:root[data-theme="newfoundland"] .hercules-discovery { background: #f5f5e9; color: #263e43; border-top: 5px solid #a65c41; border-radius: 4px; }
+:root[data-theme="newfoundland"] .hercules-discovery-card { background: #fffdf1; border-left-color: #416f74; }
+@media (max-width: 380px) { .hercules-discovery { padding: 10px; } .hercules-discovery-card { padding: 10px; } }
+.wardrobe-fitting-entrance{padding:20px;margin-bottom:20px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(120deg,var(--card),color-mix(in srgb,var(--accent) 9%,var(--card)))}
+.wardrobe-fitting-entrance h3{font-family:Georgia,serif;font-size:24px;margin:0 0 8px}.wardrobe-fitting-entrance small{display:block;font-size:11px;margin-top:9px;color:var(--muted)}.wardrobe-fitting-entrance button{min-height:44px}
+.wardrobe-loading-room{position:fixed;z-index:1401;inset:max(20px,20vh) max(20px,calc((100vw - 550px)/2));padding:30px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:16px;box-shadow:0 0 0 100vmax #201b18aa;max-height:75dvh;overflow:auto}.wardrobe-loading-room button{min-height:44px;margin:8px}

@@ -191,7 +191,7 @@ function KittyBanksScope({
             const fill = Math.round(kittyBankFill(goal) * 100);
             const contributors = describeGoalContributors(household, goal.id);
             return (
-              <div className="kitty-bank" key={goal.id} data-kitty-step={kittyBankStep(goal)}>
+              <div className="kitty-bank" data-goal-id={goal.id} tabIndex={-1} key={goal.id} data-kitty-step={kittyBankStep(goal)}>
                 {!(phone && manage) && <PaperBank goal={goal} role={role} />}
                 <div className="kitty-bank-copy">
                   <strong>{goal.name}</strong>

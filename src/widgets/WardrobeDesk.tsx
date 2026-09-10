@@ -1,3 +1,5 @@
+import { CompanionMemoryControls } from "../CompanionMemoryControls.tsx";
+import type { KitchenCommand } from "../kitchenCommand.ts";
 import { useId, useState } from "react";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { HerculesPortrait } from "../Hercules.tsx";
@@ -5,15 +7,13 @@ import {
   COSMETICS,
   describeCompanion,
   equipCosmetic,
-  forgetHerculesMemory,
   renameCompanion,
-  wipeHerculesChat,
   writeClinkOn,
-  type CommitResult,
   type Environment,
   type Household,
 } from "../core/index.ts";
 
+import { WardrobeEntrance } from '../wardrobe/WardrobeEntrance.tsx';
 const SLOTS = [
   { id: "hat" as const, label: "Hats" },
   { id: "chain" as const, label: "Chains" },
@@ -34,7 +34,7 @@ export function WardrobeBody({
   environment,
   clinkOn,
   onClinkOn,
-  onCommand,
+  onCommand, memberId, ledgerView,
 }: {
   household: Household;
   today: string;
@@ -42,7 +42,9 @@ export function WardrobeBody({
   environment: Environment;
   clinkOn: boolean;
   onClinkOn: (on: boolean) => void;
-  onCommand: (fn: (current: Household) => CommitResult) => void;
+  onCommand: KitchenCommand;
+  memberId: string;
+  ledgerView: "personal" | "household";
 }) {
   const view = describeCompanion(household, today);
   const [petName, setPetName] = useState(view.name);
@@ -50,6 +52,7 @@ export function WardrobeBody({
   const appearance = useAppearance();
   return (
     <div className="wardrobe-desk">
+      {import.meta.env.VITE_HERCULES_DRESSING_ROOM === '1' && <WardrobeEntrance key={`${environment}:${household.householdId}:${memberId}`} environment={environment} householdId={household.householdId} memberId={memberId} view={ledgerView} busy={busy}/>}
       <div className="wardrobe-still" aria-hidden="true">
         <HerculesPortrait
           mood={view.mood}
@@ -61,6 +64,7 @@ export function WardrobeBody({
           size="stage"
         />
       </div>
+      {import.meta.env.VITE_HERCULES_DRESSING_ROOM !== '1' && <>
       {appearance.scene.theme !== "classic" && <p className="muted">The theme adds accessories to empty slots. Choose None to take them off.</p>}
       {SLOTS.map((slot) => (
         <div key={slot.id} className="wardrobe-slot">
@@ -99,6 +103,7 @@ export function WardrobeBody({
           appearance.store?.setAccessoryHidden("neck", false);
         }}>Use theme accessories again</button>
       )}
+      </>}
       <label htmlFor={nameId}>Rename {view.name}</label>
       <div className="rename-row">
         <input id={nameId} value={petName} onChange={(event) => setPetName(event.target.value)} maxLength={24} />
@@ -106,28 +111,8 @@ export function WardrobeBody({
           Save
         </button>
       </div>
-      <div className="hercules-notes">
-        <span className="muted">Kitchen ledger notes</span>
-        {(household.kitchen.hercules?.memories ?? []).length === 0 ? (
-          <p className="muted">Say “remember …” to Hercules. Notes stay in this snapshot — same door as the milk.</p>
-        ) : (
-          (household.kitchen.hercules?.memories ?? []).map((row) => (
-            <div className="chalk-note" key={row.id}>
-              <p>{row.label}</p>
-              <div className="chalk-actions">
-                <button type="button" disabled={busy} onClick={() => onCommand((current) => forgetHerculesMemory(current, row.id))}>
-                  forget
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-        {(household.kitchen.hercules?.chats ?? []).length > 0 && (
-          <button className="chip quiet" type="button" disabled={busy} onClick={() => onCommand((current) => wipeHerculesChat(current))}>
-            Wipe chat ({household.kitchen.hercules.chats.length})
-          </button>
-        )}
-      </div>
+      <CompanionMemoryControls household={household} memberId={memberId} view={ledgerView} onCommand={onCommand} />
+      {((household.kitchen.hercules?.chats?.length ?? 0) + (household.kitchen.hercules?.memories?.length ?? 0)) > 0 && <details className="companion-archive"><summary>Previously shared chat archive</summary><p>These old messages were shared with the household. They are read-only and never enter the new private conversation.</p>{household.kitchen.hercules?.chats.map(row => <p className="hercules-turn" key={row.id}>{row.role === "user" ? household.members.find(member => member.id === row.createdBy)?.name ?? "Household member" : "Hercules"}: {row.text}</p>)}{household.kitchen.hercules?.memories.map(row => <p key={row.id}>{row.label}</p>)}</details>}
       <label className="clink-row">
         <input
           type="checkbox"
@@ -139,7 +124,7 @@ export function WardrobeBody({
         />
         Tiny clink on save (off unless you tick this)
       </label>
-      <p className="muted">Hats never post. Equip is a kitchen write with empty postedIds.</p>
+      <p className="muted">A change of clothes, a little more ceremony. The books carry on.</p>
     </div>
   );
 }
