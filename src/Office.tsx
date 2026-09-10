@@ -1,3 +1,4 @@
+import { revealPhoneInstrument } from "./core/officePhone.ts";
 import { OFFICE_INSTRUMENT_PURPOSE } from "./core/widgetPurpose.ts";
 import { DrawerSurface } from "./DrawerSurface.tsx";
 import type { KitchenCommand } from "./kitchenCommand.ts";
@@ -123,7 +124,7 @@ function useBreakpoint(): OfficeBreakpoint {
 }
 
 export function Office({
-  scenarioSource,
+  scenarioSource, wardrobeRequest, onWardrobeOpened,
   household,
   booksHousehold,
   dashboard,
@@ -165,6 +166,8 @@ export function Office({
   integrityFindingCount = 0,
   integrityFindings = [],
 }: {
+  wardrobeRequest?: string | null;
+  onWardrobeOpened?: () => void;
   household: Household;
   booksHousehold: Household;
   scenarioSource?: ScenarioSourceContext | null;
@@ -298,6 +301,12 @@ export function Office({
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
+
+  useEffect(() => {
+    if (!wardrobeRequest) return;
+    setLayout(current => revealPhoneInstrument(current, "wardrobe"));
+    onWardrobeOpened?.();
+  }, [wardrobeRequest, onWardrobeOpened]);
 
   useEffect(() => {
     return subscribeOfficeIntent((intent) => {
@@ -900,6 +909,7 @@ export function Office({
     >
       {breakpoint === "phone" ? (
       <OfficePhone
+        clinkOn={clinkOn} onClinkOn={onClinkOn}
         onOpenDrawer={() => setSheet("drawer")}
         scenarioSource={scenarioSource}
         household={household} booksHousehold={booksHousehold} view={view} onOpenFundDestination={onOpenFundDestination} dashboard={dashboard} sill={sill}

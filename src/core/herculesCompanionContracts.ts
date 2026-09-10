@@ -328,13 +328,13 @@ export type CompanionOperation =
   | { kind: "look.wear"; look: LookV1; expectedRevision: number }
   | { kind: "look.save"; look: LookV1; expectedRevision: number }
   | { kind: "look.remove"; lookId: string; expectedRevision: number }
-  | { kind: "suggestion.set"; state: CompanionSuggestionState; expectedRevision: number };
+  | { kind: "suggestion.set"; state: CompanionSuggestionState; expectedRevision: number; expectedState?: CompanionSuggestionState | null };
 export type CompanionIntentV1 = { version: 1; id: string; scope: CompanionScope; operation: CompanionOperation };
 export function decodeCompanionIntent(value: unknown, authenticatedScope: CompanionScope, catalogue?: CosmeticManifestV2): CompanionIntentV1 {
   const row = object(value, ["version", "id", "scope", "operation"]);
   requireContract(row.version === 1, "UNSUPPORTED_INTENT_VERSION");
   const owner = scope(row.scope); sameScope(owner, authenticatedScope);
-  const op = object(row.operation, ["kind", "key", "value", "expectedRevision", "origin", "enabled", "view", "generation", "turn", "expectedGeneration", "look", "lookId", "state"]);
+  const op = object(row.operation, ["kind", "key", "value", "expectedRevision", "origin", "enabled", "view", "generation", "turn", "expectedGeneration", "look", "lookId", "state", "expectedState"]);
   let operation: CompanionOperation;
   switch (op.kind) {
     case "preference.set": {
@@ -371,8 +371,8 @@ export function decodeCompanionIntent(value: unknown, authenticatedScope: Compan
       object(op, ["kind", "lookId", "expectedRevision"]);
       operation = { kind: op.kind, lookId: id(op.lookId), expectedRevision: revision(op.expectedRevision) }; break;
     case "suggestion.set":
-      object(op, ["kind", "state", "expectedRevision"]);
-      operation = { kind: op.kind, state: suggestion(op.state), expectedRevision: revision(op.expectedRevision) }; break;
+      object(op, ["kind", "state", "expectedRevision", "expectedState"]);
+      operation = { kind: op.kind, state: suggestion(op.state), expectedRevision: revision(op.expectedRevision), ...(op.expectedState !== undefined ? { expectedState: op.expectedState === null ? null : suggestion(op.expectedState) } : {}) }; break;
     default: throw new CompanionContractError("NONFINANCIAL_OPERATION_REQUIRED");
   }
   return { version: 1, id: id(row.id), scope: owner, operation };

@@ -1,3 +1,9 @@
+## Hercules living companion slice 3 — local implementation (2026-09-10)
+
+Useful discovery now shares one local evidence/catalogue path with typed source/navigation actions. Help has For you now, Things we can do and Continue with me; acknowledged private snooze/disable/resume settings, scope epochs, exact predecessor CAS and current-state navigation checks protect continuity. Phone and desktop use all three authored themes. Existing outfits are reachable on phone; full 3D wardrobe remains slice 4.
+
+Risk High. Budget (5): grounded explanations and existing Confirm/source workflows. Engagement (3): useful suggestions and resumable tasks without interruptions. [Worksession/evidence](worksessions/2026-09-10-hercules-slice-3.md). No push, merge, deployment, schema, secrets or real provider-data test. Server-first compatible release and authenticated two-device proof remain separate gates.
+
 ## Hercules living companion slice 2 — local implementation (2026-09-10)
 
 Private profile persistence now spans shaping, personal split/decode/overlay/assembly, v2 command admission, event replay and backup. Chat uses the versioned affectionate-diva brief, scoped bounded history and explicit preference controls with acknowledged receipts and Undo. Conversations remain usable while unsaved; legacy shared history stays read-only and outside active context. All three themes have authored controls in the chat and wardrobe.

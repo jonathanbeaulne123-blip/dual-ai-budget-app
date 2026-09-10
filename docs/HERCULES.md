@@ -10,6 +10,10 @@ Jonathan approved an affectionate little diva with contextual guidance, helpful 
 
 The local slice-2 branch now activates private member-personal profile support and the versioned voice in source. Recent conversation is partitioned by member, household, environment and ledger view; preference controls are available from conversation and wardrobe. New writes require v2 server capability and ACK. The previous shared transcript/notes are archive-only. Details and deployment limitations: [slice 2 evidence](worksessions/2026-09-10-hercules-slice-2.md).
 
+## Slice 3 implementation
+
+The local discovery surface now offers For you now, Things we can do and Continue with me. Its catalogue is backed by current-scope evidence and existing source/review flows. Suggestions can be set aside, disabled/re-enabled or bookmarked, with acknowledged private persistence. Full wardrobe production remains later. [Implementation and verification](worksessions/2026-09-10-hercules-slice-3.md).
+
 ## Earlier runtime baseline (superseded by slice 2 where stated)
 
 **The product face:** a living Maine Coon who reads the household journal, keeps notes in the same snapshot as the milk, and never posts a cent.

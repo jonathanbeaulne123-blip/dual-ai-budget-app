@@ -1,3 +1,6 @@
+import { HerculesDiscovery } from "./HerculesDiscovery.tsx";
+import { discoveryCandidates, discoveryScope, type DiscoveryDestination, type DiscoveryFund } from "./core/herculesDiscovery.ts";
+import { HERCULES_CAPABILITIES } from "./core/herculesCapabilities.ts";
 import { companionCueCommands } from "./core/herculesPresentation.ts";
 import { resolveHerculesFollowUp } from "./core/herculesPlanner.ts";
 import { CompanionMemoryControls } from "./CompanionMemoryControls.tsx";
@@ -26,7 +29,6 @@ import {
   herculesProviderLabel,
   herculesInstrumentSurface,
   herculesUsefulness,
-  firstRunLesson,
   hourInToronto,
   isCurrentHerculesReply,
   kettlePhase,
@@ -229,7 +231,7 @@ export function HerculesPresence({
   activityBlocked = false,
   memberId,
   view,
-  onOpenAdd,
+  onOpenAdd, onDiscoveryNavigate, discoveryAccountId, discoveryFund,
   onGo,
   onLedger, onCompanionCommand,
   onDraft,
@@ -260,6 +262,9 @@ export function HerculesPresence({
   activityBlocked?: boolean;
   memberId: string;
   view: LedgerView;
+  onDiscoveryNavigate?: (destination: DiscoveryDestination) => void;
+  discoveryAccountId?: string | null;
+  discoveryFund?: DiscoveryFund | null;
   onOpenAdd: (note?: string) => void;
   onGo: (tab: HearthTab) => void;
   onLedger: (fn: (current: Household) => CommitResult) => void;
@@ -306,6 +311,7 @@ export function HerculesPresence({
   const [open, setOpen] = useState(false);
   const [activePersonalOffer, setActivePersonalOffer] = useState<PersonalModuleOffer | null>(null);
   const [helpAsked, setHelpAsked] = useState(false);
+  const [invitationDismissed, setInvitationDismissed] = useState(false);
   const [begging, setBegging] = useState(false);
   const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
@@ -1106,6 +1112,7 @@ export function HerculesPresence({
   }
 
   function sitWithBag() {
+    closeChat();
     setPinned(true);
     setBegging(false);
     setOpen(false);
@@ -1123,16 +1130,19 @@ export function HerculesPresence({
     }
   }
 
-  function openChatFromBeg(helpOnly=false) {
+  function openChatFromBeg(helpOnly=true) {
     if (!helpOnly && setup && setup.household.householdOnboarding?.state !== 'complete') {
       setOpen(true);setSetupSelected(true);return;
     }
     setBegging(false);
-    if (activePersonalOffer) {
+    setFocusedWidget(null);
+    setHelpAsked(true);
+    setInvitationDismissed(true);
+    if (!helpOnly && activePersonalOffer) {
       setOpen(true);
       return;
     }
-    if (!setup && !householdOnboardingShellActive && personalOffer) {
+    if (!helpOnly && !setup && !householdOnboardingShellActive && personalOffer) {
       const offeredAt = new Date().toISOString();
       setActivePersonalOffer(personalOffer);
       onLedger((current) => recordPersonalModuleOffer(current, {
@@ -1149,12 +1159,11 @@ export function HerculesPresence({
     const page = adding ? "add" : tab;
     const instrument = currentInstrument();
     const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
-    const lesson = firstRunLesson(`page:${page}`, surface.lesson);
     applyTalk({
-      spoken: help.spoken,
-      lesson,
+      spoken: "I can help you understand the books, pick up a task, or choose something excellent to wear. What shall we do?",
+      lesson: null,
       fact: surface.fact,
-      replies: help.replies,
+      replies: onDiscoveryNavigate ? [] : help.replies,
       pose: usefulness.light === "green" ? "celebrate" : "perch",
       topic: instrument ?? topic,
       attention: false,
@@ -1347,7 +1356,7 @@ export function HerculesPresence({
     setTalk(grounded);
     setTopic(grounded.topic);
     setMotion("pounce");
-    const disclosedContext = composeHerculesChatRequest(conversationHousehold(), text, briefing, today, memberId, topic, { view }).companion;
+    const disclosedContext = composeHerculesChatRequest(conversationHousehold(), text, briefing, today, memberId, topic, { view, availableActionIds: availableDiscoveryActions() }).companion;
     const plannerMessage = resolveHerculesFollowUp(text, disclosedContext.context);
     const toolPlan = shouldPlanHerculesTools(plannerMessage)
       ? await planHerculesReadTools({ message: plannerMessage, page, view })
@@ -1360,6 +1369,7 @@ export function HerculesPresence({
       const investigation = executeHerculesReadToolPlan(household, toolPlan, today, { memberId, view });
       const groundedAnswer = investigation.talk;
       const voicedRequest = composeHerculesChatRequest(conversationHousehold(), text, briefing, today, memberId, topic, {
+        availableActionIds: availableDiscoveryActions(),
         shareCoordsWithModel: loadPhonePlacePrefs(household.environment).shareCoordsWithModel,
         view,
         coworkerIdsForModel,
@@ -1408,6 +1418,7 @@ export function HerculesPresence({
     }
     const result = await chatHercules(
       composeHerculesChatRequest(conversationHousehold(), message, briefing, today, memberId, topic, {
+        availableActionIds: availableDiscoveryActions(),
         shareCoordsWithModel: loadPhonePlacePrefs(household.environment).shareCoordsWithModel,
         view,
         coworkerIdsForModel,
@@ -1481,7 +1492,7 @@ export function HerculesPresence({
     if (!start.moved) {
       setPurr(true);
       if (open) closeChat();
-      else openChatFromBeg();
+      else openChatFromBeg(true);
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
     }
@@ -1545,6 +1556,11 @@ export function HerculesPresence({
     : talk?.fact?.source
       ? [{ id: `fact:${talk.fact.label}:${talk.fact.value}`, label: talk.fact.label, value: talk.fact.value, source: talk.fact.source, basis: "journal" as const }]
       : [];
+  const discoveryInput = { household, memberId, view, tab: adding ? "add" as const : tab, today, accountId: discoveryAccountId, fund: discoveryFund };
+  const availableDiscoveryActions = () => onDiscoveryNavigate ? [...new Set(discoveryCandidates(discoveryInput).map(row => HERCULES_CAPABILITIES.find(definition => definition.id === row.capabilityId)!.action))] : [];
+  const discoveryPanel = () => onDiscoveryNavigate ? <HerculesDiscovery key={discoveryScope(discoveryInput)} input={discoveryInput} onCommand={onCompanionCommand}
+    blocked={adding || busy} onNavigate={destination => { closeChat(); onDiscoveryNavigate(destination); }}
+    onContinueChat={() => { const input = document.querySelector<HTMLInputElement>(`.hercules-focus-shell input[aria-label="Ask ${look.view.name}"], .hercules-bubble input[aria-label="Ask ${look.view.name}"]`); input?.focus(); input?.scrollIntoView({ block: "nearest" }); }} /> : null;
   const workplaceShareToggle = () => view === "personal" && selectableWorkplaceCoworkerIds.length > 0 ? (
     <label className="hercules-workplace-share">
       <input
@@ -1636,7 +1652,7 @@ export function HerculesPresence({
             pose="loaf"
             size={40}
           />
-          <span className="hercules-pill-name">{look.view.name}</span>{(proposal || householdOnboardingShellActive) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
+          <span className="hercules-pill-name">How can I help?</span>{(!invitationDismissed && !autonomyBlocked && onDiscoveryNavigate) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
         </button>
       )}
       {focusShellOpen && (
@@ -1681,6 +1697,8 @@ export function HerculesPresence({
             />
           </div>
           <div className="hercules-focus-body">
+            {discoveryPanel()}
+            {!setup && <button type="button" onClick={sitWithBag}>Play</button>}
             {<><p className="companion-save-status" role="status">{privateSaveStatus}</p>
             {preferenceUndo && <button type="button" onClick={undoRememberedPreference}>Undo remembered preference</button>}
             {pendingExchange.current && !privateSaving && <button type="button" onClick={() => { if (pendingExchange.current) void savePrivateExchange([...pendingExchange.current]); }}>Retry conversation save</button>}
@@ -1833,29 +1851,8 @@ export function HerculesPresence({
             </>
           ) : talk ? (
           <>
-          {open && !begging && (
-            <button
-              type="button"
-              className="hercules-help"
-              onClick={() => {
-                const page = adding ? "add" : tab;
-                const instrument = currentInstrument();
-                const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
-                setHelpAsked(true);
-                applyTalk({
-                  spoken: help.spoken,
-                  lesson: null,
-                  fact: surface.fact,
-                  replies: help.replies,
-                  pose: "perch",
-                  topic: instrument ?? topic,
-                  attention: false,
-                });
-              }}
-            >
-              How can I help
-            </button>
-          )}
+          {open && !begging && discoveryPanel()}
+          {open && !setup && <button type="button" onClick={sitWithBag}>Play</button>}
           {open && !begging && turns.length > 0 ? (
             <div className="hercules-chat-log" ref={logRef}>
               {turns.slice(-6).map((turn, index) => (
@@ -1953,7 +1950,7 @@ export function HerculesPresence({
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
         aria-label={`Open ${look.view.name}`}
-        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg();}}}
+        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg(true);}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -1974,7 +1971,7 @@ export function HerculesPresence({
           size={size}
           flip={flip}
         />
-        {(proposal || householdOnboardingShellActive) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
+        {(!invitationDismissed && !autonomyBlocked && onDiscoveryNavigate) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
       </button>
     </div>
     </HerculesRigProvider>

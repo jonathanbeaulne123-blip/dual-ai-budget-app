@@ -31,7 +31,7 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
   if (!household.members.some(member => member.id === scope.memberId && member.active)) throw new Error("COMPANION_MEMBER_REQUIRED");
   const intent = decodeCompanionIntent(raw, scope);
   const op = intent.operation;
-  if (!["preference.set", "preference.forget", "remembering.set", "conversation.append", "conversation.clear"].includes(op.kind)) throw new Error("COMPANION_FEATURE_NOT_AVAILABLE");
+  if (!["preference.set", "preference.forget", "remembering.set", "conversation.append", "conversation.clear", "suggestion.set"].includes(op.kind)) throw new Error("COMPANION_FEATURE_NOT_AVAILABLE");
   const profile = companionFor(household, scope.memberId);
   const ready = checkCompanionPrecondition(profile, intent, scope);
   const now = new Date().toISOString();
@@ -45,6 +45,14 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
     if (op.kind === "preference.set" || op.kind === "preference.forget") {
       profile.preferences = profile.preferences.filter(row => row.key !== op.key);
       profile.preferences.push({ key: op.key, value: op.kind === "preference.set" ? op.value : null, revision: op.expectedRevision + 1, updatedAt: now, source: "explicit-user" });
+    } else if (op.kind === "suggestion.set") {
+      const predecessor = profile.suggestions.find(row => row.issueId === op.state.issueId && row.view === op.state.view) ?? null;
+      if (op.expectedState === undefined || canonical(predecessor) !== canonical(op.expectedState)) throw new Error("STALE_SUGGESTION_STATE");
+      const tombstone = op.state.until === "1970-01-01T00:00:00.000Z" && (op.state.issueId === `capability:${op.state.capabilityId}` || op.state.issueId === `resume:${op.state.capabilityId}`);
+      if (op.state.status === "snoozed" && !tombstone && Date.parse(op.state.until!) <= Date.parse(now)) throw new Error("SUGGESTION_EXPIRED");
+      if (op.state.until && Date.parse(op.state.until) > Date.parse(now) + 86_400_000 + 300_000) throw new Error("SUGGESTION_SNOOZE_TOO_LONG");
+      profile.suggestions = profile.suggestions.filter(row => row.view !== op.state.view || row.issueId !== op.state.issueId);
+      profile.suggestions.push({ ...op.state, revision: op.expectedRevision + 1 });
     } else if (op.kind === "remembering.set") profile.remembering = { enabled: op.enabled, revision: op.expectedRevision + 1 };
     else if (op.kind === "conversation.clear") {
       const partition = profile.conversations.find(row => row.view === op.view)!;
@@ -55,6 +63,10 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
       profile.conversations.find(row => row.view === op.view)!.turns.push(op.turn);
     }
   }
+  // Expired occurrence snoozes can be reclaimed: an old create carries an expired
+  // deadline (rejected above), and an old update retains a nonzero CAS revision.
+  profile.suggestions = profile.suggestions.filter(row => !(row.status === "snoozed" && row.issueId.startsWith(`${row.capabilityId}:`) && Date.parse(row.until!) <= Date.parse(now)));
+  if (profile.suggestions.length > COMPANION_LIMITS.suggestions) throw new Error("COMPANION_SUGGESTION_LIMIT");
   for (const partition of profile.conversations) partition.turns = partition.turns
     .filter(turn => Date.parse(turn.createdAt) >= Date.parse(now) - COMPANION_LIMITS.historyDays * 86_400_000)
     .slice(-COMPANION_LIMITS.turnsPerView);

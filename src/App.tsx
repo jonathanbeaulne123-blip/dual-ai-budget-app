@@ -1,3 +1,4 @@
+import { buildDiscoveryFund, type DiscoveryDestination } from "./core/herculesDiscovery.ts";
 import { companionUpdateAllowed } from "./core/herculesCompanion.ts";
 import { entryDraftKey, loadEntryDraft, writeEntryLocal, clearEntryLocal, entryConfirmation, clearEntryConfirmation, readEntrySubmission, type EntrySubmission, type EntryDraft } from "./entryDraft.ts";
 import type { KitchenCommandOptions } from "./kitchenCommand.ts";
@@ -739,7 +740,10 @@ export function App() {
   const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
   const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
+  const [herculesWardrobeRequest, setHerculesWardrobeRequest] = useState<{ scope: string; id: string } | null>(null);
+  const herculesSourceScope = useRef<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
+
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
   const accountFlowGateRef = useRef(createAccountFlowGate());
@@ -761,6 +765,17 @@ export function App() {
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
+  useEffect(() => {
+    const source = herculesSourceFocus;
+    if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
+    const find = () => source.goalId ? [...document.querySelectorAll<HTMLElement>("[data-goal-id]")].find(node => node.dataset.goalId === source.goalId)
+      : source.fundObligationId ? [...document.querySelectorAll<HTMLElement>("[data-fund-obligation-id]")].find(node => node.dataset.fundObligationId === source.fundObligationId) : source.label === "Health review" ? document.getElementById("hearth-health-review") : null;
+    const focus = () => { const node = find(); if (!node) return false; node.scrollIntoView?.({ block: "center" }); node.focus({ preventScroll: true }); return true; };
+    if (focus()) return;
+    const observer = new MutationObserver(() => { if (focus()) observer.disconnect(); }); observer.observe(document.body, { subtree: true, childList: true });
+    return () => observer.disconnect();
+  }, [herculesSourceFocus, tab, session?.view, session?.memberId, household?.householdId, environment]);
+
   useEffect(() => {
     if (adding && !splitDraft && household && session) {
       setSplitDraft(newSplitDraft(household, { memberId: session.memberId, view: session.view, generation: replicaScopeGenerationRef.current }));
@@ -6544,6 +6559,8 @@ export function App() {
         ) : null}
         <DeferredSurface label="Office">
         <DeferredOffice
+          wardrobeRequest={herculesWardrobeRequest?.scope === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesWardrobeRequest.id : null}
+          onWardrobeOpened={() => setHerculesWardrobeRequest(null)}
           scenarioSource={scenarioSource}
           household={displayHousehold}
           booksHousehold={household}
@@ -6832,7 +6849,7 @@ export function App() {
           view={view}
           booksStatus={booksStatus}
           focusedAccountId={focusedAccountId}
-          sourceFocus={herculesSourceFocus}
+          sourceFocus={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null}
           onFocusAccount={setFocusedAccountId}
           onClearSource={() => setHerculesSourceFocus(null)}
           onChange={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
@@ -6935,7 +6952,7 @@ export function App() {
               {view === "household" ? "Open the household table" : "Open my books"}
             </button>
           </section>
-          <section className="card">
+          <section className="card" id="hearth-health-review" tabIndex={-1}>
             <header><h2>{experience && experience.ok ? experience.integrityLabel : "Health"}</h2><span className={`pill ${healthFindings.length ? "warn" : "good"}`}>{healthFindings.length ? `${healthFindings.length} findings` : "Clean"}</span></header>
             <p className="muted">{view === "household" ? "This is the full-household books signal. It does not reveal Personal envelopes." : "Integrity still runs on the accepted household. Personal amounts stay in this folio."}</p>
             {!(experience && experience.ok) ? <p className="muted">Choose who is using this ledger before reading Health.</p> : healthFindings.length === 0 ? <p className="muted">Ledger, splits, transfers, shifts, flags, and the books agree.</p> : (
@@ -7961,7 +7978,7 @@ export function App() {
       <HerculesPresence
         setup={{ household, memberId:session.memberId, authUserId:localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId,
           today,busy,onCommand:runKitchen,onOptional:openJourneyDestination,onSave:(next,token)=>{void persistLedgerWrite(preserveCurrentPersonal(next),token);} }}
-        household={experience && experience.ok ? experience.herculesHousehold : displayHousehold}
+        household={{ ...(experience && experience.ok ? experience.herculesHousehold : displayHousehold), companionProfile: household.companionProfile?.scope.memberId === session.memberId ? household.companionProfile : undefined }}
         today={today}
         tab={presenceTab(tab)}
         adding={adding || swipeOpen}
@@ -8044,7 +8061,25 @@ export function App() {
           setFocusedAccountId(null);
           goTab("ledger");
         }}
+        discoveryFund={buildDiscoveryFund(household, session.memberId, view, today)}
+        discoveryAccountId={focusedAccountId}
+        onDiscoveryNavigate={(destination: DiscoveryDestination) => {
+          if (adding || swipeOpen || confirm || commandOpen) return;
+          herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`;
+          if (destination.kind === "entry") { openAddFor(null, destination.mode); return; }
+          if (destination.kind === "wardrobe") { setHerculesWardrobeRequest({ scope: `${environment}:${household.householdId}:${session.memberId}:${view}`, id: crypto.randomUUID() }); goTab("home"); return; }
+          if (destination.kind === "shift") { if (activeOpenShift(household.kitchen, session.memberId)?.id === destination.targetId) goTab("shift"); return; }
+          if (destination.kind === "fund") { if (view === "household") { setHerculesSourceFocus({ route: "ledger", view, label: "Fund item", fundObligationId: destination.targetId }); openFundDestination("record"); } return; }
+          if (destination.kind === "health") { setHerculesSourceFocus({ route: "more", view, label: "Health review" }); goTab("more"); return; }
+          const source = destination.source;
+          if (source.view !== view) return;
+          setHerculesSourceFocus(source);
+          if (source.accountId) setFocusedAccountId(source.accountId);
+          if (source.route === "calendar") requestCalendarPane("bills", localStorage);
+          goTab(source.route);
+        }}
         onOpenSource={(source: HerculesNumberSource) => {
+          herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${source.view}`;
           setHerculesSourceFocus(source);
           rememberSession({ memberId: session.memberId, view: source.view, householdId: household.householdId });
           if (source.accountId) setFocusedAccountId(source.accountId);

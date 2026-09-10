@@ -175,6 +175,7 @@ export function OfficeWide({
     storedFundStage(environment, household.householdId, memberId, today)
   ));
   const [fundDrawerOpen, setFundDrawerOpen] = useState(false);
+  useEffect(() => { if (layout.expanded === "wardrobe") { setMonthList(null); setFundDrawerOpen(false); } }, [layout.expanded]);
   const fundStageHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const opinion = useMemo(() => auditOpinion(household), [household]);

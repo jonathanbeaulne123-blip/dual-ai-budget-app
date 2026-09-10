@@ -215,6 +215,8 @@ function BooksSession({
 
   useEffect(() => {
     if (sourceFocus?.route !== "ledger") return;
+    setActivityFocus(null);
+    if (sourceFocus.fundObligationId) { setPane("fund-register"); return; }
     if (herculesLedgerSourcePane(sourceFocus) === "register") {
       setPane("register");
       return;

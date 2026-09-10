@@ -3237,3 +3237,33 @@ input, select, textarea {
 
 .hercules-bubble.chat { pointer-events: auto; max-height: min(680px, calc(100dvh - 120px)); overflow-y: auto; overscroll-behavior: contain; }
 .hercules-bubble .companion-memory { pointer-events: auto; }
+
+/* Hercules's help desk: a compact set of useful invitations, with a browsable catalogue. */
+.hercules-bubble.chat:has(.hercules-discovery) { width: min(440px, calc(100vw - 24px)); }
+.hercules-discovery { text-align: left; color: var(--ink); padding: 12px; border: 1px solid var(--line); background: var(--paper); border-radius: 12px; }
+.hercules-discovery header { display: block; }
+.hercules-discovery h2 { font-family: Georgia, serif; font-size: 24px; margin: 0 0 8px; }
+.hercules-discovery h3 { font-size: 17px; margin: 22px 0 8px; }
+.hercules-discovery h4 { font-size: 15px; margin: 0 0 6px; }
+.hercules-discovery p { line-height: 1.5; margin: 7px 0 12px; }
+.hercules-discovery small, .hercules-discovery-caption { display: block; font-size: 12px; line-height: 1.5; }
+.hercules-discovery-card { padding: 14px; margin: 10px 0; border: 1px solid var(--line); border-left: 4px solid var(--accent, #775538); background: var(--paper); border-radius: 6px; }
+.hercules-discovery :is(button, select, input, summary) { min-height: 44px; max-width: 100%; font: inherit; }
+.hercules-discovery button { display: inline-block; padding: 9px 12px; margin: 8px 6px 0 0; white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.hercules-discovery-card > button { font-weight: 650; }
+.hercules-discovery-choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.hercules-discovery-choices button { background: transparent; font-size: 12px; text-decoration: underline; border-color: transparent; padding: 6px; margin: 0; }
+.hercules-discovery summary { cursor: pointer; font-weight: 650; padding: 12px 0; }
+.hercules-discovery select, .hercules-discovery input { width: 100%; background: var(--paper); color: inherit; border: 1px solid currentColor; border-radius: 4px; padding: 8px; }
+.hercules-capability { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.hercules-discovery-answer { padding: 14px; border: 2px solid var(--accent, #775538); margin-top: 12px; border-radius: 8px; }
+.hercules-discovery-answer p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.hercules-discovery :is(button, select, input, summary):focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+:root[data-theme="classic"] .hercules-discovery { background: #faf5e9; color: #382f25; border-top: 5px double #947746; box-shadow: 3px 4px 0 #9b815622; }
+:root[data-theme="classic"] .hercules-discovery-card { background: #fffcf4; border-left-color: #806132; }
+:root[data-theme="taylor"] .hercules-discovery { background: #fff6f6; color: #4b3042; border: 1px dashed #9b6685; border-radius: 15px 5px 16px 6px; }
+:root[data-theme="taylor"] .hercules-discovery h2 { font-style: italic; }
+:root[data-theme="taylor"] .hercules-discovery-card { background: #fffaf9; border-left-color: #9b557c; box-shadow: 2px 3px 0 #c798b22b; }
+:root[data-theme="newfoundland"] .hercules-discovery { background: #f5f5e9; color: #263e43; border-top: 5px solid #a65c41; border-radius: 4px; }
+:root[data-theme="newfoundland"] .hercules-discovery-card { background: #fffdf1; border-left-color: #416f74; }
+@media (max-width: 380px) { .hercules-discovery { padding: 10px; } .hercules-discovery-card { padding: 10px; } }

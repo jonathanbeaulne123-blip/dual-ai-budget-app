@@ -1,7 +1,7 @@
 import type { LedgerView } from "./types.ts";
 import type { HerculesReadToolName } from "./herculesTools.ts";
 
-/** Declarations only. Slice 3 must supply a verified handler before showing a card. */
+/** Closed catalogue; herculesDiscovery supplies local evidence and verified handlers. */
 export const HERCULES_CAPABILITY_IDS = [
   "explain-page", "guide-entry", "explain-account", "bills-before-payday",
   "explain-spending", "compare-periods", "review-plan", "review-goal",
@@ -32,7 +32,7 @@ export const HERCULES_CAPABILITIES = [
   { id: "explain-page", outcome: "Understand this page", example: "What can I do here?", views: ["household", "personal"], requires: ["current-page"], readTools: [], action: "explain-current-page", completion: "Explanation shown for the same active page and scope." },
   { id: "guide-entry", outcome: "Walk through an entry", example: "Help me enter my groceries.", views: ["household", "personal"], requires: [], readTools: [], action: "open-entry-review", completion: "User completes or exits the existing entry/review flow; only its Confirm posts." },
   { id: "explain-account", outcome: "Understand this balance", example: "Why does this account show that balance?", views: ["household", "personal"], requires: ["selected-account"], readTools: ["account_balance", "explain_balance"], action: "open-account-source", completion: "Current selected-account explanation and its source are shown." },
-  { id: "bills-before-payday", outcome: "See what's due before payday", example: "Walk me through what's due before payday.", views: ["household", "personal"], requires: ["selected-payday"], readTools: ["bills_due"], action: "open-bills-calendar", completion: "Bills are shown for the explicit date range; missing payday prompts for a date." },
+  { id: "bills-before-payday", outcome: "See what's due before payday", example: "Walk me through what's due before payday.", views: ["household"], requires: ["selected-payday"], readTools: ["bills_due"], action: "open-bills-calendar", completion: "Next recorded bill occurrences are shown through the selected payday; missing payday prompts for a date." },
   { id: "explain-spending", outcome: "Understand recorded spending", example: "Where did my spending go this month?", views: ["household", "personal"], requires: ["recorded-period"], readTools: ["spending_summary", "category_breakdown"], action: "open-spending-source", completion: "Scoped recorded-period breakdown and source are shown." },
   { id: "compare-periods", outcome: "Compare two periods", example: "How does this week compare with last week?", views: ["household", "personal"], requires: ["two-recorded-periods"], readTools: ["compare_spending"], action: "open-period-comparison", completion: "Comparison is shown with both date ranges and coverage limitations." },
   { id: "review-plan", outcome: "Walk through our plan", example: "Help me understand what's left after bills.", views: ["household"], requires: ["plan-projection"], readTools: ["budget_status", "cash_position"], action: "open-current-plan", completion: "Existing projection and assumptions shown; no guarantee or silent allocation." },
@@ -40,7 +40,7 @@ export const HERCULES_CAPABILITIES = [
   { id: "review-health", outcome: "Understand something that needs review", example: "Help me understand this warning.", views: ["household", "personal"], requires: ["health-finding"], readTools: ["audit_health", "duplicate_review"], action: "open-health-review", completion: "Current finding is explained and its review destination opens; suppress once resolved." },
   { id: "resume-shift", outcome: "Finish a shift entry", example: "Help me finish the shift I started.", views: ["household", "personal"], requires: ["own-unfinished-shift"], readTools: ["shift_summary"], action: "resume-own-shift", completion: "Same actor's unfinished workflow opens; suppress after completion or abandonment." },
   { id: "explain-fund", outcome: "Understand this Fund item", example: "Explain this contribution or claim.", views: ["household"], requires: ["visible-fund-item"], readTools: [], action: "open-fund-context", completion: "Current visible Fund projection/source opens without exposing private backing money." },
-  { id: "dress-hercules", outcome: "Make a look for Hercules", example: "Let's find you something to wear.", views: ["household", "personal"], requires: ["wardrobe-handler"], readTools: [], action: "open-hercules-closet", completion: "Personal fitting preview opens; wearing/saving remains an explicit action." },
+  { id: "dress-hercules", outcome: "Make a look for Hercules", example: "Let's find you something to wear.", views: ["household", "personal"], requires: ["wardrobe-handler"], readTools: [], action: "open-hercules-closet", completion: "Existing Hercules outfits opens; selecting cosmetics stays explicit. Personal fitting preview belongs to the wardrobe slice." },
 ] as const satisfies readonly CapabilityDefinition[];
 
 /** No suggestion is available merely because its declaration exists. */

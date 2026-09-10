@@ -328,7 +328,7 @@ export function composeHerculesChatRequest(
   today: DateKey,
   memberId: string,
   lastTopic = "",
-  options: { shareCoordsWithModel?: boolean; view?: LedgerView; coworkerIdsForModel?: string[] } = {},
+  options: { shareCoordsWithModel?: boolean; view?: LedgerView; coworkerIdsForModel?: string[]; availableActionIds?: string[] } = {},
 ): {
   message: string;
   companion: CompanionChatRequestV2;
@@ -389,7 +389,7 @@ export function composeHerculesChatRequest(
         : scopedGrounded.fact,
     },
     memories: [], // The previously shared archive is never new private context.
-    companion: companionModelContext(household, memberId, options.view ?? "household", text => scrubQuietText(text, secrets)),
+    companion: { ...companionModelContext(household, memberId, options.view ?? "household", text => scrubQuietText(text, secrets)), availableActionIds: options.availableActionIds ?? [] },
     notices,
     ledger,
     ledgerLines: formatLedgerExcerptForModel(ledger),

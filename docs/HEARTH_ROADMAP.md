@@ -1,5 +1,7 @@
 # Hearth living roadmap
 
+**2026-09-10 — Hercules slice 3 implemented locally:** useful discovery, explicit private suggestion controls and revalidated continuation. [Evidence](worksessions/2026-09-10-hercules-slice-3.md). Not deployed. Next implementation: slice 4, the 3D wardrobe vertical slice.
+
 **2026-09-10 — Hercules slice 2 implemented locally:** private profile continuity, Gemini character/history, explicit preference controls and guarded cues. [Worksession](worksessions/2026-09-10-hercules-slice-2.md). Not deployed; live model quality and physical-device proof remain open. Next implementation: slice 3 useful discovery.
 
 > **Onboarding v2 and statement-assisted setup — integration review, 2026-09-08:** Five required stages, independent Shared evidence, reviewed signed/zero openings and atomic reconciled history corrections. [Implementation and acceptance](worksessions/2026-09-08-onboarding-v2-statement-setup.md). Release, real two-device Development rehearsal and physical accessibility checks remain open.
