@@ -885,11 +885,7 @@
 
 /* Furniture: window, sill, glass. Weather only — never a money token. */
 :root[data-theme] .office-window { border: 1px solid var(--line); border-radius: var(--world-r-card); overflow: hidden; }
-:root[data-theme] .office-sill,
-:root[data-theme] .sill-plate { background: var(--paper-2); border-top: 1px solid var(--line); color: var(--ink); }
-:root[data-theme] .sill-label { color: var(--muted); font-size: 12px; }
-:root[data-theme] .sill-value { color: var(--ink); }
-:root[data-theme] .sill-needs { color: var(--world-warn-fg); }
+:root[data-theme] .office-sill { background: var(--paper-2); border-top: 1px solid var(--line); color: var(--ink); }
 :root[data-theme] .office-glass { background: color-mix(in srgb, var(--theme-second) 18%, transparent); }
 :root[data-theme] .office-window.glass-clear .office-glass { background: color-mix(in srgb, var(--theme-second) 12%, transparent); }
 :root[data-theme] .office-window.glass-rain .office-glass { background: color-mix(in srgb, var(--theme-second) 26%, transparent); }

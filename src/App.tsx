@@ -79,6 +79,7 @@ import {
   setHerculesProPermissions,
   financialAuditHash,
   householdWallet,
+  sillOverview,
   jointSplit,
   memberNeedsGoogleStepUp,
   parseAmount,
@@ -744,6 +745,7 @@ export function App() {
   const [mode, setMode] = useState<AddMode>("expense");
   const [form, setForm] = useState(emptyForm);
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
+  const [moreFocusTarget, setMoreFocusTarget] = useState<"sync-help" | null>(null);
   const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
   const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
@@ -784,6 +786,17 @@ export function App() {
     const observer = new MutationObserver(() => { if (focus()) observer.disconnect(); }); observer.observe(document.body, { subtree: true, childList: true });
     return () => observer.disconnect();
   }, [herculesSourceFocus, tab, session?.view, session?.memberId, household?.householdId, environment]);
+
+  useEffect(() => {
+    if (tab !== "more" || moreFocusTarget !== "sync-help") return;
+    const frame = window.requestAnimationFrame(() => {
+      const panel = document.getElementById("hearth-sync-help");
+      panel?.scrollIntoView?.({ block: "center" });
+      panel?.focus({ preventScroll: true });
+      setMoreFocusTarget(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [moreFocusTarget, tab]);
 
   useEffect(() => {
     if (adding && !splitDraft && household && session) {
@@ -3323,6 +3336,10 @@ export function App() {
     () => (scopedHousehold ? buildDashboard(scopedHousehold, today, now, experience && experience.ok ? experience.integrityFindings.length : 0) : null),
     [scopedHousehold, today, now, experience],
   );
+  const deskAttention = useMemo(
+    () => (scopedHousehold && dashboard ? sillOverview(scopedHousehold, dashboard, today) : null),
+    [scopedHousehold, dashboard, today],
+  );
   const syncFreshnessDisplay = useMemo(() => {
     const continuityActive = Boolean(
       household
@@ -3377,6 +3394,13 @@ export function App() {
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
   );
+  const syncNeedsAttention = syncFreshnessDisplay.tone !== "neutral"
+    || syncFreshnessDisplay.transportMode === "offline"
+    || syncFreshnessDisplay.transportMode === "auth-required";
+  const appNeedsAttention = !activeBooksGate.ready
+    || syncNeedsAttention
+    || Boolean(experience && experience.ok && experience.integrityFindings.length > 0)
+    || Boolean(deskAttention?.needsAttention);
   const syncChromeSuppression = useMemo(
     () => suppressesCommandSyncChrome(
       syncFreshnessDisplay,
@@ -6408,6 +6432,11 @@ export function App() {
       <SyncFreshnessStatus
         display={syncFreshnessDisplay}
         busy={busy}
+        attentionLabel={appNeedsAttention ? "Needs attention" : null}
+        onOpenDetails={() => {
+          setMoreFocusTarget("sync-help");
+          goTab("more");
+        }}
         onAction={() => {
           if (syncFreshnessDisplay.actionKind === "reconnect-auth") reconnectContinuityAuth();
           else void retryShareNow();
@@ -6937,6 +6966,76 @@ export function App() {
       {tab === "more" && (
         <div className="more-surfaces">
           <AppearancePicker />
+          <section className="card more-sync-help" id="hearth-sync-help" tabIndex={-1}>
+            <header>
+              <div><p className="kicker">Sync status</p><h2>{appNeedsAttention ? "How to fix it" : "Everything is connected"}</h2></div>
+              <span className={`pill ${appNeedsAttention ? "warn" : "good"}`}>
+                {appNeedsAttention ? "Needs attention" : "All clear"}
+              </span>
+            </header>
+            {!activeBooksGate.ready ? (
+              <article className="more-sync-help__issue">
+                <h3>Local books</h3>
+                <p>{activeBooksGate.reason}</p>
+                <div className="button-row">
+                  {booksReadiness.phase === "blocked"
+                    && cloudLedgerOnlineRequiredEnabled(environment)
+                    && !listContinuityOutbox(environment).some((item) => item.householdId === household.householdId)
+                    && unresolvedConflicts(household).length === 0 ? (
+                    <button type="button" className="primary" disabled={busyState} onClick={() => { void restoreBooksFromCloudCopy(); }}>
+                      {busyState ? "Restoring…" : "Restore from cloud copy"}
+                    </button>
+                  ) : null}
+                  <button type="button" className="ghost" onClick={() => setValidationAttempt((attempt) => attempt + 1)}>Retry validation</button>
+                </div>
+              </article>
+            ) : null}
+            {syncNeedsAttention && activeBooksGate.ready ? (
+              <article className="more-sync-help__issue">
+                <h3>Household sharing</h3>
+                <p>{syncFreshnessDisplay.statusSummary}</p>
+                {syncFreshnessDisplay.actionKind ? (
+                  <button type="button" className="primary" disabled={busyState} onClick={() => {
+                    if (syncFreshnessDisplay.actionKind === "reconnect-auth") reconnectContinuityAuth();
+                    else void retryShareNow();
+                  }}>{syncFreshnessDisplay.actionLabel}</button>
+                ) : null}
+              </article>
+            ) : null}
+            {deskAttention?.needsAttention ? (
+              <article className="more-sync-help__issue">
+                <h3>What needs you</h3>
+                <p>{deskAttention.needsMe}</p>
+                <button type="button" className="ghost" onClick={() => {
+                  const instrument = deskAttention.attentionInstrument;
+                  if (instrument === "mail" || instrument === "appointments") {
+                    requestCalendarPane(instrument === "mail" ? "bills" : "visits", localStorage);
+                    goTab("calendar");
+                    return;
+                  }
+                  goTab("home");
+                  if (instrument) window.setTimeout(() => emitOfficeIntent({ type: "expand", id: instrument }), 0);
+                }}>Open where I can fix this</button>
+              </article>
+            ) : null}
+            {healthFindings.length > 0 ? (
+              <article className="more-sync-help__issue">
+                <h3>Books health</h3>
+                <p>{healthFindings.length} {healthFindings.length === 1 ? "finding needs" : "findings need"} review.</p>
+                <button type="button" className="ghost" onClick={() => {
+                  const panel = document.getElementById("hearth-health-review");
+                  panel?.scrollIntoView({ block: "center" });
+                  panel?.focus({ preventScroll: true });
+                }}>Review the findings</button>
+              </article>
+            ) : null}
+            {activeBooksGate.ready
+            && !syncNeedsAttention
+            && healthFindings.length === 0
+            && !deskAttention?.needsAttention ? (
+              <p className="muted">Nothing needs repair. Your local books, household sharing, and integrity checks are clear.</p>
+            ) : null}
+          </section>
           {view === "household" ? (
             <section className="card">
               <header><h2>the charter</h2></header>
