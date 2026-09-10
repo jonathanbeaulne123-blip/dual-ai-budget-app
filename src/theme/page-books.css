@@ -104,8 +104,9 @@
  :root[data-world-page="ledger"] .theme-scene-title { font-size:28px; line-height:1.12; margin:9px 0; }
  :root[data-world-page="ledger"] .theme-scene-caption { font-size:12px; }
  :root[data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { top:auto; bottom:10px; left:10px; min-height:44px; font-size:11px; padding:8px 10px; }
- :root[data-world-page="ledger"] .desktop-title-bracelets { display:none; }
- :root[data-world-page="ledger"] .theme-scene-heading>.era-light { display:block; right:8px; bottom:6px; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets { display:flex; position:absolute; right:8px; top:auto; bottom:54px; width:148px; padding:0; background:transparent; border:0; box-shadow:none; transform:none; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets .friendship-bracelets { width:118px; height:auto; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets .era-light { width:48px; height:31px; margin:30px 0 0 -24px; }
  :root[data-world-page="ledger"] .books-theme-c { margin:0 5px; padding:8px; border-left-width:3px; box-shadow:2px 3px 0 #a795752b; }
  :root[data-world-page="ledger"] .world-charm-row { margin:4px 12px 10px; }
 }

@@ -108,10 +108,16 @@ try {
      const desktopAxe=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations;
      if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
     }
-    if(route==='home' && width<720 && await page.locator('.desktop-title-bracelets').isVisible())errors.push('Desktop bracelets leaked into phone');
+    if(['home','calendar','plan','ledger','more'].includes(route)) {
+     const bracelet=await page.evaluate(()=>{const group=document.querySelector('.desktop-title-bracelets'),wrap=group?.querySelector('.friendship-bracelets--wrapped'),copy=document.querySelector('.theme-scene-copy'),era=group?.querySelectorAll('.era-light').length??0;if(!group||!wrap||!copy)return {visible:false,overlapsCopy:false,overlapsExistingArt:false,era};const g=group.getBoundingClientRect(),c=copy.getBoundingClientRect(),intersects=(r,o)=>r.left<o.right&&r.right>o.left&&r.top<o.bottom&&r.bottom>o.top;const existing=[...document.querySelectorAll('.more-chair-sticker,.calendar-couple,.plan-cannon-sticker')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.getBoundingClientRect());return {visible:getComputedStyle(group).display!=='none'&&g.width>0&&g.height>0,overlapsCopy:intersects(g,c),overlapsExistingArt:existing.some(r=>intersects(g,r)),era};});
+     if(!bracelet.visible)errors.push('Wrapped friendship bracelets missing '+route+' '+theme+' '+scope+' '+width);
+     if(bracelet.overlapsCopy)errors.push('Wrapped friendship bracelets overlap title copy '+route+' '+theme+' '+scope+' '+width);
+     if(bracelet.overlapsExistingArt)errors.push('Wrapped friendship bracelets overlap existing title art '+route+' '+theme+' '+scope+' '+width);
+     if(bracelet.era!==(theme==='taylor'?1:0))errors.push('Concert bracelet theme leak '+route+' '+theme+' '+scope+' '+width);
+    }
     if(route==='more'&&theme==='newfoundland') {
-     const contained=await page.locator('.more-chair-sticker').evaluate(e=>{const r=e.getBoundingClientRect(),p=e.closest('.theme-scene-heading').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom&&r.left>=p.left&&r.right<=p.right;});
-     if(!contained)errors.push('JAG chair clipped '+width);
+     const chair=page.locator('.more-chair-sticker');
+     if(await chair.isVisible()) { const contained=await chair.evaluate(e=>{const r=e.getBoundingClientRect(),p=e.closest('.theme-scene-heading').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom&&r.left>=p.left&&r.right<=p.right;}); if(!contained)errors.push('JAG chair clipped '+width); }
     }
     if(route==='plan') {
      const geometry=await page.evaluate(()=>{const rect=s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.x,y:r.y,w:r.width};};return {categories:rect('.plan-categories'),banks:rect('.kitty-banks'),sit:rect('.sit-guide')};});
