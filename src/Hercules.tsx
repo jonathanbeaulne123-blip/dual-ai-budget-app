@@ -788,7 +788,8 @@ export function HerculesPresence({
 
 
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+    const log = logRef.current;
+    if (typeof log?.scrollTo === "function") log.scrollTo({ top: log.scrollHeight });
   }, [turns, busy]);
 
   useEffect(() => {

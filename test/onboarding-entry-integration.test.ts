@@ -141,6 +141,8 @@ function button(label: string): HTMLButtonElement {
 async function openSetup() {
   await waitFor(()=>expect(document.querySelector('button.hercules-live')).not.toBeNull());
   await act(async()=>{document.querySelector('button.hercules-live')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));});
+  await waitFor(()=>expect([...document.querySelectorAll('button')].find(item=>item.textContent?.trim()==='Set up Hearth')).not.toBeUndefined());
+  await act(async()=>{button('Set up Hearth').click();});
   await waitFor(()=>expect(document.querySelector('.hercules-setup-backdrop:not([hidden])')).not.toBeNull());
 }
 describe("real household creation enters guided setup", () => {
