@@ -7,13 +7,14 @@ import {
 } from "./appointments.ts";
 import type { DateKey } from "./calendar.ts";
 import type { Household } from "./types.ts";
+import { duePotentialExpenses } from "./potentialExpenses.ts";
 
 /**
  * On-device science Hercules can act on. Named Notice, not Finding —
  * `health.ts` already owns Finding (D-057).
  */
-export type HerculesNoticeKind = "habit-preset" | "claim-aging" | "visit-drift" | "amount-anomaly";
-export type HerculesNoticeAction = "acceptPreset" | "none";
+export type HerculesNoticeKind = "potential-expense-due" | "habit-preset" | "claim-aging" | "visit-drift" | "amount-anomaly";
+export type HerculesNoticeAction = "reviewPotentialExpense" | "acceptPreset" | "none";
 
 export type HerculesNotice = {
   key: string;
@@ -25,6 +26,7 @@ export type HerculesNotice = {
   amountCents: number | null;
   action: HerculesNoticeAction;
   habitKey?: string;
+  potentialExpenseId?: string;
 };
 
 function dismissed(household: Household): Set<string> {
@@ -49,6 +51,23 @@ function habitNotice(habit: Habit): HerculesNotice {
 export function composeNotices(household: Household, today: DateKey): HerculesNotice[] {
   const hidden = dismissed(household);
   const notices: HerculesNotice[] = [];
+
+  for (const plan of duePotentialExpenses(household.potentialExpenses, today)) {
+    const key = `potential:${plan.id}:${plan.date}`;
+    if (plan.dismissedNoticeDate === plan.date || hidden.has(key)) continue;
+    const cad = formatCad(plan.expectedAmountCents);
+    notices.push({
+      key,
+      kind: "potential-expense-due",
+      rank: 110,
+      spoken: `${plan.title} was planned for ${plan.date} at ${cad}. Did it happen?`,
+      lesson: "A plan is not a post. Quick Confirm or Add still needs your Final Confirm.",
+      cad,
+      amountCents: plan.expectedAmountCents,
+      action: "reviewPotentialExpense",
+      potentialExpenseId: plan.id,
+    });
+  }
 
   for (const habit of detectHabits(household, today)) {
     const notice = habitNotice(habit);
@@ -94,9 +113,9 @@ export function composeNotices(household: Household, today: DateKey): HerculesNo
   return notices.sort((left, right) => right.rank - left.rank || left.key.localeCompare(right.key));
 }
 
-/** Unsolicited card. Only a habit-preset earns a shoulder-tap (D-057). Inert during Add. */
+/** One actionable shoulder-tap. Explicit due plans outrank detected habits. Inert during Add. */
 export function bubbleNotice(household: Household, today: DateKey): HerculesNotice | null {
-  return composeNotices(household, today).find((item) => item.kind === "habit-preset" && item.action === "acceptPreset") ?? null;
+  return composeNotices(household, today).find((item) => item.action !== "none") ?? null;
 }
 
 export function deskNotices(household: Household, today: DateKey): HerculesNotice[] {

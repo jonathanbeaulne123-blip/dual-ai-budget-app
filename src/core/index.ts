@@ -76,6 +76,7 @@ export * from "./rhythm.ts";
 export * from "./board.ts";
 export * from "./ics.ts";
 export * from "./recurrence.ts";
+export * from "./potentialExpenses.ts";
 export * from "./recurrencePreview.ts";
 export * from "./kitchen.ts";
 export * from "./sharedBoards.ts";

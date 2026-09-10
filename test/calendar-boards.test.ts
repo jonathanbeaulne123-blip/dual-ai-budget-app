@@ -6,17 +6,17 @@ import { ThemeProvider, useSceneBinding } from "../src/theme/ThemeProvider.tsx";
 import { AppearanceStore } from "../src/theme/appearanceStore.ts";
 import { parseAppearance } from "../src/theme/scenes.ts";
 import { CalendarPage } from "../src/Calendar.tsx";
-import { addRecurrence, catalogHousehold } from "../src/core/index.ts";
+import { addPotentialExpense, addRecurrence, catalogHousehold } from "../src/core/index.ts";
 import { CALENDAR_INTENT_KEY, requestCalendarPane, takeCalendarPane, type CalendarIntent } from "../src/core/calendarIntent.ts";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 const today = "2026-09-08";
-async function mount(width = 390, intent?: CalendarIntent, standingFactOnly = false, store?: AppearanceStore) {
+async function mount(width = 390, intent?: CalendarIntent, standingFactOnly = false, store?: AppearanceStore, suppliedHousehold?: ReturnType<typeof catalogHousehold>) {
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true });
   localStorage.clear();
   if (intent) requestCalendarPane(intent, localStorage);
-  const household = addRecurrence(catalogHousehold(), { nextDate: today, cadence: "weekly", type: "expense", accountId: "ACC-CHEQUING", subcategoryId: "SUB-FOOD-GROCERIES", amount: "20", note: "Fictional groceries" }).household;
+  const household = suppliedHousehold ?? addRecurrence(catalogHousehold(), { nextDate: today, cadence: "weekly", type: "expense", accountId: "ACC-CHEQUING", subcategoryId: "SUB-FOOD-GROCERIES", amount: "20", note: "Fictional groceries" }).household;
   const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
-  const callbacks = { onCommand: vi.fn(), onAskPost: vi.fn(), onAskPostDue: vi.fn(), onAskSaveRepeating: vi.fn(), onAskVisit: vi.fn(), onAskSettle: vi.fn(), onAskWriteOff: vi.fn(), onAskStartJar: vi.fn(), onOpenPlan: vi.fn(), onOpenShiftEnvelope: vi.fn() };
+  const callbacks = { onCommand: vi.fn(), onAskPost: vi.fn(), onAskPostDue: vi.fn(), onAskSaveRepeating: vi.fn(), onAskVisit: vi.fn(), onAskSettle: vi.fn(), onAskWriteOff: vi.fn(), onAskStartJar: vi.fn(), onOpenPlan: vi.fn(), onOpenShiftEnvelope: vi.fn(), onAskQuickPotential: vi.fn(), onReviewPotential: vi.fn() };
   const props = { household, today, environment: "development" as const, memberId: "MEM-001", view: "household" as const, busy: false, onboardingStandingFactOnly: standingFactOnly, ...callbacks };
   function ThemedCalendar() { useSceneBinding("calendar", "household", false); return createElement(CalendarPage, props); }
   await act(async () => root.render(store ? createElement(ThemeProvider, {store, children:createElement(ThemedCalendar)}) : createElement(CalendarPage, props)));
@@ -117,6 +117,41 @@ describe("Calendar boards", () => {
       expect([...m.host.querySelectorAll(".calendar-selected-day button")].some(button => button.textContent === "Paid")).toBe(false);
       expect(m.callbacks.onCommand).not.toHaveBeenCalled();
       expect(JSON.stringify(m.household)).toBe(before);
+    } finally { await m.close(); }
+  });
+
+  it("keeps day selection separate from planning controls and routes review actions without posting", async () => {
+    const planned = addPotentialExpense(catalogHousehold(), {
+      date: today, title: "Wedding travel", amount: "600", accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-LIFE-FUN", createdBy: "MEM-001", visibility: "household",
+    }).household;
+    const plan = planned.potentialExpenses[0]!;
+    const m = await mount(1440, undefined, false, undefined, planned);
+    try {
+      const cell = m.host.querySelector(`[data-calendar-date="${today}"]`)!.closest(".cal-cell")!;
+      expect(cell.querySelector(":scope > .cal-day")).not.toBeNull();
+      expect(cell.querySelector(":scope > .cal-add")).not.toBeNull();
+      expect(cell.querySelector(".cal-day button")).toBeNull();
+      await m.click(cell.querySelector<HTMLButtonElement>(":scope > .cal-add")!);
+      expect(m.host.querySelector('[role="dialog"]')?.textContent).toContain("Planned—not posted");
+      await m.click([...m.host.querySelectorAll<HTMLButtonElement>('[role="dialog"] button')].find((button) => button.textContent === "Cancel")!);
+
+      const selected = m.host.querySelector(".calendar-selected-day")!;
+      await m.click([...selected.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Quick Confirm")!);
+      expect(m.callbacks.onAskQuickPotential).toHaveBeenCalledWith(plan.id);
+      await m.click([...selected.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Review in Add")!);
+      expect(m.callbacks.onReviewPotential).toHaveBeenCalledWith(plan.id);
+      await m.click([...selected.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Remove")!);
+      expect(m.callbacks.onCommand).toHaveBeenCalledTimes(1);
+
+      const title = cell.querySelector<HTMLElement>(".kind-potential-expense")!;
+      await act(async () => title.dispatchEvent(new Event("dragstart", { bubbles: true })));
+      const target = m.host.querySelector('[data-calendar-date="2026-09-09"]')!.closest(".cal-cell")!;
+      const drop = new Event("drop", { bubbles: true, cancelable: true });
+      Object.defineProperty(drop, "dataTransfer", { value: { getData: () => plan.id } });
+      await act(async () => target.dispatchEvent(drop));
+      expect(m.callbacks.onCommand).toHaveBeenCalledTimes(2);
+      expect([...m.host.querySelectorAll('[aria-live="polite"]')].some((node) => node.textContent?.includes("moved to"))).toBe(true);
     } finally { await m.close(); }
   });
 

@@ -19,7 +19,7 @@ import { workShiftIsReversed } from "./work.ts";
 import { statusForEnvelopeAt } from "./shiftEnvelope.ts";
 import type { Household, Recurrence, RecurrenceKind } from "./types.ts";
 
-export type BoardKind = RecurrenceKind | "shift" | "shift-envelope" | "google" | "detected" | "visit" | "claim" | "work-pay" | "work-tip" | "work-tipout";
+export type BoardKind = RecurrenceKind | "potential-expense" | "shift" | "shift-envelope" | "google" | "detected" | "visit" | "claim" | "work-pay" | "work-tip" | "work-tipout";
 
 export type OverlayEvent = {
   id: string;
@@ -37,8 +37,9 @@ export type BoardItem = {
   amountCents: number;
   direction: "in" | "out" | "work" | "busy";
   kind: BoardKind;
-  source: "recurrence" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
+  source: "recurrence" | "potential-expense" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
   recurrenceId?: string;
+  potentialExpenseId?: string;
   appointmentId?: string;
   rhythmKey?: string;
   memberId?: string;
@@ -100,7 +101,7 @@ export function upcomingFromHousehold(household: Household, today: DateKey, hori
 /** Bills and subscriptions leaving the house. Never paychecks, never Bianca pay, never visits. */
 export function isOutgoingBill(item: Pick<BoardItem, "kind" | "direction">): boolean {
   if (item.direction !== "out") return false;
-  return item.kind === "bill" || item.kind === "subscription" || item.kind === "detected" || item.kind === "other";
+  return item.kind === "bill" || item.kind === "subscription" || item.kind === "detected" || item.kind === "other" || item.kind === "potential-expense";
 }
 
 export function buildMonthBoard(
@@ -133,6 +134,22 @@ export function buildMonthBoard(
         due: date <= today,
       });
     }
+  }
+
+  for (const plan of (household.potentialExpenses ?? []).filter((row) => row.status === "planned")) {
+    if (!inInclusiveRange(plan.date, gridStart, gridEnd)) continue;
+    items.push({
+      id: `potential:${plan.id}`,
+      date: plan.date,
+      title: plan.title,
+      amountCents: plan.expectedAmountCents,
+      direction: "out",
+      kind: "potential-expense",
+      source: "potential-expense",
+      potentialExpenseId: plan.id,
+      memberId: plan.createdBy,
+      due: plan.date <= today,
+    });
   }
 
   for (const rhythm of rhythms.filter((item) => item.status === "suggested")) {
@@ -346,7 +363,8 @@ export function buildMonthBoard(
     clashes: payWeeks.filter((week) => week.clash),
     payWeeks,
     dueCount: household.recurrences.filter((item) => item.active && item.nextDate <= today).length
-      + (household.appointments ?? []).filter((item) => item.active && item.nextDate <= today).length,
+      + (household.appointments ?? []).filter((item) => item.active && item.nextDate <= today).length
+      + (household.potentialExpenses ?? []).filter((item) => item.status === "planned" && item.date <= today).length,
     weekPressure: payWeeks.find((week) => week.current) ?? null,
     rhythms,
   };

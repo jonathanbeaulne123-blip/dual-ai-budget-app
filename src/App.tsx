@@ -81,6 +81,9 @@ import {
   parseAmount,
   postDueRecurrences,
   postEntry,
+  postPotentialExpense,
+  removePotentialExpense,
+  dismissPotentialExpenseNotice,
   postOneRecurrence,
   resolveSwipeCardAccount,
   swipeBelongsOnSharedHome,
@@ -548,6 +551,7 @@ type Guard =
   | { kind: "correctShift"; shift: Shift; transactionId: string }
   | { kind: "duePreview"; rows: ReturnType<typeof dueRecurrencePreview> }
   | { kind: "postRecurrence"; recurrenceId: string; summary: string }
+  | { kind: "quickPotential"; planId: string }
   | { kind: "saveRepeating"; draft: RepeatingDraft; summary: string }
   | { kind: "saveWorkJob"; job: WorkJob; summary: string }
   | { kind: "postDueAll"; summary: string; recurrenceIds: string[] }
@@ -681,6 +685,7 @@ export function App() {
 
   // Internal navigation/acceptance always dismisses; it must never create a paused draft.
   const closeAdd = () => {
+    setPotentialExpenseAddId(null);
     setPausedAddScope(null);
     setAddLaunchAccountId(null);
     punchReviewIntentRef.current++;
@@ -748,6 +753,8 @@ export function App() {
   const [history, setHistory] = useState<UndoToken[]>([]);
   const [isHouseholdOwner, setIsHouseholdOwner] = useState(false);
   const [guard, storeGuard] = useState<Guard | null>(null);
+  const [potentialExpenseAddId, setPotentialExpenseAddId] = useState<string | null>(null);
+  const [potentialCalendarEditId, setPotentialCalendarEditId] = useState<string | null>(null);
   const claimReturnFocusRef=useRef<HTMLElement|null>(null);
   const guardOpeningRef=useRef(0),guardIdentityRef=useRef(''),guardScopeIdentityRef=useRef('');
   const setGuard=(next:Guard|null)=>{guardOpeningRef.current+=1;guardIdentityRef.current=next?readDangerIdentity(next):'';guardScopeIdentityRef.current=next?readGuardScopeIdentity():'';storeGuard(next);};
@@ -5688,6 +5695,12 @@ export function App() {
     ? "Because your Google account is linked, Google will ask you to confirm it is you first."
     : undefined;
   const categories = ledger.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (mode === "income" ? "income" : "expense"));
+  const quickPotential = guard?.kind === "quickPotential"
+    ? household.potentialExpenses.find((item) => item.id === guard.planId && item.status === "planned")
+    : undefined;
+  const quickPotentialSummary = quickPotential
+    ? `${quickPotential.title} · ${formatCad(quickPotential.expectedAmountCents)} · ${quickPotential.date} · ${household.accounts.find((item) => item.id === quickPotential.accountId)?.name ?? "Account"} · ${household.categories.find((item) => item.id === quickPotential.subcategoryId)?.name ?? "Category"} · ${quickPotential.splits.map((split) => `${household.members.find((member) => member.id === split.party)?.name ?? split.party} ${formatCad(split.amountCents)}`).join(", ")} · ${quickPotential.visibility === "household" ? "Shared" : quickPotential.visibility === "personal" ? "Personal" : "Both"}`
+    : "That potential expense is no longer open.";
   const shiftPreview = previewShiftAmounts({
     salesCents: Math.round(Number(form.sales || 0) * 100) || 0,
     cashTipsCents: Math.round(Number(form.cashTips || 0) * 100) || 0,
@@ -5859,6 +5872,7 @@ export function App() {
       if (account) setAddLaunchAccountId(account.id);
       return;
     }
+    setPotentialExpenseAddId(null);
     leaveDesk();
     const kind = nextMode ?? mode;
     if (!account && restoreEntryDraft(kind)) return;
@@ -5903,7 +5917,30 @@ export function App() {
       }));
   };
 
+  const openPotentialInAdd = (planId: string) => {
+    const current = householdRef.current;
+    const plan = current?.potentialExpenses.find((item) => item.id === planId && item.status === "planned");
+    if (!current || !plan) {
+      setError("That potential expense is no longer open.");
+      return;
+    }
+    const account = displayHousehold.accounts.find((item) => item.id === plan.accountId) ?? null;
+    openAddFor(account, "expense");
+    setPotentialExpenseAddId(plan.id);
+    const singleParty = plan.splits.length === 1 ? plan.splits[0]?.party : null;
+    setForm(formForAccount(plan.accountId, {
+      date: plan.date,
+      amount: (plan.expectedAmountCents / 100).toFixed(2),
+      accountId: plan.accountId,
+      subcategoryId: plan.subcategoryId,
+      note: plan.title,
+      visibility: plan.visibility,
+      who: singleParty ?? "split",
+    }));
+  };
+
   function switchAddMode(item: AddMode) {
+    if (potentialExpenseAddId) return;
     if (restoreEntryDraft(item)) return;
     activeEntryKeyRef.current = readEntryKey(item);
     setEntrySubmission(activeEntryKeyRef.current?readEntrySubmission(activeEntryKeyRef.current):null);
@@ -6088,7 +6125,7 @@ export function App() {
 
   function entryReview() {
     const live=householdRef.current;
-    return JSON.stringify([mode,form,draftLocation,splitDraft?.percents,{
+    return JSON.stringify([mode,form,draftLocation,splitDraft?.percents,potentialExpenseAddId,{
       members:live?.members.filter(member=>member.active).map(member=>member.id),
       settings:mode==='shift'&&live?shiftSettingsFingerprint(live.shiftSettings):null,
       fundId:form.useHouseholdFund?live?.householdFund?.id:null,
@@ -6139,9 +6176,8 @@ export function App() {
           visibility: form.visibility,
         });
       }
-      return postEntry(current, {
+      const entry = {
         date: form.date,
-        type: mode,
         amount: form.amount,
         accountId: form.accountId,
         subcategoryId: form.subcategoryId,
@@ -6152,7 +6188,6 @@ export function App() {
         splits: splitsFor(parseAmount(form.amount), current),
         confirmDuplicate: flags.confirmDuplicate,
         createdBy: actorId,
-        visibility: form.visibility,
         funding: form.useHouseholdFund && current.householdFund && mode === "expense"
           ? {
               fundId: current.householdFund.id,
@@ -6160,6 +6195,17 @@ export function App() {
               destinationAccountId: form.fundDestinationAccountId || form.accountId,
             }
           : undefined,
+      };
+      if (potentialExpenseAddId) {
+        return postPotentialExpense(current, {
+          id: potentialExpenseAddId,
+          ...entry,
+        });
+      }
+      return postEntry(current, {
+        ...entry,
+        type: mode,
+        visibility: form.visibility,
       });
       } catch(caught) {if(!(caught instanceof NeedsConfirmationError)){clearEntryConfirmation(draftKey,confirmationId);setEntrySubmission(null);}throw caught;}
     }, {confirmationId, onDefinitiveRejected:()=>{clearEntryConfirmation(draftKey,confirmationId);if(activeEntryKeyRef.current===draftKey)setEntrySubmission(null);},
@@ -6699,6 +6745,10 @@ export function App() {
           onAskSettle={claimId=>openClaimSettlement(claimId)}
           onAskWriteOff={(claimId, summary) => setGuard({ kind: "writeOffClaim", claimId, summary })}
           onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
+          onAskQuickPotential={(planId) => setGuard({ kind: "quickPotential", planId })}
+          onReviewPotential={openPotentialInAdd}
+          openPotentialEditorId={potentialCalendarEditId}
+          onPotentialEditorOpened={() => setPotentialCalendarEditId(null)}
           onOpenPlan={() => goTab("plan")}
           onOpenShiftEnvelope={(envelopeId) => {
             requestShiftEnvelope(envelopeId);
@@ -7373,6 +7423,8 @@ export function App() {
           sheetRef={addSheetRef}
           mode={mode}
           onSwitchMode={switchAddMode}
+          lockedMode={Boolean(potentialExpenseAddId)}
+          lockedVisibility={potentialExpenseAddId ? form.visibility : undefined}
           form={form}
           setForm={setForm}
           household={household}
@@ -7675,6 +7727,37 @@ export function App() {
         <DuePreviewSheet key={dueOpening} rows={guard.rows} household={household} memberId={actorId} view={view} today={today} busy={busy} isCurrent={dueIsCurrent}
           onDismiss={()=>setGuard(null)}
           onPost={async reviewed=>{let accepted=false;await run(current=>{const fresh=dueOccurrenceReview(current,reviewed.request);if(fresh.kind!=='ready'||fresh.basis!==reviewed.basis)throw new Error('This occurrence changed. Review its current details.');return postOneRecurrence(current,reviewed.request.recurrenceId,reviewed.request.today,{createdBy:actorId,dueReview:reviewed.request});},{isCurrent:dueIsCurrent,scopeIsCurrent:deskScopeIsCurrent,closeAdd:false,onAccepted:()=>{accepted=true;}});return accepted;}}
+        />
+      )}
+      {guard?.kind === "quickPotential" && (
+        <ConfirmSheet
+          title="Post this planned expense?"
+          body={quickPotentialSummary}
+          extra="This is the Calendar review. The plan has not posted money yet. Final Confirm posts the saved amount and date to the books."
+          confirmLabel="Final Confirm"
+          confirmDisabled={!quickPotential}
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            if (!quickPotential) {
+              setGuard(null);
+              return;
+            }
+            const id = quickPotential.id;
+            void run(
+              (current) => postPotentialExpense(current, { id, createdBy: actorId }),
+              {
+                closeAdd: false,
+                onAccepted: () => setGuard(null),
+                onConfirm: (duplicate) => {
+                  setGuard(null);
+                  openPotentialInAdd(id);
+                  setConfirm(duplicate);
+                  return true;
+                },
+              },
+            );
+          }}
         />
       )}
       {guard?.kind === "postRecurrence" && (
@@ -7984,7 +8067,22 @@ export function App() {
         }}
         onLedger={(fn) => { void runKitchen(fn); }}
         onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
-        onDismissNotice={(key) => { void run((current) => dismissNotice(current, key)); }}
+        onDismissNotice={(key) => {
+          const match = /^potential:([^:]+):(\d{4}-\d{2}-\d{2})$/.exec(key);
+          void run((current) => match
+            ? dismissPotentialExpenseNotice(current, { id: match[1]!, date: match[2]!, createdBy: actorId })
+            : dismissNotice(current, key), { closeAdd: false });
+        }}
+        onQuickPotentialExpense={(planId) => setGuard({ kind: "quickPotential", planId })}
+        onReviewPotentialExpense={openPotentialInAdd}
+        onMovePotentialExpense={(planId) => {
+          setPotentialCalendarEditId(planId);
+          requestCalendarPane("calendar", localStorage);
+          goTab("calendar");
+        }}
+        onRemovePotentialExpense={(planId) => {
+          void run((current) => removePotentialExpense(current, { id: planId, createdBy: actorId }), { closeAdd: false });
+        }}
         onOpenCharter={() => {
           if (household.charter) setCharterPageOpen(true);
           else setCharterFoundingOpen(true);

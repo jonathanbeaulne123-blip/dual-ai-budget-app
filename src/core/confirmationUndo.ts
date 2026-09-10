@@ -28,6 +28,9 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   const dead = new Set(postedIds);
   const at = nowIso();
   const actor = token.actorMemberId;
+  const reopenedPotentialIds = new Set(current.transactions
+    .filter((tx) => dead.has(tx.id) && tx.source === "calendar" && tx.sourceId)
+    .map((tx) => tx.sourceId!));
   const undoneBibles = current.shifts
     .filter((shift) => dead.has(shift.id) && shift.shiftBible)
     .map((shift) => shift.shiftBible!);
@@ -77,6 +80,11 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   next.coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => !dead.has(row.id));
   next.coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => !dead.has(row.id));
   next.shiftBibles = (next.shiftBibles ?? []).filter((row) => !dead.has(row.id));
+  next.potentialExpenses = (next.potentialExpenses ?? []).map((plan) => (
+    reopenedPotentialIds.has(plan.id) && plan.status === "posted" && plan.transactionId && dead.has(plan.transactionId)
+      ? { ...plan, status: "planned" as const, transactionId: null, postedAt: null, updatedAt: at }
+      : plan
+  ));
   const reopenedByEnvelope = new Map(undoneBibles.map((bible) => [bible.envelopeId, bible]));
   next.shiftEnvelopes = (next.shiftEnvelopes ?? []).map((envelope) => {
     const bible = reopenedByEnvelope.get(envelope.id);

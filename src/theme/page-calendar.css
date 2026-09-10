@@ -41,12 +41,15 @@
 :root[data-scene="red"][data-world-page="calendar"] .theme-scene-title { font-family:Impact,"Arial Narrow",sans-serif; text-transform:uppercase; letter-spacing:.025em; color:#a92e43; }
 :root[data-scene="red"][data-world-page="calendar"] .calendar-binding { background:#fff5e6; border-bottom-color:#b72c43; }
 :root[data-scene="red"][data-world-page="calendar"] .calendar-card>header h2 { font-family:Impact,"Arial Narrow",sans-serif; text-transform:uppercase; font-weight:400; letter-spacing:.035em; }
+:root[data-scene="red"][data-world-page="calendar"] .potential-expense-row { background:linear-gradient(90deg,#f7dfc855,transparent); }
 :root[data-scene="midnights"][data-world-page="calendar"] .world-page { background:linear-gradient(135deg,#d6e1f1,#e8dff0 52%,#eadfcf); }
 :root[data-scene="midnights"][data-world-page="calendar"] .calendar-binding { background:linear-gradient(110deg,#d3e0f0,#e0d7ef,#ecdfc8); border-bottom-color:#6880aa; }
+:root[data-scene="midnights"][data-world-page="calendar"] .potential-expense-row { background:linear-gradient(90deg,#c9c6ef55,transparent); }
 :root[data-scene="rain"][data-world-page="calendar"] .world-page { background:linear-gradient(#dce8e8,#edf0dc 55%,#ccdee3); }
 :root[data-scene="rain"][data-world-page="calendar"] .calendar-binding { border-bottom-color:#dbb84a; background:#dfebed; }
 :root[data-scene="cape-spear"][data-world-page="calendar"] .world-page { background:linear-gradient(#dae6e7,#f2f0e3 43%,#ccdfe2); }
 :root[data-scene="cape-spear"][data-world-page="calendar"] .calendar-binding { background:#e4ece6; border-bottom-color:#9e807e; }
+:root[data-scene="rain"][data-world-page="calendar"] .potential-expense-row,:root[data-scene="cape-spear"][data-world-page="calendar"] .potential-expense-row { background:linear-gradient(90deg,#b9d5d455,transparent); }
 :root[data-theme="classic"][data-world-page="calendar"] .world-page { background:repeating-linear-gradient(90deg,#e5dfca22 0 3px,transparent 3px 6px),var(--paper); }
 .calendar-couple { position:absolute; z-index:1; right:17%; bottom:5px; width:125px; height:190px; object-fit:contain; background:#fff; border:4px solid #fff; border-radius:16px; box-shadow:0 3px 9px #33465318; pointer-events:none; }
 .calendar-rain { animation:calendar-rain 4s ease-in-out infinite alternate; }

@@ -60,7 +60,8 @@ export function herculesUsefulness(household: Household, today: DateKey): Hercul
   const wallet = householdWallet(household, today);
   const hot = wallet.hottestCard;
   const habit = notices.find((item) => item.kind === "habit-preset");
-  const otherNotices = notices.filter((item) => item.kind !== "habit-preset");
+  const duePlan = notices.find((item) => item.kind === "potential-expense-due");
+  const otherNotices = notices.filter((item) => item.kind !== "habit-preset" && item.kind !== "potential-expense-due");
 
   let score = 12;
   const reasons: string[] = [];
@@ -87,6 +88,10 @@ export function herculesUsefulness(household: Household, today: DateKey): Hercul
   if (habit) {
     score += 12;
     reasons.push("Save a repeated merchant as a preset");
+  }
+  if (duePlan) {
+    score += 20;
+    reasons.push("A planned expense needs your answer");
   }
   if (otherNotices.length) {
     score += Math.min(8, 6 + (otherNotices.length - 1) * 2);

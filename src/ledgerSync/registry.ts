@@ -56,7 +56,7 @@ register(
   ["createdBy", "memberId"],
 );
 register(
-  `submitAccountHistoryReview acceptReviewedAccountHistory approveAccountHistoryReview postEntry postOpeningBalances postTransfer settleWorkReceivable payDeferredWorkTipOut postCardInterest postCardRewards postSavingsInterest saveSitDownSession executeSitDownMoves adoptSitDownStandingOrders fundGoal purchaseGoal recordReconciliation closeBooksMonth postVisit openClaim settleClaim writeOffClaim configureHouseholdFund`,
+  `submitAccountHistoryReview acceptReviewedAccountHistory approveAccountHistoryReview postEntry postOpeningBalances postTransfer settleWorkReceivable payDeferredWorkTipOut postCardInterest postCardRewards postSavingsInterest saveSitDownSession executeSitDownMoves adoptSitDownStandingOrders fundGoal purchaseGoal recordReconciliation closeBooksMonth postVisit openClaim settleClaim writeOffClaim configureHouseholdFund addPotentialExpense updatePotentialExpense movePotentialExpense removePotentialExpense dismissPotentialExpenseNotice postPotentialExpense`,
   ["createdBy"],
 );
 register(
