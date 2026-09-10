@@ -60,7 +60,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Confirm still writes.",
+      lesson: "Review the details before Final Confirm.",
       chips: [],
       placeholder: "loafing…",
       fact: punch ? { label: "On the clock", value: previewHoursLabel(punch.startedAt, now.getTime()) } : null,
@@ -73,7 +73,7 @@ export function herculesPageSurface(
       return {
         tab,
         spoken,
-        lesson: "Leftover assignment lives on Shared. Confirm still posts there.",
+        lesson: "Choose where household money should go in Shared books, then review the changes.",
         chips: ["Sit-down?", "We good?"],
         placeholder: "ask about the plan…",
         fact: { label: "Kitty Banks", value: banks.label, source: { route: "plan", view: "personal", surface: "postcard", label: "Open Kitty Banks" } },
@@ -82,7 +82,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Leftover is cash-like minus bills and card mins. Confirm parks goal cash in Kitty Banks.",
+      lesson: "See what remains after bills and minimum card payments, then decide what to save.",
       chips: ["Sit-down?", "Leftover?", "We good?"],
       placeholder: "ask about the plan…",
       fact: { label: "Leftover", value: formatCad(leftover.leftoverCents), source: { route: "plan", view: context.view, surface: "postcard", label: "Open the sit-down calculation" } },
@@ -93,7 +93,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Dates remind. Mark paid writes.",
+      lesson: "Calendar dates are reminders. Recording a payment needs your review and Final Confirm.",
       chips: ["Which bill?", "What's owed?", "Start this goal"],
       placeholder: "ask about a date…",
       fact: visitFact(household, today) ?? billFact(household, today),
@@ -106,8 +106,8 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Hours are a preview until Confirm. Oracle never posts.",
-      chips: ["Tonight?", "Protect or chase?", "Tax milk?"],
+      lesson: "Forecast hours are estimates. Review actual work before recording a shift.",
+      chips: ["Tonight?", "How much could I earn?", "How much should I set aside for taxes?"],
       placeholder: "ask about tonight…",
       fact: shiftPunch
         ? { label: "On the clock", value: previewHoursLabel(shiftPunch.startedAt, now.getTime()), source: { route: "shift", view: context.view, surface: "timesheet", memberId: context.memberId, label: "Open Shift" } }
@@ -121,7 +121,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Fieldwork. The journal is the source.",
+      lesson: "These answers use the money recorded in your books.",
       chips: ["Opinion?", "Working capital?", "Balance sheet"],
       placeholder: "ask the books…",
       fact: { label: "Month net", value: formatCad(month.netActualCents), source: { route: "ledger", view: context.view, label: "Open the income statement" } },
@@ -132,7 +132,7 @@ export function herculesPageSurface(
     return {
       tab,
       spoken,
-      lesson: "Health is the adult screen.",
+      lesson: "Review anything in the books that needs attention.",
       chips: ["Health", "What broke?", "We good?"],
       placeholder: "ask Health…",
       fact: owing ? { label: "Owed to us", value: formatCad(owing.expectedCents - owing.receivedCents - owing.writtenOffCents), source: { route: "calendar", view: context.view, surface: "claims", claimId: owing.id, label: "Open the claim" } } : {
@@ -169,7 +169,7 @@ export type HerculesInstrumentSurface = {
   pose: "pounce" | "perch" | "loaf" | "stretch";
 };
 
-/** Sample questions when a desk instrument opens. He still never posts. */
+/** Sample questions when a desk instrument opens. Changes require the app’s reviewed Final Confirm. */
 export function herculesInstrumentSurface(
   id: InstrumentId | "window",
   household: Household,
@@ -185,70 +185,70 @@ export function herculesInstrumentSurface(
     window: {
       id: "window",
       spoken: "Rain stays on the glass. Numbers stay on paper.",
-      lesson: "Weather is atmosphere. It never carries CAD.",
+      lesson: "Weather can help you plan the day. It does not change your books.",
       chips: ["We good?", "What now?"],
       pose: "perch",
     },
     calculator: {
       id: "calculator",
       spoken: punch ? "Pad's for tips mid-shift. Confirm still posts the shift." : "Milk — ordinary groceries. Confirm posts them.",
-      lesson: "The pad previews. Confirm posts. Shift math on the pad never writes.",
+      lesson: "Check the amount and details, then use Final Confirm to record the entry.",
       chips: ["Groceries", "Log shift", "We good?"],
       pose: "pounce",
     },
     blotter: {
       id: "blotter",
       spoken: "That's the month pressed into paper. I read it. I don't write it.",
-      lesson: "Net is a projection of posted rows.",
+      lesson: "Your net position comes from recorded account balances.",
       chips: ["Opinion?", "Working capital?", "Balance sheet"],
       pose: "loaf",
     },
     wallet: {
       id: "wallet",
       spoken: hot ? `What's on the ${hot.account.name}? Paydown is a transfer.` : "Cash on the tray. Paydown is a transfer.",
-      lesson: "The tray is the running books. Statement owed is the cycle. Paydown is never an expense.",
+      lesson: "Compare the current card balance with the statement. A card payment moves money between accounts.",
       chips: [cardChip(hot?.account.name), "Pay the card?", "We good?"],
       pose: "perch",
     },
     accounts: {
       id: "accounts",
       spoken: "Balances and last posts. Bank apps taught tiles. We still have no bank feed.",
-      lesson: "Mint overview, YNAB envelope facts. Confirm still posts from Add.",
+      lesson: "Review your balances, spending and plans. Changes need a final review.",
       chips: [cardChip(hot?.account.name), "Working capital?", "We good?"],
       pose: "perch",
     },
     calendar: {
       id: "calendar",
-      spoken: bill ? `Which bill? ${bill.title} is a date, not a post.` : "Dates remind. Mark paid writes.",
-      lesson: "Shifts, visits, bills, and owed-to-us land on the same board. None of those taps post.",
+      spoken: bill ? `Which bill? ${bill.title} is a date, not a post.` : "Calendar dates are reminders. Recording a payment needs your review and Final Confirm.",
+      lesson: "See upcoming work, appointments, bills and reimbursements together.",
       chips: ["Which bill?", "What's owed?", "Calendar"],
       pose: "stretch",
     },
     appointments: {
       id: "appointments",
       spoken: visit ? "A visit is on the board. Start this goal is your tap, not mine." : "No visit on the horizon. Quiet titles stay coded in my mouth.",
-      lesson: "I propose goals. A human starts them.",
+      lesson: "I can help prepare a savings goal for you to review.",
       chips: ["Start this goal", "What's owed?", "Calendar"],
       pose: "loaf",
     },
     mail: {
       id: "mail",
       spoken: "Bills live here. Paychecks do not. Bianca pay is income, not a bill.",
-      lesson: "Mark paid still Confirm + postEntry.",
+      lesson: "Review the actual payment date, amount and account before Final Confirm.",
       chips: ["Which bill?", "Calendar", "What now?"],
       pose: "pounce",
     },
     claims: {
       id: "claims",
       spoken: "Owed to us. Settlement is a transfer. Never income.",
-      lesson: "When it lands, settle. I don't write the transfer.",
+      lesson: "When a reimbursement arrives, review the receiving account and record the transfer.",
       chips: ["What's owed?", "Calendar", "We good?"],
       pose: "perch",
     },
     timesheet: {
       id: "timesheet",
       spoken: punch ? "You're on the clock. Hours are a preview until sign-out Confirm." : "Clock in starts a preview. A new day is just a clock.",
-      lesson: "Punch is not a post. Confirm still posts the shift.",
+      lesson: "The clock tracks time. A separate shift review records actual work and earnings.",
       chips: ["Log shift", "Tips this week", "We good?"],
       pose: punch ? "pounce" : "stretch",
     },
@@ -262,14 +262,14 @@ export function herculesInstrumentSurface(
     wardrobe: {
       id: "wardrobe",
       spoken: "Hats, chains, the house — outfits only. Kitchen ledger notes live with the groceries.",
-      lesson: "Cosmetics never post. Remember … keeps a note.",
+      lesson: "Outfits are separate from your books. You control which preferences I remember.",
       chips: ["Remember payday", "Opinion?", "We good?"],
       pose: "loaf",
     },
     postcard: {
       id: "postcard",
       spoken: "Sit-down is three acts. Confirm still moves leftover. I clap.",
-      lesson: "Plan is dollars. I just clap.",
+      lesson: "Let’s review what is available and what you want it to cover.",
       chips: ["Sit-down?", "Leftover?", "We good?"],
       pose: "perch",
     },
@@ -283,14 +283,14 @@ export function herculesInstrumentSurface(
     jars: {
       id: "jars",
       spoken: "Pigs — goal envelopes — fill from posted contributions. Cash lives in Goals savings.",
-      lesson: "Contribute on Plan. Mark purchased posts an expense from Goals savings.",
+      lesson: "Add money to a savings goal, or review the purchase when you use it.",
       chips: ["Start this goal", "Sit-down?", "Leftover?"],
       pose: "loaf",
     },
     lamp: {
       id: "lamp",
       spoken: "Dark lamp, clean Health. Lit lamp, look at More.",
-      lesson: "Health is the adult screen. I hide when it's dirty.",
+      lesson: "Review anything in the books that needs attention. I hide when it's dirty.",
       chips: ["Health", "What broke?", "We good?"],
       pose: "stretch",
     },

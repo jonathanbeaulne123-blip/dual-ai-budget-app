@@ -75,7 +75,7 @@ describe("The Hercules Update", () => {
     const asked = askHercules(household, "who are you", today);
     expect(asked.kind).toBe("answer");
     expect(asked.sentence).toMatch(/Kettle/);
-    expect(asked.sentence).toMatch(/don['’]?t write/);
+    expect(asked.sentence).toMatch(/Final Confirm/);
     expect(household.transactions).toHaveLength(0);
   });
 
@@ -246,7 +246,7 @@ describe("The Hercules Update", () => {
     expect(talk.spoken.length).toBeLessThanOrEqual(120);
     expect(talk.replies.length).toBeGreaterThan(0);
     expect(talk.replies.length).toBeLessThanOrEqual(3);
-    expect(talk.spoken).toMatch(/don't write/i);
+    expect(talk.spoken).toMatch(/help|review|confirm/i);
     const idle = talkHercules(household, "", today, "home");
     expect(idle.spoken.length).toBeGreaterThan(4);
     expect(idle.spoken.length).toBeLessThanOrEqual(120);
@@ -281,10 +281,10 @@ describe("The Hercules Update", () => {
     expect(sanitizeHerculesReply("INSERT INTO journal_lines VALUES (1)")).toBe(HERCULES_REFUSE_SQL);
     expect(sanitizeHerculesReply("Sure — ```sql\nDELETE FROM transactions```")).toBe(HERCULES_REFUSE_SQL);
     expect(sanitizeHerculesReply("I posted $40.00 to groceries.")).toBe(HERCULES_REFUSE_WRITE);
-    expect(sanitizeHerculesReply("I posted $40.00 to groceries.", "Groceries this month $40.00.")).toMatch(/don't post/i);
+    expect(sanitizeHerculesReply("I posted $40.00 to groceries.", "Groceries this month $40.00.")).toMatch(/prepare.*review/i);
     expect(sanitizeHerculesReply("Bianca spent more this week.")).toBe(HERCULES_REFUSE_SHAME);
     expect(sanitizeHerculesReply("As an AI, I think you should skip rent.")).toMatch(/I'm a cat/i);
-    expect(sanitizeHerculesReply("")).toMatch(/don't write/i);
+    expect(sanitizeHerculesReply("")).toMatch(/help|review|confirm/i);
 
     const visaGrounded = "Visa on the tray is -$886.55. Statement owed $0.00. Paydown is a transfer.";
     const visaFigures = ["$886.55", "$0.00"];
@@ -343,7 +343,7 @@ describe("The Hercules Update", () => {
       },
     );
     expect(posted.source).toBe("ai");
-    expect(posted.text).toMatch(/don't post/i);
+    expect(posted.text).toMatch(/prepare.*review/i);
 
     const quiet = await chatHercules(
       { message: "we good?", briefing, grounded, memories: [] },

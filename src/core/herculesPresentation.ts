@@ -2,8 +2,8 @@ import { decodeCompanionPresentation, type CompanionPresentationV2 } from "./her
 import type { HerculesRigCommand } from "../herculesRig/types.ts";
 
 /** Invalid optional cues never become arbitrary rig instructions or actions. */
-export function readCompanionPresentation(value: unknown): CompanionPresentationV2 | undefined {
-  try { return decodeCompanionPresentation(value, new Set(), new Set()); } catch { return undefined; }
+export function readCompanionPresentation(value: unknown, factIds: readonly string[] = [], actionIds: readonly string[] = []): CompanionPresentationV2 | undefined {
+  try { return decodeCompanionPresentation(value, new Set(factIds), new Set(actionIds)); } catch { return undefined; }
 }
 export function companionCueCommands(presentation: CompanionPresentationV2 | undefined, reducedMotion = false): HerculesRigCommand[] {
   if (!presentation || reducedMotion) return [];

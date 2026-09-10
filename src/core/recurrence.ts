@@ -1,4 +1,4 @@
-import { addDays, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
+import { isValidDateKey, addDays, parseDateKey, weekdaySunday0, type DateKey } from "./calendar.ts";
 import type { HouseholdCalendar, Recurrence, RecurrenceCadence, RecurrenceKind } from "./types.ts";
 
 export const DEFAULT_REMINDER_HOURS_BEFORE = 24;
@@ -70,6 +70,9 @@ export function inferRecurrenceKind(input: {
 export function shapeRecurrence(item: Recurrence, fallbackIso: string): Recurrence {
   const createdAt = item.createdAt || fallbackIso;
   const type = item.type === "income" || item.type === "transfer" ? item.type : "expense";
+  if(item.payments!==undefined){
+    if(!Array.isArray(item.payments)||item.payments.length>10000||item.payments.some(p=>!p||!isValidDateKey(p.occurrenceDate)||!isValidDateKey(p.paymentDate)||!Number.isSafeInteger(p.amountCents)||p.amountCents<=0||typeof p.accountId!=='string'||!p.accountId||typeof p.transactionId!=='string'||!p.transactionId||typeof p.recordedBy!=='string'||!p.recordedBy)||new Set(item.payments.map(p=>p.occurrenceDate)).size!==item.payments.length)throw new Error('Invalid bill payment history.');
+  }
   return {
     ...item,
     type,

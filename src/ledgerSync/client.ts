@@ -1,3 +1,4 @@
+import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { previewFor, visiblePreviews, type PendingPreview, type RejectedEntry } from "./optimistic.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
 import type { Household, CommitResult } from "../core/types.ts";
@@ -62,6 +63,9 @@ export class LedgerSyncClient {
   private companionProfileVersion = 0;
   private companionDiscoveryVersion = 0;
   private companionWardrobeVersion = 0;
+  private companionWorkflowVersion = 0;
+  private herculesActionsEnabled = false;
+  private nativeCalendarVersion = 0;
   private initialResolve?: () => void;
   private initialReject?: (e: Error) => void;
   constructor(readonly options: ClientOptions) {}
@@ -220,6 +224,9 @@ export class LedgerSyncClient {
               this.companionProfileVersion = message.companionProfileVersion === 1 ? 1 : 0;
               this.companionDiscoveryVersion = message.companionDiscoveryVersion === 1 ? 1 : 0;
               this.companionWardrobeVersion = message.companionWardrobeVersion === 1 ? 1 : 0;
+              this.companionWorkflowVersion = message.companionWorkflowVersion === 1 ? 1 : 0;
+              this.herculesActionsEnabled = message.herculesActionsEnabled === true;
+              this.nativeCalendarVersion = message.nativeCalendarVersion === 1 ? 1 : 0;
               this.ready = true;
               this.attempt = 0;
               this.options.status(this.pending.size ? "saving" : "ready");
@@ -423,7 +430,10 @@ export class LedgerSyncClient {
   }
   private async queueConfirmation(candidate:Household,id:string,onQueued?:()=>void):Promise<CommitResult> {
     const capture=capturedIntent(candidate)!;
-    if(capture.steps.some(step=>step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')))&&(!this.ready||this.companionWardrobeVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving or sharing looks.');
+    if(capture.steps.some(s=>s.kind==='executeHerculesAction')&&(!this.ready||!this.herculesActionsEnabled))throw new LedgerCommandRejectedError('HERCULES_ACTIONS_PAUSED: Conversational changes are not enabled on this Hearth server.');
+    if(capture.steps.some(s=>s.kind==='saveNativeEvent')&&(!this.ready||this.nativeCalendarVersion!==1))throw new LedgerCommandRejectedError('CALENDAR_UPDATE_REQUIRED: Connect to an updated Hearth to save events.');
+    if(capture.steps.some(s=>['executeHerculesAction','cancelHerculesSubmission'].includes(s.kind)||s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set')&&(!this.ready||this.companionWorkflowVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving conversational drafts.');
+    if(capture.steps.some(step=>companionActionEffect(step)!==null||step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')))&&(!this.ready||this.companionWardrobeVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving or sharing looks.');
     if (capture.steps.some(step => step.kind === "commitCompanion") && (!this.ready || this.companionProfileVersion !== 1)) {
       throw new LedgerCommandRejectedError("HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving Hercules preferences or conversations.");
     }

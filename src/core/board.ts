@@ -1,3 +1,4 @@
+import { nativeEventOccurrences } from "./nativeEvents.ts";
 import {
   addDays,
   daysInMonthKey,
@@ -19,7 +20,7 @@ import { workShiftIsReversed } from "./work.ts";
 import { statusForEnvelopeAt } from "./shiftEnvelope.ts";
 import type { Household, Recurrence, RecurrenceKind } from "./types.ts";
 
-export type BoardKind = RecurrenceKind | "potential-expense" | "shift" | "shift-envelope" | "google" | "detected" | "visit" | "claim" | "work-pay" | "work-tip" | "work-tipout";
+export type BoardKind = RecurrenceKind | "event" | "potential-expense" | "shift" | "shift-envelope" | "google" | "detected" | "visit" | "claim" | "work-pay" | "work-tip" | "work-tipout";
 
 export type OverlayEvent = {
   id: string;
@@ -37,7 +38,7 @@ export type BoardItem = {
   amountCents: number;
   direction: "in" | "out" | "work" | "busy";
   kind: BoardKind;
-  source: "recurrence" | "potential-expense" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
+  source: "event" | "recurrence" | "potential-expense" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
   recurrenceId?: string;
   potentialExpenseId?: string;
   appointmentId?: string;
@@ -297,6 +298,10 @@ export function buildMonthBoard(
     }
   }
 
+  for(const event of household.nativeEvents??[])for(const occurrence of nativeEventOccurrences(event,gridStart,gridEnd)){
+    const start=occurrence.date<gridStart?gridStart:occurrence.date,end=occurrence.end.slice(0,10)>gridEnd?gridEnd:occurrence.end.slice(0,10);
+    for(let date=start;date<=end;date=addDays(date,1))items.push({id:`${event.id}:${occurrence.originalDate}:${date}`,date,title:`${event.title}${occurrence.warning?' · '+occurrence.warning:''}`,amountCents:0,direction:'busy',kind:'event',source:'event',due:false});
+  }
   const byDate = new Map<DateKey, BoardItem[]>();
   for (const item of items) {
     const list = byDate.get(item.date) ?? [];

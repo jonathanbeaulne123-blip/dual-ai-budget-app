@@ -53,11 +53,19 @@ export type CompanionSuggestionState = {
   issueId: string; capabilityId: HerculesCapabilityId; view: LedgerView; revision: number;
   status: "snoozed" | "disabled" | "resume"; until: string | null; targetId: string | null;
 };
+export type CompanionQueuedAction = { actionId: string; values: Record<string,string> };
+export type CompanionWorkflow = {
+  version: 1; actionId: string; view: LedgerView; generation: number;
+  values: Record<string,string>; updatedAt: string; queue?: CompanionQueuedAction[];
+  submission: { id: string; review: string } | null;
+};
+export type CompanionWorkflowResource = { id: string; revision: number; value: CompanionWorkflow | null };
 export type CompanionProfileV1 = {
   version: 1; scope: CompanionScope;
   remembering: { enabled: boolean; revision: number };
   preferences: CompanionPreference[]; conversations: CompanionConversation[];
   wornLook: { revision: number; value: LookV1 | null };
+  workflows?: CompanionWorkflowResource[];
   savedLooks: LookResourceV1[]; suggestions: CompanionSuggestionState[];
 };
 /** Compatibility alias; the member-personal envelope carries this profile in slice 2. */
@@ -66,11 +74,13 @@ export type CompanionChatRequestV2 = {
   version: 2; scope: CompanionScope; view: LedgerView; conversationGeneration: number;
   context: CompanionConversationTurn[]; preferences: CompanionPreference[];
   currentFactIds: string[]; availableActionIds: string[];
+  workflow?: {actionId:string;missingFields:string[];stage:"collect"|"review"|"pending";inputs?:{key:string;label:string;kind:string;required:boolean}[]};
 };
 export type CompanionPresentationV2 = {
   version: 2; text: string;
   expression: typeof COMPANION_EXPRESSIONS[number]; gesture: typeof COMPANION_GESTURES[number];
   factIds: string[]; actionIds: string[];
+  proposal?: {actionId:string;values:Record<string,string>};
 };
 
 export class CompanionContractError extends Error {
@@ -210,9 +220,21 @@ function suggestion(value: unknown): CompanionSuggestionState {
     : status === "resume" ? targetId !== null && until === null : until === null && targetId === null, "INVALID_SUGGESTION_STATE");
   return { issueId: id(row.issueId), capabilityId: literal(row.capabilityId, HERCULES_CAPABILITY_IDS), view: view(row.view), revision: revision(row.revision), status, until, targetId };
 }
+export function decodeCompanionWorkflow(value: unknown): CompanionWorkflow {
+  const row=object(value,['version','actionId','view','generation','values','updatedAt','submission','queue']);
+  requireContract(row.version===1,'WORKFLOW_VERSION');
+  requireContract(row.values && typeof row.values==='object' && !Array.isArray(row.values),'WORKFLOW_VALUES');
+  const values:Record<string,string>={};
+  requireContract(Object.keys(row.values).length<=60,'WORKFLOW_FIELDS');
+  for(const [key,value] of Object.entries(row.values)) { requireContract(/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)&&!['constructor','prototype','__proto__'].includes(key),'WORKFLOW_FIELD'); requireContract(typeof value==='string'&&value.length<=1000,'WORKFLOW_VALUE');values[key]=value as string; }
+  let submission:CompanionWorkflow['submission']=null;
+  if(row.submission!==null){const entry=object(row.submission,['id','review']);submission={id:id(entry.id),review:text(entry.review,30_000)};}
+  const queue=row.queue===undefined?undefined:list(row.queue,12,item=>{const next=object(item,['actionId','values']);const parsed=decodeCompanionWorkflow({version:1,actionId:next.actionId,values:next.values,view:row.view,generation:row.generation,updatedAt:row.updatedAt,submission:null});return {actionId:parsed.actionId,values:parsed.values};});
+  return {version:1,actionId:id(row.actionId),view:view(row.view),generation:revision(row.generation),values,updatedAt:timestamp(row.updatedAt),submission,...(queue?.length?{queue}: {})};
+}
 export function decodeCompanionProfile(value: unknown, expected: CompanionScope): CompanionProfileV1 {
   if (value === undefined) return createCompanionProfile(expected);
-  const row = object(value, ["version", "scope", "remembering", "preferences", "conversations", "wornLook", "savedLooks", "suggestions"]);
+  const row = object(value, ["version", "scope", "remembering", "preferences", "conversations", "wornLook", "savedLooks", "suggestions", "workflows"]);
   requireContract(row.version === 1, "UNSUPPORTED_PROFILE_VERSION");
   const owner = scope(row.scope); sameScope(owner, expected);
   const remembering = object(row.remembering, ["enabled", "revision"]);
@@ -235,6 +257,7 @@ export function decodeCompanionProfile(value: unknown, expected: CompanionScope)
     version: 1, scope: owner, remembering: { enabled: remembering.enabled, revision: revision(remembering.revision) },
     preferences: unique(list(row.preferences, COMPANION_LIMITS.preferences, preference), item => item.key), conversations,
     wornLook: { revision: revision(worn.revision), value: worn.value === null ? null : decodeLook(worn.value) }, savedLooks,
+    ...(row.workflows !== undefined ? { workflows: unique(list(row.workflows,100,value=>{const r=object(value,['id','revision','value']);return {id:id(r.id),revision:revision(r.revision),value:r.value===null?null:decodeCompanionWorkflow(r.value)};}),r=>r.id) } : {}),
     suggestions: unique(list(row.suggestions, COMPANION_LIMITS.suggestions, suggestion), item => `${item.view}:${item.issueId}`),
   };
 }
@@ -330,6 +353,7 @@ export type PreferenceMutationOrigin =
   | { kind: "manual" }
   | { kind: "conversation"; view: LedgerView; generation: number; rememberingRevision: number; sourceTurnId: string };
 export type CompanionOperation =
+  | { kind: "workflow.set"; workflowId: string; value: CompanionWorkflow | null; expectedRevision: number; view: LedgerView; generation: number }
   | { kind: "preference.set"; key: CompanionPreferenceKey; value: CompanionPreferenceValue; expectedRevision: number; origin: PreferenceMutationOrigin }
   | { kind: "preference.forget"; key: CompanionPreferenceKey; expectedRevision: number }
   | { kind: "remembering.set"; enabled: boolean; expectedRevision: number }
@@ -344,9 +368,12 @@ export function decodeCompanionIntent(value: unknown, authenticatedScope: Compan
   const row = object(value, ["version", "id", "scope", "operation"]);
   requireContract(row.version === 1, "UNSUPPORTED_INTENT_VERSION");
   const owner = scope(row.scope); sameScope(owner, authenticatedScope);
-  const op = object(row.operation, ["kind", "key", "value", "expectedRevision", "origin", "enabled", "view", "generation", "turn", "expectedGeneration", "look", "lookId", "state", "expectedState"]);
+  const op = object(row.operation, ["kind", "key", "value", "expectedRevision", "origin", "enabled", "view", "generation", "turn", "expectedGeneration", "look", "lookId", "state", "expectedState", "workflowId"]);
   let operation: CompanionOperation;
   switch (op.kind) {
+    case 'workflow.set':
+      object(op,['kind','workflowId','value','expectedRevision','view','generation']);
+      operation={kind:op.kind,workflowId:id(op.workflowId),value:op.value===null?null:decodeCompanionWorkflow(op.value),expectedRevision:revision(op.expectedRevision),view:view(op.view),generation:revision(op.generation)};break;
     case "preference.set": {
       object(op, ["kind", "key", "value", "expectedRevision", "origin"]);
       const key = literal(op.key, COMPANION_PREFERENCE_KEYS);
@@ -400,6 +427,14 @@ export function checkCompanionPrecondition(profileValue: unknown, intentValue: u
   }
   let current: number; let expected: number;
   switch (op.kind) {
+    case 'workflow.set': {
+      const partition=profile.conversations.find(r=>r.view===op.view)!;
+      requireContract(partition.generation===op.generation,'STALE_CONVERSATION');
+      const old=profile.workflows?.find(r=>r.id===op.workflowId);
+      requireContract(!old?.value||old.value.view===op.view,'WORKFLOW_VIEW');
+      requireContract(!op.value||(op.value.view===op.view&&op.value.generation===op.generation),'WORKFLOW_VIEW');
+      current=old?.revision??0;expected=op.expectedRevision;break;
+    }
     case "preference.set": case "preference.forget":
       current = profile.preferences.find(row => row.key === op.key)?.revision ?? 0; expected = op.expectedRevision; break;
     case "remembering.set": current = profile.remembering.revision; expected = op.expectedRevision; break;
@@ -472,22 +507,26 @@ export function legacyCompanionPreview(value: unknown): LegacyCompanionPreview {
 
 /** Structural presentation validation only; existing numeric/source guards remain mandatory. */
 export function decodeCompanionPresentation(value: unknown, allowedFactIds: ReadonlySet<string>, allowedActionIds: ReadonlySet<string>): CompanionPresentationV2 {
-  const row = object(value, ["version", "text", "expression", "gesture", "factIds", "actionIds"]);
+  const row = object(value, ["version", "text", "expression", "gesture", "factIds", "actionIds", "proposal"]);
   requireContract(row.version === 2, "UNSUPPORTED_PRESENTATION_VERSION");
   const factIds = unique(list(row.factIds, 20, id), item => item);
   const actionIds = unique(list(row.actionIds, 12, id), item => item);
   requireContract(factIds.every(item => allowedFactIds.has(item)) && actionIds.every(item => allowedActionIds.has(item)), "UNAVAILABLE_REFERENCE");
-  return { version: 2, text: text(row.text, COMPANION_LIMITS.textCharacters), expression: literal(row.expression, COMPANION_EXPRESSIONS), gesture: literal(row.gesture, COMPANION_GESTURES), factIds, actionIds };
+  let proposal:CompanionPresentationV2['proposal'];
+  if(row.proposal!==undefined){const candidate=object(row.proposal,['actionId','values']);const actionId=id(candidate.actionId);requireContract(allowedActionIds.has(`start:${actionId}`),'UNAVAILABLE_REFERENCE');const values=object(candidate.values,Object.keys(candidate.values??{}));requireContract(Object.keys(values).length<=60,'WORKFLOW_FIELDS');const clean:Record<string,string>={};for(const [key,value] of Object.entries(values)){requireContract(/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)&&!['constructor','prototype','__proto__'].includes(key),'WORKFLOW_FIELD');clean[key]=text(value,500);}proposal={actionId,values:clean};}
+  return { version: 2, text: text(row.text, COMPANION_LIMITS.textCharacters), expression: literal(row.expression, COMPANION_EXPRESSIONS), gesture: literal(row.gesture, COMPANION_GESTURES), factIds, actionIds, ...(proposal?{proposal}:{}) };
 }
 
 /** Strict provider-bound context; budgets also apply to forged HTTP payloads. */
 export function decodeCompanionChatRequest(value: unknown): CompanionChatRequestV2 {
-  const row = object(value, ["version", "scope", "view", "conversationGeneration", "context", "preferences", "currentFactIds", "availableActionIds"]);
+  const row = object(value, ["version", "scope", "view", "conversationGeneration", "context", "preferences", "currentFactIds", "availableActionIds", "workflow"]);
   requireContract(row.version === 2, "UNSUPPORTED_CHAT_VERSION");
   const context = list(row.context, COMPANION_LIMITS.contextPairs * 2, turn);
   requireContract(context.length % 2 === 0 && context.every((item, index) => item.role === (index % 2 === 0 ? "user" : "hercules")), "COMPLETE_CONTEXT_PAIRS_REQUIRED");
   requireContract(context.reduce((sum, item) => sum + item.text.length, 0) <= COMPANION_LIMITS.contextCharacters, "CONTEXT_TOO_LARGE");
+  let workflow:CompanionChatRequestV2['workflow'];
+  if(row.workflow!==undefined){const w=object(row.workflow,['actionId','missingFields','stage','inputs']);workflow={actionId:id(w.actionId),missingFields:list(w.missingFields,60,v=>text(v,80)),stage:literal(w.stage,['collect','review','pending']),...(w.inputs===undefined?{}:{inputs:list(w.inputs,60,value=>{const f=object(value,['key','label','kind','required']);requireContract(typeof f.required==='boolean','WORKFLOW_FIELD');return{key:id(f.key),label:text(f.label,100),kind:literal(f.kind,['text','date','datetime','money','number','choice']),required:f.required as boolean};})})};requireContract(list(row.availableActionIds,96,id).includes(`start:${workflow.actionId}`),'UNAVAILABLE_REFERENCE');}
   return { version: 2, scope: scope(row.scope), view: view(row.view), conversationGeneration: revision(row.conversationGeneration), context,
     preferences: unique(list(row.preferences, COMPANION_LIMITS.modelPreferences, preference), item => item.key).filter(item => item.value !== null),
-    currentFactIds: list(row.currentFactIds, 80, id), availableActionIds: list(row.availableActionIds, 20, id) };
+    currentFactIds: list(row.currentFactIds, 80, id), availableActionIds: list(row.availableActionIds, 96, id),...(workflow?{workflow}:{}) };
 }

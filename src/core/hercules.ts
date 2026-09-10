@@ -83,7 +83,7 @@ export function sitDownPostcard(household: Household): SitDownPostcard {
     return {
       ready: true,
       text: text.slice(0, 80),
-      sentence: `${session.monthKey} leftover ${formatCad(session.leftoverCents)}. Plan first; Confirm still moves. Hercules never posts.`,
+      sentence: `${session.monthKey} leftover ${formatCad(session.leftoverCents)}. Review any new changes before Final Confirm.`,
       sourceMonth: session.monthKey,
       targetMonth: session.targetMonth,
     };
@@ -220,7 +220,7 @@ function voice(name: string, ask: BooksAsk): BooksAsk {
   if (ask.kind === "help") {
     return {
       ...ask,
-      sentence: `${name} reads. He doesn't write. Ask a number.`,
+      sentence: `${name} can explain your books and help you prepare a change for review.`,
     };
   }
   return ask;
@@ -231,7 +231,7 @@ function identityAnswer(household: Household, today: DateKey): BooksAsk {
   const opinion = auditOpinion(household);
   return {
     kind: "answer",
-    sentence: `I'm ${view.name}. Auditor on the counter. I read the books. I don't write them.`,
+    sentence: `I'm ${view.name}. I can help you understand your money and prepare changes for Final Confirm.`,
     rows: [
       { label: "Mood", value: view.mood },
       { label: "Opinion", value: opinion.kind },
@@ -319,9 +319,9 @@ export function herculesPageBrief(
   if (highFive.yes) return `${highFive.names.join(" and ")} both bought food. High-five.`;
   if (tab === "add") return `${name} will loaf. You confirm.`;
   if (tab === "calendar") return "Dates remind. Mark paid writes.";
-  if (tab === "shift") return "Hours are a preview until Confirm. Oracle never posts.";
+  if (tab === "shift") return "Forecast hours are estimates. Review actual work before recording a shift.";
   if (tab === "plan") return "Sit-down is three acts. Confirm still moves leftover.";
-  if (tab === "ledger") return "Fieldwork. I walk the journal. I don't write it.";
+  if (tab === "ledger") return "We can check your records and review any corrections together.";
   if (tab === "more") return "Health is the adult screen. I hide when it's dirty.";
   if (phase === "morning") return `${name} stretched. Milk whenever.`;
   if (phase === "after-shift") return `${name} wants tip math, not vibes.`;
@@ -458,7 +458,7 @@ export function askHercules(
     const income = incomeStatement(household, monthKey);
     return {
       kind: "answer",
-      sentence: `${monthKey} P&L: in ${formatCad(income.incomeCents)}, out ${formatCad(income.expenseCents)}, net ${formatCad(income.netCents)}. I don't write it.`,
+      sentence: `${monthKey} P&L: in ${formatCad(income.incomeCents)}, out ${formatCad(income.expenseCents)}, net ${formatCad(income.netCents)}.`,
       rows: [
         { label: "Income", value: formatCad(income.incomeCents) },
         { label: "Expenses", value: formatCad(income.expenseCents) },

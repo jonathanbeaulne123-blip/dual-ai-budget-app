@@ -23,7 +23,7 @@ Open `http://localhost:5173`. **Open the demo kitchen table** loads a fictional 
 - Read Home as chalkboard, wallet tiles (tap an account like a bank app), one net number, a pulse sentence, this week versus last week, upcoming money dates, and shared goals. Hercules wanders the screen; tap him, then type in the bubble to chat. Home shows his audit opinion next to the net
 - Open **Books → Wallet** for chequing, savings, cards, the TFSA, money owed to us, and the jar; **All activity** is still the type-first register. Pay a card is a transfer. Interest and cashback never post themselves
 - Open **Books** for a general journal, trial balance, balance sheet, P&L, cash flow (including investing vs card paydown), equity roll, working capital, notes, bank rec, close pack, and read-only SQL
-- Ask Hercules in plain language from the cat or Books → Ask (**Opinion?**, **Working capital?**, **What’s on the Visa?**, **Leftover?**); Power SQL stays read-only. The cat never posts
+- Ask Hercules in plain language from the cat or Books → Ask (**Opinion?**, **Working capital?**, **What’s on the Visa?**, **Leftover?**); Power SQL stays read-only. Supported conversational changes require a visible review and Final Confirm; the model cannot execute commands
 - Run a monthly sit-down on **Plan**: positives, then the books, then leftover jobs. One Confirm turns the plan into transfers. Lock last month. Download or Save to Drive
 - Keep **Development** and **Production** as two named local ledgers on the same phone
 - Choose **Shared**, **Personal**, or **Both** on every add; switch Household vs Personal at the top

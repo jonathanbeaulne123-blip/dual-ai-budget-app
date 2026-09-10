@@ -1,3 +1,4 @@
+import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { validateFundSourceClaim } from "../core/fundContributionSources.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
 import { applyRestorePoint } from "../core/restorePoints.ts";
@@ -87,7 +88,9 @@ export async function prepareCommand(
     throw new Error("MEMBERSHIP_CHANGED");
   if ((current.accountOpeningCheckpoints?.length || current.transactions.some(t => t.openingSignedBalanceCents !== undefined)) && command.accountHistoryVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: This household uses reviewed account history. Reload Hearth before making changes.");
   if ((current.companionProfile || command.steps.some(step => step.kind === "commitCompanion")) && command.companionProfileVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth before changing Hercules preferences or conversations.");
-  const wardrobeStep=command.steps.some(step=>step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')));
+  if((current.companionProfile?.workflows?.length||command.steps.some(s=>s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set'))&&command.companionWorkflowVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve conversational drafts.');
+  if((current.nativeEvents?.length||command.steps.some(s=>s.kind==='saveNativeEvent'))&&command.nativeCalendarVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve calendar events.');
+  const wardrobeStep=command.steps.some(step=>companionActionEffect(step)!==null||step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')));
   if((wardrobeStep||current.companionProfile?.wornLook.revision||current.companionProfile?.savedLooks.length||current.companionGallery?.length)&&command.companionWardrobeVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth before changing this wardrobe.');
   if(wardrobeStep&&command.steps.length!==1)throw new Error('WARDROBE_SINGLE_OPERATION_REQUIRED');
   const before = current,
@@ -233,9 +236,9 @@ export async function prepareCommand(
         command.id,
         scope,
       );
-    if(step.kind!=='commitCompanionGallery'&&canonical(current.companionGallery??[])!==canonical(result.household.companionGallery??[]))throw new Error('GALLERY_OPERATION_REQUIRED');
+    if(step.kind!=='commitCompanionGallery'&&companionActionEffect(step)!=='shared-gallery'&&canonical(current.companionGallery??[])!==canonical(result.household.companionGallery??[]))throw new Error('GALLERY_OPERATION_REQUIRED');
     const privateWardrobe=(h:Household)=>({worn:h.companionProfile?.wornLook??{revision:0,value:null},saved:h.companionProfile?.savedLooks??[]});
-    if(step.kind!=='commitCompanion'&&canonical(privateWardrobe(current))!==canonical(privateWardrobe(result.household)))throw new Error('WARDROBE_OPERATION_REQUIRED');
+    if(step.kind!=='commitCompanion'&&companionActionEffect(step)!=='private-wardrobe'&&canonical(privateWardrobe(current))!==canonical(privateWardrobe(result.household)))throw new Error('WARDROBE_OPERATION_REQUIRED');
     if (
       canonical(reviewedFacts(result)) !== canonical(remap(step.reviewed, ids))
     )

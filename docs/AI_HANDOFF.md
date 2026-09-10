@@ -3319,3 +3319,14 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
   fail closed to full-snapshot recovery.
 - No push, PR, merge, deploy, hosted mutation, schema, secret, provider, Personal
   payload, journal/transfer behavior, or Production work has been authorized.
+
+
+## 2026-09-10 — Hercules conversational application implementation checkpoint (OPEN)
+
+- Branch: `codex/hercules-conversational-app`; base/head `2db3da9fd3bff0c23beb78ceaf73295b19f2e34e`; uncommitted isolated worktree `.codex-work/hercules-conversational-app`.
+- Risk: High. Budget delta (5): confirmed domain commands and duplicate/unknown receipt protection. Engagement delta (3): plain guided entry and visible compact composer.
+- Delivered code: 80 named adapters, shared capability awareness, private review/claim/recovery lifecycle, explicit sequential checklist, native event model, actual bill payment evidence, appointment/claim paths and named companion/wardrobe/gallery paths. Only the app's review and Final Confirm can execute a prepared action.
+- Whole-app scope is incomplete. Required next work and invariants are in [the implementation packet](briefs/HERCULES_CONVERSATIONAL_APP_IMPLEMENTATION.md); command and dedicated-surface gaps remain explicit in [coverage](HERCULES_CAPABILITY_COVERAGE.md).
+- Local evidence: 18 synthetic theme/viewport checks passed; latest focused chat/recovery 30/30 and adapter/provider 25/25 passed. Additional native, Fund, companion, appointment and wardrobe continuity scenarios passed at the snapshots recorded in [the worksession](worksessions/2026-09-10-hercules-conversational-app.md).
+- High gate is not complete: the first run failed one subsequently repaired assertion after passing TypeScript; the expanded run was stopped after more than 35 minutes in TypeScript and used a superseded source fingerprint. Both breached the five-minute target. Re-run the focused High gate on a stable final source tree before acceptance.
+- Authenticated devices, live-model dialogue, Google event operations, full scope parity, physical keyboard/VoiceOver and real 200% browser zoom remain unverified. Chat actions are off by default with separate client/server gates. External calendar writing is not implemented or enabled. No release or hosted change occurred.

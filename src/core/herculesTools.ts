@@ -1871,7 +1871,7 @@ export function executeHerculesReadToolPlan(
     results,
     talk: {
       spoken: sentence,
-      lesson: results.length ? "Read-only investigation. Tap a number to inspect the posted source." : null,
+      lesson: results.length ? "These numbers come from your books. Choose a number to see its source." : null,
       fact: facts[0] ? { label: facts[0].label, value: facts[0].value, source: facts[0].source } : null,
       facts,
       replies: ["Show me the rows", "Compare another period", "We good?"],

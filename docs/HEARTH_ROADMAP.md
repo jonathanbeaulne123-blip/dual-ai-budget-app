@@ -1,3 +1,5 @@
+**Hercules conversational app — implementation OPEN (2026-09-10):** shared capability awareness, confirmed command adapters, private checklist/receipt recovery and native event groundwork. Whole-app coverage and release acceptance remain open. [Coverage matrix](HERCULES_CAPABILITY_COVERAGE.md) · [Worksession](worksessions/2026-09-10-hercules-conversational-app.md).
+
 ## Hercules slice 6 — local integration; product trials pending (2026-09-10)
 
 Integration repairs cover private acknowledgement recovery, view-preserved session drafts, corrected/forgotten preferences, current-source navigation and useful offline replies. Three-theme browser and protected App/authority verification are recorded in the [worksession](worksessions/2026-09-10-hercules-slice-6.md). [Bianca's six actual trials](briefs/HERCULES_BIANCA_ACCEPTANCE.md), live voice ratings, likeness, physical devices and authenticated continuity remain acceptance work. No hosted release or activation is implied.

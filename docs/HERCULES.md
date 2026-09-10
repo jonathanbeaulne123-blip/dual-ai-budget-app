@@ -1,3 +1,5 @@
+> Current conversational implementation is OPEN and gated off by default. See [capability coverage](HERCULES_CAPABILITY_COVERAGE.md) and [confirmed execution contract](ARCHITECTURE.md). Historical shared-memory descriptions below are superseded by private companion continuity.
+
 ## Integrated companion — slice 6 local candidate
 
 Conversation and suggestion retries recover the original receipt before applying anything again. Unconfirmed conversation stays in its original view for this mounted session; identity changes and conversation clears invalidate old replies and drafts. Expiry keeps complete receipt groups. Explicit preference correction and forget are ordered and retained in private conversation. Source changes invalidate pending answers, while ordinary conversation ACKs do not. Desktop help now has a visible, accessible invitation and the same source buttons as phone; Calendar opens the selected bill even when already mounted. Local fallback follows simple casual context and gives useful guidance when the provider is unavailable.
@@ -30,7 +32,7 @@ A flagged local 3D fitting room now provides the first complete Cozy at home loo
 
 ## Earlier runtime baseline (superseded by slice 2 where stated)
 
-**The product face:** a living Maine Coon who reads the household journal, keeps notes in the same snapshot as the milk, and never posts a cent.
+**The product face:** a living Maine Coon who reads the household journal, keeps notes in the same snapshot as the milk, and prepares supported changes for a visible review and Final Confirm. The model has no execution or confirmation authority.
 
 The ledger is still the company (Dual Course weight 5). He is Course B (weight 3) **and** a serious tool: money questions are answered on-device from the books. Care is posted household facts, not a hunger meter. Ember was the flame prototype and is fully historical.
 
@@ -50,7 +52,7 @@ Laws: [DECISIONS.md](DECISIONS.md) D-042 / D-044 / D-045 / D-046 / D-047 / D-049
 - Unlocks come from posted facts, a tied rec, or a closed month — never a shop, never pay-to-keep-alive, never pet death.
 - Shift-posting streak (D-050) is consecutive **posted shift dates** from the latest shift. Vacation does not kill him. Clock-in is not a post. Sign-out Confirm still posts (D-062).
 - **Page-true talk (D-063 / D-074 / D-093 / D-097):** sample questions follow the tab **and** the open instrument. **How can I help** is visible when chat opens and reads leftover, calendar, notices, and jars. On a loaded desk (usefulness 80+) first tap opens that help; below 80 first tap begs. Event talk on wide desk opens Calendar. Click him again to close. He perches on an opened widget; the hop cancels if another widget or tab opens. Chat stays off wallet, blotter, accounts, and the examined rect. Sit-down / leftover chips expand the postcard and leave the leftover sentence.
-- **September Office (D-051 / D-064):** he will perch, bump, lick, and pounce on desk widgets. Expanded instruments close when you leave Home. He still never posts. Kill criterion unchanged.
+- **September Office (D-051 / D-064):** he will perch, bump, lick, and pounce on desk widgets. Expanded instruments close when you leave Home. App changes require the explicit reviewed Final Confirm contract; character animation has no write authority. Kill criterion unchanged.
 - **Mark (D-061):** the live cat is ink-on-paper SVG (white coat, ruff under the head). The 3D GLB is source, not the 96px runtime. Laws and weaknesses: [HERCULES_MARK.md](HERCULES_MARK.md).
 - **Fly and litter (D-132):** desktop only, unless reduced motion is requested. Catching the fly puts it in Hercules's mouth; dragging him to the litter box above More drops it, adds to a session-only pile, and spawns another. Dragging him over the pile without a carried fly clears it. Automatic paths are excluded from the litter zone. Mobile renders no fly or litter box. The pile is deliberately not household or device state.
 - **Appointments (D-055 / D-056):** he may notice a visit and propose a jar. `proposeVisitGoal` does not write. **Start this jar** is a human tap from Calendar → Appointments or Plan. Quiet visits are "the Tuesday visit" in his mouth (D-054). He has vet bills (`memberId: "companion"`). The METC log is a page, not only an Ask answer.

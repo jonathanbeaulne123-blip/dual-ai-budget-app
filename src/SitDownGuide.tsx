@@ -115,7 +115,7 @@ export function SitDownGuide({
       {act === 1 && (
         <>
           <p className="sit-q">What went well.</p>
-          <p className="muted">Not a grade. Hercules can read these out loud. He still never posts.</p>
+          <p className="muted">Hercules can explain these choices. Changes need your review and Final Confirm.</p>
           <SitDownCharts charts={charts} />
           <details className="sit-act1-well">
             <summary>What went well — tap to open the tiles</summary>

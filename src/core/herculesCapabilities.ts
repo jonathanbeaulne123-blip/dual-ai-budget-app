@@ -1,3 +1,4 @@
+import { HERCULES_WORKFLOW_CATALOGUE } from "./herculesWorkflowCatalogue.ts";
 import type { LedgerView } from "./types.ts";
 import type { HerculesReadToolName } from "./herculesTools.ts";
 
@@ -50,4 +51,8 @@ export function registeredCompanionCapabilities(
 ): readonly CapabilityDefinition[] {
   return (HERCULES_CAPABILITIES as readonly CapabilityDefinition[])
     .filter(row => implementedActions.has(row.action) && row.views.includes(view));
+}
+
+export function herculesCapabilityBrief(availableIds:readonly string[],view:LedgerView){
+ return [...HERCULES_CAPABILITIES.map(r=>({id:r.action,outcome:r.outcome,example:r.example,views:r.views as readonly LedgerView[]})),...HERCULES_WORKFLOW_CATALOGUE.map(r=>({id:`start:${r.id}`,outcome:r.title,example:r.example,views:r.views as readonly LedgerView[]}))].filter(r=>availableIds.includes(r.id)&&r.views.includes(view)).map(({id,outcome,example})=>({id,outcome,example}));
 }

@@ -1,3 +1,4 @@
+import type { NativeEvent } from "./nativeEvents.ts";
 import type { Currency } from "./money.ts";
 import type { DateKey, MonthKey } from "./calendar.ts";
 import type { SevenShiftsEvidenceBundle } from "./evidence.ts";
@@ -377,6 +378,8 @@ export type RecurrenceOrigin = "manual" | "detected";
 export type RecurrenceGoogleSync = Record<string, { calendarId: string; eventId: string }>;
 
 export type Recurrence = {
+  /** Actual payment evidence, independent of the repeating template. */
+  payments?: {occurrenceDate: DateKey; paymentDate: DateKey; amountCents: number; accountId: string; transactionId: string; recordedBy: string}[];
   id: string;
   cadence: RecurrenceCadence;
   nextDate: DateKey;
@@ -411,7 +414,7 @@ export type HouseholdCalendar = {
 export type PotentialExpenseStatus = "planned" | "posted" | "removed";
 
 export type PotentialExpenseCalendarLink = {
-  source: "recurrence" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
+  source: "event" | "recurrence" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
   id: string;
   title: string;
 };
@@ -1263,6 +1266,7 @@ export type WeeklyDocumentStamp = {
 };
 
 export type Household = {
+  nativeEvents?: NativeEvent[];
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
   companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
@@ -1365,6 +1369,7 @@ export type RestorePoint = {
 };
 
 export type SharedEnvelope = {
+  nativeEvents?: NativeEvent[];
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
   accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
@@ -1437,6 +1442,7 @@ export type SharedEnvelope = {
 };
 
 export type PersonalEnvelope = {
+  nativeEvents?: NativeEvent[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
   companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];

@@ -1,4 +1,5 @@
-import { TIMEZONE, type DateKey } from "./calendar.ts";
+import { addDays, TIMEZONE, type DateKey } from "./calendar.ts";
+import { nativeEventInstant, type NativeEvent } from "./nativeEvents.ts";
 import { formatCad } from "./money.ts";
 import { googleRrule, HEARTH_REMINDER_HOUR } from "./recurrence.ts";
 import { detectRhythms } from "./rhythm.ts";
@@ -89,6 +90,27 @@ const VTIMEZONE = [
   "END:VTIMEZONE",
 ];
 
+/** Preserve the series identity: detached occurrences share UID and carry RECURRENCE-ID. */
+function nativeEventIcs(event: NativeEvent, householdId: string): string[] {
+  const time = (name:string,value:string) => event.allDay
+    ? `${name};VALUE=DATE:${value.replace(/-/g, '')}`
+    : `${name};TZID=${event.timezone}:${value.replace(/[-:]/g, '')}00`;
+  const common = ['BEGIN:VEVENT', `UID:hearth-${householdId}-${event.id}@hearth.local`,
+    `DTSTAMP:${stamp(event.updatedAt)}`, `SEQUENCE:${event.revision}`,
+    `SUMMARY:${icsEscape(event.title)}`, `DESCRIPTION:${icsEscape(event.notes)}`, `LOCATION:${icsEscape(event.location)}`];
+  const period = (start:string,end:string) => [time('DTSTART',start),time('DTEND',event.allDay?addDays(end,1):end)];
+  const lines = [...common,...period(event.start,event.end)];
+  if(event.repeat!=='none') {
+    const until=event.until ? (event.allDay?event.until.replace(/-/g,''):stamp(nativeEventInstant(`${event.until}T23:59`,event.timezone,event.fold))) : null;
+    lines.push(`RRULE:FREQ=${event.repeat.toUpperCase()}${until?`;UNTIL=${until}`:''}`);
+  }
+  for(const [date,exception] of Object.entries(event.exceptions)) if(exception.cancelled) lines.push(time('EXDATE',date+event.start.slice(10)));
+  lines.push('END:VEVENT');
+  for(const [date,exception] of Object.entries(event.exceptions)) if(!exception.cancelled&&exception.start&&exception.end)
+    lines.push(...common,time('RECURRENCE-ID',date+event.start.slice(10)),...period(exception.start,exception.end),'END:VEVENT');
+  return lines;
+}
+
 export function buildHouseholdIcs(household: Household, today: DateKey): string {
   const stampNow = stamp(household.lastCommittedAt);
   const lines = [
@@ -147,6 +169,7 @@ export function buildHouseholdIcs(household: Household, today: DateKey): string 
     );
   }
 
+  for(const event of household.nativeEvents??[]) if(!event.deleted) lines.push(...nativeEventIcs(event,household.householdId));
   lines.push("END:VCALENDAR");
   return `${lines.map(fold).join("\r\n")}\r\n`;
 }

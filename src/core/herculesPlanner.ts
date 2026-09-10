@@ -24,7 +24,7 @@ function plannerUrls(): string[] {
 function plannerAllowed(message: string): boolean {
   const value = message.trim();
   if (!value) return false;
-  if (/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE)\b/i.test(value)) return false;
+  if (/\b(?:INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|(?:DROP|ALTER|CREATE|TRUNCATE)\s+(?:TABLE|DATABASE|SCHEMA|INDEX)|GRANT\s+\w+\s+ON|REVOKE\s+\w+\s+ON)\b/i.test(value)) return false;
   if (/^(?:please\s+)?(?:add|post|pay|transfer|delete|remove|change|edit|write|save|log)\b/i.test(value)) return false;
   if (/\b(?:can|could|would|will) you\s+(?:add|post|pay|transfer|delete|remove|change|edit|write|save|log)\b/i.test(value)) return false;
   return true;

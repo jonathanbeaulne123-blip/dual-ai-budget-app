@@ -149,7 +149,7 @@ it("bounds repeated offline forget requests and retains every queued forget exch
 it("moves focus into phone help, wraps Tab, and restores the launcher on Escape",async()=>{
  await act(async()=>root.render(createElement(HerculesPresence,{household:catalogHousehold(),today:'2026-09-10',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onCompanionCommand:vi.fn().mockResolvedValue(null),onOpenSource:vi.fn()})));
  const launcher=host.querySelector('.hercules-pill') as HTMLButtonElement;launcher.focus();await act(async()=>launcher.click());
- const dialog=host.querySelector('[role="dialog"]')!;expect(dialog.contains(document.activeElement)).toBe(true);
+ const dialog=host.querySelector('[role="dialog"]')!;expect(document.activeElement).toBe(dialog.querySelector('input[aria-label="Ask Hercules"]'));
  const controls=[...dialog.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
  controls.at(-1)!.focus();await act(async()=>document.activeElement!.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));expect(document.activeElement).toBe(controls[0]);
  await act(async()=>document.activeElement!.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));expect(host.querySelector('[role="dialog"]')).toBeNull();expect(document.activeElement).toBe(host.querySelector('.hercules-pill'));
