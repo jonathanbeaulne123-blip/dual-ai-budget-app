@@ -108,7 +108,12 @@ try {
      const desktopAxe=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations;
      if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
     }
-    if(route==='home' && width<720 && await page.locator('.desktop-title-bracelets').isVisible())errors.push('Desktop bracelets leaked into phone');
+    if(['home','calendar','plan','ledger','more'].includes(route)) {
+     const bracelet=await page.evaluate(()=>{const group=document.querySelector('.desktop-title-bracelets'),wrap=group?.querySelector('.friendship-bracelets--wrapped'),copy=document.querySelector('.theme-scene-copy'),era=group?.querySelectorAll('.era-light').length??0;if(!group||!wrap||!copy)return {visible:false,overlapsCopy:false,era};const g=group.getBoundingClientRect(),c=copy.getBoundingClientRect();return {visible:getComputedStyle(group).display!=='none'&&g.width>0&&g.height>0,overlapsCopy:g.left<c.right&&g.right>c.left&&g.top<c.bottom&&g.bottom>c.top,era};});
+     if(!bracelet.visible)errors.push('Wrapped friendship bracelets missing '+route+' '+theme+' '+scope+' '+width);
+     if(bracelet.overlapsCopy)errors.push('Wrapped friendship bracelets overlap title copy '+route+' '+theme+' '+scope+' '+width);
+     if(bracelet.era!==(theme==='taylor'?1:0))errors.push('Concert bracelet theme leak '+route+' '+theme+' '+scope+' '+width);
+    }
     if(route==='more'&&theme==='newfoundland') {
      const contained=await page.locator('.more-chair-sticker').evaluate(e=>{const r=e.getBoundingClientRect(),p=e.closest('.theme-scene-heading').getBoundingClientRect();return r.top>=p.top&&r.bottom<=p.bottom&&r.left>=p.left&&r.right<=p.right;});
      if(!contained)errors.push('JAG chair clipped '+width);

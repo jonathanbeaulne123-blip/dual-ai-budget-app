@@ -6,7 +6,7 @@ import { CalendarHeadingArtwork } from "./CalendarArtwork.tsx";
 import { HomeArtwork } from "./LivingArtwork.tsx";
 import { EraBracelet } from "./PageWorld.tsx";
 import { MEMORABILIA } from "./memorabilia.ts";
-import type { ThemeScene } from "./scenes.ts";
+import type { SceneRoute, ThemeScene } from "./scenes.ts";
 import { useAppearance } from "./ThemeProvider.tsx";
 import { AtmosphereControl } from "./AppearancePicker.tsx";
 
@@ -95,23 +95,79 @@ function NewfoundlandArt({ scene }: { scene: ThemeScene }) {
     <path className="scene-fog" d="M-90 161 Q240 99 504 151 T1090 136" fill="none" stroke="var(--card)" opacity=".28" strokeWidth="35" />
   </>;
 }
+const BRACELET_NAMES = ["JONATHAN", "BIANCA"] as const;
+
+function BraceletStrands({ layer = "whole" }: { layer?: "rear" | "front" | "whole" }) {
+  return <>
+    {BRACELET_NAMES.map((name, row) => {
+      const beads = Array.from({ length: 25 }, (_, i) => {
+        const angle = (i / 25) * Math.PI * 2;
+        return { angle, i, x: Math.cos(angle) * 91, y: Math.sin(angle) * 34 };
+      }).filter(({ y }) => layer === "whole" || (layer === "rear" ? y <= 0 : y >= 0));
+      return <g key={name} className={`bracelet-strand bracelet-strand--${layer}`} transform={`translate(${row ? 165 : 115} ${row ? 109 : 55}) rotate(${row ? 6 : -6})`}>
+        {layer === "whole"
+          ? <ellipse rx="91" ry="34" fill="none" stroke="var(--theme-second)" strokeOpacity=".45" strokeWidth="3" />
+          : <path d={layer === "rear" ? "M-91 0Q0-68 91 0" : "M-91 0Q0 68 91 0"} fill="none" stroke="var(--theme-second)" strokeOpacity=".45" strokeWidth="3" />}
+        {beads.map(({ angle, i, x, y }) => <circle key={i} cx={x} cy={y} r={i % 3 === 0 ? 6.8 : 5.5} fill={i % 4 === 0 ? "#e4b976" : i % 3 === 0 ? "var(--theme-accent)" : i % 2 ? "var(--card)" : "var(--theme-second)"} stroke="var(--card)" strokeWidth="1.4" data-angle={angle.toFixed(2)} />)}
+        {layer !== "rear" && name.split("").map((letter, i) => <g key={i} transform={`translate(${(i - (name.length - 1) / 2) * 18} 31)`}>
+          <rect x="-8.5" y="-11" width="17" height="23" rx="4" fill="#fffaf0" stroke="#d6bdad" />
+          <text x="0" y="5" fill="#533d43" textAnchor="middle" fontSize="17" fontFamily="Figtree, sans-serif" fontWeight="700">{letter}</text>
+        </g>)}
+        {layer !== "rear" && <path d="M91 8 c-9 -9 -18 3 -2 14 c16 -11 7 -23 -2 -14Z" fill="#cba261" stroke="#fff1ce" />}
+      </g>;
+    })}
+  </>;
+}
+
 export function FriendshipBracelets() {
   const prepared = MEMORABILIA.find(asset => asset.id === "bracelet-pair" && asset.status === "prepared" && asset.src);
   if (prepared) return <img className="friendship-bracelets" src={prepared.src!} alt={prepared.alt} width={prepared.width} height={prepared.height} decoding="async" />;
-  const names = ["JONATHAN", "BIANCA"];
   return <svg className="friendship-bracelets" viewBox="0 0 280 166" role="img" aria-label="Illustrated placeholder friendship bracelets for Jonathan and Bianca" data-placeholder="bracelets">
-    {names.map((name, row) => <g key={name} transform={`translate(${row ? 165 : 115} ${row ? 109 : 55}) rotate(${row ? 6 : -6})`}>
-      <ellipse rx="91" ry="34" fill="none" stroke="var(--theme-second)" strokeOpacity=".45" strokeWidth="3" />
-      {Array.from({ length: 25 }, (_, i) => {
-        const angle = (i / 25) * Math.PI * 2;
-        return <circle key={i} cx={Math.cos(angle) * 91} cy={Math.sin(angle) * 34} r={i % 3 === 0 ? 6.8 : 5.5} fill={i % 4 === 0 ? "#e4b976" : i % 3 === 0 ? "var(--theme-accent)" : i % 2 ? "var(--card)" : "var(--theme-second)"} stroke="var(--card)" strokeWidth="1.4" />;
-      })}
-      {name.split("").map((letter, i) => <g key={i} transform={`translate(${(i - (name.length - 1) / 2) * 18} 31)`}>
-        <rect x="-8.5" y="-11" width="17" height="23" rx="4" fill="#fffaf0" stroke="#d6bdad" />
-        <text x="0" y="5" fill="#533d43" textAnchor="middle" fontSize="17" fontFamily="Figtree, sans-serif" fontWeight="700">{letter}</text>
-      </g>)}
-      <path d="M91 8 c-9 -9 -18 3 -2 14 c16 -11 7 -23 -2 -14Z" fill="#cba261" stroke="#fff1ce" />
-    </g>)}
+    <BraceletStrands />
+  </svg>;
+}
+
+function BraceletAnchor({ page, scene }: { page: SceneRoute; scene: ThemeScene }) {
+  const shared = { fill: "var(--card)", stroke: "var(--theme-second)", strokeWidth: 2 };
+  if (page === "home") {
+    if (scene.theme === "taylor") return <g className="bracelet-wrap-anchor" transform="translate(107 34) rotate(4 41 48)"><rect width="82" height="96" rx="3" {...shared}/><rect x="9" y="9" width="64" height="58" fill="var(--theme-second)" opacity=".22"/><path d="M22 80h39" stroke="var(--theme-accent)" strokeWidth="3"/><path d="M41 32c-13-15-25 5 0 22 25-17 13-37 0-22Z" fill="var(--theme-accent)" opacity=".65"/></g>;
+    if (scene.theme === "newfoundland") return <g className="bracelet-wrap-anchor" transform="translate(108 43)"><path d="M0 31L40 0l41 31v66H0Z" fill="var(--theme-accent)" stroke="var(--theme-second)" strokeWidth="2"/><rect x="31" y="58" width="20" height="39" fill="var(--theme-second)"/><path d="M11 42h17v18H11zm42 0h17v18H53z" fill="var(--card)"/></g>;
+    return <g className="bracelet-wrap-anchor" transform="translate(103 44)"><path d="M10 22h66l-8 64Q43 99 18 86Z" {...shared}/><path d="M75 34q35-9 27 23-6 20-31 16" fill="none" stroke="var(--theme-second)" strokeWidth="7"/><ellipse cx="43" cy="23" rx="33" ry="7" fill="var(--theme-accent)" opacity=".7"/></g>;
+  }
+  if (page === "calendar") {
+    if (scene.theme === "taylor") return <g className="bracelet-wrap-anchor" transform="translate(105 40)"><circle cx="43" cy="45" r="43" fill="var(--theme-second)" stroke="var(--card)" strokeWidth="4"/><circle cx="43" cy="45" r="13" fill="var(--theme-accent)"/><circle cx="43" cy="45" r="3" fill="var(--card)"/></g>;
+    if (scene.theme === "newfoundland") return <g className="bracelet-wrap-anchor" transform="translate(120 27)"><path d="M8 104L18 23h32l10 81Z" {...shared}/><path d="M13 23h43V8H13ZM9 8L34-8 60 8Z" fill="var(--theme-accent)"/><rect x="25" y="72" width="18" height="32" fill="var(--theme-second)"/></g>;
+    return <g className="bracelet-wrap-anchor" transform="translate(104 34)"><rect width="88" height="96" rx="4" {...shared}/><path d="M0 25h88" stroke="var(--theme-accent)" strokeWidth="14"/><path d="M18 48h18m12 0h18M18 68h18m12 0h18" stroke="var(--theme-second)" strokeWidth="7" opacity=".45"/></g>;
+  }
+  if (page === "plan") {
+    if (scene.theme === "newfoundland") return <g className="bracelet-wrap-anchor" transform="translate(105 43)"><path d="M0 82l29-42 19 20 25-38 24 60Z" fill="var(--theme-second)" stroke="var(--card)" strokeWidth="3"/><path d="M8 91h82" stroke="var(--theme-accent)" strokeWidth="7"/></g>;
+    return <g className="bracelet-wrap-anchor" transform="translate(103 36) rotate(-3 45 47)"><rect x="5" width="84" height="98" rx="4" {...shared}/><path d="M22 25h52M22 43h45M22 61h52M22 79h36" stroke="var(--theme-second)" strokeWidth="3" opacity=".48"/><path d="M10 0v98" stroke="var(--theme-accent)" strokeWidth="5"/></g>;
+  }
+  if (page === "ledger") {
+    return <g className="bracelet-wrap-anchor" transform="translate(98 42) rotate(-3 48 45)"><rect x="6" y="54" width="96" height="30" rx="4" fill="var(--theme-second)" stroke="var(--card)" strokeWidth="3"/><rect x="17" y="27" width="83" height="29" rx="4" fill="var(--card)" stroke="var(--theme-accent)" strokeWidth="3"/><rect x="4" width="92" height="29" rx="4" fill="var(--theme-accent)" stroke="var(--theme-second)" strokeWidth="3"/><path d="M21 10h57M30 38h53M20 67h65" stroke="var(--card)" strokeWidth="3" opacity=".7"/></g>;
+  }
+  if (scene.theme === "newfoundland") return <g className="bracelet-wrap-anchor" transform="translate(105 31)"><path d="M14 45Q8 5 34 8h32q27-3 24 37v45H14Z" fill="var(--theme-accent)" stroke="var(--theme-second)" strokeWidth="3"/><path d="M14 90h76v25H14ZM23 115v18m58-18v18" fill="var(--card)" stroke="var(--theme-second)" strokeWidth="5"/></g>;
+  if (scene.theme === "taylor") return <g className="bracelet-wrap-anchor" transform="translate(99 46)"><rect x="5" y="18" width="100" height="65" rx="8" fill="var(--theme-second)" stroke="var(--card)" strokeWidth="3"/><path d="M18 18V7h29v11" fill="var(--theme-accent)"/><circle cx="57" cy="51" r="24" fill="var(--card)" stroke="var(--theme-accent)" strokeWidth="5"/><circle cx="57" cy="51" r="12" fill="var(--theme-second)"/></g>;
+  return <g className="bracelet-wrap-anchor" transform="translate(103 43)"><path d="M9 22h67l-8 64Q43 99 18 86Z" {...shared}/><path d="M75 34q35-9 27 23-6 20-31 16" fill="none" stroke="var(--theme-second)" strokeWidth="7"/><path d="M25 5q-12-13 0-25m24 25q12-13 0-25" fill="none" stroke="var(--theme-second)" strokeWidth="3"/></g>;
+}
+
+export function WrappedFriendshipBracelets({ page, scene }: { page: SceneRoute; scene: ThemeScene }) {
+  const prepared = MEMORABILIA.find(asset => asset.id === "bracelet-pair" && asset.status === "prepared" && asset.src);
+  const clipId = useId().replace(/:/g, "");
+  return <svg className="friendship-bracelets friendship-bracelets--wrapped" viewBox="0 0 280 166" role="img" aria-label={`Jonathan and Bianca's friendship bracelets wrapped around a ${page} keepsake`} data-wrap-anchor={`${scene.theme}-${page}`} data-placeholder={prepared ? undefined : "bracelets"}>
+    {prepared ? <>
+      <defs>
+        <clipPath id={`${clipId}-rear`}><path d="M0 0H280V55H0ZM0 75H280V109H0Z"/></clipPath>
+        <clipPath id={`${clipId}-front`}><path d="M0 55H280V75H0ZM0 109H280V166H0Z"/></clipPath>
+      </defs>
+      <image href={prepared.src!} width="280" height="166" preserveAspectRatio="xMidYMid meet" clipPath={`url(#${clipId}-rear)`}/>
+      <BraceletAnchor page={page} scene={scene}/>
+      <image href={prepared.src!} width="280" height="166" preserveAspectRatio="xMidYMid meet" clipPath={`url(#${clipId}-front)`}/>
+    </> : <>
+      <BraceletStrands layer="rear"/>
+      <BraceletAnchor page={page} scene={scene}/>
+      <BraceletStrands layer="front"/>
+    </>}
   </svg>;
 }
 function ScrapbookArt({ scene, uid }: { scene: ThemeScene; uid: string }) {
@@ -164,6 +220,7 @@ export function SceneArtwork({ scene }: { scene: ThemeScene }) {
 }
 export function ThemeSceneHeading({ home = false, calendar = false, plan = false, more = false, books = false }: { home?: boolean; calendar?: boolean; plan?: boolean; more?: boolean; books?: boolean }) {
   const { scene } = useAppearance();
+  const page: SceneRoute = books ? "ledger" : more ? "more" : plan ? "plan" : calendar ? "calendar" : "home";
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -178,8 +235,7 @@ export function ThemeSceneHeading({ home = false, calendar = false, plan = false
     {plan && scene.id === "summit" && <img className="plan-cannon-sticker" src="/theme-art/plan-cannon.webp" alt="Simple clip-art illustration of Jonathan sitting on the cannon at Signal Hill" width="240" height="160" />}
     {calendar && scene.id === "cape-spear" && <img className="calendar-couple" src="/theme-art/calendar-cape-couple.webp" alt="Clip-art illustration of Jonathan and Bianca at Cape Spear" />}
     <div className="theme-scene-copy"><span className="theme-scene-kicker">{scene.theme === "taylor" ? "A page from our scrapbook" : scene.theme === "newfoundland" ? "A little Newfoundland" : "Welcome home"}</span><p className="theme-scene-title">{scene.title}</p><p className="theme-scene-caption">{scene.caption}</p></div>
-    <EraBracelet />
-    {(home || calendar || plan || more || books) && <div className="desktop-title-bracelets"><FriendshipBracelets /><EraBracelet allThemes /></div>}
+    {(home || calendar || plan || more || books) && <div className="desktop-title-bracelets"><WrappedFriendshipBracelets page={page} scene={scene}/><EraBracelet /></div>}
     <AtmosphereControl />
   </section>;
 }
