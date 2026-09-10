@@ -34,16 +34,27 @@
   background: color-mix(in srgb, var(--card) 90%, transparent);
   color: var(--theme-accent, var(--pine));
   opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
-.calendar-stage .cal-cell:hover .cal-add,
-.calendar-stage .cal-cell:focus-within .cal-add { opacity: 1; }
+.calendar-stage .cal-add.is-revealed { opacity: 1; visibility: visible; pointer-events: auto; }
+@media (hover: hover) and (min-width: 720px) {
+  .calendar-stage .cal-cell:hover .cal-add,
+  .calendar-stage .cal-cell:focus-within .cal-add { opacity: 1; visibility: visible; pointer-events: auto; }
+}
 .calendar-stage .cal-title.kind-potential-expense { color: var(--theme-accent, var(--copper)); font-weight: 700; cursor: grab; }
 .calendar-stage .potential-expense-row { padding: 12px 0; border-bottom: 1px dashed var(--line); }
 .calendar-stage .potential-expense-row.is-due { border-left: 3px solid var(--theme-accent, var(--copper)); padding-left: 10px; }
-.potential-expense-sheet .sheet-inner { display: grid; gap: 10px; max-width: 560px; }
+.potential-expense-sheet { z-index: 45; padding-bottom: calc(var(--nav) + env(safe-area-inset-bottom, 0px) + 24px); }
+.potential-expense-sheet .sheet-inner { display: grid; gap: 10px; max-width: 560px; padding-bottom: calc(var(--nav) + env(safe-area-inset-bottom, 0px) + 24px); }
 .potential-expense-sheet :is(input, select) { width: 100%; min-height: 44px; }
 .potential-expense-sheet fieldset { border: 0; padding: 0; margin: 4px 0; }
-.potential-expense-sheet .primary { width: 100%; margin-top: 8px; }
+.potential-expense-sheet .primary { position: sticky; bottom: max(12px, env(safe-area-inset-bottom, 0px)); z-index: 3; width: 100%; margin-top: 8px; box-shadow: 0 -10px 18px color-mix(in srgb, var(--paper) 88%, transparent); }
+.potential-expense-sheet .cad-pad { margin-block: 4px 8px; }
+.potential-expense-sheet .cad-pad-display { font-size: clamp(38px, 10vw, 54px); }
+.potential-expense-event-link { margin: 0; padding: 9px 10px; border-left: 3px solid var(--theme-accent, var(--pine)); background: var(--paper-2); }
+.potential-expense-confirm .confirm-footer { position: sticky; bottom: 0; z-index: 2; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)); background: var(--card); }
+.potential-expense-confirm .cad-pad-display { font-size: clamp(38px, 10vw, 54px); }
 .calendar-stage .cal-day { min-width: 0; color: var(--ink); }
 .calendar-stage .cal-titles { width: 100%; min-width: 0; }
 .calendar-stage .cal-title { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -51,6 +62,11 @@
 .calendar-stage .calendar-selected-day .row,
 .calendar-stage .calendar-upcoming .row,
 .calendar-stage .calendar-integration .row { flex-wrap: wrap; gap: 8px; }
+.calendar-stage .calendar-event-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.calendar-stage .calendar-event-focus { min-height: 44px; min-width: 0; padding: 8px 10px; border: 1px solid transparent; border-radius: var(--world-r-control, 5px); background: transparent; color: var(--ink); text-align: left; font: inherit; }
+.calendar-stage .calendar-event-focus:hover,
+.calendar-stage .calendar-event-focus[aria-pressed="true"] { border-color: var(--theme-accent, var(--pine)); background: color-mix(in srgb, var(--theme-accent, var(--pine)) 8%, var(--card)); }
+.calendar-stage .calendar-event-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
 .calendar-stage .row > span { min-width: 0; overflow-wrap: anywhere; }
 .calendar-stage .calendar-upcoming { margin-top: 12px; }
 .calendar-stage .calendar-upcoming summary { min-height: 44px; }
@@ -63,6 +79,8 @@
   outline-offset: 2px;
 }
 @media (max-width: 719px) {
+  .potential-expense-sheet .primary { bottom: calc(var(--nav) + env(safe-area-inset-bottom, 0px) + 12px); }
+  .potential-expense-confirm .confirm-footer { bottom: calc(var(--nav) + env(safe-area-inset-bottom, 0px)); }
   .calendar-stage .calendar-tabs { grid-template-columns: 1fr .8fr 1.45fr .65fr; }
   .calendar-stage .calendar-tabs button { font-size: clamp(12px, 3.2vw, 15px); white-space: nowrap; overflow-wrap: normal; }
   .calendar-stage .calendar-card { padding: 10px; }
@@ -71,8 +89,10 @@
   .calendar-stage .cal-grid, .calendar-stage .cal-weekdays { gap: 2px; }
   .calendar-stage .cal-weekdays { font-size: 10px; letter-spacing: 0; }
   .calendar-stage .cal-day { min-height: 66px; padding: 5px 2px; border-radius: var(--world-r-control, 5px); }
-  .calendar-stage .cal-add { opacity: 1; top: 2px; right: 2px; width: 24px; min-width: 24px; height: 24px; min-height: 24px !important; }
+  .calendar-stage .cal-add { top: 2px; right: 2px; width: 24px; min-width: 24px; height: 24px; min-height: 24px !important; }
   .calendar-stage .calendar-selected-day > header > div { display: grid; gap: 6px; }
+  .calendar-stage .calendar-event-row { grid-template-columns: 1fr; }
+  .calendar-stage .calendar-event-actions { justify-content: flex-start; }
   .calendar-stage .cal-title { font-size: 9px; line-height: 1.25; }
   .calendar-stage .calendar-board-dock { margin-bottom: 10px; }
   .calendar-stage .calendar-hero-actions { flex-wrap: wrap; }

@@ -42,12 +42,13 @@ import {
   type Environment,
   type Household,
   type LedgerView,
+  type PotentialExpenseCalendarLink,
   type PotentialExpensePlan,
   type Recurrence,
   type VisitPostDraft,
   type WorkOwedFact,
 } from "./core/index.ts";
-import type { OverlayEvent } from "./core/board.ts";
+import type { BoardItem, OverlayEvent } from "./core/board.ts";
 import {
   disconnectGoogleAccount,
   googleConfigured,
@@ -139,6 +140,7 @@ function CalendarPageScope(props: CalendarProps) {
   const [monthKey, setMonthKey] = useState(() => monthKeyFromDateKey(today));
   const [selected, setSelected] = useState<DateKey>(today);
   const [dayOpen, setDayOpen] = useState(true);
+  const [mobileAddDate, setMobileAddDate] = useState<DateKey | null>(null);
   const [pane, setPane] = useState<Pane>("calendar");
   const tabsId = useId();
   const integrationRef = useRef<HTMLElement>(null);
@@ -149,7 +151,8 @@ function CalendarPageScope(props: CalendarProps) {
   const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
   const [repeatingDraft, setRepeatingDraft] = useState<RepeatingDraft | null>(null);
   const [workSettlement, setWorkSettlement] = useState<WorkOwedFact | null>(null);
-  const [potentialEditor, setPotentialEditor] = useState<{ date: DateKey; plan?: PotentialExpensePlan } | null>(null);
+  const [potentialEditor, setPotentialEditor] = useState<{ date: DateKey; plan?: PotentialExpensePlan; linkedCalendarItem?: PotentialExpenseCalendarLink } | null>(null);
+  const [selectedCalendarItemId, setSelectedCalendarItemId] = useState<string | null>(null);
   const [draggedPotentialId, setDraggedPotentialId] = useState<string | null>(null);
   const [calendarAnnouncement, setCalendarAnnouncement] = useState("");
   const scopeKey = `${environment}:${household.householdId}:${props.memberId}:${props.view ?? "household"}`;
@@ -177,6 +180,7 @@ function CalendarPageScope(props: CalendarProps) {
     setMonthKey(next);
     setSelected(`${next}-${String(Math.min(Number(selected.slice(8)), daysInMonthKey(next))).padStart(2, "0")}`);
     setDayOpen(false);
+    setMobileAddDate(null);
   };
   const workFacts = useMemo(() => workOwedFacts(household, today), [household, today]);
   const selectedDay = board.days.find((day) => day.date === selected) ?? board.days.find((day) => day.isToday);
@@ -205,6 +209,14 @@ function CalendarPageScope(props: CalendarProps) {
     setMonthKey(monthKeyFromDateKey(date));
     setDayOpen(true);
     setCalendarAnnouncement(`${plan.title} moved to ${formatDayLabel(date)}.`);
+  }
+
+  function addPotentialForItem(item: BoardItem) {
+    if (item.source === "potential-expense") return;
+    setPotentialEditor({
+      date: item.date,
+      linkedCalendarItem: { source: item.source, id: item.id, title: item.title },
+    });
   }
 
   function refreshAccounts() {
@@ -459,8 +471,10 @@ function CalendarPageScope(props: CalendarProps) {
                   ].join(" ")}
                   onClick={() => {
                     setSelected(day.date);
+                    setSelectedCalendarItemId(null);
+                    if (phone) setMobileAddDate(day.date);
                     if (!day.inMonth) setMonthKey(monthKeyFromDateKey(day.date));
-                    setDayOpen(selected === day.date ? !dayOpen : true);
+                    setDayOpen(phone ? true : selected === day.date ? !dayOpen : true);
                   }}
                   onKeyDown={event => {
                     const next = event.key === "ArrowRight" ? index + 1 : event.key === "ArrowLeft" ? index - 1
@@ -471,6 +485,7 @@ function CalendarPageScope(props: CalendarProps) {
                     const target = board.days[Math.max(0, Math.min(board.days.length - 1, next))]!;
                     setSelected(target.date);
                     setDayOpen(true);
+                    if (phone) setMobileAddDate(target.date);
                     // Keep the focused week mounted; Month follows the chosen civil date on entry.
                     event.currentTarget.closest(".cal-grid")?.querySelector<HTMLButtonElement>(`[data-calendar-date="${target.date}"]`)?.focus();
                   }}
@@ -488,7 +503,9 @@ function CalendarPageScope(props: CalendarProps) {
                     {extra > 0 ? <span className="cal-title more">+{extra}</span> : null}
                   </span>
                 </button>
-                <button type="button" className="cal-add" aria-label={`Add potential expense on ${formatDayLabel(day.date)}`}
+                <button type="button" className={`cal-add ${phone ? mobileAddDate === day.date ? "is-revealed" : "" : selected === day.date ? "is-revealed" : ""}`} aria-label={`Add potential expense on ${formatDayLabel(day.date)}`}
+                  tabIndex={phone && mobileAddDate !== day.date ? -1 : 0}
+                  aria-hidden={phone && mobileAddDate !== day.date ? true : undefined}
                   onClick={() => { setSelected(day.date); setDayOpen(true); setPotentialEditor({ date: day.date }); }}>+</button>
                 </div>
                 );
@@ -525,7 +542,7 @@ function CalendarPageScope(props: CalendarProps) {
               <header>
                 <div>
                   <h2>{formatDayLabel(selectedDay.date)}</h2>
-                  <button type="button" className="chip calendar-add-potential" onClick={() => setPotentialEditor({ date: selectedDay.date })}>+ Potential expense</button>
+                  {(!phone || mobileAddDate === selectedDay.date) ? <button type="button" className="chip calendar-add-potential" onClick={() => setPotentialEditor({ date: selectedDay.date })}>+ Potential expense</button> : null}
                 </div>
                 <span className="muted">
                   {[
@@ -572,6 +589,9 @@ function CalendarPageScope(props: CalendarProps) {
                   onAskWork={(id) => setWorkSettlement(workFacts.find((fact) => fact.id === id) ?? null)}
                   shiftEnvelopeId={item.shiftEnvelopeId}
                   onOpenShiftEnvelope={props.onOpenShiftEnvelope}
+                  selected={selectedCalendarItemId === item.id}
+                  onSelect={() => setSelectedCalendarItemId((current) => current === item.id ? null : item.id)}
+                  onAddPotential={() => addPotentialForItem(item)}
                 />
               ))}
             </section>
@@ -585,12 +605,20 @@ function CalendarPageScope(props: CalendarProps) {
             </summary>
             {board.upcoming.length === 0 ? (
               <p className="muted">Quiet three weeks.</p>
-            ) : board.upcoming.map((item) => (
+            ) : board.upcoming.map((item) => item.source === "potential-expense" && item.potentialExpenseId ? (
+              <PotentialExpenseRow key={`upcoming:${item.id}`}
+                plan={household.potentialExpenses.find((row) => row.id === item.potentialExpenseId)!}
+                today={today}
+                busy={props.busy}
+                onEdit={(plan) => setPotentialEditor({ date: plan.date, plan })}
+                onMove={(plan) => setPotentialEditor({ date: plan.date, plan })}
+                onRemove={(plan) => props.onCommand((current) => removePotentialExpense(current, { id: plan.id, createdBy: props.memberId }))}
+                onQuick={(plan) => props.onAskQuickPotential?.(plan.id)}
+                onReview={(plan) => props.onReviewPotential?.(plan.id)}
+              />
+            ) : (
               <div className="row" key={item.id}>
-                <span>
-                  <span className={`kind-pill ${item.kind}`}>{kindLabel(item.kind)}</span>
-                  {" "}{formatDayLabel(item.date)} · {item.title}
-                </span>
+                <span><span className={`kind-pill ${item.kind}`}>{kindLabel(item.kind)}</span> {formatDayLabel(item.date)} · {item.title}</span>
                 <span className={item.direction === "out" ? "right" : "muted"}>{formatCad(item.amountCents)}</span>
               </div>
             ))}
@@ -787,6 +815,7 @@ function CalendarPageScope(props: CalendarProps) {
           view={props.view ?? "household"}
           date={potentialEditor.date}
           plan={potentialEditor.plan}
+          linkedCalendarItem={potentialEditor.linkedCalendarItem}
           busy={props.busy}
           onCancel={() => setPotentialEditor(null)}
           onSave={savePotential}
@@ -830,10 +859,10 @@ function PotentialExpenseRow({ plan, today, busy, onEdit, onMove, onRemove, onQu
       <span><span className="kind-pill potential-expense">Planned</span> {plan.title}{due ? " · due" : ""}</span>
       <strong>{formatCad(plan.expectedAmountCents)}</strong>
     </div>
-    <p className="muted">Planned—not posted · {plan.visibility === "personal" ? "Personal" : plan.visibility === "both" ? "Both" : "Shared"}</p>
+    <p className="muted">Planned—not posted · {plan.visibility === "personal" ? "Personal" : plan.visibility === "both" ? "Both" : "Shared"}{plan.linkedCalendarItem ? ` · For ${plan.linkedCalendarItem.title}` : ""}</p>
     <div className="chips">
-      {due ? <button type="button" className="chip selected" disabled={busy} onClick={() => onQuick(plan)}>Quick Confirm</button> : null}
-      {due ? <button type="button" className="chip" disabled={busy} onClick={() => onReview(plan)}>Review in Add</button> : null}
+      <button type="button" className="chip selected" disabled={busy} onClick={() => onQuick(plan)}>Quick Confirm</button>
+      <button type="button" className="chip" disabled={busy} onClick={() => onReview(plan)}>Review in Add</button>
       <button type="button" className="chip" disabled={busy} onClick={() => onEdit(plan)}>Edit</button>
       <button type="button" className="chip" disabled={busy} onClick={() => onMove(plan)}>Move</button>
       <button type="button" className="chip" disabled={busy} onClick={() => onRemove(plan)}>Remove</button>
@@ -860,17 +889,20 @@ function DayRow(props: {
   onAskVisit: (draft: VisitPostDraft, summary: string) => void;
   onAskWork: (id: string) => void;
   onOpenShiftEnvelope: (envelopeId: string) => void;
+  selected?: boolean;
+  onSelect?: () => void;
+  onAddPotential?: () => void;
   standingFactOnly?: boolean;
 }) {
   const rec = props.recurrenceId ? props.household.recurrences.find((item) => item.id === props.recurrenceId) : undefined;
   const visit = props.appointmentId ? props.household.appointments.find((item) => item.id === props.appointmentId) : undefined;
   return (
-    <div className="row">
-      <span>
+    <div className={`calendar-event-row ${props.selected ? "is-selected" : ""}`}>
+      {props.onSelect ? <button type="button" className="calendar-event-focus" aria-pressed={props.selected} onClick={props.onSelect}>
         <span className={`kind-pill ${props.kind}`}>{kindLabel(props.kind)}</span> {props.title}
         {props.due ? " · due" : ""}
-      </span>
-      <span>
+      </button> : <span className="calendar-event-label"><span className={`kind-pill ${props.kind}`}>{kindLabel(props.kind)}</span> {props.title}{props.due ? " · due" : ""}</span>}
+      <span className="calendar-event-actions">
         {props.amountCents ? formatCad(props.amountCents) : ""}
         {props.rhythmKey && (
           <button className="chip" disabled={props.busy} onClick={() => props.onAdopt(props.rhythmKey!)}>Adopt</button>
@@ -901,6 +933,9 @@ function DayRow(props: {
         )}
         {props.shiftEnvelopeId && (
           <button className="chip selected" disabled={props.busy} onClick={() => props.onOpenShiftEnvelope(props.shiftEnvelopeId!)}>Open</button>
+        )}
+        {props.selected && props.onAddPotential && (
+          <button type="button" className="chip calendar-event-add-potential" disabled={props.busy} onClick={props.onAddPotential}>+ Potential expense</button>
         )}
       </span>
     </div>

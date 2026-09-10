@@ -84,6 +84,30 @@ describe("potential Calendar expenses", () => {
     expect(undone.transactions.some((row) => row.sourceId === id)).toBe(false);
   });
 
+  it("posts the reviewed actual amount while preserving the expected amount on the resolved plan", () => {
+    const planned = addPotentialExpense(catalogHousehold(), baseInput).household;
+    const id = planned.potentialExpenses[0]!.id;
+    const result = postPotentialExpense(planned, { id, createdBy: "MEM-001", amount: "643.27" });
+    const plan = result.household.potentialExpenses.find((row) => row.id === id)!;
+    const transaction = result.household.transactions.find((row) => row.id === plan.transactionId)!;
+    expect(plan.expectedAmountCents).toBe(60_000);
+    expect(transaction.amountCents).toBe(64_327);
+  });
+
+  it("retains shaped Google event provenance as planning-only state", async () => {
+    const household = catalogHousehold();
+    const before = await financialAuditHash(household);
+    const result = addPotentialExpense(household, {
+      ...baseInput,
+      linkedCalendarItem: { source: "google", id: "google:MEM-001:wedding", title: "Wedding day" },
+    });
+    expect(result.household.potentialExpenses[0]!.linkedCalendarItem).toEqual({ source: "google", id: "google:MEM-001:wedding", title: "Wedding day" });
+    expect(ensureHouseholdShape(result.household).potentialExpenses[0]!.linkedCalendarItem?.source).toBe("google");
+    const envelopes = splitForSync(result.household, "MEM-001");
+    expect(assembleHousehold(envelopes.shared, envelopes.personal).potentialExpenses[0]!.linkedCalendarItem?.id).toBe("google:MEM-001:wedding");
+    expect(await financialAuditHash(result.household)).toBe(before);
+  });
+
   it("keeps Only-me plans in the owner's Personal envelope and out of partner projections", () => {
     const planned = addPotentialExpense(catalogHousehold(), { ...baseInput, visibility: "personal" }).household;
     const { shared, personal } = splitForSync(planned, "MEM-001");
