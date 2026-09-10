@@ -1,3 +1,4 @@
+import {decodeCompanionGallery} from './herculesCompanionContracts.ts';
 import { decodeCompanionProfile } from "./herculesCompanionContracts.ts";
 import { shapeFundSourceClaims } from "./fundContributionSources.ts";
 import { shapeOnboardingAttestationInvalidations, mergeOnboardingAttestationInvalidations, shapeOnboardingAttestations, mergeOnboardingAttestations } from "./onboarding/attestations.ts";
@@ -345,6 +346,7 @@ export function ensureHouseholdShape(household: Household): Household {
   return {
     ...household,
     companionProfile: scopedCompanion(household.companionProfile, household),
+    ...(household.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(household.companionGallery,household)}:{}),
     householdId: household.householdId || randomHouseholdId(),
     inviteCode: normalizeInviteCode(household.inviteCode) || randomInviteCode(),
     linked: Boolean(household.linked),
@@ -513,6 +515,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     claims: shaped.claims,
     presets: shaped.presets,
     calendar: shaped.calendar,
+    ...(shaped.companionGallery!==undefined?{companionGallery:shaped.companionGallery}:{}),
     kitchen: shaped.kitchen,
     google: shaped.google,
     goals: sharedGoals,
@@ -933,6 +936,7 @@ export function assembleHousehold(
     claims: shared.claims ?? [],
     presets: shared.presets ?? [],
     calendar: shared.calendar,
+    ...(shared.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(shared.companionGallery,shared)}:{}),
     kitchen: shared.kitchen,
     google: shared.google,
     goals: [...shared.goals, ...personalGoals],
@@ -1028,6 +1032,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     claims: mergeRecords(server.claims ?? [], client.claims ?? [], tombstones),
     presets: mergeRecords(server.presets ?? [], client.presets ?? [], tombstones),
     calendar: mergeCalendars(server.calendar, client.calendar),
+    ...mergeCompanionGallery(server,client),
     kitchen: mergeKitchen(server.kitchen, client.kitchen, tombstones),
     google: mergeGoogle(server.google, client.google, tombstones),
     goals,
@@ -1227,4 +1232,9 @@ export function displayInviteCode(household: Household): string {
 
 export function cloneAndShape(household: Household): Household {
   return ensureHouseholdShape(cloneHousehold(household));
+}
+
+function mergeCompanionGallery(server:SharedEnvelope,client:SharedEnvelope):Pick<SharedEnvelope,'companionGallery'>{
+ if(JSON.stringify(server.companionGallery??[])!==JSON.stringify(client.companionGallery??[]))throw new Error('COMPANION_GALLERY_REQUIRES_AUTHORITY');
+ return server.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(server.companionGallery,server)}:{};
 }

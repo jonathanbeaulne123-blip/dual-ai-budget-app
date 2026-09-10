@@ -12,6 +12,7 @@ export type FieldPolicy = 'exact' | 'transport' | 'receipt-relocation';
 export const IMPORT_FIELD_POLICY = {
   version: 'exact',
   companionProfile: 'exact',
+  companionGallery: 'exact',
   householdId: 'exact',
   inviteCode: 'exact',
   linked: 'transport',

@@ -155,6 +155,7 @@ export function applyRestorePoint(
   const localParts = splitForSync(household, memberId);
   const pointShared: SharedEnvelope = {
     ...sharedEnvelopeForRestorePoint(point.shared),
+    companionGallery: localParts.shared.companionGallery,
     householdId: household.householdId,
     environment: household.environment,
     inviteCode: household.inviteCode || point.shared.inviteCode,

@@ -1,0 +1,108 @@
+{
+  "version": 1,
+  "baseSha256": "91e9b04be18df3957c8250dcc90e6432768a15ab7fc05584c3d7c584c2ef6734",
+  "collections": [
+    {
+      "collection": "cozy",
+      "nodes": [
+        "item_cozy_cardigan",
+        "item_cozy_scarf",
+        "item_cozy_teacup"
+      ],
+      "bytes": 220328,
+      "compressedBytes": 62372,
+      "sha256": "98577c22b92c542e46612d3b81e7084983e2b4dd99ce309613779b267f3f59be"
+    },
+    {
+      "collection": "office",
+      "nodes": [
+        "item_office_waistcoat",
+        "item_office_jacket",
+        "item_office_visor",
+        "item_office_glasses",
+        "item_office_tie",
+        "item_office_watch"
+      ],
+      "bytes": 319164,
+      "compressedBytes": 112922,
+      "sha256": "533faf8f79402aa61bd94b3fea01e7e5276d214e7176abad64597e6bf073f628"
+    },
+    {
+      "collection": "rain",
+      "nodes": [
+        "item_rain_coat",
+        "item_rain_souwester",
+        "item_rain_sweater",
+        "item_rain_cap",
+        "item_rain_neckerchief",
+        "item_rain_puffin"
+      ],
+      "bytes": 334476,
+      "compressedBytes": 103212,
+      "sha256": "8b7af95a32c7798a0fa678425985b992656001de240543487a9b10888a18d429"
+    },
+    {
+      "collection": "applause",
+      "nodes": [
+        "item_applause_cape",
+        "item_applause_jacket",
+        "item_applause_crown",
+        "item_applause_glasses",
+        "item_applause_bow",
+        "item_applause_star"
+      ],
+      "bytes": 955920,
+      "compressedBytes": 230677,
+      "sha256": "f88439f843f5e0e116b71312a2c330a7e9ca5cf7fefed24bdbbc8ae2baee3062"
+    },
+    {
+      "collection": "kitchen",
+      "nodes": [
+        "item_kitchen_tunic",
+        "item_kitchen_apron",
+        "item_kitchen_hat",
+        "item_kitchen_cap",
+        "item_kitchen_neckerchief",
+        "item_kitchen_whisk"
+      ],
+      "bytes": 366640,
+      "compressedBytes": 124041,
+      "sha256": "87507c7e13d744830cd78557243ecdaa03712f72e33e77b293221ad4065a8727"
+    },
+    {
+      "collection": "sunday",
+      "nodes": [
+        "item_sunday_coat",
+        "item_sunday_vest",
+        "item_sunday_beret",
+        "item_sunday_glasses",
+        "item_sunday_collar",
+        "item_sunday_cameo"
+      ],
+      "bytes": 436672,
+      "compressedBytes": 152633,
+      "sha256": "9ad791494e44293009d32c8f93ec7cc0a4bad70a6c4e90947a46b03f63297dc5"
+    },
+    {
+      "collection": "legacy",
+      "nodes": [
+        "item_toque",
+        "item_visor",
+        "item_chef",
+        "item_specs",
+        "item_copper",
+        "item_gold",
+        "item_bell",
+        "item_yarn",
+        "item_fish",
+        "item_clip",
+        "item_tooth",
+        "item_ink"
+      ],
+      "bytes": 442160,
+      "compressedBytes": 131344,
+      "sha256": "280df2a5dd8a08389ed9aa5d64bba8bfe05b986af74a9e219b7d78ad8b259d3b"
+    }
+  ],
+  "provenance": "Original deterministic garment recipes in scripts/wardrobe/collections.mjs; shared Hearth rig. No external artwork or personal data."
+}

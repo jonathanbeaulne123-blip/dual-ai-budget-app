@@ -1232,6 +1232,7 @@ export type WeeklyDocumentStamp = {
 };
 
 export type Household = {
+  companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
   companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
@@ -1332,6 +1333,7 @@ export type RestorePoint = {
 };
 
 export type SharedEnvelope = {
+  companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
   accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
   accountHistoryApprovals?: import("./accountHistory.ts").AccountHistoryApproval[];

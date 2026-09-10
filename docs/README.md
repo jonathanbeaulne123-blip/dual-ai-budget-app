@@ -1,3 +1,5 @@
+Local Hercules work: [slice 5 complete wardrobe and verification](worksessions/2026-09-10-hercules-slice-5.md).
+
 # Current docs
 
 Current sync replacement: [Ledger sync v2 — D-235](LEDGER_SYNC_V2.md), implementation and activation contract; see its explicit local-versus-hosted evidence boundary.

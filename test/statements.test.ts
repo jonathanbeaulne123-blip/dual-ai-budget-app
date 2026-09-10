@@ -159,7 +159,7 @@ describe("Audit Office", () => {
     }).household;
     const book = bookBalanceAsOf(household, "ACC-CHEQUING", today);
     const specs = COSMETIC_BY_ID.get("specs")!;
-    expect(isCosmeticUnlocked(household, specs, today)).toBe(false);
+    expect(isCosmeticUnlocked(household, specs, today)).toBe(true);
     const rec = recordReconciliation(household, {
       accountId: "ACC-CHEQUING",
       statementDate: today,

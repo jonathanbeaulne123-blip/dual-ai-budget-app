@@ -1,3 +1,4 @@
+import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { buildDiscoveryFund, type DiscoveryDestination } from "./core/herculesDiscovery.ts";
 import { companionUpdateAllowed } from "./core/herculesCompanion.ts";
 import { entryDraftKey, loadEntryDraft, writeEntryLocal, clearEntryLocal, entryConfirmation, clearEntryConfirmation, readEntrySubmission, type EntrySubmission, type EntryDraft } from "./entryDraft.ts";
@@ -4618,8 +4619,9 @@ export function App() {
       try {
         let result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
+        if(result.undo.commandKind==='hercules-companion-gallery'&&!ledgerSyncRef.current)throw new ValidationError('Connect to your household to share Hercules looks.');
         if (memberPersonal) {
-          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations and preferences.");
+          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations, preferences and looks.");
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) {
             options?.onAccepted?.(result);
@@ -4741,10 +4743,20 @@ export function App() {
       let handedToCommit = false;
       const onDefinitiveRejected: NonNullable<KitchenCommandOptions["onDefinitiveRejected"]> = rejection => { if (renderedWriteIsCurrent()) options?.onDefinitiveRejected?.(rejection); };
       try {
+        if(options?.recoverConfirmation&&options.confirmationId){
+          const client=ledgerSyncRef.current;if(!client)return null;
+          let recovered:Awaited<ReturnType<typeof client.submissionStatus>>;
+          try{recovered=await client.submissionStatus(options.confirmationId);}catch{return null;}
+          if(!renderedWriteIsCurrent())return null;
+          if(recovered==='accepted'){options.onRecoveredConfirmation?.();client.retryPending();return null;}
+          if(recovered==='pending'){client.retryPending();return null;}
+          if(recovered==='rejected'){onDefinitiveRejected();return null;}
+        }
         const result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
+        if(result.undo.commandKind==='hercules-companion-gallery'&&!ledgerSyncRef.current)throw new ValidationError('Connect to your household to share Hercules looks.');
         if (memberPersonal) {
-          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations and preferences.");
+          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations, preferences and looks.");
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) return null;
         }
@@ -6290,7 +6302,7 @@ export function App() {
   }
 
   return (
-    <div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
+    <WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
       {charterFoundingVisible && household && session ? (
         <CharterFounding
           household={household}
@@ -6605,6 +6617,7 @@ export function App() {
           onFinishedShift={beginFinishedShift}
           onPayCard={openPayCard}
           onOpenAccount={openWallet}
+          wardrobeConnected={useLedgerSync && realtimeStatus === "SUBSCRIBED"}
           onKitchen={runKitchen}
           onMarkPaid={(recurrenceId, summary) => setGuard({ kind: "postRecurrence", recurrenceId, summary })}
           onAskSettle={claimId=>openClaimSettlement(claimId)}
@@ -8197,7 +8210,7 @@ export function App() {
       </nav>
       ) : null}
       </div>
-    </div>
+    </div></WornLookContext.Provider>
   );
 }
 

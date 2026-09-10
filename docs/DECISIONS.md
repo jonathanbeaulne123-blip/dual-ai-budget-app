@@ -1,3 +1,7 @@
+## 2026-09-10 — Complete Hercules wardrobe and explicit look authority
+
+Jonathan requested slice 5 of the approved companion plan. Expand the verified rig with small original collection packs, retain every legacy wearable without financial unlocks, and keep unknown IDs in storage. Private worn/preset resources and explicit shared-gallery resources use existing command authority with CAS/tombstones and wardrobe-version capability admission. A lost acknowledgement is checked before rerunning a stale mutation; books restore and activity-reset helpers preserve current companion resources. Reconnect does not start a new Wear/Save/Share action. These are local changes behind the existing off-by-default room flag; likeness, physical-device acceptance and any hosted release remain separately gated. [Worksession](worksessions/2026-09-10-hercules-slice-5.md).
+
 ## Curriculum v2 and statement-assisted starting books — implementation (2026-09-08)
 
 Jonathan explicitly approved one coherent onboarding repair patch on audited main `a1215b2`. Five stages replace mandatory Fund/card, detailed bills and work cadence: People and agreement, Starting books, Our first plan, Using Hearth day to day, Ready together. Existing household agreement and spending authority remain. Both members complete discarded expense/correction Practice and independently approve current Shared foundation evidence. Optional lessons remain resumable and unfinished until actually completed.

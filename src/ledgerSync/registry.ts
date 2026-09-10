@@ -1,3 +1,4 @@
+import {commitCompanionGallery} from '../core/herculesWardrobe.ts';
 import { reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import { eraseDevelopmentActivity, restoreSharedPoint } from "./lifecycle.ts";
 import type { Scope } from "./protocol.ts";
@@ -16,6 +17,7 @@ const policies = new Map<string, Policy>();
 const functions = {
   ...commands,
   commitCompanion,
+  commitCompanionGallery,
   ...rehearsal,
   eraseDevelopmentActivity,
   restoreSharedPoint,
@@ -66,6 +68,7 @@ register(
   ["memberId"],
 );
 register("commitCompanion", ["scope.memberId"]);
+register("commitCompanionGallery", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
 register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);

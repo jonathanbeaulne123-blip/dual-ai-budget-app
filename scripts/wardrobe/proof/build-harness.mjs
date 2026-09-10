@@ -1,0 +1,3 @@
+import {build} from 'esbuild';import {writeFile} from 'node:fs/promises';
+await build({entryPoints:['scripts/wardrobe/proof/harness.tsx'],outdir:'dist/wardrobe-proof',bundle:true,splitting:true,format:'esm',jsx:'automatic',minify:true,define:{'process.env.NODE_ENV':'"production"','import.meta.env':'{}'},loader:{'.woff2':'file','.woff':'file','.png':'file','.svg':'file','.jpg':'file'},external:['node:*'],target:'es2022'});
+await writeFile('dist/wardrobe-proof/index.html','<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="./harness.css"></head><body><div id="root"></div><script type="module" src="./harness.js"></script></body></html>');

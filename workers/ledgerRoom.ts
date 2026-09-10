@@ -1017,6 +1017,7 @@ export class LedgerRoom extends DurableObject<Env> {
             type: "ready",
             companionProfileVersion: 1,
             companionDiscoveryVersion: 1,
+            companionWardrobeVersion: 1,
             sequence: state.sequence,
             hash: await digest({
               sequence: state.sequence,

@@ -125,7 +125,7 @@ function useBreakpoint(): OfficeBreakpoint {
 }
 
 export function Office({
-  scenarioSource, wardrobeRequest, onWardrobeOpened,
+  scenarioSource, wardrobeRequest, onWardrobeOpened, wardrobeConnected=false,
   household,
   booksHousehold,
   dashboard,
@@ -167,6 +167,7 @@ export function Office({
   integrityFindingCount = 0,
   integrityFindings = [],
 }: {
+  wardrobeConnected?: boolean;
   wardrobeRequest?: string | null;
   onWardrobeOpened?: () => void;
   household: Household;
@@ -908,7 +909,7 @@ export function Office({
       data-face={face}
       style={{ ["--room-dim" as string]: String(room.roomDim), ["--room-cool" as string]: String(room.roomCool) }}
     >
-      {import.meta.env.VITE_HERCULES_DRESSING_ROOM === '1' && <WardrobeRoomHost key={`${household.environment}:${household.householdId}:${memberId}`} environment={household.environment} householdId={household.householdId} memberId={memberId} view={view} busy={busy || adding}/>}
+      {import.meta.env.VITE_HERCULES_DRESSING_ROOM === '1' && <WardrobeRoomHost household={household} onCommand={onKitchen} connected={wardrobeConnected} key={`${household.environment}:${household.householdId}:${memberId}`} environment={household.environment} householdId={household.householdId} memberId={memberId} view={view} busy={busy || adding}/>}
       {breakpoint === "phone" ? (
       <OfficePhone
         clinkOn={clinkOn} onClinkOn={onClinkOn}

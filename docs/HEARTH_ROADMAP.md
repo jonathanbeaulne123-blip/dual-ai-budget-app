@@ -1,3 +1,7 @@
+## Hercules slice 5 — locally verified implementation (2026-09-10)
+
+Complete wardrobe implementation is in verification: 36 original pieces plus legacy compatibility; on-demand 3D collection packs and matching normal-app looks; personal Wear/Save; explicit gallery share/copy/rename/remove; all three themes. Owner likeness, physical phone and authenticated cross-device acceptance remain separate gates. [Evidence](worksessions/2026-09-10-hercules-slice-5.md).
+
 # Hearth living roadmap
 
 **2026-09-10 — Hercules slice 4 implemented locally behind a flag:** one complete 3D fitting look, shared rig, authored reactions, three-theme room and local recovery. [Evidence](worksessions/2026-09-10-hercules-slice-4.md). Not deployed; likeness/fitting and physical-phone acceptance remain open. Full catalogue and Wear/Save/share are slice 5.

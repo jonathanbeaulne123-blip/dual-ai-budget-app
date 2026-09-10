@@ -1,3 +1,5 @@
+import {useWornLook} from './wardrobe/Appearance.tsx';
+import {fittingLayers} from './wardrobe/FittingFigure.tsx';
 import { HerculesDiscovery } from "./HerculesDiscovery.tsx";
 import { discoveryCandidates, discoveryScope, type DiscoveryDestination, type DiscoveryFund } from "./core/herculesDiscovery.ts";
 import { HERCULES_CAPABILITIES } from "./core/herculesCapabilities.ts";
@@ -173,11 +175,12 @@ export function HerculesPortrait({
   rigSnapshot?: import("./herculesRig/types.ts").RigSnapshot;
   rigTransitionMs?: number;
 }) {
+  const wornLook=useWornLook();
   const px = typeof size === "number" ? size : size === "stage" ? 120 : 96;
   return (
     <div className={`hercules-stage size-${size} mood-${mood}`} aria-hidden="true">
-      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot} rigTransitionMs={rigTransitionMs}>
-        <HerculesDress hat={hat} chain={chain} house={house} collar={collar} />
+      <HerculesFigure pose={pose} mood={mood} size={px} flip={flip} rigSnapshot={rigSnapshot} rigTransitionMs={rigTransitionMs} {...(wornLook?fittingLayers(wornLook):{})}>
+        {!wornLook&&<HerculesDress hat={hat} chain={chain} house={house} collar={collar} />}
       </HerculesFigure>
       {pose === "sleep" && <span className="hercules-zzz">z</span>}
     </div>

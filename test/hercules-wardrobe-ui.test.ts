@@ -16,7 +16,7 @@ const props={environment:'development',householdId:'HOUSE',memberId:'ME',view:'h
 const button=(label:string)=>[...document.querySelectorAll('button')].find(b=>b.textContent===label||b.getAttribute('aria-label')===label)!;
 const click=async(label:string)=>act(async()=>button(label).click());
 const render=async()=>act(async()=>root.render(createElement(HerculesDressingRoom,{...props,onClose:vi.fn()})));
-beforeEach(()=>{localStorage.clear();host=document.createElement('div');document.body.append(host);root=createRoot(host);vi.stubGlobal('matchMedia',vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()})));scene={setLook:vi.fn(),setPose:vi.fn(),setPaused:vi.fn(),setCamera:vi.fn(),setMirror:vi.fn(),dispose:vi.fn()};mock.create.mockReset().mockResolvedValue(scene);});
+beforeEach(()=>{localStorage.clear();host=document.createElement('div');document.body.append(host);root=createRoot(host);vi.stubGlobal('matchMedia',vi.fn(()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()})));scene={setCollection:vi.fn(),setKeepsake:vi.fn(),setLook:vi.fn(),setPose:vi.fn(),setPaused:vi.fn(),setCamera:vi.fn(),setMirror:vi.fn(),dispose:vi.fn()};mock.create.mockReset().mockResolvedValue(scene);});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.restoreAllMocks();vi.unstubAllGlobals();});
 describe('Hercules dressing room recovery',()=>{
  it('keeps matching outfit layers inside the existing body and head in lightweight poses',async()=>{
@@ -39,7 +39,7 @@ describe('Hercules dressing room recovery',()=>{
   expect(mock.create).toHaveBeenCalledTimes(2);expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections.body?.variantId).toBe('slate');
  });
  it('shows storage failure, prevents garment-specific poses without a garment and disposes for 2D',async()=>{
-  vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});await render();expect(document.body.textContent).toContain('could not be kept');
+  vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw Error('quota');});await render();expect(document.body.textContent).toContain('Device storage is unavailable');
   await click('Remove cable-knit sweater');await click('Hercules’s poses');expect(button('Check a sleeveAdd body first').disabled).toBe(true);expect(button('Admire a capeRequires a cape').disabled).toBe(true);
   await click('Compare 2D look');expect(scene.dispose).toHaveBeenCalled();expect(document.body.textContent).toContain('2D outfit preview');expect(button('A curious tilt').disabled).toBe(true);expect(document.body.textContent).toContain('Fitting poses are available in 3D');
  });
@@ -56,5 +56,35 @@ describe('Hercules dressing room recovery',()=>{
   await vi.waitFor(()=>expect(document.querySelector('.hercules-fitting-backdrop')).not.toBeNull());
   await act(async()=>root.render(draw(false)));expect(document.querySelector('.hercules-fitting-backdrop')).not.toBeNull();
   await click('Close dressing room');expect(document.activeElement?.textContent).toBe('Desk');
+ });
+});
+
+describe('Complete wardrobe interactions',()=>{
+ it('keeps all new and legacy SVG pieces inside their actual pose anchors',async()=>{
+  const {FITTING_ITEMS}=await import('../src/wardrobe/catalogue.ts');
+  for(const item of FITTING_ITEMS)for(const pose of ['loaf','sit','walk'] as const){const look={...COZY_LOOK,selections:{[item.slot]:{itemId:item.id,variantId:item.variants[0]!}}};await act(async()=>root.render(createElement(FittingFigure,{look,pose})));const part=['neckwear','charm'].includes(item.slot)?'ruff':['head','eyewear'].includes(item.slot)?'head':'body';expect(host.querySelector(`.herc-${part} [data-fitting-item="${item.id}"]`),`${item.id}/${pose}`).not.toBeNull();}
+ });
+ it('requires acknowledgement to wear, disables offline writes and retries the same uncertain identity',async()=>{
+  const {catalogHousehold}=await import('../src/core/index.ts');const h=catalogHousehold();let finish!:(value:unknown)=>void;
+  const command=vi.fn((_fn:unknown,_options:unknown)=>new Promise(resolve=>{finish=resolve;}));const draw=(connected=true)=>createElement(HerculesDressingRoom,{...props,environment:h.environment,householdId:h.householdId,memberId:'MEM-001',household:h,connected,onCommand:command as never,onClose:vi.fn()});
+  await act(async()=>root.render(draw(false)));expect(button('Wear this').disabled).toBe(true);await act(async()=>root.render(draw()));await click('Cable-knit sweater: rose');await click('Wear this');expect(command).toHaveBeenCalledTimes(1);expect(document.body.textContent).toContain('Waiting for your household');expect(h.companionProfile).toBeUndefined();
+  await act(async()=>finish({kind:'accepted-local',ok:true}));expect(document.body.textContent).toContain('Not confirmed yet');expect(button('Wear this').disabled).toBe(true);const id=command.mock.calls[0]![1];await click('Retry unconfirmed request');expect((command.mock.calls[1] as unknown[])[1]).toMatchObject({confirmationId:(id as {confirmationId:string}).confirmationId,recoverConfirmation:true});
+  await act(async()=>finish({kind:'synchronized',ok:true}));expect(document.body.textContent).toContain('Wearing this look. Confirmed');expect(localStorage.getItem(`hearth:wardrobe-receipt:${h.environment}:${h.householdId}:MEM-001`)).toBeNull();
+ });
+ it('contains definitive conflicts, and a late acknowledgement cannot write receipt state into a new member',async()=>{
+  const {catalogHousehold}=await import('../src/core/index.ts');const h=catalogHousehold();let finish!:(value:unknown)=>void;const command=vi.fn((_fn:unknown,options:{onDefinitiveRejected:()=>void})=>{options.onDefinitiveRejected();return null;});
+  const draw=(memberId:string,onCommand:unknown)=>createElement(HerculesDressingRoom,{...props,key:memberId,environment:h.environment,householdId:h.householdId,memberId,household:h,connected:true,onCommand:onCommand as never,onClose:vi.fn()});
+  await act(async()=>root.render(draw('MEM-001',command)));await click('Wear this');expect(document.body.textContent).toContain('Not saved. Review');expect(button('Retry unconfirmed request')).toBeUndefined();
+  const delayed=vi.fn(()=>new Promise(resolve=>{finish=resolve;}));await act(async()=>root.render(draw('MEM-001',delayed)));await click('Wear this');await act(async()=>root.render(draw('MEM-002',delayed)));await act(async()=>finish({kind:'synchronized',ok:true}));expect(document.body.textContent).not.toContain('Wearing this look. Confirmed');expect(localStorage.getItem(`hearth:wardrobe-receipt:${h.environment}:${h.householdId}:MEM-001`)).not.toBeNull();expect(localStorage.getItem(`hearth:wardrobe-receipt:${h.environment}:${h.householdId}:MEM-002`)).toBeNull();
+ });
+ it('checks a reopened uncertain request before replaying an already accepted old revision',async()=>{
+  const {catalogHousehold}=await import('../src/core/index.ts');const {companionFor}=await import('../src/core/herculesCompanion.ts');const h=catalogHousehold(),scope=companionFor(h,'MEM-001').scope,id=crypto.randomUUID();
+  h.companionProfile=companionFor(h,'MEM-001');h.companionProfile.wornLook={revision:2,value:{...COZY_LOOK,selections:{}}};
+  localStorage.setItem(`hearth:wardrobe-receipt:${h.environment}:${h.householdId}:MEM-001`,JSON.stringify({id,operation:{kind:'look.wear',look:COZY_LOOK,expectedRevision:0}}));
+  const command=vi.fn((_fn:unknown,options:{recoverConfirmation?:boolean;confirmationId?:string;onRecoveredConfirmation?:()=>void})=>{expect(options.recoverConfirmation).toBe(true);expect(options.confirmationId).toBe(id);options.onRecoveredConfirmation?.();return null;});
+  await act(async()=>root.render(createElement(HerculesDressingRoom,{...props,...scope,household:h,connected:true,onCommand:command as never,onClose:vi.fn()})));await click('Retry unconfirmed request');expect(document.body.textContent).toContain('Earlier request confirmed');expect(h.companionProfile.wornLook.revision).toBe(2);expect(h.companionProfile.wornLook.value!.selections).toEqual({});expect(button('Retry unconfirmed request')).toBeUndefined();
+ });
+ it('explains incompatible replacements before applying them and keeps explicit None through view changes',async()=>{
+  await render();const choose=async(value:string)=>act(async()=>{const select=document.querySelector('.fitting-select select') as HTMLSelectElement;select.value=value;select.dispatchEvent(new Event('change',{bubbles:true}));});await choose('office');await click('Try Pinstripe jacket');expect(document.body.textContent).toContain('This piece replaces Cable-knit sweater');expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections.body?.itemId).toBe('cozy-sweater');await click('Replace and try on');expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections.outerwear?.itemId).toBe('office-jacket');await click('No accessories');await act(async()=>root.render(createElement(HerculesDressingRoom,{...props,view:'personal',onClose:vi.fn()})));expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections).toEqual({});
  });
 });

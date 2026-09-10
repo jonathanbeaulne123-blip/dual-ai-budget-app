@@ -271,17 +271,22 @@ export type CompanionGalleryIntentV1 = {
   version: 1; id: string; scope: CompanionScope;
   operation:
     | { kind: "gallery.publish"; galleryId: string; sourceLookId: string; expectedLookRevision: number; expectedRevision: number }
-    | { kind: "gallery.remove"; galleryId: string; expectedRevision: number };
+    | { kind: "gallery.remove"; galleryId: string; expectedRevision: number }
+    | { kind: "gallery.rename"; galleryId: string; name: string; expectedRevision: number };
 };
 export type GalleryResourceV1 = { id: string; creatorMemberId: string; revision: number; value: GalleryLookV1 | null };
 export function decodeCompanionGalleryIntent(value: unknown, authenticatedScope: CompanionScope): CompanionGalleryIntentV1 {
   const row = object(value, ["version", "id", "scope", "operation"]);
   requireContract(row.version === 1, "UNSUPPORTED_INTENT_VERSION");
   const owner = scope(row.scope); sameScope(owner, authenticatedScope);
-  const op = object(row.operation, ["kind", "galleryId", "sourceLookId", "expectedLookRevision", "expectedRevision"]);
+  const op = object(row.operation, ["kind", "galleryId", "sourceLookId", "expectedLookRevision", "expectedRevision", "name"]);
   let operation: CompanionGalleryIntentV1["operation"];
   if (op.kind === "gallery.publish") {
+    object(op,["kind","galleryId","sourceLookId","expectedLookRevision","expectedRevision"]);
     operation = { kind: op.kind, galleryId: id(op.galleryId), sourceLookId: id(op.sourceLookId), expectedLookRevision: revision(op.expectedLookRevision), expectedRevision: revision(op.expectedRevision) };
+  } else if(op.kind==='gallery.rename') {
+    object(op,['kind','galleryId','name','expectedRevision']);
+    operation={kind:op.kind,galleryId:id(op.galleryId),name:text(op.name,64),expectedRevision:revision(op.expectedRevision)};
   } else {
     requireContract(op.kind === "gallery.remove", "GALLERY_OPERATION_REQUIRED");
     object(op, ["kind", "galleryId", "expectedRevision"]);
@@ -289,21 +294,26 @@ export function decodeCompanionGalleryIntent(value: unknown, authenticatedScope:
   }
   return { version: 1, id: id(row.id), scope: owner, operation };
 }
+export function decodeCompanionGallery(value:unknown,expected:CompanionHouseholdScope):GalleryResourceV1[]{
+  const rows = unique(list(value, COMPANION_LIMITS.resourceRecords, value => {
+    const row = object(value, ["id", "creatorMemberId", "revision", "value"]);
+    const resourceId = id(row.id); const creatorMemberId = id(row.creatorMemberId); const resourceRevision = revision(row.revision);
+    const look = row.value === null ? null : decodeGalleryLook(row.value, expected);
+    requireContract(!look || (look.id === resourceId && look.creatorMemberId === creatorMemberId && look.revision === resourceRevision), "GALLERY_RESOURCE_MISMATCH");
+    return { id: resourceId, creatorMemberId, revision: resourceRevision, value: look };
+  }), row => row.id);
+  requireContract(rows.filter(row=>row.value).length<=COMPANION_LIMITS.galleryLooks,"GALLERY_LOOK_LIMIT");
+  return rows;
+}
 /** Preflight for an explicit human Share/Remove action, never a public-payload mutation. */
 export function checkCompanionGalleryPrecondition(profileValue: unknown, intentValue: unknown, actor: CompanionScope, galleryValue: unknown, catalogue: CosmeticManifestV2): "ready" {
   const profile = decodeCompanionProfile(profileValue, actor);
   const { operation: op } = decodeCompanionGalleryIntent(intentValue, actor);
-  const resources = unique(list(galleryValue, COMPANION_LIMITS.resourceRecords, value => {
-    const row = object(value, ["id", "creatorMemberId", "revision", "value"]);
-    const resourceId = id(row.id); const creatorMemberId = id(row.creatorMemberId); const resourceRevision = revision(row.revision);
-    const look = row.value === null ? null : decodeGalleryLook(row.value, actor);
-    requireContract(!look || (look.id === resourceId && look.creatorMemberId === creatorMemberId && look.revision === resourceRevision), "GALLERY_RESOURCE_MISMATCH");
-    return { id: resourceId, creatorMemberId, revision: resourceRevision, value: look };
-  }), row => row.id);
+  const resources = decodeCompanionGallery(galleryValue, actor);
   const existing = resources.find(row => row.id === op.galleryId);
   requireContract(!existing || existing.creatorMemberId === actor.memberId, "FOREIGN_GALLERY_RESOURCE");
   requireContract((existing?.revision ?? 0) === op.expectedRevision, "STALE_COMPANION_RESOURCE");
-  if (op.kind === "gallery.remove") {
+  if (op.kind === "gallery.remove" || op.kind === "gallery.rename") {
     requireContract(existing?.value, "GALLERY_LOOK_NOT_FOUND");
   } else {
     const source = profile.savedLooks.find(row => row.id === op.sourceLookId);

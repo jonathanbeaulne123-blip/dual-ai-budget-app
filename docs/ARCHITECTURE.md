@@ -1,3 +1,9 @@
+## Living companion continuity — current local implementation (2026-09-10)
+
+Slices 2–5 use `commitCompanion` for a member-owned personal profile, including bounded conversation/preferences, suggestions, whole worn look and saved presets. `commitCompanionGallery` publishes only an explicitly selected look projection to the household. Both use existing captured command authority, actor-bound scope and per-resource revision checks; look/gallery resources retain tombstones and cannot post money. Acknowledgement recovery checks the original receipt before rerunning a stale mutation. Normal books operations, restores and resets preserve those resources. New wardrobe writes require the server wardrobe capability; older commands cannot silently erase new resources.
+
+Legacy `kitchen.hercules`, `recordHerculesTalk` and `equipCosmetic` descriptions below describe retained compatibility paths, not the active personal companion write model. Shared history is excluded from active private conversation context. The default-off room has lazy 3D collection packs and matching ordinary SVG layers; this local architecture is not hosted or cross-device acceptance evidence. See the [slice 5 receipt](worksessions/2026-09-10-hercules-slice-5.md).
+
 # Architecture
 
 > **D-235 replacement in development:** [Ledger sync v2](LEDGER_SYNC_V2.md) implements a separate command/event authority for the ordinary App. Its hosted migration and acceptance are not yet claimed. The older transport described below remains historical runtime context for households that have not cut over; it is not a fallback after cutover.
@@ -67,7 +73,7 @@ Family-office accounting (weight **5**) and Hercules / interactables (weight **3
 - Course A writes through commands, then `compileHousehold` into PGlite. Health, statements, wallet, rec, and close are projections.
 - Course B **reads** those projections (`describeCompanion`, `herculesBriefing`, `auditOpinion`, `householdWallet`, `talkHercules`, `planHerculesTurn`, `composeNotices`). Cosmetics and Hercules desk writes (`scribbleChalk`, `equipCosmetic`, `recordHerculesTalk`, `addPreset`, `acceptPresetNotice`) clone the snapshot and never put money ids in `postedIds` except the preset catalog id. Journal questions skip the model.
 - A new accounting surface must expose at least one companion line, unlock, chalkboard, wallet tile, or ceremony.
-- A new companion behavior must be grounded in a posted fact or a Health / rec / close / wallet projection.
+- Financial companion claims must be grounded in an authorized projection. Personality, dress-up and affection do not require financial activity; cosmetics remain nonfinancial and immediately available.
 - If they conflict, Course A wins. Product law: [STRATEGY.md](STRATEGY.md), D-048.
 
 ## Data-model rules

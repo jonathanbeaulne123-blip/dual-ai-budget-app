@@ -282,6 +282,8 @@ function stressJob(startDate: DateKey, memberId: string): WorkJob {
 function keepIdentityWhileErasing(current: Household, blank: Household): Household {
   return {
     ...blank,
+    companionProfile: current.companionProfile,
+    companionGallery: current.companionGallery,
     householdId: current.householdId,
     inviteCode: current.inviteCode,
     linked: current.linked,
@@ -356,6 +358,8 @@ export function preserveContinuityForStressSeed(current: Household, stress: Hous
   }
   return {
     ...stress,
+    companionProfile: current.companionProfile,
+    companionGallery: current.companionGallery,
     householdId: current.householdId,
     inviteCode: current.inviteCode,
     linked: current.linked,

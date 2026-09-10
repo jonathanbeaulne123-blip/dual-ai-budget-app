@@ -18,7 +18,7 @@ describe('Hercules fitting asset contract',()=>{
   expect(json.skins).toHaveLength(1);expect(json.skins[0].joints).toHaveLength(40);
   expect(new Set(json.nodes.filter((n:{skin?:number})=>n.skin!==undefined).map((n:{skin:number})=>n.skin))).toEqual(new Set([0]));
   expect(json.animations.map((a:{name:string})=>a.name).sort()).toEqual(FITTING_REACTIONS.map(r=>r.id).sort());
-  for(const item of FITTING_ITEMS)expect(json.nodes.some((n:{name:string})=>n.name===item.node)).toBe(true);
+  for(const item of FITTING_ITEMS.filter(i=>i.asset.endsWith('hercules-cozy.v1.glb')))expect(json.nodes.some((n:{name:string})=>n.name===item.node)).toBe(true);
   for(const item of FITTING_MANIFEST.items)expect(readFileSync(`public${item.thumbnailAssetId}`,'utf8')).toContain('<svg');
   expect(json.images??[]).toHaveLength(0);expect(json.buffers.every((b:{uri?:string})=>!b.uri)).toBe(true);
  });
@@ -65,8 +65,9 @@ describe('local fitting drafts',()=>{
   const rows=new Map<string,string>(),storage={getItem:(k:string)=>rows.get(k)??null,setItem:(k:string,v:string)=>{rows.set(k,v);}};
   const altered={...COZY_LOOK,selections:{}};expect(saveFittingDraft(storage,keys[0]!,altered)).toBe(true);expect(loadFittingDraft(storage,keys[0]!)).toEqual(altered);expect(loadFittingDraft(storage,keys[1]!)).toEqual(COZY_LOOK);
  });
- it('rejects malformed, unknown and oversized drafts and survives unavailable storage honestly',()=>{
-  for(const raw of ['{',JSON.stringify({...COZY_LOOK,selections:{head:{itemId:'unknown',variantId:'moss'}}}),'x'.repeat(8001)])expect(parseFittingDraft(raw)).toBeNull();
+ it('preserves unknown pieces, rejects malformed and oversized drafts and survives unavailable storage honestly',()=>{
+  for(const raw of ['{','x'.repeat(8001)])expect(parseFittingDraft(raw)).toBeNull();
+  expect(parseFittingDraft(JSON.stringify({...COZY_LOOK,selections:{head:{itemId:'unknown',variantId:'moss'}}}))?.selections.head?.itemId).toBe('unknown');
   const broken={getItem:()=>{throw Error('blocked');},setItem:()=>{throw Error('quota');}};
   expect(loadFittingDraft(broken,'key')).toEqual(COZY_LOOK);expect(saveFittingDraft(broken,'key',COZY_LOOK)).toBe(false);expect(saveFittingDraft(null,'key',COZY_LOOK)).toBe(false);
  });

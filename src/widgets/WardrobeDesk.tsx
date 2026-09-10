@@ -64,6 +64,7 @@ export function WardrobeBody({
           size="stage"
         />
       </div>
+      {import.meta.env.VITE_HERCULES_DRESSING_ROOM !== '1' && <>
       {appearance.scene.theme !== "classic" && <p className="muted">The theme adds accessories to empty slots. Choose None to take them off.</p>}
       {SLOTS.map((slot) => (
         <div key={slot.id} className="wardrobe-slot">
@@ -102,6 +103,7 @@ export function WardrobeBody({
           appearance.store?.setAccessoryHidden("neck", false);
         }}>Use theme accessories again</button>
       )}
+      </>}
       <label htmlFor={nameId}>Rename {view.name}</label>
       <div className="rename-row">
         <input id={nameId} value={petName} onChange={(event) => setPetName(event.target.value)} maxLength={24} />

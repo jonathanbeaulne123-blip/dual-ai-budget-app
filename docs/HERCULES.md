@@ -1,3 +1,7 @@
+## Complete wardrobe — slice 5
+
+The flagged dressing room now contains six complete collections, original favourites and a Keepsakes shelf. Try-on, category/favourite filters, slot locks, Surprise me, undo/redo and local drafts remain available offline. Wear/Save wait for account confirmation; only explicit Share to household publishes a copy. The normal app renders the acknowledged personal look with matching item and colour IDs, including explicit None. See [slice 5](worksessions/2026-09-10-hercules-slice-5.md) for contracts and verification boundaries.
+
 # Hercules
 
 ## Living companion direction — 2026-09-10

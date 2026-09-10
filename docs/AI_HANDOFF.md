@@ -1,3 +1,7 @@
+## Hercules slice 5 — complete wardrobe, locally verified
+
+High quick gate passed 236 tests in 220.715 seconds; separate serial import parity passed 5 tests. The 36-case browser matrix, 200% text, recovery and synthetic two-member persistence passed. Full likeness/fit, physical performance, VoiceOver and authenticated two-device acceptance remain open. All 36 new pieces and 12 legacy wearables now use collection assets, shared SVG IDs, personal Wear/Save and an explicit household gallery. Receipt recovery precedes stale mutation preflight; resource revisions, tombstones, actor binding and protocol capability guards protect continuity. All three rooms retain their scene mapping. Risk High; Budget (5): no financial writer, private scope and truthful acknowledgements; Engagement (3): complete fitting, named looks and shared inspiration. Default flag off. No push/merge/deploy, hosted mutation, schema or provider activation. [Worksession](worksessions/2026-09-10-hercules-slice-5.md).
+
 ## Hercules living companion slice 4 — flagged local fitting (2026-09-10)
 
 One complete Cozy at home look now runs in a lazy 3D room with the canonical source rig, shared skin, twelve reaction clips, physical/keyboard shelf selection, mirror/camera controls, scoped local undo/redo and matching 2D layers. Classic, Taylor and Newfoundland have Shared/Personal treatments; phone keeps the room through breakpoint changes. Asset/WebGL failure retains fitting controls; failed room chunks offer an explicit reload. GPU resources and motion loops are released on close.

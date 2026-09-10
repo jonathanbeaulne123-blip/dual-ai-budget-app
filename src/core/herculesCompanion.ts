@@ -1,3 +1,4 @@
+import {FITTING_MANIFEST} from '../wardrobe/catalogue.ts';
 import type { CommitResult, Household, LedgerView } from "./types.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { canonical } from "../ledgerSync/patch.ts";
@@ -29,11 +30,11 @@ export function explicitCompanionPreference(text: string): { key: CompanionPrefe
 export const commitCompanion = captureCommand("commitCompanion", (household: Household, raw: CompanionIntentV1): CommitResult => {
   const scope = { environment: household.environment, householdId: household.householdId, memberId: raw.scope?.memberId };
   if (!household.members.some(member => member.id === scope.memberId && member.active)) throw new Error("COMPANION_MEMBER_REQUIRED");
-  const intent = decodeCompanionIntent(raw, scope);
+  const intent = decodeCompanionIntent(raw, scope, FITTING_MANIFEST);
   const op = intent.operation;
-  if (!["preference.set", "preference.forget", "remembering.set", "conversation.append", "conversation.clear", "suggestion.set"].includes(op.kind)) throw new Error("COMPANION_FEATURE_NOT_AVAILABLE");
+  if (!["preference.set", "preference.forget", "remembering.set", "conversation.append", "conversation.clear", "suggestion.set", "look.wear", "look.save", "look.remove"].includes(op.kind)) throw new Error("COMPANION_FEATURE_NOT_AVAILABLE");
   const profile = companionFor(household, scope.memberId);
-  const ready = checkCompanionPrecondition(profile, intent, scope);
+  const ready = checkCompanionPrecondition(profile, intent, scope, FITTING_MANIFEST);
   const now = new Date().toISOString();
   if (op.kind === "preference.set" && op.origin.kind === "conversation") {
     const origin = op.origin;
@@ -42,7 +43,14 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
     if (!candidate || candidate.key !== op.key || canonical(candidate.value) !== canonical(op.value)) throw new Error("EXPLICIT_PREFERENCE_REQUIRED");
   }
   if (ready !== "duplicate") {
-    if (op.kind === "preference.set" || op.kind === "preference.forget") {
+    if (op.kind === "look.wear") profile.wornLook={revision:op.expectedRevision+1,value:structuredClone(op.look)};
+    else if(op.kind === "look.save" || op.kind === "look.remove") {
+      const id=op.kind==='look.save'?op.look.id:op.lookId,existing=profile.savedLooks.find(row=>row.id===id);
+      if(op.kind==='look.remove'&&!existing?.value)throw new Error('LOOK_NOT_FOUND');
+      if(op.kind==='look.save'&&!existing?.value&&profile.savedLooks.filter(row=>row.value).length>=COMPANION_LIMITS.savedLooks)throw new Error('SAVED_LOOK_LIMIT');
+      profile.savedLooks=profile.savedLooks.filter(row=>row.id!==id);
+      profile.savedLooks.push({id,revision:op.expectedRevision+1,value:op.kind==='look.save'?structuredClone(op.look):null});
+    } else if (op.kind === "preference.set" || op.kind === "preference.forget") {
       profile.preferences = profile.preferences.filter(row => row.key !== op.key);
       profile.preferences.push({ key: op.key, value: op.kind === "preference.set" ? op.value : null, revision: op.expectedRevision + 1, updatedAt: now, source: "explicit-user" });
     } else if (op.kind === "suggestion.set") {

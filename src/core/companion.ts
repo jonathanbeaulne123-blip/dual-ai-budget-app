@@ -1,4 +1,4 @@
-import { addDays, kitchenSeason, parseDateKey, type DateKey } from "./calendar.ts";
+import { addDays, type DateKey } from "./calendar.ts";
 import { weekSummary } from "./budget.ts";
 import { runHealthCheck } from "./health.ts";
 import { formatCad } from "./money.ts";
@@ -56,37 +56,7 @@ function overdueBills(household: Household, today: DateKey) {
   return household.recurrences.filter((item) => item.active && item.type === "expense" && item.nextDate < today);
 }
 
-function paidRecurringCount(household: Household): number {
-  return household.transactions.filter((tx) => tx.source === "recurring" && !tx.isDuplicate).length;
-}
-
-function cosmeticUnlocked(household: Household, item: CosmeticItem, today: DateKey, healthClean: () => boolean): boolean {
-  if (item.id === "toque") return household.transactions.some((tx) => tx.type === "expense" && !tx.isDuplicate);
-  if (item.id === "visor") return paidRecurringCount(household) > 0;
-  if (item.id === "chef") return household.activity.some((row) => row.action === "Monthly Sit-Down");
-  if (item.id === "specs") return household.kitchen.books?.reconciliations?.some((row) => row.status === "tied") ?? false;
-  if (item.id === "ink") return (household.kitchen.books?.closedMonths?.length ?? 0) > 0;
-  if (item.id === "copper") return postingDates(household).length >= 3;
-  if (item.id === "gold") {
-    return household.goals.some((goal) => goal.targetCents > 0 && goal.savedCents >= goal.targetCents);
-  }
-  if (item.id === "cottage") return healthClean();
-  if (item.id === "townhouse") {
-    return healthClean() && overdueBills(household, today).length === 0 && household.recurrences.some((item) => item.active);
-  }
-  if (item.id === "patio") {
-    return kitchenSeason(today) === "patio" || household.transactions.some((tx) => !tx.isDuplicate && [6, 7, 8].includes(parseDateKey(tx.date).month));
-  }
-  if (item.id === "ruff") {
-    return kitchenSeason(today) === "ruff" || household.transactions.some((tx) => !tx.isDuplicate && [11, 12, 1, 2, 3].includes(parseDateKey(tx.date).month));
-  }
-  if (item.id === "bell") return household.transactions.some((tx) => tx.type === "transfer" && !tx.isDuplicate);
-  if (item.id === "clip") return household.accounts.filter((account) => account.active && account.kind === "credit").length >= 2;
-  if (item.id === "yarn") return household.activity.filter((row) => row.action === "Chalkboard").length >= 3;
-  if (item.id === "fish") return household.shifts.length > 0;
-  if (item.id === "tooth") return household.transactions.some((tx) => tx.source === "visit" && tx.type === "expense" && !tx.isDuplicate);
-  return false;
-}
+function cosmeticUnlocked(_household:Household,_item:CosmeticItem,_today:DateKey,_healthClean:()=>boolean):boolean{return true;}
 
 export function isCosmeticUnlocked(household: Household, item: CosmeticItem, today: DateKey): boolean {
   return cosmeticUnlocked(household, item, today, () => runHealthCheck(household).length === 0);

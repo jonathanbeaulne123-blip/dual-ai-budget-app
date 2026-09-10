@@ -34,7 +34,7 @@ export function HerculesFigure({
   size = 96,
   title,
   children,
-  bodyLayer, headLayer,
+  bodyLayer, headLayer, neckLayer,
   rigSnapshot,
   rigTransitionMs,
 }: {
@@ -48,6 +48,7 @@ export function HerculesFigure({
   children?: ReactNode;
   bodyLayer?: ReactNode;
   headLayer?: ReactNode;
+  neckLayer?: ReactNode;
   /** When set, per-part transforms come from the rig engine instead of CSS pose classes. */
   rigSnapshot?: RigSnapshot;
   /** Browser interpolation window between engine-issued snapshots. */
@@ -140,6 +141,7 @@ export function HerculesFigure({
             <path d="M48 104 C44 118 44 134 48 148" strokeWidth="1.3" opacity="0.3" />
             <path d="M62 106 C59 120 59 136 63 150" strokeWidth="1.2" opacity="0.26" />
             <path d="M76 108 C74 120 74 132 76 142" strokeWidth="1.1" opacity="0.22" />
+            {neckLayer}
           </g>
 
           <g className="herc-head" data-herc-part="head" style={styles ? part("head", styles) : undefined}>

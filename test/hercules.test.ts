@@ -155,10 +155,10 @@ describe("The Hercules Update", () => {
     expect(hour).toBeLessThan(24);
   });
 
-  it("unlocks the July patio in August and keeps winter ruff locked until a cold-month post", () => {
+  it("keeps the patio and natural winter ruff available in every season", () => {
     const empty = catalogHousehold();
     expect(isCosmeticUnlocked(empty, COSMETIC_BY_ID.get("patio")!, today)).toBe(true);
-    expect(isCosmeticUnlocked(empty, COSMETIC_BY_ID.get("ruff")!, today)).toBe(false);
+    expect(isCosmeticUnlocked(empty, COSMETIC_BY_ID.get("ruff")!, today)).toBe(true);
     const winter = postEntry(empty, {
       date: "2026-01-15",
       type: "expense",
