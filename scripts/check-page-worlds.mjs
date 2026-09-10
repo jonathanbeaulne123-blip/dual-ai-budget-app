@@ -19,7 +19,7 @@ await context.addInitScript(()=>{delete Object.getPrototypeOf(navigator).locks;}
 const page=await context.newPage(),records=[],errors=[];
 page.setDefaultTimeout(60000);page.setDefaultNavigationTimeout(120000);
 page.on('pageerror',e=>errors.push(String(e)));
-async function settle(){await page.locator('.deferred-surface[aria-busy=true]').waitFor({state:'hidden',timeout:90000});await page.evaluate(()=>document.fonts.ready);const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.count())await close.click();}
+async function settle(){await page.locator('.deferred-surface[aria-busy=true]').waitFor({state:'hidden',timeout:90000});await page.evaluate(()=>document.fonts.ready);await page.locator('.books-heading-art img:visible,.books-scene-viewport>img:visible').evaluateAll(es=>Promise.all(es.map(e=>e.decode().then(()=>{if(!e.naturalWidth)throw Error("Books scene image is empty");}))));const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.count())await close.click();}
 async function nav(name){await page.locator('nav.nav').getByRole('button',{name,exact:true}).click();await settle();}
 async function go(scope){
  if(route==='ledger'){await nav('More');await page.getByRole('button',{name:scope==='household'?'Open the household table':'Open my books',exact:true}).click();}
@@ -104,6 +104,7 @@ try {
     if(width===390)await page.screenshot({path:out+'/'+theme+'-'+scope+'-mobile-full.png',fullPage:true});
     if(width===1440) {
      await page.screenshot({path:out+'/'+theme+'-'+scope+'-desktop-full.png',fullPage:true});
+     if(route==='ledger') { await page.evaluate(()=>window.scrollTo(0,1000)); await page.screenshot({path:out+'/'+theme+'-'+scope+'-desktop-scrolled.png'}); const scene=await page.locator('.books-scene-viewport').evaluate(e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom})); if(scene.bottom<500)errors.push('Books background did not follow scroll '+theme+' '+scope); await page.evaluate(()=>window.scrollTo(0,0)); }
      const desktopAxe=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations;
      if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
     }

@@ -55,3 +55,6 @@ Font provenance: https://github.com/google/fonts/tree/main/ofl/unifrakturmagunti
 
 - Final accepted normal proof: all six combinations passed; 16 Shared and 14 Personal expanded states per scene, plus four corrected account replays. Final pause/reload, focus quieting, reduced motion and offscreen suspension passed. TTPD account currency was visually rechecked and remains unbroken.
 - OFL license text is included with line endings/trailing whitespace normalized; the font binary is unmodified.
+
+## Superseded visual evidence
+Jonathan rejected this first visual treatment after PR publication. Its behavior findings remain historical evidence, but its screenshots and visual acceptance claims are superseded by `2026-09-10-books-composition-revision.md`. Current screenshots and receipts in the Books evidence directory belong to that revision.
