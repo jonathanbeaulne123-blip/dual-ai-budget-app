@@ -146,7 +146,7 @@ function BraceletAnchor({ page, scene }: { page: SceneRoute; scene: ThemeScene }
   if (page === "ledger") {
     return <g className="bracelet-wrap-anchor" transform="translate(98 42) rotate(-3 48 45)"><rect x="6" y="54" width="96" height="30" rx="4" fill="var(--theme-second)" stroke="var(--card)" strokeWidth="3"/><rect x="17" y="27" width="83" height="29" rx="4" fill="var(--card)" stroke="var(--theme-accent)" strokeWidth="3"/><rect x="4" width="92" height="29" rx="4" fill="var(--theme-accent)" stroke="var(--theme-second)" strokeWidth="3"/><path d="M21 10h57M30 38h53M20 67h65" stroke="var(--card)" strokeWidth="3" opacity=".7"/></g>;
   }
-  if (scene.theme === "newfoundland") return <g className="bracelet-wrap-anchor" transform="translate(105 31)"><path d="M14 45Q8 5 34 8h32q27-3 24 37v45H14Z" fill="var(--theme-accent)" stroke="var(--theme-second)" strokeWidth="3"/><path d="M14 90h76v25H14ZM23 115v18m58-18v18" fill="var(--card)" stroke="var(--theme-second)" strokeWidth="5"/></g>;
+  if (scene.theme === "newfoundland") return <g className="bracelet-wrap-anchor" transform="translate(106 20)"><rect x="7" y="4" width="78" height="126" rx="5" fill="var(--card)" stroke="var(--theme-second)" strokeWidth="3"/><image href="/theme-art/more-jag-chair.webp" x="10" y="7" width="72" height="120" preserveAspectRatio="xMidYMid meet"/></g>;
   if (scene.theme === "taylor") return <g className="bracelet-wrap-anchor" transform="translate(99 46)"><rect x="5" y="18" width="100" height="65" rx="8" fill="var(--theme-second)" stroke="var(--card)" strokeWidth="3"/><path d="M18 18V7h29v11" fill="var(--theme-accent)"/><circle cx="57" cy="51" r="24" fill="var(--card)" stroke="var(--theme-accent)" strokeWidth="5"/><circle cx="57" cy="51" r="12" fill="var(--theme-second)"/></g>;
   return <g className="bracelet-wrap-anchor" transform="translate(103 43)"><path d="M9 22h67l-8 64Q43 99 18 86Z" {...shared}/><path d="M75 34q35-9 27 23-6 20-31 16" fill="none" stroke="var(--theme-second)" strokeWidth="7"/><path d="M25 5q-12-13 0-25m24 25q12-13 0-25" fill="none" stroke="var(--theme-second)" strokeWidth="3"/></g>;
 }
@@ -160,9 +160,9 @@ export function WrappedFriendshipBracelets({ page, scene }: { page: SceneRoute; 
         <clipPath id={`${clipId}-rear`}><path d="M0 0H280V55H0ZM0 75H280V109H0Z"/></clipPath>
         <clipPath id={`${clipId}-front`}><path d="M0 55H280V75H0ZM0 109H280V166H0Z"/></clipPath>
       </defs>
-      <image href={prepared.src!} width="280" height="166" preserveAspectRatio="xMidYMid meet" clipPath={`url(#${clipId}-rear)`}/>
+      <image className="bracelet-strand--rear" href={prepared.src!} width="280" height="166" preserveAspectRatio="xMidYMid meet" clipPath={`url(#${clipId}-rear)`}/>
       <BraceletAnchor page={page} scene={scene}/>
-      <image href={prepared.src!} width="280" height="166" preserveAspectRatio="xMidYMid meet" clipPath={`url(#${clipId}-front)`}/>
+      <image className="bracelet-strand--front" href={prepared.src!} width="280" height="166" preserveAspectRatio="xMidYMid meet" clipPath={`url(#${clipId}-front)`}/>
     </> : <>
       <BraceletStrands layer="rear"/>
       <BraceletAnchor page={page} scene={scene}/>
@@ -220,6 +220,7 @@ export function SceneArtwork({ scene }: { scene: ThemeScene }) {
 }
 export function ThemeSceneHeading({ home = false, calendar = false, plan = false, more = false, books = false }: { home?: boolean; calendar?: boolean; plan?: boolean; more?: boolean; books?: boolean }) {
   const { scene } = useAppearance();
+  const hasWrappedKeepsake = home || calendar || plan || more || books;
   const page: SceneRoute = books ? "ledger" : more ? "more" : plan ? "plan" : calendar ? "calendar" : "home";
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
@@ -235,7 +236,7 @@ export function ThemeSceneHeading({ home = false, calendar = false, plan = false
     {plan && scene.id === "summit" && <img className="plan-cannon-sticker" src="/theme-art/plan-cannon.webp" alt="Simple clip-art illustration of Jonathan sitting on the cannon at Signal Hill" width="240" height="160" />}
     {calendar && scene.id === "cape-spear" && <img className="calendar-couple" src="/theme-art/calendar-cape-couple.webp" alt="Clip-art illustration of Jonathan and Bianca at Cape Spear" />}
     <div className="theme-scene-copy"><span className="theme-scene-kicker">{scene.theme === "taylor" ? "A page from our scrapbook" : scene.theme === "newfoundland" ? "A little Newfoundland" : "Welcome home"}</span><p className="theme-scene-title">{scene.title}</p><p className="theme-scene-caption">{scene.caption}</p></div>
-    {(home || calendar || plan || more || books) && <div className="desktop-title-bracelets"><WrappedFriendshipBracelets page={page} scene={scene}/><EraBracelet /></div>}
+    {hasWrappedKeepsake ? <div className="desktop-title-bracelets"><WrappedFriendshipBracelets page={page} scene={scene}/><EraBracelet /></div> : <EraBracelet />}
     <AtmosphereControl />
   </section>;
 }

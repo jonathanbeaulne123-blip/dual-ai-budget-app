@@ -77,6 +77,7 @@
 @media(prefers-reduced-motion:reduce) { :is(.more-heading-art,.more-scenery) * { animation:none!important; } }
 @media print { .more-scenery,.more-chair-sticker { display:none!important; } }
 :root[data-world-page="more"] .more-chair-sticker { border:3px double #8d6759; border-radius:7px; background:#fff7ed; box-shadow:3px 4px 0 #55414b25; }
+:root[data-theme="newfoundland"][data-world-page="more"] .more-chair-sticker { display:none; }
 :root[data-theme="newfoundland"][data-world-page="more"] .more-title-objects { display:none; }
 :root[data-world-page="more"] .more-surfaces label:has(input[type="checkbox"]) { display:flex; align-items:center; gap:10px; min-height:44px; }
 
