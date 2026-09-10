@@ -511,13 +511,12 @@ describe("cached-shell startup books gate", () => {
 
     await act(async () => {
       (container.querySelector(".sync-freshness__details") as HTMLButtonElement).click();
-      await new Promise((resolve) => window.setTimeout(resolve, 30));
     });
+    await waitForUi(() => expect(container.querySelector(".app")?.getAttribute("data-ledger-tab")).toBe("more"));
     const help = container.querySelector("#hearth-sync-help") as HTMLElement | null;
-    expect(container.querySelector(".app")?.getAttribute("data-ledger-tab")).toBe("more");
     expect(help?.textContent).toContain("How to fix it");
     expect(help?.textContent).toContain("Google sign-in needed");
-    expect(document.activeElement).toBe(help);
+    await waitForUi(() => expect(document.activeElement).toBe(help));
 
     const sessionKey = "hearth:v1:supabase-auth:development";
     const restoredSession = JSON.stringify({
