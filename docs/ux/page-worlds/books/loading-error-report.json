@@ -1,0 +1,426 @@
+{
+  "browser": "Installed Chrome; synthetic completed-books fixture; no hosted requests",
+  "records": [
+    {
+      "theme": "classic",
+      "scope": "household",
+      "route": "ledger",
+      "state": "loading",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "loading",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "household",
+      "route": "ledger",
+      "state": "loading",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "loading",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "household",
+      "route": "ledger",
+      "state": "loading",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "loading",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "household",
+      "route": "ledger",
+      "state": "error",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "classic",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "error",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "household",
+      "route": "ledger",
+      "state": "error",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "taylor",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "error",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "household",
+      "route": "ledger",
+      "state": "error",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    },
+    {
+      "theme": "newfoundland",
+      "scope": "personal",
+      "route": "ledger",
+      "state": "error",
+      "metrics": [
+        {
+          "width": 320,
+          "scroll": 320
+        },
+        {
+          "width": 390,
+          "scroll": 390
+        },
+        {
+          "width": 720,
+          "scroll": 720
+        },
+        {
+          "width": 1100,
+          "scroll": 1100
+        },
+        {
+          "width": 1440,
+          "scroll": 1440
+        }
+      ],
+      "violations": [],
+      "special": {
+        "zoom": {
+          "width": 1440,
+          "scroll": 1440
+        }
+      }
+    }
+  ],
+  "errors": []
+}

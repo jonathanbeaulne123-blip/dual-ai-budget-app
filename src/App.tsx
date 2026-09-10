@@ -6486,7 +6486,7 @@ export function App() {
         <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
       ) : null}
 
-      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} />
+      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger"} />
       <WorldCharm page={tab} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (

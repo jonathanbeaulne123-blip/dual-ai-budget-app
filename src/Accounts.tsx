@@ -246,12 +246,12 @@ export function AccountRoom({
           </div>
           <details>
             <summary>Card terms</summary>
-            <label>Limit (CAD)</label>
-            <input inputMode="decimal" value={terms.limit} placeholder={String(credit.limitCents / 100)} onChange={(event) => setTerms({ ...terms, limit: event.target.value })} />
-            <label>APR %</label>
-            <input inputMode="decimal" value={terms.apr} placeholder={formatApr(credit.aprBps).replace("%", "")} onChange={(event) => setTerms({ ...terms, apr: event.target.value })} />
-            <label>Default cashback %</label>
-            <input inputMode="decimal" value={terms.cashback} placeholder={String((account.credit?.defaultCashbackBps ?? 100) / 100)} onChange={(event) => setTerms({ ...terms, cashback: event.target.value })} />
+            <label>Limit (CAD)
+            <input inputMode="decimal" value={terms.limit} placeholder={String(credit.limitCents / 100)} onChange={(event) => setTerms({ ...terms, limit: event.target.value })} /></label>
+            <label>APR %
+            <input inputMode="decimal" value={terms.apr} placeholder={formatApr(credit.aprBps).replace("%", "")} onChange={(event) => setTerms({ ...terms, apr: event.target.value })} /></label>
+            <label>Default cashback %
+            <input inputMode="decimal" value={terms.cashback} placeholder={String((account.credit?.defaultCashbackBps ?? 100) / 100)} onChange={(event) => setTerms({ ...terms, cashback: event.target.value })} /></label>
             <button
               className="ghost"
               type="button"
@@ -300,8 +300,8 @@ export function AccountRoom({
               Post estimated interest
             </button>
           </div>
-          <label>APY %</label>
-          <input inputMode="decimal" value={terms.apy} placeholder={formatApr(savings.apyBps).replace("%", "")} onChange={(event) => setTerms({ ...terms, apy: event.target.value })} />
+          <label>APY %
+          <input inputMode="decimal" value={terms.apy} placeholder={formatApr(savings.apyBps).replace("%", "")} onChange={(event) => setTerms({ ...terms, apy: event.target.value })} /></label>
           <button className="ghost" type="button" onClick={() => run((current) => updateAccount(current, { accountId: account.id, apyPercent: terms.apy }))}>
             Save APY
           </button>
@@ -317,8 +317,8 @@ export function AccountRoom({
             <div className="row"><span>Unrealized</span><span>{formatCad(investment.unrealizedCents)}</span></div>
           )}
           <p className="muted">{investment.hercules}</p>
-          <label>Mark market value (CAD)</label>
-          <input inputMode="decimal" value={mark} onChange={(event) => setMark(event.target.value)} placeholder="0.00" />
+          <label>Mark market value (CAD)
+          <input inputMode="decimal" value={mark} onChange={(event) => setMark(event.target.value)} placeholder="0.00" /></label>
           <div className="chips">
             <button className="chip" type="button" onClick={() => onAdd(account)}>Contribute</button>
             <button className="chip" type="button" onClick={() => run((current) => markInvestmentValue(current, { accountId: account.id, markedValue: mark, markedAt: today }))}>
@@ -475,28 +475,28 @@ export function AddAccountForm({
         ))}
       </div>
       <p className="muted">{ACCOUNT_KIND_HINT[kind]}</p>
-      <label>Name</label>
-      <input value={name} onChange={(event) => setName(event.target.value)} placeholder={kind === "credit" ? "Amex Cobalt" : "Name"} />
-      <label>Institution</label>
-      <input value={institution} onChange={(event) => setInstitution(event.target.value)} placeholder="TD, EQ, Wealthsimple…" />
-      <label>Last 4</label>
-      <input value={last4} onChange={(event) => setLast4(event.target.value)} inputMode="numeric" maxLength={4} />
+      <label>Name
+      <input value={name} onChange={(event) => setName(event.target.value)} placeholder={kind === "credit" ? "Amex Cobalt" : "Name"} /></label>
+      <label>Institution
+      <input value={institution} onChange={(event) => setInstitution(event.target.value)} placeholder="TD, EQ, Wealthsimple…" /></label>
+      <label>Last 4
+      <input value={last4} onChange={(event) => setLast4(event.target.value)} inputMode="numeric" maxLength={4} /></label>
       {kind === "credit" && (
         <>
-          <label>Limit (CAD)</label>
-          <input inputMode="decimal" value={limit} onChange={(event) => setLimit(event.target.value)} />
-          <label>APR %</label>
-          <input inputMode="decimal" value={apr} onChange={(event) => setApr(event.target.value)} />
-          <label>Default cashback %</label>
-          <input inputMode="decimal" value={cashback} onChange={(event) => setCashback(event.target.value)} />
-          <label>Grocery cashback %</label>
-          <input inputMode="decimal" value={grocery} onChange={(event) => setGrocery(event.target.value)} />
+          <label>Limit (CAD)
+          <input inputMode="decimal" value={limit} onChange={(event) => setLimit(event.target.value)} /></label>
+          <label>APR %
+          <input inputMode="decimal" value={apr} onChange={(event) => setApr(event.target.value)} /></label>
+          <label>Default cashback %
+          <input inputMode="decimal" value={cashback} onChange={(event) => setCashback(event.target.value)} /></label>
+          <label>Grocery cashback %
+          <input inputMode="decimal" value={grocery} onChange={(event) => setGrocery(event.target.value)} /></label>
         </>
       )}
       {kind === "savings" && (
         <>
-          <label>APY %</label>
-          <input inputMode="decimal" value={apy} onChange={(event) => setApy(event.target.value)} />
+          <label>APY %
+          <input inputMode="decimal" value={apy} onChange={(event) => setApy(event.target.value)} /></label>
           <label>Purpose</label>
           <div className="chips">
             <button className={`chip ${purpose === "general" ? "selected" : ""}`} type="button" onClick={() => setPurpose("general")}>

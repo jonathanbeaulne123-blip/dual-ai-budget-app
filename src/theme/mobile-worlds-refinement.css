@@ -1243,15 +1243,15 @@
   }
 
   /* The Battery · Books — clapboard. Stepped trims above the water. */
-  :root[data-scene="battery"] .office-phone .ph-seals .hearth-wax-seal {
+  :root[data-scene="merchant"] .office-phone .ph-seals .hearth-wax-seal {
     background-image:
       repeating-linear-gradient(0deg,
         color-mix(in srgb, var(--ink) 3%, transparent) 0 11px,
         transparent 11px 12px),
       var(--mw-tooth);
   }
-  :root[data-scene="battery"] .office-phone .ph-seals .hearth-wax-seal:nth-child(2) { margin-top: 0; }
-  :root[data-scene="battery"] .phone-spread::after {
+  :root[data-scene="merchant"] .office-phone .ph-seals .hearth-wax-seal:nth-child(2) { margin-top: 0; }
+  :root[data-scene="merchant"] .phone-spread::after {
     background: repeating-linear-gradient(180deg,
       color-mix(in srgb, var(--theme-second) 50%, transparent) 0 7px,
       transparent 7px 13px);

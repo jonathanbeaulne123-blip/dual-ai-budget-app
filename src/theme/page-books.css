@@ -1,0 +1,135 @@
+@font-face { font-family: "UnifrakturMaguntia"; src:url("/fonts/books/UnifrakturMaguntia-Book.ttf") format("truetype"); font-display:swap; }
+/* Books' existing layout and pane order remain intact. Art occupies its surrounding desk. */
+:root[data-world-page="ledger"] .world-page { background:repeating-linear-gradient(90deg,#a8875710 0 2px,transparent 2px 110px),linear-gradient(120deg,#e4d6bb,#f4ecdc 55%,#e1d6bd); border-radius:16px; }
+:root[data-world-page="ledger"] .books-theme-c { position:relative; padding:12px 8px 28px; }
+:root[data-world-page="ledger"] :is(.household-books-heading,.books-theme-c>.hero) { padding:18px; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--theme-second); border-radius:5px; }
+:root[data-world-page="ledger"] :is(.household-books-nav,.books-theme-c>.tabs,.books-pane-blurb,.books-floor>.hearth-story-strip) { background:var(--card); border-radius:5px; }
+:root[data-world-page="ledger"] .household-books-nav { padding:6px; }
+:root[data-world-page="ledger"] :is(.books-theme-c .card,.books-audit-office,.household-books-activity-link,.household-books-disclosure,.household-books-balance-note) { background-color:var(--card); color:var(--ink); }
+:root[data-world-page="ledger"] .books-theme-c .card { border-top:3px solid var(--theme-second); box-shadow:0 3px 0 color-mix(in srgb,var(--theme-second) 18%,var(--card)),0 7px 18px #2d271b0c; }
+:root[data-world-page="ledger"] .books-audit-office { border:1px solid var(--line); border-top:4px double var(--theme-second); }
+:root[data-world-page="ledger"] .household-books-activity-link { padding:14px; margin-block:8px; border:1px solid var(--line); }
+:root[data-world-page="ledger"] .books-theme-c :is(button,summary,select,input:not([type="checkbox"]):not([type="radio"])) { min-height:44px; }
+:root[data-world-page="ledger"] .books-theme-c :is(button,summary) { min-width:44px; }
+:root[data-world-page="ledger"] .books-theme-c :is(button,summary,a,input,select,textarea):focus-visible { outline:3px solid var(--ink); outline-offset:3px; }
+:root[data-world-page="ledger"] .books-theme-c :is(h2,h3,p,.row>span,.household-books-activity-link strong) { overflow-wrap:anywhere; }
+:root[data-world-page="ledger"] :is(.sheet-inner,.drawer-surface,.duplicate-review-dialog) { background:var(--card); color:var(--ink); border-top:4px solid var(--theme-second); }
+:root[data-world-page="ledger"] .books-theme-c label:has(input[type="checkbox"]) { min-height:44px; display:flex; align-items:center; gap:8px; }
+:root[data-world-page="ledger"] .theme-scene-copy { background:var(--card); border:1px solid var(--line); border-radius:5px; padding:12px 16px; max-width:43%; }
+:root[data-world-page="ledger"] .books-heading-art { opacity:1; }
+.books-divider { display:flex; align-items:center; justify-content:center; gap:20px; height:76px; pointer-events:none; }
+.books-divider svg { width:52px; height:65px; }
+.books-divider span { width:28%; height:3px; border-block:1px solid var(--line); }
+/* A newspaper backdrop surrounds solid black reading panels. Red and gold stay ornamental. */
+:root[data-scene="reputation"][data-world-page="ledger"] .books-theme-c { --theme-second:#b99754; }
+:root[data-scene="reputation"][data-world-page="ledger"] .books-theme-c .card { border-top:3px double #ae9870; }
+:root[data-scene="reputation"][data-world-page="ledger"] .theme-scene-title { font-family:"UnifrakturMaguntia",Georgia,serif; font-weight:400; letter-spacing:0; }
+:root[data-scene="reputation"][data-world-page="ledger"] .books-divider span { border-color:#686862; }
+/* Manuscript ivory, graphite and warm taupe come from Jonathan's supplied swatch. */
+:root[data-scene="poets"][data-world-page="ledger"] .books-theme-c .card { border-top:3px double #8e8274; background-image:linear-gradient(90deg,#70645c0b,transparent 13%); }
+:root[data-scene="poets"][data-world-page="ledger"] .theme-scene-title { font-variant:small-caps; letter-spacing:.015em; }
+/* Tavern: linen and walnut, blue glass and scallops. Harbour: daylight, ropes and water. */
+:root[data-scene="merchant"][data-world-page="ledger"] .books-theme-c .card { border:3px double #b7a681; box-shadow:0 4px 0 #7e6a442b; }
+:root[data-scene="harbour"][data-world-page="ledger"] .books-theme-c .card { border:3px solid #fcf8eb; outline:1px solid #abc5c7; border-top:5px solid #68939a; }
+/* Financial copy always sits on a continuous reading sheet, including disclosure text. */
+:root[data-world-page="ledger"] .books-theme-c { background:var(--card); border:1px solid var(--line); border-inline-start:5px solid var(--theme-second); border-radius:7px; padding:16px; box-shadow:4px 5px 0 color-mix(in srgb,var(--theme-second) 20%,transparent); }
+:root[data-world-page="ledger"] .brand { background:var(--card); border-radius:5px; }
+:root[data-world-page="ledger"] :is(.brand__identity,.wallet-group-label) { color:var(--ink); }
+@media(max-width:719px) { :root[data-world-page="ledger"] .books-theme-c { padding:8px; border-inline-start-width:3px; } }
+
+:root[data-world-page="ledger"] .theme-scene-heading::before { display:none; }
+/* Keep Fund disclosure labels readable beside long account lists on narrow screens. */
+:root[data-world-page="ledger"] .household-fund-panel .row { display:grid; grid-template-columns:minmax(78px,1fr) minmax(0,2fr); gap:12px; align-items:start; }
+:root[data-world-page="ledger"] .household-fund-panel .row>span:first-child { overflow-wrap:normal; }
+@media(max-width:719px) { :root[data-world-page="ledger"] .household-fund-panel .card>header { display:block; } }
+
+/* Table headings stay legible on the manuscript palette as well as dark scenes. */
+:root[data-world-page="ledger"] .books-theme-c th { color:var(--ink); background:var(--card); }
+/* Manuscript ruling belongs around the accounts, never through their amounts. */
+:root[data-scene="poets"][data-world-page="ledger"] :is(.hearth-paper-tile,.instrument,.desk-plate,.sheet-inner) { background:var(--card); }
+:root[data-scene="poets"][data-world-page="ledger"] .books-theme-c :is(.muted,.kicker) { color:var(--ink); }
+
+@media(max-width:719px) { :root[data-world-page="ledger"] .wallet-strip>header { display:block; } }
+:root[data-world-page="ledger"] .books-theme-c .books-table .muted { color:var(--ink); }
+:root[data-world-page="ledger"] .account-room>.row { align-items:start; }
+:root[data-world-page="ledger"] .account-room>.row>span:first-child { flex:1; min-width:0; }
+:root[data-world-page="ledger"] .account-room>.row>span:last-child { flex-shrink:0; white-space:nowrap; }
+
+/* A continuous place replaces the repeated sticker columns. The image is still;
+   only separately observed local light/steam/water details animate. */
+:root[data-theme][data-world-page="ledger"] .world-page { background:#554c3d; border-radius:12px; }
+:root[data-world-page="ledger"] :is(.world-margin,.world-light-wash,.world-paper-grain) { display:none; }
+.books-scenery { display:block; position:absolute; inset:0; }
+.books-scene-viewport { position:sticky; top:0; height:100vh; min-height:760px; overflow:hidden; }
+.books-scene-viewport>img { width:100%; height:100%; object-fit:cover; object-position:center; }
+.books-scene-shade { position:absolute; inset:0; background:linear-gradient(90deg,#20170d22,transparent 28% 72%,#20170d22); }
+.books-scenery-panel { position:absolute; left:0; width:100%; height:280px; pointer-events:none; }
+.books-scenery-panel>svg { position:absolute; inset:0; width:100%; height:100%; }
+.books-lamplight { position:absolute; width:210px; height:260px; background:radial-gradient(ellipse,#ffe5ae25,transparent 68%); animation:books-warmth 14s ease-in-out infinite alternate; }
+.books-lamplight-left { left:-40px; top:0; }.books-lamplight-right { right:-40px; top:80px; animation-delay:-7s; }
+.books-water { animation:living-drift 24s ease-in-out infinite alternate; }
+.books-steam { animation:living-steam 9s ease-in-out infinite; }
+@keyframes books-warmth { to { opacity:.45; } }
+:root[data-theme][data-world-page="ledger"] .theme-scene-heading { height:380px; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; display:block; }
+:root[data-world-page="ledger"] .theme-scene-heading::before,
+:root[data-world-page="ledger"] .theme-scene-heading::after { display:none; }
+:root[data-theme][data-world-page="ledger"] .theme-scene-copy { position:absolute; left:34px; top:auto; bottom:32px; max-width:48%; padding:20px 26px; background:var(--card); border:1px solid var(--line); border-radius:7px; box-shadow:2px 3px 0 #fff7e447,0 6px 16px #16110b25; }
+:root[data-world-page="ledger"] .theme-scene-title { font-size:clamp(27px,3.2vw,44px); margin:12px 0; }
+:root[data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { top:20px; bottom:auto; left:24px; background:var(--card); border:1px solid var(--line); box-shadow:0 3px 14px #18120b30; }
+:root[data-world-page="ledger"] .desktop-title-bracelets { display:flex; position:absolute; right:22px; top:18px; margin:0; width:285px; padding:6px 12px; background:#fff8e6ed; border:1px solid #bcaa86; border-radius:3px; box-shadow:0 8px 20px #18120b30; transform:rotate(3deg); }
+:root[data-world-page="ledger"] .desktop-title-bracelets .friendship-bracelets { width:220px; height:122px; }
+:root[data-world-page="ledger"] .theme-scene-heading>.era-light { display:none; }
+.books-heading-art { display:none; }
+:root[data-world-page="ledger"] .books-theme-c { margin-inline:clamp(64px,12vw,240px); padding:22px; border:1px solid var(--line); border-left:7px double var(--theme-second); border-radius:4px; background:var(--card); box-shadow:6px 7px 0 #eee4cc70,0 15px 50px #100d0860; }
+:root[data-world-page="ledger"] .world-charm-row { margin:0 24px 20px; }
+:root[data-world-page="ledger"] .world-thread { background:linear-gradient(90deg,transparent,#eee3c3,transparent); }
+:root[data-world-page="ledger"] .books-divider { height:86px; gap:18px; }
+:root[data-world-page="ledger"] .books-divider svg { width:46px; height:50px; filter:drop-shadow(1px 2px 1px #332d2540); }
+:root[data-world-page="ledger"] .books-theme-c .card { box-shadow:0 3px 8px #1e1b1510; }
+:root[data-world-page="ledger"] .books-audit-office { background:var(--card); }
+:root[data-world-page="ledger"] .world-page { padding-bottom:72px; }
+@media(min-width:720px) and (max-width:1099px) {
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading { height:380px; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets { width:220px; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets .friendship-bracelets { width:165px; height:105px; }
+ :root[data-world-page="ledger"] .books-theme-c { margin-inline:50px; padding:14px; }
+}
+@media(max-width:719px) {
+ :root[data-theme][data-world-page="ledger"] .world-page { background:var(--paper); padding-bottom:28px; }
+ .books-scenery { display:none; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading { height:calc(174px + 66vw); min-height:385px; max-height:450px; overflow:hidden; }
+ .books-heading-art { display:block; position:absolute; inset:auto 0 0; width:100%; height:66vw; max-height:278px; min-height:211px; }
+ .books-heading-art>img { display:block; width:100%; height:100%; object-fit:cover; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-copy { left:10px; right:10px; top:12px; bottom:auto; width:auto; max-width:none; padding:13px 15px; box-shadow:2px 3px 0 #a7957520; }
+ :root[data-world-page="ledger"] .theme-scene-title { font-size:28px; line-height:1.12; margin:9px 0; }
+ :root[data-world-page="ledger"] .theme-scene-caption { font-size:12px; }
+ :root[data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { top:auto; bottom:10px; left:10px; min-height:44px; font-size:11px; padding:8px 10px; }
+ :root[data-world-page="ledger"] .desktop-title-bracelets { display:none; }
+ :root[data-world-page="ledger"] .theme-scene-heading>.era-light { display:block; right:8px; bottom:6px; }
+ :root[data-world-page="ledger"] .books-theme-c { margin:0 5px; padding:8px; border-left-width:3px; box-shadow:2px 3px 0 #a795752b; }
+ :root[data-world-page="ledger"] .world-charm-row { margin:4px 12px 10px; }
+}
+:root[data-atmosphere="paused"] :is(.books-scenery,.books-heading-art) *,
+:root:has(input:focus,textarea:focus,[contenteditable="true"]:focus) :is(.books-scenery,.books-heading-art) * { animation-play-state:paused!important; }
+@media(prefers-reduced-motion:reduce) { :is(.books-scenery,.books-heading-art) * { animation:none!important; } }
+@media print { .books-scenery,.books-heading-art,.books-divider { display:none!important; } }
+
+/* The dinner's plated scallops remain visible beside the title, above the ledger. */
+.books-dinner-detail { position:absolute; right:28px; bottom:22px; width:270px; height:160px; overflow:hidden; border:5px solid #f5eddb; border-radius:6px; box-shadow:0 4px 12px #1e140f40; transform:rotate(-2deg); }
+.books-dinner-detail img { position:absolute; right:0; bottom:0; width:230%; max-width:none; height:auto; }
+.theme-studio .books-heading-art { display:block; position:absolute; inset:0; }
+.theme-studio .books-heading-art img { width:100%; height:100%; object-fit:cover; }
+@media(min-width:720px) and (max-width:1099px) { .books-dinner-detail { width:220px; height:130px; right:16px; bottom:20px; } }
+@media(max-width:719px) {
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading { display:flex; flex-direction:column; height:auto; min-height:0; max-height:none; padding:0; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-copy { position:relative; inset:auto; margin:10px; flex:none; order:0; align-self:stretch; }
+ :root[data-theme][data-world-page="ledger"] .books-heading-art { position:relative; inset:auto; height:auto; min-height:0; max-height:none; aspect-ratio:3 / 2; order:1; }
+ :root[data-theme][data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { top:auto; right:auto; bottom:10px; left:10px; }
+ .books-dinner-detail { display:none; }
+}
+/* Tablet's portrait viewport must not crop the two essential serpents out of the title. */
+@media(min-width:720px) and (max-width:1099px) {
+ :root[data-scene="reputation"][data-world-page="ledger"] .books-heading-art { display:block; position:absolute; inset:0; width:100%; height:100%; }
+ :root[data-scene="reputation"][data-world-page="ledger"] .books-heading-art img { display:block; width:100%; height:100%; object-fit:cover; object-position:center 35%; }
+ :root[data-scene="reputation"][data-world-page="ledger"] .desktop-title-bracelets { top:auto; bottom:16px; }
+}

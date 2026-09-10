@@ -1,0 +1,57 @@
+{
+  "baseSha": "2e113f69d03872eddc22ac461378a0f3e33f6c55",
+  "changeFingerprint": "71e0a042ec16cb7fd1e79a185ac881093f3db5930d45da60c8bb1410b40182b0",
+  "workingTreeClean": false,
+  "breachPhase": "typescript",
+  "budgetMs": 300000,
+  "elapsedMs": 968659,
+  "slowestPhase": "typescript",
+  "timeBudgetBreached": true,
+  "classification": "quick-gate-passed; time-budget-breached",
+  "focusReason": "Approved Books cartoon assets and title refinement preserve theme switching, drafts, focus, and existing App financial flows",
+  "headSha": "a3281496e23f3a0eddd93df20bbdfd7420f7d1ce",
+  "phases": [
+    {
+      "elapsedMs": 924,
+      "name": "diff-check",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 6712,
+      "name": "ai-surface",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 743438,
+      "name": "typescript",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 28897,
+      "name": "test-discovery",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 35365,
+      "name": "vitest-fast",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 142430,
+      "name": "vitest-serial",
+      "status": "passed"
+    }
+  ],
+  "risk": "medium",
+  "selectedTests": [
+    "test/app-startup-p1.test.ts",
+    "test/appearance-provider.test.ts",
+    "test/books-worlds.test.ts",
+    "test/command-contract.test.ts",
+    "test/command-runtime.test.ts",
+    "test/month-rehearsal-mainline.test.ts",
+    "test/page-worlds.test.ts",
+    "test/proof-matrix.test.ts"
+  ],
+  "uiProofRequired": true
+}

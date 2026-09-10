@@ -1,3 +1,4 @@
+import * as syncFreshness from "../src/syncFreshness.ts";
 import { shapeWorkJob, upsertWorkJob, postWorkShiftWithAttendanceReview } from "../src/core/index.ts";
 import {dueOccurrenceReview} from "../src/core/dueOccurrenceReview.ts";
 import { applyDuplicateReview } from "../src/core/duplicateReviewCommand.ts";
@@ -737,6 +738,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("commits an online Personal Confirm only after staged acceptance and cloud acknowledgement", async () => {
+    const freshness = vi.spyOn(syncFreshness, "buildSyncFreshness");
     vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
     const { identity, household } = cloudBackedPersonalBooks();
@@ -765,6 +767,7 @@ describe("cached-shell startup books gate", () => {
     const commandTransactionCount = household.transactions.length + 1;
     openExpenseSlideshow();
     const confirm = walkExpenseToConfirm(container, "Private chequing");
+    await waitForUi(() => expect(freshness.mock.lastCall?.[0].syncState).toBe("synced"));
     act(() => { confirm.click(); });
     await waitForUi(() => expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull());
 
@@ -787,6 +790,7 @@ describe("cached-shell startup books gate", () => {
   });
 
   it("keeps an online Personal cloud refusal out of active and durable books", async () => {
+    const freshness = vi.spyOn(syncFreshness, "buildSyncFreshness");
     vi.stubEnv("VITE_CLOUD_LEDGER_ONLINE_REQUIRED", "1");
     vi.stubEnv("VITE_SUPABASE_AUTH_ENABLED", "1");
     const { identity, household } = cloudBackedPersonalBooks();
@@ -815,6 +819,7 @@ describe("cached-shell startup books gate", () => {
     const commandTransactionCount = household.transactions.length + 1;
     openExpenseSlideshow();
     const confirm = walkExpenseToConfirm(container, "Private chequing");
+    await waitForUi(() => expect(freshness.mock.lastCall?.[0].syncState).toBe("synced"));
     act(() => { confirm.click(); });
     await waitForUi(() => expect(container.textContent).toContain("Cloud refused the Personal change"));
 

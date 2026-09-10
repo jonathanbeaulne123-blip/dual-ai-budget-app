@@ -1,6 +1,7 @@
 // Actual App, synthetic local fixture only. Blocks every non-local request.
 import {chromium} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {checkBooks} from './check-books-interactions.mjs';
 import {checkMore} from './check-more-interactions.mjs';
 import {checkPlan} from './check-plan-interactions.mjs';
 import {checkCalendar} from './check-calendar-interactions.mjs';
@@ -16,8 +17,9 @@ const context=await browser.newContext({viewport:{width:390,height:1000},reduced
 await context.route('**/*',r=>new URL(r.request().url()).origin===origin&&!/^\/(hercules|ledger-sync|sync|documents|bank|work)\//.test(new URL(r.request().url()).pathname)?r.continue():r.abort());
 await context.addInitScript(()=>{delete Object.getPrototypeOf(navigator).locks;});
 const page=await context.newPage(),records=[],errors=[];
+page.setDefaultTimeout(60000);page.setDefaultNavigationTimeout(120000);
 page.on('pageerror',e=>errors.push(String(e)));
-async function settle(){await page.locator('.deferred-surface[aria-busy=true]').waitFor({state:'hidden',timeout:90000});await page.evaluate(()=>document.fonts.ready);const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.count())await close.click();}
+async function settle(){await page.locator('.deferred-surface[aria-busy=true]').waitFor({state:'hidden',timeout:90000});await page.evaluate(()=>document.fonts.ready);await page.locator('.books-heading-art img:visible,.books-scene-viewport>img:visible').evaluateAll(es=>Promise.all(es.map(e=>e.decode().then(()=>{if(!e.naturalWidth)throw Error("Books scene image is empty");}))));const close=page.getByRole('button',{name:'Close reminders',exact:true});if(await close.count())await close.click();}
 async function nav(name){await page.locator('nav.nav').getByRole('button',{name,exact:true}).click();await settle();}
 async function go(scope){
  if(route==='ledger'){await nav('More');await page.getByRole('button',{name:scope==='household'?'Open the household table':'Open my books',exact:true}).click();}
@@ -25,7 +27,7 @@ async function go(scope){
  else await nav({home:'Home',plan:'Plan',calendar:'Calendar',shift:'Shifts',more:'More'}[route]);await settle();
 }
 try {
- await page.goto(origin+'/?themeStudio=1');
+ await page.goto(origin+'/?themeStudio=1',{waitUntil:'domcontentloaded',timeout:120000});
  await page.evaluate(async({state,route})=>{
   const {completedExistingBooksHousehold}=await import('/test/fixtures/existing-books-onboarding.ts');
   const {saveHousehold}=await import('/src/storage.ts');const {saveSession}=await import('/src/session.ts');
@@ -41,6 +43,7 @@ try {
    h.goals=h.goals.map(g=>({...g,name:g.name+' — something wonderful we are carefully saving toward together'}));
    h.recurrences=h.recurrences.map(r=>({...r,note:r.note+' — a long illustrative recurring payment with additional scheduling detail',amountCents:123456789}));
   }
+  if(route==='ledger'&&state==='long'){const {postEntry}=await import('/src/core/index.ts');h=postEntry(h,{date:'2026-09-09',type:'income',amount:'1234567.89',accountId:'ACC-CHEQUING',subcategoryId:'SUB-INCOME-WAGES',note:'A deliberately long illustrative income description for checking large amounts and narrow reading surfaces',createdBy:'MEM-002',visibility:'household',confirmDuplicate:true}).household;h.transactions=h.transactions.map(t=>({...t,note:t.note+' — a longer illustrative record description for testing the Books page'}));}
   if(route==='plan'&&state!=='empty') { const {addGoal}=await import('/src/core/index.ts'); h=addGoal(h,{name:'A weekend by the water'+(state==='long'?' — something wonderful we are carefully saving toward together':''),target:'1500',shared:true}).household; if(state==='long'){ const {fundGoal}=await import('/src/core/index.ts'); h=addGoal(h,{name:'A little keepsake',target:'25',shared:true}).household; const goal=h.goals.find(g=>g.name==='A little keepsake'); h=fundGoal(h,{goalId:goal.id,amount:'25',fromAccountId:'ACC-CHEQUING',date:'2026-09-09',createdBy:'MEM-002'}).household; } h=addGoal(h,{name:'My next adventure',target:'800',shared:false,ownerMemberId:'MEM-002'}).household; }
   if(route==='more'&&state==='long'){const {appendRestorePoint}=await import('/src/core/restorePoints.ts');h=await appendRestorePoint(h,'MEM-002');h.restorePoints=h.restorePoints.map(p=>({...p,label:'A deliberately long illustrative restore point label for the household books — September review'}));const {saveUndoHistory}=await import('/src/undoHistory.ts');saveUndoHistory('development',h.householdId,'MEM-002',[{id:'UNDO-VISUAL',label:'A long illustrative recent change description for the household review — groceries and supplies',postedIds:[h.transactions[0].id],snapshot:h,actorMemberId:'MEM-002'}]);}
   assertAcceptableBooks(h);h.booksAcceptedHash=await financialAuditHash(h);
@@ -49,6 +52,26 @@ try {
  await page.goto(origin);await page.locator('nav.nav').waitFor({timeout:90000});await settle();await page.locator('.app[data-books-readiness=ready]').waitFor({timeout:90000});
  const due=page.locator('[aria-labelledby="due-preview-title"]');if(await due.isVisible())await due.getByRole('button',{name:'Not now',exact:true}).click();
  const closeReminders=page.getByRole('button',{name:'Close reminders',exact:true});if(await closeReminders.count())await closeReminders.click();
+ if(route==='ledger'&&process.env.HEARTH_BOOKS_LOADING==='1') {
+  await nav('More');let release;const pending=new Promise(resolve=>release=resolve);
+  await page.route('**/src/Books.tsx*',async request=>{await pending;await request.abort();});
+  for(const phase of ['loading','error']) {
+   if(phase==='error')release();
+   for(const theme of ['classic','taylor','newfoundland']) {
+    await nav('More');await page.locator('[data-preview-theme="'+theme+'"]').click();await page.getByRole('button',{name:'Use theme',exact:true}).click();
+    for(const scope of ['household','personal']) {
+     await nav('More');await page.locator('.view-switch button').nth(scope==='household'?0:1).click();
+     await page.getByRole('button',{name:scope==='household'?'Open the household table':'Open my books',exact:true}).click();
+     const surface=phase==='loading'?page.locator('.deferred-surface[aria-busy=true]'):page.locator('.deferred-surface[role=alert]');await surface.waitFor();
+     const metrics=[];
+     for(const width of [320,390,720,1100,1440]){await page.setViewportSize({width,height:1000});await surface.scrollIntoViewIfNeeded();await page.screenshot({path:`${out}/${theme}-${scope}-${phase}-${width}.png`});metrics.push(await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth})));}
+     const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations;
+     records.push({theme,scope,route,state:phase,metrics,violations,special:{zoom:{width:1440,scroll:await page.evaluate(()=>document.documentElement.scrollWidth)}}});
+    }
+   }
+  }
+  const unexpected=errors.filter(e=>!e.includes('Failed to fetch dynamically imported module'));errors.splice(0,errors.length,...unexpected);
+ }
  if(route==='more'&&process.env.HEARTH_MORE_LOADING==='1') {
   let release;const pending=new Promise(resolve=>release=resolve);
   await page.route('**/src/Pairing.tsx',async request=>{await pending;await request.abort();});
@@ -68,9 +91,10 @@ try {
   }
   const unexpected=errors.filter(e=>!e.includes('Failed to fetch dynamically imported module'));errors.splice(0,errors.length,...unexpected);
  }
- if(process.env.HEARTH_MORE_LOADING!=='1') for(const theme of (process.env.HEARTH_THEMES?.split(',')||['classic','taylor','newfoundland'])) {
+ if(process.env.HEARTH_MORE_LOADING!=='1'&&process.env.HEARTH_BOOKS_LOADING!=='1') for(const theme of (process.env.HEARTH_THEMES?.split(',')||['classic','taylor','newfoundland'])) {
   await nav('More');await page.locator('[data-preview-theme="'+theme+'"]').click();await page.getByRole('button',{name:'Use theme',exact:true}).click();
   for(const scope of route==='till'?['household']:route==='shift'?['personal']:['household','personal']) {
+   if(process.env.HEARTH_SCENE_PAIRS&&!process.env.HEARTH_SCENE_PAIRS.split(',').includes(theme+':'+scope))continue;
    await page.locator('.view-switch button').nth(scope==='household'?0:1).click();await go(scope);
    if(route==='more'&&theme==='newfoundland')await page.locator('.more-chair-sticker').evaluate(e=>{if(!e.complete||!e.naturalWidth)throw Error('Chair image not loaded');});
    const metrics=[];
@@ -80,6 +104,7 @@ try {
     if(width===390)await page.screenshot({path:out+'/'+theme+'-'+scope+'-mobile-full.png',fullPage:true});
     if(width===1440) {
      await page.screenshot({path:out+'/'+theme+'-'+scope+'-desktop-full.png',fullPage:true});
+     if(route==='ledger') { await page.evaluate(()=>window.scrollTo(0,1000)); await page.screenshot({path:out+'/'+theme+'-'+scope+'-desktop-scrolled.png'}); const scene=await page.locator('.books-scene-viewport').evaluate(e=>({top:e.getBoundingClientRect().top,bottom:e.getBoundingClientRect().bottom})); if(scene.bottom<500)errors.push('Books background did not follow scroll '+theme+' '+scope); await page.evaluate(()=>window.scrollTo(0,0)); }
      const desktopAxe=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations;
      if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
     }
@@ -113,6 +138,7 @@ try {
    await page.setViewportSize({width:390,height:1000});await settle();
    const violations=(await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));
    const special={};
+   if(route==='ledger'&&process.env.HEARTH_SKIP_NESTED!=='1')special.books=await checkBooks({page,out,theme,scope,state});
    if(route==='more'&&process.env.HEARTH_SKIP_NESTED!=='1')special.more=await checkMore({page,out,theme,scope,state});
    if(route==='plan'&&process.env.HEARTH_SKIP_NESTED!=='1')special.plan=await checkPlan({page,out,theme,scope,state});
    if(route==='calendar'&&process.env.HEARTH_SKIP_NESTED!=='1')special.calendar=await checkCalendar({page,out,theme,scope,state});
@@ -142,15 +168,15 @@ try {
    await writeFile(out+'/report.json',JSON.stringify({records,errors},null,2));
   }
  }
- if(process.env.HEARTH_MORE_LOADING!=='1'&&['home','calendar','plan','more'].includes(route)&&state==='normal') {
+ if(process.env.HEARTH_MORE_LOADING!=='1'&&process.env.HEARTH_BOOKS_LOADING!=='1'&&['home','calendar','plan','more','ledger'].includes(route)&&state==='normal') {
   await page.setViewportSize({width:1440,height:1000});
   await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('.world-charm').focus();
   await page.locator('.theme-scene-heading').getByRole('button',{name:'Pause atmosphere',exact:true}).click();
   await page.waitForFunction(()=>document.documentElement.dataset.atmosphere==='paused');
-  const running=()=>page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art')).length);
-  if(await running())throw Error('Paused new atmosphere still running: '+JSON.stringify(await page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art')).map(a=>({target:a.effect.target.outerHTML.slice(0,160),type:a.constructor.name,style:getComputedStyle(a.effect.target).animationPlayState})))));
-  if(route==='calendar'||route==='plan'||route==='more') {
-   await page.reload({waitUntil:'domcontentloaded'});await page.locator('nav.nav').waitFor({timeout:90000});await settle();await go('personal');
+  const running=()=>page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art,.books-heading-art,.books-phone-art,.books-divider')).length);
+  if(await running())throw Error('Paused new atmosphere still running: '+JSON.stringify(await page.evaluate(()=>document.getAnimations().filter(a=>a.constructor.name==='CSSAnimation'&&a.playState==='running'&&a.effect?.target?.closest?.('.page-world-art,.living-home-art,.world-charm-row,.calendar-heading-art,.calendar-binding,.plan-heading-art,.more-heading-art,.books-heading-art,.books-phone-art,.books-divider')).map(a=>({target:a.effect.target.outerHTML.slice(0,160),type:a.constructor.name,style:getComputedStyle(a.effect.target).animationPlayState})))));
+  if(route==='calendar'||route==='plan'||route==='more'||route==='ledger') {
+   await page.reload({waitUntil:'domcontentloaded'});await page.locator('nav.nav').waitFor({timeout:90000});await settle();await page.locator('.view-switch button').nth(1).click();await go('personal');
    if(await page.locator('html').getAttribute('data-atmosphere')!=='paused')throw Error('Atmosphere pause did not persist');
    records.at(-1).special.motion={persistentPause:true};
   }
@@ -165,6 +191,18 @@ try {
    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
    await page.waitForFunction(()=>Array.from(document.querySelectorAll('.calendar-scenery-panel')).some(e=>e.dataset.atmosphereVisible==='false'));
    records.at(-1).special.motion.offscreen=await page.locator('.calendar-scenery-panel[data-atmosphere-visible=false]').count();
+  }
+  if(route==='ledger') {
+   const reminders=page.getByRole('button',{name:'Close reminders',exact:true});if(await reminders.count())await reminders.click();
+   const audit=page.locator('.books-audit-office');if(await audit.getAttribute('open')===null)await audit.locator('summary').click();
+   await page.waitForFunction(()=>document.querySelector('.books-audit-office')?.open);
+   await page.locator('[data-books-tabs="audit"]').getByRole('button',{name:'Reconcile',exact:true}).click();
+   await page.getByRole('textbox',{name:'Statement balance (CAD)',exact:true}).focus();
+   await page.waitForFunction(()=>document.documentElement.dataset.atmosphere==='paused');
+   if(await running())throw Error('Books focus quiet failed');
+   await page.locator('.world-charm').focus();await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.books-scenery-panel')).some(e=>e.dataset.atmosphereVisible==='false'));
+   records.at(-1).special.motion={persistentPause:true,focusQuiet:true,offscreen:await page.locator('.books-scenery-panel[data-atmosphere-visible=false]').count()};
   }
   if(route==='more') {
    await page.getByRole('textbox',{name:'Category name',exact:true}).focus();
@@ -186,7 +224,7 @@ try {
   }
   await page.emulateMedia({reducedMotion:'reduce'});if(await running())throw Error('Reduced motion still running');
  }
-} catch(e) { console.error(String(e));console.error((await page.locator('body').innerText()).slice(-2500));await page.screenshot({path:out+'/failure.png'});process.exitCode=1; }
+} catch(e) { errors.push(String(e));console.error(String(e));console.error((await page.locator('body').innerText()).slice(-2500));await page.screenshot({path:out+'/failure.png'});process.exitCode=1; }
 finally {
  await writeFile(out+'/report.json',JSON.stringify({browser:'Installed Chrome; synthetic completed-books fixture; no hosted requests',records,errors},null,2));
  if(errors.length||records.some(r=>r.violations.length||r.metrics.some(m=>m.scroll>m.width||(m.dateWidth!==undefined&&(m.dateWidth<43.9||m.dateHeight<(m.width<720?88:112))))||r.special.zoom.scroll>r.special.zoom.width||r.special.galleryCount>1||r.special.galleryAfterOffice===false||r.special.charm&&!r.special.charm.hit))process.exitCode=1;
