@@ -1,3 +1,9 @@
+## 2026-09-10 — Integrated companion recovery and truthful acceptance
+
+Slice 6 retains unsaved conversation only in a bounded, generation-scoped mounted session, partitioned by ledger view and cleared on identity departure. Receipts are recovered before retries; expiry removes complete command groups. Follow-up freshness compares scoped source inputs rather than the global event sequence, which also advances for private conversation ACKs. Specific preference forget instructions become both a CAS operation and a retained conversation exchange. Grounded desktop and Calendar links use existing source routes without financial writes.
+
+Local text rehearsal, synthetic authority tests and browser proof do not certify Gemini voice, physical devices or Bianca's acceptance. The [six-trial packet](briefs/HERCULES_BIANCA_ACCEPTANCE.md) records those as pending. [Worksession](worksessions/2026-09-10-hercules-slice-6.md).
+
 ## 2026-09-10 — Complete Hercules wardrobe and explicit look authority
 
 Jonathan requested slice 5 of the approved companion plan. Expand the verified rig with small original collection packs, retain every legacy wearable without financial unlocks, and keep unknown IDs in storage. Private worn/preset resources and explicit shared-gallery resources use existing command authority with CAS/tombstones and wardrobe-version capability admission. A lost acknowledgement is checked before rerunning a stale mutation; books restore and activity-reset helpers preserve current companion resources. Reconnect does not start a new Wear/Save/Share action. These are local changes behind the existing off-by-default room flag; likeness, physical-device acceptance and any hosted release remain separately gated. [Worksession](worksessions/2026-09-10-hercules-slice-5.md).

@@ -6718,6 +6718,7 @@ export function App() {
       {tab === "calendar" && (
         <DeferredSurface label="Calendar">
         <DeferredCalendarPage
+          sourceFocus={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null}
           household={displayHousehold}
           view={view}
           today={today}

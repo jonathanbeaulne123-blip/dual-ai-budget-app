@@ -6,6 +6,7 @@ import { calendarWeight } from "./core/calendarWeight.ts";
 import { daysInMonthKey } from "./core/calendar.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import {
+  type HerculesNumberSource,
   WEEKDAY_SHORT,
   adoptRhythm,
   buildHouseholdIcs,
@@ -108,6 +109,7 @@ type CalendarProps = {
   onOpenPlan: () => void;
   onOpenShiftEnvelope: (envelopeId: string) => void;
   onboardingStandingFactOnly?: boolean;
+  sourceFocus?: HerculesNumberSource | null;
 };
 
 export function CalendarPage(props: CalendarProps) {
@@ -176,6 +178,19 @@ function CalendarPageScope(props: CalendarProps) {
       setFocusIntegration(true);
     } else if (next) setPane(next);
   }, []);
+
+  useEffect(() => {
+    const source = props.sourceFocus;
+    if (!source || source.route !== "calendar" || source.view !== (props.view ?? "household")) return;
+    setPane("bills");
+    if (source.from) { setMonthKey(monthKeyFromDateKey(source.from)); setSelected(source.from); }
+  }, [props.sourceFocus]);
+  useEffect(() => {
+    const source = props.sourceFocus;
+    if (pane !== "bills" || !source || source.view !== (props.view ?? "household")) return;
+    const node = source.recurrenceId ? [...document.querySelectorAll<HTMLElement>("[data-recurrence-id]")].find(row => row.dataset.recurrenceId === source.recurrenceId) : document.getElementById(`${tabsId}-panel`);
+    node?.scrollIntoView?.({ block: "center" }); node?.focus({ preventScroll: true });
+  }, [pane, props.sourceFocus, tabsId]);
 
   useEffect(() => {
     if (!focusIntegration || pane !== "calendar") return;
@@ -771,7 +786,7 @@ function RecurrenceCard(props: {
   const { item } = props;
   const due = item.active && item.nextDate <= props.today;
   return (
-    <article className="rhythm-card">
+    <article className="rhythm-card" data-recurrence-id={item.id} tabIndex={-1}>
       <div className="row">
         <span>
           <span className={`kind-pill ${item.kind}`}>{kindLabel(item.kind)}</span> {item.note || "Recurring"}

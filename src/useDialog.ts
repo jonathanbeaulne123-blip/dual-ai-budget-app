@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 const dialogStack: HTMLElement[] = [];
 const modalListeners = new Set<() => void>();
 function notifyModals() { for (const listener of modalListeners) listener(); }
-export function useModalActive() {
-  const [active,setActive]=useState(()=>dialogStack.length > 0);
-  useEffect(()=>{const update=()=>setActive(dialogStack.length > 0);modalListeners.add(update);update();return()=>{modalListeners.delete(update);};},[]);
+/** Observe other modals without treating an owned dialog as an external blocker. */
+export function useModalActive(exclude?: RefObject<HTMLElement | null>) {
+  const [active,setActive]=useState(()=>dialogStack.some(node => node !== exclude?.current));
+  useEffect(()=>{const update=()=>setActive(dialogStack.some(node => node !== exclude?.current));modalListeners.add(update);update();return()=>{modalListeners.delete(update);};},[exclude]);
   return active;
 }
 

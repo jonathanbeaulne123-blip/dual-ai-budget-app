@@ -1,6 +1,6 @@
 ## Living companion authority update — 2026-09-10
 
-The approved [living-companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md) supersedes earlier financial cosmetic unlocks and punitive Health-driven withdrawal. Slice 5 is local behind the default-off dressing-room flag; deployment, owner likeness, physical performance and authenticated two-device acceptance remain open. Historical shipping entries below are not release evidence for this work.
+The approved [living-companion plan](briefs/HERCULES_LIVING_COMPANION_PLAN.md) supersedes earlier financial cosmetic unlocks and punitive Health-driven withdrawal. Slice 6 integrates locally verified companion behaviour; Bianca’s product trials remain pending. The wardrobe remains behind the default-off dressing-room flag; deployment, owner likeness, physical performance and authenticated two-device acceptance remain open. Historical shipping entries below are not release evidence for this work.
 
 # Dual Course Strategy
 

@@ -19,21 +19,24 @@ export function CompanionMemoryControls({ household, memberId, view, onCommand }
   const [status, setStatus] = useState("");
   const [retry, setRetry] = useState<{ operation: CompanionOperation; id: string } | null>(null);
   const scopeKey = `${household.environment}/${household.householdId}/${memberId}/${view}`;
-  const currentScope = useRef(scopeKey); currentScope.current = scopeKey;
-  useEffect(() => { currentScope.current = scopeKey; setPending(false); setRetry(null); setStatus(""); return () => { currentScope.current = "closed"; }; }, [scopeKey]);
+  const currentScope = useRef(scopeKey), epoch = useRef(0), latch = useRef(false);
+  if (currentScope.current !== scopeKey) { currentScope.current = scopeKey; epoch.current += 1; }
+  useEffect(() => { currentScope.current = scopeKey; setPending(false); latch.current = false; setRetry(null); setStatus(""); return () => { currentScope.current = "closed"; epoch.current += 1; }; }, [scopeKey]);
   async function save(operation: CompanionOperation, id: string = crypto.randomUUID()) {
-    if (!onCommand || pending) return;
-    const owner = scopeKey;
+    if (!onCommand || latch.current) return;
+    const owner = scopeKey, generation = epoch.current, recovering = retry?.id === id;
+    latch.current = true;
     setPending(true); setStatus("Saving…"); setRetry(null);
-    let definitive = false;
+    let definitive = false, recovered = false;
     try {
-      const outcome = await onCommand(current => commitCompanion(current, { version: 1, id, scope: profile.scope, operation }), { confirmationId: id, onDefinitiveRejected: () => { definitive = true; } });
-      if (currentScope.current !== owner) return;
-      if (outcome?.kind === "synchronized" && outcome.ok) setStatus(operation.kind === "preference.forget" ? "Forgotten." : operation.kind === "conversation.clear" ? "Conversation cleared. Your preferences are unchanged." : "Saved for you.");
+      const outcome = await onCommand(current => commitCompanion(current, { version: 1, id, scope: profile.scope, operation }), { confirmationId: id, recoverConfirmation: recovering, onRecoveredConfirmation: () => { recovered = true; }, onDefinitiveRejected: () => { definitive = true; } });
+      if (currentScope.current !== owner || epoch.current !== generation) return;
+      if (recovered) setStatus("Earlier save confirmed. Your latest preferences and conversation are kept.");
+      else if (outcome?.kind === "synchronized" && outcome.ok) setStatus(operation.kind === "preference.forget" ? "Forgotten." : operation.kind === "conversation.clear" ? "Conversation cleared. Your preferences are unchanged." : "Saved for you.");
       else if (definitive) { setStatus("Not saved. Your preferences may have changed or saving is unavailable. Review the current choices and try again."); }
       else { setStatus("Save not confirmed. Reconnect and retry; no preference is marked saved yet."); setRetry({ operation, id }); }
-    } catch { if (currentScope.current === owner) { setStatus("Save not confirmed. Retry after reconnecting."); setRetry({ operation, id }); } }
-    finally { if (currentScope.current === owner) setPending(false); }
+    } catch { if (currentScope.current === owner && epoch.current === generation) { setStatus("Save not confirmed. Retry after reconnecting."); setRetry({ operation, id }); } }
+    finally { if (currentScope.current === owner && epoch.current === generation) { latch.current = false; setPending(false); } }
   }
   return <details className="companion-memory">
     <summary>What Hercules remembers</summary>
@@ -48,7 +51,7 @@ export function CompanionMemoryControls({ household, memberId, view, onCommand }
         const row = profile.preferences.find(item => item.key === field.key);
         return <div className="companion-memory-field" key={field.key}>
           <label><span>{field.label}</span><select aria-label={field.label} value={Array.isArray(row?.value) ? row.value[0] ?? "" : row?.value ?? ""} disabled={pending || !onCommand}
-            onChange={event => { if (event.target.value) void save({ kind: "preference.set", key: field.key, value: field.key === "favouriteColours" ? [event.target.value] : event.target.value, expectedRevision: row?.revision ?? 0, origin: { kind: "manual" } }); }}>
+            onChange={event => { if (!event.target.value) { if (row?.value != null) void save({ kind: "preference.forget", key: field.key, expectedRevision: row.revision }); return; } void save({ kind: "preference.set", key: field.key, value: field.key === "favouriteColours" ? [event.target.value] : event.target.value, expectedRevision: row?.revision ?? 0, origin: { kind: "manual" } }); }}>
             <option value="">Hercules chooses</option>{field.options.map(option => <option key={option} value={option}>{option.replaceAll("-", " ")}</option>)}
           </select></label>
           {row?.value != null && <button type="button" disabled={pending || !onCommand} onClick={() => void save({ kind: "preference.forget", key: field.key, expectedRevision: row.revision })}>Forget<span className="sr-only"> {field.label.toLowerCase()}</span></button>}

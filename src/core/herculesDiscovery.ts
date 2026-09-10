@@ -95,7 +95,11 @@ export function discoverySelection(input: DiscoveryInput) {
   const visible = householdForHerculesContext(input.household, input.memberId, input.view);
   const empty = !visible.transactions.some(countable) && !visible.recurrences.some(row => row.active) && !activeOpenShift(visible.kitchen, input.memberId);
   const forNow = empty ? eligible.filter(row => ["explain-page", "guide-entry", "dress-hercules"].includes(row.capabilityId)) : eligible;
-  const seen = new Set<string>(), nowRows = forNow.filter(row => { if (seen.has(row.dedupe)) return false; seen.add(row.dedupe); return true; }).slice(0,3);
+  const seen = new Set<string>(), capabilities = new Set<string>();
+  const nowRows = forNow.filter(row => {
+    if (seen.has(row.dedupe) || capabilities.has(row.capabilityId)) return false;
+    seen.add(row.dedupe); capabilities.add(row.capabilityId); return true;
+  }).slice(0,3);
   const resume = states.filter(row => row.view === input.view && row.status === "resume").flatMap(state => { const match = eligible.find(row => row.issueId === state.targetId && row.capabilityId === state.capabilityId); return match ? [match] : []; });
   return { all, now: nowRows, resume, disabled };
 }

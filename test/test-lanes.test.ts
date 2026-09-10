@@ -36,7 +36,9 @@ const serialFixtureTests = [
   "stress-seed.test.ts",
 ];
 
-const serialTimingTests = ["continuity-two-browser-proof.test.ts"];
+// The repeated offline companion queue rehearsal timed out with four workers
+// but completes below its original 15-second limit in the serial UI lane.
+const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts"];
 
 const rpcIsolatedFixtureTests = [
   "demo-shift-statistics.test.ts",

@@ -1,3 +1,4 @@
+import {trimCompanionPending} from "./core/herculesSessionDraft.ts";
 import {useWornLook} from './wardrobe/Appearance.tsx';
 import {fittingLayers} from './wardrobe/FittingFigure.tsx';
 import { HerculesDiscovery } from "./HerculesDiscovery.tsx";
@@ -9,7 +10,7 @@ import { CompanionMemoryControls } from "./CompanionMemoryControls.tsx";
 import type { KitchenCommand } from "./kitchenCommand.ts";
 import { companionFor, companionConversation, commitCompanion, explicitCompanionPreference } from "./core/herculesCompanion.ts";
 import type { CompanionIntentV1, CompanionOperation, CompanionPreferenceValue, CompanionSourceReference } from "./core/herculesCompanionContracts.ts";
-import { useModalActive } from "./useDialog.ts";
+import { useDialog, useModalActive } from "./useDialog.ts";
 import { HerculesSetup, type HerculesSetupProps } from "./HerculesSetup.tsx";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
 import {
@@ -337,6 +338,8 @@ export function HerculesPresence({
   const privateSavingRef = useRef(false);
   const pendingExchange = useRef<CompanionIntentV1[] | null>(null);
   const preferenceBefore = useRef(new Map<string, CompanionPreferenceValue | null>());
+  const attemptedPrivate = useRef(new Set<string>());
+  const privateDrafts = useRef(new Map<string, { pending: CompanionIntentV1[]; before: Map<string, CompanionPreferenceValue | null>; attempted: Set<string>; question: string }>());
   const [preferenceUndo, setPreferenceUndo] = useState<CompanionOperation | null>(null);
   const [focusedWidget, setFocusedWidget] = useState<InstrumentId | "window" | null>(null);
   const [snippets, setSnippets] = useState<WidgetSnippet[]>([]);
@@ -362,6 +365,8 @@ export function HerculesPresence({
   const chatRigTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conversationGeneration = companionConversation(household, memberId, view).generation;
   const chatScope = `${household.environment}\u001f${household.householdId}\u001f${memberId}\u001f${view}\u001f${conversationGeneration}`;
+  const privateEpoch = useRef(0), observedPrivateScope = useRef(chatScope);
+  if (observedPrivateScope.current !== chatScope) { observedPrivateScope.current = chatScope; privateEpoch.current += 1; }
   const personalOfferSessionId = useMemo(createPersonalOfferSessionId, [chatScope]);
   const activeMemberPresent = useMemo(
     () => household.members.some((member) => member.active && member.id === memberId),
@@ -371,16 +376,34 @@ export function HerculesPresence({
     setActivePersonalOffer(null);
   }, [chatScope, activeMemberPresent]);
   const previousChatScope = useRef(chatScope);
-  useEffect(() => () => { previousChatScope.current = "closed"; chatGen.current += 1; if (chatRigTimer.current) clearTimeout(chatRigTimer.current); }, []);
+  useEffect(() => () => { previousChatScope.current = "closed"; privateEpoch.current += 1; privateDrafts.current.clear(); chatGen.current += 1; if (chatRigTimer.current) clearTimeout(chatRigTimer.current); }, []);
+  // Receipt/replica revisions also advance for private chat saves. Compare the
+  // scoped source inputs instead, without persisting or transmitting this key.
+  const sourceBasis = useMemo(() => {
+    const { revision, baseRevision, booksAcceptedHash, lastCommittedAt, activity, commandReceipts,
+      companionProfile, companionGallery, devices, conflicts, restorePoints, sharing, google,
+      herculesProPermissions, kitchen, ...sources } = contextHousehold;
+    return JSON.stringify({ ...sources, kitchen: { books: kitchen.books, openShift: kitchen.openShift, openShifts: kitchen.openShifts } });
+  }, [contextHousehold]);
+  const replyBasis = `${today}:${tab}:${adding}:${sourceBasis}`;
+  const priorReplyBasis = useRef(replyBasis);
+  useEffect(() => {
+    if (priorReplyBasis.current === replyBasis) return; priorReplyBasis.current = replyBasis;
+    if (!busy) return;
+    chatGen.current += 1; setBusy(false); setReplyProvider(null);
+    const message = "The page or books changed while I was answering. Ask again and I’ll use the current view.";
+    setTalk({ ...surface, spoken: message, lesson: null, fact: null, facts: [], replies: [], pose: "loaf", topic: "updated", attention: false });
+    setTurns(previous => [...previous, { role: "hercules" as const, text: message }].slice(-12));
+  }, [replyBasis]);
   const activeChatIdentity = useRef<Omit<HerculesReplyContext, "requestId">>({
     environment: household.environment,
     householdId: household.householdId,
-    memberId, view, conversationGeneration,
+    memberId, view, conversationGeneration, basis: replyBasis,
   });
   activeChatIdentity.current = {
     environment: household.environment,
     householdId: household.householdId,
-    memberId, view, conversationGeneration,
+    memberId, view, conversationGeneration, basis: replyBasis,
   };
   const logRef = useRef<HTMLDivElement | null>(null);
   const perchedOn = useRef<string | null>(null);
@@ -396,6 +419,7 @@ export function HerculesPresence({
   const showTalk = Boolean(open && !setupSelected && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding && !setupSelected;
+  const focusDialogRef = useDialog(focusShellOpen, closeChat, () => document.querySelector<HTMLButtonElement>(".hercules-pill"));
   const householdOnboardingShellActive = useMemo(
     () => activeMemberPresent && shouldShowOnboardingShell(household, memberId),
     [activeMemberPresent, household, memberId],
@@ -424,8 +448,9 @@ export function HerculesPresence({
   // this reuses the same chat bubble desktop already opens on tap — only
   // what renders inside it changes while onboarding has the floor.
   const desktopOnboardingOpen = Boolean(!setup && !phoneShell && open && onboardingShellActive);
-  const modalActive=useModalActive();
-  const autonomyBlocked = adding || activityBlocked || modalActive;
+  const modalActive=useModalActive(focusDialogRef);
+  const rigBlocked = adding || activityBlocked || modalActive;
+  const autonomyBlocked = rigBlocked || focusShellOpen;
   const homeAutonomy = tab === "home" && !autonomyBlocked && documentVisible && !open && !setupSelected && !reducedMotion();
   idleCaptureAllowed.current = !(
     typeof document === "undefined"
@@ -582,7 +607,14 @@ export function HerculesPresence({
   }, [tab, adding, look.view.mood, five.yes, spark, today]);
 
   useEffect(() => {
-    const onResize = () => setDesktopFly(window.innerWidth >= WIDE_BREAKPOINT);
+    const onResize = () => {
+      setDesktopFly(window.innerWidth >= WIDE_BREAKPOINT);
+      // Keep the whole launcher reachable after a narrower or shorter viewport.
+      setPos(current => ({
+        x: Math.max(4, Math.min(window.innerWidth - CAT - 4, current.x)),
+        y: Math.max(4, Math.min(window.innerHeight - CAT - NAV, current.y)),
+      }));
+    };
     window.addEventListener("resize", onResize);
     onResize();
     return () => window.removeEventListener("resize", onResize);
@@ -751,6 +783,11 @@ export function HerculesPresence({
 
   useEffect(() => {
     if (previousChatScope.current === chatScope) return;
+    const prior = previousChatScope.current, identity = chatScope.split("\u001f").slice(0, 3).join("\u001f");
+    if (prior.split("\u001f").slice(0, 3).join("\u001f") !== identity) privateDrafts.current.clear();
+    else if (prior.split("\u001f")[3] !== view) privateDrafts.current.set(prior, { pending: pendingExchange.current ?? [], before: new Map(preferenceBefore.current), attempted: new Set(attemptedPrivate.current), question });
+    for (const key of privateDrafts.current.keys()) if (key.startsWith(`${identity}\u001f${view}\u001f`) && key !== chatScope) privateDrafts.current.delete(key);
+    const draft = privateDrafts.current.get(chatScope); privateDrafts.current.delete(chatScope);
     previousChatScope.current = chatScope;
     chatGen.current += 1;
     chatRigUntilRef.current = 0;
@@ -758,14 +795,18 @@ export function HerculesPresence({
     dispatchHerculesRig({ type: "clearOverrides" });
     setBusy(false);
     setReplyProvider(null);
-    setQuestion("");
+    setQuestion(draft?.question ?? "");
     setTalk(null);
-    pendingExchange.current = null;
-    preferenceBefore.current.clear(); setPreferenceUndo(null);
+    pendingExchange.current = draft?.pending.length ? trimCompanionPending(draft.pending) : null;
+    if (!pendingExchange.current?.length) pendingExchange.current = null;
+    preferenceBefore.current = draft?.before ?? new Map(); attemptedPrivate.current = draft?.attempted ?? new Set(); setPreferenceUndo(null);
     setPrivateSaving(false);
     privateSavingRef.current = false;
-    setPrivateSaveStatus("");
-    setTurns(companionConversation(household, memberId, view).turns.slice(-12).map((row) => ({ role: row.role, text: row.text })));
+    setPrivateSaveStatus(pendingExchange.current ? "Your unsaved conversation is here. Retry when connected." : "");
+    const restored = companionConversation(conversationHousehold(), memberId, view).turns.slice(-12).map(row => ({ role: row.role, text: row.text }));
+    setTurns(restored);
+    const lastReply = [...restored].reverse().find(row => row.role === "hercules");
+    if (lastReply) setTalk({ spoken: lastReply.text, lesson: null, fact: null, facts: [], replies: [], pose: "loaf", topic: "conversation", attention: false });
     setSnippets(focusedWidget
       ? [{ role: "hercules", text: HERCULES_WIDGET_PLACEHOLDER, placeholder: true }]
       : []);
@@ -778,32 +819,35 @@ export function HerculesPresence({
 
   async function savePrivateExchange(_retry?: CompanionIntentV1[]) {
     if (privateSavingRef.current) return;
-    const intents = [...(pendingExchange.current ?? [])];
-    if (!intents.length) return;
+    const intents = trimCompanionPending(pendingExchange.current ?? []);
+    pendingExchange.current = intents.length ? intents : null;
+    if (!intents.length) { setPrivateSaveStatus("Older unsaved messages expired. Start a fresh conversation."); return; }
     privateSavingRef.current = true;
     let failed = false, remembered = false, discardedPreference = false, undone = false;
-    const started = chatScope;
+    const started = chatScope, epoch = privateEpoch.current;
     setPrivateSaving(true); setPrivateSaveStatus("Saving this conversation…");
     try {
       if (!onCompanionCommand) throw new Error("unavailable");
       for (const id of [...new Set(intents.map(row => row.id))]) {
         const group = intents.filter(row => row.id === id);
         const intent = group[0]!;
-        let definitivelyRejected = false;
+        let definitivelyRejected = false, recovered = false;
+        const recovering = attemptedPrivate.current.has(intent.id); attemptedPrivate.current.add(intent.id);
         const outcome = await onCompanionCommand(current => {
           let result = commitCompanion(current, group[0]!);
           for (const item of group.slice(1)) result = commitCompanion(result.household, item);
           return result;
-        }, { confirmationId: intent.id, onDefinitiveRejected: () => { definitivelyRejected = true; } });
-        if (previousChatScope.current !== started) return;
-        if ((!outcome?.ok || outcome.kind !== "synchronized") && !(definitivelyRejected && (intent.operation.kind === "preference.set" || intent.operation.kind === "preference.forget"))) throw new Error("unconfirmed");
+        }, { confirmationId: intent.id, recoverConfirmation: recovering, onRecoveredConfirmation: () => { recovered = true; }, onDefinitiveRejected: () => { definitivelyRejected = true; } });
+        if (previousChatScope.current !== started || privateEpoch.current !== epoch) return;
+        if (!recovered && (!outcome?.ok || outcome.kind !== "synchronized") && !(definitivelyRejected && (intent.operation.kind === "preference.set" || intent.operation.kind === "preference.forget"))) throw new Error("unconfirmed");
         if (outcome?.ok && outcome.kind === "synchronized" && intent.operation.kind === "preference.set" && intent.operation.origin.kind === "conversation") {
           remembered = true;
           const op = intent.operation, previous = preferenceBefore.current.get(intent.id) ?? null;
           setPreferenceUndo(previous === null ? { kind: "preference.forget", key: op.key, expectedRevision: op.expectedRevision + 1 } : { kind: "preference.set", key: op.key, value: previous, expectedRevision: op.expectedRevision + 1, origin: { kind: "manual" } });
         }
         if (definitivelyRejected && (intent.operation.kind === "preference.set" || intent.operation.kind === "preference.forget")) discardedPreference = true;
-        if (outcome?.ok && (intent.operation.kind === "preference.forget" || (intent.operation.kind === "preference.set" && intent.operation.origin.kind === "manual"))) undone = true;
+        if ((outcome?.ok || recovered) && (intent.operation.kind === "preference.forget" || (intent.operation.kind === "preference.set" && intent.operation.origin.kind === "manual"))) { undone = true; setPreferenceUndo(null); }
+        attemptedPrivate.current.delete(intent.id);
         preferenceBefore.current.delete(intent.id);
         pendingExchange.current = pendingExchange.current?.filter(row => row.id !== intent.id) ?? null;
       }
@@ -811,9 +855,9 @@ export function HerculesPresence({
       setPrivateSaveStatus(discardedPreference ? "The preference changed before saving; your last preference change was not applied. Review the current choices below." : undone ? "Preference change saved." : remembered ? "Remembered for you. You can undo this below." : "Conversation saved privately.");
     } catch {
       failed = true;
-      if (previousChatScope.current === started) setPrivateSaveStatus("This conversation's save is not confirmed. Reconnect and retry.");
+      if (previousChatScope.current === started && privateEpoch.current === epoch) setPrivateSaveStatus("This conversation's save is not confirmed. Reconnect and retry.");
     } finally {
-      if (previousChatScope.current === started) {
+      if (previousChatScope.current === started && privateEpoch.current === epoch) {
         privateSavingRef.current = false; setPrivateSaving(false);
         if (!failed && pendingExchange.current?.length) void savePrivateExchange();
       }
@@ -837,7 +881,9 @@ export function HerculesPresence({
     const intents: CompanionIntentV1[] = messages.map(row => ({ version: 1, id: exchangeId, scope: profile.scope,
       operation: { kind: "conversation.append", view, generation, turn: { ...row, text: row.text.slice(0, 6000), createdAt: new Date().toISOString(), sourceReferences: row.role === "hercules" ? references.slice(0, 20) : [] } } }));
     const candidate = userText && profile.remembering.enabled ? explicitCompanionPreference(userText) : null;
-    const existing = candidate ? profile.preferences.find(row => row.key === candidate.key) : undefined;
+    const stored = candidate ? profile.preferences.find(row => row.key === candidate.key) : undefined;
+    const queued = candidate ? [...(pendingExchange.current ?? [])].reverse().map(row => row.operation).find(op => (op.kind === "preference.set" || op.kind === "preference.forget") && op.key === candidate.key) : undefined;
+    const existing = queued && (queued.kind === "preference.set" || queued.kind === "preference.forget") ? { revision: queued.expectedRevision + 1, value: queued.kind === "preference.set" ? queued.value : null } : stored;
     if (candidate && JSON.stringify(existing?.value) !== JSON.stringify(candidate.value)) intents.push({ version: 1, id: crypto.randomUUID(), scope: profile.scope,
       operation: { kind: "preference.set", ...candidate, expectedRevision: existing?.revision ?? 0, origin: { kind: "conversation", view, generation, rememberingRevision: profile.remembering.revision, sourceTurnId: userId } } });
     for (const intent of intents) if (intent.operation.kind === "preference.set") preferenceBefore.current.set(intent.id, existing?.value ?? null);
@@ -867,9 +913,25 @@ export function HerculesPresence({
   }
 
   function preferenceTurn(text: string): boolean {
-    if (!explicitCompanionPreference(text) && !/^(?:remember\b|what (?:do you|did you) remember|what have you remembered)/i.test(text)) return false;
+    if (!explicitCompanionPreference(text) && !/^(?:forget\b|remember\b|what (?:do you|did you) remember|what have you remembered)/i.test(text)) return false;
     const candidate = explicitCompanionPreference(text);
-    const answer = candidate
+    if (/^forget\b/i.test(text)) {
+      const priorPreference = [...turns].reverse().filter(turn => turn.role === "user").map(turn => explicitCompanionPreference(turn.text)).find(Boolean);
+      const queued = [...(pendingExchange.current ?? [])].reverse().map(row => row.operation).find(op => op.kind === "preference.set" || op.kind === "preference.forget");
+      const key = priorPreference?.key ?? (queued && (queued.kind === "preference.set" || queued.kind === "preference.forget") ? queued.key : undefined);
+      if (key && /^forget (?:that|this)(?: preference)?[.! ]*$/i.test(text.trim())) {
+        if ((pendingExchange.current?.length ?? 0) >= 60) { setPrivateSaveStatus("The unsaved conversation is full. Retry saving, then ask me to forget this preference again. I have not applied this request."); return true; }
+        const profile = companionFor(household, memberId), previous = profile.preferences.find(row => row.key === key);
+        const last = [...(pendingExchange.current ?? [])].reverse().map(row => row.operation).find(op => (op.kind === "preference.set" || op.kind === "preference.forget") && op.key === key);
+        const expectedRevision = last && (last.kind === "preference.set" || last.kind === "preference.forget") ? last.expectedRevision + 1 : previous?.revision ?? 0;
+        const answer = "I’ll ask to forget that preference. It is not forgotten until the save is confirmed.";
+        applyTalk({ ...surface, spoken: answer, lesson: null, replies: [], pose: "loaf", topic: "preferences", attention: false } as HerculesTalk, text);
+        keepTalk(text, answer, "local");
+        pendingExchange.current = [...(pendingExchange.current ?? []), { version: 1, id: crypto.randomUUID(), scope: profile.scope, operation: { kind: "preference.forget", key, expectedRevision } }];
+        setPreferenceUndo(null); setReplyProvider(null); void savePrivateExchange(); return true;
+      }
+    }
+    const answer = /^forget\b/i.test(text) ? "You can choose exactly what to forget under ‘What Hercules remembers’ below. Use Forget beside that preference; I have not removed anything yet." : candidate
       ? "Of course. I can do that. You can review your preferences under ‘What Hercules remembers’."
       : "I remember a few helpful preferences, like how you like explanations or your favourite colour. You can choose them under ‘What Hercules remembers’.";
     const next = { ...surface, spoken: answer, lesson: null, replies: [], pose: "loaf" as const, topic: "preferences", attention: false } as HerculesTalk;
@@ -1580,7 +1642,7 @@ export function HerculesPresence({
     <HerculesRigProvider
       mood={look.view.mood}
       reducedMotion={reducedMotion()}
-      visibilityProfile={autonomyBlocked || !documentVisible || setupSelected ? "hidden" : phoneShell || tab !== "home" ? "compact" : "full"}
+      visibilityProfile={rigBlocked || !documentVisible || setupSelected ? "hidden" : phoneShell || tab !== "home" ? "compact" : "full"}
     >
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
@@ -1659,7 +1721,7 @@ export function HerculesPresence({
         </button>
       )}
       {focusShellOpen && (
-        <div className="hercules-focus-shell" role="dialog" aria-modal="true" aria-label={`${look.view.name} focus`}>
+        <div ref={focusDialogRef} className="hercules-focus-shell" role="dialog" aria-modal="true" aria-label={`${look.view.name} focus`}>
           <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
             Close
           </button>
@@ -1883,6 +1945,7 @@ export function HerculesPresence({
             {preferenceUndo && <button type="button" onClick={undoRememberedPreference}>Undo remembered preference</button>}
             <CompanionMemoryControls household={household} memberId={memberId} view={view} onCommand={onCompanionCommand} />
           </>}
+          {open && !busy && groundedFacts.length > 0 && <div className="hercules-grounded-facts" aria-label="Numbers pulled from the books">{groundedFacts.slice(0, 5).map(fact => <button key={fact.id} type="button" className="hercules-grounded-fact" onClick={() => { closeChat(); onOpenSource(fact.source); }}><span>{fact.label}</span><strong>{fact.value}</strong></button>)}</div>}
           {open && !busy && groundedFacts.length === 0 && talk.fact && (
             <p className="hercules-fact"><span>{talk.fact.label}</span> {talk.fact.value}</p>
           )}
@@ -1952,7 +2015,7 @@ export function HerculesPresence({
           reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
-        aria-label={`Open ${look.view.name}`}
+        aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? " — How can I help?" : ""}`}
         onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg(true);}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -1964,6 +2027,7 @@ export function HerculesPresence({
           setPinned((value) => !value);
         }}
       >
+        {!phoneShell && !open && !adding && !activityBlocked && <span className="hercules-help-label" aria-hidden="true">How can I help?</span>}
         <HerculesLivePortrait
           mood={look.view.mood}
           hat={look.hat}

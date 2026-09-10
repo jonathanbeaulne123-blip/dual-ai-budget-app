@@ -62,3 +62,16 @@ describe("Hercules discovery controls", () => {
     await act(async () => render()); expect(button("Continue my shift")).toBeUndefined(); expect(navigate).not.toHaveBeenCalled();
   });
 });
+
+describe("suggestion receipt recovery", () => {
+ it("checks an accepted receipt before repeating a stale choice", async () => {
+  let mutations = 0;
+  const command: KitchenCommand = async (fn, options) => {
+   if (options?.recoverConfirmation) { options.onRecoveredConfirmation?.(); return null; }
+   mutations++; input = {...input,household:fn(input.household).household}; render(); return null;
+  };
+  const render=()=>root.render(createElement(HerculesDiscovery,{input,onCommand:command,onNavigate:vi.fn(),onContinueChat:vi.fn()}));
+  await act(async()=>render()); await click("Not now"); await click("Retry suggestion save");
+  expect(mutations).toBe(1); expect(host.textContent).toContain("Earlier choice confirmed");
+ });
+});

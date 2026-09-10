@@ -1,3 +1,9 @@
+## Integrated companion — slice 6 local candidate
+
+Conversation and suggestion retries recover the original receipt before applying anything again. Unconfirmed conversation stays in its original view for this mounted session; identity changes and conversation clears invalidate old replies and drafts. Expiry keeps complete receipt groups. Explicit preference correction and forget are ordered and retained in private conversation. Source changes invalidate pending answers, while ordinary conversation ACKs do not. Desktop help now has a visible, accessible invitation and the same source buttons as phone; Calendar opens the selected bill even when already mounted. Local fallback follows simple casual context and gives useful guidance when the provider is unavailable.
+
+[Slice 6 evidence](worksessions/2026-09-10-hercules-slice-6.md) and [Bianca acceptance packet](briefs/HERCULES_BIANCA_ACCEPTANCE.md). This is local implementation, not completed product acceptance or release.
+
 ## Complete wardrobe — slice 5
 
 The flagged dressing room now contains six complete collections, original favourites and a Keepsakes shelf. Try-on, category/favourite filters, slot locks, Surprise me, undo/redo and local drafts remain available offline. Wear/Save wait for account confirmation; only explicit Share to household publishes a copy. The normal app renders the acknowledged personal look with matching item and colour IDs, including explicit None. See [slice 5](worksessions/2026-09-10-hercules-slice-5.md) for contracts and verification boundaries.

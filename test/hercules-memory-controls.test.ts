@@ -38,3 +38,29 @@ describe("Hercules acknowledged memory controls", () => {
     expect(host.textContent).not.toContain("Saved for you"); expect(host.textContent).not.toContain("Saving…");
   });
 });
+
+describe("memory integration recovery", () => {
+  it("recovers an accepted save without replaying over a newer preference", async () => {
+    let current = catalogHousehold(); current.companionProfile = companionFor(current, "MEM-001"); let calls = 0;
+    const callback = vi.fn<KitchenCommand>(async (fn, options) => {
+      calls++;
+      if (options?.recoverConfirmation) { options.onRecoveredConfirmation?.(); return null; }
+      current = fn(current).household; return null;
+    });
+    const { host, choose, household } = await mount(callback); current = household; await choose();
+    current.companionProfile!.preferences[0]!.value = "detailed";
+    await act(async () => [...host.querySelectorAll('button')].find(b => b.textContent === 'Retry private save')!.click());
+    expect(calls).toBe(2); expect(current.companionProfile!.preferences[0]!.value).toBe("detailed");
+    expect(host.textContent).toContain("Earlier save confirmed"); expect(host.textContent).not.toContain("Not saved.");
+  });
+  it("an old A to B to A save cannot finish the newer pending operation", async () => {
+    const releases: Array<(value: KitchenCommandResult) => void> = [];
+    const callback: KitchenCommand = () => new Promise(done => releases.push(done));
+    const { host, choose, household } = await mount(callback); await choose();
+    const render = (memberId: string) => root!.render(createElement(CompanionMemoryControls, { household, memberId, view: "household", onCommand: callback }));
+    await act(async () => render("MEM-002")); await act(async () => render("MEM-001")); await choose();
+    await act(async () => releases[0]!({kind:"synchronized",ok:true} as KitchenCommandResult));
+    expect(host.textContent).toContain("Saving…"); expect((host.querySelector('select') as HTMLSelectElement).disabled).toBe(true);
+    await act(async () => releases[1]!(null)); expect(host.textContent).toContain("Save not confirmed");
+  });
+});

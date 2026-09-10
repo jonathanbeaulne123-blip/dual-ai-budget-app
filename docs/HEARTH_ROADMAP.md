@@ -1,3 +1,7 @@
+## Hercules slice 6 — local integration; product trials pending (2026-09-10)
+
+Integration repairs cover private acknowledgement recovery, view-preserved session drafts, corrected/forgotten preferences, current-source navigation and useful offline replies. Three-theme browser and protected App/authority verification are recorded in the [worksession](worksessions/2026-09-10-hercules-slice-6.md). [Bianca's six actual trials](briefs/HERCULES_BIANCA_ACCEPTANCE.md), live voice ratings, likeness, physical devices and authenticated continuity remain acceptance work. No hosted release or activation is implied.
+
 ## Hercules slice 5 — locally verified implementation (2026-09-10)
 
 Complete wardrobe implementation is in verification: 36 original pieces plus legacy compatibility; on-demand 3D collection packs and matching normal-app looks; personal Wear/Save; explicit gallery share/copy/rename/remove; all three themes. Owner likeness, physical phone and authenticated cross-device acceptance remain separate gates. [Evidence](worksessions/2026-09-10-hercules-slice-5.md).

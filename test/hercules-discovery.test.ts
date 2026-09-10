@@ -60,6 +60,14 @@ describe("Hercules useful discovery", () => {
     expect(rows.filter(row => row.dedupe === `health:${tx.id}`)).toHaveLength(1);
     expect(new Set(rows.map(row => row.dedupe)).size).toBe(rows.length);
   });
+  it("offers different useful capabilities when several duplicate warnings compete", () => {
+    const input = fixture();
+    for (const date of ["2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05"]) spending(input, date);
+    const selection = discoverySelection(input);
+    expect(selection.all.filter(row => row.targetId.startsWith("duplicate:")).length).toBeGreaterThan(1);
+    expect(selection.now).toHaveLength(3);
+    expect(new Set(selection.now.map(row => row.capabilityId)).size).toBe(3);
+  });
   it("gives an empty household three working first choices without inventing missing data", () => {
     const input = fixture(); input.household.transactions = []; input.household.recurrences = []; input.household.kitchen.openShifts = []; input.household.kitchen.openShift = null;
     expect(new Set(discoverySelection(input).now.map(row => row.capabilityId))).toEqual(new Set(["explain-page", "guide-entry", "dress-hercules"]));

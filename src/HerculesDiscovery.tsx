@@ -49,11 +49,12 @@ export function HerculesDiscovery({ input, onCommand, onNavigate, onContinueChat
     }
     latch.current = true; setPending(true); setRetry(null); setStatus("Saving your choice…");
     const owner = scope, requestEpoch = epoch.current, profile = companionFor(current.current.household, current.current.memberId);
-    let definitive = false;
+    let definitive = false, recovered = false;
     try {
-      const result = await onCommand(household => commitCompanion(household, { version: 1, id, scope: profile.scope, operation: { kind: "suggestion.set", state, expectedRevision: state.revision, expectedState: predecessor } }), { confirmationId: id, onDefinitiveRejected: () => { definitive = true; } });
+      const result = await onCommand(household => commitCompanion(household, { version: 1, id, scope: profile.scope, operation: { kind: "suggestion.set", state, expectedRevision: state.revision, expectedState: predecessor } }), { confirmationId: id, recoverConfirmation: retry?.id === id, onRecoveredConfirmation: () => { recovered = true; }, onDefinitiveRejected: () => { definitive = true; } });
       if (liveScope.current !== owner || epoch.current !== requestEpoch) return;
-      if (result?.ok && result.kind === "synchronized") setStatus(state.status === "disabled" ? "Suggestions for this activity are off for you." : state.status === "resume" ? "Kept in Continue with me." : state.until === "1970-01-01T00:00:00.000Z" ? "Choice updated for you." : "Set aside for 24 hours.");
+      if (recovered) setStatus("Earlier choice confirmed. Your latest suggestion settings are kept.");
+      else if (result?.ok && result.kind === "synchronized") setStatus(state.status === "disabled" ? "Suggestions for this activity are off for you." : state.status === "resume" ? "Kept in Continue with me." : state.until === "1970-01-01T00:00:00.000Z" ? "Choice updated for you." : "Set aside for 24 hours.");
       else { setStatus(definitive ? "Not saved. Review the current choices and try again when connected." : "Save not confirmed. Reconnect and retry; this choice is not marked saved."); if (!definitive) setRetry({ state, expectedState: predecessor, id }); }
     } catch { if (liveScope.current === owner && epoch.current === requestEpoch) { setStatus("Save not confirmed. Reconnect and retry."); setRetry({ state, expectedState: predecessor, id }); } }
     finally { if (liveScope.current === owner && epoch.current === requestEpoch) { latch.current = false; setPending(false); } }

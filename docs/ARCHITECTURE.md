@@ -1,8 +1,10 @@
 ## Living companion continuity — current local implementation (2026-09-10)
 
-Slices 2–5 use `commitCompanion` for a member-owned personal profile, including bounded conversation/preferences, suggestions, whole worn look and saved presets. `commitCompanionGallery` publishes only an explicitly selected look projection to the household. Both use existing captured command authority, actor-bound scope and per-resource revision checks; look/gallery resources retain tombstones and cannot post money. Acknowledgement recovery checks the original receipt before rerunning a stale mutation. Normal books operations, restores and resets preserve those resources. New wardrobe writes require the server wardrobe capability; older commands cannot silently erase new resources.
+Slices 2–6 use `commitCompanion` for a member-owned personal profile, including bounded conversation/preferences, suggestions, whole worn look and saved presets. `commitCompanionGallery` publishes only an explicitly selected look projection to the household. Both use existing captured command authority, actor-bound scope and per-resource revision checks; look/gallery resources retain tombstones and cannot post money. Acknowledgement recovery checks the original receipt before rerunning a stale mutation. Normal books operations, restores and resets preserve those resources. New wardrobe writes require the server wardrobe capability; older commands cannot silently erase new resources.
 
 Legacy `kitchen.hercules`, `recordHerculesTalk` and `equipCosmetic` descriptions below describe retained compatibility paths, not the active personal companion write model. Shared history is excluded from active private conversation context. The default-off room has lazy 3D collection packs and matching ordinary SVG layers; this local architecture is not hosted or cross-device acceptance evidence. See the [slice 5 receipt](worksessions/2026-09-10-hercules-slice-5.md).
+
+Slice 6 scopes mounted-session pending conversation by identity, view and generation. Retry receipt lookup precedes mutation; expiry preserves complete receipt groups. A local-only source fingerprint excludes private receipt metadata so an ACK cannot cancel a valid follow-up. See [integration evidence](worksessions/2026-09-10-hercules-slice-6.md).
 
 # Architecture
 

@@ -202,6 +202,11 @@ export function planHerculesTurn(
       skipModel: true,
     };
   }
+  // Fund is a named accounting surface, never the similarly named Fun category.
+  if (/\bfund\b/i.test(q)) return {
+    talk: lineTalk(context.view === "personal" ? "The Fund’s contribution records are in Shared. Switch to Shared and open Fund to choose the contribution you mean." : "Let’s use the Fund’s shared contribution record. Open Fund, or choose Explain this Fund item under How can I help? when that contribution is available.", "A shared contribution does not reveal the contributor’s private backing account.", "fund", []),
+    source: "local", memory: null, draft: null, skipModel: true,
+  };
   const scoped = householdForHerculesContext(household, context.memberId, context.view);
   const extracted = extractHerculesMemory(q);
   if (extracted) {

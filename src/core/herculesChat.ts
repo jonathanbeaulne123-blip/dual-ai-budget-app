@@ -70,6 +70,7 @@ export type HerculesReplyContext = {
   requestId: number;
   view?: "household" | "personal";
   conversationGeneration?: number;
+  basis?: string;
 };
 
 /**
@@ -86,7 +87,8 @@ export function isCurrentHerculesReply(
     && started.householdId === current.householdId
     && started.memberId === current.memberId
     && started.view === current.view
-    && started.conversationGeneration === current.conversationGeneration;
+    && started.conversationGeneration === current.conversationGeneration
+    && started.basis === current.basis;
 }
 
 export const HERCULES_CHAT_PATH = "/hercules/chat";
@@ -177,7 +179,7 @@ export async function chatHercules(
   deps?: { fetch?: ChatFetch; timeoutMs?: number },
 ): Promise<HerculesChatResult> {
   const local = (): HerculesChatResult => ({
-    text: localHerculesChat(req.message, req.briefing, req.grounded, req.companion?.preferences),
+    text: localHerculesChat(req.message, req.briefing, req.grounded, req.companion?.preferences, req.companion?.context),
     source: "local",
     provider: "local",
   });

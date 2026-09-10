@@ -31,3 +31,8 @@ describe("delayed Hercules reply identity (D-116)", () => {
     expect(isCurrentHerculesReply(newer, newer)).toBe(true);
   });
 });
+
+it("rejects the response after its page, date or accepted books basis changes", () => {
+ const request={...started,basis:'2026-09-10:ledger:false:12'};
+ for(const basis of ['2026-09-11:ledger:false:12','2026-09-10:plan:false:12','2026-09-10:ledger:false:13'])expect(isCurrentHerculesReply(request,{...request,basis})).toBe(false);
+});

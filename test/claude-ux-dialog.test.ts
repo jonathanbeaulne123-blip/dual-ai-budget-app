@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { act } from "react";
 import { createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { useDialog } from "../src/useDialog.ts";
+import { useDialog, useModalActive } from "../src/useDialog.ts";
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /**
  * Add is the money form. A keyboard or screen-reader household member must land
@@ -36,6 +37,8 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
 });
+
+afterEach(() => { act(() => root.unmount()); container.remove(); });
 
 function render(open: boolean, onClose = () => {}) {
   act(() => {
@@ -89,4 +92,25 @@ describe("Add sheet modal behaviour", () => {
     });
     expect(document.activeElement?.id).toBe("close");
   });
+});
+
+
+it("excludes the owned dialog while still detecting another modal", () => {
+  function Observer({ own, other }: { own: boolean; other: boolean }) {
+    const ownRef = useDialog(own);
+    const otherRef = useDialog(other);
+    const external = useModalActive(ownRef);
+    const any = useModalActive();
+    return createElement("div", null,
+      own && createElement("div", { ref: ownRef, role: "dialog" }, "Owned"),
+      other && createElement("div", { ref: otherRef, role: "dialog" }, "Other"),
+      createElement("output", null, `${any}:${external}`));
+  }
+  const show = (own: boolean, other: boolean) => act(() => root.render(createElement(Observer, { own, other })));
+  show(false, false); expect(container.querySelector("output")!.textContent).toBe("false:false");
+  show(true, false); expect(container.querySelector("output")!.textContent).toBe("true:false");
+  show(true, true); expect(container.querySelector("output")!.textContent).toBe("true:true");
+  show(true, false); expect(container.querySelector("output")!.textContent).toBe("true:false");
+  show(false, true); expect(container.querySelector("output")!.textContent).toBe("true:true");
+  show(false, false); expect(container.querySelector("output")!.textContent).toBe("false:false");
 });
