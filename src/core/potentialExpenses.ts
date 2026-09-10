@@ -1,8 +1,32 @@
 import { isValidDateKey, type DateKey } from "./calendar.ts";
 import { parseVisibility, isVisibleInView } from "./visibility.ts";
-import type { LedgerView, PotentialExpensePlan } from "./types.ts";
+import type { LedgerView, PotentialExpenseCalendarLink, PotentialExpensePlan, Split } from "./types.ts";
 
 export const POTENTIAL_EXPENSE_TITLE_LIMIT = 120;
+
+const CALENDAR_LINK_SOURCES = new Set<PotentialExpenseCalendarLink["source"]>([
+  "recurrence", "rhythm", "shift", "shift-envelope", "google", "appointment", "claim", "work-settlement",
+]);
+
+export function shapePotentialExpenseCalendarLink(value: unknown): PotentialExpenseCalendarLink | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as Partial<PotentialExpenseCalendarLink>;
+  if (!row.source || !CALENDAR_LINK_SOURCES.has(row.source) || typeof row.id !== "string" || !row.id.trim()) return null;
+  if (typeof row.title !== "string" || !row.title.trim()) return null;
+  return { source: row.source, id: row.id.trim(), title: row.title.trim().slice(0, POTENTIAL_EXPENSE_TITLE_LIMIT) };
+}
+
+export function resizePotentialExpenseSplits(existing: Split[], oldAmountCents: number, amountCents: number): Split[] {
+  if (oldAmountCents === amountCents) return existing;
+  let assigned = 0;
+  return existing.map((split, index) => {
+    const next = index === existing.length - 1
+      ? amountCents - assigned
+      : Math.round(amountCents * split.amountCents / oldAmountCents);
+    assigned += next;
+    return { ...split, amountCents: next };
+  });
+}
 
 function validIso(value: unknown, fallback: string): string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value))
@@ -31,6 +55,7 @@ export function shapePotentialExpenses(
       accountId: row.accountId,
       subcategoryId: row.subcategoryId,
       splits: Array.isArray(row.splits) ? row.splits : [],
+      linkedCalendarItem: shapePotentialExpenseCalendarLink(row.linkedCalendarItem),
       visibility: parseVisibility(row.visibility),
       createdBy: row.createdBy,
       status,

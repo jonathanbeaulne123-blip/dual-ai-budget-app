@@ -90,6 +90,7 @@ import {
 } from "./google.ts";
 import { mergeTombstones } from "./sync.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
+import { resizePotentialExpenseSplits, shapePotentialExpenseCalendarLink } from "./potentialExpenses.ts";
 import {
   advanceAppointmentCadence,
   assertLinesSum,
@@ -1764,18 +1765,6 @@ function potentialExpenseSplits(amountCents: number, actor: { createdBy: string;
     : jointSplit(amountCents);
 }
 
-function resizedPotentialSplits(existing: Split[], oldAmountCents: number, amountCents: number): Split[] {
-  if (oldAmountCents === amountCents) return existing;
-  let assigned = 0;
-  return existing.map((split, index) => {
-    const next = index === existing.length - 1
-      ? amountCents - assigned
-      : Math.round(amountCents * split.amountCents / oldAmountCents);
-    assigned += next;
-    return { ...split, amountCents: next };
-  });
-}
-
 export const addPotentialExpense = captureCommand("addPotentialExpense", function addPotentialExpense(household: Household, input: {
   date: string;
   title: string;
@@ -1783,6 +1772,7 @@ export const addPotentialExpense = captureCommand("addPotentialExpense", functio
   accountId: string;
   subcategoryId: string;
   splits?: Split[];
+  linkedCalendarItem?: PotentialExpensePlan["linkedCalendarItem"];
   createdBy: string;
   visibility: Visibility;
 }): CommitResult {
@@ -1807,6 +1797,7 @@ export const addPotentialExpense = captureCommand("addPotentialExpense", functio
     accountId: input.accountId,
     subcategoryId: input.subcategoryId,
     splits,
+    linkedCalendarItem: shapePotentialExpenseCalendarLink(input.linkedCalendarItem),
     visibility: actor.visibility,
     createdBy: actor.createdBy,
     status: "planned",
@@ -1829,6 +1820,7 @@ export const updatePotentialExpense = captureCommand("updatePotentialExpense", f
   accountId: string;
   subcategoryId: string;
   splits?: Split[];
+  linkedCalendarItem?: PotentialExpensePlan["linkedCalendarItem"];
   createdBy: string;
 }): CommitResult {
   const existing = household.potentialExpenses.find((row) => row.id === input.id);
@@ -1841,11 +1833,11 @@ export const updatePotentialExpense = captureCommand("updatePotentialExpense", f
   const title = input.title.trim();
   if (!title) throw new ValidationError("Name the potential expense.");
   if (title.length > 120) throw new ValidationError("Keep the potential expense name under 120 characters.");
-  const splits = catalogValidateOwned(input.splits ?? resizedPotentialSplits(existing.splits, existing.expectedAmountCents, amountCents), amountCents, household);
+  const splits = catalogValidateOwned(input.splits ?? resizePotentialExpenseSplits(existing.splits, existing.expectedAmountCents, amountCents), amountCents, household);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const row = next.potentialExpenses.find((item) => item.id === input.id)!;
-  Object.assign(row, { date, title, expectedAmountCents: amountCents, accountId: input.accountId, subcategoryId: input.subcategoryId, splits, updatedAt: nowIso() });
+  Object.assign(row, { date, title, expectedAmountCents: amountCents, accountId: input.accountId, subcategoryId: input.subcategoryId, splits, linkedCalendarItem: input.linkedCalendarItem === undefined ? existing.linkedCalendarItem : shapePotentialExpenseCalendarLink(input.linkedCalendarItem), updatedAt: nowIso() });
   return potentialExpenseResult(commit(previous, next, "Calendar", `Updated ${title}`, [row.id], [], "updatePotentialExpense"), row);
 });
 
@@ -1920,17 +1912,18 @@ export const postPotentialExpense = captureCommand("postPotentialExpense", funct
   if (!plan || plan.status !== "planned") throw new ValidationError("That potential expense was already resolved.");
   potentialExpenseActor(household, plan, input.createdBy);
   const previous = cloneHousehold(household);
+  const amountCents = parseAmount(input.amount ?? plan.expectedAmountCents / 100);
   const posted = postEntry(household, {
     date: input.date ?? plan.date,
     type: "expense",
-    amount: input.amount ?? plan.expectedAmountCents / 100,
+    amount: amountCents / 100,
     accountId: input.accountId ?? plan.accountId,
     subcategoryId: input.subcategoryId ?? plan.subcategoryId,
     note: input.note ?? plan.title,
     place: input.place,
     occurredAt: input.occurredAt,
     location: input.location,
-    splits: input.splits ?? plan.splits,
+    splits: input.splits ?? resizePotentialExpenseSplits(plan.splits, plan.expectedAmountCents, amountCents),
     confirmDuplicate: input.confirmDuplicate,
     createdBy: input.createdBy,
     visibility: plan.visibility,

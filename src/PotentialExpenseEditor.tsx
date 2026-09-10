@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useDialog } from "./useDialog.ts";
-import type { Household, PotentialExpensePlan, Visibility } from "./core/index.ts";
+import { centsDigitsFromDollars, padToDollars } from "./core/cadPad.ts";
+import { CadPad } from "./CadPad.tsx";
+import type { Household, PotentialExpenseCalendarLink, PotentialExpensePlan, Visibility } from "./core/index.ts";
 
 export type PotentialExpenseEditorValue = {
   date: string;
@@ -8,6 +10,7 @@ export type PotentialExpenseEditorValue = {
   amount: string;
   accountId: string;
   subcategoryId: string;
+  linkedCalendarItem?: PotentialExpenseCalendarLink | null;
   visibility: Visibility;
 };
 
@@ -15,12 +18,13 @@ function dollars(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
-export function PotentialExpenseEditor({ household, memberId, view, date, plan, busy, onCancel, onSave }: {
+export function PotentialExpenseEditor({ household, memberId, view, date, plan, linkedCalendarItem, busy, onCancel, onSave }: {
   household: Household;
   memberId: string;
   view: "household" | "personal";
   date: string;
   plan?: PotentialExpensePlan;
+  linkedCalendarItem?: PotentialExpenseCalendarLink | null;
   busy: boolean;
   onCancel: () => void;
   onSave: (value: PotentialExpenseEditorValue) => void;
@@ -28,10 +32,11 @@ export function PotentialExpenseEditor({ household, memberId, view, date, plan, 
   const initialVisibility: Visibility = plan?.visibility ?? (view === "personal" ? "personal" : "household");
   const [form, setForm] = useState<PotentialExpenseEditorValue>(() => ({
     date: plan?.date ?? date,
-    title: plan?.title ?? "",
+    title: plan?.title ?? linkedCalendarItem?.title ?? "",
     amount: plan ? dollars(plan.expectedAmountCents) : "",
     accountId: plan?.accountId ?? "",
     subcategoryId: plan?.subcategoryId ?? "",
+    linkedCalendarItem: plan?.linkedCalendarItem ?? linkedCalendarItem ?? null,
     visibility: initialVisibility,
   }));
   const dialogRef = useDialog(true, busy ? undefined : onCancel);
@@ -59,14 +64,19 @@ export function PotentialExpenseEditor({ household, memberId, view, date, plan, 
       <div className="topbar">
         <div>
           <h1 id="potential-expense-title">{plan ? "Edit potential expense" : "Add potential expense"}</h1>
-          <p className="muted">Planned—not posted. Calendar and Hercules can ask again when the date arrives.</p>
+          <p className="muted">Planned—not posted. Confirm it whenever you spend, or leave it on Calendar for later.</p>
         </div>
         <button type="button" className="ghost" onClick={onCancel} disabled={busy}>Cancel</button>
       </div>
       <label htmlFor="potential-title">What might you spend on?</label>
       <input id="potential-title" data-autofocus maxLength={120} value={form.title} onChange={(event) => setForm({ ...form, title: event.currentTarget.value })} placeholder="Wedding travel and gift" />
-      <label htmlFor="potential-amount">Expected amount (CAD)</label>
-      <input id="potential-amount" inputMode="decimal" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.currentTarget.value })} placeholder="600.00" />
+      {form.linkedCalendarItem ? <p className="potential-expense-event-link"><span className="kind-pill">Event</span> For {form.linkedCalendarItem.title}</p> : null}
+      <CadPad
+        digits={centsDigitsFromDollars(form.amount)}
+        onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}
+        label="Expected amount"
+        emptyDisplay="$0.00 CAD"
+      />
       <label htmlFor="potential-date">Date</label>
       <input id="potential-date" type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.currentTarget.value })} />
       <label htmlFor="potential-account">Posting account</label>

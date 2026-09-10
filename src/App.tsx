@@ -387,6 +387,7 @@ import {
   resetDevelopmentHouseholds,
 } from "./ledger/householdInvites.ts";
 import { ConfirmSheet } from "./Confirm.tsx";
+import { PotentialExpenseConfirmSheet } from "./PotentialExpenseConfirmSheet.tsx";
 import type { RepeatingDraft } from "./RepeatingForm.tsx";
 import type { WorkShiftDraft } from "./WorkShiftFlow.tsx";
 import { resolveDuplicateRetry } from "./shiftDuplicateRetry.ts";
@@ -5732,9 +5733,6 @@ export function App() {
   const quickPotential = guard?.kind === "quickPotential"
     ? household.potentialExpenses.find((item) => item.id === guard.planId && item.status === "planned")
     : undefined;
-  const quickPotentialSummary = quickPotential
-    ? `${quickPotential.title} · ${formatCad(quickPotential.expectedAmountCents)} · ${quickPotential.date} · ${household.accounts.find((item) => item.id === quickPotential.accountId)?.name ?? "Account"} · ${household.categories.find((item) => item.id === quickPotential.subcategoryId)?.name ?? "Category"} · ${quickPotential.splits.map((split) => `${household.members.find((member) => member.id === split.party)?.name ?? split.party} ${formatCad(split.amountCents)}`).join(", ")} · ${quickPotential.visibility === "household" ? "Shared" : quickPotential.visibility === "personal" ? "Personal" : "Both"}`
-    : "That potential expense is no longer open.";
   const shiftPreview = previewShiftAmounts({
     salesCents: Math.round(Number(form.sales || 0) * 100) || 0,
     cashTipsCents: Math.round(Number(form.cashTips || 0) * 100) || 0,
@@ -5951,7 +5949,7 @@ export function App() {
       }));
   };
 
-  const openPotentialInAdd = (planId: string) => {
+  const openPotentialInAdd = (planId: string, amountOverride?: string) => {
     const current = householdRef.current;
     const plan = current?.potentialExpenses.find((item) => item.id === planId && item.status === "planned");
     if (!current || !plan) {
@@ -5964,7 +5962,7 @@ export function App() {
     const singleParty = plan.splits.length === 1 ? plan.splits[0]?.party : null;
     setForm(formForAccount(plan.accountId, {
       date: plan.date,
-      amount: (plan.expectedAmountCents / 100).toFixed(2),
+      amount: amountOverride ?? (plan.expectedAmountCents / 100).toFixed(2),
       accountId: plan.accountId,
       subcategoryId: plan.subcategoryId,
       note: plan.title,
@@ -7768,35 +7766,28 @@ export function App() {
         />
       )}
       {guard?.kind === "quickPotential" && (
-        <ConfirmSheet
-          title="Post this planned expense?"
-          body={quickPotentialSummary}
-          extra="This is the Calendar review. The plan has not posted money yet. Final Confirm posts the saved amount and date to the books."
-          confirmLabel="Final Confirm"
-          confirmDisabled={!quickPotential}
+        quickPotential ? <PotentialExpenseConfirmSheet
+          plan={quickPotential}
+          household={household}
           busy={busy}
           onCancel={() => setGuard(null)}
-          onConfirm={() => {
-            if (!quickPotential) {
-              setGuard(null);
-              return;
-            }
+          onConfirm={(actualAmount) => {
             const id = quickPotential.id;
             void run(
-              (current) => postPotentialExpense(current, { id, createdBy: actorId }),
+              (current) => postPotentialExpense(current, { id, createdBy: actorId, amount: actualAmount }),
               {
                 closeAdd: false,
                 onAccepted: () => setGuard(null),
                 onConfirm: (duplicate) => {
                   setGuard(null);
-                  openPotentialInAdd(id);
+                  openPotentialInAdd(id, actualAmount);
                   setConfirm(duplicate);
                   return true;
                 },
               },
             );
           }}
-        />
+        /> : <ConfirmSheet title="That plan changed" body="That potential expense is no longer open." confirmLabel="Close" onCancel={() => setGuard(null)} onConfirm={() => setGuard(null)} />
       )}
       {guard?.kind === "postRecurrence" && (
         <ConfirmSheet

@@ -410,6 +410,12 @@ export type HouseholdCalendar = {
 
 export type PotentialExpenseStatus = "planned" | "posted" | "removed";
 
+export type PotentialExpenseCalendarLink = {
+  source: "recurrence" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
+  id: string;
+  title: string;
+};
+
 /** A dated estimate on Calendar. It is planning state and never money until Final Confirm. */
 export type PotentialExpensePlan = {
   id: string;
@@ -419,6 +425,8 @@ export type PotentialExpensePlan = {
   accountId: string;
   subcategoryId: string;
   splits: Split[];
+  /** Optional Calendar activity this estimate was created from. Planning provenance only. */
+  linkedCalendarItem: PotentialExpenseCalendarLink | null;
   visibility: Visibility;
   createdBy: string;
   status: PotentialExpenseStatus;

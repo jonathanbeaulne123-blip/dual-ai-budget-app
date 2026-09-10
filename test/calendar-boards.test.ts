@@ -155,6 +155,61 @@ describe("Calendar boards", () => {
     } finally { await m.close(); }
   });
 
+  it("reveals mobile Add only after selecting a day, then opens the shared CadPad form", async () => {
+    const m = await mount(390);
+    try {
+      const todayCell = m.host.querySelector(`[data-calendar-date="${today}"]`)!.closest('.cal-cell')!;
+      expect(todayCell.querySelector(':scope > .cal-add')?.classList.contains('is-revealed')).toBe(false);
+      expect(m.host.querySelector('.calendar-selected-day .calendar-add-potential')).toBeNull();
+      const cell = m.host.querySelector('[data-calendar-date="2026-09-09"]')!.closest('.cal-cell')!;
+      const add = cell.querySelector<HTMLButtonElement>(':scope > .cal-add')!;
+      expect(add.classList.contains('is-revealed')).toBe(false);
+      expect(add.tabIndex).toBe(-1);
+      expect(add.getAttribute('aria-hidden')).toBe('true');
+      await m.click(cell.querySelector<HTMLButtonElement>(':scope > .cal-day')!);
+      expect(add.classList.contains('is-revealed')).toBe(true);
+      expect(add.tabIndex).toBe(0);
+      expect(m.host.querySelector('.calendar-selected-day .calendar-add-potential')).not.toBeNull();
+      await m.click(add);
+      const dialog = m.host.querySelector('[role="dialog"]')!;
+      expect(dialog.querySelector('.cad-pad')).not.toBeNull();
+      expect(dialog.textContent).toContain('Expected amount');
+    } finally { await m.close(); }
+  });
+
+  it("offers future plans in the focused day and Coming up, and links a selected activity into the same form", async () => {
+    const planned = addPotentialExpense(addRecurrence(catalogHousehold(), {
+      nextDate: today, cadence: "weekly", type: "expense", accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-FOOD-GROCERIES", amount: "20", note: "Fictional groceries",
+    }).household, {
+      date: "2026-09-15", title: "Future shoes", amount: "80", accountId: "ACC-CHEQUING",
+      subcategoryId: "SUB-LIFE-FUN", createdBy: "MEM-001", visibility: "household",
+    }).household;
+    const plan = planned.potentialExpenses[0]!;
+    const m = await mount(390, undefined, false, undefined, planned);
+    try {
+      await m.click(m.host.querySelector('[data-calendar-date="2026-09-15"]')!);
+      const selected = m.host.querySelector('.calendar-selected-day')!;
+      await m.click([...selected.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent === 'Quick Confirm')!);
+      expect(m.callbacks.onAskQuickPotential).toHaveBeenCalledWith(plan.id);
+
+      const upcoming = m.host.querySelector<HTMLDetailsElement>('.calendar-upcoming')!;
+      upcoming.open = true;
+      expect([...upcoming.querySelectorAll('button')].some((button) => button.textContent === 'Quick Confirm')).toBe(true);
+
+      await m.click(m.host.querySelector('[data-calendar-date="2026-09-08"]')!);
+      const event = m.host.querySelector<HTMLButtonElement>('.calendar-selected-day .calendar-event-focus')!;
+      await m.click(event);
+      const add = m.host.querySelector<HTMLButtonElement>('.calendar-selected-day .calendar-event-add-potential')!;
+      expect(add).not.toBeNull();
+      await m.click(add);
+      const dialog = m.host.querySelector('[role="dialog"]')!;
+      expect(dialog.textContent).toContain('For Fictional groceries');
+      expect((dialog.querySelector('#potential-title') as HTMLInputElement).value).toBe('Fictional groceries');
+      expect(dialog.querySelector('.cad-pad')).not.toBeNull();
+    } finally { await m.close(); }
+  });
+
   it("keeps onboarding standing facts free of payment actions in both calendar presentations", async () => {
     const m = await mount(390, undefined, true);
     try {

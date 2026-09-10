@@ -8,18 +8,25 @@ import assert from 'node:assert/strict';
 const cacheDir = mkdtempSync(join(tmpdir(), 'hearth-calendar-vite-'));
 const css = [...readFileSync('src/main.tsx', 'utf8').matchAll(/import "\.\/(.*\.css)";/g)].map(([, path]) => `import '/src/${path}';`).join('\n');
 const entry = `${css}
-import { createElement as h } from 'react';
+import { createElement as h, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CalendarPage } from '/src/Calendar.tsx';
-import { catalogHousehold, addRecurrence } from '/src/core/index.ts';
+import { PotentialExpenseConfirmSheet } from '/src/PotentialExpenseConfirmSheet.tsx';
+import { catalogHousehold, addPotentialExpense, addRecurrence } from '/src/core/index.ts';
 import { resolveThemeScene, sceneTokens } from '/src/theme/scenes.ts';
 const query = new URLSearchParams(location.search), theme = query.get('theme'), view = query.get('view');
 const scene = resolveThemeScene(theme, 'calendar', view);
 Object.assign(document.documentElement.dataset, { theme, scene: scene.id, material: scene.material, sceneLighting: scene.dark ? 'dark' : 'light', atmosphere: 'paused' });
 for (const [key, value] of Object.entries(sceneTokens(scene))) document.documentElement.style.setProperty(key, value);
-const household = addRecurrence(catalogHousehold(), { nextDate: '2026-09-08', cadence: 'weekly', type: 'expense', accountId: 'ACC-CHEQUING', subcategoryId: 'SUB-FOOD-GROCERIES', amount: '20', note: 'Fictional groceries with a long calendar title' }).household;
+let household = addRecurrence(catalogHousehold(), { nextDate: '2026-09-08', cadence: 'weekly', type: 'expense', accountId: 'ACC-CHEQUING', subcategoryId: 'SUB-FOOD-GROCERIES', amount: '20', note: 'Fictional groceries with a long calendar title' }).household;
+household = addPotentialExpense(household, { date: '2026-09-08', title: 'Fictional future purchase', amount: '60', accountId: 'ACC-CHEQUING', subcategoryId: 'SUB-LIFE-FUN', createdBy: 'MEM-001', visibility: 'household' }).household;
 const noop = () => {};
-createRoot(document.getElementById('root')).render(h('main', { className: 'app', 'data-ledger-tab': 'calendar', style: { margin: '0 auto', padding: 8, maxWidth: 1100 } }, h(CalendarPage, { household, today: '2026-09-08', environment: 'development', memberId: 'MEM-001', view, busy: false, onCommand: noop, onAskPost: noop, onAskPostDue: noop, onAskSaveRepeating: noop, onAskVisit: noop, onAskSettle: noop, onAskWriteOff: noop, onAskStartJar: noop, onOpenPlan: noop, onOpenShiftEnvelope: noop })));
+function Proof(){const [confirm,setConfirm]=useState(false);return h('main', { className: 'app', 'data-ledger-tab': 'calendar', style: { margin: '0 auto', padding: 8, maxWidth: 1100 } },
+ h(CalendarPage, { household, today: '2026-09-08', environment: 'development', memberId: 'MEM-001', view, busy: false, onCommand: noop, onAskPost: noop, onAskPostDue: noop, onAskSaveRepeating: noop, onAskVisit: noop, onAskSettle: noop, onAskWriteOff: noop, onAskStartJar: noop, onOpenPlan: noop, onOpenShiftEnvelope: noop, onAskQuickPotential:()=>setConfirm(true), onReviewPotential:noop }),
+ h('nav',{className:'nav','aria-label':'Hearth'},h('button',null,'Home'),h('button',null,'Cal')),
+ confirm?h(PotentialExpenseConfirmSheet,{plan:household.potentialExpenses[0],household,busy:false,onCancel:()=>setConfirm(false),onConfirm:noop}):null);
+}
+createRoot(document.getElementById('root')).render(h(Proof));
 `;
 const server = await createServer({ configFile: false, cacheDir, server: { host: '127.0.0.1', port: 0 }, plugins: [{
   name: 'calendar-proof',
@@ -62,6 +69,22 @@ try {
     assert.equal(await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle), 'solid');
     cases++;
   }
+  for(const width of [320,390])for(const theme of ['classic','taylor','newfoundland']){
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`${server.resolvedUrls.local[0]}calendar-proof?theme=${theme}&view=household`);
+    await page.locator('[data-calendar-date="2026-09-08"]').click();
+    const cellAdd=page.locator('[data-calendar-date="2026-09-08"] + .cal-add');
+    assert.equal(await cellAdd.isVisible(),true,`${theme}/${width}: first mobile tap reveals Add`);
+    await cellAdd.click();
+    const save=page.locator('.potential-expense-sheet .primary');await save.scrollIntoViewIfNeeded();
+    const saveBox=await save.boundingBox(),navBox=await page.locator('.nav').boundingBox();
+    assert.ok(saveBox&&navBox&&saveBox.y+saveBox.height<=navBox.y,`${theme}/${width}: Save plan stays above mobile navigation`);
+    await page.getByRole('button',{name:'Cancel',exact:true}).click();
+    await page.locator('.calendar-selected-day').getByRole('button',{name:'Quick Confirm',exact:true}).click();
+    const finalConfirm=page.getByRole('button',{name:/^Final Confirm/});await finalConfirm.scrollIntoViewIfNeeded();
+    const confirmBox=await finalConfirm.boundingBox();
+    assert.ok(confirmBox&&navBox&&confirmBox.y+confirmBox.height<=navBox.y,`${theme}/${width}: Final Confirm stays above mobile navigation`);
+  }
   assert.deepEqual(errors, []);
-  console.log(`PASS: ${cases} Chromium theme/scope/width cases; seven columns, no overflow, retained Month selection, disclosure/integration order and keyboard focus. Local synthetic data only.`);
+  console.log(`PASS: ${cases} Chromium theme/scope/width cases; seven columns, no overflow, retained Month selection, mobile two-tap Add, and Save/Final Confirm above navigation. Local synthetic data only.`);
 } finally { await browser?.close(); await server.close(); rmSync(cacheDir, { recursive: true, force: true }); }
