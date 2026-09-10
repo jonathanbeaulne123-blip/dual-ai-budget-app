@@ -1008,6 +1008,36 @@ input, select, textarea {
   gap: 6px 10px;
   min-width: 0;
 }
+.sync-freshness__details {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 44px;
+  margin: -4px 0;
+  padding: 4px 6px 4px 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sync-freshness__details:focus-visible {
+  outline: 2px solid var(--pine-2);
+  outline-offset: 2px;
+}
+.sync-freshness__attention {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  font-weight: 750;
+  white-space: nowrap;
+}
 .sync-freshness__action {
   flex: 0 0 auto;
   display: inline-flex;
@@ -1094,6 +1124,14 @@ input, select, textarea {
     font-size: 0.82rem;
     gap: 8px 12px;
   }
+}
+@media (max-width: 520px) {
+  .sync-freshness { flex-wrap: wrap; }
+  .sync-freshness__details { flex-basis: 100%; align-items: flex-start; }
+  .sync-freshness__attention { margin-top: 1px; }
+  .sync-freshness__revision,
+  .sync-freshness__actor,
+  .sync-freshness__source { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sync-freshness--live .sync-freshness__transport::before {

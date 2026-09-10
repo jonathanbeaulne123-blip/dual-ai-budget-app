@@ -5,6 +5,8 @@ type Props = {
   display: SyncFreshnessDisplay;
   busy?: boolean;
   onAction?: () => void;
+  attentionLabel?: string | null;
+  onOpenDetails: () => void;
 };
 
 const TICK_MS = 30_000;
@@ -23,7 +25,7 @@ function RefreshIcon() {
   );
 }
 
-export function SyncFreshnessStatus({ display, busy = false, onAction }: Props) {
+export function SyncFreshnessStatus({ display, busy = false, onAction, attentionLabel, onOpenDetails }: Props) {
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -49,25 +51,33 @@ export function SyncFreshnessStatus({ display, busy = false, onAction }: Props) 
       aria-live="polite"
       aria-atomic="true"
     >
-      <div className="sync-freshness__content">
-        <span className="sync-freshness__transport">
-          {display.transportPrimary}
-        </span>
-        {display.revisionLine && (
-          <span className="sync-freshness__revision">{display.revisionLine}</span>
-        )}
-        {updatedLine && (
-          <span className="sync-freshness__updated">{updatedLine}</span>
-        )}
-        {display.actorLine && (
-          <span className="sync-freshness__actor" title={display.actorLine}>
-            {display.actorLine}
+      <button
+        type="button"
+        className="sync-freshness__details"
+        aria-label={`${display.statusSummary}${attentionLabel ? `. ${attentionLabel}` : ""}. Open details in More.`}
+        onClick={onOpenDetails}
+      >
+        <span className="sync-freshness__content">
+          <span className="sync-freshness__transport">
+            {display.transportPrimary}
           </span>
-        )}
-        {display.sourceLine && (
-          <span className="sync-freshness__source muted">{display.sourceLine}</span>
-        )}
-      </div>
+          {display.revisionLine && (
+            <span className="sync-freshness__revision">{display.revisionLine}</span>
+          )}
+          {updatedLine && (
+            <span className="sync-freshness__updated">{updatedLine}</span>
+          )}
+          {display.actorLine && (
+            <span className="sync-freshness__actor" title={display.actorLine}>
+              {display.actorLine}
+            </span>
+          )}
+          {display.sourceLine && (
+            <span className="sync-freshness__source muted">{display.sourceLine}</span>
+          )}
+        </span>
+        {attentionLabel && <span className="sync-freshness__attention">{attentionLabel}</span>}
+      </button>
       {showAction && (
         <button
           type="button"

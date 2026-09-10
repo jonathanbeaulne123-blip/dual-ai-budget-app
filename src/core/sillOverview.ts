@@ -19,10 +19,12 @@ export type SillFigure = {
 
 export type SillOverview = {
   needsMe: string;
+  needsAttention: boolean;
+  attentionInstrument: InstrumentId | null;
   figures: SillFigure[];
 };
 
-/** Mint-style header + YNAB “what needs me,” on paper, never on the glass. */
+/** Shared attention facts for the status row and its More-page repair route. */
 export function sillOverview(household: Household, dashboard: Dashboard, today: DateKey, nowMs = Date.now()): SillOverview {
   const wallet = householdWallet(household, today);
   const hot = wallet.hottestCard;
@@ -45,15 +47,33 @@ export function sillOverview(household: Household, dashboard: Dashboard, today: 
   const overdueBill = dashboard.upcoming.find((item) => isOutgoingBill(item) && (item.due || item.date < today));
 
   let needsMe = "Quiet desk. Groceries whenever.";
+  let needsAttention = false;
+  let attentionInstrument: InstrumentId | null = null;
   if (punch) needsMe = `On the clock · ${previewHoursLabel(punch.startedAt, nowMs)}`;
-  else if (overdueBill) needsMe = `${overdueBill.title} is lifted. Mark paid writes.`;
+  else if (overdueBill) {
+    needsMe = `${overdueBill.title} is lifted. Mark paid writes.`;
+    needsAttention = true;
+    attentionInstrument = "mail";
+  }
   else if (hot && (hot.daysUntilDue < 3 || (hot.utilization != null && hot.utilization >= 0.8))) {
     needsMe = hot.daysUntilDue < 0
       ? `${hot.account.name} is past due. Paydown is a transfer.`
       : `${hot.account.name} needs you. Paydown is a transfer.`;
-  } else if (streak.waiting) needsMe = streak.spoken;
-  else if (groceryLeft != null && groceryLeft < 0) needsMe = `Groceries are ${formatCad(-groceryLeft)} over plan.`;
-  else if (nextVisit && nextVisit.overdue) needsMe = `${visitTitle} is overdue. Dates remind.`;
+    needsAttention = true;
+    attentionInstrument = "wallet";
+  } else if (streak.waiting) {
+    needsMe = streak.spoken;
+    needsAttention = true;
+    attentionInstrument = "timesheet";
+  } else if (groceryLeft != null && groceryLeft < 0) {
+    needsMe = `Groceries are ${formatCad(-groceryLeft)} over plan.`;
+    needsAttention = true;
+    attentionInstrument = "blotter";
+  } else if (nextVisit && nextVisit.overdue) {
+    needsMe = `${visitTitle} is overdue. Dates remind.`;
+    needsAttention = true;
+    attentionInstrument = "appointments";
+  }
 
   const figures: SillFigure[] = [
     {
@@ -107,5 +127,5 @@ export function sillOverview(household: Household, dashboard: Dashboard, today: 
     });
   }
 
-  return { needsMe, figures: figures.slice(0, punch ? 6 : 5) };
+  return { needsMe, needsAttention, attentionInstrument, figures: figures.slice(0, punch ? 6 : 5) };
 }
