@@ -53,6 +53,10 @@ describe('Hercules review destinations',()=>{
   const review=prepareAction(c,'worked-shift',values);
   expect(review.effects.length).toBeGreaterThan(2);
   expect(review.effects.every(row=>row.label.startsWith('Personal books'))).toBe(true);
+  const bothContext=structuredClone(c);
+  bothContext.household.workJobs[0]!.defaults.wagesVisibility='both';
+  const bothReview=prepareAction(bothContext,'worked-shift',values);
+  expect(bothReview.effects.some(row=>row.label.startsWith('Personal and Household books'))).toBe(true);
   const result=executeReviewedAction(c,review,crypto.randomUUID());
   expect(result.household.transactions.filter(t=>result.postedIds.includes(t.id)).every(t=>t.visibility==='personal')).toBe(true);
   expect(()=>prepareAction(c,'pay-tipout',{jobId:values.jobId,amount:'1',date:c.today,accountId:'ACC-CASH'})).toThrow(/books where this tip-out/);
