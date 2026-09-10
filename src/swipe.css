@@ -144,6 +144,12 @@
   margin: 16px 0 0;
 }
 
+@media (max-width: 719px) {
+  .swipe-sheet-inner {
+    padding-bottom: calc(var(--mobile-bottom-clearance) + 26px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .swipe-open,
   .swipe-strip,

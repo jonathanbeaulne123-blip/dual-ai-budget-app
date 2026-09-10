@@ -3,6 +3,22 @@
   "mappings": [
     {
       "sources": [
+        "src/CadPad.tsx",
+        "src/calendar-boards.css",
+        "src/confirm-mobile.css",
+        "src/entry-restoration.css",
+        "src/styles.css",
+        "src/swipe.css"
+      ],
+      "tests": [
+        "test/calendar-boards.test.ts",
+        "test/mobile-entry-sheet.test.ts",
+        "test/swipe.test.ts"
+      ],
+      "reason": "CadPad outer-scroll ownership and mobile nav plus Household Fund pull-tab clearance"
+    },
+    {
+      "sources": [
         ".github/workflows/ci.yml",
         ".github/workflows/full-verification.yml",
         "package.json",

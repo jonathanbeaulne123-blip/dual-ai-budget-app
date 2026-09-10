@@ -735,3 +735,9 @@ The room is lazy, local and opt-in through `VITE_HERCULES_DRESSING_ROOM=1`; the 
 The fitting draft is device-local and keyed by environment/household/member; it is not the worn profile. Guarded storage, bounded undo/redo and identity remounts cannot call money, profile or gallery commands. Existing worn appearance stays on the established path until slice 5 provides the whole catalogue and acknowledged Wear/Save/share flow. Classic uses wood/brass/linen; Taylor uses the More-page cottage/woodland mappings; Newfoundland uses dressing-lounge/music-room materials. No fictional personal memorabilia is introduced.
 
 Budget delta (5): visual play stays outside accepted books and disclosure authority. Engagement delta (3): a tangible dress-up fitting with a recognizable source rig, material variation and responsive reactions. Risk High for Office integration. [Local evidence](worksessions/2026-09-10-hercules-slice-4.md); physical phone, subjective likeness/fitting and release acceptance are separate gates. No push, merge, deployment, hosted schema/data, secrets or provider activation.
+
+## Mobile bottom boundary and CadPad scroll ownership (2026-09-10)
+
+The fixed mobile navigation and the measured Household Fund pull tab are one shared bottom obstruction, exposed as `--mobile-bottom-clearance`. Every new mobile sheet, drawer, sticky action, and scrollable interaction must reserve that boundary so its last control can move fully above both pieces of chrome. A surface may consume the shared token even when the Fund is absent; its measured Fund term then resolves to zero.
+
+CadPads never own wheel scrolling. They contain buttons rather than scrollable content, so wheel and trackpad gestures over a CadPad remain available to its outer sheet or document. This is presentation and input routing only; entry and Confirm semantics are unchanged.

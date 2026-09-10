@@ -167,7 +167,7 @@
   padding:
     var(--entry-pad-top)
     max(var(--entry-pad-side), env(safe-area-inset-right))
-    max(var(--entry-pad-bottom), env(safe-area-inset-bottom))
+    max(var(--entry-pad-bottom), calc(var(--mobile-bottom-clearance) + 16px))
     max(var(--entry-pad-side), env(safe-area-inset-left));
 
   /* Chrome that the original did not have, removed: the 3px pine/second/accent

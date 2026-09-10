@@ -42,7 +42,7 @@ function App(){const[form,setForm]=useState(initial),[index,setIndex]=useState(0
 const trigger=useRef(null),sheet=useDialog(open,()=>setOpen(false),()=>trigger.current),confirm=useRef(null);
 window.entryProof={form,mode,index,open,gate};
 const props={sheetRef:sheet,open,recommendationHousehold:h,mode,onSwitchMode:next=>{setMode(next);setIndex(0);},form,setForm,household:h,booksHousehold:h,pickerAccounts:h.accounts.filter(a=>a.active),categories:h.categories.filter(c=>c.recordType==='category'&&c.active&&c.transactionType===(mode==='income'?'income':'expense')),today,slideIndex:index,onSlideIndex:setIndex,shiftGate:gate,hasWorkJobs:false,shiftJobsPanel:el('p',null,'Fictional job panel'),shiftPreview:previewShiftAmounts({salesCents:Math.round(Number(form.sales)*100),cashTipsCents:Math.round(Number(form.cashTips)*100),ccTipsCents:Math.round(Number(form.ccTips)*100),hours:Number(form.hours)},h.shiftSettings),onHoursDirty:noop,hoursDirty:false,onClockIn:()=>setGate('clocked'),onAlreadyOff:()=>setGate('finished'),onSignOut:()=>setGate('signOut'),onNeverMind:()=>setGate('choose'),busy:false,error:'',onDismissError:noop,onGoMore:noop,confirm:null,confirmPanelRef:confirm,onConfirmAnyway:()=>window.entryPosts=(window.entryPosts||0)+1,postLabel:'Confirm '+mode,onPost:()=>window.entryPosts=(window.entryPosts||0)+1,onClose:()=>setOpen(false),persistCategory:noop,presetId:null,onPresetId:noop,onSavePreset:noop,onForgetPreset:noop,categoryTouched:touched,onCategoryTouched:setTouched,codingHint:'',onCodingHint:noop,splitPercents:{'MEM-001':50,'MEM-002':50},splitScopeValid:true,onMemberPercent:noop,addDetails:details,onAddDetails:setDetails,placePrefs,onPlacePrefs:noop,environment:'development',showLocationPrompt:false,onShowLocationPrompt:noop,locationBusy:false,applyConfiguredStamps:noop,clearLocationStamp:noop,displayZone:'America/Toronto',experienceLine:'Fictional local preview.'};
-return el('main',{className:'app','data-ledger-tab':'home'},el('section',null,el('h1',null,'Fictional local entry review'),el('button',{ref:trigger,onClick:()=>{setMounted(true);setOpen(true);}},'Open entry'),el('a',{href:'#background'},'Background link')),mounted?el(AddSlideshow,props):null);}
+return el('main',{className:'app','data-ledger-tab':'home',style:{'--fund-ledge-height':'84px'}},el('section',null,el('h1',null,'Fictional local entry review'),el('button',{ref:trigger,onClick:()=>{setMounted(true);setOpen(true);}},'Open entry'),el('a',{href:'#background'},'Background link')),mounted?el(AddSlideshow,props):null,el('div',{className:'fund-ledge'},el('button',{className:'fund-ledge-grip'},'Household Fund')),el('nav',{className:'nav'},el('button',null,'Home')));}
 createRoot(document.getElementById('root')).render(el(App));`;
 const server = await createServer({root:process.cwd(),configFile:false,cacheDir,server:{host:'127.0.0.1',port:0,ws:false},plugins:[{name:'entry-review',resolveId(id){if(id==='/entry-review.js')return '\0entry-review';},load(id){if(id==='\0entry-review')return entry;},configureServer(s){s.middlewares.use(async(req,res,next)=>{if(req.url?.split('?')[0]!=='/entry-review')return next();res.setHeader('Content-Type','text/html');res.end(await s.transformIndexHtml('/entry-review','<!doctype html><html lang="en"><head><title>Local entry review</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/entry-review.js"></script></body></html>'));});}}]});
 const records = [], failures = [], errors = [], blocked = [], cases = [];
@@ -64,6 +64,8 @@ async function inspect(label, meta) {
     const dialog = document.querySelector('.add-slideshow');
     const panel = dialog.querySelector('.sheet-inner');
     const rect = panel.getBoundingClientRect();
+    const nav = document.querySelector('.nav')?.getBoundingClientRect();
+    const fund = document.querySelector('.fund-ledge-grip')?.getBoundingClientRect();
     const visible = el => el.checkVisibility() && !el.closest('[hidden]');
     const targets = [...panel.querySelectorAll('button,input:not([type=hidden]),select,textarea,summary,a[href]')]
       .filter(visible).map(el => {
@@ -71,11 +73,18 @@ async function inspect(label, meta) {
         return {name:el.getAttribute('aria-label') || el.textContent?.trim().slice(0,60) || el.id,
           x:r.x, right:r.right, width:r.width, height:r.height, disabled:el.disabled || false};
       });
+    const priorScrollTop = panel.scrollTop;
+    panel.scrollTop = panel.scrollHeight;
+    const reachableBottom = Math.max(...[...panel.querySelectorAll('button,input:not([type=hidden]),select,textarea,summary,a[href]')]
+      .filter(visible).map(el => el.getBoundingClientRect().bottom));
+    panel.scrollTop = priorScrollTop;
     const motion = panel.getAnimations({subtree:true}).filter(a => a.playState === 'running' &&
       (a.effect?.getComputedTiming().duration === Infinity || Number(a.effect?.getComputedTiming().duration) > 100));
-    return {viewport:innerWidth, documentWidth:document.documentElement.scrollWidth,
+    return {viewport:innerWidth,viewportHeight:innerHeight,documentWidth:document.documentElement.scrollWidth,
       panel:{x:rect.x,right:rect.right,width:rect.width,y:rect.y,height:rect.height,
-        clientWidth:panel.clientWidth,scrollWidth:panel.scrollWidth},
+        clientWidth:panel.clientWidth,scrollWidth:panel.scrollWidth,
+        paddingBottom:parseFloat(getComputedStyle(panel).paddingBottom)},
+      bottomChrome:(nav?.height||0)+(fund?.height||0),reachableBottom,
       slide:dialog.dataset.addSlide,mobile:dialog.classList.contains('mobile-entry-sheet'),
       reduced:matchMedia('(prefers-reduced-motion: reduce)').matches,runningMotion:motion.length,motion:motion.map(a=>({kind:a.constructor.name,name:a.animationName||a.transitionProperty,duration:a.effect?.getComputedTiming().duration,target:a.effect?.target?.outerHTML?.slice(0,250)})),
       targets,declaredTransitions:[...panel.querySelectorAll('*')].filter(visible).map(el=>({target:el.tagName+'.'+el.className,property:getComputedStyle(el).transitionProperty,duration:getComputedStyle(el).transitionDuration})).filter(t=>t.duration.split(',').some(d=>parseFloat(d)>0.1)),focusInside:dialog.contains(document.activeElement)};
@@ -84,6 +93,10 @@ async function inspect(label, meta) {
   assert.ok(geometry.documentWidth <= geometry.viewport + 1, `${label}: document overflow`);
   assert.ok(geometry.panel.x >= -1 && geometry.panel.right <= geometry.viewport + 1, `${label}: panel outside viewport`);
   assert.ok(geometry.panel.scrollWidth <= geometry.panel.clientWidth + 1, `${label}: panel horizontal overflow`);
+  if (geometry.viewport <= 719) assert.ok(geometry.panel.paddingBottom >= geometry.bottomChrome + 15,
+    `${label}: final controls do not reserve mobile nav and Household Fund pull-tab clearance`);
+  if (geometry.viewport <= 719) assert.ok(geometry.reachableBottom <= geometry.viewportHeight - geometry.bottomChrome + 1,
+    `${label}: final control cannot scroll above mobile nav and Household Fund pull tab`);
   const clipped = geometry.targets.filter(t => t.x < geometry.panel.x-1 || t.right > geometry.panel.right+1);
   assert.deepEqual(clipped, [], `${label}: controls extend outside panel`);
   if (meta.reducedMotion && geometry.runningMotion) failures.push({label:'reduced-motion',...meta,state:label,error:'Transition remains active under reduced motion',motion:geometry.motion});
