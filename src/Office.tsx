@@ -103,7 +103,6 @@ import { LampBody, LampGlance, lampAria } from "./widgets/Lamp.tsx";
 import { Cabinets, type DeskSheet } from "./widgets/Cabinets.tsx";
 import { CalendarBody, CalendarGlance } from "./widgets/CalendarDesk.tsx";
 import { AppointmentsBody, AppointmentsGlance } from "./widgets/AppointmentsDesk.tsx";
-import { SillOverviewPlate } from "./widgets/SillOverview.tsx";
 import { AccountsBody, AccountsGlance } from "./widgets/AccountsDesk.tsx";
 import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
@@ -935,7 +934,6 @@ export function Office({
         minimized={layout.windowMinimized}
         onToggle={cycleWindow}
       />
-      <SillOverviewPlate overview={sill} compact={layout.windowMinimized} />
       {face === "paper" ? (
         <OfficeWide
           scenarioSource={scenarioSource}

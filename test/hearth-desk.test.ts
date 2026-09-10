@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import {
   catalogHousehold,
   collapseOfficeLayout,
@@ -66,7 +67,7 @@ describe("office desk rewrite", () => {
     expect(JSON.parse(storage.getItem(officeLayoutKey("development", "phone"))!).expanded).toBeNull();
   });
 
-  it("puts Mint/YNAB overview figures on the sill, never as a weather sentence", () => {
+  it("keeps the former overview facts available for attention routing", () => {
     const household = seedDemoHousehold({ environment: "development", today });
     const dashboard = buildDashboard(household, today);
     const plate = sillOverview(household, dashboard, today);
@@ -75,5 +76,12 @@ describe("office desk rewrite", () => {
     expect(plate.figures.some((row) => row.id === "bill")).toBe(true);
     expect(plate.needsMe.length).toBeGreaterThan(0);
     expect(plate.figures.every((row) => row.instrument !== "window")).toBe(true);
+    expect(typeof plate.needsAttention).toBe("boolean");
+  });
+
+  it("removes the duplicated sill plate from the desktop Home composition", () => {
+    const office = readFileSync("src/Office.tsx", "utf8");
+    expect(office).not.toContain("SillOverviewPlate");
+    expect(office).not.toContain("<SillOverviewPlate");
   });
 });

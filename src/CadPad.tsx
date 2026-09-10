@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { PAD_KEYS, dollarsFromCentsDigits, tapCentsDigits, type PadKey } from "./core/cadPad.ts";
 import { formatCad } from "./core/money.ts";
 
@@ -25,7 +25,6 @@ export function CadPad({
   enterLabel?: string;
   enterDisabled?: boolean;
 }) {
-  const root = useRef<HTMLDivElement>(null);
   const cap = maxCents ?? (unit === "hours" ? 2400 : 99_999_999);
   const cents = Number(digits || "0");
   const display = digits === "" && emptyDisplay
@@ -33,14 +32,6 @@ export function CadPad({
     : unit === "hours"
       ? `${dollarsFromCentsDigits(digits)} h`
       : formatCad(cents);
-
-  useEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    const block = (event: WheelEvent) => event.preventDefault();
-    el.addEventListener("wheel", block, { passive: false });
-    return () => el.removeEventListener("wheel", block);
-  }, []);
 
   useEffect(() => {
     if (!onEnter) return;
@@ -58,7 +49,7 @@ export function CadPad({
   }, [onEnter, enterDisabled]);
 
   return (
-    <div className={`cad-pad${giant ? " is-giant" : ""}`} ref={root}>
+    <div className={`cad-pad${giant ? " is-giant" : ""}`}>
       <p className="cad-pad-label">{label}</p>
       <p className="cad-pad-display" aria-live="polite">{display}</p>
       <div className="cad-pad-keys">
