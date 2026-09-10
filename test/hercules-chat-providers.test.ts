@@ -130,7 +130,7 @@ describe("Hercules in-app chat provider chain", () => {
 
     const body = await response.json() as { ok: boolean; provider: string; reply: string };
     expect(body).toMatchObject({ ok: true, provider: "gemini" });
-    expect(body.reply).toMatch(/don't post/i);
+    expect(body.reply).toMatch(/prepare.*review/i);
     expect(body.reply).not.toMatch(/I posted/i);
     expect(upstream).toHaveBeenCalledTimes(1);
     expect(run).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe("Hercules in-app chat provider chain", () => {
 
     const body = await response.json() as { ok: boolean; provider: string; reply: string };
     expect(body).toMatchObject({ ok: true, provider: "groq" });
-    expect(body.reply).toMatch(/don't post/i);
+    expect(body.reply).toMatch(/prepare.*review/i);
     expect(sentBodies[0]).toMatchObject({
       generationConfig: {
         maxOutputTokens: 16384,

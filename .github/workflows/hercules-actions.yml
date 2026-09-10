@@ -1,0 +1,60 @@
+name: Hercules confirmed actions
+
+on:
+  pull_request:
+    paths:
+      - 'src/core/hercules*.ts'
+      - 'src/core/nativeEvents.ts'
+      - 'src/HerculesActionPanel.tsx'
+      - 'src/App.tsx'
+      - 'workers/ledgerRoom.ts'
+      - 'test/hercules-*.test.ts'
+      - '.github/workflows/hercules-actions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'src/core/hercules*.ts'
+      - 'src/core/nativeEvents.ts'
+      - 'src/HerculesActionPanel.tsx'
+      - 'src/App.tsx'
+      - 'workers/ledgerRoom.ts'
+      - 'test/hercules-*.test.ts'
+      - '.github/workflows/hercules-actions.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  confirmed-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Focused High-risk confirmation and recovery gate
+        env:
+          HEARTH_TEST_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: >-
+          pnpm test -- --risk=high
+          --focus=test/hercules-action-policy.test.ts
+          --focus=test/hercules-actions.test.ts
+          --focus=test/hercules-action-ui.test.ts
+          --focus=test/hercules-execution.test.ts
+          --focus=test/hercules-fund-actions.test.ts
+          --focus=test/native-events.test.ts
+          --focus=test/hercules-private-chat-ui.test.ts
+          --focus=test/hercules-companion-continuity.test.ts
+          --focus=test/hercules-worker.test.ts
+          --focus=test/month-rehearsal-mainline.test.ts
+          --focus=test/app-startup-p1.test.ts
+          --focus=test/hercules-appointment-actions.test.ts
+          --focus=test/hercules-companion-actions.test.ts
+          --focus=test/hercules-wardrobe-continuity.test.ts
+          --focus=test/hercules-review-destinations.test.ts
+          --focus-reason='Confirmed writes: authority, scope, stale reviews, immutable identity, receipt recovery, destination disclosure and domain parity.'

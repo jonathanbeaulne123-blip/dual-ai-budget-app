@@ -207,7 +207,7 @@ export function restoreAcceptedSnapshot(accepted: Household, next: Household): H
   const missingTx = accepted.transactions.some((row) => !nextTxIds.has(row.id));
   const missingGoals = accepted.goals.some((row) => !nextGoalIds.has(row.id));
   const missingPotentialExpenses = (accepted.potentialExpenses ?? []).some((row) => !nextPotentialExpenseIds.has(row.id));
-  if (!missingAccounts && !missingTx && !missingGoals && !missingPotentialExpenses) return next;
+  if (!missingAccounts && !missingTx && !missingGoals && !missingPotentialExpenses && !(accepted.nativeEvents??[]).some(r=>!(next.nativeEvents??[]).some(n=>n.id===r.id))) return next;
   const goals = unionById(next.goals, accepted.goals);
   const goalIds = new Set(goals.map((goal) => goal.id));
   return {
@@ -221,6 +221,7 @@ export function restoreAcceptedSnapshot(accepted: Household, next: Household): H
     goalPurchases: unionById(next.goalPurchases ?? [], accepted.goalPurchases ?? [])
       .filter((row) => goalIds.has(row.goalId)),
     recurrences: unionById(next.recurrences ?? [], accepted.recurrences ?? []),
+    nativeEvents:unionById(next.nativeEvents??[],accepted.nativeEvents??[]),
     potentialExpenses: unionById(next.potentialExpenses ?? [], accepted.potentialExpenses ?? []),
     appointments: unionById(next.appointments ?? [], accepted.appointments ?? []),
     claims: unionById(next.claims ?? [], accepted.claims ?? []),

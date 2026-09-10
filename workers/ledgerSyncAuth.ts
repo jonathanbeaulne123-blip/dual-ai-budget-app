@@ -158,7 +158,7 @@ export async function importLegacy(
   );
   // These collections are intentionally projected to Shared + caller Personal;
   // their exact wire sets are checked separately by the parity comparator.
-  const scopedFields=new Set(['members','accounts','transactions','shifts','goals','goalContributions','goalPurchases','activity','tombstones','companionProfile', 'fundPrivate','herculesProPermissions','sevenShiftsSchedules','coworkers','coworkerAttendance','coworkerSchedules','shiftEnvelopes','shiftBibles']);
+  const scopedFields=new Set(['nativeEvents','members','accounts','transactions','shifts','goals','goalContributions','goalPurchases','activity','tombstones','companionProfile', 'fundPrivate','herculesProPermissions','sevenShiftsSchedules','coworkers','coworkerAttendance','coworkerSchedules','shiftEnvelopes','shiftBibles']);
   for(const [field,value] of Object.entries(shared)) {
     if(scopedFields.has(field)||['kind','linked','baseRevision','booksAcceptedHash','sharing'].includes(field))continue;
     if(canonical(value)!==canonical((assembled as any)[field]))changes.push(`assembled.${field}`);

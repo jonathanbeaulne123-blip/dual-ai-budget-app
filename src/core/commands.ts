@@ -5,7 +5,7 @@ import { reviewedSwipeEntry } from "./swipe.ts";
 import { prepareDuplicateReview, reviewedDuplicateRequest, type DuplicateReviewRequest } from "./duplicateReview.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { BOARD_ITEM_LIMIT, BOARD_TITLE_LIMIT, shapeSharedBoards, type BoardTask, type BoardMilestone, type BoardPhoto } from "./sharedBoards.ts";
-import { TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { isValidDateKey, TIMEZONE, addDays, todayKey, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { advanceCadence, DEFAULT_REMINDER_HOURS_BEFORE, EMPTY_CALENDAR, inferRecurrenceKind, normalizeRecurrenceCadence, shapeCalendar } from "./recurrence.ts";
 import { detectHabits, detectRhythms } from "./rhythm.ts";
 import { CURRENCY, parseWholeCents } from "./money.ts";
@@ -4695,6 +4695,36 @@ export const postOneRecurrence = captureCommand("postOneRecurrence", function po
   return commit(previous, next, "Post Recurring", `Posted ${item.note || "recurring"}`, postedIds);
 });
 
+/** Review an actual bill payment without rewriting the recurring template or moving bank money. */
+export const recordBillPayment = captureCommand("recordBillPayment", function recordBillPayment(household:Household,input:{
+  recurrenceId:string; occurrenceDate:DateKey; paymentDate:DateKey; amount:string; accountId:string;
+  createdBy:string; matchTransactionId?:string|null; confirmDuplicate?:boolean;
+}):CommitResult {
+  const actor=resolveActor(household,{createdBy:input.createdBy});
+  const item=household.recurrences.find(r=>r.id===input.recurrenceId&&r.active&&r.type==='expense');
+  if(!item||item.nextDate!==input.occurrenceDate||item.payments?.some(p=>p.occurrenceDate===input.occurrenceDate))throw new ValidationError('This bill occurrence changed. Review its current payment status.');
+  if(!isValidDateKey(input.paymentDate))throw new ValidationError('Choose a valid payment date.');
+  const amountCents=parseWholeCents(input.amount,'Payment');
+  const previous=cloneHousehold(household);let working=household,transactionId:string;const postedIds:string[]=[];
+  if(input.matchTransactionId){
+    const match=household.transactions.find(t=>t.id===input.matchTransactionId&&t.visibility!=='personal'&&t.type==='expense'&&!t.isDuplicate&&!t.reversalOfId);
+    if(!match||match.amountCents!==amountCents||match.accountId!==input.accountId||match.date!==input.paymentDate
+      ||household.transactions.some(t=>t.reversalOfId===match.id)
+      ||household.recurrences.some(r=>r.payments?.some(p=>p.transactionId===match.id)))throw new ValidationError('Choose an existing payment with the same date, amount and account that has not already been matched.');
+    if(item.fundingDefault)throw new ValidationError('This bill uses the Household Fund. Review its funding before matching a payment.');
+    transactionId=match.id;
+  }else{
+    const result=postEntry(working,{date:input.paymentDate,type:'expense',amount:input.amount,accountId:input.accountId,subcategoryId:item.subcategoryId,note:item.note,
+      splits:resizePotentialExpenseSplits(item.splits,item.amountCents,amountCents),createdBy:actor.createdBy,visibility:'household',confirmDuplicate:input.confirmDuplicate,
+      source:'recurring',sourceId:item.id,funding:item.fundingDefault?{fundId:item.fundingDefault.fundId,fundedCents:item.fundingDefault.fundedCents==='full'?amountCents:item.fundingDefault.fundedCents,destinationAccountId:item.fundingDefault.destinationAccountId}:undefined});
+    working=result.household;postedIds.push(...result.postedIds);transactionId=result.postedIds[0]!;
+  }
+  const next=cloneHousehold(working),current=next.recurrences.find(r=>r.id===item.id)!;
+  current.payments=[...(current.payments??[]),{occurrenceDate:input.occurrenceDate,paymentDate:input.paymentDate,amountCents,accountId:input.accountId,transactionId,recordedBy:actor.createdBy}];
+  current.nextDate=advanceCadence(item.nextDate,item.cadence);current.updatedAt=nowIso();
+  return commit(previous,next,'Bill payment',`Recorded payment for ${item.note||'bill'}`,postedIds);
+});
+
 export const setRecurrenceGoogleSync = captureCommand("setRecurrenceGoogleSync", function setRecurrenceGoogleSync(
   household: Household,
   patches: { recurrenceId: string; memberId: string; calendarId: string; eventId: string }[],
@@ -7821,3 +7851,5 @@ export function emptyHousehold(environment: Household["environment"] = "developm
 export { DEFAULT_SHIFT_SETTINGS };
 
 export { acceptReviewedAccountHistory, approveAccountHistoryReview, submitAccountHistoryReview } from "./accountHistory.ts";
+
+export { saveNativeEvent } from "./nativeEvents.ts";

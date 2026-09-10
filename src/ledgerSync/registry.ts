@@ -1,3 +1,4 @@
+import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
 import {commitCompanionGallery} from '../core/herculesWardrobe.ts';
 import { reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import { eraseDevelopmentActivity, restoreSharedPoint } from "./lifecycle.ts";
@@ -16,6 +17,7 @@ type Policy = { fn: Fn; bind: (args: unknown[], actor: string) => void };
 const policies = new Map<string, Policy>();
 const functions = {
   ...commands,
+  executeHerculesAction, cancelHerculesSubmission,
   commitCompanion,
   commitCompanionGallery,
   ...rehearsal,
@@ -67,6 +69,9 @@ register(
   `offerHouseholdOnboarding proposeHouseholdOnboarding confirmHouseholdOnboarding stopHouseholdOnboarding resumeHouseholdOnboarding clockInShift clockOutShift startShiftBreak endShiftBreak updateOpenShiftTimeline abandonOpenShift chooseOpenShiftTimeline moveAskGoalClaimToNextMonth playTicTacToe guessHangman foundHouseholdCharter signHouseholdCharter grantCharterPermission revokeCharterPermission proposeCharterAmendment proposeCharterCeilingAmendment confirmCharterAmendment holdCharterAmendment bindHouseholdFundBackingAccount setHouseholdFundMonthPlan replaceHouseholdFundContributionSource proposeHouseholdFundContribution holdHouseholdFundContribution releaseHouseholdFundHold withdrawHouseholdFundContribution confirmHouseholdFundContribution confirmHouseholdFundSettlement allocateHouseholdFundSurplus releaseHouseholdFundKitty postHouseholdFundDirectDebit recordHouseholdFundReconciliation reverseHouseholdFundEvent activateHouseholdFundConnection recordHouseholdFundBankVerification commitCharterFounding startRehearsalTask recordRehearsalOutcome linkRehearsalReceipt archiveMonthRehearsal stampWeeklyDocument`,
   ["memberId"],
 );
+register("executeHerculesAction cancelHerculesSubmission", ["memberId"]);
+register("recordBillPayment", ["createdBy"]);
+register("saveNativeEvent", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
@@ -183,6 +188,7 @@ export function executeIntent(
     for (const patch of args[0] as Array<{ memberId: string }>) {
       if (patch.memberId !== actor) throw new Error("ACTOR_MISMATCH");
     }
+  if(kind==='executeHerculesAction' && input?.submissionId!==commandId)throw new Error('CONFIRMATION_ID_MISMATCH');
   if (["postOpeningBalances", "acceptReviewedAccountHistory"].includes(kind) && input) input.confirmationId = commandId;
   if (
     kind === "reconcileWorkWeekFromEvidence" &&

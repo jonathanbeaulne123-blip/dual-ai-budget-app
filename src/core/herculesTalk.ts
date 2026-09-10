@@ -206,12 +206,12 @@ export function herculesIdle(
     topic = "bills";
     pose = "pace";
   } else if (tab === "add") {
-    spoken = "I'll loaf. You confirm. I don't write.";
+    spoken = "I can help prepare the details. You decide at Final Confirm.";
     topic = "add";
     pose = "sleep";
   } else if (tab === "ledger") {
     spoken = "Fieldwork. Trial first. Then the rec. Then I loaf.";
-    lesson = "I walk the journal. I don't write it.";
+    lesson = "We can check the records and review a correction together.";
     topic = "fieldwork";
     pose = "stretch";
   } else if (tab === "home") {
@@ -433,7 +433,7 @@ export function talkHercules(
     talk.fact = memoryFact;
   }
   if (topic === "identity") {
-    talk.spoken = clip(`I'm ${name}. Auditor on the counter. I don't write the books.`);
+    talk.spoken = clip(`I'm ${name}. I can help you understand your money and prepare changes for Final Confirm.`);
     talk.pose = "pounce";
   }
   return talk;

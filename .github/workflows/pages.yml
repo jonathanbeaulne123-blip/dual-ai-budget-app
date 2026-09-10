@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      hercules_actions:
+        description: Confirmed Hercules actions in Development only
+        type: choice
+        options: ["1", "0"]
+        default: "1"
       hercules_chat:
         description: Hercules conversation presentation (compatible writer retained)
         type: choice
@@ -52,6 +57,7 @@ jobs:
           VITE_PGLITE_INCREMENTAL_DEV: "1"
           VITE_PRODUCTION_CONTINUITY: "0"
           VITE_SYNC_PILOT_DIAGNOSTICS: "1"
+          VITE_HERCULES_ACTIONS: ${{ inputs.hercules_actions || vars.VITE_HERCULES_ACTIONS || '1' }}
           VITE_HERCULES_CHAT: ${{ inputs.hercules_chat || vars.VITE_HERCULES_CHAT || '1' }}
           VITE_HERCULES_DISCOVERY: ${{ inputs.hercules_discovery || vars.VITE_HERCULES_DISCOVERY || '1' }}
           VITE_HERCULES_DRESSING_ROOM: ${{ inputs.hercules_wardrobe || vars.VITE_HERCULES_DRESSING_ROOM || '1' }}
@@ -71,10 +77,10 @@ jobs:
           if [ "$VITE_CONTINUITY_COMMAND_LOG" = "1" ]; then
             echo "Tier 2 command-log transport is ON for this kitchen build (VITE_CONTINUITY_COMMAND_LOG=1; requires Migration 013)."
           fi
-          for flag in "$VITE_HERCULES_CHAT" "$VITE_HERCULES_DISCOVERY" "$VITE_HERCULES_DRESSING_ROOM"; do
+          for flag in "$VITE_HERCULES_ACTIONS" "$VITE_HERCULES_CHAT" "$VITE_HERCULES_DISCOVERY" "$VITE_HERCULES_DRESSING_ROOM"; do
             case "$flag" in 0|1) ;; *) echo "::error::Invalid Hercules presentation switch"; exit 1;; esac
           done
-          echo "Hercules presentation: chat=$VITE_HERCULES_CHAT discovery=$VITE_HERCULES_DISCOVERY wardrobe=$VITE_HERCULES_DRESSING_ROOM; compatible private writer retained."
+          echo "Hercules Development actions=$VITE_HERCULES_ACTIONS; presentation: chat=$VITE_HERCULES_CHAT discovery=$VITE_HERCULES_DISCOVERY wardrobe=$VITE_HERCULES_DRESSING_ROOM; compatible private writer retained."
           pnpm build
       - name: Deploy
         if: github.event_name != 'pull_request'

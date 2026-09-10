@@ -20,7 +20,7 @@ import type {
   Household,
 } from "./types.ts";
 
-const SQL_WRITE = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE)\b/i;
+const SQL_WRITE = /\b(?:INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|(?:DROP|ALTER|CREATE|TRUNCATE)\s+(?:TABLE|DATABASE|SCHEMA|INDEX)|GRANT\s+\w+\s+ON|REVOKE\s+\w+\s+ON)\b/i;
 const SHAME = /\b(who spent|who paid more|bianca vs|jonathan vs|bianca (spent|wasted)|jonathan (spent|wasted))\b/i;
 /** Topics answered from the books. Default talk topic "ask" is unmatched — that may hit a vendor model. */
 const JOURNAL_TOPICS = new Set([
@@ -189,7 +189,7 @@ export function planHerculesTurn(
   today: DateKey,
   tab: HearthTab = "home",
   lastTopic = "",
-  context: HerculesAskContext = { memberId: household.members[0]?.id ?? "", view: "household" },
+  context: HerculesAskContext & {conversationActions?:boolean} = { memberId: household.members[0]?.id ?? "", view: "household" },
 ): HerculesPlan {
   const q = question.trim();
   const gate = gateHerculesQuestion(household, q, context.memberId, context.view);
@@ -244,12 +244,12 @@ export function planHerculesTurn(
     };
   }
 
-  const draft = proposeDraft(q);
+  const draft = context.conversationActions ? null : proposeDraft(q);
   if (draft) {
     return {
       talk: lineTalk(
         HERCULES_REFUSE_WRITE,
-        "Safe write: I open Add. Confirm still posts. I never call postEntry.",
+        "Review the entry in Add before confirming it.",
         "add",
         ["Groceries", "We good?"],
       ),

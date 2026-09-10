@@ -32,7 +32,7 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
   if (!household.members.some(member => member.id === scope.memberId && member.active)) throw new Error("COMPANION_MEMBER_REQUIRED");
   const intent = decodeCompanionIntent(raw, scope, FITTING_MANIFEST);
   const op = intent.operation;
-  if (!["preference.set", "preference.forget", "remembering.set", "conversation.append", "conversation.clear", "suggestion.set", "look.wear", "look.save", "look.remove"].includes(op.kind)) throw new Error("COMPANION_FEATURE_NOT_AVAILABLE");
+  if (!["workflow.set", "preference.set", "preference.forget", "remembering.set", "conversation.append", "conversation.clear", "suggestion.set", "look.wear", "look.save", "look.remove"].includes(op.kind)) throw new Error("COMPANION_FEATURE_NOT_AVAILABLE");
   const profile = companionFor(household, scope.memberId);
   const ready = checkCompanionPrecondition(profile, intent, scope, FITTING_MANIFEST);
   const now = new Date().toISOString();
@@ -43,7 +43,11 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
     if (!candidate || candidate.key !== op.key || canonical(candidate.value) !== canonical(op.value)) throw new Error("EXPLICIT_PREFERENCE_REQUIRED");
   }
   if (ready !== "duplicate") {
-    if (op.kind === "look.wear") profile.wornLook={revision:op.expectedRevision+1,value:structuredClone(op.look)};
+    if (op.kind === 'workflow.set') {
+      const existing=profile.workflows?.find(r=>r.id===op.workflowId)?.value;
+      if(existing?.submission&&canonical(existing)!==canonical(op.value))throw new Error('PENDING_HERCULES_SUBMISSION: Resolve the original action before replacing this task.');
+      profile.workflows=[...(profile.workflows??[]).filter(r=>r.id!==op.workflowId),{id:op.workflowId,revision:op.expectedRevision+1,value:op.value}];
+    } else if (op.kind === "look.wear") profile.wornLook={revision:op.expectedRevision+1,value:structuredClone(op.look)};
     else if(op.kind === "look.save" || op.kind === "look.remove") {
       const id=op.kind==='look.save'?op.look.id:op.lookId,existing=profile.savedLooks.find(row=>row.id===id);
       if(op.kind==='look.remove'&&!existing?.value)throw new Error('LOOK_NOT_FOUND');
@@ -66,6 +70,7 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
       const partition = profile.conversations.find(row => row.view === op.view)!;
       partition.generation += 1;
       partition.turns = [];
+      if(profile.workflows)profile.workflows=profile.workflows.map(r=>r.value?.view===op.view?{...r,revision:r.revision+1,value:r.value.submission?{...r.value,generation:partition.generation,queue:[]}:null}:r);
     } else if (op.kind === "conversation.append") {
       if (Date.parse(op.turn.createdAt) > Date.parse(now) + 300_000 || Date.parse(op.turn.createdAt) < Date.parse(now) - COMPANION_LIMITS.historyDays * 86_400_000) throw new Error("COMPANION_TURN_EXPIRED");
       profile.conversations.find(row => row.view === op.view)!.turns.push(op.turn);
@@ -78,6 +83,11 @@ export const commitCompanion = captureCommand("commitCompanion", (household: Hou
   for (const partition of profile.conversations) partition.turns = partition.turns
     .filter(turn => Date.parse(turn.createdAt) >= Date.parse(now) - COMPANION_LIMITS.historyDays * 86_400_000)
     .slice(-COMPANION_LIMITS.turnsPerView);
+  // Ordinary drafts follow the private-history retention window. Pending identities
+  // are evidence needed to resolve an uncertain write and must never expire here.
+  profile.workflows = profile.workflows?.map(resource => resource.value && !resource.value.submission
+    && Date.parse(resource.value.updatedAt) < Date.parse(now) - COMPANION_LIMITS.historyDays * 86_400_000
+    ? {...resource, revision: resource.revision + 1, value: null} : resource);
   const next = { ...household, companionProfile: decodeCompanionProfile(profile, scope) };
   return { household: next, warnings: [], postedIds: [], persistenceScope: "member-personal", personalMemberId: scope.memberId,
     undo: { id: intent.id, label: "Hercules private settings", snapshot: household, postedIds: [], commandKind: "hercules-companion-personal" } };

@@ -7,14 +7,14 @@ import { householdWallet } from "./accounts.ts";
 import { formatCad } from "./money.ts";
 import type { Household } from "./types.ts";
 
-export const HERCULES_REFUSE_WRITE = "I don't write the books. Tell the kitchen what to post.";
+export const HERCULES_REFUSE_WRITE = "I can help prepare that. Review the details and use Final Confirm before it is saved.";
 export const HERCULES_REFUSE_SHAME = "Not a scoreboard. I won't name who spent.";
 export const HERCULES_REFUSE_SQL = "I read. I don't write SQL you didn't mean.";
 
 const WRITE_CLAIM =
   /\b(i(?:'ve| have)?|we)\s+(just\s+)?(posted|logged|saved|recorded|wrote|inserted|updated|deleted|paid)\b/i;
 const SQL_WRITE =
-  /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE)\b/i;
+  /\b(?:INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|(?:DROP|ALTER|CREATE|TRUNCATE)\s+(?:TABLE|DATABASE|SCHEMA|INDEX)|GRANT\s+\w+\s+ON|REVOKE\s+\w+\s+ON)\b/i;
 const SHAME = /\b(who spent|who paid more|bianca vs|jonathan vs|(?:bianca|jonathan)\s+(spent|wasted|blew|overspent))\b/i;
 const MODEL_LEAK =
   /\b(as an ai|language model|i(?:'m| am) (?:an? )?(?:ai|language model|large language|assistant))\b/gi;
@@ -167,7 +167,7 @@ export function sanitizeHerculesReply(
 ): string {
   let reply = String(text || "").replace(/[^\S\n]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   if (!reply) {
-    return clipReply(groundedSpeak) || "mrrp. Ask a number. I don't write.";
+    return clipReply(groundedSpeak) || "What would you like help with?";
   }
   if (SQL_WRITE.test(reply) || /```/.test(reply) || /\bSELECT\b.+\bFROM\b/i.test(reply)) {
     return HERCULES_REFUSE_SQL;
@@ -177,11 +177,11 @@ export function sanitizeHerculesReply(
   }
   if (WRITE_CLAIM.test(reply)) {
     return groundedSpeak
-      ? clipReply(`I don't post. ${groundedSpeak}`)
+      ? clipReply(`I can prepare a change for your review. ${groundedSpeak}`)
       : HERCULES_REFUSE_WRITE;
   }
   reply = reply.replace(MODEL_LEAK, "I'm a cat");
-  reply = reply.replace(/\bI(?:'ll| will) (post|log|save|record|write) (it|that|this|them)\b/gi, "I don't write");
+  reply = reply.replace(/\bI(?:'ll| will) (post|log|save|record|write) (it|that|this|them)\b/gi, "I can prepare that for your review");
   if (PROMPT_ECHO.test(reply) || FIGURES_HEADING.test(reply) || askedCardMismatch(asked, reply)) {
     return clipReply(groundedSpeak) || "mrrp. I only quote the books.";
   }

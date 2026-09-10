@@ -736,6 +736,14 @@ The fitting draft is device-local and keyed by environment/household/member; it 
 
 Budget delta (5): visual play stays outside accepted books and disclosure authority. Engagement delta (3): a tangible dress-up fitting with a recognizable source rig, material variation and responsive reactions. Risk High for Office integration. [Local evidence](worksessions/2026-09-10-hercules-slice-4.md); physical phone, subjective likeness/fitting and release acceptance are separate gates. No push, merge, deployment, hosted schema/data, secrets or provider activation.
 
+
+## 2026-09-10 — Hercules conversational application contract (implementation open)
+
+Jonathan explicitly authorizes conversational preparation and confirmed execution of app workflows. This replaces historical blanket “Hercules never writes” product wording, while preserving the model's lack of execution or confirmation authority. Every intentional app change requested through Hercules must reach a visible exact review and Final Confirm; ordinary agreement, quoted text, model output and old turns cannot authorize it. Existing automatic private chat, enabled preference memory and draft saving do not accept a prepared domain change.
+
+Reviews bind identity, environment, household, ledger view, exact values and current source facts. Pending claims are immutable and carry their original submission identity across retries/devices. Consumption is atomic with existing command execution; receipt recovery must adopt current canonical workflow state after acceptance, including other-device progress. Queue promotion prepares the next item without carrying confirmation authority. Native event and ordinary bill-payment additions preserve distinct event/plan/actual meanings. Google operations require separate receipts and remain unimplemented behind an independent reserved gate.
+
+High risk. Budget (5): confirmed workflows reuse accepted accounting and recovery. Engagement (3): plain guidance and a compact chat composer remain available through conversation. This is local implementation, not whole-app completion or release acceptance. [Coverage and remaining work](HERCULES_CAPABILITY_COVERAGE.md); [measured evidence](worksessions/2026-09-10-hercules-conversational-app.md). No release, hosted schema or Production permission is inferred.
 ## Mobile bottom boundary and CadPad scroll ownership (2026-09-10)
 
 The fixed mobile navigation and the measured Household Fund pull tab are one shared bottom obstruction, exposed as `--mobile-bottom-clearance`. Every new mobile sheet, drawer, sticky action, and scrollable interaction must reserve that boundary so its last control can move fully above both pieces of chrome. A surface may consume the shared token even when the Fund is absent; its measured Fund term then resolves to zero.

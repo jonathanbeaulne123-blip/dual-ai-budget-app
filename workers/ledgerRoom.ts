@@ -1,4 +1,5 @@
 /// <reference path="./ledger-platform.d.ts" />
+import {herculesActionsEnabled} from '../src/core/herculesActionPolicy.ts';
 import { compareImportParity } from "../src/ledgerSync/importParity.ts";
 import { IncrementalBooksGuard } from "../src/core/booksValidation.ts";
 import {
@@ -50,7 +51,7 @@ import {
 } from "../src/ledgerSync/wire.ts";
 import { importLegacy, supabase, type AuthEnv } from "./ledgerSyncAuth.ts";
 import { importReservationDigests, reservationDigest } from "./ledgerReservations.ts";
-type Env = AuthEnv & { LEDGER_ARCHIVE: R2Bucket };
+type Env = AuthEnv & { LEDGER_ARCHIVE: R2Bucket; HERCULES_ACTIONS_ENABLED?: string; HERCULES_EXTERNAL_CALENDAR_WRITES?: string };
 type Attachment = {
   scope?: Scope;
   deadline: number;
@@ -1017,7 +1018,8 @@ export class LedgerRoom extends DurableObject<Env> {
             type: "ready",
             companionProfileVersion: 1,
             companionDiscoveryVersion: 1,
-            companionWardrobeVersion: 1,
+            companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1,
+            herculesActionsEnabled: herculesActionsEnabled(a.scope.environment, this.env.HERCULES_ACTIONS_ENABLED),
             sequence: state.sequence,
             hash: await digest({
               sequence: state.sequence,
@@ -1051,6 +1053,8 @@ export class LedgerRoom extends DurableObject<Env> {
           return;
         }
         admission = true;
+        // Pause new actions without losing accepted receipts or the ability to cancel pending claims.
+        if(command.steps.some(step=>step.kind==='executeHerculesAction')&&!herculesActionsEnabled(a.scope.environment, this.env.HERCULES_ACTIONS_ENABLED))throw new Error('HERCULES_ACTIONS_PAUSED');
         const prepared = await prepareCommand(
           state,
           command,

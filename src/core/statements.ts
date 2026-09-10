@@ -463,7 +463,7 @@ export function notesToFinancialStatements(household: Household, monthKey: Month
     {
       id: "controls",
       title: "8. Control environment",
-      body: "Every money write is a command. Cosmetics never post. Bank rec never posts. Hercules never posts. Health refuses an unbalanced journal. Bank feeds, Interac, and issued cards wait on Auth + RLS.",
+      body: "Every money write is a command. Cosmetics never post. Bank rec never posts. Hercules prepares supported changes; the app requires a reviewed Final Confirm. Health refuses an unbalanced journal. Bank feeds, Interac, and issued cards wait on Auth + RLS.",
     },
     {
       id: "claims",

@@ -8195,6 +8195,9 @@ export function App() {
         }}
         onLedger={(fn) => { void runKitchen(fn); }}
         onCompanionCommand={runKitchen}
+        actionService={environment === "development" && import.meta.env.VITE_HERCULES_ACTIONS === "1" ? {execute:runKitchen,readSubmission:readWorkShiftSubmission} : undefined}
+        actionIdentity={`${localLedgerIdentity(session.memberId)??session.memberId}:${replicaScopeGenerationRef.current}`}
+        actionHousehold={household}
         onAcceptPreset={(key, summary) => setGuard({ kind: "acceptPreset", key, summary })}
         onDismissNotice={(key) => {
           const match = /^potential:([^:]+):(\d{4}-\d{2}-\d{2})$/.exec(key);

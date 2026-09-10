@@ -5,7 +5,7 @@ import type { LedgerView, PotentialExpenseCalendarLink, PotentialExpensePlan, Sp
 export const POTENTIAL_EXPENSE_TITLE_LIMIT = 120;
 
 const CALENDAR_LINK_SOURCES = new Set<PotentialExpenseCalendarLink["source"]>([
-  "recurrence", "rhythm", "shift", "shift-envelope", "google", "appointment", "claim", "work-settlement",
+  "event", "recurrence", "rhythm", "shift", "shift-envelope", "google", "appointment", "claim", "work-settlement",
 ]);
 
 export function shapePotentialExpenseCalendarLink(value: unknown): PotentialExpenseCalendarLink | null {
