@@ -255,6 +255,15 @@ describe("swipe sheet", () => {
     container.remove();
   });
 
+  it("leaves wheel scrolling with the CadPad's containing page", () => {
+    renderSwipe(catalogHousehold());
+    const wheel = new WheelEvent("wheel", { bubbles: true, cancelable: true, deltaY: 120 });
+
+    container.querySelector<HTMLElement>(".cad-pad")!.dispatchEvent(wheel);
+
+    expect(wheel.defaultPrevented).toBe(false);
+  });
+
   it("opens CadPad, refuses blank Enter, and posts through the callback once", () => {
     let household = archiveAccount(configuredFund(), "ACC-MC").household;
     household = buy(household, { date: "2026-09-02", amount: "10", subcategoryId: "SUB-FOOD-GROCERIES" });
