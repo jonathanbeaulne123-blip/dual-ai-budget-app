@@ -1,12 +1,12 @@
 # Plan guided conversation
 
-- Status: implemented and locally verified; Development deployment and live acceptance remain open.
+- Status: Development release authorized; current-main release verification in progress.
 - Branch: codex/plan-guided-conversation; verified clean base origin/main 16d4710733c5e5ff1655e5a7d2bdff6c01b59ad2.
 - Risk: High (private Plan drafting and conversational review); no financial projection or posting semantics change intended.
 - Budget delta (5): collect evidence, dates and explicit unknowns through existing Plan draft commands and exact review.
 - Engagement delta (3): one question with its plain-English purpose, useful existing evidence and a quieter page.
 - Scope: progressive Plan disclosure; one supported, resumable private guided workflow in the existing Hercules adapter; all themes/scopes/phone and desktop; existing independent proposal acknowledgement remains separate.
-- Authority: latest user request, CLOUD_CONTINUITY and existing Final Confirm/privacy contracts. Implementation authorization only; previous PR release authorization does not release this follow-up.
+- Authority: latest user request, CLOUD_CONTINUITY and existing Final Confirm/privacy contracts. Jonathan explicitly authorized this follow-up with “push merge deploy” on 2026-09-11. Development publication is in scope; Production activation, schema and household data changes are not.
 - Independent reviewers: bounded read-only workflow/privacy and UX investigations; root sole writer.
 
 ## Composition
@@ -45,3 +45,9 @@ Live provider phrasing, authenticated two-partner/device continuity, replay/rest
 High-risk change-focused quick gate: **PASS**, 324 tests across 24 files (198 fast plus 126 serial), TypeScript, AI surface and diff checks. Final duration **89.5 seconds**, within the five-minute target; this does not erase the earlier recorded overrun. Includes full App startup/recovery, mainline posting, private chat, command contracts, Plan projections and PGlite agreement tests. Final executable change fingerprint: `eebac309c2d2c2da29de76fed236637748b35c246c9a5772ac0e7846f8abeef7`. Only documentation evidence was finalized afterward.
 
 Final browser log: `.artifacts/guided-browser-final-2.log`; final quick log: `.artifacts/guided-quick-complete.log`; enabled build/packaging: `.artifacts/guided-build.log`. The browser run checked all three themes in Personal and Household at 390/1440, plus boundary widths. No exhaustive suite was run or claimed. Local implementation is ready for Jonathan to try; release authorization is a separate next action.
+
+## Authorized release — 2026-09-11
+
+Jonathan explicitly requested “push merge deploy” after the local implementation walkthrough. Release review is CONDITIONAL for the scoped Development release: the numerical/private workflow tests, authored twelve-experience browser proof, independent code/UX review and enabled build support publication; live partner/provider/physical/product acceptance remains open. Exhaustive verification was not requested and is not claimed.
+
+Fetched current main `401f98fbd4a3b973b07c5e56a22fc8f94db1b18d` (Quick sample story, PR #438) before release. Integrated it into this branch; only the decision-log insertion conflicted, and both entries were preserved. The Plan executable changes are unchanged. The reviewed workflow retains Production continuity off and deploys the existing `hearth-books` Worker with the Plan/Hercules Development switches enabled. Recheck the focused high gate on this integration, then require PR CI/build success, exact-head merge, post-merge CI/deployment and live served-asset proof.

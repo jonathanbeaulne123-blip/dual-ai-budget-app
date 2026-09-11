@@ -187,3 +187,141 @@ describe("quick sample history and upcoming plans", () => {
     expect(() => undoLedgerConfirm(result.household, result.undo)).toThrow("changed or posted");
   });
 });
+
+const storyInput: QuickSampleInput = { ...input, storyVersion: 1 };
+describe("coherent quick sample story", () => {
+  it.each([3, 4, 5, 6])("links %i months of steady pay, setback, recovery and future estimates", months => {
+    const h = catalogHousehold();
+    const p = previewQuickSampleScenario(h, { ...storyInput, months, today: "2026-09-30" });
+    expect(p).toEqual(previewQuickSampleScenario(h, { ...storyInput, months, today: "2026-09-30" }));
+    expect(p.rows.length).toBeLessThanOrEqual(103);
+    expect(p.plans.length).toBeLessThanOrEqual(91);
+    const pay = p.rows.filter(r => r.type === "income");
+    expect(new Set(pay.map(r => r.amount)).size).toBe(1);
+    expect(pay).toHaveLength(months * 2);
+    const sum = (month: string, category?: string) => p.rows.filter(r => r.type === "expense" && r.date.startsWith(month) && (!category || r.subcategoryId === category)).reduce((s, r) => s + Number(r.amount), 0);
+    expect(sum("2026-08")).toBeGreaterThan(sum("2026-07"));
+    expect(sum("2026-09")).toBeLessThan(sum("2026-07"));
+    expect(sum("2026-09", "SUB-FOOD-GROCERIES")).toBeLessThan(sum("2026-07", "SUB-FOOD-GROCERIES"));
+    expect(p.rows.filter(r => r.note?.includes("Unexpected dental"))).toHaveLength(1);
+    expect(p.plans.filter(r => r.title.includes("Dental follow-up"))).toHaveLength(1);
+    expect(p.rows.every(r => r.date <= "2026-09-30")).toBe(true);
+    expect(p.plans.every(r => r.date > "2026-09-30" && r.date <= p.futureEnd)).toBe(true);
+    expect(p.rows.filter(r => r.date.startsWith("2026-08") && r.type === "income").reduce((s, r) => s + Number(r.amount), 0)).toBeLessThan(sum("2026-08"));
+  });
+  it.each(["2026-01-01", "2024-02-29", "2026-08-31", "2026-12-31"])("keeps real dates and a bounded future at %s", today => {
+    const p = previewQuickSampleScenario(catalogHousehold(), { ...storyInput, today, months: 6 });
+    expect(p.rows.every(r => r.date <= today && new Date(r.date).toISOString().slice(0, 10) === r.date)).toBe(true);
+    expect(p.plans.every(r => r.date > today && r.date <= p.futureEnd)).toBe(true);
+    expect(new Set(p.plans.map(r => `${r.date}:${r.title}`)).size).toBe(p.plans.length);
+    expect(p.rows.length + p.plans.length).toBeLessThanOrEqual(194);
+  });
+  it("uses identical dated occurrences across today's history/plan boundary", () => {
+    const h = catalogHousehold();
+    const early = previewQuickSampleScenario(h, { ...storyInput, today: "2026-09-10" });
+    const later = previewQuickSampleScenario(h, { ...storyInput, today: "2026-09-25" });
+    for (const p of early.plans.filter(p => p.date <= "2026-09-25")) {
+      const r = later.rows.find(r => r.date === p.date && r.subcategoryId === p.subcategoryId);
+      expect(r?.amount).toBe(p.amount);
+    }
+    expect(previewQuickSampleScenario(h, { ...storyInput, seed: 82 }).rows).not.toEqual(previewQuickSampleScenario(h, storyInput).rows);
+  });
+  it("discloses missing categories instead of calling rent groceries, and preserves legacy replay", () => {
+    const h = catalogHousehold();
+    h.categories = h.categories.filter(c => c.transactionType !== "expense" || c.id === "SUB-FOOD-GROCERIES");
+    const p = previewQuickSampleScenario(h, storyInput);
+    expect(p.storySummary).toContain("Skipped because matching categories are missing");
+    expect(p.rows.filter(r => r.type === "expense").every(r => r.subcategoryId === "SUB-FOOD-GROCERIES" && r.note?.includes("groceries"))).toBe(true);
+    expect(previewQuickSampleScenario(catalogHousehold(), input).rows).toHaveLength(40);
+    expect(() => previewQuickSampleScenario(catalogHousehold(), { ...storyInput, storyVersion: 2 as 1 })).toThrow("Unsupported");
+    expect(() => previewQuickSampleScenario({ ...h, environment: "production" }, storyInput)).toThrow("Development-only");
+  });
+  it.each(["household", "personal"] as const)("replays reviewed %s story and undoes it without exposing Personal data", async visibility => {
+    let { h, state, scope } = fixture();
+    let accountId = input.accountId;
+    if (visibility === "personal") {
+      h = addAccount(h, { name: "Personal story", kind: "chequing", scope: "personal", ownerMemberId: input.memberId }).household;
+      accountId = h.accounts.at(-1)!.id;
+      const own = splitForSync(h, input.memberId);
+      state = { ...state, shared: own.shared, personal: new Map(state.personal).set(input.memberId, own.personal) };
+    }
+    clearCapturedIntent(h);
+    const original = structuredClone(h);
+    const result = addQuickSampleScenario(h, { ...storyInput, visibility, accountId });
+    expect(h).toEqual(original);
+    const command = await commandFromCapture(capturedIntent(result.household)!, scope, crypto.randomUUID());
+    expect(command.steps).toHaveLength(1);
+    const accepted = await prepareCommand(state, command, scope, () => {});
+    expect(accepted.household.transactions.map(t => [t.date, t.amountCents, t.subcategoryId])).toEqual(result.household.transactions.map(t => [t.date, t.amountCents, t.subcategoryId]));
+    expect(accepted.household.potentialExpenses.map(p => [p.date, p.expectedAmountCents, p.title])).toEqual(result.household.potentialExpenses.map(p => [p.date, p.expectedAmountCents, p.title]));
+    if (visibility === "personal") {
+      expect(accepted.shared.transactions).toHaveLength(0);
+      expect(accepted.shared.potentialExpenses).toHaveLength(0);
+    }
+    const after = { ...state, sequence: accepted.receipt.sequence, shared: accepted.shared, personal: new Map(state.personal).set(input.memberId, accepted.personal) };
+    const undone = await prepareCommand(after, { ...command, id: crypto.randomUUID(), observedSequence: accepted.receipt.sequence,
+      steps: [{ kind: "undoConfirm", args: [command.id], previewIds: [], reviewed: [], resources: [] }] }, scope, () => {}, () => accepted.receipt);
+    expect(undone.household.transactions).toHaveLength(0);
+    expect(undone.household.potentialExpenses).toHaveLength(0);
+    expect(() => previewQuickSampleScenario(result.household, { ...storyInput, visibility, accountId })).toThrow("already has");
+  });
+  it("gives Home, Calendar, Plan, Books, Fund and Hercules consistent views of one story", async () => {
+    const { buildDashboard, monthSummary, configureHouseholdFund, projectHouseholdFund } = await import("../src/core/index.ts");
+    const { accountsDeskFacts, calendarDeskFacts } = await import("../src/core/officeFacts.ts");
+    const { fundPlates } = await import("../src/core/fundPlates.ts");
+    const original = configureHouseholdFund(catalogHousehold(), { custodianMemberId: input.memberId, openedOn: "2026-06-01", createdBy: input.memberId }).household;
+    original.members.find(m => m.id === input.memberId)!.glanceAccountId = input.accountId;
+    const p = previewQuickSampleScenario(original, { ...storyInput, months: 4 });
+    const h = addQuickSampleScenario(original, { ...storyInput, months: 4 }).household;
+    const home = buildDashboard(h, input.today);
+    const books = monthSummary(h, "2026-09");
+    const current = p.rows.filter(r => r.date.startsWith("2026-09"));
+    expect(home.month).toEqual(books);
+    expect(books.expenseActualCents).toBe(current.filter(r => r.type === "expense").reduce((s, r) => s + Math.round(Number(r.amount) * 100), 0));
+    for (const category of books.categories) {
+      expect(category.actualCents).toBe(current.filter(r => r.subcategoryId === category.subcategoryId).reduce((s, r) => s + Math.round(Number(r.amount) * 100), 0));
+    }
+    expect(h.budgetPlans).toEqual(original.budgetPlans);
+    const board = buildMonthBoard(h, "2026-10", input.today);
+    const plans = board.days.flatMap(d => d.items).filter(i => i.potentialExpenseId);
+    expect(plans.map(i => i.amountCents).sort((a,b) => a-b)).toEqual(p.plans.filter(i => i.date.startsWith("2026-10")).map(i => Math.round(Number(i.amount) * 100)).sort((a,b) => a-b));
+    const facts = accountsDeskFacts(h, input.today);
+    expect(facts.wallet.netWorthCents).toBe(p.incomeCents - p.expenseCents);
+    expect(calendarDeskFacts(h, input.today).items.some(i => i.potentialExpenseId)).toBe(true);
+    expect(home.upcoming.some(i => i.potentialExpenseId)).toBe(true);
+    const fund = projectHouseholdFund(h, input.today);
+    expect(fund.operatingBalanceCents).toBe(0);
+    expect(h.householdFund).toEqual(original.householdFund);
+    expect(h.fundEvents).toEqual(original.fundEvents);
+    expect(fund.transferDueCents).toBe(0);
+    const plates = fundPlates({ household: h, memberId: input.memberId, today: input.today });
+    const { formatCad } = await import("../src/core/money.ts");
+    expect(plates.find(p => p.id === "accounts")?.verdict).toContain(formatCad(p.incomeCents - p.expenseCents));
+    const { categoryShape } = await import("../src/core/categoryShape.ts");
+    const shape = categoryShape(h, "2026-09", input.today);
+    expect(shape.find(c => c.subcategoryId === "SUB-FOOD-GROCERIES")?.monthToDateCents).toBe(books.categories.find(c => c.subcategoryId === "SUB-FOOD-GROCERIES")?.actualCents);
+    expect(shape.some(c => c.monthsSeen >= 3)).toBe(true);
+    expect(() => assertAcceptableBooks(h)).not.toThrow();
+  });
+  it("supplements legacy history without inventing a past dental treatment", () => {
+    const legacy = addQuickSampleData(catalogHousehold(), input).household;
+    const p = previewQuickSampleScenario(legacy, storyInput);
+    expect(p.rows).toHaveLength(0);
+    expect(p.storySummary).toBeNull();
+    expect(p.plans.some(p => /dental/i.test(p.title))).toBe(false);
+    expect(p.plans).toEqual(previewQuickSampleScenario(legacy, input).plans);
+  });
+  it("measures bounded preview and preparation on 500 existing rows", () => {
+    const h = catalogHousehold();
+    const tx = postEntry(h, { date: input.today, type: "income", amount: 1, accountId: input.accountId, subcategoryId: "SUB-INCOME-BIANCA", createdBy: input.memberId }).household.transactions[0]!;
+    h.transactions = Array.from({ length: 500 }, (_, i) => ({ ...tx, id: `existing-${i}` }));
+    const start = performance.now();
+    const p = previewQuickSampleScenario(h, { ...storyInput, months: 6 });
+    const previewMs = performance.now() - start;
+    const prepareStart = performance.now();
+    const result = addQuickSampleScenario(h, { ...storyInput, months: 6 });
+    console.info(`Story: preview ${previewMs.toFixed(1)}ms; preparation ${(performance.now() - prepareStart).toFixed(1)}ms; ${p.rows.length} transactions + ${p.plans.length} plans on 500 rows`);
+    expect(result.household.transactions.length).toBe(500 + p.rows.length);
+    expect(h.transactions).toHaveLength(500);
+  });
+});
