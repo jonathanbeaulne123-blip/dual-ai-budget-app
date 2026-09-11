@@ -3347,10 +3347,9 @@ input, select, textarea {
  .hercules-bubble.chat:before,.hercules-bubble.chat:after { display:none; }
 }
 @media(max-width:719px){
- .hercules-focus-shell:has(.hercules-focus-body) { height:100dvh; box-sizing:border-box; grid-template-columns:64px minmax(0,1fr) auto; grid-template-rows:auto minmax(0,1fr); overflow:hidden; }
- .hercules-focus-shell:has(.hercules-focus-body)>.hercules-focus-close { grid-column:3; grid-row:1; align-self:center; }
- .hercules-focus-shell:has(.hercules-focus-body)>.hercules-easy-read-toggle { grid-column:2; grid-row:1; align-self:center; margin:0; }
- .hercules-focus-hero { grid-column:1; grid-row:1; padding:0; }
+ .hercules-focus-shell:has(.hercules-focus-body) { height:100dvh; box-sizing:border-box; grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto minmax(0,1fr); overflow:hidden; }
+ .hercules-focus-shell:has(.hercules-focus-body)>.hercules-focus-close { grid-column:2; grid-row:1; align-self:center; }
+ .hercules-focus-hero { grid-column:1; grid-row:1; justify-self:start; padding:0; }
  .hercules-focus-hero>.hercules-stage { width:64px; height:64px; min-height:0; }
  .hercules-focus-body { grid-column:1 / -1; grid-row:2; }
  .hercules-focus-body { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
@@ -3361,9 +3360,7 @@ input, select, textarea {
 :root[data-theme="newfoundland"] .hercules-action-card { border-top:4px solid var(--ink); border-radius:3px; }
 
 @media(max-width:719px) and (max-height:600px){
- .hercules-focus-shell:has(.hercules-focus-body) { grid-template-columns:minmax(0,1fr) auto; padding-bottom:8px; }
- .hercules-focus-shell:has(.hercules-focus-body)>.hercules-focus-close { grid-column:2; }
- .hercules-focus-shell:has(.hercules-focus-body)>.hercules-easy-read-toggle { grid-column:1; }
+ .hercules-focus-shell:has(.hercules-focus-body) { padding-bottom:8px; }
  .hercules-focus-hero { display:none; }
 }
 :root[data-theme="classic"] .hercules-action-card { border-radius:12px; border-color:color-mix(in srgb,var(--pine) 35%,var(--line)); background:linear-gradient(120deg,var(--paper),var(--card)); }

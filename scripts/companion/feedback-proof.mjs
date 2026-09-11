@@ -18,6 +18,7 @@ try{
    await page.setViewportSize({width,height:1000});
    const launcher=page.locator(width<720?'.hercules-pill':'.hercules-help-label');await launcher.waitFor();const caption=await launcher.innerText();await launcher.click();if(caption.includes('How can I help?')&&!await page.locator('.hercules-discovery').isVisible())await page.getByText('Suggestions and help',{exact:true}).click();await page.locator('.hercules-discovery:visible').waitFor();
    if(!caption.includes('How can I help?'))await expect(page.locator('.hercules-discovery-answer:visible')).toContainText(caption.trim());
+   await expect(page.locator('.hercules-conversation-content:visible > .hercules-easy-read-toggle')).toBeVisible();await expect(page.locator('.hercules-chat-header > .hercules-easy-read-toggle')).toHaveCount(0);
    await say('Add a visa card');await say(`Synthetic ${theme} Visa`);await say('skip');
    const actions=page.locator('.hercules-actions:visible');await actions.getByRole('button',{name:'Review changes',exact:true}).click();await expect(actions).toContainText('Hearth default, unverified');
    const geometry=await actions.evaluate(e=>({overflow:e.scrollWidth>e.clientWidth+1,width:e.clientWidth}));expect(geometry.overflow).toBe(false);
