@@ -1,11 +1,12 @@
 import type { ActionContext, ActionDefinition, ActionField, ActionValues } from './herculesActions.ts';
 import { savePlanDraft } from './commands.ts';
+import { transactionProjection, projectedIncomeEffect } from './budget.ts';
 import { isVisibleInView } from './visibility.ts';
 import { ValidationError } from './types.ts';
 import type { MonthKey } from './calendar.ts';
 import { addDays, isValidDateKey } from './calendar.ts';
 import { formatCad, parseWholeCents } from './money.ts';
-import { currentPlanVersion, type PlanLine, type PlanLens, type PlanSourceReference } from './planSystem.ts';
+import { currentPlanVersion, type PlanLine, type PlanLens, type PlanAssumption, type PlanSourceReference } from './planSystem.ts';
 import { completePlanDates, planSourceVisible, projectPlan, type PlanSelection } from './planProjection.ts';
 
 export const PLAN_GUIDE_ID = 'plan-guided-draft';
@@ -18,12 +19,35 @@ export function guideMonth(c: ActionContext, v: ActionValues) { return v.monthKe
 function monthEnd(month: string) { const [year, m] = month.split('-').map(Number); return new Date(Date.UTC(year!, m!, 0)).toISOString().slice(0,10); }
 function startDate(c: ActionContext, v: ActionValues) { const month=guideMonth(c,v); return c.today.startsWith(month) ? c.today : `${month}-01`; }
 function bills(c: ActionContext) { return c.household.recurrences.filter(r=>r.active && r.type==='expense' && planSourceVisible(c.household,{type:'recurrence',id:r.id},c.memberId,c.view)).map(r=>({...r,payments:r.payments?.filter(payment=>{const tx=c.household.transactions.find(t=>t.id===payment.transactionId);return tx&&isVisibleInView(tx,c.memberId,c.view);})})); }
-function goals(c: ActionContext) { return c.household.goals.filter(g=>planSourceVisible(c.household,{type:'goal',id:g.id},c.memberId,c.view)); }
+function goals(c: ActionContext) { return c.household.goals.filter(g=>g.status!=='retired'&&planSourceVisible(c.household,{type:'goal',id:g.id},c.memberId,c.view)); }
 function prior(c: ActionContext, v: ActionValues) { const month=guideMonth(c,v); return [...(c.household.planDrafts??[])].filter(d=>d.ownerMemberId===c.memberId&&d.scope===c.view&&d.targetMonth===month).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0]; }
 function base(c: ActionContext,v: ActionValues) { return prior(c,v) ?? currentPlanVersion(c.household,c.view,guideMonth(c,v) as MonthKey,c.memberId); }
 function upcomingBills(c: ActionContext,v: ActionValues) { const month=guideMonth(c,v); if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return[]; return bills(c).filter(b=>!(base(c,v)?.lines??[]).some(l=>l.sourceReference?.type==='recurrence'&&l.sourceReference.id===b.id)).flatMap(b=>[...new Set([...completePlanDates(b.nextDate,b.cadence,`${month}-01`,monthEnd(month)), ...(b.payments??[]).map(p=>p.occurrenceDate).filter(date=>date.startsWith(month))])].sort().map(date=>({bill:b,date}))); }
 function incomeSources(c: ActionContext,v: ActionValues) {
  return c.view==='household' ? (c.household.planBridgeDecisions??[]).filter(r=>r.monthKey===guideMonth(c,v)&&r.kind==='contribution'&&['proposed','held','accepted'].includes(r.state)).map(r=>({id:r.id,label:r.label,date:r.expectedDate,amount:r.amountCents,type:'bridge' as const})) : c.household.recurrences.filter(r=>r.active&&r.type==='income'&&planSourceVisible(c.household,{type:'recurrence',id:r.id},c.memberId,c.view)).map(r=>({id:r.id,label:r.note||'Scheduled income',date:r.nextDate,amount:r.amountCents,type:'recurrence' as const}));
+}
+function existingIncome(c:ActionContext,v:ActionValues) {
+ return (base(c,v)?.assumptions??[]).filter(a=>a.kind==='income'&&a.sourceReferences.some(r=>r.type==='recurrence'&&r.id===v.incomeSource));
+}
+function incomeHasReceipt(c:ActionContext,a:PlanAssumption) {
+ const byId=new Map(c.household.transactions.map(tx=>[tx.id,tx]));
+ const dated=new Map<string,number>();
+ for(const tx of c.household.transactions.filter(tx=>isVisibleInView(tx,c.memberId,c.view))){
+  const root=transactionProjection(tx,byId).root;
+  const matched=a.sourceReferences.some(ref=>ref.type==='recurrence'&&c.household.recurrences.some(r=>r.id===ref.id&&((root.source==='recurring'&&root.sourceId===r.id&&root.date===a.expectedDate)||r.payments?.some(p=>p.transactionId===root.id&&p.occurrenceDate===a.expectedDate))));
+  if(matched){const date=tx.date<c.today?c.today:tx.date;dated.set(date,(dated.get(date)??0)+projectedIncomeEffect(tx,byId));}
+ }
+ let received=0;
+ for(const [,amount]of [...dated].sort(([a],[b])=>a.localeCompare(b))){received+=amount;if(received>0)return true;}
+ return false;
+}
+function guideNote(previous:string|undefined, entries:string[]) {
+ const start='[Hercules planning notes]', end='[End Hercules planning notes]';
+ let personal=(previous??'').replace(/\[Hercules planning notes\][\s\S]*?\[End Hercules planning notes\]/g,'').trim();
+ // Migrate the earlier generated suffix only when every line has its known shape.
+ const legacy=/(?:^|\n)What matters: [^\n]*\nPrivate life context: [^\n]*(?:\n(?:Protect: review any promises not already in the draft\.|(?:Prepare|Build): (?:left open for now\.|kept existing decisions; no new outcome chosen\.)|Everyday: (?:kept existing allowance; no new allowance chosen\.|allowance left open for now\.)))*$/;
+ while(legacy.test(personal))personal=personal.replace(legacy,'').trim();
+ return [personal,start,...entries,end].filter(Boolean).join('\n');
 }
 const WHY = {
  protect:'Dates and amounts tell us which promises need money first. A bill in the Plan is still separate from recording its payment.',
@@ -40,7 +64,11 @@ export function planGuideFields(c: ActionContext,v: ActionValues): GuideField[] 
  ask('incomeSource','Expected money','Is there future money you want this draft to count on?','Money you already have is included by the books. Future money needs a source and a date so it cannot cover an earlier bill. The review also shows forecasts already present in the books.', 'text',[choice('skip',base(c,v)?.assumptions.some(a=>a.kind==='income')?'Keep my existing money assumptions':'Continue without adding expected money'),...(base(c,v)?.assumptions.some(a=>a.kind==='income')?[choice('current-only','Remove this draft’s expected income')]:[]),...sourceOptions.map(r=>choice(r.id,r.label))],undefined,c.view==='household'&&!sourceOptions.length?['No contribution offer has been shared yet. You can keep planning with current money and revisit expected money through the Bridge.']:undefined);
  if(!skipped(v.incomeSource)) {
   const source=sourceOptions.find(r=>r.id===v.incomeSource);
-  ask('incomeAmount','Expected contribution','How much of that future money can this Plan rely on?','This stays an estimate until the money is received. Use the amount you are comfortable committing.', 'money',undefined,source?.amount!==undefined?[choice(dollars(source.amount),`Use the recorded ${formatCad(source.amount)}`)]:undefined);
+  const arrivals=c.view==='personal'?existingIncome(c,v):[];
+  if(arrivals.length)ask('incomeEntry','Expected arrival to change','Which expected arrival are we updating?','Changing a payday replaces that arrival. Choose a separate payday only when this is additional money, so we do not count the same pay twice.','text',[
+   ...arrivals.filter(a=>!incomeHasReceipt(c,a)).map(a=>choice(a.id,`${a.expectedDate??'Undated arrival'} · ${a.valueCents===undefined?'No exact amount':formatCad(a.valueCents)}`)),choice('new','A separate additional payday')],undefined,arrivals.some(a=>incomeHasReceipt(c,a))?['An arrival with a recorded receipt stays in the books. Choose a separate payday only for additional money.']:undefined);
+  const arrival=arrivals.find(a=>a.id===v.incomeEntry);
+  ask('incomeAmount','Expected contribution','How much of that future money can this Plan rely on?','This stays an estimate until the money is received. Use the amount you are comfortable committing.', 'money',undefined,(arrival?.valueCents??source?.amount)!==undefined?[choice(dollars((arrival?.valueCents??source?.amount)!),`Use the recorded ${formatCad((arrival?.valueCents??source?.amount)!)}`)]:undefined);
   ask('incomeDate','Expected arrival','When do you expect it to be available?','A positive month total cannot fill a gap before payday. Say a date or a day of the week.', 'date',undefined,source?.date&&source.date>c.today?[choice(source.date,`Use ${source.date}`)]:undefined);
  }
  const known=upcomingBills(c,v);
@@ -98,7 +126,12 @@ export function buildGuidedPlan(c:ActionContext,v:ActionValues,id:string) {
  const put=(line:PlanLine)=>{if(line.sourceReference&&lines.some(row=>row.lens!==line.lens&&row.sourceReference?.type===line.sourceReference!.type&&row.sourceReference.id===line.sourceReference!.id))throw new ValidationError('That evidence already supports another part of your Plan. Open its existing decision in Plan tools before changing its purpose.');const index=lines.findIndex(row=>row.lens===line.lens&&line.sourceReference&&row.sourceReference?.type===line.sourceReference.type&&row.sourceReference.id===line.sourceReference.id);if(index<0)lines.push(line);else lines[index]={...lines[index]!,...line,id:lines[index]!.id,assumptionIds:lines[index]!.assumptionIds,decision:{...(lines[index]!.decision?.timeConstraint?{timeConstraint:lines[index]!.decision!.timeConstraint}:{}),...(lines[index]!.decision?.reopenWhen?{reopenWhen:lines[index]!.decision!.reopenWhen}:{}),...line.decision}};};
  const line=(lens:PlanLens,label:string,amount:number,date:string,source?:PlanSourceReference,funding?:string):PlanLine=>({id:`GUIDE-${id}-${lens}-${source?.id??'idea'}-${date}`,lens,kind:lens==='protect'?'obligation':lens==='prepare'?'true-expense':lens==='build'?'goal-contribution':'everyday-pool',labelSnapshot:label,amountCents:amount,cadence:'one-time',dueDate:date,createdBy:c.memberId,assumptionIds:[],...(source?{sourceReference:source}:{}),responsibility:lens==='protect'&&v.protectOwner==='joint'?{kind:'joint'}:{kind:'member',memberId:lens==='protect'?v.protectOwner:c.memberId},decision:{...(['available','expected'].includes(funding??'')?{funding:funding as 'available'|'expected'}:{} )}});
  if(!skipped(v.incomeSource)) {const source=incomeSources(c,v).find(r=>r.id===v.incomeSource);if(!source)throw new ValidationError('That expected money is no longer visible. Choose its current source.');if(!isValidDateKey(v.incomeDate??'')||v.incomeDate!<=c.today)throw new ValidationError('Expected money needs a future arrival date. Received money is already in your books.');
-  const ref={type:source.type,id:source.id};const item={id:`GUIDE-${id}-income`,kind:'income' as const,valueCents:cents(v.incomeAmount!),expectedDate:v.incomeDate!,sourceReferences:[ref],observedAt:`${c.today}T12:00:00.000Z`,confidence:'estimated' as const};const index=assumptions.findIndex(a=>a.kind==='income'&&(ref.type==='bridge'||a.expectedDate===item.expectedDate)&&a.sourceReferences.some(r=>r.type===ref.type&&r.id===ref.id));if(index<0)assumptions.push(item);else assumptions[index]=item;}
+  const ref={type:source.type,id:source.id};const item={id:`GUIDE-${id}-income`,kind:'income' as const,valueCents:cents(v.incomeAmount!),expectedDate:v.incomeDate!,sourceReferences:[ref],observedAt:`${c.today}T12:00:00.000Z`,confidence:'estimated' as const};const arrivals=ref.type==='recurrence'?existingIncome(c,v):[];
+  if(arrivals.some(a=>a.id===v.incomeEntry&&incomeHasReceipt(c,a)))throw new ValidationError('That arrival already has a recorded receipt. Choose a separate payday only for additional money.');
+  if(arrivals.length && v.incomeEntry!=='new'&&!arrivals.some(a=>a.id===v.incomeEntry))throw new ValidationError('Choose which expected arrival to update, or explicitly add a separate payday.');
+  const index=assumptions.findIndex(a=>a.kind==='income'&&a.sourceReferences.some(r=>r.type===ref.type&&r.id===ref.id)&&(ref.type==='bridge'||a.id===v.incomeEntry));
+  if(ref.type==='recurrence'&&assumptions.some((a,i)=>i!==index&&a.kind==='income'&&a.expectedDate===item.expectedDate&&a.sourceReferences.some(r=>r.type===ref.type&&r.id===ref.id)))throw new ValidationError('That source already has an arrival on this date. Update that arrival instead.');
+  if(index<0)assumptions.push(item);else assumptions[index]={...item,id:assumptions[index]!.id};}
  if(v.protectSource==='known') {
   const occurrences=upcomingBills(c,v);
   for(const bill of bills(c)) {
@@ -112,7 +145,7 @@ export function buildGuidedPlan(c:ActionContext,v:ActionValues,id:string) {
  else unresolved.push('Protect: review any promises not already in the draft.');
  for(const lens of ['prepare','build'] as const) {if(skipped(v[`${lens}Source`])){unresolved.push(`${lens==='prepare'?'Prepare':'Build'}: ${old?.lines.some(l=>l.lens===lens)?'kept existing decisions; no new outcome chosen.':'left open for now.'}`);continue;}const g=goals(c).find(r=>r.id===v[`${lens}Source`]);if(!g&&v[`${lens}Source`]!=='unlinked')throw new ValidationError('Choose a currently visible goal.');const row=line(lens,g?.name||v[`${lens}Label`]!,cents(v[`${lens}Amount`]!),v[`${lens}Date`]!,g?{type:'goal',id:g.id}:undefined,v[`${lens}Funding`]);row.decision={...row.decision,targetCents:cents(v[`${lens}Target`]!),deadline:v[`${lens}Deadline`],nextStep:v[`${lens}Step`],...(v[`${lens}Paydays`] && !/^decide later$/i.test(v[`${lens}Paydays`]!)?{paydays:parseGuidePaydays(v[`${lens}Paydays`]!)}:{})};put(row);}
  if(!skipped(v.everydaySource)){const cat=c.household.categories.find(r=>r.id===v.everydaySource&&r.active&&r.parentId&&r.transactionType==='expense');if(!cat&&v.everydaySource!=='unlinked')throw new ValidationError('Choose a current spending category.');put(line('everyday',cat?.name||v.everydayLabel!,cents(v.everydayAmount!),v.everydayDate!,cat?{type:'category',id:cat.id}:undefined,'available'));}else unresolved.push(old?.lines.some(l=>l.lens==='everyday')?'Everyday: kept existing allowance; no new allowance chosen.':'Everyday: allowance left open for now.');
- return {monthKey:month as MonthKey,lines,assumptions,note:[prior(c,v)?.note,v.purpose&&`What matters: ${v.purpose}`,v.constraints&&`Private life context: ${v.constraints}`,...unresolved].filter(Boolean).join('\n')};
+ return {monthKey:month as MonthKey,lines,assumptions,note:guideNote(prior(c,v)?.note,[v.purpose&&`What matters: ${v.purpose}`,v.constraints&&`Private life context: ${v.constraints}`,...unresolved].filter(Boolean) as string[])};
 }
 export function guideProjection(c:ActionContext,v:ActionValues) { const built=buildGuidedPlan(c,v,'preview');const selection:PlanSelection={kind:'draft',id:'guided-preview',ownerMemberId:c.memberId,scope:c.view,monthKey:built.monthKey,lines:built.lines,assumptions:built.assumptions};return projectPlan(c.household,{memberId:c.memberId,scope:c.view,acceptedRevision:c.household.revision,asOf:c.today,through:v.lookThrough||addDays(c.today,30),selection}); }
 export function guideReviewRows(c:ActionContext,v:ActionValues) { const built=buildGuidedPlan(c,v,'preview'),p=guideProjection(c,v);return [
