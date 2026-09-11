@@ -339,7 +339,9 @@ export function HerculesPresence({
   const [open, setOpen] = useState(false);
   const [activePersonalOffer, setActivePersonalOffer] = useState<PersonalModuleOffer | null>(null);
   const [helpAsked, setHelpAsked] = useState(false);
-  const [invitationDismissed, setInvitationDismissed] = useState(false);
+  const [reminderIssue, setReminderIssue] = useState<string>();
+  const [reminderClock, setReminderClock] = useState(Date.now());
+  useEffect(()=>{const timer=setInterval(()=>setReminderClock(Date.now()),60_000);return()=>clearInterval(timer);},[]);
   const [begging, setBegging] = useState(false);
   const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
@@ -1244,6 +1246,7 @@ export function HerculesPresence({
 
   function openMobileFocus() {
     if (adding || phoneShell === false) return;
+    setReminderIssue(quietReminder?.issueId);
     setMobileFocus(true);
     if (!open && !talk) openChatFromBeg();
     else setOpen(true);
@@ -1280,6 +1283,7 @@ export function HerculesPresence({
   }
 
   function openChatFromBeg(helpOnly=true) {
+    if(!open)setReminderIssue(quietReminder?.issueId);
     if(!open && document.activeElement instanceof HTMLElement && document.activeElement!==document.body)chatReturnFocus.current=document.activeElement;
     if (!helpOnly && setup && setup.household.householdOnboarding?.state !== 'complete') {
       setOpen(true);setSetupSelected(true);return;
@@ -1287,7 +1291,7 @@ export function HerculesPresence({
     setBegging(false);
     setFocusedWidget(null);
     setHelpAsked(true);
-    setInvitationDismissed(true);
+
     if (!helpOnly && activePersonalOffer) {
       setOpen(true);
       return;
@@ -1721,8 +1725,10 @@ export function HerculesPresence({
       ? [{ id: `fact:${talk.fact.label}:${talk.fact.value}`, label: talk.fact.label, value: talk.fact.value, source: talk.fact.source, basis: "journal" as const }]
       : [];
   const discoveryInput = { household, memberId, view, tab: adding ? "add" as const : tab, today, accountId: discoveryAccountId, fund: discoveryFund };
+  const currentReminder=useMemo(()=>discoveryEnabled?discoverySelection({household,memberId,view,tab:'home',today,now:reminderClock,fund:null}).reminders[0]:undefined,[household,memberId,view,today,reminderClock,discoveryEnabled]);
+  const quietReminder = !autonomyBlocked && !busy && !adding && onDiscoveryNavigate ? currentReminder : undefined;
   const availableDiscoveryActions = () => [...(discoveryEnabled && onDiscoveryNavigate ? HERCULES_CAPABILITIES.filter(row=>discoverySelection(discoveryInput).all.some(candidate=>candidate.capabilityId===row.id)).map(row=>row.action) : []),...(actionService&&actionHousehold?availableHerculesActions({household:actionHousehold,memberId,view,today}).map(row=>`start:${row.id}`):[])];
-  const discoveryPanel = () => discoveryEnabled && onDiscoveryNavigate ? <HerculesDiscovery key={discoveryScope(discoveryInput)} input={discoveryInput} onCommand={onCompanionCommand}
+  const discoveryPanel = () => discoveryEnabled && onDiscoveryNavigate ? <HerculesDiscovery key={discoveryScope(discoveryInput)} input={discoveryInput} initialIssueId={reminderIssue} onCommand={onCompanionCommand}
     blocked={adding || busy} onNavigate={destination => { if(destination.kind==="entry"&&actionRef.current){actionRef.current.send(destination.mode==="expense"?"I just bought something":destination.mode==="income"?"I received some money":"Transfer money");return;}onDiscoveryNavigate(destination); }}
     onContinueChat={chatEnabled ? () => { const input = document.querySelector<HTMLTextAreaElement>(`.hercules-focus-shell textarea[aria-label="Ask ${look.view.name}"], .hercules-bubble textarea[aria-label="Ask ${look.view.name}"]`); input?.focus(); input?.scrollIntoView({ block: "nearest" }); } : undefined} /> : null;
   const workplaceShareToggle = () => view === "personal" && selectableWorkplaceCoworkerIds.length > 0 ? (
@@ -1787,8 +1793,8 @@ export function HerculesPresence({
       {phoneShell && !adding && !mobileFocus && (
         <button
           type="button"
-          className="hercules-pill"
-          aria-label={`Talk to ${look.view.name}. Opens focus mode.`}
+          className={`hercules-pill${quietReminder?' has-reminder':''}`}
+          aria-label={`Talk to ${look.view.name}. ${quietReminder?.title??'Opens focus mode.'}`}
           onClick={openMobileFocus}
         >
           <HerculesLivePortrait
@@ -1800,7 +1806,7 @@ export function HerculesPresence({
             pose="loaf"
             size={40}
           />
-          <span className="hercules-pill-name">How can I help?</span>{(!invitationDismissed && !autonomyBlocked && discoveryEnabled && onDiscoveryNavigate) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
+          <span className="hercules-pill-name">{quietReminder?.title??'How can I help?'}</span>
         </button>
       )}
       {focusShellOpen && (
@@ -1841,13 +1847,13 @@ export function HerculesPresence({
               house={look.house}
               collar={look.collar}
               pose={pose}
-              size={120}
+              size={64}
             />
           </div>
           <div className="hercules-focus-body"><div className="hercules-conversation-content">
             {easyReadToggle}
             {actionPanel()}
-            {turns.length?<details className="hercules-compact-tools"><summary>Suggestions and help</summary>{discoveryPanel()}</details>:discoveryPanel()}
+            {turns.length?<details className="hercules-compact-tools" open={!!reminderIssue}><summary>Suggestions and help</summary>{discoveryPanel()}</details>:discoveryPanel()}
             {!chatEnabled && <p role="status">Conversation is taking a break. Your saved preferences are still available.</p>}
             {!setup && <button type="button" onClick={sitWithBag}>Play</button>}
             {<><p className="companion-save-status" role="status">{privateSaveStatus}</p>
@@ -2005,7 +2011,7 @@ export function HerculesPresence({
             </>
           ) : talk ? (
           <>
-          {open && !begging && (turns.length?<details className="hercules-compact-tools"><summary>Suggestions and help</summary>{discoveryPanel()}</details>:discoveryPanel())}
+          {open && !begging && (turns.length?<details className="hercules-compact-tools" open={!!reminderIssue}><summary>Suggestions and help</summary>{discoveryPanel()}</details>:discoveryPanel())}
           {open && !chatEnabled && <p role="status">Conversation is taking a break. Your saved preferences are still available.</p>}
           {open && !setup && <button type="button" onClick={sitWithBag}>Play</button>}
           {open && !begging && turns.length > 0 ? (
@@ -2088,7 +2094,7 @@ export function HerculesPresence({
           reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
-        aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? " — How can I help?" : ""}`}
+        aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? ` — ${quietReminder?.title??'How can I help?'}` : ""}`}
         onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg(true);}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -2100,7 +2106,7 @@ export function HerculesPresence({
           setPinned((value) => !value);
         }}
       >
-        {!phoneShell && !open && !adding && !activityBlocked && <span className="hercules-help-label" aria-hidden="true">How can I help?</span>}
+        {!phoneShell && !open && !adding && !activityBlocked && <span className={`hercules-help-label${quietReminder?' hercules-reminder-label':''}`} aria-hidden="true">{quietReminder?.title??'How can I help?'}</span>}
         <HerculesLivePortrait
           mood={look.view.mood}
           hat={look.hat}
@@ -2111,7 +2117,7 @@ export function HerculesPresence({
           size={size}
           flip={flip}
         />
-        {(!invitationDismissed && !autonomyBlocked && discoveryEnabled && onDiscoveryNavigate) && <span className="hercules-quiet-indicator" aria-label="Guidance available">·</span>}
+
       </button>
     </div>
     </HerculesRigProvider>

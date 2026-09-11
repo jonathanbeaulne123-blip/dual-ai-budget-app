@@ -561,3 +561,9 @@ describe("Hercules read-only tool brain", () => {
     expect(run).not.toHaveBeenCalled();
   });
 });
+
+it('answers selected-account terms from scoped recorded settings and identifies unverified defaults',()=>{
+ const h=catalogHousehold();const before=structuredClone(h);const run=executeHerculesReadToolPlan(h,{calls:[{name:'account_balance',args:{account:'ACC-VISA'}}]},today,{memberId:'MEM-001',view:'household'});
+ expect(run.results[0]!.facts.some(f=>f.value.includes('Purchase APR')&&f.value.includes('Hearth defaults'))).toBe(true);expect(h).toEqual(before);
+ h.accounts.find(a=>a.id==='ACC-VISA')!.scope='personal';h.accounts.find(a=>a.id==='ACC-VISA')!.ownerMemberId='MEM-002';const denied=executeHerculesReadToolPlan(h,{calls:[{name:'account_balance',args:{account:'ACC-VISA'}}]},today,{memberId:'MEM-001',view:'household'});expect(denied.results[0]!.facts).toEqual([]);
+});

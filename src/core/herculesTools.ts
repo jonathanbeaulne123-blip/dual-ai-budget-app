@@ -760,6 +760,14 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     const rows = target ? [target] : accounts;
     if (!rows.length) return empty(call, "I cannot see an account in this ledger.");
     const facts = rows.map((account, index) => fact(call, index, account.name, formatCad(accountBookBalance(household, account.id, today)), toolSource(context, `Open ${account.name}`, { accountId: account.id, surface: "accounts", to: today })));
+    if(target){
+      const source=toolSource(context,`Open ${target.name}`,{accountId:target.id,surface:'accounts',to:today});
+      const setting=(label:string,value:string)=>facts.push(fact(call,facts.length,label,value,source));
+      setting('Recorded account type',`${target.kind}${target.institution?` · ${target.institution}`:''}`);
+      if(target.credit){const terms=target.credit;setting('Recorded card settings (verify with issuer)',`Purchase APR ${terms.aprBps/100}%; cashback ${terms.defaultCashbackBps/100}%; limit ${formatCad(terms.creditLimitCents)}; statement day ${terms.statementDay}; payment ${terms.dueDaysAfterStatement} days later. These may include Hearth defaults.`);for(const rule of terms.rules)setting(`Recorded reward: ${rule.label}`,`${rule.bps/100}%`);}
+      if(target.savings)setting('Recorded savings settings',`${target.savings.apyBps/100}% annual rate · ${target.savings.purpose}. This may include Hearth defaults.`);
+      if(target.investment)setting('Recorded investment account',target.investment.vehicle);
+    }
     return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name} is ${facts[0]!.value} on the visible books.` : `I found ${facts.length} visible account balances.`, facts };
   }
 

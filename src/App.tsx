@@ -8398,7 +8398,7 @@ export function App() {
           if (source.view !== view) return;
           setHerculesSourceFocus(source);
           if (source.accountId) setFocusedAccountId(source.accountId);
-          if (source.route === "calendar") requestCalendarPane("bills", localStorage);
+          if (source.route === "calendar") requestCalendarPane(source.claimId ? "visits" : "bills", localStorage);
           goTab(source.route);
         }}
         onOpenSource={(source: HerculesNumberSource) => {

@@ -4,14 +4,14 @@ import type { HerculesReadToolName } from "./herculesTools.ts";
 
 /** Closed catalogue; herculesDiscovery supplies local evidence and verified handlers. */
 export const HERCULES_CAPABILITY_IDS = [
-  "explain-page", "guide-entry", "explain-account", "bills-before-payday",
+  "review-bill", "review-claim", "explain-page", "guide-entry", "explain-account", "bills-before-payday",
   "explain-spending", "compare-periods", "review-plan", "review-goal",
   "review-health", "resume-shift", "explain-fund", "dress-hercules",
 ] as const;
 export type HerculesCapabilityId = typeof HERCULES_CAPABILITY_IDS[number];
 export type CompanionActionKey =
   | "explain-current-page" | "open-entry-review" | "open-account-source"
-  | "open-bills-calendar" | "open-spending-source" | "open-period-comparison"
+  | "open-bill-reminder" | "open-claim-reminder" | "open-bills-calendar" | "open-spending-source" | "open-period-comparison"
   | "open-current-plan" | "open-goal" | "open-health-review"
   | "resume-own-shift" | "open-fund-context" | "open-hercules-closet";
 export type CapabilityRequirement =
@@ -30,6 +30,8 @@ export type CapabilityDefinition = {
 };
 
 export const HERCULES_CAPABILITIES = [
+  {id:'review-bill',outcome:'Check an upcoming bill',example:'What bill needs attention?',views:['household'],requires:[],readTools:['bills_due'],action:'open-bill-reminder',completion:'Open the current recorded bill occurrence; never mark it paid automatically.'},
+  {id:'review-claim',outcome:'Follow up on money owed',example:'Any updates on my outstanding claim?',views:['household'],requires:[],readTools:['money_owed'],action:'open-claim-reminder',completion:'Open the current outstanding claim; receiving money requires its own reviewed transfer.'},
   { id: "explain-page", outcome: "Understand this page", example: "What can I do here?", views: ["household", "personal"], requires: ["current-page"], readTools: [], action: "explain-current-page", completion: "Explanation shown for the same active page and scope." },
   { id: "guide-entry", outcome: "Walk through an entry", example: "Help me enter my groceries.", views: ["household", "personal"], requires: [], readTools: [], action: "open-entry-review", completion: "User completes or exits the existing entry/review flow; only its Confirm posts." },
   { id: "explain-account", outcome: "Understand this balance", example: "Why does this account show that balance?", views: ["household", "personal"], requires: ["selected-account"], readTools: ["account_balance", "explain_balance"], action: "open-account-source", completion: "Current selected-account explanation and its source are shown." },

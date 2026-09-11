@@ -1,3 +1,4 @@
+import { outstandingClaims, claimRemainingCents, claimPublicLabel } from './appointments.ts';
 import { registerMembersDraw } from "./registerView.ts";
 import { contributionRegister } from "./contributionRegister.ts";
 import { formatCad } from "./money.ts";
@@ -62,6 +63,16 @@ export function discoveryCandidates(input: DiscoveryInput): DiscoveryCandidate[]
   const current = expenses.filter(row => row.date >= monthStartKey(month) && row.date <= monthEndKey(month));
   if (current.length) add("explain-spending", month, "Where did recorded spending go?", "There are entries to explore this month.", `${monthStartKey(month)} to ${monthEndKey(month)} · all recorded entries, including future-dated entries`, "Show the breakdown", tab === "ledger" ? 2 : 3);
   if (current.length && expenses.some(row => row.date >= monthStartKey(previous) && row.date <= monthEndKey(previous))) add("compare-periods", month, "Compare this month with last", "Both periods contain recorded entries.", `${monthStartKey(previous)}–${monthEndKey(previous)} and ${monthStartKey(month)}–${monthEndKey(month)}; current month is incomplete and may include future-dated entries`, "Compare recorded periods");
+  if(view==='household') {
+    for(const bill of visible.recurrences.filter(r=>r.active&&r.type==='expense'&&calendarDaysBetween(today,r.nextDate)<=7)) {
+      const when=bill.nextDate<today?'needs a payment update':bill.nextDate===today?'is due today':`is due ${bill.nextDate}`;
+      add('review-bill',bill.id,`${bill.note||'Repeating bill'} ${when}`,`${formatCad(bill.amountCents)} is scheduled. Check whether it has been paid.`, 'Recorded bill schedule; payment is not confirmed', 'Review this bill',1,bill.nextDate,`${bill.id}:${bill.nextDate}:${bill.amountCents}`);
+    }
+    for(const claim of outstandingClaims(visible)) {
+      if(['settled','denied'].includes(claim.status))continue;
+      add('review-claim',claim.id,`Any update on ${claimPublicLabel(visible,claim,'hercules')}?`,`${formatCad(claimRemainingCents(claim))} is still recorded as outstanding.`, 'Recorded claim; this is not available cash', 'Review this claim',1,claim.submittedAt?.slice(0,10)??claim.createdAt.slice(0,10),`${claim.id}:${claim.status}:${claimRemainingCents(claim)}:${claim.submittedAt??''}`);
+    }
+  }
   if (view === "household" && visible.recurrences.some(row => row.active && row.type === "expense")) {
     const next = visible.recurrences.filter(row => row.active && row.type === "expense" && row.nextDate >= today).sort((a,b) => a.nextDate.localeCompare(b.nextDate))[0];
     add("bills-before-payday", "payday", "What is due before payday?", next ? `Next recorded bill date: ${next.nextDate}.` : "Choose a payday to inspect recorded bill dates.", "Payday needed · next scheduled occurrence of each repeating bill", "Choose payday", next && calendarDaysBetween(today, next.nextDate) <= 7 ? 1 : 3, next?.nextDate ?? null, next ? `${next.id}:${next.nextDate}` : "payday");
@@ -93,7 +104,7 @@ export function discoverySelection(input: DiscoveryInput) {
   const eligible = all.filter(row => !disabled.has(row.capabilityId) && !states.some(state => state.view === input.view && state.issueId === row.issueId && state.status === "snoozed" && Date.parse(state.until!) > now));
   eligible.sort((a,b) => a.tier - b.tier || (a.due ?? "9999").localeCompare(b.due ?? "9999") || (input.lastShown?.get(a.issueId) ?? 0) - (input.lastShown?.get(b.issueId) ?? 0) || a.issueId.localeCompare(b.issueId));
   const visible = householdForHerculesContext(input.household, input.memberId, input.view);
-  const empty = !visible.transactions.some(countable) && !visible.recurrences.some(row => row.active) && !activeOpenShift(visible.kitchen, input.memberId);
+  const empty = !visible.transactions.some(countable) && !visible.recurrences.some(row => row.active) && !activeOpenShift(visible.kitchen, input.memberId) && !outstandingClaims(visible).length;
   const forNow = empty ? eligible.filter(row => ["explain-page", "guide-entry", "dress-hercules"].includes(row.capabilityId)) : eligible;
   const seen = new Set<string>(), capabilities = new Set<string>();
   const nowRows = forNow.filter(row => {
@@ -101,7 +112,7 @@ export function discoverySelection(input: DiscoveryInput) {
     seen.add(row.dedupe); capabilities.add(row.capabilityId); return true;
   }).slice(0,3);
   const resume = states.filter(row => row.view === input.view && row.status === "resume").flatMap(state => { const match = eligible.find(row => row.issueId === state.targetId && row.capabilityId === state.capabilityId); return match ? [match] : []; });
-  return { all, now: nowRows, resume, disabled };
+  return { all, now: nowRows, reminders: eligible.filter(row=>row.capabilityId==='review-bill'||row.capabilityId==='review-claim'), resume, disabled };
 }
 /** Expired snoozes are retained as CAS tombstones; clearing never resets a resource revision. */
 export function discoveryState(input: DiscoveryInput, candidate: DiscoveryCandidate, operation: "snooze" | "disable" | "enable" | "resume" | "clear"): CompanionSuggestionState {
@@ -117,6 +128,15 @@ export function explainDiscovery(input: DiscoveryInput, issueId: string): Discov
   const { capabilityId, targetId } = candidate, { household, memberId, view, today } = input;
   const source = (route: HerculesNumberSource["route"], label: string, extra = {}): DiscoveryDestination => ({ kind: "source", source: { route, view, label, ...extra } });
   const simple = (text: string, destination?: DiscoveryDestination, action?: string): DiscoveryAnswer => ({ text, facts: [], destination, action });
+  if(capabilityId==='review-bill'||capabilityId==='review-claim') {
+    const visible=householdForHerculesContext(household,memberId,view);
+    if(capabilityId==='review-bill') {
+      const bill=visible.recurrences.find(r=>r.id===targetId);if(!bill)return null;
+      return simple(`${bill.note||'This bill'} is scheduled for ${bill.nextDate} at ${formatCad(bill.amountCents)}. ${bill.nextDate<today?'That recorded date has passed. ':''}Has it been paid, or does the plan need an update? The books have not recorded this scheduled occurrence as paid.`,source('calendar','Open this bill',{recurrenceId:bill.id,from:bill.nextDate,to:bill.nextDate}),'Open this bill');
+    }
+    const claim=outstandingClaims(visible).find(r=>r.id===targetId);if(!claim)return null;
+    return simple(`${claimPublicLabel(visible,claim,'hercules')}: ${formatCad(claimRemainingCents(claim))} is still outstanding. ${claim.submittedAt?'It is recorded as submitted.':'There is no submission recorded yet.'} Any updates? Only record a transfer when the reimbursement actually arrives.`,source('calendar','Open this claim',{surface:'claims',claimId:claim.id}),'Open this claim');
+  }
   if (capabilityId === "explain-page") return simple(PAGE_COPY[input.tab]);
   if (capabilityId === "guide-entry") return simple("An expense records money spent. Income records money received. A transfer moves money between accounts, including a card payment. Choose one below; the usual review and Confirm stay in charge.");
   if (capabilityId === "dress-hercules") return simple("The outfits on your desk are ready to explore. Choose an available accessory there; I will handle looking pleased.", { kind: "wardrobe" }, "Open Hercules outfits");

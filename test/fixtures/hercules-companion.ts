@@ -27,6 +27,8 @@ export type CompanionDialogueScenario = {
 };
 /** Synthetic evaluation script, not a claim that the live model has passed these trials. */
 export const COMPANION_DIALOGUE_SCENARIOS = [
+  {id:'bill-reminder',capability:'review-bill',turns:['What bill needs attention?'],state:'A visible recorded bill is overdue.',must:['Show the recorded occurrence and exact bill source'],mustNot:['Claim the bank payment failed','Mark paid automatically']},
+  {id:'claim-reminder',capability:'review-claim',turns:['Any update on the outstanding claim?'],state:'A visible claim has an unpaid remainder.',must:['Show the remaining amount and exact claim source'],mustNot:['Count it as received cash','Expose a private medical title']},
   { id: "welcome", capability: "explain-page", turns: ["I finished setting up. What now?"], state: "New household, no ordinary entries.", must: ["Offer three concrete first actions", "Warm welcome"], mustNot: ["Call yourself useless", "Repeat onboarding"] },
   { id: "lost", capability: "explain-page", turns: ["I don't understand this page."], state: "Current page is available.", must: ["Explain its main action plainly"], mustNot: ["Mock intelligence", "Use unexplained accounting jargon"] },
   { id: "entry", capability: "guide-entry", turns: ["Help me enter groceries."], state: "Entry handler available.", must: ["Open existing entry review"], mustNot: ["Claim money was posted"] },

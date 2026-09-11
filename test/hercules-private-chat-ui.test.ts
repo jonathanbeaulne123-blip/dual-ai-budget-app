@@ -182,3 +182,15 @@ it.each([["0","1"],["1","0"],["0","0"]])("presentation rollback keeps the indepe
  }
  expect(fetcher).not.toHaveBeenCalled();expect(command).not.toHaveBeenCalled();
 });
+
+it.each([390,1440])('opens the exact reminder even after a previous conversation at width %s and lets resolved evidence fall away',async(width)=>{
+ Object.defineProperty(window,'innerWidth',{configurable:true,value:width});
+ vi.stubEnv('VITE_HERCULES_DISCOVERY','1');let h=addRecurrence(catalogHousehold(),{cadence:'monthly',nextDate:'2026-09-09',type:'expense',amount:'50',accountId:'ACC-VISA',subcategoryId:'SUB-HOUSING-ELECTRIC',note:'Synthetic overdue bill'}).household;const navigate=vi.fn();
+ const render=()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-10',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onCompanionCommand:vi.fn(),onOpenSource:vi.fn(),onDiscoveryNavigate:navigate}));
+ const open=async()=>act(async()=>{if(width<720)(host.querySelector('.hercules-pill') as HTMLButtonElement).click();else host.querySelector('.hercules-live')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));});
+ await act(async()=>render());expect(host.querySelector(width<720?'.hercules-pill':'.hercules-help-label')?.textContent).toContain('Synthetic overdue bill');await open();expect(host.querySelector('.hercules-discovery-answer')?.textContent).toContain('Synthetic overdue bill');
+ await send('Keep answers short');await act(async()=>{(host.querySelector(width<720?'.hercules-focus-close':'.hercules-dismiss') as HTMLButtonElement).click();});await open();
+ expect((host.querySelector('.hercules-compact-tools') as HTMLDetailsElement)?.open).toBe(true);expect(host.querySelector('.hercules-discovery-answer')?.textContent).toContain('Synthetic overdue bill');
+ await act(async()=>[...host.querySelectorAll<HTMLButtonElement>('.hercules-discovery-answer button')].find(b=>b.textContent==='Open this bill')!.click());expect(navigate).toHaveBeenCalledWith(expect.objectContaining({kind:'source',source:expect.objectContaining({recurrenceId:h.recurrences[0]!.id})}));
+ h={...h,recurrences:[]};await act(async()=>render());expect(host.querySelector('.hercules-discovery-answer')).toBeNull();
+});

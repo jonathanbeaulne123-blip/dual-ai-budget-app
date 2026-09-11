@@ -1,5 +1,6 @@
+import { defaultGoalEnvelope } from './goalEnvelopes.ts';
 import type { ActionContext, ActionDefinition, ActionField, ActionValues } from './herculesActions.ts';
-import { savePlanDraft } from './commands.ts';
+import { addGoal, savePlanDraft } from './commands.ts';
 import { transactionProjection, projectedIncomeEffect } from './budget.ts';
 import { isVisibleInView } from './visibility.ts';
 import { ValidationError } from './types.ts';
@@ -19,7 +20,7 @@ export function guideMonth(c: ActionContext, v: ActionValues) { return v.monthKe
 function monthEnd(month: string) { const [year, m] = month.split('-').map(Number); return new Date(Date.UTC(year!, m!, 0)).toISOString().slice(0,10); }
 function startDate(c: ActionContext, v: ActionValues) { const month=guideMonth(c,v); return c.today.startsWith(month) ? c.today : `${month}-01`; }
 function bills(c: ActionContext) { return c.household.recurrences.filter(r=>r.active && r.type==='expense' && planSourceVisible(c.household,{type:'recurrence',id:r.id},c.memberId,c.view)).map(r=>({...r,payments:r.payments?.filter(payment=>{const tx=c.household.transactions.find(t=>t.id===payment.transactionId);return tx&&isVisibleInView(tx,c.memberId,c.view);})})); }
-function goals(c: ActionContext) { return c.household.goals.filter(g=>g.status!=='retired'&&planSourceVisible(c.household,{type:'goal',id:g.id},c.memberId,c.view)); }
+function goals(c: ActionContext) { return c.household.goals.filter(g=>g.status!=='retired'&&!g.envelope?.archivedAt&&planSourceVisible(c.household,{type:'goal',id:g.id},c.memberId,c.view)); }
 function prior(c: ActionContext, v: ActionValues) { const month=guideMonth(c,v); return [...(c.household.planDrafts??[])].filter(d=>d.ownerMemberId===c.memberId&&d.scope===c.view&&d.targetMonth===month).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))[0]; }
 function base(c: ActionContext,v: ActionValues) { return prior(c,v) ?? currentPlanVersion(c.household,c.view,guideMonth(c,v) as MonthKey,c.memberId); }
 function upcomingBills(c: ActionContext,v: ActionValues) { const month=guideMonth(c,v); if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return[]; return bills(c).filter(b=>!(base(c,v)?.lines??[]).some(l=>l.sourceReference?.type==='recurrence'&&l.sourceReference.id===b.id)).flatMap(b=>[...new Set([...completePlanDates(b.nextDate,b.cadence,`${month}-01`,monthEnd(month)), ...(b.payments??[]).map(p=>p.occurrenceDate).filter(date=>date.startsWith(month))])].sort().map(date=>({bill:b,date}))); }
@@ -85,7 +86,7 @@ export function planGuideFields(c: ActionContext,v: ActionValues): GuideField[] 
   ask('protectFunding','Money for the promises','Which money are you identifying for these promises?','I will check the evidence and timing. Choosing a source does not by itself make a promise covered.','text',[choice('available',c.view==='household'?'Current Fund money':'Current personal cash'),...(!skipped(v.incomeSource)?[choice('expected','The expected money we discussed')]:[]),choice('unknown','I have not identified it yet')]);
  }
  for(const lens of ['prepare','build'] as const) {
-  ask(`${lens}Source`,lens==='prepare'?'Cost to prepare for':'Outcome to build',lens==='prepare'?'Is there a future cost you would rather prepare for now?':'What is one thing you want this money to make possible?',WHY[lens],'text',[...goals(c).filter(g=>v[`${lens==='prepare'?'build':'prepare'}Source`]!==g.id&&!(base(c,v)?.lines??[]).some(l=>l.sourceReference?.type==='goal'&&l.sourceReference.id===g.id&&l.lens!==lens)).map(g=>choice(g.id,g.name)),choice('unlinked',lens==='prepare'?'A cost without a reserve goal yet':'An idea without a savings goal yet'),choice('skip','Keep this open for now')]);
+  ask(`${lens}Source`,lens==='prepare'?'Cost to prepare for':'Outcome to build',lens==='prepare'?'Is there a future cost you would rather prepare for now?':'What is one thing you want this money to make possible?',WHY[lens],'text',[...goals(c).filter(g=>v[`${lens==='prepare'?'build':'prepare'}Source`]!==g.id&&!(base(c,v)?.lines??[]).some(l=>l.sourceReference?.type==='goal'&&l.sourceReference.id===g.id&&l.lens!==lens)).map(g=>choice(g.id,g.name)),...(lens==='build'?[choice('new-kitty','Create a new Kitty Bank')]:[]),choice('unlinked',lens==='prepare'?'A cost without a reserve goal yet':'An idea without a savings goal yet'),choice('skip','Keep this open for now')]);
   if(skipped(v[`${lens}Source`]))continue;
   const goal=goals(c).find(g=>g.id===v[`${lens}Source`]);
   if(!goal)ask(`${lens}Label`,lens==='prepare'?'Future cost':'Life outcome',lens==='prepare'?'What cost are you thinking of?':'What would you like to make possible?',WHY[lens]);
@@ -105,22 +106,51 @@ export function planGuideFields(c: ActionContext,v: ActionValues): GuideField[] 
  }
  ask('constraints','Time and priorities','Is there anything this Plan should leave room for in your life?','Time, rest and responsibilities matter. This answer stays in your private note; sharing a Plan will not automatically share it.','text',undefined,[choice('Nothing to add for now','Nothing to add for now')]);
  result.push({key:'lookThrough',label:'Look ahead through',question:'How far ahead are we checking?',why:'This keeps the conversation and selected Plan on the same dated horizon.',kind:'date',optional:true});
- return result;
+ result.unshift({why:'Choose a focused goal conversation or review the whole monthly picture. Existing decisions remain the starting point.',key:'guideMode',label:'Planning scope',question:'Plan one goal or the whole month?',optional:true,choices:()=>[choice('goal','One goal within the monthly Plan'),choice('month','The whole month')]});
+ return v.guideMode==='goal' ? result.filter(f=>['monthKey','guideMode','lookThrough','constraints'].includes(f.key)||f.key.startsWith('build')) : result;
+}
+function dependentGuideKeys(c:ActionContext,v:ActionValues,key:string) {
+ const fields=planGuideFields(c,v);
+ if(key==='monthKey')return fields.filter(f=>!f.optional&&f.key!==key).map(f=>f.key);
+ const section=key.match(/^(income|protect|prepare|build|everyday)/)?.[1];
+ if(!section)return [];
+ // Only changed sources and amounts reopen their own dependent answers. Other life decisions survive.
+ const suffix=key.slice(section.length);
+ return fields.filter(f=>f.key.startsWith(section)&&f.key!==key &&
+   (suffix==='Source'||suffix==='Entry'||(suffix==='Target'&&['Paydays','Amount'].includes(f.key.slice(section.length))) )).map(f=>f.key);
 }
 export function guideAnswer(c:ActionContext,v:ActionValues,key:string,value:string):ActionValues {
- const fields=planGuideFields(c,v), index=fields.findIndex(f=>f.key===key), next={...v,[key]:value};
- // A changed earlier answer reopens dependent questions. Never retain a hidden stale amount/source.
- if(v[key]!==undefined && v[key]!==value) for(const f of fields.slice(index+1).filter(f=>!f.optional)) delete next[f.key];
+ const next={...v,[key]:value};
+ if(v[key]!==undefined&&v[key]!==value)for(const k of dependentGuideKeys(c,v,key))delete next[k];
+ if(key==='incomeSource'&&skipped(value))for(const section of ['protect','prepare','build'])if(next[`${section}Funding`]==='expected')delete next[`${section}Funding`];
  return next;
 }
 export function guideBack(c:ActionContext,v:ActionValues,key?:string):ActionValues {
- const fields=planGuideFields(c,v), answered=fields.filter(f=>!f.optional&&v[f.key]);const target=key??answered.at(-1)?.key;
- if(!target)return v;const index=fields.findIndex(f=>f.key===target);return Object.fromEntries(Object.entries(v).filter(([k])=>!fields.slice(index).some(f=>!f.optional&&f.key===k)));
+ const target=key??planGuideFields(c,v).filter(f=>!f.optional&&v[f.key]).at(-1)?.key;
+ if(!target)return v;const next={...v};delete next[target];for(const k of dependentGuideKeys(c,v,target))delete next[k];return next;
+}
+export function focusedGoalValues(message:string):ActionValues|null {
+ const match=message.trim().match(/^(?:(?:can|could) you |please )?(?:(?:i|we) (?:want|need|would like) to |help (?:me|us) )?(?:save(?: up)?(?: money| \$?[\d,]+(?:\.\d{1,2})?)?|put (?:some )?money aside) for (.+)$/i);
+ if(!match)return null;
+ const label=match[1]!.replace(/\s+(?:by|on) \d{4}-\d{2}-\d{2}\b.*$/i,'').replace(/\s+(?:for|about|around) \$?\d+(?:\.\d{1,2})?\s*(?:CAD|dollars)?[.!]?$/i,'').replace(/[.!]+$/,'').trim();
+ if(!label)return null;
+ const amount=message.match(/\$((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?![\d.,])\b/)?.[1]?.replaceAll(',',''), date=message.match(/\b(?:by|on) (\d{4}-\d{2}-\d{2})\b/)?.[1];
+ return {guideMode:'goal',purpose:message.slice(0,500),buildLabel:label,...(amount?{buildTarget:amount}:{}),...(date?{buildDeadline:date}: {})};
+}
+function guidedInput(c:ActionContext,v:ActionValues,preview=true) {
+ if(v.buildSource!=='new-kitty')return {context:c,values:v,created:null};
+ const created=addGoal(c.household,{name:v.buildLabel!,target:v.buildTarget!,deadline:v.buildDeadline!,shared:c.view==='household',ownerMemberId:c.view==='personal'?c.memberId:null,envelope:{...defaultGoalEnvelope(),purpose:v.buildLabel!}});
+ // Preview identity is stable and exists only in this discarded projection. The accepted
+ // result keeps addGoal's real identity, used by the same resolved build below.
+ const goalId=created.postedIds[0]!,previewId='HERCULES-PREVIEW-NEW-KITTY';
+ const household=preview?{...created.household,goals:created.household.goals.map(g=>g.id===goalId?{...g,id:previewId}:g)}:created.household;
+ return {context:{...c,household},values:{...v,buildSource:preview?previewId:goalId},created};
 }
 export function guideQuestion(c:ActionContext,v:ActionValues) { return planGuideFields(c,v).find(f=>!f.optional&&!v[f.key]?.trim()); }
 export function guideReply(c:ActionContext,v:ActionValues) { const f=guideQuestion(c,v); return f ? `${f.question.trim()} ${f.why}` : 'We have a draft to review. I will show what is covered, what depends on future money and what still needs attention. Saving this private draft does not share an agreement or move money.'; }
 export function parseGuidePaydays(text:string){const dates=text.split(',').map(s=>s.trim()).filter(Boolean);if(!dates.length||dates.length>36||dates.some(d=>!isValidDateKey(d)))throw new ValidationError('Use dates such as 2026-09-18, 2026-10-02, or choose Decide later.');return [...new Set(dates)].sort();}
 export function buildGuidedPlan(c:ActionContext,v:ActionValues,id:string) {
+ const resolved=guidedInput(c,v);c=resolved.context;v=resolved.values;
  const month=guideMonth(c,v);if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new ValidationError('Choose a month using YYYY-MM.');
  const old=base(c,v), lines:PlanLine[]=(old?.lines??[]).map(row=>({...row,createdBy:c.memberId})), assumptions=[...(old?.assumptions??[])].filter(a=>v.incomeSource!=='current-only'||a.kind!=='income');const unresolved:string[]=[];
  const put=(line:PlanLine)=>{if(line.sourceReference&&lines.some(row=>row.lens!==line.lens&&row.sourceReference?.type===line.sourceReference!.type&&row.sourceReference.id===line.sourceReference!.id))throw new ValidationError('That evidence already supports another part of your Plan. Open its existing decision in Plan tools before changing its purpose.');const index=lines.findIndex(row=>row.lens===line.lens&&line.sourceReference&&row.sourceReference?.type===line.sourceReference.type&&row.sourceReference.id===line.sourceReference.id);if(index<0)lines.push(line);else lines[index]={...lines[index]!,...line,id:lines[index]!.id,assumptionIds:lines[index]!.assumptionIds,decision:{...(lines[index]!.decision?.timeConstraint?{timeConstraint:lines[index]!.decision!.timeConstraint}:{}),...(lines[index]!.decision?.reopenWhen?{reopenWhen:lines[index]!.decision!.reopenWhen}:{}),...line.decision}};};
@@ -147,8 +177,9 @@ export function buildGuidedPlan(c:ActionContext,v:ActionValues,id:string) {
  if(!skipped(v.everydaySource)){const cat=c.household.categories.find(r=>r.id===v.everydaySource&&r.active&&r.parentId&&r.transactionType==='expense');if(!cat&&v.everydaySource!=='unlinked')throw new ValidationError('Choose a current spending category.');put(line('everyday',cat?.name||v.everydayLabel!,cents(v.everydayAmount!),v.everydayDate!,cat?{type:'category',id:cat.id}:undefined,'available'));}else unresolved.push(old?.lines.some(l=>l.lens==='everyday')?'Everyday: kept existing allowance; no new allowance chosen.':'Everyday: allowance left open for now.');
  return {monthKey:month as MonthKey,lines,assumptions,note:guideNote(prior(c,v)?.note,[v.purpose&&`What matters: ${v.purpose}`,v.constraints&&`Private life context: ${v.constraints}`,...unresolved].filter(Boolean) as string[])};
 }
-export function guideProjection(c:ActionContext,v:ActionValues) { const built=buildGuidedPlan(c,v,'preview');const selection:PlanSelection={kind:'draft',id:'guided-preview',ownerMemberId:c.memberId,scope:c.view,monthKey:built.monthKey,lines:built.lines,assumptions:built.assumptions};return projectPlan(c.household,{memberId:c.memberId,scope:c.view,acceptedRevision:c.household.revision,asOf:c.today,through:v.lookThrough||addDays(c.today,30),selection}); }
+export function guideProjection(c:ActionContext,v:ActionValues) { const built=buildGuidedPlan(c,v,'preview');const resolved=guidedInput(c,v);const selection:PlanSelection={kind:'draft',id:'guided-preview',ownerMemberId:c.memberId,scope:c.view,monthKey:built.monthKey,lines:built.lines,assumptions:built.assumptions};return projectPlan(resolved.context.household,{memberId:c.memberId,scope:c.view,acceptedRevision:c.household.revision,asOf:c.today,through:v.lookThrough||addDays(c.today,30),selection}); }
 export function guideReviewRows(c:ActionContext,v:ActionValues) { const built=buildGuidedPlan(c,v,'preview'),p=guideProjection(c,v);return [
+ ...(v.buildSource==='new-kitty'?[{label:'New Kitty Bank',value:`${c.view==='household'?'Shared household':'Your Personal'} bank: ${v.buildLabel} · ${formatCad(cents(v.buildTarget!))} target · ${v.buildDeadline} · $0.00 reserved. Only the reviewed bank details are visible in its scope.`}]:[]),
  {label:'Dates checked',value:`${p.asOf} through ${p.through}`},
  {label:'Existing decisions',value:`${base(c,v)?.lines.length??0} retained as the starting point. This review contains ${built.lines.length} decisions.`},
  ...built.lines.flatMap((l,i)=>[{label:`${i+1}. ${l.lens} · ${l.labelSnapshot}`,value:`${formatCad(l.amountCents)} · ${l.cadence} · ${l.dueDate??'No date'} · ${l.sourceReference?`linked ${l.sourceReference.type}`:'unlinked intention'}`},{label:`${i+1}. Responsibility and money`,value:`${l.responsibility?.kind==='joint'?'Together':c.household.members.find(m=>m.id===l.responsibility?.memberId)?.name??'Not chosen'} · ${l.decision?.funding==='available'?'current resources':l.decision?.funding==='expected'?'expected money':'money still to identify'}`},...(l.decision?.lowCents!==undefined||l.decision?.highCents!==undefined?[{label:`${i+1}. Estimate range`,value:`${l.decision.lowCents===undefined?'Open lower amount':formatCad(l.decision.lowCents)} to ${l.decision.highCents===undefined?'Open upper amount':formatCad(l.decision.highCents)}`}]:[]),...(l.decision?.scheduleActualCents!==undefined?[{label:`${i+1}. Progress already in schedule`,value:formatCad(l.decision.scheduleActualCents)}]:[]),...(l.decision?.targetCents!==undefined?[{label:`${i+1}. Target and deadline`,value:`${formatCad(l.decision.targetCents)} · ${l.decision.deadline??'No deadline'}`}]:[]),...(['nextStep','timeConstraint','reopenWhen'] as const).flatMap(key=>l.decision?.[key]?[{label:`${i+1}. ${key==='nextStep'?'Next step':key==='timeConstraint'?'Time constraint':'Reopen when'}`,value:l.decision[key]!}]:[]),...(l.decision?.paydays?.length?[{label:`${i+1}. Paydays`,value:l.decision.paydays.join(', ')}]:[]),...(l.decision?.contributionSchedule??[]).map(item=>({label:`${i+1}. Contribution ${item.date}`,value:formatCad(item.amountCents)}))]),
@@ -157,8 +188,12 @@ export function guideReviewRows(c:ActionContext,v:ActionValues) { const built=bu
  ...p.lines.flatMap((l,i)=>[{label:`Coverage ${i+1}: ${l.line.labelSnapshot}`,value:`${l.status.replaceAll('-',' ')} · ${formatCad(l.coveredNowCents)} now · ${formatCad(l.expectedCoverageCents)} dependent on future money${l.issues.length?` · ${l.issues.join(' ')}`:''}`}]),
  {label:'Private note and open questions',value:built.note||'No extra note'},
  ]; }
-export const planGuideAction:ActionDefinition={id:PLAN_GUIDE_ID,title:'Create a Plan with Hercules',example:'Help me create a plan',match:/\b(?:(?:help (?:me|us) |let.s )?(?:create|make|build|start|set up|plan) (?:a |an |my |our |the )?(?:household |personal |monthly )?(?:plan|budget)|help (?:me|us) (?:with (?:my |our |the )?plan|plan (?:my|our|the) month))\b/i,views:['household','personal'],fields:[],dynamicFields:planGuideFields,
- consequence:'Save the reviewed decisions to your private Plan draft. Your conversation and private life note are not shared. Sharing a proposal, partner acknowledgement and recording money remain separate reviewed actions.',
+export const planGuideAction:ActionDefinition={id:PLAN_GUIDE_ID,title:'Create a Plan with Hercules',example:'Help me create a plan',match:/\b(?:(?:(?:save(?: up)?(?: money| \$?[\d,]+(?:\.\d{1,2})?)?|put (?:some )?money aside) for .+)|(?:help (?:me|us) |let.s )?(?:create|make|build|start|set up|plan) (?:a |an |my |our |the )?(?:household |personal |monthly )?(?:plan|budget)|help (?:me|us) (?:with (?:my |our |the )?plan|plan (?:my|our|the) month))\b/i,views:['household','personal'],fields:[],dynamicFields:planGuideFields,
+ consequence:'Save the reviewed decisions to your private Plan draft. Your conversation and private life note are not shared. A new Kitty Bank, if selected, is created unfunded in the displayed scope. Sharing a Plan proposal, partner acknowledgement and recording money remain separate reviewed actions.',
  dependencies:(c,v)=>({month:guideMonth(c,v),today:c.today,baseline:base(c,v),bills:bills(c),goals:goals(c),income:incomeSources(c,v),projection:(()=>{const {sourceRevision:_revision,...result}=guideProjection(c,v);return result;})()}),
- execute:(c,v,id)=>{const built=buildGuidedPlan(c,v,id),draft=prior(c,v);return savePlanDraft(c.household,{...(draft?{id:draft.id,expectedUpdatedAt:draft.updatedAt}: {id:`GUIDED-PLAN-${id}`}),memberId:c.memberId,createdBy:c.memberId,scope:c.view,targetMonth:built.monthKey,...(draft?.baseVersionId?{baseVersionId:draft.baseVersionId}:!draft&&base(c,v)&&'digest'in base(c,v)!?{baseVersionId:base(c,v)!.id}:{}),lines:built.lines,assumptions:built.assumptions,note:built.note});},
+ execute:(c,v,id)=>{const resolved=guidedInput(c,v,false),built=buildGuidedPlan(resolved.context,resolved.values,id),draft=prior(c,v);
+ const saved=savePlanDraft(resolved.context.household,{...(draft?{id:draft.id,expectedUpdatedAt:draft.updatedAt}: {id:`GUIDED-PLAN-${id}`}),memberId:c.memberId,createdBy:c.memberId,scope:c.view,targetMonth:built.monthKey,...(draft?.baseVersionId?{baseVersionId:draft.baseVersionId}:!draft&&base(c,v)&&'digest'in base(c,v)!?{baseVersionId:base(c,v)!.id}:{}),lines:built.lines,assumptions:built.assumptions,note:built.note});
+ if(!resolved.created)return saved;
+ const {persistenceScope:_scope,personalMemberId:_member,...result}=saved;const postedIds=[...resolved.created.postedIds,...saved.postedIds];
+ return {...result,postedIds,warnings:[...resolved.created.warnings,...saved.warnings],undo:{...saved.undo,snapshot:c.household,postedIds,commandKind:'executeHerculesAction'}};},
 };

@@ -141,3 +141,17 @@ describe("Hercules useful discovery", () => {
     await expect(prepareCommand(authority,command,{ ...scope, memberId: "MEM-002" },()=>{})).rejects.toThrow();
   });
 });
+
+it('reminds about overdue and upcoming bill occurrences, preserves snooze and removes advanced occurrences',()=>{
+ const input=fixture();input.household=addRecurrence(input.household,{cadence:'monthly',nextDate:'2026-09-09',type:'expense',amount:'50',accountId:'ACC-VISA',subcategoryId:'SUB-HOUSING-ELECTRIC',note:'Synthetic overdue bill'}).household;
+ const row=discoverySelection(input).reminders.find(r=>r.capabilityId==='review-bill')!;expect(row.title).toContain('payment update');expect(explainDiscovery(input,row.issueId)?.destination).toMatchObject({kind:'source',source:{recurrenceId:row.targetId}});
+ input.household=state(input,discoveryState(input,row,'snooze')).household;expect(discoverySelection(input).reminders.some(r=>r.issueId===row.issueId)).toBe(false);
+ expect(discoverySelection({...input,now:input.now!+86_400_001}).reminders.some(r=>r.issueId===row.issueId)).toBe(true);
+ input.household.recurrences.find(r=>r.id===row.targetId)!.nextDate='2026-10-09';expect(explainDiscovery(input,row.issueId)).toBeNull();
+});
+it('shows a scoped claim update until resolved, with private snooze and an exact source',async()=>{
+ const {openClaim}=await import('../src/core/commands.ts');const input=fixture();spending(input,'2026-09-02','50');input.household=openClaim(input.household,{expenseTransactionId:input.household.transactions.at(-1)!.id,expectedRecovery:'40',claimLabel:'Synthetic claim',createdBy:input.memberId,visibility:'household'}).household;
+ const row=discoverySelection(input).reminders.find(r=>r.capabilityId==='review-claim')!;expect(row).toBeDefined();expect(row.why).toContain('$40.00');expect(explainDiscovery(input,row.issueId)?.destination).toMatchObject({kind:'source',source:{surface:'claims',claimId:row.targetId}});
+ expect(discoverySelection({...input,view:'personal'}).reminders).toEqual([]);input.household=state(input,discoveryState(input,row,'disable')).household;expect(discoverySelection(input).reminders.some(r=>r.capabilityId==='review-claim')).toBe(false);
+ input.household.claims.find(c=>c.id===row.targetId)!.receivedCents=4000;expect(explainDiscovery(input,row.issueId)).toBeNull();
+});

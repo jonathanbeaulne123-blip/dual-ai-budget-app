@@ -1,5 +1,5 @@
 import {RowReveal} from "./RowReveal.tsx";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   APPOINTMENT_KINDS,
   HOSTED_DISCLOSURE,
@@ -365,6 +365,8 @@ function PostVisitForm(props: {
 }
 
 export function AppointmentsPage(props: {
+  focusClaimId?: string;
+  focusClaimRequest?: object;
   view?:"household"|"personal";
   household: Household;
   today: DateKey;
@@ -378,6 +380,9 @@ export function AppointmentsPage(props: {
 }) {
   const { household, today } = props;
   const [screen, setScreen] = useState<Screen>("upcoming");
+  const claimFocus=useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(props.focusClaimId)setScreen('owed');},[props.focusClaimId,props.focusClaimRequest]);
+  useEffect(()=>{if(props.focusClaimId&&screen==='owed'){claimFocus.current?.focus();claimFocus.current?.scrollIntoView?.({block:'center'});}},[props.focusClaimId,props.focusClaimRequest,screen]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const log = useMemo(() => craMedicalLog(household, today), [household, today]);
   const upcoming = useMemo(() => groupUpcomingVisits(upcomingVisitBoard(household, today)), [household, today]);
@@ -517,7 +522,7 @@ export function AppointmentsPage(props: {
                   ? household.appointments.find((item) => item.id === row.claim.appointmentId)
                   : undefined;
                 return (
-                  <RowReveal key={JSON.stringify([household.environment,household.householdId,props.memberId,props.view??"household",row.claim.id,row.claim.updatedAt,row.remainingCents])} label={claimPublicLabel(household,row.claim,'card')} busy={props.busy} right={(
+                  <div key={row.claim.id} data-claim-id={row.claim.id} tabIndex={-1} ref={props.focusClaimId===row.claim.id?claimFocus:undefined}><RowReveal key={JSON.stringify([household.environment,household.householdId,props.memberId,props.view??"household",row.claim.id,row.claim.updatedAt,row.remainingCents])} label={claimPublicLabel(household,row.claim,'card')} busy={props.busy} right={(
                     <div className="chips">
                       {appointment && (
                         <button type="button" className="chip" onClick={() => openDetail(appointment.id)}>Visit</button>
@@ -554,7 +559,7 @@ export function AppointmentsPage(props: {
                     </div>
                     <p className="muted">{formatAgingBucket(row.bucket)} · {formatClaimStatus(row.claim.status)}</p>
                     <BillLinesList lines={row.claim.lines} />
-                  </RowReveal>
+                  </RowReveal></div>
                 );
               })}
             </div>

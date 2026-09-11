@@ -38,7 +38,10 @@ export const executeHerculesAction = captureCommand('executeHerculesAction', (h:
         throw new ValidationError('This action no longer matches the review you confirmed.');
     const result = executeReviewedAction({ household: h, memberId: input.memberId, view: input.view, today: input.today }, input.review, input.submissionId);
     const released = release(result.household, input);
-    return { ...result, household: released.household };
+    // The confirmed operation also consumes its workflow. A narrow Plan-only or profile-only
+    // persistence guard cannot describe that combined change; use ordinary typed-command admission.
+    const {persistenceScope:_scope,personalMemberId:_member,...combined}=result;
+    return { ...combined, household: released.household, undo:{...result.undo,snapshot:h,commandKind:'executeHerculesAction'} };
 });
 /** Cancellation races safely with execution on the same private claim. A cancelled identity cannot later execute. */
 export const cancelHerculesSubmission = captureCommand('cancelHerculesSubmission', (h: Household, input: Claim): CommitResult => release(h, input));

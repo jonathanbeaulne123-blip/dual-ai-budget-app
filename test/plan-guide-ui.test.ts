@@ -38,3 +38,20 @@ it('collects a free-text answer and completes a private review when conversation
  await click('Nothing to add for now');await click('Review changes');await click('Final Confirm');
  expect(s.writes).toBe(1);expect(s.household.planDrafts![0]!.note).toContain('Make room for rest');
 });
+
+it('builds one small savings goal in conversation, retains the monthly Plan and creates an unfunded Kitty only on confirm',async()=>{
+ const s=setup();await act(async()=>s.render());const before=structuredClone(s.household);
+ await say(s,'I want to save money for a date with Bianca');expect(host.textContent).toContain('One goal');expect(host.textContent).not.toContain('Is there future money');
+ for(const answer of ['new-kitty','120','2026-09-25','Decide later','60','2026-09-18','unknown','Choose a restaurant','Keep Friday evening free'])await say(s,answer);
+ await click('Review changes');expect(s.writes).toBe(0);expect(s.household.goals).toEqual(before.goals);expect(host.textContent).toContain('$0.00 reserved');expect(host.textContent).toContain('a date with Bianca');
+ await click('Final Confirm');expect(s.writes).toBe(1);expect(s.household.goals).toHaveLength(before.goals.length+1);expect(s.household.transactions).toEqual(before.transactions);
+ const goal=s.household.goals.at(-1)!;expect(goal).toMatchObject({name:'a date with Bianca',savedCents:0,funded:false});
+ const draft=s.household.planDrafts!.find(d=>d.ownerMemberId==='MEM-001')!;expect(draft.lines.slice(0,before.planDrafts![0]!.lines.length)).toEqual(before.planDrafts![0]!.lines);expect(draft.lines.at(-1)).toMatchObject({sourceReference:{type:'goal',id:goal.id},amountCents:6000});
+ await say(s,'final confirm');expect(s.writes).toBe(1);
+});
+
+it('pivots into a focused savings request while keeping the earlier conversation resumable',async()=>{
+ const s=setup();await act(async()=>s.render());await say(s,'Help me create a plan');await say(s,'Less rushing');
+ await say(s,'I want to save $1,000 for a trip');const task=s.household.companionProfile!.workflows![0]!.value!;expect(task.values).toMatchObject({guideMode:'goal',buildLabel:'a trip',buildTarget:'1000'});expect(task.queue?.[0]?.values.purpose).toBe('Less rushing');expect(s.writes).toBe(0);
+ const before=structuredClone(task.values);await act(async()=>expect(s.ref.current!.send('Actually make it $150')).toBe(false));expect(s.household.companionProfile!.workflows![0]!.value!.values).toEqual(before);
+});

@@ -30,3 +30,13 @@ it('keeps a new Move editor on its Calendar date despite a retained older bill s
  expect(host.textContent).toContain('October 2026');
  }finally{await act(async()=>root.unmount());host.remove();}
 });
+
+it('opens the exact claim and can return to the same claim after browsing away',async()=>{
+ const {openClaim,postEntry}=await import('../src/core/commands.ts');const expense=postEntry(catalogHousehold(),{date:'2026-09-02',type:'expense',amount:'50',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:'MEM-001',visibility:'household'});const household=openClaim(expense.household,{expenseTransactionId:expense.postedIds[0]!,expectedRecovery:'40',claimLabel:'Synthetic claim',createdBy:'MEM-001',visibility:'household'}).household;
+ const host=document.createElement('div');document.body.append(host);const root=createRoot(host),noop=vi.fn();const claimId=household.claims.at(-1)!.id;
+ const props={household,today:'2026-09-10',environment:'development',memberId:'MEM-001',view:'household',busy:false,onCommand:noop,onAskPost:noop,onAskPostDue:noop,onAskSaveRepeating:noop,onAskVisit:noop,onAskSettle:noop,onAskWriteOff:noop,onAskStartJar:noop,onOpenPlan:noop,onOpenShiftEnvelope:noop} as Parameters<typeof CalendarPage>[0];
+ const render=()=>root.render(createElement(CalendarPage,{...props,sourceFocus:{route:'calendar',view:'household',surface:'claims',claimId,label:'Open this claim'}}));
+ try{await act(async()=>render());expect((document.activeElement as HTMLElement).dataset.claimId).toBe(claimId);expect(host.textContent).toContain('Synthetic claim');
+ const upcoming=[...host.querySelectorAll('button')].find(b=>b.textContent==='Upcoming')!;expect(upcoming).toBeDefined();await act(async()=>upcoming.click());await act(async()=>render());expect((document.activeElement as HTMLElement).dataset.claimId).toBe(claimId);expect(noop).not.toHaveBeenCalled();
+ }finally{await act(async()=>root.unmount());host.remove();}
+});
