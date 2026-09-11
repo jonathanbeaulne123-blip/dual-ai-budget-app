@@ -205,6 +205,7 @@ describe("five boards entry App integration", () => {
     await waitFor(() => expect(container.textContent).toContain("Investor preview"));
     act(() => button("Quick sample data").click());
     await waitFor(() => expect(document.body.textContent).toContain("future Calendar expenses"));
+    expect(document.body.textContent).toContain("Steady twice-monthly take-home pay");
     expect(writes.candidates.every(h => h.transactions.length === originalCount)).toBe(true);
     act(() => button("Cancel").click());
     expect(writes.candidates.every(h => h.transactions.length === originalCount)).toBe(true);
