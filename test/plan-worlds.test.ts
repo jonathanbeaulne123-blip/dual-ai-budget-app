@@ -2,6 +2,7 @@
 import { act, createElement as h } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
+vi.mock('../src/kitty/KittyStage.tsx', () => ({ KittyStage: () => null }));
 import { PlanCategories } from '../src/App.tsx';
 import { catalogHousehold, setBudget, monthSummary } from '../src/core/index.ts';
 import { ThemeProvider, useSceneBinding } from '../src/theme/ThemeProvider.tsx';
@@ -33,24 +34,30 @@ it('retains the real category draft and focus through all themes, validates, can
  }finally{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();}
 });
 
-it('preserves a reviewed bank contribution through theme changes without posting money',async()=>{
+it('preserves the Kitty Bank room contribution review through theme changes without posting money',async()=>{
  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT',true);
  vi.stubGlobal('matchMedia',()=>({matches:false,addEventListener:vi.fn(),removeEventListener:vi.fn()}));
  Object.defineProperty(window,'innerWidth',{value:1440,configurable:true});
- const {KittyBanks}=await import('../src/KittyBanks.tsx');const {addGoal}=await import('../src/core/index.ts');
- const household=addGoal(catalogHousehold(),{name:'A planned adventure',target:'800',shared:true}).household;
+ const {KittyBanks}=await import('../src/KittyBanks.tsx');
+ const {planLifeFixture}=await import('./fixtures/plan-life.ts');
+ const household=planLifeFixture('personal');
  const command=vi.fn(),store=new AppearanceStore({read:async()=>parseAppearance(null),write:async()=>parseAppearance(null)},null);
- function Screen(){useSceneBinding('plan','household',false);return h(KittyBanks,{household,booksHousehold:household,view:'household',createdBy:'MEM-002',environment:'development',surface:'plan',onCommand:command});}
+ function Screen(){useSceneBinding('plan','personal',false);return h(KittyBanks,{household,booksHousehold:household,view:'personal',createdBy:'MEM-001',environment:'development',surface:'plan',onCommand:command});}
  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
  try {
   await act(async()=>root.render(h(ThemeProvider,{store,children:h(Screen)})));
-  const source=host.querySelector<HTMLSelectElement>('select[aria-label^="Source for"]')!;
+  const click=async(name:string)=>act(async()=>[...document.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent?.trim()===name)!.click());
+  await click('Enter Kitty Banks');await click('Use money');
+  const action=document.querySelector('.kitty-money-action')!;
+  const amount=action.querySelector<HTMLInputElement>('input')!;
+  await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(amount,'25');amount.dispatchEvent(new Event('input',{bubbles:true}));});
+  const source=action.querySelector<HTMLSelectElement>('select')!;
   await act(async()=>{source.value='ACC-CHEQUING';source.dispatchEvent(new Event('change',{bubbles:true}));});
-  const review=[...host.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Review contribution')!;
-  await act(async()=>review.click());const dialog=document.querySelector('[role="dialog"]')!;expect(dialog.textContent).toContain('Confirm this bank');
+  const review=[...document.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Review contribution')!;
+  await act(async()=>review.click());const dialog=document.querySelector('.sheet.guard[role="dialog"]')!;expect(dialog.textContent).toContain('Fund this bank');
   const cancel=[...dialog.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent==='Cancel')!;
   await act(async()=>cancel.focus());
-  for(const theme of ['taylor','newfoundland','classic'] as const){await act(async()=>store.preview(theme));expect(document.querySelector('[role="dialog"]')).toBe(dialog);expect(document.activeElement).toBe(cancel);expect(source.value).toBe('ACC-CHEQUING');expect(command).not.toHaveBeenCalled();}
-  await act(async()=>cancel.click());expect(document.querySelector('[role="dialog"]')).toBeNull();expect(command).not.toHaveBeenCalled();
+  for(const theme of ['taylor','newfoundland','classic'] as const){await act(async()=>store.preview(theme));expect(document.querySelector('.sheet.guard[role="dialog"]')).toBe(dialog);expect(document.activeElement).toBe(cancel);expect(source.value).toBe('ACC-CHEQUING');expect(command).not.toHaveBeenCalled();}
+  await act(async()=>cancel.click());expect(document.querySelector('.sheet.guard[role="dialog"]')).toBeNull();expect(command).not.toHaveBeenCalled();
  }finally{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();}
 });
