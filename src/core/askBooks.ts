@@ -19,6 +19,8 @@ export type HerculesAskContext = {
   /** Optional disclosed macro soft prior for tip tools. */
   macroPrior?: import("./macroPriors.ts").MacroPrior | null;
   /** Visible Plan surface. The tools still re-resolve every id against scoped records. */
+  /** Only the private member conversation may inspect their own unsubmitted Plan. */
+  privatePlanPreparation?: boolean;
   plan?: import("./planSystem.ts").HerculesPlanContext;
 };
 

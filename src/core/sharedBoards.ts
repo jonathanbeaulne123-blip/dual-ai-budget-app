@@ -2,7 +2,7 @@ import type { Tombstone } from "./types.ts";
 import { isValidDateKey } from "./calendar.ts";
 
 export type BoardRow = { id: string; version: number; createdBy: string; createdAt: string; updatedAt: string };
-export type BoardTask = BoardRow & { title: string; assigneeId: string | null; dueDate: string | null; completed: boolean };
+export type BoardTask = BoardRow & { planReference?: { planVersionId: string; planLineId: string }; title: string; assigneeId: string | null; dueDate: string | null; completed: boolean };
 export type BoardMilestone = BoardRow & { title: string; dueDate: string | null; completed: boolean };
 export type BoardPhoto = BoardRow & {
   id: "BOARD-PHOTO-1" | "BOARD-PHOTO-2" | "BOARD-PHOTO-3";
@@ -44,7 +44,7 @@ function unique<T extends BoardRow>(items: T[]): T[] {
 export function shapeSharedBoards(value?: Partial<SharedBoardState> | null): SharedBoardState {
   return {
     photos: unique((Array.isArray(value?.photos) ? value.photos : []).filter(photo)).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, mediaId:r.mediaId, caption:r.caption, crop:{x:r.crop.x,y:r.crop.y,zoom:r.crop.zoom} })),
-    tasks: unique((Array.isArray(value?.tasks) ? value.tasks : []).filter(r => item(r) && /^BOARD-TASK-[A-Za-z0-9_-]{1,80}$/.test(r.id) && (r.assigneeId === null || typeof r.assigneeId === "string"))).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, title:r.title, completed:r.completed, dueDate:r.dueDate, assigneeId:r.assigneeId })),
+    tasks: unique((Array.isArray(value?.tasks) ? value.tasks : []).filter(r => item(r) && /^BOARD-TASK-[A-Za-z0-9_-]{1,80}$/.test(r.id) && (r.assigneeId === null || typeof r.assigneeId === "string"))).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, title:r.title, completed:r.completed, dueDate:r.dueDate, assigneeId:r.assigneeId, ...(r.planReference && typeof r.planReference.planVersionId === "string" && typeof r.planReference.planLineId === "string" ? { planReference: { planVersionId:r.planReference.planVersionId, planLineId:r.planReference.planLineId } } : {}) })),
     milestones: unique((Array.isArray(value?.milestones) ? value.milestones : []).filter(r => item(r) && /^BOARD-MILESTONE-[A-Za-z0-9_-]{1,80}$/.test(r.id))).map(r => ({ id:r.id, version:r.version, createdBy:r.createdBy, createdAt:r.createdAt, updatedAt:r.updatedAt, title:r.title, completed:r.completed, dueDate:r.dueDate })),
   };
 }

@@ -1,3 +1,5 @@
+import { matchPlanEvidence, planSourceVisible } from "./planProjection.ts";
+import { projectedExpenseEffect } from "./budget.ts";
 import { fundSourceMovement, fundSourceReservedCents, fundContributionReviewDigest, shapeFundSourceDeclaration, type FundSourceInput } from "./fundContributionSources.ts";
 import {reviewedClaimInput,type ClaimSettlementRequest} from "./claimSettlementReview.ts";
 import {dueOccurrenceReview,reviewedDueRequest,type DueOccurrenceRequest} from "./dueOccurrenceReview.ts";
@@ -91,11 +93,13 @@ import {
 import { mergeTombstones } from "./sync.ts";
 import {
   legacyHouseholdPlanDraft,
+  currentPlanVersion,
   planAcknowledgementState,
   planCompatibilityRows,
   planDigest,
   requiredPlanMemberIds,
   shapePlanDrafts,
+  shapePlanAssumptions,
   shapePlanLines,
   shapePlanVersions,
   type PlanBridgeDecision,
@@ -3473,6 +3477,7 @@ function validatedPlanDraft(household: Household, input: {
   memberId: string;
   targetMonth: MonthKey;
   baseVersionId?: string;
+  expectedUpdatedAt?: string;
   lines: PlanLine[];
   assumptions?: PlanDraft["assumptions"];
   note?: string;
@@ -3485,6 +3490,25 @@ function validatedPlanDraft(household: Household, input: {
     throw new ValidationError("Every Plan line must be a valid non-negative CAD amount created by you.");
   }
   const prior = shapePlanDrafts(household.planDrafts, input.memberId).find((draft) => draft.id === input.id);
+  if (prior && input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== prior.updatedAt) throw new ValidationError("This private draft changed. Refresh before replacing its decisions.");
+  if (new Set(lines.map(line => line.id)).size !== lines.length || input.lines.some(line => !Number.isSafeInteger(line.amountCents) || line.amountCents < 0 || line.dueDate && !isValidDateKey(line.dueDate))) throw new ValidationError("Review the Plan amounts, dates and unique decisions.");
+  for (const line of input.lines) {
+    const decision = line.decision;
+    if (!decision) continue;
+    if ([decision.targetCents, decision.lowCents, decision.highCents, decision.scheduleActualCents].some(value => value !== undefined && (!Number.isSafeInteger(value) || value < 0))
+      || decision.lowCents !== undefined && decision.highCents !== undefined && decision.lowCents > decision.highCents
+      || decision.deadline && !isValidDateKey(decision.deadline)
+      || decision.paydays?.some(date => !isValidDateKey(date))
+      || decision.funding && !["available", "expected"].includes(decision.funding)
+      || decision.contributionSchedule?.some(item => !isValidDateKey(item.date) || !Number.isSafeInteger(item.amountCents) || item.amountCents < 0)
+      || decision.contributionSchedule && new Set(decision.contributionSchedule.map(item => item.date)).size !== decision.contributionSchedule.length)
+      throw new ValidationError("Review the target, range, dates and payday contribution amounts.");
+    if (decision.contributionSchedule?.length && ((decision.scheduleActualCents ?? 0) + decision.contributionSchedule.reduce((sum, item) => sum + item.amountCents, 0) !== line.amountCents || decision.contributionSchedule.some(item => !item.date.startsWith(input.targetMonth))))
+      throw new ValidationError("The dated contributions and progress to date must equal this month's intention.");
+  }
+  if (lines.some(line => line.sourceReference && !planSourceVisible(household, line.sourceReference, input.memberId, input.scope))) throw new ValidationError("A Plan source is outside this ledger. Choose a visible source before saving.");
+  if ((input.assumptions ?? []).some(row => row.sourceReferences.some(source => !planSourceVisible(household, source, input.memberId, input.scope)) || row.expectedDate && !isValidDateKey(row.expectedDate) || [row.valueCents, row.lowCents, row.highCents].some(value => value !== undefined && (!Number.isSafeInteger(value) || value < 0)))) throw new ValidationError("Review the visible sources, dates and amounts behind these assumptions.");
+
   return {
     id: prior?.id ?? input.id ?? nextId("PLAN-DRAFT-", shapePlanDrafts(household.planDrafts).map((row) => row.id)),
     scope: input.scope,
@@ -3492,7 +3516,7 @@ function validatedPlanDraft(household: Household, input: {
     targetMonth: input.targetMonth,
     ...(input.baseVersionId ? { baseVersionId: input.baseVersionId } : {}),
     lines,
-    assumptions: input.assumptions ?? [],
+    assumptions: shapePlanAssumptions(input.assumptions ?? []),
     note: (input.note ?? "").trim(),
     updatedAt: at,
   };
@@ -3515,20 +3539,24 @@ export const createPlanScenario = captureCommand("createPlanScenario", function 
   scope: PlanScope;
   name: string;
   changedLines: PlanLine[];
+  changedAssumptions?: PlanDraft["assumptions"];
+  expectedUpdatedAt?: string;
   createdBy: string;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
   const draft = shapePlanDrafts(household.planDrafts, input.memberId).find((row) => row.id === input.draftId && row.scope === input.scope);
   if (!draft) throw new ValidationError("That private Plan draft is no longer available.");
-  const lines = shapePlanLines(input.changedLines);
-  if (lines.length !== input.changedLines.length || lines.some((line) => line.createdBy !== input.memberId)) throw new ValidationError("Review the alternative Plan lines.");
+  const validated = validatedPlanDraft(household, { memberId: input.memberId, createdBy: input.createdBy, scope: input.scope, targetMonth: draft.targetMonth, lines: input.changedLines, assumptions: input.changedAssumptions ?? draft.assumptions }, nowIso());
+  const lines = validated.lines;
   const name = input.name.trim();
   if (!name) throw new ValidationError("Name this alternative.");
   const at = nowIso();
   const previous = cloneHousehold(household), next = cloneHousehold(household);
   const existing = (next.planScenarios ?? []).find((row) => row.id === input.id && row.ownerMemberId === input.memberId);
+  if (input.id && (!existing || existing.draftId !== input.draftId || existing.scope !== input.scope)) throw new ValidationError("That private alternative is no longer available.");
+  if (existing && input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== existing.updatedAt) throw new ValidationError("This alternative changed. Refresh before replacing its decisions.");
   const scenario: PlanScenario = { id: existing?.id ?? nextId("PLAN-SCENARIO-", (next.planScenarios ?? []).map((row) => row.id)), scope: input.scope,
-    ownerMemberId: input.memberId, draftId: draft.id, name, changedLines: lines, updatedAt: at };
+    ownerMemberId: input.memberId, draftId: draft.id, name, changedLines: lines, changedAssumptions: validated.assumptions, updatedAt: at };
   next.planScenarios = [...(next.planScenarios ?? []).filter((row) => row.id !== scenario.id), scenario];
   return commitPlanPersonal(previous, next, input.memberId, "Alternative saved privately", at);
 });
@@ -3548,11 +3576,13 @@ function versionFromDraft(household: Household, draft: PlanDraft, createdBy: str
 }
 
 export const lockPersonalPlan = captureCommand("lockPersonalPlan", function lockPersonalPlan(household: Household, input: {
-  memberId: string; draftId: string; reason: string; createdBy: string;
+  memberId: string; draftId: string; reason: string; createdBy: string; expectedUpdatedAt?: string; expectedBaseVersionId?: string | null;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
   const draft = shapePlanDrafts(household.planDrafts, input.memberId).find((row) => row.id === input.draftId && row.scope === "personal");
   if (!draft) throw new ValidationError("That Personal Plan draft is no longer available.");
+  if (input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== draft.updatedAt) throw new ValidationError("The reviewed Plan changed. Refresh the exact proposal first.");
+  if (input.expectedBaseVersionId !== undefined && input.expectedBaseVersionId !== (currentPlanVersion(household, draft.scope, draft.targetMonth, input.memberId)?.id ?? null)) throw new ValidationError("The visible Plan version changed. Compare it with your draft and refresh the review first.");
   const prior = shapePlanVersions(household.planVersions, { scope: "personal", ownerMemberId: input.memberId })
     .filter((row) => row.monthKey === draft.targetMonth && row.state !== "superseded");
   const reason = input.reason.trim();
@@ -3570,11 +3600,13 @@ export const lockPersonalPlan = captureCommand("lockPersonalPlan", function lock
 
 /** Explicit disclosure boundary: copies one private Household draft into an immutable Shared proposal. */
 export const proposeHouseholdPlan = captureCommand("proposeHouseholdPlan", function proposeHouseholdPlan(household: Household, input: {
-  memberId: string; draftId: string; reason: string; createdBy: string;
+  memberId: string; draftId: string; reason: string; createdBy: string; expectedUpdatedAt?: string; expectedBaseVersionId?: string | null;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
   const draft = shapePlanDrafts(household.planDrafts, input.memberId).find((row) => row.id === input.draftId && row.scope === "household");
   if (!draft) throw new ValidationError("That private Household draft is no longer available.");
+  if (input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== draft.updatedAt) throw new ValidationError("The reviewed Plan changed. Refresh the exact proposal first.");
+  if (input.expectedBaseVersionId !== undefined && input.expectedBaseVersionId !== (currentPlanVersion(household, draft.scope, draft.targetMonth, input.memberId)?.id ?? null)) throw new ValidationError("The visible Plan version changed. Compare it with your draft and refresh the review first.");
   const bridgeById = new Map((household.planBridgeDecisions ?? []).map((row) => [row.id, row]));
   const staleBridge = draft.lines.find((line) => {
     if (line.sourceReference?.type !== "bridge") return false;
@@ -3672,15 +3704,21 @@ export const savePlanLearningProgress = captureCommand("savePlanLearningProgress
 });
 
 export const setPlanCoachingIntensity = captureCommand("setPlanCoachingIntensity", function setPlanCoachingIntensity(household: Household, input: {
-  memberId: string; intensity: PlanCoachingIntensity; createdBy: string;
+  memberId: string; intensity: PlanCoachingIntensity; createdBy: string; rememberText?: string; forgetText?: string; expectedUpdatedAt?: string;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
   if (!["off", "calm", "active"].includes(input.intensity)) throw new ValidationError("Choose off, calm, or active Plan coaching.");
   const at = nowIso(), id = `PLAN-COACHING-${input.memberId}`;
   const previous = cloneHousehold(household), next = cloneHousehold(household);
   const prior = (next.planCoachingPreferences ?? []).find((row) => row.id === id);
+  if (input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== prior?.updatedAt) throw new ValidationError("Your coaching preferences changed. Refresh before editing them.");
+  if (input.forgetText && !prior?.lifePreferences?.includes(input.forgetText)) throw new ValidationError("That preference changed. Review the current wording before editing or forgetting it.");
+  const remembered = input.rememberText?.trim();
+  if (input.rememberText !== undefined && (!remembered || remembered.length > 240)) throw new ValidationError("Use a short preference of 1 to 240 characters.");
+  const lifePreferences = [...new Set([...(prior?.lifePreferences ?? []).filter(text => text !== input.forgetText), ...(remembered ? [remembered] : [])])];
+  if (lifePreferences.length > 10) throw new ValidationError("Review or remove a preference before adding another.");
   next.planCoachingPreferences = [...(next.planCoachingPreferences ?? []).filter((row) => row.id !== id), { id, memberId: input.memberId,
-    intensity: input.intensity, dismissedIssueIds: prior?.dismissedIssueIds ?? [], snoozedIssueIds: prior?.snoozedIssueIds ?? {}, updatedAt: at }];
+    ...(prior?.lifePreferences !== undefined || input.rememberText !== undefined || input.forgetText !== undefined ? { lifePreferences } : {}), intensity: input.intensity, dismissedIssueIds: prior?.dismissedIssueIds ?? [], snoozedIssueIds: prior?.snoozedIssueIds ?? {}, updatedAt: at }];
   return commitPlanPersonal(previous, next, input.memberId, "Plan coaching preference saved", at);
 });
 
@@ -3709,13 +3747,20 @@ export const savePlanReflection = captureCommand("savePlanReflection", function 
   if (!version) throw new ValidationError("That Plan version is no longer visible here.");
   if (!["active", "superseded"].includes(version.state)) throw new ValidationError("Reflection begins after a Plan becomes active.");
   const lineIds = new Set(version.lines.map((line) => line.id));
-  const visibleTransactionIds = new Set(household.transactions.filter((row) => version.scope === "household" ? row.visibility !== "personal" : row.visibility === "personal" && row.createdBy === input.memberId).map((row) => row.id));
+  const visibleTransactionIds = new Set(household.transactions.filter((row) => version.scope === "household" ? row.visibility !== "personal" : (row.visibility === "personal" || row.visibility === "both") && row.createdBy === input.memberId).map((row) => row.id));
   const outcomes = input.outcomes.map((row) => {
     const transactionIds = [...new Set(row.transactionIds)];
-    const actualCents = household.transactions.filter((transaction) => transactionIds.includes(transaction.id)).reduce((sum, transaction) => sum + transaction.amountCents, 0);
-    return { ...row, actualCents, transactionIds };
+    const byId = new Map(household.transactions.map(transaction => [transaction.id, transaction]));
+    const evidenceIds = [...new Set(row.evidenceIds ?? [])];
+    const line = version.lines.find(line => line.id === row.planLineId);
+    const sourceEvidence = line ? matchPlanEvidence(household, line, version.monthKey, todayKey(), input.memberId, version.scope).filter(item => item.kind !== "goal-record") : [];
+    if (evidenceIds.some(id => !sourceEvidence.some(item => item.id === id))) throw new ValidationError("An outcome reference is no longer backed by visible accepted evidence.");
+    const selectedEvidence = sourceEvidence.filter(item => evidenceIds.includes(item.id));
+    if (selectedEvidence.some(item => transactionIds.includes(item.id))) throw new ValidationError("Choose each receipt only once.");
+    const actualCents = household.transactions.filter(transaction => transactionIds.includes(transaction.id)).reduce((sum, transaction) => sum + projectedExpenseEffect(transaction, byId), 0) + selectedEvidence.reduce((sum, item) => sum + item.amountCents, 0);
+    return { ...row, actualCents, transactionIds, ...(row.evidenceIds ? { evidenceIds } : {}) };
   });
-  const allTransactionIds = outcomes.flatMap((row) => row.transactionIds);
+  const allTransactionIds = outcomes.flatMap((row) => [...row.transactionIds, ...(row.evidenceIds ?? [])]);
   if (new Set(allTransactionIds).size !== allTransactionIds.length) throw new ValidationError("One transaction cannot prove two Plan outcomes.");
   if (outcomes.some((row) => !lineIds.has(row.planLineId) || !["paid", "moved", "missed", "deferred", "not-relevant"].includes(row.status) || row.transactionIds.some((id) => !visibleTransactionIds.has(id)))) throw new ValidationError("Review the Plan outcomes and their visible evidence.");
   const at = nowIso(), id = version.scope === "household" ? `PLAN-REFLECTION-${version.id}-shared` : `PLAN-REFLECTION-${version.id}-${input.memberId}`, previous = cloneHousehold(household), next = cloneHousehold(household);
@@ -3747,7 +3792,7 @@ export const markPlanReflectionReviewed = captureCommand("markPlanReflectionRevi
 
 export const savePlanBridgeDraft = captureCommand("savePlanBridgeDraft", function savePlanBridgeDraft(household: Household, input: {
   id?: string; monthKey: MonthKey; kind: PlanBridgeDraft["kind"]; label: string; amountCents?: number; lowCents?: number; highCents?: number;
-  expectedDate?: DateKey; supersedesId?: string; memberId: string; createdBy: string;
+  expectedDate?: DateKey; supersedesId?: string; memberId: string; createdBy: string; expectedUpdatedAt?: string;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
   const label = input.label.trim();
@@ -3760,6 +3805,8 @@ export const savePlanBridgeDraft = captureCommand("savePlanBridgeDraft", functio
   const id = input.id ?? nextId("PLAN-BRIDGE-DRAFT-", (next.planBridgeDrafts ?? []).map((row) => row.id));
   const prior = (next.planBridgeDrafts ?? []).find((row) => row.id === id);
   if (prior && prior.ownerMemberId !== input.memberId) throw new ValidationError("That private Bridge draft belongs to another member.");
+  if (prior && input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== prior.updatedAt) throw new ValidationError("This Bridge idea changed. Refresh your private review.");
+  if (input.expectedDate && !isValidDateKey(input.expectedDate)) throw new ValidationError("Choose a valid Bridge date.");
   const draft: PlanBridgeDraft = { id, ownerMemberId: input.memberId, monthKey: input.monthKey, kind: input.kind, label,
     ...(input.amountCents !== undefined ? { amountCents: Math.max(0, Math.round(input.amountCents)) } : {}),
     ...(input.lowCents !== undefined ? { lowCents: Math.max(0, Math.round(input.lowCents)) } : {}),
@@ -3770,11 +3817,12 @@ export const savePlanBridgeDraft = captureCommand("savePlanBridgeDraft", functio
 });
 
 export const sharePlanBridgeDraft = captureCommand("sharePlanBridgeDraft", function sharePlanBridgeDraft(household: Household, input: {
-  draftId: string; memberId: string; createdBy: string;
+  draftId: string; memberId: string; createdBy: string; expectedUpdatedAt?: string;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
   const draft = (household.planBridgeDrafts ?? []).find((row) => row.id === input.draftId && row.ownerMemberId === input.memberId);
   if (!draft) throw new ValidationError("That private Bridge draft is no longer available.");
+  if (input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== draft.updatedAt) throw new ValidationError("The exact Bridge disclosure changed. Review it again before sharing.");
   const result = proposePlanBridge(household, { monthKey: draft.monthKey, kind: draft.kind, label: draft.label,
     ...(draft.amountCents !== undefined ? { amountCents: draft.amountCents } : {}), ...(draft.lowCents !== undefined ? { lowCents: draft.lowCents } : {}),
     ...(draft.highCents !== undefined ? { highCents: draft.highCents } : {}), ...(draft.expectedDate ? { expectedDate: draft.expectedDate } : {}),
@@ -3859,7 +3907,7 @@ export const addPlanBridgeToDraft = captureCommand("addPlanBridgeToDraft", funct
 });
 
 export const appendPlanSitdownTurn = captureCommand("appendPlanSitdownTurn", function appendPlanSitdownTurn(household: Household, input: {
-  sessionId?: string; sitDownSessionId: string; monthKey: MonthKey; planDraftId: string; memberId: string; text: string; sourceReferences?: PlanHerculesTurn["sourceReferences"];
+  sessionId?: string; sitDownSessionId: string; monthKey: MonthKey; planDraftId: string; memberId: string; text: string; sourceReferences?: PlanHerculesTurn["sourceReferences"]; expectedUpdatedAt?: string; checkpoint?: { stage: number; decision?: string; rhythm?: string; close?: boolean; planVersionId?: string };
 }): CommitResult {
   const actor = requireMember(household, input.memberId);
   if (!actor.active) throw new ValidationError("Only active household members can use the Shared Sitdown.");
@@ -3870,13 +3918,23 @@ export const appendPlanSitdownTurn = captureCommand("appendPlanSitdownTurn", fun
     : input.planDraftId;
   const at = nowIso(), previous = cloneHousehold(household), next = cloneHousehold(household);
   const prior = input.sessionId ? (next.planHerculesSessions ?? []).find((row) => row.id === input.sessionId && row.state === "active") : undefined;
+  if (input.sessionId && (!prior || prior.monthKey !== input.monthKey)) throw new ValidationError("This Sitdown is no longer open in this month. Refresh its saved state.");
+  if (input.checkpoint && prior && input.expectedUpdatedAt !== prior.updatedAt) throw new ValidationError("The Sitdown changed. Read the latest shared decisions before continuing.");
+  if (input.checkpoint && (!Number.isInteger(input.checkpoint.stage) || input.checkpoint.stage < 0 || input.checkpoint.stage > 7)) throw new ValidationError("Choose a valid Sitdown stage.");
+  if (input.sourceReferences?.some(source => !planSourceVisible(household, source, input.memberId, "household"))) throw new ValidationError("Only deliberately Shared evidence belongs in this Sitdown.");
+  const closingVersion = input.checkpoint?.close ? household.planVersions?.find(row => row.id === input.checkpoint?.planVersionId && row.scope === "household" && row.monthKey === input.monthKey && ["active", "scheduled"].includes(row.state)) : null;
+  if (input.checkpoint?.close && (!closingVersion || !planAcknowledgementState(household, closingVersion).complete)) throw new ValidationError("Both partners must acknowledge the exact Plan before closing this Sitdown.");
   const sessionId = prior?.id ?? nextId("PLAN-SITDOWN-CHAT-", (next.planHerculesSessions ?? []).map((row) => row.id));
   const turn: PlanHerculesTurn = { id: nextId("PLAN-TURN-", (prior?.turns ?? []).map((row) => row.id)), role: "member",
     memberId: input.memberId, text: message, sourceReferences: input.sourceReferences ?? [], createdAt: at };
   const session = prior ? { ...prior, participantMemberIds: [...new Set([...prior.participantMemberIds, input.memberId])], turns: [...prior.turns, turn], updatedAt: at }
     : { id: sessionId, sitDownSessionId: input.sitDownSessionId, monthKey: input.monthKey, planDraftId: sharedPlanReference, state: "active" as const,
       startedBy: input.memberId, participantMemberIds: [input.memberId], turns: [turn], createdAt: at, updatedAt: at };
-  next.planHerculesSessions = [...(next.planHerculesSessions ?? []).filter((row) => row.id !== session.id), session];
+  const savedSession = input.checkpoint ? { ...session, stage: input.checkpoint.stage,
+    decisions: [...(prior?.decisions ?? []), ...(input.checkpoint.decision?.trim() ? [{ id: turn.id, memberId: input.memberId, text: input.checkpoint.decision.trim(), createdAt: at }] : [])],
+    rhythm: input.checkpoint.rhythm?.trim() ?? prior?.rhythm ?? "",
+    ...(closingVersion ? { state: "closed" as const, resultingPlanVersionId: closingVersion.id } : {}) } : session;
+  next.planHerculesSessions = [...(next.planHerculesSessions ?? []).filter((row) => row.id !== session.id), savedSession];
   return commit(previous, next, "Shared Sitdown", `Added a clearly Shared Sitdown turn by ${actor.name}`, [turn.id], [], "appendPlanSitdownTurn");
 });
 
@@ -5950,14 +6008,16 @@ function boardItemValues(input: BoardItemEdit) {
   if (typeof input.completed !== "boolean") throw new ValidationError("Choose whether the item is complete.");
   return { title: input.title.trim(), dueDate: input.dueDate === null ? null : parseDate(input.dueDate), completed: input.completed };
 }
-export const saveBoardTask = captureCommand("saveBoardTask", function saveBoardTask(household: Household, input: BoardItemEdit & { assigneeId: string | null }): CommitResult {
+export const saveBoardTask = captureCommand("saveBoardTask", function saveBoardTask(household: Household, input: BoardItemEdit & { assigneeId: string | null; planReference?: BoardTask["planReference"] }): CommitResult {
   if (!/^BOARD-TASK-[A-Za-z0-9_-]{1,80}$/.test(input.id)) throw new ValidationError("Choose a valid task identity.");
   const boards = shapeSharedBoards(household.kitchen.boards), old = boards.tasks.find(r => r.id === input.id);
   requireBoardVersion(household, input, old);
   const values = boardItemValues(input);
   if (input.assigneeId !== null && !household.members.some(m => m.id === input.assigneeId && m.active)) throw new ValidationError("Choose an active household member for this task.");
   if (!old && boards.tasks.length >= BOARD_ITEM_LIMIT) throw new ValidationError("Remove a finished task before adding another.");
-  const at = nowIso(), row: BoardTask = { id: input.id, ...values, assigneeId: input.assigneeId, version: (old?.version ?? 0) + 1, createdBy: old?.createdBy ?? input.memberId, createdAt: old?.createdAt ?? at, updatedAt: at };
+  const planReference = input.planReference ?? old?.planReference;
+  if (input.planReference && !household.planVersions?.some(plan => plan.id === input.planReference!.planVersionId && plan.scope === "household" && plan.state === "active" && plan.lines.some(line => line.id === input.planReference!.planLineId))) throw new ValidationError("Refresh the active Shared Plan before assigning its next step.");
+  const at = nowIso(), row: BoardTask = { id: input.id, ...values, assigneeId: input.assigneeId, ...(planReference ? { planReference } : {}), version: (old?.version ?? 0) + 1, createdBy: old?.createdBy ?? input.memberId, createdAt: old?.createdAt ?? at, updatedAt: at };
   const next = cloneHousehold(household);
   next.kitchen.boards = { ...boards, tasks: [...boards.tasks.filter(r => r.id !== row.id), row] };
   return commit(cloneHousehold(household), next, "Shared boards", "Updated a shared task", []);

@@ -60,11 +60,11 @@ export type LedgerExperienceFailure = {
 const SHARED_PURPOSE = "Coordinate the household: what is true together, what changed, what needs a person, what is next, and why this view is trustworthy.";
 const PERSONAL_PURPOSE = "Understand and manage my private position: what is mine, what moved, my obligations and goals, what I chose to share, and what stays private.";
 
-export type KitchenPrimaryNavId = "home" | "calendar" | "shift" | "ledger" | "plan" | "more";
+export type KitchenPrimaryNavId = "together" | "home" | "calendar" | "shift" | "ledger" | "plan" | "more";
 
-/** Shared Home owns the kitchen table; Shift and Books stay on Personal primary nav. Household table stays a deep page from More. */
+/** Four distinct household jobs; Personal retains its independent operational navigation. */
 export function kitchenPrimaryNav(view: LedgerView): KitchenPrimaryNavId[] {
-  if (view === "household") return ["home", "calendar", "plan", "more"];
+  if (view === "household") return ["home", "ledger", "plan", "together"];
   return ["home", "calendar", "shift", "ledger", "plan", "more"];
 }
 

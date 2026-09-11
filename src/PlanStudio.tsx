@@ -1,196 +1,164 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  PLAN_CURRICULUM,
-  PLAN_LENSES,
-  PLAN_LENS_COPY,
-  addDays,
-  acknowledgeHouseholdPlan,
-  adoptLegacyHouseholdPlan,
-  appendPlanSitdownTurn,
-  createPlanScenario,
-  currentPlanVersion,
-  executeHerculesReadToolPlan,
-  evaluatePlanDrift,
-  formatCad,
-  monthKeyFromDateKey,
-  planAcknowledgementState,
-  planLensTotals,
-  proposeHouseholdPlan,
-  savePlanDraft,
-  savePlanLearningProgress,
-  shiftMonthKey,
-  lockPersonalPlan,
-  updatePlanNudgeState,
-  type CommitResult,
-  type DateKey,
-  type Household,
-  type LedgerView,
-  type MonthKey,
-  type PlanLens,
-  type PlanLine,
+  PLAN_LENSES, PLAN_LENS_COPY, addDays, acknowledgeHouseholdPlan, appendPlanSitdownTurn, createPlanScenario, currentPlanVersion, evaluatePlanDrift,
+  formatCad, monthKeyFromDateKey, planAcknowledgementState, proposeHouseholdPlan, savePlanDraft, savePlanLearningProgress, setPlanCoachingIntensity,
+  shiftMonthKey, lockPersonalPlan, updatePlanNudgeState, type CommitResult, type DateKey, type Household, type LedgerView, type MonthKey, type PlanLens, type PlanLine,
+  type PlanAssumption, type HerculesPlanContext, type HerculesNumberSource,
 } from "./core/index.ts";
-import "./plan-studio.css";
+import { planSelectionForDraft, planSelectionForVersion, planSourceVisible, projectPlan, type PlanSelection } from "./core/planProjection.ts";
+import { planLesson, PLAN_LESSONS } from "./core/planLearning.ts";
+import { HerculesPortrait } from "./Hercules.tsx";
 import { PlanBridgeEditor } from "./PlanBridgeEditor.tsx";
 import { PlanReflectionEditor } from "./PlanReflectionEditor.tsx";
+import { PlanConsequence, PlanLensWorkbench, type PlanAsk } from "./PlanLensWorkbench.tsx";
+import "./plan-studio.css";
 
-type Section = "overview" | PlanLens | "scenarios" | "learn" | "reflection" | "history" | "sitdown";
-type PlanTool = "plan_overview" | "plan_cashflow_runway" | "plan_assumptions" | "plan_version_diff" | "plan_actual" | "plan_drift" | "plan_bridge_status" | "plan_sitdown_status" | "plan_learning_context";
+type Section = "overview" | PlanLens | "scenarios" | "assumptions" | "bridge" | "learn" | "reflection" | "history" | "sitdown" | "goals";
+const stages = ["Arrive", "Notice", "Reflect", "Update reality", "Build the month", "Learn", "Resolve the Bridge", "Acknowledge"];
 
-const SITDOWN_STEPS = [
-  ["Arrive", "Bring private preparation into a shared agenda only when you choose."],
-  ["Notice", "Recognize verified progress at the size it deserves."],
-  ["Reflect", "Compare what you intended with what actually happened."],
-  ["Update reality", "Refresh income, obligations, Fund needs, and true expenses."],
-  ["Build the month", "Make decisions through Protect, Prepare, Build, and Everyday."],
-  ["Learn", "Use one useful, skippable lesson for the decision in front of you."],
-  ["Resolve the Bridge", "Decide what should cross from Personal into Household."],
-  ["Acknowledge", "Review the exact Plan; each partner decides independently."],
-] as const;
-
-function toolForQuestion(question: string): PlanTool {
-  const value = question.toLowerCase();
-  if (/runway|low point|cash/.test(value)) return "plan_cashflow_runway";
-  if (/assumption|uncertain|risk/.test(value)) return "plan_assumptions";
-  if (/changed|difference|acknowledged/.test(value)) return "plan_version_diff";
-  if (/actual|paid|happen/.test(value)) return "plan_actual";
-  if (/drift|pace|exposed|forget/.test(value)) return "plan_drift";
-  if (/bridge|contribution/.test(value)) return "plan_bridge_status";
-  if (/sit.?down|talk/.test(value)) return "plan_sitdown_status";
-  if (/teach|learn|explain simply/.test(value)) return "plan_learning_context";
-  return "plan_overview";
-}
-
-export function PlanStudio({ household, view, memberId, today, busy, onCommand, onSharedHerculesReply }: {
-  household: Household;
-  view: LedgerView;
-  memberId: string;
-  today: DateKey;
-  busy: boolean;
+export function PlanStudio({ household, view, memberId, today, busy, onCommand, onSharedHerculesReply, onAskHercules, onContextChange, sourceFocus, goalsContent, contextIdentity }: {
+  household: Household; view: LedgerView; memberId: string; today: DateKey; busy: boolean;
   onCommand: (fn: (current: Household) => CommitResult) => Promise<unknown>;
   onSharedHerculesReply?: (sessionId: string, inReplyToTurnId: string) => Promise<void>;
+  onAskHercules?: PlanAsk;
+  onContextChange?: (context: HerculesPlanContext | null) => void;
+  sourceFocus?: HerculesNumberSource | null;
+  goalsContent?: ReactNode;
+  contextIdentity?: string;
 }) {
-  const scope = view === "household" ? "household" : "personal";
+  const scope = view;
   const [month, setMonth] = useState<MonthKey>(monthKeyFromDateKey(today));
   const [section, setSection] = useState<Section>("overview");
-  const [lineLabel, setLineLabel] = useState("");
-  const [lineAmount, setLineAmount] = useState("");
-  const [lineLens, setLineLens] = useState<PlanLens>("protect");
+  const [horizonDays, setHorizonDays] = useState(31);
+  const [scenarioId, setScenarioId] = useState<string | null>(null);
+  const [versionId, setVersionId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [sitdownStep, setSitdownStep] = useState(0);
-  const [sitdownText, setSitdownText] = useState("");
-  const [herculesOpen, setHerculesOpen] = useState(false);
-  const [question, setQuestion] = useState("What is protected, and what is still exposed?");
-  const [answer, setAnswer] = useState("I can read this month, explain the evidence, and help you try an alternative without changing the accepted Plan.");
-
-  const version = currentPlanVersion(household, scope, month, memberId);
-  const reflectionVersion = [...(household.planVersions ?? [])].filter((row) => row.scope === scope && row.monthKey === month
-    && ["active", "superseded"].includes(row.state) && (scope === "household" || row.ownerMemberId === memberId))
-    .sort((left, right) => right.sequence - left.sequence || right.createdAt.localeCompare(left.createdAt))[0] ?? null;
-  const draft = [...(household.planDrafts ?? [])].filter((row) => row.ownerMemberId === memberId && row.scope === scope && row.targetMonth === month)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
-  const working = draft?.lines ?? version?.lines ?? [];
-  const totals = useMemo(() => planLensTotals(working), [working]);
+  const [reviewedVersionId, setReviewedVersionId] = useState<string | null>(null);
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
+  const [reviewedAt, setReviewedAt] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [privateNote, setPrivateNote] = useState<string | null>(null);
+  const [decision, setDecision] = useState("");
+  const [rhythm, setRhythm] = useState<string | null>(null);
+  const [disruption, setDisruption] = useState<import("./core/planProjection.ts").PlanDisruption | null>(null);
+  const [purchaseContext, setPurchaseContext] = useState<{ amountCents: number; date: DateKey } | null>(null);
+  const [lessonLens, setLessonLens] = useState<PlanLens | undefined>();
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [scenarioName, setScenarioName] = useState("");
+  const [editingPreference, setEditingPreference] = useState<string | null>(null);
+  const [rememberText, setRememberText] = useState("");
+  const [incomeSource, setIncomeSource] = useState("");
+  const [incomeDate, setIncomeDate] = useState(today);
+  const [incomeAmount, setIncomeAmount] = useState("");
+  const locked = busy || saving;
+  const version = versionId ? household.planVersions?.find(row => row.id === versionId && row.scope === scope && row.monthKey === month && (scope === "household" || row.ownerMemberId === memberId)) ?? null : currentPlanVersion(household, scope, month, memberId);
+  const active = [...(household.planVersions ?? [])].filter(row => row.scope === scope && row.monthKey === month && ["active", "superseded"].includes(row.state) && (scope === "household" || row.ownerMemberId === memberId)).sort((a, b) => b.sequence - a.sequence)[0] ?? null;
+  const draft = [...(household.planDrafts ?? [])].filter(row => row.ownerMemberId === memberId && row.scope === scope && row.targetMonth === month).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
+  const scenarios = (household.planScenarios ?? []).filter(row => row.ownerMemberId === memberId && row.scope === scope && row.draftId === draft?.id);
+  const scenario = scenarios.find(row => row.id === scenarioId) ?? null;
+  const through = addDays(today, horizonDays - 1);
+  const selection = useMemo<PlanSelection>(() => {
+    const baseline: PlanSelection = !versionId && draft ? planSelectionForDraft(draft) : version ? planSelectionForVersion(version) : { kind: "draft", id: "new", ownerMemberId: memberId, scope, monthKey: month, lines: [], assumptions: [] };
+    return scenario ? { ...baseline, kind: "scenario", id: scenario.id, ownerMemberId: memberId, lines: scenario.changedLines, assumptions: scenario.changedAssumptions ?? baseline.assumptions } : baseline;
+  }, [draft, version, versionId, scenario, memberId, scope, month]);
+  const working = selection.lines;
+  const projection = useMemo(() => projectPlan(household, { memberId, scope, acceptedRevision: household.revision, asOf: today, through, selection }), [household, memberId, scope, today, through, selection]);
+  const baselineProjection = useMemo(() => projectPlan(household, { memberId, scope, acceptedRevision: household.revision, asOf: today, through, selection: draft ? planSelectionForDraft(draft) : selection }), [household, memberId, scope, today, through, draft, selection]);
   const acknowledgement = version?.scope === "household" ? planAcknowledgementState(household, version) : null;
-  const myAcknowledged = Boolean(acknowledgement?.acknowledgedMemberIds.includes(memberId));
-  const lesson = PLAN_CURRICULUM[(Math.max(1, Number(month.slice(5, 7))) - 1) % PLAN_CURRICULUM.length]!;
-  const progress = (household.planLearningProgress ?? []).find((row) => row.memberId === memberId && row.monthKey === month && row.lessonId === lesson[0]);
-  const session = [...(household.planHerculesSessions ?? [])].filter((row) => row.monthKey === month).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-  const legacyRows = household.budgetPlans.filter((row) => row.active && row.monthKey === month && row.amountCents > 0);
-  const coaching = (household.planCoachingPreferences ?? []).find((row) => row.memberId === memberId);
-  const topFinding = useMemo(() => {
-    if (!version || coaching?.intensity === "off") return null;
-    const rank = { critical: 0, attention: 1, gentle: 2 } as const;
-    return evaluatePlanDrift(household, version, today)
-      .filter((row) => !coaching?.dismissedIssueIds.includes(row.id) && (!coaching?.snoozedIssueIds[row.id] || coaching.snoozedIssueIds[row.id]! <= today))
-      .sort((left, right) => rank[left.severity] - rank[right.severity])[0] ?? null;
-  }, [coaching, household, today, version]);
-
-  const saveLines = (lines: PlanLine[]) => onCommand((current) => savePlanDraft(current, {
-    ...(draft?.id ? { id: draft.id } : {}), scope, memberId, targetMonth: month, ...(version?.id ? { baseVersionId: version.id } : {}),
-    lines, assumptions: draft?.assumptions ?? version?.assumptions ?? [], note: draft?.note ?? "", createdBy: memberId,
-  }));
-
-  const addLine = () => {
-    const cents = Math.round(Number(lineAmount) * 100);
-    if (!lineLabel.trim() || !Number.isFinite(cents) || cents < 0) return;
-    const line: PlanLine = { id: crypto.randomUUID(), lens: lineLens,
-      kind: lineLens === "protect" ? "obligation" : lineLens === "prepare" ? "true-expense" : lineLens === "build" ? "goal-contribution" : "everyday-pool",
-      labelSnapshot: lineLabel.trim(), amountCents: cents, cadence: "monthly", responsibility: { kind: scope === "household" ? "joint" : "member", ...(scope === "personal" ? { memberId } : {}) }, assumptionIds: [], createdBy: memberId };
-    void saveLines([...working, line]);
-    setLineLabel(""); setLineAmount("");
+  const coaching = household.planCoachingPreferences?.find(row => row.memberId === memberId);
+  const topFinding = useMemo(() => version && coaching?.intensity !== "off" ? evaluatePlanDrift(household, version, today).filter(row => !coaching?.dismissedIssueIds.includes(row.id) && (!coaching?.snoozedIssueIds[row.id] || coaching.snoozedIssueIds[row.id]! <= today))[0] : undefined, [household, version, coaching, today]);
+  const sessions = [...(household.planHerculesSessions ?? [])].filter(row => row.monthKey === month).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const session = sessions.find(row => row.state === "active") ?? sessions[0];
+  const stage = session?.stage ?? 0;
+  const lesson = planLesson(projection, lessonLens, household.planLearningProgress?.filter(row => row.memberId === memberId && row.state === "completed").map(row => row.lessonId));
+  const progress = household.planLearningProgress?.find(row => row.memberId === memberId && row.monthKey === month && row.lessonId === lesson.id);
+  const run = useCallback(async (command: (current: Household) => CommitResult) => {
+    setSaving(true); setError("");
+    try { const result = await onCommand(command); return result ?? null; }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "This change could not be saved. Your input is still here."); return null; }
+    finally { setSaving(false); }
+  }, [onCommand]);
+  const saveWorking = async (lines: readonly PlanLine[], assumptions: readonly PlanAssumption[] = selection.assumptions, note = draft?.note ?? "") => {
+    const mine = lines.map(line => ({ ...line, createdBy: memberId }));
+    const result = scenario ? await run(current => createPlanScenario(current, { id: scenario.id, expectedUpdatedAt: scenario.updatedAt, memberId, scope, draftId: scenario.draftId, name: scenario.name, changedLines: mine, changedAssumptions: [...assumptions], createdBy: memberId }))
+      : await run(current => savePlanDraft(current, { ...(draft ? { id: draft.id, expectedUpdatedAt: draft.updatedAt } : {}), memberId, scope, targetMonth: month, ...(draft?.baseVersionId || version?.id ? { baseVersionId: draft?.baseVersionId ?? version?.id } : {}), lines: mine, assumptions: [...assumptions], note, createdBy: memberId }));
+    if (result) { setVersionId(null); setReviewedAt(null); }
+    return Boolean(result);
   };
-
-  const askHercules = () => {
-    const tool = toolForQuestion(question);
-    const run = executeHerculesReadToolPlan(household, { calls: [{ id: "plan-studio", name: tool, args: { monthKey: month } }] }, today,
-      { memberId, view, plan: { monthKey: month, scope, ...(version?.id ? { activePlanVersionId: version.id } : {}), ...(draft?.id ? { draftId: draft.id } : {}), ...(PLAN_LENSES.includes(section as PlanLens) ? { lens: section as PlanLens } : {}), ...(session?.sitDownSessionId ? { sitDownSessionId: session.sitDownSessionId } : {}) } });
-    setAnswer(run.talk.spoken);
+  const saveLine = async (line: PlanLine, expected?: PlanLine) => {
+    const current = working.find(row => row.id === line.id);
+    if (expected && current && JSON.stringify(current) !== JSON.stringify(expected)) { setError("This decision changed while you were editing. Your input is retained; compare it with the latest decision before saving."); return false; }
+    return saveWorking(current ? working.map(row => row.id === line.id ? line : row) : [...working, line]);
   };
-
-  const submitSharedTalkingPoint = async () => {
-    const text = sitdownText.trim();
-    if (!text) return;
-    const outcome = await onCommand((current) => appendPlanSitdownTurn(current, { sessionId: session?.id,
-      sitDownSessionId: session?.sitDownSessionId ?? `SITDOWN-${month}`, monthKey: month,
-      planDraftId: draft?.id ?? `PLAN-DRAFT-${month}`, memberId, text }));
-    setSitdownText("");
-    const accepted = (outcome as { household?: Household } | null)?.household;
-    const acceptedSession = [...(accepted?.planHerculesSessions ?? [])].filter((row) => row.monthKey === month).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-    const memberTurn = [...(acceptedSession?.turns ?? [])].reverse().find((row) => row.role === "member" && row.memberId === memberId && row.text === text);
-    if (acceptedSession && memberTurn && onSharedHerculesReply) {
-      try { await onSharedHerculesReply(acceptedSession.id, memberTurn.id); }
-      catch { setAnswer("Your talking point is safely Shared. Hercules could not add his reply yet; retry after the household reconnects."); setHerculesOpen(true); }
+  const saveScenario = async (name: string, lines: PlanLine[]) => {
+    if (!draft && !await saveWorking(working)) return false;
+    const result = await run(current => {
+      const parent = current.planDrafts?.find(row => row.ownerMemberId === memberId && row.scope === scope && row.targetMonth === month);
+      if (!parent) throw new Error("Save a private draft before comparing alternatives.");
+      return createPlanScenario(current, { memberId, scope, draftId: parent.id, name, changedLines: lines.map(row => ({ ...row, createdBy: memberId })), changedAssumptions: [...selection.assumptions], createdBy: memberId });
+    });
+    const saved = (result as { household?: Household } | null)?.household?.planScenarios?.filter(row => row.ownerMemberId === memberId && row.scope === scope && row.name === name).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    if (saved) setScenarioId(saved.id);
+    if (result) { setSection("scenarios"); setVersionId(null); }
+    return Boolean(result);
+  };
+  const ask: PlanAsk = (prompt, proposal, lineId) => { if (lineId) setSelectedLineId(lineId); if (onAskHercules) onAskHercules(prompt, proposal); else setError("The full Hercules conversation is available when Plan is opened in Hearth."); };
+  useEffect(() => {
+    onContextChange?.({ contextIdentity, monthKey: month, scope, through, ...(selectedLineId && working.some(line => line.id === selectedLineId) ? { planLineId: selectedLineId } : {}), ...(disruption ? { disruption } : {}), ...(purchaseContext ? { purchase: purchaseContext } : {}), ...(PLAN_LENSES.includes(section as PlanLens) ? { lens: section as PlanLens } : lessonLens ? { lens: lessonLens } : {}), ...(selection.kind === "version" && version ? { activePlanVersionId: version.id } : {}), ...(selection.kind !== "version" && draft ? { draftId: draft.id } : {}), ...(scenario ? { scenarioId: scenario.id } : {}), ...(session ? { sitDownSessionId: session.sitDownSessionId } : {}) });
+    return () => onContextChange?.(null);
+  }, [month, scope, through, section, lessonLens, selection.kind, version?.id, draft?.id, scenario?.id, session?.sitDownSessionId, onContextChange, contextIdentity, disruption, purchaseContext, selectedLineId, working]);
+  useEffect(() => { setReviewedAt(null); setPrivateNote(null); setRhythm(null); }, [month, memberId, scope]);
+  useEffect(() => {
+    if (!sourceFocus || sourceFocus.view !== scope) return;
+    if (sourceFocus.goalId || sourceFocus.label === "Goals & reserves") setSection("goals");
+    if (sourceFocus.planSitDownSessionId) setSection("sitdown");
+    if (sourceFocus.planDraftId) {
+      const privateDraft = household.planDrafts?.find(row => row.id === sourceFocus.planDraftId && row.ownerMemberId === memberId && row.scope === scope);
+      if (!privateDraft) { setError("That exact private draft is no longer available. Choose your current Plan."); return; }
+      setMonth(privateDraft.targetMonth); setVersionId(null); setScenarioId(null);
+      setSection(privateDraft.lines.find(row => row.id === sourceFocus.planLineId)?.lens ?? "overview");
     }
+    const target = household.planVersions?.find(row => row.id === sourceFocus.planVersionId && row.scope === scope && (scope === "household" || row.ownerMemberId === memberId));
+    if (target) { setMonth(target.monthKey); setVersionId(target.id); const line = target.lines.find(row => row.id === sourceFocus.planLineId); setSection(sourceFocus.planSitDownSessionId ? "sitdown" : line?.lens ?? "overview"); }
+    if (sourceFocus.planScenarioId) { const alternative = household.planScenarios?.find(row => row.id === sourceFocus.planScenarioId && row.scope === scope && row.ownerMemberId === memberId); const parent = household.planDrafts?.find(row => row.id === alternative?.draftId && row.ownerMemberId === memberId); if (parent && alternative) { setMonth(parent.targetMonth); setScenarioId(alternative.id); setSection("scenarios"); } }
+    const frame = requestAnimationFrame(() => { if (sourceFocus.planLineId) document.querySelector<HTMLElement>(`[data-plan-line-id="${CSS.escape(sourceFocus.planLineId)}"]`)?.focus(); });
+    return () => cancelAnimationFrame(frame);
+  }, [sourceFocus, household.planVersions, household.planScenarios, household.planDrafts, scope, memberId]);
+  const sharedTurn = async (text: string, checkpoint?: { stage: number; decision?: string; rhythm?: string; close?: boolean; planVersionId?: string }, reply = false) => {
+    const openSession = session?.state === "active" ? session : undefined;
+    const result = await run(current => appendPlanSitdownTurn(current, { sessionId: openSession?.id, expectedUpdatedAt: openSession?.updatedAt, sitDownSessionId: openSession?.sitDownSessionId ?? `SITDOWN-${crypto.randomUUID()}`, monthKey: month, planDraftId: draft?.id ?? `PLAN-${month}`, memberId, text, checkpoint }));
+    if (!result) return;
+    setMessage(""); setDecision("");
+    const saved = (result as { household?: Household }).household?.planHerculesSessions?.filter(row => row.monthKey === month).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    const turn = saved?.turns.at(-1);
+    if (reply && saved && turn && onSharedHerculesReply) try { await onSharedHerculesReply(saved.id, turn.id); } catch { setError("Your shared message is saved. Hercules could not reply; use Retry beside that message after reconnecting."); }
   };
-
-  const status = draft ? "Private draft" : version ? version.state : "Not started";
-
+  const monthChange = (offset: number) => { setScenarioId(null); setVersionId(null); setMonth(shiftMonthKey(month, offset)); setSection("overview"); };
   return <main className={`plan-studio plan-studio--${scope}`} aria-label={`${scope === "household" ? "Household" : "Personal"} Plan Studio`}>
-    <header className="plan-studio__masthead">
-      <div><p className="kicker">{scope === "household" ? "Our agreement" : "My private plan"}</p><h2>{scope === "household" ? "The month we are making together" : "A month that has somewhere to go"}</h2></div>
-      <div className="plan-month-switcher" aria-label="Plan month"><button onClick={() => setMonth(shiftMonthKey(month, -1))} aria-label="Previous month">←</button><strong>{month}</strong><button onClick={() => setMonth(shiftMonthKey(month, 1))} aria-label="Next month">→</button><span>{status}</span></div>
-    </header>
-
-    <div className="plan-studio__layout">
-      <nav className="plan-studio__rail" aria-label="Plan sections">
-        {(["overview", ...PLAN_LENSES, "scenarios", "learn", "reflection", "history", "sitdown"] as Section[]).map((item) => <button key={item} className={section === item ? "active" : ""} onClick={() => setSection(item)}>{item === "sitdown" ? "Sitdown" : item[0]!.toUpperCase() + item.slice(1)}</button>)}
-      </nav>
-
-      <section className="plan-studio__canvas">
-        {section === "overview" && <>
-          <div className="plan-lens-grid">{PLAN_LENSES.map((lens) => <button key={lens} className={`plan-lens-card plan-lens-card--${lens}`} onClick={() => setSection(lens)}><span>{PLAN_LENS_COPY[lens].title}</span><strong>{formatCad(totals[lens])}</strong><small>{PLAN_LENS_COPY[lens].prompt}</small></button>)}</div>
-          {!draft && !version && <article className="plan-empty"><p>This month is a blank page. Start privately; nothing is shared or treated as agreed.</p><button disabled={busy} onClick={() => void saveLines([])}>Start a private draft</button>{scope === "household" && legacyRows.length > 0 && <button disabled={busy} onClick={() => void onCommand((current) => adoptLegacyHouseholdPlan(current, { monthKey: month, memberId, createdBy: memberId }))}>Bring in the current household budget</button>}</article>}
-          <section className="plan-working-list"><div><p className="kicker">Working plan</p><h3>{working.length ? `${working.length} decisions for ${month}` : "No decisions yet"}</h3></div>{working.map((line) => <article key={line.id}><span className={`plan-lens-dot plan-lens-dot--${line.lens}`} /> <div><strong>{line.labelSnapshot}</strong><small>{PLAN_LENS_COPY[line.lens].title} · {line.cadence}</small></div><b>{formatCad(line.amountCents)}</b>{draft && <button aria-label={`Remove ${line.labelSnapshot}`} onClick={() => void saveLines(working.filter((row) => row.id !== line.id))}>×</button>}</article>)}</section>
-        </>}
-
-        {PLAN_LENSES.includes(section as PlanLens) && (() => { const lens = section as PlanLens; return <>
-          <header className={`plan-lens-hero plan-lens-hero--${lens}`}><p className="kicker">{PLAN_LENS_COPY[lens].title}</p><h3>{PLAN_LENS_COPY[lens].prompt}</h3><strong>{formatCad(totals[lens])}</strong></header>
-          <div className="plan-decision-cards">{working.filter((line) => line.lens === lens).map((line) => <article key={line.id}><h4>{line.labelSnapshot}</h4><strong>{formatCad(line.amountCents)}</strong><p>{line.kind.replaceAll("-", " ")} · {line.cadence}</p></article>)}</div>
-          <form className="plan-add-line" onSubmit={(event) => { event.preventDefault(); addLine(); }}><h4>{scope === "personal" ? "Try a change" : "Propose a change"}</h4><label>Lens<select value={lineLens} onChange={(event) => setLineLens(event.target.value as PlanLens)}>{PLAN_LENSES.map((value) => <option key={value} value={value}>{PLAN_LENS_COPY[value].title}</option>)}</select></label><label>What is this for?<input value={lineLabel} onChange={(event) => setLineLabel(event.target.value)} /></label><label>Monthly amount (CAD)<input inputMode="decimal" value={lineAmount} onChange={(event) => setLineAmount(event.target.value)} /></label><button disabled={busy || !lineLabel.trim()}>Save to private draft</button></form>
-        </>; })()}
-
-        {section === "scenarios" && <section className="plan-section"><p className="kicker">Scenario Lab</p><h3>Alternatives are experiments, not decisions</h3><p>Compare a different shape without touching the accepted Plan.</p>{(household.planScenarios ?? []).filter((row) => row.ownerMemberId === memberId && row.scope === scope).map((scenario) => <article key={scenario.id}><strong>{scenario.name}</strong><span>{formatCad(scenario.changedLines.reduce((sum, line) => sum + line.amountCents, 0))}</span></article>)}<button disabled={!draft || busy} onClick={() => draft && void onCommand((current) => createPlanScenario(current, { memberId, draftId: draft.id, scope, name: `Alternative ${((household.planScenarios ?? []).length + 1)}`, changedLines: draft.lines, createdBy: memberId }))}>Add an alternative</button></section>}
-
-        {section === "learn" && <section className="plan-section plan-lesson"><p className="kicker">One idea for this chapter</p><h3>{lesson[1]}</h3><p>Hercules will connect this lesson to a real choice in the Plan. Learning is always skippable and never blocks agreement.</p><div><button disabled={busy || progress?.state === "completed"} onClick={() => void onCommand((current) => savePlanLearningProgress(current, { memberId, monthKey: month, lessonId: lesson[0], state: "completed", createdBy: memberId }))}>{progress?.state === "completed" ? "Completed" : "Mark understood"}</button><button disabled={busy} onClick={() => void onCommand((current) => savePlanLearningProgress(current, { memberId, monthKey: month, lessonId: lesson[0], state: "skipped", createdBy: memberId }))}>Skip for now</button></div></section>}
-
-        {section === "reflection" && <PlanReflectionEditor key={`${scope}-${reflectionVersion?.id ?? month}`} household={household} version={reflectionVersion} memberId={memberId} busy={busy} onCommand={onCommand} />}
-
-        {section === "history" && <section className="plan-section"><p className="kicker">Version history</p><h3>The past stays legible</h3>{(household.planVersions ?? []).filter((row) => row.scope === scope && row.monthKey === month && (scope === "household" || row.ownerMemberId === memberId)).sort((a, b) => b.sequence - a.sequence).map((row) => <article key={row.id}><div><strong>Version {row.sequence}</strong><small>{row.reason}</small></div><span>{row.state}</span><code>{row.digest.slice(0, 10)}</code></article>)}</section>}
-
-        {section === "sitdown" && <section className="plan-section plan-sitdown"><p className="kicker">Monthly Sitdown</p><h3>{SITDOWN_STEPS[sitdownStep]![0]}</h3><p>{SITDOWN_STEPS[sitdownStep]![1]}</p><ol>{SITDOWN_STEPS.map(([title], index) => <li key={title} className={index === sitdownStep ? "active" : index < sitdownStep ? "done" : ""}><button onClick={() => setSitdownStep(index)}><span>{index < sitdownStep ? "✓" : index + 1}</span>{title}</button></li>)}</ol>{scope === "household" && <div className="plan-shared-chat"><strong>Shared with this household</strong><p>Every message below is visible to both partners. Private prework is not imported.</p>{session?.turns.map((turn) => <blockquote key={turn.id}><b>{turn.role === "hercules" ? "Hercules" : household.members.find((row) => row.id === turn.memberId)?.name ?? "Member"}</b>{turn.text}{turn.role === "hercules" && <small>Trusted Shared reply · {turn.provider ?? "Hercules"}</small>}</blockquote>)}<form onSubmit={(event) => { event.preventDefault(); void submitSharedTalkingPoint(); }}><label>Add a shared talking point<input value={sitdownText} onChange={(event) => setSitdownText(event.target.value)} /></label><button disabled={busy || !sitdownText.trim()}>Share and ask Hercules</button></form></div>}<div className="plan-sitdown-nav"><button disabled={sitdownStep === 0} onClick={() => setSitdownStep((value) => Math.max(0, value - 1))}>Back</button><span>{sitdownStep + 1} of {SITDOWN_STEPS.length}</span><button disabled={sitdownStep === SITDOWN_STEPS.length - 1} onClick={() => setSitdownStep((value) => Math.min(SITDOWN_STEPS.length - 1, value + 1))}>Continue</button></div></section>}
-
-        {draft && <footer className="plan-publish"><div><strong>Draft saved privately</strong><span>{scope === "household" ? "Only the exact reviewed proposal crosses into Shared." : "Locking makes an immutable Personal version. It never moves money."}</span></div><label>Reason for this version<input value={reason} onChange={(event) => setReason(event.target.value)} placeholder={version ? "What changed?" : "Our plan for the month"} /></label><button disabled={busy} onClick={() => void onCommand((current) => scope === "household" ? proposeHouseholdPlan(current, { memberId, draftId: draft.id, reason, createdBy: memberId }) : lockPersonalPlan(current, { memberId, draftId: draft.id, reason, createdBy: memberId }))}>{scope === "household" ? "Review and propose to us" : "Lock my plan"}</button></footer>}
-      </section>
-
-      <aside className="plan-studio__dock">
-        <section><p className="kicker">Consequence</p><strong>{formatCad(working.reduce((sum, line) => sum + line.amountCents, 0))} intended</strong><span>No money moves here.</span></section>
-        {topFinding && <section className={`plan-finding plan-finding--${topFinding.severity}`}><p className="kicker">{topFinding.severity} guidance</p><strong>{topFinding.explanation}</strong><span>{topFinding.consequence}</span><button onClick={() => { setQuestion("Why am I seeing this?"); setAnswer(`${topFinding.explanation} ${topFinding.consequence} This rule used Plan version ${topFinding.planVersionId.slice(0, 10)} and visible evidence at revision ${topFinding.sourceRevision}, as of ${topFinding.asOf}.`); setHerculesOpen(true); }}>Why am I seeing this?</button><div><button disabled={busy} onClick={() => void onCommand((current) => updatePlanNudgeState(current, { memberId, issueId: topFinding.id, action: "snooze", snoozedUntil: addDays(today, 7), createdBy: memberId }))}>Snooze 7 days</button><button disabled={busy} onClick={() => void onCommand((current) => updatePlanNudgeState(current, { memberId, issueId: topFinding.id, action: "dismiss", createdBy: memberId }))}>Dismiss</button></div></section>}
-        {scope === "household" && version && <section className="plan-ack"><p className="kicker">Exact agreement</p><strong>{version.state}</strong><code>{version.digest.slice(0, 12)}</code><p>{acknowledgement?.acknowledgedMemberIds.length ?? 0} of 2 acknowledged</p>{version.state === "proposed" && <button disabled={busy || myAcknowledged} onClick={() => void onCommand((current) => acknowledgeHouseholdPlan(current, { planVersionId: version.id, expectedDigest: version.digest, memberId, createdBy: memberId }))}>{myAcknowledged ? "You acknowledged" : "Acknowledge this exact version"}</button>}</section>}
-        <PlanBridgeEditor key={`${memberId}-${month}`} household={household} memberId={memberId} month={month} householdDraft={scope === "household" ? draft : null} busy={busy} onCommand={onCommand} />
-        <button className="plan-hercules-launch" onClick={() => setHerculesOpen(true)}><span aria-hidden="true">♜</span><strong>Ask Hercules</strong><small>He knows this page and this month.</small></button>
-      </aside>
-    </div>
-
-    {herculesOpen && <div className="plan-hercules-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setHerculesOpen(false); }}><aside className="plan-hercules" role="dialog" aria-modal="true" aria-labelledby="plan-hercules-title"><header><div><p className="kicker">Plan guide</p><h3 id="plan-hercules-title">Hercules is with you</h3></div><button onClick={() => setHerculesOpen(false)} aria-label="Close Hercules">×</button></header><div className="plan-hercules__answer"><span aria-hidden="true">♜</span><p>{answer}</p></div><div className="plan-hercules__prompts">{["Why did our runway change?", "What are we likely forgetting?", "Teach me the underlying idea."].map((prompt) => <button key={prompt} onClick={() => { setQuestion(prompt); }}>{prompt}</button>)}</div><form onSubmit={(event) => { event.preventDefault(); askHercules(); }}><label>Ask about this Plan<textarea value={question} onChange={(event) => setQuestion(event.target.value)} /></label><button>Ask from visible evidence</button></form><small>Hercules distinguishes posted facts, Plan intentions, estimates, and inference. Suggestions never change this Plan automatically.</small></aside></div>}
+    <header className="plan-studio__masthead"><div><p className="kicker">{scope === "household" ? "Our Path" : "My private path"}</p><h2>A plan for the life we choose</h2><p>Understand. Choose. Act. Learn.</p></div><div className="plan-month-switcher"><button aria-label="Previous month" onClick={() => monthChange(-1)}>←</button><strong>{month}</strong><button aria-label="Next month" onClick={() => monthChange(1)}>→</button><span>{scenario ? scenario.name : selection.kind === "draft" ? "Private draft" : version?.state ?? "Not started"}</span></div></header>
+    {error && <p className="plan-error" role="alert">{error}<button onClick={() => setError("")}>Dismiss</button></p>}
+    <div className="plan-studio__layout"><nav className="plan-studio__rail" aria-label="Plan sections">{(["overview", ...PLAN_LENSES, "scenarios", "assumptions", "bridge", "learn", "reflection", "history", "sitdown", ...(goalsContent ? ["goals"] : [])] as Section[]).map(item => <button key={item} aria-current={section === item ? "page" : undefined} className={section === item ? "active" : ""} onClick={() => setSection(item)}>{item === "goals" ? "Goals & reserves" : item[0]!.toUpperCase() + item.slice(1)}</button>)}</nav>
+    <section className="plan-studio__canvas">
+      {section === "overview" && <><div className="plan-lens-grid">{PLAN_LENSES.map(lens => <button key={lens} className={`plan-lens-card plan-lens-card--${lens}`} onClick={() => setSection(lens)}><span>{PLAN_LENS_COPY[lens].title}</span><strong>{formatCad(projection.lines.filter(row => row.line.lens === lens).reduce((sum, row) => sum + row.intendedCents, 0))}</strong><small>{PLAN_LENS_COPY[lens].prompt}</small></button>)}</div><PlanConsequence projection={projection} /><section className="plan-section"><h3>One useful next decision</h3><p>{projection.firstExposed ? `Start with ${projection.firstExposed.label} on ${projection.firstExposed.date}.` : projection.lines.find(row => row.issues.length)?.issues[0] ?? "Choose what this month will make possible."}</p><button onClick={() => setSection(projection.lines.find(row => row.issues.length)?.line.lens ?? "protect")}>Work through it</button></section>{!draft && <button disabled={locked} onClick={() => void saveWorking(working)}>Start a private draft from this Plan</button>}<section className="plan-working-list"><h3>Our working decisions</h3>{working.map(line => <article key={line.id}><div><strong>{line.labelSnapshot}</strong><small>{line.lens} · {line.dueDate ?? "Choose a date"}</small></div><b>{formatCad(line.amountCents)}</b><button onClick={() => setSection(line.lens)}>Open</button><button disabled={locked} aria-label={`Remove ${line.labelSnapshot} from private draft`} onClick={() => void saveWorking(working.filter(row => row.id !== line.id))}>Remove</button></article>)}</section></>}
+      {PLAN_LENSES.includes(section as PlanLens) && <PlanLensWorkbench key={`${scope}-${month}-${section}-${scenario?.id ?? "working"}`} household={household} memberId={memberId} scope={scope} lens={section as PlanLens} today={today} projection={projection} selection={selection} busy={locked} onSave={saveLine} onScenario={saveScenario} onAsk={ask} onDisruptionChange={setDisruption} onPurchaseChange={setPurchaseContext} onGoals={goalsContent ? () => setSection("goals") : undefined} />}
+      {section === "scenarios" && <section className="plan-section"><p className="kicker">Scenario Lab</p><h3>Compare the consequence, then choose</h3><label>Alternative<select value={scenarioId ?? ""} onChange={event => { setScenarioId(event.target.value || null); setVersionId(null); }}><option value="">Working draft</option>{scenarios.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label><div className="plan-comparison"><div><h4>Working draft</h4><PlanConsequence projection={baselineProjection} compact /></div><div><h4>{scenario?.name ?? "Select an alternative"}</h4><PlanConsequence projection={projection} compact /></div></div><p>Compare covered commitments, the lowest date and Everyday flexibility. Goal cards retain their target, schedule and time constraints.</p><label>Name another possibility<input value={scenarioName} onChange={event => setScenarioName(event.target.value)} /></label><button disabled={locked || !scenarioName.trim()} onClick={() => void saveScenario(scenarioName.trim(), [...working])}>Save a private alternative</button>{scenario && <><p>Open any lens to edit this alternative. Accepted books and agreements remain unchanged.</p><div className="plan-editor-actions">{PLAN_LENSES.map(lens => <button key={lens} onClick={() => setSection(lens)}>Edit {lens}</button>)}</div><button disabled={locked} onClick={async () => { const result = await run(current => savePlanDraft(current, { id: draft!.id, expectedUpdatedAt: draft!.updatedAt, memberId, scope, targetMonth: month, baseVersionId: draft!.baseVersionId, lines: scenario.changedLines, assumptions: scenario.changedAssumptions ?? draft!.assumptions, note: `Alternative considered: ${scenario.name}. ${draft!.note}`, createdBy: memberId })); if (result) { setScenarioId(null); setReason(`Choose ${scenario.name}`); setSection("overview"); } }}>Bring this alternative into draft review</button></>}</section>}
+      {section === "assumptions" && <section className="plan-section plan-editor"><h3>What must be true for this Plan to work?</h3><p>Expected money is a forecast. Received money is already in current resources and must not be added again.</p>{selection.assumptions.map(row => <article key={row.id}><strong>{row.kind} · {formatCad(row.valueCents ?? 0)}</strong><p>{row.expectedDate ?? "Date to review"} · {row.confidence} · reviewed {row.observedAt.slice(0, 10)}</p><button disabled={locked} onClick={() => void saveWorking(working, selection.assumptions.filter(item => item.id !== row.id))}>Remove from private work</button></article>)}<form onSubmit={event => { event.preventDefault(); const cents = /^\d+(?:\.\d{1,2})?$/.test(incomeAmount) ? Math.round(Number(incomeAmount) * 100) : NaN; if (!Number.isSafeInteger(cents) || incomeDate <= today || !incomeSource) { setError("Choose a visible source, future date and valid CAD amount."); return; } void saveWorking(working, [...selection.assumptions, { id: crypto.randomUUID(), kind: "income", valueCents: cents, expectedDate: incomeDate, confidence: "estimated", observedAt: new Date().toISOString(), sourceReferences: [{ type: scope === "household" ? "bridge" : "recurrence", id: incomeSource }] }]); }}><label>Expected money source<select required value={incomeSource} onChange={event => setIncomeSource(event.target.value)}><option value="">Choose disclosed evidence</option>{scope === "household" ? household.planBridgeDecisions?.filter(row => row.kind === "contribution" && row.monthKey === month && ["proposed", "held", "accepted"].includes(row.state)).map(row => <option key={row.id} value={row.id}>{row.label}</option>) : household.recurrences.filter(row => row.active && row.type === "income" && planSourceVisible(household, { type: "recurrence", id: row.id }, memberId, scope)).map(row => <option key={row.id} value={row.id}>{row.note || "Scheduled income"}</option>)}</select></label><label>Expected date<input required type="date" value={incomeDate} min={addDays(today, 1)} onChange={event => setIncomeDate(event.target.value)} /></label><label>Expected CAD amount<input required inputMode="decimal" value={incomeAmount} onChange={event => setIncomeAmount(event.target.value)} /></label><button disabled={locked}>Save expected money in private work</button></form><button onClick={() => setSection("bridge")}>Prepare a contribution offer</button></section>}
+      {section === "bridge" && <PlanBridgeEditor key={`${memberId}-${month}`} household={household} memberId={memberId} month={month} householdDraft={scope === "household" ? draft : null} busy={locked} onCommand={run} />}
+      {section === "learn" && <section className="plan-section plan-lesson"><p className="kicker">One useful idea, when you need it</p><label>Explore a decision<select value={lesson.lens} onChange={event => { setLessonLens(event.target.value as PlanLens); setShowAnswer(false); }}>{PLAN_LENSES.map(lens => <option key={lens} value={lens}>{PLAN_LESSONS[lens].title}</option>)}</select></label><h3>{lesson.title}</h3><p>{lesson.explain}</p><blockquote>{lesson.evidence}</blockquote><h4>Try it safely</h4><p>{lesson.experiment}</p><button onClick={() => setSection(lesson.lens)}>Try the {lesson.lens} experiment</button><details open={showAnswer} onToggle={event => setShowAnswer(event.currentTarget.open)}><summary>{lesson.question}</summary><p>{lesson.answer}</p></details><div className="plan-editor-actions"><button disabled={locked || progress?.state === "completed"} onClick={() => void run(current => savePlanLearningProgress(current, { memberId, monthKey: month, lessonId: lesson.id, state: "completed", createdBy: memberId }))}>{progress?.state === "completed" ? "Learning recorded" : "I tried this idea"}</button><button disabled={locked} onClick={() => void run(current => savePlanLearningProgress(current, { memberId, monthKey: month, lessonId: lesson.id, state: "skipped", createdBy: memberId }))}>Skip for now</button><button onClick={() => ask(`Teach me ${lesson.title} using my selected Plan. Let me try a small example and check my understanding if I choose.`)}>Learn with Hercules</button></div><small>{lesson.jurisdiction} · <a href={lesson.source} target="_blank" rel="noreferrer">FCAC guidance</a> · reviewed {lesson.reviewedOn}. Learning never blocks agreement.</small></section>}
+      {section === "reflection" && <PlanReflectionEditor key={`${scope}-${active?.id ?? month}`} household={household} version={active} memberId={memberId} busy={locked} onCommand={run} />}
+      {section === "history" && <section className="plan-section"><h3>Why we chose this path</h3>{[...(household.planVersions ?? [])].filter(row => row.scope === scope && row.monthKey === month && (scope === "household" || row.ownerMemberId === memberId)).sort((a, b) => b.sequence - a.sequence).map(row => <article key={row.id}><h4>Version {row.sequence} · {row.state}</h4><p>{row.reason || "No reason recorded."}</p><p>{row.scope === "household" ? `${planAcknowledgementState(household, row).acknowledgedMemberIds.length} independent acknowledgements` : "Private accepted version"} · {row.createdAt.slice(0, 10)}</p>{row.lines.filter(line => line.decision?.reopenWhen).map(line => <p key={line.id}>{line.labelSnapshot}: reopen when {line.decision!.reopenWhen}</p>)}<button onClick={() => { setVersionId(row.id); setScenarioId(null); setSection("overview"); }}>Inspect this exact version</button></article>)}</section>}
+      {section === "sitdown" && <section className="plan-section plan-sitdown plan-editor"><p className="kicker">A Chapter runs from one Sitdown to the next</p><h3>{scope === "personal" ? "Arrive with your own thoughts" : session?.state === "closed" ? "Our Chapter, ready to carry forward" : stages[stage]}</h3><p>The Plan keeps a calendar month. The Chapter records what we chose, what happened and what we learned between conversations.</p><label>Your private preparation<textarea value={privateNote ?? draft?.note ?? ""} onChange={event => setPrivateNote(event.target.value)} /></label><button disabled={locked} onClick={() => void run(current => savePlanDraft(current, { ...(draft ? { id: draft.id, expectedUpdatedAt: draft.updatedAt } : {}), memberId, createdBy: memberId, scope, targetMonth: month, baseVersionId: draft?.baseVersionId, lines: [...(draft?.lines ?? working)].map(line => ({ ...line, createdBy: memberId })), assumptions: draft?.assumptions ?? [...selection.assumptions], note: privateNote ?? draft?.note ?? "" }))}>Save preparation privately</button>{scope === "household" && <>{session?.state === "closed" && <button disabled={locked} onClick={() => void sharedTurn("We are beginning a new Sitdown.", { stage: 0 })}>Begin our next Sitdown</button>}<ol>{stages.map((title, index) => <li key={title} className={index === stage ? "active" : index < stage ? "done" : ""}>{index + 1}. {title}</li>)}</ol><div className="plan-stage-content">{stage <= 1 ? <p>Choose which private thoughts belong on the shared agenda. Notice a verified contribution or an action that made life easier.</p> : stage === 2 ? <button onClick={() => setSection("reflection")}>Review intentions and actual evidence</button> : stage === 3 ? <button onClick={() => setSection("assumptions")}>Refresh the money and timing assumptions</button> : stage === 4 ? <div className="plan-editor-actions">{PLAN_LENSES.map(lens => <button key={lens} onClick={() => setSection(lens)}>Decide {lens}</button>)}</div> : stage === 5 ? <button onClick={() => setSection("learn")}>Try one useful learning moment</button> : stage === 6 ? <button onClick={() => setSection("bridge")}>Resolve shared offers and responsibilities</button> : <p>Read the exact Plan below. Each partner acknowledges for themselves.</p>}</div><div className="plan-shared-chat"><strong>Everything below is Shared</strong><p>Your private preparation is only shared if you deliberately write it here.</p>{session?.turns.map(turn => <blockquote key={turn.id}><b>{turn.role === "hercules" ? "Hercules" : household.members.find(row => row.id === turn.memberId)?.name ?? "Member"}</b>{turn.text}{turn.role === "member" && session.state === "active" && onSharedHerculesReply && !session.turns.some(reply => reply.inReplyToTurnId === turn.id) && turn.memberId === memberId && <button disabled={locked} onClick={() => void onSharedHerculesReply(session.id, turn.id).catch(() => setError("The talking point remains saved. Retry when connected."))}>Retry Hercules reply</button>}</blockquote>)}<form onSubmit={event => { event.preventDefault(); void sharedTurn(message, undefined, true); }}><label>A talking point we choose to share<textarea value={message} onChange={event => setMessage(event.target.value)} /></label><button disabled={locked || session?.state === "closed" || !message.trim()}>Share and ask Hercules</button></form></div><label>A decision to carry forward<input value={decision} onChange={event => setDecision(event.target.value)} /></label><label>One practical rhythm for this Chapter<input value={rhythm ?? session?.rhythm ?? ""} onChange={event => setRhythm(event.target.value)} placeholder="Ten minutes together on Sunday…" /></label><div className="plan-editor-actions"><button disabled={locked || session?.state === "closed" || stage === 0} onClick={() => void sharedTurn(`We returned to ${stages[Math.max(0, stage - 1)]}.`, { stage: Math.max(0, stage - 1), decision, rhythm: rhythm ?? session?.rhythm })}>Back, saving our work</button><button disabled={locked || session?.state === "closed" || stage === 7} onClick={() => void sharedTurn(`We completed ${stages[stage]}.${decision.trim() ? ` Decision: ${decision.trim()}` : ""}`, { stage: Math.min(7, stage + 1), decision, rhythm: rhythm ?? session?.rhythm })}>Save and continue</button>{stage === 7 && <button disabled={locked || session?.state === "closed" || !acknowledgement?.complete} onClick={() => void sharedTurn(`We are carrying this Plan forward.${decision ? ` ${decision}` : ""}`, { stage, decision, rhythm: rhythm ?? session?.rhythm, close: true, planVersionId: version?.id })}>Close this Sitdown with our agreed Plan</button>}</div>{session?.decisions?.length ? <section><h4>What we chose</h4>{session.decisions.map(row => <p key={row.id}>{row.text}</p>)}<h4>What we carry forward</h4><p>{session.rhythm || "Choose one manageable rhythm."}</p><button onClick={() => setSection("reflection")}>Review what happened and what we learned</button></section> : null}</>}</section>}
+      {section === "goals" && goalsContent}
+      {draft && !scenario && !versionId && <footer className="plan-publish plan-editor"><strong>Private draft → exact review → our decision</strong><label>Why this version?<input value={reason} onChange={event => { setReason(event.target.value); setReviewedAt(null); }} /></label>{reviewedAt ? <section className="plan-disclosure-review"><h4>Review the exact {scope === "household" ? "Shared proposal" : "Personal version"}</h4><p>{working.length} lines and {selection.assumptions.length} assumptions. {scope === "household" ? "The labels, amounts, responsibility, dates, time constraints and next steps in these lines will be visible to your household. Your private preparation stays private." : "This creates an immutable private version."}</p><PlanDecisionReview household={household} lines={working} assumptions={selection.assumptions} /><button disabled={locked || reviewedAt !== draft.updatedAt} onClick={() => void run(current => scope === "household" ? proposeHouseholdPlan(current, { memberId, draftId: draft.id, expectedUpdatedAt: reviewedAt, expectedBaseVersionId: reviewedVersionId, reason, createdBy: memberId }) : lockPersonalPlan(current, { memberId, draftId: draft.id, expectedUpdatedAt: reviewedAt, expectedBaseVersionId: reviewedVersionId, reason, createdBy: memberId }))}>{scope === "household" ? "Share this exact proposal for independent agreement" : "Lock this exact private Plan"}</button>{reviewedAt !== draft.updatedAt && <p>The draft changed. Refresh the review before continuing.</p>}<button onClick={() => setReviewedAt(null)}>Return to editing</button></section> : <button disabled={locked} onClick={() => { setReviewedAt(draft.updatedAt); setReviewedVersionId(version?.id ?? null); }}>Review the complete proposal</button>}</footer>}
+      {scope === "household" && version && <section className="plan-ack plan-section"><h3>Independent agreement · version {version.sequence}</h3><p>{version.reason} · {version.state} · {acknowledgement?.acknowledgedMemberIds.length ?? 0} of {acknowledgement?.requiredMemberIds.length ?? 2} acknowledged.</p><details><summary>Read this exact version</summary><PlanDecisionReview household={household} lines={version.lines} assumptions={version.assumptions} /></details>{version.state === "proposed" && <button disabled={locked || acknowledgement?.acknowledgedMemberIds.includes(memberId)} onClick={() => void run(current => acknowledgeHouseholdPlan(current, { planVersionId: version.id, expectedDigest: version.digest, memberId, createdBy: memberId }))}>{acknowledgement?.acknowledgedMemberIds.includes(memberId) ? "You acknowledged this exact version" : "Acknowledge this exact version"}</button>}<button disabled={locked} onClick={async () => { const saved = await run(current => savePlanDraft(current, { ...(draft ? { id: draft.id, expectedUpdatedAt: draft.updatedAt } : {}), memberId, createdBy: memberId, scope, targetMonth: month, baseVersionId: version.id, lines: version.lines.map(line => ({ ...line, createdBy: memberId })), assumptions: version.assumptions, note: draft?.note ?? "" })); if (saved) { setScenarioId(null); setVersionId(null); setReviewedAt(null); } }}>Prepare a counterproposal privately</button></section>}
+    </section>
+    <aside className="plan-studio__dock"><label>Look ahead<select value={horizonDays} onChange={event => setHorizonDays(Number(event.target.value))}><option value={31}>31 days</option><option value={90}>Next season · 90 days</option><option value={180}>Six months · 180 days</option><option value={366}>One year · 366 days</option></select></label><PlanConsequence projection={projection} compact />{topFinding && <section className="plan-finding"><p>{topFinding.explanation}</p><small>{topFinding.consequence}</small><button disabled={locked} onClick={() => void run(current => updatePlanNudgeState(current, { memberId, issueId: topFinding.id, action: "snooze", snoozedUntil: addDays(today, 7), createdBy: memberId }))}>Snooze 7 days</button><button disabled={locked} onClick={() => void run(current => updatePlanNudgeState(current, { memberId, issueId: topFinding.id, action: "dismiss", createdBy: memberId }))}>Dismiss this finding</button></section>}<button className="plan-hercules-launch" onClick={() => ask("Help me understand my selected Plan and the next choice worth making.")}><span aria-hidden="true"><HerculesPortrait mood="content" hat={null} chain={null} house={null} collar={null} size={48} /></span><strong>Work through it with Hercules</strong><small>Your private conversation, with this Plan in view.</small></button><label>Coaching pace<select disabled={locked} value={coaching?.intensity ?? "calm"} onChange={event => void run(current => setPlanCoachingIntensity(current, { memberId, intensity: event.target.value as "off" | "calm" | "active", createdBy: memberId }))}><option value="off">Quiet</option><option value="calm">Calm</option><option value="active">More guidance</option></select></label><section className="plan-private-preferences"><h4>What I want Hercules to remember</h4><p>Private guidance about your goals, time and preferred explanations.</p>{coaching?.lifePreferences?.map(text => <p key={text}>{text}<button onClick={() => { setEditingPreference(text); setRememberText(text); }}>Edit preference</button><button disabled={locked} onClick={() => void run(current => setPlanCoachingIntensity(current, { memberId, createdBy: memberId, intensity: coaching.intensity, expectedUpdatedAt: coaching.updatedAt, forgetText: text }))}>Forget this preference</button></p>)}<label>A preference I choose to keep<textarea maxLength={240} value={rememberText} onChange={event => setRememberText(event.target.value)} /></label><button disabled={locked || !rememberText.trim()} onClick={async () => { const saved = await run(current => setPlanCoachingIntensity(current, { memberId, createdBy: memberId, intensity: coaching?.intensity ?? "calm", ...(coaching ? { expectedUpdatedAt: coaching.updatedAt } : {}), rememberText, ...(editingPreference ? { forgetText: editingPreference } : {}) })); if (saved) { setRememberText(""); setEditingPreference(null); } }}>{editingPreference ? "Save edited preference" : "Remember for private Plan coaching"}</button><small>These preferences never enter the shared Sitdown. Shared agreements retain only what you deliberately propose.</small></section></aside></div>
+    <div className="plan-mobile-consequence"><div>Everyday from current money<strong>{projection.everydayNowCents === null ? "Evidence to review" : formatCad(projection.everydayNowCents)}</strong></div><button onClick={() => setSection("overview")}>Details</button><button onClick={() => ask("Help me understand the next choice in my selected Plan.")}>Hercules</button></div>
   </main>;
+}
+
+function PlanDecisionReview({ household, lines, assumptions }: { household: Household; lines: readonly PlanLine[]; assumptions: readonly PlanAssumption[] }) {
+  return <div className="plan-exact-decisions">{lines.map(line => <article key={line.id}><h4>{line.labelSnapshot}</h4><p>{line.lens} · {formatCad(line.amountCents)} · {line.cadence} · {line.dueDate ?? "Date not identified"}</p><p>Responsibility: {line.responsibility?.kind === "joint" ? "Together" : household.members.find(row => row.id === line.responsibility?.memberId)?.name ?? "Not chosen"}. Money: {line.decision?.funding === "available" ? "current visible capacity" : line.decision?.funding === "expected" ? "expected inflow" : "not yet identified"}. {line.sourceReference ? `Linked ${line.sourceReference.type} evidence.` : "Unlinked intention."}</p>{line.decision && <><p>{line.decision.targetCents !== undefined ? `Target ${formatCad(line.decision.targetCents)}. ` : ""}{line.decision.lowCents !== undefined || line.decision.highCents !== undefined ? `Estimate ${line.decision.lowCents === undefined ? "unspecified" : formatCad(line.decision.lowCents)} to ${line.decision.highCents === undefined ? "unspecified" : formatCad(line.decision.highCents)}. ` : ""}{line.decision.deadline ? `Deadline ${line.decision.deadline}.` : ""}</p>{line.decision.paydays?.length ? <p>Paydays: {line.decision.paydays.join(", ")}</p> : null}{line.decision.contributionSchedule?.map(item => <p key={item.date}>{item.date}: {formatCad(item.amountCents)} contribution</p>)}{line.decision.nextStep && <p>Next step: {line.decision.nextStep}</p>}{line.decision.timeConstraint && <p>Time constraint: {line.decision.timeConstraint}</p>}{line.decision.reopenWhen && <p>Reopen when: {line.decision.reopenWhen}</p>}</>}</article>)}{assumptions.map(row => <article key={row.id}><h4>{row.kind} assumption</h4><p>{row.valueCents !== undefined ? formatCad(row.valueCents) : "No exact amount"} · {row.expectedDate ?? "No date"} · {row.confidence}</p><p>Reviewed {row.observedAt.slice(0, 10)}. {row.sourceReferences.length} visible evidence sources.</p></article>)}</div>;
 }

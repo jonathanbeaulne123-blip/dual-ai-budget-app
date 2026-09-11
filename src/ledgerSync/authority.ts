@@ -1,3 +1,4 @@
+import { hasPlanDecisionData } from "../core/planSystem.ts";
 import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { validateFundSourceClaim } from "../core/fundContributionSources.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
@@ -90,6 +91,8 @@ export async function prepareCommand(
   if ((current.companionProfile || command.steps.some(step => step.kind === "commitCompanion")) && command.companionProfileVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth before changing Hercules preferences or conversations.");
   if((current.companionProfile?.workflows?.length||command.steps.some(s=>s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set'))&&command.companionWorkflowVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve conversational drafts.');
   if((current.nativeEvents?.length||command.steps.some(s=>s.kind==='saveNativeEvent'))&&command.nativeCalendarVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve calendar events.');
+  const extendedPlan = hasPlanDecisionData(current);
+  if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
   const wardrobeStep=command.steps.some(step=>companionActionEffect(step)!==null||step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')));
   if((wardrobeStep||current.companionProfile?.wornLook.revision||current.companionProfile?.savedLooks.length||current.companionGallery?.length)&&command.companionWardrobeVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth before changing this wardrobe.');
   if(wardrobeStep&&command.steps.length!==1)throw new Error('WARDROBE_SINGLE_OPERATION_REQUIRED');

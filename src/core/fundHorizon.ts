@@ -24,10 +24,14 @@ const unavailable = (code: ScenarioRefusal["code"], message: string): FundHorizo
 const validDate = (date: string) => typeof date === "string" && date.length === 10 && isValidDateKey(date);
 
 /** Canonical future from one accepted end-of-today anchor, across at most 31 inclusive days. */
-export function prepareFundHorizon(household: Household, asOf: DateKey, through: DateKey): FundHorizonResult {
-  if (!validDate(asOf) || !validDate(through) || through < asOf || calendarDaysBetween(asOf, through) + 1 > SCENARIO_MAX_DAYS) return unavailable("outside-horizon", "Choose an inclusive horizon of no more than 31 days.");
+export function prepareFundHorizon(household: Household, asOf: DateKey, through: DateKey, options?: { purpose: "plan" }): FundHorizonResult {
+  // Financial contribution scenarios retain their existing 31-day contract. Plan
+  // preparation may inspect a year, with the same conservation checks/refusals.
+  const maxDays = options?.purpose === "plan" ? 366 : SCENARIO_MAX_DAYS;
+  if (!validDate(asOf) || !validDate(through) || through < asOf || calendarDaysBetween(asOf, through) + 1 > maxDays) return unavailable("outside-horizon", `Choose an inclusive horizon of no more than ${maxDays} days.`);
   const fund = household.householdFund;
   if (!fund) return unavailable("fund-missing", "The Shared Fund is not configured.");
+  if (options?.purpose === "plan" && household.recurrences.some(row => row.active && row.cadence === "daily" && row.fundingDefault?.fundId === fund.id)) return unavailable("forecast-model-unsupported", "A daily Fund bill needs a complete recurrence review before a long Plan projection.");
   const events = activeHouseholdFundEvents(household, fund.id);
   const futureReversal = shapeHouseholdFundEvents(household.fundEvents).some(event => event.fundId === fund.id && event.kind === "reversal" && event.date > asOf);
   // These facts alter global position/allocation readers even beyond this horizon.

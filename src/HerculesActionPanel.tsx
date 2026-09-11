@@ -294,7 +294,9 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
             try {
                 const a = actionById(proposal.actionId, c), values = { ...(draft?.values ?? initialActionValues(a, '', c)) };
                 // Only known fields and resolvable choices enter a draft. Unresolved model guesses stay questions.
-                for (const [key, raw] of Object.entries(proposal.values)) {
+                for (const key of actionFields(a, c, { ...values, ...proposal.values }).map(field => field.key)) {
+                    const raw = proposal.values[key];
+                    if (raw === undefined) continue;
                     const f = actionFields(a, c, values).find(f => f.key === key);
                     if (!f)
                         continue;

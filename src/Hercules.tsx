@@ -1,3 +1,5 @@
+import type { HerculesPlanContext } from "./core/planSystem.ts";
+export type PlanHerculesOpenRequest = { id: string; scopeKey: string; isCurrent?: () => boolean; prompt?: string; proposal?: { actionId: string; values: Record<string, string> } };
 import { availableHerculesActions } from './core/herculesActions.ts';
 import { HERCULES_WORKFLOW_CATALOGUE } from "./core/herculesWorkflowCatalogue.ts";
 import { HerculesActionPanel, type HerculesActionHandle } from "./HerculesActionPanel.tsx";
@@ -242,7 +244,7 @@ export function HerculesPresence({
   onOpenAdd, onDiscoveryNavigate, discoveryAccountId, discoveryFund,
   onGo,
   onLedger, onCompanionCommand,
-  onDraft, actionService, actionIdentity, actionHousehold,
+  onDraft, actionService, actionIdentity, actionHousehold, planContext, planOpenRequest, onPlanOpenConsumed,
   onPayCard,
   onAcceptPreset,
   onDismissNotice,
@@ -285,6 +287,9 @@ export function HerculesPresence({
   actionService?: HerculesCommandService;
   actionIdentity?: string;
   actionHousehold?: Household;
+  planContext?: HerculesPlanContext | null;
+  planOpenRequest?: PlanHerculesOpenRequest | null;
+  onPlanOpenConsumed?: (id: string) => void;
   onPayCard?: () => void;
   onAcceptPreset?: (key: string, summary: string) => void;
   onDismissNotice?: (key: string) => void;
@@ -338,6 +343,22 @@ export function HerculesPresence({
   const [question, setQuestion] = useState("");
   const actionRef=useRef<HerculesActionHandle>(null);
   const composerRef=useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (!planOpenRequest) return;
+    const expectedScope = `${household.environment}:${household.householdId}:${memberId}:${view}:${actionIdentity ?? memberId}`;
+    if (planOpenRequest.scopeKey !== expectedScope || planOpenRequest.isCurrent?.() === false || activityBlocked || adding) { onPlanOpenConsumed?.(planOpenRequest.id); return; }
+    openChatFromBeg(true);
+    const frame = requestAnimationFrame(() => {
+      if (planOpenRequest.isCurrent?.() === false) { onPlanOpenConsumed?.(planOpenRequest.id); return; }
+      const fallback = planOpenRequest.proposal && (!actionService || !actionRef.current) ? " The action review is unavailable here. Help me find the existing reviewed action in Hearth." : "";
+      if (planOpenRequest.prompt) setQuestion(current => current.trim() ? `${current}\n\n${planOpenRequest.prompt}${fallback}` : `${planOpenRequest.prompt}${fallback}`);
+      if (planOpenRequest.proposal && actionService && actionRef.current) actionRef.current.propose(planOpenRequest.proposal, actionRef.current.fingerprint());
+      composerRef.current?.focus();
+      onPlanOpenConsumed?.(planOpenRequest.id);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [planOpenRequest, household.environment, household.householdId, memberId, view, actionIdentity, activityBlocked, adding]);
+
   const modelPending=useRef<number|null>(null);
   const [chatExpanded,setChatExpanded]=useState(false);
   const [suggestedWorkflowIds,setSuggestedWorkflowIds]=useState<string[]>([]);
@@ -407,7 +428,12 @@ export function HerculesPresence({
       herculesProPermissions, kitchen, ...sources } = contextHousehold;
     return JSON.stringify({ ...sources, kitchen: { books: kitchen.books, openShift: kitchen.openShift, openShifts: kitchen.openShifts } });
   }, [contextHousehold]);
-  const replyBasis = `${today}:${tab}:${adding}:${sourceBasis}`;
+  const selectedPrivatePlanBasis = JSON.stringify({
+    coaching: actionHousehold?.planCoachingPreferences?.find(row => row.memberId === memberId),
+    draft: actionHousehold?.planDrafts?.find(row => row.id === planContext?.draftId && row.ownerMemberId === memberId && row.scope === view),
+    scenario: actionHousehold?.planScenarios?.find(row => row.id === planContext?.scenarioId && row.ownerMemberId === memberId && row.scope === view),
+  });
+  const replyBasis = `${selectedPrivatePlanBasis}:${today}:${tab}:${adding}:${sourceBasis}:${JSON.stringify(planContext ?? null)}`;
   const priorReplyBasis = useRef(replyBasis);
   useEffect(() => {
     if (priorReplyBasis.current === replyBasis) return; priorReplyBasis.current = replyBasis;
@@ -906,7 +932,7 @@ export function HerculesPresence({
     const messages = [...(userText ? [{ id: userId, role: "user" as const, text: userText }] : []), { id: crypto.randomUUID(), role: "hercules" as const, text: herculesText }];
     const references: CompanionSourceReference[] = [];
     for (const fact of facts ?? []) {
-      for (const [kind, id] of [["account", fact.source.accountId], ["transaction", fact.source.transactionId], ["goal", fact.source.goalId], ["shift", fact.source.shiftId]] as const) {
+      for (const [kind, id] of [["account", fact.source.accountId], ["transaction", fact.source.transactionId], ["goal", fact.source.goalId], ["shift", fact.source.shiftId], ["plan-version", fact.source.planVersionId], ["plan-draft", fact.source.planDraftId], ["plan-line", fact.source.planLineId], ["plan-scenario", fact.source.planScenarioId], ["plan-assumption", fact.source.planAssumptionId], ["plan-bridge", fact.source.planBridgeDecisionId], ["plan-sitdown", fact.source.planSitDownSessionId]] as const) {
         if (id && !references.some(row => row.kind === kind && row.id === id)) references.push({ kind, id });
       }
     }
@@ -1462,7 +1488,7 @@ export function HerculesPresence({
     setTopic(grounded.topic);
     setMotion("pounce");
     const disclosedContext = composeHerculesChatRequest(conversationHousehold(), text, briefing, today, memberId, topic, { view, availableActionIds: availableDiscoveryActions(), workflow: actionRef.current?.state() }).companion;
-    const plannerMessage = resolveHerculesFollowUp(text, disclosedContext.context);
+    const plannerMessage = `${planContext ? "In my selected Plan: " : ""}${resolveHerculesFollowUp(text, disclosedContext.context)}`;
     const toolPlan = shouldPlanHerculesTools(plannerMessage)
       ? await planHerculesReadTools({ message: plannerMessage, page, view })
       : { calls: [] };
@@ -1471,7 +1497,7 @@ export function HerculesPresence({
       requestId: chatGen.current,
     })) return;
     if (toolPlan.calls.length) {
-      const investigation = executeHerculesReadToolPlan(household, toolPlan, today, { memberId, view });
+      const investigation = executeHerculesReadToolPlan(household, toolPlan, today, { memberId, view, privatePlanPreparation: true, ...(planContext?.scope === view ? { plan: planContext } : {}) }, actionHousehold);
       const groundedAnswer = investigation.talk;
       const voicedRequest = composeHerculesChatRequest(conversationHousehold(), text, briefing, today, memberId, topic, {
         currentFactIds:groundedAnswer.facts?.map(f=>f.id)??[],

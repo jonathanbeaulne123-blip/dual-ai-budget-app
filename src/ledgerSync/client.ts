@@ -1,3 +1,4 @@
+import { hasPlanDecisionData } from "../core/planSystem.ts";
 import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { previewFor, visiblePreviews, type PendingPreview, type RejectedEntry } from "./optimistic.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
@@ -66,6 +67,7 @@ export class LedgerSyncClient {
   private companionWorkflowVersion = 0;
   private herculesActionsEnabled = false;
   private nativeCalendarVersion = 0;
+  private planDecisionVersion = 0;
   private initialResolve?: () => void;
   private initialReject?: (e: Error) => void;
   constructor(readonly options: ClientOptions) {}
@@ -227,6 +229,7 @@ export class LedgerSyncClient {
               this.companionWorkflowVersion = message.companionWorkflowVersion === 1 ? 1 : 0;
               this.herculesActionsEnabled = message.herculesActionsEnabled === true;
               this.nativeCalendarVersion = message.nativeCalendarVersion === 1 ? 1 : 0;
+              this.planDecisionVersion = message.planDecisionVersion === 1 ? 1 : 0;
               this.ready = true;
               this.attempt = 0;
               this.options.status(this.pending.size ? "saving" : "ready");
@@ -430,6 +433,12 @@ export class LedgerSyncClient {
   }
   private async queueConfirmation(candidate:Household,id:string,onQueued?:()=>void):Promise<CommitResult> {
     const capture=capturedIntent(candidate)!;
+    const extendedPlan = hasPlanDecisionData(candidate) || capture.steps.some(step => {
+      const input = step.args[0] as { lines?: Array<{ decision?: unknown }>; changedLines?: Array<{ decision?: unknown }>; changedAssumptions?: unknown; checkpoint?: unknown; outcomes?: Array<{ evidenceIds?: unknown }>; planReference?: unknown } | undefined;
+      return (input?.lines ?? input?.changedLines ?? []).some(line => line.decision) || input?.changedAssumptions !== undefined || input?.checkpoint !== undefined || input?.outcomes?.some(row => row.evidenceIds) || input?.planReference;
+    });
+    if (extendedPlan && this.planDecisionVersion !== 1) throw new LedgerCommandRejectedError("PLAN_UPDATE_REQUIRED: Connect to the updated Hearth before saving these Plan decisions. Keep this draft open and retry after connecting.");
+
     if(capture.steps.some(s=>s.kind==='executeHerculesAction')&&(!this.ready||!this.herculesActionsEnabled))throw new LedgerCommandRejectedError('HERCULES_ACTIONS_PAUSED: Conversational changes are not enabled on this Hearth server.');
     if(capture.steps.some(s=>s.kind==='saveNativeEvent')&&(!this.ready||this.nativeCalendarVersion!==1))throw new LedgerCommandRejectedError('CALENDAR_UPDATE_REQUIRED: Connect to an updated Hearth to save events.');
     if(capture.steps.some(s=>['executeHerculesAction','cancelHerculesSubmission'].includes(s.kind)||s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set')&&(!this.ready||this.companionWorkflowVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving conversational drafts.');

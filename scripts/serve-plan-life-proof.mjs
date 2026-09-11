@@ -1,0 +1,21 @@
+/** Actual production components with exclusively fictional local books. */
+import { createServer } from 'vite';
+import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const css = [...readFileSync('src/main.tsx','utf8').matchAll(/import "\.\/(.*\.css)";/g)].map(([,path])=>`import '/src/${path}';`).join('\n');
+const entry = `${css}
+import React,{useState,useRef} from 'react';import{createRoot}from'react-dom/client';
+import{PlanStudio}from'/src/PlanStudio.tsx';import{HerculesPresence}from'/src/Hercules.tsx';import{KittyBanks}from'/src/KittyBanks.tsx';
+import{planLifeFixture}from'/test/fixtures/plan-life.ts';import{resolveThemeScene,sceneTokens}from'/src/theme/scenes.ts';
+const q=new URLSearchParams(location.search),view=q.get('view')||'household',theme=q.get('theme')||'classic';
+const scene=resolveThemeScene(theme,'plan',view);Object.assign(document.documentElement.dataset,{theme,scene:scene.id,material:scene.material,sceneLighting:scene.dark?'dark':'light',atmosphere:'paused'});for(const[key,value]of Object.entries(sceneTokens(scene)))document.documentElement.style.setProperty(key,value);
+function Proof(){const[state,setState]=useState(()=>planLifeFixture(view)),[context,setContext]=useState(null),[request,setRequest]=useState(null),[member,setMember]=useState('MEM-001');const ref=useRef(state);ref.current=state;const command=async fn=>{const result=fn(ref.current);ref.current=result.household;setState(result.household);return result;};return React.createElement('div',{className:'app','data-ledger-tab':'plan'},React.createElement('p',{style:{padding:12,background:'#fff',color:'#111'}},'Fictional local component proof — '+theme+' / '+view,React.createElement('button',{onClick:()=>setMember(member==='MEM-001'?'MEM-002':'MEM-001')},'Switch fictional member')),React.createElement(PlanStudio,{key:member,household:state,view,memberId:member,today:'2026-09-11',busy:false,onCommand:command,onContextChange:setContext,contextIdentity:'proof',onAskHercules:(prompt,proposal)=>setRequest({id:crypto.randomUUID(),scopeKey:state.environment+':'+state.householdId+':'+member+':'+view+':proof',prompt,proposal,isCurrent:()=>true}),goalsContent:React.createElement(KittyBanks,{household:state,booksHousehold:state,view,createdBy:member,onCommand:command})}),React.createElement(HerculesPresence,{household:state,actionHousehold:state,today:'2026-09-11',tab:'plan',adding:false,memberId:member,view,planContext:context,planOpenRequest:request,onPlanOpenConsumed:()=>setRequest(null),onOpenAdd:()=>{},onGo:()=>{},onLedger:command,onCompanionCommand:command,onOpenSource:()=>{},actionIdentity:'proof',actionService:{execute:command,readSubmission:async()=>null}}));}
+createRoot(document.getElementById('root')).render(React.createElement(Proof));`;
+export async function startPlanLifeProof({port=5184}={}) {
+const cacheDir=mkdtempSync(join(tmpdir(),'hearth-life-'));
+const server=await createServer({configFile:false,cacheDir,server:{host:'127.0.0.1',port,strictPort:true},plugins:[{name:'life-proof',resolveId(id){if(id==='/life-proof.js')return'\0life-proof';},load(id){if(id==='\0life-proof')return entry;},configureServer(vite){vite.middlewares.use(async(req,res,next)=>{if(req.method==='POST'){res.statusCode=503;res.end(JSON.stringify({ok:false,error:'Fictional local proof; external providers disabled'}));return;}if(req.url?.split('?')[0]!=='/life-proof')return next();res.setHeader('Content-Type','text/html');res.end(await vite.transformIndexHtml('/life-proof','<!doctype html><html><head><title>Fictional Hearth Plan proof</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/life-proof.js"></script></body></html>'));});}}]});await server.listen();
+return {url:`http://127.0.0.1:${server.httpServer.address().port}/life-proof`,async close(){await server.close();rmSync(cacheDir,{recursive:true,force:true});}};
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const proof=await startPlanLifeProof();console.log(`Fictional Plan proof: ${proof.url}`);process.once('SIGINT',async()=>{await proof.close();process.exit(0);});}

@@ -1,6 +1,7 @@
-import { monthEndKey, monthStartKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { isValidDateKey, monthEndKey, monthStartKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { sha256String } from "./synchronousHash.ts";
-import { householdWallet } from "./accounts.ts";
+import { projectedExpenseEffect, transactionProjection } from "./budget.ts";
+import { projectPlan, planSelectionForVersion } from "./planProjection.ts";
 import type { BudgetPlan, Household, Transaction } from "./types.ts";
 
 export type PlanScope = "personal" | "household";
@@ -60,6 +61,20 @@ export type PlanLine = {
   sourceReference?: PlanSourceReference;
   assumptionIds: string[];
   createdBy: string;
+  /** Optional so existing accepted version digests remain byte-for-byte stable. */
+  decision?: {
+    targetCents?: number;
+    lowCents?: number;
+    highCents?: number;
+    deadline?: DateKey;
+    paydays?: DateKey[];
+    contributionSchedule?: Array<{ date: DateKey; amountCents: number }>;
+    scheduleActualCents?: number;
+    nextStep?: string;
+    timeConstraint?: string;
+    reopenWhen?: string;
+    funding?: "available" | "expected";
+  };
 };
 
 export type PlanDraft = {
@@ -106,6 +121,7 @@ export type PlanScenario = {
   draftId: string;
   name: string;
   changedLines: PlanLine[];
+  changedAssumptions?: PlanAssumption[];
   updatedAt: string;
 };
 
@@ -114,6 +130,7 @@ export type PlanOutcome = {
   status: "paid" | "moved" | "missed" | "deferred" | "not-relevant";
   actualCents: number;
   transactionIds: string[];
+  evidenceIds?: string[];
   note?: string;
 };
 
@@ -143,6 +160,7 @@ export type PlanLearningProgress = {
 
 export type PlanCoachingIntensity = "off" | "calm" | "active";
 export type PlanCoachingPreference = {
+  lifePreferences?: string[];
   id: string;
   memberId: string;
   intensity: PlanCoachingIntensity;
@@ -213,6 +231,9 @@ export type PlanActivationJob = {
 };
 
 export type PlanHerculesSession = {
+  stage?: number;
+  decisions?: Array<{ id: string; memberId: string; text: string; createdAt: string }>;
+  rhythm?: string;
   id: string;
   sitDownSessionId: string;
   monthKey: MonthKey;
@@ -253,6 +274,10 @@ export type PlanDriftFinding = {
 };
 
 export type HerculesPlanContext = {
+  purchase?: { amountCents: number; date: DateKey };
+  contextIdentity?: string;
+  disruption?: import("./planProjection.ts").PlanDisruption;
+  through?: DateKey;
   monthKey: MonthKey;
   scope: PlanScope;
   lens?: PlanLens;
@@ -324,6 +349,20 @@ function sourceReference(value: unknown): PlanSourceReference | null {
   return id ? { type, id } : null;
 }
 
+function shapePlanDecision(value: unknown): PlanLine["decision"] {
+  const row = record(value);
+  if (!row) return undefined;
+  return {
+    ...Object.fromEntries(["targetCents", "lowCents", "highCents"].flatMap(key => Number.isSafeInteger(row[key]) && Number(row[key]) >= 0 ? [[key, Number(row[key])]] : [])),
+    ...(typeof row.deadline === "string" && isValidDateKey(row.deadline) ? { deadline: row.deadline } : {}),
+    ...(Array.isArray(row.contributionSchedule) ? { contributionSchedule: row.contributionSchedule.flatMap(item => { const entry = record(item); return entry && typeof entry.date === "string" && isValidDateKey(entry.date) && Number.isSafeInteger(entry.amountCents) && Number(entry.amountCents) >= 0 ? [{ date: entry.date, amountCents: Number(entry.amountCents) }] : []; }).slice(0, 366) } : {}),
+    ...(Number.isSafeInteger(row.scheduleActualCents) && Number(row.scheduleActualCents) >= 0 ? { scheduleActualCents: Number(row.scheduleActualCents) } : {}),
+    ...(Array.isArray(row.paydays) ? { paydays: [...new Set(row.paydays.filter((day): day is string => typeof day === "string" && isValidDateKey(day)))].sort().slice(0, 366) } : {}),
+    ...Object.fromEntries(["nextStep", "timeConstraint", "reopenWhen"].flatMap(key => text(row[key]) ? [[key, text(row[key]).slice(0, 1000)]] : [])),
+    ...(row.funding === "available" || row.funding === "expected" ? { funding: row.funding } : {}),
+  };
+}
+
 export function shapePlanAssumptions(value: unknown): PlanAssumption[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((candidate) => {
@@ -369,6 +408,7 @@ export function shapePlanLines(value: unknown): PlanLine[] {
       ...(source ? { sourceReference: source } : {}),
       assumptionIds: Array.isArray(row.assumptionIds) ? row.assumptionIds.map(text).filter(Boolean) : [],
       createdBy,
+      ...(row.decision ? { decision: shapePlanDecision(row.decision) } : {}),
     }];
   });
 }
@@ -454,7 +494,7 @@ export function shapePlanScenarios(value: unknown, ownerMemberId?: string): Plan
     const id = text(row?.id), owner = text(row?.ownerMemberId), draftId = text(row?.draftId), name = text(row?.name);
     if (!row || !id || !owner || !draftId || !name || (ownerMemberId && owner !== ownerMemberId)) return [];
     return [{ id, scope: oneOf(row.scope, ["personal", "household"] as const, "personal"), ownerMemberId: owner, draftId, name,
-      changedLines: shapePlanLines(row.changedLines), updatedAt: iso(row.updatedAt, new Date(0).toISOString()) }];
+      changedLines: shapePlanLines(row.changedLines), ...(Array.isArray(row.changedAssumptions) ? { changedAssumptions: shapePlanAssumptions(row.changedAssumptions) } : {}), updatedAt: iso(row.updatedAt, new Date(0).toISOString()) }];
   });
 }
 
@@ -469,7 +509,7 @@ export function shapePlanReflections(value: unknown, options: { scope?: PlanScop
       const outcome = record(candidateOutcome), planLineId = text(outcome?.planLineId);
       if (!outcome || !planLineId) return [];
       return [{ planLineId, status: oneOf(outcome.status, ["paid", "moved", "missed", "deferred", "not-relevant"] as const, "not-relevant"),
-        actualCents: Math.max(0, cents(outcome.actualCents)), transactionIds: Array.isArray(outcome.transactionIds) ? outcome.transactionIds.map(text).filter(Boolean) : [],
+        actualCents: cents(outcome.actualCents), ...(Array.isArray(outcome.evidenceIds) ? { evidenceIds: [...new Set(outcome.evidenceIds.map(text).filter(Boolean))] } : {}), transactionIds: Array.isArray(outcome.transactionIds) ? outcome.transactionIds.map(text).filter(Boolean) : [],
         ...(text(outcome.note) ? { note: text(outcome.note) } : {}) }];
     }) : [];
     const memberNotes = Array.isArray(row.memberNotes) ? row.memberNotes.flatMap((candidateNote) => {
@@ -513,7 +553,7 @@ export function shapePlanCoachingPreferences(value: unknown, memberId?: string):
     const row = record(candidate), id = text(row?.id), owner = text(row?.memberId);
     if (!row || !id || !owner || (memberId && owner !== memberId)) return [];
     const snoozed = record(row.snoozedIssueIds) ?? {};
-    return [{ id, memberId: owner, intensity: oneOf(row.intensity, ["off", "calm", "active"] as const, "calm"),
+    return [{ ...(Array.isArray(row.lifePreferences) ? { lifePreferences: [...new Set(row.lifePreferences.map(text).filter(Boolean))].slice(0, 10).map(value => value.slice(0, 240)) } : {}), id, memberId: owner, intensity: oneOf(row.intensity, ["off", "calm", "active"] as const, "calm"),
       dismissedIssueIds: Array.isArray(row.dismissedIssueIds) ? row.dismissedIssueIds.map(text).filter(Boolean) : [],
       snoozedIssueIds: Object.fromEntries(Object.entries(snoozed).flatMap(([key, candidateValue]) => text(candidateValue) ? [[key, text(candidateValue)]] : [])),
       updatedAt: iso(row.updatedAt, new Date(0).toISOString()) }];
@@ -574,6 +614,9 @@ export function shapePlanHerculesSessions(value: unknown, activeMemberIds: reado
     }) : [];
     return [{ id, sitDownSessionId, monthKey, planDraftId, ...(text(row.resultingPlanVersionId) ? { resultingPlanVersionId: text(row.resultingPlanVersionId) } : {}),
       state: oneOf(row.state, ["active", "closed"] as const, "active"), startedBy, participantMemberIds: participants, turns,
+      ...(Number.isInteger(row.stage) && Number(row.stage) >= 0 && Number(row.stage) <= 7 ? { stage: Number(row.stage) } : {}),
+      ...(typeof row.rhythm === "string" ? { rhythm: row.rhythm.slice(0, 2000) } : {}),
+      ...(Array.isArray(row.decisions) ? { decisions: row.decisions.flatMap(candidate => { const decision = record(candidate); return decision && text(decision.id) && activeMemberIds.includes(text(decision.memberId)) && text(decision.text) ? [{ id: text(decision.id), memberId: text(decision.memberId), text: text(decision.text).slice(0, 6000), createdAt: iso(decision.createdAt, new Date(0).toISOString()) }] : []; }) } : {}),
       createdAt: iso(row.createdAt, new Date(0).toISOString()), updatedAt: iso(row.updatedAt, iso(row.createdAt, new Date(0).toISOString())) }];
   });
 }
@@ -646,8 +689,9 @@ export function legacyHouseholdPlanDraft(household: Household, monthKey: MonthKe
 
 export function planActualCents(transactions: readonly Transaction[], line: PlanLine, monthKey: MonthKey): number {
   if (line.sourceReference?.type !== "category") return 0;
-  return transactions.filter((tx) => tx.date.startsWith(monthKey) && tx.subcategoryId === line.sourceReference?.id && tx.type === "expense")
-    .reduce((sum, tx) => sum + tx.amountCents, 0);
+  const byId = new Map(transactions.map(tx => [tx.id, tx]));
+  return [...byId.values()].filter(tx => tx.date.startsWith(monthKey) && transactionProjection(tx, byId).root.subcategoryId === line.sourceReference?.id)
+    .reduce((sum, tx) => sum + projectedExpenseEffect(tx, byId), 0);
 }
 
 function daysBetween(left: string, right: string): number { return Math.ceil((Date.parse(right) - Date.parse(left)) / 86_400_000); }
@@ -655,76 +699,30 @@ function daysBetween(left: string, right: string): number { return Math.ceil((Da
 export function evaluatePlanDrift(household: Household, version: PlanVersion, asOf: DateKey): PlanDriftFinding[] {
   const findings: PlanDriftFinding[] = [];
   const sourceRevision = household.revision;
-  const scopeTransactions = household.transactions.filter((tx) => tx.date.startsWith(version.monthKey)
-    && (version.scope === "household" ? tx.visibility !== "personal" : tx.createdBy === version.ownerMemberId && tx.visibility === "personal"));
   const add = (finding: Omit<PlanDriftFinding, "id" | "scope" | "ownerMemberId" | "planVersionId" | "asOf" | "sourceRevision">) => {
-    const horizon = finding.targetId;
+    const horizon = `${finding.explanation}|${finding.consequence}`;
     findings.push({ ...finding, id: sha256String(`${finding.rule}|${version.scope}|${version.id}|${finding.targetId}|${horizon}`).slice(0, 24),
       scope: version.scope, ...(version.ownerMemberId ? { ownerMemberId: version.ownerMemberId } : {}), planVersionId: version.id, asOf, sourceRevision });
   };
-  let availableProtectedCash = Math.max(0, householdWallet(household, asOf).cashCents);
-  const protectedLines = version.lines.filter((line) => line.lens === "protect")
-    .sort((left, right) => (left.dueDate ?? "9999-12-31").localeCompare(right.dueDate ?? "9999-12-31"));
-  for (const line of protectedLines) {
-    const actual = planActualCents(scopeTransactions, line, version.monthKey);
-    const remaining = Math.max(0, line.amountCents - actual);
-    const dueIn = line.dueDate ? daysBetween(asOf, line.dueDate) : Number.POSITIVE_INFINITY;
-    const coverageGap = Math.max(0, remaining - availableProtectedCash);
-    availableProtectedCash = Math.max(0, availableProtectedCash - remaining);
-    if (coverageGap > 0 && dueIn >= 0 && dueIn <= PLAN_DRIFT_THRESHOLDS.protectedDueDays) add({
-      severity: "critical", rule: line.kind === "obligation" ? "protected-shortfall" : "minimum-uncovered", targetId: line.id,
-      explanation: `${line.labelSnapshot} is due soon with a ${coverageGap} cent gap after visible protected cash is allocated in due-date order.`,
-      consequence: "The plan's protected layer may not be fully covered in time.", sourceReferences: line.sourceReference ? [line.sourceReference] : [],
-    });
+  const projection = projectPlan(household, { memberId: version.ownerMemberId ?? version.createdBy, scope: version.scope,
+    acceptedRevision: household.revision, asOf, through: monthEndKey(version.monthKey) < asOf ? asOf : monthEndKey(version.monthKey), selection: planSelectionForVersion(version) });
+  if (projection.firstExposed) add({ severity: "critical", rule: "negative-runway", targetId: projection.firstExposed.date,
+    explanation: `${projection.firstExposed.label} has a ${projection.firstExposed.gapCents} cent gap on ${projection.firstExposed.date}.`,
+    consequence: "Review a contribution date or a commitment in the same projection.", sourceReferences: [] });
+  for (const row of projection.lines) {
+    if (row.line.lens === "protect" && row.gapCents > 0 && row.dueDate && daysBetween(asOf, row.dueDate) <= PLAN_DRIFT_THRESHOLDS.protectedDueDays) add({
+      severity: "critical", rule: "protected-shortfall", targetId: row.line.id,
+      explanation: `${row.line.labelSnapshot} has ${row.gapCents} cents without identified coverage by ${row.dueDate}.`,
+      consequence: row.issues[0] ?? "Try a different contribution date or a reviewed adjustment.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
+    if (["build", "prepare"].includes(row.line.lens) && row.remainingCents > 0 && row.dueDate && row.dueDate < asOf) add({
+      severity: "attention", rule: row.line.lens === "build" ? "goal-contribution-late" : "true-expense-pace", targetId: row.line.id,
+      explanation: `${row.line.labelSnapshot} still needs ${row.remainingCents} cents after ${row.dueDate}.`,
+      consequence: "Review the funding evidence, next contribution and timing together.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
+    if (row.status === "completed" && row.line.lens === "build") add({ severity: "gentle", rule: "verified-milestone", targetId: row.line.id,
+      explanation: `${row.line.labelSnapshot} reached this month's contribution promise.`, consequence: "Review the verified progress and choose what comes next.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
+    if (row.line.lens === "everyday" && row.actualCents > row.intendedCents + PLAN_DRIFT_THRESHOLDS.materialCents) add({ severity: "attention", rule: "everyday-pace", targetId: row.line.id,
+      explanation: `${row.line.labelSnapshot} is ${row.actualCents - row.intendedCents} cents above its monthly intention.`, consequence: "Review upcoming plans before deciding whether this uneven month needs a change.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
   }
-  for (const line of version.lines) {
-    const actual = planActualCents(scopeTransactions, line, version.monthKey);
-    const remaining = Math.max(0, line.amountCents - actual);
-    if (line.lens === "build" && line.dueDate && remaining > 0 && daysBetween(line.dueDate, asOf) >= PLAN_DRIFT_THRESHOLDS.buildLateDays) add({
-      severity: "attention", rule: "goal-contribution-late", targetId: line.id, explanation: `${line.labelSnapshot} is still unmatched after its planned date.`,
-      consequence: "The goal may need a new date or a smaller contribution.", sourceReferences: line.sourceReference ? [line.sourceReference] : [],
-    });
-    if (line.lens === "prepare" && line.dueDate && remaining > 0) {
-      const dueIn = daysBetween(asOf, line.dueDate);
-      const totalDays = Math.max(1, daysBetween(monthStartKey(version.monthKey), line.dueDate));
-      const elapsedDays = Math.max(0, daysBetween(monthStartKey(version.monthKey), asOf));
-      const requiredByNow = Math.round(line.amountCents * Math.min(1, elapsedDays / totalDays));
-      if (dueIn >= 0 && dueIn <= PLAN_DRIFT_THRESHOLDS.prepareDueDays && actual < requiredByNow * PLAN_DRIFT_THRESHOLDS.prepareFundingPace) add({
-        severity: "attention", rule: "true-expense-pace", targetId: line.id, explanation: `${line.labelSnapshot} is below three quarters of its required funding pace.`,
-        consequence: "The amount or timing may need attention before it becomes urgent.", sourceReferences: line.sourceReference ? [line.sourceReference] : [],
-      });
-    }
-    if (line.lens === "build" && line.amountCents > 0 && actual >= line.amountCents) add({
-      severity: "gentle", rule: "verified-milestone", targetId: line.id, explanation: `${line.labelSnapshot} reached its visible Plan amount.`,
-      consequence: "This verified progress deserves a proportionate celebration.", sourceReferences: line.sourceReference ? [line.sourceReference] : [],
-    });
-  }
-  const futureEvents = [
-    ...version.assumptions.filter((row) => row.kind === "income" && row.valueCents && (row.expectedDate ?? `${version.monthKey}-01`) >= asOf)
-      .map((row) => ({ date: row.expectedDate ?? `${version.monthKey}-01`, cents: row.valueCents! })),
-    ...version.lines.map((line) => ({ line, actual: planActualCents(scopeTransactions, line, version.monthKey) }))
-      .filter(({ line }) => (line.dueDate ?? monthEndKey(version.monthKey)) >= asOf)
-      .map(({ line, actual }) => ({ date: line.dueDate ?? monthEndKey(version.monthKey), cents: -Math.max(0, line.amountCents - actual) })),
-  ].sort((left, right) => left.date.localeCompare(right.date) || right.cents - left.cents);
-  let runway = householdWallet(household, asOf).cashCents;
-  for (const event of futureEvents) {
-    runway += event.cents;
-    if (runway < 0) {
-      add({ severity: "critical", rule: "negative-runway", targetId: event.date, explanation: `The dated Plan falls below zero around ${event.date}.`, consequence: "A protected decision needs attention before that point.", sourceReferences: [] });
-      break;
-    }
-  }
-  const everydayLines = version.lines.filter((line) => line.lens === "everyday");
-  const everydayPlanned = everydayLines.reduce((sum, line) => sum + line.amountCents, 0);
-  const everydayIds = new Set(everydayLines.flatMap((line) => line.sourceReference?.type === "category" ? [line.sourceReference.id] : []));
-  const purchases = scopeTransactions.filter((tx) => tx.type === "expense" && everydayIds.has(tx.subcategoryId ?? ""));
-  const elapsed = Math.max(1, Number(asOf.slice(-2)));
-  const projected = purchases.reduce((sum, tx) => sum + tx.amountCents, 0) / elapsed * Number(monthEndKey(version.monthKey).slice(-2));
-  if (elapsed >= PLAN_DRIFT_THRESHOLDS.everydayMinimumElapsedDays && purchases.length >= PLAN_DRIFT_THRESHOLDS.everydayMinimumPurchases
-      && projected > everydayPlanned * (1 + PLAN_DRIFT_THRESHOLDS.everydayPercent) && projected - everydayPlanned >= PLAN_DRIFT_THRESHOLDS.materialCents) add({
-    severity: "attention", rule: "everyday-pace", targetId: "everyday", explanation: "Everyday spending is running meaningfully above the accepted monthly pace.",
-    consequence: "Keeping this pace would use more than the Everyday amount without changing Protect.", sourceReferences: everydayLines.flatMap((line) => line.sourceReference ? [line.sourceReference] : []),
-  });
   for (const assumption of version.assumptions) if (daysBetween(assumption.observedAt.slice(0, 10), asOf) >= PLAN_DRIFT_THRESHOLDS.staleAssumptionDays) add({
     severity: "gentle", rule: "stale-assumption", targetId: assumption.id, explanation: "A material plan assumption has not been refreshed recently.",
     consequence: "The current projection may be relying on old information.", sourceReferences: assumption.sourceReferences,
@@ -763,4 +761,13 @@ export function planVersionDiff(before: PlanVersion | null, after: PlanVersion) 
     return old && JSON.stringify(old) !== JSON.stringify(line) ? [{ before: old, after: line }] : [];
   });
   return { added, removed, changed, totalDeltaCents: after.lines.reduce((sum, line) => sum + line.amountCents, 0) - (before?.lines ?? []).reduce((sum, line) => sum + line.amountCents, 0) };
+}
+
+/** Detect additive records that pre-decision clients would otherwise drop. */
+export function hasPlanDecisionData(h: Household): boolean {
+  return Boolean(h.planCoachingPreferences?.some(row => row.lifePreferences !== undefined)) || [...(h.planDrafts ?? []), ...(h.planVersions ?? [])].some(row => row.lines.some(line => line.decision))
+    || Boolean(h.planScenarios?.some(row => row.changedAssumptions !== undefined || row.changedLines.some(line => line.decision)))
+    || Boolean(h.planHerculesSessions?.some(row => row.stage !== undefined))
+    || Boolean(h.planReflections?.some(row => row.outcomes.some(outcome => outcome.evidenceIds !== undefined)))
+    || Boolean(h.kitchen.boards?.tasks.some(row => row.planReference));
 }
