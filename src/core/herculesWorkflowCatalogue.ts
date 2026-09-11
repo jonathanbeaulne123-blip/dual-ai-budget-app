@@ -6,6 +6,8 @@ export const HERCULES_WORKFLOW_CATALOGUE = [
     { id: 'transfer', title: 'Move money between accounts', example: 'I paid my credit card', views: ['household', 'personal'] },
     { id: 'potential-expense', title: 'Plan a possible expense', example: 'Plan a possible expense', views: ['household', 'personal'] },
     { id: 'budget', title: 'Set a category budget', example: 'Set a category budget', views: ['household'] },
+    { id: 'plan-coaching-preference', title: 'Remember a Plan coaching preference', example: 'Remember a Plan coaching preference', views: ['household', 'personal'] },
+    { id: 'plan-line-change', title: 'Change a private Plan decision', example: 'Change a Plan decision', views: ['household', 'personal'] },
     { id: 'plan-scenario', title: 'Create a private Plan alternative', example: 'Help me try a Plan alternative', views: ['household', 'personal'] },
     { id: 'plan-personal-revision', title: 'Lock my Personal Plan revision', example: 'Keep this as my Personal Plan', views: ['personal'] },
     { id: 'plan-household-proposal', title: 'Propose a Household Plan', example: 'Propose this Plan to us', views: ['household'] },

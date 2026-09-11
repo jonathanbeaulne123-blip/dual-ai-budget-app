@@ -23,6 +23,16 @@ function setup(){
 async function click(label:string){await act(async()=>{const button=[...host.querySelectorAll('button')].find(b=>b.textContent===label);expect(button).toBeDefined();button!.click();});}
 async function completeDraft(s:ReturnType<typeof setup>){await act(async()=>s.ref.current!.propose({actionId:'expense',values:{amount:'24',date:'2026-09-10',accountId:'ACC-VISA',subcategoryId:'SUB-FOOD-GROCERIES',split:'MEM-001',note:'Synthetic grocery'}}));await click('Review changes');}
 describe('conversational review controls',()=>{
+ it('accepts a Plan proposal with reordered dependent fields and confirms one private edit', async()=>{
+  const {planLifeFixture}=await import('./fixtures/plan-life.ts');const s=setup();
+  await act(async()=>s.changeCanonical(()=>{const h=planLifeFixture('household');h.companionProfile=companionFor(h,'MEM-001');return h;}));
+  const before=s.household.transactions;
+  await act(async()=>s.ref.current!.propose({actionId:'plan-line-change',values:{planLineId:'life-trip',amount:'150',draftId:'LIFE-DRAFT'}}));
+  expect(companionFor(s.household,'MEM-001').workflows?.find(row=>row.id==='task-household')?.value?.values).toMatchObject({draftId:'LIFE-DRAFT',planLineId:'life-trip',amount:'150'});
+  await click('Review changes');expect(s.writes).toBe(0);expect(host.textContent).toContain('Keep Friday evenings free.');
+  await click('Final Confirm');expect(s.writes).toBe(1);expect(s.household.transactions).toEqual(before);
+  expect(s.household.planDrafts![0]!.lines.find(row=>row.id==='life-trip')!.amountCents).toBe(15000);
+ });
  it('model details only prepare; ordinary agreement and double confirmation never duplicate a write',async()=>{const s=setup();await act(async()=>s.render());await completeDraft(s);expect(s.writes).toBe(0);await act(async()=>{s.ref.current!.send('yes');s.ref.current!.send('"final confirm"');});expect(s.writes).toBe(0);await act(async()=>{s.ref.current!.send('FINAL CONFIRM');s.ref.current!.send('final confirm');});expect(s.writes).toBe(1);expect(host.textContent).toContain('Saved.');});
  it('edits invalidate review until a fresh review is shown',async()=>{const s=setup();await act(async()=>s.render());await completeDraft(s);expect(document.activeElement?.textContent).toBe('Check your changes');await act(async()=>{s.ref.current!.send('change amount to 25');});expect(host.textContent).not.toContain('Final ConfirmEdit details');await act(async()=>s.ref.current!.send('final confirm'));expect(s.writes).toBe(0);await click('Review changes');await click('Final Confirm');expect(s.household.transactions.at(-1)?.amountCents).toBe(2500);});
  it('keeps newer manual edits when an older model proposal arrives',async()=>{const s=setup();await act(async()=>s.render());await completeDraft(s);const fingerprint=s.ref.current!.fingerprint();await act(async()=>s.ref.current!.send('change amount to 25'));await act(async()=>s.ref.current!.propose({actionId:'expense',values:{amount:'24'}},fingerprint));await click('Review changes');await click('Final Confirm');expect(s.household.transactions.at(-1)?.amountCents).toBe(2500);});

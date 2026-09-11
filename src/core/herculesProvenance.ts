@@ -26,6 +26,7 @@ export type HerculesNumberSource = {
   goalId?: string;
   fundObligationId?: string;
   planVersionId?: string;
+  planDraftId?: string;
   planLineId?: string;
   planScenarioId?: string;
   planAssumptionId?: string;

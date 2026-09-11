@@ -26,7 +26,7 @@ describe("D-164 ledger story UI fences", () => {
   it("routes every tab through projectLedgerExperience and a mode-aware purpose banner", () => {
     expect(app).toContain("projectLedgerExperience");
     expect(app).toContain("<LedgerPurposeBanner");
-    expect(app).toContain("showsLedgerPurposeBanner(tab)");
+    expect(app).toContain("showsLedgerPurposeBanner(presenceTab(tab))");
     expect(app).toContain("data-ledger-mode={view}");
     expect(app).toContain("experience.exportHousehold");
     expect(app).toContain("<AddSlideshow");
@@ -105,8 +105,8 @@ describe("D-164 ledger story UI fences", () => {
     expect(shift).toContain("worker-centered");
     expect(books).toContain("Household table");
     expect(books).toContain("My books");
-    expect(books).toContain("On the table");
-    expect(books).toContain("householdTableStory");
+    expect(books).toContain("Shared operating cash");
+    expect(books).toContain("household-books-nav");
     expect(books).toContain("books-audit-office");
     expect(books).not.toContain("Together now");
     expect(books).not.toContain("Household story · double-entry");
@@ -114,7 +114,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(panel).toContain("<summary>Propose or confirm a contribution</summary>");
   });
 
-  it("keeps Books off Shared primary nav and doors it from More", () => {
+  it("keeps shared financial destinations and Add connected to existing books authority", () => {
     expect(app).toContain("kitchenPrimaryNav(view)");
     expect(app).toContain("<FabSpeedDial");
     expect(app).toContain("onPick={(nextMode) => openAddFor(null, nextMode)}");
@@ -133,9 +133,9 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).not.toContain("Open household table books");
     expect(app).not.toContain("Journal and Fund");
     expect(app).toContain('data-ledger-nav={view === "household" ? "shared" : "personal"}');
-    expect(experience).toContain('return ["home", "calendar", "plan", "more"]');
+    expect(experience).toContain('return ["home", "ledger", "plan", "together"]');
     expect(experience).toContain('return ["home", "calendar", "shift", "ledger", "plan", "more"]');
-    expect(app).toMatch(/>\s*Books\s*</);
+    expect(app).toContain('{view === "household" ? "Our Money" : "Books"}');
     expect(styles).toContain(".nav[data-ledger-nav=\"personal\"]");
     expect(styles).toMatch(/\.nav\[data-ledger-nav="personal"\] \{\s*grid-template-columns: 1fr 1fr 1fr 56px 1fr 1fr 1fr;/);
   });
@@ -175,10 +175,11 @@ describe("D-164 ledger story UI fences", () => {
     expect(kitty).toContain("paper-bank");
     expect(books).toContain("booksPresentationFloor(booksHousehold, memberId, view)");
     expect(books).toContain("books-floor");
-    expect(books).toContain("Shared is one account");
+    expect(books).toContain("A shared operating subledger");
     expect(officeWide).toContain("posted in minus posted expenses");
     expect(officeWide).toContain("onGo(\"plan\")");
-    expect(books).toContain("presentedTransactions={!sharedTable}");
+    expect(books).toContain("presentedTransactions");
+    expect(books).toContain("activityFilters={sharedTable}");
     expect(ledger).toContain("presentedTransactions");
     expect(officePhone).toContain("Leftover spend");
     expect(officePhone).toContain('onGo("plan")');

@@ -1,3 +1,4 @@
+import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
 import { personalCalendarUpdateAllowed } from "./core/personalCalendarAuthority.ts";
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
@@ -517,10 +518,10 @@ import {
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
 
-type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
+type Tab = "together" | "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
 
-function presenceTab(tab: Tab): Exclude<Tab, "till"> {
-  return tab === "till" ? "home" : tab;
+function presenceTab(tab: Tab): Exclude<Tab, "till" | "together"> {
+  return tab === "till" ? "home" : tab === "together" ? "more" : tab;
 }
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
@@ -760,6 +761,9 @@ export function App() {
   const [herculesWardrobeRequest, setHerculesWardrobeRequest] = useState<{ scope: string; id: string } | null>(null);
   const herculesSourceScope = useRef<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
+  const [planContext, setPlanContext] = useState<import("./core/planSystem.ts").HerculesPlanContext | null>(null);
+  const [planHerculesRequest, setPlanHerculesRequest] = useState<import("./Hercules.tsx").PlanHerculesOpenRequest | null>(null);
+
 
   const [busyState, setBusy] = useState(false);
   const clearThisPhoneInFlightRef = useRef(false);
@@ -3294,9 +3298,9 @@ export function App() {
 
   const view: LedgerView = session?.view ?? "household";
   const appearance = useAppearance();
-  useAppearanceBinding(environment, household && session ? tab : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
+  useAppearanceBinding(environment, household && session ? tab === "together" ? "more" : tab : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
-    if (tab === "till" && view !== "household") setTab("home");
+    if ((tab === "till" || tab === "together") && view !== "household") setTab("home");
   }, [tab, view]);
   // Guided setup is available to every household, including books created
   // before onboarding existed. offerHouseholdOnboarding is itself idempotent,
@@ -6180,7 +6184,7 @@ export function App() {
   const openFundDestination = (destination: FundDestination | "ask" = "record") => {
     rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
     if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
-    if (destination === "ask") { goTab("home"); emitOfficeIntent({ type: "expand", id: "chalkboard" }); return; }
+    if (destination === "ask") { requestSharedBoard({ environment, householdId: household.householdId, memberId: session.memberId }, "ask"); goTab("together"); return; }
     if (destination === "shelf") { goTab("plan"); return; }
     if (destination === "minutes") { goTab("more"); return; }
     setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
@@ -6377,7 +6381,7 @@ export function App() {
     if (destination === "bills") { requestCalendarPane("bills", localStorage); goTab("calendar"); return; }
     if (destination === "boards") {
       requestSharedBoard({ environment, householdId: household!.householdId, memberId: session!.memberId }, "tasks");
-      goTab("home"); return;
+      goTab("together"); return;
     }
     if (destination === "hercules") { goTab("home"); return; }
     setFocusedAccountId(null);
@@ -6520,7 +6524,7 @@ export function App() {
           {entry.preview?.rows.filter(row=>isVisibleInView(row,memberId??'',view)).map(row=><p key={row.id}>{row.date} · {row.note} · {formatCad(row.amountCents)} · {row.splits.map(split=>`${split.party}: ${formatCad(split.amountCents)}`).join(', ')}</p>)}
           {isBoardDraft(entry.command) ? <BoardRejectedDraft command={entry.command} household={household} onOpen={board=>{
             requestSharedBoard({environment,householdId:household.householdId,memberId:actorId},board);
-            goTab("home");emitOfficeIntent({type:"expand",id:"chalkboard"});
+            goTab("together");
           }} /> : <button type="button" className="chip" onClick={()=>openAddFor(null)}>Start a new entry</button>}{" "}
           <button type="button" className="ghost" onClick={()=>{void ledgerSyncRef.current?.dismissRejected(entry.command.id);}}>Dismiss retained entry</button>
         </article>)}
@@ -6605,7 +6609,7 @@ export function App() {
             aria-pressed={view === item}
             onClick={() => {
               if (item === "household" && tab === "shift") goTab("home");
-              if (item !== "household" && tab === "till") goTab("home");
+              if (item !== "household" && (tab === "till" || tab === "together")) goTab("home");
               rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId });
             }}
           >
@@ -6615,14 +6619,14 @@ export function App() {
       </div>
       <div>
         <div className="world-page">
-      <PageWorld page={tab} />
+      <PageWorld page={tab === "together" ? "more" : tab} />
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
-      {experience && experience.ok && showsLedgerPurposeBanner(tab) ? (
-        <LedgerPurposeBanner tab={tab} view={view} label={experience.label} />
+      {experience && experience.ok && showsLedgerPurposeBanner(presenceTab(tab)) ? (
+        <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
 
       <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger"} />
-      <WorldCharm page={tab} />
+      <WorldCharm page={tab === "together" ? "more" : tab} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
         <Till
@@ -6642,6 +6646,9 @@ export function App() {
         />
       ) : null}
 
+      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("more")}>Settings & more</button></nav>}
+      {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
+      {tab === "home" && view === "household" && planSystemV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && (
         <>
         {view === "household" ? (
@@ -6779,6 +6786,17 @@ export function App() {
             </div>
           ) : planSystemV2Enabled() ? (
             <PlanStudio
+              key={`${ledgerRenderScopeKey}:${view}`}
+              goalsContent={<KittyBanks environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
+              onContextChange={setPlanContext}
+              contextIdentity={`${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}`}
+              onAskHercules={(prompt, proposal) => {
+                const identity = readGuardScopeIdentity();
+                const generation = household.companionProfile?.conversations.find(row => row.view === view)?.generation ?? 0;
+                setPlanHerculesRequest({ id: crypto.randomUUID(), scopeKey: `${environment}:${household.householdId}:${actorId}:${view}:${localLedgerIdentity(actorId) ?? actorId}:${replicaScopeGenerationRef.current}`, prompt, proposal,
+                  isCurrent: () => readGuardScopeIdentity() === identity && (householdRef.current?.companionProfile?.conversations.find(row => row.view === view)?.generation ?? 0) === generation });
+              }}
+              sourceFocus={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null}
               household={household}
               view={view}
               memberId={actorId}
@@ -8246,6 +8264,9 @@ export function App() {
       </div>
       {!charterTakeoverVisible ? (
       <HerculesPresence
+        planContext={tab === "plan" && planContext?.scope === view && planContext.contextIdentity === `${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}` ? planContext : null}
+        planOpenRequest={planHerculesRequest}
+        onPlanOpenConsumed={(id) => setPlanHerculesRequest(current => current?.id === id ? null : current)}
         setup={{ household, memberId:session.memberId, authUserId:localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId,
           today,busy,onCommand:runKitchen,onOptional:openJourneyDestination,onSave:(next,token)=>{void persistLedgerWrite(preserveCurrentPersonal(next),token);} }}
         household={{ ...(experience && experience.ok ? experience.herculesHousehold : displayHousehold), companionProfile: household.companionProfile?.scope.memberId === session.memberId ? household.companionProfile : undefined }}
@@ -8399,7 +8420,7 @@ export function App() {
         session={session}
       />
 
-      {household.householdFund && ["home", "calendar", "plan", "more"].includes(tab)
+      {household.householdFund && ["home", "calendar", "plan", "more", "together"].includes(tab)
         && !charterTakeoverVisible && !onboardingInviteVisible && !adding && !swipeOpen && !confirm && !guard && !commandOpen && !fabOpen ? (
         <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
           household={household} today={today} view={view} memberId={session.memberId} busy={busy}
@@ -8454,15 +8475,6 @@ export function App() {
           onOpenChange={setFabOpen}
           onPick={(nextMode) => openAddFor(null, nextMode)}
         />
-        {kitchenPrimaryNav(view).includes("plan") && (
-        <button
-          className={tab === "plan" ? "active" : ""}
-          aria-current={tab === "plan" ? "page" : undefined}
-          onClick={() => goTab("plan")}
-        >
-          Plan
-        </button>
-        )}
         {kitchenPrimaryNav(view).includes("ledger") && (
         <button
           className={tab === "ledger" ? "active" : ""}
@@ -8471,9 +8483,19 @@ export function App() {
           onFocus={() => preloadTab("ledger")}
           onClick={() => goTab("ledger")}
         >
-          Books
+          {view === "household" ? "Our Money" : "Books"}
         </button>
         )}
+        {kitchenPrimaryNav(view).includes("plan") && (
+        <button
+          className={tab === "plan" ? "active" : ""}
+          aria-current={tab === "plan" ? "page" : undefined}
+          onClick={() => goTab("plan")}
+        >
+          {view === "household" ? "Our Path" : "Plan"}
+        </button>
+        )}
+        {kitchenPrimaryNav(view).includes("together") && <button className={tab === "together" ? "active" : ""} aria-current={tab === "together" ? "page" : undefined} onClick={() => goTab("together")}>Together</button>}
         {kitchenPrimaryNav(view).includes("more") && (
         <button
           className={tab === "more" ? "active" : ""}

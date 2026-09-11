@@ -12,6 +12,7 @@ export function companionModelContext(household: Household, memberId: string, vi
     account: new Set(visible.accounts.map(row => row.id)), transaction: new Set(visible.transactions.map(row => row.id)),
     goal: new Set(visible.goals.map(row => row.id)), shift: new Set(visible.shifts.map(row => row.id)),
     page: new Set(["home", "plan", "calendar", "shift", "ledger", "more", "add"]),
+    "plan-draft": new Set((visible.planDrafts ?? []).map(row => row.id)),
     "plan-version": new Set((visible.planVersions ?? []).map(row => row.id)),
     "plan-line": new Set((visible.planVersions ?? []).flatMap(row => row.lines.map(line => line.id))),
     "plan-scenario": new Set((visible.planScenarios ?? []).map(row => row.id)),

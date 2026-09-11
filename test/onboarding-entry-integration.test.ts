@@ -254,7 +254,7 @@ describe("real household creation enters guided setup", () => {
     expect(acceptedHouseholdOnboarding(writes.candidates.at(-1)!)?.state).toBe("offered");
 
     act(() => ([...document.querySelectorAll<HTMLButtonElement>(".hercules-setup button")].find(b=>b.textContent==="Close"))!.click());
-    act(() => button("More").click());
+    act(() => button("Settings & more").click());
     await waitFor(() => expect(container.textContent).toContain("This is a later Development reliability exercise, not household setup"));
     expect(container.textContent).toContain("Preview guided setup");
     expect(container.textContent).not.toContain("Prove recovery before week 1");

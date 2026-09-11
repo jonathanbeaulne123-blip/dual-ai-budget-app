@@ -33,6 +33,7 @@ export type LedgerCommand = {
   companionWardrobeVersion?: 1;
   companionWorkflowVersion?: 1;
   nativeCalendarVersion?: 1;
+  planDecisionVersion?: 1;
   id: string;
   householdId: string;
   environment: Environment;
@@ -83,7 +84,7 @@ export async function commandFromCapture(
     version: 2,
     accountHistoryVersion: 1,
     companionProfileVersion: 1,
-    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1,
+    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1,
     id,
     ...scope,
     observedSequence: input.observedRevision,
@@ -109,6 +110,7 @@ export function parseCommand(value: unknown): LedgerCommand {
   if (
     !c ||
     c.version !== 2 ||
+    (c.planDecisionVersion !== undefined && c.planDecisionVersion !== 1) ||
     (c.nativeCalendarVersion !== undefined && c.nativeCalendarVersion !== 1) ||
     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
     (c.companionWardrobeVersion !== undefined && c.companionWardrobeVersion !== 1) ||

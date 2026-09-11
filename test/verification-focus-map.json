@@ -3,6 +3,29 @@
   "mappings": [
     {
       "sources": [
+        "src/PlanStudio.tsx",
+        "src/PlanLensWorkbench.tsx",
+        "src/HouseholdLife.tsx",
+        "src/PlanBridgeEditor.tsx",
+        "src/PlanReflectionEditor.tsx",
+        "src/core/planProjection.ts",
+        "src/core/planLearning.ts",
+        "src/core/planSystem.ts"
+      ],
+      "tests": [
+        "test/plan-projection.test.ts",
+        "test/plan-life-contract.test.ts",
+        "test/plan-life-ui.test.ts",
+        "test/plan-system.test.ts",
+        "test/plan-hercules-worker.test.ts",
+        "test/fund-horizon.test.ts",
+        "test/hercules-action-ui.test.ts",
+        "test/ledger-experience.test.ts"
+      ],
+      "reason": "Scoped Plan evidence and dated conservation, distinct decision journeys, private coaching and scenario edits, exact shared agreement and command replay"
+    },
+    {
+      "sources": [
         "src/CadPad.tsx",
         "src/core/cadPad.ts",
         "src/AddSlideshow.tsx",

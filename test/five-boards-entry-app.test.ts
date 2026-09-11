@@ -131,7 +131,6 @@ vi.mock("../src/HerculesPro.tsx", async (importOriginal) => {
 
 import { App } from "../src/App.tsx";
 import { financialAuditHash } from "../src/core/index.ts";
-import { subscribeOfficeIntent } from "../src/core/officeLayout.ts";
 import { completedExistingBooksHousehold } from "./fixtures/existing-books-onboarding.ts";
 
 
@@ -197,7 +196,12 @@ describe("five boards entry App integration", () => {
     const originalId = writes.stored!.householdId;
     const originalCount = writes.stored!.transactions.length;
     await mount();
-    act(() => button("More").click());
+    expect(button("Our Money")).toBeDefined();
+    expect(button("Our Path")).toBeDefined();
+    act(() => button("Together").click());
+    await waitFor(() => expect(container.querySelector('.household-together')).not.toBeNull());
+    expect(container.textContent).toContain("Small actions behind our agreed Plan");
+    act(() => button("Settings & more").click());
     await waitFor(() => expect(container.textContent).toContain("Investor preview"));
     act(() => button("Quick sample data").click());
     await waitFor(() => expect(document.body.textContent).toContain("future Calendar expenses"));
@@ -339,18 +343,15 @@ describe("five boards entry App integration", () => {
     expect(container.querySelector('[data-entry-section="account"] [aria-pressed="true"]')?.textContent).toContain("Visa");
   }, 30000);
 
-  it("Ask opens Home and requests the existing chalkboard without a ledger save", async () => {
+  it("Ask opens Together on the Shift Ask board without a ledger save", async () => {
     mobile = true; await mount();
-    const intents: unknown[] = [];
-    const unsubscribe = subscribeOfficeIntent(intent => intents.push(intent));
     const writesBefore = writes.candidates.length;
-    try {
-      await act(async () => button("Open Ask").click());
-      expect(container.querySelector('[data-ledger-tab="home"]')).not.toBeNull();
-      expect(container.querySelector("[data-add-slideshow]")).toBeNull();
-      expect(intents).toContainEqual({ type: "expand", id: "chalkboard" });
-      expect(writes.candidates.length).toBe(writesBefore);
-    } finally { unsubscribe(); }
+    await act(async () => button("Open Ask").click());
+    expect(container.querySelector('[data-ledger-tab="together"]')).not.toBeNull();
+    expect(container.querySelector("[data-add-slideshow]")).toBeNull();
+    expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false);
+    expect(container.querySelector('.shared-boards [role="tab"][aria-selected="true"]')?.textContent).toBe("Shift Ask");
+    expect(writes.candidates.length).toBe(writesBefore);
   }, 30000);
 
   it.each([true, false])("Plan uses hero, Categories, sit-down and Kitty Banks DOM order (mobile=%s)", async phone => {
