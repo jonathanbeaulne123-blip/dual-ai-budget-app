@@ -749,6 +749,74 @@ export type HouseholdLedgerNames = {
 export type GoalStatus = "open" | "retired" | "unfunded";
 
 export type KittyGlaze = "cream" | "sea-glass" | "terracotta" | "midnight" | "rose";
+/** Kitty Bank Studio (2026-09-11): sculpted, painted and fired pieces. Shared through the household like `glaze`. Cosmetic only; never money. */
+export type KittyBody = "round" | "pear" | "loaf" | "tall" | "bean";
+export type KittyHead = "round" | "wedge" | "chubby" | "heart";
+export type KittyEars = "pointed" | "round" | "folded" | "tufted" | "none";
+export type KittyEyes = "open" | "happy" | "wide" | "sleepy";
+export type KittyMouth = "smile" | "w" | "tongue" | "grin" | "serene";
+export type KittyWhiskers = "short" | "long" | "curly" | "none";
+export type KittyTail = "curl" | "up" | "wrap" | "none";
+export type KittyNose = "button" | "heart" | "tiny";
+export type KittyPart = "body" | "head" | "earL" | "earR" | "tail" | "paws";
+export type KittyAnchor =
+  | "forehead" | "leftCheek" | "rightCheek" | "chin" | "chest" | "belly" | "back"
+  | "leftFlank" | "rightFlank" | "rump" | "leftEar" | "rightEar" | "tailTip";
+export type KittyStampKind = "heart" | "star" | "paw" | "fish" | "moon" | "flower" | "bolt" | "initial";
+export type KittyTool = "brush" | "marker" | "sponge" | "eraser";
+export type KittySculptV1 = {
+  body: KittyBody;
+  /** Four lathe handle radii (belly, waist, shoulder, neck), 0.55..1.15 — the "thrown" silhouette. */
+  profile: [number, number, number, number];
+  head: KittyHead;
+  ears: KittyEars;
+  eyes: KittyEyes;
+  mouth: KittyMouth;
+  whiskers: KittyWhiskers;
+  tail: KittyTail;
+  nose: KittyNose;
+};
+export type KittyStrokeV1 = {
+  part: KittyPart;
+  tool: KittyTool;
+  color: string;
+  size: number;
+  opacity: number;
+  mirror: boolean;
+  /** Flat u,v pairs in 0..1, quantized to 3 decimals. */
+  pts: number[];
+};
+export type KittyStampV1 = {
+  id: string;
+  anchor: KittyAnchor;
+  kind: KittyStampKind;
+  color: string;
+  size: number;
+  rotation: number;
+  text?: string;
+};
+export type KittyPaintV1 = {
+  /** Dip colour: a KittyGlaze name or a hex from the studio palette. */
+  base: KittyGlaze | string;
+  parts: Partial<Record<KittyPart, string>>;
+  strokes: KittyStrokeV1[];
+  stamps: KittyStampV1[];
+};
+export type KittyPieceV1 = {
+  id: string;
+  createdAt: string;
+  /** Fired pieces are final. Only a draft (firedAt null) may change. */
+  firedAt: string | null;
+  firedBy?: string | null;
+  sculpt: KittySculptV1;
+  paint: KittyPaintV1;
+};
+export type KittyStudioV1 = {
+  version: 1;
+  draft: KittyPieceV1 | null;
+  /** Immutable shelf, newest last, at most six. */
+  fired: KittyPieceV1[];
+};
 export type GoalEnvelope = {
   version: 1;
   kind: "protect" | "prepare" | "build";
@@ -757,6 +825,8 @@ export type GoalEnvelope = {
   glaze: KittyGlaze;
   /** Archival affects visibility only. Existing money and dependency claims remain. */
   archivedAt: string | null;
+  /** Optional studio pieces. Absent on legacy banks. */
+  studio?: KittyStudioV1;
 };
 
 
