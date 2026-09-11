@@ -1,3 +1,5 @@
+**Guided Plan preparation — local implementation (2026-09-11):** a quieter Plan overview and Hercules conversation collect one answer at a time, explain why, preserve private progress and produce an exact draft review. Existing lens tools and independent agreement remain available. [Worksession and acceptance](worksessions/2026-09-11-plan-guided-conversation.md). Deployment and live product acceptance remain open.
+
 Current local Plan work: [Household Fund life Plan — D-242 implementation and acceptance](briefs/HOUSEHOLD_FUND_LIFE_PLAN_IMPLEMENTATION.md), with numerical contracts, twelve-experience proof and retained live gates.
 
 **Hercules conversational app — implementation OPEN (2026-09-10):** shared capability awareness, confirmed command adapters, private checklist/receipt recovery and native event groundwork. Whole-app coverage and release acceptance remain open. [Coverage matrix](HERCULES_CAPABILITY_COVERAGE.md) · [Worksession](worksessions/2026-09-10-hercules-conversational-app.md).

@@ -10,7 +10,9 @@
         "src/PlanReflectionEditor.tsx",
         "src/core/planProjection.ts",
         "src/core/planLearning.ts",
-        "src/core/planSystem.ts"
+        "src/core/planSystem.ts",
+        "src/core/planGuide.ts",
+        "src/HerculesPlanGuide.tsx"
       ],
       "tests": [
         "test/plan-projection.test.ts",
@@ -20,7 +22,10 @@
         "test/plan-hercules-worker.test.ts",
         "test/fund-horizon.test.ts",
         "test/hercules-action-ui.test.ts",
-        "test/ledger-experience.test.ts"
+        "test/ledger-experience.test.ts",
+        "test/plan-guide.test.ts",
+        "test/plan-guide-ui.test.ts",
+        "test/hercules-actions.test.ts"
       ],
       "reason": "Scoped Plan evidence and dated conservation, distinct decision journeys, private coaching and scenario edits, exact shared agreement and command replay"
     },
