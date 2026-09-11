@@ -1,3 +1,4 @@
+import { personalCalendarUpdateAllowed } from "./core/personalCalendarAuthority.ts";
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
 import { previewQuickSampleScenario, type QuickSampleInput } from './core/quickSampleData.ts';
@@ -1144,6 +1145,7 @@ export function App() {
       if (memberPersonalPreferenceUpdateAllowed(current, result.household, who, commandKind)) return;
       throw new ValidationError("Only you can change your own Personal settings.");
     }
+    if (personalCalendarUpdateAllowed(current, result, who)) return;
     throw new ValidationError("That Personal change does not have a cloud-authority rule.");
   }
 

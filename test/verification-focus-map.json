@@ -3,6 +3,21 @@
   "mappings": [
     {
       "sources": [
+        "src/core/personalCalendarAuthority.ts",
+        "src/core/commands.ts"
+      ],
+      "tests": [
+        "test/personal-calendar-authority.test.ts",
+        "test/potential-expenses.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/ledger-sync-authority.test.ts",
+        "test/month-rehearsal-mainline.test.ts",
+        "test/household-fund.test.ts"
+      ],
+      "reason": "Personal Calendar cloud write boundary, ownership and canonical persistence"
+    },
+    {
+      "sources": [
         "src/Calendar.tsx",
         "src/calendar/google.ts",
         "scripts/check-google-calendar-reading.mjs",

@@ -1941,10 +1941,11 @@ export const postPotentialExpense = captureCommand("postPotentialExpense", funct
   row.transactionId = transactionId;
   row.postedAt = at;
   row.updatedAt = at;
-  return potentialExpenseResult(
-    commit(previous, next, "Calendar", `Posted ${row.title}`, posted.postedIds, posted.warnings, "postPotentialExpense"),
-    row,
-  );
+  const result = commit(previous, next, "Calendar", `Posted ${row.title}`, posted.postedIds, posted.warnings, "postPotentialExpense");
+  // Fund allocation also writes governed Shared fund facts. Like postEntry,
+  // this mixed-scope Confirm uses the normal ledger authority; only the receipt
+  // and plan remain in the owner's Personal envelope.
+  return input.funding ? result : potentialExpenseResult(result, row);
 });
 
 /**
