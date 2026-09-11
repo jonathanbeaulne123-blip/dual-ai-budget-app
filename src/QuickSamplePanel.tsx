@@ -15,7 +15,7 @@ export function QuickSamplePanel({ household, memberId, visibility, today, busy,
   return <div className="paper-panel sample-data-panel" data-testid="quick-sample-panel">
     <p className="kicker">Explore the everyday widgets</p>
     <h3>Quick sample data</h3>
-    <p className="muted">Fictional income and spending history, plus the same number of months of future Calendar expenses. Adds to this {visibility === "personal" ? "Personal" : "Shared"} ledger.</p>
+    <p className="muted">A fictional household story: steady pay, regular bills, an unexpected cost, then smaller outings and meal planning. Includes future Calendar expenses. Adds to this {visibility === "personal" ? "Personal" : "Shared"} ledger.</p>
     <div className="sample-data-fields">
       <label>History + future<select aria-label="Sample history" value={months} disabled={busy} onChange={e => { setMonths(Number(e.target.value)); setError(""); }}>
         {[3, 4, 5, 6].map(n => <option key={n} value={n}>{n} months each</option>)}
@@ -28,7 +28,7 @@ export function QuickSamplePanel({ household, memberId, visibility, today, busy,
     <p className="muted">Existing entries stay. Fictional entries change this account’s balance after Confirm. Future expenses stay planned until posted. If you already added history, this adds only the missing future plans. One small set per person and ledger view.</p>
     <button className="primary" disabled={busy || !selected} onClick={() => {
       try {
-        const input = { today, months, seed: freshDemoSeed(), memberId, accountId: selected, visibility };
+        const input: QuickSampleInput = { storyVersion: 1, today, months, seed: freshDemoSeed(), memberId, accountId: selected, visibility };
         onReview(input, previewQuickSampleScenario(household, input)); setError("");
       } catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
     }}>Quick sample data</button>

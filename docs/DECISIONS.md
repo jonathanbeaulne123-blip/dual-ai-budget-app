@@ -1,3 +1,9 @@
+## Coherent Quick sample story — 2026-09-11
+
+Quick sample reviews now select an explicit story version: stable twice-monthly pay, regular bills and weekly spending, an unexpected dental cost in the preceding month, then lower grocery/discretionary spending and an unposted follow-up. Date-keyed variation stays consistent within the reviewed story month. Existing categories determine coverage; skipped patterns are disclosed instead of misclassified. The same posted rows and Calendar plans supply Home, default Plan category actuals, Books and Hercules; an existing Fund shows account/shape context without inventing Fund cash, reserves, contributions or settlement claims. Unconfigured Fund and versioned Plan retain honest setup states.
+
+Keep omitted-version confirmations and existing-history supplementation on their original generator. The story remains in the selected Development household and scope, uses the dedicated preparation worker and normal reviewed acceptance/Final Confirm/Undo, and never creates a household. Bounds: 103 history entries and 91 future expenses at six months. [Local evidence and limits](worksessions/2026-09-11-quick-sample-story.md).
+
 ## Hercules Development release controls — 2026-09-10
 
 Jonathan authorized release of the complete companion after reviewing slice-6 limits. Chat, discovery and dressing-room presentation can each be disabled by an independent build setting while compatible private profile/gallery writers and validators remain active. Memory review/forget remains reachable when conversation is paused. Never revert to a server that drops new private fields. Explicit Calendar Move takes precedence over a retained Hercules bill source. [Release record](worksessions/2026-09-10-hercules-release.md).

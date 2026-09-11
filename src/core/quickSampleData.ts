@@ -5,6 +5,8 @@ import { createDemoRandom } from "./demoRandom.ts";
 import { JOINT, ValidationError, type Household, type CommitResult } from "./types.ts";
 
 export type QuickSampleInput = {
+  /** Omitted means the original replay contract. New reviews explicitly select v1. */
+  storyVersion?: 1;
   today: string;
   months: number;
   seed: number;
@@ -87,6 +89,7 @@ const futureSamplePrefix = "Fictional sample plan · ";
 
 /** V2 is a separate command: pending V1 confirmations must replay unchanged. */
 export function previewQuickSampleScenario(h: Household, input: QuickSampleInput) {
+  if (input.storyVersion !== undefined && input.storyVersion !== 1) throw new ValidationError("Unsupported sample story version.");
   const today = input.today.trim();
   parseDateKey(today);
   const currentMonth = monthKeyFromDateKey(today);
@@ -99,17 +102,19 @@ export function previewQuickSampleScenario(h: Household, input: QuickSampleInput
   // The legacy pure generator validates the actor, catalog, scope and bounds.
   const templateHousehold = { ...h, transactions: [], kitchen: { ...h.kitchen, books: { ...h.kitchen.books, closedMonths: existing ? [] : h.kitchen.books.closedMonths } } };
   const history = previewQuickSampleData(templateHousehold, { ...input, today: `${currentMonth}-28` });
-  const rows = existing ? [] : history.rows.filter(r => r.date <= today);
+  let rows = existing ? [] : history.rows.filter(r => r.date <= today);
   const endMonth = shiftMonthKey(currentMonth, input.months);
   const [year, month] = endMonth.split("-").map(Number);
   const lastDay = new Date(Date.UTC(year!, month!, 0)).getUTCDate();
   const futureEnd = `${endMonth}-${String(Math.min(Number(today.slice(8)), lastDay)).padStart(2, "0")}`;
   const futureTemplates = previewQuickSampleData({ ...templateHousehold, kitchen: { ...templateHousehold.kitchen, books: { ...templateHousehold.kitchen.books, closedMonths: [] } } }, { ...input, today: `${endMonth}-28` });
-  const plans: Parameters<typeof addPotentialExpense>[1][] = [...history.rows, ...futureTemplates.rows]
+  const story = input.storyVersion === 1 && !existing ? quickSampleStory(h, input, history.firstDate, futureEnd) : null;
+  if (story) rows = existing ? [] : story.rows.filter(r => r.date <= today);
+  const plans: Parameters<typeof addPotentialExpense>[1][] = (story?.rows ?? [...history.rows, ...futureTemplates.rows])
     .filter(r => r.type === "expense" && r.date > today && r.date <= futureEnd)
     .map(r => ({ date: r.date, title: (r.note ?? "Fictional sample · Expense").replace("Fictional sample · ", futureSamplePrefix), amount: r.amount,
       accountId: input.accountId, subcategoryId: r.subcategoryId, splits: r.splits, createdBy: input.memberId, visibility: input.visibility }));
-  return { rows, plans, existing, firstDate: history.firstDate, lastDate: today, futureEnd,
+  return { rows, plans, existing, storySummary: story?.summary ?? null, firstDate: history.firstDate, lastDate: today, futureEnd,
     incomeCents: rows.filter(r => r.type === "income").reduce((s, r) => s + Math.round(Number(r.amount) * 100), 0),
     expenseCents: rows.filter(r => r.type === "expense").reduce((s, r) => s + Math.round(Number(r.amount) * 100), 0),
     plannedCents: plans.reduce((s, p) => s + Math.round(Number(p.amount) * 100), 0) };
@@ -131,3 +136,71 @@ export const addQuickSampleScenario = captureCommand("addQuickSampleScenario", f
   }
   return { household: next, postedIds, warnings: [], undo: { id: crypto.randomUUID(), label: `Add ${input.months} months of fictional history and future plans`, snapshot: h, postedIds, actorMemberId: input.memberId, commandKind: "addQuickSampleScenario" } };
 });
+
+
+/** A bounded household arc. Randomness belongs to a dated occurrence, never to
+ * iteration order: within a reviewed story month, the same bill is identical
+ * on either side of today's cut. The input today anchors that story for replay. */
+function quickSampleStory(h: Household, input: QuickSampleInput, firstDate: string, futureEnd: string) {
+  const categories = h.categories.filter(c => c.active && c.recordType === "category");
+  const incomes = categories.filter(c => c.transactionType === "income");
+  const income = incomes.find(c => c.incomeStability === "fixed") ?? incomes[0]!;
+  const expenses = categories.filter(c => c.transactionType === "expense");
+  const currentMonth = monthKeyFromDateKey(input.today.trim());
+  const setbackMonth = shiftMonthKey(currentMonth, -1);
+  const rows: Parameters<typeof postEntry>[1][] = [];
+  const missing: string[] = [];
+  const patterns = [
+    { match: /rent|housing/i, label: "Rent", base: 185000, days: [1], variation: 0 },
+    { match: /electric|utilities/i, label: "Electric bill", base: 10500, days: [5], variation: .06 },
+    { match: /grocer/i, label: "Weekly groceries", base: 12500, days: [3, 10, 17, 24], variation: .06 },
+    { match: /coffee|lunch/i, label: "Coffee & lunches", base: 3200, days: [4, 11, 18, 25], variation: .08 },
+    { match: /transit|fuel|transport/i, label: "Transport", base: 6500, days: [8, 22], variation: .05 },
+    { match: /fun|dining|entertain/i, label: "Evening out", base: 12500, days: [12, 26], variation: .08 },
+    { match: /phone/i, label: "Phone bill", base: 8500, days: [20], variation: 0 },
+  ].map(p => {
+    const category = expenses.find(c => p.match.test(c.name));
+    if (!category) missing.push(p.label);
+    return { ...p, category };
+  });
+  const dental = expenses.find(c => /dental/i.test(c.name));
+  if (!dental) missing.push("Dental visit and follow-up");
+  const jitter = (key: string) => createDemoRandom(input.seed, `quick-story-v1:${key}`)();
+  const pay = 205000 + Math.round(jitter("pay") * 150) * 100;
+  const add = (month: string, day: number, cents: number, type: "income" | "expense", categoryId: string, note: string) => {
+    const date = `${month}-${String(day).padStart(2, "0")}`;
+    if (date < firstDate || date > futureEnd) return;
+    rows.push({ date, type, amount: (cents / 100).toFixed(2), accountId: input.accountId,
+      subcategoryId: categoryId, note: `Fictional sample · ${note}`, source: "manual",
+      sourceId: `quick-sample-v1:${input.memberId}:${input.visibility}`, createdBy: input.memberId,
+      visibility: input.visibility, confirmDuplicate: true,
+      splits: [{ party: input.visibility === "personal" ? input.memberId : JOINT, amountCents: cents }],
+    });
+  };
+  for (let month = firstDate.slice(0, 7); month <= futureEnd.slice(0, 7); month = shiftMonthKey(month, 1)) {
+    // Two equal take-home pays; no invented second member, employer or shift.
+    for (const day of [1, 15]) add(month, day, pay, "income", income.id, "Regular take-home pay");
+    const recovering = month >= currentMonth;
+    for (const p of patterns) {
+      if (!p.category) continue;
+      const groceries = p.label === "Weekly groceries";
+      const discretionary = p.label === "Coffee & lunches" || p.label === "Evening out";
+      const factor = groceries ? (month === setbackMonth ? 1.16 : recovering ? .88 : 1)
+        : discretionary && recovering ? .55 : 1;
+      const season = p.label === "Electric bill" && ["12", "01", "02", "07", "08"].includes(month.slice(5)) ? 1.18 : 1;
+      for (const day of p.days) {
+        const cents = Math.round(p.base * factor * season * (1 + (jitter(`${month}:${day}:${p.label}`) * 2 - 1) * p.variation));
+        const note = groceries && recovering ? "Weekly groceries — meal plan" : discretionary && recovering ? `${p.label} — smaller budget` : p.label;
+        add(month, day, cents, "expense", p.category.id, note);
+      }
+    }
+    if (dental && month === setbackMonth) add(month, 19, 145000, "expense", dental.id, "Unexpected dental treatment");
+    if (dental && month === shiftMonthKey(currentMonth, 1)) add(month, 19, 18000, "expense", dental.id, "Dental follow-up — planned after treatment");
+  }
+  rows.sort((a, b) => a.date.localeCompare(b.date) || (a.type === b.type ? 0 : a.type === "income" ? -1 : 1));
+  const has = (label: string) => patterns.some(p => p.label === label && p.category);
+  const recovery = [has("Weekly groceries") ? "meal planning" : "", has("Coffee & lunches") || has("Evening out") ? "smaller outings" : ""].filter(Boolean);
+  const bills = patterns.filter(p => p.category && ["Rent", "Electric bill", "Phone bill"].includes(p.label)).map(p => p.label.toLowerCase());
+  const summary = `Steady twice-monthly take-home pay.${bills.length ? ` Regular ${bills.join(", ")}.` : ""} ${dental ? `An unexpected dental bill in ${setbackMonth}, followed by a planned check in ${shiftMonthKey(currentMonth, 1)}. ` : ""}${recovery.length ? `From ${currentMonth}, ${recovery.join(" and ")} reduce spending. ` : ""}Future expenses are estimates; future pay is not posted or promised.${missing.length ? ` Skipped because matching categories are missing: ${missing.join(", ")}.` : ""}${input.visibility === "household" ? " Fund contributions and card funding stay unchanged; an account surplus is not Fund cash." : " This story stays in your Personal ledger."}`;
+  return { rows, summary };
+}
