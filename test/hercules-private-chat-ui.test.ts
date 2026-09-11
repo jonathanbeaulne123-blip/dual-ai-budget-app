@@ -35,6 +35,11 @@ describe("private chat pending continuity", () => {
     const onCommand = vi.fn<KitchenCommand>().mockImplementation(() => new Promise(() => {}));
     await act(async () => root.render(createElement(HerculesPresence, { household: h, today: "2026-09-10", tab: "ledger", adding: false, memberId: "MEM-001", view: "household", onOpenAdd: vi.fn(), onGo: vi.fn(), onLedger: vi.fn(), onCompanionCommand: onCommand, onOpenSource: vi.fn() })));
     await act(async () => (host.querySelector('.hercules-pill') as HTMLButtonElement).click());
+    const easyRead = host.querySelector<HTMLButtonElement>('.hercules-focus-body .hercules-conversation-content > .hercules-easy-read-toggle')!;
+    expect(easyRead).not.toBeNull();
+    await act(async () => easyRead.click());
+    expect(easyRead.getAttribute('aria-pressed')).toBe('true');
+    await act(async () => easyRead.click());
     const composer = host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement;
     for (const options of [{ shiftKey: true }, { isComposing: true }, { repeat: true }]) {
       const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...options });
