@@ -10,7 +10,8 @@ export const COMPANION_LIMITS = Object.freeze({
 });
 export type CompanionScope = { environment: Environment; householdId: string; memberId: string };
 export type CompanionHouseholdScope = Omit<CompanionScope, "memberId">;
-export const COMPANION_SLOTS = ["head", "eyewear", "neckwear", "body", "outerwear", "charm"] as const;
+/** Additive: "tail" widened the slot list on 2026-09-11. Older looks without it decode unchanged. */
+export const COMPANION_SLOTS = ["head", "eyewear", "neckwear", "body", "outerwear", "charm", "tail"] as const;
 export type CompanionSlot = typeof COMPANION_SLOTS[number];
 export type CosmeticSelection = { itemId: string; variantId: string };
 export type LookV1 = {

@@ -34,7 +34,7 @@ export function HerculesFigure({
   size = 96,
   title,
   children,
-  bodyLayer, headLayer, neckLayer,
+  bodyLayer, headLayer, neckLayer, tailLayer,
   rigSnapshot,
   rigTransitionMs,
 }: {
@@ -49,6 +49,8 @@ export function HerculesFigure({
   bodyLayer?: ReactNode;
   headLayer?: ReactNode;
   neckLayer?: ReactNode;
+  /** Wardrobe tail pieces (ribbons, bells) ride inside the tail group so poses carry them. */
+  tailLayer?: ReactNode;
   /** When set, per-part transforms come from the rig engine instead of CSS pose classes. */
   rigSnapshot?: RigSnapshot;
   /** Browser interpolation window between engine-issued snapshots. */
@@ -108,6 +110,7 @@ export function HerculesFigure({
             />
             <path d="M170 88 C180 104 182 126 172 144" strokeWidth="1.2" opacity="0.38" />
             <path d="M182 96 C190 112 189 132 181 146" strokeWidth="1" opacity="0.22" />
+            {tailLayer}
           </g>
 
           <g className="herc-body" data-herc-part="body" style={styles ? part("body", styles) : undefined}>

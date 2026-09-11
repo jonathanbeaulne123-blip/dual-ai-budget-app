@@ -62,7 +62,7 @@ describe('Hercules dressing room recovery',()=>{
 describe('Complete wardrobe interactions',()=>{
  it('keeps all new and legacy SVG pieces inside their actual pose anchors',async()=>{
   const {FITTING_ITEMS}=await import('../src/wardrobe/catalogue.ts');
-  for(const item of FITTING_ITEMS)for(const pose of ['loaf','sit','walk'] as const){const look={...COZY_LOOK,selections:{[item.slot]:{itemId:item.id,variantId:item.variants[0]!}}};await act(async()=>root.render(createElement(FittingFigure,{look,pose})));const part=['neckwear','charm'].includes(item.slot)?'ruff':['head','eyewear'].includes(item.slot)?'head':'body';expect(host.querySelector(`.herc-${part} [data-fitting-item="${item.id}"]`),`${item.id}/${pose}`).not.toBeNull();}
+  for(const item of FITTING_ITEMS)for(const pose of ['loaf','sit','walk'] as const){const look={...COZY_LOOK,selections:{[item.slot]:{itemId:item.id,variantId:item.variants[0]!}}};await act(async()=>root.render(createElement(FittingFigure,{look,pose})));const part=['neckwear','charm'].includes(item.slot)?'ruff':['head','eyewear'].includes(item.slot)?'head':item.slot==='tail'?'tail':'body';expect(host.querySelector(`.herc-${part} [data-fitting-item="${item.id}"]`),`${item.id}/${pose}`).not.toBeNull();}
  });
  it('requires acknowledgement to wear, disables offline writes and retries the same uncertain identity',async()=>{
   const {catalogHousehold}=await import('../src/core/index.ts');const h=catalogHousehold();let finish!:(value:unknown)=>void;
