@@ -5,7 +5,8 @@ const results=[];const view=process.env.PROOF_VIEW??'household';
 let lastPage;
 try {
  for(const theme of (process.env.PROOF_THEME ? [process.env.PROOF_THEME] : ['classic','taylor','newfoundland'])) {
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  for(const width of (process.env.PROOF_WIDTH ? [Number(process.env.PROOF_WIDTH)] : [390,1440])) {
+  const context=await browser.newContext({viewport:{width,height:width<720?844:1000},reducedMotion:'reduce'});
   const page=await context.newPage();lastPage=page;page.setDefaultTimeout(15000);
   const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.log('pageerror',e.stack);});page.on('response',r=>{if(r.status()>=400)console.log('badresponse',r.status(),r.url());});page.on('requestfailed',r=>console.log('requestfailed',r.url(),r.failure()?.errorText));
   await context.route('**/*',route=>route.request().url().startsWith('http://127.0.0.1:5191')||route.request().url().startsWith('data:')?route.continue():route.abort());
@@ -14,7 +15,6 @@ try {
   await context.route('**/pglite.wasm*',route=>route.fulfill({path:'node_modules/@electric-sql/pglite/dist/pglite.wasm',contentType:'application/wasm'}));
   await page.goto(`http://127.0.0.1:5191/test/browser/category-split-app.html?theme=${theme}&view=${view}`);
   await page.getByRole('button',{name:'Add money',exact:true}).waitFor({timeout:90000});
-  for(const width of (process.env.PROOF_WIDTH ? [Number(process.env.PROOF_WIDTH)] : [390,1440])) {
    console.log(theme,width);
    await page.setViewportSize({width,height:width<720?844:1000});
    const nav=page.locator('[data-ledger-nav]'),fab=page.getByRole('button',{name:'Add money',exact:true});
@@ -25,7 +25,8 @@ try {
    await fab.click();await page.getByRole('menuitem',{name:'Add expense',exact:true}).click();
    const sheet=page.locator('[data-add-slideshow="expense"]');
    while(await sheet.getAttribute('data-add-slide') !== 'amount')await sheet.getByRole('button',{name:'Back',exact:true}).click();
-   await sheet.getByRole('button',{name:'Type amount',exact:true}).click();
+   const typeAmount=sheet.getByRole('button',{name:'Type amount',exact:true});
+   if(await typeAmount.isVisible())await typeAmount.click();
 
    await sheet.locator('.cad-pad-input').fill('130.01');
    console.log('amount entered');await sheet.locator('.cad-pad-enter').click();console.log('category opened');
@@ -48,12 +49,9 @@ try {
    const overflow=await sheet.evaluate(el=>el.scrollWidth>el.clientWidth+1);
    if(overflow)throw new Error('Overflow');
    await sheet.getByRole('button',{name:'Close',exact:true}).click();
-   await page.reload();await page.getByRole('button',{name:'Add money',exact:true}).waitFor();
-   // Reset only this synthetic browser context before the next viewport.
-   await page.evaluate(()=>localStorage.clear());await page.reload();await page.getByRole('button',{name:'Add money',exact:true}).waitFor();
    results.push({view,theme,width,offset,overflow,errors:[...errors]});
-  }
   await context.close();
+  }
  }
  await writeFile(`artifacts/category-split/continue-results-${view}.json`,JSON.stringify(results,null,2));
  const errors=[...new Set(results.flatMap(r=>r.errors))];console.log(JSON.stringify({cases:results.length,errors}));if(errors.length)throw new Error('Browser errors recorded');

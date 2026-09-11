@@ -1,0 +1,50 @@
+[
+  {
+    "view": "household",
+    "theme": "classic",
+    "width": 390,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "household",
+    "theme": "classic",
+    "width": 1440,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "household",
+    "theme": "taylor",
+    "width": 390,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "household",
+    "theme": "taylor",
+    "width": 1440,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "household",
+    "theme": "newfoundland",
+    "width": 390,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "household",
+    "theme": "newfoundland",
+    "width": 1440,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  }
+]
