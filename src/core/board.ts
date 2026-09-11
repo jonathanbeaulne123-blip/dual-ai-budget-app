@@ -29,6 +29,7 @@ export type OverlayEvent = {
   memberId: string;
   memberColor: string;
   hearthOwned: boolean;
+  calendarId?: string;
 };
 
 export type BoardItem = {
@@ -39,6 +40,7 @@ export type BoardItem = {
   direction: "in" | "out" | "work" | "busy";
   kind: BoardKind;
   source: "event" | "recurrence" | "potential-expense" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
+  calendarId?: string;
   recurrenceId?: string;
   potentialExpenseId?: string;
   appointmentId?: string;
@@ -256,6 +258,7 @@ export function buildMonthBoard(
       direction: "busy",
       kind: "google",
       source: "google",
+      calendarId: overlay.calendarId,
       memberId: overlay.memberId,
       memberColor: overlay.memberColor,
       due: false,

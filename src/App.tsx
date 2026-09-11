@@ -70,6 +70,7 @@ import {
   copy,
   showsLedgerPurposeBanner,
   projectLedgerExperience,
+  calendarPresentation,
   restoreAcceptedSnapshot,
   setBudget,
   nameHouseholdLedgers,
@@ -3334,6 +3335,10 @@ export function App() {
   const experience = useMemo(
     () => (personalSource && memberId ? projectLedgerExperience(personalSource, memberId, view, today) : null),
     [personalSource, memberId, view, today],
+  );
+  const calendarHousehold = useMemo(
+    () => personalSource && memberId ? calendarPresentation(personalSource, memberId, view) : null,
+    [personalSource, memberId, view],
   );
   const scopedHousehold = experience && experience.ok ? experience.scopedHousehold : visible;
   const dashboard = useMemo(
@@ -6796,7 +6801,7 @@ export function App() {
         <DeferredSurface label="Calendar">
         <DeferredCalendarPage
           sourceFocus={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null}
-          household={displayHousehold}
+          household={calendarHousehold ?? displayHousehold}
           view={view}
           today={today}
           environment={environment}

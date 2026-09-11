@@ -1,3 +1,4 @@
+import { calendarItemVisible, calendarLayers, loadCalendarVisibility } from "./calendar/visibility.ts";
 import { CalendarBinding } from "./theme/CalendarArtwork.tsx";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import "./calendar-boards.css";
@@ -149,6 +150,7 @@ function CalendarPageScope(props: CalendarProps) {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
   const [readCalendars, setReadCalendars] = useState<string[]>([]);
+  const [calendarSources, setCalendarSources] = useState<{ id: string; name: string }[]>([]);
   const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
   const [repeatingDraft, setRepeatingDraft] = useState<RepeatingDraft | null>(null);
   const [workSettlement, setWorkSettlement] = useState<WorkOwedFact | null>(null);
@@ -158,6 +160,16 @@ function CalendarPageScope(props: CalendarProps) {
   const [calendarAnnouncement, setCalendarAnnouncement] = useState("");
   const scopeKey = `${environment}:${household.householdId}:${props.memberId}:${props.view ?? "household"}`;
   const asyncScope = useAsyncScope(scopeKey);
+  const visibilityKey = `hearth:calendar-visibility:v1:${scopeKey}`;
+  const [visibility, setVisibility] = useState(() => loadCalendarVisibility(visibilityKey));
+  function toggleLayer(key: string) {
+    setVisibility(previous => {
+      const next = { ...previous, [key]: previous[key] === false };
+      try { localStorage.setItem(visibilityKey, JSON.stringify(next)); } catch { /* Keep this session usable if storage is unavailable. */ }
+      return next;
+    });
+  }
+
 
   useEffect(() => {
     if (!props.openPotentialEditorId) return;
@@ -184,7 +196,11 @@ function CalendarPageScope(props: CalendarProps) {
     setMobileAddDate(null);
   };
   const workFacts = useMemo(() => workOwedFacts(household, today), [household, today]);
-  const selectedDay = board.days.find((day) => day.date === selected) ?? board.days.find((day) => day.isToday);
+  const visibleDays = useMemo(() => board.days.map(day => ({ ...day, items: day.items.filter(item => calendarItemVisible(item, visibility)) })), [board, visibility]);
+  const visibleUpcoming = useMemo(() => board.upcoming.filter(item => calendarItemVisible(item, visibility)), [board, visibility]);
+  const hiddenCount = board.days.reduce((count, day, index) => count + day.items.length - visibleDays[index]!.items.length, 0);
+  const selectedDay = visibleDays.find((day) => day.date === selected) ?? visibleDays.find((day) => day.isToday);
+  const repeatingHousehold = { ...household, accounts: household.accounts.filter(account => account.scope !== "personal"), goals: household.goals.filter(goal => goal.shared) };
   const due = household.recurrences.filter((item) => item.active && item.nextDate <= today);
   const duePotential = useMemo(() => duePotentialExpenses(household.potentialExpenses, today), [household.potentialExpenses, today]);
   const suggested = board.rhythms.filter((item) => item.status === "suggested");
@@ -280,6 +296,7 @@ function CalendarPageScope(props: CalendarProps) {
     let live = true;
     setOverlays([]);
     setReadCalendars([]);
+    setCalendarSources([]);
     setGoogleError("");
     if (!calendarGoogleOn || !accounts.length) {
       setGoogleBusy(false);
@@ -302,6 +319,7 @@ function CalendarPageScope(props: CalendarProps) {
       if (live) {
         setOverlays(items.overlays);
         setReadCalendars(items.calendars);
+        setCalendarSources(items.calendarSources ?? []);
         setGoogleError(items.errors.join(" "));
       }
     }).catch((caught) => {
@@ -446,14 +464,27 @@ function CalendarPageScope(props: CalendarProps) {
               <h2>{board.monthLabel}</h2>
               <button className="chip" onClick={() => changeMonth(1)} aria-label="Next month">›</button>
             </header>
-            {pane === "calendar" && monthTools}
+            {pane === "calendar" && <>
+              {monthTools}
+              <details className="calendar-month-tools">
+                <summary>Show on calendar{hiddenCount ? ` · ${hiddenCount} hidden` : ""}</summary>
+                <p className="muted">Choose what appears in the month, day list and upcoming list. Totals, heat, due reminders and the planning board still include all scheduled items. Choices are saved for this view on this device.</p>
+                <fieldset><legend>Hearth and Google entries</legend><div className="chips">
+                  {calendarLayers.map(([key, label]) => <label className="chip" key={key}><input type="checkbox" checked={visibility[key] !== false} onChange={() => toggleLayer(key)} /> {label}</label>)}
+                </div></fieldset>
+                {calendarSources.length > 0 && <fieldset><legend>Google calendars</legend><div className="chips">
+                  {calendarSources.map(source => <label className="chip" key={source.id}><input type="checkbox" checked={visibility[`google:${source.id}`] !== false} disabled={visibility.google === false} onChange={() => toggleLayer(`google:${source.id}`)} /> {source.name}</label>)}
+                </div></fieldset>}
+              </details>
+              {hiddenCount > 0 && <p className="muted" role="status">{hiddenCount} entries hidden by your calendar filters. Amounts include hidden entries.</p>}
+            </>}
             {pane === "board" && <p className="weight-note">{props.view === "personal" ? "My dates" : "Household dates"}</p>}
             {pane === "board" ? <CalendarWeight key={`${scopeKey}:${monthKey}`} days={weightDays} selected={selected} onSelect={setSelected}
               renderItem={({item, allowPost, scheduledDate}) => <DayRow
                 title={item.title} amountCents={item.amountCents} kind={item.kind}
                 due={item.due && (item.source === "recurrence" || item.source === "appointment" || item.source === "work-settlement")}
                 recurrenceId={allowPost && household.recurrences.some(row => row.id === item.recurrenceId && row.nextDate === item.date) ? item.recurrenceId : undefined}
-                appointmentId={allowPost ? item.appointmentId : undefined} rhythmKey={item.rhythmKey}
+                appointmentId={allowPost ? item.appointmentId : undefined} rhythmKey={props.view === "personal" ? undefined : item.rhythmKey}
                 today={today} household={household} busy={props.busy}
                 onAdopt={key => props.onCommand(current => adoptRhythm(current, key, today))}
                 onAskPost={props.onAskPost} standingFactOnly={props.onboardingStandingFactOnly}
@@ -466,7 +497,7 @@ function CalendarPageScope(props: CalendarProps) {
               {WEEKDAY_SHORT.map((label) => <span key={label}>{label}</span>)}
             </div>
             <div className="cal-grid">
-              {board.days.map((day, index) => {
+              {visibleDays.map((day, index) => {
                 const shown = day.items.slice(0, 3);
                 const extra = day.items.length - shown.length;
                 return (
@@ -598,7 +629,7 @@ function CalendarPageScope(props: CalendarProps) {
                   due={item.due && (item.source === "recurrence" || item.source === "appointment" || item.source === "work-settlement")}
                   recurrenceId={household.recurrences.some(row => row.id === item.recurrenceId && row.nextDate === item.date) ? item.recurrenceId : undefined}
                   appointmentId={item.appointmentId}
-                  rhythmKey={item.rhythmKey}
+                  rhythmKey={props.view === "personal" ? undefined : item.rhythmKey}
                   today={today}
                   household={household}
                   busy={props.busy}
@@ -623,11 +654,11 @@ function CalendarPageScope(props: CalendarProps) {
           {pane === "calendar" && <details className="card hearth-collapse calendar-upcoming">
             <summary>
               <span className="hearth-collapse-title">Coming up</span>
-              <span className="muted">{board.upcoming.length} in 21 days</span>
+              <span className="muted">{visibleUpcoming.length} in 21 days</span>
             </summary>
-            {board.upcoming.length === 0 ? (
-              <p className="muted">Quiet three weeks.</p>
-            ) : board.upcoming.map((item) => item.source === "potential-expense" && item.potentialExpenseId ? (
+            {visibleUpcoming.length === 0 ? (
+              <p className="muted">{board.upcoming.length ? "Upcoming entries are hidden by your filters." : "Quiet three weeks."}</p>
+            ) : visibleUpcoming.map((item) => item.source === "potential-expense" && item.potentialExpenseId ? (
               <PotentialExpenseRow key={`upcoming:${item.id}`}
                 plan={household.potentialExpenses.find((row) => row.id === item.potentialExpenseId)!}
                 today={today}
@@ -684,7 +715,7 @@ function CalendarPageScope(props: CalendarProps) {
           {repeatingDraft ? (
             <RepeatingForm
               key={repeatingDraft.id ?? "new-repeating"}
-              household={household}
+              household={repeatingHousehold}
               today={today}
               initial={repeatingDraft}
               busy={props.busy}
@@ -703,14 +734,15 @@ function CalendarPageScope(props: CalendarProps) {
                 type="button"
                 className="chip selected"
                 disabled={props.busy}
-                onClick={() => setRepeatingDraft(blankRepeatingDraft(household, today))}
+                onClick={() => setRepeatingDraft(blankRepeatingDraft(repeatingHousehold, today))}
               >
                 {props.onboardingStandingFactOnly ? copy("recurrences.add") : "Add repeating"}
               </button>
             </div>
           )}
 
-          {suggested.length > 0 && !repeatingDraft && (
+          {props.view === "personal" && <p className="muted">Repeating bills belong to Shared. Use a Personal potential expense for a private plan; review and confirm it when paid.</p>}
+          {props.view !== "personal" && suggested.length > 0 && !repeatingDraft && (
             <section className="card">
               <header>
                 <h2>Spotted in the ledger</h2>
@@ -734,7 +766,7 @@ function CalendarPageScope(props: CalendarProps) {
                     <button className="chip selected" disabled={props.busy} onClick={() => props.onCommand((current) => adoptRhythm(current, rhythm.key, today))}>
                       Adopt
                     </button>
-                    <button className="chip" disabled={props.busy} onClick={() => setRepeatingDraft({ ...blankRepeatingDraft(household, today), type: rhythm.type, note: rhythm.note, amount: (rhythm.amountCents / 100).toFixed(2), cadence: rhythm.cadence, nextDate: rhythm.nextDate, accountId: rhythm.accountId, subcategoryId: rhythm.subcategoryId, kind: rhythm.kind, kindLocked: true })}>Edit suggested reminder</button>
+                    <button className="chip" disabled={props.busy} onClick={() => setRepeatingDraft({ ...blankRepeatingDraft(repeatingHousehold, today), type: rhythm.type, note: rhythm.note, amount: (rhythm.amountCents / 100).toFixed(2), cadence: rhythm.cadence, nextDate: rhythm.nextDate, accountId: rhythm.accountId, subcategoryId: rhythm.subcategoryId, kind: rhythm.kind, kindLocked: true })}>Edit suggested reminder</button>
                     <button className="chip" disabled={props.busy} onClick={() => props.onCommand((current) => dismissRhythm(current, rhythm.key))}>
                       Not a bill
                     </button>

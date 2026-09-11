@@ -309,6 +309,24 @@ export function booksPresentationFloor(
   };
 }
 
+/** Calendar keeps scoped facts, with every account the actor may use for a plan. */
+export function calendarPresentation(household: Household, memberId: string, view: LedgerView): Household {
+  const scoped = applyPresentationScope(household, memberId, view);
+  const accounts = household.accounts.filter(account => account.scope !== "personal"
+    || (view === "personal" && account.ownerMemberId === memberId));
+  const accountIds = new Set(accounts.map(account => account.id));
+  return {
+    ...scoped,
+    accounts,
+    transactions: householdForView(household, memberId, view).transactions.filter(row => transactionCompilesAgainstAccounts(row, accountIds)),
+    // Repeating templates currently belong to the shared ledger. Personal plans
+    // use potentialExpenses, whose ownership survives private persistence.
+    recurrences: scoped.recurrences.filter(row => household.accounts.some(account => account.id === row.accountId && account.scope !== "personal")
+      && (!row.transferToAccountId || household.accounts.some(account => account.id === row.transferToAccountId && account.scope !== "personal"))
+      && (!row.goalId || household.goals.some(goal => goal.id === row.goalId && goal.shared))),
+  };
+}
+
 /** Personal Books includes household-visible rooms plus this member's rooms. */
 export function personalBooksFloor(household: Household, memberId: string): Household {
   return booksPresentationFloor(household, memberId, "personal");
