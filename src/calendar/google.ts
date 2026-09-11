@@ -143,7 +143,7 @@ export function disconnectGoogleAccount(environment: Environment, memberId: stri
   disconnectGoogle(environment, memberId, householdId);
 }
 
-export type GoogleCalendarRead = { overlays: OverlayEvent[]; calendars: string[]; errors: string[] };
+export type GoogleCalendarRead = { overlays: OverlayEvent[]; calendars: string[]; calendarSources: { id: string; name: string }[]; errors: string[] };
 type CalendarListEntry = { id: string; summary?: string; primary?: boolean; accessRole?: string; deleted?: boolean; hidden?: boolean };
 type ReadEvent = Parameters<typeof overlayFromGoogleEvent>[0] & { status?: string; end?: { date?: string; dateTime?: string } };
 
@@ -158,7 +158,7 @@ export async function readGoogleCalendars(input: {
   timeZone?: string;
   enabledServices?: Iterable<string>;
 }): Promise<GoogleCalendarRead> {
-  const result: GoogleCalendarRead = { overlays: [], calendars: [], errors: [] };
+  const result: GoogleCalendarRead = { overlays: [], calendars: [], calendarSources: [], errors: [] };
   const seen = new Set<string>();
   const timeZone = input.timeZone ?? TIMEZONE;
   for (const account of input.accounts) {
@@ -211,11 +211,12 @@ export async function readGoogleCalendars(input: {
                     const id = `${encodeURIComponent(calendar.id)}:${event.id}:${date}`;
                     if (seen.has(id)) continue;
                     seen.add(id);
-                    result.overlays.push({ id, date, title: event.summary?.trim() || "Google event", memberId: account.memberId,
+                    result.overlays.push({ id, calendarId: calendar.id, date, title: event.summary?.trim() || "Google event", memberId: account.memberId,
                       memberColor: input.memberColor(account.memberId), hearthOwned: event.extendedProperties?.private?.hearth === "1" });
                   }
                 }
                 result.calendars.push(name);
+                if (!result.calendarSources.some(source => source.id === calendar.id)) result.calendarSources.push({ id: calendar.id, name });
               } catch (error) { result.errors.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); }
             }
           }));

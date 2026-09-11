@@ -85,3 +85,25 @@ describe("Calendar Google connection recovery", () => {
     expect(host.textContent).not.toContain("Reading Google calendars");
   });
 });
+
+ it("remembers per-calendar filters only in their member and view without ledger or Google writes", async () => {
+   const p = props(); seed(p.household.householdId);
+   const fetch = vi.fn(async (url: string) => json(url.includes("calendarList")
+     ? { items: [{ id: "primary", summary: "Own dates" }, { id: "shared", summary: "Shared dates" }] }
+     : { items: [{ id: "same", summary: url.includes("/shared/") ? "Shared dinner" : "Private outing", start: { date: p.today } }] }));
+   setGoogleHttpFetch(fetch);
+   await act(async () => root.render(createElement(CalendarPage, p)));
+   const toggle = () => [...host.querySelectorAll("label")].find(label => label.textContent?.includes("Own dates"))!.querySelector("input")!;
+   const day = () => host.querySelector(`[data-calendar-date="${p.today}"]`)!;
+   expect(day().getAttribute("aria-label")).toContain("Private outing");
+   const calls = fetch.mock.calls.length;
+   await act(async () => toggle().click());
+   expect(day().getAttribute("aria-label")).not.toContain("Private outing");
+   expect(day().getAttribute("aria-label")).toContain("Shared dinner");
+   expect(fetch).toHaveBeenCalledTimes(calls);
+   expect(p.onCommand).not.toHaveBeenCalled();
+   await act(async () => root.render(createElement(CalendarPage, { ...p, view: "personal" })));
+   expect(toggle().checked).toBe(true);
+   await act(async () => root.render(createElement(CalendarPage, p)));
+   expect(toggle().checked).toBe(false);
+ });

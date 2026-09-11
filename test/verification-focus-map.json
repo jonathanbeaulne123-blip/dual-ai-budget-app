@@ -5,7 +5,11 @@
       "sources": [
         "src/Calendar.tsx",
         "src/calendar/google.ts",
-        "scripts/check-google-calendar-reading.mjs"
+        "scripts/check-google-calendar-reading.mjs",
+        "src/calendar/visibility.ts",
+        "src/core/board.ts",
+        "src/core/ledgerExperience.ts",
+        "scripts/check-calendar-filters.mjs"
       ],
       "tests": [
         "test/google-calendar-reading.test.ts",
@@ -14,7 +18,10 @@
         "test/google-bridge-scope.test.ts",
         "test/hercules-calendar-integration.test.ts",
         "test/app-startup-p1.test.ts",
-        "test/month-rehearsal-mainline.test.ts"
+        "test/month-rehearsal-mainline.test.ts",
+        "test/calendar-personal-filters.test.ts",
+        "test/ledger-experience.test.ts",
+        "test/potential-expenses.test.ts"
       ],
       "reason": "Google calendar read permissions, pagination, current-member credential isolation, connection recovery and Calendar integration"
     },
