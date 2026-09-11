@@ -1,0 +1,7 @@
+{
+  "command": "node node_modules/vitest/vitest.mjs run test/five-boards-entry-app.test.ts --maxWorkers=1 --testTimeout=30000",
+  "passed": 15,
+  "failed": 0,
+  "durationSeconds": 161.39,
+  "applicationOrTestChangesAfterCombinedFailure": false
+}

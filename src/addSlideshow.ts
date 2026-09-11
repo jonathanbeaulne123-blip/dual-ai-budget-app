@@ -10,6 +10,9 @@ export type AddFormFields = {
   amount: string;
   accountId: string;
   subcategoryId: string;
+  categorySplitEnabled?: boolean;
+  secondSubcategoryId?: string;
+  categoryFirstPercent?: string;
   note: string;
   place: string;
   who: string;
