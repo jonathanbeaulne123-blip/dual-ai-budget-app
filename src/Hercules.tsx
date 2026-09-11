@@ -18,7 +18,7 @@ import { companionFor, companionConversation, commitCompanion, explicitCompanion
 import type { CompanionIntentV1, CompanionOperation, CompanionPreferenceValue, CompanionSourceReference } from "./core/herculesCompanionContracts.ts";
 import { useDialog, useModalActive } from "./useDialog.ts";
 import { HerculesSetup, type HerculesSetupProps } from "./HerculesSetup.tsx";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type PointerEvent } from "react";
 import {
   attackStand,
   attackTarget,
@@ -342,12 +342,18 @@ export function HerculesPresence({
   const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
   const actionRef=useRef<HerculesActionHandle>(null);
+  const [actionPanelReady,setActionPanelReady]=useState(0);
+  const notifyActionPanelReady=useCallback(()=>setActionPanelReady(version=>version+1),[]);
   const composerRef=useRef<HTMLTextAreaElement>(null);
+  const chatReturnFocus=useRef<HTMLElement|null>(null);
   useEffect(() => {
     if (!planOpenRequest) return;
     const expectedScope = `${household.environment}:${household.householdId}:${memberId}:${view}:${actionIdentity ?? memberId}`;
     if (planOpenRequest.scopeKey !== expectedScope || planOpenRequest.isCurrent?.() === false || activityBlocked || adding) { onPlanOpenConsumed?.(planOpenRequest.id); return; }
+    if (!open && document.activeElement instanceof HTMLElement) chatReturnFocus.current=document.activeElement;
+    if (phoneShell) setMobileFocus(true);
     openChatFromBeg(true);
+    if(planOpenRequest.proposal && actionService && !actionRef.current) return;
     const frame = requestAnimationFrame(() => {
       if (planOpenRequest.isCurrent?.() === false) { onPlanOpenConsumed?.(planOpenRequest.id); return; }
       const fallback = planOpenRequest.proposal && (!actionService || !actionRef.current) ? " The action review is unavailable here. Help me find the existing reviewed action in Hearth." : "";
@@ -357,7 +363,7 @@ export function HerculesPresence({
       onPlanOpenConsumed?.(planOpenRequest.id);
     });
     return () => cancelAnimationFrame(frame);
-  }, [planOpenRequest, household.environment, household.householdId, memberId, view, actionIdentity, activityBlocked, adding]);
+  }, [planOpenRequest, household.environment, household.householdId, memberId, view, actionIdentity, activityBlocked, adding, actionPanelReady]);
 
   const modelPending=useRef<number|null>(null);
   const [chatExpanded,setChatExpanded]=useState(false);
@@ -467,7 +473,17 @@ export function HerculesPresence({
   const showTalk = Boolean(open && !setupSelected && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding && !setupSelected;
-  const focusDialogRef = useDialog(focusShellOpen, closeChat, () => document.querySelector<HTMLButtonElement>(".hercules-pill"));
+  const focusDialogRef = useDialog(focusShellOpen, closeChat, () => document.querySelector<HTMLButtonElement>(".plan-conversation-invitation button") ?? document.querySelector<HTMLButtonElement>(".hercules-pill"));
+  useEffect(() => {
+    if (!open || focusShellOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || (event.target as Element | null)?.closest?.('[data-dialog-escape-boundary]')) return;
+      closeChat();
+      document.querySelector<HTMLButtonElement>('.plan-conversation-invitation button')?.focus();
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [open, focusShellOpen]);
   useEffect(()=>{const input=composerRef.current;if(input){input.style.height="auto";input.style.height=`${Math.min(160,input.scrollHeight)}px`;}},[question,open,phoneShell]);
   useEffect(()=>{if(open&&!phoneShell)composerRef.current?.focus();},[open,phoneShell]);
   const [phoneViewport,setPhoneViewport]=useState<{height:number;top:number}|null>(null);
@@ -1025,6 +1041,12 @@ export function HerculesPresence({
   }
 
   function closeChat() {
+    if (open && !phoneShell) requestAnimationFrame(() => {
+      const origin=chatReturnFocus.current;
+      if(origin?.isConnected && origin!==document.body) origin.focus();
+      else document.querySelector<HTMLButtonElement>('.plan-conversation-invitation button')?.focus();
+      chatReturnFocus.current=null;
+    });
     setSetupSelected(false);
     chatGen.current += 1; modelPending.current=null;
     setOpen(false);
@@ -1712,7 +1734,7 @@ export function HerculesPresence({
   ) : null;
 
   function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
-  function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} context={{household:actionHousehold,memberId,view,today}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
+  function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} onReady={notifyActionPanelReady} context={{household:actionHousehold,memberId,view,today,planMonth:planContext?.scope===view?planContext.monthKey:undefined,planThrough:planContext?.scope===view?planContext.through:undefined}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
   return (
     <HerculesRigProvider
       mood={look.view.mood}

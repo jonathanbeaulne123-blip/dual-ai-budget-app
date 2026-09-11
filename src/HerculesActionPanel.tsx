@@ -1,3 +1,5 @@
+import { HerculesPlanGuide } from './HerculesPlanGuide.tsx';
+import { PLAN_GUIDE_ID, guideAnswer, guideBack, guideQuestion, guideReply, parseGuidePaydays } from './core/planGuide.ts';
 import { cancelHerculesSubmission, nextHerculesTask } from './core/herculesExecution.ts';
 import { NeedsConfirmationError } from "./core/types.ts";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -16,12 +18,14 @@ export type HerculesActionHandle = {
     }, expectedFingerprint?: string) => void;
 };
 type Props = {
+    onReady?: () => void;
     context: ActionContext;
     service: HerculesCommandService;
     identity: string;
     onReply: (question: string, reply: string) => void;
 };
-export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(function HerculesActionPanel({ context: c, service, identity, onReply }, ref) {
+export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(function HerculesActionPanel({ context: c, service, identity, onReply, onReady }, ref) {
+    useEffect(()=>{onReady?.();},[onReady]);
     const profile = companionFor(c.household, c.memberId), generation = profile.conversations.find(r => r.view === c.view)!.generation;
     const resourceId = `task-${c.view}`, key = JSON.stringify(['hercules-task-v1', identity, c.household.environment, c.household.householdId, c.memberId, c.view, generation]);
     const resource = profile.workflows?.find(r => r.id === resourceId);
@@ -36,6 +40,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
     catch {
         return resource?.value ?? null;
     } });
+    const [guidePaused, setGuidePaused] = useState(false);
     const [duplicateWarning, setDuplicateWarning] = useState(''), [duplicateAck, setDuplicateAck] = useState(false);
     const [review, setReview] = useState<ActionReview | null>(null), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [library, setLibrary] = useState(false);
     const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -129,7 +134,8 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         const a = actionById(id, c), next: CompanionWorkflow = { version: 1, actionId: id, view: c.view, generation, values: values ?? initialActionValues(a, message, c), queue, updatedAt: new Date().toISOString(), submission: null };
         void change(next);
         setLibrary(false);
-        onReply(message || a.example, missingActionField(a, next.values, c)?.question || 'Your details are ready to review.');
+        setGuidePaused(false);
+        onReply(message || a.example, id === PLAN_GUIDE_ID ? guideReply(c,next.values) : missingActionField(a, next.values, c)?.question || 'Your details are ready to review.');
     }
     function prepareAccountFirst() {
         const currentDraft=draftRef.current;
@@ -155,6 +161,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         try {
             if (JSON.stringify(prepareAction(current.current.c, d.actionId, d.values, review.duplicateAcknowledged)) !== JSON.stringify(review))
                 throw Error('These details changed. Review them again.');
+            validateReviewWorkflow(pending);
             if (!writeEntryLocal(key, { workflow: pending, baseRevision: revision.current }))
                 throw Error('Allow browser storage before confirming so this action can be recovered.');
             local(pending);
@@ -261,9 +268,15 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                 setBusy(false);
         }
     }
+    function validateReviewWorkflow(workflow: CompanionWorkflow) {
+        try { decodeCompanionWorkflow(workflow); }
+        catch { throw Error('This review is too large to save safely. Your answers are still editable. Shorten your notes or use Plan tools to review a smaller change.'); }
+    }
     function showReview() { if (!draft)
         return; try {
-        setReview(prepareAction(c, draft.actionId, draft.values, duplicateAck));
+        const prepared = prepareAction(c, draft.actionId, draft.values, duplicateAck);
+        validateReviewWorkflow({...draft, values:prepared.values, submission:{id:crypto.randomUUID(),review:JSON.stringify(prepared)}});
+        setReview(prepared);
         setNotice('Check the details, then use Final Confirm.');
     }
     catch (e) {
@@ -275,6 +288,31 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         else
             setNotice(e instanceof Error ? e.message : String(e));
     } }
+    function guideRespond(message: string) {
+        const d=draftRef.current;if(!d||d.actionId!==PLAN_GUIDE_ID)return false;
+        if(locked.current||d.submission){setNotice('Let this private save finish before answering the next question.');return true;}
+        const field=guideQuestion(c,d.values);
+        if(/^(?:help (?:me|us) (?:create|make|build) (?:a |our |my )?plan|continue(?: planning)?|resume(?: planning)?)$/i.test(message.trim())) {setGuidePaused(false);onReply(message,guideReply(c,d.values));return true;}
+        if(guidePaused)return false;
+        if(/^(?:why|what|how|explain|can you explain|could you explain)\b/i.test(message.trim())){onReply(message,field?`${field.why} ${field.question}`:guideReply(c,d.values));return true;}
+        if(/^(pause|pause planning|not now)$/i.test(message.trim())){setGuidePaused(true);requestAnimationFrame(()=>actionCardRef.current?.querySelector<HTMLElement>('.hercules-plan-guide button')?.focus());onReply(message,'We can stop here. Your answers stay in your private task; choose Continue planning when you are ready.');return true;}
+        if(/^(back|go back)$/i.test(message.trim())){guideEdit();return true;}
+        if(/^(skip|skip this|leave (?:this|it) open)$/i.test(message.trim())){guideSkip();return true;}
+        if(/^(?:i (?:don.t|do not) know|not sure(?: yet)?)$/i.test(message.trim())&&field&&field.key!=='purpose'&&field.key!=='constraints'&&!field.key.endsWith('Step')){onReply(message,'That is okay. I will not invent an amount or treat missing money as zero. You can leave this part open for now, or ask why it matters.');return true;}
+        if(/^(?:review|review changes|show review|change |set |make )/i.test(message.trim()))return false;
+        if(!field)return false;
+        try {
+            let answer=message.trim();
+            if(field.kind==='money')answer=answer.replace(/^(?:about |around )?\$?/, '').replace(/(?: CAD| dollars)$/i,'').replaceAll(',','');
+            if(field.key.endsWith('Paydays')){if(/^decide later$/i.test(answer))answer='Decide later';else parseGuidePaydays(answer);}
+            const values=guideAnswer(c,d.values,field.key,parseActionAnswer(field,answer,c,d.values));
+            void change({...d,values,updatedAt:new Date().toISOString()});
+            setNotice('');onReply(message,guideReply(c,values));
+        } catch(error){setNotice(error instanceof Error?error.message:'Choose an answer or leave this part open.');}
+        return true;
+    }
+    function guideEdit(key?:string){const d=draftRef.current;if(!d||locked.current||d.submission)return;const values=guideBack(c,d.values,key);void change({...d,values,updatedAt:new Date().toISOString()});setGuidePaused(false);onReply('Go back',guideReply(c,values));}
+    function guideSkip(){const d=draftRef.current;if(!d||locked.current||d.submission)return;const field=guideQuestion(c,d.values),section=field?.key.match(/^(income|protect|prepare|build|everyday)/)?.[1];if(!section){setNotice('You can say “not sure yet” or pause here.');return;}const key=`${section}Source`;const values=guideAnswer(c,guideBack(c,d.values,key),key,'skip');void change({...d,values,updatedAt:new Date().toISOString()});onReply('Leave this part open',guideReply(c,values));}
     useImperativeHandle(ref, () => ({
         state() { if (!draft)
             return undefined; const a = availableHerculesActions(c).find(a => a.id === draft.actionId); if (!a)
@@ -292,7 +330,8 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                 return;
             }
             try {
-                const a = actionById(proposal.actionId, c), values = { ...(draft?.values ?? initialActionValues(a, '', c)) };
+                const a = actionById(proposal.actionId, c);
+                let values = { ...(draft?.values ?? initialActionValues(a, '', c)) };
                 // Only known fields and resolvable choices enter a draft. Unresolved model guesses stay questions.
                 for (const key of actionFields(a, c, { ...values, ...proposal.values }).map(field => field.key)) {
                     const raw = proposal.values[key];
@@ -301,12 +340,15 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                     if (!f)
                         continue;
                     try {
-                        values[key] = parseActionAnswer(f, raw, c, values);
+                        const answer = parseActionAnswer(f, raw, c, values);
+                        values = a.id === PLAN_GUIDE_ID ? guideAnswer(c, values, key, answer) : {...values, [key]: answer};
                     }
                     catch { }
                 }
                 void change({ version: 1, actionId: a.id, view: c.view, generation, values, ...(draft?.queue ? { queue: draft.queue } : {}), updatedAt: new Date().toISOString(), submission: null });
-                setNotice(missingActionField(a, values, c)?.question || 'Your draft is ready to review. Nothing has been saved to the books.');
+                setGuidePaused(false);
+                if(a.id===PLAN_GUIDE_ID) onReply('Help me create a plan',guideReply(c,values));
+                setNotice(a.id===PLAN_GUIDE_ID ? '' : missingActionField(a, values, c)?.question || 'Your draft is ready to review. Nothing has been saved to the books.');
             }
             catch {
                 setNotice('Choose an available task from Things we can do.');
@@ -342,6 +384,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                 start(match.id, message);
                 return true;
             }
+            if (guideRespond(message)) return true;
             if (!draft || /^(why|what|how|can you explain)\b/i.test(message))
                 return false;
             if (draft.submission) {
@@ -356,7 +399,9 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
             try {
                 const corrected = actionCorrection(a, c, draft.values, message);
                 if (corrected) {
-                    void change({ ...draft, values: corrected, updatedAt: new Date().toISOString() });
+                    const changedKey=Object.keys(corrected).find(key=>corrected[key]!==draft.values[key]);
+                    const values=a.id===PLAN_GUIDE_ID&&changedKey?guideAnswer(c,draft.values,changedKey,corrected[changedKey]!):corrected;
+                    void change({ ...draft, values, updatedAt: new Date().toISOString() });
                     onReply(message, 'Updated. Review the changed details before Final Confirm.');
                     return true;
                 }
@@ -388,14 +433,14 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
   {resolvedIdentity.current && <p role="status">The action receipt is confirmed. Waiting for the latest task from your household.</p>}
   {!draft && !resolvedIdentity.current && <button type="button" onClick={() => setLibrary(!library)} aria-expanded={library}>Things we can do</button>}
   {library && !draft && <div className="hercules-action-library">{availableHerculesActions(c).map(a => <button type="button" key={a.id} onClick={() => start(a.id)}>{a.title}</button>)}</div>}
-  {draft && <article ref={actionCardRef} className="hercules-action-card"><h3>{a?.title ?? 'Saved task'}</h3><p>{c.view === 'household' ? 'Household books' : 'Your personal books'}</p>
+  {draft && <article ref={actionCardRef} className="hercules-action-card"><h3>{a?.title ?? 'Saved task'}</h3><p>{a?.id===PLAN_GUIDE_ID ? `Your private ${c.view==='household'?'Household':'Personal'} Plan draft · ${draft.values.monthKey||'month to choose'}` : c.view === 'household' ? 'Household books' : 'Your personal books'}</p>
    {!!draft.queue?.length && <section aria-label="Your checklist"><p>Each task needs its own review and Final Confirm.</p><ol><li>{a?.title ?? 'Current task'} — current</li>{draft.queue.map((item, index) => <li key={index}>{availableHerculesActions(c).find(a => a.id === item.actionId)?.title ?? 'Saved task'} — waiting</li>)}</ol></section>}
    {draft.submission ? <><p>This review is awaiting its receipt.</p><button type="button" disabled={busy} onClick={() => void recover()}>Check action status</button><button type="button" disabled={busy} onClick={() => void cancelPending()}>Cancel pending request</button></> : !a ? <><p>This task is no longer available in these books.</p><button type="button" disabled={busy} onClick={() => void change(nextHerculesTask(draft))}>Cancel task</button></> : <>
-    {!review ? <>{actionFields(a,c,draft.values).some(f=>/accountId$/i.test(f.key)&&f.choices&&!f.choices(c,draft.values).length) && <div role="status"><p>There is no available account for this step. Add one, then return to this task.</p><button type="button" disabled={busy} onClick={prepareAccountFirst}>Add an account first</button></div>}{actionFields(a, c, draft.values).map(f => <label key={f.key}>{f.label}{f.optional ? ' (optional)' : ''}{f.choices ? <select value={draft.values[f.key] ?? ''} onChange={e => void change({ ...draft, values: { ...draft.values, [f.key]: e.target.value }, updatedAt: new Date().toISOString() })}><option value="">Choose…</option>{f.choices(c, draft.values).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select> : <input type={f.kind === 'date' ? 'date' : f.kind === 'datetime' ? 'datetime-local' : 'text'} inputMode={f.kind === 'money' || f.kind === 'number' ? 'decimal' : undefined} defaultValue={draft.values[f.key] ?? ''} key={`${draft.actionId}-${f.key}-${draft.values[f.key] ?? ''}`} onBlur={e => { if (e.target.value !== (draft.values[f.key] ?? ''))
+    {!review ? <>{actionFields(a,c,draft.values).some(f=>/accountId$/i.test(f.key)&&f.choices&&!f.choices(c,draft.values).length) && <div role="status"><p>There is no available account for this step. Add one, then return to this task.</p><button type="button" disabled={busy} onClick={prepareAccountFirst}>Add an account first</button></div>}{a.id===PLAN_GUIDE_ID ? guidePaused ? <section className="hercules-plan-guide"><p>Your private planning conversation is paused.</p><button type="button" onClick={()=>{setGuidePaused(false);onReply('Continue planning',guideReply(c,draft.values));}}>Continue planning</button></section> : <HerculesPlanGuide context={c} values={draft.values} busy={busy} onAnswer={text=>guideRespond(text)} onBack={guideEdit} onSkip={guideSkip} onPause={()=>guideRespond('pause')}/> : actionFields(a, c, draft.values).map(f => <label key={f.key}>{f.label}{f.optional ? ' (optional)' : ''}{f.choices ? <select value={draft.values[f.key] ?? ''} onChange={e => void change({ ...draft, values: { ...draft.values, [f.key]: e.target.value }, updatedAt: new Date().toISOString() })}><option value="">Choose…</option>{f.choices(c, draft.values).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select> : <input type={f.kind === 'date' ? 'date' : f.kind === 'datetime' ? 'datetime-local' : 'text'} inputMode={f.kind === 'money' || f.kind === 'number' ? 'decimal' : undefined} defaultValue={draft.values[f.key] ?? ''} key={`${draft.actionId}-${f.key}-${draft.values[f.key] ?? ''}`} onBlur={e => { if (e.target.value !== (draft.values[f.key] ?? ''))
                 void change({ ...draft, values: { ...draft.values, [f.key]: e.target.value }, updatedAt: new Date().toISOString() }); }}/>}</label>)}<>{duplicateWarning && <div role="alert"><p>{duplicateWarning}</p><label><input type="checkbox" checked={duplicateAck} onChange={e => setDuplicateAck(e.target.checked)}/>This is another real entry, not the same one.</label></div>}</><button type="button" disabled={busy || !!missingActionField(a, draft.values, c)} onClick={showReview}>Review changes</button></> : <><h4 ref={reviewHeadingRef} tabIndex={-1}>Check your changes</h4><dl>{review.rows.map(row => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><p>{review.consequence}</p><ul>{review.effects.map((e, i) => <li key={i}>{e.label}: {e.value}</li>)}</ul><button type="button" disabled={busy} onClick={() => void confirm()}>Final Confirm</button><button type="button" disabled={busy} onClick={() => { setReview(null); requestAnimationFrame(() => actionCardRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus()); }}>Edit details</button></>}
     <button type="button" disabled={busy} onClick={() => void change(nextHerculesTask(draft))}>Cancel this task</button>
    </>}
   </article>}
-  {notice && <p role="status">{notice}</p>}
+  {notice && <p role="status">{notice}{draft?.actionId===PLAN_GUIDE_ID&&/save.*(?:not|could)|save has not/i.test(notice)&&<button disabled={busy} type="button" onClick={()=>void change(draft)}>Retry private save</button>}</p>}
  </section>;
 });
