@@ -60,7 +60,7 @@ function register(names: string, paths: string[] = []) {
   }
 }
 register(
-  `adoptExistingOnboardingEvidence recordChapterAcknowledgement recordObservedChapterCompletion skipPersonalStep skipChapterFourPersonalAccounts setOnboardingOffersMuted recordPersonalModuleOffer declinePersonalModuleOffer completePersonalModule submitOnboardingCategories mergeOnboardingCategories submitOnboardingEstimates approveOnboardingProposal approveOnboardingReady completeHouseholdOnboarding setLandingSurface setFundRailSlot resetFundRail setGlanceAccount setHerculesProPermissions setFundCardAccount postShift postWorkShift refreshSevenShiftsSchedule refreshShiftEnvelopesFromEvidence confirmShiftEnvelopeOutcome appendShiftBibleWeather retireResolvedShiftEnvelope reconcileWorkWeekFromEvidence recordEarningCadence postWorkShiftWithAttendanceReview approveHouseholdFundConfiguration adoptFirstBudget`,
+  `adoptExistingOnboardingEvidence recordChapterAcknowledgement recordObservedChapterCompletion skipPersonalStep skipChapterFourPersonalAccounts setOnboardingOffersMuted recordPersonalModuleOffer declinePersonalModuleOffer completePersonalModule submitOnboardingCategories mergeOnboardingCategories submitOnboardingEstimates approveOnboardingProposal approveOnboardingReady completeHouseholdOnboarding setLandingSurface setFundRailSlot resetFundRail setGlanceAccount setHerculesProPermissions setFundCardAccount savePlanDraft createPlanScenario lockPersonalPlan savePlanLearningProgress setPlanCoachingIntensity updatePlanNudgeState savePlanReflection markPlanReflectionReviewed savePlanBridgeDraft sharePlanBridgeDraft proposeHouseholdPlan adoptLegacyHouseholdPlan acknowledgeHouseholdPlan proposePlanBridge withdrawPlanBridge holdPlanBridge declinePlanBridge addPlanBridgeToDraft postShift postWorkShift refreshSevenShiftsSchedule refreshShiftEnvelopesFromEvidence confirmShiftEnvelopeOutcome appendShiftBibleWeather retireResolvedShiftEnvelope reconcileWorkWeekFromEvidence recordEarningCadence postWorkShiftWithAttendanceReview approveHouseholdFundConfiguration adoptFirstBudget`,
   ["createdBy", "memberId"],
 );
 register(
@@ -75,6 +75,7 @@ register("executeHerculesAction cancelHerculesSubmission", ["memberId"]);
 register("recordBillPayment", ["createdBy"]);
 register("addQuickSampleData addQuickSampleScenario", ["memberId"]);
 register("saveNativeEvent", ["memberId"]);
+register("appendPlanSitdownTurn", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);

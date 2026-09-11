@@ -185,6 +185,18 @@ export const DEMO_TOOL_COVERAGE = {
   cash_cinema: "bills-recurrences-budgets",
   what_if_desk: "bills-recurrences-budgets",
   year_review: "bills-recurrences-budgets",
+  plan_overview: "bills-recurrences-budgets",
+  plan_line_detail: "bills-recurrences-budgets",
+  plan_cashflow_runway: "bills-recurrences-budgets",
+  plan_coverage: "bills-recurrences-budgets",
+  plan_assumptions: "bills-recurrences-budgets",
+  plan_version_diff: "bills-recurrences-budgets",
+  plan_scenario_compare: "bills-recurrences-budgets",
+  plan_actual: "bills-recurrences-budgets",
+  plan_drift: "bills-recurrences-budgets",
+  plan_bridge_status: "goals-household-fund",
+  plan_sitdown_status: "bills-recurrences-budgets",
+  plan_learning_context: "bills-recurrences-budgets",
 } satisfies Record<HerculesReadToolName, DemoEngineName>;
 
 function tinyDigest(value: number): string {

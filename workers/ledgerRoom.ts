@@ -20,6 +20,10 @@ declare const Response: typeof import("@cloudflare/workers-types/index.ts").Resp
 declare const WebSocketPair: typeof import("@cloudflare/workers-types/index.ts").WebSocketPair;
 import { DurableObject } from "cloudflare:workers";
 import { splitForSync } from "../src/core/sync.ts";
+import { assembleHousehold } from "../src/core/sync.ts";
+import { activateScheduledPlans, appendTrustedPlanHerculesTurn } from "../src/core/commands.ts";
+import { todayKey } from "../src/core/calendar.ts";
+import { planActivationInstant, type PlanHerculesTurn } from "../src/core/planSystem.ts";
 import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
 import type {
   Household,
@@ -27,6 +31,7 @@ import type {
   SharedEnvelope,
   RestorePoint,
   CommandReceipt,
+  CommitResult,
 } from "../src/core/types.ts";
 import {
   prepareCommand,
@@ -799,9 +804,85 @@ export class LedgerRoom extends DurableObject<Env> {
       if ((ws.deserializeAttachment() as Attachment).scope?.aclEpoch! < epoch)
         ws.close(4003, "ACCESS_CHANGED");
   }
+  private async commitSystemPlanResult(id: string, acceptedAt: string, result: CommitResult): Promise<Receipt> {
+    const state = this.load();
+    const prior = this.ctx.storage.sql.exec<{ data: string }>("SELECT data FROM receipts WHERE id=?", id).toArray()[0];
+    if (prior) return JSON.parse(prior.data) as Receipt;
+    const household = { ...result.household, commandReceipts: [], restorePoints: [], revision: state.sequence + 1, baseRevision: state.sequence + 1 };
+    assertAcceptableBooks(household);
+    const actorMemberId = result.persistenceScope === "member-personal" ? result.personalMemberId
+      : state.shared.members.find((member) => member.active && state.personal.has(member.id))?.id;
+    if (!actorMemberId) throw new Error("SYSTEM_PLAN_REPLICA_UNAVAILABLE");
+    const priorPersonal = state.personal.get(actorMemberId);
+    if (!priorPersonal) throw new Error("SYSTEM_PLAN_REPLICA_UNAVAILABLE");
+    const split = splitForSync(household, actorMemberId);
+    const event: AcceptedEvent = { sequence: state.sequence + 1, shared: difference(state.shared, split.shared),
+      ...(result.persistenceScope === "member-personal" ? { personal: difference(priorPersonal, split.personal), memberId: actorMemberId } : {}), acceptedAt };
+    const receipt: Receipt = { id, sequence: event.sequence, digest: await digest({ id, event }), actor: "system:plan-authority",
+      postedIds: [...new Set(result.postedIds)], warnings: result.warnings, undo: { id, label: result.undo.label, postedIds: [], actorMemberId: "system:plan-authority", commandKind: result.undo.commandKind },
+      commandKind: result.undo.commandKind ?? "systemPlanAuthority",
+      ...(result.persistenceScope === "member-personal" ? { persistenceScope: "member-personal" as const, personalMemberId: actorMemberId } : {}) };
+    const eventText = JSON.stringify(event), eventHash = await digest(event);
+    this.ctx.storage.transactionSync(() => {
+      this.writeProjection("shared", event.shared);
+      if (event.personal) this.writeProjection(actorMemberId, event.personal);
+      for (let at = 0; at < eventText.length; at += 60000) this.ctx.storage.sql.exec("INSERT INTO journal VALUES (?,?,?)", event.sequence, at / 60000, eventText.slice(at, at + 60000));
+      this.ctx.storage.sql.exec("INSERT INTO receipts VALUES (?,?,?,?,?)", id, receipt.actor, receipt.digest, receipt.sequence, JSON.stringify(receipt));
+      this.ctx.storage.sql.exec("INSERT INTO archive VALUES (?,?)", receipt.sequence, eventHash);
+      this.set("sequence", String(receipt.sequence));
+    });
+    await this.ctx.storage.sync();
+    this.state = { sequence: receipt.sequence, shared: split.shared, personal: event.personal ? new Map(state.personal).set(actorMemberId, split.personal) : state.personal };
+    for (const peer of this.ctx.getWebSockets()) {
+      const attachment = peer.deserializeAttachment() as Attachment;
+      if (attachment.ready && attachment.scope) {
+        try { this.check(attachment.scope); await this.send(peer, { type: "event", event: this.visible(event, attachment.scope.memberId) }); }
+        catch { peer.close(4003, "AUTH_EXPIRED"); }
+      }
+    }
+    await this.archiveBarrier();
+    await this.schedule();
+    return receipt;
+  }
+  async appendTrustedPlanReply(scope: Scope, input: {
+    sessionId: string; inReplyToTurnId: string; text: string; sourceReferences: PlanHerculesTurn["sourceReferences"];
+    sourceRevision: number; receiptId: string; responseHash: string; provider: string; createdAt: string;
+  }) {
+    return this.serial(async () => {
+      this.check(scope);
+      await this.archiveBarrier();
+      const state = this.load(), personal = state.personal.get(scope.memberId);
+      if (!personal) throw new Error("PERSONAL_IMPORT_REQUIRED");
+      const household = assembleHousehold(state.shared, personal, { linked: true });
+      const result = appendTrustedPlanHerculesTurn(household, input);
+      const receipt = await this.commitSystemPlanResult(input.receiptId, input.createdAt, result);
+      return { receipt, turnId: result.postedIds[0] ?? null, sequence: receipt.sequence };
+    });
+  }
+  private async activateDuePlans(): Promise<void> {
+    let state = this.load();
+    const memberId = (state.shared.members ?? []).find((member) => member.active && state.personal.has(member.id))?.id;
+    if (!memberId) return;
+    const asOf = todayKey(new Date(), "America/Toronto");
+    const eventId = `PLAN-CLOCK-${asOf}-${state.sequence + 1}`;
+    const result = activateScheduledPlans(assembleHousehold(state.shared, state.personal.get(memberId)!, { linked: true }), { asOf, eventId, createdAt: new Date().toISOString() });
+    if (result.postedIds.length) await this.commitSystemPlanResult(eventId, result.household.lastCommittedAt ?? new Date().toISOString(), result);
+    state = this.load();
+    for (const [ownerMemberId, personal] of state.personal) {
+      const personalEventId = `PLAN-CLOCK-${asOf}-${ownerMemberId}-${state.sequence + 1}`;
+      const personalResult = activateScheduledPlans(assembleHousehold(state.shared, personal, { linked: true }), {
+        asOf, eventId: personalEventId, createdAt: new Date().toISOString(), scope: "personal", memberId: ownerMemberId,
+      });
+      if (personalResult.postedIds.length) {
+        await this.commitSystemPlanResult(personalEventId, new Date().toISOString(), personalResult);
+        state = this.load();
+      }
+    }
+  }
   async snapshot(scope: Scope) {
     return this.serial(async () => {
       this.check(scope);
+      await this.activateDuePlans();
       await this.archiveBarrier();
       this.check(scope);
       const state = this.load();
@@ -1214,8 +1295,18 @@ export class LedgerRoom extends DurableObject<Env> {
     this.webSocketClose(ws);
   }
   private async schedule() {
-    if ((await this.ctx.storage.getAlarm()) === null)
-      await this.ctx.storage.setAlarm(Date.now() + 5000);
+    const hasImmediateWork = this.ctx.getWebSockets().length
+      || this.ctx.storage.sql.exec("SELECT 1 FROM archive LIMIT 1").toArray().length
+      || this.ctx.storage.sql.exec("SELECT 1 FROM checkpoint_outbox LIMIT 1").toArray().length;
+    const state = this.meta("initialized") ? this.load() : undefined;
+    const activationAt = state?.shared.planActivationJobs?.filter((job) => job.state === "pending")
+      .map((job) => planActivationInstant(job.activateOn)).concat([...(state?.personal.values() ?? [])].flatMap((personal) =>
+        (personal.planVersions ?? []).filter((version) => version.scope === "personal" && version.state === "scheduled")
+          .map((version) => planActivationInstant(`${version.monthKey}-01`)))).sort((left, right) => left - right)[0];
+    const desired = hasImmediateWork ? Date.now() + 5000 : activationAt;
+    if (desired === undefined) return;
+    const current = await this.ctx.storage.getAlarm();
+    if (current === null || desired < current - 1000) await this.ctx.storage.setAlarm(desired);
   }
   // R2 is part of acknowledgement durability. No public state or receipt may
   // pass this barrier while its checkpoint/event is still only in SQLite.
@@ -1315,6 +1406,7 @@ export class LedgerRoom extends DurableObject<Env> {
         if (a.deadline <= Date.now()) ws.close(4003, "AUTH_EXPIRED");
       }
       try {
+        await this.activateDuePlans();
         await this.archiveBarrier();
       } finally {
         if (
@@ -1326,6 +1418,7 @@ export class LedgerRoom extends DurableObject<Env> {
             .toArray().length
         )
           await this.ctx.storage.setAlarm(Date.now() + 5000);
+        else await this.schedule();
       }
     });
   }

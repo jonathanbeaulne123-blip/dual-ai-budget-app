@@ -13,6 +13,7 @@ interface ImportMetaEnv {
   readonly VITE_PRODUCTION_CONTINUITY?: string;
   readonly VITE_SYNC_PILOT_DIAGNOSTICS?: string;
   readonly VITE_HERCULES_PRO_URL?: string;
+  readonly VITE_PLAN_SYSTEM_V2?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
 }
 

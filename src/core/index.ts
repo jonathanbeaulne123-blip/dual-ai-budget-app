@@ -60,6 +60,8 @@ export * from "./monthRehearsalPractice.ts";
 export * from "./helpDesk.ts";
 export * from "./deskSync.ts";
 export * from "./commands.ts";
+export * from "./planSystem.ts";
+export * from "./planFeature.ts";
 export * from "./seed.ts";
 export * from "./fixtures.ts";
 export * from "./ledgerView.ts";

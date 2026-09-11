@@ -5,6 +5,12 @@ import { HERCULES_CHARACTER_V1 } from "../src/core/herculesCharacter.ts";
 import { decodeCompanionChatRequest } from "../src/core/herculesCompanionContracts.ts";
 import { handleBoardMedia } from "./boardMedia.ts";
 import { handleLedgerSync } from "./ledgerSync.ts";
+import { authorizeRequest } from "./ledgerSyncAuth.ts";
+import { assembleHousehold } from "../src/core/sync.ts";
+import { deterministicHerculesReadFallback } from "../src/core/herculesPlanner.ts";
+import { executeHerculesReadToolPlan } from "../src/core/herculesTools.ts";
+import { currentPlanVersion } from "../src/core/planSystem.ts";
+import { todayKey } from "../src/core/calendar.ts";
 export { LedgerRoom } from "./ledgerRoom.ts";
 // Third-party keys are allowed (D-045): GEMINI_API_KEY / GROQ_API_KEY /
 // OPENAI_API_KEY / ANTHROPIC_API_KEY via `wrangler secret put`. Never VITE_.
@@ -267,6 +273,20 @@ const HERCULES_READ_TOOLS = [
     member: nullableString(),
     months: { anyOf: [{ type: "integer", minimum: 3, maximum: 12 }, { type: "null" }] },
   }) },
+  ...[
+    ["plan_overview", "Read the visible versioned Plan and its four lens totals."],
+    ["plan_line_detail", "Explain one visible Plan line, source, assumptions, and actual."],
+    ["plan_cashflow_runway", "Project the visible Plan runway and low point."],
+    ["plan_coverage", "Read Protect, Prepare, Build, and Everyday coverage."],
+    ["plan_assumptions", "Read confidence, freshness, ranges, and Plan sources."],
+    ["plan_version_diff", "Compare two visible immutable Plan versions."],
+    ["plan_scenario_compare", "Compare a visible Plan with a private alternative without changing either."],
+    ["plan_actual", "Compare Plan intentions with accepted outcomes and posted actuals."],
+    ["plan_drift", "Read deterministic thresholded Plan drift findings."],
+    ["plan_bridge_status", "Read only deliberately submitted Bridge facts."],
+    ["plan_sitdown_status", "Read Shared Sitdown and acknowledgement progress."],
+    ["plan_learning_context", "Read the contextual skippable Plan lesson."],
+  ].map(([name, description]) => ({ name, description, parameters: strictObject({ monthKey: nullableString(), planVersionId: nullableString(), compareVersionId: nullableString(), planLineId: nullableString(), scenarioId: nullableString() }) })),
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -335,6 +355,18 @@ const TOOL_ARG_KEYS = {
   cash_cinema: ["member", "weeks"],
   what_if_desk: ["member", "scenario", "amountCents"],
   year_review: ["member", "months"],
+  plan_overview: ["monthKey", "planVersionId"],
+  plan_line_detail: ["monthKey", "planVersionId", "planLineId"],
+  plan_cashflow_runway: ["monthKey", "planVersionId"],
+  plan_coverage: ["monthKey", "planVersionId"],
+  plan_assumptions: ["monthKey", "planVersionId"],
+  plan_version_diff: ["monthKey", "planVersionId", "compareVersionId"],
+  plan_scenario_compare: ["monthKey", "planVersionId", "scenarioId"],
+  plan_actual: ["monthKey", "planVersionId"],
+  plan_drift: ["monthKey", "planVersionId"],
+  plan_bridge_status: ["monthKey", "planVersionId"],
+  plan_sitdown_status: ["monthKey", "planVersionId"],
+  plan_learning_context: ["monthKey", "planVersionId"],
 };
 
 function parseJsonObject(value) {
@@ -1197,6 +1229,56 @@ async function herculesChat(request, env) {
   }, 200, cors);
 }
 
+async function sha256Text(value) {
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function sharedPlanHercules(request, env) {
+  const { allowed, origin } = resolveChatOrigin(request), cors = corsHeaders(origin);
+  if (!allowed) return json({ ok: false, error: "origin" }, 403, cors);
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+  if (request.method !== "POST") return json({ ok: false, error: "method" }, 405, cors);
+  const path = new URL(request.url).pathname.match(/^\/plan\/shared\/hercules\/(development|production)\/(HH-[A-Za-z0-9_-]{1,96})$/);
+  if (!path || path[1] === "production") return json({ ok: false, error: path?.[1] === "production" ? "production disabled" : "path" }, path ? 403 : 404, cors);
+  try {
+    const body = await request.json(), environment = path[1], householdId = path[2];
+    const { scope, token, roster } = await authorizeRequest(request, env, environment, householdId);
+    const room = env.LEDGER_ROOMS.get(env.LEDGER_ROOMS.idFromName(`${environment}/${householdId}`), { locationHint: "enam" });
+    await room.ensureImported(scope, token);
+    if (roster) await room.reconcileMembers(scope, roster);
+    const replica = await room.snapshot(scope), household = assembleHousehold(replica.shared, replica.personal, { linked: true });
+    const session = (household.planHerculesSessions || []).find((row) => row.id === String(body?.sessionId || "") && row.state === "active");
+    const memberTurn = session?.turns.find((row) => row.id === String(body?.inReplyToTurnId || "") && row.role === "member" && row.memberId === scope.memberId);
+    if (!session || !memberTurn) return json({ ok: false, error: "sitdown changed" }, 409, cors);
+    if (session.turns.some((row) => row.role === "hercules" && row.inReplyToTurnId === memberTurn.id)) return json({ ok: true, duplicate: true }, 200, cors);
+    const version = currentPlanVersion(household, "household", session.monthKey);
+    const plan = deterministicHerculesReadFallback(memberTurn.text);
+    const grounded = executeHerculesReadToolPlan(household, plan, todayKey(new Date(), "America/Toronto"), {
+      memberId: scope.memberId, view: "household", plan: { monthKey: session.monthKey, scope: "household",
+        ...(version?.id ? { activePlanVersionId: version.id } : {}), sitDownSessionId: session.sitDownSessionId },
+    });
+    const prompt = buildPrompt({ message: memberTurn.text, briefing: "This is the clearly Shared couple Sitdown. Use only the grounded Shared Plan result. Never acknowledge for either partner and never claim money moved.",
+      grounded: { spoken: grounded.talk.spoken }, figures: [...grounded.talk.spoken.matchAll(/\$\d[\d,]*(?:\.\d{2})?/g)].map((match) => match[0]) }, env);
+    const providers = [["gemini", () => chatGemini(env, prompt.gemini)], ["groq", () => chatGroq(env, prompt.openai)],
+      ["openai", () => chatOpenAI(env, prompt.openai)], ["workers-ai", () => chatWorkersAi(env, prompt.openai)]];
+    let reply = "", provider = "";
+    for (const [candidate, attempt] of providers) { try { reply = await attempt(); if (reply) { provider = candidate; break; } } catch { reply = ""; } }
+    const safeReply = sanitizeHerculesReply(reply, grounded.talk.spoken, prompt.figures, memberTurn.text);
+    if (!safeReply) return json({ ok: false, error: "ai quiet" }, 503, cors);
+    const sourceReferences = [...new Map((version?.lines || []).flatMap((line) => line.sourceReference ? [[`${line.sourceReference.type}:${line.sourceReference.id}`, line.sourceReference]] : [])).values()].slice(0, 20);
+    const receiptId = crypto.randomUUID(), createdAt = new Date().toISOString(), responseHash = await sha256Text(JSON.stringify({
+      sessionId: session.id, inReplyToTurnId: memberTurn.id, sourceRevision: household.revision, safeReply, sourceReferences, provider,
+    }));
+    const accepted = await room.appendTrustedPlanReply(scope, { sessionId: session.id, inReplyToTurnId: memberTurn.id, text: safeReply,
+      sourceReferences, sourceRevision: household.revision, receiptId, responseHash, provider: provider || "grounded-fallback", createdAt });
+    return json({ ok: true, provider: provider || "grounded-fallback", receiptId, turnId: accepted.turnId, sequence: accepted.sequence }, 200, cors);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "request failed";
+    return json({ ok: false, error: code.slice(0, 120) }, /UNAUTHENTICATED|FORBIDDEN/.test(code) ? 403 : 409, cors);
+  }
+}
+
 async function herculesPlan(request, env) {
   const { allowed, origin } = resolveChatOrigin(request);
   const cors = corsHeaders(origin);
@@ -1886,6 +1968,7 @@ export default {
     if (boardMedia) return boardMedia;
     const ledgerSync = await handleLedgerSync(request, env);
     if (ledgerSync) return ledgerSync;
+    if (url.pathname.startsWith("/plan/shared/hercules/")) return sharedPlanHercules(request, env);
     const toastOcr = await handleToastOcr(request, env);
     if (toastOcr) return toastOcr;
     const evidence = await handleEvidence(request, env);

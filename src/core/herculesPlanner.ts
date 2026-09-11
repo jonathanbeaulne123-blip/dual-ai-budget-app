@@ -41,6 +41,20 @@ export function shouldPlanHerculesTools(message: string): boolean {
 export function deterministicHerculesReadFallback(message: string): HerculesReadToolPlan {
   const value = message.trim().toLowerCase().replace(/[’']/g, "");
   if (!plannerAllowed(message)) return { calls: [] };
+  if (/\b(plan|protect|prepare|everyday|assumption|bridge|sitdown|sit down|drift|runway|scenario|acknowledg|what changed)\b/.test(value)) {
+    const name = /\bbridge\b/.test(value) ? "plan_bridge_status"
+      : /\b(what changed|difference|version)\b/.test(value) ? "plan_version_diff"
+      : /\b(assumption|uncertain|risk)\b/.test(value) ? "plan_assumptions"
+      : /\b(runway|low point|cash flow)\b/.test(value) ? "plan_cashflow_runway"
+      : /\b(drift|pace|off track)\b/.test(value) ? "plan_drift"
+      : /\b(scenario|alternative|what if)\b/.test(value) ? "plan_scenario_compare"
+      : /\b(sitdown|sit down|acknowledg)\b/.test(value) ? "plan_sitdown_status"
+      : /\b(learn|teach|explain simply)\b/.test(value) ? "plan_learning_context"
+      : /\b(actual|paid|complete)\b/.test(value) ? "plan_actual"
+      : /\b(coverage|protected|exposed)\b/.test(value) ? "plan_coverage"
+      : "plan_overview";
+    return { calls: [{ id: "deterministic-plan", name, args: {} }] };
+  }
   if (/\b(bill|bills|rent|hydro|utilities|utility|phone bill)\b/.test(value)
     && !/\b(spent|spend|paid|pay|post|add|delete|remove|owed|claim)\b/.test(value)) {
     const horizonDays = /\b(three months|90 days)\b/.test(value)

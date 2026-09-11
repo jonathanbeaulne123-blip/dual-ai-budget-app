@@ -47,6 +47,7 @@ import { advanceCadence } from "../core/recurrence.ts";
 import { dateKeyInZone, parseMonthKey, type DateKey } from "../core/calendar.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
+import type { PlanAcknowledgement, PlanActivationJob, PlanBridgeDecision, PlanHerculesSession, PlanReflection, PlanVersion } from "../core/planSystem.ts";
 import type {
   Claim,
   BudgetPlan,
@@ -103,6 +104,12 @@ export type ContinuityMaterializationFacts = {
   onboardingApprovals?: OnboardingApproval[];
   categories?: Category[];
   budgetPlans?: BudgetPlan[];
+  planVersions?: PlanVersion[];
+  planAcknowledgements?: PlanAcknowledgement[];
+  planReflections?: PlanReflection[];
+  planBridgeDecisions?: PlanBridgeDecision[];
+  planHerculesSessions?: PlanHerculesSession[];
+  planActivationJobs?: PlanActivationJob[];
   charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -726,6 +733,12 @@ function filterFactsForScope(
   if (event.ledger_scope === "shared") {
     if (facts.categories?.length) scoped.categories = facts.categories;
     if (facts.budgetPlans?.length) scoped.budgetPlans = facts.budgetPlans;
+    if (facts.planVersions?.length) scoped.planVersions = facts.planVersions.filter((row) => row.scope === "household");
+    if (facts.planAcknowledgements?.length) scoped.planAcknowledgements = facts.planAcknowledgements;
+    if (facts.planReflections?.length) scoped.planReflections = facts.planReflections.filter((row) => row.scope === "household");
+    if (facts.planBridgeDecisions?.length) scoped.planBridgeDecisions = facts.planBridgeDecisions;
+    if (facts.planHerculesSessions?.length) scoped.planHerculesSessions = facts.planHerculesSessions;
+    if (facts.planActivationJobs?.length) scoped.planActivationJobs = facts.planActivationJobs;
     if (facts.recurrences?.length) scoped.recurrences = facts.recurrences;
     if (facts.householdOnboarding) scoped.householdOnboarding = facts.householdOnboarding;
     if (facts.onboardingSubmissions?.length) {
@@ -809,6 +822,22 @@ export function extractMaterializationFacts(
       ? household.budgetPlans.filter((row) => posted.has(row.id))
       : [];
     if (budgetPlans.length) facts.budgetPlans = budgetPlans;
+    if (["proposeHouseholdPlan", "adoptLegacyHouseholdPlan", "acknowledgeHouseholdPlan"].includes(options?.commandKind ?? "")) {
+      facts.planVersions = (household.planVersions ?? []).filter((row) => row.scope === "household");
+      facts.planAcknowledgements = household.planAcknowledgements ?? [];
+      const months = new Set(facts.planVersions.map((row) => row.monthKey));
+      facts.budgetPlans = household.budgetPlans.filter((row) => months.has(row.monthKey));
+      facts.planActivationJobs = household.planActivationJobs ?? [];
+    }
+    if (["sharePlanBridgeDraft", "proposePlanBridge", "withdrawPlanBridge", "holdPlanBridge", "declinePlanBridge"].includes(options?.commandKind ?? "")) {
+      facts.planBridgeDecisions = (household.planBridgeDecisions ?? []).filter((row) => posted.has(row.id));
+    }
+    if (["savePlanReflection", "markPlanReflectionReviewed"].includes(options?.commandKind ?? "")) {
+      facts.planReflections = (household.planReflections ?? []).filter((row) => row.scope === "household" && posted.has(row.id));
+    }
+    if (options?.commandKind === "appendPlanSitdownTurn") {
+      facts.planHerculesSessions = household.planHerculesSessions ?? [];
+    }
     if (household.householdOnboarding && posted.has(household.householdOnboarding.id)) {
       facts.householdOnboarding = household.householdOnboarding;
     }
@@ -901,6 +930,12 @@ async function applyEvent(
     shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps),
     mergedTombstones,
   );
+  const planVersions = applyMoneyCollection(snapshot.planVersions ?? [], facts.planVersions, mergedTombstones);
+  const planAcknowledgements = applyAppendOnlyCollection(snapshot.planAcknowledgements ?? [], facts.planAcknowledgements, mergedTombstones);
+  const planReflections = applyMoneyCollection(snapshot.planReflections ?? [], facts.planReflections, mergedTombstones);
+  const planBridgeDecisions = applyMoneyCollection(snapshot.planBridgeDecisions ?? [], facts.planBridgeDecisions, mergedTombstones);
+  const planHerculesSessions = applyMoneyCollection(snapshot.planHerculesSessions ?? [], facts.planHerculesSessions, mergedTombstones);
+  const planActivationJobs = applyMoneyCollection(snapshot.planActivationJobs ?? [], facts.planActivationJobs, mergedTombstones);
   const categoryMap = rowMapsTo(snapshot.categories);
   for (const category of facts.categories ?? []) categoryMap.set(category.id, category);
   const budgetPlanMap = rowMapsTo(snapshot.budgetPlans);
@@ -948,6 +983,12 @@ async function applyEvent(
     recurrences: recurrences.filter((row) => !dead.has(row.id)),
     categories: [...categoryMap.values()],
     budgetPlans: [...budgetPlanMap.values()],
+    planVersions: planVersions.filter((row) => !dead.has(row.id)),
+    planAcknowledgements: planAcknowledgements.filter((row) => !dead.has(row.id)),
+    planReflections: planReflections.filter((row) => !dead.has(row.id)),
+    planBridgeDecisions: planBridgeDecisions.filter((row) => !dead.has(row.id)),
+    planHerculesSessions: planHerculesSessions.filter((row) => !dead.has(row.id)),
+    planActivationJobs: planActivationJobs.filter((row) => !dead.has(row.id)),
     householdOnboarding,
     onboardingSubmissions,
     onboardingCategoryProposals,
@@ -1003,6 +1044,12 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     shifts: [],
     claims: [],
     sitDownSessions: [],
+    planVersions: [],
+    planAcknowledgements: [],
+    planReflections: [],
+    planBridgeDecisions: [],
+    planHerculesSessions: [],
+    planActivationJobs: [],
     goalContributions: [],
     goalPurchases: [],
     householdOnboarding: null,
