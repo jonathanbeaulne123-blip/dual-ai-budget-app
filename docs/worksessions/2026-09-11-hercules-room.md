@@ -7,7 +7,7 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `claude/hercules-room`
 - **Baseline SHA:** `0837f9a4e0da068104428579d72a15629fb7b5b4` (origin/main, "Keep Hercules Easy Read inside the scrolling conversation (#444)")
-- **Head SHA:** see the final commit of this branch (four commits: rooms, navigation, collections + tail slot, evidence + docs)
+- **Head SHA:** `efe527b` (+ this SHA-record commit); four implementation commits: `2caba31` rooms, `e24a8f5` navigation, `c51ffa8` collections + tail slot, `efe527b` evidence + docs
 - **PR or issue:** none yet
 - **Risk:** Medium (cosmetics that cannot post) with one **Medium-High** edge: `COMPANION_SLOTS` / `LookV1.selections` gain an optional `tail` slot — a hosted-sync-visible companion payload shape. Needs independent trust review before merge.
 - **Decision owner:** Jonathan
