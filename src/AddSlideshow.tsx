@@ -491,8 +491,8 @@ export function AddSlideshow({
               transactionType={mode === "income" ? "income" : "expense"}
             />
             </>}
-            {!expanded && <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
-              {copy.enterLabel}
+            {!expanded && <button type="button" className={`primary post-big ${form.categorySplitEnabled ? "category-split-continue" : "entry-step-continue"}`} disabled={!canAdvance} onClick={goNext}>
+              {form.categorySplitEnabled ? (returnToReview ? "Return to review" : "Continue to account") : copy.enterLabel}
             </button>}
           </>
         )}
