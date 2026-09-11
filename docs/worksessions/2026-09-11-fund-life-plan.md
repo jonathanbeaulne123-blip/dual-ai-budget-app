@@ -1,6 +1,6 @@
 # Hearth worksession — Fund life and Plan decisions
 
-- **Status:** CLOSED — local implementation verified; release and live acceptance remain open
+- **Status:** Development release authorized; candidate and hosted checks in progress; live acceptance remains open
 - **Opened:** 2026-09-11 (`America/Toronto`)
 - **Owner / decision owner:** Jonathan
 - **Assignee:** Codex; independent read-only financial and integration reviewers
@@ -8,7 +8,7 @@
 - **Branch:** codex/fund-life-plan
 - **Baseline SHA:** 71ccc242bd44bed60ccc5eb8c8865ecd852f76c6
 - **Risk:** High
-- **Environment impact:** local implementation; no deployment, hosted schema, credentials or Production activation
+- **Environment impact:** authorized Development deployment; no hosted schema, credentials or Production activation
 
 ## Household outcome
 
@@ -91,3 +91,7 @@ Live authentication/provider, full replay/restore, physical accessibility and in
 - Tested working-change fingerprint: `f776bfa082c886a6dde7d119c2ea808149bd116f68b5f1862d7a28d43a1f06be` against base `71ccc242bd44bed60ccc5eb8c8865ecd852f76c6`. Only evidence documentation was finalized afterward.
 - **Go:** local implementation review. **Not claimed:** deployment, two-authenticated-partner acceptance or Production readiness. No hosted schema, external document, real household data or credentials were changed.
 - **Next owner:** Jonathan for product/release decisions; the next integrator verifies the branch against current main and preserves PR #433's named live acceptance gates. Release authorization remains separate from this local implementation.
+
+## Development release authorization — 2026-09-11
+
+Jonathan's follow-up “push merge and deploy” authorizes this scoped Development release. The implementation commit is `018172918d7c965824057995903a0d9061582f9f`; a fresh fetch confirms `origin/main` remains `71ccc242bd44bed60ccc5eb8c8865ecd852f76c6`. This authorization-only documentation delta does not alter the reviewed source. The release proceeds through a fresh high-risk quick gate, bounded independent release reviews, GitHub checks, exact-head merge and live deployed-asset verification. PR #433's authenticated partner, provider, replay/restore and physical acceptance gates remain open. No exhaustive suite, schema application, credentials change or Production ledger activation is authorized.

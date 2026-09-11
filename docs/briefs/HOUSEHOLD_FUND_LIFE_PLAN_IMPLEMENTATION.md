@@ -1,6 +1,6 @@
 # Household Fund: decisions for the life we choose
 
-Status: locally verified implementation; 418 tests in 36 files, enabled build and twelve component journeys pass. Verification details are recorded in the linked worksession. Not merged or deployed. High risk. Decision owner: Jonathan. Integration owner: Codex; independent read-only financial and privacy reviewers.
+Status: Development release authorized by Jonathan's 2026-09-11 instruction, “push merge and deploy”; candidate verification and hosted checks precede merge. Local evidence: 418 tests in 36 files, enabled build and twelve component journeys pass. Verification details are recorded in the linked worksession. High risk. Decision owner: Jonathan. Integration owner: Codex; independent read-only financial and privacy reviewers.
 
 ## Outcome and baseline
 
@@ -98,7 +98,7 @@ PR #433's following acceptance gates remain open: two authenticated partners on 
 
 The existing Development workflow already supplies `VITE_PLAN_SYSTEM_V2=1`; preserve it when releasing this implementation. Plain local builds omit that opt-in, so the worksession also records a build of the enabled Plan and Hercules assets.
 
-The next integrator should verify this branch against current `origin/main`, review D-242 and the worksession, then request or use explicit release authorization before publishing. Do not deploy, apply schema or activate Production from this packet. A presentation-only rollback does not remove the new-data compatibility requirement: do not replace an authority with a pre-capability writer once extension data has been accepted.
+Jonathan explicitly authorized push, merge and Development deployment on 2026-09-11. Current `origin/main` remains the recorded base at release start. Review D-242 and the worksession, complete candidate and hosted checks, and record the resulting PR, merge and Worker version. Schema application and Production activation are outside this authorization. A presentation-only rollback does not remove the new-data compatibility requirement: do not replace an authority with a pre-capability writer once extension data has been accepted.
 
 Expected handoff: exact head/base, scoped test and build evidence, browser matrix, material unresolved findings, and separately stated Development release versus Production readiness. Local evidence artifacts are ignored and contain fictional data only; no credentials, private exports or chats belong in a commit.
 
