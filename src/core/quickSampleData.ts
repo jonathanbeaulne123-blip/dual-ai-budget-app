@@ -1,5 +1,5 @@
 import { captureCommand } from "../ledgerSync/capture.ts";
-import { postEntry } from "./commands.ts";
+import { addPotentialExpense, postEntry } from "./commands.ts";
 import { monthKeyFromDateKey, parseDateKey, shiftMonthKey } from "./calendar.ts";
 import { createDemoRandom } from "./demoRandom.ts";
 import { JOINT, ValidationError, type Household, type CommitResult } from "./types.ts";
@@ -80,4 +80,54 @@ export const addQuickSampleData = captureCommand("addQuickSampleData", function(
     postedIds.push(...result.postedIds);
   }
   return { household: next, postedIds, warnings: [], undo: { id: crypto.randomUUID(), label: `Add ${input.months} months of fictional sample data`, snapshot: h, postedIds, actorMemberId: input.memberId, commandKind: "addQuickSampleData" } };
+});
+
+
+const futureSamplePrefix = "Fictional sample plan · ";
+
+/** V2 is a separate command: pending V1 confirmations must replay unchanged. */
+export function previewQuickSampleScenario(h: Household, input: QuickSampleInput) {
+  const today = input.today.trim();
+  parseDateKey(today);
+  const currentMonth = monthKeyFromDateKey(today);
+  const marker = `quick-sample-v1:${input.memberId}:${input.visibility}`;
+  const reversed = new Set(h.transactions.map(t => t.reversalOfId).filter(Boolean));
+  const existing = h.transactions.some(t => t.sourceId === marker && !t.reversalOfId && !reversed.has(t.id));
+  if (h.transactions.length > 2000 || (h.potentialExpenses ?? []).length > 500) throw new ValidationError("This ledger already has plenty of history or plans. Use a smaller Development ledger for quick samples.");
+  if ((h.potentialExpenses ?? []).some(p => p.status !== "removed" && p.createdBy === input.memberId && p.visibility === input.visibility && p.title.startsWith(futureSamplePrefix))) throw new ValidationError("This ledger already has your fictional future plans. Remove the unposted set in Calendar before replacing it; posted plans cannot be regenerated.");
+  // Generate full-month templates, then partition by actual occurrence date.
+  // The legacy pure generator validates the actor, catalog, scope and bounds.
+  const templateHousehold = { ...h, transactions: [], kitchen: { ...h.kitchen, books: { ...h.kitchen.books, closedMonths: existing ? [] : h.kitchen.books.closedMonths } } };
+  const history = previewQuickSampleData(templateHousehold, { ...input, today: `${currentMonth}-28` });
+  const rows = existing ? [] : history.rows.filter(r => r.date <= today);
+  const endMonth = shiftMonthKey(currentMonth, input.months);
+  const [year, month] = endMonth.split("-").map(Number);
+  const lastDay = new Date(Date.UTC(year!, month!, 0)).getUTCDate();
+  const futureEnd = `${endMonth}-${String(Math.min(Number(today.slice(8)), lastDay)).padStart(2, "0")}`;
+  const futureTemplates = previewQuickSampleData({ ...templateHousehold, kitchen: { ...templateHousehold.kitchen, books: { ...templateHousehold.kitchen.books, closedMonths: [] } } }, { ...input, today: `${endMonth}-28` });
+  const plans: Parameters<typeof addPotentialExpense>[1][] = [...history.rows, ...futureTemplates.rows]
+    .filter(r => r.type === "expense" && r.date > today && r.date <= futureEnd)
+    .map(r => ({ date: r.date, title: (r.note ?? "Fictional sample · Expense").replace("Fictional sample · ", futureSamplePrefix), amount: r.amount,
+      accountId: input.accountId, subcategoryId: r.subcategoryId, splits: r.splits, createdBy: input.memberId, visibility: input.visibility }));
+  return { rows, plans, existing, firstDate: history.firstDate, lastDate: today, futureEnd,
+    incomeCents: rows.filter(r => r.type === "income").reduce((s, r) => s + Math.round(Number(r.amount) * 100), 0),
+    expenseCents: rows.filter(r => r.type === "expense").reduce((s, r) => s + Math.round(Number(r.amount) * 100), 0),
+    plannedCents: plans.reduce((s, p) => s + Math.round(Number(p.amount) * 100), 0) };
+}
+
+export const addQuickSampleScenario = captureCommand("addQuickSampleScenario", function(h: Household, input: QuickSampleInput): CommitResult {
+  const preview = previewQuickSampleScenario(h, input);
+  let next = h;
+  const postedIds: string[] = [];
+  for (const row of preview.rows) {
+    const result = postEntry(next, row);
+    next = result.household;
+    postedIds.push(...result.postedIds);
+  }
+  for (const plan of preview.plans) {
+    const result = addPotentialExpense(next, plan);
+    next = result.household;
+    postedIds.push(...result.postedIds);
+  }
+  return { household: next, postedIds, warnings: [], undo: { id: crypto.randomUUID(), label: `Add ${input.months} months of fictional history and future plans`, snapshot: h, postedIds, actorMemberId: input.memberId, commandKind: "addQuickSampleScenario" } };
 });

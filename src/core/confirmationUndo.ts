@@ -23,6 +23,14 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
     throw new ValidationError("Kitchen changes do not use Undo.");
   }
 
+  if (token.commandKind === "addQuickSampleScenario") {
+    for (const plan of current.potentialExpenses ?? []) {
+      if (!postedIds.includes(plan.id)) continue;
+      if (plan.createdBy !== token.actorMemberId || plan.status !== "planned" || plan.updatedAt !== plan.createdAt) {
+        throw new ValidationError("A sample plan was changed or posted. Correct its history and plans individually instead of undoing the set.");
+      }
+    }
+  }
   const previous = cloneHousehold(current);
   const next = cloneHousehold(current);
   const dead = new Set(postedIds);
@@ -80,6 +88,7 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   next.coworkerAttendance = (next.coworkerAttendance ?? []).filter((row) => !dead.has(row.id));
   next.coworkerSchedules = (next.coworkerSchedules ?? []).filter((row) => !dead.has(row.id));
   next.shiftBibles = (next.shiftBibles ?? []).filter((row) => !dead.has(row.id));
+  if (token.commandKind === "addQuickSampleScenario") next.potentialExpenses = (next.potentialExpenses ?? []).filter(plan => !dead.has(plan.id));
   next.potentialExpenses = (next.potentialExpenses ?? []).map((plan) => (
     reopenedPotentialIds.has(plan.id) && plan.status === "posted" && plan.transactionId && dead.has(plan.transactionId)
       ? { ...plan, status: "planned" as const, transactionId: null, postedAt: null, updatedAt: at }

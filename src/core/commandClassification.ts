@@ -23,6 +23,14 @@ export type CommandClassificationRow = {
  */
 export const COMMAND_CLASSIFICATION: readonly CommandClassificationRow[] = [
   {
+    commandKind: "addQuickSampleScenario",
+    writeKind: "ledger-write",
+    correctionRoute: "confirmation-undo",
+    undoScope: "This Confirm's history and unchanged unposted plans; plan-only additions use Calendar removal",
+    uiLabel: "Undo this sample set before editing or posting its plans",
+    partnerSafe: true,
+  },
+  {
     commandKind: "addQuickSampleData",
     writeKind: "ledger-write",
     correctionRoute: "confirmation-undo",

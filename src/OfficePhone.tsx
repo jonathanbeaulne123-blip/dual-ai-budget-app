@@ -275,9 +275,9 @@ export function OfficePhone({
   const sealsContent = (
     <div className="hearth-wax-seals ph-seals" role="group" aria-label="Desk seals">
       <WaxSeal label="Money in" tone="post" pending={seals.inCents === 0}
-        value={formatCad(seals.inCents)} sub="posted income this month" pressed={chapter === "in"} onClick={event => openChapter("in", event.currentTarget)} />
+        value={formatCad(seals.inCents)} sub={`${view === "personal" ? "Personal" : "Shared"} income this month`} pressed={chapter === "in"} onClick={event => openChapter("in", event.currentTarget)} />
       <WaxSeal label="Money out" tone="due" pending={seals.outCents === 0}
-        value={formatCad(seals.outCents)} sub="posted expenses only" pressed={chapter === "out"} onClick={event => openChapter("out", event.currentTarget)} />
+        value={formatCad(seals.outCents)} sub={`${view === "personal" ? "Personal" : "Shared"} expenses this month`} pressed={chapter === "out"} onClick={event => openChapter("out", event.currentTarget)} />
       <WaxSeal label="Leftover spend" tone="close" value={formatCad(seals.leftoverCents)}
         sub="posted in minus posted expenses" pending={seals.inCents === 0 && seals.outCents === 0}
         pressed={chapter === "leftover"} onClick={event => openChapter("leftover", event.currentTarget)} />
