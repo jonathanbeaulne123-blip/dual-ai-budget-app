@@ -33,6 +33,8 @@ Independent read-only investigation: google_calendar_trace confirmed expiry reco
 - `node scripts/check-google-calendar-reading.mjs` passed 18 theme/scope/viewport cases (Classic, Taylor, Newfoundland; Shared, Personal; 320/390/1440), six axe scans, keyboard Refresh, and both synthetic calendars. 40 mocked Google reads, zero writes, zero browser errors. Evidence: `/tmp/hearth-google-calendar-reading/evidence.json`; screenshots in the same directory. Mobile screenshot visually checked.
 - Independent review found no actionable defects; requested disabled-service Connect coverage was added and passed with the actual command callback.
 
+- CI initially caught trailing whitespace in this new note, then required a focused test mapping for 19 transitive dependents. Removed whitespace and added the Calendar/Google mapping to `test/verification-focus-map.json`; the ordinary no-argument CI gate now selects the same scoped coverage.
+
 ## Release review
 CONDITIONAL: code review, scoped tests, build and synthetic browser evidence pass. Exhaustive tests were not requested. Actual authenticated Google access and physical-device proof remain open. Release execution follows Jonathan's earlier push/merge/deploy authorization in this ongoing Development repair session. No secrets, schema, Google writes, household data changes, or Production activation.
 
