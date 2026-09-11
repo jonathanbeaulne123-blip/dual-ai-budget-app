@@ -753,3 +753,9 @@ High risk. Budget (5): confirmed workflows reuse accepted accounting and recover
 The fixed mobile navigation and the measured Household Fund pull tab are one shared bottom obstruction, exposed as `--mobile-bottom-clearance`. Every new mobile sheet, drawer, sticky action, and scrollable interaction must reserve that boundary so its last control can move fully above both pieces of chrome. A surface may consume the shared token even when the Fund is absent; its measured Fund term then resolves to zero.
 
 CadPads never own wheel scrolling. They contain buttons rather than scrollable content, so wheel and trackpad gestures over a CadPad remain available to its outer sheet or document. This is presentation and input routing only; entry and Confirm semantics are unchanged.
+
+## 2026-09-11 — Read own and subscribed shared Google calendars
+
+Calendar reads discover all non-hidden calendars with reader access on the current member's scoped device credential, including shared household calendars. They paginate calendar and event lists, qualify event ids by calendar, retain successful calendars on partial failure, and project events into the household timezone. Other members' cached credentials are not read. Google events stay local display overlays and never post money.
+
+Hearth identity sign-in and direct Calendar consent remain separate. Calendar offers explicit Connect/Reconnect and read-only Refresh without requiring reminder writes. Connect may enable the Calendar service; Disconnect clears this device's Google credential without unlinking the household identity. Background refresh never opens Google account UI. See [worksession](worksessions/2026-09-11-google-calendar-reading.md) for evidence and release state.
