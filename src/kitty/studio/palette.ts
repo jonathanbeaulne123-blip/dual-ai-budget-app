@@ -48,3 +48,16 @@ export function studioHex(base: string): string {
 export function isStudioHex(value: string): boolean {
   return /^#[0-9a-f]{6}$/.test(value);
 }
+
+/** Fixed art tones for the flat cat (ink stays currentColor so themes tint it). */
+export const FLAT_TONES = {
+  white: "#ffffff",
+  blush: "#d38c8c",
+  tongue: "#e39a9a",
+  brass: "#bda375",
+  shadow: "#6b4c33",
+  doorOpen: "#5a4431",
+  doorTrim: "#a88451",
+  paper: "#fff0d0",
+  flap: "#b89665",
+} as const;
