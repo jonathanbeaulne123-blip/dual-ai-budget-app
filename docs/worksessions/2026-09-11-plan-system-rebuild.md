@@ -1,17 +1,17 @@
 # Hearth worksession — Plan System V2 rebuild
 
-- **Status:** DEVELOPMENT RELEASE AUTHORIZED; EXACT-HEAD VERIFICATION IN PROGRESS
+- **Status:** DEVELOPMENT DEPLOYED; LIVE ASSET VERIFIED; POST-DEPLOY ACCEPTANCE OPEN
 - **Opened:** 2026-09-11 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `dual-ai-budget-app`
 - **Branch:** `codex/plan-system-rebuild`
 - **Baseline SHA:** `b24dd73143b143ef96bfc856ba03cfb9272d802f`
-- **Head SHA:** implementation commit recorded in the final handoff
-- **PR or issue:** none
+- **Head SHA:** `5c90adca5a82968e1f7cf4c7e746f9fd757c01d1`
+- **PR or issue:** [#433](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/433)
 - **Risk:** High
 - **Decision owner:** Jonathan
-- **Environment impact:** Development presentation enabled after merge; Production continuity and data unchanged
+- **Environment impact:** Development presentation enabled and deployed; Production continuity and data unchanged
 
 ## Household outcome
 
@@ -58,7 +58,9 @@ The worktree was created from exact `origin/main@b24dd73143b143ef96bfc856ba03cfb
 - [ ] Authenticated two-browser Shared Sitdown convergence and independent acknowledgement.
 - [ ] Full event compaction, backup, import and restore corpus.
 - [ ] Physical phone, VoiceOver and product acceptance by Jonathan and Bianca.
-- [ ] Exact clean release-head exhaustive gate; requires separate authorization.
+- [x] Exact clean Release-risk quick gate on `d00e51f7afcfba317fdc7e4d79da7da89977e8ca`: 243 selected tests pass, including 111 serial tests; TypeScript, AI-surface and diff hygiene pass in 192.594 s.
+- [x] PR and merged-main GitHub checks pass; Development Worker version `8ace4c5b-fcfb-4621-80a2-65cfec898085` is active.
+- [x] Live shell returns HTTP 200 and `cache-control: no-store`; its main asset contains the V2 activation markers.
 
 ## Evidence log
 
@@ -67,6 +69,10 @@ The worktree was created from exact `origin/main@b24dd73143b143ef96bfc856ba03cfb
 - `pnpm test` → quick-gate-passed; 98 tests selected, 7 local-worker tests skipped in the URL-free phase, 95.758 s.
 - `pnpm build` → pass; Vite client and Hercules Pro UI built.
 - `node test/plan-studio-layout.mjs` → 12/12 local synthetic browser cases pass. Artifacts: `.artifacts/plan-studio/` (ignored local evidence).
+- `pnpm test -- --risk=release ...` at `d00e51f` → 243/243 selected tests pass; 7 URL-dependent Worker tests skip in this lane and pass 7/7 in the separate local Worker harness.
+- PR #433 checks → `test`, `pages`, `confirmed-actions`, and Cloudflare Workers Build pass. Merge commit: `5c90adca5a82968e1f7cf4c7e746f9fd757c01d1`. Main workflow runs: test `34620389525`, deploy `34620390111`, confirmed actions `34620389994`.
+- Live `wrangler deployments status` → version `8ace4c5b-fcfb-4621-80a2-65cfec898085`, created `2026-09-11T16:11:12.699Z`. `curl` → HTTP 200, `cache-control: no-store`; `/assets/index-DhyHFuuN.js` contains `PLAN_SYSTEM_V2`, `Try a change`, `Propose a change`, and `Draft saved privately`.
+- The exhaustive repository gate remains red before and after this release. A direct `origin/main@e7bc415` comparison reproduces the broad stale copy/source/Worker failures; the release-introduced lane omission was fixed before merge. Do not describe the exhaustive gate as green.
 
 ## Decisions
 
@@ -81,9 +87,9 @@ The worktree was created from exact `origin/main@b24dd73143b143ef96bfc856ba03cfb
 
 - The trusted Shared Hercules route and actor/source/hash checks pass locally, but an authenticated two-browser Development session with a live provider has not been run.
 - Reflection and Bridge editors are complete for this slice. Product copy, pacing and the partner handoff still need Jonathan and Bianca's hands-on review.
-- Durable alarms and snapshot backstop pass the real local SQLite Worker harness. A deployed alarm firing with sleeping clients remains unverified until Development release authorization.
+- Durable alarms and snapshot backstop pass the real local SQLite Worker harness. A deployed alarm firing with sleeping clients remains unverified.
 - Automated accessibility passed; physical assistive technology and touch acceptance have not been performed.
 
 ## Handoff
 
-Jonathan authorized Development activation, merge, push and deploy on 2026-09-11. The next acceptance slice after deployment is authenticated two-browser Shared Sitdown/Hercules convergence, alarm observation, replay/restore corpus and physical accessibility/product review. Production schema and Production continuity activation remain separately gated.
+Development is deployed from PR #433. The next acceptance slice is authenticated two-browser Shared Sitdown/Hercules convergence, sleeping-client alarm observation, replay/restore corpus and physical accessibility/product review. Production schema and Production continuity activation remain separately gated.
