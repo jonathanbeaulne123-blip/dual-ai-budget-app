@@ -23,6 +23,7 @@ type Inspection = {
 };
 
 const startup = vi.hoisted(() => ({
+  calendarProps: null as null | Parameters<typeof import("../src/Calendar.tsx").CalendarPage>[0],
   officeKitchen: null as import("../src/kitchenCommand.ts").KitchenCommand | null,
   v2: false,
   auditReceipt: "missing" as "accepted"|"missing"|"pending"|"rejected",
@@ -224,7 +225,7 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
     return createElement("div", { "data-testid": "cached-office-shell" }, "Cached office shell");
   },
   DeferredBooksPage: (props:{onDuplicateCommand:import("../src/Ledger.tsx").DuplicateCommand;onRemove:(transaction:import("../src/core/types.ts").Transaction)=>void}) => {startup.removeReview=props.onRemove;startup.duplicateWriter=props.onDuplicateCommand;return null;},
-  DeferredCalendarPage: () => null,
+  DeferredCalendarPage: (props: NonNullable<typeof startup.calendarProps>) => { startup.calendarProps = props; return createElement("div", { "data-testid": "calendar-stub" }); },
   DeferredWorkShiftPage: (props: NonNullable<typeof startup.countProps>) => { startup.countProps=props; return createElement("div",{"data-testid":"shift-room-stub"}); },
   DeferredPairingCard: () => null,
   DeferredWelcomeJoin: () => null,
@@ -1772,6 +1773,38 @@ describe("cached-shell startup books gate", () => {
     else expect(container.querySelector(".add-slideshow")).toBeNull();
     expect(candidate!.transactions).toEqual(before.transactions);expect(candidate!.shifts).toEqual(before.shifts);
     expect(candidate!.kitchen.openShifts.find(row=>row.memberId==="MEM-002")!.status).toBe("confirming");
+  });
+
+  it("saves a Personal Calendar plan through the App checkpoint and cloud authority", async () => {
+    startup.v2 = true;
+    vi.stubEnv("VITE_LEDGER_SYNC_V2", "1");
+    vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH", "1");
+    startup.cached = await acceptedScenarioFixture();
+    startup.calendarProps = null;
+    const { addPotentialExpense } = await import("../src/core/index.ts");
+    const { capturedIntent } = await import("../src/ledgerSync/capture.ts");
+    const { commandFromCapture } = await import("../src/ledgerSync/protocol.ts");
+    const { prepareCommand } = await import("../src/ledgerSync/authority.ts");
+    const pair = splitForSync(startup.cached, "MEM-002");
+    let accepted: Awaited<ReturnType<typeof prepareCommand>> | null = null;
+    startup.punchConfirm = async candidate => {
+      const scope = { environment: candidate.environment, householdId: candidate.householdId, memberId: "MEM-002", subject: "synthetic", role: "owner" as const, expires: Date.now() + 60000, aclEpoch: 1 };
+      const command = await commandFromCapture(capturedIntent(candidate)!, scope, crypto.randomUUID());
+      accepted = await prepareCommand({ sequence: pair.shared.revision, shared: pair.shared, personal: new Map([["MEM-002", pair.personal]]) }, command, scope, () => {});
+      return { household: accepted.household, warnings: [], postedIds: accepted.receipt.postedIds, undo: { ...accepted.receipt.undo, snapshot: startup.cached! }, persistenceScope: "member-personal", personalMemberId: "MEM-002" };
+    };
+    await act(async () => root.render(createElement(App)));
+    await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"), 4000);
+    await act(async () => container.querySelectorAll<HTMLButtonElement>(".view-switch button")[1]!.click());
+    const calendar = [...container.querySelectorAll<HTMLButtonElement>("nav.nav button")].find(button => button.getAttribute("aria-label") === "Calendar" || button.textContent === "Cal")!;
+    await act(async () => calendar.click());
+    await waitForUi(() => expect(startup.calendarProps).not.toBeNull());
+    await act(async () => startup.calendarProps!.onCommand(current => addPotentialExpense(current, { date: "2026-09-12", title: "Synthetic private plan", amount: "20", accountId: "ACC-CHEQUING", subcategoryId: "SUB-LIFE-FUN", createdBy: "MEM-002", visibility: "personal" })));
+    await waitForUi(() => expect(accepted, container.textContent ?? "").not.toBeNull(), 4000);
+    expect(accepted!.shared.potentialExpenses?.some(row => row.title === "Synthetic private plan")).toBe(false);
+    expect(accepted!.personal.potentialExpenses?.some(row => row.title === "Synthetic private plan")).toBe(true);
+    expect(container.textContent).not.toContain("does not have a cloud-authority rule");
+    await waitForUi(() => expect(startup.calendarProps!.household.potentialExpenses.some(row => row.title === "Synthetic private plan")).toBe(true));
   });
 
   it("issues an accepted cached V2 pair for the scenario without legacy SQL", async () => {

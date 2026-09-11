@@ -763,3 +763,6 @@ Hearth identity sign-in and direct Calendar consent remain separate. Calendar of
 
 ## 2026-09-11 — Calendar context and display controls
 Calendar uses scoped facts with accessible account references instead of Home's narrower wallet projection. Personal plans and receipts keep their existing ownership and private persistence. Shared repeating forms offer only Shared accounts and goals; private recurring-template persistence is not implied. Month/day/upcoming visibility settings are local to environment, household, member and view, with independent Google calendar ids. Hiding rows never changes amounts, heat, due reminders or the planning board. See `docs/worksessions/2026-09-11-calendar-personal-filters.md`.
+
+## 2026-09-11 — Personal Calendar command authority
+The App's Personal allowlist accepts bounded actor-owned potential-expense lifecycle changes and reviewed private receipts, not only preferences. Fund-backed postings affect governed Shared Fund facts too, so use the ordinary financial command authority with private envelope redaction, matching funded postEntry. No schema or consent boundary changes. Evidence: `docs/worksessions/2026-09-11-personal-plan-cloud-authority.md`.
