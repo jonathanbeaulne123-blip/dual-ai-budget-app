@@ -40,7 +40,7 @@ export type CompanionPreference = {
   revision: number; updatedAt: string; source: "explicit-user";
 };
 export type CompanionSourceReference = {
-  kind: "account" | "transaction" | "goal" | "shift" | "page"; id: string;
+  kind: "account" | "transaction" | "goal" | "shift" | "page" | "plan-version" | "plan-line" | "plan-scenario" | "plan-assumption" | "plan-bridge" | "plan-sitdown"; id: string;
 };
 export type CompanionConversationTurn = {
   id: string; role: "user" | "hercules"; text: string; createdAt: string;
@@ -207,7 +207,7 @@ function turn(value: unknown): CompanionConversationTurn {
     id: id(row.id), role: literal(row.role, ["user", "hercules"]), text: text(row.text, COMPANION_LIMITS.textCharacters), createdAt: timestamp(row.createdAt),
     sourceReferences: list(row.sourceReferences, 20, value => {
       const source = object(value, ["kind", "id"]);
-      return { kind: literal(source.kind, ["account", "transaction", "goal", "shift", "page"]), id: id(source.id) };
+      return { kind: literal(source.kind, ["account", "transaction", "goal", "shift", "page", "plan-version", "plan-line", "plan-scenario", "plan-assumption", "plan-bridge", "plan-sitdown"]), id: id(source.id) };
     }),
   };
 }

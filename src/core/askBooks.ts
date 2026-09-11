@@ -18,9 +18,11 @@ export type HerculesAskContext = {
   toolPageMode?: "free" | "pro";
   /** Optional disclosed macro soft prior for tip tools. */
   macroPrior?: import("./macroPriors.ts").MacroPrior | null;
+  /** Visible Plan surface. The tools still re-resolve every id against scoped records. */
+  plan?: import("./planSystem.ts").HerculesPlanContext;
 };
 
-export type BooksAskRow = { label: string; value: string; source?: HerculesNumberSource; basis?: "journal" | "projection" };
+export type BooksAskRow = { label: string; value: string; source?: HerculesNumberSource; basis?: "journal" | "projection" | "plan" };
 
 export type BooksAsk = {
   kind: "answer" | "help";

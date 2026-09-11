@@ -89,6 +89,25 @@ import {
   uniqueGoogleServices,
 } from "./google.ts";
 import { mergeTombstones } from "./sync.ts";
+import {
+  legacyHouseholdPlanDraft,
+  planAcknowledgementState,
+  planCompatibilityRows,
+  planDigest,
+  requiredPlanMemberIds,
+  shapePlanDrafts,
+  shapePlanLines,
+  shapePlanVersions,
+  type PlanBridgeDecision,
+  type PlanCoachingIntensity,
+  type PlanDraft,
+  type PlanHerculesTurn,
+  type PlanLine,
+  type PlanOutcome,
+  type PlanScenario,
+  type PlanScope,
+  type PlanVersion,
+} from "./planSystem.ts";
 import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
 import { resizePotentialExpenseSplits, shapePotentialExpenseCalendarLink } from "./potentialExpenses.ts";
 import {
@@ -3429,8 +3448,302 @@ function seedBudgetPlan(
   };
 }
 
+function commitPlanPersonal(previous: Household, next: Household, memberId: string, label: string, at: string): CommitResult {
+  return {
+    household: next,
+    warnings: [],
+    postedIds: [],
+    persistenceScope: "member-personal",
+    personalMemberId: memberId,
+    undo: { id: `plan-personal-${memberId}-${at}`, label, snapshot: previous, postedIds: [], commandKind: "plan-personal" },
+  };
+}
+
+function requirePlanActor(household: Household, memberId: string, createdBy: string) {
+  const member = requireMember(household, memberId);
+  const actor = resolveActor(household, { createdBy });
+  if (!member.active || actor.createdBy !== member.id) throw new ValidationError("Only you can change your private Plan.");
+  return member;
+}
+
+function validatedPlanDraft(household: Household, input: {
+  id?: string;
+  scope: PlanScope;
+  memberId: string;
+  targetMonth: MonthKey;
+  baseVersionId?: string;
+  lines: PlanLine[];
+  assumptions?: PlanDraft["assumptions"];
+  note?: string;
+  createdBy: string;
+}, at: string): PlanDraft {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  if (!/^\d{4}-\d{2}$/.test(input.targetMonth)) throw new ValidationError("Choose a valid Plan month.");
+  const lines = shapePlanLines(input.lines);
+  if (lines.length !== input.lines.length || lines.some((line) => line.createdBy !== input.memberId)) {
+    throw new ValidationError("Every Plan line must be a valid non-negative CAD amount created by you.");
+  }
+  const prior = shapePlanDrafts(household.planDrafts, input.memberId).find((draft) => draft.id === input.id);
+  return {
+    id: prior?.id ?? input.id ?? nextId("PLAN-DRAFT-", shapePlanDrafts(household.planDrafts).map((row) => row.id)),
+    scope: input.scope,
+    ownerMemberId: input.memberId,
+    targetMonth: input.targetMonth,
+    ...(input.baseVersionId ? { baseVersionId: input.baseVersionId } : {}),
+    lines,
+    assumptions: input.assumptions ?? [],
+    note: (input.note ?? "").trim(),
+    updatedAt: at,
+  };
+}
+
+/** Autosaves only to the acting member's Personal envelope, including Household pre-proposal work. */
+export const savePlanDraft = captureCommand("savePlanDraft", function savePlanDraft(household: Household, input: Parameters<typeof validatedPlanDraft>[1]): CommitResult {
+  const at = nowIso();
+  const previous = cloneHousehold(household);
+  const next = cloneHousehold(household);
+  const draft = validatedPlanDraft(household, input, at);
+  next.planDrafts = [...shapePlanDrafts(next.planDrafts, input.memberId).filter((row) => row.id !== draft.id), draft];
+  return commitPlanPersonal(previous, next, input.memberId, "Draft saved privately", at);
+});
+
+export const createPlanScenario = captureCommand("createPlanScenario", function createPlanScenario(household: Household, input: {
+  id?: string;
+  memberId: string;
+  draftId: string;
+  scope: PlanScope;
+  name: string;
+  changedLines: PlanLine[];
+  createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const draft = shapePlanDrafts(household.planDrafts, input.memberId).find((row) => row.id === input.draftId && row.scope === input.scope);
+  if (!draft) throw new ValidationError("That private Plan draft is no longer available.");
+  const lines = shapePlanLines(input.changedLines);
+  if (lines.length !== input.changedLines.length || lines.some((line) => line.createdBy !== input.memberId)) throw new ValidationError("Review the alternative Plan lines.");
+  const name = input.name.trim();
+  if (!name) throw new ValidationError("Name this alternative.");
+  const at = nowIso();
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  const existing = (next.planScenarios ?? []).find((row) => row.id === input.id && row.ownerMemberId === input.memberId);
+  const scenario: PlanScenario = { id: existing?.id ?? nextId("PLAN-SCENARIO-", (next.planScenarios ?? []).map((row) => row.id)), scope: input.scope,
+    ownerMemberId: input.memberId, draftId: draft.id, name, changedLines: lines, updatedAt: at };
+  next.planScenarios = [...(next.planScenarios ?? []).filter((row) => row.id !== scenario.id), scenario];
+  return commitPlanPersonal(previous, next, input.memberId, "Alternative saved privately", at);
+});
+
+function versionFromDraft(household: Household, draft: PlanDraft, createdBy: string, reason: string, state: PlanVersion["state"], at: string): PlanVersion {
+  const prior = shapePlanVersions(household.planVersions).filter((row) => row.scope === draft.scope && row.monthKey === draft.targetMonth
+    && (draft.scope === "household" || row.ownerMemberId === draft.ownerMemberId));
+  const sequence = Math.max(0, ...prior.map((row) => row.sequence)) + 1;
+  const version: PlanVersion = {
+    id: nextId("PLAN-VERSION-", shapePlanVersions(household.planVersions).map((row) => row.id)), scope: draft.scope,
+    ...(draft.scope === "personal" ? { ownerMemberId: draft.ownerMemberId } : {}), monthKey: draft.targetMonth, sequence,
+    ...(draft.baseVersionId ? { baseVersionId: draft.baseVersionId } : {}), lines: structuredClone(draft.lines), assumptions: structuredClone(draft.assumptions),
+    reason, digest: "", state, createdBy, createdAt: at, ...(state === "active" ? { activatedAt: at } : {}),
+  };
+  version.digest = planDigest(version);
+  return version;
+}
+
+export const lockPersonalPlan = captureCommand("lockPersonalPlan", function lockPersonalPlan(household: Household, input: {
+  memberId: string; draftId: string; reason: string; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const draft = shapePlanDrafts(household.planDrafts, input.memberId).find((row) => row.id === input.draftId && row.scope === "personal");
+  if (!draft) throw new ValidationError("That Personal Plan draft is no longer available.");
+  const prior = shapePlanVersions(household.planVersions, { scope: "personal", ownerMemberId: input.memberId })
+    .filter((row) => row.monthKey === draft.targetMonth && row.state !== "superseded");
+  const reason = input.reason.trim();
+  if (prior.length && !reason) throw new ValidationError("Say why this revision is needed.");
+  const at = nowIso(), currentMonth = monthKeyFromDateKey(todayKey());
+  const version = versionFromDraft(household, draft, input.memberId, reason || "My monthly plan", draft.targetMonth <= currentMonth ? "active" : "scheduled", at);
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  next.planVersions = [
+    ...(next.planVersions ?? []).map((row) => row.scope === "personal" && row.ownerMemberId === input.memberId && row.monthKey === draft.targetMonth && row.state !== "superseded"
+      ? { ...row, state: "superseded" as const } : row),
+    version,
+  ];
+  return commitPlanPersonal(previous, next, input.memberId, prior.length ? "Personal Plan revision locked" : "Personal Plan locked", at);
+});
+
+/** Explicit disclosure boundary: copies one private Household draft into an immutable Shared proposal. */
+export const proposeHouseholdPlan = captureCommand("proposeHouseholdPlan", function proposeHouseholdPlan(household: Household, input: {
+  memberId: string; draftId: string; reason: string; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const draft = shapePlanDrafts(household.planDrafts, input.memberId).find((row) => row.id === input.draftId && row.scope === "household");
+  if (!draft) throw new ValidationError("That private Household draft is no longer available.");
+  const activeForMonth = shapePlanVersions(household.planVersions, { scope: "household" }).filter((row) => row.monthKey === draft.targetMonth && row.state !== "superseded");
+  const reason = input.reason.trim();
+  if (activeForMonth.length && !reason) throw new ValidationError("Say why this Household Plan should change.");
+  const at = nowIso(), version = versionFromDraft(household, draft, input.memberId, reason || "Our monthly plan", "proposed", at);
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  next.planVersions = [
+    ...(next.planVersions ?? []).map((row) => row.scope === "household" && row.monthKey === draft.targetMonth && row.state === "proposed" ? { ...row, state: "superseded" as const } : row),
+    version,
+  ];
+  return commit(previous, next, "Household Plan", `Proposed the exact ${draft.targetMonth} Plan for both partners to acknowledge`, [version.id], [], "proposeHouseholdPlan");
+});
+
+export const adoptLegacyHouseholdPlan = captureCommand("adoptLegacyHouseholdPlan", function adoptLegacyHouseholdPlan(household: Household, input: {
+  monthKey: MonthKey; memberId: string; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const existing = shapePlanVersions(household.planVersions, { scope: "household" }).find((row) => row.monthKey === input.monthKey);
+  if (existing) throw new ValidationError("This month already has a versioned Household Plan.");
+  const at = nowIso(), draft = legacyHouseholdPlanDraft(household, input.monthKey, input.memberId, at);
+  if (!draft.lines.length) throw new ValidationError("There is no non-zero household budget to adopt for this month.");
+  const version = versionFromDraft(household, draft, input.memberId, "Adopted from the legacy household budget", "proposed", at);
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  next.planVersions = [...(next.planVersions ?? []), version];
+  return commit(previous, next, "Household Plan", `Prepared the first ${input.monthKey} Household Plan baseline`, [version.id], [], "adoptLegacyHouseholdPlan");
+});
+
+export const acknowledgeHouseholdPlan = captureCommand("acknowledgeHouseholdPlan", function acknowledgeHouseholdPlan(household: Household, input: {
+  planVersionId: string; expectedDigest: string; memberId: string; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const required = requiredPlanMemberIds(household);
+  if (!required.includes(input.memberId)) throw new ValidationError("Only the two active planning partners can acknowledge this Plan.");
+  const version = shapePlanVersions(household.planVersions, { scope: "household" }).find((row) => row.id === input.planVersionId && row.state === "proposed");
+  if (!version || version.digest !== input.expectedDigest) throw new ValidationError("That Plan changed. Review the current version before acknowledging it.");
+  if ((household.planAcknowledgements ?? []).some((row) => row.planVersionId === version.id && row.memberId === input.memberId && row.planDigest === version.digest)) {
+    throw new ValidationError("You already acknowledged this exact Plan.");
+  }
+  const at = nowIso(), acknowledgement = { id: nextId("PLAN-ACK-", (household.planAcknowledgements ?? []).map((row) => row.id)), planVersionId: version.id,
+    planDigest: version.digest, memberId: input.memberId, acknowledgedAt: at };
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  next.planAcknowledgements = [...(next.planAcknowledgements ?? []), acknowledgement];
+  const completed = planAcknowledgementState(next, version).complete;
+  if (completed) {
+    const state = version.monthKey <= monthKeyFromDateKey(todayKey()) ? "active" as const : "scheduled" as const;
+    next.planVersions = (next.planVersions ?? []).map((row) => row.scope === "household" && row.monthKey === version.monthKey
+      ? row.id === version.id ? { ...row, state, ...(state === "active" ? { activatedAt: at } : {}) } : row.state === "active" || row.state === "scheduled" ? { ...row, state: "superseded" as const } : row
+      : row);
+    const accepted = next.planVersions.find((row) => row.id === version.id)!;
+    const acceptedBridgeIds = new Set(accepted.lines.flatMap((line) => line.sourceReference?.type === "bridge" ? [line.sourceReference.id] : []));
+    next.planBridgeDecisions = (next.planBridgeDecisions ?? []).map((row) => acceptedBridgeIds.has(row.id) ? { ...row, state: "accepted" as const, acceptedInPlanVersionId: accepted.id, updatedAt: at } : row);
+    const projection = planCompatibilityRows(accepted, next, at);
+    const projectedIds = new Set(projection.map((row) => `${row.monthKey}:${row.subcategoryId}`));
+    next.budgetPlans = [
+      ...next.budgetPlans.map((row) => row.monthKey === version.monthKey && row.active && !projectedIds.has(`${row.monthKey}:${row.subcategoryId}`) ? { ...row, active: false, updatedAt: at } : row),
+      ...projection.filter((row) => !next.budgetPlans.some((prior) => prior.id === row.id)),
+    ].map((row) => projection.find((candidate) => candidate.id === row.id) ?? row);
+  }
+  return commit(previous, next, "Household Plan", completed ? `Both partners acknowledged the exact ${version.monthKey} Plan` : `Recorded ${input.memberId}'s exact Plan acknowledgement`, [acknowledgement.id, ...(completed ? [version.id] : [])], [], "acknowledgeHouseholdPlan");
+});
+
+export const savePlanLearningProgress = captureCommand("savePlanLearningProgress", function savePlanLearningProgress(household: Household, input: {
+  memberId: string; monthKey: MonthKey; lessonId: string; state: "offered" | "completed" | "skipped"; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const at = nowIso(), id = `PLAN-LEARN-${input.memberId}-${input.monthKey}-${slug(input.lessonId)}`;
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  const row = { id, memberId: input.memberId, monthKey: input.monthKey, lessonId: input.lessonId, state: input.state, updatedAt: at };
+  next.planLearningProgress = [...(next.planLearningProgress ?? []).filter((item) => item.id !== id), row];
+  return commitPlanPersonal(previous, next, input.memberId, input.state === "completed" ? "Lesson completed" : "Lesson preference saved", at);
+});
+
+export const setPlanCoachingIntensity = captureCommand("setPlanCoachingIntensity", function setPlanCoachingIntensity(household: Household, input: {
+  memberId: string; intensity: PlanCoachingIntensity; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  if (!["off", "calm", "active"].includes(input.intensity)) throw new ValidationError("Choose off, calm, or active Plan coaching.");
+  const at = nowIso(), id = `PLAN-COACHING-${input.memberId}`;
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  const prior = (next.planCoachingPreferences ?? []).find((row) => row.id === id);
+  next.planCoachingPreferences = [...(next.planCoachingPreferences ?? []).filter((row) => row.id !== id), { id, memberId: input.memberId,
+    intensity: input.intensity, dismissedIssueIds: prior?.dismissedIssueIds ?? [], snoozedIssueIds: prior?.snoozedIssueIds ?? {}, updatedAt: at }];
+  return commitPlanPersonal(previous, next, input.memberId, "Plan coaching preference saved", at);
+});
+
+export const updatePlanNudgeState = captureCommand("updatePlanNudgeState", function updatePlanNudgeState(household: Household, input: {
+  memberId: string; issueId: string; action: "dismiss" | "snooze" | "restore"; snoozedUntil?: DateKey; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const issueId = input.issueId.trim();
+  if (!issueId) throw new ValidationError("Choose a current Plan finding.");
+  if (input.action === "snooze" && (!input.snoozedUntil || !isValidDateKey(input.snoozedUntil))) throw new ValidationError("Choose a valid snooze date.");
+  const at = nowIso(), id = `PLAN-COACHING-${input.memberId}`, previous = cloneHousehold(household), next = cloneHousehold(household);
+  const prior = (next.planCoachingPreferences ?? []).find((row) => row.id === id) ?? { id, memberId: input.memberId, intensity: "calm" as const, dismissedIssueIds: [], snoozedIssueIds: {}, updatedAt: at };
+  const dismissed = new Set(prior.dismissedIssueIds); const snoozed = { ...prior.snoozedIssueIds };
+  if (input.action === "dismiss") { dismissed.add(issueId); delete snoozed[issueId]; }
+  else if (input.action === "snooze") { dismissed.delete(issueId); snoozed[issueId] = input.snoozedUntil!; }
+  else { dismissed.delete(issueId); delete snoozed[issueId]; }
+  next.planCoachingPreferences = [...(next.planCoachingPreferences ?? []).filter((row) => row.id !== id), { ...prior, dismissedIssueIds: [...dismissed].sort(), snoozedIssueIds: snoozed, updatedAt: at }];
+  return commitPlanPersonal(previous, next, input.memberId, "Plan coaching choice saved", at);
+});
+
+export const savePlanReflection = captureCommand("savePlanReflection", function savePlanReflection(household: Household, input: {
+  id?: string; memberId: string; planVersionId: string; outcomes: PlanOutcome[]; note?: string; createdBy: string;
+}): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const version = shapePlanVersions(household.planVersions).find((row) => row.id === input.planVersionId && (row.scope === "household" || row.ownerMemberId === input.memberId));
+  if (!version) throw new ValidationError("That Plan version is no longer visible here.");
+  const lineIds = new Set(version.lines.map((line) => line.id));
+  const visibleTransactionIds = new Set(household.transactions.filter((row) => version.scope === "household" ? row.visibility !== "personal" : row.visibility === "personal" && row.createdBy === input.memberId).map((row) => row.id));
+  const outcomes = input.outcomes.map((row) => ({ ...row, actualCents: Math.max(0, Math.round(row.actualCents)), transactionIds: [...new Set(row.transactionIds)] }));
+  if (outcomes.some((row) => !lineIds.has(row.planLineId) || !["paid", "moved", "missed", "deferred", "not-relevant"].includes(row.status) || row.transactionIds.some((id) => !visibleTransactionIds.has(id)))) throw new ValidationError("Review the Plan outcomes and their visible evidence.");
+  const at = nowIso(), id = input.id ?? `PLAN-REFLECTION-${version.id}-${input.memberId}`, previous = cloneHousehold(household), next = cloneHousehold(household);
+  const prior = (next.planReflections ?? []).find((row) => row.id === id);
+  const row = { id, scope: version.scope, ...(version.scope === "personal" ? { ownerMemberId: input.memberId } : {}), planVersionId: version.id, monthKey: version.monthKey,
+    outcomes, ...(version.scope === "personal" ? { privateNote: input.note?.trim() || undefined } : { sharedNote: input.note?.trim() || undefined }), createdAt: prior?.createdAt ?? at, updatedAt: at };
+  next.planReflections = [...(next.planReflections ?? []).filter((item) => item.id !== id), row];
+  return version.scope === "personal" ? commitPlanPersonal(previous, next, input.memberId, "Private Plan reflection saved", at)
+    : commit(previous, next, "Household Plan", "Saved a Shared Plan-to-actual reflection", [id], [], "savePlanReflection");
+});
+
+export const proposePlanBridge = captureCommand("proposePlanBridge", function proposePlanBridge(household: Household, input: Omit<PlanBridgeDecision, "id" | "offeredByMemberId" | "state" | "createdAt" | "updatedAt"> & { memberId: string; createdBy: string }): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const label = input.label.trim();
+  if (!label) throw new ValidationError("Describe what you want to share with the Household Plan.");
+  const at = nowIso(), previous = cloneHousehold(household), next = cloneHousehold(household);
+  const row: PlanBridgeDecision = { id: nextId("PLAN-BRIDGE-", (next.planBridgeDecisions ?? []).map((item) => item.id)), monthKey: input.monthKey,
+    kind: input.kind, label, ...(input.amountCents !== undefined ? { amountCents: input.amountCents } : {}),
+    ...(input.lowCents !== undefined ? { lowCents: input.lowCents } : {}), ...(input.highCents !== undefined ? { highCents: input.highCents } : {}),
+    ...(input.expectedDate ? { expectedDate: input.expectedDate } : {}),
+    offeredByMemberId: input.memberId, state: "proposed", ...(input.supersedesId ? { supersedesId: input.supersedesId } : {}), createdAt: at, updatedAt: at };
+  next.planBridgeDecisions = [...(next.planBridgeDecisions ?? []), row];
+  return commit(previous, next, "Plan Bridge", `${input.memberId} shared one reviewed commitment with the household`, [row.id], [], "proposePlanBridge");
+});
+
+export const withdrawPlanBridge = captureCommand("withdrawPlanBridge", function withdrawPlanBridge(household: Household, input: { decisionId: string; memberId: string; createdBy: string }): CommitResult {
+  requirePlanActor(household, input.memberId, input.createdBy);
+  const decision = (household.planBridgeDecisions ?? []).find((row) => row.id === input.decisionId);
+  if (!decision || decision.offeredByMemberId !== input.memberId || decision.state !== "proposed") throw new ValidationError("Only you can withdraw your unaccepted Bridge proposal.");
+  const at = nowIso(), previous = cloneHousehold(household), next = cloneHousehold(household);
+  next.planBridgeDecisions = (next.planBridgeDecisions ?? []).map((row) => row.id === decision.id ? { ...row, state: "withdrawn" as const, updatedAt: at } : row);
+  return commit(previous, next, "Plan Bridge", `${input.memberId} withdrew their unaccepted Bridge proposal`, [decision.id], [], "withdrawPlanBridge");
+});
+
+export const appendPlanSitdownTurn = captureCommand("appendPlanSitdownTurn", function appendPlanSitdownTurn(household: Household, input: {
+  sessionId?: string; sitDownSessionId: string; monthKey: MonthKey; planDraftId: string; memberId: string; text: string; sourceReferences?: PlanHerculesTurn["sourceReferences"];
+}): CommitResult {
+  const actor = requireMember(household, input.memberId);
+  if (!actor.active) throw new ValidationError("Only active household members can use the Shared Sitdown.");
+  const message = input.text.trim();
+  if (!message) throw new ValidationError("Write a Sitdown message first.");
+  const sharedPlanReference = (household.planDrafts ?? []).some((draft) => draft.id === input.planDraftId)
+    ? `PLAN-SITDOWN-WORKING-${input.monthKey}`
+    : input.planDraftId;
+  const at = nowIso(), previous = cloneHousehold(household), next = cloneHousehold(household);
+  const prior = input.sessionId ? (next.planHerculesSessions ?? []).find((row) => row.id === input.sessionId && row.state === "active") : undefined;
+  const sessionId = prior?.id ?? nextId("PLAN-SITDOWN-CHAT-", (next.planHerculesSessions ?? []).map((row) => row.id));
+  const turn: PlanHerculesTurn = { id: nextId("PLAN-TURN-", (prior?.turns ?? []).map((row) => row.id)), role: "member",
+    memberId: input.memberId, text: message, sourceReferences: input.sourceReferences ?? [], createdAt: at };
+  const session = prior ? { ...prior, participantMemberIds: [...new Set([...prior.participantMemberIds, input.memberId])], turns: [...prior.turns, turn], updatedAt: at }
+    : { id: sessionId, sitDownSessionId: input.sitDownSessionId, monthKey: input.monthKey, planDraftId: sharedPlanReference, state: "active" as const,
+      startedBy: input.memberId, participantMemberIds: [input.memberId], turns: [turn], createdAt: at, updatedAt: at };
+  next.planHerculesSessions = [...(next.planHerculesSessions ?? []).filter((row) => row.id !== session.id), session];
+  return commit(previous, next, "Shared Sitdown", `Added a clearly Shared Sitdown turn by ${actor.name}`, [turn.id], [], "appendPlanSitdownTurn");
+});
+
 export const setBudget = captureCommand("setBudget", function setBudget(household: Household, input: { monthKey: MonthKey; subcategoryId: string; amount: string | number }): CommitResult {
   requireTimezone(household);
+  if (shapePlanVersions(household.planVersions, { scope: "household" }).some((row) => row.monthKey === input.monthKey && row.state !== "superseded")) {
+    throw new ValidationError("This month is governed by a versioned Household Plan. Open its private draft and propose a revision instead.");
+  }
   const amountCents = parseMoneyCents(input.amount, "Budgeted amount", { allowZero: true });
   const category = requireSubcategory(household, input.subcategoryId);
   const previous = cloneHousehold(household);
@@ -7250,7 +7563,12 @@ export const setHouseholdFundMonthPlan = captureCommand("setHouseholdFundMonthPl
   if (!/^\d{4}-\d{2}$/.test(input.monthKey)) throw new ValidationError("Choose a valid funding month.");
   const targetCents = parseWholeCents(input.target, "Monthly target", { allowZero: true });
   const bufferCents = parseWholeCents(input.buffer ?? 0, "Fund buffer", { allowZero: true });
-  const agreedByMemberIds = [...new Set(input.agreedByMemberIds ?? [input.memberId])];
+  const acceptedPlan = shapePlanVersions(household.planVersions, { scope: "household" })
+    .filter((row) => row.monthKey === input.monthKey && ["active", "scheduled"].includes(row.state) && row.lines.some((line) => line.kind === "household-fund"))
+    .sort((left, right) => right.sequence - left.sequence)[0];
+  const agreedByMemberIds = acceptedPlan
+    ? planAcknowledgementState(household, acceptedPlan).acknowledgedMemberIds
+    : [input.memberId];
   for (const memberId of agreedByMemberIds) requireMember(household, memberId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);

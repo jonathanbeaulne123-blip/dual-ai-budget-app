@@ -267,6 +267,20 @@ const HERCULES_READ_TOOLS = [
     member: nullableString(),
     months: { anyOf: [{ type: "integer", minimum: 3, maximum: 12 }, { type: "null" }] },
   }) },
+  ...[
+    ["plan_overview", "Read the visible versioned Plan and its four lens totals."],
+    ["plan_line_detail", "Explain one visible Plan line, source, assumptions, and actual."],
+    ["plan_cashflow_runway", "Project the visible Plan runway and low point."],
+    ["plan_coverage", "Read Protect, Prepare, Build, and Everyday coverage."],
+    ["plan_assumptions", "Read confidence, freshness, ranges, and Plan sources."],
+    ["plan_version_diff", "Compare two visible immutable Plan versions."],
+    ["plan_scenario_compare", "Compare a visible Plan with a private alternative without changing either."],
+    ["plan_actual", "Compare Plan intentions with accepted outcomes and posted actuals."],
+    ["plan_drift", "Read deterministic thresholded Plan drift findings."],
+    ["plan_bridge_status", "Read only deliberately submitted Bridge facts."],
+    ["plan_sitdown_status", "Read Shared Sitdown and acknowledgement progress."],
+    ["plan_learning_context", "Read the contextual skippable Plan lesson."],
+  ].map(([name, description]) => ({ name, description, parameters: strictObject({ monthKey: nullableString(), planVersionId: nullableString(), compareVersionId: nullableString(), planLineId: nullableString(), scenarioId: nullableString() }) })),
 ];
 const HERCULES_READ_TOOL_NAMES = new Set(HERCULES_READ_TOOLS.map((tool) => tool.name));
 const TOOL_ARG_KEYS = {
@@ -335,6 +349,18 @@ const TOOL_ARG_KEYS = {
   cash_cinema: ["member", "weeks"],
   what_if_desk: ["member", "scenario", "amountCents"],
   year_review: ["member", "months"],
+  plan_overview: ["monthKey", "planVersionId"],
+  plan_line_detail: ["monthKey", "planVersionId", "planLineId"],
+  plan_cashflow_runway: ["monthKey", "planVersionId"],
+  plan_coverage: ["monthKey", "planVersionId"],
+  plan_assumptions: ["monthKey", "planVersionId"],
+  plan_version_diff: ["monthKey", "planVersionId", "compareVersionId"],
+  plan_scenario_compare: ["monthKey", "planVersionId", "scenarioId"],
+  plan_actual: ["monthKey", "planVersionId"],
+  plan_drift: ["monthKey", "planVersionId"],
+  plan_bridge_status: ["monthKey", "planVersionId"],
+  plan_sitdown_status: ["monthKey", "planVersionId"],
+  plan_learning_context: ["monthKey", "planVersionId"],
 };
 
 function parseJsonObject(value) {

@@ -32,6 +32,7 @@ import { Memorabilia } from "./theme/Memorabilia.tsx";
 import { PageWorld, WorldCharm } from "./theme/PageWorld.tsx";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import { ThemeSceneHeading } from "./theme/SceneArtwork.tsx";
+import { PlanStudio } from "./PlanStudio.tsx";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
 import { stageLedgerCreation, completeLedgerCreation } from './ledgerSync/creationStore.ts';
 import type { RestorePointSummary } from './ledgerSync/backup.ts';
@@ -72,6 +73,7 @@ import {
   showsLedgerPurposeBanner,
   projectLedgerExperience,
   calendarPresentation,
+  planSystemV2Enabled,
   restoreAcceptedSnapshot,
   setBudget,
   nameHouseholdLedgers,
@@ -1136,6 +1138,20 @@ export function App() {
         if (JSON.stringify(normalized) === JSON.stringify(current)) return;
       }
       throw new ValidationError("Only you can record your own progress.");
+    }
+    if (commandKind === "plan-personal") {
+      const before = splitForSync(current, who);
+      const after = splitForSync(result.household, who);
+      const normalizedAfter = structuredClone(after.personal);
+      normalizedAfter.planDrafts = before.personal.planDrafts;
+      normalizedAfter.planVersions = before.personal.planVersions;
+      normalizedAfter.planScenarios = before.personal.planScenarios;
+      normalizedAfter.planReflections = before.personal.planReflections;
+      normalizedAfter.planLearningProgress = before.personal.planLearningProgress;
+      normalizedAfter.planCoachingPreferences = before.personal.planCoachingPreferences;
+      if (JSON.stringify(after.shared) === JSON.stringify(before.shared)
+        && JSON.stringify(normalizedAfter) === JSON.stringify(before.personal)) return;
+      throw new ValidationError("Only you can change your private Plan work.");
     }
     if (
       commandKind === "landing-surface-personal"
@@ -6760,6 +6776,15 @@ export function App() {
                 onCommit={runKitchen}
               />
             </div>
+          ) : planSystemV2Enabled() ? (
+            <PlanStudio
+              household={household}
+              view={view}
+              memberId={actorId}
+              today={today}
+              busy={busy}
+              onCommand={runKitchen}
+            />
           ) : (
           <div className="plan-wide five-boards-plan">
           <section className="hero plan-summary">

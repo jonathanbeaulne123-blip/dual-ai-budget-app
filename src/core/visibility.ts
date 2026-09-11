@@ -264,6 +264,17 @@ export function householdForView(household: Household, memberId: string, view: L
     potentialExpenses: (household.potentialExpenses ?? []).filter((row) => isVisibleInView(row, memberId, view)),
     shifts: (household.shifts ?? []).filter((shift) => isVisibleInView(shift, memberId, view)),
     goals: (household.goals ?? []).filter((goal) => goalVisibleInView(goal, memberId, view)),
+    planDrafts: view === "personal" ? (household.planDrafts ?? []).filter((row) => row.ownerMemberId === memberId) : [],
+    planVersions: (household.planVersions ?? []).filter((row) => view === "household"
+      ? row.scope === "household"
+      : (row.scope === "personal" && row.ownerMemberId === memberId) || (row.scope === "household" && ["active", "scheduled"].includes(row.state))),
+    planAcknowledgements: view === "household" ? household.planAcknowledgements ?? [] : [],
+    planScenarios: view === "personal" ? (household.planScenarios ?? []).filter((row) => row.ownerMemberId === memberId) : [],
+    planReflections: (household.planReflections ?? []).filter((row) => row.scope === "household" ? view === "household" : view === "personal" && row.ownerMemberId === memberId),
+    planLearningProgress: view === "personal" ? (household.planLearningProgress ?? []).filter((row) => row.memberId === memberId) : [],
+    planCoachingPreferences: view === "personal" ? (household.planCoachingPreferences ?? []).filter((row) => row.memberId === memberId) : [],
+    planBridgeDecisions: view === "household" ? household.planBridgeDecisions ?? [] : household.planBridgeDecisions ?? [],
+    planHerculesSessions: view === "household" ? household.planHerculesSessions ?? [] : [],
     fundContributionSourceClaims: [],
     fundPrivate: view === "personal" && household.householdFund?.custodianMemberId === memberId
       ? household.fundPrivate

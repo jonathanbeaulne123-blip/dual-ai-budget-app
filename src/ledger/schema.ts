@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 9;
+export const BOOKS_SCHEMA_VERSION = 10;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -139,6 +139,86 @@ CREATE TABLE IF NOT EXISTS budget_plans (
   essential BOOLEAN NOT NULL DEFAULT FALSE,
   income_stability TEXT,
   active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- PLAN_SYSTEM_V2 local/offline projection. Personal rows exist only in the
+-- active member's assembled replica; cloud scope remains the typed envelopes.
+CREATE TABLE IF NOT EXISTS plan_drafts (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  scope TEXT NOT NULL CHECK (scope IN ('personal', 'household')),
+  owner_member_id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_versions (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  scope TEXT NOT NULL CHECK (scope IN ('personal', 'household')),
+  owner_member_id TEXT,
+  month_key TEXT NOT NULL,
+  sequence INTEGER NOT NULL CHECK (sequence > 0),
+  state TEXT NOT NULL CHECK (state IN ('proposed', 'scheduled', 'active', 'superseded')),
+  digest TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_acknowledgements (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  plan_version_id TEXT NOT NULL,
+  plan_digest TEXT NOT NULL,
+  member_id TEXT NOT NULL,
+  acknowledged_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_scenarios (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  owner_member_id TEXT NOT NULL,
+  scope TEXT NOT NULL CHECK (scope IN ('personal', 'household')),
+  draft_id TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_reflections (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  scope TEXT NOT NULL CHECK (scope IN ('personal', 'household')),
+  owner_member_id TEXT,
+  plan_version_id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_learning_progress (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  member_id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  lesson_id TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('offered', 'completed', 'skipped')),
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_bridge_decisions (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  month_key TEXT NOT NULL,
+  offered_by_member_id TEXT NOT NULL,
+  state TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_hercules_sessions (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  sit_down_session_id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('active', 'closed')),
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS recurrences (
@@ -311,6 +391,14 @@ CREATE INDEX IF NOT EXISTS source_transactions_household_date ON source_transact
 CREATE INDEX IF NOT EXISTS shifts_household_date ON shifts (household_id, date_key);
 CREATE INDEX IF NOT EXISTS goals_household ON goals (household_id);
 CREATE INDEX IF NOT EXISTS budget_plans_household_month ON budget_plans (household_id, month_key);
+CREATE INDEX IF NOT EXISTS plan_drafts_owner_month ON plan_drafts (household_id, owner_member_id, month_key);
+CREATE INDEX IF NOT EXISTS plan_versions_scope_month ON plan_versions (household_id, scope, month_key);
+CREATE INDEX IF NOT EXISTS plan_acknowledgements_version ON plan_acknowledgements (household_id, plan_version_id);
+CREATE INDEX IF NOT EXISTS plan_scenarios_owner ON plan_scenarios (household_id, owner_member_id);
+CREATE INDEX IF NOT EXISTS plan_reflections_month ON plan_reflections (household_id, month_key);
+CREATE INDEX IF NOT EXISTS plan_learning_member_month ON plan_learning_progress (household_id, member_id, month_key);
+CREATE INDEX IF NOT EXISTS plan_bridge_month ON plan_bridge_decisions (household_id, month_key);
+CREATE INDEX IF NOT EXISTS plan_hercules_sitdown ON plan_hercules_sessions (household_id, sit_down_session_id);
 CREATE INDEX IF NOT EXISTS recurrences_household ON recurrences (household_id);
 CREATE INDEX IF NOT EXISTS activity_household ON activity (household_id);
 CREATE INDEX IF NOT EXISTS audit_revisions_household ON audit_revisions (household_id);

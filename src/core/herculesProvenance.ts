@@ -25,6 +25,12 @@ export type HerculesNumberSource = {
   claimId?: string;
   goalId?: string;
   fundObligationId?: string;
+  planVersionId?: string;
+  planLineId?: string;
+  planScenarioId?: string;
+  planAssumptionId?: string;
+  planBridgeDecisionId?: string;
+  planSitDownSessionId?: string;
   shiftId?: string;
   from?: DateKey;
   to?: DateKey;
@@ -35,7 +41,7 @@ export type HerculesGroundedFact = {
   label: string;
   value: string;
   source: HerculesNumberSource;
-  basis: "journal" | "projection";
+  basis: "journal" | "projection" | "plan";
 };
 
 export function herculesFactId(label: string, value: string, index: number): string {

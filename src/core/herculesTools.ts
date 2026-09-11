@@ -3,6 +3,7 @@ import {
   calendarDaysBetween,
   isValidDateKey,
   monthKeyFromDateKey,
+  monthEndKey,
   monthStartKey,
   shiftMonthKey,
   weekBounds,
@@ -54,6 +55,17 @@ import {
   type WhatIfScenario,
 } from "./simReview.ts";
 import type { WeatherGlass } from "./weather.ts";
+import {
+  PLAN_CURRICULUM,
+  PLAN_LENSES,
+  currentPlanVersion,
+  evaluatePlanDrift,
+  planAcknowledgementState,
+  planActualCents,
+  planLensTotals,
+  planVersionDiff,
+  type PlanVersion,
+} from "./planSystem.ts";
 
 export const HERCULES_READ_TOOL_NAMES = [
   "ledger_context",
@@ -121,6 +133,18 @@ export const HERCULES_READ_TOOL_NAMES = [
   "cash_cinema",
   "what_if_desk",
   "year_review",
+  "plan_overview",
+  "plan_line_detail",
+  "plan_cashflow_runway",
+  "plan_coverage",
+  "plan_assumptions",
+  "plan_version_diff",
+  "plan_scenario_compare",
+  "plan_actual",
+  "plan_drift",
+  "plan_bridge_status",
+  "plan_sitdown_status",
+  "plan_learning_context",
 ] as const;
 
 export type HerculesReadToolName = (typeof HERCULES_READ_TOOL_NAMES)[number];
@@ -218,6 +242,18 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "cash_cinema", description: "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only." },
   { name: "what_if_desk", description: "Named unposted scenario versus current cash and tip floor. Never posts." },
   { name: "year_review", description: "Posted tip months, income, spend, budget misses, and shift count for a trailing window." },
+  { name: "plan_overview", description: "Read the visible accepted or proposed Plan version and its Protect, Prepare, Build, and Everyday totals." },
+  { name: "plan_line_detail", description: "Explain one visible Plan line, responsibility, source, assumptions, and actual outcome." },
+  { name: "plan_cashflow_runway", description: "Project the visible Plan's dated runway and lowest point from accepted scope-correct evidence." },
+  { name: "plan_coverage", description: "Read coverage across Protect, Prepare, Build, and Everyday without treating intentions as payments." },
+  { name: "plan_assumptions", description: "Read confidence, freshness, ranges, and sources for visible Plan assumptions." },
+  { name: "plan_version_diff", description: "Compare two visible immutable Plan versions exactly and in plain language." },
+  { name: "plan_scenario_compare", description: "Compare an accepted Plan with a member-visible private alternative. Never changes either." },
+  { name: "plan_actual", description: "Compare visible accepted Plan lines with accepted outcomes and posted actuals." },
+  { name: "plan_drift", description: "Read deterministic, thresholded Plan drift findings. Never grades behavior." },
+  { name: "plan_bridge_status", description: "Read only deliberately submitted Bridge facts and their Plan status." },
+  { name: "plan_sitdown_status", description: "Read Shared Sitdown progress, participants, and open Plan acknowledgement work." },
+  { name: "plan_learning_context", description: "Read the contextual, skippable lesson for the visible Plan month." },
 ];
 
 const TOOL_SET = new Set<string>(HERCULES_READ_TOOL_NAMES);
@@ -232,6 +268,11 @@ function cleanString(value: unknown, max = 80): string | undefined {
 function cleanDate(value: unknown): DateKey | undefined {
   const date = cleanString(value, 10);
   return date && isValidDateKey(date) ? date : undefined;
+}
+
+function cleanMonth(value: unknown): MonthKey | undefined {
+  const month = cleanString(value, 7);
+  return month && /^\d{4}-\d{2}$/.test(month) ? month as MonthKey : undefined;
 }
 
 function cleanCents(value: unknown): number | undefined {
@@ -303,6 +344,13 @@ function cleanArgs(name: HerculesReadToolName, raw: unknown, context?: HerculesA
     };
   }
   if (name === "ledger_context") return {};
+  if (name.startsWith("plan_")) return {
+    monthKey: cleanMonth(input.monthKey),
+    planVersionId: cleanString(input.planVersionId, 128),
+    compareVersionId: cleanString(input.compareVersionId, 128),
+    planLineId: cleanString(input.planLineId, 128),
+    scenarioId: cleanString(input.scenarioId, 128),
+  };
   if (name === "account_balance") return { account: common.account };
   if (name === "goal_progress") return { goal: cleanString(input.goal) };
   if (name === "category_breakdown") {
@@ -567,7 +615,7 @@ function toolSource(context: HerculesAskContext, label: string, detail: Partial<
   return { route: "ledger", view: context.view, label, ...detail };
 }
 
-function fact(call: HerculesReadToolCall, index: number, label: string, value: string, source: HerculesNumberSource, basis: "journal" | "projection" = "journal"): HerculesGroundedFact {
+function fact(call: HerculesReadToolCall, index: number, label: string, value: string, source: HerculesNumberSource, basis: "journal" | "projection" | "plan" = "journal"): HerculesGroundedFact {
   return { id: `${call.id}:${index}:${label}`, label, value, source, basis };
 }
 
@@ -595,7 +643,113 @@ function journalSource(
   });
 }
 
+function visiblePlanVersion(household: Household, call: HerculesReadToolCall, today: DateKey, context: HerculesAskContext): PlanVersion | null {
+  const monthKey = cleanMonth(call.args.monthKey) ?? context.plan?.monthKey ?? monthKeyFromDateKey(today);
+  const explicitId = cleanString(call.args.planVersionId, 128) ?? context.plan?.activePlanVersionId;
+  const scope = context.plan?.scope ?? context.view;
+  const visible = (household.planVersions ?? []).filter((row) => row.scope === scope && row.monthKey === monthKey
+    && (scope === "household" || row.ownerMemberId === context.memberId));
+  if (explicitId) return visible.find((row) => row.id === explicitId) ?? null;
+  return currentPlanVersion(household, scope, monthKey, context.memberId);
+}
+
+function planSource(context: HerculesAskContext, version: PlanVersion, label: string, detail: Partial<HerculesNumberSource> = {}): HerculesNumberSource {
+  return { route: "plan", view: context.view, label, planVersionId: version.id, ...detail };
+}
+
+function executePlanCall(household: Household, call: HerculesReadToolCall, today: DateKey, context: HerculesAskContext): HerculesReadToolResult {
+  const version = visiblePlanVersion(household, call, today, context);
+  if (!version) return empty(call, "There is no visible versioned Plan for that month yet.");
+  const source = planSource(context, version, `Open ${version.monthKey} Plan`);
+  const payloadBase = { planVersionId: version.id, planDigest: version.digest, sourceRevision: household.revision, projectedAt: new Date().toISOString() };
+  if (call.name === "plan_overview") {
+    const totals = planLensTotals(version.lines);
+    const status = version.scope === "household" ? planAcknowledgementState(household, version) : null;
+    return { callId: call.id, name: call.name, status: "ok",
+      sentence: `${version.monthKey} ${version.scope} Plan is ${version.state}. Protect ${formatCad(totals.protect)}, Prepare ${formatCad(totals.prepare)}, Build ${formatCad(totals.build)}, and Everyday ${formatCad(totals.everyday)}.${status && !status.complete ? ` ${status.acknowledgedMemberIds.length} of ${status.requiredMemberIds.length} partners acknowledged this exact version.` : ""}`,
+      facts: PLAN_LENSES.map((lens, index) => fact(call, index, lens[0]!.toUpperCase() + lens.slice(1), formatCad(totals[lens]), source, "plan")), payload: { ...payloadBase, state: version.state, totals, acknowledgement: status } };
+  }
+  if (call.name === "plan_line_detail") {
+    const lineId = cleanString(call.args.planLineId, 128) ?? context.plan?.planLineId;
+    const line = version.lines.find((row) => row.id === lineId) ?? version.lines[0];
+    if (!line) return empty(call, "That Plan has no lines to explain.");
+    const actual = planActualCents(household.transactions, line, version.monthKey);
+    const lineSource = planSource(context, version, `Open ${line.labelSnapshot}`, { planLineId: line.id, ...(line.sourceReference?.type === "category" ? { categoryId: line.sourceReference.id } : {}) });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${line.labelSnapshot} is a ${line.lens} ${line.kind} of ${formatCad(line.amountCents)}${line.dueDate ? ` due ${line.dueDate}` : ""}. ${formatCad(actual)} is visible as posted actual; the Plan itself did not move money.`,
+      facts: [fact(call, 0, "Planned", formatCad(line.amountCents), lineSource, "plan"), fact(call, 1, "Posted actual", formatCad(actual), lineSource, "journal")], payload: { ...payloadBase, line, actualCents: actual } };
+  }
+  if (call.name === "plan_cashflow_runway") {
+    const openingCashCents = householdWallet(household, today).cashCents;
+    const events = [
+      ...version.assumptions.filter((row) => row.kind === "income" && row.valueCents).map((row) => ({ date: row.expectedDate ?? `${version.monthKey}-01`, cents: row.valueCents!, label: row.id })),
+      ...version.lines.map((row) => ({ date: row.dueDate ?? monthEndKey(version.monthKey), cents: -row.amountCents, label: row.labelSnapshot })),
+    ].sort((a, b) => a.date.localeCompare(b.date) || b.cents - a.cents);
+    let running = openingCashCents, lowest = openingCashCents, lowDate = today;
+    const runway = events.map((event) => { running += event.cents; if (running < lowest) { lowest = running; lowDate = event.date as DateKey; } return { ...event, runningCents: running }; });
+    return { callId: call.id, name: call.name, status: "ok", sentence: `From ${formatCad(openingCashCents)} visible cash, the dated Plan reaches a low of ${formatCad(lowest)} around ${lowDate}. This projection uses Plan assumptions and does not treat planned income as received.`,
+      facts: [fact(call, 0, "Opening visible cash", formatCad(openingCashCents), source, "journal"), fact(call, 1, "Projected low", formatCad(lowest), source, "projection")], payload: { ...payloadBase, openingCashCents, lowestCents: lowest, lowDate, runway } };
+  }
+  if (call.name === "plan_coverage") {
+    const totals = planLensTotals(version.lines);
+    const actuals = Object.fromEntries(PLAN_LENSES.map((lens) => [lens, version.lines.filter((row) => row.lens === lens).reduce((sum, line) => sum + planActualCents(household.transactions, line, version.monthKey), 0)])) as Record<(typeof PLAN_LENSES)[number], number>;
+    return { callId: call.id, name: call.name, status: "ok", sentence: `Protect has ${formatCad(actuals.protect)} of ${formatCad(totals.protect)} matched to visible posted actuals. Prepare, Build, and Everyday remain intentions until their outcomes are verified.`,
+      facts: PLAN_LENSES.flatMap((lens, index) => [fact(call, index * 2, `${lens} planned`, formatCad(totals[lens]), source, "plan"), fact(call, index * 2 + 1, `${lens} actual`, formatCad(Number(actuals[lens])), source, "journal")]), payload: { ...payloadBase, planned: totals, actual: actuals } };
+  }
+  if (call.name === "plan_assumptions") {
+    if (!version.assumptions.length) return empty(call, "This Plan has no recorded assumptions yet, so I cannot explain its uncertainty.");
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${version.assumptions.length} assumption${version.assumptions.length === 1 ? "" : "s"} support this Plan; ${version.assumptions.filter((row) => row.confidence !== "confirmed").length} are estimated or uncertain.`,
+      facts: version.assumptions.slice(0, 8).map((row, index) => fact(call, index, `${row.kind} · ${row.confidence}`, row.valueCents !== undefined ? formatCad(row.valueCents) : row.lowCents !== undefined || row.highCents !== undefined ? `${formatCad(row.lowCents ?? 0)}–${formatCad(row.highCents ?? 0)}` : row.expectedDate ?? "No amount", planSource(context, version, "Open Plan assumption", { planAssumptionId: row.id }), "plan")), payload: { ...payloadBase, assumptions: version.assumptions } };
+  }
+  if (call.name === "plan_version_diff") {
+    const compareId = cleanString(call.args.compareVersionId, 128) ?? version.baseVersionId;
+    const before = (household.planVersions ?? []).find((row) => row.id === compareId && row.scope === version.scope) ?? null;
+    const diff = planVersionDiff(before, version);
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${diff.added.length} added, ${diff.changed.length} changed, and ${diff.removed.length} removed Plan lines; total intent changed by ${formatCad(diff.totalDeltaCents)}.`,
+      facts: [fact(call, 0, "Total Plan change", formatCad(diff.totalDeltaCents), source, "plan")], payload: { ...payloadBase, compareVersionId: before?.id ?? null, diff } };
+  }
+  if (call.name === "plan_scenario_compare") {
+    const scenarioId = cleanString(call.args.scenarioId, 128) ?? context.plan?.scenarioId;
+    const scenario = (household.planScenarios ?? []).find((row) => row.id === scenarioId && row.ownerMemberId === context.memberId);
+    if (!scenario) return empty(call, "I cannot see that private alternative in this member and ledger scope.");
+    const acceptedTotal = version.lines.reduce((sum, row) => sum + row.amountCents, 0), scenarioTotal = scenario.changedLines.reduce((sum, row) => sum + row.amountCents, 0);
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${scenario.name} totals ${formatCad(scenarioTotal)}, ${formatCad(scenarioTotal - acceptedTotal)} versus the visible Plan. Comparing it changed nothing.`,
+      facts: [fact(call, 0, "Accepted Plan", formatCad(acceptedTotal), source, "plan"), fact(call, 1, scenario.name, formatCad(scenarioTotal), planSource(context, version, `Open ${scenario.name}`, { planScenarioId: scenario.id }), "plan")], payload: { ...payloadBase, scenario } };
+  }
+  if (call.name === "plan_actual") {
+    const rows = version.lines.map((line) => ({ planLineId: line.id, label: line.labelSnapshot, plannedCents: line.amountCents, actualCents: planActualCents(household.transactions, line, version.monthKey) }));
+    const planned = rows.reduce((sum, row) => sum + row.plannedCents, 0), actual = rows.reduce((sum, row) => sum + row.actualCents, 0);
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${formatCad(actual)} in visible posted actuals is matched against ${formatCad(planned)} of Plan intention. Planned payments are not counted as completed.`,
+      facts: [fact(call, 0, "Plan intention", formatCad(planned), source, "plan"), fact(call, 1, "Visible posted actual", formatCad(actual), source, "journal")], payload: { ...payloadBase, rows } };
+  }
+  if (call.name === "plan_drift") {
+    const findings = evaluatePlanDrift(household, version, today);
+    if (!findings.length) return empty(call, "No deterministic Plan drift rule is firing on the visible evidence right now.");
+    const severityRank = { critical: 0, attention: 1, gentle: 2 } as const;
+    const top = findings.sort((a, b) => severityRank[a.severity] - severityRank[b.severity])[0]!;
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${top.severity}: ${top.explanation} ${top.consequence}`, facts: [fact(call, 0, top.rule, top.explanation, source, "plan")], payload: { ...payloadBase, findings } };
+  }
+  if (call.name === "plan_bridge_status") {
+    const rows = (household.planBridgeDecisions ?? []).filter((row) => row.monthKey === version.monthKey);
+    if (!rows.length) return empty(call, "No Bridge facts have been deliberately submitted for this month.");
+    return { callId: call.id, name: call.name, status: "ok", sentence: `${rows.length} deliberately submitted Bridge decision${rows.length === 1 ? "" : "s"} are visible; private source accounts, balances, and transactions are not included.`,
+      facts: rows.slice(0, 8).map((row, index) => fact(call, index, row.label, row.amountCents !== undefined ? `${formatCad(row.amountCents)} · ${row.state}` : row.state, planSource(context, version, "Open Bridge", { planBridgeDecisionId: row.id }), "plan")), payload: { ...payloadBase, decisions: rows } };
+  }
+  if (call.name === "plan_sitdown_status") {
+    const sessions = (household.planHerculesSessions ?? []).filter((row) => row.monthKey === version.monthKey);
+    const latest = sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    const acknowledgements = version.scope === "household" ? planAcknowledgementState(household, version) : null;
+    return { callId: call.id, name: call.name, status: latest ? "ok" : "empty", sentence: latest ? `The Shared Sitdown is ${latest.state}, with ${latest.participantMemberIds.length} participant${latest.participantMemberIds.length === 1 ? "" : "s"} and ${latest.turns.length} Shared turns. The transcript cannot acknowledge the Plan.` : "No Shared Sitdown session is open for this Plan month.",
+      facts: latest ? [fact(call, 0, "Shared Sitdown turns", String(latest.turns.length), planSource(context, version, "Open Shared Sitdown", { planSitDownSessionId: latest.sitDownSessionId }), "plan")] : [], payload: { ...payloadBase, session: latest ?? null, acknowledgement: acknowledgements } };
+  }
+  const lessonIndex = Math.max(0, Number(version.monthKey.slice(5, 7)) - 1) % PLAN_CURRICULUM.length;
+  const lesson = PLAN_CURRICULUM[lessonIndex]!;
+  const progress = (household.planLearningProgress ?? []).find((row) => row.memberId === context.memberId && row.monthKey === version.monthKey && row.lessonId === lesson[0]);
+  return { callId: call.id, name: call.name, status: "ok", sentence: `${lesson[1]} is the contextual lesson for this chapter. It is ${progress?.state ?? "offered"} and may be skipped without blocking the Plan.`,
+    facts: [fact(call, 0, "Contextual lesson", lesson[1], source, "plan")], payload: { ...payloadBase, lessonId: lesson[0], title: lesson[1], state: progress?.state ?? "offered" } };
+}
+
 function executeCall(household: Household, call: HerculesReadToolCall, today: DateKey, context: HerculesAskContext): HerculesReadToolResult {
+  if (call.name.startsWith("plan_")) return executePlanCall(household, call, today, context);
   if (call.name === "ledger_context") {
     const member = household.members.find((row) => row.id === context.memberId && row.active);
     const names = shapeLedgerNames(household.ledgerNames, household.members);

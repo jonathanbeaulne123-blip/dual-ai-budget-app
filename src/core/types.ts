@@ -1342,6 +1342,16 @@ export type Household = {
   weeklyDocumentStamps?: WeeklyDocumentStamp[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
+  /** PLAN_SYSTEM_V2: private drafts/scenarios overlay only the signed-in member; Household versions are Shared. */
+  planDrafts?: import("./planSystem.ts").PlanDraft[];
+  planVersions?: import("./planSystem.ts").PlanVersion[];
+  planAcknowledgements?: import("./planSystem.ts").PlanAcknowledgement[];
+  planScenarios?: import("./planSystem.ts").PlanScenario[];
+  planReflections?: import("./planSystem.ts").PlanReflection[];
+  planLearningProgress?: import("./planSystem.ts").PlanLearningProgress[];
+  planCoachingPreferences?: import("./planSystem.ts").PlanCoachingPreference[];
+  planBridgeDecisions?: import("./planSystem.ts").PlanBridgeDecision[];
+  planHerculesSessions?: import("./planSystem.ts").PlanHerculesSession[];
   activity: Activity[];
   devices: HouseholdDevice[];
   workJobs: WorkJob[];
@@ -1423,6 +1433,12 @@ export type SharedEnvelope = {
   weeklyDocumentStamps?: WeeklyDocumentStamp[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
+  /** Accepted/proposed Household Plan authority. Never contains Personal Plan material. */
+  planVersions?: import("./planSystem.ts").PlanVersion[];
+  planAcknowledgements?: import("./planSystem.ts").PlanAcknowledgement[];
+  planReflections?: import("./planSystem.ts").PlanReflection[];
+  planBridgeDecisions?: import("./planSystem.ts").PlanBridgeDecision[];
+  planHerculesSessions?: import("./planSystem.ts").PlanHerculesSession[];
   activity: Activity[];
   devices: HouseholdDevice[];
   /** Optional only for envelopes written before job-based shifts shipped. */
@@ -1479,6 +1495,13 @@ export type PersonalEnvelope = {
   goals?: Goal[];
   goalContributions?: GoalContribution[];
   goalPurchases?: GoalPurchase[];
+  /** PLAN_SYSTEM_V2 member-owned planning. Household drafts remain private until proposed. */
+  planDrafts?: import("./planSystem.ts").PlanDraft[];
+  planVersions?: import("./planSystem.ts").PlanVersion[];
+  planScenarios?: import("./planSystem.ts").PlanScenario[];
+  planReflections?: import("./planSystem.ts").PlanReflection[];
+  planLearningProgress?: import("./planSystem.ts").PlanLearningProgress[];
+  planCoachingPreferences?: import("./planSystem.ts").PlanCoachingPreference[];
   fundPrivate?: HouseholdFundPrivateState;
   fundContributionSourceClaims?: import("./fundContributionSources.ts").FundContributionSourceClaim[];
   tombstones: Tombstone[];

@@ -129,6 +129,14 @@ export function observedResources(
     "onboardingSubmissions",
     "onboardingCategoryMerges",
     "onboardingApprovals",
+    "planDrafts",
+    "planVersions",
+    "planAcknowledgements",
+    "planScenarios",
+    "planReflections",
+    "planLearningProgress",
+    "planBridgeDecisions",
+    "planHerculesSessions",
   ]) {
     const rows = h[field];
     if (Array.isArray(rows))
@@ -148,6 +156,17 @@ export function observedResources(
             r.subcategoryId === input?.subcategoryId,
         ) ?? null,
     });
+  if (["proposeHouseholdPlan", "adoptLegacyHouseholdPlan", "acknowledgeHouseholdPlan"].includes(kind)) {
+    const versionId = String(input?.planVersionId ?? input?.draftId ?? "");
+    result.push({
+      key: `plan-authority/${versionId}`,
+      value: {
+        versions: household.planVersions ?? [],
+        acknowledgements: household.planAcknowledgements ?? [],
+        budgetPlans: household.budgetPlans,
+      },
+    });
+  }
   if (kind === "setHouseholdFundMonthPlan")
     result.push({
       key: `fund-plan/${String(input?.monthKey)}`,

@@ -110,6 +110,18 @@ const TOOL_CATALOG = [
   ["cash_cinema", "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only."],
   ["what_if_desk", "Named unposted scenario versus current cash and tip floor. Never posts."],
   ["year_review", "Posted tip months, income, spend, budget misses, and shift count for a trailing window."],
+  ["plan_overview", "Read the visible versioned Plan and its four lens totals."],
+  ["plan_line_detail", "Explain one visible Plan line, source, assumptions, and actual."],
+  ["plan_cashflow_runway", "Project the visible Plan runway and low point."],
+  ["plan_coverage", "Read Protect, Prepare, Build, and Everyday coverage."],
+  ["plan_assumptions", "Read confidence, freshness, ranges, and Plan sources."],
+  ["plan_version_diff", "Compare two visible immutable Plan versions."],
+  ["plan_scenario_compare", "Compare a visible Plan with a private alternative without changing either."],
+  ["plan_actual", "Compare Plan intentions with accepted outcomes and posted actuals."],
+  ["plan_drift", "Read deterministic thresholded Plan drift findings."],
+  ["plan_bridge_status", "Read only deliberately submitted Bridge facts."],
+  ["plan_sitdown_status", "Read Shared Sitdown and acknowledgement progress."],
+  ["plan_learning_context", "Read the contextual skippable Plan lesson."],
 ];
 
 const TOOL_PROPERTIES = {
@@ -155,6 +167,11 @@ const TOOL_PROPERTIES = {
   seed: { type: "integer", minimum: 0, maximum: 1000000000 },
   weeks: { type: "integer", minimum: 4, maximum: 13 },
   scenario: { type: "string", enum: ["cut_one_dinner_shift", "extra_card_pay", "purchase", "tax_milk_boost"] },
+  monthKey: { type: "string", pattern: "^[0-9]{4}-[0-9]{2}$" },
+  planVersionId: { type: "string", maxLength: 128 },
+  compareVersionId: { type: "string", maxLength: 128 },
+  planLineId: { type: "string", maxLength: 128 },
+  scenarioId: { type: "string", maxLength: 128 },
 };
 
 const TOOL_PROPERTY_NAMES = {
@@ -223,6 +240,18 @@ const TOOL_PROPERTY_NAMES = {
   cash_cinema: ["view", "member", "weeks"],
   what_if_desk: ["view", "member", "scenario", "amountCents"],
   year_review: ["view", "member", "months"],
+  plan_overview: ["view", "monthKey", "planVersionId"],
+  plan_line_detail: ["view", "monthKey", "planVersionId", "planLineId"],
+  plan_cashflow_runway: ["view", "monthKey", "planVersionId"],
+  plan_coverage: ["view", "monthKey", "planVersionId"],
+  plan_assumptions: ["view", "monthKey", "planVersionId"],
+  plan_version_diff: ["view", "monthKey", "planVersionId", "compareVersionId"],
+  plan_scenario_compare: ["view", "monthKey", "planVersionId", "scenarioId"],
+  plan_actual: ["view", "monthKey", "planVersionId"],
+  plan_drift: ["view", "monthKey", "planVersionId"],
+  plan_bridge_status: ["view", "monthKey", "planVersionId"],
+  plan_sitdown_status: ["view", "monthKey", "planVersionId"],
+  plan_learning_context: ["view", "monthKey", "planVersionId"],
 };
 
 const TOOL_REQUIRED_PROPERTIES = {

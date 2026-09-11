@@ -71,6 +71,15 @@ export const IMPORT_FIELD_POLICY = {
   weeklyDocumentStamps: 'exact',
   budgetPlans: 'exact',
   sitDownSessions: 'exact',
+  planDrafts: 'exact',
+  planVersions: 'exact',
+  planAcknowledgements: 'exact',
+  planScenarios: 'exact',
+  planReflections: 'exact',
+  planLearningProgress: 'exact',
+  planCoachingPreferences: 'exact',
+  planBridgeDecisions: 'exact',
+  planHerculesSessions: 'exact',
   activity: 'exact',
   devices: 'exact',
   workJobs: 'exact',
@@ -107,9 +116,9 @@ export async function compareImportParity(input: {
   if(source.personal.memberId !== target.personal.memberId || source.shared.householdId !== target.shared.householdId || source.shared.environment !== target.shared.environment) differences.push('scope');
   for(const [label,envelopes] of [["source",source],["target",target]] as const) {
     const member=envelopes.personal.memberId;
-    if(envelopes.shared.nativeEvents?.some(row=>row.visibility==='personal') || envelopes.shared.transactions.some(row=>row.visibility==='personal') || envelopes.shared.shifts.some(row=>row.visibility==='personal') || envelopes.shared.potentialExpenses?.some(row=>row.visibility==='personal') || envelopes.shared.accounts.some(row=>row.scope==='personal'))differences.push(`${label}.sharedPrivacy`);
+    if(envelopes.shared.nativeEvents?.some(row=>row.visibility==='personal') || envelopes.shared.transactions.some(row=>row.visibility==='personal') || envelopes.shared.shifts.some(row=>row.visibility==='personal') || envelopes.shared.potentialExpenses?.some(row=>row.visibility==='personal') || envelopes.shared.accounts.some(row=>row.scope==='personal') || envelopes.shared.planVersions?.some(row=>row.scope!=='household') || envelopes.shared.planReflections?.some(row=>row.scope!=='household'))differences.push(`${label}.sharedPrivacy`);
     if(envelopes.personal.nativeEvents?.some(row=>row.visibility!=='personal'||row.createdBy!==member) || envelopes.personal.transactions.some(row=>row.visibility!=='personal'||row.createdBy!==member) || envelopes.personal.shifts.some(row=>row.visibility!=='personal'||row.createdBy!==member)
-      || envelopes.personal.potentialExpenses?.some(row=>row.visibility!=='personal'||row.createdBy!==member) || envelopes.personal.accounts?.some(row=>row.scope!=='personal'||row.ownerMemberId!==member) || envelopes.personal.goals?.some(row=>row.shared||row.ownerMemberId!==member))differences.push(`${label}.personalPrivacy`);
+      || envelopes.personal.potentialExpenses?.some(row=>row.visibility!=='personal'||row.createdBy!==member) || envelopes.personal.accounts?.some(row=>row.scope!=='personal'||row.ownerMemberId!==member) || envelopes.personal.goals?.some(row=>row.shared||row.ownerMemberId!==member) || envelopes.personal.planDrafts?.some(row=>row.ownerMemberId!==member) || envelopes.personal.planVersions?.some(row=>row.scope!=='personal'||row.ownerMemberId!==member) || envelopes.personal.planScenarios?.some(row=>row.ownerMemberId!==member))differences.push(`${label}.personalPrivacy`);
   }
   for(const scope of ['shared','personal'] as const) for(const field of new Set([...Object.keys(source[scope]),...Object.keys(target[scope])])) {
     if(scope==='shared' && field==='commandReceipts') continue;
