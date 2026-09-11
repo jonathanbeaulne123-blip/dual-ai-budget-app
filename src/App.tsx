@@ -1149,6 +1149,7 @@ export function App() {
       normalizedAfter.planReflections = before.personal.planReflections;
       normalizedAfter.planLearningProgress = before.personal.planLearningProgress;
       normalizedAfter.planCoachingPreferences = before.personal.planCoachingPreferences;
+      normalizedAfter.planBridgeDrafts = before.personal.planBridgeDrafts;
       if (JSON.stringify(after.shared) === JSON.stringify(before.shared)
         && JSON.stringify(normalizedAfter) === JSON.stringify(before.personal)) return;
       throw new ValidationError("Only you can change your private Plan work.");
@@ -6784,6 +6785,19 @@ export function App() {
               today={today}
               busy={busy}
               onCommand={runKitchen}
+              onSharedHerculesReply={async (sessionId, inReplyToTurnId) => {
+                if (!useLedgerSync) throw new Error("Connect this household before saving a Shared Hercules reply.");
+                const local = localLedgerIdentity(actorId);
+                const auth = local ? null : await ensureSupabaseSession(environment);
+                if (!local && !auth) throw new Error("Continue with Google before asking Hercules in the Shared Sitdown.");
+                const response = await fetch(`/plan/shared/hercules/${environment}/${household.householdId}`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${local ?? auth!.accessToken}`, "Content-Type": "application/json" },
+                  body: JSON.stringify({ sessionId, inReplyToTurnId }),
+                });
+                const payload = await response.json() as { ok?: boolean; error?: string };
+                if (!response.ok || !payload.ok) throw new Error(payload.error || "Hercules could not save the Shared reply.");
+              }}
             />
           ) : (
           <div className="plan-wide five-boards-plan">

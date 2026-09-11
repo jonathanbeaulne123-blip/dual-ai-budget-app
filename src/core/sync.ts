@@ -75,7 +75,9 @@ import {
 import { mergeOnboardingApprovals, shapeOnboardingApprovals } from "./onboarding/approvals.ts";
 import {
   mergePlanRecords,
+  shapePlanActivationJobs,
   shapePlanAcknowledgements,
+  shapePlanBridgeDrafts,
   shapePlanBridgeDecisions,
   shapePlanCoachingPreferences,
   shapePlanDrafts,
@@ -393,8 +395,10 @@ export function ensureHouseholdShape(household: Household): Household {
     planReflections: shapePlanReflections(household.planReflections),
     planLearningProgress: shapePlanLearningProgress(household.planLearningProgress),
     planCoachingPreferences: shapePlanCoachingPreferences(household.planCoachingPreferences),
+    planBridgeDrafts: shapePlanBridgeDrafts(household.planBridgeDrafts),
     planBridgeDecisions: shapePlanBridgeDecisions(household.planBridgeDecisions, activeMemberIds),
     planHerculesSessions: shapePlanHerculesSessions(household.planHerculesSessions, activeMemberIds),
+    planActivationJobs: shapePlanActivationJobs(household.planActivationJobs, planVersions),
     activity: shapeActivity(household.activity),
     devices: shapeDevices(household.devices, fallbackIso),
     workJobs: shapeWorkJobs(household.workJobs, fallbackIso),
@@ -580,6 +584,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     planReflections: shapePlanReflections(shaped.planReflections, { scope: "household" }),
     planBridgeDecisions: shapePlanBridgeDecisions(shaped.planBridgeDecisions, activeMemberIds),
     planHerculesSessions: shapePlanHerculesSessions(shaped.planHerculesSessions, activeMemberIds),
+    planActivationJobs: shapePlanActivationJobs(shaped.planActivationJobs, sharedPlanVersions),
     activity: sharedActivity,
     devices: shaped.devices,
     workJobs: shaped.workJobs,
@@ -611,6 +616,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     planReflections: shapePlanReflections(shaped.planReflections, { scope: "personal", ownerMemberId: memberId }),
     planLearningProgress: shapePlanLearningProgress(shaped.planLearningProgress, memberId),
     planCoachingPreferences: shapePlanCoachingPreferences(shaped.planCoachingPreferences, memberId),
+    planBridgeDrafts: shapePlanBridgeDrafts(shaped.planBridgeDrafts, memberId),
     ...(isLandingSurface(personalMember?.landingSurface)
       ? {
           landingSurface: personalMember.landingSurface,
@@ -696,6 +702,7 @@ export function personalReplicaForMember(household: Household, memberId: string)
     planReflections: shapePlanReflections(personal.planReflections, { scope: "personal", ownerMemberId: memberId }),
     planLearningProgress: shapePlanLearningProgress(personal.planLearningProgress, memberId),
     planCoachingPreferences: shapePlanCoachingPreferences(personal.planCoachingPreferences, memberId),
+    planBridgeDrafts: shapePlanBridgeDrafts(personal.planBridgeDrafts, memberId),
   };
 }
 
@@ -773,6 +780,7 @@ export function personalEnvelopeFromPayload(
     planReflections: shapePlanReflections(row.planReflections, { scope: "personal", ownerMemberId: memberId }),
     planLearningProgress: shapePlanLearningProgress(row.planLearningProgress, memberId),
     planCoachingPreferences: shapePlanCoachingPreferences(row.planCoachingPreferences, memberId),
+    planBridgeDrafts: shapePlanBridgeDrafts(row.planBridgeDrafts, memberId),
     ...(row.herculesProPermissions
       ? { herculesProPermissions: shapeHerculesProPermissions(row.herculesProPermissions) }
       : {}),
@@ -875,6 +883,7 @@ export function overlayPersonalReplica(
     ],
     planLearningProgress: shapePlanLearningProgress(personal.planLearningProgress, memberId),
     planCoachingPreferences: shapePlanCoachingPreferences(personal.planCoachingPreferences, memberId),
+    planBridgeDrafts: shapePlanBridgeDrafts(personal.planBridgeDrafts, memberId),
     shifts: overlaidShifts,
     sevenShiftsSchedules: [
       ...(household.sevenShiftsSchedules ?? []).filter((item) => item.memberId !== memberId && !personalScheduleIds.has(item.id)),
@@ -1070,8 +1079,10 @@ export function assembleHousehold(
     ],
     planLearningProgress: shapePlanLearningProgress(personal?.planLearningProgress, personal?.memberId),
     planCoachingPreferences: shapePlanCoachingPreferences(personal?.planCoachingPreferences, personal?.memberId),
+    planBridgeDrafts: shapePlanBridgeDrafts(personal?.planBridgeDrafts, personal?.memberId),
     planBridgeDecisions: shapePlanBridgeDecisions(shared.planBridgeDecisions, shared.members.filter((member) => member.active).map((member) => member.id)),
     planHerculesSessions: shapePlanHerculesSessions(shared.planHerculesSessions, shared.members.filter((member) => member.active).map((member) => member.id)),
+    planActivationJobs: shapePlanActivationJobs(shared.planActivationJobs, shapePlanVersions(shared.planVersions, { scope: "household" })),
     activity: shared.activity,
     devices: shared.devices ?? [],
     workJobs: shapeWorkJobs(shared.workJobs, shared.lastCommittedAt || MISSING_ISO),
@@ -1190,6 +1201,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     planReflections: mergePlanRecords(shapePlanReflections(server.planReflections, { scope: "household" }), shapePlanReflections(client.planReflections, { scope: "household" }), (row) => row.updatedAt),
     planBridgeDecisions: mergePlanRecords(shapePlanBridgeDecisions(server.planBridgeDecisions, activeMemberIds), shapePlanBridgeDecisions(client.planBridgeDecisions, activeMemberIds), (row) => row.updatedAt),
     planHerculesSessions: mergePlanRecords(shapePlanHerculesSessions(server.planHerculesSessions, activeMemberIds), shapePlanHerculesSessions(client.planHerculesSessions, activeMemberIds), (row) => row.updatedAt),
+    planActivationJobs: mergePlanRecords(shapePlanActivationJobs(server.planActivationJobs, mergedPlanVersions), shapePlanActivationJobs(client.planActivationJobs, mergedPlanVersions), (row) => row.updatedAt),
     activity: mergeRecords(server.activity, client.activity, []).sort((left, right) => left.at.localeCompare(right.at)).slice(-200),
     devices: mergeDevices(server.devices ?? [], client.devices ?? []),
     workJobs: mergeRecords(
@@ -1352,6 +1364,7 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     planReflections: mergePlanRecords(shapePlanReflections(server.planReflections, { scope: "personal", ownerMemberId: memberId }), shapePlanReflections(client.planReflections, { scope: "personal", ownerMemberId: memberId }), (row) => row.updatedAt),
     planLearningProgress: mergePlanRecords(shapePlanLearningProgress(server.planLearningProgress, memberId), shapePlanLearningProgress(client.planLearningProgress, memberId), (row) => row.updatedAt),
     planCoachingPreferences: mergePlanRecords(shapePlanCoachingPreferences(server.planCoachingPreferences, memberId), shapePlanCoachingPreferences(client.planCoachingPreferences, memberId), (row) => row.updatedAt),
+    planBridgeDrafts: mergePlanRecords(shapePlanBridgeDrafts(server.planBridgeDrafts, memberId), shapePlanBridgeDrafts(client.planBridgeDrafts, memberId), (row) => row.updatedAt),
     fundContributionSourceClaims: mergeRecords(server.fundContributionSourceClaims ?? [], client.fundContributionSourceClaims ?? [], tombstones),
     fundPrivate: {
       bankBindings: mergeRecords(server.fundPrivate?.bankBindings ?? [], client.fundPrivate?.bankBindings ?? [], tombstones),

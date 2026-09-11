@@ -1350,8 +1350,10 @@ export type Household = {
   planReflections?: import("./planSystem.ts").PlanReflection[];
   planLearningProgress?: import("./planSystem.ts").PlanLearningProgress[];
   planCoachingPreferences?: import("./planSystem.ts").PlanCoachingPreference[];
+  planBridgeDrafts?: import("./planSystem.ts").PlanBridgeDraft[];
   planBridgeDecisions?: import("./planSystem.ts").PlanBridgeDecision[];
   planHerculesSessions?: import("./planSystem.ts").PlanHerculesSession[];
+  planActivationJobs?: import("./planSystem.ts").PlanActivationJob[];
   activity: Activity[];
   devices: HouseholdDevice[];
   workJobs: WorkJob[];
@@ -1439,6 +1441,7 @@ export type SharedEnvelope = {
   planReflections?: import("./planSystem.ts").PlanReflection[];
   planBridgeDecisions?: import("./planSystem.ts").PlanBridgeDecision[];
   planHerculesSessions?: import("./planSystem.ts").PlanHerculesSession[];
+  planActivationJobs?: import("./planSystem.ts").PlanActivationJob[];
   activity: Activity[];
   devices: HouseholdDevice[];
   /** Optional only for envelopes written before job-based shifts shipped. */
@@ -1502,6 +1505,7 @@ export type PersonalEnvelope = {
   planReflections?: import("./planSystem.ts").PlanReflection[];
   planLearningProgress?: import("./planSystem.ts").PlanLearningProgress[];
   planCoachingPreferences?: import("./planSystem.ts").PlanCoachingPreference[];
+  planBridgeDrafts?: import("./planSystem.ts").PlanBridgeDraft[];
   fundPrivate?: HouseholdFundPrivateState;
   fundContributionSourceClaims?: import("./fundContributionSources.ts").FundContributionSourceClaim[];
   tombstones: Tombstone[];

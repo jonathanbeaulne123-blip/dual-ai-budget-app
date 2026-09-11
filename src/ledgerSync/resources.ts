@@ -163,6 +163,7 @@ export function observedResources(
       value: {
         versions: household.planVersions ?? [],
         acknowledgements: household.planAcknowledgements ?? [],
+        activationJobs: household.planActivationJobs ?? [],
         budgetPlans: household.budgetPlans,
       },
     });

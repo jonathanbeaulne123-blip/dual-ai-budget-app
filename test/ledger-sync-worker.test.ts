@@ -1,10 +1,53 @@
 import { digest } from "../src/ledgerSync/patch.ts";
 import { it, expect } from "vitest";
-import { catalogHousehold, postEntry } from "../src/core/index.ts";
+import {
+  acknowledgeHouseholdPlan,
+  catalogHousehold,
+  currentPlanVersion,
+  lockPersonalPlan,
+  planDigest,
+  postEntry,
+  proposeHouseholdPlan,
+  savePlanDraft,
+  type PlanLine,
+} from "../src/core/index.ts";
 import { capturedIntent } from "../src/ledgerSync/capture.ts";
 import { commandFromCapture } from "../src/ledgerSync/protocol.ts";
 import { encodeMessage, MessageReader } from "../src/ledgerSync/wire.ts";
 const base = process.env.HEARTH_LEDGER_WORKER_URL;
+it.skipIf(!base)("real SQLite Worker activates due Shared and member-Personal Plans through the durable snapshot backstop", async () => {
+  const memberId = "MEM-001", future = "2099-01" as const, due = "2026-09" as const;
+  const line: PlanLine = { id: "PLAN-LINE-CLOCK", lens: "protect", kind: "obligation", labelSnapshot: "Clock proof",
+    amountCents: 1000, cadence: "monthly", responsibility: { kind: "joint" }, assumptionIds: [], createdBy: memberId };
+  let household = { ...catalogHousehold(), householdId: `HH-PLAN-CLOCK-${crypto.randomUUID()}`, revision: 0, baseRevision: 0 };
+  household = savePlanDraft(household, { id: "PLAN-DRAFT-CLOCK-PERSONAL", scope: "personal", memberId, targetMonth: future,
+    lines: [{ ...line, id: "PLAN-LINE-CLOCK-PERSONAL", responsibility: { kind: "member", memberId } }], assumptions: [], createdBy: memberId }).household;
+  household = lockPersonalPlan(household, { memberId, draftId: "PLAN-DRAFT-CLOCK-PERSONAL", reason: "Clock proof", createdBy: memberId }).household;
+  household = savePlanDraft(household, { id: "PLAN-DRAFT-CLOCK-SHARED", scope: "household", memberId, targetMonth: future,
+    lines: [line], assumptions: [], createdBy: memberId }).household;
+  household = proposeHouseholdPlan(household, { memberId, draftId: "PLAN-DRAFT-CLOCK-SHARED", reason: "Clock proof", createdBy: memberId }).household;
+  const proposal = currentPlanVersion(household, "household", future)!;
+  household = acknowledgeHouseholdPlan(household, { planVersionId: proposal.id, expectedDigest: proposal.digest, memberId, createdBy: memberId }).household;
+  household = acknowledgeHouseholdPlan(household, { planVersionId: proposal.id, expectedDigest: proposal.digest, memberId: "MEM-002", createdBy: "MEM-002" }).household;
+  household.planVersions = household.planVersions!.map((version) => {
+    if (version.monthKey !== future) return version;
+    const changed = { ...version, monthKey: due, digest: "" };
+    return { ...changed, digest: planDigest(changed) };
+  });
+  const sharedVersion = household.planVersions.find((version) => version.scope === "household")!;
+  household.planAcknowledgements = household.planAcknowledgements!.map((ack) => ({ ...ack, planDigest: sharedVersion.digest }));
+  household.planActivationJobs = household.planActivationJobs!.map((job) => ({ ...job, monthKey: due, activateOn: `${due}-01`, planDigest: sharedVersion.digest }));
+  const headers = { Authorization: `Bearer local:${memberId}`, "Content-Type": "application/json" };
+  const imported = await fetch(`${base}/ledger-sync/v2/development/${household.householdId}/import`, { method: "POST", headers, body: JSON.stringify(household) });
+  expect(imported.status, await imported.text()).toBe(200);
+  const response = await fetch(`${base}/ledger-sync/v2/development/${household.householdId}/snapshot`, { headers });
+  expect(response.status, await response.clone().text()).toBe(200);
+  const replica = await response.json() as any;
+  expect(replica.sequence).toBe(2);
+  expect(replica.shared.planVersions.find((version: any) => version.scope === "household")?.state).toBe("active");
+  expect(replica.personal.planVersions.find((version: any) => version.scope === "personal")?.state).toBe("active");
+  expect(replica.shared.planActivationJobs[0]).toMatchObject({ state: "completed", completedEventId: expect.stringContaining("PLAN-CLOCK-") });
+}, 30_000);
 it.skipIf(!base)('imported receipt UUID remains reserved after a v2 posting and reconnect', async () => {
   const id = crypto.randomUUID();
   const legacy = { confirmationId:id, identityHash:'original-legacy-hash',auditHash:'original-audit',commandKind:'postEntry',postedIds:['TXN-OLD-PRIVATE-ID'],revision:1,acceptedAt:'2026-09-01T12:00:00Z' };

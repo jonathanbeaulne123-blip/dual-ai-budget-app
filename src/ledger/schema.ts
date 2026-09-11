@@ -1,4 +1,4 @@
-export const BOOKS_SCHEMA_VERSION = 10;
+export const BOOKS_SCHEMA_VERSION = 11;
 
 export const BOOKS_SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -211,12 +211,30 @@ CREATE TABLE IF NOT EXISTS plan_bridge_decisions (
   updated_at TEXT NOT NULL,
   payload TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS plan_bridge_drafts (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  owner_member_id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS plan_hercules_sessions (
   id TEXT PRIMARY KEY,
   household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   sit_down_session_id TEXT NOT NULL,
   month_key TEXT NOT NULL,
   state TEXT NOT NULL CHECK (state IN ('active', 'closed')),
+  updated_at TEXT NOT NULL,
+  payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS plan_activation_jobs (
+  id TEXT PRIMARY KEY,
+  household_id TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  plan_version_id TEXT NOT NULL,
+  month_key TEXT NOT NULL,
+  activate_on TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('pending', 'completed', 'cancelled')),
   updated_at TEXT NOT NULL,
   payload TEXT NOT NULL
 );

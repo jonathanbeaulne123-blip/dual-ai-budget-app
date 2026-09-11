@@ -6,6 +6,22 @@ import type { BudgetPlan, Household, Transaction } from "./types.ts";
 export type PlanScope = "personal" | "household";
 export type PlanLens = "protect" | "prepare" | "build" | "everyday";
 export type PlanVersionState = "proposed" | "scheduled" | "active" | "superseded";
+
+/** The durable authority schedules Plan activation at the start of a Toronto civil day. */
+export function planActivationInstant(dateKey: DateKey): number {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) throw new Error("INVALID_PLAN_ACTIVATION_DATE");
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const probe = new Date(Date.UTC(year!, month! - 1, day!, 12));
+  const zone = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Toronto",
+    timeZoneName: "longOffset",
+  }).formatToParts(probe).find((part) => part.type === "timeZoneName")?.value ?? "GMT-05:00";
+  const match = zone.match(/GMT([+-])(\d{2}):(\d{2})/);
+  const offsetMinutes = match
+    ? (match[1] === "+" ? 1 : -1) * (Number(match[2]) * 60 + Number(match[3]))
+    : -300;
+  return Date.UTC(year!, month! - 1, day!) - offsetMinutes * 60_000;
+}
 export type PlanLineKind =
   | "obligation"
   | "true-expense"
@@ -110,6 +126,8 @@ export type PlanReflection = {
   outcomes: PlanOutcome[];
   privateNote?: string;
   sharedNote?: string;
+  memberNotes: Array<{ memberId: string; text: string; updatedAt: string }>;
+  reviewedByMemberIds: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -134,6 +152,19 @@ export type PlanCoachingPreference = {
 };
 
 export type PlanBridgeState = "proposed" | "held" | "declined" | "withdrawn" | "accepted" | "superseded";
+export type PlanBridgeDraft = {
+  id: string;
+  ownerMemberId: string;
+  monthKey: MonthKey;
+  kind: "contribution" | "responsibility" | "fund-target" | "shared-goal" | "constraint";
+  label: string;
+  amountCents?: number;
+  lowCents?: number;
+  highCents?: number;
+  expectedDate?: DateKey;
+  supersedesId?: string;
+  updatedAt: string;
+};
 export type PlanBridgeDecision = {
   id: string;
   monthKey: MonthKey;
@@ -147,6 +178,10 @@ export type PlanBridgeDecision = {
   state: PlanBridgeState;
   supersedesId?: string;
   acceptedInPlanVersionId?: string;
+  heldByMemberId?: string;
+  heldReason?: string;
+  declinedByMemberId?: string;
+  declineReason?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -157,7 +192,24 @@ export type PlanHerculesTurn = {
   memberId?: string;
   text: string;
   sourceReferences: PlanSourceReference[];
+  inReplyToTurnId?: string;
+  sourceRevision?: number;
+  receiptId?: string;
+  responseHash?: string;
+  provider?: string;
   createdAt: string;
+};
+
+export type PlanActivationJob = {
+  id: string;
+  planVersionId: string;
+  planDigest: string;
+  monthKey: MonthKey;
+  activateOn: DateKey;
+  state: "pending" | "completed" | "cancelled";
+  completedEventId?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type PlanHerculesSession = {
@@ -420,9 +472,29 @@ export function shapePlanReflections(value: unknown, options: { scope?: PlanScop
         actualCents: Math.max(0, cents(outcome.actualCents)), transactionIds: Array.isArray(outcome.transactionIds) ? outcome.transactionIds.map(text).filter(Boolean) : [],
         ...(text(outcome.note) ? { note: text(outcome.note) } : {}) }];
     }) : [];
+    const memberNotes = Array.isArray(row.memberNotes) ? row.memberNotes.flatMap((candidateNote) => {
+      const note = record(candidateNote), memberId = text(note?.memberId), noteText = text(note?.text);
+      return note && memberId && noteText ? [{ memberId, text: noteText, updatedAt: iso(note.updatedAt, new Date(0).toISOString()) }] : [];
+    }) : [];
     return [{ id, scope, ...(owner ? { ownerMemberId: owner } : {}), planVersionId, monthKey, outcomes,
       ...(text(row.privateNote) ? { privateNote: text(row.privateNote) } : {}), ...(text(row.sharedNote) ? { sharedNote: text(row.sharedNote) } : {}),
+      memberNotes, reviewedByMemberIds: Array.isArray(row.reviewedByMemberIds) ? [...new Set(row.reviewedByMemberIds.map(text).filter(Boolean))] : [],
       createdAt: iso(row.createdAt, new Date(0).toISOString()), updatedAt: iso(row.updatedAt, iso(row.createdAt, new Date(0).toISOString())) }];
+  });
+}
+
+export function shapePlanBridgeDrafts(value: unknown, ownerMemberId?: string): PlanBridgeDraft[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((candidate) => {
+    const row = record(candidate), id = text(row?.id), owner = text(row?.ownerMemberId), monthKey = month(row?.monthKey), label = text(row?.label);
+    if (!row || !id || !owner || !monthKey || (ownerMemberId && owner !== ownerMemberId)) return [];
+    return [{ id, ownerMemberId: owner, monthKey,
+      kind: oneOf(row.kind, ["contribution", "responsibility", "fund-target", "shared-goal", "constraint"] as const, "contribution"), label,
+      ...(Number.isInteger(row.amountCents) ? { amountCents: Math.max(0, cents(row.amountCents)) } : {}),
+      ...(Number.isInteger(row.lowCents) ? { lowCents: Math.max(0, cents(row.lowCents)) } : {}),
+      ...(Number.isInteger(row.highCents) ? { highCents: Math.max(0, cents(row.highCents)) } : {}),
+      ...(text(row.expectedDate) ? { expectedDate: text(row.expectedDate) as DateKey } : {}),
+      ...(text(row.supersedesId) ? { supersedesId: text(row.supersedesId) } : {}), updatedAt: iso(row.updatedAt, new Date(0).toISOString()) }];
   });
 }
 
@@ -461,6 +533,24 @@ export function shapePlanBridgeDecisions(value: unknown, activeMemberIds: readon
       state: oneOf(row.state, ["proposed", "held", "declined", "withdrawn", "accepted", "superseded"] as const, "proposed"),
       ...(text(row.supersedesId) ? { supersedesId: text(row.supersedesId) } : {}),
       ...(text(row.acceptedInPlanVersionId) ? { acceptedInPlanVersionId: text(row.acceptedInPlanVersionId) } : {}),
+      ...(activeMemberIds.includes(text(row.heldByMemberId)) ? { heldByMemberId: text(row.heldByMemberId) } : {}),
+      ...(text(row.heldReason) ? { heldReason: text(row.heldReason) } : {}),
+      ...(activeMemberIds.includes(text(row.declinedByMemberId)) ? { declinedByMemberId: text(row.declinedByMemberId) } : {}),
+      ...(text(row.declineReason) ? { declineReason: text(row.declineReason) } : {}),
+      createdAt: iso(row.createdAt, new Date(0).toISOString()), updatedAt: iso(row.updatedAt, iso(row.createdAt, new Date(0).toISOString())) }];
+  });
+}
+
+export function shapePlanActivationJobs(value: unknown, versions: readonly PlanVersion[]): PlanActivationJob[] {
+  if (!Array.isArray(value)) return [];
+  const byId = new Map(versions.filter((version) => version.scope === "household").map((version) => [version.id, version]));
+  return value.flatMap((candidate) => {
+    const row = record(candidate), id = text(row?.id), planVersionId = text(row?.planVersionId), planDigest = text(row?.planDigest), monthKey = month(row?.monthKey);
+    const version = byId.get(planVersionId), activateOn = text(row?.activateOn);
+    if (!row || !id || !version || version.digest !== planDigest || version.monthKey !== monthKey || !/^\d{4}-\d{2}-\d{2}$/.test(activateOn)) return [];
+    return [{ id, planVersionId, planDigest, monthKey, activateOn: activateOn as DateKey,
+      state: oneOf(row.state, ["pending", "completed", "cancelled"] as const, "pending"),
+      ...(text(row.completedEventId) ? { completedEventId: text(row.completedEventId) } : {}),
       createdAt: iso(row.createdAt, new Date(0).toISOString()), updatedAt: iso(row.updatedAt, iso(row.createdAt, new Date(0).toISOString())) }];
   });
 }
@@ -476,6 +566,10 @@ export function shapePlanHerculesSessions(value: unknown, activeMemberIds: reado
       if (!turn || !turnId || !turnText || (role === "member" && !activeMemberIds.includes(turnMember))) return [];
       return [{ id: turnId, role, ...(role === "member" ? { memberId: turnMember } : {}), text: turnText,
         sourceReferences: Array.isArray(turn.sourceReferences) ? turn.sourceReferences.flatMap((item) => sourceReference(item) ?? []) : [],
+        ...(text(turn.inReplyToTurnId) ? { inReplyToTurnId: text(turn.inReplyToTurnId) } : {}),
+        ...(Number.isSafeInteger(turn.sourceRevision) && Number(turn.sourceRevision) >= 0 ? { sourceRevision: Number(turn.sourceRevision) } : {}),
+        ...(text(turn.receiptId) ? { receiptId: text(turn.receiptId) } : {}), ...(text(turn.responseHash) ? { responseHash: text(turn.responseHash) } : {}),
+        ...(text(turn.provider) ? { provider: text(turn.provider) } : {}),
         createdAt: iso(turn.createdAt, new Date(0).toISOString()) }];
     }) : [];
     return [{ id, sitDownSessionId, monthKey, planDraftId, ...(text(row.resultingPlanVersionId) ? { resultingPlanVersionId: text(row.resultingPlanVersionId) } : {}),

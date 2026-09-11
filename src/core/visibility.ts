@@ -273,8 +273,10 @@ export function householdForView(household: Household, memberId: string, view: L
     planReflections: (household.planReflections ?? []).filter((row) => row.scope === "household" ? view === "household" : view === "personal" && row.ownerMemberId === memberId),
     planLearningProgress: view === "personal" ? (household.planLearningProgress ?? []).filter((row) => row.memberId === memberId) : [],
     planCoachingPreferences: view === "personal" ? (household.planCoachingPreferences ?? []).filter((row) => row.memberId === memberId) : [],
+    planBridgeDrafts: view === "personal" ? (household.planBridgeDrafts ?? []).filter((row) => row.ownerMemberId === memberId) : [],
     planBridgeDecisions: view === "household" ? household.planBridgeDecisions ?? [] : household.planBridgeDecisions ?? [],
     planHerculesSessions: view === "household" ? household.planHerculesSessions ?? [] : [],
+    planActivationJobs: view === "household" ? household.planActivationJobs ?? [] : [],
     fundContributionSourceClaims: [],
     fundPrivate: view === "personal" && household.householdFund?.custodianMemberId === memberId
       ? household.fundPrivate

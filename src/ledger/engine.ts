@@ -108,7 +108,9 @@ const PROJECTION_DIGEST_TABLES = [
   ["plan_reflections", "id", "household_id"],
   ["plan_learning_progress", "id", "household_id"],
   ["plan_bridge_decisions", "id", "household_id"],
+  ["plan_bridge_drafts", "id", "household_id"],
   ["plan_hercules_sessions", "id", "household_id"],
+  ["plan_activation_jobs", "id", "household_id"],
   ["recurrences", "id", "household_id"],
   ["activity", "id", "household_id"],
   ["household_funds", "id", "household_id"],
@@ -390,6 +392,12 @@ async function applyBooksMigrations(db: Queryable): Promise<void> {
     // remain authoritative; this invalidates only the derived SQL receipt.
     await db.query("UPDATE audit_revisions SET projection_hash = NULL");
     await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [10, new Date().toISOString()]);
+  }
+  if (!have.has(11)) {
+    // PLAN_SYSTEM_V2 completion: private Bridge drafts and durable activation
+    // jobs are projections only; accepted JSON/envelopes remain authoritative.
+    await db.query("UPDATE audit_revisions SET projection_hash = NULL");
+    await db.query("INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)", [11, new Date().toISOString()]);
   }
 }
 
@@ -1049,7 +1057,9 @@ function projectBooksTables(household: Household, compiled: CompiledBooks, snaps
     { table: "plan_reflections", keyColumn: "id", columns: ["id", "household_id", "scope", "owner_member_id", "plan_version_id", "month_key", "updated_at", "payload"], rows: (household.planReflections ?? []).map((row) => [row.id, compiled.householdId, row.scope, row.ownerMemberId ?? null, row.planVersionId, row.monthKey, row.updatedAt, JSON.stringify(row)]) },
     { table: "plan_learning_progress", keyColumn: "id", columns: ["id", "household_id", "member_id", "month_key", "lesson_id", "state", "updated_at", "payload"], rows: (household.planLearningProgress ?? []).map((row) => [row.id, compiled.householdId, row.memberId, row.monthKey, row.lessonId, row.state, row.updatedAt, JSON.stringify(row)]) },
     { table: "plan_bridge_decisions", keyColumn: "id", columns: ["id", "household_id", "month_key", "offered_by_member_id", "state", "updated_at", "payload"], rows: (household.planBridgeDecisions ?? []).map((row) => [row.id, compiled.householdId, row.monthKey, row.offeredByMemberId, row.state, row.updatedAt, JSON.stringify(row)]) },
+    { table: "plan_bridge_drafts", keyColumn: "id", columns: ["id", "household_id", "owner_member_id", "month_key", "updated_at", "payload"], rows: (household.planBridgeDrafts ?? []).map((row) => [row.id, compiled.householdId, row.ownerMemberId, row.monthKey, row.updatedAt, JSON.stringify(row)]) },
     { table: "plan_hercules_sessions", keyColumn: "id", columns: ["id", "household_id", "sit_down_session_id", "month_key", "state", "updated_at", "payload"], rows: (household.planHerculesSessions ?? []).map((row) => [row.id, compiled.householdId, row.sitDownSessionId, row.monthKey, row.state, row.updatedAt, JSON.stringify(row)]) },
+    { table: "plan_activation_jobs", keyColumn: "id", columns: ["id", "household_id", "plan_version_id", "month_key", "activate_on", "state", "updated_at", "payload"], rows: (household.planActivationJobs ?? []).map((row) => [row.id, compiled.householdId, row.planVersionId, row.monthKey, row.activateOn, row.state, row.updatedAt, JSON.stringify(row)]) },
     { table: "recurrences", keyColumn: "id", columns: ["id", "household_id", "cadence", "next_date", "type", "amount_cents", "account_id", "subcategory_id", "note", "active", "auto_post"], rows: compiled.recurrences.map((recurrence) => [recurrence.id, compiled.householdId, recurrence.cadence, recurrence.nextDate, recurrence.type, recurrence.amountCents, recurrence.accountId, recurrence.subcategoryId, recurrence.note, recurrence.active, recurrence.autoPost]) },
     { table: "activity", keyColumn: "id", columns: ["id", "household_id", "at", "action", "summary"], rows: compiled.activity.map((item) => [item.id, compiled.householdId, item.at, item.action, item.summary]) },
     { table: "household_funds", keyColumn: "id", columns: ["id", "household_id", "name", "custodian_member_id", "mode", "opened_on", "created_at", "updated_at"], rows: fund ? [[fund.id, compiled.householdId, fund.name, fund.custodianMemberId, fund.mode, fund.openedOn, fund.createdAt, fund.updatedAt]] : [] },

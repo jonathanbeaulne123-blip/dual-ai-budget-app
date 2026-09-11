@@ -47,7 +47,7 @@ import { advanceCadence } from "../core/recurrence.ts";
 import { dateKeyInZone, parseMonthKey, type DateKey } from "../core/calendar.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
 import { ensureHouseholdShape, mergeTombstones } from "../core/sync.ts";
-import type { PlanAcknowledgement, PlanBridgeDecision, PlanHerculesSession, PlanReflection, PlanVersion } from "../core/planSystem.ts";
+import type { PlanAcknowledgement, PlanActivationJob, PlanBridgeDecision, PlanHerculesSession, PlanReflection, PlanVersion } from "../core/planSystem.ts";
 import type {
   Claim,
   BudgetPlan,
@@ -109,6 +109,7 @@ export type ContinuityMaterializationFacts = {
   planReflections?: PlanReflection[];
   planBridgeDecisions?: PlanBridgeDecision[];
   planHerculesSessions?: PlanHerculesSession[];
+  planActivationJobs?: PlanActivationJob[];
   charter?: HouseholdCharter;
   householdFund?: HouseholdFundConfig;
   fundMonthPlans?: HouseholdFundMonthPlan[];
@@ -737,6 +738,7 @@ function filterFactsForScope(
     if (facts.planReflections?.length) scoped.planReflections = facts.planReflections.filter((row) => row.scope === "household");
     if (facts.planBridgeDecisions?.length) scoped.planBridgeDecisions = facts.planBridgeDecisions;
     if (facts.planHerculesSessions?.length) scoped.planHerculesSessions = facts.planHerculesSessions;
+    if (facts.planActivationJobs?.length) scoped.planActivationJobs = facts.planActivationJobs;
     if (facts.recurrences?.length) scoped.recurrences = facts.recurrences;
     if (facts.householdOnboarding) scoped.householdOnboarding = facts.householdOnboarding;
     if (facts.onboardingSubmissions?.length) {
@@ -825,11 +827,12 @@ export function extractMaterializationFacts(
       facts.planAcknowledgements = household.planAcknowledgements ?? [];
       const months = new Set(facts.planVersions.map((row) => row.monthKey));
       facts.budgetPlans = household.budgetPlans.filter((row) => months.has(row.monthKey));
+      facts.planActivationJobs = household.planActivationJobs ?? [];
     }
-    if (["proposePlanBridge", "withdrawPlanBridge"].includes(options?.commandKind ?? "")) {
+    if (["sharePlanBridgeDraft", "proposePlanBridge", "withdrawPlanBridge", "holdPlanBridge", "declinePlanBridge"].includes(options?.commandKind ?? "")) {
       facts.planBridgeDecisions = (household.planBridgeDecisions ?? []).filter((row) => posted.has(row.id));
     }
-    if (options?.commandKind === "savePlanReflection") {
+    if (["savePlanReflection", "markPlanReflectionReviewed"].includes(options?.commandKind ?? "")) {
       facts.planReflections = (household.planReflections ?? []).filter((row) => row.scope === "household" && posted.has(row.id));
     }
     if (options?.commandKind === "appendPlanSitdownTurn") {
@@ -932,6 +935,7 @@ async function applyEvent(
   const planReflections = applyMoneyCollection(snapshot.planReflections ?? [], facts.planReflections, mergedTombstones);
   const planBridgeDecisions = applyMoneyCollection(snapshot.planBridgeDecisions ?? [], facts.planBridgeDecisions, mergedTombstones);
   const planHerculesSessions = applyMoneyCollection(snapshot.planHerculesSessions ?? [], facts.planHerculesSessions, mergedTombstones);
+  const planActivationJobs = applyMoneyCollection(snapshot.planActivationJobs ?? [], facts.planActivationJobs, mergedTombstones);
   const categoryMap = rowMapsTo(snapshot.categories);
   for (const category of facts.categories ?? []) categoryMap.set(category.id, category);
   const budgetPlanMap = rowMapsTo(snapshot.budgetPlans);
@@ -984,6 +988,7 @@ async function applyEvent(
     planReflections: planReflections.filter((row) => !dead.has(row.id)),
     planBridgeDecisions: planBridgeDecisions.filter((row) => !dead.has(row.id)),
     planHerculesSessions: planHerculesSessions.filter((row) => !dead.has(row.id)),
+    planActivationJobs: planActivationJobs.filter((row) => !dead.has(row.id)),
     householdOnboarding,
     onboardingSubmissions,
     onboardingCategoryProposals,
@@ -1044,6 +1049,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     planReflections: [],
     planBridgeDecisions: [],
     planHerculesSessions: [],
+    planActivationJobs: [],
     goalContributions: [],
     goalPurchases: [],
     householdOnboarding: null,
