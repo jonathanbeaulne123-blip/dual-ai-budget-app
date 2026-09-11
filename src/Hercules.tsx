@@ -1808,9 +1808,8 @@ export function HerculesPresence({
           <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
             Close
           </button>
-          {easyReadToggle}
           {!setup && onboardingShellActive ? (
-            <OnboardingChat
+            <div className="hercules-onboarding-content">{easyReadToggle}<OnboardingChat
               household={household}
               memberId={memberId}
               today={today}
@@ -1831,7 +1830,7 @@ export function HerculesPresence({
               personalOfferSessionId={personalOfferSessionId}
               personalOfferRecorded={personalOfferRecorded}
               onOpenPersonalModule={openPersonalModule}
-            />
+            /></div>
           ) : (
             <>
           <div className="hercules-focus-hero">
@@ -1846,6 +1845,7 @@ export function HerculesPresence({
             />
           </div>
           <div className="hercules-focus-body"><div className="hercules-conversation-content">
+            {easyReadToggle}
             {actionPanel()}
             {turns.length?<details className="hercules-compact-tools"><summary>Suggestions and help</summary>{discoveryPanel()}</details>:discoveryPanel()}
             {!chatEnabled && <p role="status">Conversation is taking a break. Your saved preferences are still available.</p>}
@@ -1970,8 +1970,8 @@ export function HerculesPresence({
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""} ${chatExpanded ? "is-expanded" : ""}`}
           style={bubbleStyle}
         >
-          {open&&<header className="hercules-chat-header"><HerculesLivePortrait mood={look.view.mood} hat={look.hat} chain={look.chain} house={look.house} collar={look.collar} pose={pose} size={44}/><strong>Hercules</strong>{easyReadToggle}<button type="button" aria-expanded={chatExpanded} onClick={()=>setChatExpanded(!chatExpanded)}>{chatExpanded?'Compact':'Expand'}</button></header>}
-          <div className="hercules-conversation-content">{open&&actionPanel()}
+          {open&&<header className="hercules-chat-header"><HerculesLivePortrait mood={look.view.mood} hat={look.hat} chain={look.chain} house={look.house} collar={look.collar} pose={pose} size={44}/><strong>Hercules</strong><button type="button" aria-expanded={chatExpanded} onClick={()=>setChatExpanded(!chatExpanded)}>{chatExpanded?'Compact':'Expand'}</button></header>}
+          <div className="hercules-conversation-content">{open&&easyReadToggle}{open&&actionPanel()}
           {open && setup && !setupSelected && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
           {desktopOnboardingOpen ? (
             <>

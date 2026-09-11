@@ -1,0 +1,38 @@
+[
+  {
+    "theme": "classic",
+    "width": 390,
+    "scrollDelta": 80,
+    "errors": []
+  },
+  {
+    "theme": "classic",
+    "width": 1440,
+    "scrollDelta": 80,
+    "errors": []
+  },
+  {
+    "theme": "taylor",
+    "width": 390,
+    "scrollDelta": 80,
+    "errors": []
+  },
+  {
+    "theme": "taylor",
+    "width": 1440,
+    "scrollDelta": 80,
+    "errors": []
+  },
+  {
+    "theme": "newfoundland",
+    "width": 390,
+    "scrollDelta": 80,
+    "errors": []
+  },
+  {
+    "theme": "newfoundland",
+    "width": 1440,
+    "scrollDelta": 80,
+    "errors": []
+  }
+]
