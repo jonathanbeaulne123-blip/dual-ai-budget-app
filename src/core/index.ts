@@ -241,6 +241,7 @@ export {
   latestMemberLedgerToken,
   assertLatestMemberLedgerUndo,
   fundedMoneyUndoTarget,
+  fundedMoneyUndoTargets,
 } from "./confirmationUndo.ts";
 export {
   appendRestorePoint,

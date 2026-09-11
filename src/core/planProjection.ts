@@ -161,7 +161,7 @@ export function matchPlanEvidence(h: Household, line: PlanLine, monthKey: MonthK
     if (!isVisibleInView(root, memberId, scope)) return [];
     const matches = source.type === "category" ? tx.date.startsWith(monthKey) && transactionProjection(tx, byId).root.subcategoryId === source.id
       : source.type === "recurrence" ? explicitIds.has(root.id) || root.date.startsWith(monthKey) && root.source === "recurring" && root.sourceId === source.id
-      : Boolean(potential?.transactionId && root.id === potential.transactionId);
+      : Boolean(potential?.transactionId && (root.id === potential.transactionId || root.source === "calendar" && root.sourceId === potential.id));
     if (!matches) return [];
     const amountCents = projectedExpenseEffect(tx, byId);
     return amountCents ? [{ id: tx.id, kind: "payment" as const, date: tx.date, amountCents }] : [];
@@ -334,9 +334,10 @@ export function projectPlan(h: Household, input: {
         : source?.type === "goal" ? meta?.goalId === source.id
         : source?.type === "category" ? meta?.categoryId === source.id || meta?.recurrenceId && h.recurrences.some(recurrence => recurrence.id === meta.recurrenceId && recurrence.subcategoryId === source.id)
         : source?.type === "potential-expense" ? visible && meta?.transactionId && (() => {
-          const linked = h.potentialExpenses?.find(item => item.id === source.id)?.transactionId;
+          const potential = h.potentialExpenses?.find(item => item.id === source.id);
           const transaction = allTransactions.get(meta.transactionId);
-          return Boolean(linked && transaction && purchaseRoot(transaction, allTransactions).id === linked);
+          const root = transaction && purchaseRoot(transaction, allTransactions);
+          return Boolean(potential?.transactionId && root && (root.id === potential.transactionId || root.source === "calendar" && root.sourceId === potential.id));
         })() : false;
       if (matches && movement.date.startsWith(selection.monthKey)) { assigned.set(movement.sourceId, line.id); represented.push({ movement, remaining: -movement.deltaCents }); }
     }

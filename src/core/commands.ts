@@ -1,4 +1,6 @@
 import { shapeGoalEnvelope, goalFundReserve, goalRemainingClaim, goalEnvelopeUsedCents, assertGoalEnvelopeIntegrity } from "./goalEnvelopes.ts";
+
+import { categorySplitAmounts, partitionCategoryOwnership, type CategorySplit } from "./categorySplit.ts";
 import { matchPlanEvidence, planSourceVisible } from "./planProjection.ts";
 import { projectedExpenseEffect } from "./budget.ts";
 import { fundSourceMovement, fundSourceReservedCents, fundContributionReviewDigest, shapeFundSourceDeclaration, type FundSourceInput } from "./fundContributionSources.ts";
@@ -1620,6 +1622,7 @@ function baseTx(household: Household, input: {
 }
 
 export const postEntry = captureCommand("postEntry", function postEntry(household: Household, input: {
+  categorySplit?: CategorySplit;
   swipeReviewed?: true;
   date: string;
   type: "expense" | "income" | "refund";
@@ -1674,6 +1677,40 @@ export const postEntry = captureCommand("postEntry", function postEntry(househol
     const original = household.transactions.find((tx) => tx.id === input.refundOfId);
     if (!original) throw new ValidationError("The original expense for this refund no longer exists.");
     if (original.type !== "expense") throw new ValidationError("Refunds can only reverse an expense.");
+  }
+  if (input.categorySplit !== undefined) {
+    if (input.type !== "expense" || input.refundOfId || input.reversalOfId || input.swipeReviewed || (input.source && !["manual", "calendar"].includes(input.source))) {
+      throw new ValidationError("Category splitting is available for expenses.");
+    }
+    if (splits.some(split => !Number.isSafeInteger(split.amountCents) || split.amountCents < 0)) throw new ValidationError("Category portions need nonnegative owner shares.");
+    requireSubcategory(household, input.categorySplit.secondSubcategoryId, "expense");
+    const amounts = categorySplitAmounts(input.subcategoryId, input.categorySplit, amountCents);
+    const ownership = partitionCategoryOwnership(splits, amounts[0], amountCents);
+    const firstFunded = funding ? Number((BigInt(funding.fundedCents) * BigInt(amounts[0]) + BigInt(Math.floor(amountCents / 2))) / BigInt(amountCents)) : 0;
+    const funded = [firstFunded, funding ? funding.fundedCents - firstFunded : 0];
+    // Check the whole purchase and each portion against previously accepted rows,
+    // never against the other half of this same confirmation.
+    const whole = postEntry(household, { ...input, categorySplit: undefined });
+    const warnings = [...whole.warnings];
+    const sourceId = input.source === "calendar" ? input.sourceId : nextId("CATEGORY-SPLIT-", household.transactions.map(t => t.sourceId ?? ""));
+    const portions = ([0, 1] as const).filter(index => amounts[index] > 0).map(index => {
+      const subcategoryId = index === 0 ? input.subcategoryId : input.categorySplit!.secondSubcategoryId;
+      const portion = { ...input, categorySplit: undefined, amount: (amounts[index] / 100).toFixed(2), subcategoryId,
+        splits: ownership[index], funding: funding && funded[index] ? { ...funding, fundedCents: funded[index]! } : undefined };
+      const checked = postEntry(household, portion);
+      warnings.push(...checked.warnings);
+      const name = requireSubcategory(household, subcategoryId, "expense").name;
+      return { ...portion, sourceId, note: `${input.note ? input.note + " · " : ""}${name} portion of $${(amountCents / 100).toFixed(2)}` };
+    });
+    let next = household;
+    const postedIds: string[] = [];
+    for (const portion of portions) {
+      const result = postEntry(next, { ...portion, confirmDuplicate: true });
+      next = result.household; postedIds.push(...result.postedIds);
+    }
+    // Nested previews are never persisted; one outer Confirm owns both rows and its Undo.
+    next.activity = [...household.activity];
+    return commit(cloneHousehold(household), next, "Add Expense", `Split expense $${(amountCents / 100).toFixed(2)} across two categories on ${date}`, postedIds, [...new Set(warnings)], "postEntry");
   }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
@@ -1925,6 +1962,7 @@ export const postPotentialExpense = captureCommand("postPotentialExpense", funct
   amount?: string | number;
   accountId?: string;
   subcategoryId?: string;
+  categorySplit?: CategorySplit;
   note?: string;
   place?: string;
   occurredAt?: string;
@@ -1944,6 +1982,7 @@ export const postPotentialExpense = captureCommand("postPotentialExpense", funct
     amount: amountCents / 100,
     accountId: input.accountId ?? plan.accountId,
     subcategoryId: input.subcategoryId ?? plan.subcategoryId,
+    categorySplit: input.categorySplit,
     note: input.note ?? plan.title,
     place: input.place,
     occurredAt: input.occurredAt,

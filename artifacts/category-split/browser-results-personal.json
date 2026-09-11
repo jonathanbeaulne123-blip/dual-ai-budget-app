@@ -1,0 +1,146 @@
+[
+  {
+    "view": "personal",
+    "theme": "classic",
+    "width": 320,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "classic",
+    "width": 390,
+    "offset": 0.015625,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "classic",
+    "width": 720,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "classic",
+    "width": 1100,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "classic",
+    "width": 1440,
+    "offset": 0.015625,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "classic",
+    "width": 1920,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "taylor",
+    "width": 320,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "taylor",
+    "width": 390,
+    "offset": 0.015625,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "taylor",
+    "width": 720,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "taylor",
+    "width": 1100,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "taylor",
+    "width": 1440,
+    "offset": 0.015625,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "taylor",
+    "width": 1920,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "newfoundland",
+    "width": 320,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "newfoundland",
+    "width": 390,
+    "offset": 0.015625,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "newfoundland",
+    "width": 720,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "newfoundland",
+    "width": 1100,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "newfoundland",
+    "width": 1440,
+    "offset": 0.015625,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "view": "personal",
+    "theme": "newfoundland",
+    "width": 1920,
+    "offset": 0,
+    "overflow": false,
+    "errors": []
+  }
+]

@@ -1,0 +1,45 @@
+{
+  "baseSha": "401f98fbd4a3b973b07c5e56a22fc8f94db1b18d",
+  "changeFingerprint": "087c2ded41d224143fe4a1b6ed076b1bc767fc7f7e3304454fc2f2fedbebe731",
+  "workingTreeClean": false,
+  "breachPhase": "typescript",
+  "budgetMs": 300000,
+  "elapsedMs": 1831226,
+  "slowestPhase": "typescript",
+  "timeBudgetBreached": true,
+  "classification": "quick-gate-failed; time-budget-breached",
+  "headSha": "401f98fbd4a3b973b07c5e56a22fc8f94db1b18d",
+  "phases": [
+    {
+      "elapsedMs": 383,
+      "name": "diff-check",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 1909,
+      "name": "ai-surface",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 797362,
+      "name": "typescript",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 106216,
+      "name": "test-discovery",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 123222,
+      "name": "vitest-fast",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 794124,
+      "name": "vitest-serial",
+      "status": "failed"
+    }
+  ],
+  "risk": "high"
+}
