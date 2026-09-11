@@ -190,7 +190,7 @@ function input(selector: string, value: string) {
 }
 
 describe("five boards entry App integration", () => {
-  it("retains a two-category slider draft and confirms both amounts together", async () => {
+  it.each([false, true])("retains a two-category slider draft and confirms both amounts together (expanded=%s)", async expanded => {
     mobile=true; writes.sync=true; writes.stored={...writes.stored!,linked:true};
     writes.stored.booksAcceptedHash=await financialAuditHash(writes.stored);
     vi.stubEnv("VITE_LEDGER_SYNC_V2","1");vi.stubEnv("VITE_LEDGER_SYNC_LOCAL_AUTH","1");
@@ -199,22 +199,31 @@ describe("five boards entry App integration", () => {
     expect([...nav.children].map(el=>el.classList.contains('fab-dial')?'Add':el.textContent)).toEqual(['Home','Our Money','Add','Our Path','Together']);
     await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
     await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
-    await waitFor(()=>expect(button('More').disabled).toBe(false));act(()=>button('More').click());
-    input('[data-entry-section="amount"] input','130.01');input('#add-note','Category slider fixture');
+    await waitFor(()=>expect(button('More').disabled).toBe(false));
+    if(expanded)act(()=>button('More').click());
+    input('[data-entry-section="amount"] input','130.01');
+    if(expanded)input('#add-note','Category slider fixture');
+    else act(()=>container.querySelector<HTMLButtonElement>('.cad-pad-enter')!.click());
     act(()=>button('Split between two categories').click());
     const select=(label:string,value:string)=>act(()=>{const el=container.querySelector<HTMLSelectElement>(`select[aria-label="${label}"]`)!;el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));});
     select('First category','SUB-FOOD-GROCERIES');select('Second category','SUB-FOOD-COFFEE');
     const slider=container.querySelector<HTMLElement>('.category-split-editor [role="slider"]')!;
     act(()=>slider.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
     expect(slider.getAttribute('aria-valuenow')).toBe('51');
-    const reviewed=container.querySelector('[aria-label="Category amounts"]')!;
+    const reviewed=container.querySelector(expanded?'[aria-label="Category amounts"]':'.category-split-editor')!;
     expect(reviewed.textContent).toContain('$66.31');expect(reviewed.textContent).toContain('$63.70');
     expect(writes.confirmations).toHaveLength(0);
     act(()=>[...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(b=>b.textContent==='Close')!.click());
     await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!.click());
     await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Add expense"]')!.click());
     expect(container.querySelector('.category-split-editor [role="slider"]')?.getAttribute('aria-valuenow')).toBe('51');
-    act(()=>[...container.querySelectorAll<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile')].find(tile=>tile.textContent?.includes('Visa'))!.click());
+    if(!expanded){
+      expect(button('Continue to account').disabled).toBe(false);
+      act(()=>button('Continue to account').click());
+      expect(container.querySelector('[data-add-slide="account"]')).not.toBeNull();
+    }
+    act(()=>[...container.querySelectorAll<HTMLButtonElement>('[data-entry-section="account"] button')].find(tile=>tile.textContent?.includes('Visa'))!.click());
+    if(!expanded){input('#add-note','Category slider fixture');act(()=>container.querySelector<HTMLButtonElement>('[data-entry-section="note"] .primary')!.click());}
     await act(async()=>container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
     await waitFor(()=>expect(writes.confirmations).toHaveLength(1));
     const rows=writes.confirmations[0]!.household.transactions.filter(t=>t.note.startsWith('Category slider fixture'));

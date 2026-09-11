@@ -1,0 +1,7 @@
+# Guided category slider continuation repair
+
+Jonathan reported that the deployed slider page has no way to reach Confirm. Base: c060fe72cb4223ac9f7f7ccaf0e5075031763a1a. Root cause: all `entry-step-continue` buttons are hidden by entry presentation CSS because tile choices normally advance automatically. The new category slider does not auto-advance. The earlier test and browser proof used expanded entry and missed the guided flow.
+
+The split category step now uses a dedicated visible `category-split-continue` button labelled Continue to account, retaining validation and active-drag disabling. Single-category tile behavior and the existing final Confirm remain unchanged. Budget (5): preserves explicit review before accepting both amounts. Engagement (3): removes the guided-flow dead end. Risk High verification for the affected entry path; no accounting/schema changes.
+
+Regression: mounted App tests cover both guided and expanded flows through one real acceptance with both category amounts. Browser proof checks visible continuation and final review across Classic, Taylor and Newfoundland on phone and desktop. Focused High gate and release checks are recorded in the corrective PR. This corrects the already-authorized Development release; no Production or schema work is included.
