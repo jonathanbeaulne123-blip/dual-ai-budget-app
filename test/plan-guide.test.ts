@@ -5,6 +5,31 @@ import { PLAN_GUIDE_ID, planGuideFields, guideAnswer, guideBack, guideQuestion, 
 import { companionFor, commitCompanion } from '../src/core/herculesCompanion.ts';
 const context=(view:'household'|'personal'='household')=>({household:planLifeFixture(view),memberId:'MEM-001',view,today:'2026-09-11'});
 const open={monthKey:'2026-09',purpose:'Less scrambling',incomeSource:'skip',protectSource:'skip',prepareSource:'skip',buildSource:'skip',everydaySource:'skip',constraints:'Friday evenings stay free'};
+const focused={guideMode:'goal',monthKey:'2026-09',buildSource:'new-kitty',buildLabel:'Date night',buildTarget:'120',buildDeadline:'2026-09-25',buildPaydays:'Decide later',buildAmount:'60',buildDate:'2026-09-18',buildFunding:'unknown',buildStep:'Choose a restaurant',constraints:'Friday evenings stay free'};
+describe('focused Plan scope corrections',()=>{
+ it('discards inactive monthly proposals and reopens funding when switching to one goal',()=>{
+  const c=context(),monthly={...open,...focused,guideMode:'month',incomeSource:'future-pay',incomeAmount:'1000',incomeDate:'2026-09-18',protectSource:'unlinked',protectLabel:'Unconfirmed promise',protectAmount:'900',buildFunding:'expected'};
+  const changed=guideAnswer(c,monthly,'guideMode','goal');
+  expect(Object.keys(changed).some(key=>/^(income|protect|prepare|everyday)/.test(key))).toBe(false);
+  expect(changed.buildLabel).toBe('Date night');expect(changed.constraints).toBe(monthly.constraints);expect(changed.buildFunding).toBeUndefined();
+  expect(guideQuestion(c,changed)?.key).toBe('buildFunding');expect(guideQuestion(c,{...monthly,guideMode:'goal'})?.key).toBe('buildFunding');
+  expect(planGuideFields(c,{...monthly,guideMode:'goal'}).find(f=>f.key==='buildFunding')!.choices!(c,monthly).map(o=>o.value)).toEqual(['available','unknown']);
+  expect(monthly.protectAmount).toBe('900');expect(guideAnswer(c,monthly,'constraints','More rest').incomeSource).toBe('future-pay');
+ });
+ it.each(['household','personal'] as const)('ignores restored hidden proposals and preserves saved %s decisions through confirmation',view=>{
+  const c=context(view);c.household.planDrafts![0]!.assumptions=[{id:'existing-income',kind:'income',valueCents:100000,expectedDate:'2026-09-18',sourceReferences:[],observedAt:'2026-09-11T12:00:00.000Z',confidence:'estimated'}];
+  const before=structuredClone(c.household),raw={...focused,incomeSource:'current-only',protectSource:'unlinked',protectLabel:'Unconfirmed promise',protectAmount:'900',protectDate:'2026-09-15',protectOwner:c.memberId,protectFunding:'available'};
+  const built=buildGuidedPlan(c,raw,'restored');expect(built.assumptions).toEqual(before.planDrafts![0]!.assumptions);expect(built.lines.slice(0,-1)).toEqual(before.planDrafts![0]!.lines);
+  expect(guideProjection(c,raw)).toEqual(guideProjection(c,focused));
+  expect(()=>prepareAction(c,PLAN_GUIDE_ID,{...raw,buildFunding:'expected'})).toThrow(/goal money/i);
+  const corrected=guideAnswer(c,{...raw,buildFunding:'expected'},'buildFunding','unknown'),review=prepareAction(c,PLAN_GUIDE_ID,corrected);
+  expect(prepareAction(c,PLAN_GUIDE_ID,review.values).rows).toEqual(review.rows);expect(review.rows.some(row=>row.value.includes('Unconfirmed promise'))).toBe(false);
+  const result=executeReviewedAction(c,review,crypto.randomUUID()),draft=result.household.planDrafts![0]!;
+  expect(draft.lines.slice(0,-1)).toEqual(before.planDrafts![0]!.lines);expect(draft.assumptions).toEqual(before.planDrafts![0]!.assumptions);
+  expect(result.household.goals).toHaveLength(before.goals.length+1);expect(result.household.goals.at(-1)).toMatchObject({name:'Date night',funded:false,savedCents:0});
+  expect(draft.lines.at(-1)?.sourceReference).toEqual({type:'goal',id:result.household.goals.at(-1)!.id});expect(result.household.transactions).toEqual(before.transactions);expect(c.household).toEqual(before);
+ });
+});
 describe('guided private Plan drafting',()=>{
  it.each(['Help me create a plan','Help us build our household plan','Can you help me make a budget?','Help me plan our month'])('starts the supported workflow for %s',message=>expect(findHerculesAction(message,context())?.id).toBe(PLAN_GUIDE_ID));
  it('uses the selected month and keeps all missing stages gradual',()=>{const c={...context(),planMonth:'2026-10'};const v=initialActionValues(actionById(PLAN_GUIDE_ID,c),'help me create a plan',c);expect(v).toMatchObject({monthKey:'2026-10'});expect(guideQuestion(c,v)?.key).toBe('purpose');expect(planGuideFields(c,open).every(f=>f.why.length>35)).toBe(true);expect(guideQuestion(c,open)).toBeUndefined();});

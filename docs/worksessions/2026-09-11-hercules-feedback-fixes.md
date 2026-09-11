@@ -1,6 +1,6 @@
 # Hearth worksession — Hercules feedback fixes
 
-- **Status:** RELEASE IN PROGRESS — scoped Development release authorized
+- **Status:** PR #445 LIVE IN DEVELOPMENT — scoped review follow-up in progress
 - **Opened:** 2026-09-11 (`America/Toronto`)
 - **Owner / decision owner:** Jonathan
 - **Assignee:** Codex; independent read-only reminder and planning audits
@@ -85,3 +85,11 @@ Jonathan explicitly requested "push merge deploy" after receiving the implementa
 Release assessment: **CONDITIONAL** for Development code availability, subject to current-main integration, current candidate checks, PR CI/build and deployment verification. The 518-test quick gate, 48-case browser matrix, independent reviews and builds support the bounded changes. Authenticated/physical acceptance and issuer research remain the limits stated above. Compatible rollback retains the private command/profile protocol; presentation may be disabled through the existing Hercules flags without erasing accepted records.
 
 Fetched main advanced to `0837f9a4e0da068104428579d72a15629fb7b5b4` (#444). Preserve its scrolling Easy Read placement during integration. Release receipts and the final live result will be recorded after execution.
+
+## Release receipt and review follow-up
+
+PR [#445](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/445) merged as `5f437f5b56d1297cfbd5fbbb0f73ff525423f090`. Main CI and confirmed-action checks passed. Cloudflare [run 34655164776](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/actions/runs/34655164776) deployed Worker version `d1b2ee83-de8f-41a5-aa77-906ca2004f4c`. Fresh live synthetic checks passed 12/12 across three themes, both scopes and phone/desktop, with HTTP 200 and the new asset markers verified. Production continuity remained disabled.
+
+The exact local release gate passed 518 tests and all phases in 301.818 seconds, **1.818 seconds over the five-minute target**. PR CI passed 568 tests in 134.042 seconds; this does not erase the local time-budget breach. Rebased-source browser checks passed 48/48 after disabling hot reload during proof.
+
+Automated review returned after deployment. Branch `codex/hercules-feedback-review-fixes`, based on the merge above, corrects independent savings provenance labels, missing account aliases and focused planning scope normalization. The alleged hidden confirmed write was not reproduced: the review adapter already filters inactive fields. The related confirmation dead end and raw preview inconsistency were reproduced. New regressions cover mode switching, restored drafts, saved assumptions/lines, review stability, one linked unfunded goal and unchanged money records in both scopes. Initial focused tests: 3 files / 56 passed. Risk remains High; Budget delta (5) is accurate review and preserved decisions; Engagement delta (3) is reliable scope changes and account language. Jonathan's existing scoped Development release authorization applies to this corrective follow-up.

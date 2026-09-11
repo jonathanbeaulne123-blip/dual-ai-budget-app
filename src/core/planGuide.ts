@@ -16,6 +16,14 @@ const choice = (value: string, label: string) => ({value, label});
 const cents = (text: string) => parseWholeCents(text, 'Amount', {allowZero:true});
 const dollars = (value: number) => String(value / 100);
 const skipped = (value?: string) => !value || value === 'skip' || value === 'current-only';
+function scopedGuideValues(v:ActionValues):ActionValues {
+ if(v.guideMode!=='goal')return v;
+ // Inactive monthly answers are unconfirmed proposals. Keep the saved Plan as
+ // the baseline, and ask again if this goal relied on income we no longer ask about.
+ const next=Object.fromEntries(Object.entries(v).filter(([key])=>!/^(income|protect|prepare|everyday)/.test(key)));
+ if(next.buildFunding==='expected')delete next.buildFunding;
+ return next;
+}
 export function guideMonth(c: ActionContext, v: ActionValues) { return v.monthKey || c.planMonth || c.today.slice(0,7); }
 function monthEnd(month: string) { const [year, m] = month.split('-').map(Number); return new Date(Date.UTC(year!, m!, 0)).toISOString().slice(0,10); }
 function startDate(c: ActionContext, v: ActionValues) { const month=guideMonth(c,v); return c.today.startsWith(month) ? c.today : `${month}-01`; }
@@ -57,6 +65,7 @@ const WHY = {
  everyday:'Ordinary life needs room too. We will test this allowance against the promises you have chosen.',
 };
 export function planGuideFields(c: ActionContext,v: ActionValues): GuideField[] {
+ v=scopedGuideValues(v);
  const result:GuideField[]=[];
  const ask=(key:string,label:string,question:string,why:string,kind:ActionField['kind']='text',options?:ReturnType<typeof choice>[],suggestions?:ReturnType<typeof choice>[],evidence?:string[])=>result.push({key,label,question,why,kind,...(options?{choices:()=>options}:{}),...(suggestions?{suggestions}:{}),...(evidence?{evidence}: {})});
  ask('monthKey','Plan month','Which month are we planning?','A month keeps this draft separate from your other agreements. Use YYYY-MM.', 'text',undefined,[choice(c.today.slice(0,7),'This month')]);
@@ -123,9 +132,10 @@ export function guideAnswer(c:ActionContext,v:ActionValues,key:string,value:stri
  const next={...v,[key]:value};
  if(v[key]!==undefined&&v[key]!==value)for(const k of dependentGuideKeys(c,v,key))delete next[k];
  if(key==='incomeSource'&&skipped(value))for(const section of ['protect','prepare','build'])if(next[`${section}Funding`]==='expected')delete next[`${section}Funding`];
- return next;
+ return scopedGuideValues(next);
 }
 export function guideBack(c:ActionContext,v:ActionValues,key?:string):ActionValues {
+ v=scopedGuideValues(v);
  const target=key??planGuideFields(c,v).filter(f=>!f.optional&&v[f.key]).at(-1)?.key;
  if(!target)return v;const next={...v};delete next[target];for(const k of dependentGuideKeys(c,v,target))delete next[k];return next;
 }
@@ -146,10 +156,11 @@ function guidedInput(c:ActionContext,v:ActionValues,preview=true) {
  const household=preview?{...created.household,goals:created.household.goals.map(g=>g.id===goalId?{...g,id:previewId}:g)}:created.household;
  return {context:{...c,household},values:{...v,buildSource:preview?previewId:goalId},created};
 }
-export function guideQuestion(c:ActionContext,v:ActionValues) { return planGuideFields(c,v).find(f=>!f.optional&&!v[f.key]?.trim()); }
+export function guideQuestion(c:ActionContext,v:ActionValues) { v=scopedGuideValues(v);return planGuideFields(c,v).find(f=>!f.optional&&!v[f.key]?.trim()); }
 export function guideReply(c:ActionContext,v:ActionValues) { const f=guideQuestion(c,v); return f ? `${f.question.trim()} ${f.why}` : 'We have a draft to review. I will show what is covered, what depends on future money and what still needs attention. Saving this private draft does not share an agreement or move money.'; }
 export function parseGuidePaydays(text:string){const dates=text.split(',').map(s=>s.trim()).filter(Boolean);if(!dates.length||dates.length>36||dates.some(d=>!isValidDateKey(d)))throw new ValidationError('Use dates such as 2026-09-18, 2026-10-02, or choose Decide later.');return [...new Set(dates)].sort();}
 export function buildGuidedPlan(c:ActionContext,v:ActionValues,id:string) {
+ v=scopedGuideValues(v);
  const resolved=guidedInput(c,v);c=resolved.context;v=resolved.values;
  const month=guideMonth(c,v);if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new ValidationError('Choose a month using YYYY-MM.');
  const old=base(c,v), lines:PlanLine[]=(old?.lines??[]).map(row=>({...row,createdBy:c.memberId})), assumptions=[...(old?.assumptions??[])].filter(a=>v.incomeSource!=='current-only'||a.kind!=='income');const unresolved:string[]=[];
