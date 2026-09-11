@@ -12,7 +12,7 @@ export function kittyBanksInView(
   memberId?: string,
 ): Goal[] {
   return openGoals(household).filter((goal) => (
-    memberId ? goalVisibleInView(goal, memberId, view) : (view === "household" ? goal.shared : !goal.shared)
+    !goal.envelope?.archivedAt && (memberId ? goalVisibleInView(goal, memberId, view) : (view === "household" ? goal.shared : !goal.shared))
   ));
 }
 
@@ -22,7 +22,7 @@ export function kittyBankGlance(goals: Goal[]): { cents: number; count: number; 
   return {
     cents,
     count,
-    label: count ? `${count} bank${count === 1 ? "" : "s"} · ${formatCad(cents)}` : "No banks yet",
+    label: count ? `${count} bank${count === 1 ? "" : "s"} · ${formatCad(cents)} lifetime contributions` : "No banks yet",
   };
 }
 

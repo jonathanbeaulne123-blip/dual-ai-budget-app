@@ -1,3 +1,5 @@
+import { shapeGoalEnvelope, goalFundReserve, goalRemainingClaim, goalEnvelopeUsedCents, assertGoalEnvelopeIntegrity } from "./goalEnvelopes.ts";
+
 import { categorySplitAmounts, partitionCategoryOwnership, type CategorySplit } from "./categorySplit.ts";
 import { matchPlanEvidence, planSourceVisible } from "./planProjection.ts";
 import { projectedExpenseEffect } from "./budget.ts";
@@ -114,7 +116,7 @@ import {
   type PlanScope,
   type PlanVersion,
 } from "./planSystem.ts";
-import { parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
+import { isVisibleInView, parseVisibility, visibleForDuplicateScan } from "./visibility.ts";
 import { resizePotentialExpenseSplits, shapePotentialExpenseCalendarLink } from "./potentialExpenses.ts";
 import {
   advanceAppointmentCadence,
@@ -3531,6 +3533,9 @@ function validatedPlanDraft(household: Household, input: {
   if (prior && input.expectedUpdatedAt !== undefined && input.expectedUpdatedAt !== prior.updatedAt) throw new ValidationError("This private draft changed. Refresh before replacing its decisions.");
   if (new Set(lines.map(line => line.id)).size !== lines.length || input.lines.some(line => !Number.isSafeInteger(line.amountCents) || line.amountCents < 0 || line.dueDate && !isValidDateKey(line.dueDate))) throw new ValidationError("Review the Plan amounts, dates and unique decisions.");
   for (const line of input.lines) {
+    if (line.envelopeGoalId !== undefined && (typeof line.envelopeGoalId !== "string" || !line.envelopeGoalId.trim() || !["protect", "prepare", "build"].includes(line.lens)
+      || !planSourceVisible(household, { type: "goal", id: line.envelopeGoalId }, input.memberId, input.scope)
+      || line.sourceReference?.type === "goal" && line.sourceReference.id !== line.envelopeGoalId)) throw new ValidationError("Choose one visible bank for this future-facing decision.");
     const decision = line.decision;
     if (!decision) continue;
     if ([decision.targetCents, decision.lowCents, decision.highCents, decision.scheduleActualCents].some(value => value !== undefined && (!Number.isSafeInteger(value) || value < 0))
@@ -4731,6 +4736,27 @@ export const adoptSitDownStandingOrders = captureCommand("adoptSitDownStandingOr
   };
 });
 
+/** Editable purpose and appearance; archive preserves all accounting claims. */
+export const saveGoalEnvelope = captureCommand("saveGoalEnvelope", function saveGoalEnvelope(household: Household, input: {
+  goalId: string; expectedUpdatedAt: string; name: string; target: string | number;
+  arrivalDate?: string | null; envelope: import("./types.ts").GoalEnvelope;
+} & ActorInput): CommitResult {
+  const actor = resolveActor(household, input);
+  const goal = household.goals.find(row => row.id === input.goalId);
+  if (!goal || !goal.shared && goal.ownerMemberId !== actor.createdBy) throw new ValidationError("This bank is outside your ledger.");
+  if (goal.updatedAt !== input.expectedUpdatedAt) throw new ValidationError("This bank changed. Review its current details before saving.");
+  const name = input.name.trim();
+  if (!name || name.length > 100) throw new ValidationError("Give this bank a name of 1–100 characters.");
+  const envelope = shapeGoalEnvelope(input.envelope)!;
+  if (!envelope) throw new ValidationError("Review this bank's purpose and appearance.");
+  const previous = cloneHousehold(household), next = cloneHousehold(household);
+  const live = next.goals.find(row => row.id === goal.id)!;
+  const at = nowIso();
+  Object.assign(live, { name, targetCents: parseAmount(input.target, "Bank target"), arrivalDate: input.arrivalDate ? parseDate(input.arrivalDate) : null,
+    envelope: { ...envelope, archivedAt: envelope.archivedAt ? goal.envelope?.archivedAt ?? at : null }, updatedAt: at });
+  return commit(previous, next, "Kitty Bank", `${envelope.archivedAt ? "Archived" : "Saved"} ${name}`, [goal.id]);
+});
+
 export const addGoal = captureCommand("addGoal", function addGoal(household: Household, input: {
   name: string;
   target: string | number;
@@ -4739,7 +4765,9 @@ export const addGoal = captureCommand("addGoal", function addGoal(household: Hou
   shared?: boolean;
   ownerMemberId?: string | null;
   subcategoryId?: string | null;
+  envelope?: import("./types.ts").GoalEnvelope;
 }): CommitResult {
+  if (!input.name.trim() || input.name.trim().length > 100) throw new ValidationError("Give this bank a name of 1–100 characters.");
   const targetCents = parseAmount(input.target, "Goal target");
   if (input.shared === false && !input.ownerMemberId) {
     throw new ValidationError("A personal goal needs an owner. Hidden screens are not private.");
@@ -4757,6 +4785,7 @@ export const addGoal = captureCommand("addGoal", function addGoal(household: Hou
   next.goalContributions = [...(next.goalContributions ?? [])];
   next.goals.push({
     id,
+    ...(input.envelope ? { envelope: shapeGoalEnvelope(input.envelope) } : {}),
     name: input.name.trim(),
     targetCents,
     savedCents: 0,
@@ -4790,6 +4819,7 @@ export const contributeToGoal = captureCommand("contributeToGoal", function cont
   if (goalStatus(goal) === "retired") {
     throw new ValidationError("That jar already lives in the retirement home. Start a new one if you are saving again.");
   }
+  if (goal.envelope?.archivedAt) throw new ValidationError("Restore this bank before adding money. Its existing money is still reserved.");
   const at = nowIso();
   next.goalContributions = [...(next.goalContributions ?? [])];
   const id = nextId("GCON-", next.goalContributions.map((row) => row.id), 4);
@@ -4838,6 +4868,7 @@ export const fundGoal = captureCommand("fundGoal", function fundGoal(household: 
     throw new ValidationError(goal.shared ? "Choose Shared cash for a Shared bank." : "Choose your own Personal cash for a private goal.");
   }
   const visibility = goal.shared ? "household" : "personal";
+  if (goal.envelope?.archivedAt) throw new ValidationError("Restore this bank before adding money.");
   let working = household;
   const withVault = ensureGoalsVault(working);
   working = withVault.household;
@@ -4898,6 +4929,7 @@ export const ensureGoalsVault = captureCommand("ensureGoalsVault", function ensu
 
 export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal(household: Household, input: {
   goalId: string;
+  keepOpen?: boolean;
   amount: string | number;
   lines?: { note: string; amount: string | number }[];
   date?: string;
@@ -4906,6 +4938,7 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
   const actor = resolveActor(household, input);
   const date = input.date ? parseDate(input.date) : todayKey();
   requireOpenPeriod(household, date);
+  if (input.keepOpen !== undefined && typeof input.keepOpen !== "boolean") throw new ValidationError("Review whether this bank stays open.");
   const spentCents = parseAmount(input.amount, "Purchase");
   const goal = household.goals.find((item) => item.id === input.goalId);
   if (!goal) throw new ValidationError("That goal no longer exists.");
@@ -4917,14 +4950,20 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
   if (!goal.funded) {
     throw new ValidationError("Fund this goal with a real transfer into Goals savings first. Envelope-only progress is unfunded.");
   }
-  if (goal.savedCents < goal.targetCents) {
+  if (goal.envelope?.archivedAt) throw new ValidationError("Restore this bank before using its money.");
+  if (!input.keepOpen && goal.savedCents < goal.targetCents) {
     throw new ValidationError("Fill the jar before you buy it. Contribute stays on Plan.");
   }
   const vault = goalsVaultAccount(household);
   if (!vault) throw new ValidationError("Open Goals savings first. Sit-down Confirm can create one.");
   const capacity = goalVaultCapacity(household, goal.id, date);
   if (capacity.kind === "unavailable") throw new ValidationError(capacity.reason);
-  const spendable = capacity.spendableCents;
+  let spendable = capacity.spendableCents;
+  if (input.keepOpen) {
+    const evidence = matchPlanEvidence(household, { id: goal.id, lens: "build", kind: "goal-contribution", labelSnapshot: goal.name, amountCents: 0, cadence: "one-time", assumptionIds: [], createdBy: actor.createdBy, sourceReference: { type: "goal", id: goal.id } }, date.slice(0, 7), date, actor.createdBy, visibility);
+    const supported = evidence.filter(row => row.kind === "goal-funding" && row.reserveCents !== undefined && !household.fundKittyAllocations?.some(allocation=>allocation.id===row.id)).reduce((sum, row) => sum + (row.reserveCents ?? 0), 0);
+    spendable = Math.min(spendable, goalRemainingClaim(household, goal, date), supported);
+  }
   if (spentCents > spendable) {
     throw new ValidationError(
       `Goals savings can spare $${(spendable / 100).toFixed(2)} without raiding other goals. Transfer extra in, or spend less.`,
@@ -4970,6 +5009,7 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
     goalId: goal.id,
     spentCents,
     vaultAccountId: vault.id,
+    ...(input.keepOpen ? { envelopeUse: "vault" as const } : {}),
     transactionIds,
     lines: posting,
     memberId: actor.createdBy,
@@ -4979,16 +5019,31 @@ export const purchaseGoal = captureCommand("purchaseGoal", function purchaseGoal
   });
   const live = next.goals.find((item) => item.id === goal.id);
   if (live) {
-    live.status = "retired";
-    live.retiredAt = at;
-    live.purchaseId = purchaseId;
+    if (!input.keepOpen) { live.status = "retired"; live.retiredAt = at; live.purchaseId = purchaseId; }
+
     live.updatedAt = at;
     live.savedCents = savedCentsFromContributions(next.goalContributions, live.id);
+  }
+  if (input.keepOpen) {
+    // A backdated use must also fit every later accepted vault balance.
+    const checkpoints = new Set([date, ...next.transactions.filter(tx =>
+      isVisibleInView(tx, actor.createdBy, visibility) &&
+      (tx.accountId === vault.id || tx.transferFromAccountId === vault.id || tx.transferToAccountId === vault.id) && tx.date >= date
+    ).map(tx => tx.date)]);
+    const contributionIds = new Set(next.goalContributions.filter(row => row.goalId === goal.id).map(row => row.id));
+    for (const checkpoint of checkpoints) {
+      const evidence = matchPlanEvidence(next, { id: goal.id, lens: "build", kind: "goal-contribution", labelSnapshot: goal.name, amountCents: 0, cadence: "one-time", assumptionIds: [], createdBy: actor.createdBy, sourceReference: { type: "goal", id: goal.id } }, checkpoint.slice(0, 7), checkpoint, actor.createdBy, visibility);
+      const principal = Math.min(goal.savedCents, evidence.filter(row => row.kind === "goal-funding" && contributionIds.has(row.id)).reduce((sum, row) => sum + row.amountCents, 0));
+      const used = goalEnvelopeUsedCents(next, goal.id, checkpoint);
+      const capacity = goalVaultCapacity(next, goal.id, checkpoint);
+      if (used > principal || capacity.kind !== "ready" || capacity.cashCents < capacity.reservedCents + principal - used)
+        throw new ValidationError(`This purchase would use money already needed by accepted vault activity on ${checkpoint}. Review the dated receipts first.`);
+    }
   }
   return commit(
     previous,
     next,
-    "Goal purchased",
+    input.keepOpen ? "Bank money used" : "Goal purchased",
     `${goal.name} · spent $${(spentCents / 100).toFixed(2)}`,
     [purchaseId, ...transactionIds],
   );
@@ -8182,7 +8237,7 @@ export const allocateHouseholdFundSurplus = captureCommand("allocateHouseholdFun
   const amountCents = allocations.reduce((sum, row) => sum + row.amountCents, 0);
   if (!amountCents) throw new ValidationError("Choose a surplus amount to move into Kitty Banks.");
   for (const row of allocations) {
-    if (!household.goals.some((goal) => goal.id === row.goalId && goal.shared && goal.status !== "retired")) {
+    if (!household.goals.some((goal) => goal.id === row.goalId && goal.shared && goal.status !== "retired" && !goal.envelope?.archivedAt)) {
       throw new ValidationError("Kitty rollover can only use active shared goals.");
     }
   }
@@ -8211,16 +8266,23 @@ export const releaseHouseholdFundKitty = captureCommand("releaseHouseholdFundKit
   amount: string | number;
   date: string;
   note?: string;
+  goalId?: string;
 }): CommitResult {
   const fund = requireFundCustodian(household, input.memberId);
   const amountCents = parseAmount(input.amount, "Kitty release");
   const projection = projectHouseholdFund(household, parseDate(input.date));
   if (amountCents > projection.kittyCents) throw new ValidationError("That release exceeds the amount in Kitty Banks.");
+  if (input.goalId) {
+    const goal = household.goals.find(row => row.id === input.goalId && row.shared);
+    const reserve = goalFundReserve(household, input.goalId, input.date);
+    if (!goal || reserve.unresolved || amountCents > reserve.reservedCents) throw new ValidationError("This release exceeds the bank's verified Fund reserve. Review the Fund's allocation history.");
+  }
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const at = nextFundEventAt(next);
   const id = nextFundEventId(next);
   next.fundEvents = [...shapeHouseholdFundEvents(next.fundEvents), {
+    ...(input.goalId ? { goalId: input.goalId } : {}),
     id, fundId: fund.id, kind: "kitty-released", amountCents, date: parseDate(input.date),
     createdBy: input.memberId, confirmedByMemberId: fund.custodianMemberId, contributorMemberId: null,
     destinationAccountId: null, relatedEventId: null, relatedTransactionIds: [], evidenceDigests: [],
@@ -8346,6 +8408,7 @@ export const reverseHouseholdFundEvent = captureCommand("reverseHouseholdFundEve
     relatedTransactionIds: [...target.relatedTransactionIds], evidenceDigests: [], reconciliationTied: null,
     purpose: "", note: input.reason.trim().slice(0, 180), createdAt: at, updatedAt: at,
   }];
+  assertGoalEnvelopeIntegrity(next);
   return commit(previous, next, "Household Fund", `Reversed ${target.id}: ${input.reason.trim()}`, [id]);
 });
 

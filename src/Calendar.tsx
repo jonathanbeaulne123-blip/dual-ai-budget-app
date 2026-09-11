@@ -1,3 +1,5 @@
+import { calendarKindLabel } from "./calendar/semantics.ts";
+import "./ux-readability.css";
 import { calendarItemVisible, calendarLayers, loadCalendarVisibility } from "./calendar/visibility.ts";
 import { CalendarBinding } from "./theme/CalendarArtwork.tsx";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -74,20 +76,7 @@ import { PotentialExpenseEditor, type PotentialExpenseEditorValue } from "./Pote
 
 type Pane = CalendarPane;
 
-function kindLabel(kind: string): string {
-  if (kind === "paycheck") return "Pay";
-  if (kind === "subscription") return "Sub";
-  if (kind === "detected") return "New";
-  if (kind === "potential-expense") return "Planned";
-  if (kind === "shift") return "Shift";
-  if (kind === "shift-envelope") return "✉ Shift";
-  if (kind === "google") return "GCal";
-  if (kind === "claim") return "Owed";
-  if (kind === "work-pay") return "Pay";
-  if (kind === "work-tip") return "Tips";
-  if (kind === "work-tipout") return "Tip-out";
-  return "Bill";
-}
+const kindLabel = calendarKindLabel;
 
 function downloadIcs(household: Household, today: DateKey) {
   const blob = new Blob([buildHouseholdIcs(household, today)], { type: "text/calendar;charset=utf-8" });
@@ -464,6 +453,7 @@ function CalendarPageScope(props: CalendarProps) {
               <h2>{board.monthLabel}</h2>
               <button className="chip" onClick={() => changeMonth(1)} aria-label="Next month">›</button>
             </header>
+            <div className="calendar-meaning-legend" aria-label="Calendar meaning legend"><span>↓ Income</span><span>▣ Bill</span><span>↻ Subscription</span><span className="is-planned">◇ Planned cost</span><span>◷ Work</span><span>⌂ Visit</span><span>○ Event</span><span>↗ Google event</span><small>Read the symbol and label for the type. A planned cost is an estimate; it becomes an expense only after Final Confirm. Calendar colours also reflect people and your theme.</small></div>
             {pane === "calendar" && <>
               {monthTools}
               <details className="calendar-month-tools">
@@ -551,7 +541,7 @@ function CalendarPageScope(props: CalendarProps) {
                       <span key={item.id} className={`cal-title ${item.direction} kind-${item.kind}`} title={item.title}
                         draggable={item.source === "potential-expense" && !phone}
                         onDragStart={() => setDraggedPotentialId(item.potentialExpenseId ?? null)}
-                        onDragEnd={() => setDraggedPotentialId(null)}>{item.title}</span>
+                        onDragEnd={() => setDraggedPotentialId(null)}><span className="cal-kind" aria-label={kindLabel(item.kind)}>{kindLabel(item.kind).split(" ")[0]}</span> {item.title}</span>
                     ))}
                     {extra > 0 ? <span className="cal-title more">+{extra}</span> : null}
                   </span>

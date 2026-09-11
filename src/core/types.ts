@@ -748,6 +748,18 @@ export type HouseholdLedgerNames = {
 
 export type GoalStatus = "open" | "retired" | "unfunded";
 
+export type KittyGlaze = "cream" | "sea-glass" | "terracotta" | "midnight" | "rose";
+export type GoalEnvelope = {
+  version: 1;
+  kind: "protect" | "prepare" | "build";
+  purpose: string;
+  refill: "target" | "refill" | "repeat";
+  glaze: KittyGlaze;
+  /** Archival affects visibility only. Existing money and dependency claims remain. */
+  archivedAt: string | null;
+};
+
+
 export type Goal = {
   id: string;
   name: string;
@@ -766,6 +778,7 @@ export type Goal = {
   purchaseId: string | null;
   createdAt: string;
   updatedAt: string;
+  envelope?: GoalEnvelope;
 };
 
 export type GoalContribution = {
@@ -903,6 +916,8 @@ export type HouseholdFundEventKind =
 /** Immutable operational fact. Corrections append a reversal and replacement; old rows are never edited. */
 export type HouseholdFundEvent = {
   sourceDeclaration?: import("./fundContributionSources.ts").FundSourceDeclaration;
+  /** Exact envelope released; absent on legacy unassigned releases. */
+  goalId?: string;
   id: string;
   fundId: string;
   kind: HouseholdFundEventKind;
@@ -1146,6 +1161,8 @@ export type GoalPurchase = {
   goalId: string;
   spentCents: number;
   vaultAccountId: string;
+  /** An attributed partial use; the bank stays open and may be refilled. */
+  envelopeUse?: "vault";
   transactionIds: string[];
   lines: GoalPurchaseLine[];
   memberId: string;

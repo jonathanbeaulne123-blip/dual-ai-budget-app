@@ -1,3 +1,4 @@
+import { shapeGoalEnvelope } from "./goalEnvelopes.ts";
 import { formatCad } from "./money.ts";
 import type { Goal, GoalContribution, GoalPurchase, GoalPurchaseLine, GoalStatus, Household } from "./types.ts";
 
@@ -71,6 +72,7 @@ export function shapeGoalProgress(
         : goal.deadline ?? null;
     return {
       ...goal,
+      ...(goal.envelope !== undefined ? { envelope: shapeGoalEnvelope(goal.envelope) } : {}),
       savedCents: goal.savedCents ?? 0,
       arrivalDate,
       funded,
@@ -153,6 +155,7 @@ export function shapeGoalPurchases(
       goalId: row.goalId,
       spentCents,
       vaultAccountId: row.vaultAccountId,
+      ...(row.envelopeUse !== undefined ? { envelopeUse: row.envelopeUse } : {}),
       transactionIds: Array.isArray(row.transactionIds) ? row.transactionIds.filter((id) => typeof id === "string") : [],
       lines: lines.length ? lines : spentCents > 0 ? [{ note: "", amountCents: spentCents }] : [],
       memberId: row.memberId || fallbackMemberId,

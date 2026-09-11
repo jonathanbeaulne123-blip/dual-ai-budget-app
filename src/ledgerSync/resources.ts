@@ -85,6 +85,7 @@ export function observedResources(
     return [{key:'due-occurrence-review',value}];
   }
   if(kind==='settleClaim'&&args[0]&&typeof args[0]==='object'&&(args[0] as Record<string,unknown>).claimReview!==undefined){let value:unknown;try{value={kind:'ready',basis:reviewedClaimInput(household,args[0]).basis};}catch(e){value={kind:'unavailable',reason:e instanceof Error?e.message:String(e)};}return [{key:'claim-settlement-review',value}];}
+  if (["saveGoalEnvelope", "purchaseGoal", "fundGoal", "releaseHouseholdFundKitty", "allocateHouseholdFundSurplus"].includes(kind)) return [{ key: "kitty-backing-review", value: { goals: household.goals, contributions: household.goalContributions, purchases: household.goalPurchases, accounts: household.accounts, transactions: household.transactions, fund: household.householdFund, events: household.fundEvents, allocations: household.fundKittyAllocations } }];
   if (additive.has(kind)) return [];
   if (
     [

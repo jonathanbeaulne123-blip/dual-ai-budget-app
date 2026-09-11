@@ -14,6 +14,7 @@ export function ConfirmSheet({
   notice,
   content,
   confirmDisabled=false,
+  cancelDisabled=false,
   confirmLabel,
   danger,
   busy,
@@ -30,6 +31,7 @@ export function ConfirmSheet({
   notice?:string;
   content?:ReactNode;
   confirmDisabled?:boolean;
+  cancelDisabled?:boolean;
   confirmLabel: string;
   danger?: boolean;
   busy?: boolean;
@@ -67,8 +69,8 @@ export function ConfirmSheet({
     return true;
   };
   const describedBy=['guard-body',extra?'guard-extra':null,option?'guard-option':null,!valid?'guard-stale':null].filter(Boolean).join(' ');
-  const sheetRef=useDialog(true,busy?undefined:onCancel,returnFocusFallback);
-  const cancel=<button className='ghost' type='button' data-autofocus={busy?undefined:true} onClick={onCancel} disabled={busy}>Cancel</button>;
+  const sheetRef=useDialog(true,busy||cancelDisabled?undefined:onCancel,returnFocusFallback);
+  const cancel=<button className='ghost' type='button' data-autofocus={busy?undefined:true} onClick={onCancel} disabled={busy||cancelDisabled}>Cancel</button>;
   const confirm=<button type='button' className={danger?'danger':'primary'} style={{width:'100%',marginTop:12}} disabled={busy||confirmDisabled||!valid||dragging} aria-busy={busy||undefined} onClick={()=>{const now=latest.current;if(!now.busy&&!now.confirmDisabled&&!now.dragging&&(!now.phoneDanger||now.revealed===now.revealKey)&&isCurrent())onConfirm();}}>{confirmLabel}</button>;
   return <div className={`sheet guard ${phoneDanger?'phone-danger':''} ${className??''}`} role='dialog' aria-modal='true' aria-labelledby='guard-title' aria-describedby={describedBy} ref={sheetRef}>
     <ConfirmFocusBoundary>

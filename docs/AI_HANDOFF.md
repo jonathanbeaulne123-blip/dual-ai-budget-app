@@ -1,3 +1,17 @@
+## Kitty Banks — authorized Development release (2026-09-11)
+
+Jonathan explicitly authorized push, merge and Development deployment after the scoped implementation and remaining limits were reported. The candidate incorporates main through #441, retaining guided Plan and category splitting. [Release scope, verification and compatible rollback](worksessions/2026-09-11-kitty-envelope-release.md). This supersedes the local-only release boundary below; it does not authorize exhaustive verification, Production, schema, or real-household writes.
+
+## Kitty Banks — local cinematic envelope implementation (2026-09-11)
+
+Branch `codex/kitty-envelope-app-20260911`, base `16d4710733c5e5ff1655e5a7d2bdff6c01b59ad2`, incorporating merged #433 and #437. Jonathan authorized implementation. Risk High. Budget (5): exact backing, reusable partial purchases, scope-bound receipts and correction recovery. Engagement (3): an interactive ceramic bank and folio in six authored theme/scope rooms, useful Plan rehearsals, clearer Calendar types and readable Hercules.
+
+The dedicated room preserves the existing Plan, links future decisions to exact bank IDs, and supports create/style, funding, partial use, history, archive/restore, private scenarios, explicit paydays and contextual Hercules. Accepted funding uses existing Goals-vault transfers or Fund earmarks. General account-independent assignment, arbitrary reallocation, credit-card envelope logic and automated refill execution remain unimplemented; no claim of a complete YNAB replacement. New data requires `goalEnvelopeVersion:1`; deploy compatible authority before clients and retain receipt/validator support in rollback.
+
+[Implementation, exact verification chronology and limits](worksessions/2026-09-11-kitty-envelope-implementation.md) · [Product destination and remaining contract work](briefs/KITTY_BANKS_CINEMATIC_ENVELOPE_APP_2026-09-11.md). Build passed. All 81 startup checks and all selected focused files have passing serial evidence; the initial concurrent quick gate failed and exceeded its five-minute budget. The synthetic browser proof covers all three themes in both scopes, 42 room geometry cases, Calendar semantics, partial purchase, archive, privacy, fallback and keyboard recovery. Physical devices, authenticated continuity, live providers and comparative product acceptance remain open.
+
+Claude supplied one bounded sculpture module; Codex integrated it and owns the financial implementation. Two independent read-only closure reviews found no blockers in their scope. Local only: no push, merge, deployment, schema, Production or real-household writes. Next owner: Jonathan for product review; release needs its own authorization and current candidate verification.
+
 ## Hercules — authorized Development release (2026-09-10)
 
 Jonathan authorized push, merge and Development deployment of all six local slices. The candidate now includes main's Books and potential-Calendar changes, independent presentation rollback and Calendar Move/source reconciliation. [Release scope, exact gate and compatible rollback](worksessions/2026-09-10-hercules-release.md). Verification and deployment receipts are tracked there; earlier local-only entries below remain historical evidence. Production/schema/secrets/provider settings are unchanged, and real user/device acceptance stays open.

@@ -522,7 +522,7 @@ function HouseholdFundPanelSession({
           <label htmlFor="fund-kitty-goal">Existing Kitty Bank</label>
           <select id="fund-kitty-goal" value={kittyGoal} onChange={(event) => setKittyGoal(event.target.value)}>
             <option value="">Choose a shared goal</option>
-            {household.goals.filter((goal) => goal.shared && goal.status !== "retired").map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}
+            {household.goals.filter((goal) => goal.shared && goal.status !== "retired" && !goal.envelope?.archivedAt).map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}
           </select>
           <label htmlFor="fund-kitty-amount">Rollover amount (CAD)</label>
           <input id="fund-kitty-amount" inputMode="decimal" value={kittyAmount} onChange={(event) => setKittyAmount(event.target.value)} />

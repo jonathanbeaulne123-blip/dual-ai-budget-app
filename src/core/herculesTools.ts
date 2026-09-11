@@ -1,5 +1,5 @@
 import { redactCompanionText } from "./herculesCompanionContext.ts";
-import { rehearsePlanPurchase, projectPlan, planSelectionForDraft, planSelectionForVersion, type PlanSelection } from "./planProjection.ts";
+import { matchPlanEvidence, rehearsePlanPurchase, projectPlan, planSelectionForDraft, planSelectionForVersion, type PlanSelection } from "./planProjection.ts";
 import { planLesson } from "./planLearning.ts";
 import {
   addDays,
@@ -899,8 +899,17 @@ function executeCall(household: Household, call: HerculesReadToolCall, today: Da
     if (goalQuery && !target) return empty(call, `I cannot match visible goal “${goalQuery}” in this ledger.`);
     const rows = target ? [target] : household.goals.slice(0, 8);
     if (!rows.length) return empty(call, "No visible savings goals are on these books.");
-    const facts = rows.map((goal, index) => fact(call, index, goal.name, `${formatCad(goal.savedCents)} / ${formatCad(goal.targetCents)}`, { route: "plan", view: context.view, surface: "jars", goalId: goal.id, label: `Open ${goal.name}` }));
-    return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name} is ${target.targetCents ? Math.round((target.savedCents / target.targetCents) * 100) : 0}% funded.` : `I found ${rows.length} visible savings goals.`, facts };
+    const facts = rows.map((goal, index) => {
+      let backing="Backing needs review";
+      try {
+        const evidence=matchPlanEvidence(household,{id:goal.id,lens:"build",kind:"goal-contribution",labelSnapshot:goal.name,amountCents:0,cadence:"one-time",assumptionIds:[],createdBy:context.memberId,sourceReference:{type:"goal",id:goal.id}},monthKeyFromDateKey(today),today,context.memberId,context.view);
+        const vault=evidence.filter(row=>!household.fundKittyAllocations?.some(allocation=>allocation.id===row.id)).reduce((sum,row)=>sum+(row.reserveCents??0),0);
+        const fund=evidence.filter(row=>household.fundKittyAllocations?.some(allocation=>allocation.id===row.id)).reduce((sum,row)=>sum+(row.reserveCents??0),0);
+        backing=goal.status==="retired"?"Completed bank":`${formatCad(vault)} vault reserve${context.view==="household"?`, ${formatCad(fund)} Fund reserve`:""}`;
+      }catch{/* Never label unverified progress as available money. */}
+      return fact(call,index,goal.name,`${backing} · target ${formatCad(goal.targetCents)} · lifetime contributions ${formatCad(goal.savedCents)}`,{route:"plan",view:context.view,surface:"jars",goalId:goal.id,label:`Open ${goal.name}`});
+    });
+    return { callId: call.id, name: call.name, status: "ok", sentence: target ? `${target.name}: current backing and lifetime contributions are shown separately.` : `I found ${rows.length} visible savings goals. Current backing is separate from lifetime contributions.`, facts };
   }
 
   if (call.name === "money_owed") {

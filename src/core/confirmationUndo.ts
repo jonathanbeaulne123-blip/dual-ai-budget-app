@@ -1,3 +1,4 @@
+import { reversePostedMoney } from "./commands.ts";
 import { cloneHousehold } from "./household.ts";
 import { mergeTombstones } from "./sync.ts";
 import { refreshDuplicateFlags } from "./duplicate.ts";
@@ -34,6 +35,17 @@ export function undoLedgerConfirm(current: Household, token: UndoToken): CommitR
   const previous = cloneHousehold(current);
   const next = cloneHousehold(current);
   const dead = new Set(postedIds);
+  const partials=(current.goalPurchases??[]).filter(row=>row.envelopeUse&&dead.has(row.id));
+  if(partials.length){
+    if(partials.some(row=>row.memberId!==token.actorMemberId||row.transactionIds.some(id=>!dead.has(id))))throw new ValidationError("Undo the complete purchase from its original receipt.");
+    let working=current;const reversedIds:string[]=[];
+    for(const receipt of partials)for(const id of receipt.transactionIds){
+      if(current.transactions.some(tx=>tx.reversalOfId===id||tx.refundOfId===id))throw new ValidationError("This purchase already has a correction or refund. Review its history.");
+      const goal=current.goals.find(row=>row.id===receipt.goalId)!;
+      const reversed=reversePostedMoney(working,id,{createdBy:receipt.memberId,visibility:goal.shared?"household":"personal",reversalDate:receipt.date});working=reversed.household;reversedIds.push(...reversed.postedIds);
+    }
+    return {household:working,postedIds:reversedIds,warnings:[],undo:{id:`undo-${token.id}`,label:"Reversed bank purchase; original receipt retained",snapshot:current,postedIds:reversedIds,commandKind:"undoConfirm"}};
+  }
   const at = nowIso();
   const actor = token.actorMemberId;
   const reopenedPotentialIds = new Set(current.transactions

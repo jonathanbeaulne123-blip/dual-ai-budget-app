@@ -1,0 +1,143 @@
+.calendar-meaning-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 12px 0;
+  margin: 0 0 12px;
+  border-block: 1px solid var(--border, #bbb);
+  font: 12px/1.5 var(--font-body, system-ui, sans-serif);
+  color: var(--ink, #29251f);
+}
+.calendar-meaning-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.calendar-meaning-legend small {
+  flex-basis: 100%;
+  font-size: 11px;
+}
+.calendar-meaning-legend .is-planned {
+  border-bottom: 1px dashed currentColor;
+}
+.calendar-meaning-legend .is-paid {
+  border-bottom: 2px solid currentColor;
+}
+.hercules-world {
+  --chat-paper: var(--paper, #fff9ef);
+  --chat-ink: var(--ink, #29251f);
+  --chat-user-paper: var(--paper-raised, var(--paper, #fff9ef));
+}
+.hercules-world .hercules-chat-log,
+.hercules-world .hercules-chat-turn,
+.hercules-world .hercules-chat-question,
+.hercules-world .hercules-chat-answer,
+.hercules-world .hercules-chat-form textarea {
+  background: var(--chat-paper);
+  color: var(--chat-ink);
+  text-shadow: none;
+}
+.hercules-world .hercules-chat-header {
+  flex-wrap: wrap;
+}
+.hercules-world .hercules-easy-read-toggle {
+  font:
+    12px/1.4 system-ui,
+    sans-serif;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid currentColor;
+  border-radius: 8px;
+  background: var(--chat-paper);
+  color: var(--chat-ink);
+}
+.hercules-focus-shell > .hercules-easy-read-toggle {
+  margin: 8px 16px;
+  align-self: flex-start;
+}
+.hercules-world[data-easy-read="true"] {
+  --chat-paper: #fffaf0;
+  --chat-ink: #25231f;
+  --chat-user-paper: #f1ece2;
+}
+.hercules-world[data-easy-read="true"]
+  :is(
+    .hercules-conversation-content,
+    .hercules-chat-log,
+    .hercules-chat-turn,
+    .hercules-chat-question,
+    .hercules-chat-answer,
+    .hercules-chat-form,
+    .hercules-action-panel,
+    .hercules-focus-shell,
+    .hercules-bubble.chat
+  ) {
+  background: var(--chat-paper) !important;
+  color: var(--chat-ink) !important;
+  font:
+    17px/1.6 system-ui,
+    -apple-system,
+    sans-serif !important;
+  text-align: left;
+  text-shadow: none;
+}
+.hercules-world[data-easy-read="true"]
+  :is(
+    .hercules-conversation-content,
+    .hercules-chat-form,
+    .hercules-focus-shell
+  )
+  :is(
+    p,
+    span,
+    div,
+    label,
+    button,
+    input,
+    textarea,
+    select,
+    small,
+    h1,
+    h2,
+    h3,
+    h4
+  ) {
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif !important;
+  line-height: 1.6;
+  color: var(--chat-ink);
+  letter-spacing: normal;
+}
+.hercules-world[data-easy-read="true"] :is(button, input, textarea, select) {
+  background: #fffaf0;
+  min-height: 44px;
+  font-size: 16px;
+}
+.hercules-world[data-easy-read="true"] :focus-visible {
+  outline: 3px solid #214e80;
+  outline-offset: 3px;
+}
+.hercules-world .hercules-turn,
+.hercules-world .hercules-snippet,
+.hercules-world .hercules-typing {
+  background: var(--chat-paper);
+  color: var(--chat-ink);
+  text-shadow: none;
+}
+.hercules-world .hercules-turn.you,
+.hercules-world .hercules-snippet.you {
+  background: var(--chat-user-paper);
+  color: var(--chat-ink);
+}
+.hercules-world[data-easy-read="true"]
+  :is(.hercules-turn, .hercules-snippet, .hercules-typing) {
+  background: var(--chat-paper) !important;
+  color: var(--chat-ink) !important;
+  font:
+    17px/1.6 system-ui,
+    -apple-system,
+    sans-serif !important;
+  text-align: left;
+}
