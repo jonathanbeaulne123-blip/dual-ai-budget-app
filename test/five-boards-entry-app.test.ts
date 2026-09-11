@@ -405,6 +405,7 @@ describe("five boards entry App integration", () => {
     expect(plan.children[0]!.classList.contains('hero')).toBe(true);
     expect(plan.children[1]!.querySelector('h2')!.textContent).toBe('Categories');
     expect(plan.children[2]!.classList.contains('sit-guide')).toBe(true);
-    expect(plan.children[3]!.classList.contains('kitty-banks')).toBe(true);
+    expect(plan.children[3]!.querySelector('h2')?.textContent).toBe('Kitty Banks');
+    expect(plan.children[3]!.querySelector('button')?.textContent).toBe('Enter Kitty Banks');
   }, 30000);
 });
