@@ -1,0 +1,12 @@
+import { completedExistingBooksHousehold } from '../fixtures/existing-books-onboarding.ts';
+import { saveHousehold } from '../../src/storage.ts';
+import { saveSession } from '../../src/session.ts';
+import { DEFAULT_APPEARANCE } from '../../src/theme/scenes.ts';
+const query = new URLSearchParams(location.search);
+const household = completedExistingBooksHousehold();
+household.householdId = 'HH-CATEGORY-SPLIT-BROWSER';
+household.linked = false;
+localStorage.setItem('hearth:appearance:v1:development:guest',JSON.stringify({appearance:{...DEFAULT_APPEARANCE,theme:query.get('theme')??'classic'},pending:false}));
+saveSession('development',{memberId:'MEM-002',view:query.get('view')==='personal'?'personal':'household',householdId:household.householdId});
+await saveHousehold(household,{operatingEnvironment:'development',memberId:'MEM-002',activate:true});
+await import('../../src/main.tsx');

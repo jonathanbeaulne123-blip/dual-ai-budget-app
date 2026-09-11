@@ -1,3 +1,4 @@
+import { CategorySplitEditor, CategorySplitReview, readCategorySplit } from "./CategorySplitEditor.tsx";
 import { loadEntryPresentation, writeEntryLocal } from "./entryDraft.ts";
 import { SplitCut } from "./SplitCut.tsx";
 import { splitReading } from "./core/splitDraft.ts";
@@ -216,7 +217,8 @@ export function AddSlideshow({
   const index = clampAddSlide(slideIndex, slides);
   const slide: AddSlideId = slides[index] ?? "amount";
   const copy = addSlideCopy(mode, slide, shiftGate);
-  const canAdvance = canAdvanceAddSlide(slide, form);
+  const categorySplitError = mode === "expense" && form.categorySplitEnabled ? readCategorySplit(form, categories).error : "";
+  const canAdvance = canAdvanceAddSlide(slide, form) && !(slide === "category" && categorySplitError);
   const [cutPreviewActive, setCutPreviewActive] = useState(false);
   const [pictureName, setPictureName] = useState(initialPresentation.current?.pictureName ?? "");
   const [presentationVolatile, setPresentationVolatile] = useState(false);
@@ -327,7 +329,7 @@ export function AddSlideshow({
     entryInvalid = mode === "transfer"
       ? !hasAccount(form.fromAccountId) || !hasAccount(form.toAccountId) || form.fromAccountId === form.toAccountId
       : !hasAccount(form.accountId) || (mode !== "shift" && !categories.some(category => category.active && category.id === form.subcategoryId));
-    entryInvalid ||= needsAccountChoice;
+    entryInvalid ||= needsAccountChoice || !!categorySplitError;
     if (mode === "shift") entryInvalid ||= slides.some(item => item.startsWith("shift-") && !canAdvanceAddSlide(item, form));
     if (mode !== "shift") {
       try { entryInvalid ||= parseAmount(form.amount) <= 0; } catch { entryInvalid = true; }
@@ -390,7 +392,7 @@ export function AddSlideshow({
         <fieldset className="entry-sheet-fields" disabled={!open || busy}>
         {(expanded ? slides : [slide]).map((slide) => {
           const copy = addSlideCopy(mode, slide, shiftGate);
-          const canAdvance = canAdvanceAddSlide(slide, form);
+          const canAdvance = canAdvanceAddSlide(slide, form) && !(slide === "category" && categorySplitError) && !cutPreviewActive;
           return <section key={slide} className={expanded ? "entry-full-section" : undefined} data-entry-section={slide}>
             {expanded && <h2 tabIndex={-1}>{copy.title}</h2>}
         {slide === "amount" && (
@@ -449,7 +451,7 @@ export function AddSlideshow({
                 >
                   Coffee
                 </button>
-                <button type="button" className="chip" onClick={onSavePreset}>Save as preset</button>
+                {!form.categorySplitEnabled && <button type="button" className="chip" onClick={onSavePreset}>Save as preset</button>}
                 {presetId && (
                   <button type="button" className="chip" onClick={onForgetPreset}>Forget preset</button>
                 )}
@@ -460,7 +462,13 @@ export function AddSlideshow({
 
         {slide === "category" && (
           <>
-            {!expanded ? <MobileEntryChoices
+            {mode === "expense" && <button type="button" className="chip category-split-toggle" aria-pressed={!!form.categorySplitEnabled}
+              onClick={() => { onCategoryTouched(); setForm(current => ({ ...current, categorySplitEnabled: !current.categorySplitEnabled,
+                categoryFirstPercent: current.categoryFirstPercent ?? "50" })); }}>
+              {form.categorySplitEnabled ? "Use one category" : "Split between two categories"}
+            </button>}
+            {mode === "expense" && form.categorySplitEnabled ? <><CategorySplitEditor form={form} setForm={setForm} categories={categories}
+              onTouched={onCategoryTouched} onPreviewChange={setCutPreviewActive} /><AddCategoryForm household={household} onSave={persistCategory} inline transactionType="expense" /></> : !expanded ? <MobileEntryChoices
               choices={suggestions ? entryRecommendations(categories.filter(category => suggestions.categories.some(item => item.id === category.id)), suggestions, mode, "subcategoryId", today) : []}
               label="Suggested categories" selectedId={form.subcategoryId} busy={busy} onPick={pickCategory} onMore={() => setFullForm(true)}
             /> : <>
@@ -973,7 +981,7 @@ function ConfirmSlide({
         ) : (
           <>
             <div className="row"><span>Amount</span><span>{money || "$0.00"}</span></div>
-            <div className="row"><span>Category</span><span>{categoryName || "—"}</span></div>
+            {mode === "expense" && form.categorySplitEnabled ? <CategorySplitReview form={form} categories={categories} /> : <div className="row"><span>Category</span><span>{categoryName || "—"}</span></div>}
             <div className="row"><span>Account</span><span>{accountName}</span></div>
             <div className="row"><span>Note</span><span>{form.note || "—"}</span></div>
           </>

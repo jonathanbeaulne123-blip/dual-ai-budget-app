@@ -175,21 +175,22 @@ export function assertLatestMemberLedgerUndo(
 
 const FUNDED_MONEY_REVERSAL_COMMANDS = new Set([
   "postEntry",
+  "postPotentialExpense",
   "postHouseholdFundDirectDebit",
 ]);
 
 /**
- * Return the one current money row that a supported funded Confirm must reverse.
+ * Return the current money rows that a supported funded Confirm must reverse.
  *
  * Funded facts are append-only, so confirmation-scoped deletion is not a safe
  * correction. Keep this decision command-kind-bound: a future command cannot
  * inherit reversal semantics merely by returning an id with a familiar prefix.
  */
-export function fundedMoneyUndoTarget(current: Household, token: UndoToken): string | null {
+export function fundedMoneyUndoTargets(current: Household, token: UndoToken): string[] {
   const postedIds = [...new Set((token.postedIds ?? []).filter(Boolean))];
   const currentFundEventIds = new Set((current.fundEvents ?? []).map((event) => event.id));
   const carriesFundFact = postedIds.some((id) => currentFundEventIds.has(id));
-  if (!carriesFundFact) return null;
+  if (!carriesFundFact) return [];
 
   if (!token.commandKind || !FUNDED_MONEY_REVERSAL_COMMANDS.has(token.commandKind)) {
     throw new ValidationError("That funded change needs its recorded correction path before it can be undone.");
@@ -198,8 +199,15 @@ export function fundedMoneyUndoTarget(current: Household, token: UndoToken): str
   const currentTransactionIds = postedIds.filter((id) => (
     current.transactions.some((transaction) => transaction.id === id)
   ));
-  if (currentTransactionIds.length !== 1) {
-    throw new ValidationError("That funded change does not identify exactly one current money row to reverse.");
+  if (currentTransactionIds.length < 1 || currentTransactionIds.length > (["postEntry", "postPotentialExpense"].includes(token.commandKind) ? 2 : 1)) {
+    throw new ValidationError("That funded change does not identify its current money rows to reverse.");
   }
-  return currentTransactionIds[0]!;
+  return currentTransactionIds;
+}
+
+/** Single-purchase callers retain their narrower contract. */
+export function fundedMoneyUndoTarget(current: Household, token: UndoToken): string | null {
+  const ids = fundedMoneyUndoTargets(current, token);
+  if (ids.length > 1) throw new ValidationError("This split purchase has two category entries. Undo the complete confirmation.");
+  return ids[0] ?? null;
 }

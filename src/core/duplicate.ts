@@ -92,6 +92,12 @@ export function scoreSimilarity(candidate: {
   source?: string;
   sourceId?: string;
 }, existing: Transaction): SimilarityMatch | null {
+  // Two categories from the same accepted purchase are portions, not repeat spending.
+  if (candidate.type === "expense" && existing.type === "expense" && candidate.sourceId
+    && candidate.sourceId === existing.sourceId && candidate.source === existing.source
+    && (candidate.source === "calendar" || candidate.source === "manual" && candidate.sourceId.startsWith("CATEGORY-SPLIT-"))
+    && candidate.subcategoryId && existing.subcategoryId && candidate.subcategoryId !== existing.subcategoryId
+    && candidate.accountId === existing.accountId && candidate.date === existing.date) return null;
   if (existing.type !== candidate.type) return null;
   if (existing.amountCents !== candidate.amountCents) return null;
   const days = calendarDaysBetween(existing.date, candidate.date);

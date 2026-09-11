@@ -150,7 +150,7 @@ import {
   touchGoogleConfirmation,
   touchVisitSpark,
   undoLedgerConfirm,
-  fundedMoneyUndoTarget,
+  fundedMoneyUndoTargets,
   assertLatestMemberLedgerUndo,
   appendRestorePoint,
   applyRestorePoint,
@@ -4597,13 +4597,22 @@ export function App() {
       if (!current || !who) return;
       try {
         assertLatestMemberLedgerUndo(historyRef.current, who, token);
-        const fundedTransactionId = fundedMoneyUndoTarget(current, token);
-        let result = fundedTransactionId ? reversePostedMoney(current, fundedTransactionId, { createdBy: who }) : undoLedgerConfirm(current, token);
-        if (useLedgerSync && !fundedTransactionId) result = captureExplicit(current,result,'undoConfirm',[token.id]);
+        const fundedTransactionIds = fundedMoneyUndoTargets(current, token);
+        let result;
+        if (fundedTransactionIds.length) {
+          let staged = current;
+          const postedIds: string[] = [];
+          for (const id of fundedTransactionIds) {
+            result = reversePostedMoney(staged, id, { createdBy: who });
+            staged = result.household; postedIds.push(...result.postedIds);
+          }
+          result = { ...result!, postedIds, undo: { ...result!.undo, snapshot: current, postedIds } };
+        } else result = undoLedgerConfirm(current, token);
+        if (useLedgerSync && !fundedTransactionIds.length) result = captureExplicit(current,result,'undoConfirm',[token.id]);
         lastAmountLabelRef.current = null;
         // Starting the accepted writer ends the quick-window check. Delivery is
         // still scoped even if the paper strip expires while acceptance waits.
-        const outcome = await commitHousehold(result.household, {...result.undo,actorMemberId:who},who,{suppressUndo: Boolean(fundedTransactionId),isCurrent:scopeIsCurrent,scopeIsCurrent});
+        const outcome = await commitHousehold(result.household, {...result.undo,actorMemberId:who},who,{suppressUndo: fundedTransactionIds.length > 0,isCurrent:scopeIsCurrent,scopeIsCurrent});
         if (!scopeIsCurrent()||!outcome || !outcome.postedExactlyOnce || outcome.kind === "conflict-needs-attention") return;
         rememberUndoHistory(historyRef.current.filter((item) => item.id !== token.id));
         setToast((item) => (item?.id === token.id ? null : item));
@@ -6036,7 +6045,7 @@ export function App() {
     setAddSlide(0);
     setCategoryTouched(false);
     setCodingHint("");
-    setForm((current) => ({ ...current, subcategoryId: defaultSubcategoryForMode(item) }));
+    setForm((current) => ({ ...current, subcategoryId: defaultSubcategoryForMode(item), categorySplitEnabled: false, secondSubcategoryId: "", categoryFirstPercent: "50" }));
     if (item === "shift") {
       const punch = activeOpenShift(ledger.kitchen, actorId);
       setShiftGate(punch ? "clocked" : "choose");
@@ -6269,6 +6278,7 @@ export function App() {
         amount: form.amount,
         accountId: form.accountId,
         subcategoryId: form.subcategoryId,
+        categorySplit: mode === "expense" && form.categorySplitEnabled ? { secondSubcategoryId: form.secondSubcategoryId ?? "", firstPercent: Number(form.categoryFirstPercent ?? "50") } : undefined,
         note: form.note,
         place: form.place,
         occurredAt: form.occurredAt || undefined,
@@ -7716,6 +7726,7 @@ export function App() {
           presetId={presetId}
           onPresetId={setPresetId}
           onSavePreset={() => {
+            if (form.categorySplitEnabled) return;
             if (!form.note.trim() && !form.subcategoryId) return;
             let amountBit = "Amount stays on the pad";
             try {
@@ -8470,12 +8481,7 @@ export function App() {
           Shift
         </button>
         )}
-        <FabSpeedDial
-          closed={adding}
-          onOpenChange={setFabOpen}
-          onPick={(nextMode) => openAddFor(null, nextMode)}
-        />
-        {kitchenPrimaryNav(view).includes("ledger") && (
+        {view === "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
           className={tab === "ledger" ? "active" : ""}
           aria-current={tab === "ledger" ? "page" : undefined}
@@ -8484,6 +8490,22 @@ export function App() {
           onClick={() => goTab("ledger")}
         >
           {view === "household" ? "Our Money" : "Books"}
+        </button>
+        )}
+        <FabSpeedDial
+          closed={adding}
+          onOpenChange={setFabOpen}
+          onPick={(nextMode) => openAddFor(null, nextMode)}
+        />
+        {view !== "household" && kitchenPrimaryNav(view).includes("ledger") && (
+        <button
+          className={tab === "ledger" ? "active" : ""}
+          aria-current={tab === "ledger" ? "page" : undefined}
+          onPointerEnter={() => preloadTab("ledger")}
+          onFocus={() => preloadTab("ledger")}
+          onClick={() => goTab("ledger")}
+        >
+          Books
         </button>
         )}
         {kitchenPrimaryNav(view).includes("plan") && (
