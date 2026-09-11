@@ -523,7 +523,11 @@ export function StudioBench({ state, goal, busy, step }: { state: KittyStudioSta
           {state.firing ? (
             <div className="studio-row">
               <p role="status" aria-live="polite">{state.firing.phase === "heat" ? `Firing… ${temperature} °C` : "Out of the kiln. Look at that shine."}</p>
-              {state.firing.phase === "heat" && <button type="button" onClick={() => state.setFiring({ ...state.firing!, phase: "reveal", skipped: true })}>Skip</button>}
+              {state.firing.phase === "heat" ? (
+                <button type="button" onClick={() => state.setFiring({ ...state.firing!, phase: "reveal", skipped: true })}>Skip</button>
+              ) : (
+                <button type="button" className="kitty-primary" onClick={() => { state.setFiring(null); state.throwAnother(); }} disabled={busy}>Throw another</button>
+              )}
             </div>
           ) : draft ? (
             <>
