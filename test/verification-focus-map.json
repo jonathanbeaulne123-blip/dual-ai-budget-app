@@ -3,6 +3,23 @@
   "mappings": [
     {
       "sources": [
+        "src/Calendar.tsx",
+        "src/calendar/google.ts",
+        "scripts/check-google-calendar-reading.mjs"
+      ],
+      "tests": [
+        "test/google-calendar-reading.test.ts",
+        "test/google-calendar-ui.test.ts",
+        "test/google.test.ts",
+        "test/google-bridge-scope.test.ts",
+        "test/hercules-calendar-integration.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/month-rehearsal-mainline.test.ts"
+      ],
+      "reason": "Google calendar read permissions, pagination, current-member credential isolation, connection recovery and Calendar integration"
+    },
+    {
+      "sources": [
         "scripts/check-page-worlds.mjs",
         "src/Hercules.tsx",
         "src/theme/PageWorld.tsx",

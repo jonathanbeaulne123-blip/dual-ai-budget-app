@@ -29,12 +29,12 @@ import {
   removePotentialExpense,
   updatePotentialExpense,
   setRecurrenceGoogleSync,
+  setGoogleServices,
   settleWorkReceivable,
   payDeferredWorkTipOut,
   shiftMonthKey,
   skipOccurrence,
   typicalVisitDraft,
-  unlinkGoogleIdentity,
   visitPostSummary,
   workOwedFacts,
   type CommitResult,
@@ -53,7 +53,7 @@ import {
   disconnectGoogleAccount,
   googleConfigured,
   loadGoogleAccounts,
-  listGoogleOverlays,
+  readGoogleCalendars,
   upsertHearthReminders,
   type GoogleAccount,
 } from "./calendar/google.ts";
@@ -148,6 +148,7 @@ function CalendarPageScope(props: CalendarProps) {
   const [accounts, setAccounts] = useState<GoogleAccount[]>([]);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [googleError, setGoogleError] = useState("");
+  const [readCalendars, setReadCalendars] = useState<string[]>([]);
   const [overlays, setOverlays] = useState<OverlayEvent[]>([]);
   const [repeatingDraft, setRepeatingDraft] = useState<RepeatingDraft | null>(null);
   const [workSettlement, setWorkSettlement] = useState<WorkOwedFact | null>(null);
@@ -222,14 +223,28 @@ function CalendarPageScope(props: CalendarProps) {
   function refreshAccounts() {
     setAccounts(loadGoogleAccounts(
       environment,
-      household.members.filter((member) => member.active).map((member) => member.id),
+      [props.memberId],
       household.householdId,
     ));
   }
 
   useEffect(() => {
     refreshAccounts();
-  }, [environment, household.householdId, household.members]);
+    let refreshedAt = Date.now();
+    const refreshOnReturn = () => {
+      if (document.visibilityState === "hidden" || Date.now() - refreshedAt < 15000) return;
+      refreshedAt = Date.now();
+      refreshAccounts();
+    };
+    window.addEventListener("focus", refreshOnReturn);
+    window.addEventListener("online", refreshOnReturn);
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    return () => {
+      window.removeEventListener("focus", refreshOnReturn);
+      window.removeEventListener("online", refreshOnReturn);
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+    };
+  }, [environment, household.householdId, props.memberId, calendarGoogleOn]);
 
   useEffect(() => {
     const next = takeCalendarPane(localStorage);
@@ -263,26 +278,31 @@ function CalendarPageScope(props: CalendarProps) {
 
   useEffect(() => {
     let live = true;
+    setOverlays([]);
+    setReadCalendars([]);
+    setGoogleError("");
     if (!calendarGoogleOn || !accounts.length) {
-      setOverlays([]);
+      setGoogleBusy(false);
       return;
     }
     const from = board.days[0]?.date;
     const to = board.days[board.days.length - 1]?.date;
     if (!from || !to) return;
     setGoogleBusy(true);
-    void listGoogleOverlays({
+    void readGoogleCalendars({
       environment,
       householdId: household.householdId,
       accounts,
       memberColor: (memberId) => household.members.find((member) => member.id === memberId)?.color ?? "#2f6b4f",
       from,
       to,
+      timeZone: household.timezone,
       enabledServices: household.google.enabledServices,
     }).then((items) => {
       if (live) {
-        setOverlays(items);
-        setGoogleError("");
+        setOverlays(items.overlays);
+        setReadCalendars(items.calendars);
+        setGoogleError(items.errors.join(" "));
       }
     }).catch((caught) => {
       if (live) setGoogleError(caught instanceof Error ? caught.message : String(caught));
@@ -290,22 +310,24 @@ function CalendarPageScope(props: CalendarProps) {
       if (live) setGoogleBusy(false);
     });
     return () => { live = false; };
-  }, [accounts, environment, household.householdId, monthKey, household.members, calendarGoogleOn, household.google.enabledServices]);
+  }, [accounts, environment, household.householdId, monthKey, household.members, household.timezone, calendarGoogleOn, household.google.enabledServices]);
 
   async function connectMember(memberId: string) {
     const startedScope = asyncScope.capture();
     setGoogleBusy(true);
     setGoogleError("");
     try {
+      if (memberId !== props.memberId) return;
       const session = await connectGoogle({
         memberId,
         environment,
         householdId: household.householdId,
         services: ["identity", "calendar"],
-        enabledServices: household.google.enabledServices,
+        enabledServices: [...household.google.enabledServices, "calendar"],
+        loginHint: findActiveGoogleLink(household, memberId)?.email,
       });
       if (!asyncScope.isCurrent(startedScope)) return;
-      props.onCommand((current) => linkGoogleIdentity(current, {
+      props.onCommand((current) => linkGoogleIdentity(setGoogleServices(current, [...new Set([...current.google.enabledServices, "calendar"])]).household, {
         memberId,
         email: session.identity.email,
         subject: session.identity.subject,
@@ -755,9 +777,9 @@ function CalendarPageScope(props: CalendarProps) {
             <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
           </header>
           <p className="muted">
-            See Google events here and send reminders for 9:00 Toronto time. Calendar connections never post money.
+            Connect Calendar separately from Hearth sign-in. Read your calendars and calendars shared with your Google account, including shared household calendars. These events appear only in your current browser and never post money.
           </p>
-          {household.members.filter((member) => member.active).sort((left, right) => {
+          {household.members.filter((member) => member.active && member.id === props.memberId).sort((left, right) => {
             if (left.id === props.memberId) return -1;
             if (right.id === props.memberId) return 1;
             return left.name.localeCompare(right.name);
@@ -769,33 +791,36 @@ function CalendarPageScope(props: CalendarProps) {
               <div className="row" key={member.id}>
                 <span>
                   <i className="swatch" style={{ background: member.color }} /> {member.name}
-                  <span className="muted"> {label}{link && !account ? " · connect on this phone" : ""}</span>
+                  <span className="muted"> {label}{link && !account ? " · Calendar access needed on this device" : ""}</span>
                 </span>
                 {account ? (
+                  <div className="row">
+                  <button className="chip selected" disabled={googleBusy || !configured} onClick={() => void connectMember(member.id)}>Reconnect Calendar</button>
                   <button className="chip" onClick={() => {
                     disconnectGoogleAccount(environment, member.id, household.householdId);
-                    if (findActiveGoogleLink(household, member.id)) {
-                      props.onCommand((current) => unlinkGoogleIdentity(current, member.id));
-                    }
+                    // Removing this device token must not unlink household sign-in identity.
                     refreshAccounts();
                     setOverlays((items) => items.filter((item) => item.memberId !== member.id));
                   }}>
                     Disconnect
                   </button>
+                  </div>
                 ) : (
-                  <button className="chip selected" disabled={googleBusy || !configured || !calendarGoogleOn} onClick={() => void connectMember(member.id)}>
-                    Connect
+                  <button className="chip selected" disabled={googleBusy || !configured} onClick={() => void connectMember(member.id)}>
+                    Connect Calendar
                   </button>
                 )}
               </div>
             );
           })}
           {!calendarGoogleOn && (
-            <p className="muted">Calendar Google is off. Turn it on in More → Google household bridge.</p>
+            <p className="muted">Calendar access is off. Connect Calendar here to enable it.</p>
           )}
           {!configured && (
             <p className="muted">Google connection isn’t available here yet. You can still download your calendar with reminders.</p>
           )}
+          <p className="muted" role="status">{googleBusy ? "Reading Google calendars…" : readCalendars.length ? `${overlays.length} events from ${readCalendars.length} calendars: ${readCalendars.join(", ")}` : accounts.length && calendarGoogleOn && !googleError ? "No readable Google calendars were returned." : "Connect or reconnect to read Google events."}</p>
+          {accounts.length > 0 && <button className="ghost" disabled={googleBusy || !calendarGoogleOn} onClick={refreshAccounts}>Refresh Google events</button>}
           {googleError ? <KitchenNotice message={googleError} /> : null}
           <button className="primary" disabled={googleBusy || !calendarGoogleOn || !household.recurrences.some((item) => item.active)} onClick={() => void remindOnGoogle()}>
             {googleBusy ? "Talking to Google…" : "Write reminders to Google"}

@@ -1,4 +1,4 @@
-import { TIMEZONE, type DateKey } from "../core/calendar.ts";
+import { TIMEZONE, addDays, dateKeyInZone, type DateKey } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
 import { googleRrule, HEARTH_REMINDER_HOUR } from "../core/recurrence.ts";
 import type { Environment, Recurrence } from "../core/types.ts";
@@ -76,8 +76,9 @@ export function loadGoogleAccounts(environment: Environment, memberIds: string[]
 
 export function dateFromGoogleEvent(event: {
   start?: { date?: string; dateTime?: string };
-}): DateKey | null {
-  const value = event.start?.date || event.start?.dateTime?.slice(0, 10);
+}, timeZone: string = TIMEZONE): DateKey | null {
+  const instant = event.start?.dateTime ? new Date(event.start.dateTime) : null;
+  const value = event.start?.date || (instant && Number.isFinite(instant.getTime()) ? dateKeyInZone(instant, timeZone) : null);
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
@@ -142,41 +143,96 @@ export function disconnectGoogleAccount(environment: Environment, memberId: stri
   disconnectGoogle(environment, memberId, householdId);
 }
 
-export async function listGoogleOverlays(input: {
+export type GoogleCalendarRead = { overlays: OverlayEvent[]; calendars: string[]; errors: string[] };
+type CalendarListEntry = { id: string; summary?: string; primary?: boolean; accessRole?: string; deleted?: boolean; hidden?: boolean };
+type ReadEvent = Parameters<typeof overlayFromGoogleEvent>[0] & { status?: string; end?: { date?: string; dateTime?: string } };
+
+/** Read subscribed calendars, including shared reader calendars. No Google writes. */
+export async function readGoogleCalendars(input: {
   environment: Environment;
   householdId: string;
   accounts: GoogleAccount[];
   memberColor: (memberId: string) => string;
   from: DateKey;
   to: DateKey;
+  timeZone?: string;
   enabledServices?: Iterable<string>;
-}): Promise<OverlayEvent[]> {
-  const overlays: OverlayEvent[] = [];
+}): Promise<GoogleCalendarRead> {
+  const result: GoogleCalendarRead = { overlays: [], calendars: [], errors: [] };
+  const seen = new Set<string>();
+  const timeZone = input.timeZone ?? TIMEZONE;
   for (const account of input.accounts) {
-    const items = await withGoogle({
-      environment: input.environment,
-      memberId: account.memberId,
-      householdId: input.householdId,
-      services: ["identity", "calendar"],
-      enabledServices: input.enabledServices,
-      loginHint: account.email,
-      fn: async (ctx) => {
-        const calendarId = ctx.session.calendarId;
-        if (!calendarId) return [] as OverlayEvent[];
-        const timeMin = `${input.from}T00:00:00-04:00`;
-        const timeMax = `${input.to}T23:59:59-04:00`;
-        const payload = await ctx.fetch<{ items?: Parameters<typeof overlayFromGoogleEvent>[0][] }>(
-          ctx.session.accessToken,
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?singleEvents=true&orderBy=startTime&timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&maxResults=250`,
-        );
-        return (payload.items ?? [])
-          .map((event) => overlayFromGoogleEvent(event, account.memberId, input.memberColor(account.memberId)))
-          .filter((item): item is OverlayEvent => Boolean(item));
-      },
-    });
-    overlays.push(...items);
+    try {
+      await withGoogle({
+        environment: input.environment, memberId: account.memberId, householdId: input.householdId,
+        services: ["identity", "calendar"], enabledServices: input.enabledServices, loginHint: account.email,
+        fn: async ctx => {
+          const calendars: CalendarListEntry[] = [];
+          let pageToken: string | undefined;
+          for (let page = 0; ; page++) {
+            if (page === 20) throw new Error("Too many calendar pages. Google calendar loading is incomplete.");
+            const query = new URLSearchParams({ minAccessRole: "reader", maxResults: "250" });
+            if (pageToken) query.set("pageToken", pageToken);
+            const payload = await ctx.fetch<{ items?: CalendarListEntry[]; nextPageToken?: string }>(ctx.session.accessToken,
+              `https://www.googleapis.com/calendar/v3/users/me/calendarList?${query}`);
+            calendars.push(...(payload.items ?? []).filter(c => c.id && !c.deleted && !c.hidden && c.accessRole !== "freeBusyReader" && c.accessRole !== "none"));
+            pageToken = payload.nextPageToken;
+            if (!pageToken) break;
+          }
+          // A small concurrency limit keeps multi-calendar refreshes responsive.
+          let cursor = 0;
+          await Promise.all(Array.from({ length: Math.min(3, calendars.length) }, async () => {
+            while (cursor < calendars.length) {
+              const calendar = calendars[cursor++]!;
+              const name = calendar.summary || (calendar.primary ? "Primary calendar" : calendar.id);
+              try {
+                const events: ReadEvent[] = [];
+                let nextPage: string | undefined;
+                for (let page = 0; ; page++) {
+                  if (page === 20) throw new Error("Too many event pages; this calendar could not be fully loaded.");
+                  // Fetch a padded UTC range, then filter by household civil date.
+                  // This covers DST and offsets without hard-coding Toronto summer time.
+                  const query = new URLSearchParams({ singleEvents: "true", orderBy: "startTime", maxResults: "250",
+                    timeMin: `${addDays(input.from, -1)}T00:00:00Z`, timeMax: `${addDays(input.to, 2)}T00:00:00Z`, timeZone });
+                  if (nextPage) query.set("pageToken", nextPage);
+                  const payload = await ctx.fetch<{ items?: ReadEvent[]; nextPageToken?: string }>(ctx.session.accessToken,
+                    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?${query}`);
+                  events.push(...(payload.items ?? []));
+                  nextPage = payload.nextPageToken;
+                  if (!nextPage) break;
+                }
+                for (const event of events) {
+                  if (event.status === "cancelled" || !event.id) continue;
+                  const start = dateFromGoogleEvent(event, timeZone);
+                  if (!start) continue;
+                  const endInstant = event.end?.dateTime ? new Date(event.end.dateTime).getTime() - 1 : NaN;
+                  const end = event.end?.date ? addDays(event.end.date, -1) : Number.isFinite(endInstant) ? dateKeyInZone(new Date(endInstant), timeZone) : start;
+                  for (let date = start < input.from ? input.from : start; date <= end && date <= input.to; date = addDays(date, 1)) {
+                    const id = `${encodeURIComponent(calendar.id)}:${event.id}:${date}`;
+                    if (seen.has(id)) continue;
+                    seen.add(id);
+                    result.overlays.push({ id, date, title: event.summary?.trim() || "Google event", memberId: account.memberId,
+                      memberColor: input.memberColor(account.memberId), hearthOwned: event.extendedProperties?.private?.hearth === "1" });
+                  }
+                }
+                result.calendars.push(name);
+              } catch (error) { result.errors.push(`${name}: ${error instanceof Error ? error.message : String(error)}`); }
+            }
+          }));
+        },
+      });
+    } catch (error) { result.errors.push(`${account.email}: ${error instanceof Error ? error.message : String(error)}`); }
   }
-  return overlays;
+  result.overlays.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  result.calendars.sort((a, b) => a.localeCompare(b));
+  return result;
+}
+
+/** Compatibility helper for callers requiring an all-or-error overlay array. */
+export async function listGoogleOverlays(input: Parameters<typeof readGoogleCalendars>[0]): Promise<OverlayEvent[]> {
+  const result = await readGoogleCalendars(input);
+  if (result.errors.length) throw new Error(result.errors.join(" "));
+  return result.overlays;
 }
 
 export async function upsertHearthReminders(input: {
