@@ -49,3 +49,7 @@ Fund setup/contributions/reserves and approved versioned Plan records are never 
 ## Handoff
 
 Local implementation complete; **170 passing tests** across the High quick gate and required separate mainline regression, plus browser proof and Vite build. Next owner: Jonathan for product review. Branch `codex/quick-sample-story`; no push, PR, merge, deployment, schema change, provider call or real-household write. Source candidate remains based on `71ccc24`; this final receipt is documentation only. The local browser proof exercised an existing synthetic household through the visible Confirm control, and the generator never created one.
+
+## Authorized Development release — 2026-09-11
+
+Jonathan explicitly instructed “push merge and deploy.” This supersedes the local-only release status above. Rebased cleanly onto fresh main `16d4710733c5e5ff1655e5a7d2bdff6c01b59ad2` (Fund life Plan #437); generator code is unchanged and the single App review-copy change remains isolated. Re-run the High quick gate against this integrated candidate before merging, and verify GitHub build/CI and the main-triggered Cloudflare deployment. Production continuity remains disabled by the release workflow; no schema, secrets, provider configuration, or household writes are authorized. Prior scoped/local browser evidence remains separate from exhaustive or physical-device proof. Release review: conditional on the integrated gate and hosted deployment receipt; Jonathan owns the explicitly authorized release decision.
