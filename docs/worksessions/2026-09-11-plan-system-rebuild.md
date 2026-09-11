@@ -1,6 +1,6 @@
 # Hearth worksession — Plan System V2 rebuild
 
-- **Status:** ACTIVE; LOCAL GATED CANDIDATE; RELEASE ACCEPTANCE OPEN
+- **Status:** DEVELOPMENT RELEASE AUTHORIZED; EXACT-HEAD VERIFICATION IN PROGRESS
 - **Opened:** 2026-09-11 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -11,7 +11,7 @@
 - **PR or issue:** none
 - **Risk:** High
 - **Decision owner:** Jonathan
-- **Environment impact:** none; local code only, flag off
+- **Environment impact:** Development presentation enabled after merge; Production continuity and data unchanged
 
 ## Household outcome
 
@@ -39,11 +39,11 @@ The worktree was created from exact `origin/main@b24dd73143b143ef96bfc856ba03cfb
 - Legacy Household budget adoption and accepted-version compatibility projection.
 - Plan-specific Hercules provenance, context, read tools, planner routes and reviewed planning actions.
 - PlanStudio desktop/mobile UI, three themes, Personal/Household variants, Sitdown, learning, Bridge and Hercules.
-- `VITE_PLAN_SYSTEM_V2` rollback boundary, default off.
+- `VITE_PLAN_SYSTEM_V2` rollback boundary; Development deploys default on and an explicit `0` restores the legacy presentation.
 
 ### Out of scope
 
-- Production schema, hosted mutation, feature activation, deployment, push or merge.
+- Production schema, Production continuity activation, or money movement.
 - Money movement; every Plan action remains non-financial.
 - External notifications.
 
@@ -86,4 +86,4 @@ The worktree was created from exact `origin/main@b24dd73143b143ef96bfc856ba03cfb
 
 ## Handoff
 
-Next owner: Jonathan for local product review. Keep the feature flag off. The next acceptance slice is authenticated two-browser Shared Sitdown/Hercules convergence, alarm observation, replay/restore corpus and physical accessibility/product review. No release, deployment, Production schema, or activation is authorized by this worksession.
+Jonathan authorized Development activation, merge, push and deploy on 2026-09-11. The next acceptance slice after deployment is authenticated two-browser Shared Sitdown/Hercules convergence, alarm observation, replay/restore corpus and physical accessibility/product review. Production schema and Production continuity activation remain separately gated.

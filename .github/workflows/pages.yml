@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      plan_system_v2:
+        description: Plan System V2 presentation (set 0 for legacy rollback)
+        type: choice
+        options: ["1", "0"]
+        default: "1"
       hercules_actions:
         description: Confirmed Hercules actions in Development only
         type: choice
@@ -57,6 +62,7 @@ jobs:
           VITE_PGLITE_INCREMENTAL_DEV: "1"
           VITE_PRODUCTION_CONTINUITY: "0"
           VITE_SYNC_PILOT_DIAGNOSTICS: "1"
+          VITE_PLAN_SYSTEM_V2: ${{ inputs.plan_system_v2 || '1' }}
           VITE_HERCULES_ACTIONS: ${{ inputs.hercules_actions || vars.VITE_HERCULES_ACTIONS || '1' }}
           VITE_HERCULES_CHAT: ${{ inputs.hercules_chat || vars.VITE_HERCULES_CHAT || '1' }}
           VITE_HERCULES_DISCOVERY: ${{ inputs.hercules_discovery || vars.VITE_HERCULES_DISCOVERY || '1' }}
@@ -73,7 +79,9 @@ jobs:
           test "$VITE_PGLITE_INCREMENTAL_DEV" = "1"
           test "$VITE_PRODUCTION_CONTINUITY" = "0"
           test "$VITE_SYNC_PILOT_DIAGNOSTICS" = "1"
+          case "$VITE_PLAN_SYSTEM_V2" in 0|1) ;; *) echo "::error::Invalid Plan System V2 presentation switch"; exit 1;; esac
           echo "Development pilot boundary verified: Auth, Realtime, command log, online-required cloud-backed Personal and Shared writes, incremental PGlite, and privacy-safe diagnostics ON; Production continuity OFF."
+          echo "Plan System V2 Development presentation=$VITE_PLAN_SYSTEM_V2 (set VITE_PLAN_SYSTEM_V2=0 for legacy rollback)."
           if [ "$VITE_CONTINUITY_COMMAND_LOG" = "1" ]; then
             echo "Tier 2 command-log transport is ON for this kitchen build (VITE_CONTINUITY_COMMAND_LOG=1; requires Migration 013)."
           fi

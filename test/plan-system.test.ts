@@ -32,6 +32,7 @@ import {
 import { executeIntent } from "../src/ledgerSync/registry.ts";
 import { ingestBooks, openMemoryBooks } from "../src/ledger/engine.ts";
 import { extractMaterializationFacts } from "../src/ledger/materializeSnapshotFromEvents.ts";
+import { planSystemV2Enabled } from "../src/core/planFeature.ts";
 
 const month = "2026-09";
 const jonathan = "MEM-001";
@@ -52,6 +53,14 @@ function proposedHousehold(household = catalogHousehold()) {
 }
 
 describe("Plan System V2 authority", () => {
+  it("keeps activation explicit and preserves the legacy rollback switch", () => {
+    expect(planSystemV2Enabled("1")).toBe(true);
+    expect(planSystemV2Enabled("true")).toBe(true);
+    expect(planSystemV2Enabled("0")).toBe(false);
+    expect(planSystemV2Enabled("false")).toBe(false);
+    expect(planSystemV2Enabled("")).toBe(false);
+  });
+
   it("keeps Personal and pre-proposal Household drafts out of Shared and out of the partner replica", () => {
     let household = saveDraft(catalogHousehold(), "personal", jonathan, [line(jonathan, "Jonathan private amount", 12_345)]);
     household = saveDraft(household, "household", jonathan, [line(jonathan, "Unsubmitted household idea", 45_600)]);
