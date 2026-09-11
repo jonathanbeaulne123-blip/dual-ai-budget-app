@@ -23,26 +23,60 @@ import {
   type LedgerView,
 } from "./core/index.ts";
 import { goalFundingBasis } from "./goalFundingReview.ts";
+import { displayedKittyPiece } from "./core/kittyStudio.ts";
+import { bisqueHex } from "./kitty/studio/paintCanvas.ts";
+import { studioHex } from "./kitty/studio/palette.ts";
 import { GoalFill, fillDraftCents } from "./GoalFill.tsx";
 import { useAsyncScope } from "./asyncScope.ts";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { PurchaseGoalSheet } from "./widgets/Jars.tsx";
 
+/** Coarse studio reflection on the shelf: dip colour, ears, eyes and mouth from the displayed piece. */
+function paperBankLook(goal: Goal) {
+  const piece = displayedKittyPiece(goal.envelope?.studio);
+  if (!piece) return null;
+  const fired = Boolean(piece.firedAt);
+  const tone = (hex: string) => (fired ? studioHex(hex) : bisqueHex(hex));
+  return {
+    body: tone(piece.paint.parts.body ?? piece.paint.base),
+    head: tone(piece.paint.parts.head ?? piece.paint.base),
+    ears: piece.sculpt.ears,
+    eyes: piece.sculpt.eyes,
+    mouth: piece.sculpt.mouth,
+    fired,
+  };
+}
 function PaperBank({ goal, role }: { goal: Goal; role: "subaccount" | "goal" }) {
   const step = kittyBankStep(goal);
   const fill = Math.round(kittyBankFill(goal) * 100);
   const belly = 16 + step * 2.2;
   const slips = Math.max(0, step);
+  const look = paperBankLook(goal);
+  const lidY = 16 - step * 0.3, lidR = 14 + step * 0.9;
   return (
     <div
       className="paper-bank"
       data-kitty-step={step}
       data-kitty-role={role}
-      style={{ ["--kitty-step" as string]: String(step) }}
+      data-kitty-fired={look ? String(look.fired) : undefined}
+      style={{ ["--kitty-step" as string]: String(step), ...(look ? { ["--kitty-glaze" as string]: look.body, ["--kitty-head" as string]: look.head } : {}) }}
     >
       <svg className="paper-bank-shape" viewBox="0 0 80 100" aria-hidden="true">
-        <ellipse className="paper-bank-lid" cx="40" cy={16 - step * 0.3} rx={14 + step * 0.9} ry={7 + step * 0.2} />
+        {look && look.ears !== "none" && (
+          look.ears === "round"
+            ? <><circle className="paper-bank-ear" cx={40 - lidR * 0.7} cy={lidY - 4} r={4} /><circle className="paper-bank-ear" cx={40 + lidR * 0.7} cy={lidY - 4} r={4} /></>
+            : <path className="paper-bank-ear" d={`M${40 - lidR * 0.9} ${lidY} l3 ${look.ears === "folded" ? -5 : -10} l5 ${look.ears === "folded" ? 3 : 8} Z M${40 + lidR * 0.9} ${lidY} l-3 ${look.ears === "folded" ? -5 : -10} l-5 ${look.ears === "folded" ? 3 : 8} Z`} />
+        )}
+        <ellipse className="paper-bank-lid" cx="40" cy={lidY} rx={lidR} ry={7 + step * 0.2} />
+        {look && (
+          <g className="paper-bank-face">
+            {look.eyes === "happy" || look.eyes === "sleepy"
+              ? <path d={`M34 ${lidY} q2 ${look.eyes === "happy" ? -3 : 3} 4 0 M42 ${lidY} q2 ${look.eyes === "happy" ? -3 : 3} 4 0`} fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" />
+              : <><circle cx={36} cy={lidY} r={look.eyes === "wide" ? 1.8 : 1.3} fill="currentColor" /><circle cx={44} cy={lidY} r={look.eyes === "wide" ? 1.8 : 1.3} fill="currentColor" /></>}
+            <path d={look.mouth === "smile" || look.mouth === "grin" ? `M37 ${lidY + 3} q3 3 6 0` : look.mouth === "serene" ? `M38 ${lidY + 3.5} h4` : `M37 ${lidY + 3} q1.5 2 3 0 q1.5 2 3 0`} fill="none" stroke="currentColor" strokeWidth={1} strokeLinecap="round" />
+          </g>
+        )}
         <path
           className="paper-bank-body"
           d={`M ${24 - step * 0.6} 22

@@ -88,7 +88,7 @@ export function KittyStage({
         renderer.shadowMap.type = T.PCFSoftShadowMap;
         renderer.outputColorSpace = T.SRGBColorSpace;
         renderer.toneMapping = T.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.3;
+        renderer.toneMappingExposure = 1.08;
         renderer.domElement.setAttribute("aria-hidden", "true");
         element.appendChild(renderer.domElement);
         const scene = new T.Scene(), camera = new T.PerspectiveCamera(34, 1, 0.1, 40);
@@ -100,13 +100,13 @@ export function KittyStage({
           scene.environment = env.texture;
           cleanup.push(() => { env.dispose(); pmrem.dispose(); });
         } catch { pmrem.dispose(); }
-        scene.add(new T.HemisphereLight("#fff1d9", "#77767c", 2.4));
-        const key = new T.DirectionalLight("#ffe9ca", 3.4);
+        scene.add(new T.HemisphereLight("#fff1d9", "#77767c", 1.5));
+        const key = new T.DirectionalLight("#ffe9ca", 2.6);
         key.position.set(-3, 5, 4);
         key.castShadow = true;
         key.shadow.mapSize.set(1024, 1024);
         scene.add(key);
-        const rim = new T.DirectionalLight("#d9ecfa", 1.8);
+        const rim = new T.DirectionalLight("#d9ecfa", 1.2);
         rim.position.set(3, 3, -3);
         scene.add(rim);
         const reduced = reducedMotion();
@@ -143,6 +143,12 @@ export function KittyStage({
         floor.receiveShadow = true;
         scene.add(floor);
         const raycaster = new T.Raycaster(), pointer = new T.Vector2();
+        const frame = (n: number) => {
+          // Dolly out as the cat grows so a full bank still fits the stage.
+          camera.position.set(0.25, 3.1 + n * 0.12, 7.1 + n * 0.22);
+          camera.lookAt(0, 1.55 + n * 0.11, 0);
+        };
+        frame(latest.current.step);
         const resize = () => {
           const box = element.getBoundingClientRect();
           if (!box.width || !box.height) return;
@@ -163,7 +169,7 @@ export function KittyStage({
           },
           replayPaint(paint) { cat.replayPaint(paint); render(); },
           paintStroke(stroke, from) { cat.paintStroke(stroke, from); render(); },
-          fill(n, animate) { cat.setFill(n, animate); render(); },
+          fill(n, animate) { frame(n); cat.setFill(n, animate); render(); },
           fired(v) { cat.setFired(v); render(); },
           spin(v) { cat.setSpin(v ? 0.5 : 0); render(); },
           idle(v) { cat.setIdle(v); render(); },

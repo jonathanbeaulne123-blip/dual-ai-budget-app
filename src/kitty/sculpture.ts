@@ -100,13 +100,13 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
       m.roughness = fired ? 0.18 : 0.92;
       m.clearcoat = fired ? 1 : 0;
       m.clearcoatRoughness = 0.08;
-      m.envMapIntensity = fired ? 1 : 0.25;
+      m.envMapIntensity = fired ? 0.7 : 0.15;
       m.needsUpdate = true;
     }
     doorMat.roughness = fired ? 0.18 : 0.92;
     doorMat.clearcoat = fired ? 1 : 0;
     doorMat.clearcoatRoughness = 0.08;
-    doorMat.envMapIntensity = fired ? 1 : 0.25;
+    doorMat.envMapIntensity = fired ? 0.7 : 0.15;
     doorMat.needsUpdate = true;
   };
   const present = (part: KittyPart, rect?: { x: number; y: number; w: number; h: number }) => {

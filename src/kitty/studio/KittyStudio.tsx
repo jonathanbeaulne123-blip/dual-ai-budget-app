@@ -519,7 +519,7 @@ export function StudioBench({ state, goal, busy, step }: { state: KittyStudioSta
       )}
       {bench === "kiln" && (
         <section className="studio-kiln" aria-label="Kiln">
-          <Kiln firing={state.firing} temperature={temperature} piece={state.firing ? state.latestFired : draft} fired={Boolean(state.firing) || (!draft && Boolean(state.latestFired))} step={step} />
+          <Kiln firing={state.firing} temperature={temperature} piece={state.firing ? state.latestFired : draft ?? state.latestFired} fired={Boolean(state.firing) || !draft || state.previewFired} step={step} />
           {state.firing ? (
             <div className="studio-row">
               <p role="status" aria-live="polite">{state.firing.phase === "heat" ? `Firing… ${temperature} °C` : "Out of the kiln. Look at that shine."}</p>
@@ -599,7 +599,7 @@ function Kiln({ firing, temperature, piece, fired, step }: { firing: KittyStudio
         <rect x="20" y="20" width="280" height="200" rx="18" fill="var(--studio-bench)" stroke="currentColor" strokeWidth="3" />
         <rect x="46" y="40" width="228" height="150" rx="10" fill="var(--studio-kiln-chamber)" stroke="currentColor" strokeWidth="2" />
         <rect x="46" y="40" width="228" height="150" rx="10" fill="var(--studio-kiln-glow)" style={{ opacity: heat }} />
-        <g className="studio-kiln-door" style={{ transform: open ? "rotateY(-70deg)" : "none", transformOrigin: "46px 115px" }}>
+        <g className="studio-kiln-door" data-open={open ? "true" : "false"}>
           <rect x="46" y="40" width="228" height="150" rx="10" fill="var(--studio-bench)" stroke="currentColor" strokeWidth="3" />
           <circle cx="160" cy="115" r="22" fill="var(--studio-kiln-glow)" style={{ opacity: 0.25 + heat * 0.75 }} stroke="currentColor" strokeWidth="2" />
           <rect x="236" y="100" width="10" height="30" rx="4" fill="currentColor" />

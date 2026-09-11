@@ -51,7 +51,15 @@
   background: transparent;
   border-radius: 10px;
   font-weight: 600;
+  font-size: 14px;
+  padding: 8px 6px;
+  min-width: 0;
   letter-spacing: 0.01em;
+}
+@media (max-width: 1100px) {
+  .studio-benches button b {
+    display: none;
+  }
 }
 .studio-benches button b {
   display: inline-grid;
@@ -372,7 +380,11 @@
 }
 .studio-kiln-door {
   transition: transform 900ms ease;
-  transform-style: preserve-3d;
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+.studio-kiln-door[data-open="true"] {
+  transform: scaleX(0.1);
 }
 .studio-kiln-piece {
   position: absolute;
@@ -456,6 +468,9 @@
 .studio-keep small {
   flex-basis: 100%;
 }
+.kitty-room-spread[data-page="studio"] .kitty-glazes {
+  display: none;
+}
 .kitty-stage-wrap[data-mode="paint"] .kitty-stage {
   cursor: crosshair;
   touch-action: none;
@@ -466,6 +481,12 @@
 }
 .kitty-stage-wrap[data-fired="false"] .kitty-table {
   filter: saturate(0.85);
+}
+@media (min-width: 720px) {
+  .kitty-room-spread[data-page="studio"] .kitty-object {
+    position: sticky;
+    top: 0;
+  }
 }
 @media (max-width: 719px) {
   .kitty-room-spread[data-page="studio"] {

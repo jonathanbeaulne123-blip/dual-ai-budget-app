@@ -1,0 +1,51 @@
+// Drag a brush stroke across the 3D cat and report stroke count + growth on a fictional deposit.
+import { chromium } from '@playwright/test';
+const origin = process.env.ORIGIN || 'http://127.0.0.1:5199';
+const out = process.env.OUT || '/tmp/claude-0/-home-claude/1bfc372e-ec5e-520e-b7db-64ecca36352c/scratchpad/shots';
+const browser = await chromium.launch({ headless: true, executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const page = await (await browser.newContext({ viewport: { width: 1100, height: 1000 } })).newPage();
+const errors = []; page.on('pageerror', (e) => errors.push(String(e)));
+await page.goto(`${origin}/scripts/fixtures/kitty-studio/index.html?theme=classic&view=household&seed=draft`, { waitUntil: 'networkidle' });
+await page.waitForTimeout(1500);
+await page.getByRole('button', { name: 'Studio', exact: true }).click();
+await page.getByRole('button', { name: 'Paint', exact: true }).click();
+await page.waitForTimeout(500);
+const stage = page.locator('.kitty-stage');
+await page.getByRole('button', { name: 'Marigold', exact: true }).click();
+await stage.scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+const box = await stage.boundingBox();
+const cx = box.x + box.width * 0.5, cy = box.y + box.height * 0.45;
+await page.mouse.move(cx - 30, cy);
+await page.mouse.down();
+for (let i = 0; i <= 20; i++) { await page.mouse.move(cx - 30 + i * 3, cy + Math.sin(i / 3) * 18); await page.waitForTimeout(30); }
+await page.mouse.up();
+await page.waitForTimeout(800);
+const before = await page.locator('.studio-hint').last().textContent();
+console.log('after stroke:', before, await page.getByRole('button', { name: 'Keep the clay' }).isDisabled());
+await page.screenshot({ path: `${out}/paint-stroke.png` });
+// Stamp by tapping the cat
+await page.locator('details.studio-stamps summary').click();
+await page.getByRole('button', { name: 'Fish', exact: true }).click();
+await stage.scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+const b2 = await stage.boundingBox(); const cx2 = b2.x + b2.width * 0.5, cy2 = b2.y + b2.height * 0.45;
+await page.mouse.click(cx2, cy2 + 40);
+await page.waitForTimeout(500);
+const after = await page.locator('.studio-hint').last().textContent();
+console.log('after stamp:', after, await page.getByRole('button', { name: 'Keep the clay' }).isDisabled());
+// Deposit growth: back to This bank, deposit via harness, capture mid-bounce
+await page.getByRole('button', { name: 'Keep the clay', exact: true }).click();
+await page.waitForTimeout(500);
+await page.getByRole('button', { name: 'This bank', exact: true }).click();
+await page.evaluate(() => { document.querySelector('.kitty-room').scrollTop = 0; });
+await page.waitForTimeout(600);
+await page.screenshot({ path: `${out}/grow-before.png` });
+await page.evaluate(() => window.deposit());
+await page.waitForTimeout(250);
+await page.screenshot({ path: `${out}/grow-mid.png` });
+await page.waitForTimeout(1600);
+await page.screenshot({ path: `${out}/grow-rest.png` });
+const saved = await page.evaluate(() => JSON.parse(sessionStorage.getItem(Object.keys(sessionStorage).find((k) => k.startsWith('hearth-kitty-studio')) ?? '') ?? 'null'));
+console.log({ before, after, errors, sessionDraft: saved ? 'present' : 'cleared' });
+await browser.close();

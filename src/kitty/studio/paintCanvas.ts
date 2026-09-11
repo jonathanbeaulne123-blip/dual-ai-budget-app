@@ -209,7 +209,7 @@ export function appendStroke(layer: HTMLCanvasElement, paint: KittyPaintV1, part
 /** Copy layer → display; unfired clay gets the chalky bisque lift. */
 export function presentPart(layer: HTMLCanvasElement, display: HTMLCanvasElement, fired: boolean, rect?: { x: number; y: number; w: number; h: number }) {
   const size = layer.width;
-  const ctx = display.getContext("2d")!;
+  const ctx = display.getContext("2d", { willReadFrequently: true })!;
   const x = Math.max(0, Math.floor(rect?.x ?? 0)), y = Math.max(0, Math.floor(rect?.y ?? 0));
   const w = Math.min(size - x, Math.ceil(rect?.w ?? size)), h = Math.min(size - y, Math.ceil(rect?.h ?? size));
   if (w <= 0 || h <= 0) return;

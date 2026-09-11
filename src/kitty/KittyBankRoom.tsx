@@ -41,7 +41,16 @@ import { useDialog } from "../useDialog.ts";
 import { useAsyncScope } from "../asyncScope.ts";
 import { KittyStage } from "./KittyStage.tsx";
 import { StudioBench, useKittyStudio } from "./studio/KittyStudio.tsx";
-import { newKittyPiece } from "../core/kittyStudio.ts";
+import { displayedKittyPiece, newKittyPiece } from "../core/kittyStudio.ts";
+import { studioHex } from "./studio/palette.ts";
+import { bisqueHex } from "./studio/paintCanvas.ts";
+/** Seal colour: the displayed studio piece's dip (chalky while unfired), else the legacy glaze. */
+function sealColor(goal: Goal): string {
+  const piece = displayedKittyPiece(goal.envelope?.studio);
+  if (!piece) return KITTY_GLAZES[goal.envelope?.glaze ?? "cream"];
+  const base = piece.paint.parts.body ?? piece.paint.base;
+  return piece.firedAt ? studioHex(base) : bisqueHex(base);
+}
 import type { PlanAsk } from "../PlanLensWorkbench.tsx";
 import "./kitty-room.css";
 
@@ -447,7 +456,7 @@ function Room({
                 className="kitty-seal"
                 style={
                   {
-                    "--glaze": KITTY_GLAZES[item.envelope?.glaze ?? "cream"],
+                    "--glaze": sealColor(item),
                   } as CSSProperties
                 }
                 aria-hidden="true"
