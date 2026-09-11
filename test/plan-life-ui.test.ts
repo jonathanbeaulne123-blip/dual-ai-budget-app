@@ -2,6 +2,7 @@
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { describe, expect, it } from 'vitest';
+import { PlanStudio } from '../src/PlanStudio.tsx';
 import { PlanLineEditor } from '../src/PlanLensWorkbench.tsx';
 import { planLifeFixture } from './fixtures/plan-life.ts';
 import { applyPlanSchedule, projectPlan, planSelectionForDraft } from '../src/core/planProjection.ts';
@@ -25,4 +26,16 @@ describe('Plan editing preserves the reviewed decision', () => {
    expect(project([saved!]).movements).toEqual(project([initial]).movements.map(row=>row.sourceId?.startsWith(`plan:${initial.id}`)?{...row,label:'More precise title'}:row));
   } finally {await act(async()=>root.unmount());host.remove();}
  });
+});
+
+it('shows the exact locked Personal version when Review my Plan is opened',async()=>{
+ let household=planLifeFixture('personal');const draft=household.planDrafts![0]!;
+
+ household.planDrafts=[];
+ const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
+ try {await act(async()=>root.render(createElement(PlanStudio,{household,memberId:'MEM-001',view:'personal',today:'2026-09-11',busy:false,onCommand:async()=>null})));
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Review my Plan')!.click());
+ expect(host.textContent).toContain('Your accepted Personal Plan');expect(host.textContent).toContain('Fictional private possibilities');
+ for(const line of draft.lines)expect(host.querySelector('.plan-disclosure-review')!.textContent).toContain(line.labelSnapshot);
+ }finally{await act(async()=>root.unmount());host.remove();}
 });

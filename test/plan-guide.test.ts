@@ -32,3 +32,45 @@ it('excludes a previous private payment from a now-shared bill’s suggestions a
 it('keeps one source owner across lenses instead of reusing a retained reserve in Build',()=>{const c=context('personal');const source=c.household.planDrafts![0]!.lines.find(l=>l.lens==='prepare')!.sourceReference!.id;const v={...open,buildSource:source,buildTarget:'1200',buildDeadline:'2026-12-01',buildPaydays:'Decide later',buildAmount:'100',buildDate:'2026-09-18',buildFunding:'available',buildStep:'Get a quote'};expect(planGuideFields(c,v).find(f=>f.key==='buildSource')!.choices!(c,v).some(o=>o.value===source)).toBe(false);expect(()=>prepareAction(c,PLAN_GUIDE_ID,v)).toThrow();expect(()=>buildGuidedPlan(c,v,'duplicate')).toThrow(/already supports/);});
 
 it('keeps the selected horizon when going back or correcting an answer',()=>{const c=context(),v={...open,lookThrough:'2027-03-01'};expect(guideAnswer(c,v,'purpose','A different purpose').lookThrough).toBe(v.lookThrough);expect(guideBack(c,v,'purpose').lookThrough).toBe(v.lookThrough);});
+
+
+describe('guided release corrections',()=>{
+ it('requires choosing the Personal arrival, reschedules only that payday and rejects a duplicate date',()=>{
+  const c=context('personal'),draft=c.household.planDrafts![0]!;
+  const source={...c.household.recurrences[0]!,id:'personal-pay',type:'income' as const};c.household.recurrences.push(source);
+  draft.assumptions=['2026-09-18','2026-09-30'].map((date,i)=>({id:`pay-${i}`,kind:'income',valueCents:100000,expectedDate:date,sourceReferences:[{type:'recurrence',id:source.id}],observedAt:'2026-09-11T12:00:00.000Z',confidence:'estimated'}));
+  const v={...open,incomeSource:source.id,incomeAmount:'900',incomeDate:'2026-09-21'};
+  expect(guideQuestion(c,v)?.key).toBe('incomeEntry');expect(()=>buildGuidedPlan(c,v,'new')).toThrow(/which expected arrival/);
+  const updated={...v,incomeEntry:'pay-0'},built=buildGuidedPlan(c,updated,'new');
+  expect(built.assumptions).toHaveLength(2);expect(built.assumptions[0]).toMatchObject({id:'pay-0',valueCents:90000,expectedDate:'2026-09-21'});expect(built.assumptions[1]).toEqual(draft.assumptions[1]);
+  const before=guideProjection(c,{...open,lookThrough:'2026-10-01'}),after=guideProjection(c,{...updated,lookThrough:'2026-10-01'});
+  expect(after.movements.filter(m=>m.kind==='contribution').reduce((sum,m)=>sum+m.deltaCents,0)).toBe(before.movements.filter(m=>m.kind==='contribution').reduce((sum,m)=>sum+m.deltaCents,0)-10000);
+  expect(()=>buildGuidedPlan(c,{...v,incomeEntry:'new',incomeDate:'2026-09-30'},'duplicate')).toThrow(/already has an arrival/);
+  expect(buildGuidedPlan(c,{...v,incomeEntry:'new'},'additional').assumptions).toHaveLength(3);
+ });
+ it('does not offer or accept retired goals',()=>{const c=context(),g=c.household.goals[0]!;g.status='retired';const v={...open,prepareSource:g.id};expect(planGuideFields(c,v).find(f=>f.key==='prepareSource')!.choices!(c,v).some(o=>o.value===g.id)).toBe(false);expect(()=>buildGuidedPlan(c,v,'retired')).toThrow(/visible goal/);});
+ it('replaces generated notes on repeat passes while retaining personal prose and clearing resolved questions',()=>{
+  const c=context();c.household.planDrafts![0]!.note='Remember to ask for a quote.';
+  const first=buildGuidedPlan(c,open,'first');c.household.planDrafts![0]!.note=first.note;
+  expect(buildGuidedPlan(c,open,'again').note).toBe(first.note);
+  const row=c.household.planDrafts![0]!.lines.find(l=>l.lens==='prepare')!;
+  const next=buildGuidedPlan(c,{...open,purpose:'More time together',prepareSource:row.sourceReference!.id,prepareTarget:'1200',prepareDeadline:'2026-12-01',preparePaydays:'Decide later',prepareAmount:'100',prepareDate:'2026-09-18',prepareFunding:'available',prepareStep:'Get a quote'},'second');
+  expect(next.note).toContain('Remember to ask for a quote.');expect(next.note).toContain('More time together');expect(next.note).not.toContain('Less scrambling');expect(next.note).not.toContain('Prepare:');
+  c.household.planDrafts![0]!.note=first.note.replace('[Hercules planning notes]\n','').replace('\n[End Hercules planning notes]','');
+  expect(buildGuidedPlan(c,open,'legacy').note).toBe(first.note);
+  c.household.planDrafts![0]!.note+='\n'+c.household.planDrafts![0]!.note.split('\n').slice(1).join('\n');expect(buildGuidedPlan(c,open,'accumulated').note).toBe(first.note);
+  c.household.planDrafts![0]!.note='Remember the appointment.\nWhat matters: protect my sleep';expect(buildGuidedPlan(c,open,'prose').note).toContain('What matters: protect my sleep');
+ });
+});
+
+it('keeps a received Personal arrival out of rescheduling choices and rejects bypassed ids',async()=>{
+ const {postEntry}=await import('../src/core/commands.ts');const c=context('personal');
+ const incomeCategory=c.household.categories.find(row=>row.parentId&&row.transactionType==='income')!;
+ const source={...c.household.recurrences[0]!,id:'received-pay',type:'income' as const,subcategoryId:incomeCategory.id};c.household.recurrences.push(source);
+ c.household=postEntry(c.household,{type:'income',date:'2026-09-10',amount:'1000',accountId:source.accountId,subcategoryId:source.subcategoryId,createdBy:c.memberId,visibility:'personal',source:'recurring',sourceId:source.id}).household;
+ c.household.planDrafts![0]!.assumptions=[{id:'received',kind:'income',valueCents:100000,expectedDate:'2026-09-10',sourceReferences:[{type:'recurrence',id:source.id}],observedAt:'2026-09-11T12:00:00.000Z',confidence:'estimated'}];
+ const v={...open,incomeSource:source.id,incomeEntry:'received',incomeAmount:'1000',incomeDate:'2026-09-18'};
+ expect(planGuideFields(c,v).find(f=>f.key==='incomeEntry')!.choices!(c,v).map(o=>o.value)).toEqual(['new']);
+ expect(()=>buildGuidedPlan(c,v,'move')).toThrow(/recorded receipt/);
+ expect(buildGuidedPlan(c,{...v,incomeEntry:'new'},'new').assumptions).toHaveLength(2);
+});

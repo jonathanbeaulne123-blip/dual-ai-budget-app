@@ -479,7 +479,6 @@ export function HerculesPresence({
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || (event.target as Element | null)?.closest?.('[data-dialog-escape-boundary]')) return;
       closeChat();
-      document.querySelector<HTMLButtonElement>('.plan-conversation-invitation button')?.focus();
     };
     document.addEventListener('keydown', closeOnEscape);
     return () => document.removeEventListener('keydown', closeOnEscape);
@@ -1044,7 +1043,7 @@ export function HerculesPresence({
     if (open && !phoneShell) requestAnimationFrame(() => {
       const origin=chatReturnFocus.current;
       if(origin?.isConnected && origin!==document.body) origin.focus();
-      else document.querySelector<HTMLButtonElement>('.plan-conversation-invitation button')?.focus();
+      else document.querySelector<HTMLElement>('.hercules-live, .plan-conversation-invitation button')?.focus();
       chatReturnFocus.current=null;
     });
     setSetupSelected(false);
@@ -1277,6 +1276,7 @@ export function HerculesPresence({
   }
 
   function openChatFromBeg(helpOnly=true) {
+    if(!open && document.activeElement instanceof HTMLElement && document.activeElement!==document.body)chatReturnFocus.current=document.activeElement;
     if (!helpOnly && setup && setup.household.householdOnboarding?.state !== 'complete') {
       setOpen(true);setSetupSelected(true);return;
     }
@@ -1734,7 +1734,7 @@ export function HerculesPresence({
   ) : null;
 
   function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
-  function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} onReady={notifyActionPanelReady} context={{household:actionHousehold,memberId,view,today,planMonth:planContext?.scope===view?planContext.monthKey:undefined,planThrough:planContext?.scope===view?planContext.through:undefined}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
+  function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} composerAvailable={chatEnabled} onReady={notifyActionPanelReady} context={{household:actionHousehold,memberId,view,today,planMonth:planContext?.scope===view?planContext.monthKey:undefined,planThrough:planContext?.scope===view?planContext.through:undefined}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
   return (
     <HerculesRigProvider
       mood={look.view.mood}

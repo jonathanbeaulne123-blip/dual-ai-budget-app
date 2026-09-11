@@ -117,6 +117,11 @@ try {
     await page.getByRole('button',{name:'Review changes',exact:true}).filter({visible:true}).click();
     await page.getByRole('heading',{name:'Check your changes',exact:true}).waitFor();
     assert.match(await page.locator('.hercules-action-card:visible').innerText(),/Fictional weekend pleasures/);
+    await page.getByRole('button',{name:'Edit details',exact:true}).filter({visible:true}).click();
+    await page.waitForFunction(()=>document.activeElement?.matches('.hercules-plan-recap summary'));
+    await page.keyboard.press('Enter');
+    await guide.getByRole('button',{name:'Edit what matters this month',exact:true}).waitFor();
+    await page.getByRole('button',{name:'Review changes',exact:true}).filter({visible:true}).click();
     const guideAxe=await new AxeBuilder({page}).include('.hercules-actions').withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
     assert.deepEqual(guideAxe.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[]);
     await page.screenshot({path:join(output, `${theme}-${view}-${width}-guided-review.png`),fullPage:true});
@@ -144,12 +149,39 @@ try {
     records.push({ width, theme, view, checks, focusVisible });
     console.log(`PASS ${theme} ${view} ${width}`);
   }
+  for(const surface of ['home','books']){
+    await page.setViewportSize({width:1440,height:1000});await page.goto(`${proof.url}?surface=${surface}&theme=classic&view=household`);
+    const cat=page.locator('.hercules-live:visible');await cat.focus();await cat.press('Enter');
+    await page.getByRole('textbox',{name:/Ask Hercules/}).filter({visible:true}).waitFor();
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>document.activeElement?.matches('.hercules-live'));
+  }
   for (const width of [320, 720, 1100, 1920]) {
     await page.setViewportSize({ width, height: 1000 }); await page.goto(`${proof.url}?theme=taylor&view=household`);
     await page.locator('.plan-studio').waitFor();
     const scroll = await page.evaluate(() => document.documentElement.scrollWidth);
     assert.ok(scroll <= width + 1, `Boundary width ${width} overflow ${scroll}`);
   }
+  const pausedChat=await startPlanLifeProof({port:0,chatEnabled:false});
+  try {
+    for(const width of [390,1440])for(const theme of ['classic','taylor','newfoundland'])for(const view of ['personal','household']){
+      await page.setViewportSize({width,height:1000});await page.goto(`${pausedChat.url}?theme=${theme}&view=${view}`);
+      await page.getByRole('button',{name:'Help me create a plan',exact:true}).click();
+      const guide=page.getByRole('region',{name:'Plan conversation'});
+      const answer=async text=>{await guide.locator('input').fill(text);await guide.getByRole('button',{name:'Continue',exact:true}).click();};
+      await answer('Make room for rest');
+      for(let i=0;i<4;i++)await guide.getByRole('button',{name:'Leave this part open for now',exact:true}).click();
+      await guide.getByRole('combobox').selectOption('unlinked');
+      await answer('Weekend pleasures');await answer('75');await answer('2026-09-20');await answer('Set a date for rest');
+      await page.getByRole('button',{name:'Review changes',exact:true}).filter({visible:true}).click();
+      await page.getByRole('heading',{name:'Check your changes',exact:true}).waitFor();
+      assert.match(await page.locator('.hercules-action-card:visible').innerText(),/Weekend pleasures/);
+      await page.getByRole('button',{name:'Final Confirm',exact:true}).filter({visible:true}).click();
+      await page.getByText(/Saved[.]/).filter({visible:true}).first().waitFor();
+      assert.equal(await page.getByRole('textbox',{name:/Ask Hercules/}).count(),0);
+      console.log(`PASS paused chat ${theme} ${view} ${width}`);
+    }
+  }finally{await pausedChat.close();}
   assert.deepEqual(errors, []);
 } catch (error) {
   if (page) { writeFileSync(join(output, "failure.txt"), await page.locator("body").innerText()); await page.screenshot({ path: join(output, "failure.png"), fullPage: true }); }
