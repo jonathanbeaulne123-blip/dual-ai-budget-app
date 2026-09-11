@@ -78,3 +78,14 @@ it('keeps a received Personal arrival out of rescheduling choices and rejects by
  expect(()=>buildGuidedPlan(c,v,'future-reversal')).toThrow(/recorded receipt/);
  expect(()=>buildGuidedPlan({...c,today:'2026-10-01'},{...v,incomeDate:'2026-10-02'},'already-reversed')).not.toThrow();
 });
+
+it('labels an unknown expected arrival without inventing a zero amount',()=>{
+ const c=context('personal'),source={...c.household.recurrences[0]!,id:'unknown-pay',type:'income' as const};c.household.recurrences.push(source);
+ c.household.planDrafts![0]!.assumptions=[{id:'unknown',kind:'income',expectedDate:'2026-09-18',sourceReferences:[{type:'recurrence',id:source.id}],observedAt:'2026-09-11T12:00:00.000Z',confidence:'estimated'}];
+ const v={...open,incomeSource:source.id};const option=planGuideFields(c,v).find(f=>f.key==='incomeEntry')!.choices!(c,v).find(o=>o.value==='unknown')!;
+ expect(option.label).toContain('No exact amount');expect(option.label).not.toContain('0.00');
+});
+it('migrates a completed legacy guide suffix with no unresolved questions',()=>{
+ const c=context();c.household.planDrafts![0]!.note='My personal reminder.\nWhat matters: Old purpose\nPrivate life context: Old constraints';
+ const note=buildGuidedPlan(c,open,'completed-legacy').note;expect(note).toContain('My personal reminder.');expect(note).not.toContain('Old purpose');expect(note).not.toContain('Old constraints');
+});

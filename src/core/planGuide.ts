@@ -45,7 +45,7 @@ function guideNote(previous:string|undefined, entries:string[]) {
  const start='[Hercules planning notes]', end='[End Hercules planning notes]';
  let personal=(previous??'').replace(/\[Hercules planning notes\][\s\S]*?\[End Hercules planning notes\]/g,'').trim();
  // Migrate the earlier generated suffix only when every line has its known shape.
- const legacy=/(?:^|\n)What matters: [^\n]*\nPrivate life context: [^\n]*(?:\n(?:Protect: review any promises not already in the draft\.|(?:Prepare|Build): (?:left open for now\.|kept existing decisions; no new outcome chosen\.)|Everyday: (?:kept existing allowance; no new allowance chosen\.|allowance left open for now\.)))+$/;
+ const legacy=/(?:^|\n)What matters: [^\n]*\nPrivate life context: [^\n]*(?:\n(?:Protect: review any promises not already in the draft\.|(?:Prepare|Build): (?:left open for now\.|kept existing decisions; no new outcome chosen\.)|Everyday: (?:kept existing allowance; no new allowance chosen\.|allowance left open for now\.)))*$/;
  while(legacy.test(personal))personal=personal.replace(legacy,'').trim();
  return [personal,start,...entries,end].filter(Boolean).join('\n');
 }
@@ -66,7 +66,7 @@ export function planGuideFields(c: ActionContext,v: ActionValues): GuideField[] 
   const source=sourceOptions.find(r=>r.id===v.incomeSource);
   const arrivals=c.view==='personal'?existingIncome(c,v):[];
   if(arrivals.length)ask('incomeEntry','Expected arrival to change','Which expected arrival are we updating?','Changing a payday replaces that arrival. Choose a separate payday only when this is additional money, so we do not count the same pay twice.','text',[
-   ...arrivals.filter(a=>!incomeHasReceipt(c,a)).map(a=>choice(a.id,`${a.expectedDate??'Undated arrival'} · ${formatCad(a.valueCents??0)}`)),choice('new','A separate additional payday')],undefined,arrivals.some(a=>incomeHasReceipt(c,a))?['An arrival with a recorded receipt stays in the books. Choose a separate payday only for additional money.']:undefined);
+   ...arrivals.filter(a=>!incomeHasReceipt(c,a)).map(a=>choice(a.id,`${a.expectedDate??'Undated arrival'} · ${a.valueCents===undefined?'No exact amount':formatCad(a.valueCents)}`)),choice('new','A separate additional payday')],undefined,arrivals.some(a=>incomeHasReceipt(c,a))?['An arrival with a recorded receipt stays in the books. Choose a separate payday only for additional money.']:undefined);
   const arrival=arrivals.find(a=>a.id===v.incomeEntry);
   ask('incomeAmount','Expected contribution','How much of that future money can this Plan rely on?','This stays an estimate until the money is received. Use the amount you are comfortable committing.', 'money',undefined,(arrival?.valueCents??source?.amount)!==undefined?[choice(dollars((arrival?.valueCents??source?.amount)!),`Use the recorded ${formatCad((arrival?.valueCents??source?.amount)!)}`)]:undefined);
   ask('incomeDate','Expected arrival','When do you expect it to be available?','A positive month total cannot fill a gap before payday. Say a date or a day of the week.', 'date',undefined,source?.date&&source.date>c.today?[choice(source.date,`Use ${source.date}`)]:undefined);
