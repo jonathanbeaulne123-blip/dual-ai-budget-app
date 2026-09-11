@@ -359,3 +359,10 @@
 }
 
 .hercules-help-label{position:absolute;bottom:0;left:50%;transform:translateX(-50%);z-index:15;width:100%;max-width:100%;box-sizing:border-box;white-space:normal;text-align:center;background:var(--paper,#fff8ec);color:var(--ink,#3b3027);border:1px solid var(--line,#c7b393);border-radius:14px;padding:5px 9px;font:600 11px/1.4 system-ui,sans-serif;pointer-events:auto;cursor:pointer}
+
+/* Quiet reminders use each world's existing paper, ink and border materials. */
+.hercules-pill.has-reminder { max-width:min(300px,calc(100vw - 24px)); border-color:var(--pine); }
+.hercules-pill.has-reminder .hercules-pill-name { max-width:220px; white-space:normal; overflow-wrap:anywhere; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.hercules-reminder-label { overflow-wrap:anywhere; max-height:6.6em; overflow:hidden; }
+:root[data-theme="taylor"] .hercules-pill.has-reminder { border-radius:18px 25px 20px 16px; border-style:dashed; }
+:root[data-theme="newfoundland"] .hercules-pill.has-reminder { border-radius:12px; border-width:2px; }

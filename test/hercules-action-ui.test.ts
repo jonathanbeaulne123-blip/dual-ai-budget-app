@@ -60,3 +60,20 @@ describe('conversational review controls',()=>{
  it('keeps receipt recovery visible when a pending capability becomes unavailable',async()=>{const s=setup();await act(async()=>s.changeCanonical(h=>({...h,companionProfile:{...h.companionProfile!,workflows:[{id:'task-household',revision:1,value:{version:1,actionId:'future-action',view:'household',generation:0,values:{},updatedAt:new Date().toISOString(),submission:{id:crypto.randomUUID(),review:'{}'}}}]}})));expect(host.textContent).toContain('Check action status');expect(s.ref.current!.state()).toBeUndefined();await act(async()=>s.ref.current!.send('What happened?'));expect(host.textContent).toContain('Check action status');});
  it('retains an unknown acknowledgement until the original receipt is checked',async()=>{const s=setup();s.loseAck();await act(async()=>s.render());await completeDraft(s);await click('Final Confirm');expect(s.writes).toBe(1);expect(host.textContent).toContain('Check action status');await click('Check action status');expect(s.writes).toBe(1);expect(host.textContent).toContain('original confirmation was found');});
 });
+
+it('recognizes a Visa, walks through skippable card terms, then requires exact confirmation',async()=>{
+ const s=setup();await act(async()=>s.render());
+ const send=async(text:string)=>act(async()=>{expect(s.ref.current!.send(text)).toBe(true);});
+ await send('Add a visa card');expect(s.ref.current!.state()?.missingFields).toEqual(['Name']);
+ await send('Visa Aeroplan');expect(host.textContent).toContain('Account details');
+ await send('yes');await send('TD');await send('skip');await send('5000');await send('20.99%');await send('0');await send('skip');await send('15');await send('21');
+ expect(s.writes).toBe(0);await click('Review changes');expect(host.textContent).toContain('20.99%');expect(host.textContent).toContain('0%');
+ await send('actually, change annual interest rate (%) to 19.99');expect(s.writes).toBe(0);await send('final confirm');expect(s.writes).toBe(0);
+ await click('Review changes');await click('Final Confirm');expect(s.writes).toBe(1);
+ expect(s.household.accounts.at(-1)).toMatchObject({name:'Visa Aeroplan',kind:'credit',institution:'TD',credit:{aprBps:1999,defaultCashbackBps:0,statementDay:15,creditLimitCents:500000}});
+});
+it('can skip account details and reviews the actual unverified defaults',async()=>{
+ const s=setup();await act(async()=>s.render());for(const message of ['Add a credit card','My Visa','skip'])await act(async()=>{expect(s.ref.current!.send(message)).toBe(true);});
+ await click('Review changes');expect(host.textContent).toContain('Hearth default, unverified');expect(host.textContent).toContain('19.99%');expect(s.writes).toBe(0);
+ await click('Final Confirm');expect(s.household.accounts.at(-1)?.kind).toBe('credit');expect(s.writes).toBe(1);
+});

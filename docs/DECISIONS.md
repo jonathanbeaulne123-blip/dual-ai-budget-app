@@ -798,3 +798,13 @@ The App's Personal allowlist accepts bounded actor-owned potential-expense lifec
 
 ## 2026-09-11 — CashPad keyboard entry and form navigation
 CashPad offers decimal typing on desktop and a rounded cents keypad on mobile, with an explicit mode switch and units. Enter belongs to the active input, never a document-wide money shortcut. Named sections support revisiting draft fields, and guided review edits return to review. Full forms do not expose misleading guided Continue controls. Hercules gains multiline writing and focus on its editable review. Existing cloud authority, private draft storage, theme assets and Final Confirm remain authoritative. Claude supplied the design direction; repository constraints determined the implementation. See `docs/worksessions/2026-09-11-cashpad-keyboard-ux.md`.
+
+## 2026-09-11 — Hercules reminders, account guidance and focused savings plans
+
+Hercules can surface a quiet reminder for a recorded bill due within seven days or overdue, and for an outstanding household claim. Reminders use current scoped evidence, retain existing private snooze/disable controls and open the exact recorded source. They do not send external notifications or assume a claim is available cash.
+
+Account creation recognizes explicit card/account language and offers optional, skippable type-specific details. Reviews distinguish supplied settings from unverified Hearth defaults. Read tools may explain recorded account terms within the existing visibility boundary; automatic issuer research and provider autofill are not activated.
+
+A focused savings intention starts a goal conversation within the selected monthly Plan. Existing decisions remain the starting point; corrections reopen dependent answers without discarding unrelated choices. If the user selects a new Kitty Bank, one exact Final Confirm creates its unfunded record and saves the linked private Plan draft together. Shared bank details are explicitly reviewed; private life notes stay private. Proposal sharing, partner acknowledgement and recording money remain separate actions. The composed Hercules command uses the existing captured authority and consumes its private workflow atomically.
+
+Budget delta (5): current evidence, precise review and retained Plan decisions. Engagement delta (3): useful reminders, optional account guidance and steerable focused planning. Risk High; local implementation and [verification](worksessions/2026-09-11-hercules-feedback-fixes.md), with no release or hosted-data action.

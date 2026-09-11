@@ -574,7 +574,7 @@ describe("swipe posting contract", () => {
     const applyUndo = appSource.slice(appSource.indexOf("function applyUndo"), appSource.indexOf("async function runRestorePoint"));
     expect(applyUndo).toContain("fundedMoneyUndoTarget");
     expect(applyUndo).toContain("reversePostedMoney");
-    expect(applyUndo).toContain("suppressUndo: Boolean(fundedTransactionId)");
+    expect(applyUndo).toContain("suppressUndo: fundedTransactionIds.length > 0");
     expect(applyUndo).toContain("swipeUndoScopeMatches");
     expect(appSource).toContain("!options?.suppressUndo");
     expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded)}");

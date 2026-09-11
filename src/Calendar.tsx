@@ -263,7 +263,7 @@ function CalendarPageScope(props: CalendarProps) {
     if (props.openPotentialEditorId || potentialEditor) return;
     const source = props.sourceFocus;
     if (!source || source.route !== "calendar" || source.view !== (props.view ?? "household")) return;
-    setPane("bills");
+    setPane(source.claimId ? "visits" : "bills");
     if (source.from) { setMonthKey(monthKeyFromDateKey(source.from)); setSelected(source.from); }
   }, [props.sourceFocus]);
   useEffect(() => {
@@ -670,7 +670,7 @@ function CalendarPageScope(props: CalendarProps) {
       )}
 
       {pane === "visits" && (
-        <AppointmentsPage view={props.view}
+        <AppointmentsPage view={props.view} focusClaimRequest={props.sourceFocus??undefined} focusClaimId={props.sourceFocus?.view===(props.view??"household")?props.sourceFocus?.claimId:undefined}
           household={household}
           today={today}
           memberId={props.memberId}

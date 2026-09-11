@@ -224,17 +224,17 @@ describe("Wardrobe and explicit sharing contracts", () => {
 });
 
 describe("Capability and character evaluation foundations", () => {
-  it("declares twelve unique outcomes with known read tools and no available handler by default", async () => {
+  it("declares fourteen unique outcomes with known read tools and no available handler by default", async () => {
     const { HERCULES_READ_TOOL_NAMES } = await import("../src/core/herculesTools.ts");
     expect(HERCULES_CAPABILITIES.map(row => row.id)).toEqual([...HERCULES_CAPABILITY_IDS]);
-    expect(new Set(HERCULES_CAPABILITIES.map(row => row.action)).size).toBe(12);
+    expect(new Set(HERCULES_CAPABILITIES.map(row => row.action)).size).toBe(14);
     for (const row of HERCULES_CAPABILITIES) for (const tool of row.readTools) expect(HERCULES_READ_TOOL_NAMES).toContain(tool);
     expect(registeredCompanionCapabilities(new Set(), "household")).toEqual([]);
     expect(registeredCompanionCapabilities(new Set(["open-current-plan", "explain-current-page"]), "personal").map(row => row.id)).toEqual(["explain-page"]);
   });
-  it("provides 24 synthetic scenarios covering all capabilities and multi-turn, privacy and recovery behaviours", () => {
-    expect(COMPANION_DIALOGUE_SCENARIOS).toHaveLength(24);
-    expect(new Set(COMPANION_DIALOGUE_SCENARIOS.map(row => row.id)).size).toBe(24);
+  it("provides 26 synthetic scenarios covering all capabilities and multi-turn, privacy and recovery behaviours", () => {
+    expect(COMPANION_DIALOGUE_SCENARIOS).toHaveLength(26);
+    expect(new Set(COMPANION_DIALOGUE_SCENARIOS.map(row => row.id)).size).toBe(26);
     expect(new Set(COMPANION_DIALOGUE_SCENARIOS.map(row => row.capability))).toEqual(new Set(HERCULES_CAPABILITY_IDS));
     expect(COMPANION_DIALOGUE_SCENARIOS.some(row => row.turns.length === 3)).toBe(true);
     for (const row of COMPANION_DIALOGUE_SCENARIOS) { expect(row.must.length).toBeGreaterThan(0); expect(row.mustNot.length).toBeGreaterThan(0); }

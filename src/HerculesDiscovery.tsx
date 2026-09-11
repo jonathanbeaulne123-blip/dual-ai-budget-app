@@ -5,8 +5,8 @@ import { discoveryScope, discoverySelection, discoveryState, explainDiscovery, t
 import type { CompanionSuggestionState } from "./core/herculesCompanionContracts.ts";
 import type { KitchenCommand } from "./kitchenCommand.ts";
 
-export function HerculesDiscovery({ input, onCommand, onNavigate, onContinueChat, blocked = false }: {
-  input: DiscoveryInput; onCommand?: KitchenCommand; onNavigate: (destination: DiscoveryDestination) => void; onContinueChat?: () => void; blocked?: boolean;
+export function HerculesDiscovery({ input, onCommand, onNavigate, onContinueChat, initialIssueId, blocked = false }: {
+  initialIssueId?: string; input: DiscoveryInput; onCommand?: KitchenCommand; onNavigate: (destination: DiscoveryDestination) => void; onContinueChat?: () => void; blocked?: boolean;
 }) {
   const scope = discoveryScope(input), current = useRef(input); current.current = input;
   const liveScope = useRef(scope); liveScope.current = scope;
@@ -33,6 +33,7 @@ export function HerculesDiscovery({ input, onCommand, onNavigate, onContinueChat
     if (!value) { setAnswer(null); setStatus("That item has changed or is complete. Here are the current choices."); return; }
     setSelected(id); setAnswer({ issueId: id, value }); setAnswerFocus(current => current + 1); setStatus("");
   }
+  useEffect(()=>{if(initialIssueId)explain(initialIssueId);},[scope,initialIssueId]);
   function navigate(id: string, entry?: "expense" | "income" | "transfer", factSource?: string) {
     if (blocked || !fresh(id)) { setAnswer(null); setStatus("That item is no longer available. Review the current choices."); return; }
     const value = explainDiscovery({ ...current.current, payday }, id);

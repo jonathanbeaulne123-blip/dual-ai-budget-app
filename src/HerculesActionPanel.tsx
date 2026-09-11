@@ -1,9 +1,9 @@
 import { HerculesPlanGuide } from './HerculesPlanGuide.tsx';
-import { PLAN_GUIDE_ID, guideAnswer, guideBack, guideQuestion, guideReply, parseGuidePaydays } from './core/planGuide.ts';
+import { PLAN_GUIDE_ID, focusedGoalValues, guideAnswer, guideBack, guideQuestion, guideReply, parseGuidePaydays } from './core/planGuide.ts';
 import { cancelHerculesSubmission, nextHerculesTask } from './core/herculesExecution.ts';
 import { NeedsConfirmationError } from "./core/types.ts";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { compoundHerculesActions, actionCorrection, actionFields, actionById, availableHerculesActions, findHerculesAction, initialActionValues, isFinalConfirm, missingActionField, parseActionAnswer, prepareAction, type ActionContext, type ActionReview } from './core/herculesActions.ts';
+import { compoundHerculesActions, actionCorrection, actionFields, actionById, availableHerculesActions, findHerculesAction, initialActionValues, isFinalConfirm, missingActionField, nextActionField, parseActionAnswer, prepareAction, type ActionContext, type ActionReview } from './core/herculesActions.ts';
 import { companionFor, commitCompanion } from './core/herculesCompanion.ts';
 import { decodeCompanionWorkflow, type CompanionWorkflow } from './core/herculesCompanionContracts.ts';
 import { readEntryLocal, writeEntryLocal, clearEntryLocal } from './entryDraft.ts';
@@ -136,7 +136,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         void change(next);
         setLibrary(false);
         setGuidePaused(false);
-        onReply(message || a.example, id === PLAN_GUIDE_ID ? guideReply(c,next.values) : missingActionField(a, next.values, c)?.question || 'Your details are ready to review.');
+        onReply(message || a.example, id === PLAN_GUIDE_ID ? guideReply(c,next.values) : nextActionField(a, next.values, c)?.question || 'Your details are ready to review.');
     }
     function prepareAccountFirst() {
         const currentDraft=draftRef.current;
@@ -300,7 +300,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         if(!explicitAnswer&&/^(back|go back)$/i.test(message.trim())){guideEdit();return true;}
         if(!explicitAnswer&&/^(skip|skip this|leave (?:this|it) open)$/i.test(message.trim())){guideSkip();return true;}
         if(!explicitAnswer&&/^(?:i (?:don.t|do not) know|not sure(?: yet)?)$/i.test(message.trim())&&field&&field.key!=='purpose'&&field.key!=='constraints'&&!field.key.endsWith('Step')){onReply(message,'That is okay. I will not invent an amount or treat missing money as zero. You can leave this part open for now, or ask why it matters.');return true;}
-        if(!explicitAnswer&&/^(?:review|review changes|show review|change |set |make )/i.test(message.trim()))return false;
+        if(!explicitAnswer&&(/^(?:review|review changes|show review|change |set |make )/i.test(message.trim())||/\b(?:instead|rather)\b/i.test(message)))return false;
         if(!field)return false;
         try {
             let answer=message.trim();
@@ -349,13 +349,14 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                 void change({ version: 1, actionId: a.id, view: c.view, generation, values, ...(draft?.queue ? { queue: draft.queue } : {}), updatedAt: new Date().toISOString(), submission: null });
                 setGuidePaused(false);
                 if(a.id===PLAN_GUIDE_ID) onReply('Help me create a plan',guideReply(c,values));
-                setNotice(a.id===PLAN_GUIDE_ID ? '' : missingActionField(a, values, c)?.question || 'Your draft is ready to review. Nothing has been saved to the books.');
+                setNotice(a.id===PLAN_GUIDE_ID ? '' : nextActionField(a, values, c)?.question || 'Your draft is ready to review. Nothing has been saved to the books.');
             }
             catch {
                 setNotice('Choose an available task from Things we can do.');
             }
         },
         send(message) {
+            message=message.trim().replace(/^actually[, ]+/i,'');
             if (resolvedIdentity.current) {
                 setNotice('The receipt is confirmed. Waiting for the latest private task to arrive.');
                 return true;
@@ -378,6 +379,11 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
             if (compound) {
                 const [first, ...queue] = compound;
                 start(first!.actionId, message, queue, first!.values);
+                return true;
+            }
+            if(draft && !draft.submission && focusedGoalValues(message)) {
+                if((draft.queue?.length??0)>=12){setNotice('Finish or cancel a queued task before adding another.');return true;}
+                start(PLAN_GUIDE_ID,message,[{actionId:draft.actionId,values:draft.values},...(draft.queue??[])]);
                 return true;
             }
             const match = findHerculesAction(message, c);
@@ -415,13 +421,16 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                 showReview();
                 return true;
             }
-            const f = missingActionField(a, draft.values, c);
+            // Ambiguous steering belongs in the bounded chat/proposal path, never in an
+            // unrelated free-text answer or an automatic account/amount guess.
+            if (/^(?:(?:make|change) (?:it|that)\b|switch (?:to|back)\b)/i.test(message)||/\b(?:instead|rather)\b/i.test(message)) return false;
+            const f = nextActionField(a, draft.values, c);
             if (!f)
                 return false;
             try {
                 const values = { ...draft.values, [f.key]: parseActionAnswer(f, message, c, draft.values) };
                 void change({ ...draft, values, updatedAt: new Date().toISOString() });
-                onReply(message, missingActionField(a, values, c)?.question || 'Everything is ready. Review the details below.');
+                onReply(message, nextActionField(a, values, c)?.question || 'Everything is ready. Review the details below.');
             }
             catch (e) {
                 setNotice(e instanceof Error ? e.message : String(e));

@@ -10,7 +10,7 @@ export function HerculesPlanGuide({context,values,busy,onAnswer,onBack,onPause,o
  useEffect(()=>{setAnswer('');setDatePicker(false);if(document.activeElement?.tagName!=='TEXTAREA')questionHeading.current?.focus();},[field?.key]);
  const choices=field?.choices?.(context,values)??[];
  return <section className="hercules-plan-guide" aria-label="Plan conversation" tabIndex={-1}>
-  <p className="kicker">A little at a time · private preparation</p>
+  <p className="kicker">{values.guideMode==='goal'?'One goal · part of your monthly Plan':'A little at a time · private preparation'}</p>
   {field ? <div key={field.key} className="hercules-plan-question">
    <h4 ref={questionHeading} tabIndex={-1}>{field.question}</h4><p>{field.why}</p>
    {field.evidence?.length ? <details><summary>What I found in your books</summary><ul>{field.evidence.map((text,i)=><li key={i}>{text}</li>)}</ul></details>:null}
@@ -21,7 +21,7 @@ export function HerculesPlanGuide({context,values,busy,onAnswer,onBack,onPause,o
    <small>{inlineAnswers?"Answer here, go back, or leave this part open.":"Reply in the conversation below. You can ask “why?”, go back, or leave this part open."}</small>
    {/^(income|protect|prepare|build|everyday)/.test(field.key)&&<button type="button" disabled={busy} onClick={onSkip}>Leave this part open for now</button>}
   </div>:<p>Here is the draft we have built. Review the whole picture before saving it privately.</p>}
-  {answered.length>0&&<details className="hercules-plan-recap"><summary>Answers so far · {answered.length}</summary><p>Changing an earlier answer reopens the questions that follow it.</p><dl>{answered.map(f=><div key={f.key}><dt>{f.label}</dt><dd>{f.choices?.(context,values).find(o=>o.value===values[f.key])?.label??values[f.key]} <button type="button" disabled={busy} onClick={()=>onBack(f.key)}>Edit {f.label.toLowerCase()}</button></dd></div>)}</dl></details>}
+  {answered.length>0&&<details className="hercules-plan-recap"><summary>Answers so far · {answered.length}</summary><p>Changing a source reopens its related details. Your other answers stay here.</p><dl>{answered.map(f=><div key={f.key}><dt>{f.label}</dt><dd>{f.choices?.(context,values).find(o=>o.value===values[f.key])?.label??values[f.key]} <button type="button" disabled={busy} onClick={()=>onBack(f.key)}>Edit {f.label.toLowerCase()}</button></dd></div>)}</dl></details>}
   <div className="hercules-plan-controls"><button type="button" disabled={busy||!answered.length} onClick={()=>onBack()}>Back one question</button><button type="button" disabled={busy} onClick={onPause}>Pause planning</button></div>
  </section>;
 }
