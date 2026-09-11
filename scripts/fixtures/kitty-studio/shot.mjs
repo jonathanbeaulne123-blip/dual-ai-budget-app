@@ -21,6 +21,7 @@ for (const theme of (process.env.THEMES || 'classic').split(',')) {
       if (step.eval) await page.evaluate(step.eval);
       if (step.wait) await page.waitForTimeout(step.wait);
       if (step.key) await page.keyboard.press(step.key);
+      if (step.top) await page.evaluate(() => { document.querySelector('.kitty-room').scrollTop = 0; });
       if (step.scroll) await page.evaluate((y) => { document.querySelector('.kitty-room').scrollTop = y; }, step.scroll);
       if (step.shot) await page.screenshot({ path: `${out}/${theme}-${width}-${step.shot}.png`, fullPage: Boolean(step.full) });
       i++;
