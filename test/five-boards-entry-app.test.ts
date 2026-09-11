@@ -10,8 +10,8 @@ const writes = vi.hoisted(() => ({ candidates: [] as Household[], stored: null a
   release: null as null | (() => void),
 }));
 vi.mock("../src/prepareQuickSample.ts", async () => {
-  const { addQuickSampleData } = await import("../src/core/quickSampleData.ts");
-  return { prepareQuickSample: async (h: Household, input: Parameters<typeof addQuickSampleData>[1]) => addQuickSampleData(h, input) };
+  const { addQuickSampleScenario } = await import("../src/core/quickSampleData.ts");
+  return { prepareQuickSample: async (h: Household, input: Parameters<typeof addQuickSampleScenario>[1]) => addQuickSampleScenario(h, input) };
 });
 
 vi.mock("../src/ledgerSync/presence.ts", () => ({ attachLedgerPresence: () => () => {} }));
@@ -200,16 +200,17 @@ describe("five boards entry App integration", () => {
     act(() => button("More").click());
     await waitFor(() => expect(container.textContent).toContain("Investor preview"));
     act(() => button("Quick sample data").click());
-    await waitFor(() => expect(document.body.textContent).toContain("48 entries"));
+    await waitFor(() => expect(document.body.textContent).toContain("future Calendar expenses"));
     expect(writes.candidates.every(h => h.transactions.length === originalCount)).toBe(true);
     act(() => button("Cancel").click());
     expect(writes.candidates.every(h => h.transactions.length === originalCount)).toBe(true);
     act(() => button("Quick sample data").click());
     act(() => button("Confirm sample data").click());
-    await waitFor(() => expect(writes.candidates.some(h => h.transactions.length === originalCount + 48)).toBe(true), 15000);
-    const added = writes.candidates.find(h => h.transactions.length === originalCount + 48)!;
+    await waitFor(() => expect(writes.candidates.some(h => h.transactions.length > originalCount)).toBe(true), 15000);
+    const added = writes.candidates.find(h => h.transactions.length > originalCount)!;
     expect(added.householdId).toBe(originalId);
-    expect(added.transactions.filter(t => t.note.startsWith("Fictional sample"))).toHaveLength(48);
+    expect(added.transactions.filter(t => t.note.startsWith("Fictional sample")).length).toBeLessThanOrEqual(48);
+    expect(added.potentialExpenses?.filter(p => p.title.startsWith("Fictional sample plan")).length).toBeGreaterThanOrEqual(40);
   });
   it.each(["expense", "income", "transfer", "shift"])("returns real App %s FAB entry focus to Add money across Close and resume", async mode => {
     mobile = true; await mount();

@@ -64,12 +64,13 @@ export function WalletStrip({
       <header>
         <h2>Wallet</h2>
         <span className="muted">
-          Cash {formatCad(wallet.cashCents)}
+          Cash balance {formatCad(wallet.cashCents)}
           {wallet.receivableCents ? ` · owed ${formatCad(wallet.receivableCents)}` : ""}
           {wallet.owedCents ? ` · cards ${formatCad(wallet.owedCents)}` : ""}
           {wallet.investedCostCents ? ` · invested ${formatCad(wallet.investedMarkedCents ?? wallet.investedCostCents)}` : ""}
         </span>
       </header>
+      <p className="muted">Balances through {today}, including earlier history. Wallet can include Shared accounts; Home totals show this month’s activity in the selected Personal or Shared ledger.</p>
       {wallet.groups.map((group) => (
         <div key={group.kind} className="wallet-group">
           <p className="wallet-group-label">{group.label}</p>
@@ -127,6 +128,7 @@ function WalletTileButton({
     >
       <span className="wallet-tile-kind">{ACCOUNT_KIND_LABEL[tile.kind]}</span>
       <strong>{tile.account.name}</strong>
+      <span className="muted">{tile.account.scope === "personal" ? "Personal account" : "Shared account"}</span>
       <span className={`wallet-tile-money ${tile.displayCents < 0 ? "negative" : ""}`}>
         {formatCad(tile.kind === "credit" ? tile.balanceCents : tile.displayCents)}
       </span>

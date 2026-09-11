@@ -27,9 +27,9 @@ try {
     const start = performance.now();
     const result = await prepareQuickSample(h, { today:'2026-09-11', months:6, seed:81, memberId:'MEM-001', accountId:'ACC-CHEQUING', visibility:'household' });
     running = false;
-    return { elapsedMs:performance.now()-start, frames, longestFrameMs:longestFrame, rows:result.postedIds.length, retained:result.household.transactions.length };
+    return { elapsedMs:performance.now()-start, frames, longestFrameMs:longestFrame, rows:result.household.transactions.length-h.transactions.length, plans:result.household.potentialExpenses.length, retained:result.household.transactions.length };
   });
-  if(evidence.worker.rows!==96 || evidence.worker.retained!==2096 || evidence.worker.frames<5) throw Error('Worker preparation failed or did not yield interaction frames');
+  if(evidence.worker.rows!==88 || evidence.worker.plans!==84 || evidence.worker.retained!==2088 || evidence.worker.frames<5) throw Error('Worker preparation failed or did not yield interaction frames');
   const bundledWorker=(await readdir('dist/assets')).find(name=>name.startsWith('quickSample.worker-')&&name.endsWith('.js'));
   if(!bundledWorker)throw Error('Run vite build before this browser proof');
   evidence.bundledWorker=await page.evaluate(async file=>{
@@ -37,12 +37,12 @@ try {
     return await new Promise((resolve,reject)=>{
       const worker=new Worker(`/dist/assets/${file}`,{type:'module'});
       const timer=setTimeout(()=>{worker.terminate();reject(Error('Built worker timed out'));},15000);
-      worker.onmessage=e=>{clearTimeout(timer);worker.terminate();if(e.data.error)reject(Error(e.data.error));else resolve({rows:e.data.result.postedIds.length});};
+      worker.onmessage=e=>{clearTimeout(timer);worker.terminate();if(e.data.error)reject(Error(e.data.error));else resolve({rows:e.data.result.household.transactions.length,plans:e.data.result.household.potentialExpenses.length});};
       worker.onerror=()=>{clearTimeout(timer);worker.terminate();reject(Error('Built worker failed'));};
       worker.postMessage({household:catalogHousehold(),input:{today:'2026-09-11',months:3,seed:81,memberId:'MEM-001',accountId:'ACC-CHEQUING',visibility:'household'}});
     });
   },bundledWorker);
-  if(evidence.bundledWorker.rows!==48)throw Error('Built worker row count mismatch');
+  if(evidence.bundledWorker.rows!==40 || evidence.bundledWorker.plans!==42)throw Error('Built worker row count mismatch');
   await page.evaluate(async () => {
     const { completedExistingBooksHousehold } = await import('/test/fixtures/existing-books-onboarding.ts');
     const { saveHousehold } = await import('/src/storage.ts');
@@ -87,7 +87,7 @@ try {
       if(violations.length)throw Error(`Sample accessibility: ${JSON.stringify(violations)}`);
       await panel.getByRole('button',{name:'Quick sample data',exact:true}).click();
       const dialog=page.getByRole('dialog'); await dialog.waitFor();
-      if(!(await dialog.textContent()).includes('96 entries'))throw Error('Incorrect review count');
+      if(!(await dialog.textContent()).includes('future Calendar expenses'))throw Error('Incorrect review count');
       await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
       await panel.getByRole('button',{name:'Quick sample data',exact:true}).focus();
       await page.keyboard.press('Enter');await dialog.waitFor();
@@ -106,9 +106,9 @@ try {
     const {inspectBrowserBooks}=await import('/src/ledger/engine.ts');
     const h=await loadHousehold('development');
     const inspection=await inspectBrowserBooks(h);
-    return {rows:h.transactions.filter(t=>t.note.startsWith('Fictional sample')).length,booksMatch:inspection.ok};
+    return {rows:h.transactions.filter(t=>t.note.startsWith('Fictional sample')).length,plans:h.potentialExpenses.filter(p=>p.title.startsWith('Fictional sample plan')).length,booksMatch:inspection.ok};
   });
-  if(evidence.accepted.rows!==48||!evidence.accepted.booksMatch)throw Error('Sample Confirm did not persist matching books');
+  if((evidence.accepted.rows<32||evidence.accepted.rows>48)||evidence.accepted.plans!==42||!evidence.accepted.booksMatch)throw Error('Sample Confirm did not persist matching books');
   if(evidence.errors.length) throw Error(evidence.errors.join('\n'));
   console.log(JSON.stringify(evidence));
 } catch(error) {

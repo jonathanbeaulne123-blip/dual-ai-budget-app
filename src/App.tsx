@@ -1,6 +1,6 @@
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
-import { previewQuickSampleData, type QuickSampleInput } from './core/quickSampleData.ts';
+import { previewQuickSampleScenario, type QuickSampleInput } from './core/quickSampleData.ts';
 import { prepareQuickSample } from './prepareQuickSample.ts';
 import { buildDiscoveryFund, type DiscoveryDestination } from "./core/herculesDiscovery.ts";
 import { companionUpdateAllowed } from "./core/herculesCompanion.ts";
@@ -552,7 +552,7 @@ function loadWelcomeGoogleIntent(): WelcomeGoogleIntent | null {
 type Guard =
   | { kind: "environment"; next: Environment }
   | { kind: "demo-suite"; seed: number }
-  | { kind: "quick-sample"; input: QuickSampleInput; preview: ReturnType<typeof previewQuickSampleData> }
+  | { kind: "quick-sample"; input: QuickSampleInput; preview: ReturnType<typeof previewQuickSampleScenario> }
   | { kind: "erase-development" }
   | { kind: "clear-this-phone" }
   | { kind: "reset-development" }
@@ -7780,7 +7780,7 @@ export function App() {
       {environment === "development" && guard?.kind === "quick-sample" && (
         <ConfirmSheet
           title="Add fictional data to this ledger?"
-          body={`${guard.preview.rows.length} entries · ${guard.preview.firstDate} to ${guard.preview.lastDate}. Add ${formatCad(guard.preview.incomeCents)} income and ${formatCad(guard.preview.expenseCents)} spending to ${household.accounts.find(a => a.id === guard.input.accountId)?.name ?? "the selected account"}. The balance changes by ${formatCad(guard.preview.incomeCents - guard.preview.expenseCents)}. Existing entries stay; every new row is labelled Fictional sample. Undo removes this set.`}
+          body={`${guard.preview.rows.length} entries · ${guard.preview.firstDate} to ${guard.preview.lastDate}. Add ${formatCad(guard.preview.incomeCents)} income and ${formatCad(guard.preview.expenseCents)} spending to ${household.accounts.find(a => a.id === guard.input.accountId)?.name ?? "the selected account"}. The balance changes by ${formatCad(guard.preview.incomeCents - guard.preview.expenseCents)}. ${guard.preview.plans.length} future Calendar expenses through ${guard.preview.futureEnd}, totalling ${formatCad(guard.preview.plannedCents)}, stay planned and do not change balances. Existing entries stay; every new row is labelled fictional. ${guard.preview.existing ? "Only missing future plans will be added; existing sample history stays unchanged. Remove individual plans in Calendar." : "Undo removes this set while its plans remain unchanged and unposted."}`}
           extra={googleStepUpExtra}
           confirmLabel="Confirm sample data"
           busy={busy}
@@ -7799,8 +7799,8 @@ export function App() {
                 if (!isCurrent()) return;
                 await run(current => {
                   if (current !== baseline) throw new ValidationError("The books changed while preparing samples. Close this review and try again.");
-                  if (canonical(previewQuickSampleData(current, input).rows) !== canonical(preview.rows)) throw new ValidationError("The sample details changed. Close this review and preview them again.");
-                  return captureExplicit(current, { ...prepared, undo: { ...prepared.undo, snapshot: current } }, "addQuickSampleData", [input]);
+                  if (canonical(previewQuickSampleScenario(current, input)) !== canonical(preview)) throw new ValidationError("The sample details changed. Close this review and preview them again.");
+                  return captureExplicit(current, { ...prepared, undo: { ...prepared.undo, snapshot: current } }, "addQuickSampleScenario", [input]);
                 }, { closeAdd: false, isCurrent, onAccepted: () => setGuard(null) });
               } catch (caught) { if (isCurrent()) setError(caught instanceof Error ? caught.message : String(caught)); }
               finally { setBusy(false); }

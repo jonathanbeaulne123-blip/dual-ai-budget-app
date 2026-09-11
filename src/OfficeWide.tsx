@@ -523,7 +523,7 @@ export function OfficeWide({
             pending={seals.inCents === 0}
             pressed={monthList === "income"}
             value={formatCad(seals.inCents)}
-            sub="posted income this month"
+            sub={`${view === "personal" ? "Personal" : "Shared"} income this month`}
             onClick={() => openMonthList("income")}
           />
           <WaxSeal
@@ -532,7 +532,7 @@ export function OfficeWide({
             pending={seals.outCents === 0}
             pressed={monthList === "expenses"}
             value={formatCad(seals.outCents)}
-            sub="posted expenses only"
+            sub={`${view === "personal" ? "Personal" : "Shared"} expenses this month`}
             onClick={() => openMonthList("expenses")}
           />
           <WaxSeal
