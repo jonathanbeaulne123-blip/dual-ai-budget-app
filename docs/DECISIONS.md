@@ -1,3 +1,11 @@
+## 2026-09-11 — Reusable Kitty Banks and their dedicated room
+
+Jonathan asked to implement the cinematic envelope app while preserving both Plan overhauls (#433 and #437). Kitty Banks now opens a dedicated room inside Plan, with a stable purpose, exact links from Protect/Prepare/Build, private scenarios, authored Shared/Personal scenes in all three themes and one reviewed money flow. The cat's appearance never measures financial worth or changes with spending.
+
+This implementation uses two existing authorities: recorded transfers into the partitioned Goals vault and accepted Household Fund earmarks. Partial vault purchases keep the bank open; exact receipt attribution, refunds and append-only Undo determine remaining reserve. Backdated purchases must preserve every later accepted vault checkpoint. Fund releases identify one bank; historical unattributed releases remain unresolved rather than guessed. Archive hides a bank while retaining backing and dependencies. New fields survive shaping/sync and require a compatible writer; rollback must retain these validators.
+
+Calendar type glyphs/labels and solid Hercules chat surfaces make theme colour optional for meaning. Easy read is a member-scoped local preference. Hercules names current backing separately from lifetime contributions. No general account-independent allocation or credit-card envelope engine is claimed; those remain explicit extensions. Budget (5): conserved, scope-bound money and receipts. Engagement (3): a tangible, personal place for future plans. [Implementation and measured evidence](worksessions/2026-09-11-kitty-envelope-implementation.md). No release, schema or real-household mutation is authorized by this implementation receipt.
+
 ## Hercules Development release controls — 2026-09-10
 
 Jonathan authorized release of the complete companion after reviewing slice-6 limits. Chat, discovery and dressing-room presentation can each be disabled by an independent build setting while compatible private profile/gallery writers and validators remain active. Memory review/forget remains reachable when conversation is paused. Never revert to a server that drops new private fields. Explicit Calendar Move takes precedence over a retained Hercules bill source. [Release record](worksessions/2026-09-10-hercules-release.md).

@@ -59,6 +59,8 @@ export type PlanLine = {
   dueDate?: string;
   responsibility?: { kind: "joint" | "member"; memberId?: string };
   sourceReference?: PlanSourceReference;
+  /** Funding envelope; does not replace the obligation or create another cash claim. */
+  envelopeGoalId?: string;
   assumptionIds: string[];
   createdBy: string;
   /** Optional so existing accepted version digests remain byte-for-byte stable. */
@@ -406,6 +408,7 @@ export function shapePlanLines(value: unknown): PlanLine[] {
       ...(text(row.dueDate) ? { dueDate: text(row.dueDate) } : {}),
       ...(responsibility ? { responsibility: responsibilityKind === "member" && memberId ? { kind: "member", memberId } : { kind: "joint" } } : {}),
       ...(source ? { sourceReference: source } : {}),
+      ...(text(row.envelopeGoalId) ? { envelopeGoalId: text(row.envelopeGoalId) } : {}),
       assumptionIds: Array.isArray(row.assumptionIds) ? row.assumptionIds.map(text).filter(Boolean) : [],
       createdBy,
       ...(row.decision ? { decision: shapePlanDecision(row.decision) } : {}),

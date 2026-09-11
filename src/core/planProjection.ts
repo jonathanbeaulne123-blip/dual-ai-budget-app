@@ -1,3 +1,4 @@
+import { goalEnvelopeUsedCents, goalFundReserve } from "./goalEnvelopes.ts";
 import { addDays, calendarDaysBetween, isValidDateKey, monthEndKey, monthStartKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { walletForListedAccounts } from "./accounts.ts";
 import { isCashLikeKind } from "./accountKinds.ts";
@@ -117,24 +118,29 @@ export function matchPlanEvidence(h: Household, line: PlanLine, monthKey: MonthK
       const claimed = claims.filter(other => root && other.transfer?.root.id === root.id).reduce((sum, other) => sum + other.row.amountCents, 0);
       return Boolean(root && visibleVault && destination?.savings?.purpose === "goals" && isVisibleInView(root, memberId, scope) && claim.transfer!.net >= claimed);
     };
+    let usedRemaining = goalEnvelopeUsedCents(h, source.id, asOf);
     const evidence: PlanEvidence[] = contributions.map(row => {
       const claim = claims.find(item => item.row.id === row.id)!;
       const backed = backedClaim(claim);
       const vault = claim.transfer?.root.transferToAccountId;
       // A withdrawal without goal attribution makes current reserves uncertain.
       // Keep the historical contribution, but never spend the same cash twice.
-      const vaultClaims = h.goals.filter(goal => goal.status !== "retired" && !goal.purchaseId && goalVisibleInView(goal, memberId, scope)).reduce((total, goal) => total + Math.min(Math.max(0, goal.savedCents), claims.filter(other => other.row.goalId === goal.id && other.transfer?.root.transferToAccountId === vault && backedClaim(other)).reduce((sum, other) => sum + other.row.amountCents, 0)), 0);
+      const vaultClaims = h.goals.filter(goal => goal.status !== "retired" && !goal.purchaseId && goalVisibleInView(goal, memberId, scope)).reduce((total, goal) => total + Math.min(Math.max(0, goal.savedCents), Math.max(0, claims.filter(other => other.row.goalId === goal.id && other.transfer?.root.transferToAccountId === vault && backedClaim(other)).reduce((sum, other) => sum + other.row.amountCents, 0) - goalEnvelopeUsedCents(h, goal.id, asOf))), 0);
       let currentBacking = false;
       if (backed && vault) { const capacity = goalVaultCapacity(h, source.id, asOf); currentBacking = capacity.kind === "ready" && capacity.vaultId === vault && capacity.cashCents >= vaultClaims; }
-      return { id: row.id, kind: backed ? "goal-funding" : "goal-record", date: row.date, amountCents: row.amountCents, reserveCents: currentBacking ? row.amountCents : 0 };
+      const consumed = backed ? Math.min(usedRemaining, row.amountCents) : 0;
+      usedRemaining -= consumed;
+      return { id: row.id, kind: backed ? "goal-funding" : "goal-record", date: row.date, amountCents: row.amountCents, reserveCents: currentBacking ? row.amountCents - consumed : 0 };
     });
     // Kitty allocations are an alternative accepted funding path, not a second transfer.
     if (scope === "household" && h.householdFund) {
-      const events = activeHouseholdFundEvents(h, h.householdFund.id).filter(row => row.date <= asOf);
-      const released = events.some(row => row.kind === "kitty-released");
+      const events = activeHouseholdFundEvents({...h,fundEvents:h.fundEvents?.filter(row=>row.date<=asOf)}, h.householdFund.id);
+      const reserve = goalFundReserve(h, source.id, asOf);
+      const released = reserve.unresolved;
+      let fundReleased = reserve.releasedCents;
       for (const allocation of h.fundKittyAllocations ?? []) {
         const event = events.find(row => row.id === allocation.eventId && row.kind === "kitty-allocated");
-        if (allocation.goalId === source.id && event) evidence.push({ id: allocation.id, kind: released ? "goal-record" : "goal-funding", date: event.date, amountCents: allocation.amountCents });
+        if (allocation.goalId === source.id && event) { const consumed = Math.min(fundReleased, allocation.amountCents); fundReleased -= consumed; evidence.push({ id: allocation.id, kind: released ? "goal-record" : "goal-funding", date: event.date, amountCents: allocation.amountCents, reserveCents: released?0:Math.max(0, allocation.amountCents - consumed) }); }
       }
     }
     return evidence;
@@ -295,7 +301,9 @@ export function projectPlan(h: Household, input: {
     if (!visible) issues.push("Link visible evidence to turn this intention into supported coverage.");
     if (key && usedSources.has(key)) issues.push("This source already belongs to another Plan line. Combine or relink these intentions.");
     if (key) usedSources.add(key);
-    const evidence = matchPlanEvidence(h, line, selection.monthKey, asOf, memberId, scope).filter(row => {
+    let matched:PlanEvidence[]=[];
+    try{matched=matchPlanEvidence(h, line, selection.monthKey, asOf, memberId, scope);}catch{issues.push("The bank’s receipt history needs review before its reserve can be used.");}
+    const evidence = matched.filter(row => {
       if (usedEvidence.has(row.id)) return false;
       usedEvidence.add(row.id); return true;
     });
@@ -303,10 +311,11 @@ export function projectPlan(h: Household, input: {
     const recordedProgressCents = evidence.filter(row => row.kind === "goal-record" || row.kind === "goal-funding").reduce((sum, row) => sum + row.amountCents, 0);
     const goal = source?.type === "goal" ? h.goals.find(row => row.id === source.id) : null;
     // Retired/purchased goals and unallocated releases cannot claim live reserves.
-    const verifiedProgressCents = goal && goal.status !== "retired" && !goal.purchaseId ? Math.max(0, Math.min(goal.savedCents, evidence.filter(row => row.kind === "goal-funding" && !h.fundKittyAllocations?.some(allocation => allocation.id === row.id)).reduce((sum, row) => sum + (row.reserveCents ?? 0), 0)) + evidence.filter(row => row.kind === "goal-funding" && h.fundKittyAllocations?.some(allocation => allocation.id === row.id)).reduce((sum, row) => sum + row.amountCents, 0)) : 0;
+    const verifiedProgressCents = goal && goal.status !== "retired" && !goal.purchaseId ? Math.max(0, Math.min(goal.savedCents, evidence.filter(row => row.kind === "goal-funding" && !h.fundKittyAllocations?.some(allocation => allocation.id === row.id)).reduce((sum, row) => sum + (row.reserveCents ?? 0), 0)) + evidence.filter(row => row.kind === "goal-funding" && h.fundKittyAllocations?.some(allocation => allocation.id === row.id)).reduce((sum, row) => sum + (row.reserveCents ?? row.amountCents), 0)) : 0;
     const outcomeFulfilled = Boolean(goal?.purchaseId);
+    let attributedUse=0;try{if(goal)attributedUse=goalEnvelopeUsedCents(h,goal.id,asOf);}catch{issues.push("Review the bank’s connected purchase and correction receipts.");}
     if (goal?.status === "retired" && !outcomeFulfilled) issues.push("This goal has been retired. Review whether to remove or replace this intention.");
-    if (goal && goal.status !== "retired" && !outcomeFulfilled && recordedProgressCents > verifiedProgressCents) issues.push("Some goal progress lacks current backing evidence; it is not available reserve money.");
+    if (goal && goal.status !== "retired" && !outcomeFulfilled && recordedProgressCents > verifiedProgressCents + attributedUse + goalFundReserve(h, goal.id, asOf).releasedCents) issues.push("Some goal progress lacks current backing evidence; it is not available reserve money.");
     const remainingCents = outcomeFulfilled || goal?.status === "retired" ? 0 : Math.max(0, intendedCents - actualCents);
     const dueDate = line.dueDate && isValidDateKey(line.dueDate) ? line.dueDate : null;
     if (!dueDate) issues.push("Choose a contribution or payment date.");

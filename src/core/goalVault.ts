@@ -1,3 +1,4 @@
+import { goalRemainingClaim } from "./goalEnvelopes.ts";
 import { bookBalanceAsOf } from "./statements.ts";
 import { parseVisibility } from "./visibility.ts";
 import type { Transaction } from "./types.ts";
@@ -28,14 +29,14 @@ export function retiredGoals(household: Pick<Household, "goals">): Goal[] {
   return household.goals.filter((goal) => goalStatus(goal) === "retired");
 }
 
-export function allocatedVaultCents(household: Pick<Household, "goals" | "goalContributions">): number {
-  return openGoals(household).reduce((sum, goal) => sum + Math.max(0, goal.savedCents), 0);
+export function allocatedVaultCents(household: Pick<Household, "goals" | "goalContributions"> & Partial<Pick<Household,"transactions"|"goalPurchases"|"accounts">>, asOf: DateKey = "9999-12-31"): number {
+  return openGoals(household).reduce((sum, goal) => sum + (household.goalPurchases?.some(row=>row.envelopeUse&&row.goalId===goal.id)&&household.accounts&&household.transactions?goalRemainingClaim(household as Household,goal,asOf):Math.max(0, goal.savedCents)), 0);
 }
 
 export function unallocatedVaultCents(household: Household, asOf: DateKey): number {
   const vault = goalsVaultAccount(household);
   if (!vault) return 0;
-  return Math.max(0, bookBalanceAsOf(household, vault.id, asOf) - allocatedVaultCents(household));
+  return Math.max(0, bookBalanceAsOf(household, vault.id, asOf) - allocatedVaultCents(household, asOf));
 }
 
 export type GoalVaultCapacity =
@@ -92,8 +93,8 @@ export function goalVaultCapacity(household: Household, goalId: string, asOf: Da
   const claims = openGoals(household).filter(other => other.id !== goal.id && (
     goal.shared ? other.shared : !other.shared && other.ownerMemberId === goal.ownerMemberId
   ));
-  const reservedCents = claims.reduce((sum, other) => sum + Math.max(0, other.savedCents), 0);
   try {
+    const reservedCents = claims.reduce((sum, other) => sum + (household.goalPurchases?.some(row => row.goalId === other.id && row.envelopeUse) ? goalRemainingClaim(household, other, asOf) : Math.max(0, other.savedCents)), 0);
     const cashCents = bookBalanceAsOf({ ...household, transactions: household.transactions.filter(belongs) }, vault.id, asOf);
     if (![cashCents, reservedCents, cashCents - reservedCents].every(Number.isSafeInteger)) return refuse("Goals cash is outside the supported exact-cent range.");
     return { kind: "ready", vaultId: vault.id, cashCents, reservedCents, spendableCents: Math.max(0, cashCents - reservedCents) };
@@ -170,7 +171,7 @@ export function vaultReceiptBlurb(household: Household, asOf: DateKey): string {
   const vault = goalsVaultAccount(household);
   if (!vault) return "Leftover parks in Goals savings once sit-down Confirm moves it. Each goal tracks its share of that account.";
   const balance = bookBalanceAsOf(household, vault.id, asOf);
-  const allocated = allocatedVaultCents(household);
+  const allocated = allocatedVaultCents(household, asOf);
   const loose = Math.max(0, balance - allocated);
   return `${vault.name} holds ${formatCad(balance)}. ${formatCad(allocated)} in open goals, ${formatCad(loose)} unallocated.`;
 }

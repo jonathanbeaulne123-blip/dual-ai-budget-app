@@ -1,3 +1,4 @@
+import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
 import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { validateFundSourceClaim } from "../core/fundContributionSources.ts";
@@ -87,6 +88,8 @@ export async function prepareCommand(
   let current = assembleHousehold(state.shared, personal, { linked: true });
   if (!current.members.some((m) => m.id === scope.memberId && m.active))
     throw new Error("MEMBERSHIP_CHANGED");
+  const kittyChange = command.steps.some(step => step.kind === "saveGoalEnvelope" || step.kind === "purchaseGoal" && Boolean((step.args[0] as {keepOpen?:unknown})?.keepOpen) || JSON.stringify(step.args).includes('"envelopeGoalId"') || step.kind === "addGoal" && Boolean((step.args[0] as {envelope?:unknown})?.envelope) || step.kind === "releaseHouseholdFundKitty" && Boolean((step.args[0] as {goalId?:unknown})?.goalId));
+  if ((hasGoalEnvelopeData(current) || kittyChange) && command.goalEnvelopeVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve Kitty Bank reserves and links.");
   if ((current.accountOpeningCheckpoints?.length || current.transactions.some(t => t.openingSignedBalanceCents !== undefined)) && command.accountHistoryVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: This household uses reviewed account history. Reload Hearth before making changes.");
   if ((current.companionProfile || command.steps.some(step => step.kind === "commitCompanion")) && command.companionProfileVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth before changing Hercules preferences or conversations.");
   if((current.companionProfile?.workflows?.length||command.steps.some(s=>s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set'))&&command.companionWorkflowVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve conversational drafts.');
@@ -283,6 +286,7 @@ export async function prepareCommand(
       : before,
     candidate: current,
     validatedFundSourceClaimIds,
+    validatedGoalEnvelopeVersion: 1,
     booksGuard: guardFor(scope.memberId)?.fork(),
     // Adoption has a proposal-bound domain identity; the transport receipt still uses the UUID.
     confirmationId: result.undo.commandKind === "adoptFirstBudget" ? result.undo.id : command.id,

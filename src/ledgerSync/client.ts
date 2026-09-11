@@ -1,3 +1,4 @@
+import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
 import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { previewFor, visiblePreviews, type PendingPreview, type RejectedEntry } from "./optimistic.ts";
@@ -68,6 +69,7 @@ export class LedgerSyncClient {
   private herculesActionsEnabled = false;
   private nativeCalendarVersion = 0;
   private planDecisionVersion = 0;
+  private goalEnvelopeVersion = 0;
   private initialResolve?: () => void;
   private initialReject?: (e: Error) => void;
   constructor(readonly options: ClientOptions) {}
@@ -229,6 +231,7 @@ export class LedgerSyncClient {
               this.companionWorkflowVersion = message.companionWorkflowVersion === 1 ? 1 : 0;
               this.herculesActionsEnabled = message.herculesActionsEnabled === true;
               this.nativeCalendarVersion = message.nativeCalendarVersion === 1 ? 1 : 0;
+              this.goalEnvelopeVersion = message.goalEnvelopeVersion === 1 ? 1 : 0;
               this.planDecisionVersion = message.planDecisionVersion === 1 ? 1 : 0;
               this.ready = true;
               this.attempt = 0;
@@ -433,6 +436,7 @@ export class LedgerSyncClient {
   }
   private async queueConfirmation(candidate:Household,id:string,onQueued?:()=>void):Promise<CommitResult> {
     const capture=capturedIntent(candidate)!;
+    if (hasGoalEnvelopeData(candidate) && this.goalEnvelopeVersion !== 1) throw new LedgerCommandRejectedError("KITTY_UPDATE_REQUIRED: Connect to updated Hearth before saving this bank. Your review remains open.");
     const extendedPlan = hasPlanDecisionData(candidate) || capture.steps.some(step => {
       const input = step.args[0] as { lines?: Array<{ decision?: unknown }>; changedLines?: Array<{ decision?: unknown }>; changedAssumptions?: unknown; checkpoint?: unknown; outcomes?: Array<{ evidenceIds?: unknown }>; planReference?: unknown } | undefined;
       return (input?.lines ?? input?.changedLines ?? []).some(line => line.decision) || input?.changedAssumptions !== undefined || input?.checkpoint !== undefined || input?.outcomes?.some(row => row.evidenceIds) || input?.planReference;

@@ -76,7 +76,7 @@ export function herculesPageSurface(
         lesson: "Choose where household money should go in Shared books, then review the changes.",
         chips: ["Sit-down?", "We good?"],
         placeholder: "ask about the plan…",
-        fact: { label: "Kitty Banks", value: banks.label, source: { route: "plan", view: "personal", surface: "postcard", label: "Open Kitty Banks" } },
+        fact: { label: "Kitty Banks", value: banks.label, source: { route: "plan", view: "personal", surface: "postcard", label: "Goals & reserves" } },
       };
     }
     return {

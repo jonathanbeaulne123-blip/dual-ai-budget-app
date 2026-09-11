@@ -791,6 +791,7 @@ export function App() {
   useEffect(() => {
     const source = herculesSourceFocus;
     if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
+    if (tab === "plan" && planSystemV2Enabled() && source.goalId) return;
     const find = () => source.goalId ? [...document.querySelectorAll<HTMLElement>("[data-goal-id]")].find(node => node.dataset.goalId === source.goalId)
       : source.fundObligationId ? [...document.querySelectorAll<HTMLElement>("[data-fund-obligation-id]")].find(node => node.dataset.fundObligationId === source.fundObligationId) : source.label === "Health review" ? document.getElementById("hearth-health-review") : null;
     const focus = () => { const node = find(); if (!node) return false; node.scrollIntoView?.({ block: "center" }); node.focus({ preventScroll: true }); return true; };
@@ -6185,7 +6186,7 @@ export function App() {
     rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
     if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
     if (destination === "ask") { requestSharedBoard({ environment, householdId: household.householdId, memberId: session.memberId }, "ask"); goTab("together"); return; }
-    if (destination === "shelf") { goTab("plan"); return; }
+    if (destination === "shelf") { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Goals & reserves"}); goTab("plan"); return; }
     if (destination === "minutes") { goTab("more"); return; }
     setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
     goTab("ledger");
@@ -6787,7 +6788,7 @@ export function App() {
           ) : planSystemV2Enabled() ? (
             <PlanStudio
               key={`${ledgerRenderScopeKey}:${view}`}
-              goalsContent={<KittyBanks environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
+              goalsContent={context => <KittyBanks planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
               onContextChange={setPlanContext}
               contextIdentity={`${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}`}
               onAskHercules={(prompt, proposal) => {
@@ -6846,6 +6847,7 @@ export function App() {
             createdBy={memberId}
             busy={busy}
             surface="plan"
+            onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}}
             onCommand={runKitchen}
             onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })}
             onShowHome={() => goTab("home")}

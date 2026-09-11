@@ -259,6 +259,7 @@ export function shapeHouseholdFundEvents(value: unknown): HouseholdFundEvent[] {
       confirmedByMemberId: typeof row.confirmedByMemberId === "string" && row.confirmedByMemberId ? row.confirmedByMemberId : null,
       contributorMemberId: typeof row.contributorMemberId === "string" && row.contributorMemberId ? row.contributorMemberId : null,
       destinationAccountId: typeof row.destinationAccountId === "string" && row.destinationAccountId ? row.destinationAccountId : null,
+      ...(row.goalId !== undefined ? { goalId: row.goalId } : {}),
       relatedEventId: typeof row.relatedEventId === "string" && row.relatedEventId ? row.relatedEventId : null,
       relatedTransactionIds: Array.isArray(row.relatedTransactionIds)
         ? [...new Set(row.relatedTransactionIds.filter((id): id is string => typeof id === "string" && Boolean(id)))].sort()

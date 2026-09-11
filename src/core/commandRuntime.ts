@@ -1,3 +1,4 @@
+import { assertGoalEnvelopeTransition, hasGoalEnvelopeData } from "./goalEnvelopes.ts";
 import { assertFundSourceTransition } from "./fundContributionSources.ts";
 import { assertLegacyOnboardingCompatible } from "./onboarding/legacyCompatibility.ts";
 import { capturedIntent } from "../ledgerSync/capture.ts";
@@ -98,6 +99,7 @@ export type AcceptWriteInput = {
   booksGuard?: IncrementalBooksGuard;
   /** Server-only isolated owner-source validation; never populated from command input. */
   validatedFundSourceClaimIds?: ReadonlySet<string>;
+  validatedGoalEnvelopeVersion?: 1;
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
@@ -312,6 +314,8 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     // A validated synthetic replacement is a whole disposable fixture, not an
     // append-only edit of its previous seed. Candidate Fund integrity still runs.
     assertHouseholdFundTransition(validSyntheticDemoReplacement ? null : previous, candidate);
+    if (hasGoalEnvelopeData(candidate) && input.transportRequested && input.validatedGoalEnvelopeVersion !== 1) throw new ValidationError("Reload Hearth with current ledger sync before saving envelope changes.");
+    assertGoalEnvelopeTransition(validSyntheticDemoReplacement ? null : previous, candidate);
     if (previous && !validSyntheticDemoReplacement) {
       const newLinkedContribution = candidate.fundEvents?.some(event => event.sourceDeclaration?.kind === 'recorded-movement'
         && !previous.fundEvents?.some(old => old.id === event.id));

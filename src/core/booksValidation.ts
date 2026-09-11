@@ -1,10 +1,12 @@
+import { assertGoalEnvelopeIntegrity } from "./goalEnvelopes.ts";
 import { assertAccountOpeningIntegrity } from "./accountHistory.ts";
 import { booksEquation, compileHousehold, trialBalance, type CompiledBooks } from "./journal.ts";
 import { BooksRejectedError } from "./commandOutcome.ts";
 import type { Household } from "./types.ts";
 
-export function assertAcceptableBooks(household: Household, compiled = compileHousehold(household)): CompiledBooks {
+export function assertAcceptableBooks(household: Household, compiled = compileHousehold(household), exactEnvelopeReceipts=true): CompiledBooks {
   assertAccountOpeningIntegrity(household);
+  assertGoalEnvelopeIntegrity(household,exactEnvelopeReceipts);
   for (const entry of compiled.entries) {
     const debit = entry.lines.reduce((sum, line) => sum + line.debitCents, 0);
     const credit = entry.lines.reduce((sum, line) => sum + line.creditCents, 0);
@@ -87,7 +89,7 @@ export class IncrementalBooksGuard {
             || !["expense", "income", "refund"].includes(row.type)) return false;
           ids.add(row.id); return true;
         })) {
-          const delta = assertAcceptableBooks({ ...h, transactions: added });
+          const delta = assertAcceptableBooks({ ...h, transactions: added },undefined,false);
           const totals = new Map([...prior.totals].map(([id, value]) => [id, { ...value }]));
           let debit = prior.absoluteDebit, credit = prior.absoluteCredit;
           for (const entry of delta.entries) for (const line of entry.lines) {

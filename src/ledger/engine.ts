@@ -707,6 +707,7 @@ export function booksIntegrityFacts(household: Household) {
       goalId: row.goalId,
       spentCents: row.spentCents,
       vaultAccountId: row.vaultAccountId,
+      ...(row.envelopeUse ? { envelopeUse: row.envelopeUse } : {}),
       transactionIds: [...row.transactionIds].sort(),
     })),
     claims: byId(household.claims ?? []).map((row) => ({

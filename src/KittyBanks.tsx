@@ -1,3 +1,4 @@
+import { KittyBankRoom, type KittyPlanContext, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
 import { useEffect, useRef, useState } from "react";
 import {
   addGoal,
@@ -72,9 +73,14 @@ function PaperBank({ goal, role }: { goal: Goal; role: "subaccount" | "goal" }) 
 
 /** Existing goals as paper banks. Shared Fund surplus (D-161) is not a second envelope. */
 export function KittyBanks(props: KittyBanksProps) {
+  const [open,setOpen]=useState(false);
+  if (props.planContext || (open && props.surface !== "home")) return <KittyBankRoom household={props.booksHousehold} view={props.view} memberId={props.createdBy} busy={props.busy} identity={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}`} context={props.planContext} onReadSubmission={props.onReadSubmission} onCommand={props.onCommand} onClose={props.planContext?.onClose ?? (()=>setOpen(false))}/>;
+  if (props.surface !== "home") return <section className="card"><h2>Kitty Banks</h2><p>Your goals, reserves and future plans have a room of their own.</p><button onClick={()=>setOpen(true)}>Enter Kitty Banks</button></section>;
   return <KittyBanksScope key={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}:${props.surface ?? "plan"}`} {...props} />;
 }
 type KittyBanksProps = {
+  planContext?: KittyPlanContext;
+  onReadSubmission?:KittySubmissionReader;
   environment?: Environment;
   household: Household;
   booksHousehold: Household;
@@ -82,7 +88,7 @@ type KittyBanksProps = {
   createdBy: string;
   busy?: boolean;
   surface?: "home" | "plan";
-  onCommand: (fn: (current: Household) => CommitResult) => void;
+  onCommand: (fn: (current: Household) => CommitResult, options?:KittyCommandOptions) => unknown;
   onAskStartJar?: (appointmentId: string, summary: string) => void;
   onShowHome?: () => void;
   onOpenPlan?: () => void;

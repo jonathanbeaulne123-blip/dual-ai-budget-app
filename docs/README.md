@@ -1,3 +1,5 @@
+Current local Kitty Banks work: [cinematic envelope room implementation and evidence](worksessions/2026-09-11-kitty-envelope-implementation.md), integrating both merged Plan overhauls, reusable vault purchases, six theme/scope rooms, Calendar meanings and Hercules readability. [Complete product direction and remaining envelope contracts](briefs/KITTY_BANKS_CINEMATIC_ENVELOPE_APP_2026-09-11.md).
+
 Current local Plan work: [Household Fund life Plan — D-242 implementation and acceptance](briefs/HOUSEHOLD_FUND_LIFE_PLAN_IMPLEMENTATION.md), with numerical contracts, twelve-experience proof and retained live gates.
 
 **Hercules conversational app — implementation OPEN (2026-09-10):** shared capability awareness, confirmed command adapters, private checklist/receipt recovery and native event groundwork. Whole-app coverage and release acceptance remain open. [Coverage matrix](HERCULES_CAPABILITY_COVERAGE.md) · [Worksession](worksessions/2026-09-10-hercules-conversational-app.md).

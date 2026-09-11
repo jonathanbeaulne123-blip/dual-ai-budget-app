@@ -1,3 +1,5 @@
+import { useEasyRead } from "./useEasyRead.ts";
+import "./ux-readability.css";
 import type { HerculesPlanContext } from "./core/planSystem.ts";
 export type PlanHerculesOpenRequest = { id: string; scopeKey: string; isCurrent?: () => boolean; prompt?: string; proposal?: { actionId: string; values: Record<string, string> } };
 import { availableHerculesActions } from './core/herculesActions.ts';
@@ -361,6 +363,8 @@ export function HerculesPresence({
 
   const modelPending=useRef<number|null>(null);
   const [chatExpanded,setChatExpanded]=useState(false);
+  const [easyRead,setEasyRead]=useEasyRead(`${household.environment}:${household.householdId}:${memberId}`);
+  const easyReadToggle=<button type="button" className="hercules-easy-read-toggle" aria-pressed={easyRead} onClick={()=>setEasyRead(!easyRead)}>Easy read {easyRead?"on":"off"}</button>;
   const [suggestedWorkflowIds,setSuggestedWorkflowIds]=useState<string[]>([]);
   const [shareWorkplaceRoster, setShareWorkplaceRoster] = useState(false);
   const [ephemeralWorkplaceTurn, setEphemeralWorkplaceTurn] = useState(false);
@@ -1721,7 +1725,7 @@ export function HerculesPresence({
     >
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
-    <div className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly && homeAutonomy ? "is-desktop-wander" : ""}`} aria-live="polite">
+    <div data-easy-read={easyRead} className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly && homeAutonomy ? "is-desktop-wander" : ""}`} aria-live="polite">
       {setup && activeMemberPresent && <HerculesSetup {...setup} key={`${setup.household.environment}:${setup.household.householdId}:${setup.memberId}:${setup.authUserId}`} open={open && setupSelected} onClose={closeChat} onHelp={()=>{setSetupSelected(false);openChatFromBeg(true);}} onPlay={()=>{closeChat();sitWithBag();}} />}
       {desktopFly && homeAutonomy && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />
@@ -1782,6 +1786,7 @@ export function HerculesPresence({
           <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
             Close
           </button>
+          {easyReadToggle}
           {!setup && onboardingShellActive ? (
             <OnboardingChat
               household={household}
@@ -1943,7 +1948,7 @@ export function HerculesPresence({
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""} ${chatExpanded ? "is-expanded" : ""}`}
           style={bubbleStyle}
         >
-          {open&&<header className="hercules-chat-header"><HerculesLivePortrait mood={look.view.mood} hat={look.hat} chain={look.chain} house={look.house} collar={look.collar} pose={pose} size={44}/><strong>Hercules</strong><button type="button" aria-expanded={chatExpanded} onClick={()=>setChatExpanded(!chatExpanded)}>{chatExpanded?'Compact':'Expand'}</button></header>}
+          {open&&<header className="hercules-chat-header"><HerculesLivePortrait mood={look.view.mood} hat={look.hat} chain={look.chain} house={look.house} collar={look.collar} pose={pose} size={44}/><strong>Hercules</strong>{easyReadToggle}<button type="button" aria-expanded={chatExpanded} onClick={()=>setChatExpanded(!chatExpanded)}>{chatExpanded?'Compact':'Expand'}</button></header>}
           <div className="hercules-conversation-content">{open&&actionPanel()}
           {open && setup && !setupSelected && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
           {desktopOnboardingOpen ? (
