@@ -3,6 +3,30 @@
   "mappings": [
     {
       "sources": [
+        "src/CadPad.tsx",
+        "src/core/cadPad.ts",
+        "src/AddSlideshow.tsx",
+        "src/HerculesActionPanel.tsx",
+        "src/cashpad-ux.css",
+        "scripts/check-cashpad-ux.mjs",
+        "src/addSlideshow.ts",
+        "src/Hercules.tsx"
+      ],
+      "tests": [
+        "test/cad-pad-ui.test.ts",
+        "test/add-slideshow-ui.test.ts",
+        "test/mobile-entry-sheet.test.ts",
+        "test/hercules-action-ui.test.ts",
+        "test/kitchen-habit.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/month-rehearsal-mainline.test.ts",
+        "test/add-slideshow.test.ts",
+        "test/hercules-private-chat-ui.test.ts"
+      ],
+      "reason": "Decimal input, guided and expanded entry, explicit review, private Hercules forms and mainline posting guards"
+    },
+    {
+      "sources": [
         "src/core/personalCalendarAuthority.ts",
         "src/core/commands.ts"
       ],

@@ -17,9 +17,9 @@ beforeEach(() => {
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 async function send(text: string) {
-  const input = host.querySelector('input[aria-label="Ask Hercules"]') as HTMLInputElement;
+  const input = host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement;
   await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, text);
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(input, text);
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
   await act(async () => { input.closest("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
@@ -35,6 +35,12 @@ describe("private chat pending continuity", () => {
     const onCommand = vi.fn<KitchenCommand>().mockImplementation(() => new Promise(() => {}));
     await act(async () => root.render(createElement(HerculesPresence, { household: h, today: "2026-09-10", tab: "ledger", adding: false, memberId: "MEM-001", view: "household", onOpenAdd: vi.fn(), onGo: vi.fn(), onLedger: vi.fn(), onCompanionCommand: onCommand, onOpenSource: vi.fn() })));
     await act(async () => (host.querySelector('.hercules-pill') as HTMLButtonElement).click());
+    const composer = host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement;
+    for (const options of [{ shiftKey: true }, { isComposing: true }, { repeat: true }]) {
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...options });
+      await act(async () => composer.dispatchEvent(event));
+      expect(requests).toHaveLength(0);
+    }
     await send("Tell me about your favourite napping spot");
     expect(onCommand).toHaveBeenCalledTimes(1);
     expect(host.textContent).toContain("Saving this conversation");
@@ -88,7 +94,7 @@ describe("integrated session conversation", () => {
   const render=()=>root.render(createElement(HerculesPresence,{household:h,today:"2026-09-10",tab:"ledger",adding:false,memberId:"MEM-001",view:"household",onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onCompanionCommand:command,onOpenSource:vi.fn()}));
   await act(async()=>render());await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());await send("Tell me about the windowsill");
   h=addRecurrence(h,{cadence:"monthly",nextDate:"2026-09-12",type:"expense",amount:"4.00",accountId:"ACC-VISA",subcategoryId:"SUB-HOUSING-ELECTRIC",note:"New current bill"}).household;await act(async()=>render());await act(async()=>resolve(new Response(JSON.stringify({ok:true,provider:"gemini",reply:"STALE_REPLY_MARKER"}),{headers:{"Content-Type":"application/json"}})));
-  expect(host.textContent).not.toContain('STALE_REPLY_MARKER');expect((host.querySelector('input[aria-label="Ask Hercules"]') as HTMLInputElement).disabled).toBe(false);expect(command).not.toHaveBeenCalled();
+  expect(host.textContent).not.toContain('STALE_REPLY_MARKER');expect((host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement).disabled).toBe(false);expect(command).not.toHaveBeenCalled();
  });
  it("does not cancel the next reply when the prior private exchange receives its ACK", async()=>{
   let h=catalogHousehold();h.companionProfile=companionFor(h,"MEM-001");let resolve!:(r:Response)=>void;
@@ -149,7 +155,7 @@ it("bounds repeated offline forget requests and retains every queued forget exch
 it("moves focus into phone help, wraps Tab, and restores the launcher on Escape",async()=>{
  await act(async()=>root.render(createElement(HerculesPresence,{household:catalogHousehold(),today:'2026-09-10',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onCompanionCommand:vi.fn().mockResolvedValue(null),onOpenSource:vi.fn()})));
  const launcher=host.querySelector('.hercules-pill') as HTMLButtonElement;launcher.focus();await act(async()=>launcher.click());
- const dialog=host.querySelector('[role="dialog"]')!;expect(document.activeElement).toBe(dialog.querySelector('input[aria-label="Ask Hercules"]'));
+ const dialog=host.querySelector('[role="dialog"]')!;expect(document.activeElement).toBe(dialog.querySelector('textarea[aria-label="Ask Hercules"]'));
  const controls=[...dialog.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
  controls.at(-1)!.focus();await act(async()=>document.activeElement!.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true})));expect(document.activeElement).toBe(controls[0]);
  await act(async()=>document.activeElement!.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true})));expect(host.querySelector('[role="dialog"]')).toBeNull();expect(document.activeElement).toBe(host.querySelector('.hercules-pill'));

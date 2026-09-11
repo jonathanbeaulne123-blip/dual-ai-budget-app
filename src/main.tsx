@@ -27,6 +27,7 @@ import "./entry-restoration.css";
 import "./entry-restoration-integration.css";
 import "./entry-restoration-corrections.css";
 import "./entry-restoration-extension.css";
+import "./cashpad-ux.css";
 
 if (typeof window !== "undefined") {
   const phone = window.matchMedia("(max-width: 719px)");

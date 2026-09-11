@@ -43,7 +43,7 @@ describe("Calendar boards", () => {
         expect(upcoming.open).toBe(false);
         expect(grid.compareDocumentPosition(upcoming) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(upcoming.compareDocumentPosition(google) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-        expect(google.textContent).toContain("Calendar connections never post money");
+        expect(google.textContent).toContain("never post money");
         expect(google.textContent).toContain("Download .ics with alarms");
         expect(m.callbacks.onCommand).not.toHaveBeenCalled();
       } finally { await m.close(); }

@@ -63,6 +63,10 @@ describe("add slideshow prompts", () => {
     expect(canAdvanceAddSlide("amount", { ...blank, amount: "12.50" })).toBe(true);
     expect(canAdvanceAddSlide("to", { ...blank, fromAccountId: "ACC-VISA", toAccountId: "ACC-VISA" })).toBe(false);
     expect(canAdvanceAddSlide("to", { ...blank, fromAccountId: "ACC-CHEQUING", toAccountId: "ACC-VISA" })).toBe(true);
+    expect(canAdvanceAddSlide("shift-sales", { ...blank, sales: "0" })).toBe(true);
+    expect(canAdvanceAddSlide("shift-sales", { ...blank, sales: "12.345" })).toBe(false);
+    expect(canAdvanceAddSlide("shift-hours", { ...blank, hours: "24.01" })).toBe(false);
+    expect(canAdvanceAddSlide("amount", { ...blank, amount: "12.345" })).toBe(false);
     expect(clampAddSlide(9, ["amount", "confirm"])).toBe(1);
     expect(defaultSubcategoryForMode("income")).toBe("SUB-INCOME-WAGES");
     expect(defaultSubcategoryForMode("expense")).toBe("SUB-FOOD-GROCERIES");

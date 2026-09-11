@@ -102,7 +102,7 @@ describe("Hercules kitchen habit", () => {
     const household = catalogHousehold();
     const plan = planHerculesTurn(household, "Log shift", today, "home");
     expect(plan.draft).toEqual({ kind: "shift", note: "" });
-    expect(plan.talk.lesson).toMatch(/confirm still posts/i);
+    expect(plan.talk.lesson).toMatch(/before confirming it/i);
     const sit = applySitDown(household, "2026-07", {});
     expect(sit.postedIds).toEqual([]);
     expect(sit.household.transactions).toEqual(household.transactions);

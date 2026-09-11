@@ -341,7 +341,7 @@ describe("swipe sheet", () => {
     expect(alert?.textContent).toContain("Purchase needs attention.");
     expect(alert?.textContent).toContain("local journal");
     expect(alert?.textContent).toContain("try the category again");
-    expect(container.querySelector(".cad-pad-label")?.textContent).toBe("Amount");
+    expect(container.querySelector(".cad-pad-label")?.textContent).toBe("Amount (CAD)");
     expect([...container.querySelectorAll("h2, .cad-pad-label")]
       .filter((node) => node.textContent === SWIPE_COPY.title)).toHaveLength(1);
     expect(document.activeElement?.closest(".swipe-sheet")).not.toBeNull();
