@@ -10,11 +10,7 @@ export function dollarsFromCentsDigits(digits: string): string {
 }
 
 export function centsDigitsFromDollars(value: string): string {
-  const text = String(value ?? "").trim();
-  if (!text) return "";
-  const cents = Math.round(Number(text) * 100);
-  if (!Number.isFinite(cents) || cents <= 0) return "";
-  return String(cents);
+  return parsePadDecimal(String(value ?? "")).digits;
 }
 
 /** Empty pad stays empty so Confirm still refuses a blank amount. Zero is not a post. */
@@ -43,4 +39,15 @@ export const MAX_HOURS_HUNDREDTHS = 2400;
 
 export function hoursFromDigits(digits: string): string {
   return dollarsFromCentsDigits(digits);
+}
+
+/** Decimal keyboard entry stays exact; never round an extra fractional digit. */
+export function parsePadDecimal(value: string, maxCents = 99_999_999): { digits: string; error: string } {
+  const text = value.trim().replace(/^(?:CAD\s*|\$\s*)/i, "");
+  if (!text || text === ".") return { digits: "", error: "" };
+  if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)?(?:\.\d{0,2})?$/.test(text)) return { digits: "", error: "Enter a number with up to two decimal places." };
+  const [whole = "", fraction = ""] = text.replace(/,/g, "").split(".");
+  const cents = Number(whole || "0") * 100 + Number(fraction.padEnd(2, "0"));
+  if (!Number.isSafeInteger(cents) || cents > maxCents) return { digits: "", error: `Enter ${dollarsFromCentsDigits(String(maxCents))} or less.` };
+  return { digits: String(cents), error: "" };
 }

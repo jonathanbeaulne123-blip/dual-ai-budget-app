@@ -766,3 +766,6 @@ Calendar uses scoped facts with accessible account references instead of Home's 
 
 ## 2026-09-11 — Personal Calendar command authority
 The App's Personal allowlist accepts bounded actor-owned potential-expense lifecycle changes and reviewed private receipts, not only preferences. Fund-backed postings affect governed Shared Fund facts too, so use the ordinary financial command authority with private envelope redaction, matching funded postEntry. No schema or consent boundary changes. Evidence: `docs/worksessions/2026-09-11-personal-plan-cloud-authority.md`.
+
+## 2026-09-11 — CashPad keyboard entry and form navigation
+CashPad offers decimal typing on desktop and a rounded cents keypad on mobile, with an explicit mode switch and units. Enter belongs to the active input, never a document-wide money shortcut. Named sections support revisiting draft fields, and guided review edits return to review. Full forms do not expose misleading guided Continue controls. Hercules gains multiline writing and focus on its editable review. Existing cloud authority, private draft storage, theme assets and Final Confirm remain authoritative. Claude supplied the design direction; repository constraints determined the implementation. See `docs/worksessions/2026-09-11-cashpad-keyboard-ux.md`.

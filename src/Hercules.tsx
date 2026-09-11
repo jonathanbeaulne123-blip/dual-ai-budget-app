@@ -337,7 +337,7 @@ export function HerculesPresence({
   const [bagPlay, setBagPlay] = useState(false);
   const [question, setQuestion] = useState("");
   const actionRef=useRef<HerculesActionHandle>(null);
-  const composerRef=useRef<HTMLInputElement>(null);
+  const composerRef=useRef<HTMLTextAreaElement>(null);
   const modelPending=useRef<number|null>(null);
   const [chatExpanded,setChatExpanded]=useState(false);
   const [suggestedWorkflowIds,setSuggestedWorkflowIds]=useState<string[]>([]);
@@ -442,6 +442,7 @@ export function HerculesPresence({
   const hideLiveCat = phoneShell && !mobileFocus;
   const focusShellOpen = phoneShell && mobileFocus && !adding && !setupSelected;
   const focusDialogRef = useDialog(focusShellOpen, closeChat, () => document.querySelector<HTMLButtonElement>(".hercules-pill"));
+  useEffect(()=>{const input=composerRef.current;if(input){input.style.height="auto";input.style.height=`${Math.min(160,input.scrollHeight)}px`;}},[question,open,phoneShell]);
   useEffect(()=>{if(open&&!phoneShell)composerRef.current?.focus();},[open,phoneShell]);
   const [phoneViewport,setPhoneViewport]=useState<{height:number;top:number}|null>(null);
   useEffect(()=>{
@@ -1671,7 +1672,7 @@ export function HerculesPresence({
   const availableDiscoveryActions = () => [...(discoveryEnabled && onDiscoveryNavigate ? HERCULES_CAPABILITIES.filter(row=>discoverySelection(discoveryInput).all.some(candidate=>candidate.capabilityId===row.id)).map(row=>row.action) : []),...(actionService&&actionHousehold?availableHerculesActions({household:actionHousehold,memberId,view,today}).map(row=>`start:${row.id}`):[])];
   const discoveryPanel = () => discoveryEnabled && onDiscoveryNavigate ? <HerculesDiscovery key={discoveryScope(discoveryInput)} input={discoveryInput} onCommand={onCompanionCommand}
     blocked={adding || busy} onNavigate={destination => { if(destination.kind==="entry"&&actionRef.current){actionRef.current.send(destination.mode==="expense"?"I just bought something":destination.mode==="income"?"I received some money":"Transfer money");return;}onDiscoveryNavigate(destination); }}
-    onContinueChat={chatEnabled ? () => { const input = document.querySelector<HTMLInputElement>(`.hercules-focus-shell input[aria-label="Ask ${look.view.name}"], .hercules-bubble input[aria-label="Ask ${look.view.name}"]`); input?.focus(); input?.scrollIntoView({ block: "nearest" }); } : undefined} /> : null;
+    onContinueChat={chatEnabled ? () => { const input = document.querySelector<HTMLTextAreaElement>(`.hercules-focus-shell textarea[aria-label="Ask ${look.view.name}"], .hercules-bubble textarea[aria-label="Ask ${look.view.name}"]`); input?.focus(); input?.scrollIntoView({ block: "nearest" }); } : undefined} /> : null;
   const workplaceShareToggle = () => view === "personal" && selectableWorkplaceCoworkerIds.length > 0 ? (
     <label className="hercules-workplace-share">
       <input
@@ -1684,7 +1685,7 @@ export function HerculesPresence({
     </label>
   ) : null;
 
-  function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><input ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)}/><button type="submit" disabled={busy||!question.trim()}>Send</button></form>:null;}
+  function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
   function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} context={{household:actionHousehold,memberId,view,today}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
   return (
     <HerculesRigProvider

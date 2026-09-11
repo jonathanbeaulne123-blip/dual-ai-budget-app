@@ -277,10 +277,9 @@ describe("mobile entry sheet", () => {
     expect(host.querySelector('[data-entry-section="account"] [aria-pressed="true"]')).toBeNull();
     // A desktop resize cannot turn a phone draft's inherited default into intent.
     resize(1440);
-    for (let index = 0; index < 4; index++) {
-      const next = [...host.querySelectorAll<HTMLButtonElement>('button')].find(item => ["Enter", "Continue", "Skip"].includes(item.textContent?.trim() ?? ""));
-      act(() => next!.click());
-    }
+    expect(host.querySelector(".entry-step-continue")).toBeNull();
+    // Section navigation scrolls the full form; it cannot manufacture account intent.
+    click("Account");
     expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
     resize(390); click("Back"); click("More");
     const visa = host.querySelector<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile[aria-label="Credit card Visa"]')

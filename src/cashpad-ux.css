@@ -1,0 +1,46 @@
+/* Shared entry instruments inherit each scene's paper, ink and accent. */
+:root[data-theme] .cad-pad { max-inline-size: 420px; margin-inline: auto; width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: 28px; background: color-mix(in srgb, var(--card) 96%, var(--pine)); box-sizing: border-box; }
+:root[data-theme] .cad-pad [hidden] { display: none !important; }
+:root[data-theme] .cad-pad .cad-pad-input { width: 100%; min-width: 0; font-family: var(--display); font-size: clamp(28px, 5vw, 42px); font-variant-numeric: tabular-nums; padding: 12px; margin: 8px 0; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--ink); box-sizing: border-box; }
+:root[data-theme] .cad-pad .cad-pad-help, :root[data-theme] .cad-pad .cad-pad-error { font-size: 13px; line-height: 1.4; margin: 6px 0; }
+:root[data-theme] .cad-pad .cad-pad-mode { min-height: 44px; margin: 6px 0; padding: 6px 12px; border-radius: 99px; font-size: 13px; }
+:root[data-theme] .sheet.add-slideshow .cad-pad.is-giant .cad-pad-keys button, :root[data-theme] .cad-pad .cad-pad-keys button { min-height: 52px; border-radius: 22px; font-size: 23px; box-shadow: 0 2px 0 color-mix(in srgb, var(--ink) 10%, transparent); }
+:root[data-theme] .sheet.add-slideshow .cad-pad.is-giant .cad-pad-keys { gap: 8px; }
+:root[data-theme] .sheet.add-slideshow .cad-pad.is-giant .cad-pad-display { font-size: clamp(38px, 10vw, 56px); margin: 10px 0 12px; overflow-wrap: anywhere; }
+:root[data-theme] .cad-pad .cad-pad-enter { min-height: 48px; border-radius: 20px; margin-top: 8px; }
+:root[data-theme] .entry-section-nav { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 14px; }
+:root[data-theme] .entry-section-nav button { min-height: 44px; padding: 6px 12px; font-size: 13px; border-radius: 99px; }
+:root[data-theme] .entry-section-nav button[aria-current] { border: 2px solid var(--pine); font-weight: 700; }
+:root[data-theme] .entry-full-section { scroll-margin-block: 16px; }
+:root[data-theme] .entry-error-focus:empty { display: none; }
+:root[data-theme="taylor"] .cad-pad { border-radius: 26px 32px 28px 24px; border-color: color-mix(in srgb, var(--line) 70%, var(--pine)); background: color-mix(in srgb, var(--card) 96%, var(--pine)); }
+:root[data-theme="newfoundland"] .cad-pad { border-radius: 26px; border-top: 3px solid var(--pine); background: color-mix(in srgb, var(--card) 94%, var(--pine)); }
+:root[data-theme] .hercules-chat-form { flex-wrap: wrap; align-items: flex-end; }
+:root[data-theme] .hercules-chat-form textarea { flex: 1; min-width: 0; min-height: 52px; max-height: 160px; resize: vertical; box-sizing: border-box; border-radius: 16px; padding: 10px 12px; font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); }
+:root[data-theme] .hercules-composer-help { flex-basis: 100%; font-size: 12px; line-height: 1.4; color: var(--muted); }
+@media (min-width: 720px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .sheet-inner { max-inline-size: 640px; width: min(640px, 100%); min-height: 0; }
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) .cad-pad { max-inline-size: 360px; margin-inline: 0; }
+}
+@media (max-width: 719px) {
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet { top: var(--entry-visible-top, 0px); height: var(--entry-visible-height, 100dvh); bottom: auto; }
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .sheet-inner { width: 100%; max-width: 100%; max-height: 100%; border-radius: 28px 28px 0 0; padding-bottom: max(24px, calc(var(--mobile-bottom-clearance) + var(--fund-return-height, 0px) + 16px)); }
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad { max-inline-size: 420px; }
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad.is-giant .cad-pad-keys button { min-height: 52px; border-radius: 22px; }
+  :root[data-theme] .sheet.add-slideshow.mobile-entry-sheet .cad-pad.is-giant .cad-pad-display { font-size: clamp(38px, 11vw, 52px); }
+}
+
+:root[data-theme] .sheet.add-slideshow .cad-pad .cad-pad-mode,
+:root[data-theme] .sheet.add-slideshow .entry-section-nav button { border: 1px solid var(--line); border-radius: 99px; background: var(--card); color: var(--ink); }
+:root[data-theme] .sheet.add-slideshow .cad-pad .cad-pad-enter { border-radius: 20px; }
+:root[data-theme] .sheet.add-slideshow .cad-pad .cad-pad-display { background: transparent; border: 0; padding: 0; }
+:root[data-theme] .sheet.add-slideshow .cad-pad.is-giant { padding: 14px; border-radius: 28px; background: color-mix(in srgb, var(--card) 96%, var(--pine)); }
+:root[data-theme] .sheet.add-slideshow .cad-pad.is-giant .cad-pad-input { font-size: clamp(28px, 5vw, 42px); line-height: 1.15; padding: 12px; }
+:root[data-theme="taylor"] .sheet.add-slideshow .cad-pad.is-giant { border-radius: 26px 32px 28px 24px; }
+:root[data-theme="newfoundland"] .sheet.add-slideshow .cad-pad.is-giant { border-top: 3px solid var(--pine); border-radius: 26px; }
+@media (min-width: 720px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet):not([data-add-slide="full-form"]) .sheet-inner { width: min(500px, 100%); }
+}
+@media (min-width: 720px) {
+  :root[data-theme] .sheet.add-slideshow:not(.mobile-entry-sheet) { padding-bottom: calc(var(--nav) + var(--fund-ledge-height, 0px) + var(--fund-return-height, 0px) + 48px); scroll-padding-bottom: calc(var(--nav) + 48px); }
+}

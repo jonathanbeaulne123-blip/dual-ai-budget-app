@@ -1,3 +1,4 @@
+import { parsePadDecimal } from "./core/cadPad.ts";
 import { ceremonyFields, ceremonyCopy, type ShiftGate } from "./core/shiftClock.ts";
 import type { Visibility } from "./core/types.ts";
 
@@ -82,7 +83,7 @@ export function addSlideCopy(mode: AddMode, slide: AddSlideId, shiftGate: ShiftG
     if (mode === "transfer") {
       return { title: "How much are you moving?", hint: "Not income. Not spend. Enter, then pick the two rooms.", enterLabel: "Enter" };
     }
-    return { title: "How much did you spend?", hint: "Giant cashpad. Enter opens the next prompt. Confirm still posts.", enterLabel: "Enter" };
+    return { title: "How much did you spend?", hint: "Enter an amount. Enter opens the next prompt. Confirm still posts.", enterLabel: "Enter" };
   }
   if (slide === "category") {
     if (mode === "income") {
@@ -166,14 +167,14 @@ export function canAdvanceAddSlide(slide: AddSlideId, form: {
   cashTips: string;
   ccTips: string;
 }): boolean {
-  if (slide === "amount") return Boolean(form.amount.trim());
+  if (slide === "amount") return !parsePadDecimal(form.amount).error && Number(parsePadDecimal(form.amount).digits) > 0;
   if (slide === "category") return Boolean(form.subcategoryId);
   if (slide === "account") return Boolean(form.accountId);
   if (slide === "from") return Boolean(form.fromAccountId);
   if (slide === "to") return Boolean(form.toAccountId) && form.toAccountId !== form.fromAccountId;
-  if (slide === "shift-hours") return Boolean(form.hours.trim());
-  if (slide === "shift-sales") return true;
-  if (slide === "shift-cashTips" || slide === "shift-ccTips") return true;
+  if (slide === "shift-hours") return !parsePadDecimal(form.hours, 2400).error && Number(parsePadDecimal(form.hours, 2400).digits) > 0;
+  if (slide === "shift-sales") return !!form.sales.trim() && !parsePadDecimal(form.sales).error;
+  if (slide === "shift-cashTips" || slide === "shift-ccTips") { const value = slide === "shift-cashTips" ? form.cashTips : form.ccTips; return !!value.trim() && !parsePadDecimal(value).error; }
   return true;
 }
 

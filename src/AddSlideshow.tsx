@@ -193,7 +193,17 @@ export function AddSlideshow({
   experienceLine: string;
 }) {
   const mobile = useMobileEntry();
+  const [visibleViewport, setVisibleViewport] = useState<{height:number;top:number}|null>(null);
+  useEffect(() => {
+    if (!open || !mobile || !window.visualViewport) { setVisibleViewport(null); return; }
+    const viewport = window.visualViewport;
+    const update = () => setVisibleViewport({ height: viewport.height, top: viewport.offsetTop });
+    update(); viewport.addEventListener("resize", update); viewport.addEventListener("scroll", update);
+    return () => { viewport.removeEventListener("resize", update); viewport.removeEventListener("scroll", update); };
+  }, [open, mobile]);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const [returnToReview, setReturnToReview] = useState(false);
   const initialPresentation = useRef(draftStorageKey ? loadEntryPresentation(draftStorageKey) : null);
   const [pickedAccounts, setPickedAccounts] = useState(initialPresentation.current?.pickedAccounts ?? { accountId: "", fromAccountId: "", toAccountId: "" });
   const [fullForm, setFullForm] = useState(initialPresentation.current?.fullForm ?? false);
@@ -236,17 +246,34 @@ export function AddSlideshow({
   useEffect(() => {
     if (!open) return;
     // Let the parent dialog capture the opener before this child moves focus.
-    const frame = requestAnimationFrame(() => headingRef.current?.focus());
+    const frame = requestAnimationFrame(() => {
+      const input = !mobile && !expanded ? headingRef.current?.closest(".sheet-inner")?.querySelector<HTMLInputElement>(".cad-pad.is-typing input") : null;
+      (input ?? headingRef.current)?.focus();
+    });
     return () => cancelAnimationFrame(frame);
   }, [mobile, open, index, expanded]);
+
+  useEffect(() => {
+    if (open && error) errorRef.current?.focus();
+  }, [open, error]);
+
+  function jumpTo(target: AddSlideId) {
+    if (busy) return;
+    if (!expanded) { setReturnToReview(index === slides.length - 1 || returnToReview); onSlideIndex(slides.indexOf(target)); return; }
+    const section = headingRef.current?.closest(".sheet-inner")?.querySelector<HTMLElement>(`[data-entry-section="${target}"]`);
+    section?.scrollIntoView?.({ block: "start", behavior: "auto" });
+    section?.querySelector<HTMLElement>("input, select, textarea, h2")?.focus();
+  }
 
   function goNext() {
     if (index >= slides.length - 1) return;
     if (!canAdvance) return;
-    onSlideIndex(index + 1);
+    onSlideIndex(returnToReview ? slides.length - 1 : index + 1);
+    setReturnToReview(false);
   }
 
   function goBack() {
+    setReturnToReview(false);
     if (expanded) { setFullForm(false); return; }
     if (index <= 0) return;
     onSlideIndex(index - 1);
@@ -255,25 +282,25 @@ export function AddSlideshow({
   function pickAccount(accountId: string) {
     setPickedAccounts(current => ({ ...current, accountId: accountId }));
     setForm((current) => ({ ...current, accountId }));
-    if (!expanded) onSlideIndex(Math.min(index + 1, slides.length - 1));
+    if (!expanded) { onSlideIndex(returnToReview ? slides.length - 1 : Math.min(index + 1, slides.length - 1)); setReturnToReview(false); }
   }
 
   function pickFrom(accountId: string) {
     setPickedAccounts(current => ({ ...current, fromAccountId: accountId }));
     setForm((current) => ({ ...current, fromAccountId: accountId }));
-    if (!expanded) onSlideIndex(Math.min(index + 1, slides.length - 1));
+    if (!expanded) { onSlideIndex(returnToReview ? slides.length - 1 : Math.min(index + 1, slides.length - 1)); setReturnToReview(false); }
   }
 
   function pickTo(accountId: string) {
     setPickedAccounts(current => ({ ...current, toAccountId: accountId }));
     setForm((current) => ({ ...current, toAccountId: accountId }));
-    if (!expanded) onSlideIndex(Math.min(index + 1, slides.length - 1));
+    if (!expanded) { onSlideIndex(returnToReview ? slides.length - 1 : Math.min(index + 1, slides.length - 1)); setReturnToReview(false); }
   }
 
   function pickCategory(subcategoryId: string) {
     onCategoryTouched();
     setForm((current) => ({ ...current, subcategoryId }));
-    if (!expanded) onSlideIndex(Math.min(index + 1, slides.length - 1));
+    if (!expanded) { onSlideIndex(returnToReview ? slides.length - 1 : Math.min(index + 1, slides.length - 1)); setReturnToReview(false); }
   }
 
   const hidePost = mode === "shift" && (slide === "shift-choose" || slide === "shift-clocked" || slide === "shift-jobs");
@@ -301,6 +328,7 @@ export function AddSlideshow({
       ? !hasAccount(form.fromAccountId) || !hasAccount(form.toAccountId) || form.fromAccountId === form.toAccountId
       : !hasAccount(form.accountId) || (mode !== "shift" && !categories.some(category => category.active && category.id === form.subcategoryId));
     entryInvalid ||= needsAccountChoice;
+    if (mode === "shift") entryInvalid ||= slides.some(item => item.startsWith("shift-") && !canAdvanceAddSlide(item, form));
     if (mode !== "shift") {
       try { entryInvalid ||= parseAmount(form.amount) <= 0; } catch { entryInvalid = true; }
     }
@@ -314,6 +342,7 @@ export function AddSlideshow({
       aria-modal="true"
       aria-labelledby="add-sheet-title"
       ref={sheetRef}
+      style={visibleViewport ? { "--entry-visible-height": `${visibleViewport.height}px`, "--entry-visible-top": `${visibleViewport.top}px` } as import("react").CSSProperties : undefined}
       data-add-slideshow={mode}
       data-add-slide={expanded ? "full-form" : slide}
     >
@@ -351,6 +380,10 @@ export function AddSlideshow({
         )}
 
         </div>
+        {returnToReview && !expanded && <p className="muted">Editing your draft. Continue returns to Review.</p>}
+        {(expanded || index > 0) && <nav className="entry-section-nav" aria-label="Draft sections">
+          {slides.map((item, position) => <button key={item} type="button" disabled={busy || (!expanded && position > index)} aria-current={!expanded && position === index ? "step" : undefined} onClick={() => jumpTo(item)}>{({amount:"Amount",category:"Category",account:"Account",from:"From",to:"To",note:"Note",confirm:"Review"} as Record<string,string>)[item] ?? addSlideCopy(mode,item,shiftGate).title}</button>)}
+        </nav>}
         {presentationVolatile && <p role="status">Some draft details could not be saved for reload. Keep this tab open to retain your latest choices and picture.</p>}
       {recovery}
         {!expanded && choiceSlide && enteredAmount && <p className="swipe-amount">{enteredAmount}</p>}
@@ -359,7 +392,7 @@ export function AddSlideshow({
           const copy = addSlideCopy(mode, slide, shiftGate);
           const canAdvance = canAdvanceAddSlide(slide, form);
           return <section key={slide} className={expanded ? "entry-full-section" : undefined} data-entry-section={slide}>
-            {expanded && <h2>{copy.title}</h2>}
+            {expanded && <h2 tabIndex={-1}>{copy.title}</h2>}
         {slide === "amount" && (
           <>
             {expanded ? <label>Amount (CAD)<input inputMode="decimal" value={form.amount} onChange={event => setForm(current => ({ ...current, amount: event.target.value }))} /></label> : <CadPad
@@ -450,9 +483,9 @@ export function AddSlideshow({
               transactionType={mode === "income" ? "income" : "expense"}
             />
             </>}
-            <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
+            {!expanded && <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
               {copy.enterLabel}
-            </button>
+            </button>}
           </>
         )}
 
@@ -469,9 +502,9 @@ export function AddSlideshow({
               selectedId={accountIntent ? form.accountId : ""}
               onSelect={pickAccount}
             />}
-            <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
+            {!expanded && <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
               {copy.enterLabel}
-            </button>
+            </button>}
           </>
         )}
 
@@ -488,9 +521,9 @@ export function AddSlideshow({
               selectedId={fromIntent ? form.fromAccountId : ""}
               onSelect={pickFrom}
             />}
-            <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
+            {!expanded && <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
               {copy.enterLabel}
-            </button>
+            </button>}
           </>
         )}
 
@@ -511,9 +544,9 @@ export function AddSlideshow({
             {form.toAccountId === form.fromAccountId && (
               <p className="muted">Pick a different room than From.</p>
             )}
-            <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
+            {!expanded && <button type="button" className="primary post-big entry-step-continue" disabled={!canAdvance} onClick={goNext}>
               {copy.enterLabel}
-            </button>
+            </button>}
           </>
         )}
 
@@ -619,7 +652,7 @@ export function AddSlideshow({
         {!hidePost && (last || expanded) && needsAccountChoice && (
           <p role="status" data-add-account-intent>{mode === "transfer" ? "Choose the source and destination accounts before Confirm." : "Choose the account for this entry before Confirm."}</p>
         )}
-        <KitchenNotice message={error} onGoMore={onGoMore} onDismiss={onDismissError} />
+        <div ref={errorRef} tabIndex={-1} className="entry-error-focus"><KitchenNotice message={error} onGoMore={onGoMore} onDismiss={onDismissError} /></div>
         {confirm && (
           <div className="preview warn" role="alert" tabIndex={-1} ref={confirmPanelRef}>
             <p>{confirm.message}</p>
@@ -681,6 +714,11 @@ function NoteSlide({
       <label htmlFor="add-note">Note</label>
       <input
         id="add-note"
+        onKeyDown={event => {
+          if (event.key === "Enter" && !event.nativeEvent.isComposing && !event.repeat && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && onContinue) {
+            event.preventDefault(); event.stopPropagation(); onContinue();
+          }
+        }}
         value={form.note}
         onChange={(event) => {
           const note = event.target.value;
@@ -783,8 +821,9 @@ function ShiftPadSlide({
         digits={centsDigitsFromDollars(form[field])}
         onDigits={(digits) => {
           if (field === "hours") onHoursDirty();
-          setForm((current) => ({ ...current, [field]: dollarsFromCentsDigits(digits) }));
+          setForm((current) => ({ ...current, [field]: digits === "" ? "" : dollarsFromCentsDigits(digits) }));
         }}
+        onInvalid={raw => setForm(current => ({ ...current, [field]: raw }))}
         label={shiftFieldLabel(field)}
         unit={field === "hours" ? "hours" : "cad"}
         onEnter={open ? onEnter : undefined}
