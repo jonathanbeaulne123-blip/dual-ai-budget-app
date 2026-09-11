@@ -25,7 +25,7 @@ export function createRoom(scene: T.Scene, palette: RoomPalette): Room {
   const hemisphere = new T.HemisphereLight('#fff5df', '#55626d', 1.5); group.add(hemisphere);
   const sun = new T.DirectionalLight('#fff1d2', 2); sun.position.set(-0.5, 1.2, 1); group.add(sun);
   const fill = new T.DirectionalLight('#d3e7ed', 0.7); fill.position.set(1, 0.6, -0.4); group.add(fill);
-  const lamp = new T.PointLight('#ffb970', 0, 2.2, 1.6); group.add(lamp);
+  const lamp = new T.PointLight('#ffd3a6', 0, 2.4, 1.5); group.add(lamp);
   const stageLight = new T.SpotLight('#fff0d0', 0, 3, Math.PI / 5, 0.6, 1.2); stageLight.position.set(0.15, 1.1, 0.5); stageLight.target.position.set(0, 0.1, 0); group.add(stageLight, stageLight.target);
   // Shared shell: floor, back wall.
   box(1.65, 0.035, 1.25, 0, FLOOR_Y, -0.03, materials.wood);
@@ -37,14 +37,14 @@ export function createRoom(scene: T.Scene, palette: RoomPalette): Room {
     box(1.6, 0.3, 0.02, 0, 0.1, WALL_Z + 0.016, materials.wood);
     box(1.6, 0.018, 0.03, 0, 0.255, WALL_Z + 0.022, materials.trim);
     for (let i = -5; i <= 5; i++) box(0.012, 0.22, 0.012, i * 0.145, 0.1, WALL_Z + 0.03, materials.trim);
-    const pane = mesh(new T.PlaneGeometry(0.3, 0.52), glow, -0.66, 0.5, WALL_Z + 0.018); windowPanes.push(pane);
-    for (const x of [-0.82, -0.5]) box(0.03, 0.56, 0.04, x, 0.5, WALL_Z + 0.03, materials.wood);
-    for (const y of [0.22, 0.78]) box(0.35, 0.03, 0.04, -0.66, y, WALL_Z + 0.03, materials.wood);
-    box(0.012, 0.52, 0.02, -0.66, 0.5, WALL_Z + 0.03, materials.wood); box(0.3, 0.012, 0.02, -0.66, 0.5, WALL_Z + 0.03, materials.wood);
-    box(0.36, 0.02, 0.09, -0.66, 0.205, WALL_Z + 0.06, materials.wood);
+    const pane = mesh(new T.PlaneGeometry(0.24, 0.34), glow, 0.47, 0.64, WALL_Z + 0.018); windowPanes.push(pane);
+    for (const x of [0.34, 0.6]) box(0.028, 0.38, 0.04, x, 0.64, WALL_Z + 0.03, materials.wood);
+    for (const y of [0.46, 0.82]) box(0.29, 0.028, 0.04, 0.47, y, WALL_Z + 0.03, materials.wood);
+    box(0.012, 0.34, 0.02, 0.47, 0.64, WALL_Z + 0.03, materials.wood); box(0.24, 0.012, 0.02, 0.47, 0.64, WALL_Z + 0.03, materials.wood);
+    box(0.3, 0.018, 0.08, 0.47, 0.445, WALL_Z + 0.055, materials.wood);
     box(0.14, 0.075, 0.1, -0.48, 0.23, -0.44, materials.cloth); box(0.15, 0.018, 0.11, -0.48, 0.275, -0.44, materials.trim);
-    lamp.position.set(0.6, 0.62, -0.3);
-    cylinder(0.011, 0.24, 0.66, 0.35, -0.5, materials.trim); mesh(new T.ConeGeometry(0.075, 0.09, 24, 1, true), lampShade, 0.66, 0.5, -0.5);
+    lamp.position.set(0.7, 0.58, -0.3);
+    cylinder(0.011, 0.24, 0.72, 0.35, -0.48, materials.trim); mesh(new T.ConeGeometry(0.075, 0.09, 24, 1, true), lampShade, 0.72, 0.5, -0.48);
   } else if (palette.theme === 'taylor') {
     // Cottage attic: sloped pastel wall, a string of blank paper photo cards, a botanical pot, patchwork cushion, warm lamp.
     const rafter = box(1.6, 0.04, 0.05, 0, 0.83, WALL_Z + 0.04, materials.wood); rafter.rotation.x = 0.2;
@@ -61,11 +61,11 @@ export function createRoom(scene: T.Scene, palette: RoomPalette): Room {
     // Harbour music room: painted clapboard in jellybean colours, rope-and-brass hook rail, three original record sleeves, a porthole, a cone lamp.
     const jellybeans = [palette.accent, palette.second, palette.brass, palette.card, palette.accent, palette.second, palette.card, palette.brass];
     for (let i = 0; i < 8; i++) { const m = new T.MeshStandardMaterial({ color: jellybeans[i]!, roughness: 0.88 }); disposables.push(m); clapboards.push(m); const board = box(1.6, 0.108, 0.014, 0, -0.01 + i * 0.112, WALL_Z + 0.022, m); board.rotation.x = 0.06; }
-    const porthole = mesh(new T.TorusGeometry(0.11, 0.018, 12, 40), materials.trim, -0.6, 0.58, WALL_Z + 0.05); porthole.rotation.y = 0;
-    const pane = mesh(new T.CircleGeometry(0.1, 32), glow, -0.6, 0.58, WALL_Z + 0.04); windowPanes.push(pane);
-    for (let i = 0; i < 4; i++) { const bolt = mesh(new T.SphereGeometry(0.008, 8, 6), materials.trim, -0.6 + Math.cos(i * Math.PI / 2) * 0.11, 0.58 + Math.sin(i * Math.PI / 2) * 0.11, WALL_Z + 0.07); bolt.scale.z = 0.5; }
-    const rope = mesh(new T.TorusGeometry(0.2, 0.006, 8, 40, Math.PI), materials.cloth, -0.2, 0.62, WALL_Z + 0.05); rope.rotation.z = Math.PI; rope.scale.y = 0.3;
-    for (const x of [-0.42, -0.2, 0.02]) { box(0.03, 0.03, 0.02, x, 0.63, WALL_Z + 0.04, materials.wood); const hook = mesh(new T.TorusGeometry(0.014, 0.004, 8, 16, Math.PI * 1.4), materials.trim, x, 0.6, WALL_Z + 0.06); hook.rotation.z = Math.PI * 0.8; }
+    const porthole = mesh(new T.TorusGeometry(0.11, 0.018, 12, 40), materials.trim, 0.47, 0.64, WALL_Z + 0.05); porthole.rotation.y = 0;
+    const pane = mesh(new T.CircleGeometry(0.1, 32), glow, 0.47, 0.64, WALL_Z + 0.04); windowPanes.push(pane);
+    for (let i = 0; i < 4; i++) { const bolt = mesh(new T.SphereGeometry(0.008, 8, 6), materials.trim, 0.47 + Math.cos(i * Math.PI / 2) * 0.11, 0.64 + Math.sin(i * Math.PI / 2) * 0.11, WALL_Z + 0.07); bolt.scale.z = 0.5; }
+    const rope = mesh(new T.TorusGeometry(0.16, 0.006, 8, 40, Math.PI), materials.cloth, -0.46, 0.79, WALL_Z + 0.05); rope.rotation.z = Math.PI; rope.scale.y = 0.3;
+    for (const x of [-0.62, -0.46, -0.3]) { box(0.03, 0.03, 0.02, x, 0.8, WALL_Z + 0.04, materials.wood); const hook = mesh(new T.TorusGeometry(0.014, 0.004, 8, 16, Math.PI * 1.4), materials.trim, x, 0.77, WALL_Z + 0.06); hook.rotation.z = Math.PI * 0.8; }
     for (let i = 0; i < 3; i++) { box(0.085, 0.085, 0.006, -0.5 + i * 0.018, 0.24 + i * 0.004, -0.37, i === 1 ? materials.second : materials.accent); const disc = mesh(new T.CylinderGeometry(0.026, 0.026, 0.003, 24), materials.wood, -0.5 + i * 0.018, 0.24 + i * 0.004, -0.362); disc.rotation.x = Math.PI / 2; }
     lamp.position.set(0.65, 0.5, -0.44);
     cylinder(0.012, 0.21, 0.65, 0.31, -0.48, materials.trim); mesh(new T.ConeGeometry(0.07, 0.1, 24, 1, true), lampShade, 0.65, 0.43, -0.48);
@@ -76,9 +76,9 @@ export function createRoom(scene: T.Scene, palette: RoomPalette): Room {
     lampShade.color.set(next.card);
     const dark = next.dark;
     // Dark scenes: lower ambient, a warm key lamp, the stage still lit, and legible brass on the mirror frame.
-    hemisphere.intensity = dark ? 0.35 : 1.5; hemisphere.color.set(dark ? '#5f6f8c' : '#fff5df'); hemisphere.groundColor.set(dark ? '#1c1a20' : '#55626d');
+    hemisphere.intensity = dark ? 0.45 : 1.5; hemisphere.color.set(dark ? '#7f8fb0' : '#fff5df'); hemisphere.groundColor.set(dark ? '#23242c' : '#55626d');
     sun.intensity = dark ? 0.25 : 2; sun.color.set(dark ? '#9fb0d8' : '#fff1d2'); fill.intensity = dark ? 0.15 : 0.7;
-    lamp.intensity = dark ? 2.6 : 0.35; stageLight.intensity = dark ? 4 : 0;
+    lamp.intensity = dark ? 2.2 : 0.35; stageLight.intensity = dark ? 3.2 : 0;
     lampShade.emissiveIntensity = dark ? 0.9 : 0.12;
     glow.color.set(dark ? mixHex(next.paper, '#2b3552', 0.6) : '#fff4dc');
     if (dark) materials.trim.color.set(mixHex(next.brass, '#ffe4a0', 0.3));

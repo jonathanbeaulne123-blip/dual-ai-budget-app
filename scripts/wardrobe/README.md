@@ -40,6 +40,18 @@ Legacy IDs and `legacy-original` remain valid. All old cosmetics are available w
 
 Saved personal looks and worn state stay in `companionProfile`; only explicit projections enter root `companionGallery`. Each resource uses its own CAS revision and deletion tombstone. Books restore and Development activity replacement preserve this state. The feature remains off by default pending owner likeness and physical-device acceptance; no schema or hosted release is implied by these local files.
 
+## Nine collections and the tail slot (2026-09-11)
+
+`collections.mjs` now iterates `COLLECTIONS` plus `legacy`, so adding a collection to `pieces.ts` (six recipes, each with a glyph in `glyphs.ts` and a mesh recipe in the exporter) regenerates its pack. Tail pieces are skinned 100% to `rig_tail_04` at that bone's exported world position; head and eyewear stay rigid under `rig_head`. The six earlier packs were left byte-identical when the three new packs were added; only their `collections.json` entries are carried forward.
+
+Room evidence (fictional fixture, local server, swiftshader WebGL):
+
+```sh
+PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers HEARTH_CHROMIUM=/path/to/chrome node scripts/wardrobe/proof/room-evidence.mjs
+```
+
+It writes PNGs and `report.json` to `docs/evidence/hercules-room/` (or `HEARTH_ARTIFACTS_DIR`). `HEARTH_CHROMIUM` is optional when the installed Playwright browser matches.
+
 ## Repeatable local browser proof
 
 Run from the repository root. Use the installed Node runtime and pinned dependencies. These runners create only synthetic local demo data and block non-local browser traffic. They expect an explicit flagged build served on `127.0.0.1:5193`; do not point them at a real household or a hosted deployment.
