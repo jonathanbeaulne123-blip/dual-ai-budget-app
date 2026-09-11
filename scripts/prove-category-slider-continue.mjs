@@ -24,9 +24,10 @@ try {
 
    await fab.click();await page.getByRole('menuitem',{name:'Add expense',exact:true}).click();
    const sheet=page.locator('[data-add-slideshow="expense"]');
-   const more=sheet.getByRole('button',{name:'More',exact:true});
-   
-   await sheet.locator('[data-entry-section="amount"] input').fill('130.01');
+   while(await sheet.getAttribute('data-add-slide') !== 'amount')await sheet.getByRole('button',{name:'Back',exact:true}).click();
+   await sheet.getByRole('button',{name:'Type amount',exact:true}).click();
+
+   await sheet.locator('.cad-pad-input').fill('130.01');
    console.log('amount entered');await sheet.locator('.cad-pad-enter').click();console.log('category opened');
    const toggle=sheet.getByRole('button',{name:'Split between two categories',exact:true});
    if(await toggle.count())await toggle.click();

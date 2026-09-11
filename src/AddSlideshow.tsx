@@ -492,7 +492,7 @@ export function AddSlideshow({
             />
             </>}
             {!expanded && <button type="button" className={`primary post-big ${form.categorySplitEnabled ? "category-split-continue" : "entry-step-continue"}`} disabled={!canAdvance} onClick={goNext}>
-              {form.categorySplitEnabled ? "Continue to account" : copy.enterLabel}
+              {form.categorySplitEnabled ? (returnToReview ? "Return to review" : "Continue to account") : copy.enterLabel}
             </button>}
           </>
         )}
