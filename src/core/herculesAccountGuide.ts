@@ -18,7 +18,7 @@ export function inferAccountKind(message:string):string|undefined {
  return matched.length===1?matched[0]![1]:undefined;
 }
 export const accountGuideAction:ActionDefinition={id:'add-account',title:'Add an account',example:'Add an account',
- match:/\b(?:add|create|open|set up) (?:an? |my |new )*(?:(?:credit|debit|visa|master\s?card|amex|savings|chequing|checking|investment|tfsa|rrsp|fhsa)\b(?:[^.!?;]{0,50}?\b)?(?:account|card)\b|account\b|(?:visa|master\s?card|amex)\b)/i,
+ match:/\b(?:add|create|open|set up) (?:an? |my |new )*(?:(?:credit|debit|visa|master\s?card|amex|american express|savings|hisa|chequing|checking|investment|brokerage|tfsa|rrsp|fhsa|receivable)\b(?:[^.!?;]{0,50}?\b)?(?:account|card)\b|account\b|(?:visa|master\s?card|amex|american express)\b)/i,
  views:['household','personal'],fields:[{key:'name',maxLength:40,label:'Name',question:'What would you like to name it?'},{key:'kind',label:'Account type',question:'What kind of account is it?',choices:()=>ACCOUNT_KINDS.map(value=>({value,label:ACCOUNT_KIND_LABEL[value]}))}],dynamicFields:accountGuideFields,
  consequence:'Create this account with the settings shown. Skipped card terms use Hearth defaults, not verified bank terms; check them before relying on estimates. Opening balances, interest and rewards require separate reviewed entries.',dependencies:c=>c.household.accounts,
  execute:(c,v)=>addAccount(c.household,{name:v.name!,kind:v.kind!,scope:c.view==='personal'?'personal':'shared',ownerMemberId:c.view==='personal'?c.memberId:'joint',...(v.details==='yes'?{
