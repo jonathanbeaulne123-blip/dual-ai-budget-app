@@ -64,7 +64,7 @@ describe('guided release corrections',()=>{
 });
 
 it('keeps a received Personal arrival out of rescheduling choices and rejects bypassed ids',async()=>{
- const {postEntry}=await import('../src/core/commands.ts');const c=context('personal');
+ const {postEntry,reversePostedMoney}=await import('../src/core/commands.ts');const c=context('personal');
  const incomeCategory=c.household.categories.find(row=>row.parentId&&row.transactionType==='income')!;
  const source={...c.household.recurrences[0]!,id:'received-pay',type:'income' as const,subcategoryId:incomeCategory.id};c.household.recurrences.push(source);
  c.household=postEntry(c.household,{type:'income',date:'2026-09-10',amount:'1000',accountId:source.accountId,subcategoryId:source.subcategoryId,createdBy:c.memberId,visibility:'personal',source:'recurring',sourceId:source.id}).household;
@@ -73,4 +73,8 @@ it('keeps a received Personal arrival out of rescheduling choices and rejects by
  expect(planGuideFields(c,v).find(f=>f.key==='incomeEntry')!.choices!(c,v).map(o=>o.value)).toEqual(['new']);
  expect(()=>buildGuidedPlan(c,v,'move')).toThrow(/recorded receipt/);
  expect(buildGuidedPlan(c,{...v,incomeEntry:'new'},'new').assumptions).toHaveLength(2);
+ const receipt=c.household.transactions.find(tx=>tx.sourceId===source.id)!;
+ c.household=reversePostedMoney(c.household,receipt.id,{createdBy:c.memberId,reversalDate:'2026-09-30'}).household;
+ expect(()=>buildGuidedPlan(c,v,'future-reversal')).toThrow(/recorded receipt/);
+ expect(()=>buildGuidedPlan({...c,today:'2026-10-01'},{...v,incomeDate:'2026-10-02'},'already-reversed')).not.toThrow();
 });

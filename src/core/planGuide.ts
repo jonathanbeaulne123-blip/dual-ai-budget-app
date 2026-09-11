@@ -31,11 +31,15 @@ function existingIncome(c:ActionContext,v:ActionValues) {
 }
 function incomeHasReceipt(c:ActionContext,a:PlanAssumption) {
  const byId=new Map(c.household.transactions.map(tx=>[tx.id,tx]));
- return c.household.transactions.filter(tx=>isVisibleInView(tx,c.memberId,c.view)).reduce((sum,tx)=>{
+ const dated=new Map<string,number>();
+ for(const tx of c.household.transactions.filter(tx=>isVisibleInView(tx,c.memberId,c.view))){
   const root=transactionProjection(tx,byId).root;
   const matched=a.sourceReferences.some(ref=>ref.type==='recurrence'&&c.household.recurrences.some(r=>r.id===ref.id&&((root.source==='recurring'&&root.sourceId===r.id&&root.date===a.expectedDate)||r.payments?.some(p=>p.transactionId===root.id&&p.occurrenceDate===a.expectedDate))));
-  return sum+(matched?projectedIncomeEffect(tx,byId):0);
- },0)>0;
+  if(matched){const date=tx.date<c.today?c.today:tx.date;dated.set(date,(dated.get(date)??0)+projectedIncomeEffect(tx,byId));}
+ }
+ let received=0;
+ for(const [,amount]of [...dated].sort(([a],[b])=>a.localeCompare(b))){received+=amount;if(received>0)return true;}
+ return false;
 }
 function guideNote(previous:string|undefined, entries:string[]) {
  const start='[Hercules planning notes]', end='[End Hercules planning notes]';
