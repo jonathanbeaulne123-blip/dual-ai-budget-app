@@ -9,6 +9,10 @@ const writes = vi.hoisted(() => ({ candidates: [] as Household[], stored: null a
   sync: false, queue: false, confirmations: [] as Array<{ id: string; household: Household }>,
   release: null as null | (() => void),
 }));
+vi.mock("../src/prepareQuickSample.ts", async () => {
+  const { addQuickSampleData } = await import("../src/core/quickSampleData.ts");
+  return { prepareQuickSample: async (h: Household, input: Parameters<typeof addQuickSampleData>[1]) => addQuickSampleData(h, input) };
+});
 
 vi.mock("../src/ledgerSync/presence.ts", () => ({ attachLedgerPresence: () => () => {} }));
 vi.mock("../src/ledgerSync/client.ts", async importOriginal => {
@@ -187,6 +191,26 @@ function input(selector: string, value: string) {
 }
 
 describe("five boards entry App integration", () => {
+  it("reviews, cancels and confirms quick samples in the current household", async () => {
+    mobile = false;
+    writes.stored!.kitchen.books.closedMonths = [];
+    const originalId = writes.stored!.householdId;
+    const originalCount = writes.stored!.transactions.length;
+    await mount();
+    act(() => button("More").click());
+    await waitFor(() => expect(container.textContent).toContain("Investor preview"));
+    act(() => button("Quick sample data").click());
+    await waitFor(() => expect(document.body.textContent).toContain("48 entries"));
+    expect(writes.candidates.every(h => h.transactions.length === originalCount)).toBe(true);
+    act(() => button("Cancel").click());
+    expect(writes.candidates.every(h => h.transactions.length === originalCount)).toBe(true);
+    act(() => button("Quick sample data").click());
+    act(() => button("Confirm sample data").click());
+    await waitFor(() => expect(writes.candidates.some(h => h.transactions.length === originalCount + 48)).toBe(true), 15000);
+    const added = writes.candidates.find(h => h.transactions.length === originalCount + 48)!;
+    expect(added.householdId).toBe(originalId);
+    expect(added.transactions.filter(t => t.note.startsWith("Fictional sample"))).toHaveLength(48);
+  });
   it.each(["expense", "income", "transfer", "shift"])("returns real App %s FAB entry focus to Add money across Close and resume", async mode => {
     mobile = true; await mount();
     const fab = container.querySelector<HTMLButtonElement>('[aria-label="Add money"]')!;

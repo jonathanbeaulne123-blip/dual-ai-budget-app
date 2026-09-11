@@ -42,6 +42,7 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if (kind === "addQuickSampleData") return [{ key: "quick-sample-catalog", value: { accounts: household.accounts, categories: household.categories, closedMonths: household.kitchen.books.closedMonths } }];
   if(kind==='saveNativeEvent'){const input=args[0] as {id:string};return [{key:`native-event/${input.id}`,value:household.nativeEvents?.find(r=>r.id===input.id)??null}];}
   if (kind === "commitCompanion" || kind === "commitCompanionGallery") return []; // Typed resource revisions and conversation generations are rechecked by the authority.
   if (['proposeHouseholdFundContribution','replaceHouseholdFundContributionSource'].includes(kind)) {

@@ -13,6 +13,17 @@
 :root[data-world-page="more"] .more-surfaces :is(button,select,input:not([type="checkbox"]):not([type="radio"]),summary) { min-height:44px; }
 :root[data-world-page="more"] .more-surfaces :is(button,summary):focus-visible { outline:3px solid var(--ink); outline-offset:3px; }
 
+.sample-data-panel { margin-top:16px; padding:16px; border:1px solid var(--line); }
+.sample-data-panel h3 { margin:5px 0 10px; }
+.sample-data-fields { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,2fr); gap:12px; }
+.sample-data-fields label { min-width:0; }
+.sample-data-fields select { display:block; width:100%; margin-top:6px; }
+:root[data-theme="classic"] .sample-data-panel { border-top:4px double var(--theme-accent); background:var(--paper); }
+:root[data-theme="taylor"] .sample-data-panel { border-style:dashed; border-radius:14px 4px 14px 4px; background:var(--paper); box-shadow:3px 3px 0 color-mix(in srgb,var(--theme-accent) 18%,transparent); }
+:root[data-theme="newfoundland"] .sample-data-panel { border-radius:3px; border-left:5px solid var(--theme-accent); background:var(--paper); }
+.investor-data-panel { border-bottom:3px solid var(--theme-second); }
+@media(max-width:480px) { .sample-data-fields { grid-template-columns:minmax(0,1fr); } .sample-data-panel>button { width:100%; } }
+
 .more-sync-help { grid-column: 1 / -1; }
 .more-sync-help:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
 .more-sync-help > header { align-items: flex-start; }

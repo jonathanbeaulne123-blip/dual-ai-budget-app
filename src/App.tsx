@@ -1,4 +1,7 @@
 import {WornLookContext} from './wardrobe/Appearance.tsx';
+import { QuickSamplePanel } from './QuickSamplePanel.tsx';
+import { previewQuickSampleData, type QuickSampleInput } from './core/quickSampleData.ts';
+import { prepareQuickSample } from './prepareQuickSample.ts';
 import { buildDiscoveryFund, type DiscoveryDestination } from "./core/herculesDiscovery.ts";
 import { companionUpdateAllowed } from "./core/herculesCompanion.ts";
 import { entryDraftKey, loadEntryDraft, writeEntryLocal, clearEntryLocal, entryConfirmation, clearEntryConfirmation, readEntrySubmission, type EntrySubmission, type EntryDraft } from "./entryDraft.ts";
@@ -549,6 +552,7 @@ function loadWelcomeGoogleIntent(): WelcomeGoogleIntent | null {
 type Guard =
   | { kind: "environment"; next: Environment }
   | { kind: "demo-suite"; seed: number }
+  | { kind: "quick-sample"; input: QuickSampleInput; preview: ReturnType<typeof previewQuickSampleData> }
   | { kind: "erase-development" }
   | { kind: "clear-this-phone" }
   | { kind: "reset-development" }
@@ -7410,11 +7414,13 @@ export function App() {
             }}>
               {view === "personal" ? "Export this Personal folio" : "Export Shared snapshot"}
             </button>
+            {environment === "development" && <QuickSamplePanel key={`${household.householdId}:${actorId}:${view}`} household={household} memberId={actorId} visibility={view === "personal" ? "personal" : "household"} today={today} busy={busy} onReview={(input, preview) => setGuard({ kind: "quick-sample", input, preview })} />}
             {environment === "development" && (
-              <div className="paper-panel" style={{ marginTop: 12, padding: 12 }} data-testid="demo-suite-panel">
-                <p className="kicker">Synthetic Demo Suite</p>
+              <div className="paper-panel sample-data-panel investor-data-panel" data-testid="demo-suite-panel">
+                <p className="kicker">Investor preview · Synthetic Demo Suite</p>
+                <h3>The full twelve-month story</h3>
                 <p className="muted" style={{ marginTop: 4 }}>
-                  A dedicated, visibly fictional household for Hercules Pro. Every run has a replay seed; schedule mail stays proposal-only until Confirm.
+                  A large fictional household with weighted income and spending, shift simulations, goals, claims, schedules and audit checks. Generation and verification take longer. Every run has a replay seed; schedule mail stays proposal-only until Confirm.
                 </p>
                 {household.syntheticFixture?.kind === "hearth-demo-suite" ? (
                   <p style={{ margin: "8px 0 0" }}><strong>Seed {household.syntheticFixture.seed}</strong> · generator {household.syntheticFixture.version}</p>
@@ -7430,7 +7436,7 @@ export function App() {
                   onChange={(event) => setDemoSeed(event.target.value.replace(/\D/g, "").slice(0, 10))}
                 />
                 <div className="button-row demo-suite-actions" style={{ marginTop: 8 }}>
-                  <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed() })}>Fresh showcase</button>
+                  <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed() })}>Investor preview</button>
                   <button className="ghost" disabled={busy || !demoSeed} onClick={() => setGuard({ kind: "demo-suite", seed: Number(demoSeed) >>> 0 })}>Replay seed</button>
                   {household.syntheticFixture?.kind === "hearth-demo-suite" && (
                     <button className="ghost" disabled={busy} onClick={() => {
@@ -7767,6 +7773,37 @@ export function App() {
               } finally {
                 setBusy(false);
               }
+            })();
+          }}
+        />
+      )}
+      {environment === "development" && guard?.kind === "quick-sample" && (
+        <ConfirmSheet
+          title="Add fictional data to this ledger?"
+          body={`${guard.preview.rows.length} entries · ${guard.preview.firstDate} to ${guard.preview.lastDate}. Add ${formatCad(guard.preview.incomeCents)} income and ${formatCad(guard.preview.expenseCents)} spending to ${household.accounts.find(a => a.id === guard.input.accountId)?.name ?? "the selected account"}. The balance changes by ${formatCad(guard.preview.incomeCents - guard.preview.expenseCents)}. Existing entries stay; every new row is labelled Fictional sample. Undo removes this set.`}
+          extra={googleStepUpExtra}
+          confirmLabel="Confirm sample data"
+          busy={busy}
+          onCancel={() => setGuard(null)}
+          onConfirm={() => {
+            const { input, preview } = guard;
+            const isCurrent = () => openingScope === readGuardScopeIdentity() && dueOpening === guardOpeningRef.current;
+            void (async () => {
+              setBusy(true);
+              try {
+                await gateWithGoogle({ record: false });
+                if (!isCurrent()) return;
+                const baseline = householdRef.current;
+                if (!baseline) return;
+                const prepared = await prepareQuickSample(baseline, input);
+                if (!isCurrent()) return;
+                await run(current => {
+                  if (current !== baseline) throw new ValidationError("The books changed while preparing samples. Close this review and try again.");
+                  if (canonical(previewQuickSampleData(current, input).rows) !== canonical(preview.rows)) throw new ValidationError("The sample details changed. Close this review and preview them again.");
+                  return captureExplicit(current, { ...prepared, undo: { ...prepared.undo, snapshot: current } }, "addQuickSampleData", [input]);
+                }, { closeAdd: false, isCurrent, onAccepted: () => setGuard(null) });
+              } catch (caught) { if (isCurrent()) setError(caught instanceof Error ? caught.message : String(caught)); }
+              finally { setBusy(false); }
             })();
           }}
         />

@@ -24,6 +24,10 @@ Risk High. Budget (5): truthful openings, reconciled history and completion auth
 
 # Decision Log
 
+## Two random-data options — 2026-09-11
+
+Jonathan requested a rich investor preview and a lightweight 3–6 month fictional history for widget exploration. More now separates Quick sample data from Investor preview. The former adds at most 96 labelled income/spending entries to the selected existing Development ledger and cash account, after a review of dates and exact totals. It preserves existing setup, uses ordinary Confirm/Undo and actor-bound command replay, refuses closed months and repeated sets, and does not execute simulations. The investor option retains the existing twelve-month dedicated synthetic suite and its broader calculations. Specialized shift/Fund/reconciliation records belong to that larger preview. [Scope and measured evidence](worksessions/2026-09-11-two-random-data-buttons.md).
+
 Living product and architecture decisions for **Hearth**.
 
 ## Books scene refinement — approved 2026-09-10
