@@ -1,3 +1,7 @@
+## Kitty Banks — authorized Development release (2026-09-11)
+
+Jonathan explicitly authorized push, merge and Development deployment after the scoped implementation and remaining limits were reported. The candidate incorporates main through #441, retaining guided Plan and category splitting. [Release scope, verification and compatible rollback](worksessions/2026-09-11-kitty-envelope-release.md). This supersedes the local-only release boundary below; it does not authorize exhaustive verification, Production, schema, or real-household writes.
+
 ## Kitty Banks — local cinematic envelope implementation (2026-09-11)
 
 Branch `codex/kitty-envelope-app-20260911`, base `16d4710733c5e5ff1655e5a7d2bdff6c01b59ad2`, incorporating merged #433 and #437. Jonathan authorized implementation. Risk High. Budget (5): exact backing, reusable partial purchases, scope-bound receipts and correction recovery. Engagement (3): an interactive ceramic bank and folio in six authored theme/scope rooms, useful Plan rehearsals, clearer Calendar types and readable Hercules.
