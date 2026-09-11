@@ -1,4 +1,5 @@
 import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
+import { addQuickSampleData } from '../core/quickSampleData.ts';
 import {commitCompanionGallery} from '../core/herculesWardrobe.ts';
 import { reviewedDuplicateRequest } from "../core/duplicateReview.ts";
 import { eraseDevelopmentActivity, restoreSharedPoint } from "./lifecycle.ts";
@@ -16,6 +17,7 @@ type Fn = (household: Household, ...args: never[]) => CommitResult;
 type Policy = { fn: Fn; bind: (args: unknown[], actor: string) => void };
 const policies = new Map<string, Policy>();
 const functions = {
+  addQuickSampleData,
   ...commands,
   executeHerculesAction, cancelHerculesSubmission,
   commitCompanion,
@@ -71,6 +73,7 @@ register(
 );
 register("executeHerculesAction cancelHerculesSubmission", ["memberId"]);
 register("recordBillPayment", ["createdBy"]);
+register("addQuickSampleData", ["memberId"]);
 register("saveNativeEvent", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);

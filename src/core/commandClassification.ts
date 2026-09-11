@@ -23,6 +23,14 @@ export type CommandClassificationRow = {
  */
 export const COMMAND_CLASSIFICATION: readonly CommandClassificationRow[] = [
   {
+    commandKind: "addQuickSampleData",
+    writeKind: "ledger-write",
+    correctionRoute: "confirmation-undo",
+    undoScope: "Only this Confirm's fictional transaction ids",
+    uiLabel: "Undo removes this sample set; existing entries stay",
+    partnerSafe: true,
+  },
+  {
     commandKind: "postEntry",
     writeKind: "ledger-write",
     correctionRoute: "confirmation-undo",
