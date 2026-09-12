@@ -6,28 +6,13 @@
  * Display canvas = what the material shows: identical when fired, "bisque"
  * lifted (35% toward chalk, 25% desaturated) while the clay is unfired.
  */
-import type { KittyAnchor, KittyPaintV1, KittyPart, KittyStampV1, KittyStrokeV1 } from "../../core/types.ts";
+import type { KittyPaintV1, KittyPart, KittyStampV1, KittyStrokeV1 } from "../../core/types.ts";
+import { KITTY_ANCHOR_UV, PART_CANVAS_SIZE, mirrorPart, mirrorU } from "./anchors.ts";
+import { STAMP_ART, stampPlacement, stampRoleColor } from "./stampArt.ts";
 import { studioHex } from "./palette.ts";
 
-export const PART_CANVAS_SIZE: Record<KittyPart, number> = { body: 512, head: 512, earL: 256, earR: 256, tail: 256, paws: 256 };
-/** Part-local uv for every named anchor. Front centre of every part is u = 0.5. */
-export const KITTY_ANCHOR_UV: Record<KittyAnchor, { part: KittyPart; u: number; v: number }> = {
-  forehead: { part: "head", u: 0.5, v: 0.74 },
-  leftCheek: { part: "head", u: 0.36, v: 0.46 },
-  rightCheek: { part: "head", u: 0.64, v: 0.46 },
-  chin: { part: "head", u: 0.5, v: 0.2 },
-  chest: { part: "body", u: 0.5, v: 0.82 },
-  belly: { part: "body", u: 0.5, v: 0.64 },
-  back: { part: "body", u: 0.0, v: 0.62 },
-  leftFlank: { part: "body", u: 0.25, v: 0.55 },
-  rightFlank: { part: "body", u: 0.75, v: 0.55 },
-  rump: { part: "body", u: 0.0, v: 0.3 },
-  leftEar: { part: "earL", u: 0.5, v: 0.45 },
-  rightEar: { part: "earR", u: 0.5, v: 0.45 },
-  tailTip: { part: "tail", u: 0.9, v: 0.5 },
-};
-export const mirrorU = (u: number) => 1 - u;
-export const mirrorPart = (part: KittyPart): KittyPart => (part === "earL" ? "earR" : part === "earR" ? "earL" : part);
+export { KITTY_ANCHOR_UV, PART_CANVAS_SIZE, mirrorPart, mirrorU };
+
 export const BISQUE = { r: 239, g: 230, b: 216 };
 
 export function partDip(paint: KittyPaintV1, part: KittyPart): string {
@@ -85,81 +70,48 @@ function strokeSegment(ctx: Ctx, stroke: KittyStrokeV1, dip: string, size: numbe
   draw(-size);
   ctx.restore();
 }
-function stampPath(ctx: Ctx, kind: KittyStampV1["kind"], r: number, text?: string) {
-  ctx.beginPath();
-  switch (kind) {
-    case "heart":
-      ctx.moveTo(0, r * 0.8);
-      ctx.bezierCurveTo(-r * 1.4, -r * 0.2, -r * 0.6, -r * 1.1, 0, -r * 0.35);
-      ctx.bezierCurveTo(r * 0.6, -r * 1.1, r * 1.4, -r * 0.2, 0, r * 0.8);
-      ctx.closePath();
-      break;
-    case "star":
-      for (let i = 0; i < 10; i++) {
-        const a = (i * Math.PI) / 5 - Math.PI / 2, rad = i % 2 ? r * 0.45 : r;
-        ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
-      }
-      ctx.closePath();
-      break;
-    case "paw":
-      ctx.ellipse(0, r * 0.3, r * 0.6, r * 0.5, 0, 0, Math.PI * 2);
-      for (const [x, y] of [[-0.62, -0.2], [-0.22, -0.62], [0.22, -0.62], [0.62, -0.2]]) {
-        ctx.moveTo(x! * r + r * 0.25, y! * r);
-        ctx.arc(x! * r, y! * r, r * 0.25, 0, Math.PI * 2);
-      }
-      break;
-    case "fish":
-      ctx.moveTo(-r, 0);
-      ctx.quadraticCurveTo(-r * 0.2, -r * 0.9, r * 0.5, 0);
-      ctx.quadraticCurveTo(-r * 0.2, r * 0.9, -r, 0);
-      ctx.moveTo(r * 0.45, 0);
-      ctx.lineTo(r, -r * 0.5);
-      ctx.lineTo(r, r * 0.5);
-      ctx.closePath();
-      break;
-    case "moon":
-      ctx.arc(0, 0, r, Math.PI * 0.2, Math.PI * 1.8);
-      ctx.arc(r * 0.45, 0, r * 0.75, Math.PI * 1.6, Math.PI * 0.4, true);
-      ctx.closePath();
-      break;
-    case "flower":
-      for (let i = 0; i < 6; i++) {
-        const a = (i * Math.PI) / 3;
-        ctx.moveTo(Math.cos(a) * r * 0.55 + r * 0.42, Math.sin(a) * r * 0.55);
-        ctx.arc(Math.cos(a) * r * 0.55, Math.sin(a) * r * 0.55, r * 0.42, 0, Math.PI * 2);
-      }
-      break;
-    case "bolt":
-      ctx.moveTo(-r * 0.2, -r);
-      ctx.lineTo(r * 0.45, -r);
-      ctx.lineTo(r * 0.05, -r * 0.15);
-      ctx.lineTo(r * 0.5, -r * 0.15);
-      ctx.lineTo(-r * 0.35, r);
-      ctx.lineTo(-r * 0.05, r * 0.2);
-      ctx.lineTo(-r * 0.5, r * 0.2);
-      ctx.closePath();
-      break;
-    case "initial":
-      ctx.font = `700 ${r * 1.6}px Georgia, serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText((text ?? "").slice(0, 2), 0, 0);
-      return;
-  }
-  ctx.fill();
-}
-export function drawStamp(ctx: Ctx, stamp: KittyStampV1, size: number) {
-  const anchor = KITTY_ANCHOR_UV[stamp.anchor];
-  const p = px(anchor.u, anchor.v, size);
+const pathCache = new Map<string, Path2D>();
+const path2d = (d: string) => {
+  let cached = pathCache.get(d);
+  if (!cached) { cached = new Path2D(d); pathCache.set(d, cached); }
+  return cached;
+};
+/** One stamp or add-on at an explicit point, drawn from the shared artwork. */
+export function drawStampAt(ctx: Ctx, stamp: KittyStampV1, size: number, u: number, v: number) {
+  const p = px(u, v, size);
   const r = stamp.size * size * 0.5;
   for (const offset of [0, size, -size]) {
     ctx.save();
     ctx.translate(p.x + offset, p.y);
     ctx.rotate((stamp.rotation * Math.PI) / 180);
-    ctx.fillStyle = stamp.color;
-    stampPath(ctx, stamp.kind, r, stamp.text);
+    ctx.scale(r, r);
+    if (stamp.kind === "initial") {
+      ctx.fillStyle = stamp.color;
+      ctx.font = "700 1.6px Georgia, serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText((stamp.text ?? "").slice(0, 2), 0, 0);
+    } else {
+      for (const piece of STAMP_ART[stamp.kind]) {
+        const color = stampRoleColor(piece.role, stamp);
+        if (piece.stroke) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = piece.stroke;
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.stroke(path2d(piece.d));
+        } else {
+          ctx.fillStyle = color;
+          ctx.fill(path2d(piece.d));
+        }
+      }
+    }
     ctx.restore();
   }
+}
+export function drawStamp(ctx: Ctx, stamp: KittyStampV1, size: number) {
+  const spot = stampPlacement(stamp);
+  drawStampAt(ctx, stamp, size, spot.u, spot.v);
 }
 /** Full replay of one part's underglaze into `layer`. */
 export function replayPart(layer: HTMLCanvasElement, paint: KittyPaintV1, part: KittyPart) {
@@ -179,7 +131,7 @@ export function replayPart(layer: HTMLCanvasElement, paint: KittyPaintV1, part: 
       if (mirrored.part === part) strokeSegment(ctx, mirrored, dip, size, 0, last);
     }
   }
-  for (const stamp of paint.stamps) if (KITTY_ANCHOR_UV[stamp.anchor].part === part) drawStamp(ctx, stamp, size);
+  for (const stamp of paint.stamps) if (stampPlacement(stamp).part === part) drawStamp(ctx, stamp, size);
 }
 /** Draw only the newest segment(s) of an in-progress stroke. Returns the dirty rect. */
 export function appendStroke(layer: HTMLCanvasElement, paint: KittyPaintV1, part: KittyPart, stroke: KittyStrokeV1, fromIndex: number) {

@@ -948,3 +948,59 @@
   > button[aria-pressed="true"] {
   --room-muted: #5d6680;
 }
+
+/* Brush ring (2026-09-12): the cursor is the mark. It grows with the size
+   selector so you can see what a stroke will cover before you make it, and it
+   shows where paint lands when you run past the edge of the clay. */
+.kitty-stage[data-painting="true"] {
+  cursor: none;
+  touch-action: none;
+}
+.kitty-brush-ring {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--brush, currentColor) 70%, white);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--room-ink) 55%, transparent), inset 0 0 0 1.5px color-mix(in srgb, var(--room-ink) 30%, transparent);
+  background: color-mix(in srgb, var(--brush, currentColor) 22%, transparent);
+}
+.kitty-brush-ring[data-erasing="true"] {
+  background: none;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--room-ink) 65%, transparent);
+}
+.kitty-stage-spin[aria-pressed="true"] {
+  border-color: var(--room-accent);
+  box-shadow: inset 0 0 0 2px var(--room-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kitty-brush-ring {
+    transition: none;
+  }
+}
+
+/* Optional detail, folded away (2026-09-12). A bank needs a name and an
+   amount; the rest is there when you want it and silent when you don't. */
+.kitty-optional {
+  border: 1px dashed var(--room-line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--folio) 60%, transparent);
+}
+.kitty-optional > summary {
+  cursor: pointer;
+  font-size: 13px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  color: var(--room-muted);
+}
+.kitty-optional[open] > summary {
+  margin-bottom: 8px;
+}
+.kitty-optional label {
+  display: block;
+  margin-bottom: 10px;
+}

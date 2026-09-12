@@ -3,12 +3,14 @@ import type { KittyGlaze, KittyPaintV1, KittyPart, KittyPieceV1, KittyStrokeV1 }
 import { defaultKittyPaint, defaultKittySculpt } from "../core/kittyStudio.ts";
 import { KittyFlat } from "./studio/flat.tsx";
 
-export type KittyHit = { part: KittyPart; uv: { u: number; v: number } };
+export type KittyHit = { part: KittyPart; uv: { u: number; v: number }; outside?: boolean };
 export type KittyStageApi = {
   paintStroke: (stroke: KittyStrokeV1, fromIndex: number) => void;
   replayPaint: (paint: KittyPaintV1) => void;
   rotate: (radians: number) => void;
 };
+/** Texture pixels → screen pixels for the brush ring. The wrap is 512 across a cat that fills most of the stage. */
+const brushRingPx = (size: number, stageHeight: number) => Math.max(6, Math.min(stageHeight * 0.9, (size / 512) * stageHeight * 1.75));
 export type KittyStageMode = "view" | "wheel" | "paint" | "kiln";
 const reducedMotion = () =>
   typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -24,10 +26,12 @@ export function KittyStage({
   fired,
   mode = "view",
   spin = false,
+  brush,
   apiRef,
   onPaint,
   onThrow,
   onFlatChange,
+  onSpinChange,
 }: {
   piece: KittyPieceV1 | null;
   glaze: KittyGlaze;
@@ -41,16 +45,23 @@ export function KittyStage({
   fired?: boolean;
   mode?: KittyStageMode;
   spin?: boolean;
+  /** What the brush is set to, so the stage can show a ring the size of the mark it will make. */
+  brush?: { size: number; color: string; erasing: boolean } | null;
   apiRef?: MutableRefObject<KittyStageApi | null>;
   onPaint?: (hit: KittyHit | null, phase: "down" | "move" | "up") => void;
   onThrow?: (deltaY: number) => void;
   onFlatChange?: (flat: boolean) => void;
+  onSpinChange?: (spinning: boolean) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
-  const api = useRef<(KittyStageApi & { open: (v: boolean) => void; sculpt: (p: KittyPieceV1 | null) => void; fill: (n: number, animate: boolean) => void; fired: (v: boolean) => void; spin: (v: boolean) => void; idle: (v: boolean) => void; hit: (x: number, y: number) => KittyHit | null }) | null>(null);
+  const api = useRef<(KittyStageApi & { open: (v: boolean) => void; sculpt: (p: KittyPieceV1 | null) => void; fill: (n: number, animate: boolean) => void; fired: (v: boolean) => void; spin: (v: boolean) => void; idle: (v: boolean) => void; hit: (x: number, y: number, outside?: boolean) => KittyHit | null }) | null>(null);
   const [flat, setFlat] = useState(false), [failed, setFailed] = useState(false);
-  const latest = useRef({ piece, glaze, open, step, fired, mode, spin, celebrate });
-  latest.current = { piece, glaze, open, step, fired, mode, spin, celebrate };
+  // null = follow the bench; true/false = the choice made with the Spin button, which sticks.
+  const [spinChoice, setSpinChoice] = useState<boolean | null>(null);
+  const spinning = spinChoice ?? spin;
+  const [ring, setRing] = useState<{ x: number; y: number; d: number } | null>(null);
+  const latest = useRef({ piece, glaze, open, step, fired, mode, spin: spinning, celebrate });
+  latest.current = { piece, glaze, open, step, fired, mode, spin: spinning, celebrate };
   const drag = useRef<{ x: number; y: number; id: number; painting: boolean } | null>(null);
   const firedState = fired ?? (piece ? Boolean(piece.firedAt) : true);
   useEffect(() => { onFlatChange?.(flat || failed); }, [flat, failed, onFlatChange]);
@@ -59,7 +70,7 @@ export function KittyStage({
   useEffect(() => { if (piece) api.current?.replayPaint(piece.paint); }, [piece?.paint]);
   useEffect(() => { api.current?.fill(step, celebrate); }, [step, celebrate]);
   useEffect(() => { api.current?.fired(firedState); }, [firedState]);
-  useEffect(() => { api.current?.spin(spin); }, [spin]);
+  useEffect(() => { api.current?.spin(spinning); onSpinChange?.(spinning); }, [spinning, onSpinChange]);
   useEffect(() => {
     const element = host.current;
     if (!element || flat) return;
@@ -173,11 +184,11 @@ export function KittyStage({
           fired(v) { cat.setFired(v); render(); },
           spin(v) { cat.setSpin(v ? 0.5 : 0); render(); },
           idle(v) { cat.setIdle(v); render(); },
-          hit(x, y) {
+          hit(x, y, outside = false) {
             const box = renderer.domElement.getBoundingClientRect();
             pointer.set(((x - box.left) / box.width) * 2 - 1, -((y - box.top) / box.height) * 2 + 1);
             raycaster.setFromCamera(pointer, camera);
-            return cat.raycastPart(raycaster);
+            return cat.raycastPart(raycaster, outside);
           },
         };
         if (apiRef) apiRef.current = api.current;
@@ -219,12 +230,16 @@ export function KittyStage({
           const painting = mode === "paint" && event.button === 0;
           drag.current = { x: event.clientX, y: event.clientY, id: event.pointerId, painting };
           event.currentTarget.setPointerCapture(event.pointerId);
-          if (painting) onPaint?.(api.current.hit(event.clientX, event.clientY), "down");
+          if (painting) onPaint?.(api.current.hit(event.clientX, event.clientY, true), "down");
         }}
         onPointerMove={(event) => {
+          if (mode === "paint" && brush && live) {
+            const box = event.currentTarget.getBoundingClientRect();
+            setRing({ x: event.clientX - box.left, y: event.clientY - box.top, d: brushRingPx(brush.size, box.height) });
+          }
           if (!drag.current || !api.current) return;
           if (drag.current.painting) {
-            onPaint?.(api.current.hit(event.clientX, event.clientY), "move");
+            onPaint?.(api.current.hit(event.clientX, event.clientY, true), "move");
             return;
           }
           const dx = event.clientX - drag.current.x, dy = event.clientY - drag.current.y;
@@ -234,20 +249,39 @@ export function KittyStage({
           drag.current.y = event.clientY;
         }}
         onPointerUp={(event) => {
-          if (drag.current?.painting && api.current) onPaint?.(api.current.hit(event.clientX, event.clientY), "up");
+          if (drag.current?.painting && api.current) onPaint?.(api.current.hit(event.clientX, event.clientY, true), "up");
           drag.current = null;
         }}
         onPointerCancel={() => {
           if (drag.current?.painting) onPaint?.(null, "up");
           drag.current = null;
+          setRing(null);
         }}
+        onPointerLeave={() => setRing(null)}
       >
         {!live && <KittyFlat className="kitty-flat" piece={piece} glaze={glaze} step={step} open={open} fired={firedState} />}
+        {live && mode === "paint" && brush && ring && (
+          <span
+            className="kitty-brush-ring"
+            aria-hidden="true"
+            data-erasing={brush.erasing ? "true" : undefined}
+            style={{ left: `${ring.x}px`, top: `${ring.y}px`, width: `${ring.d}px`, height: `${ring.d}px`, ["--brush" as string]: brush.color }}
+          />
+        )}
       </div>
       <div className="kitty-stage-controls">
         <button type="button" aria-label={`Rotate ${name} left`} disabled={!live} onClick={() => api.current?.rotate(-0.45)}>↶</button>
-        <span>{mode === "paint" ? "Paint straight onto the clay." : mode === "wheel" ? "Drag up and down to throw." : "Turn it. Make it yours."}</span>
+        <span>{mode === "paint" ? "Paint right past the edge — it still lands." : mode === "wheel" ? "Drag up and down to throw." : "Turn it. Make it yours."}</span>
         <button type="button" aria-label={`Rotate ${name} right`} disabled={!live} onClick={() => api.current?.rotate(0.45)}>↷</button>
+        <button
+          type="button"
+          className="kitty-stage-spin"
+          aria-pressed={spinning}
+          disabled={!live}
+          onClick={() => setSpinChoice(!spinning)}
+        >
+          {spinning ? "Stop turning" : "Turn it slowly"}
+        </button>
         <button type="button" aria-pressed={flat} onClick={() => setFlat(!flat)}>{flat ? "3D view" : "Simple view"}</button>
       </div>
       {failed && !flat && (

@@ -76,7 +76,7 @@ describe("Kitty Bank Studio benches", () => {
       await click("Kiln");
       await click("Fire it");
       expect(document.body.textContent).toContain("Fire Fictional seasonal reserve");
-      expect(document.body.textContent).toContain("cannot be changed");
+      expect(document.body.textContent).toContain("take it back to the wheel");
       expect(m.commands).toHaveLength(1);
       await click("Fire it", true);
       expect(m.commands).toHaveLength(2);
@@ -84,7 +84,7 @@ describe("Kitty Bank Studio benches", () => {
       expect(studio.draft).toBeNull();
       expect(studio.fired).toHaveLength(1);
       expect(studio.fired[0]!.firedBy).toBe("MEM-001");
-      expect(document.body.textContent).toContain("Fired shelf · 1 of 6");
+      expect(document.body.textContent).toContain("Shelf · 1 of 6");
       expect(document.body.textContent).toContain("Fired. Your Kitty Bank came out of the kiln.");
       // The ceremony is skippable; Throw another gives fresh clay, shelf untouched, nothing saved yet.
       expect(document.body.textContent).toContain("Firing…");
@@ -99,15 +99,13 @@ describe("Kitty Bank Studio benches", () => {
       await m.close();
     }
   });
-  it("places and adjusts stamps from the anchor list with keyboard rotation", async () => {
+  it("bakes an extra on from the drawer, adjusts it by keyboard, and takes it off again", async () => {
     sessionStorage.clear();
     const m = await fixture();
     try {
       await click("Studio");
       await click("Throw a piece");
       await click("Paint");
-      const details = document.querySelector<HTMLDetailsElement>("details.studio-stamps")!;
-      await act(async () => { details.open = true; });
       await click("Initial");
       const letters = [...document.querySelectorAll("label")].find((row) => row.textContent?.includes("Letters"))!.querySelector("input")!;
       await act(async () => {
@@ -116,16 +114,65 @@ describe("Kitty Bank Studio benches", () => {
       });
       await click("Forehead");
       const item = document.querySelector<HTMLButtonElement>(".studio-stamp-list button")!;
-      expect(item.textContent).toContain("Initial · Forehead · 0°");
-      await act(async () => item.click());
+      // Placing selects the piece, so its controls are already open.
+      expect(item.textContent).toContain("Initial · Forehead");
+      expect(item.getAttribute("aria-pressed")).toBe("true");
       await act(async () => { item.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })); });
-      expect(document.querySelector(".studio-stamp-list button")!.textContent).toContain("15°");
+      // Placed free, not pinned to the anchor: it carries its own part and uv.
+      await click("Move it right");
       await click("Keep the clay");
       const stamp = m.h.goals[0]!.envelope!.studio!.draft!.paint.stamps[0]!;
-      expect(stamp).toMatchObject({ kind: "initial", anchor: "forehead", rotation: 15, text: "JB" });
+      expect(stamp).toMatchObject({ kind: "initial", part: "head", rotation: 15, text: "JB" });
+      expect(stamp.u).toBeCloseTo(0.53, 5);
+      expect(stamp.v).toBeCloseTo(0.74, 5);
+      await click("Take it off");
+      expect(document.querySelector(".studio-stamp-list")).toBeNull();
+      await click("Heart");
+      await click("Chest");
+      expect(document.querySelector(".studio-stamp-list")).toBeTruthy();
       await click("Wash it off");
       await click("Yes, wash it");
       expect(document.querySelector(".studio-stamp-list")).toBeNull();
+    } finally {
+      await m.close();
+    }
+  });
+  it("takes a fired piece back to the wheel, refires it, and can throw it off the shelf", async () => {
+    sessionStorage.clear();
+    const m = await fixture();
+    try {
+      await click("Studio");
+      await click("Throw a piece");
+      // Feature dials live on the Shape bench and change only the local draft.
+      await click("Bigger eyes");
+      await click("Bigger eyes");
+      await click("Kiln");
+      await click("Fire it");
+      await click("Fire it", true);
+      await click("Skip");
+      const fired = m.h.goals[0]!.envelope!.studio!.fired[0]!;
+      expect(fired.firings).toBe(1);
+      expect(fired.sculpt.features?.eyes).toBeCloseTo(1.2, 5);
+      expect(m.h.goals[0]!.envelope!.studio!.displayId).toBe(fired.id);
+      // Nothing is final: the shelf piece comes back as clay, keeping its id.
+      await click("Repaint");
+      expect(document.body.textContent).toContain("Back to the wheel");
+      await click("Bring it back");
+      expect(m.h.goals[0]!.envelope!.studio!.fired).toHaveLength(0);
+      expect(m.h.goals[0]!.envelope!.studio!.draft!.id).toBe(fired.id);
+      expect(document.body.textContent).toContain("Back on the wheel");
+      await click("Kiln");
+      await click("Fire it again");
+      await click("Fire it", true);
+      const refired = m.h.goals[0]!.envelope!.studio!.fired[0]!;
+      expect(refired.id).toBe(fired.id);
+      expect(refired.firings).toBe(2);
+      // And it can leave the shelf without touching the bank's money.
+      const saved = m.h.goals[0]!.savedCents;
+      await click("Throw away");
+      await click("Throw it away");
+      expect(m.h.goals[0]!.envelope!.studio!.fired).toHaveLength(0);
+      expect(m.h.goals[0]!.savedCents).toBe(saved);
     } finally {
       await m.close();
     }

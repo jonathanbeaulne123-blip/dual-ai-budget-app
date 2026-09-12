@@ -753,8 +753,8 @@ export type KittyGlaze = "cream" | "sea-glass" | "terracotta" | "midnight" | "ro
 export type KittyBody = "round" | "pear" | "loaf" | "tall" | "bean";
 export type KittyHead = "round" | "wedge" | "chubby" | "heart";
 export type KittyEars = "pointed" | "round" | "folded" | "tufted" | "none";
-export type KittyEyes = "open" | "happy" | "wide" | "sleepy";
-export type KittyMouth = "smile" | "w" | "tongue" | "grin" | "serene";
+export type KittyEyes = "open" | "happy" | "wide" | "sleepy" | "sparkle" | "wink" | "closed";
+export type KittyMouth = "smile" | "w" | "tongue" | "grin" | "serene" | "oh";
 export type KittyWhiskers = "short" | "long" | "curly" | "none";
 export type KittyTail = "curl" | "up" | "wrap" | "none";
 export type KittyNose = "button" | "heart" | "tiny";
@@ -762,7 +762,13 @@ export type KittyPart = "body" | "head" | "earL" | "earR" | "tail" | "paws";
 export type KittyAnchor =
   | "forehead" | "leftCheek" | "rightCheek" | "chin" | "chest" | "belly" | "back"
   | "leftFlank" | "rightFlank" | "rump" | "leftEar" | "rightEar" | "tailTip";
-export type KittyStampKind = "heart" | "star" | "paw" | "fish" | "moon" | "flower" | "bolt" | "initial";
+export type KittyStampKind =
+  | "heart" | "star" | "paw" | "fish" | "moon" | "flower" | "bolt" | "initial"
+  /** Bake-on add-ons (2026-09-12): little pieces that sit anywhere on the clay. */
+  | "party-hat" | "sun-hat" | "beanie" | "crown" | "glasses" | "sunglasses" | "bowtie" | "scarf"
+  | "purse" | "suitcase" | "camera" | "palm" | "shell" | "ticket" | "balloon" | "sun" | "cloud" | "key" | "leaf" | "cupcake";
+/** Feature dials: 0.5 (smaller) .. 1.8 (bigger), 1 = as thrown. */
+export type KittyFeature = "head" | "ears" | "eyes" | "nose" | "mouth" | "whiskers" | "tail";
 export type KittyTool = "brush" | "marker" | "sponge" | "eraser";
 export type KittySculptV1 = {
   body: KittyBody;
@@ -775,6 +781,8 @@ export type KittySculptV1 = {
   whiskers: KittyWhiskers;
   tail: KittyTail;
   nose: KittyNose;
+  /** Per-feature size dials. Absent on pieces made before 2026-09-12; every dial reads 1 then. */
+  features?: Partial<Record<KittyFeature, number>>;
 };
 export type KittyStrokeV1 = {
   part: KittyPart;
@@ -788,9 +796,16 @@ export type KittyStrokeV1 = {
 };
 export type KittyStampV1 = {
   id: string;
+  /** Nearest named anchor. Kept for readers older than free placement, and for the spoken label. */
   anchor: KittyAnchor;
+  /** Free placement (2026-09-12): the exact part and uv the piece was baked onto. Absent = sit on the anchor. */
+  part?: KittyPart;
+  u?: number;
+  v?: number;
   kind: KittyStampKind;
   color: string;
+  /** Second colour for two-tone add-ons (hat band, lens frame). Absent = derived from `color`. */
+  trim?: string;
   size: number;
   rotation: number;
   text?: string;
@@ -805,17 +820,21 @@ export type KittyPaintV1 = {
 export type KittyPieceV1 = {
   id: string;
   createdAt: string;
-  /** Fired pieces are final. Only a draft (firedAt null) may change. */
+  /** When this piece last came out of the kiln. Null while it is clay on the wheel. */
   firedAt: string | null;
   firedBy?: string | null;
+  /** How many times it has been fired. Absent = once. A repainted piece keeps its id and counts up. */
+  firings?: number;
   sculpt: KittySculptV1;
   paint: KittyPaintV1;
 };
 export type KittyStudioV1 = {
   version: 1;
   draft: KittyPieceV1 | null;
-  /** Immutable shelf, newest last, at most six. */
+  /** The shelf, newest last, at most six. Pieces may be taken back to the wheel or thrown away. */
   fired: KittyPieceV1[];
+  /** Which piece the bank shows. Absent = the newest fired piece. */
+  displayId?: string | null;
 };
 export type GoalEnvelope = {
   version: 1;
