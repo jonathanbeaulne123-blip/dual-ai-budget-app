@@ -925,6 +925,16 @@ export function App() {
   booksGateRef.current = activeBooksGate;
   const [spark, setSpark] = useState(false);
   const [visorPop, setVisorPop] = useState(false);
+  useEffect(() => {
+    if (!spark) return;
+    const timer = window.setTimeout(() => setSpark(false), 900);
+    return () => window.clearTimeout(timer);
+  }, [spark]);
+  useEffect(() => {
+    if (!visorPop) return;
+    const timer = window.setTimeout(() => setVisorPop(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [visorPop]);
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
@@ -4799,13 +4809,11 @@ export function App() {
         if (result.warnings.length) setError(result.warnings.join(" "));
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
           setSpark(true);
-          window.setTimeout(() => setSpark(false), 900);
           if (comfort.sound) playClink();
           if (comfort.haptics && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(10);
         }
         if (result.household.activity.at(-1)?.action === "Post Recurring") {
           setVisorPop(true);
-          window.setTimeout(() => setVisorPop(false), 700);
         }
       } catch (caught) {
         if (options?.isCurrent?.() === false) return;

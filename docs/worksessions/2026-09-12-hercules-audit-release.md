@@ -16,7 +16,9 @@ The prior local-only boundary in the [implementation worksession](2026-09-12-her
 
 ## Integration and verification
 
-The merge preserves both handoff entries. In Hercules it preserves main's King room and this branch's hidden-conversation protection on the setup surface. Source-level independent review and the focused High gate will be recorded with exact SHAs and timing. Public live checks must not mutate books or private projects.
+The merge preserves both handoff entries. In Hercules it preserves main's King room and this branch's hidden-conversation protection on the setup surface. Independent review found no integration blockers: direct task authority replay passed in both scopes with existing nest designs, private names stayed outside Shared, and the nest capability is supplied correctly.
+
+The clean integrated gate at `cfb497ff6b755ff232b50a7e231c71b8e23ae383` failed in 118.642 seconds (no budget breach): all assertions passed, but an App post-success timer fired after unmount. Both post-success feedback timers now belong to effects that cancel on unmount. A focused real App acceptance/unmount regression passes. The corrected exact head must pass the complete selected gate before merge. Public live checks must not mutate books or private projects.
 
 ## Compatibility and limits
 
@@ -26,4 +28,4 @@ Live Gemini dialogue quality/cost comparison, authenticated two-device continuit
 
 ## Release receipts
 
-Pending PR, exact-head CI, merge SHA, deployment version and live public smoke.
+[PR #467](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/467) is pushed. The initial integrated head passed GitHub's confirmed-action and Cloudflare document-container/build jobs. GitHub automatic security review was unavailable due to its usage limit; independent local authority/privacy reviews are recorded in the implementation evidence. Corrected exact-head gates, browser checks and final merge/deployment receipts are recorded in the PR release evidence.
