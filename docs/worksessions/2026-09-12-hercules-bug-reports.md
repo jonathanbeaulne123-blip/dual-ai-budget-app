@@ -1,6 +1,6 @@
 # Hearth worksession — Hercules bug reports
 
-- Status: LOCAL IMPLEMENTATION VERIFIED — Google connection and Development release await approval
+- Status: RELEASE AUTHORIZED — Google connection and Development release in progress
 - Opened: 2026-09-12 (America/Toronto)
 - Owner / decision owner: Jonathan
 - Assignee: Codex; bounded read-only integration and trust reviewer
@@ -9,7 +9,7 @@
 - Baseline / initial HEAD: a0d76e99b9a0d1e31aafc618608fe4dcdb7ef100 (verified origin/main)
 - Current base: 5837bbdf253c8e253bcd53b0029fcfbe8bc796a0 (origin/main, #464)
 - Verified implementation HEAD: b085202309c36828f55ca8852c4e79cd78fbe9be; the final evidence update is documentation only
-- Local branch only; no PR, push, merge or deployment for this feature
+- Release approval: Jonathan replied “yes” on 2026-09-12 to the specific service-account, sheet access, Worker-secret, push/merge/Development deployment and labelled test-report request. No repeat approval is needed within that scope.
 - Risk: High (external disclosure, new durable receipt table and connector credentials)
 - Environment impact: local Development implementation. No hosted schema, secrets, deployment or spreadsheet write.
 
@@ -84,4 +84,9 @@ The report and receipt use the current member's private Development workspace; n
 
 Service account has not been created, shared onto the sheet, or installed as a Worker secret. No live report has been submitted. Live Gemini questions, Google dropdown acceptance, full signed-in App reporting, cross-device recovery, membership revocation against hosted identity, physical devices and physical keyboard/screen-reader behavior remain unverified.
 
-Next decision owner: Jonathan. Approval is needed to create the dedicated Google service identity, share only the target sheet to it, store its credential in the Worker, push/merge/deploy this feature to Development, and submit a labelled synthetic acceptance report. Follow `docs/HERCULES_FEEDBACK.md` for exact setup and recovery proof. This approval is separate from the earlier Gemini API key activation. No Supabase migration, new Durable Object class, Production access or financial data mutation is needed.
+Next decision owner: Jonathan. The dedicated Google service identity, sharing only the target sheet to it, Worker credential, push/merge/Development deployment and labelled synthetic acceptance report are now explicitly authorized. Follow `docs/HERCULES_FEEDBACK.md` for exact setup and recovery proof. This approval is separate from the earlier Gemini API key activation. No Supabase migration, new Durable Object class, Production access or financial data mutation is needed.
+
+## Authorized activation progress
+
+- Current main remains 5837bbd. Live Worker settings retain the approved synthetic Workspace execution, free-only Gemini routing, disabled generic Google writes and disabled local-auth bypass.
+- Google Cloud console redirects the Hearth project to its mandatory two-step-verification screen. The Google security setup is open for Jonathan; creation of the service identity waits for that account requirement. No credential or spreadsheet permission has changed yet.
