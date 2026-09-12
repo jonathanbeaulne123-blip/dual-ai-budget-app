@@ -15,12 +15,12 @@ export const LEDGER_CUSTODY_DISCLOSURE =
 export type LedgerExperienceMode = LedgerView;
 export type LedgerTab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
 /** All App destinations, including the planner, Time Machine and Hercules workspace. */
-export type AppTab = LedgerTab | "together" | "planner" | "timeMachine" | "hercules";
+export type AppTab = LedgerTab | "together" | "planner" | "timeMachine" | "hercules" | "play";
 /** Time Machine borrows Books materials; Hercules borrows Plan materials. */
-export function sceneTabFor(tab: AppTab): Exclude<AppTab, "together" | "planner" | "timeMachine" | "hercules"> {
+export function sceneTabFor(tab: AppTab): Exclude<AppTab, "together" | "planner" | "timeMachine" | "hercules" | "play"> {
   if (tab === "timeMachine") return "ledger";
   if (tab === "hercules") return "plan";
-  return tab === "together" || tab === "planner" ? "more" : tab;
+  return tab === "together" || tab === "planner" || tab === "play" ? "more" : tab;
 }
 
 export type LedgerRouteContract = {

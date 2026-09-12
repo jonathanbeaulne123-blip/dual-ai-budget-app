@@ -1,0 +1,241 @@
+{
+  "records": [
+    {
+      "label": "classic/room/320",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/room/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/room/720",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/room/1100",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/room/1440",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/room/1920",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/gallery/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/fitting/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/portrait/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/toy/The Curator’s Camera",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/toy/The Velvet Theatre",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/toy/The Curious Key",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/toy/The Household Orrery",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/toy/The Celebration Lantern",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "classic/toy/The Keepsake Projector",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/room/320",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/room/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/room/720",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/room/1100",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/room/1440",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/room/1920",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/gallery/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/fitting/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/portrait/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/toy/The Curator’s Camera",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/toy/The Velvet Theatre",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/toy/The Curious Key",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/toy/The Household Orrery",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/toy/The Celebration Lantern",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "taylor/toy/The Keepsake Projector",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/room/320",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/room/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/room/720",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/room/1100",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/room/1440",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/room/1920",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/gallery/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/fitting/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/portrait/390",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/toy/The Curator’s Camera",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/toy/The Velvet Theatre",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/toy/The Curious Key",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/toy/The Household Orrery",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/toy/The Celebration Lantern",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "newfoundland/toy/The Keepsake Projector",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "empty",
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "label": "empty/fallback/gallery",
+      "overflow": false,
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "scope": "Local Chromium synthetic fixture using actual components and prepareCommand; no physical-device or hosted-authentication claim."
+}

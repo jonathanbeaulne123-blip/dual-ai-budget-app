@@ -1,0 +1,88 @@
+{
+  "baseSha": "02a5539dfc4dfadf6c7cae67b98f17db278c9eaa",
+  "changeFingerprint": "301a3f437a4697b9eacb020f8639eb8a583dcae3fc8edc88b7ca4c15707b6d0f",
+  "workingTreeClean": false,
+  "breachPhase": null,
+  "budgetMs": 300000,
+  "elapsedMs": 110048,
+  "slowestPhase": "vitest-serial",
+  "timeBudgetBreached": false,
+  "classification": "quick-gate-passed",
+  "focusReason": "Final Play authority, App routes, scoped storage and Plan evidence compatibility",
+  "headSha": "02a5539dfc4dfadf6c7cae67b98f17db278c9eaa",
+  "phases": [
+    {
+      "elapsedMs": 98,
+      "name": "diff-check",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 618,
+      "name": "ai-surface",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 33370,
+      "name": "typescript",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 5260,
+      "name": "test-discovery",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 22768,
+      "name": "vitest-fast",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 46102,
+      "name": "vitest-serial",
+      "status": "passed"
+    }
+  ],
+  "risk": "high",
+  "selectedTests": [
+    "test/add-slideshow-ui.test.ts",
+    "test/add-slideshow.test.ts",
+    "test/app-startup-p1.test.ts",
+    "test/cad-pad-ui.test.ts",
+    "test/calendar-boards.test.ts",
+    "test/calendar-personal-filters.test.ts",
+    "test/command-contract.test.ts",
+    "test/command-runtime.test.ts",
+    "test/continuity-policy.test.ts",
+    "test/environment-isolation.test.ts",
+    "test/fund-horizon.test.ts",
+    "test/google-bridge-scope.test.ts",
+    "test/google-calendar-reading.test.ts",
+    "test/google-calendar-ui.test.ts",
+    "test/google.test.ts",
+    "test/hercules-action-ui.test.ts",
+    "test/hercules-actions.test.ts",
+    "test/hercules-calendar-integration.test.ts",
+    "test/hercules-play.test.ts",
+    "test/hercules-private-chat-ui.test.ts",
+    "test/hercules-reply-context.test.ts",
+    "test/hercules-wardrobe-continuity.test.ts",
+    "test/kitchen-habit.test.ts",
+    "test/ledger-experience.test.ts",
+    "test/mobile-entry-sheet.test.ts",
+    "test/month-rehearsal-mainline.test.ts",
+    "test/onboarding-entry-integration.test.ts",
+    "test/page-worlds.test.ts",
+    "test/plan-guide-ui.test.ts",
+    "test/plan-guide.test.ts",
+    "test/plan-hercules-worker.test.ts",
+    "test/plan-life-contract.test.ts",
+    "test/plan-life-ui.test.ts",
+    "test/plan-projection.test.ts",
+    "test/plan-system.test.ts",
+    "test/potential-expenses.test.ts",
+    "test/proof-matrix.test.ts",
+    "test/storage-replicas.test.ts",
+    "test/swipe.test.ts"
+  ],
+  "uiProofRequired": true
+}

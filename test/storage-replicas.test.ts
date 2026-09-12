@@ -260,3 +260,15 @@ describe("multi-ledger replicas", () => {
     });
   });
 });
+
+ it('clears only the selected household private Play drafts on device',async()=>{
+  localStorage.setItem('hearth:play-portrait:development:PLAY-A:MEM-001','private caption');
+  localStorage.setItem('hearth:play-request:development:PLAY-A:MEM-002','pending request');
+  localStorage.setItem('hearth:play-portrait:development:PLAY-B:MEM-001','other household');
+  await clearHousehold('development','PLAY-A',{activateRemaining:false});
+  expect(localStorage.getItem('hearth:play-portrait:development:PLAY-A:MEM-001')).toBeNull();
+  expect(localStorage.getItem('hearth:play-request:development:PLAY-A:MEM-002')).toBeNull();
+  expect(localStorage.getItem('hearth:play-portrait:development:PLAY-B:MEM-001')).toBe('other household');
+  await clearAllHouseholdReplicas('development');
+  expect(localStorage.getItem('hearth:play-portrait:development:PLAY-B:MEM-001')).toBeNull();
+ });

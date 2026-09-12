@@ -1,3 +1,4 @@
+import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
 import { hasTaskData, TASK_COMMAND_KINDS } from "../core/tasks.ts";
@@ -98,6 +99,9 @@ export async function prepareCommand(
   if((hasTaskData(current)||command.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&command.taskPlannerVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve planner tasks.');
   const extendedPlan = hasPlanDecisionData(current);
   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
+  const playStep=command.steps.some(s=>s.kind==='commitCompanionPlay');
+  if((playStep||hasPlayData(current)||command.steps.some(isPlayStep))&&command.companionPlayVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve Play.');
+  if(playStep&&command.steps.length!==1)throw Error('PLAY_SINGLE_OPERATION_REQUIRED');
   const wardrobeStep=command.steps.some(step=>companionActionEffect(step)!==null||step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')));
   if((wardrobeStep||current.companionProfile?.wornLook.revision||current.companionProfile?.savedLooks.length||current.companionGallery?.length)&&command.companionWardrobeVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth before changing this wardrobe.');
   if(wardrobeStep&&command.steps.length!==1)throw new Error('WARDROBE_SINGLE_OPERATION_REQUIRED');
@@ -245,6 +249,7 @@ export async function prepareCommand(
         command.id,
         scope,
       );
+    if(step.kind!=='commitCompanionPlay'&&(canonical(current.playRoom??null)!==canonical(result.household.playRoom??null)||canonical(current.companionProfile?.play??null)!==canonical(result.household.companionProfile?.play??null)))throw Error('PLAY_OPERATION_REQUIRED');
     if(step.kind!=='commitCompanionGallery'&&companionActionEffect(step)!=='shared-gallery'&&canonical(current.companionGallery??[])!==canonical(result.household.companionGallery??[]))throw new Error('GALLERY_OPERATION_REQUIRED');
     const privateWardrobe=(h:Household)=>({worn:h.companionProfile?.wornLook??{revision:0,value:null},saved:h.companionProfile?.savedLooks??[]});
     if(step.kind!=='commitCompanion'&&companionActionEffect(step)!=='private-wardrobe'&&canonical(privateWardrobe(current))!==canonical(privateWardrobe(result.household)))throw new Error('WARDROBE_OPERATION_REQUIRED');
@@ -350,6 +355,7 @@ export async function prepareCommand(
         "commandReceipts",
         "restorePoints",
         "companionGallery",
+        "playRoom",
       ].includes(field) ||
       !Array.isArray(rows)
     )

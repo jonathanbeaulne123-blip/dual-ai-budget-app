@@ -1,3 +1,4 @@
+import {decodePlayPrivate,decodePortrait,type PlayPrivate,type PortraitSettings} from './playContracts.ts';
 import type { Environment, LedgerView, PersonalEnvelope } from "./types.ts";
 import { HERCULES_CAPABILITY_IDS, type HerculesCapabilityId } from "./herculesCapabilities.ts";
 import { COMPANION_EXPRESSIONS, COMPANION_GESTURES } from "./herculesCharacter.ts";
@@ -17,6 +18,7 @@ export type CosmeticSelection = { itemId: string; variantId: string };
 export type LookV1 = {
   version: 1; id: string; name: string; catalogueVersion: number;
   selections: Partial<Record<CompanionSlot, CosmeticSelection>>;
+  portrait?: PortraitSettings;
 };
 export type CosmeticDefinitionV2 = {
   version: 2; id: string; slot: CompanionSlot; occupies: readonly CompanionSlot[];
@@ -67,6 +69,7 @@ export type CompanionProfileV1 = {
   preferences: CompanionPreference[]; conversations: CompanionConversation[];
   wornLook: { revision: number; value: LookV1 | null };
   workflows?: CompanionWorkflowResource[];
+  play?: PlayPrivate;
   savedLooks: LookResourceV1[]; suggestions: CompanionSuggestionState[];
 };
 /** Compatibility alias; the member-personal envelope carries this profile in slice 2. */
@@ -155,10 +158,10 @@ export function createCompanionProfile(expected: CompanionScope): CompanionProfi
   };
 }
 export function decodeLook(value: unknown): LookV1 {
-  const row = object(value, ["version", "id", "name", "catalogueVersion", "selections"]);
+  const row = object(value, ["version", "id", "name", "catalogueVersion", "selections", "portrait"]);
   requireContract(row.version === 1, "UNSUPPORTED_LOOK_VERSION");
   const selections = object(row.selections, COMPANION_SLOTS);
-  const result: LookV1 = { version: 1, id: id(row.id), name: text(row.name, 64), catalogueVersion: revision(row.catalogueVersion), selections: {} };
+  const result: LookV1 = { ...(row.portrait !== undefined ? {portrait:decodePortrait(row.portrait)} : {}), version: 1, id: id(row.id), name: text(row.name, 64), catalogueVersion: revision(row.catalogueVersion), selections: {} };
   requireContract(result.catalogueVersion > 0, "INVALID_CATALOGUE_VERSION");
   for (const slot of COMPANION_SLOTS) {
     if (!Object.hasOwn(selections, slot)) continue;
@@ -235,7 +238,7 @@ export function decodeCompanionWorkflow(value: unknown): CompanionWorkflow {
 }
 export function decodeCompanionProfile(value: unknown, expected: CompanionScope): CompanionProfileV1 {
   if (value === undefined) return createCompanionProfile(expected);
-  const row = object(value, ["version", "scope", "remembering", "preferences", "conversations", "wornLook", "savedLooks", "suggestions", "workflows"]);
+  const row = object(value, ["version", "scope", "remembering", "preferences", "conversations", "wornLook", "savedLooks", "suggestions", "workflows", "play"]);
   requireContract(row.version === 1, "UNSUPPORTED_PROFILE_VERSION");
   const owner = scope(row.scope); sameScope(owner, expected);
   const remembering = object(row.remembering, ["enabled", "revision"]);
@@ -255,6 +258,7 @@ export function decodeCompanionProfile(value: unknown, expected: CompanionScope)
   }), item => item.id);
   requireContract(savedLooks.filter(item => item.value !== null).length <= COMPANION_LIMITS.savedLooks, "SAVED_LOOK_LIMIT");
   return {
+    ...(row.play !== undefined ? {play:decodePlayPrivate(row.play)} : {}),
     version: 1, scope: owner, remembering: { enabled: remembering.enabled, revision: revision(remembering.revision) },
     preferences: unique(list(row.preferences, COMPANION_LIMITS.preferences, preference), item => item.key), conversations,
     wornLook: { revision: revision(worn.revision), value: worn.value === null ? null : decodeLook(worn.value) }, savedLooks,

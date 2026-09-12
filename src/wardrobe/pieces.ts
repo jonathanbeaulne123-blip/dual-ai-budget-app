@@ -69,6 +69,27 @@ const rows: [string,string,PieceSlot,string,string,string,readonly string[],bool
  ['snow-flake','snow','charm','Snowflake pendant','snowflake','Six points · a fine chain',metal],
  ['snow-bell','snow','tail','Tail bell','tailbell','A little bell on a ribbon',snow],
 ];
+// Eighteen Play additions to the original six collections; later collections stay intact.
+rows.push(
+ ['cozy-bow','cozy','neckwear','Sunday knit bow','bow','A soft bow for a very small occasion',fabric],
+ ['cozy-beret','cozy','head','Reading-room beret','beret','Low wool crown with a little stem',fabric],
+ ['cozy-moon','cozy','charm','Bedside moon charm','moon','A polished crescent for quiet evenings',metal],
+ ['office-oval','office','eyewear','Archivist spectacles','oval','Oval brass rims with fine temples',metal],
+ ['office-ribbon','office','neckwear','Secretary ribbon','ribbon','A neat silk knot with a rosette',office],
+ ['office-star','office','charm','Employee-of-the-moment star','starpendant','A star for his very important desk',metal],
+ ['rain-round','rain','eyewear','Harbour spectacles','round','Fine weather-ready circular rims',metal],
+ ['rain-bow','rain','neckwear','Sailor’s bow','bow','A small nautical bow',rain],
+ ['rain-fish','rain','charm','Silver catch charm','fish','A tiny fish on a bright chain',metal],
+ ['applause-beret','applause','head','Velvet artist’s beret','beret','A tilted crown for the encore',applause],
+ ['applause-scarf','applause','neckwear','Backstage scarf','scarf','Dramatic fringed folds',applause],
+ ['applause-cameo','applause','charm','Leading-cat cameo','cameo','His likeness in a polished setting',metal],
+ ['kitchen-round','kitchen','eyewear','Recipe spectacles','round','A closer look at the instructions',metal],
+ ['kitchen-bow','kitchen','neckwear','Patisserie bow','bow','A neatly tied confection',kitchen],
+ ['kitchen-cup','kitchen','charm','Teatime cup charm','teacup','A cup and saucer on a fine chain',metal],
+ ['sunday-scarf','sunday','neckwear','Promenade scarf','scarf','Fringed folds for the window seat',sunday],
+ ['sunday-crown','sunday','head','Sunday coronet','crown','Five small points and polished stones',metal],
+ ['sunday-watch','sunday','charm','Afternoon watch','watch','There is still time for a little walk',metal],
+);
 export const NEW_PIECES:Piece[]=rows.map(([id,collection,slot,name,shape,detail,variants,coversBody])=>({id,collection,slot,name,shape,detail,variants,coversBody}));
 const legacy:[string,PieceSlot,string,string][]=[['toque','head','Kitchen toque','toque'],['visor','head','Bill visor','visor'],['chef','head','Sit-down chef hat','chef'],['specs','eyewear','Audit spectacles','round'],['copper','charm','Copper chain','chain'],['gold','charm','Gold chain','chain'],['bell','neckwear','Collar bell','bell'],['yarn','neckwear','Yarn collar','yarn'],['fish','charm','Fish treat','fish'],['clip','charm','Card clip','clip'],['tooth','charm','Tooth charm','tooth'],['ink','charm','Green-ink stamp','stamp']];
 export const LEGACY_PIECES:Piece[]=legacy.map(([id,slot,name,shape])=>({id,collection:'legacy',slot,name,shape,detail:'From the original wardrobe · always available',variants:['legacy-original'],legacy:true}));

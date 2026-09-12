@@ -740,3 +740,7 @@ At the close of a worksession:
 - **High-risk review:** money, privacy, auth, sync, and deployment packets require a second reviewer plus proof from deterministic tests.
 
 This role split is intentionally soft. The laws, gates, evidence, and handoff contract are hard.
+
+### Hercules Play — implementation under acceptance
+
+Dedicated 3D room, private fitting and portrait creation, shared semantic displays, Kitty Bank entrances, six toy activities, twelve discoveries and eighteen wardrobe additions are implemented locally on `codex/hercules-play`. See [implementation and acceptance](features/HERCULES_PLAY.md). Local synthetic checks do not close hosted multi-device, physical performance, full theme/art acceptance or product-value trials. No release or hosted activation is implied.

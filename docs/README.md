@@ -123,3 +123,4 @@ Start from the repository [README](../README.md) to run the app. Compatibility f
 
 - [Hercules Workspace](HERCULES_WORKSPACE.md) — D-249 private projects, Flash runtime, artifacts, authority and staged activation.
 - [Hercules Workspace handoff](briefs/HERCULES_WORKSPACE_HANDOFF.md) — exact baseline, reproducible local proof and remaining Release acceptance.
+- [Hercules Play implementation and acceptance](features/HERCULES_PLAY.md) — room/state architecture, local proof and outstanding full-plan gates.

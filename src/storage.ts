@@ -333,6 +333,12 @@ export async function selectHouseholdReplica(environment: Environment, household
   return household;
 }
 
+/** Explicit device clearing also erases scoped, unpublished creative drafts. */
+function clearLocalPlay(environment: Environment, householdId?: string) {
+  const prefixes = ['hearth:play-portrait:', 'hearth:play-request:'].map(prefix => `${prefix}${environment}:${householdId ? householdId + ':' : ''}`);
+  for (const key of Object.keys(localStorage)) if (prefixes.some(prefix => key.startsWith(prefix))) localStorage.removeItem(key);
+}
+
 export async function clearHousehold(
   environment: Environment,
   householdId?: string,
@@ -340,6 +346,7 @@ export async function clearHousehold(
 ): Promise<void> {
   const activateRemaining = options.activateRemaining ?? true;
   const targetId = householdId ?? activeHouseholdId(environment);
+  clearLocalPlay(environment, targetId ?? undefined);
   const catalog = readCatalog(environment);
   const target = targetId ? catalog.find((item) => item.householdId === targetId) : null;
   if (targetId) {
@@ -365,6 +372,7 @@ export async function clearHousehold(
 
 /** Remove every local replica for one environment without activating another ledger. */
 export async function clearAllHouseholdReplicas(environment: Environment): Promise<void> {
+  clearLocalPlay(environment);
   const catalog = readCatalog(environment);
   for (const item of catalog) {
     const key = householdKey(environment, item.householdId);

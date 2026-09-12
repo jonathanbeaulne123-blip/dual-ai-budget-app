@@ -442,7 +442,7 @@ export function HerculesPresence({
   // scoped source inputs instead, without persisting or transmitting this key.
   const sourceBasis = useMemo(() => {
     const { revision, baseRevision, booksAcceptedHash, lastCommittedAt, activity, commandReceipts,
-      companionProfile, companionGallery, devices, conflicts, restorePoints, sharing, google,
+      companionProfile, companionGallery, playRoom, devices, conflicts, restorePoints, sharing, google,
       herculesProPermissions, kitchen, ...sources } = contextHousehold;
     return JSON.stringify({ ...sources, kitchen: { books: kitchen.books, openShift: kitchen.openShift, openShifts: kitchen.openShifts } });
   }, [contextHousehold]);

@@ -7,11 +7,14 @@
       "nodes": [
         "item_cozy_cardigan",
         "item_cozy_scarf",
-        "item_cozy_teacup"
+        "item_cozy_teacup",
+        "item_cozy_bow",
+        "item_cozy_beret",
+        "item_cozy_moon"
       ],
-      "bytes": 220328,
-      "compressedBytes": 62372,
-      "sha256": "98577c22b92c542e46612d3b81e7084983e2b4dd99ce309613779b267f3f59be"
+      "bytes": 327900,
+      "compressedBytes": 99109,
+      "sha256": "6a98fc6ab9a2525f499c09c09a57c28bd421dfd511294c7f1e54d6da7fe89ea6"
     },
     {
       "collection": "office",
@@ -21,11 +24,14 @@
         "item_office_visor",
         "item_office_glasses",
         "item_office_tie",
-        "item_office_watch"
+        "item_office_watch",
+        "item_office_oval",
+        "item_office_ribbon",
+        "item_office_star"
       ],
-      "bytes": 319164,
-      "compressedBytes": 112922,
-      "sha256": "533faf8f79402aa61bd94b3fea01e7e5276d214e7176abad64597e6bf073f628"
+      "bytes": 415948,
+      "compressedBytes": 140366,
+      "sha256": "bcda59169b6e21d6d80c243b481d226faffcda06fda0583a7e1af36e27508cc0"
     },
     {
       "collection": "rain",
@@ -35,11 +41,14 @@
         "item_rain_sweater",
         "item_rain_cap",
         "item_rain_neckerchief",
-        "item_rain_puffin"
+        "item_rain_puffin",
+        "item_rain_round",
+        "item_rain_bow",
+        "item_rain_fish"
       ],
-      "bytes": 334476,
-      "compressedBytes": 103212,
-      "sha256": "8b7af95a32c7798a0fa678425985b992656001de240543487a9b10888a18d429"
+      "bytes": 463888,
+      "compressedBytes": 147203,
+      "sha256": "c7067f0c94266305002e19ad4e619e1e79d18d079f3b3f1f391b329613fe3b1d"
     },
     {
       "collection": "applause",
@@ -49,11 +58,14 @@
         "item_applause_crown",
         "item_applause_glasses",
         "item_applause_bow",
-        "item_applause_star"
+        "item_applause_star",
+        "item_applause_beret",
+        "item_applause_scarf",
+        "item_applause_cameo"
       ],
-      "bytes": 955920,
-      "compressedBytes": 230677,
-      "sha256": "f88439f843f5e0e116b71312a2c330a7e9ca5cf7fefed24bdbbc8ae2baee3062"
+      "bytes": 1114176,
+      "compressedBytes": 278869,
+      "sha256": "37cc907ffc6d42e239943e20dc92bc9aabecde9e7beb11596777440784502b7f"
     },
     {
       "collection": "kitchen",
@@ -63,11 +75,14 @@
         "item_kitchen_hat",
         "item_kitchen_cap",
         "item_kitchen_neckerchief",
-        "item_kitchen_whisk"
+        "item_kitchen_whisk",
+        "item_kitchen_round",
+        "item_kitchen_bow",
+        "item_kitchen_cup"
       ],
-      "bytes": 366640,
-      "compressedBytes": 124041,
-      "sha256": "87507c7e13d744830cd78557243ecdaa03712f72e33e77b293221ad4065a8727"
+      "bytes": 506404,
+      "compressedBytes": 169693,
+      "sha256": "0bd20944b147dce4d8d8e45c06f33846736614517096423498a03950fd8e9fb9"
     },
     {
       "collection": "sunday",
@@ -77,11 +92,14 @@
         "item_sunday_beret",
         "item_sunday_glasses",
         "item_sunday_collar",
-        "item_sunday_cameo"
+        "item_sunday_cameo",
+        "item_sunday_scarf",
+        "item_sunday_crown",
+        "item_sunday_watch"
       ],
-      "bytes": 436672,
-      "compressedBytes": 152633,
-      "sha256": "9ad791494e44293009d32c8f93ec7cc0a4bad70a6c4e90947a46b03f63297dc5"
+      "bytes": 583812,
+      "compressedBytes": 190515,
+      "sha256": "6d7bb692da5e813e17265651d9d7384487e52d70d76bcda5e7e2e52e797615a2"
     },
     {
       "collection": "night",

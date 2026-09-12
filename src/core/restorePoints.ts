@@ -156,6 +156,7 @@ export function applyRestorePoint(
   const pointShared: SharedEnvelope = {
     ...sharedEnvelopeForRestorePoint(point.shared),
     companionGallery: localParts.shared.companionGallery,
+    playRoom: localParts.shared.playRoom,
     householdId: household.householdId,
     environment: household.environment,
     inviteCode: household.inviteCode || point.shared.inviteCode,

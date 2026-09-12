@@ -89,7 +89,7 @@ export function planSourceVisible(h: Household, source: PlanSourceReference, mem
     : Boolean(account && account.scope !== "personal");
 }
 
-export function matchPlanEvidence(h: Household, line: PlanLine, monthKey: MonthKey, asOf: DateKey, memberId: string, scope: PlanScope): PlanEvidence[] {
+export function matchPlanEvidence(h: Household, line: Partial<PlanLine>, monthKey: MonthKey, asOf: DateKey, memberId: string, scope: PlanScope): PlanEvidence[] {
   const source = line.sourceReference;
   if (!source || !planSourceVisible(h, source, memberId, scope)) return [];
   const byId = new Map(h.transactions.filter(tx => tx.date <= asOf).map(tx => [tx.id, tx]));
