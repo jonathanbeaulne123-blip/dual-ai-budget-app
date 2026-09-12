@@ -10,7 +10,8 @@ import type { LedgerView } from "./types.ts";
  *
  * "Plan a cost" lives on the Calendar's own +, "Decide together" is the
  * Together tab, and "Plan the week" is the planner room (D-245): the +
- * stopped carrying a second route to any of them (row 5).
+ * stopped carrying a second route to any of them (row 5). The time machine
+ * (D-247) opens from Books, not from +.
  */
 export type FabAddMode = "shift" | "income" | "expense" | "transfer";
 
@@ -18,7 +19,7 @@ export type FabAction =
   | { id: string; kind: "add"; mode: FabAddMode; label: string; aria: string; money: true }
   | { id: string; kind: "go"; tab: "calendar" | "together" | "plan" | "ledger" | "planner"; label: string; aria: string; money: false };
 
-export type FabActionTab = "home" | "calendar" | "shift" | "ledger" | "plan" | "together" | "more" | "planner" | string;
+export type FabActionTab = "home" | "calendar" | "shift" | "ledger" | "plan" | "together" | "more" | "planner" | "timeMachine" | string;
 
 const PERSONAL: readonly FabAction[] = [
   { id: "shift", kind: "add", mode: "shift", label: "Shift", aria: "Add shift", money: true },
@@ -36,6 +37,7 @@ export function fabActionsFor(view: LedgerView, tab: FabActionTab): readonly Fab
   if (view !== "household") return PERSONAL;
   switch (tab) {
     case "ledger":
+    case "timeMachine":
       return [RECORD, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
     case "plan":
       return [RECORD, MOVE_MONEY, ADD_INCOME, ADD_SHIFT];
