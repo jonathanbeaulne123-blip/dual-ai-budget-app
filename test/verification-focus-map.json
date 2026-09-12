@@ -20,7 +20,7 @@
         "test/month-spread.test.ts",
         "test/statements.test.ts"
       ],
-      "reason": "Time machine (D-246): asOf and period split through the Fund projector and the cumulative statements, dated goal readers, the month read-models, the ribbon surface and Books month paging"
+      "reason": "Time machine (D-247): asOf and period split through the Fund projector and the cumulative statements, dated goal readers, the month read-models, the ribbon surface and Books month paging"
     },
     {
       "sources": [

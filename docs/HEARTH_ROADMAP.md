@@ -16,7 +16,10 @@ Complete wardrobe implementation is in verification: 36 original pieces plus leg
 
 # Hearth living roadmap
 
-**2026-09-12 — Feedback rows 5–7 (D-246) rebased onto planner main:** Calendar kinds, Whisper copy, and one-route chrome land on `origin/main@6fa38aed` (#453). The planner room stays; Household tools and `+` go-verbs stay retired. Together opens the planner. [Worksession](worksessions/2026-09-12-feedback-rows-5-7.md) · [Rebase](worksessions/2026-09-12-feedback-rows-5-7-rebase.md).
+**2026-09-12 — The time machine (feedback row 8, D-247) rebased over #455:** `asOf` and `period` separated through the Fund projector and the cumulative statements, dated goal history, a month ribbon with three month states, comparison, forecast, the year and a closed-month memory layer, plus month paging for Books statements and the Fund register. Books is the door; Household tools and `+` go-verbs stay retired. Branch `cursor/time-machine-row-8-420a`; originally numbered D-246 on `claude/time-machine-row-8`. [Worksession](worksessions/2026-09-12-time-machine-row-8.md) · [Rebase](worksessions/2026-09-12-time-machine-row-8-rebase.md).
+
+**2026-09-12 — Feedback rows 5–7 (D-246) merged to main:** Calendar kinds, Whisper copy, and one-route chrome land on `origin/main@02a5539d` (#455). The planner room stays; Household tools and `+` go-verbs stay retired. Together opens the planner. [Worksession](worksessions/2026-09-12-feedback-rows-5-7.md) · [Rebase](worksessions/2026-09-12-feedback-rows-5-7-rebase.md).
+
 
 **2026-09-12 — The planner (feedback row 9, D-245) implemented locally:** one Task object with money, private tasks, evidence-only completion, agenda and affordability, a Planner room in three themes. Local branch `claude/planner-row-9`; trust review, push, PR, merge and Development deploy pending. [Worksession](worksessions/2026-09-12-planner-row-9.md).
 

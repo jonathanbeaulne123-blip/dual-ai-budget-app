@@ -1,4 +1,4 @@
-/** D-246 browser evidence: the time machine at 320/390/720/1100/1440 in three themes, both views, every pane, with axe, keyboard and reduced motion. Fictional books only. */
+/** D-247 browser evidence: the time machine at 320/390/720/1100/1440 in three themes, both views, every pane, with axe, keyboard and reduced motion. Fictional books only. */
 import { startTimeMachineProof } from '../scripts/serve-time-machine-proof.mjs';
 import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
