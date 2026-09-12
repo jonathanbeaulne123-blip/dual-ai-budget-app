@@ -1,4 +1,5 @@
 import type { NativeEvent } from "./nativeEvents.ts";
+import type { Task, TaskList } from "./tasks.ts";
 import type { Currency } from "./money.ts";
 import type { DateKey, MonthKey } from "./calendar.ts";
 import type { SevenShiftsEvidenceBundle } from "./evidence.ts";
@@ -1373,6 +1374,9 @@ export type WeeklyDocumentStamp = {
 
 export type Household = {
   nativeEvents?: NativeEvent[];
+  /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
+  tasks?: Task[];
+  taskLists?: TaskList[];
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
   companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
@@ -1493,6 +1497,9 @@ export type RestorePoint = {
 
 export type SharedEnvelope = {
   nativeEvents?: NativeEvent[];
+  /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
+  tasks?: Task[];
+  taskLists?: TaskList[];
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
   accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];
@@ -1578,6 +1585,9 @@ export type SharedEnvelope = {
 
 export type PersonalEnvelope = {
   nativeEvents?: NativeEvent[];
+  /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
+  tasks?: Task[];
+  taskLists?: TaskList[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
   companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];

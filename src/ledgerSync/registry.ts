@@ -9,6 +9,7 @@ import { commitCompanion } from "../core/herculesCompanion.ts";
 import * as commands from "../core/commands.ts";
 import * as rehearsal from "../core/monthRehearsal.ts";
 import * as chapterCommands from "../core/chapters.ts";
+import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks } from "../core/tasks.ts";
 import { stampWeeklyDocument } from "../core/weeklyDocumentStamp.ts";
 import { commitCharterFounding } from "../core/charterFounding.ts";
 import type { CommitResult, Household } from "../core/types.ts";
@@ -26,6 +27,7 @@ const functions = {
   ...rehearsal,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
   offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
+  saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks,
   eraseDevelopmentActivity,
   restoreSharedPoint,
   stampWeeklyDocument,
@@ -78,6 +80,7 @@ register("executeHerculesAction cancelHerculesSubmission", ["memberId"]);
 register("recordBillPayment", ["createdBy"]);
 register("addQuickSampleData addQuickSampleScenario", ["memberId"]);
 register("saveNativeEvent", ["memberId"]);
+register("saveTask completeTask reopenTask acknowledgeTask saveTaskList adoptBoardTasks", ["memberId"]);
 register("appendPlanSitdownTurn", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);

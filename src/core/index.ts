@@ -55,6 +55,7 @@ export * from "./swipe.ts";
 export * from "./openingTruth.ts";
 export * from "./monthRehearsal.ts";
 export * from "./chapters.ts";
+export * from "./tasks.ts";
 export * from "./fundPulse.ts";
 export * from "./spaceNames.ts";
 export * from "./fabActions.ts";
