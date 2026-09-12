@@ -78,7 +78,7 @@ export function kitchenPrimaryNav(view: LedgerView): KitchenPrimaryNavId[] {
 
 /** Home, Calendar, Shift, and Books already carry their own heading. Do not stack a second purpose card. */
 export function showsLedgerPurposeBanner(tab: LedgerTab): boolean {
-  return tab === "plan" || tab === "more";
+  return tab === "plan";
 }
 
 export function ledgerRouteContract(tab: LedgerTab, view: LedgerView): LedgerRouteContract {

@@ -1,0 +1,16 @@
+{
+  "scope": "household",
+  "metrics": [
+    {"theme":"classic","route":"calendar","width":320,"scroll":320,"titleBracelets":0,"nav":[{"text":"Home","y":831},{"text":"The Fund","y":831},{"text":"Our Path","y":831},{"text":"Together","y":831}],"clippedTabs":[],"hiddenAdd":0},
+    {"theme":"classic","route":"calendar","width":390,"scroll":390,"titleBracelets":0,"nav":[{"text":"Home","y":831},{"text":"The Fund","y":831},{"text":"Our Path","y":831},{"text":"Together","y":831}],"clippedTabs":[],"hiddenAdd":0},
+    {"theme":"classic","route":"calendar","width":720,"scroll":720,"titleBracelets":0,"nav":[{"text":"Home","y":831},{"text":"The Fund","y":831},{"text":"Our Path","y":831},{"text":"Together","y":831}],"clippedTabs":[],"hiddenAdd":0},
+    {"theme":"classic","route":"calendar","width":1100,"scroll":1100,"titleBracelets":0,"nav":[{"text":"Home","y":831},{"text":"The Fund","y":831},{"text":"Our Path","y":831},{"text":"Together","y":831}],"clippedTabs":[],"hiddenAdd":0},
+    {"theme":"classic","route":"calendar","width":1440,"scroll":1440,"titleBracelets":0,"nav":[{"text":"Home","y":831},{"text":"The Fund","y":831},{"text":"Our Path","y":831},{"text":"Together","y":831}],"clippedTabs":[],"hiddenAdd":0},
+    {"theme":"classic","route":"calendar","width":1920,"scroll":1920,"titleBracelets":0,"nav":[{"text":"Home","y":831},{"text":"The Fund","y":831},{"text":"Our Path","y":831},{"text":"Together","y":831}],"clippedTabs":[],"hiddenAdd":0},
+    {"theme":"classic","scope":"household","nested":{"panes":["day-expanded","month","appointments","appointment-draft","medical-log","bills","bill-draft"],"dateKeyboard":true,"monthKeyboard":true,"draftCancel":true}}
+  ],
+  "accessibility": [
+    {"theme":"classic","route":"calendar","violations":[]}
+  ],
+  "errors": []
+}

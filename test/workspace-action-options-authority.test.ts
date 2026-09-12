@@ -1,0 +1,48 @@
+import { afterEach, expect, it, vi } from 'vitest';
+vi.mock('cloudflare:workers', () => ({ DurableObject: class {} }));
+vi.mock('agents', () => ({ Agent: class {}, getAgentByName: vi.fn() }));
+vi.mock('../workers/workspace/files.ts', () => ({ importWorkspaceFile: vi.fn(), exportWorkspaceFile: vi.fn() }));
+vi.mock('../workers/workspace/sandbox.ts', () => ({ executeArtifactCode: vi.fn() }));
+import { LedgerRoom } from '../workers/ledgerRoom.ts';
+import { HerculesWorkspace } from '../workers/workspace/service.ts';
+import { catalogHousehold } from '../src/core/seed.ts';
+import { splitForSync } from '../src/core/sync.ts';
+import { createWorkspaceProject } from '../src/workspace/contracts.ts';
+import { DEFAULT_RUN_BUDGET, newWorkspaceRun } from '../src/workspace/runtime.ts';
+import { HERCULES_READ_TOOL_NAMES } from '../src/core/herculesTools.ts';
+const scope = () => ({ environment: 'development' as const, householdId: 'HH-TEST', memberId: 'MEM-001', subject: 'synthetic-member', role: 'owner' as const, aclEpoch: 10, expires: Date.now() + 60000 });
+afterEach(() => vi.unstubAllGlobals());
+it('checks the real LedgerRoom scope twice, reads accepted state without activation and returns no snapshot', async () => {
+  const h = catalogHousehold(); h.householdId = 'HH-TEST';
+  const parts = splitForSync(h, 'MEM-001'), other = splitForSync(h, 'MEM-002');
+  const room: any = Object.create(LedgerRoom.prototype);
+  room.serial = async (f: () => unknown) => f();
+  room.meta = (key: string, fallback: string) => key === 'acl' ? '10' : key === 'scope' ? 'development/HH-TEST' : fallback;
+  room.archiveBarrier = vi.fn(async () => {}); room.activateDuePlans = vi.fn();
+  room.load = vi.fn(() => ({ shared: parts.shared, personal: new Map([['MEM-001', parts.personal], ['MEM-002', other.personal]]), sequence: 42 }));
+  const result = await room.workspaceQuery(scope(), { name: 'action_options', args: { actionId: 'expense', values: {} }, view: 'personal' });
+  expect(result).toMatchObject({ scope: 'personal', acceptedSequence: 42, actionId: 'expense', noActionExecuted: true });
+  expect(result.observedAt).toMatch(/^\d{4}-/); expect(result.household).toBeUndefined(); expect(result.shared).toBeUndefined(); expect(result.personal).toBeUndefined();
+  expect(room.activateDuePlans).not.toHaveBeenCalled(); expect(room.archiveBarrier).toHaveBeenCalledOnce();
+  await expect(room.workspaceQuery({ ...scope(), expires: 0 }, { name: 'action_catalogue', args: {}, view: 'personal' })).rejects.toThrow('AUTH_EXPIRED');
+  await expect(room.workspaceQuery({ ...scope(), householdId: 'HH-OTHER' }, { name: 'action_catalogue', args: {}, view: 'personal' })).rejects.toThrow('SCOPE_MISMATCH');
+  room.archiveBarrier.mockImplementationOnce(async () => { room.meta = (key: string, fallback: string) => key === 'acl' ? '11' : fallback; });
+  await expect(room.workspaceQuery(scope(), { name: 'action_catalogue', args: {}, view: 'personal' })).rejects.toThrow('AUTH_EXPIRED');
+});
+it('pauses an old granted run before any ledger dispatch and makes Resume renew immutable permission', async () => {
+  const at = new Date().toISOString(), s = scope();
+  let p = createWorkspaceProject('project', 'Saved project', s.memberId, at); p.goal = 'Preserve this intention';
+  const run = newWorkspaceRun(p, 'run', 'grant', at); p.runs.push(run);
+  let e: any = { grant: { id: 'grant', token: 'synthetic-token', runId: 'run', projectId: p.id, expiresAt: new Date(Date.now() + 60000).toISOString() }, pending: 1, activeAttempt: 'attempt', reservedTokens: 0,
+    contents: [{ role: 'model', parts: [{ functionCall: { name: 'hearth_action_options', args: { actionId: 'expense', scope: 'personal', valuesJson: '{}' } } }] }] };
+  const service: any = Object.create(HerculesWorkspace.prototype), query = vi.fn();
+  service.env = { HERCULES_WORKSPACE_EXECUTION: 'true', SUPABASE_URL: 'https://synthetic.invalid', SUPABASE_PUBLISHABLE_KEY: 'fixture', LEDGER_ROOMS: { idFromName: vi.fn(), get: () => ({ workspaceQuery: query }) } };
+  service.sql = () => []; service.authenticate = vi.fn();
+  service.getProject = () => structuredClone(p); service.saveProject = (next: typeof p) => { p = structuredClone(next); };
+  service.execution = () => structuredClone(e); service.saveExecution = (_id: string, next: unknown) => { e = structuredClone(next); };
+  vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ...s, runId: 'run', projectId: p.id, permittedReads: [...HERCULES_READ_TOOL_NAMES], budget: DEFAULT_RUN_BUDGET, leaseExpiresAt: new Date(Date.now() + 60000).toISOString() })));
+  expect(await service.advance(p.id, run.id, 'attempt-step')).toEqual({ continue: false });
+  expect(query).not.toHaveBeenCalled(); expect(p.runs[0]?.status).toBe('paused');
+  expect(p.runs[0]?.progress).toContain('Resume to renew permission'); expect(p.goal).toBe('Preserve this intention');
+  expect(Date.parse(e.grant.expiresAt)).toBeLessThan(Date.now()); expect(p.proposals).toHaveLength(0);
+});

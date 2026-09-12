@@ -27,7 +27,7 @@ export function restoreCanonicalBankArtwork(goals:Goal[],lookup:(bankId:string)=
 }
 
 /** Financial recovery preserves the complete operational/story graph, including its approvals. */
-type SharedLifeRecords=Pick<Household,'hearthside'|'playRoom'|'companionGallery'|'chapters'|'rituals'|'moves'|'wins'|'tasks'|'taskLists'|'nativeEvents'>;
+type SharedLifeRecords=Pick<Household,'kittyNestDesigns'|'hearthside'|'playRoom'|'companionGallery'|'chapters'|'rituals'|'moves'|'wins'|'tasks'|'taskLists'|'nativeEvents'>;
 export function currentSharedLifeRecords(current:SharedLifeRecords):SharedLifeRecords{
-  return {hearthside:current.hearthside,playRoom:current.playRoom,companionGallery:current.companionGallery,chapters:current.chapters,rituals:current.rituals,moves:current.moves,wins:current.wins,tasks:current.tasks,taskLists:current.taskLists,nativeEvents:current.nativeEvents};
+  return {kittyNestDesigns:current.kittyNestDesigns,hearthside:current.hearthside,playRoom:current.playRoom,companionGallery:current.companionGallery,chapters:current.chapters,rituals:current.rituals,moves:current.moves,wins:current.wins,tasks:current.tasks,taskLists:current.taskLists,nativeEvents:current.nativeEvents};
 }

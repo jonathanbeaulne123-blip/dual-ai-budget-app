@@ -544,6 +544,10 @@ function project(
     case "ch-10-estimates": return estimateEvidence(household, chapterId);
     case "ch-11-plan": return planEvidence(household, chapterId, context?.today);
     case "ch-12-ready": return readyEvidence(household, chapterId, viewerMemberId);
+    case "ch-13-king": {
+      const design = household.kittyNestDesigns?.find(row => row.visibility === "household" && row.bankKey === "king" && row.setupCompletedAt);
+      return design ? { household: { chapterId, scope: "household", kind: "configuration", sourceIds: [design.id], lines: [{ label: "King chapter", value: "Built, fired and welcomed into the nest" }], observedAt: design.setupCompletedAt! }, personal: null } : EMPTY;
+    }
     default: return { ...EMPTY, ineligible: "malformed" };
   }
 }

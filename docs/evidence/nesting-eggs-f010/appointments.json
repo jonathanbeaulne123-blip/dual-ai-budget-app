@@ -1,0 +1,8 @@
+{
+  "applicationCodeSha": "c85c5b7df72ce12f3b475409b7c15bde451f5296",
+  "command": "pnpm exec vitest run test/appointments.test.ts",
+  "files": 1,
+  "tests": 20,
+  "passed": 20,
+  "durationSeconds": 2.05
+}

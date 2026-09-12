@@ -31,7 +31,7 @@ describe("Calendar boards", () => {
       document.documentElement.dataset.theme = theme;
       const m = await mount(width);
       try {
-        expect([...m.host.querySelectorAll('[role="tab"]')].map(node => node.textContent)).toEqual(["Calendar", "Month", "Appointments", "Bills"]);
+        expect([...m.host.querySelectorAll('[role="tab"]')].map(node => node.textContent)).toEqual(["Calendar", "Appointments", "Bills"]);
         expect(m.tab("Calendar").getAttribute("aria-selected")).toBe("true");
         expect(m.host.querySelectorAll(".cal-weekdays > span")).toHaveLength(7);
         expect(m.host.querySelectorAll(".cal-day").length % 7).toBe(0);
@@ -50,7 +50,7 @@ describe("Calendar boards", () => {
     }
   });
 
-  it.each([["board", "Month"], ["visits", "Appointments"], ["bills", "Bills"], ["google", "Calendar"], ["calendar", "Calendar"]] as const)("consumes %s deep links into %s", async (intent, label) => {
+  it.each([["board", "Calendar"], ["visits", "Appointments"], ["bills", "Bills"], ["google", "Calendar"], ["calendar", "Calendar"]] as const)("consumes %s deep links into %s", async (intent, label) => {
     const m = await mount(1440, intent);
     try {
       expect(m.tab(label).getAttribute("aria-selected")).toBe("true");
@@ -66,19 +66,19 @@ describe("Calendar boards", () => {
     try {
       await m.click(m.host.querySelector('[data-calendar-date="2026-09-22"]')!);
       expect(m.host.querySelector(".calendar-selected-day")?.textContent).toContain("Sep 22");
-      await m.click(m.tab("Month"));
+      await m.click([...m.host.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Cash flow")!);
       expect(m.host.querySelector(".weight-day time")?.getAttribute("datetime")).toBe("2026-09-22");
       await m.click(m.host.querySelector('[aria-label="Next month"]')!);
       await m.click(m.tab("Bills")); await m.click(m.tab("Appointments")); await m.click(m.tab("Calendar"));
-      expect(m.host.querySelector('[aria-pressed="true"]')?.getAttribute("data-calendar-date")).toBe("2026-10-22");
+      expect(m.host.querySelector('[data-calendar-date][aria-pressed="true"]')?.getAttribute("data-calendar-date")).toBe("2026-10-22");
       await act(async () => { Object.defineProperty(window, "innerWidth", { value: 1440, configurable: true }); window.dispatchEvent(new Event("resize")); });
-      expect(m.host.querySelector('[aria-pressed="true"]')?.getAttribute("data-calendar-date")).toBe("2026-10-22");
-      await m.click(m.tab("Month"));
+      expect(m.host.querySelector('[data-calendar-date][aria-pressed="true"]')?.getAttribute("data-calendar-date")).toBe("2026-10-22");
+      await m.click([...m.host.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Cash flow")!);
       expect(m.host.querySelector(".weight-day time")?.getAttribute("datetime")).toBe("2026-10-22");
       await act(async () => m.root.render(createElement(CalendarPage, { ...m.props, view: "personal" })));
       expect(m.host.querySelector(".calendar-stage")?.getAttribute("data-calendar-view")).toBe("personal");
       expect(m.tab("Calendar").getAttribute("aria-selected")).toBe("true");
-      expect(m.host.querySelector('[aria-pressed="true"]')?.getAttribute("data-calendar-date")).toBe(today);
+      expect(m.host.querySelector('[data-calendar-date][aria-pressed="true"]')?.getAttribute("data-calendar-date")).toBe(today);
       for (const callback of Object.values(m.callbacks)) expect(callback).not.toHaveBeenCalled();
     } finally { await m.close(); }
   });
@@ -88,19 +88,19 @@ describe("Calendar boards", () => {
     const key = async (node: Element, key: string) => { await act(async () => node.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }))); };
     try {
       await key(m.tab("Calendar"), "ArrowRight");
-      expect(document.activeElement).toBe(m.tab("Month")); expect(m.tab("Month").tabIndex).toBe(0);
+      expect(document.activeElement).toBe(m.tab("Appointments")); expect(m.tab("Appointments").tabIndex).toBe(0);
       expect(m.tab("Calendar").tabIndex).toBe(-1);
       const panel = m.host.querySelector('[role="tabpanel"]')!;
-      expect(panel.id).toBe(m.tab("Month").getAttribute("aria-controls"));
-      expect(panel.getAttribute("aria-labelledby")).toBe(m.tab("Month").id);
-      await key(m.tab("Month"), "End"); expect(document.activeElement).toBe(m.tab("Bills"));
+      expect(panel.id).toBe(m.tab("Appointments").getAttribute("aria-controls"));
+      expect(panel.getAttribute("aria-labelledby")).toBe(m.tab("Appointments").id);
+      await key(m.tab("Appointments"), "End"); expect(document.activeElement).toBe(m.tab("Bills"));
       await key(m.tab("Bills"), "ArrowRight"); expect(document.activeElement).toBe(m.tab("Calendar"));
       await key(m.host.querySelector(`[data-calendar-date="${today}"]`)!, "ArrowDown");
       expect(document.activeElement?.getAttribute("data-calendar-date")).toBe("2026-09-15");
       expect(document.activeElement?.getAttribute("aria-expanded")).toBe("true");
       await key(document.activeElement!, "Home"); expect(document.activeElement?.getAttribute("data-calendar-date")).toBe("2026-09-13");
       await m.click(m.host.querySelector('[data-calendar-date="2026-08-31"]')!);
-      await m.click(m.tab("Month"));
+      await m.click([...m.host.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === "Cash flow")!);
       expect(m.host.querySelector(".weight-day time")?.getAttribute("datetime")).toBe("2026-08-31");
     } finally { await m.close(); }
   });
@@ -213,8 +213,8 @@ describe("Calendar boards", () => {
   it("keeps onboarding standing facts free of payment actions in both calendar presentations", async () => {
     const m = await mount(390, undefined, true);
     try {
-      for (const name of ["Calendar", "Month", "Bills"]) {
-        await m.click(m.tab(name));
+      for (const name of ["Calendar", "Cash flow", "Bills"]) {
+        await m.click(name === "Cash flow" ? [...m.host.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === name)! : m.tab(name));
         expect([...m.host.querySelectorAll("button")].some(button => ["Paid", "Mark paid", "Mark due paid", "Skip once"].includes(button.textContent ?? ""))).toBe(false);
       }
       expect(m.callbacks.onCommand).not.toHaveBeenCalled();

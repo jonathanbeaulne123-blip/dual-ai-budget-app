@@ -104,7 +104,7 @@ function randomSculpt(): KittySculptV1 {
 }
 const dist = (a: number, b: number, c: number, d: number) => Math.hypot(a - c, b - d);
 
-export function useKittyStudio({ goal, identity, memberId, envelope, active, run, readLatest }: {
+export function useKittyStudio({ goal, identity, memberId, envelope, active, run, readLatest, saveDesign }: {
   goal: Goal;
   identity: string;
   memberId: string;
@@ -114,6 +114,8 @@ export function useKittyStudio({ goal, identity, memberId, envelope, active, run
   active: boolean;
   run: StudioRun;
   readLatest: () => Household;
+  /** Cosmetic storage for parent/source banks; Goals retain their ordinary command. */
+  saveDesign?: (h: Household, studio: KittyStudioV1, fire: boolean) => CommitResult;
 }) {
   const storageKey = `hearth-kitty-studio:${identity}:${goal.id}`;
   const server: KittyStudioV1 = goal.envelope?.studio ?? emptyKittyStudio();
@@ -183,7 +185,7 @@ export function useKittyStudio({ goal, identity, memberId, envelope, active, run
   };
   const studioForSave = (): KittyStudioV1 => ({ version: 1, draft, fired: server.fired, ...(server.displayId ? { displayId: server.displayId } : {}) });
   const saveStudio = (next: KittyStudioV1, message: string, review?: Omit<Review, "command" | "id" | "basis">) => {
-    const command = (current: Household) => saveGoalEnvelope(current, {
+    const command = (current: Household) => saveDesign ? saveDesign(current, next, false) : saveGoalEnvelope(current, {
       goalId: goal.id,
       expectedUpdatedAt: current.goals.find((row) => row.id === goal.id)?.updatedAt ?? goal.updatedAt,
       name: goal.name,
@@ -236,7 +238,7 @@ export function useKittyStudio({ goal, identity, memberId, envelope, active, run
         : "This puts the clay on the wheel into the kiln and gives it its glaze.",
       extra: "No money moves. You can take it back to the wheel later, throw another, or take it off the shelf.",
       basis: goal.updatedAt,
-      command: (current) => saveGoalEnvelope(current, {
+      command: (current) => saveDesign ? saveDesign(current, studioForSave(), true) : saveGoalEnvelope(current, {
         goalId: goal.id,
         expectedUpdatedAt: current.goals.find((row) => row.id === goal.id)?.updatedAt ?? goal.updatedAt,
         name: goal.name,
@@ -351,7 +353,14 @@ export function usePaintPointer(state: KittyStudioState) {
     if (phase === "move") {
       // A miss past the clay is not the end of the stroke: the stage hands back
       // the shell's uv, so the line keeps going and comes back on.
-      if (!hit || hit.part !== current.stroke.part) return;
+      if (!hit || hit.part !== current.stroke.part) {
+        commit();
+        if (hit) {
+          live.current = { stroke: { part: hit.part, tool: tool.tool, color: tool.color, size: tool.size, opacity: tool.opacity, mirror: tool.mirror, pts: [hit.uv.u, hit.uv.v] }, drawn: 0 };
+          state.apiRef.current?.paintStroke(live.current.stroke, 0);
+        }
+        return;
+      }
       const pts = current.stroke.pts;
       const lastU = pts[pts.length - 2]!, lastV = pts[pts.length - 1]!;
       if (dist(lastU, lastV, hit.uv.u, hit.uv.v) < 0.003) return;
@@ -572,14 +581,14 @@ export function StudioBench({ state, goal, busy, step }: { state: KittyStudioSta
       )}
       {draft && bench === "paint" && (
         <section className="studio-paint" aria-label="Paint">
-          {state.flat && <p className="studio-hint studio-limit">Freehand painting needs the 3D view. Dips and extras work here.</p>}
+          {state.flat && <p className="studio-hint studio-limit">Paint directly on this simple view. The same marks appear in 3D.</p>}
           <div className="studio-tools" role="group" aria-label="Tools">
             {(["brush", "marker", "sponge", "eraser"] as const).map((value) => (
-              <button type="button" key={value} className="studio-chip" aria-pressed={brush.tool === value && !brush.stamp} onClick={() => { setBrush({ ...brush, tool: value, stamp: null }); setSelectedStamp(null); }} disabled={state.flat}>
+              <button type="button" key={value} className="studio-chip" aria-pressed={brush.tool === value && !brush.stamp} onClick={() => { setBrush({ ...brush, tool: value, stamp: null }); setSelectedStamp(null); }}>
                 <ToolGlyph value={value} /><span>{value}</span>
               </button>
             ))}
-            <button type="button" className="studio-chip" aria-pressed={brush.mirror} onClick={() => setBrush({ ...brush, mirror: !brush.mirror })} disabled={state.flat}>
+            <button type="button" className="studio-chip" aria-pressed={brush.mirror} onClick={() => setBrush({ ...brush, mirror: !brush.mirror })}>
               <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4v32" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" /><path d="M6 30l10-8-10-8Z M34 30l-10-8 10-8Z" fill="var(--studio-clay)" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>
               <span>Mirror</span>
             </button>

@@ -28,7 +28,7 @@ it('wraps the friendship pair around a page keepsake and keeps concert lights Ta
  const store=new AppearanceStore({read:async()=>parseAppearance(null),write:async()=>parseAppearance(null)},null);
  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
  const pages:SceneRoute[]=['home','calendar','plan','ledger','more'];
- function Screen({page}:{page:SceneRoute}){useSceneBinding(page,'household',false);return h(ThemeSceneHeading,{home:page==='home',calendar:page==='calendar',plan:page==='plan',books:page==='ledger',more:page==='more'});}
+ function Screen({page}:{page:SceneRoute}){useSceneBinding(page,'household',false);return h('div',null,h(ThemeSceneHeading,{home:page==='home',calendar:page==='calendar',plan:page==='plan',books:page==='ledger',more:page==='more'}),h(PageWorld,{page}));}
  try{
   for(const theme of ['classic','taylor','newfoundland'] as const){
    await act(async()=>store.preview(theme));
@@ -38,6 +38,8 @@ it('wraps the friendship pair around a page keepsake and keeps concert lights Ta
     const rear=wrap?.querySelector('.bracelet-strand--rear');
     const anchor=wrap?.querySelector('.bracelet-wrap-anchor');
     const front=wrap?.querySelector('.bracelet-strand--front');
+    expect(host.querySelector('.desktop-title-bracelets')).toBeNull();
+    expect(wrap?.closest('[aria-hidden="true"]')).not.toBeNull();
     expect(wrap?.getAttribute('data-wrap-anchor')).toBe(`${theme}-${page}`);
     expect(rear).not.toBeNull();expect(anchor).not.toBeNull();expect(front).not.toBeNull();
     expect(rear!.compareDocumentPosition(anchor!)&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

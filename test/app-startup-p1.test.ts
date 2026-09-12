@@ -2118,6 +2118,22 @@ describe("cached-shell startup books gate", () => {
     await waitForUi(()=>expect(startup.auditIds).toHaveLength(1));
     expect(startup.auditIds[0]).not.toBe(first);
   });
+  it('closing App after an accepted entry cancels its pending feedback',async()=>{
+    await auditMount('feedback-cleanup');
+    startup.punchConfirm=async next=>({household:next,postedIds:[],warnings:[],undo:undefined} as unknown as import('../src/core/types.ts').CommitResult);
+    const scheduled=vi.spyOn(window,'setTimeout');
+    const cleared=vi.spyOn(window,'clearTimeout');
+    openExpenseSlideshow();
+    const reviewed=walkExpenseToConfirm(container);
+    await act(async()=>reviewed.click());
+    await waitForUi(()=>expect(scheduled.mock.calls.some(([,delay])=>delay===900)).toBe(true));
+    const feedbackIndex=scheduled.mock.calls.findIndex(([,delay])=>delay===900);
+    const feedbackTimer=scheduled.mock.results[feedbackIndex]!.value;
+    await act(async()=>root.unmount());
+    root=createRoot(container);
+    expect(cleared).toHaveBeenCalledWith(feedbackTimer);
+    expect(startup.auditIds).toHaveLength(1);
+  });
   it('missing receipt after roster order changes requires review before resubmission',async()=>{
     await auditMount('basis-drift');startup.punchConfirm=async()=>{throw new Error('Response lost');};
     openExpenseSlideshow();const reviewed=walkExpenseToConfirm(container);await act(async()=>reviewed.click());

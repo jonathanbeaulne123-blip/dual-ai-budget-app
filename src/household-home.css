@@ -61,7 +61,7 @@
 .home-presence li::before { content: "·"; position: absolute; left: 2px; color: var(--muted); }
 .home-presence li.is-waiting-me::before { content: "◆"; color: var(--copper); font-size: 10px; top: 4px; }
 .home-win { border-color: var(--gold); background: linear-gradient(180deg, var(--card), var(--paper-2)); }
-.home-doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.home-doors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .home-doors button { display: grid; gap: 2px; text-align: left; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); font: inherit; cursor: pointer; min-height: 60px; }
 .home-doors button small { color: var(--muted); font-size: 12px; }
 .home-doors button:focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; }
@@ -182,7 +182,7 @@
 .comfort-grid { display: grid; gap: 10px; }
 .comfort-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-2); }
 .comfort-row span { display: grid; gap: 2px; }
-.comfort-row small { color: var(--muted); }
+.comfort-row small { color: var(--ink); }
 .comfort-row input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--pine); }
 .comfort-row select { min-height: 40px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; max-width: 60vw; }
 .capability-map { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; }
@@ -222,3 +222,5 @@
 :root[data-theme="newfoundland"] .chapter-setup button { border-left: 3px solid var(--copper); }
 @media (max-width: 359px) { .home-bank { grid-template-columns: 72px minmax(0, 1fr); gap: 8px; padding: 8px; } .home-bank__portrait svg { height: 100px; } }
 @media (forced-colors: active) { .home-bank, .chapter-setup button { border: 1px solid CanvasText; } }
+
+@media(min-width:1100px) { .home-doors { grid-template-columns:repeat(4,minmax(0,1fr)); } }

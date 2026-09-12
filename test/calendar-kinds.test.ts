@@ -131,6 +131,12 @@ describe("Calendar month — legend is the filter, runs read as one event", () =
     const h: Household = { ...catalogHousehold(), nativeEvents: [event()] };
     const m = await mount(h, 1100);
     try {
+      expect([...m.host.querySelectorAll<HTMLButtonElement>('.cal-add:not(.is-revealed)')].every(button=>button.tabIndex === -1)).toBe(true);
+      expect(m.host.querySelector('[data-calendar-date="2026-09-11"]')?.getAttribute('aria-label')).toContain('Shared');
+      const cash=[...m.host.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.textContent==='Cash flow')!;
+      await act(async()=>cash.click());
+      expect(m.host.querySelector('[role="tab"].active')?.textContent).toBe('Calendar');
+      await act(async()=>[...m.host.querySelectorAll<HTMLButtonElement>('button')].find(button=>button.textContent==='Dates')!.click());
       const chips = [...m.host.querySelectorAll<HTMLElement>(".cal-title.is-span")];
       expect(chips.length).toBe(3);
       const byDate = (date: string) => m.host.querySelector<HTMLElement>(`[data-calendar-date="${date}"] .cal-title.is-span`)!;

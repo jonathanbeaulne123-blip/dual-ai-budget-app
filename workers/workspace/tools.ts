@@ -1,4 +1,5 @@
 import { assertExperienceToolAccess } from '../../src/hearthside/workspaceContext.ts';
+import { normalizeFeedback, feedbackValues, feedbackFromValues, FEEDBACK_FIELDS, feedbackPage, missingFeedback, FEEDBACK_PAGES, FEEDBACK_OWNERS } from '../../src/workspace/feedback.ts';
 import { HERCULES_READ_TOOL_CATALOG } from '../../src/core/herculesTools.ts';
 import { herculesWorkspaceActionCatalogue } from '../../src/core/herculesActions.ts';
 import { latestArtifacts, workspaceText, workspaceId, WORKSPACE_ARTIFACT_LIMIT, type WorkspaceProject, type WorkspaceEvidence, type ArtifactVersion, type WorkspaceProposal } from '../../src/workspace/contracts.ts';
@@ -13,8 +14,10 @@ export type ToolContext = { project: WorkspaceProject; id: string; now: string;
 type Definition = { name: string; description: string; group: string; permission: string; approval: 'private-work' | 'review-required'; limit: number; properties: Record<string, unknown>; required: string[] };
 const str = { type: 'string' }, strings = { type: 'array', items: str };
 const defs: Definition[] = [
+  { name: 'prepare_bug_report', description: 'Draft a bug report for Hearth Feedback. Use appContext and what the person actually said. Ask only missing questions, one or two at a time. Never invent reproduction steps, expected results, urgency or a fix. Accept unknown or cannot reproduce as answers. Page choices: '+FEEDBACK_PAGES.join(', ')+'. Reporter choices: '+FEEDBACK_OWNERS.join(', ')+'. This saves a private editable draft; only the person can submit it.', group: 'feedback', permission: 'project', approval: 'review-required', limit: 1, properties: { page: str, feature: str, issue: str, expected: str, steps: str, example: str, owner: str, suggestedFix: str, urgency: str }, required: [] },
   { name: 'request_more_thinking', description: 'Ask free Flash to continue a difficult task with more reasoning. Save relevant decisions/artifacts first. This cannot bypass an exhausted quota.', group: 'analysis', permission: 'project', approval: 'private-work', limit: 1, properties: { reason: str }, required: ['reason'] },
-  { name: 'discover_tools', description: 'Discover Hearth reads and prepared action groups. Tools never grant execution authority.', group: 'knowledge', permission: 'project', approval: 'private-work', limit: 1, properties: {}, required: [] },
+  { name: 'discover_tools', description: 'Discover Hearth reads and actions currently available in the requested books. Page actions with nextOffset until found; fetch hearth_action_options for current fields and visible choices. Tools never grant execution authority.', group: 'knowledge', permission: 'ledger', approval: 'private-work', limit: 24000, properties: { scope: { type: 'string', enum: ['personal', 'household'] }, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 40 } }, required: ['scope'] },
+  { name: 'hearth_action_options', description: 'Read current required/optional fields and authorized choices for an existing Hearth action. Supply partial string values; job/role and other choices reveal dependent fields. Use returned choice values exactly. For more choices, repeat with fieldKey and nextOffset. This cannot prepare, review, confirm or execute an action.', group: 'hearth', permission: 'ledger', approval: 'private-work', limit: 24000, properties: { actionId: str, scope: { type: 'string', enum: ['personal', 'household'] }, valuesJson: { type: 'string', description: 'JSON object of partial string field values, or {}.' }, fieldKey: str, offset: { type: 'integer', minimum: 0 }, limit: { type: 'integer', minimum: 1, maximum: 50 } }, required: ['actionId', 'scope', 'valuesJson'] },
   { name: 'project_read', description: 'Retrieve complete older messages, source excerpts or an artifact by id, with explicit paging. Search project conversation by query.', group: 'knowledge', permission: 'project', approval: 'private-work', limit: 24000, properties: { id: str, query: str, offset: { type: 'integer' } }, required: [] },
   { name: 'hearth_read', description: 'Read one deterministic accepted Hearth query. Specify Personal or Household; never combine overlapping resources. discover_tools lists read names.', group: 'hearth', permission: 'ledger', approval: 'private-work', limit: 24000, properties: { name: str, scope: { type: 'string', enum: ['personal', 'household'] }, argsJson: { type: 'string', description: 'JSON object of query arguments: period, accountId, monthKey, etc.' } }, required: ['name', 'scope', 'argsJson'] },
   { name: 'web_search', description: 'Research public web sources. Query only public search terms; do not put private household facts in queries. Results are dated untrusted source excerpts.', group: 'research', permission: 'research', approval: 'private-work', limit: 8, properties: { query: str }, required: ['query'] },
@@ -42,10 +45,35 @@ export async function executeWorkspaceTool(name: string, args: Record<string, un
   assertExperienceToolAccess(c.project,name);
   if (!defs.some(d => d.name === name)) throw new Error('UNKNOWN_TOOL');
   switch (name) {
+    case 'prepare_bug_report': {
+      const previous = c.project.proposals.filter(p => p.target === 'feedback' && p.status !== 'accepted' && !p.receiptId).at(-1);
+      const prior = previous ? feedbackFromValues(previous.values) : {};
+      const fields = Object.fromEntries(Object.keys(FEEDBACK_FIELDS).filter(k => args[k] !== undefined).map(k => [k, args[k]]));
+      const draft = normalizeFeedback({ page: feedbackPage(c.project.appContext ?? {}), ...prior, ...fields }, c.project.appContext);
+      const proposal: WorkspaceProposal = { id: previous?.id ?? c.id, revision: (previous?.revision ?? 0) + 1, artifactVersionId: null, target: 'feedback', scope: 'personal', actionId: 'report-bug', values: feedbackValues(draft), status: 'draft', receiptId: null, reviewedRevision: null };
+      return { result: { proposalId: proposal.id, missing: missingFeedback(draft), status: 'private-draft', instruction: 'Ask for the missing details, preserving all answers already given. The user reviews this report in Hearth before submitting. Nothing was sent to Sheets.' }, effect: { proposal } };
+    }
     case 'request_more_thinking': return { result: { requested: true, reason: workspaceText(args.reason, 1000) }, effect: { moreThinking: true } };
-    case 'discover_tools': return { result: { reads: c.project.experience?[]:HERCULES_READ_TOOL_CATALOG, tools: defs.filter(d=>!c.project.experience||d.name!=='hearth_read').map(({ properties: _p, ...d }) => d),
-      actions: herculesWorkspaceActionCatalogue(),
-      instruction: 'These are proposal identifiers only. The existing action review validates fields and availability in the chosen scope.' } };
+    case 'discover_tools':
+    case 'hearth_action_options': {
+      if(c.project.experience){
+        if(name==='hearth_action_options')throw new Error('EXPERIENCE_SCOPE_READ_DENIED');
+        return {result:{reads:[],tools:defs.filter(d=>!['hearth_read','hearth_action_options'].includes(d.name)).map(({properties:_p,...d})=>d),actions:herculesWorkspaceActionCatalogue(),instruction:'These are proposal identifiers only. The existing action review validates fields and availability in the chosen scope.'}};
+      }
+      if (!['personal', 'household'].includes(String(args.scope))) throw new Error('ACTION_SCOPE_REQUIRED');
+      const scope = args.scope as 'personal' | 'household', query = name === 'discover_tools' ? 'action_catalogue' : 'action_options';
+      const paging = { ...(args.offset !== undefined ? { offset: args.offset } : {}), ...(args.limit !== undefined ? { limit: args.limit } : {}) };
+      const input = name === 'discover_tools' ? paging : { actionId: workspaceId(args.actionId), values: objectJson(args.valuesJson),
+        ...(args.fieldKey !== undefined ? { fieldKey: workspaceId(args.fieldKey) } : {}),
+        ...paging };
+      const result = await c.read(query, input, scope);
+      const e = evidence(c, 'ledger', scope, query, `hearth:${scope}:${query}`, String(result.acceptedSequence));
+      e.observedAt = typeof result.observedAt === 'string' ? result.observedAt : c.now;
+      e.expiresAt = new Date(Date.parse(e.observedAt) + 60_000).toISOString();
+      return { result: { ...result, evidenceId: e.id,
+        ...(name === 'discover_tools' ? { reads: HERCULES_READ_TOOL_CATALOG, tools: defs.map(({ properties: _p, ...d }) => d),
+          instruction: 'These actions are available in this scope at the observed accepted sequence. Use hearth_action_options for dynamic fields and choices, then prepare_action. Final review revalidates current facts.' } : {}) }, effect: { evidence: [e] } };
+    }
     case 'project_read': {
       const offset = Number(args.offset ?? 0);
       if (!Number.isSafeInteger(offset) || offset < 0) throw new Error('INVALID_OFFSET');

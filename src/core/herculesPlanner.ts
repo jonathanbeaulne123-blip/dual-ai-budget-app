@@ -41,6 +41,10 @@ export function shouldPlanHerculesTools(message: string): boolean {
 export function deterministicHerculesReadFallback(message: string): HerculesReadToolPlan {
   const value = message.trim().toLowerCase().replace(/[’']/g, "");
   if (!plannerAllowed(message)) return { calls: [] };
+  if (/\bshifts?\b/.test(value) && !/\b(schedule|scheduled|forecast|expect|tomorrow|next week|next month|today|yesterday|start|finish|record|log|clock)\b/.test(value)) {
+    const period = /\blast week\b/.test(value) ? "last_week" : /\bthis week\b/.test(value) ? "this_week" : /\blast month\b/.test(value) ? "last_month" : "this_month";
+    return { calls: [{ id: "deterministic-shifts", name: "shift_summary", args: { period, ...(/\b(my|i|me)\b/.test(value) ? { member: "me" } : {}) } }] };
+  }
   if (/\b(plan|protect|prepare|everyday|assumption|bridge|sitdown|sit down|drift|runway|scenario|acknowledg|what changed)\b/.test(value)) {
     const name = /\bbridge\b/.test(value) ? "plan_bridge_status"
       : /\b(what changed|difference|version)\b/.test(value) ? "plan_version_diff"
@@ -83,7 +87,7 @@ export async function planHerculesReadTools(
 ): Promise<HerculesReadToolPlan> {
   if (!plannerAllowed(request.message)) return { calls: [] };
   const fetchFn = deps?.fetch ?? (typeof fetch === "function" ? fetch : undefined);
-  if (!fetchFn) return { calls: [] };
+  if (!fetchFn) return deterministicHerculesReadFallback(request.message);
   const body = herculesPlannerPayload(request);
   for (const url of plannerUrls()) {
     const controller = new AbortController();

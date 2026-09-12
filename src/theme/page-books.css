@@ -76,8 +76,6 @@
 :root[data-theme][data-world-page="ledger"] .theme-scene-copy { position:absolute; left:34px; top:auto; bottom:32px; max-width:48%; padding:20px 26px; background:var(--card); border:1px solid var(--line); border-radius:7px; box-shadow:2px 3px 0 #fff7e447,0 6px 16px #16110b25; }
 :root[data-world-page="ledger"] .theme-scene-title { font-size:clamp(27px,3.2vw,44px); margin:12px 0; }
 :root[data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { top:20px; bottom:auto; left:24px; background:var(--card); border:1px solid var(--line); box-shadow:0 3px 14px #18120b30; }
-:root[data-world-page="ledger"] .desktop-title-bracelets { display:flex; position:absolute; right:22px; top:18px; margin:0; width:285px; padding:6px 12px; background:#fff8e6ed; border:1px solid #bcaa86; border-radius:3px; box-shadow:0 8px 20px #18120b30; transform:rotate(3deg); }
-:root[data-world-page="ledger"] .desktop-title-bracelets .friendship-bracelets { width:220px; height:122px; }
 :root[data-world-page="ledger"] .theme-scene-heading>.era-light { display:none; }
 .books-heading-art { display:none; }
 :root[data-world-page="ledger"] .books-theme-c { margin-inline:clamp(64px,12vw,240px); padding:22px; border:1px solid var(--line); border-left:7px double var(--theme-second); border-radius:4px; background:var(--card); box-shadow:6px 7px 0 #eee4cc70,0 15px 50px #100d0860; }
@@ -90,8 +88,6 @@
 :root[data-world-page="ledger"] .world-page { padding-bottom:72px; }
 @media(min-width:720px) and (max-width:1099px) {
  :root[data-theme][data-world-page="ledger"] .theme-scene-heading { height:380px; }
- :root[data-world-page="ledger"] .desktop-title-bracelets { width:220px; }
- :root[data-world-page="ledger"] .desktop-title-bracelets .friendship-bracelets { width:165px; height:105px; }
  :root[data-world-page="ledger"] .books-theme-c { margin-inline:50px; padding:14px; }
 }
 @media(max-width:719px) {
@@ -104,9 +100,6 @@
  :root[data-world-page="ledger"] .theme-scene-title { font-size:28px; line-height:1.12; margin:9px 0; }
  :root[data-world-page="ledger"] .theme-scene-caption { font-size:12px; }
  :root[data-world-page="ledger"] .theme-scene-heading>.theme-atmosphere-toggle { top:auto; bottom:10px; left:10px; min-height:44px; font-size:11px; padding:8px 10px; }
- :root[data-world-page="ledger"] .desktop-title-bracelets { display:flex; position:absolute; right:8px; top:auto; bottom:54px; width:148px; padding:0; background:transparent; border:0; box-shadow:none; transform:none; }
- :root[data-world-page="ledger"] .desktop-title-bracelets .friendship-bracelets { width:118px; height:auto; }
- :root[data-world-page="ledger"] .desktop-title-bracelets .era-light { width:48px; height:31px; margin:30px 0 0 -24px; }
  :root[data-world-page="ledger"] .books-theme-c { margin:0 5px; padding:8px; border-left-width:3px; box-shadow:2px 3px 0 #a795752b; }
  :root[data-world-page="ledger"] .world-charm-row { margin:4px 12px 10px; }
 }
@@ -132,5 +125,6 @@
 @media(min-width:720px) and (max-width:1099px) {
  :root[data-scene="reputation"][data-world-page="ledger"] .books-heading-art { display:block; position:absolute; inset:0; width:100%; height:100%; }
  :root[data-scene="reputation"][data-world-page="ledger"] .books-heading-art img { display:block; width:100%; height:100%; object-fit:cover; object-position:center 35%; }
- :root[data-scene="reputation"][data-world-page="ledger"] .desktop-title-bracelets { top:auto; bottom:16px; }
 }
+
+:root[data-world-page="ledger"] .close-the-month { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:7px; padding:16px; margin-top:16px; }

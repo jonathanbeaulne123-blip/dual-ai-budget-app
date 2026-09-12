@@ -1,0 +1,10 @@
+{
+  "applicationCodeSha": "c85c5b7df72ce12f3b475409b7c15bde451f5296",
+  "command": "pnpm build",
+  "exitCode": 0,
+  "appTypeScript": "passed",
+  "workspaceTypeScript": "passed",
+  "viteSeconds": 6.84,
+  "herculesUI": "passed",
+  "advisory": "Existing Vite chunk size advisory; largest chunk 3116.14 kB before gzip."
+}

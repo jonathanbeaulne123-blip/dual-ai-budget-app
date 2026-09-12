@@ -23,7 +23,7 @@ import { isLedgerWrite } from "./writeKind.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
 import { calcShiftAmounts, parseShiftInput, shiftSettingsFingerprint, DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { calculateWorkShift, previousWorkWeekHours, shapeWorkJob, shapeWorkSchedule, workJobFingerprint, workPayScheduleIsValid, workShiftIsReversed } from "./work.ts";
+import { takeHomeBasis, workRateForDate, calculateWorkShift, previousWorkWeekHours, shapeWorkJob, shapeWorkSchedule, workJobFingerprint, workPayScheduleIsValid, workShiftIsReversed } from "./work.ts";
 import {
   incomeSubcategory,
   parseAmount,
@@ -659,7 +659,7 @@ export const recordObservedChapterCompletion = captureCommand("recordObservedCha
     (attested.onboardingAttestations ?? []).filter(row => !priorIds.has(row.id)).map(row => row.id), [], "recordObservedChapterCompletion");
 });
 
-/** Skip only a personal module whose registry policy explicitly permits it. */
+/** Skip a Personal module or the optional King chapter; required household gates cannot be skipped. */
 export const skipPersonalStep = captureCommand("skipPersonalStep", function skipPersonalStep(household: Household, input: {
   memberId: string;
   chapterId: string;
@@ -667,10 +667,10 @@ export const skipPersonalStep = captureCommand("skipPersonalStep", function skip
   at?: string;
 }): CommitResult {
   const chapter = chapterById(input.chapterId);
-  if (!chapter || chapter.track !== "personal" || chapter.skip !== "member-skippable") {
+  if (!chapter || (chapter.track !== "personal" && chapter.id !== "ch-13-king") || chapter.skip !== "member-skippable") {
     throw new ValidationError("That setup chapter cannot be skipped.");
   }
-  return updateMemberProgress(household, input, "Personal onboarding module skipped", (progress, at) => ({
+  return updateMemberProgress(household, input, "Optional setup chapter skipped", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
       ? { ...row, skippedAt: row.skippedAt ?? at, lastSafeResumePoint: chapter.id }
@@ -2497,6 +2497,8 @@ export const postWorkShift = captureCommand("postWorkShift", function postWorkSh
   if (!job) throw new ValidationError("Choose one of this worker's active jobs.");
   const role = job.roles.find((row) => row.id === input.roleId && row.active);
   if (!role) throw new ValidationError("Choose an active role for this job.");
+  if ((Number(input.workedHours) > 0 || (Number(input.paidBreakHours) > 0 && job.paidBreakRate !== "custom")) && workRateForDate(role, date).grossHourlyRateCents > 0 && takeHomeBasis(workRateForDate(role, date)) === "unknown")
+    throw new ValidationError("This shift earned gross wages but its take-home is not set. Set a take-home rate or deductions on this job, then confirm.");
   const shiftEnvelope = input.shiftEnvelopeId
     ? shapeShiftEnvelope((household.shiftEnvelopes ?? []).find((row) => row.id === input.shiftEnvelopeId), member.id)
     : null;
@@ -6748,6 +6750,7 @@ export const postVisit = captureCommand("postVisit", function postVisit(househol
     place,
     splits,
     source: "visit",
+    ...(appointment ? { sourceId: appointment.id } : {}),
     createdAt,
     createdBy: actor.createdBy,
     visibility: actor.visibility,

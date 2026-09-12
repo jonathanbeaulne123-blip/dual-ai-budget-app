@@ -3,6 +3,8 @@ import { askBelongsOnDesk } from "./core/askView.ts";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CadPad } from "./CadPad.tsx";
 import {
+  takeHomeBasis,
+  workRateForDate,
   calculateWorkShift,
   centsDigitsFromDollars,
   dollarsFromCentsDigits,
@@ -167,6 +169,7 @@ export function WorkShiftFlow({
   const job = jobs.find((row) => row.id === jobId);
   const [roleId, setRoleId] = useDraftField(restored, "roleId", () => inboxDraft?.roleId || cameraDraft?.roleId || job?.roles.find((role) => role.active)?.id || "");
   const role = job?.roles.find((row) => row.id === roleId && row.active);
+  const shiftTakeHomeBasis = (() => { const rate = role ? workRateForDate(role, date) : undefined; return rate ? takeHomeBasis(rate) : "unknown"; })();
   const punchHours = punch ? workedHoursFromOpenShift(punch) : null;
   const [hoursDigits, setHoursDigits] = useDraftField(restored, "hoursDigits", () => asDigitsFromDollars(inboxDraft?.workedHours ?? cameraDraft?.workedHours ?? punchHours?.workedHours ?? 0) || centsDigitsFromDollars("0"));
   const [paidBreakDigits, setPaidBreakDigits] = useDraftField(restored, "paidBreakDigits", () => asExplicitDigitsFromDollars(inboxDraft?.paidBreakHours ?? cameraDraft?.paidBreakHours ?? punchHours?.paidBreakHours));
@@ -594,7 +597,8 @@ export function WorkShiftFlow({
             <div><span>Paid break</span><strong>{dollars(paidBreakDigits)} h</strong></div>
             {cameraDraft?.shiftEnvelopeId ? <div><span>Unpaid break</span><strong>{dollars(unpaidBreakDigits)} h</strong></div> : null}
             <div><span>Gross wages</span><strong>{calculation ? formatCad(calculation.grossWagesCents) : "—"}</strong></div>
-            <div><span>Expected take-home wages</span><strong>{calculation ? formatCad(calculation.takeHomeWagesCents) : "—"}</strong></div>
+            <div><span>Expected take-home wages</span><strong>{shiftTakeHomeBasis === "unknown" ? "Not set" : calculation ? formatCad(calculation.takeHomeWagesCents) : "—"}</strong></div>
+            {shiftTakeHomeBasis === "unknown" && <p className="work-shift-review__note" role="note">Take-home is not set for this role, so Hearth cannot work out what you keep. Set a take-home rate or deductions on the job, then confirm.</p>}
             <div><span>Tips before tip-outs</span><strong>{calculation ? formatCad(calculation.tipsBeforeTipOutCents) : "—"}</strong></div>
             <div><span>Tips after tip-outs</span><strong>{calculation ? formatCad(calculation.netTipsCents) : "—"}</strong></div>
             {role.tipped && <div><span>Customers served</span><strong>{customersServed || "—"}</strong></div>}

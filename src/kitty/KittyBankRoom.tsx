@@ -58,12 +58,15 @@ function sealColor(goal: Goal): string {
 }
 import type { PlanAsk } from "../PlanLensWorkbench.tsx";
 import "./kitty-room.css";
+import { KittyNest, NestBankDetail } from "./KittyNest.tsx";
+import { projectKittyNest, nestCategoryFor, type NestBank } from "../core/kittyNest.ts";
 import { Whisper } from "../theme/Whisper.tsx";
 
 export type KittyPlanContext = {
   selection: PlanSelection;
   projection: PlanProjection;
   goalId?: string;
+  bankId?: string;
   lineId?: string;
   onClose: () => void;
   onSaveLine: (line: PlanLine, expected?: PlanLine) => Promise<boolean>;
@@ -97,7 +100,9 @@ export type KittyRoomProps = {
   ) => unknown;
   context?: KittyPlanContext;
   initialGoalId?: string;
-  returnTo?: "Plan" | "Home" | "Hearthside";
+  initialBankId?: string;
+  onOpenCalendar?: () => void;
+  returnTo?: "Plan" | "Home" | "setup" | "Hercules" | "Hearthside";
   onClose: () => void;
 };
 type SavedReview = { id: string; title: string };
@@ -144,9 +149,9 @@ function initialEnvelope(goal: Goal, context?: KittyPlanContext) {
   )?.lens;
   return {
     ...defaultGoalEnvelope(),
-    ...(lens === "protect" || lens === "prepare" || lens === "build"
+    ...(lens === "protect" || lens === "everyday" || lens === "prepare" || lens === "build"
       ? { kind: lens }
-      : {}),
+      : { kind: nestCategoryFor(goal.name) }),
   };
 }
 function bankEvidence(
@@ -226,6 +231,8 @@ function Room({
   onCommand,
   context,
   initialGoalId,
+  initialBankId,
+  onOpenCalendar,
   returnTo = "Plan",
   onClose,
 }: KittyRoomProps) {
@@ -247,7 +254,7 @@ function Room({
   const [filter, setFilter] = useState<"active" | "archived" | "completed">(
     "active",
   );
-  const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? "");
+  const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? (context?.bankId || initialBankId ? `nest:${context?.bankId ?? initialBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
   const bankScope={identity:creationIdentity??identity,environment:h.environment,householdId:h.householdId,memberId};
   const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext);}});
   const [studioFor, setStudioFor] = useState("");
@@ -262,6 +269,9 @@ function Room({
   const requested = all.find((goal) => goal.id === selected);
   const goal = requested ?? visible[0];
   const awaitingCreatedGoal=Boolean(studioFor&&selected===studioFor&&!requested);
+  const nest = useMemo(() => projectKittyNest(h, memberId, view, todayKey()), [h, memberId, view]);
+  const nestBanks = [nest.king, ...nest.categories, ...nest.categories.flatMap(row => row.children), ...nest.history];
+  const selectedNest = selected.startsWith("nest:") ? nestBanks.find(row => row.id === selected.slice(5)) : undefined;
   const [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState("");
@@ -449,7 +459,8 @@ function Room({
         <p>{world}</p>
         <span>A place for the things you’re making possible.</span>
       </div>
-      <nav className="kitty-collection" aria-label="Your Kitty Banks">
+      <details className="nest-gallery-map"><summary>Explore the nest</summary><KittyNest household={h} memberId={memberId} view={view} today={todayKey()} onSelect={bank => select(bank.goal?.id ?? `nest:${bank.id}`)} /></details>
+      {!selectedNest && <nav className="kitty-collection" aria-label="Your Kitty Banks">
         <div className="kitty-collection-filters">
           {(["active", "archived", "completed"] as const).map((value) => (
             <button
@@ -469,7 +480,7 @@ function Room({
           {visible.map((item) => (
             <button
               key={item.id}
-              aria-pressed={goal?.id === item.id && !creating}
+              aria-pressed={goal?.id === item.id && !creating && !selectedNest}
               onClick={() => select(item.id)}
             >
               <span
@@ -493,7 +504,7 @@ function Room({
             </button>
           ))}
         </div>
-      </nav>
+      </nav>}
       {error && (
         <p className="kitty-notice is-error" role="alert">
           {error}
@@ -505,7 +516,7 @@ function Room({
           ✓ {receipt}
         </p>
       )}
-      {awaitingCreatedGoal ? <section className="kitty-folio"><h2>Your bank is created</h2><p role="status">The accepted bank is arriving in this view.</p><button type="button" onClick={onClose}>Return with bank saved</button></section> : creating || !goal ? (
+      {awaitingCreatedGoal ? <section className="kitty-folio"><h2>Your bank is created</h2><p role="status">The accepted bank is arriving in this view.</p><button type="button" onClick={onClose}>Return with bank saved</button></section> : selectedNest && !creating ? <NestBankDetail key={selectedNest.id} bank={selectedNest} h={h} memberId={memberId} view={view} identity={identity} busy={busy || saving} theme={theme} run={run} readLatest={() => latest.current} onSelect={(bank: NestBank) => select(bank.goal?.id ?? `nest:${bank.id}`)} onOpenCalendar={onOpenCalendar} /> : creating || !goal ? (
         <BankCreationSurface key={JSON.stringify([creationIdentity??identity,creationContext?.id??(creating?'new':'empty')])} scope={bankScope} household={h} view={view} busy={Boolean(busy||saving)} context={creationContext} onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand}
           onCancel={creationContext?onClose:goal?()=>setCreating(false):onClose}
           onCreated={async value=>{const token=scope.capture();await onBankCreated?.(value);if(!scope.isCurrent(token))return;setFilter('active');setStudioFor(value.goalId);select(value.goalId);}}/>
@@ -1004,6 +1015,7 @@ function Bank({
                         <option value="protect">Protect</option>
                         <option value="prepare">Prepare</option>
                         <option value="build">Build</option>
+                        <option value="everyday">Everyday</option>
                       </select>
                     </label>
                     <label>
@@ -1119,7 +1131,7 @@ function Bank({
                     {context.selection.lines
                       .filter(
                         (line) =>
-                          ["protect", "prepare", "build"].includes(line.lens) &&
+                          ["protect", "everyday", "prepare", "build"].includes(line.lens) &&
                           (!line.sourceReference ||
                             line.sourceReference.type !== "goal" ||
                             line.sourceReference.id === goal.id),

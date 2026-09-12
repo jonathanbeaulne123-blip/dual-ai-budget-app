@@ -54,6 +54,12 @@
 .hercules-conversation-content > .hercules-easy-read-toggle,
 .hercules-onboarding-content > .hercules-easy-read-toggle {
   display: block;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  width: 100%;
+  text-align: left;
+  box-shadow: 0 4px 0 var(--chat-paper);
   margin: 4px 0 12px;
 }
 .hercules-onboarding-content {

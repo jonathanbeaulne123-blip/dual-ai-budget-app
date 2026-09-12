@@ -22,7 +22,7 @@ export async function checkCalendar({page,out,theme,scope,state}) {
  await page.locator('.calendar-upcoming summary').click();await capture('day-expanded');
  await page.getByRole('button',{name:'Next month',exact:true}).click();
  await page.getByRole('button',{name:'Previous month',exact:true}).click();
- await tab('Month');const range=page.getByRole('slider',{name:'Day of the month',exact:true});
+ await page.getByRole('button',{name:'Cash flow',exact:true}).click();const range=page.getByRole('slider',{name:'Day of the month',exact:true});
  await range.focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowRight');receipt.monthKeyboard=(await range.inputValue())==='2';
  if(!receipt.monthKeyboard)throw Error('Month keyboard failed');
  await page.locator('.weight-list summary').click();await capture('month');

@@ -1,3 +1,5 @@
+Hercules bug reports: [connection and recovery](HERCULES_FEEDBACK.md) · [current worksession](worksessions/2026-09-12-hercules-bug-reports.md).
+
 Current local Kitty Banks work: [cinematic envelope room implementation and evidence](worksessions/2026-09-11-kitty-envelope-implementation.md), integrating both merged Plan overhauls, reusable vault purchases, six theme/scope rooms, Calendar meanings and Hercules readability. [Complete product direction and remaining envelope contracts](briefs/KITTY_BANKS_CINEMATIC_ENVELOPE_APP_2026-09-11.md).
 
 **Guided Plan preparation — local implementation (2026-09-11):** a quieter Plan overview and Hercules conversation collect one answer at a time, explain why, preserve private progress and produce an exact draft review. Existing lens tools and independent agreement remain available. [Worksession and acceptance](worksessions/2026-09-11-plan-guided-conversation.md). Deployment and live product acceptance remain open.

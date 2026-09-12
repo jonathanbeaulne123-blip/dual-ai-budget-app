@@ -8,6 +8,7 @@ import { HEARTHSIDE_FLAGS } from './hearthside/flags.ts';
 import { HEARTHSIDE_LABEL, hearthsidePath, parseHearthsideRoute } from './hearthside/routes.ts';
 import {readHearthsideToolReturn,type HearthsideToolReturn} from './hearthside/focusedTool.ts';
 import type {SharedReference} from './hearthside/contracts.ts';
+import { feedbackContext, type FeedbackContext } from './workspace/feedback.ts';
 import { WorkspaceClient } from './workspace/client.ts';
 import { PlayBoundary } from "./play/PlayBoundary.tsx";
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
@@ -699,6 +700,10 @@ export function App() {
   const pendingDemoAcceptanceRef = useRef<Promise<CommandOutcome | null> | null>(null);
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
+  const currentTabRef = useRef<Tab>(tab);
+  currentTabRef.current = tab;
+  const secondaryOrigin = useRef<Tab>("home");
+  const secondaryTrigger = useRef<HTMLElement | null>(null);
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
@@ -807,6 +812,7 @@ export function App() {
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const workspaceEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
   const [workspaceCompact, setWorkspaceCompact] = useState(false);
+  const [bugReportRequest, setBugReportRequest] = useState<{ id: string; context: FeedbackContext; text?: string; identity: string } | null>(null);
   const [workspaceSnapshot, setWorkspaceSnapshot] = useState<(WorkspaceSnapshot & { identity: string }) | null>(null);
   const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null);
   const [workspaceExperienceSelection,setWorkspaceExperienceSelection]=useState<{scope:string;id:string}|null>(null);
@@ -847,7 +853,7 @@ export function App() {
     };
     locate(); window.addEventListener("popstate", locate); return () => window.removeEventListener("popstate", locate);
   }, [environment, household?.householdId, session?.memberId, session?.view]);
-  useEffect(()=>{if(!PLAY_ENABLED)return;const open=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.environment===environment&&detail.householdId===household?.householdId&&detail.memberId===session?.memberId){event.stopImmediatePropagation();setPlayInitialArea("dressing");setTab("play");}};window.addEventListener('hearth:open-fitting',open,true);return()=>window.removeEventListener('hearth:open-fitting',open,true);},[environment,household?.householdId,session?.memberId]);
+  useEffect(()=>{if(!PLAY_ENABLED)return;const open=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.environment===environment&&detail.householdId===household?.householdId&&detail.memberId===session?.memberId){event.stopImmediatePropagation();if (!["planner", "timeMachine", "hercules", "play"].includes(currentTabRef.current)) { secondaryOrigin.current = currentTabRef.current; secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; } setPlayInitialArea("dressing");setTab("play");}};window.addEventListener('hearth:open-fitting',open,true);return()=>window.removeEventListener('hearth:open-fitting',open,true);},[environment,household?.householdId,session?.memberId]);
   useEffect(() => {
     const source = herculesSourceFocus;
     if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
@@ -941,6 +947,16 @@ export function App() {
   booksGateRef.current = activeBooksGate;
   const [spark, setSpark] = useState(false);
   const [visorPop, setVisorPop] = useState(false);
+  useEffect(() => {
+    if (!spark) return;
+    const timer = window.setTimeout(() => setSpark(false), 900);
+    return () => window.clearTimeout(timer);
+  }, [spark]);
+  useEffect(() => {
+    if (!visorPop) return;
+    const timer = window.setTimeout(() => setVisorPop(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [visorPop]);
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
@@ -4840,13 +4856,11 @@ export function App() {
         if (result.warnings.length) setError(result.warnings.join(" "));
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
           setSpark(true);
-          window.setTimeout(() => setSpark(false), 900);
           if (comfort.sound) playClink();
           if (comfort.haptics && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(10);
         }
         if (result.household.activity.at(-1)?.action === "Post Recurring") {
           setVisorPop(true);
-          window.setTimeout(() => setVisorPop(false), 700);
         }
       } catch (caught) {
         if (options?.isCurrent?.() === false) return;
@@ -6171,11 +6185,29 @@ export function App() {
     if (load) void load().catch(() => undefined);
   }
 
+  function captureReportContext(): FeedbackContext {
+    const ua = navigator.userAgent;
+    return feedbackContext({ page: adding ? 'add' : tab, scope: view, environment, theme: appearance.scene.theme, scene: appearance.scene.id,
+      viewport: `${window.innerWidth} × ${window.innerHeight}`, browser: /Edg/.test(ua) ? 'Edge' : /Firefox/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'Other',
+      build: import.meta.env.VITE_GIT_SHA || 'local', online: navigator.onLine ? 'online' : 'offline', observedAt: new Date().toISOString() });
+  }
+  function openWorkspaceConversation() {
+    setWorkspaceCompact(true);
+    if (adding && !confirm) pauseAdd();
+  }
+  function openBugReport(text = '') {
+    setBugReportRequest({ id: crypto.randomUUID(), context: captureReportContext(), text, identity: ledgerRenderScopeKey });
+    setWorkspaceCompact(true);
+    // Use the existing presentation pause so an unfinished Add draft survives the report.
+    if (adding && !confirm) pauseAdd();
+  }
   function openLegacyHercules(proposal?: WorkspaceProposal) {
     if (!household || !session) return;
-    if (proposal?.target === "google") { setError("Open the external change review in the Hercules working area."); return; }
+    if (proposal && proposal.target !== "hearth") { setError("Open the external change review in the Hercules working area."); return; }
     const targetView = proposal?.scope ?? view;
     setWorkspaceCompact(false);
+    if (tab === "hercules") setTab(secondaryOrigin.current === "hercules" ? "home" : secondaryOrigin.current);
+    if (adding && !confirm) pauseAdd();
     if (targetView !== view) rememberSession({ memberId: actorId, view: targetView, householdId: household.householdId });
     setPlanHerculesRequest({ id: crypto.randomUUID(), scopeKey: `${environment}:${household.householdId}:${actorId}:${targetView}:${localLedgerIdentity(actorId) ?? actorId}:${replicaScopeGenerationRef.current}`,
       prompt: proposal ? "Review this proposed change. Keep its own Final Confirm and receipt." : "",
@@ -6187,6 +6219,10 @@ export function App() {
     if(hearthsideToolReturn?.tab!==next)setHearthsideToolReturn(null);
     if (HEARTHSIDE_FLAGS.presentation && next === "together") next = "play";
     if(next === "play" && !PLAY_ENABLED && !HEARTHSIDE_FLAGS.presentation)next="together";
+    if (["planner", "timeMachine", "hercules", "play"].includes(next) && !["planner", "timeMachine", "hercules", "play"].includes(tab)) {
+      secondaryOrigin.current = tab;
+      secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     clearWorkHandoff(window.sessionStorage);
     preloadTab(next);
     leaveDesk();
@@ -6557,8 +6593,11 @@ export function App() {
     return money ? `Post ${money}` : "Post";
   }
 
+  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
+
   return (
     <HearthsideDesignProvider key={ledgerRenderScopeKey} household={household} memberId={session.memberId} identity={ledgerRenderScopeKey} source={()=>ledgerSyncRef.current}><WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
+      {!(HEARTHSIDE_FLAGS.presentation&&view==="household"&&tab==="play")&&!hearthsideToolReturn&&["planner", "timeMachine", "hercules", "play"].includes(tab) && <button type="button" className="secondary-back chip" onClick={() => {goTab(secondaryOrigin.current); requestAnimationFrame(() => {if (secondaryTrigger.current?.isConnected) secondaryTrigger.current.focus(); else { const target = document.querySelector<HTMLElement>('nav.nav button[aria-current="page"]') ?? document.querySelector<HTMLElement>('.app'); if (target) { if (!target.hasAttribute("tabindex")) target.tabIndex = -1; target.focus(); } }});}}>Back to {secondaryOrigin.current === "ledger" ? "Books" : secondaryOrigin.current === "more" ? "Status Centre" : secondaryOrigin.current === "plan" ? "Plan" : secondaryOrigin.current === "together" ? "Together" : secondaryOrigin.current === "calendar" ? "Calendar" : secondaryOrigin.current === "shift" ? "Shifts" : secondaryOrigin.current === "till" ? "Till" : "Home"}</button>}
       {charterFoundingVisible && household && session ? (
         <CharterFounding
           household={household}
@@ -6805,8 +6844,10 @@ export function App() {
 
       {workspaceEnabled && <HerculesWorkspaceRoom
         hearthside={selectedExperienceWorkspace()} onExperienceOpened={id=>{if(household.hearthside?.experiences.some(e=>e.id===id&&e.state!=="archived"))setWorkspaceExperienceSelection({scope:ledgerRenderScopeKey,id});}}
-        key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
-        mode={tab === "hercules" ? "room" : workspaceCompact && !Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "compact" : "hidden"}
+        getReportContext={captureReportContext} reporterName={household.members.find(m => m.id === actorId)?.name}
+        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)}
+        key={`workspace:${ledgerRenderScopeKey}`} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
+        mode={workspaceMode}
         getAccessToken={async () => {
           const identity = readGuardScopeIdentity(), local = localLedgerIdentity(actorId), expected = loadSupabaseSession(environment)?.userId;
           if (local) return local;
@@ -6874,6 +6915,7 @@ export function App() {
           )}
         />
       )}
+      {tab === "home" && dashboard && view === "personal" && <KittyBanks key={`${ledgerRenderScopeKey}:nest`} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="home" onCommand={runKitchen} onOpenCalendar={() => goTab("calendar")} />}
       {tab === "home" && dashboard && (
         <>
         <HomeInstruments collapsed={view === "household" && householdHomeV2Enabled()}>
@@ -7020,7 +7062,7 @@ export function App() {
         onOpenWorkspace={workspaceEnabled ? () => { setWorkspaceProjectId(null);setWorkspaceExperienceSelection(null); goTab("hercules"); } : undefined}
               workspaceCards={workspaceEnabled && workspaceSnapshot?.identity === ledgerRenderScopeKey ? month => <WorkspaceProjectCards projects={workspaceSnapshot.projects} household={household} memberId={actorId} scope={view} month={month} today={today} onOpen={id => {setWorkspaceProjectId(id);setWorkspaceExperienceSelection(null);goTab("hercules");}} /> : undefined}
               key={`${ledgerRenderScopeKey}:${view}`}
-              goalsContent={context => <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey} planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
+              goalsContent={context => <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey} planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onOpenCalendar={() => goTab("calendar")} onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
               onContextChange={setPlanContext}
               contextIdentity={`${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}`}
               onAskHercules={(prompt, proposal) => {
@@ -7287,8 +7329,8 @@ export function App() {
       )}
 
       {tab === "more" && (
-        <div className="more-surfaces status-centre">{PLAY_ENABLED && <button type="button" className="play-status-entry" onClick={()=>goTab("play")}>✧ Hercules Play — dressing, portraits & curiosities</button>}
-          <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1><p className="muted">Health, sources, household, privacy, comfort, and help. Everyday work lives on its own page.</p></header>
+        <div className="more-surfaces status-centre">
+          <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1></header>
           <StatusFold id="needs-us" title="Needs us" defaultOpen forceOpen={appNeedsAttention}>
           <section className="card more-sync-help" id="hearth-sync-help" tabIndex={-1}>
             <header>
@@ -7727,7 +7769,7 @@ export function App() {
           </section>
           </StatusFold>
           <StatusFold id="help" title="Help and transparency">
-            {workspaceEnabled && <button onClick={() => goTab("hercules")}>Hercules workspace</button>}
+            {workspaceEnabled && <><button onClick={() => goTab("hercules")}>Hercules workspace</button><button onClick={() => openBugReport()}>Report a bug with Hercules</button></>}
           <section className="card hercules-capability-map" aria-labelledby="hercules-map-heading">
             <header><h2 id="hercules-map-heading">What Hercules can see, infer, draft, and never decide</h2></header>
             <ul className="capability-map">
@@ -7893,7 +7935,7 @@ export function App() {
         <AddSlideshow
           key={addPresentationKey}
           draftStorageKey={readEntryKey(mode) ?? undefined}
-          recovery={<>{entryDraftVolatile && <p role="status">Browser storage is full or unavailable. Your latest draft is kept in this open tab; reloading may lose changes.</p>}{entrySubmission && !confirm ? <section className="entry-recovery" aria-label="Entry receipt"><p role="status">This reviewed entry is awaiting its receipt. Its details are kept here.</p><button type="button" className="ghost" onClick={()=>void recoverEntryReceipt()}>Check entry status</button></section> : null}</>}
+          recovery={<>{workspaceEnabled && <button type="button" className="ghost" disabled={Boolean(entrySubmission || confirm)} onClick={openWorkspaceConversation}>Ask Hercules</button>}{entryDraftVolatile && <p role="status">Browser storage is full or unavailable. Your latest draft is kept in this open tab; reloading may lose changes.</p>}{entrySubmission && !confirm ? <section className="entry-recovery" aria-label="Entry receipt"><p role="status">This reviewed entry is awaiting its receipt. Its details are kept here.</p><button type="button" className="ghost" onClick={()=>void recoverEntryReceipt()}>Check entry status</button></section> : null}</>}
           open={adding}
           recommendationHousehold={displayHousehold}
           initialAccountId={addLaunchAccountId}
@@ -8485,7 +8527,7 @@ export function App() {
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
             {commandChrome.toast.showUndo !== false
-              ? ` ${undoToastSecondaryCopy()} Find it later under More → Recent on this phone.`
+              ? ` ${undoToastSecondaryCopy()} Find it later in Recent changes on this phone.`
               : ""}
           </span>
           {commandChrome.toast.showUndo !== false && (
@@ -8546,7 +8588,9 @@ export function App() {
           const client=new WorkspaceClient(`/hercules/workspace/${environment}/${household.householdId}`,async()=>token,()=>readGuardScopeIdentity()===guard);
           await client.authorizeAction(id);
         } : undefined}
-        onOpenWorkspace={workspaceEnabled ? () => setWorkspaceCompact(open => !open) : undefined}
+        conversationHidden={workspaceMode !== "hidden"}
+        onOpenWorkspace={workspaceEnabled ? openWorkspaceConversation : undefined}
+        onReportBug={workspaceEnabled ? openBugReport : undefined}
         planContext={tab === "plan" && planContext?.scope === view && planContext.contextIdentity === `${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}` ? planContext : null}
         planOpenRequest={planHerculesRequest}
         onPlanOpenConsumed={(id) => setPlanHerculesRequest(current => current?.id === id ? null : current)}
@@ -8792,7 +8836,6 @@ export function App() {
           {view === "household" ? "Our Path" : "Plan"}
         </button>
         )}
-        {(!HEARTHSIDE_FLAGS.presentation || view !== "household") && PLAY_ENABLED && <button type="button" className={`play-desktop-entry ${tab === "play" ? "active" : ""}`} aria-current={tab === "play" ? "page" : undefined} onClick={()=>goTab("play")}>Play</button>}
         {kitchenPrimaryNav(view).includes("together") && <button className={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "active" : ""} aria-current={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "page" : undefined} onClick={() => goTab("together")}>{HEARTHSIDE_FLAGS.presentation ? HEARTHSIDE_LABEL : "Together"}</button>}
         {kitchenPrimaryNav(view).includes("more") && (
         <button

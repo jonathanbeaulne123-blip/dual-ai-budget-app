@@ -17,7 +17,7 @@ const householdChapter = (
   track: "household",
   copyKey: `onboarding.household.${row.id}`,
   flavorKeys: [1, 2, 3].map((index) => `onboarding.household.${row.id}.flavor-${index}`),
-  contributesToFinalGate: !["ch-06-fund", "ch-07-recurrences", "ch-08-cadence"].includes(row.id),
+  contributesToFinalGate: !["ch-06-fund", "ch-07-recurrences", "ch-08-cadence", "ch-13-king"].includes(row.id),
 });
 
 const personalChapter = (
@@ -80,6 +80,10 @@ export const ONBOARDING_REGISTRY: readonly OnboardingChapter[] = [
   householdChapter({
     id: "ch-12-ready", order: 12, sitting: 3, target: { tab: "ledger" }, conductor: "both", approval: "joint",
     skip: "household-required", timeBudgetSeconds: 180, pausePoints: [], actions: ["navigate", "approve", "continue"], dependsOn: ["ch-11-plan"],
+  }),
+  householdChapter({
+    id: "ch-13-king", order: 13, sitting: 3, target: { tab: "home" }, conductor: "either", approval: "none",
+    skip: "member-skippable", timeBudgetSeconds: 600, pausePoints: ["after-shaping", "before-firing"], actions: ["navigate", "edit", "continue", "skip-personal"], dependsOn: ["ch-02-household"],
   }),
   personalChapter({
     id: "pm-01-own-books", order: 1, target: { tab: "ledger" }, conductor: "self", approval: "none",
