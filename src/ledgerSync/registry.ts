@@ -8,6 +8,7 @@ import { buildBatchImport } from "../core/importInbox/command.ts";
 import { commitCompanion } from "../core/herculesCompanion.ts";
 import * as commands from "../core/commands.ts";
 import * as rehearsal from "../core/monthRehearsal.ts";
+import * as chapterCommands from "../core/chapters.ts";
 import { stampWeeklyDocument } from "../core/weeklyDocumentStamp.ts";
 import { commitCharterFounding } from "../core/charterFounding.ts";
 import type { CommitResult, Household } from "../core/types.ts";
@@ -23,6 +24,8 @@ const functions = {
   commitCompanion,
   commitCompanionGallery,
   ...rehearsal,
+  openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
+  offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
   eraseDevelopmentActivity,
   restoreSharedPoint,
   stampWeeklyDocument,
@@ -83,6 +86,7 @@ register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone 
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
 register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
+register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
   "ownerMemberId",
 ]);

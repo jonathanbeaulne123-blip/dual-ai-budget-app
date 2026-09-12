@@ -62,10 +62,10 @@ const PERSONAL_PURPOSE = "Understand and manage my private position: what is min
 
 export type KitchenPrimaryNavId = "together" | "home" | "calendar" | "shift" | "ledger" | "plan" | "more";
 
-/** Four distinct household jobs; Personal retains its independent operational navigation. */
+/** Four distinct household jobs; My Money keeps five direct jobs. More is no longer a destination: the status bar opens the Status Centre (Vision v2 §4.7). */
 export function kitchenPrimaryNav(view: LedgerView): KitchenPrimaryNavId[] {
   if (view === "household") return ["home", "ledger", "plan", "together"];
-  return ["home", "calendar", "shift", "ledger", "plan", "more"];
+  return ["home", "calendar", "shift", "ledger", "plan"];
 }
 
 /** Home, Calendar, Shift, and Books already carry their own heading. Do not stack a second purpose card. */

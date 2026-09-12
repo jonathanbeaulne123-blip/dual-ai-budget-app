@@ -180,6 +180,10 @@ export function householdForHerculesContext(
     shiftBibles: [],
     monthRehearsals: [],
     weeklyDocumentStamps: [],
+    chapters: [],
+    rituals: [],
+    moves: [],
+    wins: [],
     // `householdForView` already removes every partner-owned Personal account.
     // Keep the requesting member's own Personal accounts here so their visible
     // Personal transactions still compile against a complete journal.

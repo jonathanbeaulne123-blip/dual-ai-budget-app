@@ -123,7 +123,7 @@ describe("continuity Auth reconnect status UI", () => {
     expect(html).toContain("Google sign-in needed");
     expect(html).toContain("Continue with Google");
     expect(html).toContain("Needs attention");
-    expect(html).toContain("Open details in More");
+    expect(html).toContain("Open the Status Centre");
     expect(html).toContain("sync-freshness__details");
     expect(html).toContain('aria-label="Continue with Google"');
     expect(html).toContain("sync-freshness--auth-required");

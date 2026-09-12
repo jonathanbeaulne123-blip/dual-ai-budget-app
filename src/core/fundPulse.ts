@@ -216,3 +216,43 @@ export function deriveFundPulseInput(
     ...(gapCents !== undefined ? { gapCents } : {}),
   };
 }
+
+/**
+ * Partner presence (Vision v2 §4.4): what each person has completed, proposed,
+ * or is waiting on — composed only from shared-scope facts. Never counts money,
+ * never totals contributions, never ranks.
+ */
+export type PresenceLine = { id: string; text: string; waitingOn: "me" | "partner" | null };
+
+export function presenceLines(household: Household, options: { memberId: string; today: DateKey }): PresenceLine[] {
+  const lines: PresenceLine[] = [];
+  const monthKey = monthKeyFromDateKey(options.today);
+  const name = (id: string | null | undefined) => household.members.find((m) => m.id === id)?.name ?? "Your partner";
+  const partner = household.members.find((m) => m.active && m.id !== options.memberId);
+
+  const version = currentPlanVersion(household, "household", monthKey);
+  if (version) {
+    const ack = planAcknowledgementState(household, version);
+    for (const id of ack.requiredMemberIds) {
+      if (ack.acknowledgedMemberIds.includes(id)) {
+        lines.push({ id: `ack:${id}`, text: id === options.memberId ? `You acknowledged the ${monthKey} Plan.` : `${name(id)} acknowledged the ${monthKey} Plan.`, waitingOn: null });
+      } else {
+        lines.push({ id: `ack:${id}`, text: id === options.memberId ? `The ${monthKey} Plan is waiting for you.` : `The ${monthKey} Plan is waiting on ${name(id)}.`, waitingOn: id === options.memberId ? "me" : "partner" });
+      }
+    }
+  }
+  for (const decision of household.planBridgeDecisions ?? []) {
+    if (decision.monthKey !== monthKey || (decision.state !== "proposed" && decision.state !== "held")) continue;
+    const mine = decision.offeredByMemberId === options.memberId;
+    lines.push({ id: `bridge:${decision.id}`, text: mine ? `Your Bridge proposal "${decision.label}" is waiting on ${partner?.name ?? "your partner"}.` : `${name(decision.offeredByMemberId)}'s Bridge proposal "${decision.label}" is waiting for you.`, waitingOn: mine ? "partner" : "me" });
+  }
+  const config = shapeHouseholdFundConfig(household.householdFund);
+  if (config) {
+    for (const motion of householdFundContributionMotions(household, config.id)) {
+      if (motion.status !== "open" && motion.status !== "held") continue;
+      const custodianIsMe = config.custodianMemberId === options.memberId;
+      lines.push({ id: `motion:${motion.proposal.id}`, text: custodianIsMe ? `A contribution from ${name(motion.proposal.contributorMemberId)} is waiting for you to confirm.` : `A contribution is waiting for ${name(config.custodianMemberId)} to confirm.`, waitingOn: custodianIsMe ? "me" : "partner" });
+    }
+  }
+  return lines.slice(0, 4);
+}

@@ -1,5 +1,7 @@
 # Hearth Future Vision v2 — One Complete Plan
 
+> **Status 2026-09-12:** Horizon A (A1–A12) is implemented locally on branch `claude/vision-v2-slice-1` — see D-243, D-244 and `worksessions/2026-09-12-vision-v2-horizon-a.md`. Decisions 1, 2, 3 and 6–8 were accepted by Jonathan; Decision 2 carries a centred + (3 | + | 2). Horizon B is next.
+
 *Prepared 12 September 2026 from the Future Vision compass document and a full audit of the repository at `main@ecf936a` (Claude/kitty studio, PR #447). This version turns the compass into a single plan: what the product is, where the app actually stands, what changes now, and what is deliberately later. Nothing here is shipped by being written; decisions marked **Decision** wait for Jonathan (and where noted, Bianca).*
 
 ---

@@ -241,7 +241,7 @@ describe("five boards entry App integration", () => {
     act(() => button("Together").click());
     await waitFor(() => expect(container.querySelector('.household-together')).not.toBeNull());
     expect(container.textContent).toContain("Small actions behind our agreed Plan");
-    act(() => button("Settings & more").click());
+    act(() => button("Status Centre").click());
     await waitFor(() => expect(container.textContent).toContain("Investor preview"));
     act(() => button("Quick sample data").click());
     await waitFor(() => expect(document.body.textContent).toContain("future Calendar expenses"));

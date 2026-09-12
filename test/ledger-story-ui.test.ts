@@ -134,10 +134,10 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).not.toContain("Journal and Fund");
     expect(app).toContain('data-ledger-nav={view === "household" ? "shared" : "personal"}');
     expect(experience).toContain('return ["home", "ledger", "plan", "together"]');
-    expect(experience).toContain('return ["home", "calendar", "shift", "ledger", "plan", "more"]');
+    expect(experience).toContain('return ["home", "calendar", "shift", "ledger", "plan"]');
     expect(app).toContain('{view === "household" ? fundDisplayName(household) : "Books"}');
     expect(styles).toContain(".nav[data-ledger-nav=\"personal\"]");
-    expect(styles).toMatch(/\.nav\[data-ledger-nav="personal"\] \{\s*grid-template-columns: 1fr 1fr 1fr 56px 1fr 1fr 1fr;/);
+    expect(styles).toMatch(/\.nav\[data-ledger-nav="personal"\] \{\s*grid-template-columns: 1fr 1fr 1fr 56px 1\.5fr 1\.5fr;/);
   });
 
   it("replaces Plan Goals with Kitty Banks and keeps Shared Home as six tiles plus notebook", () => {

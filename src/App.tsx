@@ -46,7 +46,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { lazy, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -463,6 +463,16 @@ import { defaultSubcategoryForMode } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { fabActionsFor, fabClosedLabel } from "./core/fabActions.ts";
 import { fundDisplayName, spaceLabel } from "./core/spaceNames.ts";
+import { HouseholdHome } from "./HouseholdHome.tsx";
+import { ChapterRoom } from "./ChapterPanel.tsx";
+import { ComfortControls } from "./theme/ComfortControls.tsx";
+
+/** Under the Vision v2 Household Home, the Office stays reachable as collapsed instruments rather than the opening composition. */
+function HomeInstruments({ collapsed, children }: { collapsed: boolean; children: ReactNode }) {
+  if (!collapsed) return <>{children}</>;
+  return <details className="home-instruments"><summary>The office · instruments and boards</summary><div className="home-instruments__body">{children}</div></details>;
+}
+import { householdHomeV2Enabled } from "./core/planFeature.ts";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalAccess } from "./MonthRehearsalAccess.tsx";
@@ -6476,6 +6486,7 @@ export function App() {
       <SyncFreshnessStatus
         display={syncFreshnessDisplay}
         busy={busy}
+        space={household && session ? spaceLabel(household, session.memberId, view) : null}
         attentionLabel={appNeedsAttention ? "Needs attention" : null}
         onOpenDetails={() => {
           setMoreFocusTarget("sync-help");
@@ -6658,11 +6669,35 @@ export function App() {
         />
       ) : null}
 
-      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("more")}>Settings & more</button></nav>}
+      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("more")}>Status Centre</button></nav>}
       {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
-      {tab === "home" && view === "household" && planSystemV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
+      {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
+      {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
+        <HouseholdHome
+          household={household}
+          memberId={actorId}
+          today={today}
+          freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
+          busy={busy}
+          onCommand={runKitchen}
+          onGo={(next) => goTab(next)}
+          rehearsal={(
+            <div className="home-rehearsal-entry">
+              <MonthRehearsalAccess
+                household={household}
+                memberId={session.memberId}
+                today={today}
+                surface="home"
+                onApply={(next, token, confirmationId) => persistLedgerWrite(preserveCurrentPersonal(next), token, confirmationId)}
+                onOpenTask={openMonthRehearsalTask}
+              />
+            </div>
+          )}
+        />
+      )}
       {tab === "home" && dashboard && (
         <>
+        <HomeInstruments collapsed={view === "household" && householdHomeV2Enabled()}>
         {view === "household" ? (
           <p className="till-home-door">
             <a
@@ -6677,7 +6712,7 @@ export function App() {
             </a>
           </p>
         ) : null}
-        {view === "household" ? (
+        {view === "household" && !householdHomeV2Enabled() ? (
           <div className="home-rehearsal-entry">
           <MonthRehearsalAccess
             household={household}
@@ -6758,6 +6793,7 @@ export function App() {
         />
         </DeferredSurface>
         <Memorabilia scene={appearance.scene.id} />
+        </HomeInstruments>
         </>
       )}
 
@@ -6797,6 +6833,10 @@ export function App() {
               />
             </div>
           ) : planSystemV2Enabled() ? (
+            <div className={`our-path our-path--${view}`}>
+            {view === "household" && <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>}
+            {view === "household" && <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} />}
+            {view === "household" && <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>}
             <PlanStudio
               key={`${ledgerRenderScopeKey}:${view}`}
               goalsContent={context => <KittyBanks planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
@@ -6829,6 +6869,7 @@ export function App() {
                 if (!response.ok || !payload.ok) throw new Error(payload.error || "Hercules could not save the Shared reply.");
               }}
             />
+            </div>
           ) : (
           <div className="plan-wide five-boards-plan">
           <section className="hero plan-summary">
@@ -7041,12 +7082,28 @@ export function App() {
             setGuard({ kind: "remove", transactionId: transaction.id, summary, reviewedSummaryBasis:canonical([transaction.id,transaction.amountCents,transaction.type,transaction.source,transaction.note]) });
           }}
         />}
+        {view === "household" && planSystemV2Enabled() && dashboard && (
+          <section className="close-the-month" aria-label="Close the month">
+            <p className="kicker">Close the month</p>
+            <h2>Where leftover goes</h2>
+            <p className="muted">A bounded financial action with its own Final Confirm. The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</p>
+            <SitDownGuide
+              household={household}
+              displayHousehold={displayHousehold}
+              dashboard={dashboard}
+              view={view}
+              memberId={actorId}
+              onApply={(next, token) => persist(next, token)}
+            />
+          </section>
+        )}
         </DeferredSurface>
       )}
 
       {tab === "more" && (
-        <div className="more-surfaces">
-          <AppearancePicker />
+        <div className="more-surfaces status-centre">
+          <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1><p className="muted">Health, sources, household, privacy, comfort, and help. Everyday work lives on its own page.</p></header>
+          <h2 className="status-group" id="status-needs-us">Needs us</h2>
           <section className="card more-sync-help" id="hearth-sync-help" tabIndex={-1}>
             <header>
               <div><p className="kicker">Sync status</p><h2>{appNeedsAttention ? "How to fix it" : "Everything is connected"}</h2></div>
@@ -7117,6 +7174,7 @@ export function App() {
               <p className="muted">Nothing needs repair. Your local books, household sharing, and integrity checks are clear.</p>
             ) : null}
           </section>
+          <h2 className="status-group" id="status-household">Household</h2>
           {view === "household" ? (
             <section className="card">
               <header><h2>the charter</h2></header>
@@ -7168,6 +7226,7 @@ export function App() {
               </button>
             </section>
           )}
+          <h2 className="status-group" id="status-your-hearth">Your Hearth</h2>
           <section className="card">
             <header><h2>Account</h2></header>
             <p className="muted">
@@ -7183,6 +7242,10 @@ export function App() {
               Sign out
             </button>
           </section>
+          <h2 className="status-group" id="status-comfort">Appearance and comfort</h2>
+          <AppearancePicker />
+          <ComfortControls environment={environment} />
+          <h2 className="status-group" id="status-sources">Sources and continuity</h2>
           <section className="card">
             <header><h2>{view === "household" ? "Household table" : "My books"}</h2></header>
             <p className="muted">
@@ -7360,6 +7423,7 @@ export function App() {
               return accepted.herculesProPermissions ?? { ...permissions, updatedAt: null };
             }}
           />
+          <h2 className="status-group" id="status-privacy">Privacy, devices, and sharing</h2>
           <section className="card">
             <header><h2>This phone</h2></header>
             <p className="muted">
@@ -7475,6 +7539,16 @@ export function App() {
             <p className="muted" style={{ marginTop: 8 }}>
               Hosted open Development still treats published snapshots as disclosed until Auth. Model sharing is off unless you check it.
             </p>
+          </section>
+          <h2 className="status-group" id="status-help">Help and transparency</h2>
+          <section className="card hercules-capability-map" aria-labelledby="hercules-map-heading">
+            <header><h2 id="hercules-map-heading">What Hercules can see, infer, draft, and never decide</h2></header>
+            <ul className="capability-map">
+              <li><strong>Sees</strong> — accepted household truth in Our Home, and only your own Personal books in My Money. Never your partner's Personal ledger, notes, or private Hercules conversation.</li>
+              <li><strong>Infers</strong> — plain-language explanations and deterministic Plan drift findings, each citing its source and freshness. He labels an inference as his own.</li>
+              <li><strong>Drafts</strong> — scenarios, talking points, proposals, and Add drafts for your review. Private drafts stay private until you share them.</li>
+              <li><strong>Never decides</strong> — he never posts money, performs Final Confirm, acknowledges for either of you, chooses the fairness model, or takes a side.</li>
+            </ul>
           </section>
           <section className="card storage">
             <header><h2>Where the books live</h2></header>

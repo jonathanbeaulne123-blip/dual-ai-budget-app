@@ -694,8 +694,9 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 .nav[data-ledger-nav="shared"] {
   grid-template-columns: 1fr 1fr 56px 1fr 1fr;
 }
+/* My Money: five direct jobs with the + exactly centred (3 | + | 2; the two right tabs share the left three's width). */
 .nav[data-ledger-nav="personal"] {
-  grid-template-columns: 1fr 1fr 1fr 56px 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 56px 1.5fr 1.5fr;
 }
 .nav button {
   border: 0;

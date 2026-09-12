@@ -1533,7 +1533,7 @@ describe("cached-shell startup books gate", () => {
     expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull();
     expect(container.textContent).toContain("receipt-covered money facts changed after acceptance");
 
-    act(() => button("Settings & more").click());
+    act(() => button("Status Centre").click());
     const reset = button("Start from scratch");
     expect(reset.disabled).toBe(false);
     expect(container.textContent).not.toContain("Starting over…");

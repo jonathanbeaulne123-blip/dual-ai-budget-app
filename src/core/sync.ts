@@ -58,6 +58,7 @@ import {
   shapeHouseholdFundSettlementAllocations,
 } from "./householdFund.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts";
+import { mergeChapters, mergeMoves, mergeRituals, mergeWins, shapeChapters, shapeMoves, shapeRituals, shapeWins } from "./chapters.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import { mergeHouseholdCharters, shapeHouseholdCharter } from "./charter.ts";
 import { mergeHouseholdOnboarding, shapeHouseholdOnboarding } from "./onboarding/mode.ts";
@@ -423,6 +424,10 @@ export function ensureHouseholdShape(household: Household): Household {
     fundContributionSourceClaims: shapeFundSourceClaims(household.fundContributionSourceClaims),
     monthRehearsals: shapeMonthRehearsals(household.monthRehearsals),
     weeklyDocumentStamps: shapeWeeklyDocumentStamps(household.weeklyDocumentStamps, members),
+    chapters: shapeChapters(household.chapters),
+    rituals: shapeRituals(household.rituals),
+    moves: shapeMoves(household.moves),
+    wins: shapeWins(household.wins),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -577,6 +582,10 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     fundKittyAllocations: shaped.fundKittyAllocations ?? [],
     monthRehearsals: shaped.monthRehearsals ?? [],
     weeklyDocumentStamps: shaped.weeklyDocumentStamps ?? [],
+    chapters: shaped.chapters ?? [],
+    rituals: shaped.rituals ?? [],
+    moves: shaped.moves ?? [],
+    wins: shaped.wins ?? [],
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
     planVersions: sharedPlanVersions,
@@ -1057,6 +1066,10 @@ export function assembleHousehold(
     fundKittyAllocations: shared.fundKittyAllocations ?? [],
     monthRehearsals: shapeMonthRehearsals(shared.monthRehearsals),
     weeklyDocumentStamps: shapeWeeklyDocumentStamps(shared.weeklyDocumentStamps, shared.members),
+    chapters: shapeChapters(shared.chapters),
+    rituals: shapeRituals(shared.rituals),
+    moves: shapeMoves(shared.moves),
+    wins: shapeWins(shared.wins),
     companionProfile: scopedCompanion(personal?.companionProfile, shared, personal?.memberId),
     fundPrivate: shapeHouseholdFundPrivate(personal?.fundPrivate, personal?.memberId),
     fundContributionSourceClaims: shapeFundSourceClaims(personal?.fundContributionSourceClaims, personal?.memberId),
@@ -1189,6 +1202,10 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
       shapeMonthRehearsals(server.monthRehearsals),
       shapeMonthRehearsals(client.monthRehearsals),
     ),
+    chapters: mergeChapters(shapeChapters(server.chapters), shapeChapters(client.chapters)),
+    rituals: mergeRituals(shapeRituals(server.rituals), shapeRituals(client.rituals)),
+    moves: mergeMoves(shapeMoves(server.moves), shapeMoves(client.moves)),
+    wins: mergeWins(shapeWins(server.wins), shapeWins(client.wins)),
     weeklyDocumentStamps: mergeWeeklyDocumentStamps(
       server.weeklyDocumentStamps,
       client.weeklyDocumentStamps,
