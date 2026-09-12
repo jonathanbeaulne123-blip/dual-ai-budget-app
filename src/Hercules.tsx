@@ -1976,7 +1976,7 @@ export function HerculesPresence({
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""} ${chatExpanded ? "is-expanded" : ""}`}
           style={bubbleStyle}
         >
-          {open&&<header className="hercules-chat-header"><HerculesLivePortrait mood={look.view.mood} hat={look.hat} chain={look.chain} house={look.house} collar={look.collar} pose={pose} size={44}/><strong>Hercules</strong><button type="button" aria-expanded={chatExpanded} onClick={()=>setChatExpanded(!chatExpanded)}>{chatExpanded?'Compact':'Expand'}</button></header>}
+          {open&&<header className="hercules-chat-header"><HerculesLivePortrait mood={look.view.mood} hat={look.hat} chain={look.chain} house={look.house} collar={look.collar} pose={pose} size={44}/><strong>Hercules</strong><span className="mode-label mode-label--private" role="note"><span aria-hidden="true">◌</span>Private — only you see this conversation</span><button type="button" aria-expanded={chatExpanded} onClick={()=>setChatExpanded(!chatExpanded)}>{chatExpanded?'Compact':'Expand'}</button></header>}
           <div className="hercules-conversation-content">{open&&easyReadToggle}{open&&actionPanel()}
           {open && setup && !setupSelected && <div className="hercules-manual-actions"><button type="button" onClick={()=>setSetupSelected(true)}>Set up Hearth</button><button type="button" onClick={sitWithBag}>Play</button></div>}
           {desktopOnboardingOpen ? (

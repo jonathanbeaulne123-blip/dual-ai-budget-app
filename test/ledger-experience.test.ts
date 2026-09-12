@@ -426,7 +426,8 @@ describe("ledgerRouteContract", () => {
     expect(ledgerRouteContract("shift", "household").purpose).toMatch(/worker-centered/i);
     expect(ledgerRouteContract("ledger", "household").heading).toMatch(/Household table/i);
     expect(kitchenPrimaryNav("household")).toEqual(["home", "ledger", "plan", "together"]);
-    expect(kitchenPrimaryNav("personal")).toEqual(["home", "calendar", "shift", "ledger", "plan", "more"]);
+    expect(kitchenPrimaryNav("personal")).toEqual(["home", "calendar", "shift", "ledger", "plan"]);
+    expect(kitchenPrimaryNav("personal")).not.toContain("more");
     expect(kitchenPrimaryNav("household")).not.toContain("till");
     expect(ledgerRouteContract("till", "household").heading).toBe("Till");
     expect(ledgerRouteContract("till", "household").commandsExposed).toEqual([

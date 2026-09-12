@@ -1427,6 +1427,11 @@ export type Household = {
   monthRehearsals?: MonthRehearsal[];
   /** Member-owned, append-only weekly acknowledgements. Never money or model context. */
   weeklyDocumentStamps?: WeeklyDocumentStamp[];
+  /** Vision v2 Chapter system (D-243+): non-money shared practice metadata. Never journal or model context. */
+  chapters?: import("./chapters.ts").Chapter[];
+  rituals?: import("./chapters.ts").Ritual[];
+  moves?: import("./chapters.ts").Move[];
+  wins?: import("./chapters.ts").Win[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   /** PLAN_SYSTEM_V2: private drafts/scenarios overlay only the signed-in member; Household versions are Shared. */
@@ -1520,6 +1525,11 @@ export type SharedEnvelope = {
   monthRehearsals?: MonthRehearsal[];
   /** Shared append-only weekly acknowledgements; omitted from financial hashes and Personal envelopes. */
   weeklyDocumentStamps?: WeeklyDocumentStamp[];
+  /** Vision v2 Chapter system; omitted from financial hashes and Personal envelopes. */
+  chapters?: import("./chapters.ts").Chapter[];
+  rituals?: import("./chapters.ts").Ritual[];
+  moves?: import("./chapters.ts").Move[];
+  wins?: import("./chapters.ts").Win[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   /** Accepted/proposed Household Plan authority. Never contains Personal Plan material. */

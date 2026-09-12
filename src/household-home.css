@@ -1,0 +1,194 @@
+/* Our Home (Vision v2 §4.2) and the Chapter system surfaces.
+   One grammar, three authored expressions: Classic Hearth is a household table,
+   Taylor's Scrapbook is an open spread, Newfoundland is a harbour with weather.
+   Meaning never depends on colour: every state carries a glyph and words. */
+
+.household-home {
+  display: grid;
+  gap: 18px;
+  padding: 12px 0 calc(var(--mobile-bottom-clearance, 96px) + 12px);
+  max-width: 720px;
+  margin: 0 auto;
+}
+.household-home .kicker { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+.household-home h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 6vw, 38px); margin: 0; line-height: 1.1; text-wrap: balance; }
+.household-home h3 { font-family: var(--display); font-weight: 600; font-size: 21px; margin: 0 0 6px; text-wrap: balance; }
+.household-home .muted { color: var(--muted); }
+.home-identity { display: grid; gap: 2px; padding: 4px 4px 0; }
+
+/* Fund pulse — the one sentence. */
+.fund-pulse { display: grid; gap: 6px; }
+.fund-pulse__button {
+  display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start;
+  width: 100%; text-align: left; padding: 16px; border-radius: 18px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  box-shadow: var(--lift-1); font: inherit; cursor: pointer;
+}
+.fund-pulse__button:focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; }
+.fund-pulse__glyph { font-size: 28px; line-height: 44px; text-align: center; color: var(--pine); }
+.fund-pulse--needs-us .fund-pulse__glyph { color: var(--copper); }
+.fund-pulse--reset .fund-pulse__glyph { color: var(--danger); }
+.fund-pulse--checking .fund-pulse__glyph { color: var(--muted); }
+.fund-pulse__text { display: grid; gap: 4px; }
+.fund-pulse__text strong { font-family: var(--display); font-size: 22px; font-weight: 600; }
+.fund-pulse__amount { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+.fund-pulse__source { margin: 0 4px; font-size: 12.5px; color: var(--muted); }
+
+/* Chapter moment and next Move */
+.chapter-moment { padding: 16px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--lift-0); display: grid; gap: 8px; }
+.chapter-moment--empty { background: var(--paper-2); }
+.chapter-meaning { margin: 0; color: var(--ink); }
+.next-move { margin-top: 6px; padding: 12px 14px; border-radius: 14px; background: var(--paper-2); border-left: 4px solid var(--pine); display: grid; gap: 4px; }
+.next-move__text { margin: 0; font-size: 17px; font-weight: 600; }
+.next-move__meta { margin: 0; font-size: 13px; color: var(--muted); }
+.chapter-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chapter-actions button, .chapter-door, .home-door { min-height: 40px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+.chapter-actions button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chapter-actions button:focus-visible, .chapter-door:focus-visible, .home-door:focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; }
+.chapter-door, .home-door { justify-self: start; font-weight: 500; }
+
+/* Coming up, growing, presence, win */
+.home-coming-up, .home-growing, .home-presence, .home-win { padding: 14px 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--card); display: grid; gap: 8px; }
+.home-coming-up ul, .home-growing ul, .home-presence ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.home-coming-up li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: baseline; font-size: 15px; }
+.home-coming-up li .home-amount { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.home-coming-up li.is-planned .home-amount { color: var(--muted); font-style: italic; }
+.home-growing li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; }
+.growing-steps { display: inline-flex; gap: 3px; }
+.growing-steps i { width: 8px; height: 14px; border-radius: 3px; background: var(--line); display: inline-block; }
+.growing-steps i.is-on { background: var(--pine); }
+.home-presence li { font-size: 14px; color: var(--ink); padding-left: 14px; position: relative; }
+.home-presence li::before { content: "·"; position: absolute; left: 2px; color: var(--muted); }
+.home-presence li.is-waiting-me::before { content: "◆"; color: var(--copper); font-size: 10px; top: 4px; }
+.home-win { border-color: var(--gold); background: linear-gradient(180deg, var(--card), var(--paper-2)); }
+.home-doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.home-doors button { display: grid; gap: 2px; text-align: left; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); font: inherit; cursor: pointer; min-height: 60px; }
+.home-doors button small { color: var(--muted); font-size: 12px; }
+.home-doors button:focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; }
+@media (max-width: 389px) { .home-doors { grid-template-columns: 1fr; } }
+
+/* Wide: the living stage gets breathing room; doors become a rail. */
+@media (min-width: 720px) {
+  .household-home { max-width: 1040px; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); grid-template-areas: "identity identity" "pulse pulse" "chapter coming" "chapter growing" "rehearsal presence" "win win" "doors doors"; align-items: start; }
+  .home-identity { grid-area: identity; }
+  .fund-pulse { grid-area: pulse; }
+  .chapter-moment { grid-area: chapter; }
+  .home-coming-up { grid-area: coming; }
+  .home-growing { grid-area: growing; }
+  .home-presence { grid-area: presence; }
+  .home-win { grid-area: win; }
+  .home-doors { grid-area: doors; }
+  .household-home > .home-rehearsal-entry { grid-area: rehearsal; }
+}
+
+/* Mode label — whose eyes a surface is for. */
+.mode-label { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 8px; padding: 4px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 600; border: 1px solid var(--line); }
+.mode-label--private { background: var(--paper-2); color: var(--ink); }
+.mode-label--shared { background: var(--pine); color: var(--paper); border-color: var(--pine); }
+
+/* Sitdown brief */
+.sitdown-brief { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); margin-bottom: 10px; }
+.sitdown-brief__cols { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .sitdown-brief__cols { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.sitdown-brief h4 { margin: 0 0 4px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.sitdown-brief ul { margin: 0; padding-left: 16px; font-size: 14px; }
+.sitdown-brief__pressure { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--paper-2); border-left: 4px solid var(--copper); font-weight: 600; }
+
+/* Chapter room (Our Path) */
+.chapter-room { display: grid; gap: 14px; }
+.chapter-card h4 { margin: 14px 0 6px; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.chapter-lesson { padding: 10px 12px; border-radius: 12px; background: var(--paper-2); }
+.chapter-lesson summary { cursor: pointer; font-weight: 600; }
+.ritual-list, .move-list, .foundation-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ritual { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); }
+.ritual p { margin: 2px 0; font-size: 14px; }
+.ritual--graduated { border-style: dashed; }
+.ritual--paused { opacity: .8; }
+.move { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 15px; }
+.move--done { text-decoration: line-through; color: var(--muted); }
+.ritual-form, .move-form { display: grid; gap: 8px; margin-top: 8px; }
+.ritual-form label, .move-form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.ritual-form input, .ritual-form select, .move-form input { min-height: 40px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; }
+.foundation-list li { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.foundation-list li.is-done { color: var(--muted); }
+.chapter-close { display: grid; gap: 8px; }
+.chapter-close label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.chapter-close input { min-height: 40px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; }
+.chapter-outcomes { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.chapter-outcomes button { display: grid; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink); font: inherit; cursor: pointer; }
+.chapter-outcomes button small { color: var(--muted); }
+
+/* ---- Theme expressions ---- */
+
+/* Classic Hearth: the household table. Pine rules, paper grain, a warm settle. */
+:root[data-theme="classic"] .fund-pulse__button { border-top: 3px solid var(--pine); }
+:root[data-theme="classic"] .chapter-moment { background: linear-gradient(180deg, var(--card), var(--paper)); }
+:root[data-theme="classic"] .home-doors button { border-bottom: 2px solid var(--sill, #b9a68a); }
+
+/* Taylor's Scrapbook: an open spread. Pasted blocks, a hint of tape, clean amounts. */
+:root[data-theme="taylor"] .fund-pulse__button,
+:root[data-theme="taylor"] .chapter-moment,
+:root[data-theme="taylor"] .home-coming-up,
+:root[data-theme="taylor"] .home-growing,
+:root[data-theme="taylor"] .home-win { border-radius: 6px; box-shadow: 2px 3px 0 rgba(60, 42, 20, .12); position: relative; }
+:root[data-theme="taylor"] .chapter-moment::before,
+:root[data-theme="taylor"] .home-win::before { content: ""; position: absolute; top: -8px; left: 24px; width: 64px; height: 16px; background: rgba(201, 162, 39, .35); transform: rotate(-3deg); border-radius: 2px; }
+:root[data-theme="taylor"] .chapter-moment { transform: rotate(-.4deg); }
+:root[data-theme="taylor"] .home-doors button { border-radius: 4px; }
+
+/* Newfoundland: a harbour. Horizon line on the pulse; cool wayfinding doors; weather stays outside the decision. */
+:root[data-theme="newfoundland"] .fund-pulse__button { border-radius: 12px; background: linear-gradient(180deg, var(--card) 0 70%, var(--paper-2) 70%); }
+:root[data-theme="newfoundland"] .fund-pulse__glyph { color: var(--glass-night, #26303a); }
+:root[data-theme="newfoundland"] .fund-pulse--covered .fund-pulse__glyph { color: var(--pine); }
+:root[data-theme="newfoundland"] .home-doors button { border-radius: 10px; border-left: 3px solid var(--glass-rain, #9fb0b5); }
+:root[data-theme="newfoundland"] .next-move { border-left-color: var(--copper); }
+
+/* Quiet expression: less ornament, same meaning. */
+:root[data-quiet="true"] .chapter-moment::before,
+:root[data-quiet="true"] .home-win::before { display: none; }
+:root[data-quiet="true"] .chapter-moment { transform: none; }
+:root[data-quiet="true"] .home-win { background: var(--card); }
+
+/* Forced colours and reduced motion keep every state legible. */
+@media (forced-colors: active) {
+  .fund-pulse__button, .chapter-moment, .home-coming-up, .home-growing, .home-presence, .home-win, .home-doors button { border: 1px solid CanvasText; }
+  .growing-steps i.is-on { background: CanvasText; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="taylor"] .chapter-moment { transform: none; }
+}
+
+/* The Office under the new Home: reachable, never the opening composition. */
+.home-instruments { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+.home-instruments > summary { cursor: pointer; font-weight: 600; color: var(--muted); padding: 10px 4px; list-style: none; }
+.home-instruments > summary::before { content: "▸ "; }
+.home-instruments[open] > summary::before { content: "▾ "; }
+
+/* Our Path: the Chapter leads; the Plan Studio is a room inside. */
+.our-path { display: grid; gap: 14px; }
+.our-path__head h2 { font-family: var(--display); font-weight: 600; font-size: 26px; margin: 0 0 4px; }
+.our-path__head p { margin: 0; }
+.our-path__room-title { font-family: var(--display); font-weight: 600; font-size: 19px; margin: 10px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* Close the month lives in the Fund, not in the Sitdown. */
+.close-the-month { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.close-the-month h2 { font-family: var(--display); font-weight: 600; font-size: 22px; margin: 0; }
+
+/* Status Centre — the rebuilt More. */
+.status-centre__head { padding: 8px 4px 4px; }
+.status-centre__head h1 { font-family: var(--display); font-weight: 600; font-size: clamp(24px, 5vw, 32px); margin: 0 0 4px; }
+.status-centre__head p { margin: 0; }
+.status-group { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 22px 4px 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.comfort-grid { display: grid; gap: 10px; }
+.comfort-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-2); }
+.comfort-row span { display: grid; gap: 2px; }
+.comfort-row small { color: var(--muted); }
+.comfort-row input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--pine); }
+.comfort-row select { min-height: 40px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font: inherit; max-width: 60vw; }
+.capability-map { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; }
+
+/* Comfort attributes honoured app-wide. */
+:root[data-quiet="true"] .memorabilia, :root[data-quiet="true"] .home-scrapbook, :root[data-quiet="true"] .world-charm { display: none !important; }
+:root[data-quiet="true"] .scene-artwork { opacity: .35; }
+:root[data-motion="reduced"] *, :root[data-motion="reduced"] *::before, :root[data-motion="reduced"] *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+:root[data-celebration="off"] .home-win { background: var(--card); border-color: var(--line); }

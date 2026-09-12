@@ -7,6 +7,8 @@ type Props = {
   onAction?: () => void;
   attentionLabel?: string | null;
   onOpenDetails: () => void;
+  /** The space the person is in (My Money / Our Home). The bar always says who, where, how fresh, and whether anything needs attention. */
+  space?: string | null;
 };
 
 const TICK_MS = 30_000;
@@ -25,7 +27,7 @@ function RefreshIcon() {
   );
 }
 
-export function SyncFreshnessStatus({ display, busy = false, onAction, attentionLabel, onOpenDetails }: Props) {
+export function SyncFreshnessStatus({ display, busy = false, onAction, attentionLabel, onOpenDetails, space = null }: Props) {
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export function SyncFreshnessStatus({ display, busy = false, onAction, attention
     ? freshnessUpdatedLine(display.updatedAtIso, new Date())
     : null;
 
-  if (!display.visible) return null;
+  if (!display.visible && !space) return null;
 
   const showAction = Boolean(display.actionLabel && display.actionKind && onAction);
 
@@ -54,13 +56,16 @@ export function SyncFreshnessStatus({ display, busy = false, onAction, attention
       <button
         type="button"
         className="sync-freshness__details"
-        aria-label={`${display.statusSummary}${attentionLabel ? `. ${attentionLabel}` : ""}. Open details in More.`}
+        aria-label={`${space ? `${space}. ` : ""}${display.visible ? display.statusSummary : "Status"}${attentionLabel ? `. ${attentionLabel}` : ""}. Open the Status Centre.`}
         onClick={onOpenDetails}
       >
         <span className="sync-freshness__content">
+          {space && <span className="sync-freshness__space">{space}</span>}
+          {display.visible ? (
           <span className="sync-freshness__transport">
             {display.transportPrimary}
           </span>
+          ) : <span className="sync-freshness__transport">Status Centre</span>}
           {display.revisionLine && (
             <span className="sync-freshness__revision">{display.revisionLine}</span>
           )}

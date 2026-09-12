@@ -43,6 +43,16 @@ import {
   ONBOARDING_ADOPTION_COMMAND_KIND,
 } from "../core/onboarding/adoption.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
+import {
+  shapeChapters,
+  shapeMoves,
+  shapeRituals,
+  shapeWins,
+  type Chapter,
+  type Move,
+  type Ritual,
+  type Win,
+} from "../core/chapters.ts";
 import { advanceCadence } from "../core/recurrence.ts";
 import { dateKeyInZone, parseMonthKey, type DateKey } from "../core/calendar.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
@@ -118,6 +128,10 @@ export type ContinuityMaterializationFacts = {
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   monthRehearsals?: MonthRehearsal[];
   weeklyDocumentStamps?: WeeklyDocumentStamp[];
+  chapters?: Chapter[];
+  rituals?: Ritual[];
+  moves?: Move[];
+  wins?: Win[];
   tombstones?: Tombstone[];
 };
 
@@ -209,6 +223,39 @@ function applyAppendOnlyCollection<T extends MoneyRow>(
     incoming,
     tombstones,
   );
+}
+
+function chapterCollectionsValid(input: {
+  household: Household;
+  chapters: Chapter[];
+  rituals: Ritual[];
+  moves: Move[];
+  wins: Win[];
+}): boolean {
+  const unique = <T extends { id: string }>(rows: T[]) => new Set(rows.map((row) => row.id)).size === rows.length;
+  if (!unique(input.chapters) || !unique(input.rituals) || !unique(input.moves) || !unique(input.wins)) return false;
+  if (input.chapters.filter((row) => row.state === "open").length > 1) return false;
+  const memberIds = new Set(input.household.members.map((row) => row.id));
+  const chapterIds = new Set(input.chapters.map((row) => row.id));
+  const ritualsById = new Map(input.rituals.map((row) => [row.id, row]));
+  if (input.chapters.some((row) => !memberIds.has(row.openedByMemberId))) return false;
+  if (input.rituals.some((row) => (
+    !chapterIds.has(row.chapterId)
+    || !memberIds.has(row.ownerMemberId)
+    || (row.backupMemberId !== null && (!memberIds.has(row.backupMemberId) || row.backupMemberId === row.ownerMemberId))
+  ))) return false;
+  if (input.moves.some((row) => {
+    const ritual = row.ritualId ? ritualsById.get(row.ritualId) : null;
+    return !chapterIds.has(row.chapterId)
+      || Boolean(row.ritualId && (!ritual || ritual.chapterId !== row.chapterId))
+      || Boolean(row.ownerMemberId && !memberIds.has(row.ownerMemberId))
+      || Boolean(row.completedByMemberId && !memberIds.has(row.completedByMemberId))
+      || row.acknowledgedByMemberIds.some((id) => !memberIds.has(id));
+  })) return false;
+  return !input.wins.some((row) => (
+    Boolean(row.chapterId && !chapterIds.has(row.chapterId))
+    || row.keptByMemberIds.some((id) => !memberIds.has(id))
+  ));
 }
 
 function receiptFromPayload(payload: ContinuityCommandEventPayload): CommandReceipt {
@@ -767,6 +814,10 @@ function filterFactsForScope(
     if (facts.weeklyDocumentStamps?.length) {
       scoped.weeklyDocumentStamps = shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps);
     }
+    if (facts.chapters?.length) scoped.chapters = shapeChapters(facts.chapters);
+    if (facts.rituals?.length) scoped.rituals = shapeRituals(facts.rituals);
+    if (facts.moves?.length) scoped.moves = shapeMoves(facts.moves);
+    if (facts.wins?.length) scoped.wins = shapeWins(facts.wins);
   }
   if (facts.tombstones?.length) {
     scoped.tombstones = facts.tombstones;
@@ -880,6 +931,12 @@ export function extractMaterializationFacts(
     if (options?.commandKind === "updateMonthRehearsal") {
       facts.monthRehearsals = shapeMonthRehearsals(household.monthRehearsals);
     }
+    if (options?.commandKind === "updateChapters") {
+      facts.chapters = shapeChapters(household.chapters);
+      facts.rituals = shapeRituals(household.rituals);
+      facts.moves = shapeMoves(household.moves);
+      facts.wins = shapeWins(household.wins);
+    }
     const weeklyDocumentStamps = shapeWeeklyDocumentStamps(
       household.weeklyDocumentStamps,
       household.members,
@@ -928,6 +985,45 @@ async function applyEvent(
   const weeklyDocumentStamps = applyAppendOnlyCollection(
     shapeWeeklyDocumentStamps(snapshot.weeklyDocumentStamps, snapshot.members),
     shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps),
+    mergedTombstones,
+  );
+  const existingChapters = shapeChapters(snapshot.chapters);
+  const existingRituals = shapeRituals(snapshot.rituals);
+  const existingMoves = shapeMoves(snapshot.moves);
+  const existingWins = shapeWins(snapshot.wins);
+  const chapters = applyMoneyCollection(
+    existingChapters,
+    shapeChapters(facts.chapters),
+    mergedTombstones,
+  );
+  const rituals = applyMoneyCollection(
+    existingRituals,
+    shapeRituals(facts.rituals).map((incoming) => {
+      const existing = existingRituals.find((row) => row.id === incoming.id);
+      return existing
+        ? { ...incoming, heldOn: [...new Set([...existing.heldOn, ...incoming.heldOn])].sort() as DateKey[] }
+        : incoming;
+    }),
+    mergedTombstones,
+  );
+  const moves = applyMoneyCollection(
+    existingMoves,
+    shapeMoves(facts.moves).map((incoming) => {
+      const existing = existingMoves.find((row) => row.id === incoming.id);
+      return existing
+        ? { ...incoming, acknowledgedByMemberIds: [...new Set([...existing.acknowledgedByMemberIds, ...incoming.acknowledgedByMemberIds])] }
+        : incoming;
+    }),
+    mergedTombstones,
+  );
+  const wins = applyMoneyCollection(
+    existingWins,
+    shapeWins(facts.wins).map((incoming) => {
+      const existing = existingWins.find((row) => row.id === incoming.id);
+      return existing
+        ? { ...incoming, keptByMemberIds: [...new Set([...existing.keptByMemberIds, ...incoming.keptByMemberIds])] }
+        : incoming;
+    }),
     mergedTombstones,
   );
   const planVersions = applyMoneyCollection(snapshot.planVersions ?? [], facts.planVersions, mergedTombstones);
@@ -1009,6 +1105,10 @@ async function applyEvent(
       weeklyDocumentStamps,
       snapshot.members,
     ),
+    chapters,
+    rituals,
+    moves,
+    wins,
     tombstones: mergedTombstones,
   };
   next = rememberReceipt(next, receiptFromPayload(payload));
@@ -1064,6 +1164,10 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     fundSettlementAllocations: [],
     fundKittyAllocations: [],
     weeklyDocumentStamps: [],
+    chapters: [],
+    rituals: [],
+    moves: [],
+    wins: [],
     tombstones: [],
     commandReceipts: [],
     conflicts: [],
@@ -1208,6 +1312,16 @@ export async function applyCommandEventLocally(input: {
   const incomingCategories = Array.isArray(rawIncomingCategories) ? rawIncomingCategories : [];
   const rawIncomingBudgetPlans = event.payload_json.materializationFacts.budgetPlans;
   const incomingBudgetPlans = shapeOnboardingAdoptionPlans(rawIncomingBudgetPlans);
+  const rawIncomingChapters = event.payload_json.materializationFacts.chapters;
+  const rawIncomingRituals = event.payload_json.materializationFacts.rituals;
+  const rawIncomingMoves = event.payload_json.materializationFacts.moves;
+  const rawIncomingWins = event.payload_json.materializationFacts.wins;
+  const incomingChapters = shapeChapters(rawIncomingChapters);
+  const incomingRituals = shapeRituals(rawIncomingRituals);
+  const incomingMoves = shapeMoves(rawIncomingMoves);
+  const incomingWins = shapeWins(rawIncomingWins);
+  const containsChapterCommand = event.command_type === "updateChapters"
+    || readableCompactedCommands(event).some((row) => row.commandKind === "updateChapters");
   let incomingSubmissions: OnboardingSubmission[];
   try {
     incomingSubmissions = shapeOnboardingSubmissions(rawIncomingSubmissions);
@@ -1253,6 +1367,30 @@ export async function applyCommandEventLocally(input: {
   }
   if (!incomingBudgetPlans) {
     return { ok: false, reason: "onboarding-adoption-plan-invalid", fallback: true };
+  }
+  for (const [raw, shaped] of [
+    [rawIncomingChapters, incomingChapters],
+    [rawIncomingRituals, incomingRituals],
+    [rawIncomingMoves, incomingMoves],
+    [rawIncomingWins, incomingWins],
+  ] as const) {
+    if (raw !== undefined && (!Array.isArray(raw) || shaped.length !== raw.length)) {
+      return { ok: false, reason: "chapter-materialization-invalid", fallback: true };
+    }
+  }
+  const hasAnyChapterFacts = [rawIncomingChapters, rawIncomingRituals, rawIncomingMoves, rawIncomingWins]
+    .some((rows) => rows !== undefined);
+  if ((containsChapterCommand && [rawIncomingChapters, rawIncomingRituals, rawIncomingMoves, rawIncomingWins]
+    .some((rows) => !Array.isArray(rows)))
+    || (hasAnyChapterFacts && !containsChapterCommand)
+    || (containsChapterCommand && !chapterCollectionsValid({
+      household: local,
+      chapters: incomingChapters,
+      rituals: incomingRituals,
+      moves: incomingMoves,
+      wins: incomingWins,
+    }))) {
+    return { ok: false, reason: "chapter-materialization-invalid", fallback: true };
   }
   if (incomingCategoryProposals.length || incomingCategoryMerges.length) {
     try {
@@ -1416,7 +1554,8 @@ export async function applyCommandEventLocally(input: {
   }
   if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length
     || incomingCategoryProposals.length || incomingCategoryMerges.length || incomingApprovals.length
-    || incomingBudgetPlans.length) {
+    || incomingBudgetPlans.length || containsChapterCommand || incomingChapters.length || incomingRituals.length
+    || incomingMoves.length || incomingWins.length) {
     const expected = await sha256Hex(commandMaterializationFacts({
       monthRehearsals: incomingRehearsals,
       recurrences: incomingRecurrences,
@@ -1427,6 +1566,10 @@ export async function applyCommandEventLocally(input: {
       onboardingApprovals: incomingApprovals,
       categories: incomingCategories,
       budgetPlans: incomingBudgetPlans,
+      chapters: incomingChapters,
+      rituals: incomingRituals,
+      moves: incomingMoves,
+      wins: incomingWins,
     }));
     const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
       ? await sha256Hex(incomingRehearsals)

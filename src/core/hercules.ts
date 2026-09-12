@@ -320,7 +320,7 @@ export function herculesPageBrief(
   if (tab === "add") return `${name} will loaf. You confirm.`;
   if (tab === "calendar") return "Dates remind. Mark paid writes.";
   if (tab === "shift") return "Forecast hours are estimates. Review actual work before recording a shift.";
-  if (tab === "plan") return "Sit-down is three acts. Confirm still moves leftover.";
+  if (tab === "plan") return "One Sitdown, eight steps. A Chapter runs from one to the next. Confirm still moves money.";
   if (tab === "ledger") return "We can check your records and review any corrections together.";
   if (tab === "more") return "Health is the adult screen. I hide when it's dirty.";
   if (phase === "morning") return `${name} stretched. Milk whenever.`;

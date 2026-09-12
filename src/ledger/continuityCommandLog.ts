@@ -152,6 +152,10 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.fundSettlementAllocations ?? []).map((row) => row.id),
     ...(mergedFacts?.fundKittyAllocations ?? []).map((row) => row.id),
     ...(mergedFacts?.weeklyDocumentStamps ?? []).map((row) => row.id),
+    ...(mergedFacts?.chapters ?? []).map((row) => row.id),
+    ...(mergedFacts?.rituals ?? []).map((row) => row.id),
+    ...(mergedFacts?.moves ?? []).map((row) => row.id),
+    ...(mergedFacts?.wins ?? []).map((row) => row.id),
     ...(mergedFacts?.tombstones ?? []).map((row) => row.id),
   ])].sort();
   const compactedCommands = await Promise.all(item.commandRefs
@@ -181,6 +185,10 @@ export async function compactedCommandPayload(
       || mergedFacts?.onboardingApprovals?.length
       || mergedFacts?.categories?.length
       || mergedFacts?.budgetPlans?.length
+      || mergedFacts?.chapters?.length
+      || mergedFacts?.rituals?.length
+      || mergedFacts?.moves?.length
+      || mergedFacts?.wins?.length
       ? await sha256Hex(commandMaterializationFacts({
         monthRehearsals: mergedFacts.monthRehearsals,
         recurrences: mergedFacts.recurrences,
@@ -191,6 +199,10 @@ export async function compactedCommandPayload(
         onboardingApprovals: mergedFacts.onboardingApprovals,
         categories: mergedFacts.categories,
         budgetPlans: mergedFacts.budgetPlans,
+        chapters: mergedFacts.chapters,
+        rituals: mergedFacts.rituals,
+        moves: mergedFacts.moves,
+        wins: mergedFacts.wins,
       }))
       : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
@@ -289,6 +301,10 @@ function mergeMaterializationFacts(
         ...facts.weeklyDocumentStamps,
       ];
     }
+    if (facts.chapters !== undefined) merged.chapters = facts.chapters;
+    if (facts.rituals !== undefined) merged.rituals = facts.rituals;
+    if (facts.moves !== undefined) merged.moves = facts.moves;
+    if (facts.wins !== undefined) merged.wins = facts.wins;
     if (facts.tombstones?.length) {
       merged.tombstones = [...(merged.tombstones ?? []), ...facts.tombstones];
     }

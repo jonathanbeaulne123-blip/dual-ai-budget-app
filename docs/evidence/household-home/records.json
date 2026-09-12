@@ -1,0 +1,293 @@
+{
+  "records": [
+    {
+      "surface": "home",
+      "theme": "classic",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-320-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-390-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "classic",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-720-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-1100-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "taylor",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-320-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-390-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "taylor",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-720-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-1100-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-320-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-390-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-720-home.png"
+    },
+    {
+      "surface": "home",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-1100-home.png"
+    },
+    {
+      "surface": "path",
+      "theme": "classic",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-320-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-390-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "classic",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-720-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-1100-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "taylor",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-320-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-390-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "taylor",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-720-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-1100-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-320-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-390-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-720-path.png"
+    },
+    {
+      "surface": "path",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-1100-path.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "classic",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-320-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-390-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "classic",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-720-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/classic-1100-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "taylor",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-320-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-390-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "taylor",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-720-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/taylor-1100-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-320-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-390-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-720-comfort.png"
+    },
+    {
+      "surface": "comfort",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/.artifacts/household-home/newfoundland-1100-comfort.png"
+    }
+  ],
+  "errors": []
+}
