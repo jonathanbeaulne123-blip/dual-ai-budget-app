@@ -1,12 +1,14 @@
 # Hearth worksession — Vision v2 Horizon A (A1–A12)
 
-- **Status:** OPEN — local branch, quick gate (High) passed, browser evidence captured
+- **Status:** OPEN — Codex-integrated local branch, replay trust gap closed, quick gate (High) passed, browser evidence captured
 - **Opened:** 2026-09-12 (`America/Toronto`)
 - **Owner:** Jonathan
-- **Assignee or AI:** Claude (UX, Hercules, accessibility; non-money Chapter objects)
+- **Assignee or AI:** Claude (Horizon A implementation); Codex (integration and replay trust review)
 - **Repository:** jonathanbeaulne123-blip/dual-ai-budget-app
-- **Branch:** `claude/vision-v2-slice-1` (continues slice 1; one branch for Horizon A)
+- **Source branch:** `claude/vision-v2-slice-1` (continues slice 1; one branch for Horizon A)
+- **Integration branch:** `codex/vision-v2-horizon-a-integration`
 - **Baseline SHA:** `ecf936ac` (main, #447)
+- **Integration base:** `317a041` (current `origin/main`, #448); both mailbox commits rebased without conflict
 - **Head SHA:** see git log
 - **PR or issue:** none — this session's git proxy has no push credential for the repository
 - **Risk:** High (new Shared-envelope collections, Household Home recomposition, Sitdown consolidation, navigation change). No command posts money; no PGlite or hosted schema change; no Auth/RLS change.
@@ -37,7 +39,7 @@ Facts at `ecf936ac`: two Sitdowns (`PlanStudio` stages and `SitDownGuide` three 
 - **A4** `fundPulse()` consumed on Home; `presenceLines()` presence strip (facts only; no totals).
 - **A5** Adaptive + — slice 1.
 - **A6** One Sitdown: `PlanStudio` stages renamed to the eight steps (Arrive together · Close the previous Chapter · Orient to shared reality · Learn one useful thing · Make the shared decisions · Turn the decision into a Ritual · Look ahead · Open the next Chapter); `SitdownBriefCard` at step 1; `ChapterClose` at steps 2 and 8; `RitualForm` at step 6; `ModeLabel` (Private preparation / Shared with both of you); `SitDownGuide` retired as a Plan surface and mounted in the Fund tab as "Close the month" (V2 only). Hercules's plan brief no longer says "three acts".
-- **A7** Chapter system v1: `src/core/chapters.ts` — `Chapter`, `Ritual`, `Move`, `Win` (Memories are kept Wins), six foundation definitions, shapers/mergers, and eleven commands (`openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter`) registered with `memberId` binding. Wired: `Household`/`SharedEnvelope` types, `ensureHouseholdShape`, `splitForSync`, `assembleHousehold`, server/client merge, `IMPORT_FIELD_POLICY` (`exact`), `householdForAiDisclosure` (blanked). Not added to `financialAuditFacts` (by design) nor to `commandMaterializationFacts` (see uncertainty).
+- **A7** Chapter system v1: `src/core/chapters.ts` — `Chapter`, `Ritual`, `Move`, `Win` (Memories are kept Wins), six foundation definitions, shapers/mergers, and eleven commands (`openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter`) registered with `memberId` binding. Wired: `Household`/`SharedEnvelope` types, `ensureHouseholdShape`, `splitForSync`, `assembleHousehold`, server/client merge, `IMPORT_FIELD_POLICY` (`exact`), `householdForAiDisclosure` (blanked), command identity, and direct/compacted Ledger sync v2 materialization. The collections remain outside `financialAuditFacts` by design.
 - **A8** Our Path: `ChapterRoom` leads the household plan tab; Plan Studio is titled as a room beneath. The Kitty room stays mounted inside Plan Studio's goals content (a second mount would duplicate state).
 - **A9** Lessons: `CHAPTER_LESSONS` (7) with couple skills; `chapterLesson()`; `CURRICULUM_BY_CHAPTER` re-keys all twelve `PLAN_CURRICULUM` modules to foundation/expansion Chapters (asserted by test).
 - **A10** Comfort: `src/theme/comfort.ts` + `ComfortControls` — Quiet expression, celebration intensity, motion, haptics, sound; device-local (`hearth:comfort:v1:<env>`), applied as root data attributes; never account data.
@@ -51,7 +53,7 @@ Expense Bridge, Bring into My Money, Seen/In discussion states, Bridge privacy d
 ## Acceptance evidence
 
 - [x] `tsc --noEmit` clean; `pnpm build` passes.
-- [x] Focused: `vision-v2-chapters` (13), `vision-v2-slice-1` (10).
+- [x] Focused: `vision-v2-chapters` (14, including direct/compacted replay integrity), `vision-v2-slice-1` (10).
 - [x] Sweep: `app-startup-p1`, `five-boards-entry-app`, `month-rehearsal-mainline`, `ledger-import-parity`, `ledger-story-ui`, `continuity-auth-reconnect`, `onboarding-entry-integration`, `plan-system`, `sitdown`, `kitchen`, `fab-speed-dial` — 167 tests pass serially.
 - [x] Quick gate, risk High, focus `vision-v2-chapters`: **passed**, 157.6 s of 300 s, no breach; 41 files (35 fast / 6 serial), 518 tests.
 - [x] Browser evidence (`test/household-home-layout.mjs`, fictional fixture only): Home, Our Path, Comfort × Classic/Taylor/Newfoundland × 320/390/720/1100 — 36 captures, 0 horizontal overflow, 0 serious/critical axe hits, 0 page errors, keyboard reaches the pulse first. Representative PNGs in `docs/evidence/household-home/`.
@@ -74,7 +76,7 @@ Expense Bridge, Bring into My Money, Seen/In discussion states, Bridge privacy d
 
 ## Remaining uncertainty
 
-- **Ledger sync v2 command events do not carry Chapter facts.** `commandMaterializationFacts` was left unchanged (it is the trust-reviewed replay hash). Chapter writes travel through the Shared snapshot envelope; in a pure event-replay materialization they would be absent until the next snapshot publish. Codex should add `chapters/rituals/moves/wins` to the materialization facts with a trust review before Development deployment, or confirm the snapshot path suffices for the pilot.
+- **Closed by Codex integration:** Ledger sync v2 direct and compacted command events now carry `chapters/rituals/moves/wins`. The four collections bind both command identity and the non-financial materialization hash; replay rejects missing, malformed, duplicate-id, cross-reference-invalid, and hash-tampered Chapter facts. Canonical hosted order applies mutable state while evidence/member unions remain additive. `catalogBaseFromSnapshot` removes the four collections so replay tests cannot pass from a preloaded tip. The financial audit hash remains unchanged by design.
 - `PlanHerculesSession.rhythm` text still exists beside Ritual objects; the Sitdown step 6 form writes Rituals, the old field is untouched.
 - `fundPulse()` freshness maps from `syncFreshnessDisplay.tone`/`transportMode`; review on real Development sync states.
 - Hercules's private label is static; a Shared-mode label appears only in the Sitdown's shared chat.
@@ -82,4 +84,4 @@ Expense Bridge, Bring into My Money, Seen/In discussion states, Bridge privacy d
 
 ## Handoff
 
-Local only on `claude/vision-v2-slice-1` — not pushed, not a PR, not merged, not deployed, not live verified. Next owner: Jonathan (push/PR authorization; product review of Home on real Development data); Codex (trust review of the new Shared collections, materialization facts, and D-243/D-244).
+Local only on `codex/vision-v2-horizon-a-integration`, rebased over `origin/main@317a041` — not pushed, not a PR, not merged, not deployed, not live verified. Codex's clean-head High quick gate selected 41 test files / 519 tests and passed within the 300 s budget without a breach; `uiProofRequired` remains satisfied only by the existing synthetic browser matrix. Next owner: Jonathan (push/PR authorization; product review of Home on real Development data).

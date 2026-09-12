@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { catalogHousehold, ensureHouseholdShape, financialAuditHash, householdForAiDisclosure, splitForSync } from "../src/core/index.ts";
+import { acceptHouseholdWrite, catalogHousehold, ensureHouseholdShape, financialAuditHash, householdForAiDisclosure, splitForSync } from "../src/core/index.ts";
+import { commandIdentityHash } from "../src/core/commandIdentity.ts";
 import {
   FOUNDATION_CHAPTERS,
   celebrationLevel,
@@ -26,6 +27,8 @@ import { CHAPTER_LESSONS, CURRICULUM_BY_CHAPTER, chapterLesson } from "../src/co
 import { PLAN_CURRICULUM } from "../src/core/planSystem.ts";
 import { sitdownBrief } from "../src/core/sitdownBrief.ts";
 import { parseComfort, DEFAULT_COMFORT } from "../src/theme/comfort.ts";
+import { compactedCommandPayload, primaryCommandRef, receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
+import { applyCommandEventLocally, extractMaterializationFacts, type ContinuityCommandEvent, type ContinuityCommandEventPayload } from "../src/ledger/materializeSnapshotFromEvents.ts";
 
 const ME = "MEM-002";
 const PARTNER = "MEM-001";
@@ -131,6 +134,111 @@ describe("Chapter system — objects (Vision v2 §5)", () => {
     expect(split.shared.rituals).toHaveLength(1);
     const disclosed = householdForAiDisclosure(shaped, ME, { view: "household" });
     expect(disclosed.chapters ?? []).toHaveLength(0);
+  });
+
+  it("binds Chapter changes into command identity and replays direct and compacted Ledger sync v2 events", async () => {
+    const base = catalogHousehold();
+    const opened = openChapter(base, { memberId: ME, foundationId: "make-rent-boring", at: AT });
+    expect(await commandIdentityHash(base, opened.household, [])).not.toBe(
+      await commandIdentityHash(base, base, []),
+    );
+    const first = await acceptHouseholdWrite({
+      previous: base,
+      candidate: opened.household,
+      confirmationId: "chapter-open",
+      commandKind: "updateChapters",
+      postedIds: [],
+      actingMemberId: ME,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    expect(first.ok).toBe(true);
+    const firstReceipt = first.household.commandReceipts?.find((row) => row.confirmationId === "chapter-open")!;
+    expect(firstReceipt.materializationHash).toMatch(/^[a-f0-9]{64}$/);
+    const firstRef = receiptToCommandRef({ household: first.household, receipt: firstReceipt, baseRevision: base.revision });
+    const event = (id: string, previousRevision: number, resultRevision: number, ref: typeof firstRef, household = first.household): ContinuityCommandEvent => ({
+      id,
+      environment: household.environment,
+      household_id: household.householdId,
+      member_id: ME,
+      idempotency_key: ref.confirmationId,
+      confirmation_id: ref.confirmationId,
+      identity_hash: ref.identityHash,
+      base_revision: previousRevision,
+      result_revision: resultRevision,
+      ledger_scope: ref.ledgerScope,
+      command_type: ref.commandType,
+      payload_json: {
+        ...ref.commandPayload,
+        materializationFacts: extractMaterializationFacts(household, ref.commandPayload.postedIds, {
+          acceptedAt: ref.commandPayload.acceptedAt,
+          ledgerScope: ref.ledgerScope,
+          memberId: ME,
+          commandKind: ref.commandType,
+        }),
+      },
+      created_at: ref.commandPayload.acceptedAt,
+    });
+    const direct = await applyCommandEventLocally({
+      local: base,
+      event: event("evt-chapter-open", base.revision, first.household.revision, firstRef),
+      memberId: ME,
+    });
+    expect(direct.ok).toBe(true);
+    if (!direct.ok) throw new Error(direct.reason);
+    expect(direct.household.chapters).toEqual(first.household.chapters);
+    expect(direct.household.rituals).toEqual(first.household.rituals);
+    expect(direct.household.moves).toEqual(first.household.moves);
+    const missingFacts = event("evt-chapter-missing", base.revision, first.household.revision, firstRef);
+    missingFacts.payload_json.materializationFacts = {};
+    expect(await applyCommandEventLocally({ local: base, event: missingFacts, memberId: ME }))
+      .toEqual({ ok: false, reason: "chapter-materialization-invalid", fallback: true });
+
+    const ritual = first.household.rituals![0]!;
+    const held = recordRitualHeld(first.household, {
+      memberId: ME,
+      ritualId: ritual.id,
+      onDate: "2026-09-12",
+      at: "2026-09-12T15:00:00.000Z",
+    });
+    const second = await acceptHouseholdWrite({
+      previous: first.household,
+      candidate: held.household,
+      confirmationId: "chapter-held",
+      commandKind: "updateChapters",
+      postedIds: [],
+      actingMemberId: ME,
+      adapters: { persist: async () => {}, ingest: async () => ({ ok: true }) },
+    });
+    const secondReceipt = second.household.commandReceipts?.find((row) => row.confirmationId === "chapter-held")!;
+    const secondRef = receiptToCommandRef({ household: second.household, receipt: secondReceipt, baseRevision: first.household.revision });
+    const compacted = await compactedCommandPayload(
+      { confirmationIds: [firstRef.confirmationId, secondRef.confirmationId], commandRefs: [firstRef, secondRef] },
+      primaryCommandRef([firstRef, secondRef]),
+      second.household,
+      ME,
+    );
+    const compactedReplay = await applyCommandEventLocally({
+      local: base,
+      event: {
+        ...event("evt-chapter-compacted", base.revision, second.household.revision, secondRef, second.household),
+        payload_json: compacted as ContinuityCommandEventPayload,
+      },
+      memberId: ME,
+    });
+    if (!compactedReplay.ok) throw new Error(compactedReplay.reason);
+    expect(compactedReplay.ok).toBe(true);
+    expect(compactedReplay.household.chapters).toEqual(second.household.chapters);
+    expect(compactedReplay.household.rituals).toEqual(second.household.rituals);
+
+    const brokenReference = structuredClone(event("evt-chapter-reference", base.revision, first.household.revision, firstRef));
+    brokenReference.payload_json.materializationFacts!.moves![0]!.chapterId = "CHAP-MISSING";
+    expect(await applyCommandEventLocally({ local: base, event: brokenReference, memberId: ME }))
+      .toEqual({ ok: false, reason: "chapter-materialization-invalid", fallback: true });
+
+    const tampered = structuredClone(event("evt-chapter-tampered", base.revision, first.household.revision, firstRef));
+    tampered.payload_json.materializationFacts!.chapters![0]!.title = "Tampered";
+    expect(await applyCommandEventLocally({ local: base, event: tampered, memberId: ME }))
+      .toEqual({ ok: false, reason: "materialization-hash-mismatch", fallback: true });
   });
 });
 

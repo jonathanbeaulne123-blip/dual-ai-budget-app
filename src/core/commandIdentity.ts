@@ -31,6 +31,10 @@ export function commandMaterializationFacts(input: {
   acceptedStarterPlans?: Household["acceptedStarterPlans"];
   categories?: Category[];
   budgetPlans?: BudgetPlan[];
+  chapters?: Household["chapters"];
+  rituals?: Household["rituals"];
+  moves?: Household["moves"];
+  wins?: Household["wins"];
 }): unknown {
   return stable({
     ...(input.accountOpeningCheckpoints?.length ? {accountOpeningCheckpoints: byId(input.accountOpeningCheckpoints)} : {}),
@@ -46,6 +50,10 @@ export function commandMaterializationFacts(input: {
     ...(input.acceptedStarterPlans?.length ? { acceptedStarterPlans: byId(input.acceptedStarterPlans) } : {}),
     ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
     ...(input.budgetPlans?.length ? { budgetPlans: byId(input.budgetPlans) } : {}),
+    ...(input.chapters?.length ? { chapters: byId(input.chapters) } : {}),
+    ...(input.rituals?.length ? { rituals: byId(input.rituals) } : {}),
+    ...(input.moves?.length ? { moves: byId(input.moves) } : {}),
+    ...(input.wins?.length ? { wins: byId(input.wins) } : {}),
   });
 }
 
@@ -255,6 +263,9 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const budgetPlans = next.budgetPlans.filter((row) => (
     posted.has(row.id) && (row.id.includes("-ONB-") || !postsCategory)
   ));
+  const chapterFactsChanged = (["chapters", "rituals", "moves", "wins"] as const).some((field) => (
+    JSON.stringify(stable(previous?.[field] ?? [])) !== JSON.stringify(stable(next[field] ?? []))
+  ));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -335,6 +346,12 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     onboardingApprovals,
     onboardingAttestations,
     budgetPlans,
+    ...(chapterFactsChanged ? {
+      chapters: byId(next.chapters),
+      rituals: byId(next.rituals),
+      moves: byId(next.moves),
+      wins: byId(next.wins),
+    } : {}),
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.

@@ -406,7 +406,14 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       identityHash,
       auditHash: "",
       commandKind: input.commandKind ?? "commit",
-      materializationHash: input.commandKind === "updateMonthRehearsal"
+      materializationHash: input.commandKind === "updateChapters"
+        ? await sha256Hex(commandMaterializationFacts({
+          chapters: accepted.chapters,
+          rituals: accepted.rituals,
+          moves: accepted.moves,
+          wins: accepted.wins,
+        }))
+        : input.commandKind === "updateMonthRehearsal"
         ? await sha256Hex(commandMaterializationFacts({ monthRehearsals: accepted.monthRehearsals ?? [] }))
         : input.commandKind === "moveAskGoalClaimToNextMonth"
           ? await sha256Hex(commandMaterializationFacts({
