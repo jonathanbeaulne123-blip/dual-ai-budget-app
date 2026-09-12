@@ -1,3 +1,4 @@
+import { assertExperienceToolAccess } from '../../src/hearthside/workspaceContext.ts';
 import { HERCULES_READ_TOOL_CATALOG } from '../../src/core/herculesTools.ts';
 import { herculesWorkspaceActionCatalogue } from '../../src/core/herculesActions.ts';
 import { latestArtifacts, workspaceText, workspaceId, WORKSPACE_ARTIFACT_LIMIT, type WorkspaceProject, type WorkspaceEvidence, type ArtifactVersion, type WorkspaceProposal } from '../../src/workspace/contracts.ts';
@@ -38,17 +39,18 @@ function evidence(c: ToolContext, origin: WorkspaceEvidence['origin'], scope: Wo
   return { id: c.id, origin, scope, title, source, sourceVersion: version, observedAt: c.now, excerpt };
 }
 export async function executeWorkspaceTool(name: string, args: Record<string, unknown>, c: ToolContext): Promise<ToolResult> {
+  assertExperienceToolAccess(c.project,name);
   if (!defs.some(d => d.name === name)) throw new Error('UNKNOWN_TOOL');
   switch (name) {
     case 'request_more_thinking': return { result: { requested: true, reason: workspaceText(args.reason, 1000) }, effect: { moreThinking: true } };
-    case 'discover_tools': return { result: { reads: HERCULES_READ_TOOL_CATALOG, tools: defs.map(({ properties: _p, ...d }) => d),
+    case 'discover_tools': return { result: { reads: c.project.experience?[]:HERCULES_READ_TOOL_CATALOG, tools: defs.filter(d=>!c.project.experience||d.name!=='hearth_read').map(({ properties: _p, ...d }) => d),
       actions: herculesWorkspaceActionCatalogue(),
       instruction: 'These are proposal identifiers only. The existing action review validates fields and availability in the chosen scope.' } };
     case 'project_read': {
       const offset = Number(args.offset ?? 0);
       if (!Number.isSafeInteger(offset) || offset < 0) throw new Error('INVALID_OFFSET');
       const item = [...c.project.messages, ...c.project.artifacts, ...c.project.evidence].find(v => v.id === args.id);
-      const special=args.id==='context'?{goal:c.project.goal,completionCriteria:c.project.completionCriteria,decisions:c.project.decisions,constraints:c.project.constraints,questions:c.project.questions,tasks:c.project.tasks,links:c.project.links,proposals:c.project.proposals,preferences:c.project.preferences}:args.id==='sources'?c.project.evidence:args.id==='artifacts'?c.project.artifacts.map(({content,...a})=>({...a,length:content.length})):null;
+      const special=args.id==='experience'&&c.project.experience?c.project.experience.context:args.id==='context'?{goal:c.project.goal,completionCriteria:c.project.completionCriteria,decisions:c.project.decisions,constraints:c.project.constraints,questions:c.project.questions,tasks:c.project.tasks,links:c.project.links,proposals:c.project.proposals,preferences:c.project.preferences}:args.id==='sources'?c.project.evidence:args.id==='artifacts'?c.project.artifacts.map(({content,...a})=>({...a,length:content.length})):null;
       const text = special?JSON.stringify(special):item ? JSON.stringify(item) : JSON.stringify(c.project.messages.filter(m => m.text.toLowerCase().includes(String(args.query ?? '').toLowerCase())));
       return { result: { text: text.slice(offset, offset + 24000), nextOffset: offset + 24000 < text.length ? offset + 24000 : null, totalCharacters: text.length } };
     }
@@ -85,6 +87,7 @@ export async function executeWorkspaceTool(name: string, args: Record<string, un
     }
     case 'artifact_write': {
       const id = workspaceId(args.artifactId), previous = latestArtifacts(c.project).find(a => a.artifactId === id);
+      if(c.project.deletedArtifactIds?.includes(id))throw new Error('ARTIFACT_SOURCE_DELETED');
       if (previous && previous.id !== args.parentId || !previous && args.parentId) throw new Error('ARTIFACT_CHANGED_READ_CURRENT');
       if (!['markdown', 'csv', 'html', 'python', 'json'].includes(String(args.format))) throw new Error('INVALID_FORMAT');
       const ids = args.evidenceIds as string[];

@@ -19,8 +19,9 @@ import {Toy,playChime} from './Toy.tsx';
 import type {DisplayImage} from './room.ts';
 import './play.css';
 const Dressing=lazy(()=>import('../wardrobe/HerculesDressingRoom.tsx'));
-type Props={household:Household;memberId:string;connected:boolean;onCommand:KitchenCommand;onGoal:(id?:string)=>void;onTogether:()=>void;initialArea?:PlayArea};
-export default function HerculesPlay({household:h,memberId,connected,onCommand,onGoal,onTogether,initialArea}:Props){
+type Props={household:Household;memberId:string;connected:boolean;onCommand:KitchenCommand;onGoal:(id?:string)=>void;onTogether:()=>void;initialArea?:PlayArea;embedded?:boolean};
+export default function HerculesPlay({household:h,memberId,connected,onCommand,onGoal,onTogether,initialArea,embedded}:Props){
+ const Container=embedded?'section':'main';
  const appearance=useAppearance(),theme=appearance.scene.theme,scope:CompanionScope={environment:h.environment,householdId:h.householdId,memberId};
  const room=playRoomFor(h),personal=playPrivateFor(h,memberId),profile=companionFor(h,memberId),commands=usePlayCommands(scope,connected,onCommand),wardrobe=useWardrobeCommands(scope,connected,onCommand);
  const [area,setArea]=useState<PlayArea|'room'>(initialArea??'room'),[editing,setEditing]=useState(initialArea==='dressing'),[portraitOpen,setPortraitOpen]=useState(false),[preview,setPreview]=useState<LookV1>(()=>profile.wornLook.value??COZY_LOOK),[portrait,setPortrait]=useState<PortraitSettings>(()=>personal.portrait??DEFAULT_PORTRAIT),[name,setName]=useState(''),[savedId,setSavedId]=useState('');
@@ -61,7 +62,7 @@ export default function HerculesPlay({household:h,memberId,connected,onCommand,o
  const milestone=useMemo(()=>rewardEvidence(h,memberId,reward),[h,memberId,reward]);
  const availableReward=room.awards.some(a=>a.id===reward)||personal.awards.some(a=>a.id===reward),rewardInfo=REWARDS.find(r=>r.id===reward)!;
  const activeCopy=area==='room'?null:AREAS.find(a=>a.id===area);const currentSlotRevision=room.slots.find(s=>s.id===slot)?.revision??0;
- return <main className="hercules-play" data-play-theme={theme} data-reduced={reduced||paused} data-play-dark={appearance.scene.dark}>
+ return <Container className="hercules-play" data-play-theme={theme} data-reduced={reduced||paused} data-play-dark={appearance.scene.dark}>
   <header className="play-heading"><div><p className="play-kicker">HERCULES · PLAY</p><h1>{THEME_COPY[theme].title}</h1><p>{THEME_COPY[theme].subtitle}</p></div><div className="play-utilities"><button type="button" onClick={()=>{setSound(v=>!v);playChime(!sound);}} aria-pressed={sound}>Sound {sound?'on':'off'}</button><button type="button" onClick={()=>setPaused(v=>!v)} aria-pressed={paused||reduced} disabled={reduced}>{reduced?'Reduced motion':paused?'Resume motion':'Pause motion'}</button><button type="button" disabled={!commands.canStart} onClick={()=>void commands.submit({kind:'private',expectedRevision:personal.revision,portrait,sound,paused})}>Save preferences</button></div></header>
   <nav className="play-navigation" aria-label="Places in Hercules’s room"><button aria-current={area==='room'?'page':undefined} onClick={()=>visit('room')}>The room</button>{AREAS.map(a=><button key={a.id} aria-current={area===a.id?'page':undefined} onClick={()=>visit(a.id)}><span aria-hidden="true">{a.glyph}</span>{a.name}</button>)}</nav>
   {!connected&&<p className="play-connection" role="status">You can explore and keep a fitting draft here. Connect to save, share or arrange the household room.</p>}
@@ -80,5 +81,5 @@ export default function HerculesPlay({household:h,memberId,connected,onCommand,o
   </div>}
   {reaction&&<p className="play-reaction" role="status">✧ {reaction}</p>}
   <div className="play-save-status" role="status">{commands.message&&<p>{commands.message}</p>}{wardrobe.message&&<p>{wardrobe.message}</p>}{commands.retry&&<button disabled={commands.pending||!connected} onClick={()=>void commands.retryNow()}>Retry unconfirmed room save</button>}{wardrobe.retry&&<button disabled={wardrobe.pending||!connected} onClick={()=>void wardrobe.retryNow()}>Retry unconfirmed outfit save</button>}</div>
- </main>;
+ </Container>;
 }

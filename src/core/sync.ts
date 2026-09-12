@@ -1,3 +1,5 @@
+import {assertChapterTaskGraph} from "./chapterAuthority.ts";
+import { decodeHearthside } from '../hearthside/contracts.ts';
 import {decodePlayRoom} from './playContracts.ts';
 import { shapeNativeEvents, mergeNativeEvents } from "./nativeEvents.ts";
 import { shapeTasks, mergeTasks, shapeTaskLists, mergeTaskLists } from "./tasks.ts";
@@ -364,9 +366,10 @@ export function ensureHouseholdShape(household: Household): Household {
   const householdFund = shapeHouseholdFundConfig(household.householdFund);
   const activeMemberIds = members.filter((member) => member.active).map((member) => member.id);
   const planVersions = shapePlanVersions(household.planVersions);
-  return {
+  const shaped:Household = {
     ...household,
     companionProfile: scopedCompanion(household.companionProfile, household),
+    ...(household.hearthside!==undefined?{hearthside:decodeHearthside(household.hearthside)}:{}),
     ...(household.playRoom!==undefined?{playRoom:decodePlayRoom(household.playRoom)}:{}),
     ...(household.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(household.companionGallery,household)}:{}),
     householdId: household.householdId || randomHouseholdId(),
@@ -484,6 +487,8 @@ export function ensureHouseholdShape(household: Household): Household {
       ? { herculesProPermissions: shapeHerculesProPermissions(household.herculesProPermissions) }
       : {}),
   };
+  assertChapterTaskGraph(shaped);
+  return shaped;
 }
 
 export function emptyPersonal(memberId: string): PersonalEnvelope {
@@ -571,6 +576,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     claims: shaped.claims,
     presets: shaped.presets,
     calendar: shaped.calendar,
+    ...(shaped.hearthside!==undefined?{hearthside:decodeHearthside(shaped.hearthside)}:{}),
     ...(shaped.playRoom!==undefined?{playRoom:shaped.playRoom}:{}),
     ...(shaped.companionGallery!==undefined?{companionGallery:shaped.companionGallery}:{}),
     kitchen: shaped.kitchen,
@@ -737,6 +743,7 @@ export function personalEnvelopeFromPayload(
   memberId: string,
 ): PersonalEnvelope | null {
   if (!payload || typeof payload !== "object") return null;
+  if (Object.hasOwn(payload, "hearthside")) throw new Error("HEARTHSIDE_SHARED_ONLY");
   const row = payload as PersonalEnvelope;
   if (row.kind !== "personal" || row.memberId !== memberId) return null;
   const goals = Array.isArray(row.goals)
@@ -1066,6 +1073,7 @@ export function assembleHousehold(
     claims: shared.claims ?? [],
     presets: shared.presets ?? [],
     calendar: shared.calendar,
+    ...(shared.hearthside!==undefined?{hearthside:decodeHearthside(shared.hearthside)}:{}),
     ...(shared.playRoom!==undefined?{playRoom:decodePlayRoom(shared.playRoom)}:{}),
     ...(shared.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(shared.companionGallery,shared)}:{}),
     kitchen: shared.kitchen,
@@ -1427,8 +1435,9 @@ export function cloneAndShape(household: Household): Household {
   return ensureHouseholdShape(cloneHousehold(household));
 }
 
-function mergeCompanionGallery(server:SharedEnvelope,client:SharedEnvelope):Pick<SharedEnvelope,'companionGallery'|'playRoom'>{
+function mergeCompanionGallery(server:SharedEnvelope,client:SharedEnvelope):Pick<SharedEnvelope,'companionGallery'|'playRoom'|'hearthside'>{
+ if(JSON.stringify(server.hearthside)!==JSON.stringify(client.hearthside))throw new Error('HEARTHSIDE_REQUIRES_AUTHORITY');
  if(JSON.stringify(server.playRoom)!==JSON.stringify(client.playRoom))throw new Error('PLAY_REQUIRES_AUTHORITY');
  if(JSON.stringify(server.companionGallery??[])!==JSON.stringify(client.companionGallery??[]))throw new Error('COMPANION_GALLERY_REQUIRES_AUTHORITY');
- return {...(server.playRoom?{playRoom:decodePlayRoom(server.playRoom)}:{}),...(server.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(server.companionGallery,server)}:{})};
+ return {...(server.hearthside!==undefined?{hearthside:decodeHearthside(server.hearthside)}:{}),...(server.playRoom?{playRoom:decodePlayRoom(server.playRoom)}:{}),...(server.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(server.companionGallery,server)}:{})};
 }

@@ -28,6 +28,9 @@ export async function handleWorkspace(request: Request, env: WorkspaceEnv): Prom
     const body = JSON.parse(new TextDecoder().decode(bytes));
     if (body.operation === 'action-review') return reply(await workspace.actionReviewFor(scope, workspaceId(body.projectId), workspaceId(body.proposalId)));
     if (body.operation === 'action-confirm') return reply(await workspace.authorizeActionFor(scope, workspaceId(body.confirmationId)));
+    if(body.operation==='share-experience')return reply(await workspace.shareExperienceFor(scope,body.review,String(body.confirmDigest)));
+    if(body.operation==='withdraw-experience')return reply(await workspace.withdrawExperienceFor(scope,workspaceId(body.id)));
+    if(body.operation==='experience-artifacts'){const shared=await getAgentByName(env.HERCULES_SHARED_WORKSPACES,`${scope.environment}/${scope.householdId}`);return reply(await shared.experienceCopiesFor(scope,String(body.experienceId),String(body.after??'')));}
     if (body.operation === 'share') return reply(await workspace.shareFor(scope, body.review, String(body.confirmDigest)));
     if (body.operation === 'external') return reply(await workspace.externalFor(scope, body.review, String(body.confirmDigest), String(body.googleToken ?? '')));
     if (body.operation === 'shared-artifacts') { const shared = await getAgentByName(env.HERCULES_SHARED_WORKSPACES, `${scope.environment}/${scope.householdId}`); return reply(await shared.listFor(scope)); }

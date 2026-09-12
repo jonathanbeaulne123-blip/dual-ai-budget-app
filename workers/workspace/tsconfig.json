@@ -1,9 +1,27 @@
 {
   "compilerOptions": {
-    "target": "ES2022", "module": "ESNext", "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"], "types": ["@cloudflare/workers-types", "vite/client"],
-    "strict": true, "skipLibCheck": true, "noEmit": true, "allowJs": true,
-    "allowImportingTsExtensions": true, "jsx": "react-jsx"
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "@cloudflare/workers-types",
+      "vite/client"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx"
   },
-  "include": ["*.ts", "../geminiQuota.ts"]
+  "include": [
+    "*.ts",
+    "../geminiQuota.ts",
+    "../ledger-platform.d.ts"
+  ]
 }

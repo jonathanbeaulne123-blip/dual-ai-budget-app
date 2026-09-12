@@ -1,3 +1,9 @@
+import {HEARTHSIDE_FLAGS} from './hearthside/flags.ts';
+import {HEARTHSIDE_LABEL} from './hearthside/routes.ts';
+import type {KittyAcceptedCommandReader} from './hearthside/bankReceipt.ts';
+import {WinMemoryReview} from './hearthside/WinMemoryReview.tsx';
+import {winMemoryId} from './hearthside/winMemory.ts';
+import {commitHearthside} from './hearthside/commands.ts';
 import { useState, type ReactNode } from "react";
 import type { CommitResult, Household } from "./core/types.ts";
 import type { DateKey } from "./core/calendar.ts";
@@ -7,11 +13,10 @@ import { monthObligations } from "./core/monthObligations.ts";
 import { duePotentialExpenses, potentialExpensesForView } from "./core/potentialExpenses.ts";
 import { kittyBankBackingStep, kittyBanksInView } from "./core/kittyBanks.ts";
 import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulseFreshness } from "./core/fundPulse.ts";
-import { dismissWin, keepWinAsMemory, openChapterFor, recentWin } from "./core/chapters.ts";
+import { dismissWin, openChapterFor, recentWin } from "./core/chapters.ts";
 import { fundDisplayName } from "./core/spaceNames.ts";
 import { ChapterMoment } from "./ChapterPanel.tsx";
-import { displayedKittyPiece } from "./core/kittyStudio.ts";
-import { KittyFlat } from "./kitty/studio/flat.tsx";
+import { CanonicalKittyFlat } from "./hearthside/DesignProvider.tsx";
 import { KittyBankRoom, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
 import "./household-home.css";
 
@@ -40,12 +45,15 @@ type HouseholdHomeProps = {
   onGo: (tab: "ledger" | "plan" | "together" | "calendar" | "more") => void;
   onOpenSetup: (destination: "charter" | "fund") => void;
   onReadSubmission?: KittySubmissionReader;
+  onReadAcceptedCommand?: KittyAcceptedCommandReader;
+  creationIdentity?: string;
+  onOpenMemory?: (memoryId:string)=>void;
   /** Chapter 1 is the Month-One rehearsal; its access stays inside the Chapter area. */
   rehearsal?: ReactNode;
   identityArt?: ReactNode;
 };
 
-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt }: HouseholdHomeProps) {
+function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt }: HouseholdHomeProps) {
   const [bankRequest, setBankRequest] = useState<{ goalId?: string } | null>(null);
   const monthKey = monthKeyFromDateKey(today);
   const chapter = openChapterFor(household);
@@ -56,9 +64,6 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
   const allBanks = kittyBanksInView(household, "household", memberId);
   const banks = allBanks.slice(0, 2);
   const win = recentWin(household);
-  const activeMemberIds = household.members.filter((row) => row.active).map((row) => row.id);
-  const memoryComplete = Boolean(win && activeMemberIds.every((id) => win.keptByMemberIds.includes(id)));
-  const memberKeptMemory = Boolean(win?.keptByMemberIds.includes(memberId));
   const fundName = fundDisplayName(household);
   const destinationTab = pulse.destination === "fund" ? "ledger" : pulse.destination === "path" ? "plan" : pulse.destination === "together" ? "together" : "more";
 
@@ -106,7 +111,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
                 <li key={goal.id}>
                   <button type="button" className="home-bank" onClick={() => setBankRequest({ goalId: goal.id })} aria-label={`Open ${goal.name} in the 3D gallery`}>
                     <span className="home-bank__portrait" aria-hidden="true">
-                      <KittyFlat piece={displayedKittyPiece(goal.envelope?.studio)} glaze={goal.envelope?.glaze} step={step} />
+                      <CanonicalKittyFlat goal={goal} step={step} />
                     </span>
                     <span className="home-bank__label">
                       <strong>{goal.name}</strong>
@@ -125,7 +130,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
       </section>
       {bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
         identity={`${household.environment}:${household.householdId}:${memberId}:household`}
-        initialGoalId={bankRequest.goalId} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission}
+        initialGoalId={bankRequest.goalId} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand} creationIdentity={creationIdentity}
         onClose={() => setBankRequest(null)} />}
 
       {presence.length > 0 && (
@@ -140,21 +145,17 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
         <section className={`home-win home-win--${win.level}`} aria-label="A recent Win">
           <p className="kicker">{win.level === "first" ? "A First" : win.level === "graduation" ? "Graduated" : "A shared Win"}</p>
           <h3>{win.title}</h3>
-          {memoryComplete ? <p className="muted">Kept as a Memory{win.authoredNote ? ` — “${win.authoredNote}”` : ""}.</p> : (
-            <div className="chapter-actions">
-              {memberKeptMemory ? <p className="muted">You chose to keep this. It becomes a shared Memory when your partner chooses too.</p> : <>
-                <button type="button" disabled={busy} onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: win.id }))}>Keep as a Memory</button>
-                {win.keptByMemberIds.length === 0 ? <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button> : null}
-              </>}
-            </div>
-          )}
+          <WinMemoryReview key={win.id} household={household} win={win} memory={household.hearthside?.memories.find(m=>m.id===winMemoryId(household,win.id))} busy={busy}
+            onAdopt={(operation,id,recover)=>onCommand(current=>commitHearthside(current,{version:1,id,scope:{environment:current.environment,householdId:current.householdId,memberId},operation}),{confirmationId:id,recoverConfirmation:recover,suppressUndo:true})}
+            onOpen={id=>{if(onOpenMemory)onOpenMemory(id);else onGo('together');}}/>
+          {win.keptByMemberIds.length===0&&!household.hearthside?.memories.some(m=>m.id===winMemoryId(household,win.id))&&<button type="button" disabled={busy} onClick={()=>void onCommand(current=>dismissWin(current,{memberId,winId:win.id}))}>Let it fade</button>}
         </section>
       )}
 
       <nav className="home-doors" aria-label="Ways deeper">
         <button type="button" onClick={() => onGo("ledger")}><strong>{fundName}</strong><small>What is true</small></button>
         <button type="button" onClick={() => onGo("plan")}><strong>Our Path</strong><small>Where we are going</small></button>
-        <button type="button" onClick={() => onGo("together")}><strong>Together</strong><small>What needs us</small></button>
+        <button type="button" onClick={() => onGo("together")}><strong>{HEARTHSIDE_FLAGS.presentation?HEARTHSIDE_LABEL:"Together"}</strong><small>{HEARTHSIDE_FLAGS.presentation?"Our shared life":"What needs us"}</small></button>
       </nav>
     </div>
   );

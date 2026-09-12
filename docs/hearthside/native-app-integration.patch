@@ -1,0 +1,223 @@
+--- a/src/main.tsx
++++ b/src/main.tsx
+@@ -1,6 +1,7 @@
+ import { StrictMode, type ReactNode } from "react";
+ import { createRoot } from "react-dom/client";
+-import { App } from "./App.tsx";
++import { hydrateNativeAuthentication } from "./hearthside/nativeBootstrap.ts";
++import { NativeAuthNotice } from "./hearthside/NativeAuthNotice.tsx";
+ import { KitchenErrorBoundary } from "./KitchenErrorBoundary.tsx";
+ import { ThemeProvider } from "./theme/ThemeProvider.tsx";
+ import "./styles.css";
+@@ -55,5 +56,15 @@
+ if (import.meta.env.DEV && new URLSearchParams(window.location.search).has("themeStudio")) {
+   void import("./theme/ThemeStudio.tsx").then(({ default: Studio }) => renderKitchen(<Studio />));
+ } else {
+-  renderKitchen(<App />);
++  const start = async () => {
++    renderKitchen(<main className="welcome"><section className="welcome-card"><h1>Opening Hearth…</h1><p role="status">Loading your secure sign-in on this device.</p></section></main>);
++    try {
++      await hydrateNativeAuthentication();
++      const { App } = await import("./App.tsx");
++      renderKitchen(<><NativeAuthNotice /><App /></>);
++    } catch {
++      renderKitchen(<main className="welcome"><section className="welcome-card"><h1>Unlock secure storage</h1><p role="alert">Hearth could not load this device’s secure sign-in. Unlock your device and retry.</p><button type="button" onClick={() => void start()}>Retry secure startup</button></section></main>);
++    }
++  };
++  void start();
+ }
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,3 +1,5 @@
++import { nativeAuthController, nativeWidgetController } from "./hearthside/nativeBootstrap.ts";
++import { NATIVE_AUTH_EVENT } from "./hearthside/nativeAuth.ts";
+ import {workspaceExperienceContext} from './hearthside/workspaceContext.ts';
+ import type {HearthsideWorkspaceBinding} from './hearthside/workspaceSurface.tsx';
+ import type {SharedExperience} from './hearthside/contracts.ts';
+@@ -1762,6 +1764,18 @@
+   }, []);
+ 
+   useEffect(() => {
++    const returned = () => {
++      const completed = nativeAuthController()?.takeCompletion();
++      if (!completed) return;
++      // The environment comes from the secure initiating flow, never from an arbitrary URL.
++      if (completed !== environment) changeEnvironment(completed);
++      setSupabaseAuthReturned(true);
++    };
++    returned(); window.addEventListener(NATIVE_AUTH_EVENT, returned);
++    return () => window.removeEventListener(NATIVE_AUTH_EVENT, returned);
++  }, [environment]);
++
++  useEffect(() => {
+     if (!supabaseAuthReturned) return;
+     setSupabaseAuthReturned(false);
+     void continueWithGoogle();
+@@ -1792,7 +1806,7 @@
+       if (registered.reason === "device-revoked" || registered.reason === "session-not-live") {
+         clearContinuityOutboxForHousehold(environment, household.householdId);
+         void clearStagedHouseholdBooks(environment, household.householdId);
+-        clearSupabaseSession(environment);
++        await clearSupabaseSession(environment);
+       }
+     })().catch((caught) => {
+       if (!cancelled) {
+@@ -3387,6 +3401,16 @@
+   const onboardingReadyOnly = false;
+   const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
+   useEffect(() => { setOnboardingBooksOpen(false);setWorkspaceExperienceSelection(null); }, [ledgerRenderScopeKey]);
++  const nativeAuthScopeRef = useRef(ledgerRenderScopeKey);
++  useEffect(() => {
++    const scopeChanged = nativeAuthScopeRef.current !== ledgerRenderScopeKey;
++    nativeAuthScopeRef.current = ledgerRenderScopeKey;
++    const auth = loadSupabaseSession(environment);
++    const scope = household && memberId && auth ? {environment, householdId: household.householdId, memberId, subject: auth.userId} : null;
++    void nativeWidgetController()?.enterScope(scope).catch(() => setError("The previous home-screen sculpture could not be cleared. Open its widget controls and retry."));
++    const current = nativeAuthController()?.getStatus();
++    if (current?.environment && (current.environment !== environment || (scopeChanged && current.phase !== "complete"))) void nativeAuthController()?.cancel(current.environment).catch(() => setError("Secure sign-in cancellation needs a retry."));
++  }, [ledgerRenderScopeKey]);
+   useEffect(()=>{const restore=()=>setHearthsideToolReturn(household?readHearthsideToolReturn(window.history.state?.hearthsideReturn,ledgerRenderScopeKey,household.householdId):null);restore();window.addEventListener('popstate',restore);return()=>window.removeEventListener('popstate',restore);},[ledgerRenderScopeKey]);
+   const visibleLedgerPending=useLedgerSync&&ledgerPending?.key===ledgerRenderScopeKey?ledgerPending.rows:[];
+   const visibleLedgerRejected=useLedgerSync&&ledgerRejected?.key===ledgerRenderScopeKey?ledgerRejected.entries.filter(entry=>!entry.preview||entry.preview.rows.some(row=>isVisibleInView(row,memberId??'',view))):[];
+@@ -3818,7 +3842,8 @@
+     }
+   }
+ 
+-  function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): void {
++  async function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): Promise<void> {
++    try {
+     cancelAccountFlow();
+     invitationTokenRef.current = token;
+     savePendingAuthInvite({ token, environment: inviteEnvironment });
+@@ -3829,7 +3854,7 @@
+     rememberWelcomeGoogleIntent("login");
+     if (inviteEnvironment !== environment) changeEnvironment(inviteEnvironment);
+     clearGoogleSessions(inviteEnvironment);
+-    clearSupabaseSession(inviteEnvironment);
++    await clearSupabaseSession(inviteEnvironment);
+     startSupabaseGoogleSignIn(
+       inviteEnvironment,
+       window.location.href,
+@@ -3837,6 +3862,7 @@
+       (url) => window.location.assign(url),
+       { selectAccount: true },
+     );
++    } catch (caught) { setInviteFlowState("error"); setError(caught instanceof Error ? caught.message : "Secure sign-in could not start."); }
+   }
+ 
+   async function redeemAuthInviteToken(token: string, parentIsCurrent: () => boolean, displayName?: string): Promise<void> {
+@@ -4037,7 +4063,7 @@
+         if (!shouldContinue()) return;
+         rememberWelcomeGoogleIntent(null);
+         if (environment === "production") {
+-          if (supabaseAuthEnabled()) clearSupabaseSession(environment);
++          if (supabaseAuthEnabled()) await clearSupabaseSession(environment);
+           else disconnectGoogle(environment, "__welcome__");
+           throw new Error(
+             productionContinuityEnabled()
+@@ -4925,7 +4951,7 @@
+     setCloudReplicaReadyKey(null);
+     const current = householdRef.current;
+     if (!current) {
+-      signOutWelcomeGoogle();
++      await signOutWelcomeGoogle();
+       setGuard(null);
+       return;
+     }
+@@ -4934,8 +4960,9 @@
+     cancelAccountFlow();
+     const who = sessionRef.current?.memberId;
+     const hid = current.householdId;
++    try { await clearSupabaseSession(environment); }
++    catch { clearThisPhoneInFlightRef.current = false; setError("Secure sign-out could not finish. Unlock this device and retry."); return; }
+     clearGoogleSessions(environment);
+-    clearSupabaseSession(environment);
+     clearSession(environment);
+     clearPendingAuthInvite();
+     setBusy(true);
+@@ -5053,11 +5080,12 @@
+     }).catch(() => undefined);
+   }
+ 
+-  function signOutWelcomeGoogle() {
++  async function signOutWelcomeGoogle() {
++    try {
+     clearWorkHandoff(window.sessionStorage);
+     cancelAccountFlow();
+     clearGoogleSessions(environment);
+-    clearSupabaseSession(environment);
++    await clearSupabaseSession(environment);
+     rememberWelcomeGoogleIntent(null);
+     setWelcomeIdentity(null);
+     setDiscoveredLedgers([]);
+@@ -5068,6 +5096,7 @@
+     clearPendingAuthInvite();
+     setWelcomeMode("home");
+     setError("");
++    } catch { setError("Secure sign-out could not finish. Unlock this device and retry."); }
+   }
+ 
+   function dismissWelcomeJoin() {
+@@ -5083,12 +5112,13 @@
+     setError("");
+   }
+ 
+-  function tryInviteWithAnotherGoogleAccount() {
++  async function tryInviteWithAnotherGoogleAccount() {
++    try {
+     clearWorkHandoff(window.sessionStorage);
+     const token = pendingAuthInvite ?? loadPendingAuthInvite()?.token ?? authInviteTokenFromText(inviteInput);
+     cancelAccountFlow();
+     clearGoogleSessions(environment);
+-    clearSupabaseSession(environment);
++    await clearSupabaseSession(environment);
+     rememberWelcomeGoogleIntent("login");
+     setWelcomeIdentity(null);
+     setDiscoveredLedgers([]);
+@@ -5104,6 +5134,7 @@
+       (url) => window.location.assign(url),
+       { selectAccount: true },
+     );
++    } catch { setError("Secure account switching could not finish. Unlock this device and retry."); }
+   }
+ 
+   async function returnToGoogleEntryAfterFullHouse(): Promise<void> {
+@@ -5112,7 +5143,7 @@
+     try {
+       cancelAccountFlow();
+       clearGoogleSessions(environment);
+-      clearSupabaseSession(environment);
++      await clearSupabaseSession(environment);
+       clearSession(environment);
+       clearPendingAuthInvite();
+       rememberWelcomeGoogleIntent(null);
+@@ -5443,10 +5474,12 @@
+     && household.google.links.some(link => link.memberId === session.memberId && link.active)
+     && (!returnAuth || continuityMemberId(household, { email: returnAuth.email, subject: returnAuth.googleSubject }) !== session.memberId);
+   if (returningToAnotherIdentity) {
+-    return <div className="welcome"><ThemeSceneHeading /><section className="welcome-card"><h1>Confirm access to the saved books</h1><p>The saved ledger is still on this device. The current Google account belongs to a different person, so its contents are hidden.</p><button className="primary" type="button" onClick={() => {
+-      cancelAccountFlow(); clearSupabaseSession(environment); clearGoogleSessions(environment);
++    return <div className="welcome"><ThemeSceneHeading /><section className="welcome-card"><h1>Confirm access to the saved books</h1><p>The saved ledger is still on this device. The current Google account belongs to a different person, so its contents are hidden.</p><button className="primary" type="button" onClick={async () => {
++      try {
++      cancelAccountFlow(); await clearSupabaseSession(environment); clearGoogleSessions(environment);
+       rememberWelcomeGoogleIntent("login");
+       startSupabaseGoogleSignIn(environment, window.location.href, readHearthAuthConfig(), url => window.location.assign(url), { selectAccount: true });
++      } catch { setError("Secure account switching could not finish. Unlock this device and retry."); }
+     }}>Use Google for these saved books</button></section></div>;
+   }
+ 
+@@ -7516,12 +7549,12 @@
+                 mode: "leave",
+               });
+             }}
+-            onCurrentDeviceRevoked={() => {
++            onCurrentDeviceRevoked={async () => {
+     clearWorkHandoff(window.sessionStorage);
+               traceSyncPilot("auth-blocked", { household, transport: "outbox" });
+               clearContinuityOutboxForHousehold(environment, household.householdId);
+               void clearStagedHouseholdBooks(environment, household.householdId);
+-              clearSupabaseSession(environment);
++              try { await clearSupabaseSession(environment); } catch { setError("Device access was revoked. Secure credential removal needs a retry."); }
+               setSyncState("error");
+             }}
+           />

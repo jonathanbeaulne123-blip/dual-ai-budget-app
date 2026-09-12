@@ -31,6 +31,7 @@ export function commandMaterializationFacts(input: {
   acceptedStarterPlans?: Household["acceptedStarterPlans"];
   categories?: Category[];
   budgetPlans?: BudgetPlan[];
+  chapterTasks?: Household["tasks"];
   chapters?: Household["chapters"];
   rituals?: Household["rituals"];
   moves?: Household["moves"];
@@ -50,6 +51,7 @@ export function commandMaterializationFacts(input: {
     ...(input.acceptedStarterPlans?.length ? { acceptedStarterPlans: byId(input.acceptedStarterPlans) } : {}),
     ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
     ...(input.budgetPlans?.length ? { budgetPlans: byId(input.budgetPlans) } : {}),
+    ...(input.chapterTasks?.length ? { chapterTasks: byId(input.chapterTasks) } : {}),
     ...(input.chapters?.length ? { chapters: byId(input.chapters) } : {}),
     ...(input.rituals?.length ? { rituals: byId(input.rituals) } : {}),
     ...(input.moves?.length ? { moves: byId(input.moves) } : {}),

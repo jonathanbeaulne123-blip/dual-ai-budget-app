@@ -1,0 +1,38 @@
+{
+  "src/hearthside/Hearthside.tsx": {
+    "before": "a5f2584abcc8caf2c54f1728604dcf6b8d7c28cb",
+    "after": "48dab404f12e1a4132e6cc5f75194434bac05f1d"
+  },
+  "src/hearthside/contracts.ts": {
+    "before": "2ac3bfd815a7949d3b4c3dfcc33545378ae52fd1",
+    "after": "06b8a834698724433a3100e15227d92d11bf7987"
+  },
+  "src/hearthside/routes.ts": {
+    "before": "91329b2ce03f320ce6f97552bb9695fdde8c966d",
+    "after": "bc004d4e1e56e07e04f339029aa40f7f3eae92ff"
+  },
+  "src/ledgerSync/authority.ts": {
+    "before": "855180fa1c12c1c35c948267699b58cda420edfc",
+    "after": "69f654ef0153df0b346c60b153595f51894037ce"
+  },
+  "src/ledgerSync/client.ts": {
+    "before": "703d22d459311b80ed51e8ba77541a35a6aa87e9",
+    "after": "081191250a7b714604b17b3cee613302abcd55b1"
+  },
+  "src/ledgerSync/registry.ts": {
+    "before": "1c06aba656de413538ea540e879508d49f12d3d5",
+    "after": "42d2a15c333c9fb46cc61b9f49f55b6936a89723"
+  },
+  "src/ledgerSync/resources.ts": {
+    "before": "31eaed34194717cd1b60c0cb1af32bf50174e35e",
+    "after": "5ecb61f79aaef9ac678e64eff1512fb0c2d01c57"
+  },
+  "workers/ledgerRoom.ts": {
+    "before": "6e1cbcfd9af723b2df4e2ab766c54d543762af12",
+    "after": "279afd16d4be88c80d25b5e114184294ea1b576f"
+  },
+  "workers/ledgerSync.ts": {
+    "before": "552c06ccdd156eb9804138b3fdfb687e25d01866",
+    "after": "1e54a49102607ebed0e383187cad3970e8067532"
+  }
+}

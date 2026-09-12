@@ -1,0 +1,55 @@
+import {useEffect,useRef,useState} from 'react';
+import type {Household} from '../core/types.ts';
+import {formatCad} from '../core/money.ts';
+import type {KitchenCommand} from '../kitchenCommand.ts';
+import {ConfirmSheet} from '../Confirm.tsx';
+import {KittyBankRoom,type KittySubmissionReader} from '../kitty/KittyBankRoom.tsx';
+import {canonical} from '../ledgerSync/patch.ts';
+import {commitHearthside} from './commands.ts';
+import type {SharedExperience} from './contracts.ts';
+import {acceptedCreatedBank,type BankScope,type KittyAcceptedCommandReader} from './bankReceipt.ts';
+import {bankCreationKey,readBankCreation} from './bankCreation.ts';
+import {boundedBankSubmission} from './BankCreationSurface.tsx';
+import {acceptedBankLink,assertBankLinkReview,bankJourneyKey,newBankJourney,readBankJourney,reviewBankLink,saveBankJourney,type ExperienceBankJourney} from './bankJourney.ts';
+import './experienceBank.css';
+
+export function ExperienceBankEntry(props:{household:Household;experience:SharedExperience;identity:string;memberId:string;connected:boolean;busy?:boolean;canStart:boolean;onCommand:KitchenCommand;onReadSubmission?:KittySubmissionReader;onReadAcceptedCommand?:KittyAcceptedCommandReader}){
+ const {household:h,experience,identity,memberId,connected,busy,canStart,onCommand,onReadSubmission,onReadAcceptedCommand}=props,scope:BankScope={identity,environment:h.environment,householdId:h.householdId,memberId},scopeKey=canonical(scope);
+ const [restored]=useState(()=>{try{return{journey:readBankJourney(localStorage,scope,experience.id),error:''};}catch{return{journey:null,error:'The saved bank connection could not be read. Keep it for recovery before starting another bank.'};}}),[journey,setJourney]=useState(restored.journey),[open,setOpen]=useState(false),[saving,setSaving]=useState(false),[notice,setNotice]=useState(restored.error),[rejected,setRejected]=useState(false),[showReview,setShowReview]=useState(false);
+ const live=useRef({key:scopeKey,abort:new AbortController()}),lock=useRef(false),latest=useRef(h);latest.current=h;
+ if(live.current.key!==scopeKey){live.current.abort.abort();live.current={key:scopeKey,abort:new AbortController()};}
+ useEffect(()=>{if(live.current.abort.signal.aborted)live.current={key:scopeKey,abort:new AbortController()};const pop=()=>{const active=window.history.state?.hearthsideBankJourney;setOpen(active?.scope===scopeKey&&active?.experienceId===experience.id);};pop();window.addEventListener('popstate',pop);return()=>{live.current.abort.abort();window.removeEventListener('popstate',pop);};},[scopeKey,experience.id]);
+ const buttonId=`hearthside-bank-intention-${experience.id}`;
+ function store(value:ExperienceBankJourney){saveBankJourney(localStorage,value);setJourney(value);}
+ function begin(){try{const value=journey??newBankJourney(scope,experience,window.location.pathname+window.location.search,buttonId);store(value);window.history.replaceState({...window.history.state,hearthsideFocus:buttonId},'',window.location.href);window.history.pushState({...window.history.state,hearthsideBankJourney:{scope:scopeKey,experienceId:experience.id}},'',window.location.href);setOpen(true);setShowReview(Boolean(value.link));}catch(error){setNotice(error instanceof Error?error.message:'The bank journey could not be kept on this device.');}}
+ function close(){setOpen(false);setShowReview(false);if(window.history.state?.hearthsideBankJourney?.scope===scopeKey){const state={...window.history.state};delete state.hearthsideBankJourney;window.history.replaceState(state,'',journey?.returnPath??window.location.href);}requestAnimationFrame(()=>document.getElementById(journey?.focusId??buttonId)?.focus());}
+ function leaveCreation(){if(!journey)return;try{const review=readBankCreation(localStorage,scope,journey.context);if(review?.attempted){close();return;}localStorage.removeItem(bankCreationKey(scope,journey.context));store({...journey,mode:'choose'});}catch{close();}}
+ function change(value:Partial<ExperienceBankJourney>){if(!journey)return;try{store({...journey,...value});setNotice('');}catch{setNotice('This device could not preserve the bank connection. Try again before continuing.');}}
+ function prepare(){if(!journey||journey.link?.attempted&&!rejected)return;try{store({...journey,link:reviewBankLink(h,journey)});setShowReview(true);setRejected(false);setNotice('');}catch(error){setNotice(error instanceof Error?error.message:'Choose an available shared bank.');}}
+ async function created({confirmationId,goalId}:{confirmationId:string;goalId:string}){
+  if(!journey||!onReadAcceptedCommand)throw Error('BANK_RECEIPT_REQUIRED');const generation=live.current,value=await onReadAcceptedCommand(confirmationId,generation.abort.signal);if(live.current!==generation||generation.abort.signal.aborted)throw Error('SCOPE_CLOSED');if(!value)throw Error('BANK_RECEIPT_CATCHING_UP');const goal=acceptedCreatedBank(value,confirmationId,scope,'household');if(goal.id!==goalId)throw Error('BANK_RECEIPT_MISMATCH');store({...journey,bankId:goal.id,creationId:confirmationId,mode:'existing',link:null});setNotice('Your bank was created. Review its connection to this intention.');
+ }
+ async function confirm(){
+  const j=journey;if(!j?.link||lock.current||busy||!connected||!onReadAcceptedCommand)return;const generation=live.current,signal=generation.abort.signal,current=()=>live.current===generation&&!signal.aborted;lock.current=true;setSaving(true);setNotice('Checking the connection receipt…');
+  try{
+   let accepted=j.link.attempted?await onReadAcceptedCommand(j.link.id,signal):null;if(!current())return;
+   if(!accepted){const status=j.link.attempted&&onReadSubmission?await onReadSubmission(j.link.id):'missing';if(!current())return;if(status==='rejected'){setRejected(true);setNotice('The connection changed before acceptance. Review the current intention and bank.');return;}if(status==='accepted'||status==='pending'){setNotice('The original connection is still catching up. Check its receipt again.');return;}
+    // An exact old review never silently adopts a newer intention or bank meaning.
+    assertBankLinkReview(latest.current,j);const attempted={...j,link:{...j.link,attempted:true}};store(attempted);let definite=false;
+    await boundedBankSubmission(Promise.resolve(onCommand(currentHousehold=>{if(!current()||currentHousehold.environment!==scope.environment||currentHousehold.householdId!==scope.householdId)throw Error('SCOPE_CLOSED');assertBankLinkReview(currentHousehold,j);return commitHearthside(currentHousehold,{version:1,id:j.link!.id,scope:{environment:scope.environment,householdId:scope.householdId,memberId},operation:j.link!.operation});},{confirmationId:j.link.id,recoverConfirmation:j.link.attempted,onDefinitiveRejected:()=>{definite=true;if(current())setRejected(true);}})),signal);
+    if(!current())return;accepted=await onReadAcceptedCommand(j.link.id,signal);if(!current())return;if(!accepted){if(definite)setRejected(true);setNotice(definite?'The connection was rejected. Review the current intention; your bank remains available.':'Acceptance is not confirmed. Keep this connection review and check the same receipt.');return;}
+   }
+   const linked=acceptedBankLink(accepted,j);localStorage.removeItem(bankJourneyKey(scope,experience.id));localStorage.removeItem(bankCreationKey(scope,j.context));setJourney(null);setShowReview(false);setNotice(linked?'The accepted bank is connected to this intention.':'The connection was accepted, then changed. Review the current intention before connecting it again.');close();
+  }catch(error){if(current()){if(error instanceof Error&&error.message==='BANK_LINK_REVIEW_CHANGED')setRejected(true);setNotice(error instanceof Error?error.message:'The connection receipt is unavailable. Your bank and review remain.');}}
+  finally{if(current()){lock.current=false;setSaving(false);}}
+ }
+ const goal=journey?.bankId?h.goals.find(g=>g.id===journey.bankId&&g.shared):undefined,changed=journey&&canonical(experience)!==canonical(journey.experience);
+ return <section className="experience-bank-entry" aria-label="A bank for this intention">
+  <button id={buttonId} disabled={!connected||!canStart||experience.state==='archived'||Boolean(restored.error)||!onReadAcceptedCommand} onClick={begin}>{journey?'Resume this bank connection':'Choose a bank for this'}</button>{notice&&<p role="status">{notice}</p>}
+  {open&&journey&&<div className="experience-bank-worktable"><header><h3>A place for “{experience.title}”</h3><button type="button" onClick={close}>Return to this intention</button></header><p>{experience.intention}</p><p>A bank is optional. Creating one does not contribute money or change this intention.</p>{changed&&<p role="status">This intention changed after you opened the bank. Review its current words before connecting anything.</p>}
+   {journey.bankId?<><p>{goal?`${goal.name} · ${formatCad(goal.targetCents)} target`:'The accepted bank is not available in this household snapshot yet.'}</p><button type="button" disabled={!goal||saving||busy||Boolean(journey.link?.attempted&&!rejected)} onClick={prepare}>Review this connection</button>{journey.link&&<button type="button" onClick={()=>setShowReview(true)}>Open saved connection review</button>}</>:<><div className="experience-bank-choices"><button type="button" onClick={()=>change({mode:'new'})}>Create a new shared bank</button><button type="button" onClick={()=>change({mode:'existing'})}>Choose an existing shared bank</button></div>{journey.mode==='existing'&&<label>Shared bank<select value="" onChange={e=>{if(e.target.value)change({bankId:e.target.value,creationId:null});}}><option value="">Choose a bank</option>{h.goals.filter(g=>g.shared&&!g.envelope?.archivedAt&&g.status!=='retired').map(g=><option key={g.id} value={g.id}>{g.name} · {formatCad(g.targetCents)} target</option>)}</select></label>}</>}
+   {journey.mode==='new'&&!journey.bankId&&<KittyBankRoom household={h} view="household" memberId={memberId} identity={identity} busy={busy||saving} creationContext={journey.context} onBankCreated={created} onReadAcceptedCommand={onReadAcceptedCommand} onReadSubmission={onReadSubmission} onCommand={onCommand} returnTo="Hearthside" onClose={leaveCreation}/>}
+   {showReview&&journey.link&&<ConfirmSheet key={journey.link.id} title="Connect this bank to our intention" body={`${journey.link.operation.value.title} · ${goal?.name??'The reviewed shared bank'}`} extra="This saves one connection. It does not change the target, assign backing, or move money." content={<><p>{journey.link.operation.value.intention}</p><p>Bank: {goal?.name??journey.bankId}</p><button type="button" onClick={close}>Return with connection review saved</button></>} notice={notice||undefined} confirmLabel={journey.link.attempted?'Check saved connection':'Final Confirm'} confirmDisabled={rejected||!connected} busy={busy||saving} onConfirm={()=>void confirm()} onCancel={()=>{if(!journey.link?.attempted||rejected){change({link:null});setRejected(false);}setShowReview(false);}}/>}
+  </div>}
+ </section>;
+}

@@ -1,3 +1,8 @@
+import {decodeRestorePointOptions,decodeSharedLifeRestorePreview,decodeRestoreSelection,type SharedLifeRestoreTarget} from '../hearthside/sharedLifeRestoreContracts.ts';
+import type {KittyAcceptedCommand} from '../hearthside/bankReceipt.ts';
+import {hasChapterAgreementData,isChapterAgreementCommand} from "../core/chapterAuthority.ts";
+import {decodeHearthsideContent} from '../hearthside/contracts.ts';
+import { hasHearthsideData } from '../hearthside/commands.ts';
 import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
@@ -65,6 +70,8 @@ export class LedgerSyncClient {
   private confirming = new Map<string,Promise<CommitResult>>();
   private ready = false;
   private companionProfileVersion = 0;
+  private hearthsideVersion = 0;
+  private kittyDesignVersion = 0;
   private companionPlayVersion = 0;
   private companionDiscoveryVersion = 0;
   private companionWardrobeVersion = 0;
@@ -72,6 +79,7 @@ export class LedgerSyncClient {
   private herculesActionsEnabled = false;
   private nativeCalendarVersion = 0;
   private taskPlannerVersion = 0;
+  private chapterAgreementVersion = 0;
   private planDecisionVersion = 0;
   private goalEnvelopeVersion = 0;
   private initialResolve?: () => void;
@@ -230,6 +238,8 @@ export class LedgerSyncClient {
                 throw new Error("REPLICA_CHECKSUM");
               }
               this.companionProfileVersion = message.companionProfileVersion === 1 ? 1 : 0;
+              this.hearthsideVersion = message.hearthsideVersion === 1 ? 1 : 0;
+              this.kittyDesignVersion = message.kittyDesignVersion === 1 ? 1 : 0;
               this.companionPlayVersion = message.companionPlayVersion === 1 ? 1 : 0;
               this.companionDiscoveryVersion = message.companionDiscoveryVersion === 1 ? 1 : 0;
               this.companionWardrobeVersion = message.companionWardrobeVersion === 1 ? 1 : 0;
@@ -237,6 +247,7 @@ export class LedgerSyncClient {
               this.herculesActionsEnabled = message.herculesActionsEnabled === true;
               this.nativeCalendarVersion = message.nativeCalendarVersion === 1 ? 1 : 0;
               this.taskPlannerVersion = message.taskPlannerVersion === 1 ? 1 : 0;
+              this.chapterAgreementVersion = message.chapterAgreementVersion === 1 ? 1 : 0;
               this.goalEnvelopeVersion = message.goalEnvelopeVersion === 1 ? 1 : 0;
               this.planDecisionVersion = message.planDecisionVersion === 1 ? 1 : 0;
               this.ready = true;
@@ -442,6 +453,7 @@ export class LedgerSyncClient {
   }
   private async queueConfirmation(candidate:Household,id:string,onQueued?:()=>void):Promise<CommitResult> {
     const capture=capturedIntent(candidate)!;
+    if ((hasChapterAgreementData(candidate) || capture.steps.some(step => isChapterAgreementCommand(step.kind))) && (!this.ready || this.chapterAgreementVersion !== 1)) throw new LedgerCommandRejectedError("CHAPTER_UPDATE_REQUIRED: Connect to an updated Hearth before saving shared Chapter work.");
     if (hasGoalEnvelopeData(candidate) && this.goalEnvelopeVersion !== 1) throw new LedgerCommandRejectedError("KITTY_UPDATE_REQUIRED: Connect to updated Hearth before saving this bank. Your review remains open.");
     const extendedPlan = hasPlanDecisionData(candidate) || capture.steps.some(step => {
       const input = step.args[0] as { lines?: Array<{ decision?: unknown }>; changedLines?: Array<{ decision?: unknown }>; changedAssumptions?: unknown; checkpoint?: unknown; outcomes?: Array<{ evidenceIds?: unknown }>; planReference?: unknown } | undefined;
@@ -460,6 +472,8 @@ export class LedgerSyncClient {
     if (capture.steps.some(step => step.kind === "commitCompanion" && (step.args[0] as { operation?: { kind?: string } })?.operation?.kind === "suggestion.set") && this.companionDiscoveryVersion !== 1) {
       throw new LedgerCommandRejectedError("HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving suggestions.");
     }
+    if ((hasHearthsideData(candidate) || capture.steps.some(s => s.kind === 'commitHearthside')) && (!this.ready || this.hearthsideVersion !== 1)) throw new LedgerCommandRejectedError('HEARTHSIDE_UPDATE_REQUIRED: Connect to the updated Hearth to save this experience.');
+    if ((candidate.hearthside?.designs?.length || candidate.goals.some(g => g.envelope?.designRef)) && (!this.ready || this.kittyDesignVersion !== 1)) throw new LedgerCommandRejectedError('KITTY_DESIGN_UPDATE_REQUIRED: Connect to the updated Hearth to preserve collaborative artwork.');
     if ((hasPlayData(candidate) || capture.steps.some(isPlayStep)) && (!this.ready || this.companionPlayVersion!==1)) throw new LedgerCommandRejectedError('PLAY_UPDATE_REQUIRED: Connect to the updated Hearth to save this room.');
     const replica=this.replica;
     if(!replica)throw new Error("LOCAL_REPLICA_REQUIRED");
@@ -513,6 +527,53 @@ export class LedgerSyncClient {
     const rejected = await this.store.rejected();
     if (this.stopped) throw new Error("SCOPE_CLOSED");
     return rejected.some(row => row.command.id === id) ? "rejected" : "missing";
+  }
+  async sharedLifeRestorePoints(signal?:AbortSignal){
+    if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');const token=await this.options.token();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
+    const response=await fetch(this.path('points'),{headers:{Authorization:`Bearer ${token}`},signal,cache:'no-store'});if(!response.ok)throw Error('SHARED_LIFE_RESTORE_UNAVAILABLE');
+    const result=decodeRestorePointOptions(await response.json());if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');return result;
+  }
+  async sharedLifeRestorePreview(input:{pointId:string;selection:SharedLifeRestoreTarget[]},signal?:AbortSignal){
+    if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');const token=await this.options.token();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
+    const body=JSON.stringify({pointId:input.pointId,selection:decodeRestoreSelection(input.selection)});
+    const response=await fetch(this.path('shared-life-restore'),{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body,signal,cache:'no-store'});
+    const raw=await response.json();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
+    if(!response.ok)throw Error(typeof raw?.error==='string'?raw.error:'SHARED_LIFE_RESTORE_UNAVAILABLE');
+    const result=decodeSharedLifeRestorePreview(raw);if(result.audience.environment!==this.options.scope.environment||result.audience.householdId!==this.options.scope.householdId||!result.audience.memberIds.includes(this.options.scope.memberId))throw Error('SCOPE_CLOSED');return result;
+  }
+  async hearthsideContent(signal?:AbortSignal){
+    if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
+    const token=await this.options.token();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
+    const response=await fetch(this.path('hearthside-content'),{headers:{Authorization:`Bearer ${token}`},signal,cache:'no-store'});
+    if(!response.ok)throw Error('HEARTHSIDE_CONTENT_UNAVAILABLE');
+    const content=decodeHearthsideContent(await response.json());
+    if(this.stopped||signal?.aborted||content.environment!==this.options.scope.environment||content.householdId!==this.options.scope.householdId||!content.memberIds.includes(this.options.scope.memberId))throw Error('SCOPE_CLOSED');
+    return content;
+  }
+  /** A recovered receipt may precede replica delivery. Never animate or resize from that stale replica. */
+  async acceptedCommand(id:string,signal?:AbortSignal):Promise<KittyAcceptedCommand|null>{
+    await this.localReady;
+    const current=()=>{if(this.stopped||!this.store||signal?.aborted)throw Error('SCOPE_CLOSED');};current();
+    const token=await this.options.token();current();
+    const response=await fetch(this.path(`receipt?id=${encodeURIComponent(id)}`),{headers:{Authorization:`Bearer ${token}`},signal,cache:'no-store'}),value=await response.json();current();
+    if(!response.ok){if(value.error==='RECEIPT_NOT_FOUND')return null;throw Error('RECEIPT_RECOVERY_FAILED');}
+    const receipt=value.receipt;
+    if(value.version!==2||receipt?.id!==id||receipt.actor!==this.options.scope.memberId||!Number.isSafeInteger(receipt.sequence)||receipt.sequence<0||typeof receipt.commandKind!=='string'||!Array.isArray(receipt.postedIds))throw Error('RECEIPT_RECOVERY_REQUIRED');
+    if(!this.replica||this.replica.sequence<receipt.sequence){this.retryPending();return null;}
+    const household=await this.household(this.replica);current();
+    if(household.environment!==this.options.scope.environment||household.householdId!==this.options.scope.householdId)throw Error('SCOPE_CLOSED');
+    return {environment:this.options.scope.environment,householdId:this.options.scope.householdId,memberId:this.options.scope.memberId,receipt,household};
+  }
+  async acceptedHousehold(id:string):Promise<Household|null>{
+    await this.localReady;
+    if(this.stopped||!this.store)throw Error('SCOPE_CLOSED');
+    const response=await fetch(this.path(`receipt?id=${encodeURIComponent(id)}`),{headers:{Authorization:`Bearer ${await this.options.token()}`}}),value=await response.json();
+    if(this.stopped)throw Error('SCOPE_CLOSED');
+    if(!response.ok){if(value.error==='RECEIPT_NOT_FOUND')return null;throw Error('RECEIPT_RECOVERY_FAILED');}
+    const receipt=value.receipt;
+    if(value.version!==2||receipt?.id!==id||receipt.actor!==this.options.scope.memberId||!Number.isSafeInteger(receipt.sequence)||receipt.sequence<0)throw Error('RECEIPT_RECOVERY_REQUIRED');
+    if(!this.replica||this.replica.sequence<receipt.sequence){this.retryPending();return null;}
+    const household=await this.household(this.replica);if(this.stopped)throw Error('SCOPE_CLOSED');return household;
   }
   async verifyImport() {
     const response=await fetch(this.path('parity'),{method:'POST',headers:{Authorization:`Bearer ${await this.options.token()}`}});

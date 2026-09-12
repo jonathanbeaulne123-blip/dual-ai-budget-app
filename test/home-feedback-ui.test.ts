@@ -32,6 +32,10 @@ describe("F-014 and F-015 Home actions", () => {
     expect(command).not.toHaveBeenCalled(); expect(JSON.stringify(h)).toBe(snapshot);
     h.moves![0]!.text = "A custom question for our next conversation";
     await render(h, onOpenSetup);
+    // A stale legacy label cannot override the adopted Task.
+    expect(host.querySelector(".chapter-setup")).not.toBeNull();
+    h.tasks!.find(task => task.id === h.moves![0]!.taskId)!.title = h.moves![0]!.text;
+    await render(h, onOpenSetup);
     expect(host.querySelector(".chapter-setup")).toBeNull();
   });
 

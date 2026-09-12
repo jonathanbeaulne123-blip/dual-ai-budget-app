@@ -46,12 +46,16 @@
     "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
   },
   "dependencies": {
+    "@capacitor/core": "8.5.2",
     "@cloudflare/sandbox": "0.12.9",
     "@electric-sql/pglite": "^0.5.5",
     "@google/genai": "2.22.0",
+    "@hearth/browser-ar": "workspace:*",
     "@supabase/supabase-js": "^2.112.4",
     "agents": "0.23.0",
+    "fflate": "0.8.2",
     "jsqr": "1.4.0",
+    "manifold-3d": "3.5.3",
     "pdfjs-dist": "^6.3.289",
     "postgres": "^3.4.9",
     "react": "^19.1.1",

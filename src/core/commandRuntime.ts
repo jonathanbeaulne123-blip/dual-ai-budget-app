@@ -408,6 +408,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       commandKind: input.commandKind ?? "commit",
       materializationHash: input.commandKind === "updateChapters"
         ? await sha256Hex(commandMaterializationFacts({
+          chapterTasks: accepted.tasks?.filter(task => task.chapterSource),
           chapters: accepted.chapters,
           rituals: accepted.rituals,
           moves: accepted.moves,

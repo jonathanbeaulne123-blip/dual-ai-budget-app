@@ -45,7 +45,7 @@ export type HerculesNoticeView = {
 };
 
 const MODEL_OPERATIONAL_KEYS = new Set([
-  "companionProfile", "chats", "memories",
+  "hearthside", "companionProfile", "chats", "memories",
   "inviteCode",
   "linked",
   "revision",

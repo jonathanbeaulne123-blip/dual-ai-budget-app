@@ -1,3 +1,7 @@
+import { consumeWorkspaceRpc } from '../../src/hearthside/workspaceRpc.ts';
+import { createExperienceWorkspaceProject, assertAcceptedWorkspaceExperience, experienceCommandNeedsFreshContext, adoptReviewedExperienceCopy } from '../../src/hearthside/workspaceAuthority.ts';
+import { publishExperienceArtifact, withdrawExperienceArtifact, validateArtifactSource, type ExperienceArtifactReview, type ExperiencePublicationPorts } from '../../src/hearthside/workspacePublication.ts';
+import { workspaceExperienceDigest } from '../../src/hearthside/workspaceContext.ts';
 import { conversationModel, freeGeminiOnly, FLASH_LITE_MODEL, FLASH_MODEL } from '../geminiFree.js';
 import { workspaceConfirmationId } from '../../src/workspace/actionBridge.ts';
 import { Agent, getAgentByName } from 'agents';
@@ -20,6 +24,8 @@ const collections = ['messages', 'artifacts', 'evidence', 'runs', 'proposals'] a
 /** SQL only: never setState/broadcast private material through generic Agent synchronization. */
 export class HerculesWorkspace extends Agent<WorkspaceEnv> {
   onStart() {
+    this.sql`CREATE TABLE IF NOT EXISTS workspace_artifact_reviews (id TEXT PRIMARY KEY,digest TEXT NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS workspace_source_cleanup (object_key TEXT PRIMARY KEY)`;
     this.sql`CREATE TABLE IF NOT EXISTS workspace_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS workspace_projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS workspace_items (project TEXT NOT NULL, kind TEXT NOT NULL, id TEXT NOT NULL, position INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(project,kind,id))`;
@@ -51,6 +57,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
     for (const key of collections) (meta[key] as unknown[]) = [];
     this.ctx.storage.transactionSync(() => {
       this.sql`INSERT OR REPLACE INTO workspace_projects VALUES (${project.id},${JSON.stringify(meta)})`;
+      for(const id of project.deletedArtifactIds??[])this.sql`DELETE FROM workspace_items WHERE project=${project.id} AND kind='artifacts' AND id=${id}`;
       for (const key of collections) project[key].forEach((row, index) => {
         this.sql`INSERT OR REPLACE INTO workspace_items VALUES (${project.id},${key},${row.id},${index},${JSON.stringify(row)})`;
       });
@@ -104,14 +111,32 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
     }
     throw new Error('PROPOSAL_MISSING');
   }
+  private hearthsideAuthority(scope:Scope){return this.env.LEDGER_ROOMS.get(this.env.LEDGER_ROOMS.idFromName(`${scope.environment}/${scope.householdId}`));}
+  private async checkExperience(scope:Scope,project:WorkspaceProject){if(project.experience){const accepted=consumeWorkspaceRpc(await this.hearthsideAuthority(scope).workspaceExperience(scope,project.experience.context.id));this.authenticate(scope);assertAcceptedWorkspaceExperience(project,accepted);}}
+  private async cleanDeletedSources(){for(const row of this.sql<{object_key:string}>`SELECT object_key FROM workspace_source_cleanup`){await this.env.HERCULES_FILES.delete(row.object_key);this.sql`DELETE FROM workspace_source_cleanup WHERE object_key=${row.object_key}`;}}
+  private async experiencePublicationPorts(scope:Scope):Promise<ExperiencePublicationPorts>{
+    const shared=await getAgentByName(this.env.HERCULES_SHARED_WORKSPACES,`${scope.environment}/${scope.householdId}`), room=this.hearthsideAuthority(scope);this.authenticate(scope);
+    return {assertCurrent:()=>this.authenticate(scope),claimReview:async(id,digest)=>{this.authenticate(scope);const old=this.sql<{digest:string}>`SELECT digest FROM workspace_artifact_reviews WHERE id=${id}`[0];if(old&&old.digest!==digest)throw new Error('DISCLOSURE_ID_REUSED');if(!old)this.sql`INSERT INTO workspace_artifact_reviews VALUES (${id},${digest})`;},
+      prepared:async id=>consumeWorkspaceRpc(await shared.preparedExperienceFor(scope,id)),prepare:async copy=>consumeWorkspaceRpc(await shared.prepareExperience(scope,copy)),
+      validateSource:async review=>{const context=consumeWorkspaceRpc(await room.workspaceExperience(scope,review.experienceId));this.authenticate(scope);validateArtifactSource(this.getProject(review.projectId),context,review,scope.memberId);},
+      accept:async publication=>consumeWorkspaceRpc(await room.workspaceAcceptArtifact(scope,publication)),activate:(id,receipt)=>shared.activateExperience(scope,id,receipt),revoke:async id=>consumeWorkspaceRpc(await shared.revokeExperience(scope,id)),withdraw:async publication=>consumeWorkspaceRpc(await room.workspaceWithdrawArtifact(scope,publication))};
+  }
+  async shareExperienceFor(scope:Scope,review:ExperienceArtifactReview,confirmDigest:string){this.authenticate(scope);return publishExperienceArtifact(await this.experiencePublicationPorts(scope),scope,review,confirmDigest);}
+  async withdrawExperienceFor(scope:Scope,id:string){this.authenticate(scope);return withdrawExperienceArtifact(await this.experiencePublicationPorts(scope),scope,id);}
   async command(scope: Scope, authToken: string, body: { commandId: string; projectId: string; expectedRevision: number; command: WorkspaceCommand }) {
     this.authenticate(scope);
     workspaceId(body.commandId); workspaceId(body.projectId);
     const fingerprint = await hashText(canonical(body)), existing = this.sql<{ fingerprint: string }>`SELECT fingerprint FROM workspace_commands WHERE id=${body.commandId}`[0];
     if (existing && existing.fingerprint !== fingerprint) throw new Error('COMMAND_ID_REUSED');
     if (!existing) {
-      let p: WorkspaceProject;
-      if (body.command.type === 'create') {
+      let p: WorkspaceProject;const deletedSourceKeys:string[]=[];
+      if(body.command.type==='create-experience'){
+        const cmd=body.command;const accepted=consumeWorkspaceRpc(await this.hearthsideAuthority(scope).workspaceExperience(scope,cmd.context.id));this.authenticate(scope);const duplicate=this.sql<{fingerprint:string}>`SELECT fingerprint FROM workspace_commands WHERE id=${body.commandId}`[0];if(duplicate){if(duplicate.fingerprint!==fingerprint)throw new Error('COMMAND_ID_REUSED');return this.snapshotFor(scope);}
+        if(cmd.id!==body.projectId||body.expectedRevision!==0)throw new Error('INVALID_COMMAND');
+        if(this.sql`SELECT id FROM workspace_projects WHERE id=${body.projectId}`.length)throw new Error('PROJECT_EXISTS');
+        if(this.sql`SELECT id FROM workspace_projects`.length>=100)throw new Error('PROJECT_LIMIT');
+        p=createExperienceWorkspaceProject(scope,body.projectId,cmd.context,cmd.confirmDigest,accepted,new Date().toISOString());
+      }else if (body.command.type === 'create') {
         if (this.sql`SELECT id FROM workspace_projects WHERE id=${body.projectId}`.length) throw new Error('PROJECT_EXISTS');
         if (this.sql`SELECT id FROM workspace_projects`.length >= 100) throw new Error('PROJECT_LIMIT');
         p = createWorkspaceProject(body.projectId, body.command.title, scope.memberId, new Date().toISOString());
@@ -119,7 +144,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
         const cmd = body.command; workspaceId(cmd.id);
         const before = this.getProject(body.projectId);
         if (before.revision !== body.expectedRevision) throw new Error('WORKSPACE_CHANGED');
-        if (before.artifacts.some(a => a.id === cmd.id)) throw new Error('ARTIFACT_EXISTS');
+        if (before.artifacts.some(a => a.id === cmd.id) || before.deletedArtifactIds?.includes(cmd.id)) throw new Error('ARTIFACT_EXISTS');
         if (cmd.filename.length > 180) throw new Error('FILENAME_TOO_LONG');
         const sourceHash = await hashText(cmd.base64);
         const parsed = await importWorkspaceFile(this.env, await hashText(`${scope.environment}/${scope.householdId}/${scope.memberId}/${body.projectId}/${cmd.id}/${crypto.randomUUID()}`), cmd.filename, cmd.base64);
@@ -133,7 +158,24 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
           parentId: null, author: 'user', createdAt: new Date().toISOString(), evidenceIds: [cmd.id], validation: { status: 'unchecked', details: 'Imported source text; verify tables and extracted details against the original.' } });
         p.evidence.push({ id: cmd.id, origin: 'external', scope: 'personal', title: cmd.filename, source: `attachment:${cmd.id}`, sourceVersion: sourceHash, observedAt: new Date().toISOString() });
         p.revision++;
-      } else p = applyWorkspaceCommand(this.getProject(body.projectId), body.command, body.expectedRevision, new Date().toISOString());
+      } else {
+        let before=this.getProject(body.projectId);
+        if(before.experience&&experienceCommandNeedsFreshContext(body.command)){
+          const selected=body.command.type==='refresh-experience'?body.command.context:before.experience.context;
+          const accepted=consumeWorkspaceRpc(await this.hearthsideAuthority(scope).workspaceExperience(scope,selected.id));this.authenticate(scope);const duplicate=this.sql<{fingerprint:string}>`SELECT fingerprint FROM workspace_commands WHERE id=${body.commandId}`[0];if(duplicate){if(duplicate.fingerprint!==fingerprint)throw new Error('COMMAND_ID_REUSED');return this.snapshotFor(scope);}before=this.getProject(body.projectId);
+          if(workspaceExperienceDigest(selected)!==workspaceExperienceDigest(accepted))throw new Error('EXPERIENCE_CONTEXT_CHANGED');
+        }
+        if(body.command.type==='adopt-experience-copy'){
+          if(!before.experience)throw new Error('ARTIFACT_SOURCE_FORBIDDEN');
+          const shared=await getAgentByName(this.env.HERCULES_SHARED_WORKSPACES,`${scope.environment}/${scope.householdId}`), copy=consumeWorkspaceRpc(await shared.experienceCopyFor(scope,before.experience.context.id,body.command.copyId));this.authenticate(scope);const duplicate=this.sql<{fingerprint:string}>`SELECT fingerprint FROM workspace_commands WHERE id=${body.commandId}`[0];if(duplicate){if(duplicate.fingerprint!==fingerprint)throw new Error('COMMAND_ID_REUSED');return this.snapshotFor(scope);}before=this.getProject(body.projectId);
+          const cmd=body.command;if(!copy)throw new Error('ARTIFACT_SOURCE_FORBIDDEN');
+          p=adoptReviewedExperienceCopy(before,copy,cmd,body.expectedRevision,new Date().toISOString());
+        }else p=applyWorkspaceCommand(before,body.command,body.expectedRevision,new Date().toISOString());
+        if(body.command.type==='delete-artifact'){
+          const id=body.command.artifactId, source=before.evidence.find(e=>e.id===id&&e.source===`attachment:${id}`);
+          if(source){const key=`${scope.environment}/${scope.householdId}/${scope.memberId}/${before.id}/original-${id}-${source.sourceVersion}`;deletedSourceKeys.push(key);}
+        }
+      }
       if (body.command.type === 'message' || body.command.type === 'follow-up' && body.command.at) {
         const scheduled = body.command.type === 'follow-up' ? body.command : null;
         const runId = body.command.type === 'message' ? body.command.id : body.commandId;
@@ -155,10 +197,12 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
         }
       }
       this.ctx.storage.transactionSync(() => {
+        for(const key of deletedSourceKeys)this.sql`INSERT OR IGNORE INTO workspace_source_cleanup VALUES (${key})`;
         this.saveProject(p);
         this.sql`INSERT INTO workspace_commands VALUES (${body.commandId},${fingerprint},${body.projectId})`;
       });
     }
+    if(body.command.type==='delete-artifact')await this.cleanDeletedSources();
     const cmd = body.command;
     if (cmd.type === 'message' || cmd.type === 'control' && cmd.action === 'resume' || cmd.type === 'follow-up' && cmd.at) {
       const continuation=cmd.type==='control'?this.getProject(body.projectId).runs.find(r=>r.id===body.commandId && r.continuationOf===cmd.runId):null;
@@ -248,6 +292,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
     const generation = run.generation;
     if (this.env.HERCULES_WORKSPACE_EXECUTION !== 'true') { run.status = 'paused'; run.progress = 'Saved. Background execution awaits activation.'; this.saveProject(p); return; }
     try {
+      await this.checkExperience(scope,p);
       const execution = this.execution(runId);
       execution.activeAttempt = attempt; this.saveExecution(runId, execution);
       if (!execution.grant.id) execution.grant = await issueGrant(this.env, scope, token, execution.grant);
@@ -285,6 +330,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
       let modelProject: WorkspaceProject | undefined;
       const scope = await leaseGrant(this.env, e.grant); this.authenticate(scope);
       p = this.getProject(projectId); run = p.runs.find(r => r.id === runId)!;
+      await this.checkExperience(scope,p);
       if (!currentRun()) return { continue: false };
       if (Object.keys(run.budget).some(key => run.budget[key as keyof typeof run.budget] > scope.budget[key as keyof typeof scope.budget])) throw new Error('GRANT_BUDGET_MISMATCH');
       run.status = 'running'; run.progress = e.pending ? 'Working with the results' : 'Thinking through your project';
@@ -300,6 +346,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
           const current = this.getProject(projectId), currentRun = current.runs.find(r => r.id === runId)!;
           if (currentRun.generation !== generation || !runCanAdvance(current, currentRun) || this.execution(runId).activeAttempt !== attempt) return { continue: false };
           const freshScope = await leaseGrant(this.env, e.grant);
+          await this.checkExperience(freshScope,current);
           const id = `${runId}-${run.step}-${index}`;
           const receipt = this.sql<{ data: string }>`SELECT data FROM workspace_tool_receipts WHERE id=${id}`[0];
           if (receipt) { if (call.name === 'request_more_thinking' && JSON.parse(receipt.data).requested === true) moreThinking = true; responses.push({ functionResponse: { id: call.id, name: String(call.name), response: JSON.parse(receipt.data) } }); continue; }
@@ -309,6 +356,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
               project: current, id, now: new Date().toISOString(),
               readWeb: readPublicSource,
               read: async (name, args, view) => {
+                if(current.experience)throw new Error('EXPERIENCE_SCOPE_READ_DENIED');
                 if (!freshScope.permittedReads.includes(name)) throw new Error('READ_NOT_GRANTED');
                 const room = this.env.LEDGER_ROOMS.get(this.env.LEDGER_ROOMS.idFromName(`${freshScope.environment}/${freshScope.householdId}`));
                 return await room.workspaceQuery(freshScope, { name, args, view }) as unknown as Record<string, unknown>;

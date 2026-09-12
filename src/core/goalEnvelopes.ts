@@ -1,3 +1,4 @@
+import { decodeKittyDesignReference } from "../hearthside/designContracts.ts";
 import { isValidDateKey } from "./calendar.ts";
 import {
   projectedCountable,
@@ -52,6 +53,8 @@ export function shapeGoalEnvelope(value: unknown): GoalEnvelope | undefined {
     throw new ValidationError(
       "This Kitty Bank needs a compatible envelope reader. Reload Hearth.",
     );
+  if (row.designRef !== undefined && row.studio !== undefined) throw new ValidationError("This artwork has moved to the collaborative Studio. Reload Hearth.");
+  const designRef=row.designRef===undefined?undefined:decodeKittyDesignReference(row.designRef);
   const studio = shapeKittyStudio(row.studio);
   // Legacy readers (shelf seals, `.kitty-seal`) keep working: the displayed
   // piece's dip colour wins whenever it is one of the five named glazes.
@@ -67,6 +70,7 @@ export function shapeGoalEnvelope(value: unknown): GoalEnvelope | undefined {
     glaze,
     archivedAt: row.archivedAt,
     ...(studio !== undefined ? { studio } : {}),
+    ...(designRef!==undefined?{designRef}:{}),
   };
 }
 export function goalEnvelopeDependencies(

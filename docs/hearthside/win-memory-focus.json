@@ -1,0 +1,32 @@
+{
+  "sources": [
+    "src/hearthside/winMemory.ts",
+    "src/hearthside/winMemoryProvenance.ts",
+    "src/hearthside/winMemoryCaptions.ts",
+    "src/hearthside/WinMemoryReview.tsx",
+    "src/hearthside/WinMemorySource.tsx",
+    "src/hearthside/contracts.ts",
+    "src/hearthside/commands.ts",
+    "src/hearthside/memoryPublication.ts",
+    "src/HouseholdHome.tsx",
+    "src/core/chapters.ts",
+    "src/hearthside/projectorCanvas.ts",
+    "src/hearthside/projectorStory.ts",
+    "src/hearthside/guestProjection.ts",
+    "workers/hearthsideGuestSource.ts",
+    "workers/ledgerRoom.ts"
+  ],
+  "tests": [
+    "test/hearthside-win-memory.test.ts",
+    "test/hearthside-win-memory-ui.test.ts",
+    "test/hearthside-win-memory-runtime.test.ts",
+    "test/hearthside-contracts.test.ts",
+    "test/hearthside-memory-authority.test.ts",
+    "test/hearthside-projector.test.ts",
+    "test/hearthside-projector-authority.test.ts",
+    "test/hearthside-journeys.test.ts",
+    "test/home-feedback-ui.test.ts",
+    "test/vision-v2-chapters.test.ts"
+  ],
+  "reason": "Deterministic legacy Win adoption, exact provenance consent, accepted Home-to-Theatre continuity, retired-write receipt replay and recovery without resurrection"
+}

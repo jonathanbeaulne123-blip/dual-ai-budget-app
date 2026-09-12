@@ -1,0 +1,408 @@
+diff --git a/src/kitty/KittyBankRoom.tsx b/src/kitty/KittyBankRoom.tsx
+--- a/src/kitty/KittyBankRoom.tsx
++++ b/src/kitty/KittyBankRoom.tsx
+@@ -1,10 +1,12 @@
++import {BankCreationSurface} from '../hearthside/BankCreationSurface.tsx';
++import {bankCreationKey,type BankCreationContext} from '../hearthside/bankCreation.ts';
++import type {KittyAcceptedCommandReader} from '../hearthside/bankReceipt.ts';
+ import { useCanonicalKitty } from "../hearthside/DesignProvider.tsx";
+ import { CollaborativeStudio } from "../hearthside/CollaborativeStudio.tsx";
+ import { HEARTHSIDE_FLAGS } from "../hearthside/flags.ts";
+ import { useMemo, useRef, useState, type CSSProperties } from "react";
+ import { createPortal } from "react-dom";
+ import {
+-  addGoal,
+   saveGoalEnvelope,
+   fundGoal,
+   purchaseGoal,
+@@ -44,7 +46,7 @@
+ import { useAsyncScope } from "../asyncScope.ts";
+ import { KittyStage } from "./KittyStage.tsx";
+ import { StudioBench, useKittyStudio } from "./studio/KittyStudio.tsx";
+-import { displayedKittyPiece, newKittyPiece } from "../core/kittyStudio.ts";
++import { displayedKittyPiece } from "../core/kittyStudio.ts";
+ import { studioHex } from "./studio/palette.ts";
+ import { bisqueHex } from "./studio/paintCanvas.ts";
+ /** Seal colour: the displayed studio piece's dip (chalky while unfired), else the legacy glaze. */
+@@ -85,6 +87,10 @@
+   busy?: boolean;
+   identity: string;
+   onReadSubmission?: KittySubmissionReader;
++  onReadAcceptedCommand?: KittyAcceptedCommandReader;
++  creationContext?: BankCreationContext;
++  creationIdentity?: string;
++  onBankCreated?: (value:{confirmationId:string;goalId:string})=>void|Promise<void>;
+   onCommand: (
+     fn: (h: Household) => CommitResult,
+     options?: KittyCommandOptions,
+@@ -213,6 +219,10 @@
+   busy = false,
+   identity,
+   onReadSubmission,
++  onReadAcceptedCommand,
++  creationContext,
++  creationIdentity,
++  onBankCreated,
+   onCommand,
+   context,
+   initialGoalId,
+@@ -238,7 +248,8 @@
+     "active",
+   );
+   const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? "");
+-  const [creating, setCreating] = useState(false);
++  const bankScope={identity:creationIdentity??identity,environment:h.environment,householdId:h.householdId,memberId};
++  const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext);}});
+   const [studioFor, setStudioFor] = useState("");
+   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
+   const visible = all.filter((goal) =>
+@@ -250,6 +261,7 @@
+   );
+   const requested = all.find((goal) => goal.id === selected);
+   const goal = requested ?? visible[0];
++  const awaitingCreatedGoal=Boolean(studioFor&&selected===studioFor&&!requested);
+   const [saving, setSaving] = useState(false),
+     [error, setError] = useState(""),
+     [receipt, setReceipt] = useState("");
+@@ -428,7 +440,7 @@
+           type="button"
+           className="kitty-new"
+           onClick={() => setCreating(true)}
+-          disabled={busy || saving}
++          disabled={busy || saving || awaitingCreatedGoal}
+         >
+           ＋ New bank
+         </button>
+@@ -493,28 +505,11 @@
+           ✓ {receipt}
+         </p>
+       )}
+-      {creating || !goal ? (
+-        <CreateBank
+-          key={creating ? "new" : "empty"}
+-          view={view}
+-          memberId={memberId}
+-          busy={busy || saving}
+-          onCancel={goal ? () => setCreating(false) : undefined}
+-          onCreate={async (input) => {
+-            let id = "";
+-            const saved = await run((current) => {
+-              const result = addGoal(current, input);
+-              id = result.postedIds[0]!;
+-              return result;
+-            }, "Bank created. Your new purpose is ready for its first plan.");
+-            if (saved) {
+-              setFilter("active");
+-              setStudioFor(id);
+-              select(id);
+-            }
+-            return saved;
+-          }}
+-        />
++      {awaitingCreatedGoal ? <section className="kitty-folio"><h2>Your bank is created</h2><p role="status">The accepted bank is arriving in this view.</p><button type="button" onClick={onClose}>Return with bank saved</button></section> : creating || !goal ? (
++        <BankCreationSurface key={JSON.stringify([creationIdentity??identity,creationContext?.id??(creating?'new':'empty')])} scope={bankScope} household={h} view={view} busy={Boolean(busy||saving)} context={creationContext} onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand}
++          onCancel={creationContext?onClose:goal?()=>setCreating(false):onClose}
++          onCreated={async value=>{const token=scope.capture();await onBankCreated?.(value);if(!scope.isCurrent(token))return;setFilter('active');setStudioFor(value.goalId);select(value.goalId);}}/>
++
+       ) : (
+         <Bank
+           key={goal.id}
+@@ -571,119 +566,6 @@
+           keeps the purpose.
+         </p>
+       </footer>
+-    </div>
+-  );
+-}
+-function CreateBank({
+-  view,
+-  memberId,
+-  busy,
+-  onCreate,
+-  onCancel,
+-}: {
+-  view: LedgerView;
+-  memberId: string;
+-  busy: boolean;
+-  onCreate: (input: Parameters<typeof addGoal>[1]) => Promise<boolean>;
+-  onCancel?: () => void;
+-}) {
+-  const [name, setName] = useState(""),
+-    [target, setTarget] = useState(""),
+-    [envelope, setEnvelope] = useState(() => ({
+-      ...defaultGoalEnvelope(),
+-      studio: {
+-        version: 1 as const,
+-        draft: newKittyPiece(crypto.randomUUID().slice(0, 8), new Date().toISOString(), "cream"),
+-        fired: [],
+-      },
+-    }));
+-  return (
+-    <div className="kitty-room-spread">
+-      <KittyStage piece={envelope.studio.draft} glaze={envelope.glaze} open={true} name="New bank" />
+-      <form
+-        className="kitty-folio"
+-        onSubmit={(event) => {
+-          event.preventDefault();
+-          void onCreate({
+-            name,
+-            target,
+-            shared: view === "household",
+-            ownerMemberId: view === "personal" ? memberId : null,
+-            envelope,
+-          });
+-        }}
+-      >
+-        <span className="kitty-eyebrow">The first page</span>
+-        <h2>What are we making room for?</h2>
+-        <p>Two things to start. Everything else can wait, or never happen at all.</p>
+-        <label>
+-          Bank name
+-          <input
+-            required
+-            maxLength={100}
+-            value={name}
+-            onChange={(event) => setName(event.target.value)}
+-            placeholder="A slower week away"
+-          />
+-        </label>
+-        <label>
+-          How much (CAD)
+-          <input
+-            required
+-            inputMode="decimal"
+-            value={target}
+-            onChange={(event) => setTarget(event.target.value)}
+-            placeholder="2,000"
+-          />
+-        </label>
+-        <details className="kitty-optional">
+-          <summary>Say more (optional)</summary>
+-          <label>
+-            Why this one
+-            <textarea
+-              maxLength={1000}
+-              value={envelope.purpose}
+-              onChange={(event) =>
+-                setEnvelope({ ...envelope, purpose: event.target.value })
+-              }
+-              placeholder="What will this make possible?"
+-            />
+-          </label>
+-          <label>
+-            Belongs in
+-            <select
+-              value={envelope.kind}
+-              onChange={(event) =>
+-                setEnvelope({
+-                  ...envelope,
+-                  kind: event.target.value as typeof envelope.kind,
+-                })
+-              }
+-            >
+-              <option value="build">Build · a future we choose</option>
+-              <option value="protect">Protect · a promise or cushion</option>
+-              <option value="prepare">Prepare · a cost that comes around</option>
+-            </select>
+-          </label>
+-        </details>
+-        <div className="kitty-actions">
+-          <button
+-            className="kitty-primary"
+-            disabled={busy || !name.trim() || !fillDraftCents(target)}
+-          >
+-            Create {view === "personal" ? "personal" : "shared"} bank
+-          </button>
+-          {onCancel && (
+-            <button type="button" onClick={onCancel}>
+-              Cancel
+-            </button>
+-          )}
+-        </div>
+-        <small>
+-          This makes the bank and a lump of clay to shape next. It does not
+-          assign or move money.
+-        </small>
+-      </form>
+     </div>
+   );
+ }
+diff --git a/src/ledgerSync/client.ts b/src/ledgerSync/client.ts
+--- a/src/ledgerSync/client.ts
++++ b/src/ledgerSync/client.ts
+@@ -1,3 +1,4 @@
++import type {KittyAcceptedCommand} from '../hearthside/bankReceipt.ts';
+ import {hasChapterAgreementData,isChapterAgreementCommand} from "../core/chapterAuthority.ts";
+ import {decodeHearthsideContent} from '../hearthside/contracts.ts';
+ import { hasHearthsideData } from '../hearthside/commands.ts';
+@@ -536,6 +537,19 @@
+     return content;
+   }
+   /** A recovered receipt may precede replica delivery. Never animate or resize from that stale replica. */
++  async acceptedCommand(id:string,signal?:AbortSignal):Promise<KittyAcceptedCommand|null>{
++    await this.localReady;
++    const current=()=>{if(this.stopped||!this.store||signal?.aborted)throw Error('SCOPE_CLOSED');};current();
++    const token=await this.options.token();current();
++    const response=await fetch(this.path(`receipt?id=${encodeURIComponent(id)}`),{headers:{Authorization:`Bearer ${token}`},signal,cache:'no-store'}),value=await response.json();current();
++    if(!response.ok){if(value.error==='RECEIPT_NOT_FOUND')return null;throw Error('RECEIPT_RECOVERY_FAILED');}
++    const receipt=value.receipt;
++    if(value.version!==2||receipt?.id!==id||receipt.actor!==this.options.scope.memberId||!Number.isSafeInteger(receipt.sequence)||receipt.sequence<0||typeof receipt.commandKind!=='string'||!Array.isArray(receipt.postedIds))throw Error('RECEIPT_RECOVERY_REQUIRED');
++    if(!this.replica||this.replica.sequence<receipt.sequence){this.retryPending();return null;}
++    const household=await this.household(this.replica);current();
++    if(household.environment!==this.options.scope.environment||household.householdId!==this.options.scope.householdId)throw Error('SCOPE_CLOSED');
++    return {environment:this.options.scope.environment,householdId:this.options.scope.householdId,memberId:this.options.scope.memberId,receipt,household};
++  }
+   async acceptedHousehold(id:string):Promise<Household|null>{
+     await this.localReady;
+     if(this.stopped||!this.store)throw Error('SCOPE_CLOSED');
+diff --git a/src/hearthside/Hearthside.tsx b/src/hearthside/Hearthside.tsx
+--- a/src/hearthside/Hearthside.tsx
++++ b/src/hearthside/Hearthside.tsx
+@@ -1,3 +1,5 @@
++import {ExperienceBankEntry} from './ExperienceBankEntry.tsx';
++import type {KittyAcceptedCommandReader} from './bankReceipt.ts';
+ import {WinMemorySource} from './WinMemorySource.tsx';
+ import {GuestVisitsEntry} from './GuestVisitsEntry.tsx';
+ import {HEARTHSIDE_FLAGS} from './flags.ts';
+@@ -37,6 +39,7 @@
+ export type HearthsideProps = {
+   household: Household; memberId: string; identity: string; connected: boolean; busy?: boolean;
+   onCommand: KitchenCommand; onReadSubmission?: KittySubmissionReader;
++  onReadAcceptedCommand?:KittyAcceptedCommandReader;
+   onReadAcceptedHousehold?:(id:string)=>Promise<Household|null>;
+   practical: ReactNode; studio: ReactNode;
+   vaultSource?:()=>LedgerSyncClient|null;
+@@ -49,7 +52,7 @@
+   const child=<HearthsideHousehold key={`${props.identity}:${props.household.householdId}:${props.memberId}`} {...props}/>;
+   return props.vaultSource?<HearthsideVaultProvider household={props.household} memberId={props.memberId} identity={props.identity} connected={props.connected} source={props.vaultSource}>{child}</HearthsideVaultProvider>:child;
+ }
+-function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCommand,onReadSubmission,onReadAcceptedHousehold,practical,studio,letters,onReference,onWorkspace,initialRoom,vaultSource}:HearthsideProps) {
++function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCommand,onReadSubmission,onReadAcceptedCommand,onReadAcceptedHousehold,practical,studio,letters,onReference,onWorkspace,initialRoom,vaultSource}:HearthsideProps) {
+   const appearance=useAppearance(), theme=appearance.scene.theme, state=decodeHearthside(h.hearthside);
+   const scope={environment:h.environment,householdId:h.householdId,memberId}, commands=useHearthsideCommands(scope,identity,connected,onCommand);
+   const [route,setRoute]=useState<HearthsideRoute>(()=>parseHearthsideRoute(window.location.href,h.householdId)??{version:1,householdId:h.householdId,room:initialRoom??'common',mode:'present'});
+@@ -133,6 +136,7 @@
+       {tool==='guests'?<GuestVisitsEntry household={h} theme={theme} onClose={closeFocused}/>:tool==='worktable'&&selectedExperience?<ExperienceWorktable hearthside={{scope:{identity,environment:h.environment,householdId:h.householdId,memberId},experience:workspaceExperienceContext(selectedExperience),onReturn:closeFocused}}/>:tool==='history'?<RoomHistory household={h} memberId={memberId} identity={identity} room={route.room} horizon={horizon} theme={theme} canSave={commands.canStart} submit={commands.submit} onCurrent={target=>openObject(target.kind,target.id,target.kind==='piece'?target.designId:undefined)}/>:tool==='projector'?<ProjectorEntry household={h} memberId={memberId} identity={identity} source={vaultSource} theme={theme} onClose={closeFocused} onReviewMemory={id=>openObject('memory',id)}/>:tool==='occasions'||route.object?.kind==='occasion'?<Occasions state={state} memberId={memberId} identity={identity} canSave={commands.canStart} submit={commands.submit} onOpen={openObject} selectedId={route.object?.kind==='occasion'?route.object.id:undefined}/>:tool==='letters'?letters?.(closeFocused,theme):tool==='practical'?practical:tool==='studio'||route.object?.kind==='piece'?<CollaborativeStudio handoff={(documentId,pieceId,revision,pending)=><StudioHandoff household={h} memberId={memberId} identity={identity} design={{version:1,documentId,pieceId,revision}} canSave={commands.canStart&&!pending} submit={commands.submit}/>} acceptedReceipt={nativeFunding.receipt} onFundingIntent={intent=>{const id=nativeFunding.begin(intent);if(id)setBank({id});}} initialDesignId={route.object?.kind==='piece'?route.object.designId:undefined} initialPieceId={route.object?.kind==='piece'?route.object.id:undefined} household={h} memberId={memberId} wardrobe={studio} onKeep={selectedExperience?(designId,pieceId,revision)=>{void commands.submit({kind:'experience.save',expectedRevision:selectedExperience.revision,value:{...selectedExperience,revision:selectedExperience.revision+1,references:[...selectedExperience.references.filter(r=>!(r.kind==='piece'&&r.id===pieceId&&r.designId===designId)),{kind:'piece',id:pieceId,designId,revision}]}});}:undefined}/>:selectedExperience?<>
+         <p className="hearthside-eyebrow">{selectedExperience.state==='paused'?'Resting for now':'Something of ours'}</p><h2 id="hearthside-focus-title" tabIndex={-1}>{selectedExperience.title}</h2><p className="hearthside-intention">{selectedExperience.intention}</p>
+         <div className="hearthside-actions"><button onClick={()=>setExperienceDraft({...selectedExperience,revision:selectedExperience.revision+1})}>Shape this intention</button><button onClick={beginNote}>Leave a note</button><button onClick={()=>openTool('studio')}>Make something for this</button><button id="hearthside-experience-worktable" onClick={()=>onWorkspace?onWorkspace(selectedExperience):openTool('worktable')}>Work on this with Hercules</button><button onClick={()=>setLifeStep('task')}>Choose a next step</button><button onClick={()=>setLifeStep('date')}>Make time for this</button><button onClick={()=>beginMemory()}>Remember this</button></div>
++        <ExperienceBankEntry key={selectedExperience.id} household={h} experience={selectedExperience} identity={identity} memberId={memberId} connected={connected} busy={busy} canStart={commands.canStart} onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand}/>
+         {route.room==='conservatory'&&<FuturePath key={selectedExperience.id} household={h} memberId={memberId} experience={selectedExperience} onReference={r=>r.kind==='bank'?bankView(r.id):onReference(r,selectedExperience)}/>}
+         {lifeStep&&<LifeStepComposer kind={lifeStep} experience={selectedExperience} household={h} memberId={memberId} identity={identity} canSave={commands.canStart} submit={commands.submit} onClose={()=>setLifeStep(null)}/>}
+         <section className="hearthside-linked"><h3>Connected to this</h3>{selectedExperience.references.map((r,i)=>{const goal=r.kind==='bank'?h.goals.find(g=>g.id===r.id&&g.shared):null;const facts=goal?playBankFacts(h,goal.id,memberId):null;return <article key={`${r.kind}:${r.planVersionId??''}:${r.id}`}>
+@@ -161,6 +165,6 @@
+     {memoryDraft&&<section className="hearthside-editor" aria-label="Memory draft"><form onSubmit={e=>{e.preventDefault();if(memoryDraft.media.length)return;const plain={...memoryDraft};delete plain.publication;void commands.submit({kind:'memory.compose',expectedRevision:memoryDraft.revision-1,value:plain}).then(ok=>{if(ok){setMemoryDraft(null);openObject('memory',memoryDraft.id);}});}}><h2>What I remember</h2><WinMemorySource source={memoryDraft.legacySource}/><label>A name for this moment<input required maxLength={240} value={memoryDraft.title} onChange={e=>setMemoryDraft({...memoryDraft,title:e.target.value})}/></label><label>My words<textarea aria-label="My words" maxLength={6000} value={memoryDraft.recollections.find(r=>r.memberId===memberId)?.text??''} onChange={e=>setMemoryDraft({...memoryDraft,recollections:[...memoryDraft.recollections.filter(r=>r.memberId!==memberId),{memberId,text:e.target.value}]})}/></label><label>A date, if you want one<input type="date" value={memoryDraft.date??''} onChange={e=>setMemoryDraft({...memoryDraft,date:e.target.value||null})}/></label><label className="hearthside-checkbox"><input type="checkbox" checked={memoryDraft.hideAmounts} onChange={e=>setMemoryDraft({...memoryDraft,hideAmounts:e.target.checked})}/>Keep amounts out of this memory</label><details><summary>Keep a piece exactly as it is now</summary>{state.designs.flatMap(design=>design.pieceIds.map((pieceId,i)=>{const selected=memoryDraft.designs.some(ref=>ref.documentId===design.designId&&ref.pieceId===pieceId);return <label className="hearthside-checkbox" key={`${design.designId}:${pieceId}`}><input type="checkbox" checked={selected} onChange={e=>setMemoryDraft({...memoryDraft,designs:e.target.checked?[...memoryDraft.designs,{version:1,documentId:design.designId,pieceId,revision:design.revision}]:memoryDraft.designs.filter(ref=>!(ref.documentId===design.designId&&ref.pieceId===pieceId))})}/>{design.bankId?h.goals.find(g=>g.id===design.bankId)?.name??'Our piece':'Our Studio piece'} {i+1} · revision {design.revision}</label>;}))}<MemoryArtwork references={memoryDraft.designs} snapshots={draftArtwork.snapshots}/></details><p>We each choose whether to keep the resulting version.</p>{memoryPublication(memoryDraft,true)}<div className="hearthside-actions">{!memoryDraft.media.length&&<button disabled={!commands.canStart||!draftArtwork.ready}>Share this composition for us to keep</button>}<button type="button" onClick={()=>setMemoryDraft(null)}>Cancel</button></div></form></section>}
+     {(commands.message||draftMessage||!connected)&&<aside className="hearthside-status" role="status">{commands.message||draftMessage||'Your room is here. Reconnect to save something shared.'}{commands.retry&&<button disabled={commands.pending||!connected} onClick={()=>void retrySave()}>Check and retry this save</button>}</aside>}
+     {nativeFunding.message&&<p role="status">{nativeFunding.message}</p>}
+-    {bank&&<KittyBankRoom household={h} view="household" memberId={memberId} identity={identity} busy={busy} onCommand={nativeFunding.command} onReadSubmission={nativeFunding.read} initialGoalId={bank.id} returnTo="Hearthside" onClose={()=>{setBank(null);requestAnimationFrame(()=>document.getElementById(returnFocus.current)?.focus());}}/>}
++    {bank&&<KittyBankRoom household={h} view="household" memberId={memberId} identity={identity} busy={busy} onCommand={nativeFunding.command} onReadSubmission={nativeFunding.read} onReadAcceptedCommand={onReadAcceptedCommand} initialGoalId={bank.id} returnTo="Hearthside" onClose={()=>{setBank(null);requestAnimationFrame(()=>document.getElementById(returnFocus.current)?.focus());}}/>}
+   </main>;
+ }
+diff --git a/src/HouseholdHome.tsx b/src/HouseholdHome.tsx
+--- a/src/HouseholdHome.tsx
++++ b/src/HouseholdHome.tsx
+@@ -1,3 +1,4 @@
++import type {KittyAcceptedCommandReader} from './hearthside/bankReceipt.ts';
+ import {WinMemoryReview} from './hearthside/WinMemoryReview.tsx';
+ import {winMemoryId} from './hearthside/winMemory.ts';
+ import {commitHearthside} from './hearthside/commands.ts';
+@@ -42,13 +43,15 @@
+   onGo: (tab: "ledger" | "plan" | "together" | "calendar" | "more") => void;
+   onOpenSetup: (destination: "charter" | "fund") => void;
+   onReadSubmission?: KittySubmissionReader;
++  onReadAcceptedCommand?: KittyAcceptedCommandReader;
++  creationIdentity?: string;
+   onOpenMemory?: (memoryId:string)=>void;
+   /** Chapter 1 is the Month-One rehearsal; its access stays inside the Chapter area. */
+   rehearsal?: ReactNode;
+   identityArt?: ReactNode;
+ };
+
+-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onOpenMemory, rehearsal, identityArt }: HouseholdHomeProps) {
++function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt }: HouseholdHomeProps) {
+   const [bankRequest, setBankRequest] = useState<{ goalId?: string } | null>(null);
+   const monthKey = monthKeyFromDateKey(today);
+   const chapter = openChapterFor(household);
+@@ -125,7 +128,7 @@
+       </section>
+       {bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
+         identity={`${household.environment}:${household.householdId}:${memberId}:household`}
+-        initialGoalId={bankRequest.goalId} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission}
++        initialGoalId={bankRequest.goalId} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand} creationIdentity={creationIdentity}
+         onClose={() => setBankRequest(null)} />}
+
+       {presence.length > 0 && (
+diff --git a/src/KittyBanks.tsx b/src/KittyBanks.tsx
+--- a/src/KittyBanks.tsx
++++ b/src/KittyBanks.tsx
+@@ -1,3 +1,4 @@
++import type {KittyAcceptedCommandReader} from './hearthside/bankReceipt.ts';
+ import { CanonicalKittyFlat } from "./hearthside/DesignProvider.tsx";
+ import { KittyBankRoom, type KittyPlanContext, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
+ import { useEffect, useRef, useState } from "react";
+@@ -111,13 +112,15 @@
+ /** Existing goals as paper banks. Shared Fund surplus (D-161) is not a second envelope. */
+ export function KittyBanks(props: KittyBanksProps) {
+   const [open,setOpen]=useState(false);
+-  if (props.planContext || (open && props.surface !== "home")) return <KittyBankRoom household={props.booksHousehold} view={props.view} memberId={props.createdBy} busy={props.busy} identity={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}`} context={props.planContext} onReadSubmission={props.onReadSubmission} onCommand={props.onCommand} onClose={props.planContext?.onClose ?? (()=>setOpen(false))}/>;
++  if (props.planContext || (open && props.surface !== "home")) return <KittyBankRoom household={props.booksHousehold} view={props.view} memberId={props.createdBy} busy={props.busy} identity={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}`} context={props.planContext} onReadSubmission={props.onReadSubmission} onReadAcceptedCommand={props.onReadAcceptedCommand} creationIdentity={props.creationIdentity} onCommand={props.onCommand} onClose={props.planContext?.onClose ?? (()=>setOpen(false))}/>;
+   if (props.surface !== "home") return <section className="card"><h2>Kitty Banks</h2><p>Your goals, reserves and future plans have a room of their own.</p><button onClick={()=>setOpen(true)}>Enter Kitty Banks</button></section>;
+   return <KittyBanksScope key={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}:${props.surface ?? "plan"}`} {...props} />;
+ }
+ type KittyBanksProps = {
+   planContext?: KittyPlanContext;
+   onReadSubmission?:KittySubmissionReader;
++  onReadAcceptedCommand?:KittyAcceptedCommandReader;
++  creationIdentity?:string;
+   environment?: Environment;
+   household: Household;
+   booksHousehold: Household;
+diff --git a/src/App.tsx b/src/App.tsx
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -6220,6 +6220,12 @@
+     const experience=household.hearthside?.experiences.find(e=>e.id===workspaceExperienceSelection.id&&e.state!=='archived');if(!experience)return;
+     return {scope:{identity:ledgerRenderScopeKey,environment,householdId:household.householdId,memberId:actorId},experience:workspaceExperienceContext(experience),onReturn:returnFromExperienceWorkspace};
+   }
++  async function readAcceptedKittyCommand(id:string,signal?:AbortSignal){
++    const client=ledgerSyncRef.current;
++    if(!client||signal?.aborted||!renderedWriteIsCurrent()||client.options.scope.environment!==environment||client.options.scope.householdId!==household?.householdId||client.options.scope.memberId!==actorId)throw Error('SCOPE_CLOSED');
++    const value=await client.acceptedCommand(id,signal);
++    if(client!==ledgerSyncRef.current||signal?.aborted||!renderedWriteIsCurrent())throw Error('SCOPE_CLOSED');return value;
++  }
+   function openHearthsideTool(next:HearthsideToolReturn['tab'],reference?:SharedReference,label='Our shared life'){
+     if(!household||!session)return;
+     const path=`${window.location.pathname}${window.location.search}`,focusId=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';
+@@ -6820,6 +6826,7 @@
+         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} household={household} memberId={actorId} busy={busy} vaultSource={()=>ledgerSyncRef.current}
+         connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen}
+         initialRoom={playInitialArea === "dressing" ? "studio" : undefined}
++        onReadAcceptedCommand={readAcceptedKittyCommand}
+         onReadAcceptedHousehold={async id=>{const client=ledgerSyncRef.current;if(!client||client.options.scope.environment!==environment||client.options.scope.householdId!==household.householdId||client.options.scope.memberId!==actorId)throw Error("SCOPE_CLOSED");return client.acceptedHousehold(id);}}
+         onReadSubmission={async id => {const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}}
+         onWorkspace={workspaceEnabled?openExperienceWorkspace:undefined}
+@@ -6851,6 +6858,7 @@
+           onGo={(next) => goTab(next)}
+           onOpenMemory={id=>{window.history.pushState({hearthTab:'play'},'',hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}));goTab('play');}}
+           onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
++          onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey}
+           onReadSubmission={async id => { const status = await readWorkShiftSubmission(id); if (status === "pending") ledgerSyncRef.current?.retryPending(); return status; }}
+           rehearsal={(
+             <div className="home-rehearsal-entry">
+@@ -7012,7 +7020,7 @@
+         onOpenWorkspace={workspaceEnabled ? () => { setWorkspaceProjectId(null);setWorkspaceExperienceSelection(null); goTab("hercules"); } : undefined}
+               workspaceCards={workspaceEnabled && workspaceSnapshot?.identity === ledgerRenderScopeKey ? month => <WorkspaceProjectCards projects={workspaceSnapshot.projects} household={household} memberId={actorId} scope={view} month={month} today={today} onOpen={id => {setWorkspaceProjectId(id);setWorkspaceExperienceSelection(null);goTab("hercules");}} /> : undefined}
+               key={`${ledgerRenderScopeKey}:${view}`}
+-              goalsContent={context => <KittyBanks planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
++              goalsContent={context => <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey} planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
+               onContextChange={setPlanContext}
+               contextIdentity={`${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}`}
+               onAskHercules={(prompt, proposal) => {
+@@ -7064,7 +7072,7 @@
+             memberId={actorId}
+             onApply={(next, token) => persist(next, token)}
+           />
+-          <KittyBanks
++          <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey}
+             environment={environment}
+             household={displayHousehold}
+             booksHousehold={household}

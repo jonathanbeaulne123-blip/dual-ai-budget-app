@@ -1,4 +1,7 @@
 import { calendarKindLabel } from "./calendar/semantics.ts";
+import {NativeEventEditor} from './calendar/NativeEventEditor.tsx';
+import type {KitchenCommand} from './kitchenCommand.ts';
+import type {KittySubmissionReader} from './kitty/KittyBankRoom.tsx';
 import "./ux-readability.css";
 import { calendarItemVisible, loadCalendarVisibility } from "./calendar/visibility.ts";
 import { KindLegend } from "./calendar/KindLegend.tsx";
@@ -42,7 +45,6 @@ import {
   typicalVisitDraft,
   visitPostSummary,
   workOwedFacts,
-  type CommitResult,
   type DateKey,
   type Environment,
   type Household,
@@ -100,7 +102,10 @@ type CalendarProps = {
   environment: Environment;
   memberId: string;
   busy: boolean;
-  onCommand: (fn: (current: Household) => CommitResult) => void;
+  onCommand: KitchenCommand;
+  identity?:string;
+  focusEventId?:string;
+  onReadSubmission?:KittySubmissionReader;
   onAskPost: (recurrenceId: string, summary: string) => void;
   onAskPostDue: (recurrenceIds: string[], summary: string) => void;
   onAskSaveRepeating: (draft: RepeatingDraft, summary: string) => void;
@@ -148,6 +153,9 @@ function CalendarPageScope(props: CalendarProps) {
   const [workSettlement, setWorkSettlement] = useState<WorkOwedFact | null>(null);
   const [potentialEditor, setPotentialEditor] = useState<{ date: DateKey; plan?: PotentialExpensePlan; linkedCalendarItem?: PotentialExpenseCalendarLink } | null>(null);
   const [selectedCalendarItemId, setSelectedCalendarItemId] = useState<string | null>(null);
+  const [nativeEditorId,setNativeEditorId]=useState<string|null>(null);
+  const nativeEvent=household.nativeEvents?.find(event=>event.id===nativeEditorId&&!event.deleted&&(props.view==='personal'?event.visibility==='personal'&&event.createdBy===props.memberId:event.visibility==='household'));
+  useEffect(()=>{if(!props.focusEventId)return;const event=household.nativeEvents?.find(row=>row.id===props.focusEventId&&!row.deleted&&(props.view==='personal'?row.visibility==='personal'&&row.createdBy===props.memberId:row.visibility==='household'));if(event){setNativeEditorId(event.id);setPane('calendar');setMonthKey(monthKeyFromDateKey(event.start.slice(0,10)));setSelected(event.start.slice(0,10));setDayOpen(true);}},[props.focusEventId]);
   const [draggedPotentialId, setDraggedPotentialId] = useState<string | null>(null);
   const [calendarAnnouncement, setCalendarAnnouncement] = useState("");
   const scopeKey = `${environment}:${household.householdId}:${props.memberId}:${props.view ?? "household"}`;
@@ -264,7 +272,7 @@ function CalendarPageScope(props: CalendarProps) {
   }, []);
 
   useEffect(() => {
-    if (props.openPotentialEditorId || potentialEditor) return;
+    if (props.openPotentialEditorId || potentialEditor || props.focusEventId) return;
     const source = props.sourceFocus;
     if (!source || source.route !== "calendar" || source.view !== (props.view ?? "household")) return;
     setPane(source.claimId ? "visits" : "bills");
@@ -419,6 +427,7 @@ function CalendarPageScope(props: CalendarProps) {
       data-calendar-view={props.view ?? "household"}
       data-onboarding-standing-fact={props.onboardingStandingFactOnly ? "true" : undefined}
     >
+      {nativeEvent&&<NativeEventEditor event={nativeEvent} household={household} memberId={props.memberId} identity={props.identity??`${environment}:${household.householdId}:${props.memberId}`} busy={props.busy} onCommand={props.onCommand} onReadSubmission={props.onReadSubmission} onClose={()=>setNativeEditorId(null)}/>}
       {pane !== "board" && pane !== "visits" && board.clashes[0] && !(props.onboardingStandingFactOnly && pane === "bills") && (
         <article className="pulse-banner warn">{describeClash(board.clashes[0])}</article>
       )}
@@ -619,7 +628,7 @@ function CalendarPageScope(props: CalendarProps) {
                   onReview={(plan) => props.onReviewPotential?.(plan.id)}
                 />
               ) : (
-                <DayRow
+                <div key={item.id}><DayRow
                   key={item.id}
                   title={item.title}
                   amountCents={item.amountCents}
@@ -643,7 +652,7 @@ function CalendarPageScope(props: CalendarProps) {
                   selected={selectedCalendarItemId === item.id}
                   onSelect={() => setSelectedCalendarItemId((current) => current === item.id ? null : item.id)}
                   onAddPotential={() => addPotentialForItem(item)}
-                />
+                />{item.nativeEventId&&<button type="button" className="chip" disabled={props.busy} onClick={()=>setNativeEditorId(item.nativeEventId!)}>Change this date</button>}</div>
               ))}
             </section>
           )}

@@ -1,0 +1,347 @@
+{
+  "createdAt": "2026-09-12T19:43:48.363Z",
+  "base": "429db8ef0447dac6347e89e945dd04aad05e84fb",
+  "scope": "Synthetic component harness; not actual App, authenticated media, native or physical-device acceptance",
+  "checks": [
+    {
+      "theme": "classic",
+      "width": 320,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "classic",
+      "width": 390,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "classic",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "width": 719,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "classic",
+      "width": 720,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "classic",
+      "width": 1100,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "classic",
+      "width": 1440,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "classic",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "width": 1920,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "taylor",
+      "width": 320,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "taylor",
+      "width": 390,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "taylor",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "width": 719,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "taylor",
+      "width": 720,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "taylor",
+      "width": 1440,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "taylor",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "width": 1920,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "newfoundland",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "width": 719,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "newfoundland",
+      "width": 1440,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "newfoundland",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "width": 1920,
+      "overflow": false,
+      "smallButtons": [],
+      "canvas": [
+        1280,
+        720
+      ],
+      "reelAnimation": "none"
+    },
+    {
+      "theme": "classic",
+      "emptyWidth": 390,
+      "emptyAxeViolations": 0
+    },
+    {
+      "theme": "taylor",
+      "emptyWidth": 390,
+      "emptyAxeViolations": 0
+    },
+    {
+      "theme": "newfoundland",
+      "emptyWidth": 390,
+      "emptyAxeViolations": 0
+    },
+    {
+      "film": {
+        "width": 1280,
+        "height": 720,
+        "currentTime": 3.546,
+        "duration": 3.546,
+        "mime": "video/webm",
+        "ended": true,
+        "audio": {
+          "duration": 1.2,
+          "channels": 2,
+          "peak": 0.15578952431678772
+        },
+        "bytes": 168398,
+        "filename": "our-kept-story.webm"
+      }
+    },
+    {
+      "resources": {
+        "urls": [
+          "blob:http://127.0.0.1:5173/ce7aec17-5801-4bdc-a4ec-8570e8e65952",
+          "blob:http://127.0.0.1:5173/4b083cd7-cef6-41c1-9507-a49bd8a3426d"
+        ],
+        "revoked": [
+          "blob:http://127.0.0.1:5173/ce7aec17-5801-4bdc-a4ec-8570e8e65952",
+          "blob:http://127.0.0.1:5173/4b083cd7-cef6-41c1-9507-a49bd8a3426d"
+        ],
+        "tracksStopped": 6
+      }
+    },
+    {
+      "freshDownloadAccess": "Rejected changed resolver access without any React props change; no download emitted"
+    },
+    {
+      "backgroundCancel": "Simulated document visibility event during real MediaRecorder capture; no partial file",
+      "tracksStopped": 2
+    },
+    {
+      "audioElementCleanup": "scope change pauses detached voice note and clears its source"
+    },
+    {
+      "fallback": "unsupported=1",
+      "bytes": 139333
+    },
+    {
+      "fallback": "encoder-fails=1",
+      "bytes": 139333
+    },
+    {
+      "interactions": "order, theme retention, review callback, keyboard, pause, actual film download/playback, cancel/withdraw cleanup, unsupported/runtime encoder fallback, long text",
+      "pageErrors": []
+    }
+  ],
+  "verifiedSourceSha256": {
+    "scripts/hearthside/projector-fixture.tsx": "79a81ddc822978baf03acd174bcd30a45cae0bbc238c19d5c5b82b9bfc654b01",
+    "scripts/hearthside/projector-proof.mjs": "cc9ba33587ad450ad8a5af06d12dfa0967a881f48f861b66b20ac317a646f8e6",
+    "src/hearthside/TheatreProjector.tsx": "ac45fd8c99052d6598aa3096b780c448645c20adbc1d9a49760ae1db4e107923",
+    "src/hearthside/projectorCanvas.ts": "87ee8b27bc7f3d512ade21d32f443cbee03c30653e5451af61454aada0a60484",
+    "src/hearthside/projectorComposition.ts": "349bb2012a54836fd2bbb92f4ffe9cd36073525bcc13e103573471a9417d498b",
+    "src/hearthside/projectorFilm.ts": "cf429e82a99cdd41207aa77eef26f402b6febb0e54123b57f380395998ac57e2",
+    "src/hearthside/projectorStory.ts": "c691c30fb8a189a62f6da6a3606f1798fefb74fc15fb1352ce96a66e1f1a4e91",
+    "src/hearthside/projectorTypes.ts": "33694947223a0d615ad06394a0a867a8d93f15b8bb3f85ccb0f69e270a3b9a01",
+    "src/hearthside/theatreProjector.css": "5aacd60a112502b9dbfa889618f9d33f40804b3d0da159c77b7f3631c9695cd4",
+    "test/hearthside-projector.test.ts": "57b4c58d653df9043bf237820969e360d0cfc8a6413d10d4f93669bf3c7e90c5"
+  }
+}

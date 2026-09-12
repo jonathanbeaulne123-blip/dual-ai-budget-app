@@ -1,3 +1,5 @@
+import {commitSharedLifeRestore} from '../hearthside/sharedLifeRestore.ts';
+import { commitHearthside } from '../hearthside/commands.ts';
 import {commitCompanionPlay} from '../core/herculesPlay.ts';
 import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
 import { addQuickSampleData, addQuickSampleScenario } from '../core/quickSampleData.ts';
@@ -26,7 +28,9 @@ const functions = {
   commitCompanion,
   commitCompanionGallery,
   commitCompanionPlay,
+  commitHearthside, commitSharedLifeRestore,
   ...rehearsal,
+  editRitual: chapterCommands.editRitual, acknowledgeRitualChange: chapterCommands.acknowledgeRitualChange, setRitualParticipation: chapterCommands.setRitualParticipation, adoptChapterTasks: chapterCommands.adoptChapterTasks, prepareRitualOccurrence: chapterCommands.prepareRitualOccurrence,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
   offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
   saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks,
@@ -87,12 +91,14 @@ register("appendPlanSitdownTurn", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);
 register("commitCompanionPlay", ["scope.memberId"]);
+register("commitHearthside", ["scope.memberId"]);
+register("commitSharedLifeRestore", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
 register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
 register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
-register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
+register("editRitual acknowledgeRitualChange setRitualParticipation adoptChapterTasks prepareRitualOccurrence openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
   "ownerMemberId",
 ]);
@@ -160,6 +166,7 @@ export function executeIntent(
   commandId: string,
   scope?: Pick<Scope, "identity" | "role">,
 ): CommitResult {
+  if(kind==='commitSharedLifeRestore')throw Error('SHARED_LIFE_RESTORE_AUTHORITY_REQUIRED');
   const policy = policies.get(kind);
   if (!policy)
     throw new ValidationError(

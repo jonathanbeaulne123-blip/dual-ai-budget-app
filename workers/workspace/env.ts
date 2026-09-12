@@ -1,3 +1,4 @@
+import type {WorkspaceHearthsideAuthority} from '../../src/hearthside/workspaceAuthority.ts';
 import type { HerculesWorkspace } from './service.ts';
 import type { HerculesSharedWorkspace } from './shared.ts';
 import type { DurableObjectId, Workflow, R2Bucket } from '@cloudflare/workers-types/index.ts';
@@ -14,7 +15,7 @@ export type WorkspaceEnv = AuthEnv & {
   HERCULES_RUNS: Workflow<{ workspace: string; projectId: string; runId: string; attempt: string; startAt?: string }>;
   HERCULES_FILES: R2Bucket;
   HERCULES_SANDBOX: Parameters<typeof getSandbox<HerculesSandbox>>[0];
-  LEDGER_ROOMS: { idFromName(name: string): DurableObjectId; get(id: DurableObjectId): {
+  LEDGER_ROOMS: { idFromName(name: string): DurableObjectId; get(id: DurableObjectId): WorkspaceHearthsideAuthority & {
     resolveReceipt(scope: Scope, id: string): Promise<{version:number;receipt?:{id:string;actor:string;commandKind:string;postedIds:string[]}}>;
     workspaceQuery(scope: Scope, query: { name: string; args: Record<string, unknown>; view: 'personal' | 'household' }): Promise<Record<string, unknown>>;
   } };

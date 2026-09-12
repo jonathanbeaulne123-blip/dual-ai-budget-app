@@ -185,6 +185,7 @@ export async function compactedCommandPayload(
       || mergedFacts?.onboardingApprovals?.length
       || mergedFacts?.categories?.length
       || mergedFacts?.budgetPlans?.length
+      || mergedFacts?.chapterTasks?.length
       || mergedFacts?.chapters?.length
       || mergedFacts?.rituals?.length
       || mergedFacts?.moves?.length
@@ -199,6 +200,7 @@ export async function compactedCommandPayload(
         onboardingApprovals: mergedFacts.onboardingApprovals,
         categories: mergedFacts.categories,
         budgetPlans: mergedFacts.budgetPlans,
+        chapterTasks: mergedFacts.chapterTasks,
         chapters: mergedFacts.chapters,
         rituals: mergedFacts.rituals,
         moves: mergedFacts.moves,
@@ -301,6 +303,7 @@ function mergeMaterializationFacts(
         ...facts.weeklyDocumentStamps,
       ];
     }
+    if (facts.chapterTasks !== undefined) merged.chapterTasks = facts.chapterTasks;
     if (facts.chapters !== undefined) merged.chapters = facts.chapters;
     if (facts.rituals !== undefined) merged.rituals = facts.rituals;
     if (facts.moves !== undefined) merged.moves = facts.moves;

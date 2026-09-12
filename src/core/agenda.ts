@@ -125,6 +125,13 @@ function taskItems(full: Household, visible: Household, input: AgendaInput, from
     return dates.map((date) => ({ ...base, key: `${task.id}@${date}`, date, dueDate: task.dueDate && task.doDate ? addDays(task.dueDate, Math.round((Date.parse(date) - Date.parse(task.doDate)) / 86400000)) : task.dueDate, completedOn: null, done: false, overdue: date < input.today }));
   });
 }
+/** A direct Task link keeps the same operational row even outside the selected week. */
+export function focusedAgendaTask(household:Household,id:string,input:AgendaInput):AgendaItem|null {
+  const visible=householdForView(household,input.memberId,input.view),task=visible.tasks?.find(t=>t.id===id&&!t.deleted);
+  if(!task)return null;
+  const day=task.doDate??task.dueDate??input.today;
+  return taskItems(household,{...visible,tasks:[task]},{...input,ownership:'all'},day,day)[0]??null;
+}
 function booksItems(full: Household, visible: Household, input: AgendaInput, from: DateKey, to: DateKey): AgendaItem[] {
   const items: AgendaItem[] = [];
   for (const row of visible.recurrences.filter((r) => recurrenceVisible(visible, r))) {

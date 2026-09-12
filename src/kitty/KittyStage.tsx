@@ -55,7 +55,7 @@ export function KittyStage({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const api = useRef<(KittyStageApi & { open: (v: boolean) => void; sculpt: (p: KittyPieceV1 | null) => void; fill: (n: number, animate: boolean) => void; fired: (v: boolean) => void; spin: (v: boolean) => void; idle: (v: boolean) => void; hit: (x: number, y: number, outside?: boolean) => KittyHit | null }) | null>(null);
-  const [flat, setFlat] = useState(false), [failed, setFailed] = useState(false);
+  const [flat, setFlat] = useState(false), [failed, setFailed] = useState(false), [ready, setReady] = useState(false);
   // null = follow the bench; true/false = the choice made with the Spin button, which sticks.
   const [spinChoice, setSpinChoice] = useState<boolean | null>(null);
   const spinning = spinChoice ?? spin;
@@ -64,7 +64,7 @@ export function KittyStage({
   latest.current = { piece, glaze, open, step, fired, mode, spin: spinning, celebrate };
   const drag = useRef<{ x: number; y: number; id: number; painting: boolean } | null>(null);
   const firedState = fired ?? (piece ? Boolean(piece.firedAt) : true);
-  useEffect(() => { onFlatChange?.(flat || failed); }, [flat, failed, onFlatChange]);
+  useEffect(() => { onFlatChange?.(flat || failed || !ready); }, [flat, failed, ready, onFlatChange]);
   useEffect(() => { api.current?.open(open); }, [open]);
   useEffect(() => { api.current?.sculpt(piece); }, [piece?.sculpt, piece?.id, glaze]);
   useEffect(() => { if (piece) api.current?.replayPaint(piece.paint); }, [piece?.paint]);
@@ -75,6 +75,7 @@ export function KittyStage({
     const element = host.current;
     if (!element || flat) return;
     setFailed(false);
+    setReady(false);
     let dead = false;
     const cleanup: Array<() => void> = [];
     const dispose = () => {
@@ -106,16 +107,24 @@ export function KittyStage({
         camera.position.set(0.25, 3.1, 7.1);
         camera.lookAt(0, 1.55, 0);
         const pmrem = new T.PMREMGenerator(renderer);
+        const environment = new RoomEnvironment();
         try {
-          const env = pmrem.fromScene(new RoomEnvironment(), 0.04);
+          const env = pmrem.fromScene(environment, 0.04);
           scene.environment = env.texture;
           cleanup.push(() => { env.dispose(); pmrem.dispose(); });
         } catch { pmrem.dispose(); }
+        finally {
+          // RoomEnvironment disposes shared geometry/materials; its instanced
+          // furniture also owns a per-instance buffer in the renderer.
+          environment.traverse(object => { if (object instanceof T.InstancedMesh) object.dispose(); });
+          environment.dispose();
+        }
         scene.add(new T.HemisphereLight("#fff1d9", "#77767c", 1.5));
         const key = new T.DirectionalLight("#ffe9ca", 2.6);
         key.position.set(-3, 5, 4);
         key.castShadow = true;
         key.shadow.mapSize.set(1024, 1024);
+        cleanup.push(() => key.shadow.dispose());
         scene.add(key);
         const rim = new T.DirectionalLight("#d9ecfa", 1.2);
         rim.position.set(3, 3, -3);
@@ -161,6 +170,7 @@ export function KittyStage({
         };
         frame(latest.current.step);
         const resize = () => {
+          if (dead) return;
           const box = element.getBoundingClientRect();
           if (!box.width || !box.height) return;
           camera.aspect = box.width / box.height;
@@ -196,15 +206,17 @@ export function KittyStage({
         cleanup.push(() => observer.disconnect());
         observer.observe(element);
         resize();
+        setReady(true);
         // Idle breathe only while the stage is actually on screen and the tab is visible.
+        let onScreen = false;
         const visibility = new IntersectionObserver((entries) => {
-          const on = entries.some((entry) => entry.isIntersecting);
-          cat.setIdle(on && !document.hidden);
-          if (on) render();
+          onScreen = entries.some((entry) => entry.isIntersecting);
+          cat.setIdle(onScreen && !document.hidden);
+          if (onScreen) render();
         });
         visibility.observe(element);
         cleanup.push(() => visibility.disconnect());
-        const onHidden = () => { if (document.hidden) { if (raf) cancelAnimationFrame(raf); raf = 0; cat.setIdle(false); } else { cat.setIdle(true); kick(); } };
+        const onHidden = () => { if (document.hidden) { if (raf) cancelAnimationFrame(raf); raf = 0; cat.setIdle(false); } else { cat.setIdle(onScreen); if (onScreen) kick(); } };
         document.addEventListener("visibilitychange", onHidden);
         cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
         const lost = (e: Event) => { e.preventDefault(); dispose(); setFailed(true); };
@@ -214,7 +226,7 @@ export function KittyStage({
       .catch(() => { dispose(); if (!dead) setFailed(true); });
     return () => { dead = true; dispose(); };
   }, [flat]);
-  const live = !flat && !failed;
+  const live = !flat && !failed && ready;
   return (
     <div className="kitty-stage-wrap" data-mode={mode} data-fired={firedState ? "true" : "false"}>
       <div className="kitty-window" aria-hidden="true"><i /><i /><i /><i /></div>

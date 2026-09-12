@@ -1,0 +1,367 @@
+diff --git a/src/hearthside/contracts.ts b/src/hearthside/contracts.ts
+--- a/src/hearthside/contracts.ts
++++ b/src/hearthside/contracts.ts
+@@ -1,3 +1,4 @@
++import {decodeWinProvenance,type LegacyWinProvenance} from './winMemoryProvenance.ts';
+ import {decodeSharedEncounter,type SharedEncounter} from './encounterContracts.ts';
+ import {decodeArtifactPublication,type ArtifactPublication} from './workspacePublication.ts';
+ import {decodeRecordedRoom,type RecordedRoom} from './roomHistory.ts';
+@@ -26,6 +27,7 @@
+   recollections: Recollection[]; hideAmounts: boolean;
+   approvals: { memberId: string; revision: number }[]; withdrawn: boolean;
+   publication?:MemoryPublicationBinding;
++  legacySource?:LegacyWinProvenance;
+ };
+ export type PersonalOccasion = {
+   version: 1; id: string; revision: number; title: string;
+@@ -121,13 +123,14 @@
+   return { version: version(r.version), documentId: identifier(r.documentId), pieceId: identifier(r.pieceId), revision: revisionValue(r.revision) };
+ }
+ export function decodeMemory(value: unknown): MemoryComposition {
+-  const r = object(value, ['version', 'id', 'revision', 'title', 'date', 'experienceId', 'media', 'designs', 'recollections', 'hideAmounts', 'approvals', 'withdrawn', 'publication']);
++  const r = object(value, ['version', 'id', 'revision', 'title', 'date', 'experienceId', 'media', 'designs', 'recollections', 'hideAmounts', 'approvals', 'withdrawn', 'publication', 'legacySource']);
+   return {
+     version: version(r.version), id: identifier(r.id), revision: revisionValue(r.revision, 1), title: textValue(r.title), date: r.date === null ? null : civilDate(r.date), experienceId: nullableId(r.experienceId),
+     media: list(r.media, decodeMediaReference, 50), designs: list(r.designs, decodeDesignReference, 20),
+     recollections: unique(list(r.recollections, value => { const row = object(value, ['memberId', 'text']); return { memberId: identifier(row.memberId), text: textValue(row.text, 6000, true) }; }, 20), row => row.memberId),
+     hideAmounts: bool(r.hideAmounts), withdrawn: bool(r.withdrawn),
+     ...(r.publication===undefined?{}:{publication:decodeMemoryPublicationBinding(r.publication)}),
++    ...(r.legacySource===undefined?{}:{legacySource:decodeWinProvenance(r.legacySource)}),
+     approvals: unique(list(r.approvals, value => { const row = object(value, ['memberId', 'revision']); return { memberId: identifier(row.memberId), revision: revisionValue(row.revision, 1) }; }, 20), row => row.memberId),
+   };
+ }
+diff --git a/src/hearthside/commands.ts b/src/hearthside/commands.ts
+--- a/src/hearthside/commands.ts
++++ b/src/hearthside/commands.ts
+@@ -1,3 +1,4 @@
++import {adoptWinMemory,requireStableWinProvenance,type AdoptWinMemoryOperation} from './winMemory.ts';
+ import {applyEncounterTransition} from './encounterService.ts';
+ import {decodeEncounterCommand,type EncounterCommand} from './encounterContracts.ts';
+ import {ENCOUNTER_WARDROBE} from './encounterWardrobe.ts';
+@@ -10,7 +11,7 @@
+ import { canonical } from '../ledgerSync/patch.ts';
+ import { decodeHearthside, decodeExperience, decodeNote, decodeMemory, decodeOccasion, decodePlacement, occasionDate, identifier, object, revisionValue, memoryKeptByEveryone, type SharedExperience, type PlacedNote, type MemoryComposition, type PersonalOccasion, type RoomPlacement, type SharedReference } from './contracts.ts';
+
+-export type HearthsideOperation = EncounterCommand
++export type HearthsideOperation = EncounterCommand | AdoptWinMemoryOperation
+   | {kind:'room.capture';expectedRevision:0;value:RecordedRoom}
+   | {kind:'room.keep'|'room.withdraw';expectedRevision:number;id:string}
+   | {kind:'studio.handoff';expectedRevision:number;value:StudioHandoff}
+@@ -30,7 +31,8 @@
+ };
+ export const hasHearthsideData = (h: Pick<Household, 'hearthside'>) => h.hearthside !== undefined;
+ export function hearthsideOperationalCollection(operation:unknown):'tasks'|'nativeEvents'|null {
+-  const kind=(operation as {kind?:unknown}|null)?.kind;
++  const property=operation&&typeof operation==='object'?Object.getOwnPropertyDescriptor(operation,'kind'):undefined;
++  const kind=property&&'value' in property?property.value:undefined;
+   return kind==='experience.add-task'?'tasks':kind==='experience.schedule'?'nativeEvents':null;
+ }
+ function expectRevision(actual: number, expected: number, next?: number) {
+@@ -67,6 +69,7 @@
+     if (canonical(other(value.recollections)) !== canonical(other(old?.recollections ?? []))) throw Error('HEARTHSIDE_RECOLLECTION_AUTHOR_REQUIRED');
+     if (value.recollections.some(r => !h.members.some(m => m.id === r.memberId))) throw Error('HEARTHSIDE_MEMBER_REQUIRED');
+     for(const ref of value.designs)if(!s.designs.some(d=>d.designId===ref.documentId&&d.pieceIds.includes(ref.pieceId)&&d.revision>=ref.revision))throw Error('HEARTHSIDE_SHARED_DESIGN_REQUIRED');
++  requireStableWinProvenance(old,value);
+   return value;
+ }
+ export const commitHearthside = captureCommand('commitHearthside', (h: Household, input: HearthsideIntent): CommitResult => {
+@@ -75,6 +78,8 @@
+   const actor = identifier(input.scope.memberId);
+   if (input.version !== 1 || input.scope.householdId !== h.householdId || input.scope.environment !== h.environment || !h.members.some(m => m.id === actor && m.active)) throw Error('HEARTHSIDE_SCOPE_MISMATCH');
+   const s = decodeHearthside(h.hearthside);
++  const operationKind=Object.getOwnPropertyDescriptor(input.operation??{},'kind');
++  if(!operationKind||!('value' in operationKind))throw Error('HEARTHSIDE_INVALID_OBJECT');
+   if(typeof input.operation?.kind==='string'&&input.operation.kind.startsWith('encounter.')){
+     const op=decodeEncounterCommand(input.operation),current=s.encounters?.find(e=>e.id===op.id)??null;
+     const outcome=op.kind==='encounter.outcome'?op.outcome:undefined;
+@@ -86,6 +91,10 @@
+   }
+   const op=input.operation as Exclude<HearthsideOperation,EncounterCommand>;
+   let working=h;
++  if(op.kind==='memory.adopt-win'){
++    const memory=adoptWinMemory(h,actor,op);s.memories=[...s.memories.filter(m=>m.id!==memory.id),memory];
++    return {household:{...h,hearthside:decodeHearthside(s)},postedIds:[],warnings:[],undo:{id:input.id,label:'Review an earlier Win as a memory',snapshot:h,postedIds:[],actorMemberId:actor,commandKind:'hearthside'}};
++  }
+   object(op, ['kind', 'expectedRevision', 'id', 'value', 'year', 'experience','task','event']);
+   object(op, op.kind==='experience.add-task'?['kind','expectedRevision','id','task']:op.kind==='experience.schedule'?['kind','expectedRevision','id','event']:op.kind==='occasion.prepare'?['kind','expectedRevision','id','year','experience']:['memory.keep','memory.withdraw','room.keep','room.withdraw'].includes(op.kind) ? ['kind', 'expectedRevision', 'id'] : ['kind', 'expectedRevision', 'value']);
+   const experienceExists = (id: string | null) => { if (id !== null && !s.experiences.some(e => e.id === id)) throw Error('HEARTHSIDE_EXPERIENCE_MISSING'); };
+diff --git a/src/hearthside/memoryPublication.ts b/src/hearthside/memoryPublication.ts
+--- a/src/hearthside/memoryPublication.ts
++++ b/src/hearthside/memoryPublication.ts
+@@ -1,3 +1,4 @@
++import {decodeWinProvenance} from './winMemoryProvenance.ts';
+ import type { MemoryComposition } from './contracts.ts';
+ import { vaultAssert, vaultDigest, vaultId, vaultInteger, vaultObject } from './vaultContracts.ts';
+
+@@ -7,7 +8,7 @@
+   memoryId: string; memoryRevision: number; compositionDigest: string;
+ };
+ export type MemoryPublicationComposition = Pick<MemoryComposition,
+-  'version' | 'id' | 'revision' | 'title' | 'date' | 'experienceId' | 'media' | 'designs' | 'recollections' | 'hideAmounts'>;
++  'version' | 'id' | 'revision' | 'title' | 'date' | 'experienceId' | 'media' | 'designs' | 'recollections' | 'hideAmounts' | 'legacySource'>;
+ export type MemoryPublicationCandidate = MemoryComposition & { publication?: MemoryPublicationBinding };
+ export type VaultMemoryReview = {
+   expectedRevision: number; composition: MemoryPublicationComposition; compositionDigest: string;
+@@ -38,7 +39,7 @@
+     media: memory.media.map(m => ({ version: m.version, contentId: m.contentId, revision: m.revision, kind: m.kind, alt: m.alt })),
+     designs: memory.designs.map(d => ({ version: d.version, documentId: d.documentId, pieceId: d.pieceId, revision: d.revision })),
+     recollections: memory.recollections.map(r => ({ memberId: r.memberId, text: r.text })).sort((a, b) => a.memberId.localeCompare(b.memberId)),
+-    hideAmounts: memory.hideAmounts };
++    hideAmounts: memory.hideAmounts, ...(memory.legacySource?{legacySource:decodeWinProvenance(memory.legacySource)}:{}) };
+ }
+ export function memoryCompositionDigest(memory: MemoryPublicationComposition): Promise<string> {
+   return vaultDigest(memoryPublicationProjection(memory));
+diff --git a/src/core/chapters.ts b/src/core/chapters.ts
+--- a/src/core/chapters.ts
++++ b/src/core/chapters.ts
+@@ -1,3 +1,4 @@
++import {assertLegacyWinWriteAllowed} from '../hearthside/winMemory.ts';
+ import { captureCommand } from "../ledgerSync/capture.ts";
+ import type { DateKey } from "./calendar.ts";
+ import { cloneHousehold } from "./household.ts";
+@@ -895,6 +896,7 @@
+ /** Keeping a Memory is opt-in and authored; a shared Memory is kept when both partners choose it. */
+ export const keepWinAsMemory = captureCommand("keepWinAsMemory", function keepWinAsMemory(household: Household, input: { memberId: string; winId: string; authoredNote?: string; hideAmounts?: boolean; at?: string }): CommitResult {
+   requireMember(household, input.memberId);
++  assertLegacyWinWriteAllowed(household);
+   const at = input.at ?? nowIso();
+   const next = cloneHousehold(household);
+   const win = (next.wins ?? []).find((row) => row.id === input.winId);
+diff --git a/workers/ledgerRoom.ts b/workers/ledgerRoom.ts
+--- a/workers/ledgerRoom.ts
++++ b/workers/ledgerRoom.ts
+@@ -1,3 +1,4 @@
++import {rejectLegacyWinPublication} from '../src/hearthside/winMemory.ts';
+ import {createEncounterDesign,encounterDesignIdentity} from '../src/hearthside/encounterDesign.ts';
+ import {commitHearthside} from '../src/hearthside/commands.ts';
+ import {identifier,object} from '../src/hearthside/contracts.ts';
+@@ -1488,6 +1489,7 @@
+           return;
+         }
+         admission = true;
++        rejectLegacyWinPublication(command.steps);
+         // Pause new actions without losing accepted receipts or the ability to cancel pending claims.
+         if(command.steps.some(step=>step.kind==='executeHerculesAction')&&!herculesActionsEnabled(a.scope.environment, this.env.HERCULES_ACTIONS_ENABLED))throw new Error('HERCULES_ACTIONS_PAUSED');
+         const prepared = await prepareCommand(
+diff --git a/src/HouseholdHome.tsx b/src/HouseholdHome.tsx
+--- a/src/HouseholdHome.tsx
++++ b/src/HouseholdHome.tsx
+@@ -1,3 +1,6 @@
++import {WinMemoryReview} from './hearthside/WinMemoryReview.tsx';
++import {winMemoryId} from './hearthside/winMemory.ts';
++import {commitHearthside} from './hearthside/commands.ts';
+ import { useState, type ReactNode } from "react";
+ import type { CommitResult, Household } from "./core/types.ts";
+ import type { DateKey } from "./core/calendar.ts";
+@@ -7,7 +10,7 @@
+ import { duePotentialExpenses, potentialExpensesForView } from "./core/potentialExpenses.ts";
+ import { kittyBankBackingStep, kittyBanksInView } from "./core/kittyBanks.ts";
+ import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulseFreshness } from "./core/fundPulse.ts";
+-import { dismissWin, keepWinAsMemory, openChapterFor, recentWin } from "./core/chapters.ts";
++import { dismissWin, openChapterFor, recentWin } from "./core/chapters.ts";
+ import { fundDisplayName } from "./core/spaceNames.ts";
+ import { ChapterMoment } from "./ChapterPanel.tsx";
+ import { CanonicalKittyFlat } from "./hearthside/DesignProvider.tsx";
+@@ -39,12 +42,13 @@
+   onGo: (tab: "ledger" | "plan" | "together" | "calendar" | "more") => void;
+   onOpenSetup: (destination: "charter" | "fund") => void;
+   onReadSubmission?: KittySubmissionReader;
++  onOpenMemory?: (memoryId:string)=>void;
+   /** Chapter 1 is the Month-One rehearsal; its access stays inside the Chapter area. */
+   rehearsal?: ReactNode;
+   identityArt?: ReactNode;
+ };
+
+-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt }: HouseholdHomeProps) {
++function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onOpenMemory, rehearsal, identityArt }: HouseholdHomeProps) {
+   const [bankRequest, setBankRequest] = useState<{ goalId?: string } | null>(null);
+   const monthKey = monthKeyFromDateKey(today);
+   const chapter = openChapterFor(household);
+@@ -55,9 +59,6 @@
+   const allBanks = kittyBanksInView(household, "household", memberId);
+   const banks = allBanks.slice(0, 2);
+   const win = recentWin(household);
+-  const activeMemberIds = household.members.filter((row) => row.active).map((row) => row.id);
+-  const memoryComplete = Boolean(win && activeMemberIds.every((id) => win.keptByMemberIds.includes(id)));
+-  const memberKeptMemory = Boolean(win?.keptByMemberIds.includes(memberId));
+   const fundName = fundDisplayName(household);
+   const destinationTab = pulse.destination === "fund" ? "ledger" : pulse.destination === "path" ? "plan" : pulse.destination === "together" ? "together" : "more";
+
+@@ -139,14 +140,10 @@
+         <section className={`home-win home-win--${win.level}`} aria-label="A recent Win">
+           <p className="kicker">{win.level === "first" ? "A First" : win.level === "graduation" ? "Graduated" : "A shared Win"}</p>
+           <h3>{win.title}</h3>
+-          {memoryComplete ? <p className="muted">Kept as a Memory{win.authoredNote ? ` — “${win.authoredNote}”` : ""}.</p> : (
+-            <div className="chapter-actions">
+-              {memberKeptMemory ? <p className="muted">You chose to keep this. It becomes a shared Memory when your partner chooses too.</p> : <>
+-                <button type="button" disabled={busy} onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: win.id }))}>Keep as a Memory</button>
+-                {win.keptByMemberIds.length === 0 ? <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button> : null}
+-              </>}
+-            </div>
+-          )}
++          <WinMemoryReview key={win.id} household={household} win={win} memory={household.hearthside?.memories.find(m=>m.id===winMemoryId(household,win.id))} busy={busy}
++            onAdopt={(operation,id,recover)=>onCommand(current=>commitHearthside(current,{version:1,id,scope:{environment:current.environment,householdId:current.householdId,memberId},operation}),{confirmationId:id,recoverConfirmation:recover,suppressUndo:true})}
++            onOpen={id=>{if(onOpenMemory)onOpenMemory(id);else onGo('together');}}/>
++          {win.keptByMemberIds.length===0&&!household.hearthside?.memories.some(m=>m.id===winMemoryId(household,win.id))&&<button type="button" disabled={busy} onClick={()=>void onCommand(current=>dismissWin(current,{memberId,winId:win.id}))}>Let it fade</button>}
+         </section>
+       )}
+
+diff --git a/src/App.tsx b/src/App.tsx
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -6816,6 +6816,7 @@
+           busy={busy}
+           onCommand={runKitchen}
+           onGo={(next) => goTab(next)}
++          onOpenMemory={id=>{window.history.pushState({hearthTab:'play'},'',hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}));goTab('play');}}
+           onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
+           onReadSubmission={async id => { const status = await readWorkShiftSubmission(id); if (status === "pending") ledgerSyncRef.current?.retryPending(); return status; }}
+           rehearsal={(
+diff --git a/src/hearthside/Hearthside.tsx b/src/hearthside/Hearthside.tsx
+--- a/src/hearthside/Hearthside.tsx
++++ b/src/hearthside/Hearthside.tsx
+@@ -1,3 +1,4 @@
++import {WinMemorySource} from './WinMemorySource.tsx';
+ import {GuestVisitsEntry} from './GuestVisitsEntry.tsx';
+ import {HEARTHSIDE_FLAGS} from './flags.ts';
+ import {ExperienceWorktable} from './workspaceSurface.tsx';
+@@ -146,7 +147,7 @@
+       </>:selectedMemory&&!selectedMemory.withdrawn?<>
+         <p className="hearthside-eyebrow">{selectedMemory.date??'A moment, in our own time'}</p><h2 id="hearthside-focus-title" tabIndex={-1}>{selectedMemory.title}</h2>
+         <MemoryArtwork references={selectedMemory.designs} snapshots={memoryArtwork.snapshots}/>
+-        <div className="hearthside-recollections">{h.members.filter(m=>m.active).map(member=><article key={member.id}><h3>{member.name} remembers</h3><p>{selectedMemory.recollections.find(r=>r.memberId===member.id)?.text||'Room for their own words.'}</p></article>)}</div>
++        <WinMemorySource source={selectedMemory.legacySource}/><div className="hearthside-recollections">{h.members.filter(m=>m.active).map(member=><article key={member.id}><h3>{member.name} remembers</h3><p>{selectedMemory.recollections.find(r=>r.memberId===member.id)?.text||'Room for their own words.'}</p></article>)}</div>
+         <p>{memoryKeptByEveryone(selectedMemory,activeMembers)?'We both chose to keep this version.':'Each of us chooses whether to keep this exact composition.'}</p>
+         <div className="hearthside-actions"><button onClick={()=>editMemory(selectedMemory)}>Add or edit my recollection</button>{!selectedMemory.publication&&<button disabled={!commands.canStart||!memoryArtwork.ready||selectedMemory.approvals.some(a=>a.memberId===memberId&&a.revision===selectedMemory.revision)} onClick={()=>void commands.submit({kind:'memory.keep',id:selectedMemory.id,expectedRevision:selectedMemory.revision})}>{selectedMemory.approvals.some(a=>a.memberId===memberId&&a.revision===selectedMemory.revision)?'You chose to keep this':'Keep this version'}</button>}</div>
+         {selectedMemory.publication&&memoryPublication(selectedMemory)}
+@@ -158,7 +159,7 @@
+       <details><summary>Connect existing parts of our life</summary><div className="hearthside-link-choices">{[...h.goals.filter(g=>g.shared).map(g=>({reference:{kind:'bank',id:g.id} as SharedReference,label:g.name})),...(h.tasks??[]).filter(t=>t.visibility==='household'&&!t.deleted).map(t=>({reference:{kind:'task',id:t.id} as SharedReference,label:t.title})),...(h.nativeEvents??[]).filter(e=>e.visibility==='household'&&!e.deleted).map(e=>({reference:{kind:'calendar-event',id:e.id} as SharedReference,label:e.title})),...(h.planVersions??[]).filter(p=>p.scope==='household'&&p.state==='active').flatMap(p=>p.lines.map(l=>({reference:{kind:'plan-line',id:l.id,planVersionId:p.id} as SharedReference,label:l.labelSnapshot})))].map(({reference,label})=>{const same=(r:SharedReference)=>r.kind===reference.kind&&r.id===reference.id&&r.planVersionId===reference.planVersionId;return <label key={`${reference.kind}:${reference.planVersionId??''}:${reference.id}`}><input type="checkbox" checked={experienceDraft.references.some(same)} onChange={e=>setExperienceDraft({...experienceDraft,references:e.target.checked?[...experienceDraft.references,reference]:experienceDraft.references.filter(r=>!same(r))})}/><span>{label}<small>{reference.kind.replaceAll('-',' ')}</small></span></label>;})}</div></details>
+       <div className="hearthside-actions"><button disabled={!commands.canStart}>Save our intention</button><button type="button" onClick={()=>setExperienceDraft(null)}>Cancel</button></div></form></section>}
+     {noteDraft&&<section className="hearthside-editor" aria-label="Note draft"><form onSubmit={e=>{e.preventDefault();void commands.submit({kind:'note.save',expectedRevision:noteDraft.revision-1,value:noteDraft}).then(ok=>{if(ok)setNoteDraft(null);});}}><h2>A little something, from {actorName}</h2><label>Your note<textarea aria-label="Your note" required maxLength={4000} value={noteDraft.text} onChange={e=>setNoteDraft({...noteDraft,text:e.target.value})}/></label><p>Shared with the people in this home.</p><div className="hearthside-actions"><button disabled={!commands.canStart}>Leave this note</button><button type="button" onClick={()=>setNoteDraft(null)}>Cancel</button></div></form></section>}
+-    {memoryDraft&&<section className="hearthside-editor" aria-label="Memory draft"><form onSubmit={e=>{e.preventDefault();if(memoryDraft.media.length)return;const plain={...memoryDraft};delete plain.publication;void commands.submit({kind:'memory.compose',expectedRevision:memoryDraft.revision-1,value:plain}).then(ok=>{if(ok){setMemoryDraft(null);openObject('memory',memoryDraft.id);}});}}><h2>What I remember</h2><label>A name for this moment<input required maxLength={240} value={memoryDraft.title} onChange={e=>setMemoryDraft({...memoryDraft,title:e.target.value})}/></label><label>My words<textarea aria-label="My words" maxLength={6000} value={memoryDraft.recollections.find(r=>r.memberId===memberId)?.text??''} onChange={e=>setMemoryDraft({...memoryDraft,recollections:[...memoryDraft.recollections.filter(r=>r.memberId!==memberId),{memberId,text:e.target.value}]})}/></label><label>A date, if you want one<input type="date" value={memoryDraft.date??''} onChange={e=>setMemoryDraft({...memoryDraft,date:e.target.value||null})}/></label><label className="hearthside-checkbox"><input type="checkbox" checked={memoryDraft.hideAmounts} onChange={e=>setMemoryDraft({...memoryDraft,hideAmounts:e.target.checked})}/>Keep amounts out of this memory</label><details><summary>Keep a piece exactly as it is now</summary>{state.designs.flatMap(design=>design.pieceIds.map((pieceId,i)=>{const selected=memoryDraft.designs.some(ref=>ref.documentId===design.designId&&ref.pieceId===pieceId);return <label className="hearthside-checkbox" key={`${design.designId}:${pieceId}`}><input type="checkbox" checked={selected} onChange={e=>setMemoryDraft({...memoryDraft,designs:e.target.checked?[...memoryDraft.designs,{version:1,documentId:design.designId,pieceId,revision:design.revision}]:memoryDraft.designs.filter(ref=>!(ref.documentId===design.designId&&ref.pieceId===pieceId))})}/>{design.bankId?h.goals.find(g=>g.id===design.bankId)?.name??'Our piece':'Our Studio piece'} {i+1} · revision {design.revision}</label>;}))}<MemoryArtwork references={memoryDraft.designs} snapshots={draftArtwork.snapshots}/></details><p>We each choose whether to keep the resulting version.</p>{memoryPublication(memoryDraft,true)}<div className="hearthside-actions">{!memoryDraft.media.length&&<button disabled={!commands.canStart||!draftArtwork.ready}>Share this composition for us to keep</button>}<button type="button" onClick={()=>setMemoryDraft(null)}>Cancel</button></div></form></section>}
++    {memoryDraft&&<section className="hearthside-editor" aria-label="Memory draft"><form onSubmit={e=>{e.preventDefault();if(memoryDraft.media.length)return;const plain={...memoryDraft};delete plain.publication;void commands.submit({kind:'memory.compose',expectedRevision:memoryDraft.revision-1,value:plain}).then(ok=>{if(ok){setMemoryDraft(null);openObject('memory',memoryDraft.id);}});}}><h2>What I remember</h2><WinMemorySource source={memoryDraft.legacySource}/><label>A name for this moment<input required maxLength={240} value={memoryDraft.title} onChange={e=>setMemoryDraft({...memoryDraft,title:e.target.value})}/></label><label>My words<textarea aria-label="My words" maxLength={6000} value={memoryDraft.recollections.find(r=>r.memberId===memberId)?.text??''} onChange={e=>setMemoryDraft({...memoryDraft,recollections:[...memoryDraft.recollections.filter(r=>r.memberId!==memberId),{memberId,text:e.target.value}]})}/></label><label>A date, if you want one<input type="date" value={memoryDraft.date??''} onChange={e=>setMemoryDraft({...memoryDraft,date:e.target.value||null})}/></label><label className="hearthside-checkbox"><input type="checkbox" checked={memoryDraft.hideAmounts} onChange={e=>setMemoryDraft({...memoryDraft,hideAmounts:e.target.checked})}/>Keep amounts out of this memory</label><details><summary>Keep a piece exactly as it is now</summary>{state.designs.flatMap(design=>design.pieceIds.map((pieceId,i)=>{const selected=memoryDraft.designs.some(ref=>ref.documentId===design.designId&&ref.pieceId===pieceId);return <label className="hearthside-checkbox" key={`${design.designId}:${pieceId}`}><input type="checkbox" checked={selected} onChange={e=>setMemoryDraft({...memoryDraft,designs:e.target.checked?[...memoryDraft.designs,{version:1,documentId:design.designId,pieceId,revision:design.revision}]:memoryDraft.designs.filter(ref=>!(ref.documentId===design.designId&&ref.pieceId===pieceId))})}/>{design.bankId?h.goals.find(g=>g.id===design.bankId)?.name??'Our piece':'Our Studio piece'} {i+1} · revision {design.revision}</label>;}))}<MemoryArtwork references={memoryDraft.designs} snapshots={draftArtwork.snapshots}/></details><p>We each choose whether to keep the resulting version.</p>{memoryPublication(memoryDraft,true)}<div className="hearthside-actions">{!memoryDraft.media.length&&<button disabled={!commands.canStart||!draftArtwork.ready}>Share this composition for us to keep</button>}<button type="button" onClick={()=>setMemoryDraft(null)}>Cancel</button></div></form></section>}
+     {(commands.message||draftMessage||!connected)&&<aside className="hearthside-status" role="status">{commands.message||draftMessage||'Your room is here. Reconnect to save something shared.'}{commands.retry&&<button disabled={commands.pending||!connected} onClick={()=>void retrySave()}>Check and retry this save</button>}</aside>}
+     {nativeFunding.message&&<p role="status">{nativeFunding.message}</p>}
+     {bank&&<KittyBankRoom household={h} view="household" memberId={memberId} identity={identity} busy={busy} onCommand={nativeFunding.command} onReadSubmission={nativeFunding.read} initialGoalId={bank.id} returnTo="Hearthside" onClose={()=>{setBank(null);requestAnimationFrame(()=>document.getElementById(returnFocus.current)?.focus());}}/>}
+diff --git a/src/hearthside/MemoryPublication.tsx b/src/hearthside/MemoryPublication.tsx
+--- a/src/hearthside/MemoryPublication.tsx
++++ b/src/hearthside/MemoryPublication.tsx
+@@ -1,3 +1,4 @@
++import {WinMemorySource} from './WinMemorySource.tsx';
+ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+ import type { VaultClientScope } from './vaultClient.ts';
+ import { type VaultMailCard, type VaultMedia, vaultAssert } from './vaultContracts.ts';
+@@ -149,6 +150,7 @@
+     {review && exact && proposalAccepted && <section className="memory-exact-review" aria-label="Exact shared memory review"><h4 ref={reviewHeading} tabIndex={-1}>We each choose this whole composition</h4>
+       <h5>{review.memory.composition.title}</h5><p>{review.memory.composition.date ?? 'An ordinary moment, in our own time'}</p>
+       {artwork}
++      <WinMemorySource source={review.memory.composition.legacySource}/>
+       <div className="memory-paired-words">{review.memory.composition.recollections.map(r => <article key={r.memberId}><h6>{name(r.memberId)} remembers</h6><p>{r.text || 'Room for their own words.'}</p></article>)}</div>
+       <p>{review.memory.composition.hideAmounts ? 'Amounts stay out of this memory.' : 'This composition allows its reviewed amounts to appear.'}</p>
+       <p>For {review.recipientMemberIds.map(name).join(' and ')}. A changed photo, caption, recollection, or amount choice needs a fresh review.</p>
+diff --git a/src/hearthside/guestProjection.ts b/src/hearthside/guestProjection.ts
+--- a/src/hearthside/guestProjection.ts
++++ b/src/hearthside/guestProjection.ts
+@@ -10,7 +10,7 @@
+   activeMemberIds: readonly string[];
+   experience(id: string): { revision: number; shared: boolean; archived: boolean; title: string; intention: string } | null;
+   note(id: string): { revision: number; shared: boolean; archived: boolean; text: string } | null;
+-  memory(id: string): { revision: number; shared: boolean; withdrawn: boolean; title: string; recollections: { memberId: string; text: string }[]; approvals: { memberId: string; revision: number }[]; media: GuestSourceMedia[]; publicationId:string|null; designs:{designId:string;pieceId:string;revision:number}[] } | null;
++  memory(id: string): { revision: number; shared: boolean; withdrawn: boolean; title: string; recollections: { memberId: string; text: string }[]; earlierNote?:{label:string;text:string}; approvals: { memberId: string; revision: number }[]; media: GuestSourceMedia[]; publicationId:string|null; designs:{designId:string;pieceId:string;revision:number}[] } | null;
+   memoryAccess(binding:GuestMemoryBinding):Promise<boolean>;
+   piece(designId: string, pieceId: string, revision: number): Promise<{ revision: number; shared: boolean; archived: boolean; piece: KittyPieceV1 } | null>;
+   /** Exact reviewed, metadata-clean image or voice-note bytes. May not resolve private Vault drafts/letters. */
+@@ -39,7 +39,7 @@
+         const sha256=await guestDigest(copied.bytes);guestAssert(sha256===copied.sha256,'GUEST_MEDIA_CHANGED');mediaBytes+=copied.bytes.byteLength;guestAssert(mediaBytes<=GUEST_LIMITS.totalMediaBytes,'GUEST_SELECTION_TOO_LARGE');
+         const id=`media-${media.length+1}`;media.push({id,mime:copied.mime,sha256,bytes:copied.bytes});images.push({id,kind:reference.kind,mime:copied.mime,sha256,byteLength:copied.bytes.byteLength,alt:reference.alt});
+       }
+-      objects.push({...base,kind:'memory',title:row.title,captions:row.recollections.map((r,index)=>({label:`Voice ${index+1}`,text:r.text})),media:images,pieces});
++      objects.push({...base,kind:'memory',title:row.title,captions:[...row.recollections.map((r,index)=>({label:`Voice ${index+1}`,text:r.text})),...(row.earlierNote?[row.earlierNote]:[])],media:images,pieces});
+     }
+   }
+   const {title,welcome,theme,room,mode}=selection,arrangement=decodeGuestArrangement({version:1,title,welcome,theme,room,mode,objects});
+diff --git a/workers/hearthsideGuestSource.ts b/workers/hearthsideGuestSource.ts
+--- a/workers/hearthsideGuestSource.ts
++++ b/workers/hearthsideGuestSource.ts
+@@ -1,3 +1,4 @@
++import {winPublicCaption} from '../src/hearthside/winMemoryProvenance.ts';
+ import {memoryKeptByEveryone,type HearthsideState} from '../src/hearthside/contracts.ts';
+ import {guestAssert,guestDigest,GUEST_LIMITS,type GuestMedia} from '../src/hearthside/guestContracts.ts';
+ import type {GuestSourceCatalogue} from '../src/hearthside/guestProjection.ts';
+@@ -13,7 +14,7 @@
+  const catalogue:GuestSourceCatalogue={activeMemberIds,
+   experience:id=>{const r=state.experiences.find(e=>e.id===id);return r?{revision:r.revision,shared:true,archived:r.state==='archived',title:r.title,intention:r.intention}:null;},
+   note:id=>{const r=state.notes.find(n=>n.id===id);return r?{revision:r.revision,shared:true,archived:r.archived,text:r.text}:null;},
+-  memory:id=>{const r=memory(id);return r?{revision:r.revision,shared:memoryKeptByEveryone(r,activeMemberIds),withdrawn:r.withdrawn,title:r.title,recollections:r.recollections,approvals:r.approvals,
++  memory:id=>{const r=memory(id);return r?{revision:r.revision,shared:memoryKeptByEveryone(r,activeMemberIds),withdrawn:r.withdrawn,title:r.title,recollections:r.recollections,...(winPublicCaption(r.legacySource)?{earlierNote:winPublicCaption(r.legacySource)!}:{}),approvals:r.approvals,
+     publicationId:r.publication?.publicationId??null,media:r.media.map(m=>({id:m.contentId,revision:m.revision,publicationId:r.publication?.publicationId??'',kind:m.kind,alt:m.alt})),
+     designs:r.designs.map(d=>({designId:d.documentId,pieceId:d.pieceId,revision:d.revision}))}:null;},
+   piece:readers.piece,
+diff --git a/src/hearthside/projectorCanvas.ts b/src/hearthside/projectorCanvas.ts
+--- a/src/hearthside/projectorCanvas.ts
++++ b/src/hearthside/projectorCanvas.ts
+@@ -1,7 +1,8 @@
++import {memoryCaptionRows} from './winMemoryCaptions.ts';
+ import type { MemoryComposition } from './contracts.ts';
+ import { amountForMemory, assetNotice, authorLabel } from './projectorComposition.ts';
+ import type { PreparedProjector, ProjectorAsset } from './projectorTypes.ts';
+-export type ProjectorPage = { memory: MemoryComposition; asset?: ProjectorAsset; columns: { memberId: string; label: string; lines: string[] }[]; page: number; pages: number };
++export type ProjectorPage = { memory: MemoryComposition; asset?: ProjectorAsset; columns: { memberId: string|null; label: string; lines: string[] }[]; page: number; pages: number };
+ export const PROJECTOR_WIDTH = 1280, PROJECTOR_HEIGHT = 720;
+ const palettes = {
+   classic: { paper: '#f5e8d0', ink: '#332d24', border: '#a88a57', light: '#fff6df', soft: '#e7d8bb' },
+@@ -21,8 +22,9 @@
+ export function buildProjectorPages(prepared: PreparedProjector, measure: (text: string) => number): ProjectorPage[] {
+   return prepared.selection.memories.flatMap(memory => {
+     const captionPages: ProjectorPage['columns'][] = [];
+-    for (let author = 0; author < memory.recollections.length; author += 2) {
+-      const pair = memory.recollections.slice(author, author + 2).map(row => ({ memberId: row.memberId, label: authorLabel(prepared.selection, row.memberId), lines: wrapProjectorText(row.text, 548, measure) }));
++    const captions=memoryCaptionRows(memory,id=>authorLabel(prepared.selection,id));
++    for (let author = 0; author < captions.length; author += 2) {
++      const pair = captions.slice(author, author + 2).map(row => ({ memberId: row.memberId, label: row.label, lines: wrapProjectorText(row.text, 548, measure) }));
+       const count = Math.max(1, ...pair.map(row => Math.ceil(row.lines.length / 6)));
+       for (let page = 0; page < count; page++) captionPages.push(pair.map(row => ({ ...row, lines: row.lines.slice(page * 6, (page + 1) * 6) })));
+     }
+diff --git a/src/hearthside/projectorStory.ts b/src/hearthside/projectorStory.ts
+--- a/src/hearthside/projectorStory.ts
++++ b/src/hearthside/projectorStory.ts
+@@ -1,3 +1,4 @@
++import {memoryCaptionRows,memoryForStoryFile} from './winMemoryCaptions.ts';
+ import { amountForMemory, assetNotice, authorLabel, checkProjectorCurrent } from './projectorComposition.ts';
+ import type { PreparedProjector, ProjectorGuard, ProjectorFile } from './projectorTypes.ts';
+ const escape = (value: unknown) => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
+@@ -6,7 +7,7 @@
+   return {
+     format: 'hearth-kept-story', version: 1, theme: selection.options.theme,
+     secondsPerPage: selection.options.secondsPerPage,
+-    compositions: selection.memories,
++    compositions: selection.memories.map(memoryForStoryFile),
+     voices: Object.fromEntries(selection.memories.flatMap(memory => memory.recollections.map(row => [row.memberId, authorLabel(selection, row.memberId)]))),
+     // Hidden or unrelated snapshot amounts never enter the downloadable payload.
+     amountSnapshots: selection.memories.flatMap(memory => { const amount = amountForMemory(selection, memory); return amount ? [amount] : []; }),
+@@ -30,7 +31,7 @@
+       pictures.push(`<figure>${asset.kind === 'audio' ? `<audio controls preload="none" src="${escape(url)}"></audio>` : `<img alt="${escape(caption)}" src="${escape(url)}">`}<figcaption>${escape(caption)}</figcaption></figure>`);
+     }
+     const amount = amountForMemory(selection, memory);
+-    sections.push(`<article><header><small>KEPT TOGETHER · REVISION ${memory.revision}</small><h2>${escape(memory.title)}</h2>${memory.date ? `<time>${escape(memory.date)}</time>` : ''}</header><div class="pictures">${pictures.join('')}</div><div class="voices">${memory.recollections.map(row => `<section><h3>${escape(authorLabel(selection, row.memberId))}</h3><p>${escape(row.text || 'No caption was added to this kept version.')}</p></section>`).join('')}</div>${amount ? `<aside>${escape(new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount.amountCents / 100))} · snapshot as of ${escape(amount.asOf)}<br>${escape(amount.provenance)}</aside>` : ''}</article>`);
++    sections.push(`<article><header><small>KEPT TOGETHER · REVISION ${memory.revision}</small><h2>${escape(memory.title)}</h2>${memory.date ? `<time>${escape(memory.date)}</time>` : ''}</header><div class="pictures">${pictures.join('')}</div><div class="voices">${memoryCaptionRows(memory,id=>authorLabel(selection,id)).map(row => `<section><h3>${escape(row.label)}</h3><p>${escape(row.text || 'No caption was added to this kept version.')}</p></section>`).join('')}</div>${amount ? `<aside>${escape(new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount.amountCents / 100))} · snapshot as of ${escape(amount.asOf)}<br>${escape(amount.provenance)}</aside>` : ''}</article>`);
+   }
+   const manifest = JSON.stringify(projectorManifest(prepared), null, 2);
+   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; media-src data:; style-src 'unsafe-inline'"><title>Our kept story</title><style>body{margin:0;background:#ece5d6;color:#332e26;font:18px/1.6 Georgia,serif}main{max-width:1000px;margin:auto;padding:clamp(20px,5vw,70px)}h1{font-weight:400;font-size:clamp(36px,7vw,66px)}h2{font-size:32px;font-weight:400}small{font:12px system-ui;letter-spacing:.12em}article{margin:45px 0;padding:clamp(20px,4vw,44px);background:#fff7e8;border-top:6px double #9d865e;box-shadow:0 8px 30px #49351915}header{border-bottom:1px solid #bfa983;padding-bottom:20px}.voices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:28px}.voices p{white-space:pre-wrap;overflow-wrap:anywhere}.voices h3{font:600 13px system-ui;letter-spacing:.08em}.pictures{display:flex;flex-wrap:wrap;gap:18px;margin:26px 0}.pictures figure{margin:0;flex:1;min-width:min(100%,280px)}img{max-width:100%;max-height:600px;object-fit:contain}audio{max-width:100%}figcaption,.missing,aside{font:14px/1.6 system-ui}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 monospace}body[data-theme=taylor]{background:#e9d8d6;color:#543547}body[data-theme=taylor] article{background:#fff0e7;border-color:#b28699;box-shadow:7px 7px 0 #a777891c}body[data-theme=newfoundland]{background:#d9e1d8;color:#294748}body[data-theme=newfoundland] article{background:#f5f0dd;border-color:#718a7b}button,a{min-height:44px}@media print{article{break-inside:avoid;box-shadow:none}details{display:none}}</style></head><body data-theme="${escape(selection.options.theme)}"><main><small>HEARTH · OUR THEATRE</small><h1>Our kept story</h1><p>This readable story file contains the selected kept versions, in your chosen order. It is not a video.</p>${sections.join('')}<details><summary>Exact compositions and asset records</summary><pre>${escape(manifest)}</pre></details></main></body></html>`;
+diff --git a/src/hearthside/TheatreProjector.tsx b/src/hearthside/TheatreProjector.tsx
+--- a/src/hearthside/TheatreProjector.tsx
++++ b/src/hearthside/TheatreProjector.tsx
+@@ -1,3 +1,4 @@
++import {WinMemorySource} from './WinMemorySource.tsx';
+ import { useEffect, useId, useMemo, useRef, useState } from 'react';
+ import type { MemoryComposition } from './contracts.ts';
+ import type { ThemeId } from '../theme/scenes.ts';
+@@ -127,7 +128,7 @@
+     </div><div className="htp-footlights" aria-hidden="true"/></div>
+     <div className="htp-transport"><button type="button" disabled={!page || pageIndex <= 0 || operationBusy} onClick={() => { setPlaying(false); setPageIndex(index => index - 1); }}>← Previous</button><button type="button" className="htp-play" disabled={!page || operationBusy} onClick={() => setPlaying(value => !value)}>{playing ? 'Pause story' : 'Play story'}</button><button type="button" disabled={!page || pageIndex >= pages.length - 1 || operationBusy} onClick={() => { setPlaying(false); setPageIndex(index => index + 1); }}>Next →</button><span>{pages.length ? `${Math.min(pageIndex + 1, pages.length)} / ${pages.length} pages` : 'Ready when we are'}</span></div>
+     {audioUrl && page?.asset?.kind === 'audio' && <div className="htp-audio"><label htmlFor={`${id}-audio`}>The kept voice note</label><audio id={`${id}-audio`} ref={audio} src={audioUrl} controls preload="metadata"/></div>}
+-    {active && page && <section className="htp-caption-copy" aria-label="The complete kept captions"><header><div><small>KEPT VERSION {page.memory.revision}{page.memory.date ? ` · ${page.memory.date}` : ''}</small><h3>{page.memory.title}</h3></div>{props.onReviewMemory && <button type="button" onClick={() => props.onReviewMemory!(page.memory.id, page.memory.revision)}>Review our captions</button>}</header><div>{page.memory.recollections.map(row => <article key={row.memberId}><h4>{props.authorLabels?.[row.memberId] || `Voice ${page.memory.recollections.indexOf(row) + 1}`}</h4><p>{row.text || 'No caption was added to this kept version.'}</p></article>)}</div>{amountForMemory(active.selection, page.memory) && <p className="htp-amount">{amountForMemory(active.selection, page.memory)!.provenance} · snapshot {amountForMemory(active.selection, page.memory)!.asOf}</p>}</section>}
++    {active && page && <section className="htp-caption-copy" aria-label="The complete kept captions"><header><div><small>KEPT VERSION {page.memory.revision}{page.memory.date ? ` · ${page.memory.date}` : ''}</small><h3>{page.memory.title}</h3></div>{props.onReviewMemory && <button type="button" onClick={() => props.onReviewMemory!(page.memory.id, page.memory.revision)}>Review our captions</button>}</header><WinMemorySource source={page.memory.legacySource} history={false}/><div>{page.memory.recollections.map(row => <article key={row.memberId}><h4>{props.authorLabels?.[row.memberId] || `Voice ${page.memory.recollections.indexOf(row) + 1}`}</h4><p>{row.text || 'No caption was added to this kept version.'}</p></article>)}</div>{amountForMemory(active.selection, page.memory) && <p className="htp-amount">{amountForMemory(active.selection, page.memory)!.provenance} · snapshot {amountForMemory(active.selection, page.memory)!.asOf}</p>}</section>}
+     <div className="htp-desk"><section className="htp-selection" aria-label="Choose and order memories"><header><div><small>SET OUT OUR REEL</small><h3>The order we remember</h3></div><span>{chosen.length} chosen</span></header><ol>{[...chosen.map(key => eligible.find(memory => memoryKey(memory) === key)!).filter(Boolean), ...eligible.filter(memory => !chosen.includes(memoryKey(memory)))].map(memory => { const key = memoryKey(memory), index = chosen.indexOf(key); return <li key={key}><label><input type="checkbox" checked={index >= 0} disabled={operationBusy} onChange={event => setOrder(previous => event.target.checked ? [...previous, key] : previous.filter(item => item !== key))}/><span><strong>{memory.title}</strong><small>{memory.date || 'A moment we kept'} · version {memory.revision}</small></span></label>{index >= 0 && <div><button type="button" disabled={index === 0 || operationBusy} aria-label={`Move ${memory.title} earlier`} onClick={() => move(key, -1)}>↑</button><button type="button" disabled={index === chosen.length - 1 || operationBusy} aria-label={`Move ${memory.title} later`} onClick={() => move(key, 1)}>↓</button></div>}</li>; })}</ol>{!eligible.length && <p>There are no mutually kept versions to project yet.</p>}</section>
+       <section className="htp-export" aria-labelledby={`${id}-export`}><small>TAKE OUR STORY WITH US</small><h3 id={`${id}-export`}>A film to keep</h3><p>Our chosen moments, saved artwork and each person’s own words, in the order we choose.</p><label htmlFor={`${id}-seconds`}>Seconds per page<input id={`${id}-seconds`} type="number" min="1" max="30" value={seconds} disabled={operationBusy} onChange={event => { const value = Number(event.target.value); if (value >= 1 && value <= 30) setSeconds(value); }}/></label><p className="htp-help">Voice notes play in full. Longer captions continue onto more pages.</p>{canShowAmounts && <label className="htp-check"><input type="checkbox" checked={showAmounts} disabled={operationBusy} onChange={event => setShowAmounts(event.target.checked)}/>Include the explicitly kept amount snapshots</label>}<div className="htp-export-actions"><button type="button" disabled={!active || operationBusy || !filmSupported} onClick={() => void createFile('film')}>Create film</button><button type="button" disabled={!active || operationBusy} onClick={() => void createFile('story')}>Create story file</button></div>{!filmSupported && <p className="htp-help">Video recording is unavailable here. The readable story file keeps the chosen words and media.</p>}{operationBusy && <div className="htp-progress"><label htmlFor={`${id}-progress`}>{busy === 'film' ? 'Recording our film' : busy === 'download' ? 'Checking access to our story' : 'Preparing our story'}</label><progress id={`${id}-progress`} max="1" value={busy === 'film' ? progress : undefined}/><button type="button" onClick={cancel}>Cancel export</button></div>}{file?.stamp === stamp && fileUrl && <button type="button" className="htp-download" disabled={operationBusy} onClick={() => void downloadFile()}>Download {file.value.kind === 'film' ? 'film' : 'readable story file'}</button>}</section></div>
+     <p className="htp-status" role="status">{message}</p>

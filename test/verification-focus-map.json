@@ -292,6 +292,604 @@
         "test/sync-pilot-diagnostics.test.ts"
       ],
       "reason": "Exact-release daily sync evidence, privacy-safe diagnostics, two-client visibility, reconnect, poll fallback, and relaunch proof"
+    },
+    {
+      "sources": [
+        "src/App.tsx",
+        "src/hearthside/CollaborativeStudio.tsx",
+        "src/hearthside/DesignExportJob.ts",
+        "src/hearthside/DesignExportSurface.tsx",
+        "src/hearthside/DesignProvider.tsx",
+        "src/hearthside/Hearthside.tsx",
+        "src/hearthside/HouseholdRoom.tsx",
+        "src/hearthside/Letters.tsx",
+        "src/hearthside/LettersEntry.tsx",
+        "src/hearthside/LettersState.tsx",
+        "src/hearthside/MemoryArtwork.tsx",
+        "src/hearthside/NativeSceneSurface.tsx",
+        "src/hearthside/Occasions.tsx",
+        "src/hearthside/PlanNextSteps.tsx",
+        "src/hearthside/RoomIllustration.tsx",
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/catalogue.ts",
+        "src/hearthside/collaborativeStudio.css",
+        "src/hearthside/commands.ts",
+        "src/hearthside/contracts.ts",
+        "src/hearthside/creativeContinuity.ts",
+        "src/hearthside/creativePresence.ts",
+        "src/hearthside/design.ts",
+        "src/hearthside/designArchive.ts",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/designContracts.ts",
+        "src/hearthside/designProjection.ts",
+        "src/hearthside/designSurfaceContracts.ts",
+        "src/hearthside/designSurfaces.css",
+        "src/hearthside/drafts.ts",
+        "src/hearthside/exportCapture.ts",
+        "src/hearthside/exportGeometry.ts",
+        "src/hearthside/exportGlb.ts",
+        "src/hearthside/exportKitty.ts",
+        "src/hearthside/exportManufacturing.ts",
+        "src/hearthside/exportPdf.ts",
+        "src/hearthside/exportStl.ts",
+        "src/hearthside/exportThreeMf.ts",
+        "src/hearthside/exportTypes.ts",
+        "src/hearthside/exportWorker.ts",
+        "src/hearthside/flags.ts",
+        "src/hearthside/focusedTool.ts",
+        "src/hearthside/hearthside.css",
+        "src/hearthside/letters.css",
+        "src/hearthside/lettersMedia.ts",
+        "src/hearthside/native.ts",
+        "src/hearthside/nativeBridge.ts",
+        "src/hearthside/nativeFundingReview.ts",
+        "src/hearthside/occasions.css",
+        "src/hearthside/roomScene.css",
+        "src/hearthside/routes.ts",
+        "src/hearthside/specimen.css",
+        "src/hearthside/specimen.tsx",
+        "src/hearthside/specimenDesign.tsx",
+        "src/hearthside/useHearthsideCommands.ts",
+        "src/hearthside/vaultClient.ts",
+        "src/hearthside/vaultContracts.ts",
+        "src/ledgerSync/authority.ts",
+        "src/ledgerSync/backup.ts",
+        "src/ledgerSync/registry.ts",
+        "src/ledgerSync/resources.ts",
+        "workers/hearthsideAcceptanceStore.ts",
+        "workers/hearthsideDesignStore.ts",
+        "workers/hearthsideVault.ts",
+        "workers/hearthsideVaultArchive.ts",
+        "workers/hearthsideVaultAudience.ts",
+        "workers/hearthsideVaultStore.ts",
+        "workers/ledgerRoom.ts"
+      ],
+      "tests": [
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/hercules-play.test.ts",
+        "test/kitty-studio.test.ts",
+        "test/kitty-studio-ui.test.ts",
+        "test/kitty-envelope.test.ts",
+        "test/kitty-envelope-ui.test.ts",
+        "test/kitty-banks.test.ts",
+        "test/plan-life-contract.test.ts",
+        "test/plan-life-ui.test.ts",
+        "test/plan-system.test.ts",
+        "test/vision-v2-chapters.test.ts",
+        "test/workspace-contracts.test.ts",
+        "test/workspace-command-authority.test.ts",
+        "test/workspace-links.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/month-rehearsal-mainline.test.ts",
+        "test/ledger-sync-authority.test.ts",
+        "test/ledger-sync-backup.test.ts",
+        "test/home-feedback-ui.test.ts"
+      ],
+      "reason": "Hearthside complete couple journeys, scoped creative authority and recovery preserve affected Play, Kitty, Plan, Chapter, Workspace, startup and month-rehearsal contracts"
+    },
+    {
+      "sources": [
+        "src/hearthside/DesignExportJob.ts",
+        "src/hearthside/DesignExportSurface.tsx",
+        "src/hearthside/DesignProvider.tsx",
+        "src/hearthside/design.ts",
+        "src/hearthside/designArchive.ts",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/designContracts.ts",
+        "src/hearthside/designProjection.ts",
+        "src/hearthside/designSurfaceContracts.ts",
+        "src/hearthside/designSurfaces.css",
+        "src/hearthside/specimenDesign.tsx",
+        "workers/hearthsideDesignStore.ts"
+      ],
+      "tests": [
+        "test/hearthside-design-client.test.ts",
+        "test/hearthside-design-incremental.test.ts",
+        "test/hearthside-design-runtime.test.ts",
+        "test/hearthside-design-surfaces-browser.test.ts",
+        "test/hearthside-design-surfaces.test.ts"
+      ],
+      "reason": "Hearthside canonical design history and selected design surfaces"
+    },
+    {
+      "sources": [
+        "src/hearthside/vaultClient.ts",
+        "src/hearthside/vaultContracts.ts",
+        "workers/hearthsideVault.ts",
+        "workers/hearthsideVaultArchive.ts",
+        "workers/hearthsideVaultAudience.ts",
+        "workers/hearthsideVaultStore.ts"
+      ],
+      "tests": [
+        "test/hearthside-vault-archive.test.ts",
+        "test/hearthside-vault-audience-sql.test.ts",
+        "test/hearthside-vault-audience.test.ts",
+        "test/hearthside-vault-client.test.ts",
+        "test/hearthside-vault-runtime.test.ts",
+        "test/hearthside-vault-service.test.ts",
+        "test/hearthside-vault.test.ts"
+      ],
+      "reason": "Hearthside recipient isolation and recoverable private publication"
+    },
+    {
+      "sources": [
+        "src/hearthside/DesignExportJob.ts",
+        "src/hearthside/DesignExportSurface.tsx",
+        "src/hearthside/exportCapture.ts",
+        "src/hearthside/exportGeometry.ts",
+        "src/hearthside/exportGlb.ts",
+        "src/hearthside/exportKitty.ts",
+        "src/hearthside/exportManufacturing.ts",
+        "src/hearthside/exportPdf.ts",
+        "src/hearthside/exportStl.ts",
+        "src/hearthside/exportThreeMf.ts",
+        "src/hearthside/exportTypes.ts",
+        "src/hearthside/exportWorker.ts"
+      ],
+      "tests": [
+        "test/hearthside-exports.test.ts"
+      ],
+      "reason": "Hearthside immutable physical production packages"
+    },
+    {
+      "sources": [
+        "src/hearthside/NativeSceneSurface.tsx",
+        "src/hearthside/native.ts",
+        "src/hearthside/nativeBridge.ts",
+        "src/hearthside/nativeFundingReview.ts"
+      ],
+      "tests": [
+        "test/hearthside-native.test.ts"
+      ],
+      "reason": "Hearthside native identity and reviewed funding return"
+    },
+    {
+      "sources": [
+        "src/hearthside/HouseholdRoom.tsx",
+        "src/hearthside/RoomIllustration.tsx",
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/roomScene.css"
+      ],
+      "tests": [
+        "test/hearthside-room-scene.test.ts"
+      ],
+      "reason": "Hearthside authored rooms and bounded arrangement"
+    },
+    {
+      "sources": [
+        "src/hearthside/Letters.tsx",
+        "src/hearthside/LettersEntry.tsx",
+        "src/hearthside/LettersState.tsx",
+        "src/hearthside/letters.css",
+        "src/hearthside/lettersMedia.ts"
+      ],
+      "tests": [
+        "test/hearthside-letters-browser.test.ts",
+        "test/hearthside-letters-ui.test.ts"
+      ],
+      "reason": "Hearthside private letter and voice encounters"
+    },
+    {
+      "sources": [
+        "src/hearthside/MemoryPublication.tsx",
+        "src/hearthside/MemoryPublicationEntry.tsx",
+        "src/hearthside/memoryPublication.ts",
+        "src/hearthside/memoryPublicationClient.ts",
+        "src/hearthside/VaultProvider.tsx",
+        "src/hearthside/contracts.ts",
+        "src/hearthside/commands.ts",
+        "workers/hearthsideVault.ts",
+        "workers/hearthsideVaultStore.ts",
+        "workers/ledgerRoom.ts",
+        "workers/ledgerSync.ts",
+        "src/ledgerSync/client.ts"
+      ],
+      "tests": [
+        "test/hearthside-memory-authority.test.ts",
+        "test/hearthside-vault-memory.test.ts",
+        "test/hearthside-vault-memory-client.test.ts",
+        "test/hearthside-memory-browser.test.ts",
+        "test/hearthside-contracts.test.ts"
+      ],
+      "reason": "Exact shared-memory composition, private reviewed copies, actual LedgerRoom and Vault admission, paired approval, withdrawal and retry recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/TheatreProjector.tsx",
+        "src/hearthside/ProjectorEntry.tsx",
+        "src/hearthside/projectorAuthority.ts",
+        "src/hearthside/projectorComposition.ts",
+        "src/hearthside/projectorFilm.ts",
+        "src/hearthside/projectorCanvas.ts",
+        "src/hearthside/projectorStory.ts",
+        "src/hearthside/projectorTypes.ts",
+        "src/hearthside/paintedSnapshot.tsx"
+      ],
+      "tests": [
+        "test/hearthside-projector.test.ts",
+        "test/hearthside-projector-authority.test.ts"
+      ],
+      "reason": "Actual chosen immutable memory/design revisions, fresh exact authorization at download, playable film, cancellation and bounded media resources"
+    },
+    {
+      "sources": [
+        "src/core/chapterAuthority.ts",
+        "src/core/chapterConsent.ts",
+        "src/core/chapterTaskSource.ts",
+        "src/core/chapterTasks.ts",
+        "src/core/chapters.ts",
+        "src/core/tasks.ts",
+        "src/ChapterPanel.tsx",
+        "src/ChapterTaskControls.tsx",
+        "src/hearthside/creativeContinuity.ts",
+        "src/core/restorePoints.ts",
+        "src/ledgerSync/authority.ts",
+        "src/ledger/materializeSnapshotFromEvents.ts",
+        "src/ledger/continuityCommandLog.ts"
+      ],
+      "tests": [
+        "test/hearthside-chapter-tasks.test.ts",
+        "test/hearthside-chapter-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/vision-v2-chapters.test.ts",
+        "test/planner-tasks.test.ts",
+        "test/planner-agenda.test.ts",
+        "test/planner-ui.test.ts",
+        "test/month-rehearsal-mainline.test.ts"
+      ],
+      "reason": "Canonical Chapter/Move/Ritual Task graph, exact mutual review, individual pause, accepted responsibility and financial-restore preservation"
+    },
+    {
+      "sources": [
+        "src/hearthside/LifeStepComposer.tsx",
+        "src/hearthside/focusedTool.ts",
+        "src/calendar/NativeEventEditor.tsx",
+        "src/Calendar.tsx",
+        "src/core/agenda.ts",
+        "src/planner/Planner.tsx"
+      ],
+      "tests": [
+        "test/hearthside-practical.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/calendar-weight-ui.test.ts",
+        "test/native-events.test.ts",
+        "test/planner-ui.test.ts"
+      ],
+      "reason": "One intention survives canonical Task/date creation, existing-record changes, pending receipt recovery and focused return"
+    },
+    {
+      "sources": [
+        "src/hearthside/FutureLandscape.tsx",
+        "src/hearthside/futureLandscape.css",
+        "src/hearthside/HouseholdRoom.tsx",
+        "src/hearthside/Hearthside.tsx"
+      ],
+      "tests": [
+        "test/hearthside-futures.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/plan-projection.test.ts"
+      ],
+      "reason": "Imagined tonight, season and someday projections reuse exact acknowledged shared Plan evidence, with free intentions and private/unavailable source isolation"
+    },
+    {
+      "sources": [
+        "src/hearthside/StudioHandoff.tsx",
+        "src/hearthside/studioHandoff.ts",
+        "src/hearthside/RoomHistory.tsx",
+        "src/hearthside/roomHistory.ts",
+        "src/hearthside/roomHistory.css",
+        "src/hearthside/commands.ts",
+        "src/hearthside/contracts.ts",
+        "workers/ledgerRoom.ts",
+        "src/hearthside/StudioShelf.tsx",
+        "src/hearthside/studioShelf.css"
+      ],
+      "tests": [
+        "test/hearthside-handoff.test.ts",
+        "test/hearthside-room-history.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-room-scene.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Author-specific Studio invitations and exact paired recorded room views, retained historical designs, current withdrawal and local real-authority receipt recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/workspacePublicationState.ts",
+        "src/hearthside/workspaceAuthority.ts",
+        "src/hearthside/workspaceContext.ts",
+        "src/hearthside/workspacePublication.ts",
+        "src/hearthside/workspaceSurface.tsx",
+        "src/hearthside/workspaceDraft.ts",
+        "src/hearthside/resident.ts",
+        "src/hearthside/resident.tsx",
+        "src/workspace/Workspace.tsx",
+        "src/workspace/contracts.ts",
+        "src/workspace/client.ts",
+        "src/workspace/runtime.ts",
+        "workers/workspace/service.ts",
+        "workers/workspace/shared.ts",
+        "workers/workspace/route.ts",
+        "workers/workspace/tools.ts",
+        "workers/ledgerRoom.ts",
+        "src/App.tsx"
+      ],
+      "tests": [
+        "test/hearthside-workspace.test.ts",
+        "test/hearthside-workspace-runtime.test.ts",
+        "test/hearthside-workspace-browser.test.ts",
+        "test/hearthside-workspace-authority.test.ts",
+        "test/workspace-contracts.test.ts",
+        "test/workspace-trust.test.ts",
+        "test/workspace-ui.test.ts",
+        "test/workspace-links.test.ts",
+        "test/workspace-command-authority.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/app-startup-p1.test.ts"
+      ],
+      "reason": "Selected experience continuity, private drafts, exact provider disclosure and immutable reviewed artifacts accepted by real LedgerRoom without private source leakage"
+    },
+    {
+      "sources": [
+        "src/hearthside/designRecovery.ts",
+        "src/hearthside/RejectedDesignEdit.tsx",
+        "src/hearthside/KeyboardPaint.tsx",
+        "src/hearthside/keyboardStrokeDraft.ts",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/CollaborativeStudio.tsx"
+      ],
+      "tests": [
+        "test/hearthside-design-client.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-design-runtime.test.ts"
+      ],
+      "reason": "Explicit retained-edit comparison, atomic durable replacement, original surface mapping and privately scoped keyboard draft recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/encounterContracts.ts",
+        "src/hearthside/encounterService.ts",
+        "src/hearthside/encounterDesign.ts",
+        "src/hearthside/encounterWardrobe.ts",
+        "src/hearthside/encounterSharedClient.ts",
+        "workers/hearthsideVaultEncounters.ts",
+        "workers/hearthsideVaultEncounterAdapter.ts"
+      ],
+      "tests": [
+        "test/hearthside-encounters.test.ts",
+        "test/hearthside-encounter-runtime.test.ts",
+        "test/hearthside-encounter-client.test.ts",
+        "test/hearthside-encounter-authority.test.ts",
+        "test/hearthside-encounter-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Exact paired encounter choices, fresh recipient evidence, canonical Studio copy and private recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/roomFurniture.ts",
+        "src/hearthside/RoomFurnitureArranger.tsx",
+        "src/hearthside/roomHistory.ts"
+      ],
+      "tests": [
+        "test/hearthside-furniture.test.ts",
+        "test/hearthside-furniture-authority.test.ts",
+        "test/hearthside-furniture-browser.test.ts",
+        "test/hearthside-room-history.test.ts",
+        "test/hearthside-room-scene.test.ts",
+        "test/hearthside-guests-runtime.test.ts",
+        "test/hearthside-contracts.test.ts"
+      ],
+      "reason": "Canonical furniture CAS, immutable historical and guest layouts, arrangement recovery and actual SVG controls"
+    },
+    {
+      "sources": [
+        "workers/hearthsideGuestSource.ts",
+        "src/hearthside/guestImage.ts",
+        "src/hearthside/GuestVisitsEntry.tsx",
+        "src/hearthside/StreetEntry.tsx",
+        "src/hearthside/GuestVisits.tsx",
+        "workers/hearthsideGuests.ts"
+      ],
+      "tests": [
+        "test/hearthside-guests.test.ts",
+        "test/hearthside-guests-runtime.test.ts",
+        "test/hearthside-guests-sql.test.ts",
+        "test/hearthside-guests-browser.test.ts",
+        "test/hearthside-memory-authority.test.ts",
+        "test/hearthside-furniture-authority.test.ts",
+        "test/hearthside-guest-image.test.ts",
+        "test/hearthside-street-entry.test.ts",
+        "test/hearthside-guest-assembly.test.ts"
+      ],
+      "reason": "Guest-only namespace and actual entry, original publication binding, source withdrawal and prepared private media"
+    },
+    {
+      "sources": [
+        "src/hearthside/nativeAuth.ts",
+        "src/hearthside/nativeBootstrap.ts",
+        "src/hearthside/nativeSessionStore.ts",
+        "src/hearthside/NativeWidgetEntry.tsx",
+        "src/hearthside/nativeWidget.ts",
+        "src/hearthside/nativeWidgetCapture.ts",
+        "src/auth/supabaseSession.ts",
+        "src/main.tsx"
+      ],
+      "tests": [
+        "test/hearthside-native.test.ts",
+        "test/hearthside-native-auth.test.ts",
+        "test/hearthside-native-bootstrap.test.ts",
+        "test/hearthside-native-ui.test.ts",
+        "test/hearthside-native-widget.test.ts",
+        "test/hearthside-street-entry.test.ts",
+        "test/supabase-auth-session.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/continuity-auth-reconnect.test.ts"
+      ],
+      "reason": "Secure native hydration and callback recovery, exact widget opt-in and account/guest scope isolation"
+    },
+    {
+      "sources": [
+        "workers/workspace/shared.ts",
+        "workers/workspace/sharedArchive.ts",
+        "workers/workspace/sharedArchiveStorage.ts"
+      ],
+      "tests": [
+        "test/hearthside-workspace-archive.test.ts",
+        "test/hearthside-workspace-authority.test.ts",
+        "test/hearthside-workspace-runtime.test.ts",
+        "test/hearthside-workspace.test.ts",
+        "test/workspace-command-authority.test.ts"
+      ],
+      "reason": "Shared-copy archive-before-ACK, initialization rollback, stale-tail restore and terminal withdrawal"
+    },
+    {
+      "sources": [
+        "src/hearthside/winMemory.ts",
+        "src/hearthside/winMemoryProvenance.ts",
+        "src/hearthside/winMemoryCaptions.ts",
+        "src/hearthside/WinMemoryReview.tsx",
+        "src/hearthside/WinMemorySource.tsx",
+        "src/hearthside/contracts.ts",
+        "src/hearthside/commands.ts",
+        "src/hearthside/memoryPublication.ts",
+        "src/HouseholdHome.tsx",
+        "src/core/chapters.ts",
+        "src/hearthside/projectorCanvas.ts",
+        "src/hearthside/projectorStory.ts",
+        "src/hearthside/guestProjection.ts",
+        "workers/hearthsideGuestSource.ts",
+        "workers/ledgerRoom.ts"
+      ],
+      "tests": [
+        "test/hearthside-win-memory.test.ts",
+        "test/hearthside-win-memory-ui.test.ts",
+        "test/hearthside-win-memory-runtime.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-memory-authority.test.ts",
+        "test/hearthside-projector.test.ts",
+        "test/hearthside-projector-authority.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/home-feedback-ui.test.ts",
+        "test/vision-v2-chapters.test.ts",
+        "test/hearthside-guest-assembly.test.ts"
+      ],
+      "reason": "Deterministic legacy Win adoption, exact provenance consent, accepted Home-to-Theatre continuity, retired-write receipt replay and recovery without resurrection"
+    },
+    {
+      "sources": [
+        "src/kitty/KittyStage.tsx",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/RejectedDesignEdit.tsx",
+        "test/fixtures/hearthsideMakingPerformanceProof.tsx"
+      ],
+      "tests": [
+        "test/hearthside-making-performance.test.ts",
+        "test/hearthside-design-client.test.ts"
+      ],
+      "reason": "Actual Studio local pointer and keyboard response, immediate illustrated loading, retained edit continuation and repeated WebGL resource disposal"
+    },
+    {
+      "sources": [
+        "src/hearthside/EncounterEntry.tsx",
+        "src/hearthside/encounterEntryController.ts",
+        "src/hearthside/encounterEntryBridge.ts",
+        "src/hearthside/encounterSharedClient.ts",
+        "src/hearthside/encounterEntry.css"
+      ],
+      "tests": [
+        "test/hearthside-encounter-entry-browser.test.ts",
+        "test/hearthside-encounter-authority.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Actual recipient-private encounter entry, stable Studio and media identities, paired memory review, scoped recovery and canonical authority"
+    },
+    {
+      "sources": [
+        "src/hearthside/bankReceipt.ts",
+        "src/hearthside/bankCreation.ts",
+        "src/hearthside/bankJourney.ts",
+        "src/hearthside/BankCreationSurface.tsx",
+        "src/hearthside/ExperienceBankEntry.tsx",
+        "src/hearthside/experienceBank.css",
+        "src/kitty/KittyBankRoom.tsx",
+        "src/ledgerSync/client.ts",
+        "src/hearthside/Hearthside.tsx",
+        "src/HouseholdHome.tsx",
+        "src/KittyBanks.tsx",
+        "src/App.tsx"
+      ],
+      "tests": [
+        "test/hearthside-bank-journey.test.ts",
+        "test/hearthside-bank-journey-ui.test.ts",
+        "test/hearthside-bank-journey-runtime.test.ts",
+        "test/kitty-envelope-ui.test.ts",
+        "test/kitty-envelope.test.ts",
+        "test/kitty-studio-ui.test.ts",
+        "test/home-feedback-ui.test.ts",
+        "test/plan-life-ui.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Exact bank creation receipts, independent intention links, reviewed recovery across reload/scope changes and existing Kitty financial regressions"
+    },
+    {
+      "sources": [
+        "src/hearthside/BrowserSculpture.tsx",
+        "packages/hearthside-browser-ar/index.js",
+        "packages/hearthside-browser-ar/package.json"
+      ],
+      "tests": [
+        "test/hearthside-design-surfaces-browser.test.ts",
+        "test/hearthside-native-ui.test.ts"
+      ],
+      "reason": "Private accepted sculpture viewer, explicit browser placement, supported renderer isolation and scope-close model revocation"
+    },
+    {
+      "sources": [
+        "src/hearthside/sharedLifeRestore.ts",
+        "src/hearthside/sharedLifeRestoreContracts.ts",
+        "src/hearthside/SharedLifeRestore.tsx",
+        "src/hearthside/useSharedLifeRestore.ts",
+        "src/hearthside/sharedLifeRestore.css"
+      ],
+      "tests": [
+        "test/hearthside-shared-life-restore.test.ts",
+        "test/hearthside-shared-life-restore-runtime.test.ts",
+        "test/hearthside-shared-life-restore-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-bank-journey.test.ts",
+        "test/hearthside-furniture-authority.test.ts",
+        "test/ledger-sync-authority.test.ts",
+        "test/month-rehearsal-mainline.test.ts"
+      ],
+      "reason": "Exact paired shared-life restore, current withdrawal and financial preservation, media exclusion and real authority recovery"
     }
   ]
 }

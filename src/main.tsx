@@ -1,6 +1,7 @@
-import { StrictMode, type ReactNode } from "react";
+import { StrictMode, Suspense, lazy, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "./App.tsx";
+import { hydrateNativeAuthentication } from "./hearthside/nativeBootstrap.ts";
+import { NativeAuthNotice } from "./hearthside/NativeAuthNotice.tsx";
 import { KitchenErrorBoundary } from "./KitchenErrorBoundary.tsx";
 import { ThemeProvider } from "./theme/ThemeProvider.tsx";
 import "./styles.css";
@@ -55,5 +56,16 @@ const renderKitchen = (content: ReactNode) => root.render(
 if (import.meta.env.DEV && new URLSearchParams(window.location.search).has("themeStudio")) {
   void import("./theme/ThemeStudio.tsx").then(({ default: Studio }) => renderKitchen(<Studio />));
 } else {
-  renderKitchen(<App />);
+  const start = async () => {
+    renderKitchen(<main className="welcome"><section className="welcome-card"><h1>Opening Hearth…</h1><p role="status">Loading your secure sign-in on this device.</p></section></main>);
+    try {
+      await hydrateNativeAuthentication();
+      const { HearthsideEntry } = await import("./hearthside/StreetEntry.tsx");
+      const App = lazy(() => import("./App.tsx").then(module => ({default: module.App})));
+      renderKitchen(<><NativeAuthNotice /><HearthsideEntry><Suspense fallback={<p role="status">Opening your home…</p>}><App /></Suspense></HearthsideEntry></>);
+    } catch {
+      renderKitchen(<main className="welcome"><section className="welcome-card"><h1>Unlock secure storage</h1><p role="alert">Hearth could not load this device’s secure sign-in. Unlock your device and retry.</p><button type="button" onClick={() => void start()}>Retry secure startup</button></section></main>);
+    }
+  };
+  void start();
 }

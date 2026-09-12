@@ -2009,6 +2009,8 @@ export default {
       return handleWorkspace(request, env);
     }
     const url = new URL(request.url);
+    if(url.pathname.startsWith('/api/hearthside-vault/')){const {handleHearthsideVault}=await import('./hearthsideVault.ts');return handleHearthsideVault(request,env);}
+    if(url.pathname.startsWith('/api/hearthside-guests/')){const {handleHearthsideGuests}=await import('./hearthsideGuests.ts');return handleHearthsideGuests(request,env);}
     const boardMedia = await handleBoardMedia(request, env);
     if (boardMedia) return boardMedia;
     const ledgerSync = await handleLedgerSync(request, env);

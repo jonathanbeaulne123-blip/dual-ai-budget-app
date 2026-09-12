@@ -1,7 +1,12 @@
+import {BankCreationSurface} from '../hearthside/BankCreationSurface.tsx';
+import {bankCreationKey,type BankCreationContext} from '../hearthside/bankCreation.ts';
+import type {KittyAcceptedCommandReader} from '../hearthside/bankReceipt.ts';
+import { useCanonicalKitty } from "../hearthside/DesignProvider.tsx";
+import { CollaborativeStudio } from "../hearthside/CollaborativeStudio.tsx";
+import { HEARTHSIDE_FLAGS } from "../hearthside/flags.ts";
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import {
-  addGoal,
   saveGoalEnvelope,
   fundGoal,
   purchaseGoal,
@@ -41,7 +46,7 @@ import { useDialog } from "../useDialog.ts";
 import { useAsyncScope } from "../asyncScope.ts";
 import { KittyStage } from "./KittyStage.tsx";
 import { StudioBench, useKittyStudio } from "./studio/KittyStudio.tsx";
-import { displayedKittyPiece, newKittyPiece } from "../core/kittyStudio.ts";
+import { displayedKittyPiece } from "../core/kittyStudio.ts";
 import { studioHex } from "./studio/palette.ts";
 import { bisqueHex } from "./studio/paintCanvas.ts";
 /** Seal colour: the displayed studio piece's dip (chalky while unfired), else the legacy glaze. */
@@ -82,13 +87,17 @@ export type KittyRoomProps = {
   busy?: boolean;
   identity: string;
   onReadSubmission?: KittySubmissionReader;
+  onReadAcceptedCommand?: KittyAcceptedCommandReader;
+  creationContext?: BankCreationContext;
+  creationIdentity?: string;
+  onBankCreated?: (value:{confirmationId:string;goalId:string})=>void|Promise<void>;
   onCommand: (
     fn: (h: Household) => CommitResult,
     options?: KittyCommandOptions,
   ) => unknown;
   context?: KittyPlanContext;
   initialGoalId?: string;
-  returnTo?: "Plan" | "Home";
+  returnTo?: "Plan" | "Home" | "Hearthside";
   onClose: () => void;
 };
 type SavedReview = { id: string; title: string };
@@ -210,6 +219,10 @@ function Room({
   busy = false,
   identity,
   onReadSubmission,
+  onReadAcceptedCommand,
+  creationContext,
+  creationIdentity,
+  onBankCreated,
   onCommand,
   context,
   initialGoalId,
@@ -235,7 +248,8 @@ function Room({
     "active",
   );
   const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? "");
-  const [creating, setCreating] = useState(false);
+  const bankScope={identity:creationIdentity??identity,environment:h.environment,householdId:h.householdId,memberId};
+  const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext);}});
   const [studioFor, setStudioFor] = useState("");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
   const visible = all.filter((goal) =>
@@ -247,6 +261,7 @@ function Room({
   );
   const requested = all.find((goal) => goal.id === selected);
   const goal = requested ?? visible[0];
+  const awaitingCreatedGoal=Boolean(studioFor&&selected===studioFor&&!requested);
   const [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState("");
@@ -425,7 +440,7 @@ function Room({
           type="button"
           className="kitty-new"
           onClick={() => setCreating(true)}
-          disabled={busy || saving}
+          disabled={busy || saving || awaitingCreatedGoal}
         >
           ＋ New bank
         </button>
@@ -490,28 +505,11 @@ function Room({
           ✓ {receipt}
         </p>
       )}
-      {creating || !goal ? (
-        <CreateBank
-          key={creating ? "new" : "empty"}
-          view={view}
-          memberId={memberId}
-          busy={busy || saving}
-          onCancel={goal ? () => setCreating(false) : undefined}
-          onCreate={async (input) => {
-            let id = "";
-            const saved = await run((current) => {
-              const result = addGoal(current, input);
-              id = result.postedIds[0]!;
-              return result;
-            }, "Bank created. Your new purpose is ready for its first plan.");
-            if (saved) {
-              setFilter("active");
-              setStudioFor(id);
-              select(id);
-            }
-            return saved;
-          }}
-        />
+      {awaitingCreatedGoal ? <section className="kitty-folio"><h2>Your bank is created</h2><p role="status">The accepted bank is arriving in this view.</p><button type="button" onClick={onClose}>Return with bank saved</button></section> : creating || !goal ? (
+        <BankCreationSurface key={JSON.stringify([creationIdentity??identity,creationContext?.id??(creating?'new':'empty')])} scope={bankScope} household={h} view={view} busy={Boolean(busy||saving)} context={creationContext} onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand}
+          onCancel={creationContext?onClose:goal?()=>setCreating(false):onClose}
+          onCreated={async value=>{const token=scope.capture();await onBankCreated?.(value);if(!scope.isCurrent(token))return;setFilter('active');setStudioFor(value.goalId);select(value.goalId);}}/>
+
       ) : (
         <Bank
           key={goal.id}
@@ -568,119 +566,6 @@ function Room({
           keeps the purpose.
         </p>
       </footer>
-    </div>
-  );
-}
-function CreateBank({
-  view,
-  memberId,
-  busy,
-  onCreate,
-  onCancel,
-}: {
-  view: LedgerView;
-  memberId: string;
-  busy: boolean;
-  onCreate: (input: Parameters<typeof addGoal>[1]) => Promise<boolean>;
-  onCancel?: () => void;
-}) {
-  const [name, setName] = useState(""),
-    [target, setTarget] = useState(""),
-    [envelope, setEnvelope] = useState(() => ({
-      ...defaultGoalEnvelope(),
-      studio: {
-        version: 1 as const,
-        draft: newKittyPiece(crypto.randomUUID().slice(0, 8), new Date().toISOString(), "cream"),
-        fired: [],
-      },
-    }));
-  return (
-    <div className="kitty-room-spread">
-      <KittyStage piece={envelope.studio.draft} glaze={envelope.glaze} open={true} name="New bank" />
-      <form
-        className="kitty-folio"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void onCreate({
-            name,
-            target,
-            shared: view === "household",
-            ownerMemberId: view === "personal" ? memberId : null,
-            envelope,
-          });
-        }}
-      >
-        <span className="kitty-eyebrow">The first page</span>
-        <h2>What are we making room for?</h2>
-        <p>Two things to start. Everything else can wait, or never happen at all.</p>
-        <label>
-          Bank name
-          <input
-            required
-            maxLength={100}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="A slower week away"
-          />
-        </label>
-        <label>
-          How much (CAD)
-          <input
-            required
-            inputMode="decimal"
-            value={target}
-            onChange={(event) => setTarget(event.target.value)}
-            placeholder="2,000"
-          />
-        </label>
-        <details className="kitty-optional">
-          <summary>Say more (optional)</summary>
-          <label>
-            Why this one
-            <textarea
-              maxLength={1000}
-              value={envelope.purpose}
-              onChange={(event) =>
-                setEnvelope({ ...envelope, purpose: event.target.value })
-              }
-              placeholder="What will this make possible?"
-            />
-          </label>
-          <label>
-            Belongs in
-            <select
-              value={envelope.kind}
-              onChange={(event) =>
-                setEnvelope({
-                  ...envelope,
-                  kind: event.target.value as typeof envelope.kind,
-                })
-              }
-            >
-              <option value="build">Build · a future we choose</option>
-              <option value="protect">Protect · a promise or cushion</option>
-              <option value="prepare">Prepare · a cost that comes around</option>
-            </select>
-          </label>
-        </details>
-        <div className="kitty-actions">
-          <button
-            className="kitty-primary"
-            disabled={busy || !name.trim() || !fillDraftCents(target)}
-          >
-            Create {view === "personal" ? "personal" : "shared"} bank
-          </button>
-          {onCancel && (
-            <button type="button" onClick={onCancel}>
-              Cancel
-            </button>
-          )}
-        </div>
-        <small>
-          This makes the bank and a lump of clay to shape next. It does not
-          assign or move money.
-        </small>
-      </form>
     </div>
   );
 }
@@ -764,12 +649,14 @@ function Bank({
     () => kittyBankBackingStep(h, goal, today),
     [h, goal, today],
   );
+  const canonical = useCanonicalKitty(goal);
+  const collaborative = Boolean(goal.envelope?.designRef) || HEARTHSIDE_FLAGS.collaborativeDesign;
   const studio = useKittyStudio({
     goal,
     identity,
     memberId,
     envelope: initialEnvelope(goal, context),
-    active: page === "studio",
+    active: page === "studio" && !collaborative,
     run,
     readLatest,
   });
@@ -865,29 +752,29 @@ function Bank({
         )}
       </div>
       <div
-        className="kitty-room-spread"
+        className={`kitty-room-spread${collaborative ? " is-collaborative" : ""}`}
         ref={bankRef}
         data-goal-id={goal.id}
         data-page={page}
         tabIndex={-1}
       >
         <section className="kitty-object">
-          <KittyStage
-            piece={studio.stagePiece}
+          {canonical.loading ? <p role="status">{canonical.error ? "This artwork is unavailable. Your saved piece is kept." : "Opening your artwork…"}</p> : <KittyStage
+            piece={collaborative ? canonical.piece : studio.stagePiece}
             glaze={envelope.glaze}
             open={open}
             name={goal.name}
             step={step}
             celebrate={celebrate}
-            fired={studio.stageFired}
-            mode={studio.mode}
+            fired={collaborative ? Boolean(canonical.piece?.firedAt) : studio.stageFired}
+            mode={collaborative ? "view" : studio.mode}
             spin={studio.spin}
             brush={studio.stageBrush}
             apiRef={studio.apiRef}
             onPaint={(hit, phase) => studio.onPaintRef.current?.(hit, phase)}
             onThrow={(dy) => studio.onThrowRef.current?.(dy)}
             onFlatChange={studio.setFlat}
-          />
+          />}
           <div className="kitty-nameplate">
             <span>
               {goal.envelope?.kind ?? linked[0]?.lens ?? "Build"} ·{" "}
@@ -986,7 +873,7 @@ function Bank({
             </p>
           )}
           {page === "studio" && (
-            <StudioBench state={studio} goal={goal} busy={busy} step={step} />
+            collaborative ? <CollaborativeStudio household={h} memberId={memberId} bankId={goal.id} initialDesignId={goal.envelope?.designRef?.designId}/> : <StudioBench state={studio} goal={goal} busy={busy} step={step} />
           )}
           {page === "bank" && (
             <>

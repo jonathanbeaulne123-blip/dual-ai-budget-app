@@ -12,7 +12,7 @@ async function mount(household: Household, width = 390) {
   const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
   const requests: string[] = [];
   const props = { household, today, environment: "development" as const, memberId: "MEM-001", view: "household" as const, busy: false,
-    onCommand: () => requests.push("write"), onAskPost: (id: string) => requests.push(id), onAskPostDue: noop,
+    onCommand: () => { requests.push("write"); }, onAskPost: (id: string) => requests.push(id), onAskPostDue: noop,
     onAskSaveRepeating: noop, onAskVisit: noop, onAskSettle: noop, onAskWriteOff: noop, onAskStartJar: noop, onOpenPlan: noop, onOpenShiftEnvelope: noop };
   await act(async () => root.render(createElement(CalendarPage, props)));
   await act(async () => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(button => button.textContent === "Month")!.click());

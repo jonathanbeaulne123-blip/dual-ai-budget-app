@@ -1,0 +1,1 @@
+export declare const HearthsideNative: import('../../src/hearthside/native.ts').NativePlugin & import('../../src/hearthside/nativeAuth.ts').NativeAuthPlugin & import('../../src/hearthside/nativeWidget.ts').NativeWidgetPlugin;

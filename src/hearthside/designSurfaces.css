@@ -1,0 +1,157 @@
+.design-surface {
+  --ds-paper: #fffaf0;
+  --ds-ground: #ede0cb;
+  --ds-ink: #3b2a21;
+  --ds-muted: #655342;
+  --ds-rule: #b5a082;
+  --ds-accent: #6f3829;
+  --ds-wash: #e9d5b4;
+  --ds-art-paper: #fffaf0;
+  --ds-art-ink: #3b2a21;
+  --ds-link: var(--ds-accent);
+  color: var(--ds-ink);
+  background: var(--ds-paper);
+  border: 1px solid var(--ds-rule);
+  border-radius: 20px;
+  box-shadow: 0 16px 50px #35200d12, 0 3px 0 var(--ds-ground);
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 40px);
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+  font-family: var(--font-body, system-ui, sans-serif);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  isolation: isolate;
+}
+.design-surface *, .design-surface *::before, .design-surface *::after { box-sizing: border-box; }
+.design-surface h2, .design-surface h3, .design-surface h4 { color: var(--ds-ink); font-family: Georgia, 'Times New Roman', serif; line-height: 1.18; margin: 0 0 16px; }
+.design-surface h2 { font-size: clamp(1.8rem, 3vw, 2.8rem); max-width: 20ch; }
+.design-surface h3 { font-size: 1.5rem; }
+.design-surface h4 { font-size: 1.1rem; }
+.design-surface p { margin: 0 0 16px; }
+.design-surface button, .design-surface .design-primary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 46px;
+  padding: 11px 18px;
+  border: 1px solid var(--ds-accent);
+  border-radius: 8px;
+  background: var(--ds-accent);
+  color: #fffaf1;
+  font: inherit;
+  font-weight: 650;
+  text-align: center;
+  line-height: 1.35;
+  text-decoration: none;
+  white-space: normal;
+  cursor: pointer;
+}
+.design-surface button:hover:not(:disabled), .design-surface .design-primary:hover { filter: brightness(1.13); }
+.design-surface button:disabled { opacity: .6; cursor: not-allowed; }
+.design-surface :focus-visible { outline: 3px solid var(--ds-link); outline-offset: 4px; }
+.design-surface input, .design-surface select {
+  font: inherit;
+  min-height: 46px;
+  color: var(--ds-ink);
+  background: var(--ds-paper);
+  border: 1px solid var(--ds-rule);
+  border-radius: 5px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 9px 10px;
+}
+.design-surface input[type='checkbox'], .design-surface input[type='radio'] {
+  accent-color: var(--ds-accent);
+  min-height: 22px;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  flex: 0 0 22px;
+}
+.design-surface-heading { display: flex; align-items: flex-start; gap: 24px; justify-content: space-between; border-bottom: 1px solid var(--ds-rule); padding-bottom: 24px; margin-bottom: 32px; }
+.design-surface-heading > div { min-width: 0; }
+.design-surface-heading > button { flex-shrink: 0; color: var(--ds-link); border-color: var(--ds-link); background: transparent; }
+.design-surface .design-eyebrow { color: var(--ds-muted); font-size: .8rem; letter-spacing: .11em; text-transform: uppercase; margin-bottom: 10px; }
+.design-surface-spread { display: grid; grid-template-columns: minmax(220px, .85fr) minmax(0, 1.3fr); gap: clamp(24px, 4vw, 60px); align-items: start; }
+.design-source-preview { margin: 0; padding: 14px; background: var(--ds-ground); border-radius: 12px; position: sticky; top: 16px; }
+.design-preview-paper { position: relative; display: grid; place-items: center; background: var(--ds-art-paper); min-height: 280px; padding: 24px 34px 24px 12px; border: 1px solid var(--ds-rule); border-radius: 5px; }
+.design-preview-paper > svg { color: var(--ds-art-ink); display: block; width: 100%; max-width: 300px; height: auto; overflow: visible; }
+.design-measure { position: absolute; right: 6px; top: 25%; bottom: 25%; display: flex; align-items: center; writing-mode: vertical-rl; border-left: 1px solid var(--ds-rule); padding-left: 5px; color: var(--ds-art-ink); font-size: .75rem; letter-spacing: .03em; }
+.design-source-preview figcaption { text-align: center; margin: 16px 6px; color: var(--ds-muted); font-size: .88rem; }
+.design-surface .design-surface-note { border-top: 1px solid var(--ds-rule); margin: 18px 8px 0; padding: 18px 4px 6px; font-family: Georgia, 'Times New Roman', serif; font-style: italic; text-align: center; }
+.design-surface-work { min-width: 0; }
+.design-surface fieldset { margin: 0 0 24px; border: 1px solid var(--ds-rule); border-radius: 8px; padding: 20px; min-width: 0; }
+.design-surface legend { padding: 0 8px; font-weight: 650; }
+.design-dimensions > label { display: grid; gap: 7px; margin-bottom: 18px; }
+.design-small-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.design-small-fields label { display: grid; align-content: end; gap: 7px; }
+.design-help, .design-backing-state { color: var(--ds-muted); font-size: .88rem; }
+.design-progress, .design-status, .design-error { padding: 18px; background: var(--ds-wash); border-left: 3px solid var(--ds-accent); margin: 20px 0; }
+.design-review, .design-download { margin-top: 30px; padding-top: 28px; border-top: 3px double var(--ds-rule); }
+.design-report { margin: 20px 0 24px; }
+.design-report dl { margin: 0; }
+.design-report dl > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ds-rule); }
+.design-report dt { color: var(--ds-muted); }
+.design-report dd { margin: 0; font-weight: 600; }
+.design-report ul, .design-repair ul, .design-repair ol { padding-left: 24px; }
+.design-surface li { padding-left: 4px; margin-bottom: 10px; }
+.design-surface .design-choice { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 0; cursor: pointer; }
+.design-review > .design-choice { margin: 16px 0; }
+.design-repair { background: var(--ds-ground); border: 1px dashed var(--ds-rule); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+.design-download > .design-primary { margin: 8px 0 24px; }
+.design-download details { border: 1px solid var(--ds-rule); border-radius: 8px; padding: 10px 16px; margin-bottom: 20px; }
+.design-download summary { cursor: pointer; padding: 7px 0; min-height: 44px; }
+.design-download details ul { padding: 10px 0 0; list-style: none; }
+.design-download code { display: block; color: var(--ds-muted); font-size: .74rem; overflow-wrap: anywhere; }
+.design-ar-instructions ol { padding-left: 28px; margin: 24px 0; }
+.design-ar-instructions li::marker { color: var(--ds-accent); font-weight: 700; }
+.design-ar-instructions { border-bottom: 1px solid var(--ds-rule); padding-bottom: 12px; margin-bottom: 26px; }
+.design-ar-actions, .design-browser-fallback { padding: 22px; background: var(--ds-ground); border-radius: 10px; margin-bottom: 24px; }
+.design-browser-fallback .design-primary { margin-top: 16px; }
+.design-browser-fallback button + p, .design-browser-fallback a + p { margin-top: 18px; }
+
+/* The scrapbook retains stitched edges and an offset pasted-in portrait down the
+   entire working page, including its folded production review and receipt. */
+.design-surface[data-design-theme='taylor'] { --ds-paper: #fff8ed; --ds-ground: #eedde2; --ds-ink: #492637; --ds-muted: #754955; --ds-rule: #bc909c; --ds-accent: #873756; --ds-wash: #f0d2ca; border: 2px dashed var(--ds-rule); border-radius: 4px 20px 8px 4px; background-image: linear-gradient(90deg, transparent 21px, #c577821c 21px, #c577821c 23px, transparent 23px); }
+.design-surface[data-design-theme='taylor'] .design-surface-heading { border-bottom: 2px dashed var(--ds-rule); }
+.design-surface[data-design-theme='taylor'] .design-source-preview { border-radius: 3px; transform: rotate(-1deg); box-shadow: 3px 4px 0 #7744511c; margin-top: 10px; }
+.design-surface[data-design-theme='taylor'] .design-source-preview::before { content: ''; position: absolute; z-index: 1; width: 86px; height: 24px; top: -9px; left: calc(50% - 43px); background: repeating-linear-gradient(45deg, #c598a6c9, #c598a6c9 4px, #d9b4bfd6 4px, #d9b4bfd6 8px); transform: rotate(4deg); }
+.design-surface[data-design-theme='taylor'] .design-preview-paper { border: 8px solid var(--ds-paper); outline: 1px solid var(--ds-rule); border-radius: 0; }
+.design-surface[data-design-theme='taylor'] .design-repair, .design-surface[data-design-theme='taylor'] .design-download { border: 2px dashed var(--ds-rule); padding: 24px 20px; background: linear-gradient(135deg, var(--ds-wash) 12px, var(--ds-paper) 12px); }
+.design-surface[data-design-theme='taylor'] .design-report dl > div { border-bottom-style: dashed; }
+.design-surface[data-design-theme='taylor'] .design-ar-instructions { border-left: 3px solid var(--ds-rule); padding-left: 20px; }
+
+/* A coastal workshop: ruled measurement board, solid shelf and blue joinery. */
+.design-surface[data-design-theme='newfoundland'] { --ds-paper: #f7f5e8; --ds-ground: #d7e1dc; --ds-ink: #203b3d; --ds-muted: #49645f; --ds-rule: #8ca8a0; --ds-accent: #225f69; --ds-wash: #c1d8d1; border-radius: 8px; border-top: 8px solid var(--ds-accent); }
+.design-surface[data-design-theme='newfoundland'] .design-source-preview { border-radius: 3px; padding-bottom: 20px; box-shadow: 0 7px 0 #756246, 0 11px 0 #b5a381; }
+.design-surface[data-design-theme='newfoundland'] .design-preview-paper { border-radius: 0; background-image: linear-gradient(#769f9623 1px, transparent 1px), linear-gradient(90deg, #769f9623 1px, transparent 1px); background-size: 20px 20px; }
+.design-surface[data-design-theme='newfoundland'] .design-measure { border-left: 4px double var(--ds-accent); }
+.design-surface[data-design-theme='newfoundland'] .design-surface-heading { border-bottom: 4px double var(--ds-rule); }
+.design-surface[data-design-theme='newfoundland'] .design-review, .design-surface[data-design-theme='newfoundland'] .design-download { border-top: 6px solid var(--ds-accent); }
+.design-surface[data-design-theme='newfoundland'] .design-report dl > div:nth-child(odd) { background: var(--ds-ground); padding-inline: 10px; }
+.design-surface[data-design-theme='newfoundland'] .design-ar-instructions { border-left: 6px solid var(--ds-accent); padding-left: 20px; }
+
+@media (max-width: 719px) {
+  .design-surface { border-radius: 12px; padding: 18px 14px; padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+  .design-surface-heading { flex-direction: column; gap: 6px; margin-bottom: 24px; padding-bottom: 18px; }
+  .design-surface-heading > button { align-self: flex-start; }
+  .design-surface-spread { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .design-source-preview { position: relative; top: auto; max-width: 380px; width: calc(100% - 8px); justify-self: center; padding: 10px; }
+  .design-preview-paper { min-height: 220px; padding-block: 12px; }
+  .design-preview-paper > svg { max-width: 210px; }
+  .design-source-preview figcaption { margin-block: 12px; }
+  .design-surface .design-surface-note { padding-top: 12px; margin-top: 12px; }
+  .design-surface fieldset { padding: 16px 12px; }
+  .design-small-fields { gap: 14px 12px; }
+  .design-report dl > div { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .design-surface .design-primary, .design-dimensions > button, .design-review > button { width: 100%; }
+  .design-repair, .design-ar-actions, .design-browser-fallback { padding: 18px 14px; }
+  .design-surface[data-design-theme='taylor'] .design-repair, .design-surface[data-design-theme='taylor'] .design-download { padding: 20px 12px; }
+}
+@media (prefers-color-scheme: dark) {
+  .design-surface { --ds-paper: #2d2723; --ds-ground: #40352a; --ds-ink: #f4e8d5; --ds-muted: #d4c1a5; --ds-rule: #887157; --ds-accent: #8e4a32; --ds-wash: #574032; --ds-link: var(--ds-ink); }
+  .design-surface[data-design-theme='taylor'] { --ds-paper: #30262b; --ds-ground: #49343c; --ds-ink: #fbe5e4; --ds-muted: #e4c1cb; --ds-rule: #ad7b89; --ds-accent: #873756; --ds-wash: #583842; }
+  .design-surface[data-design-theme='newfoundland'] { --ds-paper: #202d2b; --ds-ground: #2c413a; --ds-ink: #ecf1e6; --ds-muted: #c2d4c8; --ds-rule: #729589; --ds-accent: #225f69; --ds-wash: #355549; }
+}
+@media (prefers-reduced-motion: reduce) { .design-surface *, .design-surface *::before, .design-surface *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

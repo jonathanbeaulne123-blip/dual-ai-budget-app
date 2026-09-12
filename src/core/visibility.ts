@@ -110,6 +110,7 @@ export function householdForAiDisclosure(
   return {
     ...contextual,
     companionProfile: undefined,
+    hearthside: undefined,
     // Personal account IDs remain available so the member's Personal journal
     // still compiles, but private bank/product metadata never enters the model
     // disclosure projection.
@@ -171,6 +172,7 @@ export function householdForHerculesContext(
   return {
     ...scoped,
     companionProfile: undefined,
+    hearthside: undefined,
     accountHistoryReviews: [],
     accountHistoryApprovals: [],
     activity: activitySafeForMember(household, memberId),

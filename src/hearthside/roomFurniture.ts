@@ -1,0 +1,34 @@
+/** Version 1 is an immutable authored coordinate system. Future art changes need a new version. */
+export const FURNITURE_ROOMS = ['common','studio','conservatory','theatre'] as const;
+export type FurnitureRoom = typeof FURNITURE_ROOMS[number];
+export type FurnitureId = 'sofa'|'coffee-table'|'floor-plant'|'worktable'|'stool-left'|'stool-right'|'plant-stand'|'feature-planter'|'hanging-plant'|'projector'|'chair-left'|'chair-right'|'reading-lamp';
+export type FurniturePlacement = {room:FurnitureRoom;furnitureId:FurnitureId;revision:number;x:number;y:number};
+/** A full snapshot, including defaults, carries no household, actor or source identifiers. */
+export type RoomFurnitureLayout = {version:1;room:FurnitureRoom;placements:FurniturePlacement[]};
+export type FurnitureMove = {room:FurnitureRoom;furnitureId:FurnitureId;expectedRevision:number;x:number;y:number};
+export type FurnitureDefinition = {id:FurnitureId;label:string;description:string;anchor:readonly [number,number];travel:readonly [number,number]};
+const row=(id:FurnitureId,label:string,description:string,anchor:readonly[number,number],travel:readonly[number,number]):FurnitureDefinition=>({id,label,description,anchor,travel});
+const CATALOGUE:Record<FurnitureRoom,readonly FurnitureDefinition[]>={
+ common:[row('sofa','Sofa','A seat with its cushions and woven throw.',[320,588],[140,52]),row('coffee-table','Coffee table','The table, cloth and two mugs move together.',[690,643],[130,38]),row('floor-plant','Floor plant','The leafy plant in its own pot.',[1025,546],[94,70])],
+ studio:[row('worktable','Worktable','Both wheels, tools and glazes stay on the worktable.',[582,569],[94,34]),row('stool-left','Left stool','A seat at the first wheel.',[342,713],[142,6]),row('stool-right','Right stool','A seat at the second wheel.',[806,713],[142,6]),row('floor-plant','Studio plant','A small leafy companion by the kiln.',[1082,510],[40,70])],
+ conservatory:[row('plant-stand','Plant stand','The stepped shelves and their plants move together.',[610,548],[82,20]),row('feature-planter','Feature planter','The central growing pot and its leaves.',[575,624],[122,44]),row('hanging-plant','Hanging plant','A pot, foliage and its hanging cord.',[1081,392],[44,64])],
+ theatre:[row('projector','Projector table','The projector, reels and stand move together.',[601,642],[122,8]),row('chair-left','Left armchair','A place to settle in for the story.',[253,674],[118,5]),row('chair-right','Right armchair','A second seat beside the screen.',[943,674],[118,5]),row('reading-lamp','Reading lamp','A little light beside the seats.',[1016,556],[60,70])],
+};
+export const roomFurnitureCatalogue=(room:FurnitureRoom):readonly FurnitureDefinition[]=>CATALOGUE[room];
+function assert(ok:unknown,code='HEARTHSIDE_FURNITURE_INVALID'):asserts ok {if(!ok)throw Error(code);}
+function record(raw:unknown,keys:readonly string[]):Record<string,unknown>{assert(raw&&typeof raw==='object'&&!Array.isArray(raw)&&[Object.prototype,null].includes(Object.getPrototypeOf(raw)));assert(Reflect.ownKeys(raw).every(k=>typeof k==='string'&&keys.includes(k)&&'value' in Object.getOwnPropertyDescriptor(raw,k)!));return raw as Record<string,unknown>;}
+function integer(v:unknown):number{assert(typeof v==='number'&&Number.isSafeInteger(v)&&v>=0);return v;}
+function coordinate(v:unknown):number{assert(typeof v==='number'&&Number.isFinite(v)&&v>=.08&&v<=.92&&Math.abs(v*1000-Math.round(v*1000))<1e-8);return v;}
+export function furnitureRoom(raw:unknown):FurnitureRoom{assert(typeof raw==='string'&&FURNITURE_ROOMS.includes(raw as FurnitureRoom));return raw as FurnitureRoom;}
+export function furnitureDefinition(room:FurnitureRoom,id:unknown):FurnitureDefinition{const found=CATALOGUE[room].find(row=>row.id===id);assert(found);return found;}
+export function decodeFurniturePlacement(raw:unknown):FurniturePlacement{const r=record(raw,['room','furnitureId','revision','x','y']),room=furnitureRoom(r.room);return {room,furnitureId:furnitureDefinition(room,r.furnitureId).id,revision:integer(r.revision),x:coordinate(r.x),y:coordinate(r.y)};}
+export function decodeFurniturePlacements(raw:unknown):FurniturePlacement[]{assert(Array.isArray(raw)&&Object.getPrototypeOf(raw)===Array.prototype&&raw.length<=14&&Reflect.ownKeys(raw).every(k=>typeof k==='string'&&(k==='length'||/^(0|[1-9][0-9]*)$/.test(k))));const out:FurniturePlacement[]=[];for(let i=0;i<raw.length;i++){const d=Object.getOwnPropertyDescriptor(raw,String(i));assert(d&&'value' in d);out.push(decodeFurniturePlacement(d.value));}assert(new Set(out.map(p=>p.room+'/'+p.furnitureId)).size===out.length);return out;}
+export function decodeFurnitureMove(raw:unknown):FurnitureMove{const r=record(raw,['room','furnitureId','expectedRevision','x','y']),p=decodeFurniturePlacement({room:r.room,furnitureId:r.furnitureId,revision:r.expectedRevision,x:r.x,y:r.y});return {room:p.room,furnitureId:p.furnitureId,expectedRevision:p.revision,x:p.x,y:p.y};}
+export const clampFurnitureCoordinate=(v:number)=>Math.round(Math.max(.08,Math.min(.92,Number.isFinite(v)?v:.5))*1000)/1000;
+/** Authority calls this only after authenticating the current active household member. Never merge stale moves. */
+export function applyFurnitureMove(rawState:unknown,rawMove:unknown):FurniturePlacement[]{const state=decodeFurniturePlacements(rawState),move=decodeFurnitureMove(rawMove),old=state.find(p=>p.room===move.room&&p.furnitureId===move.furnitureId);assert((old?.revision??0)===move.expectedRevision,'HEARTHSIDE_FURNITURE_CONFLICT');assert(move.expectedRevision<Number.MAX_SAFE_INTEGER);return [...state.filter(p=>p!==old),{room:move.room,furnitureId:move.furnitureId,revision:move.expectedRevision+1,x:move.x,y:move.y}];}
+/** Missing stored records resolve only to frozen v1 authored defaults, never to another room or member. */
+export function captureRoomFurniture(room:FurnitureRoom,rawState:unknown=[]):RoomFurnitureLayout{const state=decodeFurniturePlacements(rawState);return {version:1,room,placements:CATALOGUE[room].map(d=>state.find(p=>p.room===room&&p.furnitureId===d.id)??{room,furnitureId:d.id,revision:0,x:.5,y:.5}).map(p=>({...p}))};}
+export function decodeRoomFurniture(raw:unknown):RoomFurnitureLayout{const r=record(raw,['version','room','placements']),room=furnitureRoom(r.room);assert(r.version===1);const placements=decodeFurniturePlacements(r.placements);assert(placements.length===CATALOGUE[room].length&&placements.every(p=>p.room===room));return captureRoomFurniture(room,placements);}
+export function roomFurnitureOffset(layout:RoomFurnitureLayout,id:FurnitureId):[number,number]{const definition=furnitureDefinition(layout.room,id),p=layout.placements.find(p=>p.furnitureId===id)!;return [(p.x-.5)*definition.travel[0]/.42,(p.y-.5)*definition.travel[1]/.42];}
+export const roomFurnitureTransform=(layout:RoomFurnitureLayout,id:FurnitureId)=>{const [x,y]=roomFurnitureOffset(layout,id);return `translate(${x} ${y})`;};

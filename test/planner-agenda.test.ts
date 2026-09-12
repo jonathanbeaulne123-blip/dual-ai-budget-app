@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogHousehold, compileHousehold, postEntry, addRecurrence, postOneRecurrence } from "../src/core/index.ts";
-import { saveTask, completeTask, type TaskInput } from "../src/core/tasks.ts";
+import { saveTask, acknowledgeTask, completeTask, type TaskInput } from "../src/core/tasks.ts";
 import { agenda, affordability, evidenceForTask, suggestedEvidence, nextPayday, taskOccurrences } from "../src/core/agenda.ts";
 import { parseTaskCapture } from "../src/core/taskCapture.ts";
 
@@ -73,7 +73,8 @@ describe("planner agenda and affordability (D-245)", () => {
     expect(week.items.find((i) => i.kind === "bill" && i.title === "Hydro")).toMatchObject({ done: true });
     expect(agenda(paid, "logbook", { memberId: B, view: "household", today: "2026-09-30" }).months[0]).toMatchObject({ monthKey: "2026-09", handled: 1, bills: 1, billCents: 14_000 });
     // Attaching that evidence is a command the person confirms; the receipt is verified against the books.
-    const done = completeTask(paid, { memberId: B, id: "TASK-hydro", expectedRevision: 1, evidence }).household;
+    const taken = acknowledgeTask(paid, { memberId: B, id: "TASK-hydro", expectedRevision: 1 }).household;
+    const done = completeTask(taken, { memberId: B, id: "TASK-hydro", expectedRevision: 2, evidence }).household;
     expect(done.tasks![0]!.completionEvidence).toEqual(evidence);
     h = saveTask(h, input("tires", { title: "Tires at Canadian Tire", expectedAmountCents: 78_000, doDate: "2026-09-17" })).household;
     h = postEntry(h, { date: "2026-09-17", type: "expense", amount: 802.5, accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: B, note: "Canadian Tire", confirmDuplicate: true }).household;
@@ -86,7 +87,8 @@ describe("planner agenda and affordability (D-245)", () => {
     let h = saveTask(fixture(), input("bins", { title: "Bins out", doDate: "2026-09-15", repeat: "weekly" })).household;
     expect(taskOccurrences(h.tasks![0]!, TODAY, "2026-10-05")).toEqual(["2026-09-15", "2026-09-22", "2026-09-29"]);
     expect(agenda(h, "week", { memberId: B, view: "household", today: TODAY }).items.map((i) => i.key)).toContain("TASK-bins@2026-09-15");
-    h = completeTask(h, { memberId: B, id: "TASK-bins", expectedRevision: 1 }).household;
+    h = acknowledgeTask(h, { memberId: B, id: "TASK-bins", expectedRevision: 1 }).household;
+    h = completeTask(h, { memberId: B, id: "TASK-bins", expectedRevision: 2 }).household;
     expect(h.tasks!.map((t) => [t.id, t.doDate, Boolean(t.completedAt)])).toEqual([["TASK-bins", "2026-09-15", true], ["TASK-bins-r20260922", "2026-09-22", false]]);
     expect(agenda(h, "week", { memberId: B, view: "household", today: "2026-09-21" }).items.map((i) => i.key)).toContain("TASK-bins-r20260922@2026-09-22");
   });

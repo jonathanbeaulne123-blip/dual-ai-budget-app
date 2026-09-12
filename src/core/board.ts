@@ -46,6 +46,7 @@ export type BoardItem = {
   kind: BoardKind;
   source: "event" | "recurrence" | "potential-expense" | "rhythm" | "shift" | "shift-envelope" | "google" | "appointment" | "claim" | "work-settlement";
   calendarId?: string;
+  nativeEventId?:string;
   recurrenceId?: string;
   potentialExpenseId?: string;
   appointmentId?: string;
@@ -314,7 +315,7 @@ export function buildMonthBoard(
     const start=runStart<gridStart?gridStart:runStart,end=runEnd>gridEnd?gridEnd:runEnd;
     for(let date=start;date<=end;date=addDays(date,1)){
       const index=Math.round((Date.parse(date)-Date.parse(runStart))/86400000);
-      items.push({id:`${event.id}:${occurrence.originalDate}:${date}`,date,title:`${event.title}${occurrence.warning?' · '+occurrence.warning:''}`,amountCents:0,direction:'busy',kind:'event',source:'event',due:false,...(length>1?{span:{index,length}}:{})});
+      items.push({id:`${event.id}:${occurrence.originalDate}:${date}`,nativeEventId:event.id,date,title:`${event.title}${occurrence.warning?' · '+occurrence.warning:''}`,amountCents:0,direction:'busy',kind:'event',source:'event',due:false,...(length>1?{span:{index,length}}:{})});
     }
   }
   const byDate = new Map<DateKey, BoardItem[]>();

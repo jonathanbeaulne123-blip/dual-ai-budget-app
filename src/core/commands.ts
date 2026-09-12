@@ -1,3 +1,4 @@
+import { preserveGoalArtwork,currentSharedLifeRecords } from "../hearthside/creativeContinuity.ts";
 import { shapeGoalEnvelope, goalFundReserve, goalRemainingClaim, goalEnvelopeUsedCents, assertGoalEnvelopeIntegrity } from "./goalEnvelopes.ts";
 import { KITTY_STUDIO_LIMITS } from "./kittyStudio.ts";
 
@@ -4750,6 +4751,9 @@ export const saveGoalEnvelope = captureCommand("saveGoalEnvelope", function save
   if (goal.updatedAt !== input.expectedUpdatedAt) throw new ValidationError("This bank changed. Review its current details before saving.");
   const name = input.name.trim();
   if (!name || name.length > 100) throw new ValidationError("Give this bank a name of 1–100 characters.");
+  if (goal.envelope?.designRef || input.envelope?.designRef) {
+    if (input.fire || input.envelope.studio !== undefined || JSON.stringify(input.envelope.designRef) !== JSON.stringify(goal.envelope?.designRef)) throw new ValidationError("This artwork uses collaborative edits. Open its Studio to change the piece.");
+  }
   let envelope = shapeGoalEnvelope(input.envelope)!;
   if (!envelope) throw new ValidationError("Review this bank's purpose and appearance.");
   const previous = cloneHousehold(household), next = cloneHousehold(household);
@@ -4778,6 +4782,7 @@ export const addGoal = captureCommand("addGoal", function addGoal(household: Hou
   envelope?: import("./types.ts").GoalEnvelope;
 }): CommitResult {
   if (!input.name.trim() || input.name.trim().length > 100) throw new ValidationError("Give this bank a name of 1–100 characters.");
+  if(input.envelope?.designRef)throw new ValidationError("Link a canonical design through its Studio after creating the bank.");
   const targetCents = parseAmount(input.target, "Goal target");
   if (input.shared === false && !input.ownerMemberId) {
     throw new ValidationError("A personal goal needs an owner. Hidden screens are not private.");
@@ -4785,7 +4790,7 @@ export const addGoal = captureCommand("addGoal", function addGoal(household: Hou
   if (input.ownerMemberId) requireMember(household, input.ownerMemberId);
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
-  const id = nextId("GOAL-", next.goals.map((goal) => goal.id), 3);
+  const id = nextId("GOAL-", [...next.goals.map((goal) => goal.id), ...(next.hearthside?.designs?.flatMap(d=>d.bankId?[d.bankId]:[])??[]), ...(next.hearthside?.experiences.flatMap(e=>e.references.filter(r=>r.kind==="bank").map(r=>r.id))??[])], 3);
   const at = nowIso();
   const arrival = input.arrivalDate
     ? parseDate(input.arrivalDate)
@@ -6070,6 +6075,8 @@ export const beginShiftBibleCorrection = captureCommand("beginShiftBibleCorrecti
 export function undo(current: Household, token: UndoToken): Household {
   if (!token?.snapshot) throw new ValidationError("Nothing to undo.");
   const restored = cloneHousehold(token.snapshot);
+  Object.assign(restored,currentSharedLifeRecords(current));
+  restored.goals = preserveGoalArtwork(current.goals,restored.goals);
   const removedTx = current.transactions.filter((tx) => !restored.transactions.some((row) => row.id === tx.id));
   const removedShifts = current.shifts.filter((shift) => !restored.shifts.some((row) => row.id === shift.id));
   const posted = token.postedIds ?? [];

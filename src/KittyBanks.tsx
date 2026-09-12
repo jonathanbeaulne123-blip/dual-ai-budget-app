@@ -1,3 +1,5 @@
+import type {KittyAcceptedCommandReader} from './hearthside/bankReceipt.ts';
+import { CanonicalKittyFlat } from "./hearthside/DesignProvider.tsx";
 import { KittyBankRoom, type KittyPlanContext, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -55,6 +57,7 @@ function PaperBank({ goal, role }: { goal: Goal; role: "subaccount" | "goal" }) 
   const slips = Math.max(0, step);
   const look = paperBankLook(goal);
   const lidY = 16 - step * 0.3, lidR = 14 + step * 0.9;
+  if(goal.envelope?.designRef)return <div className="paper-bank" data-kitty-role={role}><CanonicalKittyFlat goal={goal} step={step}/></div>;
   return (
     <div
       className="paper-bank"
@@ -109,13 +112,15 @@ function PaperBank({ goal, role }: { goal: Goal; role: "subaccount" | "goal" }) 
 /** Existing goals as paper banks. Shared Fund surplus (D-161) is not a second envelope. */
 export function KittyBanks(props: KittyBanksProps) {
   const [open,setOpen]=useState(false);
-  if (props.planContext || (open && props.surface !== "home")) return <KittyBankRoom household={props.booksHousehold} view={props.view} memberId={props.createdBy} busy={props.busy} identity={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}`} context={props.planContext} onReadSubmission={props.onReadSubmission} onCommand={props.onCommand} onClose={props.planContext?.onClose ?? (()=>setOpen(false))}/>;
+  if (props.planContext || (open && props.surface !== "home")) return <KittyBankRoom household={props.booksHousehold} view={props.view} memberId={props.createdBy} busy={props.busy} identity={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}`} context={props.planContext} onReadSubmission={props.onReadSubmission} onReadAcceptedCommand={props.onReadAcceptedCommand} creationIdentity={props.creationIdentity} onCommand={props.onCommand} onClose={props.planContext?.onClose ?? (()=>setOpen(false))}/>;
   if (props.surface !== "home") return <section className="card"><h2>Kitty Banks</h2><p>Your goals, reserves and future plans have a room of their own.</p><button onClick={()=>setOpen(true)}>Enter Kitty Banks</button></section>;
   return <KittyBanksScope key={`${props.environment ?? props.booksHousehold.environment}:${props.household.householdId}:${props.createdBy}:${props.view}:${props.surface ?? "plan"}`} {...props} />;
 }
 type KittyBanksProps = {
   planContext?: KittyPlanContext;
   onReadSubmission?:KittySubmissionReader;
+  onReadAcceptedCommand?:KittyAcceptedCommandReader;
+  creationIdentity?:string;
   environment?: Environment;
   household: Household;
   booksHousehold: Household;

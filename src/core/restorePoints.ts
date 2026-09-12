@@ -1,3 +1,4 @@
+import { preserveGoalArtwork,currentSharedLifeRecords } from "../hearthside/creativeContinuity.ts";
 import { TIMEZONE } from "./calendar.ts";
 import { financialAuditHash } from "./commandIdentity.ts";
 import { nextId } from "./ids.ts";
@@ -155,8 +156,8 @@ export function applyRestorePoint(
   const localParts = splitForSync(household, memberId);
   const pointShared: SharedEnvelope = {
     ...sharedEnvelopeForRestorePoint(point.shared),
-    companionGallery: localParts.shared.companionGallery,
-    playRoom: localParts.shared.playRoom,
+    goals: preserveGoalArtwork(localParts.shared.goals,point.shared.goals),
+    ...currentSharedLifeRecords(localParts.shared),
     householdId: household.householdId,
     environment: household.environment,
     inviteCode: household.inviteCode || point.shared.inviteCode,

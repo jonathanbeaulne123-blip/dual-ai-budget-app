@@ -1,0 +1,1591 @@
+{
+  "createdAt": "2026-09-12T18:54:12.951Z",
+  "base": "429db8ef0447dac6347e89e945dd04aad05e84fb",
+  "scope": "component host harness; not integrated App or physical-device evidence",
+  "checks": [
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 261,
+      "gzipSvgBytes": 3822,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 261,
+      "gzipSvgBytes": 3822,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 261,
+      "gzipSvgBytes": 3822,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 261,
+      "gzipSvgBytes": 3822,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 261,
+      "gzipSvgBytes": 3822,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 261,
+      "gzipSvgBytes": 3822,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "common",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 261,
+      "gzipSvgBytes": 3822,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 265,
+      "gzipSvgBytes": 3500,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 265,
+      "gzipSvgBytes": 3500,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 265,
+      "gzipSvgBytes": 3500,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 265,
+      "gzipSvgBytes": 3500,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 265,
+      "gzipSvgBytes": 3500,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 265,
+      "gzipSvgBytes": 3500,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "studio",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 265,
+      "gzipSvgBytes": 3500,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 258,
+      "gzipSvgBytes": 3206,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 258,
+      "gzipSvgBytes": 3206,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 258,
+      "gzipSvgBytes": 3206,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 258,
+      "gzipSvgBytes": 3206,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 258,
+      "gzipSvgBytes": 3206,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 258,
+      "gzipSvgBytes": 3206,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "conservatory",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 258,
+      "gzipSvgBytes": 3206,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 186,
+      "gzipSvgBytes": 3057,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 186,
+      "gzipSvgBytes": 3057,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 186,
+      "gzipSvgBytes": 3057,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 186,
+      "gzipSvgBytes": 3057,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 186,
+      "gzipSvgBytes": 3057,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 186,
+      "gzipSvgBytes": 3057,
+      "smallTargets": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "classic",
+      "room": "theatre",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 186,
+      "gzipSvgBytes": 3057,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 196,
+      "gzipSvgBytes": 3598,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 196,
+      "gzipSvgBytes": 3598,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 196,
+      "gzipSvgBytes": 3598,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 196,
+      "gzipSvgBytes": 3598,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 196,
+      "gzipSvgBytes": 3598,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 196,
+      "gzipSvgBytes": 3598,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "common",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 196,
+      "gzipSvgBytes": 3598,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 286,
+      "gzipSvgBytes": 4252,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 286,
+      "gzipSvgBytes": 4252,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 286,
+      "gzipSvgBytes": 4252,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 286,
+      "gzipSvgBytes": 4252,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 286,
+      "gzipSvgBytes": 4252,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 286,
+      "gzipSvgBytes": 4252,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "studio",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 286,
+      "gzipSvgBytes": 4252,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 234,
+      "gzipSvgBytes": 3356,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 234,
+      "gzipSvgBytes": 3356,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 234,
+      "gzipSvgBytes": 3356,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 234,
+      "gzipSvgBytes": 3356,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 234,
+      "gzipSvgBytes": 3356,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 234,
+      "gzipSvgBytes": 3356,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "conservatory",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 234,
+      "gzipSvgBytes": 3356,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 160,
+      "gzipSvgBytes": 2955,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 160,
+      "gzipSvgBytes": 2955,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 160,
+      "gzipSvgBytes": 2955,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 160,
+      "gzipSvgBytes": 2955,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 160,
+      "gzipSvgBytes": 2955,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 160,
+      "gzipSvgBytes": 2955,
+      "smallTargets": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "taylor",
+      "room": "theatre",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 160,
+      "gzipSvgBytes": 2955,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 345,
+      "gzipSvgBytes": 4143,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 345,
+      "gzipSvgBytes": 4143,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 345,
+      "gzipSvgBytes": 4143,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 345,
+      "gzipSvgBytes": 4143,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 345,
+      "gzipSvgBytes": 4143,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 345,
+      "gzipSvgBytes": 4143,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "common",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 345,
+      "gzipSvgBytes": 4143,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 362,
+      "gzipSvgBytes": 3935,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 362,
+      "gzipSvgBytes": 3935,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 362,
+      "gzipSvgBytes": 3935,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 362,
+      "gzipSvgBytes": 3935,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 362,
+      "gzipSvgBytes": 3935,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 362,
+      "gzipSvgBytes": 3935,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "studio",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 362,
+      "gzipSvgBytes": 3935,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 358,
+      "gzipSvgBytes": 3650,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 358,
+      "gzipSvgBytes": 3650,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 358,
+      "gzipSvgBytes": 3650,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 358,
+      "gzipSvgBytes": 3650,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 358,
+      "gzipSvgBytes": 3650,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 358,
+      "gzipSvgBytes": 3650,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "conservatory",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 358,
+      "gzipSvgBytes": 3650,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 320,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 280,
+      "gzipSvgBytes": 3435,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 390,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 280,
+      "gzipSvgBytes": 3435,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 390,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 719,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 280,
+      "gzipSvgBytes": 3435,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 720,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 280,
+      "gzipSvgBytes": 3435,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 1100,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 280,
+      "gzipSvgBytes": 3435,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 1440,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 280,
+      "gzipSvgBytes": 3435,
+      "smallTargets": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 1440,
+      "axe": []
+    },
+    {
+      "theme": "newfoundland",
+      "room": "theatre",
+      "width": 1920,
+      "overflow": false,
+      "layers": [
+        "sky",
+        "far-architecture",
+        "thresholds",
+        "furniture",
+        "semantic-objects",
+        "foreground-light"
+      ],
+      "nodes": 280,
+      "gzipSvgBytes": 3435,
+      "smallTargets": []
+    },
+    {
+      "arrangerAxe": []
+    },
+    {
+      "motion": "pause, offscreen, keyboard focus, illustrated, OS reduced motion verified",
+      "placement": "four corners at 320/720/1440 and eight repeated objects at 320/1440 in all three themes verified",
+      "productionComponentBuild": "passed in memory; App integration remains separate"
+    },
+    {
+      "interactions": "activation, bounds, theme retention, cancel/focus, door, empty, illustrated and text enlargement passed",
+      "pageErrors": []
+    }
+  ]
+}

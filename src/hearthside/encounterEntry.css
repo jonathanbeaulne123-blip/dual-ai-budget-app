@@ -1,0 +1,14 @@
+.encounter-entry{--entry-paper:#fff8e9;--entry-ink:#293c35;--entry-edge:#b49563;color:var(--entry-ink);max-width:1120px;margin-inline:auto;overflow-wrap:anywhere}
+.encounter-entry[data-theme=taylor]{--entry-paper:#fff4f4;--entry-ink:#563948;--entry-edge:#b97590}
+.encounter-entry[data-theme=newfoundland]{--entry-paper:#eff7f2;--entry-ink:#284d51;--entry-edge:#588789}
+.encounter-entry button{font:inherit;min-height:44px;max-width:100%;white-space:normal;border:1px solid var(--entry-edge);border-radius:12px;background:var(--entry-paper);color:var(--entry-ink);padding:10px 16px;cursor:pointer}
+.encounter-entry button:disabled{cursor:default;opacity:.58}.encounter-entry button:focus-visible{outline:3px solid var(--entry-ink);outline-offset:3px}
+.encounter-entry-toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-block:16px}.encounter-entry-discoveries{border:0;padding:0;min-width:0}
+.encounter-entry-recovery,.encounter-entry-outcome{padding:22px;margin-block:22px;border:2px solid var(--entry-edge);background:var(--entry-paper);border-radius:20px;box-shadow:0 5px 0 color-mix(in srgb,var(--entry-edge) 18%,transparent)}
+.encounter-entry[data-theme=taylor] .encounter-entry-recovery{border-style:dashed;border-radius:2px 20px 4px 18px;background-image:linear-gradient(90deg,transparent 28px,#d6a5b830 28px,#d6a5b830 30px,transparent 30px)}
+.encounter-entry[data-theme=newfoundland] .encounter-entry-outcome{border-block-width:5px;border-radius:4px 4px 24px 24px}
+.encounter-entry-recovery button,.encounter-entry-outcome button{margin:4px 8px 4px 0}.encounter-entry-card{display:block;max-width:min(100%,480px);height:auto;margin:16px auto;border:1px solid var(--entry-edge)}
+.encounter-entry-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media(max-width:420px){.encounter-entry-recovery,.encounter-entry-outcome{padding:14px}.encounter-entry-recovery button,.encounter-entry-outcome button{width:100%;margin-inline:0}}
+@media(prefers-reduced-motion:reduce){.encounter-entry *{scroll-behavior:auto;animation:none;transition:none}}
+@media(prefers-color-scheme:dark){.encounter-entry{--entry-paper:#27332e;--entry-ink:#fff0d4;--entry-edge:#d1b889}.encounter-entry[data-theme=taylor]{--entry-paper:#392c36;--entry-ink:#ffedf3;--entry-edge:#d5a3b5}.encounter-entry[data-theme=newfoundland]{--entry-paper:#203b40;--entry-ink:#e7faf2;--entry-edge:#a1c7bd}}
