@@ -6,7 +6,7 @@ import sharp from 'sharp';
 // Reuse the authored Hearth identity. No generated household content or remote assets.
 const native=resolve(dirname(fileURLToPath(import.meta.url)),'..'),root=resolve(native,'..');
 const source=await readFile(resolve(root,'public/hercules-mark.svg'),'utf8');
-const mark=source.replace(/^.*?<svg[^>]*>/s,'').replace(/<\/svg>\s*$/,'').replace(/<!--.*?-->/sg,'').replaceAll('currentColor','#342b25').replaceAll('var(--herc-coat, #fdfbf6)','#fdfbf6');
+const mark=source.replace(/^.*?<svg[^>]*>/s,'').replace(/<\/svg>\s*$/,'').replace(/<!--.*?-->/sg,'').replaceAll('currentColor','#342b25').replaceAll('var(--herc-coat, #fdfbf6)','#fdfbf6').replace(/[ \t]+$/gm,'');
 const background='#f3ead8';
 function svg(width,height,size,fill=true){return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><title>Hearth</title>${fill?`<rect width="${width}" height="${height}" fill="${background}"/>`:''}<svg x="${(width-size)/2}" y="${(height-size)/2}" width="${size}" height="${size}" viewBox="0 0 64 64">${mark}</svg></svg>`;}
 await mkdir(resolve(native,'assets'),{recursive:true});

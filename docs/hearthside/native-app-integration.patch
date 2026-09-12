@@ -36,7 +36,7 @@
  import type {SharedExperience} from './hearthside/contracts.ts';
 @@ -1762,6 +1764,18 @@
    }, []);
- 
+
    useEffect(() => {
 +    const returned = () => {
 +      const completed = nativeAuthController()?.takeCompletion();
@@ -82,7 +82,7 @@
 @@ -3818,7 +3842,8 @@
      }
    }
- 
+
 -  function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): void {
 +  async function startQrInviteGoogleSignIn(token: string, inviteEnvironment: Environment = environment): Promise<void> {
 +    try {
@@ -104,7 +104,7 @@
      );
 +    } catch (caught) { setInviteFlowState("error"); setError(caught instanceof Error ? caught.message : "Secure sign-in could not start."); }
    }
- 
+
    async function redeemAuthInviteToken(token: string, parentIsCurrent: () => boolean, displayName?: string): Promise<void> {
 @@ -4037,7 +4063,7 @@
          if (!shouldContinue()) return;
@@ -138,7 +138,7 @@
 @@ -5053,11 +5080,12 @@
      }).catch(() => undefined);
    }
- 
+
 -  function signOutWelcomeGoogle() {
 +  async function signOutWelcomeGoogle() {
 +    try {
@@ -156,12 +156,12 @@
      setError("");
 +    } catch { setError("Secure sign-out could not finish. Unlock this device and retry."); }
    }
- 
+
    function dismissWelcomeJoin() {
 @@ -5083,12 +5112,13 @@
      setError("");
    }
- 
+
 -  function tryInviteWithAnotherGoogleAccount() {
 +  async function tryInviteWithAnotherGoogleAccount() {
 +    try {
@@ -180,7 +180,7 @@
      );
 +    } catch { setError("Secure account switching could not finish. Unlock this device and retry."); }
    }
- 
+
    async function returnToGoogleEntryAfterFullHouse(): Promise<void> {
 @@ -5112,7 +5143,7 @@
      try {
@@ -205,7 +205,7 @@
 +      } catch { setError("Secure account switching could not finish. Unlock this device and retry."); }
      }}>Use Google for these saved books</button></section></div>;
    }
- 
+
 @@ -7516,12 +7549,12 @@
                  mode: "leave",
                });

@@ -19,4 +19,3 @@ Validation:
 - First High attempt failed on incomplete isolated compiler dependencies (old package tree, missing platform declaration include and a read-only proof fixture). No assembly-source TypeScript error was reported. Local dependency-only commit `09c9dd5` completed the frozen consumers/platform include and this checkout now reads the existing root node_modules. No package installation occurred.
 - Handoff contains only five new files. Do not integrate dependency-only commits `8fd9a84`, `79f543a` or `09c9dd5`; root already owns those integrated sources and its revision-zero decoder fix.
 - The broader P12 guest archive/browser suites and root full-program gate remain the integration owner's responsibility. No build was repeated for this test-only package. No hosted actions were performed.
-
