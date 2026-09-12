@@ -1,14 +1,14 @@
 # Hearth worksession — Plan V2 deployment guard
 
-- **Status:** OPEN
+- **Status:** CLOSED
 - **Opened:** 2026-09-12 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/plan-v2-deploy-guard`
 - **Baseline SHA:** `d152a973b71074030075e93c86d7dfa96adaa6e1`
-- **Head SHA:** working tree
-- **PR or issue:** none yet
+- **Head SHA:** `2d6b70fa1f2c0c8fa4f42b16d6902344497ca2d4`
+- **PR or issue:** PR #457
 - **Risk:** Release
 - **Decision owner:** Jonathan
 - **Environment impact:** Development
@@ -52,21 +52,24 @@ Restores Plan Studio and the Horizon A Household Home rather than silently retur
 - [x] Unit tests prove missing/empty metadata stays current and explicit rollback stays legacy.
 - [x] Change-focused High quick gate passes within its budget.
 - [x] A build without `VITE_PLAN_SYSTEM_V2` compiles Plan V2 as active.
-- [ ] Merged `main` deployment succeeds.
-- [ ] Fresh live browser shows Our Path, Plan Studio, and Protect / Prepare / Build / Everyday; legacy Household budgeted net/Categories are absent.
+- [x] Merged `main` deployment succeeds.
+- [x] Fresh live bundle selects current Plan and contains Our Path, Plan Studio, and Protect / Prepare / Build / Everyday. An authenticated route screenshot was not captured because the fresh browser context required account re-confirmation; no account action was taken.
 
 ## Plan
 
 - [x] Reproduce and isolate the deployment replacement.
 - [x] Implement the fail-safe feature switch and focused assertions.
 - [x] Verify locally.
-- [ ] Push, merge, deploy Development, and verify live.
+- [x] Push, merge, deploy Development, and verify live.
 
 ## Evidence log
 
 - `pnpm exec vitest run test/plan-system.test.ts test/vision-v2-slice-1.test.ts --maxWorkers=1`: 29 tests passed.
 - `env -u VITE_PLAN_SYSTEM_V2 pnpm build`: production build passed; main bundle contains `return !(e==="0"||e==="false")`, proving absent metadata selects the current Plan.
 - `pnpm test -- --risk=high --focus=test/plan-system.test.ts --focus=test/vision-v2-slice-1.test.ts --focus-reason="Plan V2 must remain active when build metadata is missing while explicit legacy rollback stays available"`: quick gate passed in 68.622 seconds, 67 tests across five selected files, no time-budget breach, `uiProofRequired:false`.
+- PR #457 merged as `2d6b70fa1f2c0c8fa4f42b16d6902344497ca2d4`; post-merge CI `34690681641` and Cloudflare run `34690681795` passed.
+- Worker version `874e090a-37e4-40f4-8212-dd674bc8b816` received 100% traffic at 11:19 UTC.
+- Fresh browser-UA request returned HTTP 200 with `Cache-Control: no-store`. Asset `/assets/index-DqCEK6T_.js` compiled the feature guard as current-on and contained `Where we are going`, `The Plan Studio · our agreement room`, `Protect`, `Prepare`, `Build`, and `Everyday`.
 
 ## Decisions
 
@@ -74,8 +77,8 @@ Restores Plan Studio and the Horizon A Household Home rather than silently retur
 
 ## Remaining uncertainty
 
-The actor or process that promoted the second Cloudflare version is not named by the read-only deployment metadata.
+The actor or process that promoted the second Cloudflare version is not named by the read-only deployment metadata. The signed-in route was not reopened in the fresh verification browser because its saved-ledger identity required account re-confirmation; bundle and deployment proof are complete, while a user-session screenshot remains unclaimed.
 
 ## Handoff
 
-Codex owns implementation and Development restoration. Jonathan retains Production and explicit rollback decisions.
+Development is restored on `main` and protected against the same missing-flag failure. Jonathan retains Production and explicit rollback decisions; no further owner action is required for this repair.
