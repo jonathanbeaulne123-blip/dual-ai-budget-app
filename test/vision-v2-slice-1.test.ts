@@ -122,7 +122,7 @@ describe("Vision v2 slice 1 — the Fund pulse", () => {
 
 describe("Vision v2 feature family", () => {
   it("never exposes Household Home without the Plan V2 room it links to", () => {
-    expect(householdHomeV2Enabled(undefined, undefined)).toBe(false);
+    expect(householdHomeV2Enabled(undefined, undefined)).toBe(true);
     expect(householdHomeV2Enabled("1", "0")).toBe(false);
     expect(householdHomeV2Enabled("0", "1")).toBe(false);
     expect(householdHomeV2Enabled("1", "1")).toBe(true);

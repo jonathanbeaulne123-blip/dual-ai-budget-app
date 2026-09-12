@@ -1,5 +1,5 @@
 export function planSystemV2Enabled(value: unknown = import.meta.env.VITE_PLAN_SYSTEM_V2): boolean {
-  return value === "1" || value === "true";
+  return !(value === "0" || value === "false");
 }
 
 /** Vision v2 Household Home (A3). It cannot outlive the Plan V2 room that its Chapter door opens. */

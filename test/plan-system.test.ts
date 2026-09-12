@@ -53,12 +53,13 @@ function proposedHousehold(household = catalogHousehold()) {
 }
 
 describe("Plan System V2 authority", () => {
-  it("keeps activation explicit and preserves the legacy rollback switch", () => {
+  it("keeps the current Plan active unless the legacy rollback is explicit", () => {
+    expect(planSystemV2Enabled(undefined)).toBe(true);
+    expect(planSystemV2Enabled("")).toBe(true);
     expect(planSystemV2Enabled("1")).toBe(true);
     expect(planSystemV2Enabled("true")).toBe(true);
     expect(planSystemV2Enabled("0")).toBe(false);
     expect(planSystemV2Enabled("false")).toBe(false);
-    expect(planSystemV2Enabled("")).toBe(false);
   });
 
   it("keeps Personal and pre-proposal Household drafts out of Shared and out of the partner replica", () => {
