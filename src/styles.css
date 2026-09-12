@@ -3323,6 +3323,8 @@ input, select, textarea {
 .hercules-chat-header { display:flex; flex:0 0 auto; align-items:center; justify-content:space-between; gap:8px; padding:8px 4px; }
 .hercules-chat-header>.hercules-stage { flex:0 0 44px; width:44px; height:44px; min-height:0; }
 .hercules-actions { margin: 8px 0; font-size:14px; line-height:1.5; }
+.hercules-action-search { grid-column: 1 / -1; display: grid; gap: 6px; }
+.hercules-action-search input { min-height: 44px; width: 100%; padding: 10px; background: var(--chat-paper, var(--paper)); color: var(--chat-ink, var(--ink)); border: 1px solid currentColor; border-radius: 6px; }
 .hercules-action-library { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
 .hercules-action-card { padding:14px; border:1px solid var(--line); border-radius:8px; background:var(--paper-2); }
 .hercules-action-card h3 { font:600 18px var(--font); margin:0 0 8px; }
@@ -3375,3 +3377,5 @@ input, select, textarea {
 
 .cal-titles .cal-title { box-sizing:border-box; min-height:20px; height:20px; }
 @media(forced-colors:active) { .cal-owner,.cal-state { color:CanvasText; } .cal-title.is-span { border-color:CanvasText; } }
+
+.hercules-composer-actions { display:flex; flex:0 0 100%; flex-wrap:wrap; gap:6px; }

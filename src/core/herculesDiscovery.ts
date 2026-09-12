@@ -40,7 +40,7 @@ const PAGE_COPY: Record<HearthTab, string> = {
   ledger: "Your books show accounts, recorded entries and their sources. Open an account to understand its balance, or the register to inspect individual rows.",
   plan: "Plan brings projections and goals together. Projections depend on the records and assumptions entered here; they are not a guarantee of money available to spend.",
   shift: "Shift holds your current punch and shift review. Continue your own open shift here; review the count before Confirm records it.",
-  more: "More holds household settings, appearance, Health and other tools. Open Health to understand a finding, or change your theme without changing the books.",
+  more: "Status Centre holds household settings, appearance, Health and other tools. Open Health to understand a finding, or change your theme without changing the books.",
 };
 function fingerprint(text: string) { let h = 2166136261; for (const c of text) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return (h >>> 0).toString(36); }
 export function discoveryScope(input: DiscoveryInput) { return `${input.household.environment}:${input.household.householdId}:${input.memberId}:${input.view}`; }

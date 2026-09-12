@@ -43,9 +43,12 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
     catch {
         return resource?.value ?? null;
     } });
-    const [guidePaused, setGuidePaused] = useState(false);
+    // Values already survive private workflow saves and old strict decoders.
+    // This UI marker is never an action field or part of a financial review.
+    const guidePaused = draft?.actionId === PLAN_GUIDE_ID && draft.values.guidePaused === 'true';
     const [duplicateWarning, setDuplicateWarning] = useState(''), [duplicateAck, setDuplicateAck] = useState(false);
     const [review, setReview] = useState<ActionReview | null>(null), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [library, setLibrary] = useState(false);
+    const [librarySearch, setLibrarySearch] = useState('');
     const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
     const actionCardRef = useRef<HTMLElement>(null);
     useEffect(() => { if (review) reviewHeadingRef.current?.focus(); }, [review]);
@@ -137,16 +140,32 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         const a = actionById(id, c), next: CompanionWorkflow = { version: 1, actionId: id, view: c.view, generation, values: values ?? initialActionValues(a, message, c), queue, updatedAt: new Date().toISOString(), submission: null };
         void change(next);
         setLibrary(false);
-        setGuidePaused(false);
         onReply(message || a.example, id === PLAN_GUIDE_ID ? guideReply(c,next.values) : nextActionField(a, next.values, c)?.question || 'Your details are ready to review.');
+    }
+    function queuedTask(d: CompanionWorkflow) {
+        return { actionId: d.actionId, values: d.values, ...(d.workspaceConfirmationId ? { workspaceConfirmationId: d.workspaceConfirmationId } : {}) };
+    }
+    function chooseTask(id: string, message = '') {
+        const d = draftRef.current;
+        if (d?.submission) { setNotice('Check the pending action before starting another.'); return; }
+        if (d && (d.queue?.length ?? 0) >= 12) { setNotice('Finish or cancel a queued task before adding another.'); return; }
+        start(id, message, d ? [queuedTask(d), ...(d.queue ?? [])] : []);
     }
     function prepareAccountFirst() {
         const currentDraft=draftRef.current;
         if (!currentDraft || currentDraft.submission || locked.current || (currentDraft.queue?.length ?? 0) >= 12) return;
         const accountAction=actionById('add-account', c);
         void change({...currentDraft,workspaceConfirmationId:undefined,actionId:accountAction.id,values:initialActionValues(accountAction,'',c),
-            queue:[{actionId:currentDraft.actionId,values:currentDraft.values,...(currentDraft.workspaceConfirmationId?{workspaceConfirmationId:currentDraft.workspaceConfirmationId}:{})},...(currentDraft.queue ?? [])],updatedAt:new Date().toISOString()});
+            queue:[queuedTask(currentDraft),...(currentDraft.queue ?? [])],updatedAt:new Date().toISOString()});
         onReply('Add an account first','Let’s add the account, then return to these details. Each change will have its own review.');
+    }
+    function prepareJobFirst() {
+        const currentDraft = draftRef.current;
+        if (!currentDraft || currentDraft.submission || locked.current || (currentDraft.queue?.length ?? 0) >= 12) return;
+        const jobAction = actionById('add-job', c);
+        void change({ ...currentDraft, workspaceConfirmationId: undefined, actionId: jobAction.id, values: initialActionValues(jobAction, '', c),
+            queue: [queuedTask(currentDraft), ...(currentDraft.queue ?? [])], updatedAt: new Date().toISOString() });
+        onReply('Set up a job first', 'Let’s set up your job, then return to this shift with its hours and date. Each change will have its own review.');
     }
     function receiptResolved(id: string) {
         resolvedIdentity.current = id;
@@ -297,14 +316,27 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         else
             setNotice(e instanceof Error ? e.message : String(e));
     } }
+    function setGuidePaused(paused: boolean) {
+        const d = draftRef.current;
+        if (!d || d.actionId !== PLAN_GUIDE_ID || d.submission) return;
+        const values = { ...d.values };
+        if (paused) values.guidePaused = 'true'; else delete values.guidePaused;
+        void change({ ...d, values, updatedAt: new Date().toISOString() });
+    }
+    function sideQuestion(message: string) {
+        return /\?/.test(message) || /^(?:why|what|how|where|when|who|which|can|could|would|will|do|does|did|is|are|am|was|were|have|has|should|explain)\b/i.test(message.trim());
+    }
     function guideRespond(message: string, explicitAnswer=false) {
         const d=draftRef.current;if(!d||d.actionId!==PLAN_GUIDE_ID)return false;
-        if(locked.current||d.submission){setNotice('Let this private save finish before answering the next question.');return true;}
+        if(d.submission){if(sideQuestion(message))return false;setNotice('Check this action’s original receipt before changing the plan.');return true;}
         const field=guideQuestion(c,d.values);
         if(!explicitAnswer&&/^(?:help (?:me|us) (?:create|make|build) (?:a |our |my )?plan|continue(?: planning)?|resume(?: planning)?)$/i.test(message.trim())) {setGuidePaused(false);onReply(message,guideReply(c,d.values));return true;}
-        if(guidePaused)return false;
-        if(!explicitAnswer&&/^(?:why|what|how|explain|can you explain|could you explain)\b/i.test(message.trim())){onReply(message,field?`${field.why} ${field.question}`:guideReply(c,d.values));return true;}
+        if(d.values.guidePaused==='true')return false;
         if(!explicitAnswer&&/^(pause|pause planning|not now)$/i.test(message.trim())){setGuidePaused(true);requestAnimationFrame(()=>actionCardRef.current?.querySelector<HTMLElement>('.hercules-plan-guide button')?.focus());onReply(message,'We can stop here. Your answers stay in your private task; choose Continue planning when you are ready.');return true;}
+        if(!explicitAnswer&&/^(?:put|set)\b.{0,45}\b(?:plan|draft|planning)\b.{0,25}\b(?:aside|on hold)\b/i.test(message.trim())){setGuidePaused(true);return false;}
+        if(!explicitAnswer&&/^(?:why(?: this(?: question| step)?)?|explain this(?: question| step)?)\??$/i.test(message.trim())){onReply(message,field?`${field.why} ${field.question}`:guideReply(c,d.values));return true;}
+        if(!explicitAnswer&&sideQuestion(message))return false;
+        if(locked.current||d.submission){setNotice('Let this private save finish before answering the next question.');return true;}
         if(!explicitAnswer&&/^(back|go back)$/i.test(message.trim())){guideEdit();return true;}
         if(!explicitAnswer&&/^(skip|skip this|leave (?:this|it) open)$/i.test(message.trim())){guideSkip();return true;}
         if(!explicitAnswer&&/^(?:i (?:don.t|do not) know|not sure(?: yet)?)$/i.test(message.trim())&&field&&field.key!=='purpose'&&field.key!=='constraints'&&!field.key.endsWith('Step')){onReply(message,'That is okay. I will not invent an amount or treat missing money as zero. You can leave this part open for now, or ask why it matters.');return true;}
@@ -320,7 +352,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         } catch(error){setNotice(error instanceof Error?error.message:'Choose an answer or leave this part open.');}
         return true;
     }
-    function guideEdit(key?:string){const d=draftRef.current;if(!d||locked.current||d.submission)return;const values=guideBack(c,d.values,key);void change({...d,values,updatedAt:new Date().toISOString()});setGuidePaused(false);onReply('Go back',guideReply(c,values));}
+    function guideEdit(key?:string){const d=draftRef.current;if(!d||locked.current||d.submission)return;const values=guideBack(c,d.values,key);delete values.guidePaused;void change({...d,values,updatedAt:new Date().toISOString()});onReply('Go back',guideReply(c,values));}
     function guideSkip(){const d=draftRef.current;if(!d||locked.current||d.submission)return;const field=guideQuestion(c,d.values),section=field?.key.match(/^(income|protect|prepare|build|everyday)/)?.[1];if(!section){setNotice('You can say “not sure yet” or pause here.');return;}const key=`${section}Source`;const values=guideAnswer(c,guideBack(c,d.values,key),key,'skip');void change({...d,values,updatedAt:new Date().toISOString()});onReply('Leave this part open',guideReply(c,values));}
     useImperativeHandle(ref, () => ({
         state() { if (!draft)
@@ -355,7 +387,6 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                     catch { }
                 }
                 void change({ version: 1, actionId: a.id, view: c.view, generation, values, ...(proposal.workspaceConfirmationId?{workspaceConfirmationId:proposal.workspaceConfirmationId}:{}), ...(draft?.queue ? { queue: draft.queue } : {}), updatedAt: new Date().toISOString(), submission: null });
-                setGuidePaused(false);
                 if(a.id===PLAN_GUIDE_ID) onReply('Help me create a plan',guideReply(c,values));
                 setNotice(a.id===PLAN_GUIDE_ID ? '' : nextActionField(a, values, c)?.question || 'Your draft is ready to review. Nothing has been saved to the books.');
             }
@@ -391,7 +422,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
             }
             if(draft && !draft.submission && focusedGoalValues(message)) {
                 if((draft.queue?.length??0)>=12){setNotice('Finish or cancel a queued task before adding another.');return true;}
-                start(PLAN_GUIDE_ID,message,[{actionId:draft.actionId,values:draft.values},...(draft.queue??[])]);
+                start(PLAN_GUIDE_ID,message,[queuedTask(draft),...(draft.queue??[])]);
                 return true;
             }
             const match = findHerculesAction(message, c);
@@ -399,8 +430,20 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                 start(match.id, message);
                 return true;
             }
+            /** A new request while a task is open starts that request and keeps the open
+             * task, its answers and its queue behind it. Never silently ignored, and never
+             * answered by the model as though the capability did not exist. */
+            if (match && draft && !draft.submission) {
+                if ((draft.queue?.length ?? 0) >= 12) {
+                    setNotice('Finish or cancel a queued task before adding another.');
+                    return true;
+                }
+                start(match.id, message, [queuedTask(draft), ...(draft.queue ?? [])]);
+                return true;
+            }
             if (guideRespond(message)) return true;
-            if (!draft || /^(why|what|how|can you explain)\b/i.test(message))
+            // A paused guide must not fall through into the generic field parser.
+            if (!draft || draftRef.current?.values.guidePaused === 'true' || sideQuestion(message))
                 return false;
             if (draft.submission) {
                 setNotice('Finish checking this action before changing its details.');
@@ -447,14 +490,15 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         }
     }));
     const a = draft ? availableHerculesActions(c).find(a => a.id === draft.actionId) : undefined;
+    const libraryActions = availableHerculesActions(c).filter(a => `${a.title} ${a.example} ${a.id}`.toLowerCase().includes(librarySearch.trim().toLowerCase()));
     return <section className="hercules-actions" aria-label="Do something with Hercules">
   {resolvedIdentity.current && <p role="status">The action receipt is confirmed. Waiting for the latest task from your household.</p>}
-  {!draft && !resolvedIdentity.current && <button type="button" onClick={() => setLibrary(!library)} aria-expanded={library}>Things we can do</button>}
-  {library && !draft && <div className="hercules-action-library">{availableHerculesActions(c).map(a => <button type="button" key={a.id} onClick={() => start(a.id)}>{a.title}</button>)}</div>}
+  {!resolvedIdentity.current && <button type="button" disabled={!!draft?.submission} onClick={() => setLibrary(!library)} aria-expanded={library}>Things we can do</button>}
+  {library && <div className="hercules-action-library"><label className="hercules-action-search">Find an action<input type="search" placeholder="Try shift, Kitty Bank, to-do…" value={librarySearch} onChange={event => setLibrarySearch(event.target.value)}/></label>{draft && <p>Your current task and its answers will wait here while we work on another.</p>}{!libraryActions.length && <p>No matching action. Try another word, or ask me in the conversation.</p>}{libraryActions.map(a => <button type="button" disabled={!!draft?.submission} key={a.id} onClick={() => chooseTask(a.id)}>{a.title}</button>)}</div>}
   {draft && <article ref={actionCardRef} className="hercules-action-card"><h3>{a?.title ?? 'Saved task'}</h3><p>{a?.id===PLAN_GUIDE_ID ? `Your private ${c.view==='household'?'Household':'Personal'} Plan draft · ${draft.values.monthKey||'month to choose'}` : c.view === 'household' ? 'Household books' : 'Your personal books'}</p>
    {!!draft.queue?.length && <section aria-label="Your checklist"><p>Each task needs its own review and Final Confirm.</p><ol><li>{a?.title ?? 'Current task'} — current</li>{draft.queue.map((item, index) => <li key={index}>{availableHerculesActions(c).find(a => a.id === item.actionId)?.title ?? 'Saved task'} — waiting</li>)}</ol></section>}
    {draft.submission ? <><p>This review is awaiting its receipt.</p><button type="button" disabled={busy} onClick={() => void recover()}>Check action status</button><button type="button" disabled={busy} onClick={() => void cancelPending()}>Cancel pending request</button></> : !a ? <><p>This task is no longer available in these books.</p><button type="button" disabled={busy} onClick={() => void change(nextHerculesTask(draft))}>Cancel task</button></> : <>
-    {!review ? <>{actionFields(a,c,draft.values).some(f=>/accountId$/i.test(f.key)&&f.choices&&!f.choices(c,draft.values).length) && <div role="status"><p>There is no available account for this step. Add one, then return to this task.</p><button type="button" disabled={busy} onClick={prepareAccountFirst}>Add an account first</button></div>}{a.id===PLAN_GUIDE_ID ? guidePaused ? <section className="hercules-plan-guide"><p>Your private planning conversation is paused.</p><button type="button" onClick={()=>{setGuidePaused(false);onReply('Continue planning',guideReply(c,draft.values));}}>Continue planning</button></section> : <HerculesPlanGuide inlineAnswers={!composerAvailable} context={c} values={draft.values} busy={busy} onAnswer={text=>guideRespond(text,true)} onBack={guideEdit} onSkip={guideSkip} onPause={()=>guideRespond('pause')}/> : actionFields(a, c, draft.values).map(f => <label key={f.key}>{f.label}{f.optional ? ' (optional)' : ''}{f.choices ? <select value={draft.values[f.key] ?? ''} onChange={e => void change({ ...draft, values: { ...draft.values, [f.key]: e.target.value }, updatedAt: new Date().toISOString() })}><option value="">Choose…</option>{f.choices(c, draft.values).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select> : <input type={f.kind === 'date' ? 'date' : f.kind === 'datetime' ? 'datetime-local' : 'text'} inputMode={f.kind === 'money' || f.kind === 'number' ? 'decimal' : undefined} defaultValue={draft.values[f.key] ?? ''} key={`${draft.actionId}-${f.key}-${draft.values[f.key] ?? ''}`} onBlur={e => { if (e.target.value !== (draft.values[f.key] ?? ''))
+    {!review ? <>{actionFields(a,c,draft.values).some(f=>/accountId$/i.test(f.key)&&f.choices&&!f.choices(c,draft.values).length) && <div role="status"><p>There is no available account for this step. Add one, then return to this task.</p><button type="button" disabled={busy} onClick={prepareAccountFirst}>Add an account first</button></div>}{a.id==='worked-shift' && actionFields(a,c,draft.values).some(f=>f.key==='jobId'&&f.choices&&!f.choices(c,draft.values).length) && <div role="status"><p>Set up your job before recording this shift. Your hours and date will stay with this task.</p><button type="button" disabled={busy} onClick={prepareJobFirst}>Set up a job first</button></div>}{a.id===PLAN_GUIDE_ID ? guidePaused ? <section className="hercules-plan-guide"><p>Your private planning conversation is paused.</p><button type="button" onClick={()=>{setGuidePaused(false);onReply('Continue planning',guideReply(c,draft.values));}}>Continue planning</button></section> : <HerculesPlanGuide inlineAnswers={!composerAvailable} context={c} values={draft.values} busy={busy} onAnswer={text=>guideRespond(text,true)} onBack={guideEdit} onSkip={guideSkip} onPause={()=>guideRespond('pause')}/> : actionFields(a, c, draft.values).map(f => <label key={f.key}>{f.label}{f.optional ? ' (optional)' : ''}{f.choices ? <select value={draft.values[f.key] ?? ''} onChange={e => void change({ ...draft, values: { ...draft.values, [f.key]: e.target.value }, updatedAt: new Date().toISOString() })}><option value="">Choose…</option>{f.choices(c, draft.values).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select> : <input type={f.kind === 'date' ? 'date' : f.kind === 'datetime' ? 'datetime-local' : 'text'} inputMode={f.kind === 'money' || f.kind === 'number' ? 'decimal' : undefined} defaultValue={draft.values[f.key] ?? ''} key={`${draft.actionId}-${f.key}-${draft.values[f.key] ?? ''}`} onBlur={e => { if (e.target.value !== (draft.values[f.key] ?? ''))
                 void change({ ...draft, values: { ...draft.values, [f.key]: e.target.value }, updatedAt: new Date().toISOString() }); }}/>}</label>)}<>{duplicateWarning && <div role="alert"><p>{duplicateWarning}</p><label><input type="checkbox" checked={duplicateAck} onChange={e => setDuplicateAck(e.target.checked)}/>This is another real entry, not the same one.</label></div>}</><button type="button" disabled={busy || !!missingActionField(a, draft.values, c)} onClick={showReview}>Review changes</button></> : <><h4 ref={reviewHeadingRef} tabIndex={-1}>Check your changes</h4><dl>{review.rows.map(row => <div key={row.label}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl><p>{review.consequence}</p><ul>{review.effects.map((e, i) => <li key={i}>{e.label}: {e.value}</li>)}</ul><button type="button" disabled={busy} onClick={() => void confirm()}>Final Confirm</button><button type="button" disabled={busy} onClick={() => { setReview(null); requestAnimationFrame(() => (a.id===PLAN_GUIDE_ID ? actionCardRef.current?.querySelector<HTMLElement>(".hercules-plan-recap summary") ?? actionCardRef.current?.querySelector<HTMLElement>(".hercules-plan-guide") : actionCardRef.current?.querySelector<HTMLElement>("input, select, textarea"))?.focus()); }}>Edit details</button></>}
     <button type="button" disabled={busy} onClick={() => void change(nextHerculesTask(draft))}>Cancel this task</button>
    </>}

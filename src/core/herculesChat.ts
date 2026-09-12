@@ -190,17 +190,21 @@ export async function chatHercules(
   const body = herculesModelPayload(req);
 
   for (const url of chatUrls()) {
+    const ctrl = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => { ctrl.abort(); reject(new Error('HERCULES_CHAT_TIMEOUT')); }, timeoutMs);
+    });
     try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-      const res = await fetchFn(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        signal: ctrl.signal,
-      });
-      clearTimeout(timer);
-      const result = await readAiReply(res, req.companion);
+      const result = await Promise.race([(async () => {
+        const res = await fetchFn(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          signal: ctrl.signal,
+        });
+        return readAiReply(res, req.companion);
+      })(), deadline]);
       if (result) {
         return {
           text: sanitizeHerculesReply(result.reply, req.grounded.spoken, req.figures ?? [], req.message),
@@ -211,6 +215,8 @@ export async function chatHercules(
       }
     } catch {
       continue;
+    } finally {
+      clearTimeout(timer);
     }
   }
 

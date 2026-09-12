@@ -25,6 +25,7 @@ import { assembleHousehold } from "../src/core/sync.ts";
 import { activateScheduledPlans, appendTrustedPlanHerculesTurn } from "../src/core/commands.ts";
 import { todayKey } from "../src/core/calendar.ts";
 import { executeHerculesReadToolPlan, HERCULES_READ_TOOL_NAMES } from "../src/core/herculesTools.ts";
+import { executeWorkspaceActionQuery, isWorkspaceActionQuery } from "../src/workspace/actionQueries.ts";
 import { planActivationInstant, type PlanHerculesTurn } from "../src/core/planSystem.ts";
 import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
 import type {
@@ -887,11 +888,13 @@ export class LedgerRoom extends DurableObject<Env> {
       this.check(scope);
       await this.archiveBarrier();
       this.check(scope);
-      if (!['personal', 'household'].includes(query.view) || !(HERCULES_READ_TOOL_NAMES as readonly string[]).includes(query.name)) throw new Error('INVALID_READ');
+      if (!['personal', 'household'].includes(query.view) || !((HERCULES_READ_TOOL_NAMES as readonly string[]).includes(query.name) || isWorkspaceActionQuery(query.name))) throw new Error('INVALID_READ');
       const state = this.load();
       const personal = state.personal.get(scope.memberId);
       if (!state.shared || !personal) throw new Error('LEDGER_NOT_READY');
       const household = assembleHousehold(state.shared, personal, { linked: true });
+      if (isWorkspaceActionQuery(query.name)) return { scope: query.view, acceptedSequence: state.sequence, observedAt: new Date().toISOString(),
+        ...executeWorkspaceActionQuery(query.name, query.args, { household, memberId: scope.memberId, view: query.view, today: todayKey(new Date(), 'America/Toronto') }) };
       const result = executeHerculesReadToolPlan(household, { calls: [{ id: 'workspace-read', name: query.name, args: query.args }] }, todayKey(new Date(), 'America/Toronto'), { memberId: scope.memberId, view: query.view });
       return { scope: query.view, acceptedSequence: state.sequence, observedAt: new Date().toISOString(), results: result.results };
     });

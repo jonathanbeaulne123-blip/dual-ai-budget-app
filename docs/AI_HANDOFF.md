@@ -1,3 +1,7 @@
+## Hercules audit expansion — local candidate (2026-09-12)
+
+Branch `codex/hercules-audit-expansion`, base `1686ccc4`. Claude's downloaded journey audit informed conversation repairs, truthful take-home, scoped dynamic action discovery, reviewed hourly job setup and modern task lifecycle. High risk; Budget (5): current financial evidence and retained Confirm authority. Engagement (3): questions, useful actions and recoverable work. No push, deployment, schema or provider changes. [Handoff](briefs/HERCULES_AUDIT_EXPANSION_HANDOFF.md) and [worksession](worksessions/2026-09-12-hercules-audit-expansion.md) distinguish local validation from live/physical acceptance.
+
 ## Hercules Workspace — local implementation (2026-09-12)
 
 Branch `codex/hercules-workspace`, baseline `origin/main@02a5539dfc4dfadf6c7cae67b98f17db278c9eaa`; D-249; High risk. Jonathan approved the full workspace implementation. Private projects, a Flash-only Agent/Workflow runtime, versioned artifacts, scoped ledger reads, Plan links and existing confirmation bridges are implemented behind disabled activation flags. Budget (5): verified resources and retained financial authority. Engagement (3): enduring conversation, broad work and three authored rooms.

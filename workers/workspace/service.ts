@@ -8,7 +8,7 @@ import { applyWorkspaceCommand, createWorkspaceProject, workspaceId, type Worksp
 import { adaptiveEffort, newWorkspaceRun, projectContext, runCanAdvance, type ModelContent } from '../../src/workspace/runtime.ts';
 import type { Scope } from '../../src/ledgerSync/protocol.ts';
 import { canonical } from '../../src/ledgerSync/patch.ts';
-import { pendingGrant, issueGrant, leaseGrant, hashText, type PrivateRunGrant } from './grants.ts';
+import { pendingGrant, issueGrant, leaseGrant, hashText, requireWorkspaceReadGrant, type PrivateRunGrant } from './grants.ts';
 import { importWorkspaceFile, exportWorkspaceFile } from './files.ts';
 import { callFlash } from './provider.ts';
 import { executeWorkspaceTool, type ToolEffect } from './tools.ts';
@@ -394,7 +394,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
               project: current, id, now: new Date().toISOString(),
               readWeb: readPublicSource,
               read: async (name, args, view) => {
-                if (!freshScope.permittedReads.includes(name)) throw new Error('READ_NOT_GRANTED');
+                requireWorkspaceReadGrant(freshScope.permittedReads, name);
                 const room = this.env.LEDGER_ROOMS.get(this.env.LEDGER_ROOMS.idFromName(`${freshScope.environment}/${freshScope.householdId}`));
                 return await room.workspaceQuery(freshScope, { name, args, view }) as unknown as Record<string, unknown>;
               },
@@ -408,7 +408,10 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
               },
               execute: async code => executeArtifactCode(this.env.HERCULES_SANDBOX, await hashText(`${scope.environment}/${scope.householdId}/${scope.memberId}/${projectId}/${id}/${crypto.randomUUID()}`), code),
             }); result = output.result; effect = output.effect;
-          } catch (error) { result = { error: error instanceof Error ? error.message : 'TOOL_FAILED', completed: false }; }
+          } catch (error) {
+            if (error instanceof Error && error.message === 'GRANT_ACTION_OPTIONS_REFRESH_REQUIRED') throw error;
+            result = { error: error instanceof Error ? error.message : 'TOOL_FAILED', completed: false };
+          }
           await leaseGrant(this.env, e.grant);
           const latest = this.getProject(projectId), latestRun = latest.runs.find(r => r.id === runId)!;
           if (latestRun.generation !== generation || !runCanAdvance(latest, latestRun) || this.execution(runId).activeAttempt !== attempt) return { continue: false };
@@ -475,6 +478,13 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
       return { continue: run.status === 'running' };
     } catch (error) {
       const code = error instanceof Error ? error.message : 'RUN_INTERRUPTED';
+      if (code === 'GRANT_ACTION_OPTIONS_REFRESH_REQUIRED' && currentRun()) {
+        // Issued grants are immutable. Resume creates a new granted continuation;
+        // never add these reads to an older grant or repeat the same denied step.
+        e.grant.expiresAt = new Date(0).toISOString(); this.saveExecution(runId, e);
+        await this.stopRun(projectId, runId, 'paused', 'Your work is saved. Resume to renew permission for current Hearth action options.');
+        return { continue: false };
+      }
       if (currentRun()) await this.stopRun(projectId, runId, code==='RUN_BUDGET_EXCEEDED'?'waiting':'paused', code==='RUN_BUDGET_EXCEEDED'?'This run reached its work budget. Continue with a new instruction.':code.startsWith('GEMINI_FREE_')?'Free Gemini is paused before further calls. Your work is saved. '+(code.includes('LIMIT')?'The available quota needs to reset.':'The free service or its configuration needs attention.'):/GRANT|UNAUTHENTICATED/.test(code) ? 'Permission needs renewing. Your work is saved.' : 'Hercules could not finish this step. Your work is saved; retry when ready.');
       return { continue: false };
     }

@@ -1,3 +1,13 @@
+## 2026-09-12 — Hercules retains work and resolves its real capabilities (D-249 amendment)
+
+Jonathan asked Codex to use Claude's hands-on audit to fix demonstrated failures and expand Hercules's intelligence and tools. The audit's older activation observations remain historical evidence. Current implementation retains private pause and queued confirmation identities, routes side questions around guided fields, bounds complete connection attempts, and gives Workspace and legacy conversation one presentation owner. Easy Read stays inside its scroll owner and remains reachable while scrolling.
+
+Action discovery now derives scope from executable adapters. An authenticated pure LedgerRoom query resolves current dynamic fields and scoped choices, with accepted sequence and observation time, rather than exposing a household snapshot. Existing grants do not gain reads silently: an old run pauses and Resume creates a fresh grant. The provider and quota routing are unchanged.
+
+Reviewed hourly job setup creates settings and owed accounts without earnings; returning to the original shift retains its answers and separate confirmation. Unknown take-home blocks role wages even when tips exist, with effective-date selection and a supplied custom paid-break exception. Modern to-dos retain their identity through edit, complete, reopen and removal; financial completion requires selected accepted evidence. Legacy board drafts work only while their unadopted record exists. No financial total, shared Plan approval or external-write authority is delegated to the model.
+
+High risk. Budget (5): truthful earnings and current scoped evidence. Engagement (3): durable conversation and useful follow-through. [Worksession and measured validation](worksessions/2026-09-12-hercules-audit-expansion.md). No deployment or hosted activation is included in this change.
+
 ## 2026-09-12 — Hercules reports bugs to Hearth Feedback
 
 Jonathan asked for in-app bug reporting through Hercules questions and app context, connected to the existing FeedBack Sheet. Reports are private workspace proposals until the person submits the exact editable report. The destination and field mapping are constrained server-side; a dedicated service account avoids asking each reporter for Google Sheets access. App context is allowlisted and removable; automatic collection excludes books, full URLs, raw errors, screenshots and conversation history. New rows have a distinct H-UUID identity, Not started status and Done=false; priority, fixes actually implemented and resolution scores remain human triage fields.
