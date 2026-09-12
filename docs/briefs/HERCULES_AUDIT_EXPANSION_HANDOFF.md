@@ -6,7 +6,7 @@ Jonathan and Bianca can ask a question without losing their current planning tas
 
 Target: Codex integration/release review, with Claude for a bounded hands-on product recheck. Jonathan owns release decisions. High risk. Budget (5): distinguish unknown earnings and resolve current scoped facts. Engagement (3): usable conversation, discoverable actions and preserved work.
 
-Repository: `jonathanbeaulne123-blip/dual-ai-budget-app`. Branch: `codex/hercules-audit-expansion`. Base: `1686ccc4a569c99b5a2d92ae8b311b83873e211d`, reverified against `origin/main` on 2026-09-12. No PR, push or deployment is included. The worksession records exact candidate and measured verification once gates finish.
+Repository: `jonathanbeaulne123-blip/dual-ai-budget-app`. Branch: `codex/hercules-audit-expansion`. Base: `1686ccc4a569c99b5a2d92ae8b311b83873e211d`, reverified against `origin/main` on 2026-09-12. No PR, push or deployment is included. Verified implementation/test head: `5fe8f1558f29945bcdfe84828271b85f8bcf45aa`. Focused High gate: 472 tests, 99.444 seconds; build, 13 local runtime cases and 96 browser matrix cases pass. The worksession records commands, prior failures and remaining live acceptance.
 
 ## Claude evidence and current disposition
 
