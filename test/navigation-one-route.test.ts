@@ -24,7 +24,7 @@ describe("One route to each place", () => {
   it("+ means add in both spaces — four money verbs, no navigation verbs", () => {
     for (const view of ["household", "personal"] as const) {
       expect(fabClosedLabel(view)).toBe("Add money");
-      for (const tab of ["home", "calendar", "shift", "ledger", "plan", "together", "more", "planner"]) {
+      for (const tab of ["home", "calendar", "shift", "ledger", "plan", "together", "more", "planner", "timeMachine"]) {
         const actions = fabActionsFor(view, tab);
         expect(actions).toHaveLength(4);
         expect(actions.every(action => action.kind === "add" && action.money)).toBe(true);
@@ -35,8 +35,11 @@ describe("One route to each place", () => {
   it("keeps one tab vocabulary: Together borrows More's scene, nothing else is remapped", () => {
     expect(sceneTabFor("together")).toBe("more");
     expect(sceneTabFor("planner")).toBe("more");
+    expect(sceneTabFor("timeMachine")).toBe("ledger");
     for (const tab of ["home", "plan", "calendar", "shift", "ledger", "more", "till"] as const) expect(sceneTabFor(tab)).toBe(tab);
     expect(readFileSync("src/App.tsx", "utf8")).not.toMatch(/tab === "together" \? "more" : tab/);
+    expect(readFileSync("src/App.tsx", "utf8")).toMatch(/onOpenTimeMachine=\{\(\) => goTab\("timeMachine"\)\}/);
+    expect(readFileSync("src/Books.tsx", "utf8")).toMatch(/onOpenTimeMachine/);
   });
 });
 

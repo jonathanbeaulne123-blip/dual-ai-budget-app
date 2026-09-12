@@ -6666,7 +6666,7 @@ export function App() {
         <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
 
-      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger"} />
+      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger" || tab === "timeMachine"} />
       <WorldCharm page={sceneTabFor(tab)} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
@@ -7089,6 +7089,7 @@ export function App() {
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onGoMore={() => goTab("more")}
+          onOpenTimeMachine={() => goTab("timeMachine")}
           requestedPane={booksPaneRequest}
           onConsumeRequestedPane={() => setBooksPaneRequest(null)}
           onRemove={(transaction) => {
@@ -8578,8 +8579,8 @@ export function App() {
         )}
         {view === "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
-          className={tab === "ledger" ? "active" : ""}
-          aria-current={tab === "ledger" ? "page" : undefined}
+          className={tab === "ledger" || tab === "timeMachine" ? "active" : ""}
+          aria-current={tab === "ledger" || tab === "timeMachine" ? "page" : undefined}
           onPointerEnter={() => preloadTab("ledger")}
           onFocus={() => preloadTab("ledger")}
           onClick={() => goTab("ledger")}
@@ -8597,8 +8598,8 @@ export function App() {
         />
         {view !== "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
-          className={tab === "ledger" ? "active" : ""}
-          aria-current={tab === "ledger" ? "page" : undefined}
+          className={tab === "ledger" || tab === "timeMachine" ? "active" : ""}
+          aria-current={tab === "ledger" || tab === "timeMachine" ? "page" : undefined}
           onPointerEnter={() => preloadTab("ledger")}
           onFocus={() => preloadTab("ledger")}
           onClick={() => goTab("ledger")}
