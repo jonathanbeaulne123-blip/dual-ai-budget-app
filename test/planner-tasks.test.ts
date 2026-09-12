@@ -113,7 +113,7 @@ describe("planner tasks (D-245)", () => {
     expect(adopted.tombstones.map((row) => row.id).sort()).toEqual(["BOARD-TASK-one", "BOARD-TASK-two"]);
     expect(adopted.tasks?.map((row) => [row.id, row.assigneeId, row.dueDate, Boolean(row.completedAt), row.createdBy])).toEqual([["TASK-board-one", J, "2026-09-15", false, B], ["TASK-board-two", null, null, true, B]]);
     expect(() => adoptBoardTasks(adopted, { memberId: J })).toThrow(/already/);
-    expect(compileHousehold(adopted).transactions).toEqual(compileHousehold(h).transactions);
+    expect(adopted.transactions).toEqual(h.transactions);
   });
   it("binds the actor, carries the planner capability, and refuses an old client once tasks exist", async () => {
     const h = catalogHousehold();

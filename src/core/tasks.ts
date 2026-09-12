@@ -1,6 +1,7 @@
 import type { Household, CommitResult, LedgerView, RecurrenceCadence } from "./types.ts";
 import { ValidationError } from "./types.ts";
 import { isValidDateKey, type DateKey } from "./calendar.ts";
+import { advanceCadence } from "./recurrence.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { shapeSharedBoards } from "./sharedBoards.ts";
@@ -243,8 +244,21 @@ export const completeTask = captureCommand("completeTask", (h: Household, input:
   }
   const now = input.completedAt && iso(input.completedAt) ? input.completedAt : new Date().toISOString();
   const row = validateTask({ ...old, revision: old.revision + 1, completedAt: now, completedBy: input.memberId, completionEvidence: evidence, updatedAt: new Date().toISOString() });
-  return { household: put(h, row), postedIds: [row.id], warnings: [], undo: undo(h, row, "Complete task", "planner-task") };
+  let next = put(h, row);
+  // A repeating task keeps its history: this occurrence stays in the logbook and the next one opens on its own date.
+  const following = nextTaskDates(old);
+  if (following) {
+    const nextId = `${old.id}-r${(following.doDate ?? following.dueDate)!.replace(/-/g, "")}`;
+    if (!(next.tasks ?? []).some((r) => r.id === nextId)) next = put(next, validateTask({ ...old, id: nextId, revision: 1, ...following, acknowledgedBy: [], completedAt: null, completedBy: null, completionEvidence: null, createdAt: now, updatedAt: now }));
+  }
+  return { household: next, postedIds: [row.id], warnings: [], undo: undo(h, row, "Complete task", "planner-task") };
 });
+/** Where a repeating task goes after one occurrence is done. Yearly keeps the day; the rest follow the recurrence engine. */
+export function nextTaskDates(task: Task): { doDate: DateKey | null; dueDate: DateKey | null } | null {
+  if (task.repeat === "none") return null;
+  const shift = (date: DateKey | null) => date === null ? null : task.repeat === "yearly" ? `${Number(date.slice(0, 4)) + 1}${date.slice(4)}` : advanceCadence(date, task.repeat as RecurrenceCadence);
+  return { doDate: shift(task.doDate), dueDate: shift(task.dueDate) };
+}
 
 export type TaskEditInput = { memberId: string; id: string; expectedRevision: number };
 export const reopenTask = captureCommand("reopenTask", (h: Household, input: TaskEditInput): CommitResult => {
