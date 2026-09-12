@@ -2,6 +2,7 @@ import { useId, useMemo } from 'react';
 import { fundSourceMovement, fundSourceReservedCents, type FundSourceInput } from './core/fundContributionSources.ts';
 import type { Household } from './core/types.ts';
 import { formatCad } from './core/money.ts';
+import { Whisper } from './theme/Whisper.tsx';
 
 export const emptyFundSource = (): FundSourceInput => ({version:1,kind:'already-held',explanation:''});
 export function FundSourceFields({household,memberId,date,value,onChange}: {
@@ -28,10 +29,12 @@ export function FundSourceFields({household,memberId,date,value,onChange}: {
         <option value="">Choose a recorded movement</option>
         {eligible.map(({tx,remaining})=><option key={tx.id} value={tx.id}>{tx.date} · {tx.note || tx.type} · {formatCad(remaining)} available to link</option>)}
       </select>
-      <p className="muted">Its private account and transaction details stay Personal. Linking records provenance; it does not move money again or verify your bank balance.</p>
+      <Whisper mode="line">Linking records where the money came from. It does not move money again.</Whisper>
+      <Whisper mode="aside" id="fund.source-link">The private account and transaction details stay Personal. Linking does not verify your bank balance.</Whisper>
     </>}
     <label htmlFor={`${id}-explanation`}>Explain the source</label>
     <textarea id={`${id}-explanation`} required maxLength={240} value={value.explanation} onChange={e=>onChange({...value,explanation:e.target.value})} placeholder="For example: money I sent from my separate savings." />
-    <p className="muted">This explanation is Shared with your household. Leave out private account numbers. The custodian must separately confirm receipt.</p>
+    <Whisper mode="line">Shared with your household — leave out account numbers.</Whisper>
+    <Whisper mode="aside" id="fund.source-explanation">The custodian must separately confirm receipt.</Whisper>
   </fieldset>;
 }

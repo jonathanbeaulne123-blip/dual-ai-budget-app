@@ -1,0 +1,56 @@
+/* Whisper — supporting text that knows how much screen it may take.
+   Three renderings, one component (src/theme/Whisper.tsx). Authored for all
+   three worlds through scene tokens; each world changes the toggle's voice,
+   not the words. */
+
+.whisper { margin: 0; }
+.whisper-line { font-size: 13px; line-height: 1.45; color: var(--muted); max-width: 62ch; }
+
+/* Read by assistive tech, painted for nobody. */
+.whisper-described { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* The "Why" toggle: a small word beside the heading, a short paragraph when opened. */
+.whisper-aside { display: inline-block; max-width: 100%; vertical-align: middle; }
+.whisper-aside > summary {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px; padding: 4px 10px;
+  list-style: none; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  color: var(--theme-accent, var(--pine));
+  border: 1px solid color-mix(in srgb, var(--theme-accent, var(--pine)) 40%, transparent);
+  border-radius: var(--world-r-chip, 999px);
+  background: color-mix(in srgb, var(--theme-accent, var(--pine)) 8%, transparent);
+}
+.whisper-aside > summary::-webkit-details-marker { display: none; }
+.whisper-aside > summary::before { content: "?"; font-weight: 700; }
+.whisper-aside[open] > summary::before { content: "×"; }
+.whisper-aside > summary:focus-visible { outline: 2px solid var(--theme-accent, var(--pine)); outline-offset: 2px; }
+.whisper-aside .whisper-body {
+  margin: 8px 0 4px; padding: 10px 12px; max-width: 62ch;
+  font-size: 13px; line-height: 1.5; color: var(--ink);
+  border-left: 3px solid var(--theme-accent, var(--pine));
+  background: color-mix(in srgb, var(--theme-accent, var(--pine)) 6%, var(--card));
+  border-radius: 0 var(--world-r-control, 8px) var(--world-r-control, 8px) 0;
+}
+.whisper-aside .whisper-body p { margin: 0 0 8px; }
+.whisper-aside .whisper-body p:last-child { margin-bottom: 0; }
+
+/* A heading row that carries its Why beside it. */
+.whisper-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.whisper-row > :is(h2, h3, h4) { margin: 0; }
+
+/* World voices: Taylor writes the toggle by hand; Newfoundland sets it like a sign. Classic stays plain. */
+:root[data-theme="taylor"] .whisper-aside > summary { font-family: var(--theme-hand, inherit); font-size: 15px; font-weight: 600; letter-spacing: 0; border-style: dashed; }
+:root[data-theme="taylor"] .whisper-aside .whisper-body { border-left-style: dashed; }
+:root[data-theme="newfoundland"] .whisper-aside > summary { font-family: var(--theme-display, inherit); text-transform: uppercase; font-size: 11px; letter-spacing: .08em; border-radius: var(--world-r-control, 6px); }
+:root[data-theme="newfoundland"] .whisper-aside .whisper-body { border-radius: 0; }
+:root[data-scene-lighting="dark"] .whisper-aside > summary { background: color-mix(in srgb, var(--theme-accent) 16%, transparent); }
+
+@media (max-width: 719px) {
+  .whisper-aside > summary { min-height: 44px; padding: 8px 12px; }
+}
+@media (forced-colors: active) {
+  .whisper-aside > summary { border: 1px solid ButtonText; color: ButtonText; background: ButtonFace; }
+  .whisper-aside .whisper-body { border-left-color: CanvasText; background: Canvas; }
+}
+@media print { .whisper-aside { display: block; } .whisper-aside > summary { display: none; } .whisper-aside .whisper-body { display: block; } }

@@ -48,7 +48,7 @@ const REHEARSAL_PREFLIGHT_ACKNOWLEDGEMENTS = [
   { id: "access", label: "We each use our own Google account, and Household access lists both people and both current phones." },
   { id: "environment", label: "Both phones show Development, and we recorded the deployed build from its release receipt." },
   { id: "privacy", label: "Real amounts and descriptions stay out of screenshots, diagnostics, AI/model input, committed files, and support notes." },
-  { id: "stop", label: "We agreed on one ten-minute weekly sit-down and will stop for imbalance, privacy leakage, duplication, loss, or a false Synced state." },
+  { id: "stop", label: "We agreed on one ten-minute weekly Sitdown and will stop for imbalance, privacy leakage, duplication, loss, or a false Synced state." },
 ] as const;
 
 type RehearsalPreflightAcknowledgement = typeof REHEARSAL_PREFLIGHT_ACKNOWLEDGEMENTS[number]["id"];
@@ -116,7 +116,7 @@ function RehearsalPreflight({
   return <section className="month-preflight" aria-labelledby="month-preflight-heading">
     <p className="eyebrow">Private Development preparation</p>
     <h3 id="month-preflight-heading">Prove recovery before week 1</h3>
-    <p>The backup contains the household books. Keep it private and local. Hearth checks the file without importing it or changing this kitchen.</p>
+    <p>The backup contains the household books. Keep it private and local. Hearth checks the file without importing it or changing this household.</p>
     <ol>
       <li><button type="button" className="secondary" disabled={Boolean(busy)} onClick={() => void apply("download-backup", async () => {
         const file = await makeHouseholdExport(household);
@@ -136,12 +136,12 @@ function RehearsalPreflight({
     {downloaded && !recoveryProof ? <p className="month-disclosure" role="status">Backup downloaded. Select that private file above to prove it reopens.</p> : null}
     {error ? <p className="month-error" role="alert">{error}</p> : null}
     <p className={`month-preflight-status ${recoveryProofIsCurrent ? "good" : "attention"}`} role="status">
-      {recoveryProofIsCurrent ? "Recovery check passed for the exact current Development snapshot." : recoveryProof ? "The household changed. Download and verify a fresh backup." : "Recovery check still required."}
+      {recoveryProofIsCurrent ? "Recovery check passed for the exact current Development books." : recoveryProof ? "The household changed. Download and verify a fresh backup." : "Recovery check still required."}
     </p>
     <fieldset><legend>At the table, confirm together</legend>
       {REHEARSAL_PREFLIGHT_ACKNOWLEDGEMENTS.map((item) => <label key={item.id} className="month-preflight-check"><input type="checkbox" checked={acknowledgements[item.id]} onChange={(event) => setAcknowledgements((current) => ({ ...current, [item.id]: event.target.checked }))} /> <span>{item.label}</span></label>)}
     </fieldset>
-    <p className="month-disclosure">These acknowledgements stay in this browser session. They are not uploaded, added to the household snapshot, or sent to Hercules.</p>
+    <p className="month-disclosure">These acknowledgements stay in this browser session. They are not uploaded, added to the household books, or sent to Hercules.</p>
   </section>;
 }
 
@@ -224,7 +224,7 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
         const result = dismissNotice(household, inviteKey);
         await onApply(result.household, result.undo);
       })}>×</button>
-      <div className="month-hercules-line"><span aria-hidden="true">🐈</span><p>One short sit-down each week. We’ll begin with the balances you already have, then prove the books together.</p></div>
+      <div className="month-hercules-line"><span aria-hidden="true">🐈</span><p>One short Sitdown each week. We’ll begin with the balances you already have, then prove the books together.</p></div>
       <p className="eyebrow">{formatMonthLabel(monthKey)} · Development</p>
       <h2>Four-week household rehearsal</h2>
       <p>About ten minutes a week on your own phones. Nothing here enables Production or moves money without the ordinary Confirm.</p>
@@ -284,7 +284,7 @@ export function MonthRehearsalPanel({ household, memberId, today, onApply, onOpe
       <div><p className="eyebrow">Our month · {formatMonthLabel(rehearsal.monthKey)}</p><h2>Week {week.week}: {week.week === 1 ? "Begin truthfully" : week.week === 2 ? "Bills and clearing" : week.week === 3 ? "Corrections and trust" : "Close together"}</h2></div>
       <span className={`month-proof-pill ${week.checkpoint?.status === "tied" ? "good" : "attention"}`}>{week.checkpoint?.status === "tied" ? "Tied" : "Needs attention"}</span>
     </header>
-    <p>{availability === "future" ? `Preview only until ${week.startsOn}.` : `Resume the ${week.startsOn} to ${week.endsOn} sit-down.`}</p>
+    <p>{availability === "future" ? `Preview only until ${week.startsOn}.` : `Resume the ${week.startsOn} to ${week.endsOn} Sitdown.`}</p>
     {!expanded ? <div className="month-actions"><button type="button" className="primary" aria-expanded={false} onClick={() => setExpanded(true)}>Resume our month</button><button type="button" className="secondary" aria-expanded={false} onClick={() => setExpanded(true)}>See the four weeks</button></div> : null}
     {expanded ? <>
       <nav className="month-week-tabs" aria-label="Month weeks">

@@ -31,6 +31,7 @@ import { useAsyncScope } from "./asyncScope.ts";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { CollapsibleCard } from "./theme/PaperTheme.tsx";
 import { PurchaseGoalSheet } from "./widgets/Jars.tsx";
+import { Whisper } from "./theme/Whisper.tsx";
 
 /** Coarse studio reflection on the shelf: dip colour, ears, eyes and mouth from the displayed piece. */
 function paperBankLook(goal: Goal) {
@@ -205,9 +206,8 @@ function KittyBanksScope({
     <section className={`card kitty-banks ${manage ? "is-plan" : "is-home"}`} data-kitty-banks={view} data-kitty-surface={surface}>
       <header><h2>Kitty Banks</h2></header>
       {phone && manage ? <p className="fill-scope">{shared ? "Shared banks" : "Personal · only you"}</p> : <>      {shared ? (
-        <p className="muted">
-          Shared banks keep their recorded contributions. Fund surplus earmarks are shown separately; that cash remains in the shared pool.
-        </p>
+        <><Whisper mode="line">Shared banks keep their recorded contributions.</Whisper>
+        <Whisper mode="aside" id="kitty.shared-banks">Fund surplus earmarks are shown separately; that cash remains in the shared pool.</Whisper></>
       ) : (
         <p className="muted">
           Personal goals on this folio. Fund surplus does not land here.

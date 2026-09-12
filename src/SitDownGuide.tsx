@@ -33,6 +33,7 @@ import { KitchenNotice } from "./KitchenNotice.tsx";
 import { PaperBars } from "./theme/PaperTheme.tsx";
 import { googleConfigured, uploadSitDownWorkbook } from "./google/index.ts";
 import { useAsyncScope } from "./asyncScope.ts";
+import { Whisper } from "./theme/Whisper.tsx";
 
 export function SitDownGuide({
   household,
@@ -97,7 +98,7 @@ export function SitDownGuide({
     return (
       <section className="card sit-guide" data-sit-view="personal">
         <header>
-          <h2>Sit-down</h2>
+          <h2>Sitdown</h2>
           <span className="muted">{formatMonthLabel(monthKey)}</span>
         </header>
         <SitDownCharts charts={charts} />
@@ -109,7 +110,7 @@ export function SitDownGuide({
   return (
     <section className="card sit-guide">
       <header>
-        <h2>Sit-down</h2>
+        <h2>Sitdown</h2>
         <span className="muted">Act {act} / 3 · {formatMonthLabel(monthKey)}</span>
       </header>
       {act === 1 && (
@@ -162,9 +163,8 @@ export function SitDownGuide({
       {act === 3 && (
         <>
           <p className="sit-q">Where leftover goes.</p>
-          <p className="muted">
-            Plan first. One Confirm turns it into transfers you already have — goals park in Kitty Banks; card paydown is a transfer. Hercules never moves a dollar.
-          </p>
+          <Whisper mode="line">One Confirm turns this into transfers you already have. Hercules never moves a dollar.</Whisper>
+          <Whisper mode="aside" id="sitdown.leftover">Plan first. Goals park in Kitty Banks; card paydown is a transfer.</Whisper>
           <SitDownCharts charts={charts} />
           {!leftover.leftoverCents && (
             <p className="muted">Nothing to move. The arithmetic is the lesson, not invented CAD.</p>
@@ -347,7 +347,7 @@ function SitDownCharts({ charts }: { charts: SitDownChart[] }) {
       ))}
       <p className="muted">{chart.note}</p>
       {charts.length > 1 ? (
-        <div className="sit-chart-nav" role="group" aria-label="Sit-down charts">
+        <div className="sit-chart-nav" role="group" aria-label="Sitdown charts">
           <button
             type="button"
             className="chip"

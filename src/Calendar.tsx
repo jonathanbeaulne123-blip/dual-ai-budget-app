@@ -75,6 +75,7 @@ import {
 import { WorkSettlementSheet } from "./WorkSettlementSheet.tsx";
 import { useAsyncScope } from "./asyncScope.ts";
 import { PotentialExpenseEditor, type PotentialExpenseEditorValue } from "./PotentialExpenseEditor.tsx";
+import { Whisper } from "./theme/Whisper.tsx";
 
 type Pane = CalendarPane;
 
@@ -805,9 +806,8 @@ function CalendarPageScope(props: CalendarProps) {
             <h2>Google calendars</h2>
             <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
           </header>
-          <p className="muted">
-            Connect Calendar separately from Hearth sign-in. Read your calendars and calendars shared with your Google account, including shared household calendars. These events appear only in your current browser and never post money.
-          </p>
+          <Whisper mode="line">Reads your Google calendars in this browser only. Never posts money.</Whisper>
+          <Whisper mode="aside" id="calendar.google">Connect Calendar separately from Hearth sign-in. Hearth reads your own calendars and any shared with your Google account, including shared household calendars. Events appear only in your current browser.</Whisper>
           {household.members.filter((member) => member.active && member.id === props.memberId).sort((left, right) => {
             if (left.id === props.memberId) return -1;
             if (right.id === props.memberId) return 1;

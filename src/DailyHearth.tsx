@@ -142,9 +142,9 @@ export function DailyHearth({
           </button>
         </div>
         <div className="hercules-notes">
-          <span className="muted">Kitchen ledger notes</span>
+          <span className="muted">Hearth notes</span>
           {(household.kitchen.hercules?.memories ?? []).length === 0 ? (
-            <p className="muted">Say “remember …” to Hercules. Notes stay in this snapshot — same door as the books.</p>
+            <p className="muted">Say “remember …” to Hercules. Notes stay in these books — same door as the rest.</p>
           ) : (
             (household.kitchen.hercules?.memories ?? []).map((row) => (
               <div className="chalk-note" key={row.id}>
