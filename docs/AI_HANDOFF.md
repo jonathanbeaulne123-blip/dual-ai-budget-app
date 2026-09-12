@@ -1,3 +1,13 @@
+## Vision v2 slice 1 — names, the Fund tab, the adaptive +, the Fund pulse (2026-09-12)
+
+Branch `claude/vision-v2-slice-1`, base `ecf936ac` (main after #447). Jonathan accepted Vision v2 Decisions 1, 2 and 3 and asked for Horizon A to begin. Risk Medium. Budget (5): no posting path changed; the pulse is a pure projector that says "Checking" before anything else when evidence is stale, offline or untied. Engagement (3): the spaces read My Money / Our Home, the household truth tab carries the Fund's chosen name (default The Fund), Personal tabs read Calendar and Work, and the + asks "What can we do?" in Our Home with verb-first actions ordered by destination.
+
+New: `src/core/spaceNames.ts`, `src/core/fabActions.ts`, `src/core/fundPulse.ts`, `test/vision-v2-slice-1.test.ts`, `docs/briefs/HEARTH_FUTURE_VISION_V2.md` (the plan), D-243. Changed: `FabSpeedDial` gains optional `actions`/`closedLabel`/`onGo`; `App.tsx` wiring; `.tone-go` style for navigation-only verbs; label updates in three test files. Stored ledger names and `HOUSEHOLD_FUND_NAME` are unchanged.
+
+Verification: `tsc` clean; 23 focused tests pass; the Bianca mainline suites (`app-startup-p1` 81, `five-boards-entry-app`, `month-rehearsal-mainline`) pass serially, 98 tests in 67.9 s. Quick gate (Medium, focus `vision-v2-slice-1`) passed in 141 s with no time-budget breach across 16 selected files; `uiProofRequired` stays open. Details in [the worksession](worksessions/2026-09-12-vision-v2-slice-1.md). No browser evidence captured for the six-row household dial at 320 px; no three-theme screenshots in this session.
+
+Uncertainty: Personal bar geometry with a centred + (3 | + | 2 vs folding Calendar vs a raised +) needs Jonathan's choice before the Status Centre slice; `fundPulse()` has no UI consumer until slice 2. Data/environment: fictional catalog fixtures only; no hosted, schema, Production or real-household writes. This session's git proxy had no push credential for the repository, so the branch is local only — not pushed, not a PR, not merged, not deployed, not live verified. Next owner: Jonathan to authorize push/PR; Codex to audit D-243 and the slice-2 Household Home plan.
+
 ## Kitty Banks — authorized Development release (2026-09-11)
 
 Jonathan explicitly authorized push, merge and Development deployment after the scoped implementation and remaining limits were reported. The candidate incorporates main through #441, retaining guided Plan and category splitting. [Release scope, verification and compatible rollback](worksessions/2026-09-11-kitty-envelope-release.md). This supersedes the local-only release boundary below; it does not authorize exhaustive verification, Production, schema, or real-household writes.

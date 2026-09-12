@@ -135,7 +135,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).toContain('data-ledger-nav={view === "household" ? "shared" : "personal"}');
     expect(experience).toContain('return ["home", "ledger", "plan", "together"]');
     expect(experience).toContain('return ["home", "calendar", "shift", "ledger", "plan", "more"]');
-    expect(app).toContain('{view === "household" ? "Our Money" : "Books"}');
+    expect(app).toContain('{view === "household" ? fundDisplayName(household) : "Books"}');
     expect(styles).toContain(".nav[data-ledger-nav=\"personal\"]");
     expect(styles).toMatch(/\.nav\[data-ledger-nav="personal"\] \{\s*grid-template-columns: 1fr 1fr 1fr 56px 1fr 1fr 1fr;/);
   });

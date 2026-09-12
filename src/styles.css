@@ -776,6 +776,9 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 }
 .nav .fab-dial-action.tone-expense { box-shadow: 0 0 0 1px rgba(74, 103, 85, 0.25), var(--lift-1, 0 6px 14px rgba(60, 42, 20, 0.12)); }
 .nav .fab-dial-action.tone-income { box-shadow: 0 0 0 1px rgba(176, 108, 76, 0.28), var(--lift-1, 0 6px 14px rgba(60, 42, 20, 0.12)); }
+/* Non-money verbs (Plan a cost, Decide together) read as doors, not postings: dashed edge, no money tint. */
+.nav .fab-dial-action.tone-go { border-style: dashed; background: var(--paper-2); font-weight: 600; }
+.nav .fab-dial-action.tone-go::before { content: "→"; margin-right: 6px; font-weight: 500; color: var(--muted); }
 .nav .fab {
   position: relative;
   z-index: 2;

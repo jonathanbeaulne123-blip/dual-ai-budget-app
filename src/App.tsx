@@ -66,7 +66,6 @@ import {
   localDeviceId,
   touchHouseholdDevice,
   householdForView,
-  ledgerNameForView,
   ledgerRouteContract,
   kitchenPrimaryNav,
   acceptedHouseholdOnboarding,
@@ -462,6 +461,8 @@ import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.t
 import { AddCategoryForm } from "./AddCategoryForm.tsx";
 import { defaultSubcategoryForMode } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
+import { fabActionsFor, fabClosedLabel } from "./core/fabActions.ts";
+import { fundDisplayName, spaceLabel } from "./core/spaceNames.ts";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalAccess } from "./MonthRehearsalAccess.tsx";
@@ -6612,7 +6613,7 @@ export function App() {
           </div>
         </details>
       )}
-      <div className="view-switch" role="group" aria-label="Ledger view">
+      <div className="view-switch" role="group" aria-label="Space">
         {(["household", "personal"] as LedgerView[]).map((item) => (
           <button
             key={item}
@@ -6624,7 +6625,7 @@ export function App() {
               rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId });
             }}
           >
-            {ledgerNameForView(household, session.memberId, item)}
+            {spaceLabel(household, session.memberId, item)}
           </button>
         ))}
       </div>
@@ -8463,24 +8464,23 @@ export function App() {
         <button
           className={tab === "calendar" ? "active" : ""}
           aria-current={tab === "calendar" ? "page" : undefined}
-          aria-label="Calendar"
           onPointerEnter={() => preloadTab("calendar")}
           onFocus={() => preloadTab("calendar")}
           onClick={() => goTab("calendar")}
         >
-          Cal
+          Calendar
         </button>
         )}
         {kitchenPrimaryNav(view).includes("shift") && (
         <button
           className={tab === "shift" ? "active" : ""}
           aria-current={tab === "shift" ? "page" : undefined}
-          aria-label="Shifts"
+          aria-label="Work and shifts"
           onPointerEnter={() => preloadTab("shift")}
           onFocus={() => preloadTab("shift")}
           onClick={() => goTab("shift")}
         >
-          Shift
+          Work
         </button>
         )}
         {view === "household" && kitchenPrimaryNav(view).includes("ledger") && (
@@ -8491,13 +8491,16 @@ export function App() {
           onFocus={() => preloadTab("ledger")}
           onClick={() => goTab("ledger")}
         >
-          {view === "household" ? "Our Money" : "Books"}
+          {view === "household" ? fundDisplayName(household) : "Books"}
         </button>
         )}
         <FabSpeedDial
           closed={adding}
+          actions={fabActionsFor(view, tab)}
+          closedLabel={fabClosedLabel(view)}
           onOpenChange={setFabOpen}
           onPick={(nextMode) => openAddFor(null, nextMode)}
+          onGo={(nextTab) => goTab(nextTab)}
         />
         {view !== "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button

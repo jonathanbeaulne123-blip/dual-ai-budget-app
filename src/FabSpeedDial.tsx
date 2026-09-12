@@ -1,24 +1,35 @@
 import { useEffect, useId, useRef, useState } from "react";
+import type { FabAction, FabAddMode } from "./core/fabActions.ts";
+import { fabActionsFor } from "./core/fabActions.ts";
 
-export const FAB_ADD_ACTIONS = [
-  { mode: "shift", label: "Shift", aria: "Add shift" },
-  { mode: "income", label: "Income", aria: "Add income" },
-  { mode: "expense", label: "Expense", aria: "Add expense" },
-  { mode: "transfer", label: "Transfer", aria: "Add transfer" },
-] as const;
+export type { FabAddMode } from "./core/fabActions.ts";
 
-export type FabAddMode = (typeof FAB_ADD_ACTIONS)[number]["mode"];
+/** My Money's direct four, in their known order. The household set comes from `fabActionsFor`. */
+export const FAB_ADD_ACTIONS = fabActionsFor("personal", "home")
+  .filter((action): action is Extract<FabAction, { kind: "add" }> => action.kind === "add")
+  .map((action) => ({ mode: action.mode, label: action.label, aria: action.aria }));
 
-/** Vertical linear speed dial from the nav + . Actions open Add; they never post. */
+/**
+ * Vertical linear speed dial from the nav + . Actions open a flow; they never post.
+ * `actions` adapts the verb set to the space and destination (Vision v2 §4.5);
+ * `onGo` receives the non-money verbs that only navigate.
+ */
 export function FabSpeedDial({
   closed = false,
+  actions,
+  closedLabel = "Add money",
   onPick,
+  onGo,
   onOpenChange,
 }: {
   closed?: boolean;
+  actions?: readonly FabAction[];
+  closedLabel?: string;
   onPick: (mode: FabAddMode) => void;
+  onGo?: (tab: Extract<FabAction, { kind: "go" }>["tab"]) => void;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const rows: readonly FabAction[] = actions ?? fabActionsFor("personal", "home");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const fabRef = useRef<HTMLButtonElement | null>(null);
@@ -72,20 +83,22 @@ export function FabSpeedDial({
         aria-label="Add"
         hidden={!shown}
       >
-        {FAB_ADD_ACTIONS.map((action) => (
-          <li key={action.mode} role="none">
+        {rows.map((action) => (
+          <li key={action.id} role="none">
             <button
               type="button"
               role="menuitem"
-              data-fab-action={action.mode}
-              className={`fab-dial-action tone-${action.mode}`}
+              data-fab-action={action.kind === "add" ? action.mode : action.id}
+              data-fab-kind={action.kind}
+              className={`fab-dial-action tone-${action.kind === "add" ? action.mode : "go"}`}
               aria-label={action.aria}
               onClick={() => {
                 setDial(false);
                 // The menu item becomes hidden. Give the entry dialog a stable
                 // return target before it captures the current focus.
                 fabRef.current?.focus();
-                onPick(action.mode);
+                if (action.kind === "add") onPick(action.mode);
+                else onGo?.(action.tab);
               }}
             >
               {action.label}
@@ -97,7 +110,7 @@ export function FabSpeedDial({
         ref={fabRef}
         className="fab"
         type="button"
-        aria-label={shown ? "Close add menu" : "Add money"}
+        aria-label={shown ? "Close add menu" : closedLabel}
         aria-haspopup="menu"
         aria-expanded={shown}
         aria-controls={menuId}

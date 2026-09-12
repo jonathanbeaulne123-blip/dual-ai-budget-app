@@ -256,8 +256,15 @@ function tapPad(container: HTMLElement, label: string): void {
   act(() => { key.click(); });
 }
 
+/** The + reads "Add money" in My Money and "What can we do?" in Our Home (Vision v2 §4.5). */
+function openAddDial(): void {
+  const fab = [...document.querySelectorAll("button.fab")].find((item) => item.getAttribute("aria-label") === "Add money" || item.getAttribute("aria-label") === "What can we do?");
+  if (!fab) throw new Error("Missing the + control");
+  act(() => (fab as HTMLButtonElement).click());
+}
+
 function openExpenseSlideshow(): void {
-  act(() => button("Add money").click());
+  openAddDial();
   act(() => button("Add expense").click());
 }
 
@@ -1748,7 +1755,7 @@ describe("cached-shell startup books gate", () => {
     const before=startup.cached,discarded=abandonOpenShift(before,{memberId:"MEM-002"});let candidate:Household|null=null;
     startup.punchConfirm=async next=>{candidate=next;return {...discarded,household:next};};
     await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);
-    act(()=>button("Add money").click());act(()=>button("Add shift").click());act(()=>button("Never mind").click());
+    openAddDial();act(()=>button("Add shift").click());act(()=>button("Never mind").click());
     await waitForUi(()=>expect(candidate).not.toBeNull(),1500);
     expect(candidate!.kitchen.openShifts.find(row=>row.memberId==="MEM-002")!.status).toBe("cleared");
     expect(candidate!.transactions).toEqual(before.transactions);expect(container.querySelector(".add-slideshow")).toBeNull();
@@ -1796,7 +1803,7 @@ describe("cached-shell startup books gate", () => {
     await act(async () => root.render(createElement(App)));
     await waitForUi(() => expect(startup.scenarioSource?.accepted.ownBooks).toBe("ready"), 4000);
     await act(async () => container.querySelectorAll<HTMLButtonElement>(".view-switch button")[1]!.click());
-    const calendar = [...container.querySelectorAll<HTMLButtonElement>("nav.nav button")].find(button => button.getAttribute("aria-label") === "Calendar" || button.textContent === "Cal")!;
+    const calendar = [...container.querySelectorAll<HTMLButtonElement>("nav.nav button")].find(button => button.getAttribute("aria-label") === "Calendar" || button.textContent === "Calendar")!;
     await act(async () => calendar.click());
     await waitForUi(() => expect(startup.calendarProps).not.toBeNull());
     await act(async () => startup.calendarProps!.onCommand(current => addPotentialExpense(current, { date: "2026-09-12", title: "Synthetic private plan", amount: "20", accountId: "ACC-CHEQUING", subcategoryId: "SUB-LIFE-FUN", createdBy: "MEM-002", visibility: "personal" })));
@@ -2086,7 +2093,7 @@ describe("cached-shell startup books gate", () => {
     let resolve!:(value:'accepted')=>void;startup.auditStatus=new Promise(r=>{resolve=r;});
     await act(async()=>button('Check entry status').click());
     act(()=>[...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(b=>b.textContent==='Close')!.click());
-    act(()=>button('Add money').click());act(()=>button('Add shift').click());
+    openAddDial();act(()=>button('Add shift').click());
     expect(container.querySelector('[data-add-slideshow="shift"]')).not.toBeNull();
     await act(async()=>{resolve('accepted');await Promise.resolve();});
     expect(container.querySelector('[data-add-slideshow="shift"]')).not.toBeNull();
