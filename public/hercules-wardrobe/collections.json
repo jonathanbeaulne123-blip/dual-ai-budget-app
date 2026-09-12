@@ -84,6 +84,48 @@
       "sha256": "9ad791494e44293009d32c8f93ec7cc0a4bad70a6c4e90947a46b03f63297dc5"
     },
     {
+      "collection": "night",
+      "nodes": [
+        "item_night_cap",
+        "item_night_mask",
+        "item_night_pyjama",
+        "item_night_robe",
+        "item_night_moon",
+        "item_night_ribbon"
+      ],
+      "bytes": 316464,
+      "compressedBytes": 105919,
+      "sha256": "9a18cfa032b530567c2461179b783231c9b69d87bc8d8a90b94b5cbd1246c755"
+    },
+    {
+      "collection": "garden",
+      "nodes": [
+        "item_garden_hat",
+        "item_garden_smock",
+        "item_garden_jacket",
+        "item_garden_collar",
+        "item_garden_seeds",
+        "item_garden_tail"
+      ],
+      "bytes": 707716,
+      "compressedBytes": 190160,
+      "sha256": "55475950112e80fdb9f6fb0b19d6b2ec133d1fb5890f5edf34b9487f760e5235"
+    },
+    {
+      "collection": "snow",
+      "nodes": [
+        "item_snow_hat",
+        "item_snow_goggles",
+        "item_snow_fleece",
+        "item_snow_vest",
+        "item_snow_flake",
+        "item_snow_bell"
+      ],
+      "bytes": 378528,
+      "compressedBytes": 119513,
+      "sha256": "4425e37bae221be3bd6916eac94928932063b1b378abe3dcd1cd7a7f82b77620"
+    },
+    {
       "collection": "legacy",
       "nodes": [
         "item_toque",

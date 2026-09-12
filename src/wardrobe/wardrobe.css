@@ -1,24 +1,189 @@
-.hercules-fitting-backdrop{position:fixed;inset:0;z-index:1400;background:rgba(31,27,23,.65);padding:24px;display:grid;place-items:center;color:#3b3027;--fitting-paper:#f5edde;--fitting-wood:#6b503c;--fitting-line:#c7b393;--fitting-accent:#6b795b;--fitting-muted:#6e604f;--fitting-card:#fffaf0}
-.hercules-fitting-room{width:min(1480px,100%);max-height:calc(100dvh - 48px);overflow:auto;border:1px solid #b89a6b;border-radius:18px;background:var(--fitting-paper);box-shadow:0 24px 90px #0006;display:grid;grid-template-columns:220px minmax(300px,1fr) 275px;grid-template-areas:'header header header' 'rail stage drawer' 'footer footer footer';grid-template-rows:auto minmax(0,1fr) auto}
-.hercules-fitting-room button{font:inherit;font-size:13px;font-weight:600;min-height:44px;min-width:44px;color:inherit;background:var(--fitting-card);border:1px solid var(--fitting-line);border-radius:8px;cursor:pointer;padding:9px 13px}
-.hercules-fitting-room button:hover:not(:disabled){background:color-mix(in srgb,var(--fitting-accent) 12%,var(--fitting-card))}.hercules-fitting-room button[aria-pressed=true]{border-color:var(--fitting-accent);box-shadow:inset 0 0 0 1px var(--fitting-accent)}.hercules-fitting-room button:disabled{opacity:.55;cursor:default}.hercules-fitting-room :focus-visible{outline:3px solid var(--fitting-accent);outline-offset:3px}
-.fitting-header{grid-area:header;padding:25px 28px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:1px solid var(--fitting-line);background:linear-gradient(100deg,#fff8,transparent)}
-.fitting-header h1{font-family:Georgia,serif;font-weight:500;font-size:clamp(25px,2.8vw,38px);line-height:1.15;margin:7px 0 8px;letter-spacing:-.035em}.fitting-header p{font-size:13px;color:var(--fitting-muted);margin:0;line-height:1.5}.fitting-eyebrow{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--fitting-muted)}.fitting-close{flex:none}.fitting-close span{font-size:19px;margin-left:12px}
-.fitting-rail{grid-area:rail;padding:24px 18px;background:linear-gradient(90deg,#b2997620,transparent);border-right:1px solid var(--fitting-line)}.fitting-collection small{font-size:9px;letter-spacing:.18em;color:var(--fitting-muted)}.fitting-collection h2,.fitting-drawer h2{font-family:Georgia,serif;font-size:23px;font-weight:500;line-height:1.15;margin:8px 0 12px}.fitting-collection p,.fitting-drawer p{font-size:13px;line-height:1.6;color:var(--fitting-muted)}
-.fitting-hangers{display:grid;gap:12px;margin-top:24px}.fitting-hangers button{display:grid;justify-items:center;gap:6px;background:linear-gradient(150deg,#fff8,#d3bea530);border-radius:4px 4px 14px 14px;min-width:0;white-space:normal}.fitting-hangers strong{font-size:12px}.fitting-hangers small{font-weight:400;font-size:10px;color:var(--fitting-muted)}.fitting-miniature{display:grid;place-items:center;height:64px;width:100%;position:relative}.fitting-miniature span{display:block;filter:drop-shadow(2px 4px 2px #0002)}.fitting-miniature-head span{width:59px;height:37px;border:1px solid #645743;border-radius:40px 40px 8px 8px;background:repeating-linear-gradient(90deg,#fff2 0 2px,transparent 2px 6px),var(--piece-colour);position:relative}.fitting-miniature-head span:before{content:'';position:absolute;width:15px;height:15px;left:21px;top:-12px;background:var(--piece-colour);border-radius:50%;border:1px solid #645743}.fitting-miniature-head span:after{content:'';position:absolute;bottom:0;left:-4px;right:-4px;height:9px;border:1px solid #645743;background:var(--piece-colour);border-radius:3px}.fitting-miniature-body span{width:65px;height:53px;background:repeating-linear-gradient(90deg,#fff5 0 2px,transparent 2px 7px),var(--piece-colour);clip-path:polygon(27% 0,39% 8%,61% 8%,73% 0,100% 25%,85% 49%,78% 40%,78% 100%,22% 100%,22% 40%,15% 49%,0 25%)}.fitting-miniature-eyewear span{width:29px;height:29px;border:3px solid var(--piece-colour);border-radius:50%;transform:translateX(-18px);position:relative}.fitting-miniature-eyewear span:before{content:'';position:absolute;width:24px;height:24px;left:32px;top:-3px;border:3px solid var(--piece-colour);border-radius:50%}.fitting-miniature-eyewear span:after{content:'';position:absolute;width:13px;height:6px;left:23px;top:6px;border-top:3px solid var(--piece-colour);border-radius:50%}.fitting-studio-note{margin:22px 4px 0;font-family:Georgia,serif;font-style:italic;color:var(--fitting-muted);font-size:13px;line-height:1.6}
-.fitting-stage-wrap{grid-area:stage;min-width:0;display:flex;flex-direction:column;justify-content:center;background:radial-gradient(ellipse at 35% 15%,#fff9,transparent 70%)}.fitting-stage{position:relative;height:clamp(350px,48vh,650px);min-width:0;overflow:hidden;background:linear-gradient(145deg,#e3d6bd77,#b8a58a33)}.fitting-webgl{position:absolute;inset:0}.fitting-webgl canvas{width:100%;height:100%;display:block;touch-action:pan-y}.fitting-stage-label{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--fitting-card);border:1px solid var(--fitting-line);border-radius:20px;padding:6px 14px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;pointer-events:none}.fitting-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--fitting-paper);gap:12px;padding:25px;text-align:center}.fitting-fallback p{max-width:280px;font-size:13px;line-height:1.5}.fitting-fallback .herc{animation:none!important}.fitting-fallback .herc *{animation:none!important;transition:none!important}.fitting-camera{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 18px 8px}.fitting-camera label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;min-width:0}.fitting-camera input{min-height:44px;min-width:0;width:100%;accent-color:var(--fitting-accent)}.fitting-view-options{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;padding:4px 16px 16px}.fitting-view-options button{font-size:11px;padding:7px 9px}
-.fitting-drawer{grid-area:drawer;border-left:1px solid var(--fitting-line);padding:18px;background:linear-gradient(270deg,#ad926615,transparent);overflow:auto}.fitting-tabs{display:flex;gap:6px;margin-bottom:22px}.fitting-tabs button{flex:1;padding:7px;font-size:11px}.fitting-swatches{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:20px 0 13px}.fitting-swatches button{display:flex;gap:9px;align-items:center;min-width:0;text-transform:capitalize;padding:9px;font-size:12px}.fitting-swatches span{width:25px;height:25px;flex:none;border-radius:50%;border:1px solid #76695588;box-shadow:inset -2px -2px 4px #0002}.fitting-remove{width:100%;font-size:12px!important}.fitting-look-note{border-top:1px dashed var(--fitting-line);margin-top:28px;padding-top:15px}.fitting-look-note h3{font-family:Georgia,serif;font-size:16px;font-weight:500}.fitting-poses{display:grid;gap:7px}.fitting-poses button{text-align:left;font-size:12px}.fitting-poses small{display:block;font-weight:400;font-size:10px;margin-top:4px}
-.fitting-footer{grid-area:footer;display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid var(--fitting-line);padding:16px 24px;background:var(--fitting-card)}.fitting-footer strong,.fitting-footer span,.fitting-footer small{display:block}.fitting-footer strong{font-family:Georgia,serif;font-size:16px;font-weight:500}.fitting-footer span{font-size:12px;margin-top:5px;line-height:1.45;color:var(--fitting-muted)}.fitting-footer small{font-size:10px;color:var(--fitting-muted);margin-top:4px}.fitting-history{display:flex;gap:7px;flex:none}
-[data-fitting-theme=taylor]{--fitting-paper:#eee4d4;--fitting-wood:#755b49;--fitting-line:#bfb093;--fitting-accent:#65754e;--fitting-muted:#635744;--fitting-card:#faf5e9}.hercules-fitting-backdrop[data-fitting-theme=taylor][data-fitting-view=personal]{--fitting-paper:#e5e7dc;--fitting-accent:#54674f;--fitting-line:#adb7a1}.hercules-fitting-backdrop[data-fitting-theme=taylor] .fitting-header{background:repeating-linear-gradient(0deg,transparent 0 9px,#76644208 9px 10px),linear-gradient(90deg,#9a6b3c15,transparent)}.hercules-fitting-backdrop[data-fitting-theme=taylor] .fitting-hangers button{border-style:dashed;box-shadow:2px 3px 0 #ac94741c}.hercules-fitting-backdrop[data-fitting-theme=taylor] .fitting-collection h2{font-style:italic}.hercules-fitting-backdrop[data-fitting-theme=newfoundland]{--fitting-paper:#e5dfdb;--fitting-wood:#463d45;--fitting-line:#bca999;--fitting-accent:#7c4f5e;--fitting-muted:#65515a;--fitting-card:#fff6e9;color:#3d3038}.hercules-fitting-backdrop[data-fitting-theme=newfoundland][data-fitting-view=personal]{--fitting-paper:#dce5e7;--fitting-accent:#3f6776;--fitting-muted:#4b6069;--fitting-line:#acbcbf;color:#263e48}.hercules-fitting-backdrop[data-fitting-theme=newfoundland] .fitting-header{border-bottom:3px double #b39a65}.hercules-fitting-backdrop[data-fitting-theme=newfoundland] .fitting-hangers button{border-radius:12px;background:linear-gradient(125deg,#fff9,#bf9c6030)}
-@media(min-width:1600px){.fitting-stage{height:620px}.fitting-rail,.fitting-drawer{padding:28px}.hercules-fitting-room{grid-template-columns:250px minmax(400px,1fr) 310px}}
-@media(max-width:900px){.hercules-fitting-backdrop{padding:0}.hercules-fitting-room{max-height:100dvh;height:100dvh;border:0;border-radius:0;grid-template-columns:1fr;grid-template-areas:'header' 'stage' 'rail' 'drawer' 'footer';grid-template-rows:auto auto auto auto auto;display:grid}.fitting-header{padding:18px 16px 14px;gap:10px}.fitting-header h1{font-size:28px}.fitting-header p{font-size:12px}.fitting-close{padding:8px!important;min-width:54px!important}.fitting-close span{display:none}.fitting-stage{height:390px}.fitting-camera{padding:10px 16px 4px}.fitting-view-options{padding-bottom:12px}.fitting-rail{padding:18px 14px;border-right:0;border-top:1px solid var(--fitting-line)}.fitting-collection{display:flex;align-items:baseline;justify-content:space-between;gap:8px}.fitting-collection h2{font-size:21px;margin:0}.fitting-collection p,.fitting-collection small,.fitting-studio-note{display:none}.fitting-hangers{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}.fitting-hangers button{padding:11px 5px}.fitting-hangers strong{font-size:11px;line-height:1.35}.fitting-hangers small{font-size:9px}.fitting-miniature{height:58px}.fitting-miniature-body span{transform:scale(.8)}.fitting-miniature-head span{transform:scale(.8)}.fitting-drawer{padding:16px;border-left:0;overflow:visible}.fitting-drawer h2{font-size:24px}.fitting-tabs{margin-bottom:18px}.fitting-tabs button{font-size:12px}.fitting-swatches{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.fitting-swatches button{flex-direction:column;gap:6px;font-size:11px;padding:8px 5px}.fitting-look-note{margin-top:18px}.fitting-poses{grid-template-columns:1fr 1fr}.fitting-footer{position:sticky;bottom:0;z-index:2;flex-direction:column;align-items:stretch;padding:12px 14px max(14px,env(safe-area-inset-bottom));gap:9px;box-shadow:0 -4px 18px #44372210}.fitting-footer strong{font-size:14px}.fitting-footer span{font-size:11px;margin-top:2px}.fitting-footer small{font-size:9px}.fitting-history button{flex:1;font-size:11px}.fitting-footer small{max-width:100%}}
-@media(max-width:360px){.fitting-header h1{font-size:24px}.fitting-stage{height:340px}.fitting-view-options{gap:4px}.fitting-view-options button{font-size:10px}.fitting-camera{gap:6px}.fitting-camera button{font-size:11px}.fitting-miniature{transform:scale(.86)}.fitting-footer span{max-width:260px}}
-@media(prefers-reduced-motion:reduce){.hercules-fitting-room *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
-/* Full wardrobe: authored garment studies, collection rail and separate personal/public shelves. */
-.hercules-fitting-room{grid-template-areas:'header header header' 'rail stage drawer' 'notices notices notices' 'footer footer footer'}
-.fitting-rail{max-height:74vh;overflow:auto}.fitting-hangers{grid-template-columns:1fr 1fr}.fitting-hangers svg{width:100%;max-width:90px;height:80px}.fitting-hangers button{min-width:0;overflow-wrap:anywhere}.fitting-hangers strong{font-size:11px}
-.fitting-select,.fitting-filters label,.fitting-saved label{display:grid;gap:6px;font-size:12px;font-weight:600;margin:10px 0}.hercules-fitting-room select,.hercules-fitting-room input:not([type=range]){width:100%;min-width:0;min-height:44px;padding:9px;border:1px solid var(--fitting-line);border-radius:7px;background:var(--fitting-card);color:inherit;font:inherit;font-size:12px}.fitting-filters{display:flex;align-items:end;gap:6px}.fitting-filters label{min-width:0;flex:1}.fitting-filters button{margin-bottom:10px;font-size:10px}.fitting-recommended{width:100%;margin:4px 0}.fitting-keepsakes{border-top:1px dashed var(--fitting-line);margin-top:18px;padding-top:12px;font-size:12px}.fitting-keepsakes summary{min-height:44px;cursor:pointer;display:flex;align-items:center}.fitting-keepsakes button{margin:3px;text-transform:capitalize}.fitting-piece-actions{display:flex;gap:5px;margin:9px 0}.fitting-piece-actions button{flex:1;font-size:11px}.fitting-notices{grid-area:notices;padding:0 20px;background:var(--fitting-card);font-size:13px}.fitting-notices:empty{display:none}.fitting-notices button{margin:4px}.fitting-footer-actions{display:grid;gap:8px;max-width:600px}.fitting-history{flex-wrap:wrap}.fitting-save-actions{display:flex;gap:8px}.fitting-save-actions button{flex:1}.fitting-save-actions button:first-child{background:var(--fitting-accent);color:#fff}.fitting-saved h3{margin-top:27px;font-family:Georgia,serif;font-size:20px;font-weight:400}.fitting-saved form{display:grid;gap:7px}.fitting-look-card{border:1px solid var(--fitting-line);border-radius:9px;background:var(--fitting-card);padding:12px;margin:12px 0}.fitting-look-card h4{font:18px Georgia,serif;overflow-wrap:anywhere;margin:7px 0}.fitting-look-card button{font-size:11px;margin:3px 0;width:100%}.fitting-look-card .herc{display:block;margin:auto}.fitting-look-card form{border-top:1px dashed var(--fitting-line);margin:12px 0;padding-top:5px}.fitting-asset-error{position:absolute;left:10px;right:10px;top:8px;background:var(--fitting-card);padding:10px;border:1px solid var(--fitting-line);border-radius:8px;font-size:12px}.fitting-asset-error p{margin:0 0 6px}
-@media(max-width:900px){.hercules-fitting-room{grid-template-areas:'header' 'stage' 'rail' 'drawer' 'notices' 'footer'}.fitting-rail{max-height:none;overflow:visible}.fitting-hangers{grid-template-columns:repeat(3,minmax(0,1fr))}.fitting-hangers svg{height:65px}.fitting-filters{align-items:center}.fitting-select{margin-top:0}.fitting-collection{display:block}.fitting-collection p{display:block;font-size:12px;margin:6px 0}.fitting-footer-actions{max-width:none}.fitting-history button{padding:5px 7px;font-size:10px}.fitting-save-actions button{font-size:12px}.fitting-footer{gap:6px}.fitting-footer span{max-width:none}.fitting-notices{padding:0 14px}.fitting-look-card{display:grid;grid-template-columns:100px 1fr;gap:5px 12px}.fitting-look-card>form,.fitting-look-card>button,.fitting-look-card>div{grid-column:1/-1}.fitting-look-card>.herc{grid-row:span 2}.fitting-look-card p{margin:0}.fitting-look-card h4{align-self:end}.fitting-drawer{overflow:visible}}
-/* Enlarged text must wrap within the phone room, including its sticky actions. */
-.hercules-fitting-room>*{min-width:0}.hercules-fitting-room button{white-space:normal;overflow-wrap:anywhere}.fitting-footer-actions,.fitting-history,.fitting-save-actions{min-width:0}.fitting-header>div{min-width:0}
-@media(max-width:900px){.hercules-fitting-room{grid-template-columns:minmax(0,1fr)}.fitting-footer-actions{width:100%}.fitting-history button{flex:1 1 4.5em}.fitting-swatches{grid-template-columns:repeat(auto-fit,minmax(min(100%,75px),1fr))}}
+/* Hercules dressing room. Every colour derives from the live Hearth scene tokens on <html>; no hex literals here.
+   Wide (>= 720px) is a three-column office: wardrobe rail, stage, fitting drawer. Phone (< 720px) is stage first,
+   slot tabs, a three-column hanger grid, a bottom-sheet drawer and sticky actions. */
+.hercules-fitting-backdrop{
+ position:fixed;inset:0;z-index:1400;padding:24px;display:grid;place-items:center;
+ background:color-mix(in srgb,var(--ink) 62%,transparent);color:var(--ink);
+ --fitting-paper:var(--paper);--fitting-paper-2:var(--paper-2,var(--paper));--fitting-card:var(--card);--fitting-line:var(--line);--fitting-muted:var(--muted);
+ --fitting-accent:var(--theme-accent,var(--pine));--fitting-second:var(--theme-second,var(--copper));--fitting-tint:var(--fitting-accent);
+ --fitting-wood:var(--desk,var(--felt));--fitting-brass:var(--brass,var(--gold));--fitting-on-accent:var(--theme-on-accent,var(--card));
+ --fitting-radius:var(--theme-radius,14px);--fitting-display:var(--display,Georgia,serif);--fitting-font:var(--font,system-ui,sans-serif);
+ --fitting-shadow:var(--shadow,0 12px 30px color-mix(in srgb,var(--ink) 12%,transparent));
+ --fitting-glass:color-mix(in srgb,var(--fitting-card) 78%,transparent);
+ font-family:var(--fitting-font);
+}
+/* Personal view keeps a quiet distinction: the second scene colour tints rails and pressed chips. */
+.hercules-fitting-backdrop[data-fitting-view=personal]{--fitting-tint:var(--fitting-second)}
+.hercules-fitting-room{
+ width:min(1480px,100%);height:calc(100dvh - 48px);max-height:calc(100dvh - 48px);overflow:hidden;
+ border:1px solid color-mix(in srgb,var(--fitting-brass) 55%,var(--fitting-line));border-radius:calc(var(--fitting-radius) + 4px);
+ background:var(--fitting-paper);box-shadow:var(--fitting-shadow),0 30px 90px color-mix(in srgb,var(--ink) 40%,transparent);
+ display:grid;grid-template-columns:250px minmax(300px,1fr) 290px;
+ grid-template-areas:'header header header' 'rail stage drawer' 'notices notices notices' 'looks looks looks' 'footer footer footer';
+ grid-template-rows:auto minmax(0,1fr) auto auto auto;
+}
+.hercules-fitting-room>*{min-width:0}
+.hercules-fitting-room button{font:inherit;font-size:13px;font-weight:600;min-height:44px;min-width:44px;color:inherit;background:var(--fitting-card);border:1px solid var(--fitting-line);border-radius:calc(var(--fitting-radius) * .6);cursor:pointer;padding:9px 13px;white-space:normal;overflow-wrap:anywhere}
+.hercules-fitting-room button:hover:not(:disabled){background:color-mix(in srgb,var(--fitting-tint) 12%,var(--fitting-card))}
+.hercules-fitting-room button[aria-pressed=true],.hercules-fitting-room button[aria-selected=true]{border-color:var(--fitting-tint);box-shadow:inset 0 0 0 1px var(--fitting-tint);background:color-mix(in srgb,var(--fitting-tint) 14%,var(--fitting-card))}
+.hercules-fitting-room button:disabled{opacity:.55;cursor:default}
+.hercules-fitting-room :focus-visible{outline:3px solid var(--fitting-tint);outline-offset:3px}
+.hercules-fitting-room select,.hercules-fitting-room input:not([type=range]){width:100%;min-width:0;min-height:44px;padding:9px 12px;border:1px solid var(--fitting-line);border-radius:calc(var(--fitting-radius) * .5);background:var(--fitting-card);color:inherit;font:inherit;font-size:13px}
+.hercules-fitting-room input[type=search]::-webkit-search-cancel-button{cursor:pointer}
+.fitting-eyebrow{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--fitting-muted)}
+kbd{font:inherit;font-size:10px;padding:1px 5px;border:1px solid var(--fitting-line);border-bottom-width:2px;border-radius:4px;background:var(--fitting-card)}
+
+/* Header: the room's name plate. */
+.fitting-header{grid-area:header;padding:24px 28px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;border-bottom:1px solid var(--fitting-line);background:linear-gradient(100deg,color-mix(in srgb,var(--fitting-card) 60%,transparent),transparent 60%),linear-gradient(0deg,color-mix(in srgb,var(--fitting-wood) 10%,transparent),transparent)}
+.fitting-header>div{min-width:0}
+.fitting-header h1{font-family:var(--fitting-display);font-weight:500;font-size:clamp(25px,2.8vw,38px);line-height:1.12;margin:6px 0 8px;letter-spacing:-.03em}
+.fitting-header p{font-size:13px;color:var(--fitting-muted);margin:0;line-height:1.5;max-width:60ch}
+.fitting-close{flex:none}.fitting-close span{font-size:19px;margin-left:12px}
+
+/* Stage: wearing strip, the 3D platform with prev/next, slot tabs, camera. */
+.fitting-stage-wrap{grid-area:stage;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:auto;background:radial-gradient(ellipse at 35% 15%,color-mix(in srgb,var(--fitting-card) 70%,transparent),transparent 70%)}
+.fitting-stage-wrap>*{flex:none}.fitting-stage-wrap>.fitting-stage{flex:1 1 auto}
+.fitting-wearing{display:flex;align-items:center;gap:10px;padding:12px 16px 8px;flex-wrap:wrap}
+.fitting-wearing ul{display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;list-style:none;margin:0;padding:0 0 3px;min-width:0}
+.fitting-wearing li{flex:none;display:inline-flex;align-items:stretch;border:1px solid var(--fitting-line);border-radius:999px;background:var(--fitting-card);overflow:hidden}
+.fitting-wearing p{margin:0;font-size:12px;color:var(--fitting-muted);font-style:italic}
+.fitting-wearing .fitting-chip{border:0;border-radius:0;display:inline-flex;align-items:center;gap:6px;padding:3px 6px 3px 8px;font-size:11px;min-height:38px;background:transparent}
+.fitting-wearing .fitting-chip svg{flex:none}
+.fitting-wearing .fitting-chip[aria-pressed=true]{box-shadow:none;background:color-mix(in srgb,var(--fitting-tint) 16%,var(--fitting-card))}
+.fitting-chip-remove{border:0;border-left:1px solid var(--fitting-line);border-radius:0;min-width:38px;min-height:38px;padding:0 10px;font-size:18px;line-height:1;background:transparent}
+.fitting-stage{position:relative;min-height:260px;min-width:0;overflow:hidden;border-block:1px solid var(--fitting-line);background:linear-gradient(145deg,color-mix(in srgb,var(--fitting-wood) 18%,var(--fitting-paper)),color-mix(in srgb,var(--fitting-wood) 42%,var(--fitting-paper)))}
+.fitting-webgl{position:absolute;inset:0}.fitting-webgl canvas{width:100%;height:100%;display:block;touch-action:pan-y}
+.fitting-stage-label{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:var(--fitting-glass);border:1px solid var(--fitting-line);border-radius:20px;padding:6px 14px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;pointer-events:none;backdrop-filter:blur(6px)}
+.fitting-fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--fitting-paper);gap:12px;padding:25px;text-align:center}
+.fitting-fallback p{max-width:280px;font-size:13px;line-height:1.5}.fitting-fallback .herc{animation:none!important}.fitting-fallback .herc *{animation:none!important;transition:none!important}
+.fitting-step{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:64px;min-width:0;padding:0;font-size:30px;line-height:1;background:var(--fitting-glass);backdrop-filter:blur(6px);border-radius:calc(var(--fitting-radius) * .7)}
+.fitting-step-prev{left:10px}.fitting-step-next{right:10px}
+.fitting-asset-error{position:absolute;left:10px;right:10px;top:8px;background:var(--fitting-card);padding:10px;border:1px solid var(--fitting-line);border-radius:calc(var(--fitting-radius) * .5);font-size:12px}.fitting-asset-error p{margin:0 0 6px}
+.fitting-slot-tabs{display:flex;gap:6px;padding:12px 16px 4px;overflow-x:auto;scrollbar-width:thin;scroll-snap-type:x proximity}
+.fitting-slot-tabs button{flex:none;font-size:12px;padding:8px 13px;border-radius:999px;position:relative;scroll-snap-align:start}
+.fitting-slot-tabs button i{position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--fitting-tint)}
+.fitting-camera{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px 6px}
+.fitting-camera label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;min-width:0}
+.fitting-camera input{min-height:44px;min-width:0;width:100%;accent-color:var(--fitting-tint)}
+.fitting-view-options{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;padding:4px 16px 16px}.fitting-view-options button{font-size:11px;padding:7px 9px}
+
+/* Rail: the wardrobe itself. */
+.fitting-rail{grid-area:rail;padding:20px 18px;border-right:1px solid var(--fitting-line);min-height:0;overflow:auto;background:linear-gradient(90deg,color-mix(in srgb,var(--fitting-wood) 14%,transparent),transparent),repeating-linear-gradient(0deg,transparent 0 11px,color-mix(in srgb,var(--fitting-wood) 5%,transparent) 11px 12px)}
+.fitting-search{display:grid;gap:6px;font-size:12px;font-weight:600}
+.fitting-search-count{font-size:11px;color:var(--fitting-muted);margin:6px 0 0;min-height:1em}
+.fitting-shelves{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0 4px}
+.fitting-chip{font-size:11px!important;padding:6px 11px!important;min-height:36px!important;border-radius:999px!important}
+.fitting-colour-first{border-top:1px dashed var(--fitting-line);margin-top:10px;padding-top:6px;font-size:12px}
+.fitting-colour-first summary{min-height:44px;cursor:pointer;display:flex;align-items:center;font-weight:600;text-transform:capitalize}
+.fitting-colour-first p{margin:0 0 8px;color:var(--fitting-muted)}
+.fitting-colour-grid{display:flex;flex-wrap:wrap;gap:5px}
+.fitting-colour-grid button{min-width:44px;min-height:44px;padding:6px;display:grid;place-items:center}
+.fitting-colour-grid button span{width:24px;height:24px;border-radius:50%;border:1px solid color-mix(in srgb,var(--ink) 35%,transparent);box-shadow:inset -2px -2px 4px color-mix(in srgb,var(--ink) 15%,transparent)}
+.fitting-collection h2,.fitting-drawer h2{font-family:var(--fitting-display);font-size:22px;font-weight:500;line-height:1.15;margin:14px 0 8px}
+.fitting-collection p,.fitting-drawer p{font-size:13px;line-height:1.55;color:var(--fitting-muted);margin:0 0 10px}
+.fitting-recommended{width:100%;margin:4px 0}
+.fitting-hangers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.fitting-hangers button{display:grid;justify-items:center;gap:5px;min-width:0;padding:10px 6px 9px;border-radius:4px 4px calc(var(--fitting-radius) * .8) calc(var(--fitting-radius) * .8);background:linear-gradient(150deg,color-mix(in srgb,var(--fitting-card) 85%,transparent),color-mix(in srgb,var(--fitting-wood) 12%,var(--fitting-card)));position:relative}
+.fitting-hangers button::before{content:'';position:absolute;top:-1px;left:50%;width:22px;height:8px;margin-left:-11px;border:1px solid var(--fitting-brass);border-bottom:0;border-radius:11px 11px 0 0;background:transparent}
+.fitting-hangers svg{width:100%;max-width:88px;height:74px}
+.fitting-hangers strong{font-size:11px;line-height:1.3}.fitting-hangers small{font-weight:400;font-size:10px;color:var(--fitting-muted)}
+.fitting-empty{font-size:12px;color:var(--fitting-muted);line-height:1.5;margin:14px 2px}
+.fitting-keepsakes{border-top:1px dashed var(--fitting-line);margin-top:18px;padding-top:12px;font-size:12px}
+.fitting-keepsakes summary{min-height:44px;cursor:pointer;display:flex;align-items:center}.fitting-keepsakes button{margin:3px;text-transform:capitalize}
+.fitting-shortcuts{font-size:11px;color:var(--fitting-muted);line-height:1.9;margin:16px 2px 0}
+
+/* Drawer: fitting table, poses, saved looks. */
+.fitting-drawer{grid-area:drawer;border-left:1px solid var(--fitting-line);padding:18px;overflow:auto;min-height:0;background:linear-gradient(270deg,color-mix(in srgb,var(--fitting-wood) 12%,transparent),transparent)}
+.fitting-sheet-head{display:grid;gap:8px}
+.hercules-fitting-room .fitting-sheet-handle{display:none}
+.fitting-tabs{display:flex;gap:6px;margin-bottom:18px}.fitting-tabs button{flex:1;padding:7px;font-size:11px}
+.fitting-swatches{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 12px}
+.fitting-swatches button{display:flex;gap:9px;align-items:center;min-width:0;text-transform:capitalize;padding:9px;font-size:12px}
+.fitting-swatches span{width:25px;height:25px;flex:none;border-radius:50%;border:1px solid color-mix(in srgb,var(--ink) 35%,transparent);box-shadow:inset -2px -2px 4px color-mix(in srgb,var(--ink) 15%,transparent)}
+.fitting-remove{width:100%;font-size:12px!important}
+.fitting-piece-actions{display:flex;gap:5px;margin:9px 0}.fitting-piece-actions button{flex:1;font-size:11px}
+.fitting-look-note{border-top:1px dashed var(--fitting-line);margin-top:24px;padding-top:14px}
+.fitting-look-note h3{font-family:var(--fitting-display);font-size:16px;font-weight:500;margin:0 0 6px}
+.fitting-poses{display:grid;gap:7px}.fitting-poses button{text-align:left;font-size:12px}.fitting-poses small{display:block;font-weight:400;font-size:10px;margin-top:4px}
+.fitting-saved h3{margin-top:24px;font-family:var(--fitting-display);font-size:19px;font-weight:400}
+.fitting-saved label{display:grid;gap:6px;font-size:12px;font-weight:600;margin:10px 0}
+.fitting-saved form{display:grid;gap:7px}
+.fitting-look-card{border:1px solid var(--fitting-line);border-radius:calc(var(--fitting-radius) * .6);background:var(--fitting-card);padding:12px;margin:12px 0}
+.fitting-look-card h4{font-family:var(--fitting-display);font-size:18px;font-weight:500;overflow-wrap:anywhere;margin:7px 0}
+.fitting-look-card button{font-size:11px;margin:3px 0;width:100%}.fitting-look-card .herc{display:block;margin:auto}
+.fitting-look-card form{border-top:1px dashed var(--fitting-line);margin:12px 0;padding-top:5px}
+
+/* Notices, look strip and footer. */
+.fitting-notices{grid-area:notices;padding:0 20px;background:var(--fitting-card);font-size:13px}.fitting-notices:empty{display:none}.fitting-notices button{margin:4px}
+.fitting-look-strip{grid-area:looks;display:flex;align-items:center;gap:12px;padding:10px 20px;border-top:1px solid var(--fitting-line);background:linear-gradient(0deg,color-mix(in srgb,var(--fitting-wood) 10%,transparent),transparent)}
+.fitting-look-strip>.fitting-eyebrow{flex:none}
+.fitting-look-strip ul{display:flex;gap:8px;list-style:none;margin:0;padding:2px;overflow-x:auto;scrollbar-width:thin;min-width:0}
+.fitting-look-strip li{flex:none}
+.fitting-look-strip button{display:grid;grid-template-columns:48px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;column-gap:8px;text-align:left;padding:5px 10px 5px 5px;max-width:190px;min-height:60px}
+.fitting-look-strip .herc{grid-row:span 2}
+.fitting-look-strip span{font-size:12px;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fitting-look-strip small{font-size:10px;font-weight:400;color:var(--fitting-muted)}
+.fitting-footer{grid-area:footer;display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid var(--fitting-line);padding:16px 24px;background:var(--fitting-card)}
+.fitting-footer strong,.fitting-footer span,.fitting-footer small{display:block}
+.fitting-footer strong{font-family:var(--fitting-display);font-size:16px;font-weight:500}
+.fitting-footer span{font-size:12px;margin-top:5px;line-height:1.45;color:var(--fitting-muted)}
+.fitting-footer-actions{display:grid;gap:8px;max-width:640px;min-width:0}
+.fitting-history{display:flex;gap:7px;flex-wrap:wrap;min-width:0}
+.fitting-save-actions{display:flex;gap:8px;min-width:0}.fitting-save-actions button{flex:1}
+.fitting-save-actions button:first-child{background:var(--fitting-accent);color:var(--fitting-on-accent);border-color:var(--fitting-accent)}
+.fitting-save-actions button:first-child:hover:not(:disabled){background:color-mix(in srgb,var(--fitting-accent) 85%,var(--ink))}
+
+/* Theme character beyond colour: scrapbook dashes, harbour double rules, study wood. */
+.hercules-fitting-backdrop[data-fitting-theme=taylor] .fitting-header{background:repeating-linear-gradient(0deg,transparent 0 9px,color-mix(in srgb,var(--fitting-wood) 6%,transparent) 9px 10px),linear-gradient(90deg,color-mix(in srgb,var(--fitting-second) 10%,transparent),transparent)}
+.hercules-fitting-backdrop[data-fitting-theme=taylor] .fitting-hangers button{border-style:dashed;box-shadow:2px 3px 0 color-mix(in srgb,var(--fitting-wood) 14%,transparent)}
+.hercules-fitting-backdrop[data-fitting-theme=taylor] .fitting-collection h2,.hercules-fitting-backdrop[data-fitting-theme=taylor] .fitting-header h1{font-style:italic}
+.hercules-fitting-backdrop[data-fitting-theme=newfoundland] .fitting-header{border-bottom:3px double var(--fitting-brass)}
+.hercules-fitting-backdrop[data-fitting-theme=newfoundland] .fitting-hangers button{border-radius:calc(var(--fitting-radius) * .8);background:linear-gradient(125deg,color-mix(in srgb,var(--fitting-card) 90%,transparent),color-mix(in srgb,var(--fitting-brass) 18%,var(--fitting-card)))}
+.hercules-fitting-backdrop[data-fitting-theme=newfoundland] .fitting-look-strip{background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--fitting-accent) 7%,transparent) 0 40px,color-mix(in srgb,var(--fitting-second) 7%,transparent) 40px 80px)}
+.hercules-fitting-backdrop[data-fitting-theme=classic] .fitting-rail{border-right:3px double color-mix(in srgb,var(--fitting-brass) 60%,var(--fitting-line))}
+.hercules-fitting-backdrop[data-fitting-lighting=dark] .fitting-stage{background:linear-gradient(145deg,color-mix(in srgb,var(--fitting-wood) 30%,var(--fitting-paper)),color-mix(in srgb,var(--ink) 20%,var(--fitting-paper)))}
+.hercules-fitting-backdrop[data-fitting-lighting=dark] .fitting-hangers button{background:linear-gradient(150deg,color-mix(in srgb,var(--fitting-card) 85%,transparent),color-mix(in srgb,var(--fitting-brass) 10%,var(--fitting-card)))}
+
+@media(min-width:1600px){.fitting-rail,.fitting-drawer{padding:28px}.hercules-fitting-room{grid-template-columns:280px minmax(400px,1fr) 320px}}
+@media(min-width:720px) and (max-width:1000px){.hercules-fitting-backdrop{padding:12px}.hercules-fitting-room{height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);grid-template-columns:186px minmax(240px,1fr) 214px}.fitting-rail,.fitting-drawer{padding:14px 12px}.fitting-header{padding:18px 20px 14px}.fitting-hangers{grid-template-columns:1fr}.fitting-swatches{grid-template-columns:1fr}.fitting-step{width:40px;height:56px}.fitting-camera{grid-template-columns:1fr}}
+
+/* Phone composition. */
+@media(max-width:719px){
+ .hercules-fitting-backdrop{padding:0;--fitting-peek:calc(102px + env(safe-area-inset-bottom))}
+ .hercules-fitting-room{max-height:100dvh;height:100dvh;overflow:auto;border:0;border-radius:0;grid-template-columns:minmax(0,1fr);grid-template-areas:'header' 'stage' 'rail' 'notices' 'looks' 'footer';grid-template-rows:auto auto auto auto auto auto;padding-bottom:var(--fitting-peek);scroll-padding-bottom:calc(var(--fitting-peek) + 150px)}
+ .fitting-header{padding:14px 16px 12px;gap:10px;align-items:center}
+ .fitting-header h1{font-size:23px;margin:3px 0 4px}.fitting-header p{font-size:12px}
+ .fitting-close{padding:8px!important;min-width:54px!important}.fitting-close span{display:none}
+ .fitting-wearing{padding:8px 12px 6px;gap:6px}.fitting-wearing ul{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.fitting-wearing .fitting-eyebrow{display:none}
+ .fitting-wearing li{flex:none}
+ .fitting-stage-wrap,.fitting-rail,.fitting-drawer{overflow:visible;max-height:none;min-height:auto}
+ .fitting-stage-wrap>.fitting-stage{flex:none;height:44vh;min-height:280px;border-radius:0}
+ .fitting-step{width:44px;height:58px}
+ .fitting-slot-tabs{padding:10px 12px 2px;position:relative}
+ .fitting-camera{padding:8px 12px 2px;gap:6px}.fitting-view-options{padding:2px 12px 10px;gap:4px}.fitting-view-options button{font-size:10px}
+ .fitting-rail{padding:12px 12px 18px;border-right:0;border-top:1px solid var(--fitting-line);max-height:none;overflow:visible}
+ .fitting-shelves{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;margin:10px -12px 4px;padding:0 12px}
+ .fitting-collection h2{font-size:19px;margin:8px 0 4px}.fitting-collection p{font-size:12px}
+ .fitting-hangers{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+ .fitting-hangers button{padding:11px 5px 9px}.fitting-hangers svg{height:62px}.fitting-hangers strong{font-size:11px;line-height:1.35}.fitting-hangers small{font-size:9px}
+ .fitting-shortcuts{display:none}
+ .fitting-look-strip{padding:8px 12px;gap:8px}.fitting-look-strip .fitting-eyebrow{display:none}
+ /* Bottom sheet: the drawer's tabs peek above the footer; the body slides up with a grab handle. */
+ .fitting-sheet{position:fixed;left:0;right:0;bottom:0;z-index:3;border-left:0;border-top:1px solid var(--fitting-line);border-radius:calc(var(--fitting-radius) + 4px) calc(var(--fitting-radius) + 4px) 0 0;padding:6px 14px calc(12px + env(safe-area-inset-bottom));max-height:78dvh;overflow:auto;background:var(--fitting-paper);box-shadow:0 -10px 40px color-mix(in srgb,var(--ink) 25%,transparent);transform:translateY(calc(100% - var(--fitting-peek)));transition:transform .28s ease}
+ .fitting-sheet[data-open=true]{transform:none}
+ .hercules-fitting-room .fitting-sheet-handle{display:grid;place-items:center;width:100%;min-height:26px;min-width:0;padding:0;border:0;border-radius:0;background:transparent}
+ .fitting-sheet-handle span{width:44px;height:5px;border-radius:3px;background:color-mix(in srgb,var(--fitting-muted) 55%,transparent)}
+ .fitting-sheet .fitting-tabs{margin-bottom:10px}.fitting-sheet .fitting-tabs button{font-size:12px}
+ .fitting-sheet .fitting-drawer-body{padding-bottom:12px}
+ .fitting-drawer h2{font-size:22px}
+ .fitting-swatches{grid-template-columns:repeat(auto-fit,minmax(min(100%,75px),1fr));gap:6px}.fitting-swatches button{flex-direction:column;gap:6px;font-size:11px;padding:8px 5px}
+ .fitting-look-note{margin-top:16px}.fitting-poses{grid-template-columns:1fr 1fr}
+ .fitting-look-card{display:grid;grid-template-columns:100px 1fr;gap:5px 12px}.fitting-look-card>form,.fitting-look-card>button,.fitting-look-card>div{grid-column:1/-1}.fitting-look-card>.herc{grid-row:span 2}.fitting-look-card p{margin:0}.fitting-look-card h4{align-self:end}
+ .fitting-notices{padding:0 12px}
+ .fitting-footer{position:sticky;bottom:var(--fitting-peek);z-index:2;flex-direction:column;align-items:stretch;padding:8px 12px 10px;gap:6px;box-shadow:0 -4px 18px color-mix(in srgb,var(--ink) 10%,transparent)}
+ .fitting-footer [role=status]{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;min-width:0}
+ .fitting-footer strong{font-size:13px}.fitting-footer span{font-size:11px;margin-top:0;flex:1 1 100%}
+ .fitting-footer-actions{max-width:none;width:100%;grid-template-columns:auto minmax(0,1fr);gap:6px}.fitting-history{flex-wrap:nowrap;gap:4px}.fitting-history button{flex:none;padding:5px 8px;font-size:11px;min-width:44px}.fitting-secondary{display:none}.fitting-save-actions button{font-size:12px;padding:6px 8px}
+}
+@media(max-width:360px){.fitting-header h1{font-size:21px}.fitting-stage{min-height:280px}.fitting-camera button{font-size:11px}.fitting-step{width:38px;height:52px;font-size:24px}}
+@media(prefers-reduced-motion:reduce){.hercules-fitting-room *,.fitting-sheet{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

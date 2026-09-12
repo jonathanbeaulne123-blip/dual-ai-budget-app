@@ -6,10 +6,13 @@ export const COLLECTIONS = [
   {id:'applause',name:'Dressing for applause',note:'The occasion? His arrival, naturally.'},
   {id:'kitchen',name:'Kitchen royalty',note:'An apron on, a whisk nearby, and absolutely no washing up.'},
   {id:'sunday',name:'Sunday best',note:'Careful stitching and nowhere in particular to hurry.'},
+ {id:'night',name:'Hearth after dark',note:'Lamp low, robe on, and a firm opinion about bedtime.'},
+ {id:'garden',name:'Garden Sunday',note:'Straw hat, muddy paws, and supervising the tomatoes.'},
+ {id:'snow',name:'Snow day',note:'Bundled to the whiskers and not going out anyway.'},
 ] as const;
-export type PieceSlot='head'|'eyewear'|'neckwear'|'body'|'outerwear'|'charm';
+export type PieceSlot='head'|'eyewear'|'neckwear'|'body'|'outerwear'|'charm'|'tail';
 export type Piece={id:string;collection:string;slot:PieceSlot;name:string;shape:string;detail:string;variants:readonly string[];coversBody?:boolean;legacy?:boolean};
-const fabric=['cream','moss','rose','slate'],office=['ink','oat','claret','sage'],rain=['yellow','navy','seafoam','coral'],applause=['plum','midnight','ruby','ivory'],kitchen=['ivory','sage','terracotta','blue'],sunday=['oat','claret','sage','midnight'],metal=['silver','brass','rose-gold'];
+const fabric=['cream','moss','rose','slate'],office=['ink','oat','claret','sage'],rain=['yellow','navy','seafoam','coral'],applause=['plum','midnight','ruby','ivory'],kitchen=['ivory','sage','terracotta','blue'],sunday=['oat','claret','sage','midnight'],metal=['silver','brass','rose-gold'],night=['midnight','plum','lavender','cream'],garden=['sage','yellow','oat','terracotta'],snow=['frost','navy','cherry','pine'];
 const rows: [string,string,PieceSlot,string,string,string,readonly string[],boolean?][]=[
  ['cozy-sweater','cozy','body','Cable-knit sweater','cable','Raised cables · fitted sleeves',fabric],
  ['cozy-cardigan','cozy','body','Cardigan','cardigan','Open V · pearl buttons · patch pockets',fabric],
@@ -47,6 +50,24 @@ const rows: [string,string,PieceSlot,string,string,string,readonly string[],bool
  ['sunday-glasses','sunday','eyewear','Oval glasses','oval','Elongated rims · delicate bridge',metal],
  ['sunday-collar','sunday','neckwear','Ribbon collar','ribbon','A narrow ribbon with a rosette',sunday],
  ['sunday-cameo','sunday','charm','Cameo charm','cameo','Oval setting · raised cat silhouette',metal],
+ ['night-cap','night','head','Nightcap','nightcap','Soft cone · tassel at the tip',night],
+ ['night-mask','night','eyewear','Sleep mask','sleepmask','Padded shade · stitched closed eyes',night],
+ ['night-pyjama','night','body','Pyjama top','pyjama','Piped collar · two little buttons',night],
+ ['night-robe','night','outerwear','Plush robe','robe','Shawl collar · tie belt · deep cuffs',night,true],
+ ['night-moon','night','charm','Moon pendant','moon','A crescent on a fine chain',metal],
+ ['night-ribbon','night','tail','Tail ribbon','tailribbon','A satin bow tied near the tip',night],
+ ['garden-hat','garden','head','Straw hat','strawhat','Wide brim · woven band',garden],
+ ['garden-smock','garden','body','Linen smock','smock','Loose fit · front pocket · rolled sleeves',garden],
+ ['garden-jacket','garden','outerwear','Waxed jacket','waxed','Corduroy collar · two flap pockets',garden,true],
+ ['garden-collar','garden','neckwear','Daisy collar','daisy','A chain of little daisies',garden],
+ ['garden-seeds','garden','charm','Seed-packet charm','seedpacket','A tiny paper packet · this year’s tomatoes',garden],
+ ['garden-tail','garden','tail','Tail daisy','tailbow','A bow with one daisy, tied on the tail',garden],
+ ['snow-hat','snow','head','Earflap hat','earflap','Lined flaps · chin ties',snow],
+ ['snow-goggles','snow','eyewear','Ski goggles','goggles','One wide lens · wide strap',snow],
+ ['snow-fleece','snow','body','Fleece','fleece','Half zip · high collar',snow],
+ ['snow-vest','snow','outerwear','Puffer vest','puffer','Quilted channels · layers over a fleece',snow],
+ ['snow-flake','snow','charm','Snowflake pendant','snowflake','Six points · a fine chain',metal],
+ ['snow-bell','snow','tail','Tail bell','tailbell','A little bell on a ribbon',snow],
 ];
 export const NEW_PIECES:Piece[]=rows.map(([id,collection,slot,name,shape,detail,variants,coversBody])=>({id,collection,slot,name,shape,detail,variants,coversBody}));
 const legacy:[string,PieceSlot,string,string][]=[['toque','head','Kitchen toque','toque'],['visor','head','Bill visor','visor'],['chef','head','Sit-down chef hat','chef'],['specs','eyewear','Audit spectacles','round'],['copper','charm','Copper chain','chain'],['gold','charm','Gold chain','chain'],['bell','neckwear','Collar bell','bell'],['yarn','neckwear','Yarn collar','yarn'],['fish','charm','Fish treat','fish'],['clip','charm','Card clip','clip'],['tooth','charm','Tooth charm','tooth'],['ink','charm','Green-ink stamp','stamp']];
