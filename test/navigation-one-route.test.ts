@@ -28,7 +28,7 @@ describe("One route to each place", () => {
         const actions = fabActionsFor(view, tab);
         expect(actions).toHaveLength(4);
         expect(actions.every(action => action.kind === "add" && action.money)).toBe(true);
-        expect(new Set(actions.map(action => action.mode)).size).toBe(4);
+        expect(new Set(actions.map(action => action.kind === "add" ? action.mode : action.kind)).size).toBe(4);
       }
     }
   });
@@ -82,8 +82,8 @@ describe("Status Centre folds", () => {
     localStorage.clear();
     const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
     const tree = (attention: boolean) => createElement("div", null,
-      createElement(StatusFold, { id: "needs-us", title: "Needs us", defaultOpen: true, forceOpen: attention }, createElement("p", null, "sync")),
-      createElement(StatusFold, { id: "household", title: "Household", count: 3 }, createElement("button", null, "Start from scratch")),
+      createElement(StatusFold, { id: "needs-us", title: "Needs us", defaultOpen: true, forceOpen: attention, children: createElement("p", null, "sync") }),
+      createElement(StatusFold, { id: "household", title: "Household", count: 3, children: createElement("button", null, "Start from scratch") }),
     );
     try {
       await act(async () => root.render(tree(false)));
