@@ -19,7 +19,7 @@ function claimed(h: Household, input: Claim) {
 }
 export function nextHerculesTask(draft: CompanionWorkflow): CompanionWorkflow | null {
     const [next, ...queue] = draft.queue ?? [];
-    return next ? { ...draft, actionId: next.actionId, values: next.values, queue, submission: null, updatedAt: new Date().toISOString() } : null;
+    return next ? { ...draft, actionId: next.actionId, values: next.values, workspaceConfirmationId: next.workspaceConfirmationId, queue, submission: null, updatedAt: new Date().toISOString() } : null;
 }
 function release(h: Household, input: Claim): CommitResult {
     const { profile, resource } = claimed(h, input);

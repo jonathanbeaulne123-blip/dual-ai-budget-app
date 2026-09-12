@@ -1,3 +1,4 @@
+import { WorkspaceClient } from './workspace/client.ts';
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
 import { Planner } from "./planner/Planner.tsx";
 import { TimeMachine } from "./timeMachine/TimeMachine.tsx";
@@ -36,6 +37,11 @@ import { PageWorld, WorldCharm } from "./theme/PageWorld.tsx";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
 import { ThemeSceneHeading } from "./theme/SceneArtwork.tsx";
 import { PlanStudio } from "./PlanStudio.tsx";
+import { tokenFresh } from "./google/tokens.ts";
+import { WorkspaceProjectCards } from "./workspace/ProjectCards.tsx";
+import { workspaceRecordOptions } from "./workspace/links.ts";
+import { HerculesWorkspaceRoom } from "./workspace/Workspace.tsx";
+import type { WorkspaceSnapshot, WorkspaceProposal } from "./workspace/contracts.ts";
 import type { PendingPreview, RejectedEntry } from "./ledgerSync/optimistic.ts";
 import { stageLedgerCreation, completeLedgerCreation } from './ledgerSync/creationStore.ts';
 import type { RestorePointSummary } from './ledgerSync/backup.ts';
@@ -538,8 +544,8 @@ import {
 
 type Tab = AppTab;
 
-function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine"> {
-  if (tab === "planner" || tab === "till") return "home";
+function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules"> {
+  if (tab === "planner" || tab === "till" || tab === "hercules") return "home";
   const scene = sceneTabFor(tab);
   return scene === "till" ? "home" : scene;
 }
@@ -782,6 +788,10 @@ export function App() {
   const [herculesWardrobeRequest, setHerculesWardrobeRequest] = useState<{ scope: string; id: string } | null>(null);
   const herculesSourceScope = useRef<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
+  const workspaceEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
+  const [workspaceCompact, setWorkspaceCompact] = useState(false);
+  const [workspaceSnapshot, setWorkspaceSnapshot] = useState<(WorkspaceSnapshot & { identity: string }) | null>(null);
+  const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null);
   const [planContext, setPlanContext] = useState<import("./core/planSystem.ts").HerculesPlanContext | null>(null);
   const [planHerculesRequest, setPlanHerculesRequest] = useState<import("./Hercules.tsx").PlanHerculesOpenRequest | null>(null);
 
@@ -6100,6 +6110,18 @@ export function App() {
     if (load) void load().catch(() => undefined);
   }
 
+  function openLegacyHercules(proposal?: WorkspaceProposal) {
+    if (!household || !session) return;
+    if (proposal?.target === "google") { setError("Open the external change review in the Hercules working area."); return; }
+    const targetView = proposal?.scope ?? view;
+    setWorkspaceCompact(false);
+    if (targetView !== view) rememberSession({ memberId: actorId, view: targetView, householdId: household.householdId });
+    setPlanHerculesRequest({ id: crypto.randomUUID(), scopeKey: `${environment}:${household.householdId}:${actorId}:${targetView}:${localLedgerIdentity(actorId) ?? actorId}:${replicaScopeGenerationRef.current}`,
+      prompt: proposal ? "Review this proposed change. Keep its own Final Confirm and receipt." : "",
+      ...(proposal ? { proposal: { actionId: proposal.actionId, values: proposal.values, workspaceConfirmationId: proposal.receiptId ?? undefined } } : {}),
+      isCurrent: () => householdRef.current?.householdId === household.householdId && sessionRef.current?.memberId === actorId });
+  }
+
   function goTab(next: Tab) {
     clearWorkHandoff(window.sessionStorage);
     preloadTab(next);
@@ -6423,7 +6445,7 @@ export function App() {
       requestSharedBoard({ environment, householdId: household!.householdId, memberId: session!.memberId }, "tasks");
       goTab("together"); return;
     }
-    if (destination === "hercules") { goTab("home"); return; }
+    if (destination === "hercules") { goTab(workspaceEnabled ? "hercules" : "home"); return; }
     setFocusedAccountId(null);
     if (destination === "books") setBooksPaneRequest("opening");
     if (destination === "fund") setBooksPaneRequest("fund");
@@ -6687,6 +6709,23 @@ export function App() {
         />
       ) : null}
 
+      {workspaceEnabled && <HerculesWorkspaceRoom
+        key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
+        mode={tab === "hercules" ? "room" : workspaceCompact && !Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "compact" : "hidden"}
+        getAccessToken={async () => {
+          const identity = readGuardScopeIdentity(), local = localLedgerIdentity(actorId), expected = loadSupabaseSession(environment)?.userId;
+          if (local) return local;
+          const fresh = await ensureSupabaseSession(environment);
+          if (!fresh || fresh.userId !== expected || readGuardScopeIdentity() !== identity) throw new Error("UNAUTHENTICATED");
+          return fresh.accessToken;
+        }}
+        getGoogleAccessToken={async () => { const google=loadGoogleSession(environment,actorId,household.householdId);if(!google||!tokenFresh(google))throw new Error("Connect your Google services in Hearth before confirming this change.");return google.accessToken; }}
+        isCurrent={() => environmentRef.current === environment && householdRef.current?.householdId === household.householdId && sessionRef.current?.memberId === actorId}
+        onExpand={() => { setWorkspaceCompact(false); goTab("hercules"); }}
+        onClose={() => { setWorkspaceCompact(false); if (tab === "hercules") goTab("home"); }}
+        onLegacy={() => openLegacyHercules()} onReview={openLegacyHercules} recordOptions={workspaceRecordOptions(household, actorId)}
+        onSnapshot={value => setWorkspaceSnapshot({ ...value, identity: ledgerRenderScopeKey })} openProjectId={workspaceProjectId} onProjectOpened={()=>setWorkspaceProjectId(null)}
+      />}
       {tab === "planner" && <Planner household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
       {tab === "timeMachine" && <TimeMachine household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
       {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
@@ -6857,6 +6896,8 @@ export function App() {
             {view === "household" && <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} />}
             {view === "household" && <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>}
             <PlanStudio
+        onOpenWorkspace={workspaceEnabled ? () => { setWorkspaceProjectId(null); goTab("hercules"); } : undefined}
+              workspaceCards={workspaceEnabled && workspaceSnapshot?.identity === ledgerRenderScopeKey ? month => <WorkspaceProjectCards projects={workspaceSnapshot.projects} household={household} memberId={actorId} scope={view} month={month} today={today} onOpen={id => {setWorkspaceProjectId(id);goTab("hercules");}} /> : undefined}
               key={`${ledgerRenderScopeKey}:${view}`}
               goalsContent={context => <KittyBanks planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
               onContextChange={setPlanContext}
@@ -7562,6 +7603,7 @@ export function App() {
           </section>
           </StatusFold>
           <StatusFold id="help" title="Help and transparency">
+            {workspaceEnabled && <button onClick={() => goTab("hercules")}>Hercules workspace</button>}
           <section className="card hercules-capability-map" aria-labelledby="hercules-map-heading">
             <header><h2 id="hercules-map-heading">What Hercules can see, infer, draft, and never decide</h2></header>
             <ul className="capability-map">
@@ -8352,7 +8394,7 @@ export function App() {
               { label: view === "household" ? "Household table" : "My books", run: () => goTab("ledger") },
               { label: "Health", run: () => goTab("more") },
               { label: "Google household bridge", run: () => goTab("more") },
-              { label: "Ask Hercules", run: () => goTab("home") },
+              { label: "Ask Hercules", run: () => goTab(workspaceEnabled ? "hercules" : "home") },
               { label: "Export", run: () => {
                 if (!experience || !experience.ok) {
                   setError("Choose who is using this ledger before exporting.");
@@ -8371,6 +8413,16 @@ export function App() {
       </div>
       {!charterTakeoverVisible ? (
       <HerculesPresence
+        onWorkspaceConfirm={workspaceEnabled ? async id => {
+          if (!household || !session) throw new Error('Reconnect to Hearth first.');
+          const guard=readGuardScopeIdentity(), expected=loadSupabaseSession(environment)?.userId, local=localLedgerIdentity(actorId);
+          const fresh=local?null:await ensureSupabaseSession(environment),token=local??fresh?.accessToken;
+          if(!token||(!local&&fresh?.userId!==expected))throw new Error('UNAUTHENTICATED');
+          if(readGuardScopeIdentity()!==guard)throw new Error('Your account changed.');
+          const client=new WorkspaceClient(`/hercules/workspace/${environment}/${household.householdId}`,async()=>token,()=>readGuardScopeIdentity()===guard);
+          await client.authorizeAction(id);
+        } : undefined}
+        onOpenWorkspace={workspaceEnabled ? () => setWorkspaceCompact(open => !open) : undefined}
         planContext={tab === "plan" && planContext?.scope === view && planContext.contextIdentity === `${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}` ? planContext : null}
         planOpenRequest={planHerculesRequest}
         onPlanOpenConsumed={(id) => setPlanHerculesRequest(current => current?.id === id ? null : current)}

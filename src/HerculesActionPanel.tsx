@@ -15,17 +15,19 @@ export type HerculesActionHandle = {
     propose: (proposal: {
         actionId: string;
         values: Record<string, string>;
+        workspaceConfirmationId?: string;
     }, expectedFingerprint?: string) => void;
 };
 type Props = {
     onReady?: () => void;
+    onWorkspaceConfirm?: (id: string) => Promise<void>;
     composerAvailable?: boolean;
     context: ActionContext;
     service: HerculesCommandService;
     identity: string;
     onReply: (question: string, reply: string) => void;
 };
-export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(function HerculesActionPanel({ context: c, service, identity, onReply, onReady, composerAvailable = true }, ref) {
+export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(function HerculesActionPanel({ context: c, service, identity, onReply, onReady, onWorkspaceConfirm, composerAvailable = true }, ref) {
     useEffect(()=>{onReady?.();},[onReady]);
     const profile = companionFor(c.household, c.memberId), generation = profile.conversations.find(r => r.view === c.view)!.generation;
     const resourceId = `task-${c.view}`, key = JSON.stringify(['hercules-task-v1', identity, c.household.environment, c.household.householdId, c.memberId, c.view, generation]);
@@ -142,8 +144,8 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         const currentDraft=draftRef.current;
         if (!currentDraft || currentDraft.submission || locked.current || (currentDraft.queue?.length ?? 0) >= 12) return;
         const accountAction=actionById('add-account', c);
-        void change({...currentDraft,actionId:accountAction.id,values:initialActionValues(accountAction,'',c),
-            queue:[{actionId:currentDraft.actionId,values:currentDraft.values},...(currentDraft.queue ?? [])],updatedAt:new Date().toISOString()});
+        void change({...currentDraft,workspaceConfirmationId:undefined,actionId:accountAction.id,values:initialActionValues(accountAction,'',c),
+            queue:[{actionId:currentDraft.actionId,values:currentDraft.values,...(currentDraft.workspaceConfirmationId?{workspaceConfirmationId:currentDraft.workspaceConfirmationId}:{})},...(currentDraft.queue ?? [])],updatedAt:new Date().toISOString()});
         onReply('Add an account first','Let’s add the account, then return to these details. Each change will have its own review.');
     }
     function receiptResolved(id: string) {
@@ -158,10 +160,15 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
             return;
         locked.current = true;
         setBusy(true);
-        const id = crypto.randomUUID(), pending = { ...d, values: review.values, submission: { id, review: JSON.stringify(review) }, updatedAt: new Date().toISOString() };
+        const id = d.workspaceConfirmationId ?? crypto.randomUUID(), pending = { ...d, values: review.values, submission: { id, review: JSON.stringify(review) }, updatedAt: new Date().toISOString() };
         try {
             if (JSON.stringify(prepareAction(current.current.c, d.actionId, d.values, review.duplicateAcknowledged)) !== JSON.stringify(review))
                 throw Error('These details changed. Review them again.');
+            if(d.workspaceConfirmationId){
+                if(!onWorkspaceConfirm) throw Error('Reconnect the Hercules workspace before confirming this proposal.');
+                await onWorkspaceConfirm(id);
+                if(!valid() || JSON.stringify(prepareAction(current.current.c,d.actionId,d.values,review.duplicateAcknowledged))!==JSON.stringify(review)) throw Error('These details changed. Review them again.');
+            }
             validateReviewWorkflow(pending);
             if (!writeEntryLocal(key, { workflow: pending, baseRevision: revision.current }))
                 throw Error('Allow browser storage before confirming so this action can be recovered.');
@@ -224,6 +231,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                     setNotice('The original review has changed. Keep this pending record until its status is resolved.');
                     return;
                 }
+                if(d.workspaceConfirmationId){if(!onWorkspaceConfirm)throw Error('Reconnect the workspace first.');await onWorkspaceConfirm(d.workspaceConfirmationId);if(!valid())return;}
                 const result = await submitHerculesReview(service, { memberId: c.memberId, view: c.view, today: c.today }, old, d.submission.id, valid);
                 if (!valid())
                     return;
@@ -326,7 +334,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
             }
             if (locked.current || draft?.submission)
                 return;
-            if (draft && draft.actionId !== proposal.actionId) {
+            if (draft && (draft.actionId !== proposal.actionId || draft.workspaceConfirmationId !== proposal.workspaceConfirmationId)) {
                 setNotice('Your current task is still here. Finish or cancel it before starting another.');
                 return;
             }
@@ -346,7 +354,7 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
                     }
                     catch { }
                 }
-                void change({ version: 1, actionId: a.id, view: c.view, generation, values, ...(draft?.queue ? { queue: draft.queue } : {}), updatedAt: new Date().toISOString(), submission: null });
+                void change({ version: 1, actionId: a.id, view: c.view, generation, values, ...(proposal.workspaceConfirmationId?{workspaceConfirmationId:proposal.workspaceConfirmationId}:{}), ...(draft?.queue ? { queue: draft.queue } : {}), updatedAt: new Date().toISOString(), submission: null });
                 setGuidePaused(false);
                 if(a.id===PLAN_GUIDE_ID) onReply('Help me create a plan',guideReply(c,values));
                 setNotice(a.id===PLAN_GUIDE_ID ? '' : nextActionField(a, values, c)?.question || 'Your draft is ready to review. Nothing has been saved to the books.');

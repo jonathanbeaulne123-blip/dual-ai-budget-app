@@ -2,7 +2,7 @@ import { useEasyRead } from "./useEasyRead.ts";
 import "./ux-readability.css";
 import type { HerculesPlanContext } from "./core/planSystem.ts";
 import type { FundPulseFreshness } from "./core/fundPulse.ts";
-export type PlanHerculesOpenRequest = { id: string; scopeKey: string; isCurrent?: () => boolean; prompt?: string; proposal?: { actionId: string; values: Record<string, string> } };
+export type PlanHerculesOpenRequest = { id: string; scopeKey: string; isCurrent?: () => boolean; prompt?: string; proposal?: { actionId: string; values: Record<string, string>; workspaceConfirmationId?: string } };
 import { availableHerculesActions } from './core/herculesActions.ts';
 import { HERCULES_WORKFLOW_CATALOGUE } from "./core/herculesWorkflowCatalogue.ts";
 import { HerculesActionPanel, type HerculesActionHandle } from "./HerculesActionPanel.tsx";
@@ -248,7 +248,7 @@ export function HerculesPresence({
   onOpenAdd, onDiscoveryNavigate, discoveryAccountId, discoveryFund,
   onGo,
   onLedger, onCompanionCommand,
-  onDraft, actionService, actionIdentity, actionHousehold, planContext, planOpenRequest, onPlanOpenConsumed,
+  onDraft, actionService, actionIdentity, actionHousehold, planContext, planOpenRequest, onPlanOpenConsumed, onOpenWorkspace,
   onPayCard,
   onAcceptPreset,
   onDismissNotice,
@@ -267,6 +267,7 @@ export function HerculesPresence({
   onOpenEstimates,
   onOpenPlan,
   onOpenReady,
+  onWorkspaceConfirm,
   setup,
 }: {
   setup?: HerculesSetupProps;
@@ -295,6 +296,8 @@ export function HerculesPresence({
   planContext?: HerculesPlanContext | null;
   planOpenRequest?: PlanHerculesOpenRequest | null;
   onPlanOpenConsumed?: (id: string) => void;
+  onOpenWorkspace?: () => void;
+  onWorkspaceConfirm?: (id: string) => Promise<void>;
   onPayCard?: () => void;
   onAcceptPreset?: (key: string, summary: string) => void;
   onDismissNotice?: (key: string) => void;
@@ -1663,7 +1666,7 @@ export function HerculesPresence({
     if (!start.moved) {
       setPurr(true);
       if (open) closeChat();
-      else openChatFromBeg(true);
+      else if (onOpenWorkspace) onOpenWorkspace(); else openChatFromBeg(true);
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
     }
@@ -1747,7 +1750,7 @@ export function HerculesPresence({
   ) : null;
 
   function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
-  function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} composerAvailable={chatEnabled} onReady={notifyActionPanelReady} context={{household:actionHousehold,memberId,view,today,planMonth:planContext?.scope===view?planContext.monthKey:undefined,planThrough:planContext?.scope===view?planContext.through:undefined}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
+  function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} composerAvailable={chatEnabled} onWorkspaceConfirm={onWorkspaceConfirm} onReady={notifyActionPanelReady} context={{household:actionHousehold,memberId,view,today,planMonth:planContext?.scope===view?planContext.monthKey:undefined,planThrough:planContext?.scope===view?planContext.through:undefined}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
   return (
     <HerculesRigProvider
       mood={look.view.mood}
@@ -1798,7 +1801,7 @@ export function HerculesPresence({
           type="button"
           className={`hercules-pill${quietReminder?' has-reminder':''}`}
           aria-label={`Talk to ${look.view.name}. ${quietReminder?.title??'Opens focus mode.'}`}
-          onClick={openMobileFocus}
+          onClick={onOpenWorkspace ?? openMobileFocus}
         >
           <HerculesLivePortrait
             mood={look.view.mood}
@@ -2098,7 +2101,7 @@ export function HerculesPresence({
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
         aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? ` — ${quietReminder?.title??'How can I help?'}` : ""}`}
-        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else openChatFromBeg(true);}}}
+        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else if (onOpenWorkspace) onOpenWorkspace(); else openChatFromBeg(true);}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

@@ -52,6 +52,11 @@ export type ActionDefinition = {
     dependencies: (c: ActionContext, v: ActionValues) => unknown;
     availableWhen?: (c: ActionContext) => boolean;
 };
+/** Descriptions and field schemas only. This does not expose command execution. */
+export function herculesWorkspaceActionCatalogue() {
+    return definitions.map(a => ({ id: a.id, title: a.title, example: a.example, views: a.views,
+        consequence: a.consequence, fields: a.fields.map(f => ({ key: f.key, label: f.label, kind: f.kind ?? 'text', optional: f.optional === true })) }));
+}
 const both = ['household', 'personal'] as const, shared = ['household'] as const;
 const accountChoices = (c: ActionContext) => householdForView(c.household, c.memberId, c.view).accounts.filter(a => a.active && (c.view === 'personal' ? a.ownerMemberId === c.memberId : a.scope !== 'personal')).map(a => ({ value: a.id, label: a.name }));
 const categoryChoices = (c: ActionContext, type = 'expense') => c.household.categories.filter(a => a.active && a.parentId && a.transactionType === type).map(a => ({ value: a.id, label: a.name }));

@@ -1963,6 +1963,10 @@ async function herculesRigPoll(request, env) {
 
 export default {
   async fetch(request, env) {
+    if (new URL(request.url).pathname.startsWith('/hercules/workspace/')) {
+      const { handleWorkspace } = await import('./workspace/route.ts');
+      return handleWorkspace(request, env);
+    }
     const url = new URL(request.url);
     const boardMedia = await handleBoardMedia(request, env);
     if (boardMedia) return boardMedia;
