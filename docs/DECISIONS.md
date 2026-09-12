@@ -866,3 +866,11 @@ Budget delta (5): current evidence, precise review and retained Plan decisions. 
 ### Development release review follow-up
 
 PR #445 released the bounded feature to Development under Jonathan's explicit "push merge deploy" instruction. Review found that inactive monthly answers could influence direct goal previews and leave expected funding unconfirmable after a scope switch. Normalize focused answers before questions and projection; discard inactive unconfirmed proposals while retaining saved Plan lines and income assumptions. The existing confirmation adapter already filtered hidden sections before writes. Savings rate and purpose now carry independent supplied/default labels, and account matching accepts American Express, HISA, brokerage and receivable aliases. These corrections retain the same release authority, Final Confirm and environment boundaries.
+
+## Hercules Play — local implementation, 2026-09-12
+
+Jonathan's approved Play plan introduces a dedicated creative room while retaining current financial navigation. Current main uses Status Centre on mobile; Play has a prominent entry there and in Together. The room renderer reuses the Hercules/wardrobe rig and emits intents. Application authority owns private portraits, shared semantic placements and explicit milestone claims. A per-position revision prevents silent same-position replacement, and companionPlayVersion negotiation protects the new resources from incompatible clients.
+
+Kitty Bank presentation reuses accepted Plan evidence, separating available reserves, lifetime contributions and planned future contributions. Room interaction cannot post money. Ordinary wardrobe access is open; six exceptional awards add playable activities. Shared portrait records retain creator ownership; room placement references them instead of copying private looks or image blobs. The presentation can be disabled without erasing collections.
+
+Budget delta (5): shared banks are easier to revisit through truthful existing Plan flows. Engagement delta (3): dedicated fitting, household portraits, discovery activities and three room themes. This is local implementation evidence, not hosted continuity certification, release approval or a willingness-to-pay result. See [Hercules Play implementation and acceptance](features/HERCULES_PLAY.md) for detailed scope and outstanding gates.

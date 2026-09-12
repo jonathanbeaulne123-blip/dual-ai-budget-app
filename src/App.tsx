@@ -1,4 +1,5 @@
 import { WorkspaceClient } from './workspace/client.ts';
+import { PlayBoundary } from "./play/PlayBoundary.tsx";
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
 import { Planner } from "./planner/Planner.tsx";
 import { TimeMachine } from "./timeMachine/TimeMachine.tsx";
@@ -54,7 +55,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { lazy, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -493,6 +494,8 @@ import "./swipe.css";
 import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
+const PLAY_ENABLED = import.meta.env.VITE_HERCULES_PLAY !== "0";
+const HerculesPlay = lazy(() => import("./play/HerculesPlay.tsx"));
 const AccountHistorySetup = lazy(() => import("./AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
 import { type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
@@ -544,7 +547,7 @@ import {
 
 type Tab = AppTab;
 
-function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules"> {
+function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules" | "play"> {
   if (tab === "planner" || tab === "till" || tab === "hercules") return "home";
   const scene = sceneTabFor(tab);
   return scene === "till" ? "home" : scene;
@@ -786,6 +789,8 @@ export function App() {
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
   const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
   const [herculesWardrobeRequest, setHerculesWardrobeRequest] = useState<{ scope: string; id: string } | null>(null);
+
+
   const herculesSourceScope = useRef<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const workspaceEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
@@ -819,6 +824,8 @@ export function App() {
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
+  const [playInitialArea,setPlayInitialArea]=useState<"dressing"|undefined>();
+  useEffect(()=>{if(!PLAY_ENABLED)return;const open=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.environment===environment&&detail.householdId===household?.householdId&&detail.memberId===session?.memberId){event.stopImmediatePropagation();setPlayInitialArea("dressing");setTab("play");}};window.addEventListener('hearth:open-fitting',open,true);return()=>window.removeEventListener('hearth:open-fitting',open,true);},[environment,household?.householdId,session?.memberId]);
   useEffect(() => {
     const source = herculesSourceFocus;
     if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
@@ -1149,7 +1156,7 @@ export function App() {
     }
     if (result.household === current) return;
     const commandKind = result.undo.commandKind;
-    if (commandKind === "hercules-companion-personal") {
+    if (commandKind === "hercules-companion-personal" || commandKind === "hercules-play") {
       if (companionUpdateAllowed(current, result.household, who)) return;
       throw new ValidationError("Only you can change your Hercules conversations and preferences.");
     }
@@ -4724,9 +4731,9 @@ export function App() {
       try {
         let result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
-        if(result.undo.commandKind==='hercules-companion-gallery'&&!ledgerSyncRef.current)throw new ValidationError('Connect to your household to share Hercules looks.');
+        if(['hercules-companion-gallery','hercules-play'].includes(result.undo.commandKind??'')&&!ledgerSyncRef.current)throw new ValidationError('Connect to your household to share Hercules looks.');
         if (memberPersonal) {
-          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations, preferences and looks.");
+          if ((result.undo.commandKind === "hercules-companion-personal" || result.undo.commandKind === "hercules-play") && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations, preferences and looks.");
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) {
             options?.onAccepted?.(result);
@@ -4855,9 +4862,9 @@ export function App() {
         }
         const result = fn(current);
         const memberPersonal = result.persistenceScope === "member-personal";
-        if(result.undo.commandKind==='hercules-companion-gallery'&&!ledgerSyncRef.current)throw new ValidationError('Connect to your household to share Hercules looks.');
+        if(['hercules-companion-gallery','hercules-play'].includes(result.undo.commandKind??'')&&!ledgerSyncRef.current)throw new ValidationError('Connect to your household to share Hercules looks.');
         if (memberPersonal) {
-          if (result.undo.commandKind === "hercules-companion-personal" && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations, preferences and looks.");
+          if ((result.undo.commandKind === "hercules-companion-personal" || result.undo.commandKind === "hercules-play") && !ledgerSyncRef.current) throw new ValidationError("Connect to your household to save private Hercules conversations, preferences and looks.");
           assertMemberPersonalUpdate(current, result);
           if (result.household === current) return null;
         }
@@ -6123,6 +6130,7 @@ export function App() {
   }
 
   function goTab(next: Tab) {
+    if(next === "play" && !PLAY_ENABLED)next="together";
     clearWorkHandoff(window.sessionStorage);
     preloadTab(next);
     leaveDesk();
@@ -6728,7 +6736,8 @@ export function App() {
       />}
       {tab === "planner" && <Planner household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
       {tab === "timeMachine" && <TimeMachine household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
-      {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
+      {PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>goTab("together")}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
+      {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlay={PLAY_ENABLED ? () => {setPlayInitialArea(undefined);goTab("play");} : undefined} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
         <HouseholdHome
@@ -7163,7 +7172,7 @@ export function App() {
       )}
 
       {tab === "more" && (
-        <div className="more-surfaces status-centre">
+        <div className="more-surfaces status-centre">{PLAY_ENABLED && <button type="button" className="play-status-entry" onClick={()=>goTab("play")}>✧ Hercules Play — dressing, portraits & curiosities</button>}
           <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1><p className="muted">Health, sources, household, privacy, comfort, and help. Everyday work lives on its own page.</p></header>
           <StatusFold id="needs-us" title="Needs us" defaultOpen forceOpen={appNeedsAttention}>
           <section className="card more-sync-help" id="hearth-sync-help" tabIndex={-1}>
@@ -8537,7 +8546,7 @@ export function App() {
           if (adding || swipeOpen || confirm || commandOpen) return;
           herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`;
           if (destination.kind === "entry") { openAddFor(null, destination.mode); return; }
-          if (destination.kind === "wardrobe") { setHerculesWardrobeRequest({ scope: `${environment}:${household.householdId}:${session.memberId}:${view}`, id: crypto.randomUUID() }); goTab("home"); return; }
+          if (destination.kind === "wardrobe") { setHerculesWardrobeRequest({ scope: `${environment}:${household.householdId}:${session.memberId}:${view}`, id: crypto.randomUUID() }); setPlayInitialArea("dressing"); if(PLAY_ENABLED)goTab("play"); return; }
           if (destination.kind === "shift") { if (activeOpenShift(household.kitchen, session.memberId)?.id === destination.targetId) goTab("shift"); return; }
           if (destination.kind === "fund") { if (view === "household") { setHerculesSourceFocus({ route: "ledger", view, label: "Fund item", fundObligationId: destination.targetId }); openFundDestination("record"); } return; }
           if (destination.kind === "health") { setHerculesSourceFocus({ route: "more", view, label: "Health review" }); goTab("more"); return; }
@@ -8668,6 +8677,7 @@ export function App() {
           {view === "household" ? "Our Path" : "Plan"}
         </button>
         )}
+        {PLAY_ENABLED && <button type="button" className={`play-desktop-entry ${tab === "play" ? "active" : ""}`} aria-current={tab === "play" ? "page" : undefined} onClick={()=>goTab("play")}>Play</button>}
         {kitchenPrimaryNav(view).includes("together") && <button className={tab === "together" ? "active" : ""} aria-current={tab === "together" ? "page" : undefined} onClick={() => goTab("together")}>Together</button>}
         {kitchenPrimaryNav(view).includes("more") && (
         <button

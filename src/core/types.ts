@@ -1377,6 +1377,7 @@ export type Household = {
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   tasks?: Task[];
   taskLists?: TaskList[];
+  playRoom?: import("./playContracts.ts").PlayRoom;
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
   companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
@@ -1500,6 +1501,7 @@ export type SharedEnvelope = {
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   tasks?: Task[];
   taskLists?: TaskList[];
+  playRoom?: import("./playContracts.ts").PlayRoom;
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];
   accountOpeningCheckpoints?: import("./accountHistory.ts").AccountOpeningCheckpoint[];

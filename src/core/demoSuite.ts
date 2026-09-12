@@ -848,6 +848,7 @@ export function preserveDemoShowcaseContinuity(current: Household, generated: Ho
     ...generated,
     companionProfile: current.companionProfile,
     companionGallery: current.companionGallery,
+    playRoom: current.playRoom,
     householdId: current.householdId,
     inviteCode: current.inviteCode,
     linked: current.linked,

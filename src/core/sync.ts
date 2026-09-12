@@ -1,3 +1,4 @@
+import {decodePlayRoom} from './playContracts.ts';
 import { shapeNativeEvents, mergeNativeEvents } from "./nativeEvents.ts";
 import { shapeTasks, mergeTasks, shapeTaskLists, mergeTaskLists } from "./tasks.ts";
 import {decodeCompanionGallery} from './herculesCompanionContracts.ts';
@@ -366,6 +367,7 @@ export function ensureHouseholdShape(household: Household): Household {
   return {
     ...household,
     companionProfile: scopedCompanion(household.companionProfile, household),
+    ...(household.playRoom!==undefined?{playRoom:decodePlayRoom(household.playRoom)}:{}),
     ...(household.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(household.companionGallery,household)}:{}),
     householdId: household.householdId || randomHouseholdId(),
     inviteCode: normalizeInviteCode(household.inviteCode) || randomInviteCode(),
@@ -569,6 +571,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     claims: shaped.claims,
     presets: shaped.presets,
     calendar: shaped.calendar,
+    ...(shaped.playRoom!==undefined?{playRoom:shaped.playRoom}:{}),
     ...(shaped.companionGallery!==undefined?{companionGallery:shaped.companionGallery}:{}),
     kitchen: shaped.kitchen,
     google: shaped.google,
@@ -1063,6 +1066,7 @@ export function assembleHousehold(
     claims: shared.claims ?? [],
     presets: shared.presets ?? [],
     calendar: shared.calendar,
+    ...(shared.playRoom!==undefined?{playRoom:decodePlayRoom(shared.playRoom)}:{}),
     ...(shared.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(shared.companionGallery,shared)}:{}),
     kitchen: shared.kitchen,
     google: shared.google,
@@ -1423,7 +1427,8 @@ export function cloneAndShape(household: Household): Household {
   return ensureHouseholdShape(cloneHousehold(household));
 }
 
-function mergeCompanionGallery(server:SharedEnvelope,client:SharedEnvelope):Pick<SharedEnvelope,'companionGallery'>{
+function mergeCompanionGallery(server:SharedEnvelope,client:SharedEnvelope):Pick<SharedEnvelope,'companionGallery'|'playRoom'>{
+ if(JSON.stringify(server.playRoom)!==JSON.stringify(client.playRoom))throw new Error('PLAY_REQUIRES_AUTHORITY');
  if(JSON.stringify(server.companionGallery??[])!==JSON.stringify(client.companionGallery??[]))throw new Error('COMPANION_GALLERY_REQUIRES_AUTHORITY');
- return server.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(server.companionGallery,server)}:{};
+ return {...(server.playRoom?{playRoom:decodePlayRoom(server.playRoom)}:{}),...(server.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(server.companionGallery,server)}:{})};
 }

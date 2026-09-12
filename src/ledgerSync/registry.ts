@@ -1,3 +1,4 @@
+import {commitCompanionPlay} from '../core/herculesPlay.ts';
 import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
 import { addQuickSampleData, addQuickSampleScenario } from '../core/quickSampleData.ts';
 import {commitCompanionGallery} from '../core/herculesWardrobe.ts';
@@ -24,6 +25,7 @@ const functions = {
   executeHerculesAction, cancelHerculesSubmission,
   commitCompanion,
   commitCompanionGallery,
+  commitCompanionPlay,
   ...rehearsal,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
   offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
@@ -84,6 +86,7 @@ register("saveTask completeTask reopenTask acknowledgeTask saveTaskList adoptBoa
 register("appendPlanSitdownTurn", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);
+register("commitCompanionPlay", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
 register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);

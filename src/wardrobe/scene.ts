@@ -1,3 +1,5 @@
+import {createPlayRoom,PLAY_CAMERAS,type DisplayImage,type PlayPerformance} from '../play/room.ts';
+import type {PlayArea,PlayDecor} from '../core/playContracts.ts';
 import {loadCollection} from './collectionLoader.ts';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
@@ -7,14 +9,15 @@ import {FITTING_ITEMS,WARDROBE_ASSET,canPlayReaction,fittingColour,type FittingR
 import {createRoom} from './room.ts';
 import type {RoomPalette} from './roomPalette.ts';
 export type {RoomTheme} from './roomPalette.ts';
-export type WardrobeScene={setLook:(look:LookV1)=>void;setCollection:(id:string)=>void;setKeepsake:(id:string|null)=>void;setPose:(pose:FittingReaction)=>void;setPaused:(paused:boolean)=>void;setCamera:(angle:number,zoom:number)=>void;setMirror:(show:boolean)=>void;setRoom:(palette:RoomPalette)=>void;dispose:()=>void};
-export async function createWardrobeScene(host:HTMLElement,options:{palette:RoomPalette;signal:AbortSignal;paused:boolean;onError:()=>void;onReady:()=>void;onPick:(id:string)=>void;onFittingState?:(state:'loading'|'ready'|'error')=>void;onCollectionState?:(state:'loading'|'ready'|'error')=>void}):Promise<WardrobeScene>{
+export type WardrobeScene={setZone?:(zone:PlayArea|"room")=>void;setDisplays?:(items:DisplayImage[],decor:PlayDecor)=>void;perform?:(id:string,cue?:PlayPerformance)=>void;setLook:(look:LookV1)=>void;setCollection:(id:string)=>void;setKeepsake:(id:string|null)=>void;setPose:(pose:FittingReaction)=>void;setPaused:(paused:boolean)=>void;setCamera:(angle:number,zoom:number)=>void;setMirror:(show:boolean)=>void;setRoom:(palette:RoomPalette)=>void;dispose:()=>void};
+export async function createWardrobeScene(host:HTMLElement,options:{play?:boolean;onPlayPick?:(id:string)=>void;palette:RoomPalette;signal:AbortSignal;paused:boolean;onError:()=>void;onReady:()=>void;onPick:(id:string)=>void;onFittingState?:(state:'loading'|'ready'|'error')=>void;onCollectionState?:(state:'loading'|'ready'|'error')=>void}):Promise<WardrobeScene>{
  const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
  renderer.shadowMap.enabled=false;renderer.domElement.setAttribute('aria-hidden','true');host.append(renderer.domElement);
  const scene=new T.Scene(), camera=new T.PerspectiveCamera(35,1,.01,12);camera.position.set(.66,.49,1.24);camera.lookAt(0,.26,0);
  // The room shell, lights and set dressing are authored per theme and tinted from the live scene tokens.
- const room=createRoom(scene,options.palette);const {wood,trim,cloth,accent}=room.materials;host.dataset.roomLighting=options.palette.dark?'dark':'light';
+ const playRoom=options.play?createPlayRoom(scene,options.palette,()=>render()):null;
+ const room=playRoom??createRoom(scene,options.palette);const {wood,trim,cloth,accent}=room.materials;host.dataset.roomLighting=options.palette.dark?'dark':'light';
  function box(w:number,h:number,d:number,x:number,y:number,z:number,mat:T.Material){const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);scene.add(m);return m;}
  function cylinder(r:number,h:number,x:number,y:number,z:number,mat:T.Material){const m=new T.Mesh(new T.CylinderGeometry(r,r,h,32),mat);m.position.set(x,y,z);scene.add(m);return m;}
  cylinder(.32,.045,0,-.008,.015,wood);cylinder(.3,.012,0,.02,.015,cloth);
@@ -31,19 +34,21 @@ export async function createWardrobeScene(host:HTMLElement,options:{palette:Room
  const collectionAbort=new AbortController();options.signal.addEventListener('abort',()=>collectionAbort.abort(),{once:true});
  const shelves=new T.Group();scene.add(shelves);
  const keepsake=new T.Group();const littleHouse=new T.Mesh(new T.BoxGeometry(.065,.065,.045),cloth),roof=new T.Mesh(new T.ConeGeometry(.055,.042,4),accent);roof.position.y=.052;roof.rotation.y=Math.PI/4;keepsake.add(littleHouse,roof);keepsake.position.set(.61,.15,-.29);keepsake.visible=false;scene.add(keepsake);const patio=new T.Group();const deck=new T.Mesh(new T.BoxGeometry(.1,.007,.07),wood),table=new T.Mesh(new T.CylinderGeometry(.025,.025,.005,16),cloth),leg=new T.Mesh(new T.CylinderGeometry(.003,.003,.037,6),trim);table.position.y=.04;leg.position.y=.02;patio.add(deck,table,leg);for(const x of [-.039,.039]){const seat=new T.Mesh(new T.BoxGeometry(.022,.005,.023),accent),back=new T.Mesh(new T.BoxGeometry(.005,.038,.023),accent);seat.position.set(x,.018,0);back.position.set(x,.026,0);patio.add(seat,back);}patio.position.copy(keepsake.position);patio.visible=false;scene.add(patio);
+ let zone:PlayArea|'room'='room',cameraTarget=new T.Vector3(0,.26,0),cameraDestination=camera.position.clone(),targetDestination=cameraTarget.clone();
+ function zoneCamera(){if(!options.play)return;const preset=PLAY_CAMERAS[zone];cameraDestination.set(...preset.position);targetDestination.set(...preset.target);if(camera.aspect<.8)cameraDestination.sub(targetDestination).multiplyScalar(zone==='room'?1.35:1.15).add(targetDestination);}
  let lookToken=0,shelfToken=0;const loaded=new Set([WARDROBE_ASSET]),loading=new Map<string,Promise<void>>();
  function ensure(url:string){if(loaded.has(url))return Promise.resolve();if(loading.has(url))return loading.get(url)!;const promise=loadCollection(model!,url,collectionAbort.signal).then(()=>{loaded.add(url);}).finally(()=>loading.delete(url));loading.set(url,promise);return promise;}
  let model:T.Group|undefined,mixer:T.AnimationMixer|undefined,clips:T.AnimationClip[]=[],look:LookV1|undefined,disposed=false,paused=options.paused,visible=true,frame=0,last=0,frames=0;
  const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>(),skeletons=new Set<T.Skeleton>();
  function render(){if(disposed)return;renderer.render(scene,camera);host.dataset.frames=String(++frames);host.dataset.drawCalls=String(renderer.info.render.calls);}
- function loop(now:number){frame=0;if(disposed||paused||!visible||document.hidden)return;mixer?.update(last?Math.min((now-last)/1000,.06):0);last=now;render();frame=requestAnimationFrame(loop);}
+ function loop(now:number){frame=0;if(disposed||paused||!visible||document.hidden)return;mixer?.update(last?Math.min((now-last)/1000,.06):0);last=now;if(options.play){camera.position.lerp(cameraDestination,.13);cameraTarget.lerp(targetDestination,.13);camera.lookAt(cameraTarget);playRoom?.tick();}render();frame=requestAnimationFrame(loop);}
  function schedule(){cancelAnimationFrame(frame);frame=0;last=0;if(!disposed&&!paused&&visible&&!document.hidden)frame=requestAnimationFrame(loop);host.dataset.animating=String(Boolean(frame));}
  const visibility=()=>schedule();document.addEventListener('visibilitychange',visibility);
  const intersection=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(([entry])=>{visible=entry?.isIntersecting??true;schedule();});intersection?.observe(host);
- const resize=()=>{if(disposed)return;const w=Math.max(host.clientWidth,1),h=Math.max(host.clientHeight,1);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();render();};
+ const resize=()=>{if(disposed)return;const w=Math.max(host.clientWidth,1),h=Math.max(host.clientHeight,1);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();if(options.play){zoneCamera();camera.position.copy(cameraDestination);cameraTarget.copy(targetDestination);camera.lookAt(cameraTarget);}render();};
  const resizeObserver=new ResizeObserver(resize);resizeObserver.observe(host);
  const lose=(event:Event)=>{event.preventDefault();dispose();options.onError();};renderer.domElement.addEventListener('webglcontextlost',lose);
- const pick=(event:PointerEvent)=>{if(!model)return;const rect=renderer.domElement.getBoundingClientRect();const point=new T.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1),ray=new T.Raycaster();ray.setFromCamera(point,camera);const hit=ray.intersectObjects(scene.children,true).find(hit=>hit.object.userData.fittingItemId);if(hit)options.onPick(hit.object.userData.fittingItemId as string);};renderer.domElement.addEventListener('pointerup',pick);
+ const pick=(event:PointerEvent)=>{if(!model)return;const rect=renderer.domElement.getBoundingClientRect();const point=new T.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1),ray=new T.Raycaster();ray.setFromCamera(point,camera);const hits=ray.intersectObjects(scene.children,true);const playHit=hits.find(hit=>hit.object.userData.playTarget);if(options.play&&playHit){options.onPlayPick?.(String(playHit.object.userData.playTarget));return;}const hit=hits.find(hit=>hit.object.userData.fittingItemId);if(hit)options.onPick(hit.object.userData.fittingItemId as string);};renderer.domElement.addEventListener('pointerup',pick);
  function dispose(){collectionAbort.abort();if(disposed)return;disposed=true;cancelAnimationFrame(frame);resizeObserver.disconnect();intersection?.disconnect();document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('webglcontextlost',lose);renderer.domElement.removeEventListener('pointerup',pick);mixer?.stopAllAction();if(model)mixer?.uncacheRoot(model);scene.traverse(n=>{if(n instanceof T.SkinnedMesh)skeletons.add(n.skeleton);if(n instanceof T.Mesh){geometries.add(n.geometry);for(const m of Array.isArray(n.material)?n.material:[n.material])materials.add(m);}});for(const skeleton of skeletons)skeleton.dispose();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();mirror.getRenderTarget().dispose();room.dispose();renderer.dispose();renderer.domElement.remove();host.dataset.animating='false';}
  options.signal.addEventListener('abort',dispose,{once:true});
  try{
@@ -53,10 +58,14 @@ export async function createWardrobeScene(host:HTMLElement,options:{palette:Room
   if(disposed)throw new DOMException('Closed','AbortError');const gltf=await new GLTFLoader().parseAsync(buffer,'');model=gltf.scene;clips=gltf.animations;
   if(disposed){const lateSkeletons=new Set<T.Skeleton>();model.traverse(n=>{if(n instanceof T.SkinnedMesh)lateSkeletons.add(n.skeleton);if(n instanceof T.Mesh){n.geometry.dispose();for(const m of Array.isArray(n.material)?n.material:[n.material])m.dispose();}});for(const skeleton of lateSkeletons)skeleton.dispose();throw new DOMException('Closed','AbortError');}
   model.position.y=.047;scene.add(model);mixer=new T.AnimationMixer(model);
+  mixer.addEventListener('finished',()=>{if(disposed||paused)return;const idle=clips.find(c=>c.name==='breathe-blink');if(idle){mixer!.stopAllAction();mixer!.clipAction(idle).reset().setLoop(T.LoopRepeat,Infinity).play();}});
   for(const item of FITTING_ITEMS){const node=model.getObjectByName(item.node);if(node)node.visible=false;}
   host.dataset.assetBytes=String(buffer.byteLength);host.dataset.state='ready';resize();schedule();options.onReady();
  }catch(error){dispose();throw error;}
  return {
+  setZone(next){zone=next;zoneCamera();if(paused){camera.position.copy(cameraDestination);cameraTarget.copy(targetDestination);camera.lookAt(cameraTarget);}render();},
+  setDisplays(items,decor){playRoom?.style(decor);playRoom?.setDisplays(items);render();},
+  perform(id,cue){playRoom?.perform(id,paused,cue);render();},
   setLook(next){look=next;const token=++lookToken;if(!model||disposed)return;const urls=[...new Set(Object.values(next.selections).map(s=>FITTING_ITEMS.find(p=>p.id===s.itemId)?.asset).filter((s):s is string=>Boolean(s)))];
    const apply=()=>{if(disposed||token!==lookToken||!model)return;const hidden=new Set<string>();
     for(const item of FITTING_ITEMS){const selection=next.selections[item.slot],node=model.getObjectByName(item.node);if(!node)continue;node.visible=selection?.itemId===item.id;if(node.visible)item.hiddenBodyRegions.forEach(r=>hidden.add(r));node.traverse(n=>{if(n instanceof T.Mesh)for(const mat of Array.isArray(n.material)?n.material:[n.material])if(mat instanceof T.MeshStandardMaterial&&selection&&(mat.name.startsWith('tint_')||item.asset===WARDROBE_ASSET))mat.color.set(fittingColour(selection.variantId,item.id));});}

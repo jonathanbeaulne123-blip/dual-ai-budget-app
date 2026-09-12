@@ -1,3 +1,4 @@
+import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
 import { hasTaskData, TASK_COMMAND_KINDS } from "../core/tasks.ts";
@@ -64,6 +65,7 @@ export class LedgerSyncClient {
   private confirming = new Map<string,Promise<CommitResult>>();
   private ready = false;
   private companionProfileVersion = 0;
+  private companionPlayVersion = 0;
   private companionDiscoveryVersion = 0;
   private companionWardrobeVersion = 0;
   private companionWorkflowVersion = 0;
@@ -228,6 +230,7 @@ export class LedgerSyncClient {
                 throw new Error("REPLICA_CHECKSUM");
               }
               this.companionProfileVersion = message.companionProfileVersion === 1 ? 1 : 0;
+              this.companionPlayVersion = message.companionPlayVersion === 1 ? 1 : 0;
               this.companionDiscoveryVersion = message.companionDiscoveryVersion === 1 ? 1 : 0;
               this.companionWardrobeVersion = message.companionWardrobeVersion === 1 ? 1 : 0;
               this.companionWorkflowVersion = message.companionWorkflowVersion === 1 ? 1 : 0;
@@ -457,6 +460,7 @@ export class LedgerSyncClient {
     if (capture.steps.some(step => step.kind === "commitCompanion" && (step.args[0] as { operation?: { kind?: string } })?.operation?.kind === "suggestion.set") && this.companionDiscoveryVersion !== 1) {
       throw new LedgerCommandRejectedError("HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving suggestions.");
     }
+    if ((hasPlayData(candidate) || capture.steps.some(isPlayStep)) && (!this.ready || this.companionPlayVersion!==1)) throw new LedgerCommandRejectedError('PLAY_UPDATE_REQUIRED: Connect to the updated Hearth to save this room.');
     const replica=this.replica;
     if(!replica)throw new Error("LOCAL_REPLICA_REQUIRED");
     const command =
