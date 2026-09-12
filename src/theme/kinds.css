@@ -21,7 +21,7 @@
   padding: 1px 4px 1px 3px;
   border-left: 3px solid var(--kind);
   border-radius: 3px;
-  background: color-mix(in srgb, var(--kind) 8%, transparent);
+  background: color-mix(in srgb, var(--kind) 8%, var(--card));
   color: var(--ink);
 }
 :root[data-theme] .cal-title.stroke-dashed { border-left-style: dashed; }
@@ -46,10 +46,10 @@
 :root[data-theme] .cal-title.span-l .cal-kind { display: none; }
 :root[data-theme] .cal-title.span-quiet .cal-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :root[data-theme] .cal-title.span-quiet { min-height: 1.25em; }
-:root[data-theme] .cal-title.is-span { background: color-mix(in srgb, var(--kind) 14%, transparent); }
+:root[data-theme] .cal-title.is-span { background: color-mix(in srgb, var(--kind) 14%, var(--card)); }
 
 /* Heavy day: a non-colour carrier for heat (the tint stays; the mark is the meaning). */
-:root[data-theme] .cal-day.hot .num { border-bottom: 2px solid var(--copper); padding-bottom: 1px; }
+:root[data-theme] .cal-day.hot .num { border-bottom: 2px solid var(--world-warn-edge, var(--ink)); padding-bottom: 1px; }
 
 /* Legend that is also the filter. */
 .kind-legend { margin: 4px 0 10px; }

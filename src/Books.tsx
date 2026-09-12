@@ -294,8 +294,7 @@ function BooksSession({
         <section className="hero">
           <div className="label">My books · CAD · {household.timezone}</div>
           <div className={`money ${wallet.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(wallet.netWorthCents)}</div>
-          <div className="sub whisper-row">Rooms I can manage · accepted-books position<Whisper mode="aside" id="books.my-books">Partner-personal rooms stay off this floor. The figure is your accepted-books position, not a partner-hidden envelope.</Whisper></div>
-          {onOpenTimeMachine ? <button type="button" className="chip" onClick={onOpenTimeMachine}>My months</button> : null}
+          <div className="sub whisper-row">Accepted balances<Whisper mode="aside" id="books.my-books">Partner-personal rooms stay off this floor. The figure is your accepted-books position, not a partner-hidden envelope.</Whisper></div>
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
               Trial is off. Open Audit before treating the journal as closed.
@@ -303,6 +302,7 @@ function BooksSession({
           ) : null}
         </section>
       )}
+      {onOpenTimeMachine && <button type="button" className="chip quiet" onClick={onOpenTimeMachine}>See any month</button>}
       {!sharedTable && <StoryStrip heading="My accounts">
         {showFundPane && (
         <PaperTile
@@ -376,12 +376,7 @@ function BooksSession({
             </button>}
           </div>
           <p className="muted">Accepted balances. Savings, Kitty and operating money are shown separately and are not added together. {LEDGER_CUSTODY_DISCLOSURE}</p>
-          {onOpenTimeMachine ? (
-            <button type="button" className="household-books-obligations" onClick={onOpenTimeMachine}>
-              <span><strong>Months</strong><small>See any month, behind or ahead. Reading only.</small></span>
-              <strong>{formatMonthLabel(monthKey)} <span aria-hidden="true">→</span></strong>
-            </button>
-          ) : null}
+
           <button type="button" className="household-books-obligations" onClick={() => setPane("fund-register")}>
             <span><strong>Obligations · {monthKey}</strong><small>{fundRegister.rows.length} planned obligations · {formatCad(fundRegister.unfundedCents)} unfunded</small></span>
             <strong>{formatCad(fundRegister.owedCents)} <span aria-hidden="true">→</span></strong>
@@ -445,7 +440,7 @@ function BooksSession({
       )}
       {pane === "fund-register" && sharedTable && (
         <>
-          <MonthControl monthKey={viewMonth} currentMonthKey={monthKey} onChange={setViewMonth} onOpenTimeMachine={onOpenTimeMachine} />
+          <MonthControl monthKey={viewMonth} currentMonthKey={monthKey} onChange={setViewMonth} />
           <Register register={fundRegister} members={registerMembers} />
         </>
       )}
@@ -492,7 +487,7 @@ function BooksSession({
         <summary>{sharedTable ? "Tools & audit" : "Audit office — journal, trial, statements"}</summary>
         {sharedTable ? (
           <>
-            <p className="muted">Import entries, inspect the journal, reconcile accounts, and close the month.</p>
+            <p className="muted">Import, reconcile, or close the month.</p>
             <BooksStorageNotes household={household} booksStatus={booksStatus} onGoMore={onGoMore} />
           </>
         ) : null}
@@ -600,7 +595,7 @@ function BooksSession({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={auditHousehold} writeHousehold={booksHousehold} monthKey={viewMonth} currentMonthKey={monthKey} today={today} onChange={onChange} onMonthChange={setViewMonth} onOpenTimeMachine={onOpenTimeMachine} />
+        <StatementsPane household={auditHousehold} writeHousehold={booksHousehold} monthKey={viewMonth} currentMonthKey={monthKey} today={today} onChange={onChange} onMonthChange={setViewMonth} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -859,7 +854,7 @@ function BooksStorageNotes({
  * changes what is read and nothing else: a month behind you is history, and
  * history has no edit affordance here.
  */
-function MonthControl({ monthKey, currentMonthKey, onChange, onOpenTimeMachine }: { monthKey: string; currentMonthKey: string; onChange: (monthKey: string) => void; onOpenTimeMachine?: () => void }) {
+function MonthControl({ monthKey, currentMonthKey, onChange }: { monthKey: string; currentMonthKey: string; onChange: (monthKey: string) => void }) {
   return (
     <div className="books-month" role="group" aria-label="Month">
       <button type="button" className="chip" aria-label="Previous month" onClick={() => onChange(shiftMonthKey(monthKey, -1))}>‹</button>
@@ -874,7 +869,6 @@ function MonthControl({ monthKey, currentMonthKey, onChange, onOpenTimeMachine }
       {monthKey === currentMonthKey ? null : (
         <button type="button" className="chip quiet" onClick={() => onChange(currentMonthKey)}>This month</button>
       )}
-      {onOpenTimeMachine ? <button type="button" className="chip quiet" onClick={onOpenTimeMachine}>See any month</button> : null}
       {monthKey === currentMonthKey ? null : <span className="muted">Reading a past month. Changes still belong to {formatMonthLabel(currentMonthKey)}.</span>}
     </div>
   );
@@ -888,7 +882,6 @@ function StatementsPane({
   today,
   onChange,
   onMonthChange,
-  onOpenTimeMachine,
 }: {
   household: Household;
   writeHousehold?: Household;
@@ -897,7 +890,6 @@ function StatementsPane({
   today: string;
   onChange: (household: Household, undo?: UndoToken) => void;
   onMonthChange: (monthKey: string) => void;
-  onOpenTimeMachine?: () => void;
 }) {
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -936,7 +928,7 @@ function StatementsPane({
 
   return (
     <>
-      <MonthControl monthKey={monthKey} currentMonthKey={currentMonthKey} onChange={onMonthChange} onOpenTimeMachine={onOpenTimeMachine} />
+      <MonthControl monthKey={monthKey} currentMonthKey={currentMonthKey} onChange={onMonthChange} />
       <section className="card">
         <header>
           <h2>Balance sheet</h2>

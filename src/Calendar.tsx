@@ -1,10 +1,12 @@
+import { RememberedDetails } from "./theme/RememberedDetails.tsx";
+import { calendarDisplayDays, calendarItemReading, calendarLanes } from "./calendar/presentation.ts";
 import { calendarKindLabel } from "./calendar/semantics.ts";
 import "./ux-readability.css";
 import { calendarItemVisible, loadCalendarVisibility } from "./calendar/visibility.ts";
 import { KindLegend } from "./calendar/KindLegend.tsx";
 import { kindClassNames, kindsPresent } from "./calendar/semantics.ts";
 import { CalendarBinding } from "./theme/CalendarArtwork.tsx";
-import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import "./calendar-boards.css";
 import { CalendarWeight } from "./CalendarWeight.tsx";
 import { calendarWeight } from "./core/calendarWeight.ts";
@@ -188,10 +190,12 @@ function CalendarPageScope(props: CalendarProps) {
     setMobileAddDate(null);
   };
   const workFacts = useMemo(() => workOwedFacts(household, today), [household, today]);
-  const visibleDays = useMemo(() => board.days.map(day => ({ ...day, items: day.items.filter(item => calendarItemVisible(item, visibility)) })), [board, visibility]);
+  const displayDays = useMemo(() => calendarDisplayDays(board.days, household), [board, household]);
+  const visibleDays = useMemo(() => displayDays.map(day => ({ ...day, items: day.items.filter(item => calendarItemVisible(item, visibility)) })), [displayDays, visibility]);
   const visibleUpcoming = useMemo(() => board.upcoming.filter(item => calendarItemVisible(item, visibility)), [board, visibility]);
-  const hiddenCount = board.days.reduce((count, day, index) => count + day.items.length - visibleDays[index]!.items.length, 0);
-  const monthKinds = useMemo(() => kindsPresent(board.days.filter(day => day.inMonth).flatMap(day => day.items)), [board]);
+  const lanes = useMemo(() => calendarLanes(visibleDays), [visibleDays]);
+  const hiddenCount = displayDays.reduce((count, day, index) => count + day.items.length - visibleDays[index]!.items.length, 0);
+  const monthKinds = useMemo(() => kindsPresent(displayDays.filter(day => day.inMonth).flatMap(day => day.items)), [displayDays]);
   const selectedDay = visibleDays.find((day) => day.date === selected) ?? visibleDays.find((day) => day.isToday);
   const repeatingHousehold = { ...household, accounts: household.accounts.filter(account => account.scope !== "personal"), goals: household.goals.filter(goal => goal.shared) };
   const due = household.recurrences.filter((item) => item.active && item.nextDate <= today);
@@ -280,6 +284,8 @@ function CalendarPageScope(props: CalendarProps) {
 
   useEffect(() => {
     if (!focusIntegration || pane !== "calendar") return;
+    const fold = integrationRef.current?.closest("details");
+    if (fold) fold.open = true;
     integrationRef.current?.focus();
     integrationRef.current?.scrollIntoView?.({ block: "start" });
     setFocusIntegration(false);
@@ -426,27 +432,25 @@ function CalendarPageScope(props: CalendarProps) {
       <div className="tabs calendar-tabs" role="tablist" aria-label="Calendar views">
         {([
           ["calendar", "Calendar"],
-          ["board", "Month"],
           ["visits", "Appointments"],
           ["bills", "Bills"],
         ] as const).map(([id, label], index, tabs) => (
           <button key={id} type="button" role="tab" id={`${tabsId}-tab-${id}`}
-            aria-selected={pane === id} aria-controls={`${tabsId}-panel`}
-            tabIndex={pane === id ? 0 : -1} className={pane === id ? "active" : ""}
-            onClick={() => { if (id === "board") setMonthKey(monthKeyFromDateKey(selected)); setPane(id); }} onKeyDown={event => {
+            aria-selected={pane === id || (id === "calendar" && pane === "board")} aria-controls={`${tabsId}-panel`}
+            tabIndex={pane === id || (id === "calendar" && pane === "board") ? 0 : -1} className={pane === id || (id === "calendar" && pane === "board") ? "active" : ""}
+            onClick={() => { setPane(id); }} onKeyDown={event => {
               const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
                 : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length
                 : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : null;
               if (next === null) return;
               event.preventDefault();
-              if (tabs[next]![0] === "board") setMonthKey(monthKeyFromDateKey(selected));
               setPane(tabs[next]![0]);
               document.getElementById(`${tabsId}-tab-${tabs[next]![0]}`)?.focus();
             }}>{label}</button>
         ))}
       </div>
       <div className="calendar-panel" role="tabpanel" id={`${tabsId}-panel`}
-        aria-labelledby={`${tabsId}-tab-${pane}`} tabIndex={0}>
+        aria-labelledby={`${tabsId}-tab-${pane === "board" ? "calendar" : pane}`} tabIndex={0}>
       {(pane === "calendar" || pane === "board") && (
         <>
           <div className="calendar-board-stack">
@@ -457,15 +461,17 @@ function CalendarPageScope(props: CalendarProps) {
               <h2>{board.monthLabel}</h2>
               <button className="chip" onClick={() => changeMonth(1)} aria-label="Next month">›</button>
             </header>
+            <div className="calendar-display-choice" role="group" aria-label="Calendar display"><button type="button" className="chip" aria-pressed={pane === "calendar"} onClick={() => setPane("calendar")}>Dates</button><button type="button" className="chip" aria-pressed={pane === "board"} onClick={() => setPane("board")}>Cash flow</button></div>
             {pane === "calendar" && <>
               <KindLegend kinds={monthKinds} visibility={visibility} onToggle={toggleLayer} hiddenCount={hiddenCount} />
+              <p className="kind-legend-note">∞ Shared · ! Needs attention · ✓ Recorded</p>
               {monthTools}
-              {calendarSources.length > 0 && <details className="calendar-month-tools">
+              {calendarSources.length > 0 && <RememberedDetails remember="calendar-tools-0" className="calendar-month-tools">
                 <summary>Google calendars</summary>
                 <div className="chips">
                   {calendarSources.map(source => <label className="chip" key={source.id}><input type="checkbox" checked={visibility[`google:${source.id}`] !== false} disabled={visibility.google === false} onChange={() => toggleLayer(`google:${source.id}`)} /> {source.name}</label>)}
                 </div>
-              </details>}
+              </RememberedDetails>}
             </>}
             {pane === "board" && <p className="weight-note">{props.view === "personal" ? "My dates" : "Household dates"}</p>}
             {pane === "board" ? <CalendarWeight key={`${scopeKey}:${monthKey}`} days={weightDays} selected={selected} onSelect={setSelected}
@@ -487,9 +493,8 @@ function CalendarPageScope(props: CalendarProps) {
             </div>
             <div className="cal-grid">
               {visibleDays.map((day, index) => {
-                const ordered = [...day.items].sort((a, b) => Number(Boolean(b.span)) - Number(Boolean(a.span)));
-                const shown = ordered.slice(0, 3);
-                const extra = day.items.length - shown.length;
+                const shown = lanes[index]!;
+                const extra = day.items.length - shown.filter(Boolean).length;
                 const weekday = index % 7;
                 return (
                 <div
@@ -501,7 +506,7 @@ function CalendarPageScope(props: CalendarProps) {
                 <button
                   type="button" data-calendar-date={day.date}
                   tabIndex={selected === day.date ? 0 : -1}
-                  aria-label={`${new Intl.DateTimeFormat("en-CA", { dateStyle: "full", timeZone: "America/Toronto" }).format(new Date(`${day.date}T12:00:00Z`))}${day.heat > 0.55 ? " · heavy day" : ""}${day.items.length ? ` · ${day.items.map(item => item.title).join("; ")}` : " · Nothing scheduled"}`}
+                  aria-label={`${new Intl.DateTimeFormat("en-CA", { dateStyle: "full", timeZone: "America/Toronto" }).format(new Date(`${day.date}T12:00:00Z`))}${day.heat > 0.55 ? " · heavy day" : ""}${day.items.length ? ` · ${day.items.map(item => {const reading=calendarItemReading(item,household);return `${item.title}, ${reading.owner}, ${reading.statusLabel}`;}).join("; ")}` : " · Nothing scheduled"}`}
                   aria-current={day.isToday ? "date" : undefined}
                   aria-pressed={selected === day.date}
                   aria-controls={`${tabsId}-day`}
@@ -538,34 +543,36 @@ function CalendarPageScope(props: CalendarProps) {
                 >
                   <span className="num">{Number(day.date.slice(8))}</span>
                   <span className="cal-titles">
-                    {shown.map((item) => {
+                    {shown.map((item, lane) => {
+                      if (!item) return <span key={`empty-${lane}`} className="cal-title cal-span-space" aria-hidden="true">&nbsp;</span>;
+                      const reading = calendarItemReading(item, household);
                       const span = item.span;
                       const joinsLeft = Boolean(span && span.index > 0 && weekday !== 0 && index > 0);
                       const joinsRight = Boolean(span && span.index < span.length - 1 && weekday !== 6 && index < visibleDays.length - 1);
                       const quiet = joinsLeft;
-                      const classes = ["cal-title", item.direction, kindClassNames(item.kind), span ? "is-span" : "", joinsLeft ? "span-l" : "", joinsRight ? "span-r" : "", quiet ? "span-quiet" : ""].filter(Boolean).join(" ");
+                      const classes = ["cal-title", item.direction, kindClassNames(item.kind), `cal-status-${reading.status}`, span ? "is-span" : "", joinsLeft ? "span-l" : "", joinsRight ? "span-r" : "", quiet ? "span-quiet" : ""].filter(Boolean).join(" ");
                       return (
                       <span key={item.id} className={classes} title={span ? `${item.title} · day ${span.index + 1} of ${span.length}` : item.title}
                         draggable={item.source === "potential-expense" && !phone}
                         onDragStart={() => setDraggedPotentialId(item.potentialExpenseId ?? null)}
-                        onDragEnd={() => setDraggedPotentialId(null)}><span className="cal-kind" aria-label={kindLabel(item.kind)}>{kindLabel(item.kind).split(" ")[0]}</span><span className="cal-text">{item.title}</span>{props.view !== "personal" && item.memberColor ? <i className="cal-who" style={{ "--who": item.memberColor } as CSSProperties} aria-hidden="true" /> : null}</span>
+                        onDragEnd={() => setDraggedPotentialId(null)}><span className="cal-kind" aria-label={kindLabel(item.kind)}>{kindLabel(item.kind).split(" ")[0]}</span><span className="cal-text">{item.title}</span><span className="cal-state" aria-label={reading.statusLabel}>{reading.status === "done" ? "✓" : reading.status === "attention" ? "!" : ""}</span><span className="cal-owner" title={reading.owner} aria-label={reading.owner}>{reading.owner === "Shared" ? "∞" : reading.owner.slice(0,1)}</span></span>
                       );
                     })}
                     {extra > 0 ? <span className="cal-title more">+{extra}</span> : null}
                   </span>
                 </button>
                 <button type="button" className={`cal-add ${phone ? mobileAddDate === day.date ? "is-revealed" : "" : selected === day.date ? "is-revealed" : ""}`} aria-label={`Add potential expense on ${formatDayLabel(day.date)}`}
-                  tabIndex={phone && mobileAddDate !== day.date ? -1 : 0}
-                  aria-hidden={phone && mobileAddDate !== day.date ? true : undefined}
+                  tabIndex={(phone ? mobileAddDate === day.date : selected === day.date) ? 0 : -1}
+                  aria-hidden={(phone ? mobileAddDate === day.date : selected === day.date) ? undefined : true}
                   onClick={() => { setSelected(day.date); setDayOpen(true); setPotentialEditor({ date: day.date }); }}>+</button>
                 </div>
                 );
               })}
             </div>
             </>}
-            {pane === "board" && <details className="calendar-month-tools"><summary>Month tools</summary>
+            {pane === "board" && <RememberedDetails remember="calendar-tools-1" className="calendar-month-tools"><summary>Month tools</summary>
               {board.clashes[0] && <p className="weight-note">{describeClash(board.clashes[0])}</p>}{monthTools}
-            </details>}
+            </RememberedDetails>}
           </section>
 
           {pane === "calendar" && selectedDay && !dayOpen ? (
@@ -607,7 +614,7 @@ function CalendarPageScope(props: CalendarProps) {
               </header>
               {selectedDay.items.length === 0 ? (
                 <p className="muted">Nothing on this day.</p>
-              ) : selectedDay.items.map((item) => item.source === "potential-expense" && item.potentialExpenseId ? (
+              ) : selectedDay.items.map((item) => item.completed ? <div className="day-row" key={item.id}><span className={`kind-pill ${kindClassNames(item.kind)}`}>{kindLabel(item.kind)}</span><span>{item.title} · {calendarItemReading(item, household).statusLabel} ✓ · {calendarItemReading(item, household).owner}</span><strong>{formatCad(item.amountCents)}</strong></div> : item.source === "potential-expense" && item.potentialExpenseId ? (
                 <PotentialExpenseRow key={item.id}
                   plan={household.potentialExpenses.find((row) => row.id === item.potentialExpenseId)!}
                   today={today}
@@ -621,7 +628,7 @@ function CalendarPageScope(props: CalendarProps) {
               ) : (
                 <DayRow
                   key={item.id}
-                  title={item.title}
+                  title={`${item.title} · ${calendarItemReading(item, household).owner}`}
                   amountCents={item.amountCents}
                   kind={item.kind}
                   due={item.due && (item.source === "recurrence" || item.source === "appointment" || item.source === "work-settlement")}
@@ -801,11 +808,8 @@ function CalendarPageScope(props: CalendarProps) {
       )}
 
       {pane === "calendar" && (
-        <section className="card calendar-integration" ref={integrationRef} tabIndex={-1} aria-label="Google calendar integration">
-          <header>
-            <h2>Google calendars</h2>
-            <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
-          </header>
+        <RememberedDetails remember="calendar-connection" className="card calendar-connection"><summary>Google calendars · {accounts.length ? `${accounts.length} connected` : "Optional"}</summary>
+        <section className="calendar-integration" ref={integrationRef} tabIndex={-1} aria-label="Google calendar integration">
           <Whisper mode="line">Reads your Google calendars in this browser only. They never post money.</Whisper>
           <Whisper mode="aside" id="calendar.google">Connect Calendar separately from Hearth sign-in. Hearth reads your own calendars and any shared with your Google account, including shared household calendars. Events appear only in your current browser.</Whisper>
           {household.members.filter((member) => member.active && member.id === props.memberId).sort((left, right) => {
@@ -857,7 +861,7 @@ function CalendarPageScope(props: CalendarProps) {
           <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => downloadIcs(household, today)}>
             Download .ics with alarms
           </button>
-        </section>
+        </section></RememberedDetails>
       )}
       </div>
       <p className="sr-only" aria-live="polite">{calendarAnnouncement}</p>

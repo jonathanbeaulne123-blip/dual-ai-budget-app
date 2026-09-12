@@ -70,7 +70,7 @@ Reduce oversized secondary bands when they crowd out the main purpose of the pag
 - Classic: retain warmth and restraint through paper, wood, linen, plants, coffee and small household objects. Match the quieter approved office; more ornament is not inherently better.
 - Taylor: use the current era's actual visual vocabulary throughout the page. Lover's cloud gradients and Showgirl's orange/mint, feathers and lights are examples of specific identity, not universal Taylor decorations.
 - Newfoundland: preserve a sense of place through architecture, landscape, water, daylight and planted details. Carry the scene into margins and section transitions rather than repeating a single header illustration.
-- Where a page has the shared scene title card, retain the approved desktop named-bracelet cluster and scene-coloured light across all themes; preserve the approved phone placement. Keep Jonathan and Bianca's bracelets distinct. Taylor's light follows the current era with a gentle transition and steady glow.
+- Friendship bracelets are fixed, occasional discoveries in background scenery across all three themes, outside title and reading lanes (Jonathan, 2026-09-12, F-004). Keep the pair distinct and decorative. Concert lights are Taylor-only; no presence-dependent or random placement.
 - Home's scrapbook remains at the bottom after Notes and functional content, with manual navigation. Do not duplicate it across pages unless their scope calls for one.
 
 ## Motion and interaction

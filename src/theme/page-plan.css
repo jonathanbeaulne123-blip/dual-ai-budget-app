@@ -39,7 +39,6 @@
  :root[data-world-page="plan"] .plan-summary .money { grid-column:2; grid-row:1 / span 2; font-size:clamp(25px,3vw,40px); margin:0; text-align:right; }
  :root[data-world-page="plan"] .plan-summary .sub { margin:5px 0 0; }
  :root[data-world-page="plan"] .theme-scene-heading>.era-light { display:none; }
- :root[data-world-page="plan"] .desktop-title-bracelets { display:flex; }
  :root[data-world-page="plan"] .five-boards-plan :is(button,input,select,summary) { min-height:44px; }
  :root[data-world-page="plan"] .kitty-banks-shelf { display:grid; grid-template-columns:1fr; }
  :root[data-world-page="plan"] .kitty-bank { width:100%; box-sizing:border-box; display:grid; grid-template-columns:74px minmax(0,1fr); gap:12px; text-align:left; padding:16px; }

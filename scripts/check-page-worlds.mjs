@@ -109,7 +109,7 @@ try {
      if(desktopAxe.length)errors.push(theme+' '+scope+' desktop axe '+JSON.stringify(desktopAxe.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)}))));
     }
     if(['home','calendar','plan','ledger','more'].includes(route)) {
-     const bracelet=await page.evaluate(()=>{const group=document.querySelector('.desktop-title-bracelets'),wrap=group?.querySelector('.friendship-bracelets--wrapped'),copy=document.querySelector('.theme-scene-copy'),era=group?.querySelectorAll('.era-light').length??0;if(!group||!wrap||!copy)return {visible:false,overlapsCopy:false,overlapsExistingArt:false,era};const g=group.getBoundingClientRect(),c=copy.getBoundingClientRect(),intersects=(r,o)=>r.left<o.right&&r.right>o.left&&r.top<o.bottom&&r.bottom>o.top;const existing=[...document.querySelectorAll('.more-chair-sticker,.calendar-couple,.plan-cannon-sticker')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.getBoundingClientRect());return {visible:getComputedStyle(group).display!=='none'&&g.width>0&&g.height>0,overlapsCopy:intersects(g,c),overlapsExistingArt:existing.some(r=>intersects(g,r)),era};});
+     const bracelet=await page.evaluate(()=>{const group=document.querySelector('.background-keepsake'),wrap=group?.querySelector('.friendship-bracelets--wrapped'),copy=document.querySelector('.theme-scene-copy'),era=group?.querySelectorAll('.era-light').length??0;if(!group||!wrap||!copy)return {visible:false,overlapsCopy:false,overlapsExistingArt:false,era};const g=group.getBoundingClientRect(),c=copy.getBoundingClientRect(),intersects=(r,o)=>r.left<o.right&&r.right>o.left&&r.top<o.bottom&&r.bottom>o.top;const existing=[...document.querySelectorAll('.more-chair-sticker,.calendar-couple,.plan-cannon-sticker')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.getBoundingClientRect());return {visible:getComputedStyle(group).display!=='none'&&g.width>0&&g.height>0,overlapsCopy:intersects(g,c),overlapsExistingArt:existing.some(r=>intersects(g,r)),era};});
      if(!bracelet.visible)errors.push('Wrapped friendship bracelets missing '+route+' '+theme+' '+scope+' '+width);
      if(bracelet.overlapsCopy)errors.push('Wrapped friendship bracelets overlap title copy '+route+' '+theme+' '+scope+' '+width);
      if(bracelet.overlapsExistingArt)errors.push('Wrapped friendship bracelets overlap existing title art '+route+' '+theme+' '+scope+' '+width);
@@ -129,7 +129,7 @@ try {
    await page.setViewportSize({width:1440,height:1000});await settle();
    if(route==='home') {
     if(await page.locator('.home-rehearsal-entry').isVisible())errors.push('Desktop rehearsal duplicate visible');
-    if(!await page.locator('.desktop-title-bracelets').isVisible())errors.push('Desktop bracelets missing');
+    if(!await page.locator('.background-keepsake').isVisible())errors.push('Desktop bracelets missing');
     const weather=page.locator('.office-glass');
     if(await weather.count()) {
      await weather.click();if(!await page.locator('.office-forecast').isVisible())errors.push('Forecast failed to open');

@@ -3,6 +3,17 @@
   "mappings": [
     {
       "sources": [
+        "src/calendar/presentation.ts",
+        "src/theme/RememberedDetails.tsx"
+      ],
+      "tests": [
+        "test/calendar-presentation.test.ts",
+        "test/calendar-kinds.test.ts"
+      ],
+      "reason": "Display-only completion evidence, scope labels, stable span lanes and remembered auxiliary controls"
+    },
+    {
+      "sources": [
         "src/HouseholdHome.tsx",
         "src/ChapterPanel.tsx",
         "src/household-home.css",
