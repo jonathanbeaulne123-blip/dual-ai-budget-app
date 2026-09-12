@@ -1,0 +1,20 @@
+/* Status Centre folds (src/theme/StatusFold.tsx). Seven groups, each behind its
+   heading, remembered per device. The heading keeps the .status-group voice the
+   worlds already author; the fold only adds the affordance. */
+.status-fold { margin: 0; border: 0; padding: 0; }
+.status-fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; }
+.status-fold > summary::-webkit-details-marker { display: none; }
+.status-fold > summary::after { content: "›"; margin-left: auto; font-size: 22px; line-height: 1; color: var(--muted); transition: transform .18s ease; }
+.status-fold[open] > summary::after { transform: rotate(90deg); }
+.status-fold > summary .status-group { margin: 0; flex: 1 1 auto; }
+.status-fold > summary:focus-visible { outline: 2px solid var(--theme-accent, var(--pine)); outline-offset: 2px; border-radius: var(--world-r-control, 8px); }
+.status-fold__count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px; font-size: 12px; font-weight: 700; background: color-mix(in srgb, var(--theme-accent, var(--copper)) 14%, var(--card)); color: var(--ink); border: 1px solid color-mix(in srgb, var(--theme-accent, var(--copper)) 40%, transparent); }
+.status-fold__body { display: grid; gap: 12px; padding: 2px 0 14px; }
+.status-fold:not([open]) + .status-fold { border-top: 1px solid var(--line); }
+:root[data-theme="taylor"] .status-fold > summary::after { content: "✦"; font-size: 16px; }
+:root[data-theme="taylor"] .status-fold[open] > summary::after { transform: rotate(45deg); }
+:root[data-theme="newfoundland"] .status-fold > summary { border-bottom: 1px dashed var(--line); }
+:root[data-theme="newfoundland"] .status-fold > summary::after { content: "+"; font-size: 20px; }
+:root[data-theme="newfoundland"] .status-fold[open] > summary::after { content: "–"; transform: none; }
+@media (prefers-reduced-motion: reduce) { .status-fold > summary::after { transition: none; } }
+@media (forced-colors: active) { .status-fold > summary { border-bottom: 1px solid CanvasText; } .status-fold__count { border-color: CanvasText; } }

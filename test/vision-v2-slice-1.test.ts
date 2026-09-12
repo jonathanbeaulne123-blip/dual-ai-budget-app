@@ -59,12 +59,16 @@ describe("Vision v2 slice 1 — adaptive action", () => {
     expect(fabClosedLabel("personal")).toBe("Add money");
   });
 
-  it("reorders Our Home's verbs by destination and names the control as a question", () => {
+  it("keeps Our Home's + on four money verbs, reordered by destination, and never a navigation verb (row 5)", () => {
     expect(fabActionsFor("household", "home")[0]!.id).toBe("record-expense");
-    expect(fabActionsFor("household", "together")[0]!.id).toBe("decide-together");
-    expect(fabActionsFor("household", "plan")[0]!.id).toBe("plan-cost");
+    expect(fabActionsFor("household", "plan").slice(0, 2).map((row) => row.id)).toEqual(["record-expense", "move-money"]);
     expect(fabActionsFor("household", "ledger").slice(0, 3).map((row) => row.id)).toEqual(["record-expense", "add-income", "move-money"]);
-    expect(fabClosedLabel("household")).toBe("What can we do?");
+    for (const tab of ["home", "ledger", "plan", "together"]) {
+      const actions = fabActionsFor("household", tab);
+      expect(actions).toHaveLength(4);
+      expect(actions.every((row) => row.kind === "add" && row.money)).toBe(true);
+    }
+    expect(fabClosedLabel("household")).toBe("Add money");
   });
 
   it("keeps every money verb on an Add mode and marks navigation verbs as non-money", () => {

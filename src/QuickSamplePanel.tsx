@@ -16,7 +16,7 @@ export function QuickSamplePanel({ household, memberId, visibility, today, busy,
   return <div className="paper-panel sample-data-panel" data-testid="quick-sample-panel">
     <p className="kicker">Explore the everyday widgets</p>
     <h3>Quick sample data</h3>
-    <Whisper mode="line">A fictional story of pay, bills and outings, added to this {visibility === "personal" ? "Personal" : "Shared"} ledger.</Whisper>
+    <Whisper mode="line">A fictional story of pay, bills, outings and future Calendar expenses for this {visibility === "personal" ? "Personal" : "Shared"} ledger.</Whisper>
     <div className="sample-data-fields">
       <label>History + future<select aria-label="Sample history" value={months} disabled={busy} onChange={e => { setMonths(Number(e.target.value)); setError(""); }}>
         {[3, 4, 5, 6].map(n => <option key={n} value={n}>{n} months each</option>)}

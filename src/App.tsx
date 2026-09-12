@@ -68,6 +68,8 @@ import {
   householdForView,
   ledgerRouteContract,
   kitchenPrimaryNav,
+  sceneTabFor,
+  type AppTab,
   acceptedHouseholdOnboarding,
   copy,
   showsLedgerPurposeBanner,
@@ -520,6 +522,7 @@ import {
   loadWorkShiftSurface,
 } from "./deferredSurfaces.tsx";
 import { Whisper } from "./theme/Whisper.tsx";
+import { StatusFold } from "./theme/StatusFold.tsx";
 import {
   acceptedSnapshotRebuildCheck,
   booksWriteGate,
@@ -530,10 +533,11 @@ import {
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
 
-type Tab = "together" | "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
+type Tab = AppTab;
 
 function presenceTab(tab: Tab): Exclude<Tab, "till" | "together"> {
-  return tab === "till" ? "home" : tab === "together" ? "more" : tab;
+  const scene = sceneTabFor(tab);
+  return scene === "till" ? "home" : scene;
 }
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
@@ -3312,7 +3316,7 @@ export function App() {
 
   const view: LedgerView = session?.view ?? "household";
   const appearance = useAppearance();
-  useAppearanceBinding(environment, household && session ? tab === "together" ? "more" : tab : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
+  useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
     if ((tab === "till" || tab === "together") && view !== "household") setTab("home");
   }, [tab, view]);
@@ -6640,14 +6644,14 @@ export function App() {
       </div>
       <div>
         <div className="world-page">
-      <PageWorld page={tab === "together" ? "more" : tab} />
+      <PageWorld page={sceneTabFor(tab)} />
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(presenceTab(tab)) ? (
         <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
 
       <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger"} />
-      <WorldCharm page={tab === "together" ? "more" : tab} />
+      <WorldCharm page={sceneTabFor(tab)} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
         <Till
@@ -6667,7 +6671,6 @@ export function App() {
         />
       ) : null}
 
-      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("more")}>Status Centre</button></nav>}
       {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
@@ -7102,7 +7105,7 @@ export function App() {
       {tab === "more" && (
         <div className="more-surfaces status-centre">
           <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1><p className="muted">Health, sources, household, privacy, comfort, and help. Everyday work lives on its own page.</p></header>
-          <h2 className="status-group" id="status-needs-us">Needs us</h2>
+          <StatusFold id="needs-us" title="Needs us" defaultOpen forceOpen={appNeedsAttention}>
           <section className="card more-sync-help" id="hearth-sync-help" tabIndex={-1}>
             <header>
               <div><p className="kicker">Sync status</p><h2>{appNeedsAttention ? "How to fix it" : "Everything is connected"}</h2></div>
@@ -7173,7 +7176,8 @@ export function App() {
               <p className="muted">Nothing needs repair. Your local books, household sharing, and integrity checks are clear.</p>
             ) : null}
           </section>
-          <h2 className="status-group" id="status-household">Household</h2>
+          </StatusFold>
+          <StatusFold id="household" title="Household">
           {view === "household" ? (
             <section className="card">
               <header><h2>the charter</h2></header>
@@ -7224,7 +7228,8 @@ export function App() {
               </button>
             </section>
           )}
-          <h2 className="status-group" id="status-your-hearth">Your Hearth</h2>
+          </StatusFold>
+          <StatusFold id="your-hearth" title="Your Hearth">
           <section className="card">
             <header><h2>Account</h2></header>
             <p className="muted">
@@ -7240,10 +7245,12 @@ export function App() {
               Sign out
             </button>
           </section>
-          <h2 className="status-group" id="status-comfort">Appearance and comfort</h2>
+          </StatusFold>
+          <StatusFold id="comfort" title="Appearance and comfort">
           <AppearancePicker />
           <ComfortControls environment={environment} />
-          <h2 className="status-group" id="status-sources">Sources and continuity</h2>
+          </StatusFold>
+          <StatusFold id="sources" title="Sources and continuity">
           <section className="card">
             <header><h2>{view === "household" ? "Household table" : "My books"}</h2></header>
             <p className="muted">
@@ -7421,7 +7428,8 @@ export function App() {
               return accepted.herculesProPermissions ?? { ...permissions, updatedAt: null };
             }}
           />
-          <h2 className="status-group" id="status-privacy">Privacy, devices, and sharing</h2>
+          </StatusFold>
+          <StatusFold id="privacy" title="Privacy, devices, and sharing">
           <section className="card">
             <header><h2>This phone</h2></header>
             <p className="muted">
@@ -7533,7 +7541,8 @@ export function App() {
             </label>
             <Whisper mode="line">Development books are open until Auth lands. Model sharing is off unless you check it.</Whisper>
           </section>
-          <h2 className="status-group" id="status-help">Help and transparency</h2>
+          </StatusFold>
+          <StatusFold id="help" title="Help and transparency">
           <section className="card hercules-capability-map" aria-labelledby="hercules-map-heading">
             <header><h2 id="hercules-map-heading">What Hercules can see, infer, draft, and never decide</h2></header>
             <ul className="capability-map">
@@ -7678,6 +7687,7 @@ export function App() {
             )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
+          </StatusFold>
         </div>
       )}
 

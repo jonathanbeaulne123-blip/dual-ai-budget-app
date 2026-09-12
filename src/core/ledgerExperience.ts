@@ -14,6 +14,12 @@ export const LEDGER_CUSTODY_DISCLOSURE =
 
 export type LedgerExperienceMode = LedgerView;
 export type LedgerTab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
+/** Every destination the App can stand on: the route-contract tabs plus Together, which borrows More's scene. One vocabulary (feedback row 5). */
+export type AppTab = LedgerTab | "together";
+/** The scene a destination is drawn in. Together has no authored world of its own yet and borrows More's; Till is a Home door. */
+export function sceneTabFor(tab: AppTab): Exclude<AppTab, "together"> {
+  return tab === "together" ? "more" : tab;
+}
 
 export type LedgerRouteContract = {
   tab: LedgerTab;
