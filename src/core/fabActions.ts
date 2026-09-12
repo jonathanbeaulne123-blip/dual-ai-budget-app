@@ -15,7 +15,7 @@ export type FabAddMode = "shift" | "income" | "expense" | "transfer";
 
 export type FabAction =
   | { id: string; kind: "add"; mode: FabAddMode; label: string; aria: string; money: true }
-  | { id: string; kind: "go"; tab: "calendar" | "together" | "plan" | "ledger" | "planner"; label: string; aria: string; money: false };
+  | { id: string; kind: "go"; tab: "calendar" | "together" | "plan" | "ledger" | "planner" | "timeMachine"; label: string; aria: string; money: false };
 
 export type FabActionTab = "home" | "calendar" | "shift" | "ledger" | "plan" | "together" | "more" | string;
 
@@ -34,21 +34,25 @@ const PLAN_COST: FabAction = { id: "plan-cost", kind: "go", tab: "calendar", lab
 const DECIDE: FabAction = { id: "decide-together", kind: "go", tab: "together", label: "Decide together", aria: "Open what needs us together", money: false };
 /** The planner (D-245): tasks that carry money. Navigation only; a task never posts. */
 const PLAN_WEEK: FabAction = { id: "plan-week", kind: "go", tab: "planner", label: "Plan the week", aria: "Open the planner", money: false };
+/** The time machine (D-246): any month, behind or ahead. Reading only; this surface posts nothing. */
+const SEE_A_MONTH: FabAction = { id: "see-a-month", kind: "go", tab: "timeMachine", label: "See a month", aria: "Open the time machine", money: false };
 
 /** Ordered actions for the + control. Household order follows the destination's job. */
 export function fabActionsFor(view: LedgerView, tab: FabActionTab): readonly FabAction[] {
   if (view !== "household") return PERSONAL;
   switch (tab) {
     case "together":
-      return [DECIDE, PLAN_WEEK, RECORD, PLAN_COST, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+      return [DECIDE, PLAN_WEEK, RECORD, PLAN_COST, SEE_A_MONTH, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
     case "plan":
-      return [PLAN_COST, RECORD, DECIDE, PLAN_WEEK, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+      return [PLAN_COST, RECORD, DECIDE, PLAN_WEEK, SEE_A_MONTH, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
     case "ledger":
-      return [RECORD, ADD_INCOME, MOVE_MONEY, PLAN_COST, DECIDE, PLAN_WEEK, ADD_SHIFT];
+      return [RECORD, ADD_INCOME, MOVE_MONEY, SEE_A_MONTH, PLAN_COST, DECIDE, PLAN_WEEK, ADD_SHIFT];
     case "planner":
-      return [PLAN_WEEK, RECORD, PLAN_COST, DECIDE, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+      return [PLAN_WEEK, RECORD, PLAN_COST, DECIDE, SEE_A_MONTH, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+    case "timeMachine":
+      return [SEE_A_MONTH, RECORD, PLAN_COST, PLAN_WEEK, DECIDE, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
     default:
-      return [RECORD, PLAN_COST, PLAN_WEEK, DECIDE, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+      return [RECORD, PLAN_COST, PLAN_WEEK, SEE_A_MONTH, DECIDE, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
   }
 }
 

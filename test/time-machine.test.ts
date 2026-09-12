@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fundContributionReviewDigest } from "../src/core/fundContributionSources.ts";
 import {
   HOUSEHOLD_FUND_ID,
+  activeHouseholdFundEvents,
   addGoal,
   catalogHousehold,
   compareMonths,
@@ -71,8 +72,8 @@ function threeMonths(): Household {
 }
 
 function balanceThrough(household: Household, through: string): number {
-  return (household.fundEvents ?? [])
-    .filter((event) => event.fundId === HOUSEHOLD_FUND_ID && event.date <= through && !event.reversedByEventId)
+  return activeHouseholdFundEvents(household, HOUSEHOLD_FUND_ID)
+    .filter((event) => event.date <= through)
     .reduce((sum, event) => sum + householdFundOperatingDelta(event), 0);
 }
 
@@ -104,7 +105,6 @@ describe("the as-of foundation", () => {
   });
 
   it("never lets one projection mix two months", () => {
-    const household = threeMonths();
     for (const period of ["2026-07", "2026-08", "2026-09", "2026-10"]) {
       const lens = fundLensForPeriod(period, TODAY);
       expect(lens.period).toBe(period);
@@ -119,7 +119,7 @@ describe("goals get a history", () => {
     let household = addGoal(catalogHousehold(), { name: "Japan", target: "5000", shared: true }).household;
     const goalId = household.goals.at(-1)!.id;
     for (const [date, amount] of [["2026-07-15", "200"], ["2026-08-15", "300"], ["2026-09-05", "250"]] as const) {
-      household = contributeToGoal(household, goalId, amount, { memberId: JONATHAN, date }).household;
+      household = contributeToGoal(household, goalId, amount, { createdBy: JONATHAN, date }).household;
     }
     expect(goalSavedAsOf(household, goalId, "2026-07-31")).toBe(20000);
     expect(goalSavedAsOf(household, goalId, "2026-08-31")).toBe(50000);
@@ -188,9 +188,9 @@ describe("the memory layer", () => {
   it("remembers a bank that filled, from dated records only", () => {
     let household = addGoal(catalogHousehold(), { name: "Tires", target: "300", shared: true }).household;
     const goalId = household.goals.at(-1)!.id;
-    household = contributeToGoal(household, goalId, "150", { memberId: JONATHAN, date: "2026-07-20" }).household;
+    household = contributeToGoal(household, goalId, "150", { createdBy: JONATHAN, date: "2026-07-20" }).household;
     expect(monthMemories(household, "2026-07").some((row) => row.kind === "goal-reached")).toBe(false);
-    household = contributeToGoal(household, goalId, "150", { memberId: JONATHAN, date: "2026-08-20" }).household;
+    household = contributeToGoal(household, goalId, "150", { createdBy: JONATHAN, date: "2026-08-20" }).household;
     const august = monthMemories(household, "2026-08");
     expect(august.some((row) => row.kind === "goal-reached" && row.title.includes("Tires"))).toBe(true);
   });

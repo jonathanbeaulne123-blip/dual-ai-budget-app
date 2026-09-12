@@ -1,5 +1,6 @@
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
 import { Planner } from "./planner/Planner.tsx";
+import { TimeMachine } from "./timeMachine/TimeMachine.tsx";
 import { personalCalendarUpdateAllowed } from "./core/personalCalendarAuthority.ts";
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
@@ -531,13 +532,21 @@ import {
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
 
-type Tab = "together" | "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till" | "planner";
+type Tab = "together" | "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till" | "planner" | "timeMachine";
 
-function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner"> {
-  return tab === "till" || tab === "planner" ? "home" : tab === "together" ? "more" : tab;
+function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine"> {
+  if (tab === "till" || tab === "planner") return "home";
+  if (tab === "timeMachine") return "ledger";
+  return tab === "together" ? "more" : tab;
 }
-/** Together and the planner borrow the More scene until they earn their own (D-245 keeps the thirteen-file SceneRoute change out of scope). */
-function sceneTab(tab: Tab): Exclude<Tab, "together" | "planner"> {
+/**
+ * Together and the planner borrow the More scene until they earn their own
+ * (D-245 keeps the thirteen-file SceneRoute change out of scope). The time
+ * machine borrows the ledger's, which is the scene it belongs to: it is the
+ * books read by month rather than by day, and it posts nothing (D-246).
+ */
+function sceneTab(tab: Tab): Exclude<Tab, "together" | "planner" | "timeMachine"> {
+  if (tab === "timeMachine") return "ledger";
   return tab === "together" || tab === "planner" ? "more" : tab;
 }
 type WelcomeGoogleIntent = "create" | "login";
@@ -6684,9 +6693,10 @@ export function App() {
         />
       ) : null}
 
-      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>Planner</button><button onClick={() => goTab("more")}>Status Centre</button></nav>}
-      {view !== "household" && <nav className="household-secondary" aria-label="Personal tools"><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>My planner</button></nav>}
+      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>Planner</button><button onClick={() => goTab("timeMachine")} aria-current={tab === "timeMachine" ? "page" : undefined}>Months</button><button onClick={() => goTab("more")}>Status Centre</button></nav>}
+      {view !== "household" && <nav className="household-secondary" aria-label="Personal tools"><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>My planner</button><button onClick={() => goTab("timeMachine")} aria-current={tab === "timeMachine" ? "page" : undefined}>My months</button></nav>}
       {tab === "planner" && <Planner household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
+      {tab === "timeMachine" && <TimeMachine household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
       {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
