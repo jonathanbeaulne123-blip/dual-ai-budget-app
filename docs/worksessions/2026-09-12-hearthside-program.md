@@ -7,7 +7,7 @@
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/hearthside-program`
 - **Baseline SHA:** `a96c1ffb0905957d20c16491846ff0ca4b9b5e3c` (current-main reconciliation; initial base `429db8e`)
-- **Head SHA:** `4ae12f866062a225ab22dfbfef65b15a36ec650a` plus recorded gate repairs; final tested head pending
+- **Head SHA:** `1bf0c9c493fe98bcc98582a37145376db5b67568` plus browser setup repair; final tested head pending
 - **Risk:** High; hosted activation and native distribution require Release review
 - **Environment impact:** local and synthetic Development
 
@@ -191,3 +191,9 @@ Codex continues integration. The full program remains open through P15. No deplo
 - Memory race repair `22808e18b08c435d2e0ed9ff8e1819d8e0ec62e9` is integrated after root diff review. Compose must finish before automatic review; prepare/compose/manual refresh verify the current live candidate binding and digest after awaits. Seven browser tests pass in 19.18 seconds, including deliberately held composition and stale same-memory responses. The changed-candidate regression fails the original component and passes the repaired source. No worker admission was relaxed.
 - Added an observable funded-weekend journey through actual Hearthside controls and canonical command authority: one accepted bank contribution, one linked date changed in place, paused state after reload, lived state, separate recollections, both exact Keeps and later return. It preserves the same financial hash, contribution, bank, date and memory identities. The funding review UI remains covered separately; this harness supplies its accepted canonical command. The journey exposed duplicate React keys between bank/future sections in Conservatory; distinct stable keys fix the real identity warning. Nine journey/future tests pass in 4.89 seconds.
 - All native authored assets regenerate reproducibly from the original Hearth mark (30 PNG outputs; no byte changes). Eight native CI boundary tests pass. SDK and physical acceptance remain open.
+
+## Second combined gate and export surface startup repair
+
+- Clean integrated head `1bf0c9c493fe98bcc98582a37145376db5b67568`, base `a96c1ffb0905957d20c16491846ff0ca4b9b5e3c`, fingerprint `3ce36f4090f9c79967ca7168151e1b425046d290367850c2d85dfe18e6e7d944`: diff/AI and TypeScript passed; 1,078 tests passed across 152 fast files. The export/native browser suite timed out in setup and skipped its five tests; serial suites were not reached. The gate FAILED in164.267s without breaching300s. Log `/tmp/hearthside-integrated-high-final.log`. This is not passing integrated evidence.
+- The export/native middleware fixture still used a shared cache and default HTML dependency discovery, scanning unrelated App/Workspace fixtures. Its setup now names its actual single entry and uses a fresh temporary cache, deleted after server teardown. Assertions, coverage, hooks and the300s gate budget are unchanged.
+- Cold-cache scoped rerun: all five actual export/native browser tests passed in7.30s. Actual textured capture, review, production ZIP download, repair consent, cancellation, focus, private model viewer, native-controller receipt handling and all themes/widths remain exercised. Log `/tmp/hearthside-surfaces-startup-repair.log`; startup evidence `/tmp/hearthside-surfaces-proof/startup.json`.

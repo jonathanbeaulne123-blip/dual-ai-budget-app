@@ -1,23 +1,31 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createServer, type ViteDevServer } from 'vite';
 import { chromium, type Browser, type Page } from '@playwright/test';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { unzipSync } from 'fflate';
 import type { DesignSurfaceTheme } from '../src/hearthside/designSurfaceContracts.ts';
 import type {} from './fixtures/hearthsideSurfaceProof.tsx';
 
 describe('actual export and native surfaces in a browser', () => {
   let server: ViteDevServer, browser: Browser, page: Page, address: string;
+  let cacheDir: string;
   const errors: string[] = [], artifactDirectory = process.env.HEARTH_ARTIFACTS_DIR ?? '/tmp/hearthside-surfaces-proof';
   beforeAll(async () => {
-    server = await createServer({ configFile: false, root: process.cwd(), cacheDir: 'node_modules/.hearthside-surfaces-vite', esbuild: { jsx: 'automatic' }, logLevel: 'error', server: { host: '127.0.0.1', port: 0 }, plugins: [{ name: 'hearthside-surfaces-proof', configureServer(vite) {
+    // This middleware page has one entry. The default HTML crawl includes
+    // unrelated App/Workspace fixtures and can leave their optimizer running.
+    cacheDir = await mkdtemp(join(tmpdir(), 'hearthside-surfaces-vite-'));
+    const startedAt = performance.now();
+    server = await createServer({ configFile: false, root: process.cwd(), cacheDir, optimizeDeps: { entries: ['test/fixtures/hearthsideSurfaceProof.tsx'] }, esbuild: { jsx: 'automatic' }, logLevel: 'error', server: { host: '127.0.0.1', port: 0 }, plugins: [{ name: 'hearthside-surfaces-proof', configureServer(vite) {
       vite.middlewares.use('/__hearthside_surfaces', (_req, res) => { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hearthside local synthetic surface proof</title><style>body{margin:0;background:#e5ddd0;font-family:system-ui}main{padding:16px 10px 180px}nav{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 auto 24px;max-width:1300px}nav button{min-height:44px;padding:8px 14px}nav span{font-size:13px}</style></head><body><div id="root"></div><script type="module" src="/test/fixtures/hearthsideSurfaceProof.tsx"></script></body></html>'); });
     } }] });
     await server.listen(); address = `http://127.0.0.1:${(server.httpServer!.address() as { port: number }).port}/__hearthside_surfaces`;
     browser = await chromium.launch({ channel: 'chrome', headless: true }); page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }); page.on('pageerror', error => errors.push(error.message));
     await mkdir(artifactDirectory, { recursive: true }); await page.goto(address); await page.getByRole('button', { name: 'Open export', exact: true }).waitFor();
+    await writeFile(`${artifactDirectory}/startup.json`, JSON.stringify({ coldStartupMs: Math.round(performance.now() - startedAt), entry: 'hearthsideSurfaceProof.tsx', errors }, null, 2));
   }, 60_000);
-  afterAll(async () => { await browser?.close(); await server?.close(); });
+  afterAll(async () => { await browser?.close(); await server?.close(); if (cacheDir) await rm(cacheDir, { recursive: true, force: true }); });
   beforeEach(async () => { await page.goto(address); await page.getByRole('button', { name: 'Open export', exact: true }).waitFor(); });
 
   it('keeps all three authored treatments readable at every required width and enlarged text', async () => {
