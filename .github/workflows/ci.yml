@@ -33,3 +33,18 @@ jobs:
         env:
           HEARTH_TEST_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEARTH_TEST_RISK: medium
+      - name: Verify Home setup and Kitty Bank browser flows when changed
+        env:
+          HEARTH_TEST_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if git diff --name-only "$HEARTH_TEST_BASE" HEAD -- src/HouseholdHome.tsx src/ChapterPanel.tsx src/household-home.css src/kitty/KittyBankRoom.tsx test/home-feedback-layout.mjs scripts/serve-home-feedback-proof.mjs | grep -q .; then
+            node test/home-feedback-layout.mjs
+          fi
+      - name: Keep Home browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-feedback-browser
+          path: .artifacts/feedback-home/actual-app
+          if-no-files-found: ignore
+          retention-days: 7
