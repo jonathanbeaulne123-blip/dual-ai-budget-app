@@ -1,3 +1,4 @@
+import {decodeGuestNestOrnament,type GuestNestOrnament} from './nestGuestAppearance.ts';
 import {decodeRoomFurniture,type RoomFurnitureLayout} from './roomFurniture.ts';
 import type { KittyPaintV1, KittyPieceV1, KittySculptV1 } from '../core/types.ts';
 import { shapeKittyPaint, shapeKittySculpt } from '../core/kittyStudio.ts';
@@ -10,7 +11,7 @@ export type GuestPrincipal = { memberId: string; subject: string };
 export type GuestIdentity = { environment: 'development'; subject: string; expires: number; checkedAt: number };
 export type GuestSourceItem = { kind: 'experience' | 'note' | 'memory' | 'piece'; id: string; revision: number; designId?: string; x: number; y: number };
 export type GuestPrepareInput = { publicationId: string; title: string; welcome: string; theme: GuestTheme; room: GuestRoomKind; mode: GuestMode; items: GuestSourceItem[] };
-export type GuestAppearance = { sculpt: KittySculptV1; paint: KittyPaintV1 };
+export type GuestAppearance = { sculpt: KittySculptV1; paint: KittyPaintV1; ornament?:GuestNestOrnament };
 export type GuestMedia = { id: string; kind: 'image' | 'audio'; mime: 'image/png' | 'image/jpeg' | 'audio/webm' | 'audio/mp4' | 'audio/ogg'; sha256: string; byteLength: number; alt: string };
 export type GuestObject =
   | { id: string; kind: 'experience'; x: number; y: number; title: string; text: string }
@@ -60,14 +61,14 @@ export function decodeGuestPrepare(raw: unknown): GuestPrepareInput {
 }
 /** Closed nested cosmetic fields: source piece/stamp identities are remapped by the source projection. */
 export function decodeGuestAppearance(raw: unknown): GuestAppearance {
-  const r = guestRecord(raw,['sculpt','paint']), sculpt = guestRecord(r.sculpt,['body','profile','head','ears','eyes','mouth','whiskers','tail','nose','features']);
+  const r = guestRecord(raw,['sculpt','paint','ornament']), sculpt = guestRecord(r.sculpt,['body','profile','head','ears','eyes','mouth','whiskers','tail','nose','features']);
   guestArray(sculpt.profile, v=>guestNumber(v,.55,1.15),4); if (sculpt.features !== undefined) { const f = guestRecord(sculpt.features,['head','ears','eyes','nose','mouth','whiskers','tail']); Object.values(f).forEach(v=>guestNumber(v,.5,1.8)); }
   const paint = guestRecord(r.paint,['base','parts','strokes','stamps']); guestRecord(paint.parts,['body','head','earL','earR','tail','paws']);
   guestArray(paint.strokes, raw=>{const s=guestRecord(raw,['part','tool','color','size','opacity','mirror','pts']);guestArray(s.pts,v=>guestNumber(v,0,1),6000);return s;},400);
   guestArray(paint.stamps, raw=>guestRecord(raw,['id','anchor','kind','color','trim','part','u','v','size','rotation','text']),64);
-  return {sculpt:shapeKittySculpt(sculpt),paint:shapeKittyPaint(paint)};
+  return {sculpt:shapeKittySculpt(sculpt),paint:shapeKittyPaint(paint),...(r.ornament?{ornament:decodeGuestNestOrnament(r.ornament)}:{})};
 }
-export function guestDisplayPiece(appearance: GuestAppearance): KittyPieceV1 { return { id:'guest-display',createdAt:'2000-01-01T00:00:00.000Z',firedAt:null,...decodeGuestAppearance(appearance) }; }
+export function guestDisplayPiece(appearance: GuestAppearance): KittyPieceV1 { const {sculpt,paint}=decodeGuestAppearance(appearance);return { id:'guest-display',createdAt:'2000-01-01T00:00:00.000Z',firedAt:null,sculpt,paint }; }
 export function decodeGuestMedia(raw: unknown): GuestMedia { const r=guestRecord(raw,['id','kind','mime','sha256','byteLength','alt']);const kind=guestChoice(r.kind,['image','audio']),mime=guestChoice(r.mime,['image/png','image/jpeg','audio/webm','audio/mp4','audio/ogg']);guestAssert(mime.startsWith(kind+'/'));return {id:guestId(r.id),kind,mime,sha256:guestDigestValue(r.sha256),byteLength:guestInteger(r.byteLength,1,GUEST_LIMITS.mediaBytes),alt:guestText(r.alt,400,true)}; }
 export function decodeGuestArrangement(raw: unknown): GuestArrangement {
   const r=guestRecord(raw,['version','title','welcome','theme','room','mode','objects','furniture']);guestAssert(r.version===1);

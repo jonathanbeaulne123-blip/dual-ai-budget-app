@@ -1,0 +1,126 @@
+diff --git a/src/workspace/Workspace.tsx b/src/workspace/Workspace.tsx
+--- a/src/workspace/Workspace.tsx
++++ b/src/workspace/Workspace.tsx
+@@ -21,6 +21,7 @@
+   onSnapshot?: (snapshot: WorkspaceSnapshot) => void;
+   openProjectId?: string | null; onProjectOpened?:()=>void;
+   onExperienceOpened?:(experienceId:string)=>void;
++  onPrivateReportRequested?:(request:{id:string;context:FeedbackContext;text?:string})=>void;
+   recordOptions?: ProjectLink[];
+   getGoogleAccessToken?: () => Promise<string>;
+   hearthside?: HearthsideWorkspaceBinding;
+@@ -44,7 +45,7 @@
+   const alive = useRef(true);
+   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot | null>(null);
+   const snapshotRef = useRef(snapshot); snapshotRef.current = snapshot;
+-  const [selected, setSelected] = useState<string | null>(() => experienceProjectId??readEntryLocal<{ projectId?: string }>(scopeKey)?.projectId ?? null);
++  const [selected, setSelected] = useState<string | null>(() => experienceProjectId??props.reportRequest?.id??readEntryLocal<{ projectId?: string }>(scopeKey)?.projectId ?? null);
+   const selectedRef=useRef(selected);selectedRef.current=selected;
+   const [composer, setComposer] = useState(() => readEntryLocal<{text:string}>(scopeKey+':composer:'+selected)?.text ?? readEntryLocal<{ composer?: string }>(scopeKey)?.composer ?? '');
+   const [notice, setNotice] = useState(''), [saving, setSaving] = useState(false), [loading, setLoading] = useState(true);
+@@ -68,10 +69,11 @@
+   const composerRef = useRef<HTMLTextAreaElement>(null);
+   const clientRef = useRef<WorkspaceClient | null>(null);
+   const refreshFlight = useRef<Promise<void> | null>(null);
++  const refreshGeneration = useRef(0);
+   if (!clientRef.current) clientRef.current = new WorkspaceClient(`/hercules/workspace/${props.environment}/${props.householdId}`, () => current.current.getAccessToken(), () => alive.current && current.current.isCurrent());
+   const project = snapshot?.projects.find(p => p.id === (experienceProjectId??selected)) ?? null;
+   const hearthside=props.hearthside?{...props.hearthside,onPublication:props.hearthside.onPublication??((review:ExperienceArtifactReview,digest:string)=>clientRef.current!.shareExperience(review,digest)),onWithdrawal:props.hearthside.onWithdrawal??((id:string)=>clientRef.current!.withdrawExperience(id))}:undefined;
+-  useEffect(()=>{if(project?.experience&&!props.hearthside)props.onExperienceOpened?.(project.experience.context.id);},[project?.id,props.hearthside?.experience.id]);
++  useEffect(()=>{if(project?.experience&&!props.hearthside&&!props.reportRequest)props.onExperienceOpened?.(project.experience.context.id);},[project?.id,props.hearthside?.experience.id,props.reportRequest?.id]);
+   const run = project?.runs.at(-1);
+   const artifact = project && (latestArtifacts(project).find(a => a.artifactId === artifactId) ?? latestArtifacts(project).at(-1));
+   function adopt(value: WorkspaceSnapshot) {
+@@ -80,20 +82,35 @@
+   }
+   function refresh(): Promise<void> {
+     if (refreshFlight.current) return refreshFlight.current;
++    const generation = refreshGeneration.current;
++    const isCurrent = () => alive.current && generation === refreshGeneration.current && current.current.isCurrent();
+     const flight = (async () => {
+-      try { adopt(await clientRef.current!.request()); if (alive.current && !readEntryLocal<{ pending?: WorkspaceRequest }>(scopeKey)?.pending) setNotice(''); }
+-      catch (error) { if (alive.current) setNotice(workspaceError(error)); }
+-      finally { if (alive.current) setLoading(false); }
++      try {
++        const value = await clientRef.current!.request();
++        if (!isCurrent()) return;
++        adopt(value);
++        if (!readEntryLocal<{ pending?: WorkspaceRequest }>(scopeKey)?.pending) setNotice('');
++      }
++      catch (error) { if (isCurrent()) setNotice(workspaceError(error)); }
++      finally { if (isCurrent()) setLoading(false); }
+     })();
+     refreshFlight.current = flight;
+     void flight.finally(() => { if (refreshFlight.current === flight) refreshFlight.current = null; });
+     return flight;
+   }
+   useEffect(() => {
+-    alive.current = true; void refresh();
++    alive.current = true; const generation = ++refreshGeneration.current; void refresh();
+     const interval = window.setInterval(() => { if (snapshotRef.current && !document.hidden && current.current.mode !== 'hidden') void refresh(); }, 5000);
+     const reconnect = () => void refresh(); window.addEventListener('online', reconnect); window.addEventListener('focus', reconnect);
+-    return () => { alive.current = false; clientRef.current?.cancelRequests();clearInterval(interval); window.removeEventListener('online', reconnect); window.removeEventListener('focus', reconnect); };
++    return () => {
++      alive.current = false;
++      if (generation === refreshGeneration.current) refreshGeneration.current++;
++      // A StrictMode effect replay must start a fresh request, not reuse its
++      // cancelled predecessor. That predecessor is fenced from new UI state.
++      refreshFlight.current = null;
++      clientRef.current?.cancelRequests();
++      clearInterval(interval); window.removeEventListener('online', reconnect); window.removeEventListener('focus', reconnect);
++    };
+   }, []);
+   useEffect(() => { writeEntryLocal(scopeKey+':composer:'+selected,{text:composer}); writeEntryLocal(scopeKey, { projectId: selected, composer, pending }); }, [scopeKey, selected, composer, pending]);
+   function chooseProject(id:string) { writeEntryLocal(scopeKey+':composer:'+selected,{text:composer});setSelected(id);setComposer(readEntryLocal<{text:string}>(scopeKey+':composer:'+id)?.text ?? '');setArtifactId(null); }
+@@ -128,6 +145,15 @@
+   const reportOpening = useRef<string | null>(null);
+   async function newReport(request: { id: string; context: FeedbackContext; text: string } = { id: crypto.randomUUID(), context: props.getReportContext?.() ?? {}, text: '' }) {
+     if (pending || saving || !snapshot) return;
++    if (props.hearthside) {
++      if (!props.onPrivateReportRequested) {
++        setNotice('Open your private Workspace to start a separate bug report. Your intention work is saved here.');
++        return;
++      }
++      reportOpening.current = request.id;
++      props.onPrivateReportRequested(request);
++      return;
++    }
+     const owner = feedbackOwner(props.reporterName);
+     reportOpening.current = request.id;
+     props.onReportOpened?.();
+@@ -220,7 +246,8 @@
+   }
+   if (props.mode === 'hidden') return null;
+   return <section className={`hercules-workspace hw--${props.mode} hw--${theme}`} data-workspace-scope={props.view} aria-label="Hercules workspace" onKeyDown={event => { if (event.key === 'Escape' && props.mode === 'compact') props.onClose(); }}>
+-    <header className="hw-header"><div className="hw-monogram" aria-hidden="true">H<span>✦</span></div><div><p className="hw-eyebrow">Hercules · your private study</p><h1>{props.mode === 'compact' ? 'Here with you' : 'Bring an intention. Make something of it.'}</h1><p>Life, work, learning, and the plans that connect them.</p></div><div className="hw-window-controls"><button disabled={!snapshot || saving || !!pending} onClick={() => void newReport()}>Report a bug</button>{props.mode === 'compact' && <button onClick={props.onExpand}>Open room ↗</button>}<button onClick={props.onClose} aria-label="Close Hercules workspace">Close</button></div></header>
++    <header className="hw-header"><div className="hw-monogram" aria-hidden="true">H<span>✦</span></div><div><p className="hw-eyebrow">Hercules · your private study</p><h1>{props.mode === 'compact' ? 'Here with you' : 'Bring an intention. Make something of it.'}</h1><p>Life, work, learning, and the plans that connect them.</p></div><div className="hw-window-controls"><button disabled={!snapshot || saving || !!pending || !!hearthside && !props.onPrivateReportRequested} onClick={() => void newReport()}>Report a bug</button>{props.mode === 'compact' && <button onClick={props.onExpand}>Open room ↗</button>}<button onClick={props.onClose} aria-label="Close Hercules workspace">Close</button></div></header>
++    {hearthside&&<p className="hw-eyebrow">Bug reports open a separate private project. Your intention and its disclosure approval stay here.</p>}
+     {(notice || pending) && <div className="hw-notice" role="alert"><p>{notice || "The last save needs checking before another change."}</p><button disabled={saving} onClick={() => pending ? void submit(pending) : void refresh()}>{pending ? 'Check original save' : 'Reconnect'}</button><button onClick={props.onLegacy}>Existing conversations & guided actions</button></div>}
+     {hearthside&&<ExperienceWorktable hearthside={hearthside} project={project} busy={saving||!!pending} executionEnabled={snapshot?.executionEnabled??false} onSave={snapshot?saveExperienceDraft:undefined} onRefreshContext={async()=>!!project?.experience&&command({type:'refresh-experience',context:hearthside.experience,previousDigest:project.experience.digest,confirmDigest:workspaceExperienceDigest(hearthside.experience)})} onApproveDisclosure={()=>command({type:'approve-experience-disclosure',confirmDigest:workspaceExperienceDigest(hearthside.experience)})}/>}
+     {hearthside&&experienceShare&&<ExperienceArtifactSharing hearthside={hearthside} projectId={experienceProjectId!} artifact={project?latestArtifacts(project).find(a=>a.artifactId===experienceShare.artifactId)??experienceShare:experienceShare} onClose={()=>{setExperienceShare(null);void refreshExperienceCopies();}}/>}
+diff --git a/src/App.tsx b/src/App.tsx
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -6219,7 +6219,12 @@
+     if (adding && !confirm) pauseAdd();
+   }
+   function openBugReport(text = '') {
+-    setBugReportRequest({ id: crypto.randomUUID(), context: captureReportContext(), text, identity: ledgerRenderScopeKey });
++    openPrivateBugReport({ id: crypto.randomUUID(), context: captureReportContext(), text });
++  }
++  function openPrivateBugReport(request: { id: string; context: FeedbackContext; text?: string }) {
++    setWorkspaceExperienceSelection(null);
++    setWorkspaceProjectId(null);
++    setBugReportRequest({ ...request, identity: ledgerRenderScopeKey });
+     setWorkspaceCompact(true);
+     // Use the existing presentation pause so an unfinished Add draft survives the report.
+     if (adding && !confirm) pauseAdd();
+@@ -6870,7 +6875,7 @@
+       {workspaceEnabled && <HerculesWorkspaceRoom
+         hearthside={selectedExperienceWorkspace()} onExperienceOpened={id=>{if(household.hearthside?.experiences.some(e=>e.id===id&&e.state!=="archived"))setWorkspaceExperienceSelection({scope:ledgerRenderScopeKey,id});}}
+         getReportContext={captureReportContext} reporterName={household.members.find(m => m.id === actorId)?.name}
+-        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)}
++        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)} onPrivateReportRequested={openPrivateBugReport}
+         key={`workspace:${ledgerRenderScopeKey}`} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
+         mode={workspaceMode}
+         getAccessToken={async () => {

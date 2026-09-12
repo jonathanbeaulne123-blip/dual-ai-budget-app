@@ -94,6 +94,9 @@ export async function restoreArchive(
     const selected=goal.envelope?.designRef;if(!selected)continue;
     const ref=designs.get(selected.designId);if(!ref||ref.revision!==selected.revision||ref.bankId!==goal.id)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
   }
+  for(const row of [...(state.shared.kittyNestDesigns??[]),...state.personal.flatMap(([,own])=>own.kittyNestDesigns??[])]){
+    if(!row.designRef)continue;const ref=designs.get(row.designRef.designId);if(!ref||ref.revision!==row.designRef.revision||ref.bankId!==null)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
+  }
   for (const [memberId, own] of state.personal) {
     if (own.memberId !== memberId) throw new Error("PERSONAL_SCOPE_MISMATCH");
     assertAcceptableBooks(

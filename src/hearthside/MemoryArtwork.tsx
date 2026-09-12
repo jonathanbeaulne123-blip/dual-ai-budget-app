@@ -1,3 +1,4 @@
+import {NestProp} from '../kitty/NestProp.tsx';
 import {useEffect,useMemo} from 'react';
 import {KittyFlat} from '../kitty/studio/flat.tsx';
 import {useDesignClient} from './DesignProvider.tsx';
@@ -15,10 +16,10 @@ export function useMemoryDesigns(references:DesignReference[]){
   return {snapshots,ready:snapshots.every(Boolean),errors:references.map(ref=>client?.errors.get(ref.documentId)??'')};
 }
 export function MemoryArtwork({references,snapshots}:{references:DesignReference[];snapshots:Array<ReturnType<typeof snapshotKittyDesignRevision>|null>}){
-  return <div className="hearthside-memory-artwork">{references.map((ref,index)=><figure key={JSON.stringify(ref)}>{snapshots[index]?<KittyFlat piece={snapshots[index]!.piece} title="The piece as it was when this memory was composed"/>:<p role="status">This saved piece is unavailable. Its chosen revision has not been replaced.</p>}<figcaption>Our piece, kept at revision {ref.revision}</figcaption></figure>)}</div>;
+  return <div className="hearthside-memory-artwork">{references.map((ref,index)=><figure key={JSON.stringify(ref)}>{snapshots[index]?<><KittyFlat piece={snapshots[index]!.piece} title="The piece as it was when this memory was composed"/>{snapshots[index]!.appearance&&<NestProp ornament={snapshots[index]!.appearance!}/>}</>:<p role="status">This saved piece is unavailable. Its chosen revision has not been replaced.</p>}<figcaption>Our piece, kept at revision {ref.revision}</figcaption></figure>)}</div>;
 }
 /** An immutable authored view for room objects; money scale is deliberately supplied nowhere here. */
 export function SavedPiecePreview({reference}:{reference:DesignReference}){
   const {snapshots}=useMemoryDesigns([reference]),snapshot=snapshots[0];
-  return snapshot?<KittyFlat piece={snapshot.piece} title="Our authored piece"/>:<span role="status">Artwork unavailable</span>;
+  return snapshot?<><KittyFlat piece={snapshot.piece} title="Our authored piece"/>{snapshot.appearance&&<NestProp ornament={snapshot.appearance}/>}</>:<span role="status">Artwork unavailable</span>;
 }

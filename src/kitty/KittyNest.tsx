@@ -1,3 +1,6 @@
+import {NestCanonicalArtwork} from '../hearthside/NestCanonicalArtwork.tsx';
+import {NestCanonicalStudio} from '../hearthside/NestCanonicalStudio.tsx';
+import {HEARTHSIDE_FLAGS} from '../hearthside/flags.ts';
 import {CanonicalKittyFlat} from '../hearthside/DesignProvider.tsx';
 import { NestProp } from "./NestProp.tsx";
 import { useMemo, useState } from "react";
@@ -17,8 +20,8 @@ export function NestPortrait({ bank, theme }: { bank: NestBank; theme: string })
   const piece = bank.goal ? displayedKittyPiece(bank.goal.envelope?.studio) : displayedKittyPiece(bank.design?.studio) ?? nestDefaultPiece(bank);
   const step = bank.amountCents!==null && bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor(bank.amountCents / bank.targetCents * 10))) : 0;
   return <span className={`nest-portrait nest-portrait--${bank.tier}${bank.state === "broken" ? " is-broken" : ""}`} aria-hidden="true">
-    {bank.goal ? <CanonicalKittyFlat goal={bank.goal} step={step}/> : <KittyFlat piece={piece} glaze={bank.design?.glaze ?? "cream"} step={step} />}
-    <NestProp ornament={nestOrnament(bank, theme)} />
+    {bank.goal ? <CanonicalKittyFlat goal={bank.goal} step={step}/> : bank.design?.designRef ? <NestCanonicalArtwork design={bank.design} step={step}/> : <KittyFlat piece={piece} glaze={bank.design?.glaze ?? "cream"} step={step} />}
+    {!bank.design?.designRef&&<NestProp ornament={nestOrnament(bank, theme)} />}
     {bank.state === "broken" && <svg className="nest-crack" viewBox="0 0 100 100"><path d="M51 15L43 38L62 48L39 66L54 88" fill="none" stroke="currentColor" strokeWidth="4"/></svg>}
   </span>;
 }
@@ -45,7 +48,7 @@ export function KittyNest({ household, memberId, view, today, onSelect, compact 
   </section>;
 }
 
-export function NestBankDetail({ bank, h, memberId, view, identity, busy, theme, run, readLatest, onSelect, onOpenCalendar }: { bank: NestBank; h: Household; memberId: string; view: LedgerView; identity: string; busy: boolean; theme: string; run: StudioRun; readLatest: () => Household; onSelect: (bank: NestBank) => void; onOpenCalendar?: () => void }) {
+function LegacyNestBankDetail({ bank, h, memberId, view, identity, busy, theme, run, readLatest, onSelect, onOpenCalendar }: { bank: NestBank; h: Household; memberId: string; view: LedgerView; identity: string; busy: boolean; theme: string; run: StudioRun; readLatest: () => Household; onSelect: (bank: NestBank) => void; onOpenCalendar?: () => void }) {
   const [editing, setEditing] = useState(bank.tier === "king" && !bank.design?.setupCompletedAt);
   const [name, setName] = useState(bank.name);
   const [glaze, setGlaze] = useState(bank.design?.glaze ?? "cream");
@@ -77,4 +80,10 @@ export function NestBankDetail({ bank, h, memberId, view, identity, busy, theme,
     </div></div>
     {!!bank.children.length && <section className="nest-detail__children"><h3>Inside {bank.name}</h3><div>{bank.children.map(child=><NestButton key={child.id} bank={child} theme={theme} onSelect={onSelect}/>)}</div></section>}
   </section>;
+}
+
+export function NestBankDetail(props:Parameters<typeof LegacyNestBankDetail>[0]){
+ if(props.bank.state==='broken'&&props.bank.design?.designRef)return <section className="nest-detail nest-detail--bill" aria-label="Saved payment pottery"><h2>{props.bank.name}</h2><p>Paid. This pottery keeps the exact appearance saved with its receipt.</p><NestCanonicalArtwork design={props.bank.design}/>{props.onOpenCalendar&&<button type="button" onClick={props.onOpenCalendar}>See payment in Calendar</button>}</section>;
+ if((props.bank.tier==='king'&&props.view==='household'&&HEARTHSIDE_FLAGS.collaborativeDesign)||props.bank.design?.designRef)return <section className={`nest-detail nest-detail--${props.bank.tier}`} data-studio-mode={props.bank.tier}><header><p className="kicker">King · your foundation chapter</p><h2>{props.bank.name}</h2><strong>{props.bank.amountCents===null?'Backing unavailable':formatCad(props.bank.amountCents)}</strong></header><NestCanonicalStudio {...props}/>{!!props.bank.children.length&&<section className="nest-detail__children"><h3>Inside {props.bank.name}</h3><div>{props.bank.children.map(child=><NestButton key={child.id} bank={child} theme={props.theme} onSelect={props.onSelect}/>)}</div></section>}</section>;
+ return <LegacyNestBankDetail {...props}/>;
 }

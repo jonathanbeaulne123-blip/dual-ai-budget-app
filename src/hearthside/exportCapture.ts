@@ -1,3 +1,4 @@
+import {decodeNestAppearance} from './nestDesignBinding.ts';
 import * as THREE from 'three';
 import { createKittySculpture } from '../kitty/sculpture.ts';
 import { shapeKittyPiece } from '../core/kittyStudio.ts';
@@ -7,7 +8,8 @@ import type { ExportCapture, ExportMaterial, ExportMesh, ExportSelection } from 
 export function captureAuthoredKitty(selection: ExportSelection): ExportCapture {
   if (typeof document === 'undefined') throw Error('EXPORT_CANVAS_REQUIRED: Capture the authored sculpture in a browser or supplied Canvas host.');
   const piece = shapeKittyPiece(structuredClone(selection.piece));
-  const sculpture = createKittySculpture(piece, { brass: '#b68a50', wood: '#6b4630', fired: true, reducedMotion: true });
+  const appearance=selection.appearance===undefined?undefined:decodeNestAppearance(selection.appearance);
+  const sculpture = createKittySculpture(piece, { brass: '#b68a50', wood: '#6b4630', fired: true, reducedMotion: true, ornament:appearance });
   try {
     sculpture.setOpen(false);
     sculpture.setExpression(piece.sculpt.eyes);
@@ -15,10 +17,12 @@ export function captureAuthoredKitty(selection: ExportSelection): ExportCapture 
     // The fixed turntable and sparkle pool are outside this subtree.
     const clay = sculpture.group.children[0];
     const sculpt = clay?.children.find(child => child.type === 'Group');
-    if (!sculpt || !sculpture.paintables.every(mesh => { let p: THREE.Object3D | null = mesh; while (p && p !== sculpt) p = p.parent; return p === sculpt; })) throw Error('EXPORT_SCULPTURE_LAYOUT_CHANGED');
+    if (!clay || !sculpt || !sculpture.paintables.every(mesh => { let p: THREE.Object3D | null = mesh; while (p && p !== sculpt) p = p.parent; return p === sculpt; })) throw Error('EXPORT_SCULPTURE_LAYOUT_CHANGED');
     sculpture.group.updateMatrixWorld(true);
     const visible: THREE.Mesh[] = [];
-    sculpt.traverseVisible(object => {
+    const ornaments=clay.children.filter(child=>child.name.startsWith('nest-prop:'));
+    if(appearance&&ornaments.length!==1)throw Error('EXPORT_NEST_LAYOUT_CHANGED');
+    for(const root of [sculpt,...(appearance?ornaments:[])])root.traverseVisible(object => {
       if (!(object instanceof THREE.Mesh)) return;
       if (Array.isArray(object.material)) throw Error('EXPORT_MULTIMATERIAL_LAYOUT_CHANGED');
       if (!object.material.colorWrite || object.material.opacity === 0) return; // paint hit shells
@@ -60,6 +64,6 @@ export function captureAuthoredKitty(selection: ExportSelection): ExportCapture 
       meshes.push({ name: `${mesh.userData.part ?? geometry.type}-${i}`, positions, uv: texcoords, indices: geometry.index ? Array.from(geometry.index.array) : Array.from({ length: p.count }, (_, n) => n), material: materialIds.get(material)! });
     }
     const headCenter = headBounds.getCenter(new THREE.Vector3()), bodyCenter = bodyBounds.getCenter(new THREE.Vector3());
-    return { meshes, materials, crownY, baseY: 0, crownCenter: [(headCenter.x - centerX) * scale, (headCenter.z - centerZ) * scale], baseCenter: [(bodyCenter.x - centerX) * scale, (bodyCenter.z - centerZ) * scale], source: 'authored-kitty-sculpture-v1' };
+    return { meshes, materials, crownY, baseY: 0, crownCenter: [(headCenter.x - centerX) * scale, (headCenter.z - centerZ) * scale], baseCenter: [(bodyCenter.x - centerX) * scale, (bodyCenter.z - centerZ) * scale], source: appearance?'authored-kitty-nest-v1':'authored-kitty-sculpture-v1' };
   } finally { sculpture.dispose(); }
 }

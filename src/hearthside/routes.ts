@@ -5,6 +5,7 @@ export type HearthsideRoute = {
   object?: { kind: 'experience' | 'memory' | 'occasion' | 'note' | 'encounter'; id: string } | {kind:'piece';id:string;designId:string};
   mode: 'present' | 'remember' | 'imagine';
   surface?:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'|'restore';
+  studioSelection?: {designId:string;pieceId:string};
   returnContext?: { path: string; focusId: string };
 };
 const collections = { experience: 'experiences', piece: 'pieces', memory: 'memories', occasion: 'occasions', note: 'notes', encounter: 'encounters' } as const;
@@ -25,6 +26,10 @@ export function hearthsidePath(route: HearthsideRoute): string {
   const query = new URLSearchParams({ household: route.householdId, room: route.room, mode: route.mode });
   if(route.surface)query.set('surface',choice(route.surface,['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe','restore']));
   if (route.object?.kind==='piece')query.set('design',identifier(route.object.designId));
+  if(route.studioSelection){
+    if(!['studio','wardrobe'].includes(route.surface??'')||route.object?.kind==='piece')throw Error('HEARTHSIDE_INVALID_STUDIO_SELECTION');
+    query.set('design',identifier(route.studioSelection.designId));query.set('piece',identifier(route.studioSelection.pieceId));
+  }
   if (route.returnContext) { const back=returnContext(route.returnContext.path,route.returnContext.focusId,route.householdId);query.set('from',back.path);query.set('focus',back.focusId); }
   return `/hearthside${path}?${query}`;
 }
@@ -39,11 +44,13 @@ export function parseHearthsideRoute(url: string, selectedHouseholdId: string): 
     const room = choice(u.searchParams.get('room') ?? (parts[1] === 'rooms' ? parts[2] : 'common') ?? 'common', HEARTHSIDE_ROOMS);
     const mode = choice(u.searchParams.get('mode') ?? 'present', ['present', 'remember', 'imagine']);
     const surface=u.searchParams.has('surface')?{surface:choice(u.searchParams.get('surface'),['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe','restore'] as const)}:{};
+    const selection=u.searchParams.has('piece')||u.searchParams.has('design')&&parts[1]!=='pieces'?{studioSelection:{designId:identifier(u.searchParams.get('design')),pieceId:identifier(u.searchParams.get('piece'))}}:{};
+    if(selection.studioSelection&&(!['studio','wardrobe'].includes(surface.surface??'')||parts[1]==='pieces'))return null;
     const back=u.searchParams.has('from')||u.searchParams.has('focus')?{returnContext:returnContext(u.searchParams.get('from'),u.searchParams.get('focus'),householdId)}:{};
-    if (parts.length === 1 || parts.length === 3 && parts[1] === 'rooms' && HEARTHSIDE_ROOMS.includes(parts[2] as HearthsideRoom)) return { version: 1, householdId, room, mode,...surface,...back };
+    if (parts.length === 1 || parts.length === 3 && parts[1] === 'rooms' && HEARTHSIDE_ROOMS.includes(parts[2] as HearthsideRoom)) return { version: 1, householdId, room, mode,...surface,...selection,...back };
     const kind = Object.entries(collections).find(([, name]) => name === parts[1])?.[0] as keyof typeof collections | undefined;
     if (parts.length !== 3 || !kind) return null;
-    return { version: 1, householdId, room, mode,...surface, object: kind==='piece'?{kind,id:identifier(decodeURIComponent(parts[2]!)),designId:identifier(u.searchParams.get('design'))}:{kind,id:identifier(decodeURIComponent(parts[2]!))},...back };
+    return { version: 1, householdId, room, mode,...surface,...selection, object: kind==='piece'?{kind,id:identifier(decodeURIComponent(parts[2]!)),designId:identifier(u.searchParams.get('design'))}:{kind,id:identifier(decodeURIComponent(parts[2]!))},...back };
   } catch { return null; }
 }
 export function legacyHearthsideRoom(entrance: string): HearthsideRoom {

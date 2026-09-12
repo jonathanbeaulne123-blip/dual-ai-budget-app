@@ -244,6 +244,7 @@ export function HerculesPresence({
   visorPop,
   spark,
   activityBlocked = false,
+  hearthsideResident = false,
   conversationHidden = false,
   memberId,
   view,
@@ -282,6 +283,8 @@ export function HerculesPresence({
   spark?: boolean;
   /** Consequential sheets/palettes keep Hercules visible but pause autonomous work. */
   activityBlocked?: boolean;
+  /** Shared creative time keeps unsolicited financial reminders in the ordinary ledger surfaces. */
+  hearthsideResident?: boolean;
   /** Another Hercules surface owns presentation; retain this conversation's drafts. */
   conversationHidden?: boolean;
   memberId: string;
@@ -495,7 +498,7 @@ export function HerculesPresence({
   const lastBump = useRef<{ id: string; at: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement | null>(null);
   const [bubbleSize, setBubbleSize] = useState({ w: 228, h: 96 });
-  const showProposal = Boolean(proposal?.potentialExpenseId && !adding && !activityBlocked && !setupSelected);
+  const showProposal = Boolean(proposal?.potentialExpenseId && !hearthsideResident && !adding && !activityBlocked && !setupSelected);
   const showWidgetSnippets = Boolean(open && !setupSelected && tab === "home" && focusedWidget && !adding && !(phoneShell && mobileFocus));
   const showTalk = Boolean(open && !setupSelected && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
@@ -1753,7 +1756,8 @@ export function HerculesPresence({
       : [];
   const discoveryInput = { household, memberId, view, tab: adding ? "add" as const : tab, today, accountId: discoveryAccountId, fund: discoveryFund };
   const currentReminder=useMemo(()=>discoveryEnabled?discoverySelection({household,memberId,view,tab:'home',today,now:reminderClock,fund:null}).reminders[0]:undefined,[household,memberId,view,today,reminderClock,discoveryEnabled]);
-  const quietReminder = !autonomyBlocked && !busy && !adding && onDiscoveryNavigate ? currentReminder : undefined;
+  const quietReminder = !hearthsideResident && !autonomyBlocked && !busy && !adding && onDiscoveryNavigate ? currentReminder : undefined;
+  const residentLabel=hearthsideResident?'A little company':'How can I help?';
   const availableDiscoveryActions = () => [...(discoveryEnabled && onDiscoveryNavigate ? HERCULES_CAPABILITIES.filter(row=>discoverySelection(discoveryInput).all.some(candidate=>candidate.capabilityId===row.id)).map(row=>row.action) : []),...(actionService&&actionHousehold?availableHerculesActions({household:actionHousehold,memberId,view,today}).map(row=>`start:${row.id}`):[])];
   const discoveryPanel = () => discoveryEnabled && onDiscoveryNavigate ? <HerculesDiscovery key={discoveryScope(discoveryInput)} input={discoveryInput} initialIssueId={reminderIssue} onCommand={onCompanionCommand}
     blocked={adding || busy} onNavigate={destination => { if(destination.kind==="entry"&&actionRef.current){actionRef.current.send(destination.mode==="expense"?"I just bought something":destination.mode==="income"?"I received some money":"Transfer money");return;}onDiscoveryNavigate(destination); }}
@@ -1822,7 +1826,7 @@ export function HerculesPresence({
         <button
           type="button"
           className={`hercules-pill${quietReminder?' has-reminder':''}`}
-          aria-label={`Talk to ${look.view.name}. ${quietReminder?.title??'Opens focus mode.'}`}
+          aria-label={`Talk to ${look.view.name}. ${quietReminder?.title??(hearthsideResident?'A little company. Opens Hercules.':'Opens focus mode.')}`}
           onClick={onOpenWorkspace ?? openMobileFocus}
         >
           <HerculesLivePortrait
@@ -1834,7 +1838,7 @@ export function HerculesPresence({
             pose="loaf"
             size={40}
           />
-          <span className="hercules-pill-name">{quietReminder?.title??'How can I help?'}</span>
+          <span className="hercules-pill-name">{quietReminder?.title??residentLabel}</span>
         </button>
       )}
       {focusShellMounted && (
@@ -2124,7 +2128,7 @@ export function HerculesPresence({
           reducedMotion() ? "cut-motion" : "",
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
-        aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? ` — ${quietReminder?.title??'How can I help?'}` : ""}`}
+        aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? ` — ${quietReminder?.title??residentLabel}` : ""}`}
         onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(conversationHidden&&onOpenWorkspace)onOpenWorkspace();else if(open)closeChat();else if (onOpenWorkspace) onOpenWorkspace(); else openChatFromBeg(true);}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -2136,7 +2140,7 @@ export function HerculesPresence({
           setPinned((value) => !value);
         }}
       >
-        {!phoneShell && !open && !adding && !activityBlocked && <span className={`hercules-help-label${quietReminder?' hercules-reminder-label':''}`} aria-hidden="true">{quietReminder?.title??'How can I help?'}</span>}
+        {!phoneShell && !open && !adding && !activityBlocked && <span className={`hercules-help-label${quietReminder?' hercules-reminder-label':''}`} aria-hidden="true">{quietReminder?.title??residentLabel}</span>}
         <HerculesLivePortrait
           mood={look.view.mood}
           hat={look.hat}

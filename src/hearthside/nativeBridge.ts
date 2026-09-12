@@ -23,7 +23,7 @@ export const NATIVE_AUTHORED_HEIGHT_MM = 160;
 export function nativeSceneFromDesign(selection: DesignSurfaceSelection, backing: NativeBacking, returnPath: string, capture: (selection: ExportSelection) => ExportCapture = captureAuthoredKitty): NativeScene {
   const identity = validateNativeIdentity(selection.identity), piece = shapeKittyPiece(structuredClone(selection.piece));
   if (piece.id !== identity.pieceId) throw Error('NATIVE_DESIGN_IDENTITY_MISMATCH');
-  const authored = capture({ version: 1, documentId: identity.designId, revision: identity.revision, piece, heightMm: NATIVE_AUTHORED_HEIGHT_MM, construction: 'solid' });
+  const authored = capture({ version: 1, documentId: identity.designId, revision: identity.revision, piece, ...(selection.appearance?{appearance:selection.appearance}:{}), heightMm: NATIVE_AUTHORED_HEIGHT_MM, construction: 'solid' });
   const byMaterial = new Map<number, NativeMesh>();
   const meshes: NativeMesh[] = [];
   for (const mesh of authored.meshes) {

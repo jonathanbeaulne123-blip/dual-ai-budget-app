@@ -1,0 +1,160 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index f8ca29a..8273d15 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,3 +1,4 @@
++import {kittyUsesLedgerReceipts} from './hearthside/legacyBankAcceptance.ts';
+ import { nativeAuthController, nativeWidgetController } from "./hearthside/nativeBootstrap.ts";
+ import { NATIVE_AUTH_EVENT } from "./hearthside/nativeAuth.ts";
+ import {workspaceExperienceContext} from './hearthside/workspaceContext.ts';
+@@ -6220,6 +6221,7 @@ export function App() {
+     const experience=household.hearthside?.experiences.find(e=>e.id===workspaceExperienceSelection.id&&e.state!=='archived');if(!experience)return;
+     return {scope:{identity:ledgerRenderScopeKey,environment,householdId:household.householdId,memberId:actorId},experience:workspaceExperienceContext(experience),onReturn:returnFromExperienceWorkspace};
+   }
++  const kittyAcceptedCommandReader=kittyUsesLedgerReceipts(useLedgerSync,household,localLedgerIdentity(actorId??''))?readAcceptedKittyCommand:undefined;
+   async function readAcceptedKittyCommand(id:string,signal?:AbortSignal){
+     const client=ledgerSyncRef.current;
+     if(!client||signal?.aborted||!renderedWriteIsCurrent()||client.options.scope.environment!==environment||client.options.scope.householdId!==household?.householdId||client.options.scope.memberId!==actorId)throw Error('SCOPE_CLOSED');
+@@ -6826,7 +6828,7 @@ export function App() {
+         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} household={household} memberId={actorId} busy={busy} vaultSource={()=>ledgerSyncRef.current}
+         connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen}
+         initialRoom={playInitialArea === "dressing" ? "studio" : undefined}
+-        onReadAcceptedCommand={readAcceptedKittyCommand}
++        onReadAcceptedCommand={kittyAcceptedCommandReader}
+         onReadAcceptedHousehold={async id=>{const client=ledgerSyncRef.current;if(!client||client.options.scope.environment!==environment||client.options.scope.householdId!==household.householdId||client.options.scope.memberId!==actorId)throw Error("SCOPE_CLOSED");return client.acceptedHousehold(id);}}
+         onReadSubmission={async id => {const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}}
+         onWorkspace={workspaceEnabled?openExperienceWorkspace:undefined}
+@@ -6858,7 +6860,7 @@ export function App() {
+           onGo={(next) => goTab(next)}
+           onOpenMemory={id=>{window.history.pushState({hearthTab:'play'},'',hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}));goTab('play');}}
+           onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
+-          onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey}
++          onReadAcceptedCommand={kittyAcceptedCommandReader} creationIdentity={ledgerRenderScopeKey}
+           onReadSubmission={async id => { const status = await readWorkShiftSubmission(id); if (status === "pending") ledgerSyncRef.current?.retryPending(); return status; }}
+           rehearsal={(
+             <div className="home-rehearsal-entry">
+@@ -7020,7 +7022,7 @@ export function App() {
+         onOpenWorkspace={workspaceEnabled ? () => { setWorkspaceProjectId(null);setWorkspaceExperienceSelection(null); goTab("hercules"); } : undefined}
+               workspaceCards={workspaceEnabled && workspaceSnapshot?.identity === ledgerRenderScopeKey ? month => <WorkspaceProjectCards projects={workspaceSnapshot.projects} household={household} memberId={actorId} scope={view} month={month} today={today} onOpen={id => {setWorkspaceProjectId(id);setWorkspaceExperienceSelection(null);goTab("hercules");}} /> : undefined}
+               key={`${ledgerRenderScopeKey}:${view}`}
+-              goalsContent={context => <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey} planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
++              goalsContent={context => <KittyBanks onReadAcceptedCommand={kittyAcceptedCommandReader} creationIdentity={ledgerRenderScopeKey} planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
+               onContextChange={setPlanContext}
+               contextIdentity={`${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}`}
+               onAskHercules={(prompt, proposal) => {
+@@ -7072,7 +7074,7 @@ export function App() {
+             memberId={actorId}
+             onApply={(next, token) => persist(next, token)}
+           />
+-          <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey}
++          <KittyBanks onReadAcceptedCommand={kittyAcceptedCommandReader} creationIdentity={ledgerRenderScopeKey}
+             environment={environment}
+             household={displayHousehold}
+             booksHousehold={household}
+diff --git a/src/hearthside/BankCreationSurface.tsx b/src/hearthside/BankCreationSurface.tsx
+index d85b8c5..4bd2ddc 100644
+--- a/src/hearthside/BankCreationSurface.tsx
++++ b/src/hearthside/BankCreationSurface.tsx
+@@ -1,3 +1,4 @@
++import {acceptedLegacyCreatedBank,legacyCreatedBank} from './legacyBankAcceptance.ts';
+ import {useEffect,useRef,useState} from 'react';
+ import {addGoal} from '../core/commands.ts';
+ import type {CommitResult,Household,LedgerView} from '../core/types.ts';
+@@ -19,14 +20,34 @@ export async function boundedBankSubmission<T>(promise:Promise<T>,signal:AbortSi
+ export function BankCreationSurface({scope,household,view,busy,context,onCommand,onReadSubmission,onReadAcceptedCommand,onCreated,onCancel}:{scope:BankScope;household:Household;view:LedgerView;busy:boolean;context?:BankCreationContext;onCommand:(fn:(h:Household)=>CommitResult,options?:KittyCommandOptions)=>unknown;onReadSubmission?:KittySubmissionReader;onReadAcceptedCommand?:KittyAcceptedCommandReader;onCreated:(value:{confirmationId:string;goalId:string})=>void|Promise<void>;onCancel?:()=>void}){
+  const [restored]=useState(()=>{try{const review=readBankCreation(localStorage,scope,context);if(review&&review.input.shared!==(view==='household'))throw Error('BANK_REVIEW_SCOPE_MISMATCH');return{review,error:''};}catch{return{review:null,error:'This saved bank review could not be read. Keep it for recovery before starting another bank.'};}});
+  const [review,setReview]=useState(restored.review),[name,setName]=useState(restored.review?.input.name??context?.name??''),[target,setTarget]=useState(String(restored.review?.input.target??'')),[envelope,setEnvelope]=useState(()=>restored.review?.input.envelope??newBankEnvelope(context?.purpose)),[saving,setSaving]=useState(false),[notice,setNotice]=useState(restored.error),[rejected,setRejected]=useState(false);
++ const legacy=!onReadAcceptedCommand&&!context;
+  const scopeKey=JSON.stringify(scope),live=useRef<{key:string;abort:AbortController}>({key:scopeKey,abort:new AbortController()}),lock=useRef(false);
+  if(live.current.key!==scopeKey){live.current.abort.abort();live.current={key:scopeKey,abort:new AbortController()};}
+  useEffect(()=>{if(live.current.abort.signal.aborted)live.current={key:scopeKey,abort:new AbortController()};return()=>live.current.abort.abort();},[scopeKey]);
+  const current=()=>!live.current.abort.signal.aborted&&live.current.key===scopeKey;
+- function openReview(){try{const input={name,target,shared:view==='household',ownerMemberId:view==='household'?null:scope.memberId,envelope};addGoal(household,input);const next:BankCreationReview={version:1,scope,context:context??null,confirmationId:crypto.randomUUID(),input,attempted:false};saveBankCreation(localStorage,next);setReview(next);setRejected(false);setNotice('');}catch(error){setNotice(error instanceof Error?error.message:'This bank needs another look.');}}
++ function openReview(){try{const input={name,target,shared:view==='household',ownerMemberId:view==='household'?null:scope.memberId,envelope};addGoal(household,input);const next:BankCreationReview={version:1,scope,context:context??null,confirmationId:crypto.randomUUID(),input,attempted:false,authority:onReadAcceptedCommand?'ledger-v2':'legacy'};saveBankCreation(localStorage,next);setReview(next);setRejected(false);setNotice('');}catch(error){setNotice(error instanceof Error?error.message:'This bank needs another look.');}}
+  async function confirm(){
+-  if(!review||busy||lock.current||!onReadAcceptedCommand||!current())return;const generation=live.current,signal=generation.abort.signal,isCurrent=()=>live.current===generation&&!signal.aborted;lock.current=true;setSaving(true);setNotice('Checking this bank’s receipt…');
++  if(!review||busy||lock.current||(!onReadAcceptedCommand&&!legacy)||!current())return;const generation=live.current,signal=generation.abort.signal,isCurrent=()=>live.current===generation&&!signal.aborted;lock.current=true;setSaving(true);setNotice('Checking this bank’s receipt…');
+   try{
++   if(legacy){
++    let goal=review.attempted?legacyCreatedBank(household,review.confirmationId,scope,view,review.input):null;
++    if(!goal){
++     if(review.attempted&&review.authority!=='legacy')throw Error('This saved creation belongs to the receipt service. Its acceptance is not available in these books; keep the original review for recovery.');
++     if(!review.attempted&&review.authority==='ledger-v2')throw Error('The saving method changed. Cancel this unsubmitted review and review the current bank again.');
++     const attempted={...review,attempted:true,authority:'legacy' as const};saveBankCreation(localStorage,attempted);setReview(attempted);let definite=false;
++     const result=await boundedBankSubmission(Promise.resolve(onCommand(h=>{
++      if(!isCurrent()||h.environment!==scope.environment||h.householdId!==scope.householdId)throw Error('SCOPE_CLOSED');
++      const value=addGoal(h,review.input);return {...value,undo:{...value.undo,commandKind:'addGoal'}};
++     },{confirmationId:review.confirmationId,suppressUndo:true,onDefinitiveRejected:()=>{definite=true;if(isCurrent())setRejected(true);}})),signal);
++     if(!isCurrent())return;
++     if(definite||(result as {ok?:boolean;postedNothing?:boolean}|null)?.ok===false&&(result as {postedNothing?:boolean}).postedNothing===true){setRejected(true);setNotice('This creation was rejected. Your bank details are kept; cancel the review to edit them.');return;}
++     goal=acceptedLegacyCreatedBank(result,review.confirmationId,scope,view,review.input);
++    }
++    await onCreated({confirmationId:review.confirmationId,goalId:goal.id});
++    localStorage.removeItem(bankCreationKey(scope,context));if(isCurrent())setNotice('The accepted bank is ready.');return;
++   }
++   if(!onReadAcceptedCommand)return;
++   if(review.authority==='legacy')throw Error('This review belongs to the previous saving method. Return to that ledger to check its original acceptance before creating another bank.');
+    let accepted=review.attempted?await onReadAcceptedCommand(review.confirmationId,signal):null;if(!isCurrent())return;
+    if(!accepted){
+     const status=review.attempted&&onReadSubmission?await onReadSubmission(review.confirmationId):'missing';if(!isCurrent())return;
+@@ -41,7 +62,7 @@ export function BankCreationSurface({scope,household,view,busy,context,onCommand
+    const goal=acceptedCreatedBank(accepted,review.confirmationId,scope,view);
+    await onCreated({confirmationId:review.confirmationId,goalId:goal.id});
+    localStorage.removeItem(bankCreationKey(scope,context));if(!isCurrent())return;setNotice('The accepted bank is ready.');
+-  }catch(error){if(isCurrent())setNotice(error instanceof Error?error.message:'The receipt is unavailable. Keep this review and try again.');}
++  }catch(error){if(isCurrent())setNotice(error instanceof Error&&error.message==='BANK_ACCEPTANCE_NOT_CONFIRMED'?'Acceptance is not confirmed. Keep this exact review and check its saved creation again.':error instanceof Error?error.message:'The receipt is unavailable. Keep this review and try again.');}
+   finally{if(isCurrent()){lock.current=false;setSaving(false);}}
+  }
+  function edit(){if(review?.attempted&&!rejected)return;try{localStorage.removeItem(bankCreationKey(scope,context));setReview(null);setRejected(false);setNotice('');}catch{setNotice('The saved review could not be cleared. Try again.');}}
+@@ -52,9 +73,9 @@ export function BankCreationSurface({scope,household,view,busy,context,onCommand
+    <label>Bank name<input required maxLength={100} value={name} disabled={Boolean(review)} onChange={e=>setName(e.target.value)} placeholder="A slower week away"/></label>
+    <label>How much (CAD)<input required inputMode="decimal" value={target} disabled={Boolean(review)} onChange={e=>setTarget(e.target.value)} placeholder="2,000"/></label>
+    <details className="kitty-optional" open={Boolean(context)}><summary>Say more (optional)</summary><label>Why this one<textarea maxLength={1000} value={envelope.purpose} disabled={Boolean(review)} onChange={e=>setEnvelope({...envelope,purpose:e.target.value})}/></label><label>Belongs in<select value={envelope.kind} disabled={Boolean(review)} onChange={e=>setEnvelope({...envelope,kind:e.target.value as typeof envelope.kind})}><option value="build">Build · a future we choose</option><option value="protect">Protect · a promise or cushion</option><option value="prepare">Prepare · a cost that comes around</option></select></label></details>
+-   <div className="kitty-actions"><button className="kitty-primary" disabled={busy||saving||Boolean(review)||Boolean(restored.error)||!onReadAcceptedCommand||!name.trim()||!fillDraftCents(target)}>Review {view==='personal'?'personal':'shared'} bank</button>{onCancel&&<button type="button" onClick={onCancel}>{review?.attempted?'Return with review saved':'Cancel'}</button>}</div>
+-   <small>This makes a bank and clay to shape. It does not assign, contribute or move money.</small>{!onReadAcceptedCommand&&<p role="status">Connect to the current household’s receipt service to create a bank.</p>}{notice&&<p role="status">{notice}</p>}
++   <div className="kitty-actions"><button className="kitty-primary" disabled={busy||saving||Boolean(review)||Boolean(restored.error)||(!onReadAcceptedCommand&&!legacy)||!name.trim()||!fillDraftCents(target)}>Review {view==='personal'?'personal':'shared'} bank</button>{onCancel&&<button type="button" onClick={onCancel}>{review?.attempted?'Return with review saved':'Cancel'}</button>}</div>
++   <small>This makes a bank and clay to shape. It does not assign, contribute or move money.</small>{!onReadAcceptedCommand&&!legacy&&<p role="status">Connect to the current household’s receipt service to create a bank.</p>}{notice&&<p role="status">{notice}</p>}
+   </form>
+-  {review&&<ConfirmSheet key={review.confirmationId} title="Review this bank" body={`${review.input.name} · ${formatCad(parseAmount(review.input.target,'Target'))} target · ${view==='household'?'Shared':'Personal'}`} extra={`${review.input.envelope?.purpose||'No purpose note.'} ${context?'Its connection to the intention has a separate review. ':''}No money will be moved.`} notice={notice||undefined} content={review.attempted?<button type="button" onClick={onCancel??(()=>{})}>Return with review saved</button>:undefined} confirmLabel={review.attempted?'Check saved creation':'Final Confirm'} confirmDisabled={rejected||!onReadAcceptedCommand} cancelDisabled={review.attempted&&!rejected} busy={busy||saving} onConfirm={()=>void confirm()} onCancel={edit}/>}
++  {review&&<ConfirmSheet key={review.confirmationId} title="Review this bank" body={`${review.input.name} · ${formatCad(parseAmount(review.input.target,'Target'))} target · ${view==='household'?'Shared':'Personal'}`} extra={`${review.input.envelope?.purpose||'No purpose note.'} ${context?'Its connection to the intention has a separate review. ':''}No money will be moved.`} notice={notice||undefined} content={review.attempted?<button type="button" onClick={onCancel??(()=>{})}>Return with review saved</button>:undefined} confirmLabel={review.attempted?'Check saved creation':'Final Confirm'} confirmDisabled={rejected||(!onReadAcceptedCommand&&!legacy)} cancelDisabled={review.attempted&&!rejected} busy={busy||saving} onConfirm={()=>void confirm()} onCancel={edit}/>}
+  </div>;
+ }
+diff --git a/src/hearthside/bankCreation.ts b/src/hearthside/bankCreation.ts
+index 5f8eec3..4881875 100644
+--- a/src/hearthside/bankCreation.ts
++++ b/src/hearthside/bankCreation.ts
+@@ -7,16 +7,17 @@ import {vaultObject,vaultAssert} from './vaultContracts.ts';
+ import type {BankScope} from './bankReceipt.ts';
+ export type BankCreationContext={id:string;experienceId:string;experienceRevision:number;name:string;purpose:string};
+ export type BankCreationInput=Parameters<typeof addGoal>[1];
+-export type BankCreationReview={version:1;scope:BankScope;context:BankCreationContext|null;confirmationId:string;input:BankCreationInput;attempted:boolean};
++export type BankCreationReview={version:1;scope:BankScope;context:BankCreationContext|null;confirmationId:string;input:BankCreationInput;attempted:boolean;authority?:'ledger-v2'|'legacy'};
+ export type BankCreationStorage=Pick<Storage,'getItem'|'setItem'|'removeItem'>;
+ export const bankCreationKey=(scope:BankScope,context?:BankCreationContext)=>`hearth:bank-create:${JSON.stringify([scope.identity,scope.environment,scope.householdId,scope.memberId,context?.id??null])}`;
+ export function newBankEnvelope(purpose='') {return {...defaultGoalEnvelope(),purpose,studio:{version:1 as const,draft:newKittyPiece(crypto.randomUUID().slice(0,8),new Date().toISOString(),'cream'),fired:[]}};}
+ export function decodeBankCreationReview(raw:unknown,scope:BankScope,context?:BankCreationContext):BankCreationReview{
+- const r=vaultObject(raw,['version','scope','context','confirmationId','input','attempted']);
++ const r=vaultObject(raw,['version','scope','context','confirmationId','input','attempted','authority']);
+  vaultAssert(r.version===1&&canonical(r.scope)===canonical(scope)&&canonical(r.context)===canonical(context??null)&&typeof r.confirmationId==='string'&&/^[0-9a-f-]{36}$/i.test(r.confirmationId)&&typeof r.attempted==='boolean','BANK_REVIEW_SCOPE_MISMATCH');
++ vaultAssert(r.authority===undefined||r.authority==='ledger-v2'||r.authority==='legacy','BANK_REVIEW_INVALID');
+  const i=vaultObject(r.input,['name','target','shared','ownerMemberId','envelope']),envelope=shapeGoalEnvelope(i.envelope);
+  vaultAssert(typeof i.name==='string'&&i.name.trim().length>0&&i.name.length<=100&&typeof i.target==='string'&&i.target.length<=30&&parseAmount(i.target,'Target')>0&&typeof i.shared==='boolean'&&(i.shared?i.ownerMemberId===null:i.ownerMemberId===scope.memberId)&&envelope&&!envelope.designRef&&envelope.archivedAt===null&&canonical(envelope)===canonical(i.envelope),'BANK_REVIEW_INVALID');
+- return {version:1,scope,context:context??null,confirmationId:r.confirmationId,input:{name:i.name,target:i.target,shared:i.shared,ownerMemberId:i.ownerMemberId as string|null,envelope},attempted:r.attempted};
++ return {version:1,scope,context:context??null,confirmationId:r.confirmationId,input:{name:i.name,target:i.target,shared:i.shared,ownerMemberId:i.ownerMemberId as string|null,envelope},attempted:r.attempted,...(r.authority?{authority:r.authority as 'ledger-v2'|'legacy'}:{})};
+ }
+ export function readBankCreation(storage:BankCreationStorage,scope:BankScope,context?:BankCreationContext):BankCreationReview|null{
+  const raw=storage.getItem(bankCreationKey(scope,context));if(raw===null)return null;if(raw.length>128*1024)throw Error('BANK_REVIEW_INVALID');return decodeBankCreationReview(JSON.parse(raw),scope,context);
+diff --git a/src/kitty/KittyBankRoom.tsx b/src/kitty/KittyBankRoom.tsx
+index 0f63711..a066057 100644
+--- a/src/kitty/KittyBankRoom.tsx
++++ b/src/kitty/KittyBankRoom.tsx
+@@ -249,7 +249,8 @@ function Room({
+   );
+   const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? "");
+   const bankScope={identity:creationIdentity??identity,environment:h.environment,householdId:h.householdId,memberId};
+-  const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext);}});
++  const initiallyNeedsCreation=!h.goals.some(g=>goalVisibleInView(g,memberId,view)&&!g.envelope?.archivedAt&&g.status!=='retired');
++  const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||initiallyNeedsCreation||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext||initiallyNeedsCreation);}});
+   const [studioFor, setStudioFor] = useState("");
+   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
+   const visible = all.filter((goal) =>

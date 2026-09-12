@@ -241,9 +241,10 @@ export function KittyStage({
   const hitAt = (x: number, y: number) => live ? api.current?.hit(x,y,true) ?? null : host.current ? flatKittyHit(host.current,x,y,true) : null;
   useEffect(() => { setFlatStroke(null); }, [piece?.paint,flat,failed]);
   useEffect(() => {
-    if (live || !apiRef) return;
-    apiRef.current = { paintStroke: stroke => setFlatStroke({...stroke,pts:[...stroke.pts]}), replayPaint: () => setFlatStroke(null), rotate: () => {} };
-    return () => { apiRef.current = null; };
+    if (!apiRef) return;
+    const active=live ? api.current : { paintStroke:(stroke:KittyStrokeV1) => setFlatStroke({...stroke,pts:[...stroke.pts]}), replayPaint:() => setFlatStroke(null), rotate:() => {} };
+    apiRef.current=active;
+    return () => { if(apiRef.current===active)apiRef.current = null; };
   },[live,apiRef]);
   useEffect(() => { if (mode !== "paint") { api.current?.previewBrush(null);setFlatPreview(null);setRing(null); } },[mode]);
   const flatPiece = piece && flatStroke ? {...piece,paint:{...piece.paint,strokes:[...piece.paint.strokes,flatStroke]}} : piece;

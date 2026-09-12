@@ -1,3 +1,5 @@
+import {decodeKittyDesignReference} from '../hearthside/designContracts.ts';
+import type {KittyDesignReference} from '../hearthside/designContracts.ts';
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 import { shapeKittyStudio, KITTY_STUDIO_LIMITS } from "./kittyStudio.ts";
@@ -7,8 +9,10 @@ import { ValidationError, type CommitResult, type Household, type KittyGlaze, ty
 export const NEST_CATEGORIES = ["protect", "everyday", "build", "prepare"] as const;
 export type NestCategory = typeof NEST_CATEGORIES[number];
 /** Cosmetic records only. Parent banks never enter Goals or claim money. */
-export type KittyNestLook = { at: string; name: string; glaze: KittyGlaze; studio?: KittyStudioV1 };
+export type KittyNestLook = { designRef?:KittyDesignReference; at: string; name: string; glaze: KittyGlaze; studio?: KittyStudioV1 };
 export type KittyNestDesign = {
+  designRef?:KittyDesignReference;
+  designHasFired?:boolean;
   version: 1;
   id: string;
   bankKey: string;
@@ -29,7 +33,7 @@ export const nestDesignId = (view: LedgerView, memberId: string, bankKey: string
 export const nestDesignInView = (row: KittyNestDesign, memberId: string, view: LedgerView) => row.visibility === view && (view === "household" || row.createdBy === memberId);
 const fail = (): never => { throw new ValidationError("This bank design needs an updated Hearth. Reload and try again."); };
 const iso = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
-const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history"];
+const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history", "designRef", "designHasFired"];
 export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 4000) return fail();
@@ -47,13 +51,17 @@ export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
     if (r.bankKey === "king" && r.category !== null) return fail();
     if (r.bankKey.startsWith("plan:") && r.category !== null && r.category !== r.bankKey.slice(5)) return fail();
     const studio = shapeKittyStudio(r.studio);
+    const designRef=r.designRef===undefined?undefined:decodeKittyDesignReference(r.designRef);
+    if(designRef&&studio||r.designHasFired!==undefined&&(typeof r.designHasFired!=="boolean"||!designRef))return fail();
     if (r.history !== undefined && !Array.isArray(r.history)) return fail();
     const history = r.history?.map(look => {
-      if (!look || Object.keys(look).some(key => !["at", "name", "glaze", "studio"].includes(key)) || !iso(look.at) || typeof look.name !== "string" || look.name.length > 120 || !["cream", "sea-glass", "terracotta", "midnight", "rose"].includes(look.glaze)) return fail();
-      return { ...look, studio: shapeKittyStudio(look.studio) };
+      if (!look || Object.keys(look).some(key => !["at", "name", "glaze", "studio", "designRef"].includes(key)) || !iso(look.at) || typeof look.name !== "string" || look.name.length > 120 || !["cream", "sea-glass", "terracotta", "midnight", "rose"].includes(look.glaze)) return fail();
+      const ref=look.designRef===undefined?undefined:decodeKittyDesignReference(look.designRef);
+      if(ref&&look.studio)return fail();
+      return { ...look, studio: shapeKittyStudio(look.studio), ...(ref?{designRef:ref}:{}) };
     });
     if (history?.some((look, i) => look.at < r.createdAt || look.at > r.updatedAt || (i > 0 && look.at < history[i - 1]!.at))) return fail();
-    return { ...r, name: r.name.trim(), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}) };
+    return { ...r, name: r.name.trim(), ...(designRef?{designRef}:{}), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}) };
   });
   if (new Set(rows.map(row => row.id)).size !== rows.length) return fail();
   return rows;
@@ -103,7 +111,8 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
   if (!nestSourceVisible(h, input.memberId, input.view, input.bankKey)) throw new ValidationError("This bank is no longer available in this space.");
   const source = input.bankKey.split(":")[0];
   const now = new Date().toISOString();
-  const history = old && !["king", "plan"].includes(source!) ? receiptLooks(h, old) : old?.history;
+  const history = old && !["king", "plan"].includes(source!) ? retainNestReceiptLooks(h, old) : old?.history;
+  if(old?.designRef&&(input.studio!==undefined||input.fire))throw new ValidationError("This pottery now uses the shared Studio. Its history cannot be replaced.");
   let studio = shapeKittyStudio(input.studio ?? old?.studio);
   if (input.fire) {
     if (!studio?.draft) throw new ValidationError("Put some clay on the wheel first.");
@@ -112,10 +121,10 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
     if (fired.length > KITTY_STUDIO_LIMITS.fired) throw new ValidationError("Make room on your pottery shelf first.");
     studio = { version: 1, draft: null, fired, displayId: piece.id };
   }
-  if (input.completeSetup && (source !== "king" || !studio?.fired.length)) throw new ValidationError("Fire your King before completing this chapter.");
+  if (input.completeSetup && (source !== "king" || !(old?.designRef?old.designHasFired:studio?.fired.length))) throw new ValidationError("Fire your King before completing this chapter.");
   const row = shapeKittyNestDesigns([{ version: 1, id, bankKey: input.bankKey, visibility: input.view,
     createdBy: old?.createdBy ?? input.memberId, revision: (old?.revision ?? 0) + 1,
-    name: input.name, glaze: input.glaze, ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}), category: input.category ?? old?.category ?? null,
+    name: input.name, glaze: input.glaze, ...(old?.designRef?{designRef:old.designRef,designHasFired:old.designHasFired??false}:{}), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}), category: input.category ?? old?.category ?? null,
     archivedAt: input.archived === undefined ? old?.archivedAt ?? null : input.archived ? now : null,
     setupCompletedAt: old?.setupCompletedAt ?? (input.completeSetup ? now : null), createdAt: old?.createdAt ?? now, updatedAt: now }])[0]!;
   return { household: { ...h, kittyNestDesigns: [...(h.kittyNestDesigns ?? []).filter(r => r.id !== id), row] }, postedIds: [id], warnings: [],
@@ -125,9 +134,9 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
 /** A paid pot is a keepsake: later series edits belong to future pots. */
 export function nestLookAt(design: KittyNestDesign | undefined, paidAt: string): KittyNestDesign | undefined {
   if (!design || design.createdAt > paidAt) return undefined;
-  const looks: KittyNestLook[] = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, studio: design.studio }];
+  const looks: KittyNestLook[] = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, studio: design.studio, ...(design.designRef?{designRef:design.designRef}:{}) }];
   const look = looks.filter(row => row.at <= paidAt).sort((a,b) => b.at.localeCompare(a.at))[0];
-  return look ? { ...design, name: look.name, glaze: look.glaze, studio: look.studio } : undefined;
+  return look ? { ...design, name: look.name, glaze: look.glaze, studio: look.studio, designRef:look.designRef } : undefined;
 }
 /** Retain only appearances that an accepted receipt can reference. Repeated editing
  * and archive/restore cannot exhaust a pot's history or rewrite a paid keepsake. */
@@ -152,8 +161,8 @@ function sourceReceipts(h: Household, design: KittyNestDesign) {
   }
   return h.transactions.filter(tx => linked.has(tx.id) && tx.type === "expense" && !tx.refundOfId && !tx.reversalOfId && isVisibleInView(tx, design.createdBy, design.visibility));
 }
-function receiptLooks(h: Household, design: KittyNestDesign): KittyNestLook[] {
-  const looks = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, ...(design.studio ? { studio: design.studio } : {}) }];
+export function retainNestReceiptLooks(h: Household, design: KittyNestDesign): KittyNestLook[] {
+  const looks = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, ...(design.studio ? { studio: design.studio } : {}), ...(design.designRef?{designRef:design.designRef}:{}) }];
   const keep = new Set<number>();
   for (const receipt of sourceReceipts(h, design)) {
     if (receipt.type !== "expense" || receipt.createdAt < design.createdAt) continue;
@@ -164,7 +173,7 @@ function receiptLooks(h: Household, design: KittyNestDesign): KittyNestLook[] {
   return looks.filter((_, index) => keep.has(index));
 }
 export function assertNestKeepsakes(h: Household, old: KittyNestDesign, row: KittyNestDesign): void {
-  const appearance = (design: KittyNestDesign | undefined) => design ? { name: design.name, glaze: design.glaze, studio: design.studio } : null;
+  const appearance = (design: KittyNestDesign | undefined) => design ? { name: design.name, glaze: design.glaze, studio: design.studio, ...(design.designRef?{designRef:design.designRef}:{}) } : null;
   for (const receipt of sourceReceipts(h, old)) {
     if (receipt.type === "expense" && canonical(appearance(nestLookAt(old, receipt.createdAt))) !== canonical(appearance(nestLookAt(row, receipt.createdAt)))) {
       throw new ValidationError("A broken pot keeps its original appearance.");
@@ -173,17 +182,18 @@ export function assertNestKeepsakes(h: Household, old: KittyNestDesign, row: Kit
 }
 export function assertKittyNestTransition(previous: Household | null | undefined, next: Household, actorMemberId?: string, commandKind?: string): void {
   const nextRows = shapeKittyNestDesigns(next.kittyNestDesigns);
-  if (!previous) return;
+  if (!previous) return; // Validated cloud replicas may hydrate current canonical references.
   const oldRows = shapeKittyNestDesigns(previous.kittyNestDesigns);
   for (const old of oldRows) {
     const row = nextRows.find(r => r.id === old.id);
-    if (!row || row.createdBy !== old.createdBy || row.visibility !== old.visibility || row.bankKey !== old.bankKey || row.createdAt !== old.createdAt || (old.setupCompletedAt && row.setupCompletedAt !== old.setupCompletedAt)) throw new ValidationError("An accepted bank design cannot disappear or change owner. Archive it instead.");
+    if (!row || canonical(row.designRef)!==canonical(old.designRef)||row.designHasFired!==old.designHasFired||row.createdBy !== old.createdBy || row.visibility !== old.visibility || row.bankKey !== old.bankKey || row.createdAt !== old.createdAt || (old.setupCompletedAt && row.setupCompletedAt !== old.setupCompletedAt)) throw new ValidationError("An accepted bank design cannot disappear or change owner. Archive it instead.");
     if (row.revision < old.revision || (row.revision === old.revision && canonical(row) !== canonical(old))) throw new ValidationError("The bank design changed. Open its current version.");
     if (!["king", "plan"].includes(old.bankKey.split(":")[0]!)) assertNestKeepsakes(previous, old, row);
   }
   for (const row of nextRows) {
     const old = oldRows.find(r => r.id === row.id);
     if (old && canonical(old) === canonical(row)) continue;
+    if(!old&&(row.designRef||row.history?.some(look=>look.designRef)))throw new ValidationError("Canonical pottery is owned by the creative authority.");
     if (!commandKind?.startsWith("saveKittyNestDesign") || !actorMemberId || !next.members.some(m => m.id === actorMemberId && m.active) || !nestSourceVisible(next, actorMemberId, row.visibility, row.bankKey)
       || (!old && row.createdBy !== actorMemberId) || (row.visibility === "personal" && row.createdBy !== actorMemberId) || row.revision !== (old?.revision ?? 0) + 1) throw new ValidationError("Open this bank in its own space before changing its design.");
   }

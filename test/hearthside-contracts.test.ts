@@ -176,6 +176,16 @@ describe('Authorship, meaning and recurring occasions', () => {
     expect(()=>decodeHearthside({...emptyHearthside(),experiences:rows})).toThrow('HEARTHSIDE_INVALID_LIST');
     expect(()=>decodeHearthside({...emptyHearthside(),memories:[{...memory(),date:'2026-02-30'}]})).toThrow('HEARTHSIDE_INVALID_DATE');
   });
+  it('retains an accepted free piece under its intention without requiring a bank, and rejects ambiguous Studio addresses', () => {
+    const route={version:1 as const,householdId:'HH-one',room:'common' as const,mode:'present' as const,surface:'studio' as const,object:{kind:'experience' as const,id:'EXP-free'},studioSelection:{designId:'DESIGN-free',pieceId:'PIECE-unfinished'}};
+    const path=hearthsidePath(route);
+    expect(parseHearthsideRoute(path,'HH-one')).toEqual(route);
+    expect(parseHearthsideRoute(path,'HH-two')).toBeNull();
+    expect(parseHearthsideRoute(path.replace('surface=studio','surface=letters'),'HH-one')).toBeNull();
+    expect(parseHearthsideRoute(path.replace('&piece=PIECE-unfinished',''),'HH-one')).toBeNull();
+    expect(()=>hearthsidePath({...route,surface:undefined})).toThrow('HEARTHSIDE_INVALID_STUDIO_SELECTION');
+    expect(()=>hearthsidePath({...route,object:{kind:'piece',id:'PIECE-other',designId:'DESIGN-other'}})).toThrow('HEARTHSIDE_INVALID_STUDIO_SELECTION');
+  });
   it('round-trips stable object routes and refuses another household or malformed objects', () => {
     const route={version:1 as const,householdId:'HH-one',room:'studio' as const,mode:'present' as const,object:{kind:'piece' as const,id:'PIECE-one',designId:'DESIGN-one'}};
     const path=hearthsidePath(route); expect(parseHearthsideRoute(path,'HH-one')).toEqual(route);

@@ -1,3 +1,4 @@
+import type {NestDesignSource} from './nestDesignBinding.ts';
 import type { KittyFeature, KittyPart, KittyPieceV1, KittySculptV1, KittyStampV1, KittyStrokeV1 } from "../core/types.ts";
 import { defaultKittySculpt, isKittyColor, KITTY_FEATURES, KITTY_PARTS, shapeKittyPaint, shapeKittySculpt } from "../core/kittyStudio.ts";
 
@@ -24,7 +25,7 @@ export type KittyDesignOperation = Base & (
 export type KittyAcceptedDesignOperation = { operation: KittyDesignOperation; actorId: string; order: number; acceptedAt: string };
 export type KittyLegacyBaseline = { version: 1; migrationId: string; pieces: KittyPieceV1[]; displayPieceId: string | null; authorship: "unknown" };
 /** Separately loaded canonical document. Never put this journal in a goal envelope. */
-export type KittyDesignDocument = { version: 1; id: string; scope: KittyDesignScope; legacy: KittyLegacyBaseline | null; revision: number; operations: KittyAcceptedDesignOperation[] };
+export type KittyDesignDocument = { nest?: NestDesignSource; version: 1; id: string; scope: KittyDesignScope; legacy: KittyLegacyBaseline | null; revision: number; operations: KittyAcceptedDesignOperation[] };
 export type KittyDesignReference = { version: 1; designId: string; revision: number; displayPieceId: string | null };
 /** Constructed by authenticated authority, never decoded from a client operation. */
 export type KittyDesignAuthority = { environment: "development" | "production"; householdId: string; actorId: string; order: number; acceptedAt: string };

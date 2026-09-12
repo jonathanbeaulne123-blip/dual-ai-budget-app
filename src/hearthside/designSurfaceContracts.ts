@@ -1,8 +1,9 @@
+import type {NestAppearance} from './nestDesignBinding.ts';
 import type { KittyPieceV1 } from '../core/types.ts';
 import type { NativeIdentity } from './native.ts';
 
 /** The caller resolves this exact revision through authenticated design authority. */
-export type DesignSurfaceSelection = { identity: NativeIdentity; piece: KittyPieceV1 };
+export type DesignSurfaceSelection = { identity: NativeIdentity; piece: KittyPieceV1; appearance?:NestAppearance };
 export type DesignSurfaceTheme = 'classic' | 'taylor' | 'newfoundland';
 export const designSurfaceKey = (selection: DesignSurfaceSelection) => JSON.stringify(selection.identity);
 export const designDownloadName = (selection: DesignSurfaceSelection, extension: string) => `Hearthside-${selection.identity.pieceId.replace(/[^A-Za-z0-9_-]/g, '-')}-r${selection.identity.revision}.${extension}`;

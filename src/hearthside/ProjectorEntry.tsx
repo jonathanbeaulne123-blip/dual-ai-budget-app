@@ -36,7 +36,7 @@ export function ProjectorEntry({household,memberId,identity,source,theme,onClose
       const memory=await currentMemory(scope);if(!memory.designs.some(ref=>JSON.stringify(ref)===JSON.stringify(reference)))return {status:'withdrawn'};
       const document=await designs?.load(reference.documentId,reference.revision);assertCurrent(scope.signal);
       if(!document||document.scope.ownerMemberId!==null||document.scope.environment!==household.environment||document.scope.householdId!==household.householdId)return {status:'unavailable'};
-      const snapshot=snapshotKittyDesignRevision(document,reference.pieceId,reference.revision),blob=await paintedSnapshot(snapshot.piece,scope.signal);
+      const snapshot=snapshotKittyDesignRevision(document,reference.pieceId,reference.revision),blob=await paintedSnapshot(snapshot.piece,scope.signal,snapshot.appearance);
       return {status:'available',reference,blob,rendering:'authored-flat'};
     }}
     validateDownload={async(proof,context)=>{

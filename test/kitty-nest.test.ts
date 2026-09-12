@@ -37,6 +37,13 @@ describe("Four tiers of nesting banks",()=>{
   expect(banks(h).filter(row=>row.goal).map(row=>row.goal!.id).sort()).toEqual(h.goals.map(row=>row.id).sort());
   expect(nestCategoryFor("Summer vacation")).toBe("build");expect(nestCategoryFor("Unknown purpose")).toBe("everyday");expect(nestCategoryFor("Summer vacation","protect")).toBe("protect");
  });
+ it("keeps unreadable goal backing and dependent category shares unavailable",()=>{
+  const h=planLifeFixture('household'),event=h.fundEvents!.find(row=>row.kind==='kitty-allocated')??h.fundEvents![0]!;
+  h.fundEvents!.push({...event,id:'FUND-legacy-release',kind:'kitty-released',goalId:undefined,amountCents:1,date:'2026-09-12'});
+  const result=nest(h);expect(result.categories.every(row=>row.amountCents===null)).toBe(true);
+  expect(result.categories.flatMap(row=>row.children).filter(row=>row.goal).every(row=>row.amountCents===null)).toBe(true);
+  expect(Number.isSafeInteger(result.king.amountCents)).toBe(true);
+ });
  it("breaks the paid occurrence, automatically shows the next, and restores reversed debt without duplicating either",()=>{
   let h=planLifeFixture("household");const r=h.recurrences[0]!;
   const paid=recordBillPayment(h,{recurrenceId:r.id,occurrenceDate:r.nextDate,paymentDate:"2026-09-19",amount:"900",accountId:r.accountId,createdBy:memberId});h=paid.household;

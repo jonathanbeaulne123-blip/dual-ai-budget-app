@@ -23,15 +23,15 @@ export class WorkspaceClient {
     if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const token = await this.token();
     // A token can resolve after the deadline. It must never dispatch a late write.
-    signal.throwIfAborted();
     if (!this.current() || generation!==this.generation) throw new Error('Your Hearth account changed. Reopen this workspace.');
+    signal.throwIfAborted();
     const response = await fetch(this.endpoint+(after===undefined?'':`?after=${after}`), { method: body ? 'POST' : 'GET', credentials: 'omit', cache: 'no-store',
       headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
       body: body ? JSON.stringify(body) : undefined, signal });
     if (!this.current() || generation!==this.generation) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const value = await response.json();
-    signal.throwIfAborted();
     if (!this.current() || generation!==this.generation) throw new Error('Your Hearth account changed. Reopen this workspace.');
+    signal.throwIfAborted();
     if (!response.ok) throw new Error(value.error ?? 'WORKSPACE_UNAVAILABLE');
     return value;
   }

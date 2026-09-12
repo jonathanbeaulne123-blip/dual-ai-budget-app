@@ -1,3 +1,4 @@
+import {kittyUsesLedgerReceipts} from './hearthside/legacyBankAcceptance.ts';
 import { nativeAuthController, nativeWidgetController } from "./hearthside/nativeBootstrap.ts";
 import { NATIVE_AUTH_EVENT } from "./hearthside/nativeAuth.ts";
 import {workspaceExperienceContext} from './hearthside/workspaceContext.ts';
@@ -853,7 +854,29 @@ export function App() {
     };
     locate(); window.addEventListener("popstate", locate); return () => window.removeEventListener("popstate", locate);
   }, [environment, household?.householdId, session?.memberId, session?.view]);
-  useEffect(()=>{if(!PLAY_ENABLED)return;const open=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.environment===environment&&detail.householdId===household?.householdId&&detail.memberId===session?.memberId){event.stopImmediatePropagation();if (!["planner", "timeMachine", "hercules", "play"].includes(currentTabRef.current)) { secondaryOrigin.current = currentTabRef.current; secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; } setPlayInitialArea("dressing");setTab("play");}};window.addEventListener('hearth:open-fitting',open,true);return()=>window.removeEventListener('hearth:open-fitting',open,true);},[environment,household?.householdId,session?.memberId]);
+  useEffect(() => {
+    if (!PLAY_ENABLED && !HEARTHSIDE_FLAGS.presentation) return;
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.environment !== environment || detail.householdId !== household?.householdId || detail.memberId !== session?.memberId) return;
+      event.stopImmediatePropagation();
+      if (!["planner", "timeMachine", "hercules", "play"].includes(currentTabRef.current)) {
+        secondaryOrigin.current = currentTabRef.current;
+        secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      }
+      if (HEARTHSIDE_FLAGS.presentation && household && session?.view === "household") {
+        const origin = parseHearthsideRoute(window.location.href, household.householdId);
+        const path = hearthsidePath({version:1,householdId:household.householdId,room:"studio",mode:"present",surface:"wardrobe",...(origin ? {returnContext:{path:hearthsidePath(origin),focusId:"hearthside-title"}} : {})});
+        window.history.pushState({hearthTab:"play"}, "", path);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        setHearthsideToolReturn(null);
+      }
+      setPlayInitialArea("dressing");
+      setTab("play");
+    };
+    window.addEventListener("hearth:open-fitting", open, true);
+    return () => window.removeEventListener("hearth:open-fitting", open, true);
+  }, [environment, household?.householdId, session?.memberId, session?.view]);
   useEffect(() => {
     const source = herculesSourceFocus;
     if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
@@ -6196,7 +6219,12 @@ export function App() {
     if (adding && !confirm) pauseAdd();
   }
   function openBugReport(text = '') {
-    setBugReportRequest({ id: crypto.randomUUID(), context: captureReportContext(), text, identity: ledgerRenderScopeKey });
+    openPrivateBugReport({ id: crypto.randomUUID(), context: captureReportContext(), text });
+  }
+  function openPrivateBugReport(request: { id: string; context: FeedbackContext; text?: string }) {
+    setWorkspaceExperienceSelection(null);
+    setWorkspaceProjectId(null);
+    setBugReportRequest({ ...request, identity: ledgerRenderScopeKey });
     setWorkspaceCompact(true);
     // Use the existing presentation pause so an unfinished Add draft survives the report.
     if (adding && !confirm) pauseAdd();
@@ -6231,7 +6259,7 @@ export function App() {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     if (HEARTHSIDE_FLAGS.presentation && next !== "play" && url.pathname.startsWith("/hearthside")) {
-      url.pathname = "/"; url.searchParams.delete("household"); url.searchParams.delete("room"); url.searchParams.delete("mode"); url.searchParams.delete("from"); url.searchParams.delete("focus"); url.searchParams.delete("design"); url.searchParams.delete("surface");
+      url.pathname = "/"; url.searchParams.delete("household"); url.searchParams.delete("room"); url.searchParams.delete("mode"); url.searchParams.delete("from"); url.searchParams.delete("focus"); url.searchParams.delete("design"); url.searchParams.delete("surface"); url.searchParams.delete("piece");
       window.history.pushState({hearthTab:next}, "", `${url.pathname}${url.search}${url.hash}`);
     }
     if (next === "till") url.hash = TILL_HOME_HASH.slice(1);
@@ -6256,6 +6284,7 @@ export function App() {
     const experience=household.hearthside?.experiences.find(e=>e.id===workspaceExperienceSelection.id&&e.state!=='archived');if(!experience)return;
     return {scope:{identity:ledgerRenderScopeKey,environment,householdId:household.householdId,memberId:actorId},experience:workspaceExperienceContext(experience),onReturn:returnFromExperienceWorkspace};
   }
+  const kittyAcceptedCommandReader=kittyUsesLedgerReceipts(useLedgerSync,household,localLedgerIdentity(actorId??''))?readAcceptedKittyCommand:undefined;
   async function readAcceptedKittyCommand(id:string,signal?:AbortSignal){
     const client=ledgerSyncRef.current;
     if(!client||signal?.aborted||!renderedWriteIsCurrent()||client.options.scope.environment!==environment||client.options.scope.householdId!==household?.householdId||client.options.scope.memberId!==actorId)throw Error('SCOPE_CLOSED');
@@ -6593,6 +6622,7 @@ export function App() {
     return money ? `Post ${money}` : "Post";
   }
 
+  const hearthsideOpen = HEARTHSIDE_FLAGS.presentation && view === "household" && tab === "play";
   const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
 
   return (
@@ -6814,15 +6844,15 @@ export function App() {
         ))}
       </div>
       <div>
-        <div className="world-page">
-      <PageWorld page={sceneTabFor(tab)} />
+        <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>
+      {!hearthsideOpen && <PageWorld page={sceneTabFor(tab)} />}
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(presenceTab(tab)) ? (
         <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
 
-      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger" || tab === "timeMachine"} />
-      <WorldCharm page={sceneTabFor(tab)} />
+      {!hearthsideOpen && <><ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger" || tab === "timeMachine"} />
+      <WorldCharm page={sceneTabFor(tab)} /></>}
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
         <Till
@@ -6845,7 +6875,7 @@ export function App() {
       {workspaceEnabled && <HerculesWorkspaceRoom
         hearthside={selectedExperienceWorkspace()} onExperienceOpened={id=>{if(household.hearthside?.experiences.some(e=>e.id===id&&e.state!=="archived"))setWorkspaceExperienceSelection({scope:ledgerRenderScopeKey,id});}}
         getReportContext={captureReportContext} reporterName={household.members.find(m => m.id === actorId)?.name}
-        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)}
+        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)} onPrivateReportRequested={openPrivateBugReport}
         key={`workspace:${ledgerRenderScopeKey}`} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
         mode={workspaceMode}
         getAccessToken={async () => {
@@ -6867,7 +6897,7 @@ export function App() {
         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} household={household} memberId={actorId} busy={busy} vaultSource={()=>ledgerSyncRef.current}
         connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen}
         initialRoom={playInitialArea === "dressing" ? "studio" : undefined}
-        onReadAcceptedCommand={readAcceptedKittyCommand}
+        onReadAcceptedCommand={kittyAcceptedCommandReader}
         onReadAcceptedHousehold={async id=>{const client=ledgerSyncRef.current;if(!client||client.options.scope.environment!==environment||client.options.scope.householdId!==household.householdId||client.options.scope.memberId!==actorId)throw Error("SCOPE_CLOSED");return client.acceptedHousehold(id);}}
         onReadSubmission={async id => {const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}}
         onWorkspace={workspaceEnabled?openExperienceWorkspace:undefined}
@@ -6899,7 +6929,7 @@ export function App() {
           onGo={(next) => goTab(next)}
           onOpenMemory={id=>{window.history.pushState({hearthTab:'play'},'',hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}));goTab('play');}}
           onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
-          onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey}
+          onReadAcceptedCommand={kittyAcceptedCommandReader} creationIdentity={ledgerRenderScopeKey}
           onReadSubmission={async id => { const status = await readWorkShiftSubmission(id); if (status === "pending") ledgerSyncRef.current?.retryPending(); return status; }}
           rehearsal={(
             <div className="home-rehearsal-entry">
@@ -7062,7 +7092,7 @@ export function App() {
         onOpenWorkspace={workspaceEnabled ? () => { setWorkspaceProjectId(null);setWorkspaceExperienceSelection(null); goTab("hercules"); } : undefined}
               workspaceCards={workspaceEnabled && workspaceSnapshot?.identity === ledgerRenderScopeKey ? month => <WorkspaceProjectCards projects={workspaceSnapshot.projects} household={household} memberId={actorId} scope={view} month={month} today={today} onOpen={id => {setWorkspaceProjectId(id);setWorkspaceExperienceSelection(null);goTab("hercules");}} /> : undefined}
               key={`${ledgerRenderScopeKey}:${view}`}
-              goalsContent={context => <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey} planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onOpenCalendar={() => goTab("calendar")} onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
+              goalsContent={context => <KittyBanks onReadAcceptedCommand={kittyAcceptedCommandReader} creationIdentity={ledgerRenderScopeKey} planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onOpenCalendar={() => goTab("calendar")} onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
               onContextChange={setPlanContext}
               contextIdentity={`${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}`}
               onAskHercules={(prompt, proposal) => {
@@ -7114,7 +7144,7 @@ export function App() {
             memberId={actorId}
             onApply={(next, token) => persist(next, token)}
           />
-          <KittyBanks onReadAcceptedCommand={readAcceptedKittyCommand} creationIdentity={ledgerRenderScopeKey}
+          <KittyBanks onReadAcceptedCommand={kittyAcceptedCommandReader} creationIdentity={ledgerRenderScopeKey}
             environment={environment}
             household={displayHousehold}
             booksHousehold={household}
@@ -8589,6 +8619,7 @@ export function App() {
           await client.authorizeAction(id);
         } : undefined}
         conversationHidden={workspaceMode !== "hidden"}
+        hearthsideResident={hearthsideOpen}
         onOpenWorkspace={workspaceEnabled ? openWorkspaceConversation : undefined}
         onReportBug={workspaceEnabled ? openBugReport : undefined}
         planContext={tab === "plan" && planContext?.scope === view && planContext.contextIdentity === `${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}` ? planContext : null}

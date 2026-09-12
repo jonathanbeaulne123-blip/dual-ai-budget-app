@@ -74,3 +74,12 @@
 .hearthside-room-actions{padding:1rem 0}.hearthside-room-actions .hearthside-scene-actions{position:static;display:flex;flex-wrap:wrap;gap:.65rem;padding:0}.hearthside-memory-artwork{display:flex;flex-wrap:wrap;gap:1rem}.hearthside-memory-artwork figure{margin:0;max-width:240px;width:100%}.hearthside-memory-artwork svg{width:100%;height:auto}.hearthside-memory-artwork figcaption{font-size:.85rem}
 
 .hearthside-tool-return{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem;background:var(--paper,#f6eddf);border:1px solid var(--line,#b2987c);border-radius:1rem}.hearthside-tool-return button{min-height:44px}
+
+/* The room is the scene; the App keeps its normal ledger, Fund and navigation chrome. */
+.hearthside-page{position:relative;isolation:isolate}
+.hearthside-arrival-settings{display:grid;justify-items:end;gap:12px;max-width:38%}
+.hearthside-arrival-settings .hearthside-scope{max-width:none}
+.hearthside-arrival-settings .theme-atmosphere-toggle{position:static;font-size:.8rem;background:var(--hs-paper);border:1px solid var(--hs-line);color:var(--hs-ink)}
+@media(max-width:719px){.hearthside-arrival-settings{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:none;margin-top:12px}.hearthside-arrival-settings .hearthside-scope{margin-top:0;flex:1;min-width:0}.hearthside-arrival-settings .theme-atmosphere-toggle{flex:0 1 130px;padding:8px;font-size:.75rem}}
+
+@media(max-width:719px){.hearthside-arrival{margin-bottom:16px}.hearthside-arrival h1{margin-bottom:8px}.hearthside-room-nav{margin-bottom:12px}.hearthside .hsr-heading{margin-top:12px;padding-top:10px;padding-bottom:12px}.hearthside .hsr-heading h2{font-size:28px}.hearthside .hsr-heading>span{font-size:14px}.hearthside .hsr[data-theme=taylor] .hsr-heading{margin-top:16px}}

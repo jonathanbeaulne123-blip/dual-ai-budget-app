@@ -73,6 +73,7 @@ export class LedgerSyncClient {
   private companionProfileVersion = 0;
   private hearthsideVersion = 0;
   private kittyDesignVersion = 0;
+  private nestDesignVersion=0;
   private companionPlayVersion = 0;
   private companionDiscoveryVersion = 0;
   private companionWardrobeVersion = 0;
@@ -241,6 +242,7 @@ export class LedgerSyncClient {
               }
               this.companionProfileVersion = message.companionProfileVersion === 1 ? 1 : 0;
               this.hearthsideVersion = message.hearthsideVersion === 1 ? 1 : 0;
+              this.nestDesignVersion=message.nestDesignVersion===1?1:0;
               this.kittyDesignVersion = message.kittyDesignVersion === 1 ? 1 : 0;
               this.companionPlayVersion = message.companionPlayVersion === 1 ? 1 : 0;
               this.companionDiscoveryVersion = message.companionDiscoveryVersion === 1 ? 1 : 0;
@@ -260,38 +262,7 @@ export class LedgerSyncClient {
               this.initialResolve = undefined;
               await this.sendPending();
             } else if (message.type === "ack") {
-              const receipt = message.receipt as Receipt;
-              if (!this.replica || receipt.sequence > this.replica.sequence)
-                throw new Error("SEQUENCE_GAP");
-              await this.store!.acknowledge(receipt.id);
-              const acknowledgedCommand=this.pending.get(receipt.id);
-              if(acknowledgedCommand)this.confirmationIntents.set(receipt.id,canonical(acknowledgedCommand.steps.map(({kind,args})=>({kind,args}))));
-              this.pending.delete(receipt.id);
-              this.previews.delete(receipt.id);
-              this.options.pendingChanged?.(this.pendingRows());
-              if (this.inFlight === receipt.id) this.inFlight = undefined;
-              const household = await this.household(this.replica),
-                result: CommitResult = {
-                  household,
-                  postedIds: receipt.postedIds,
-                  warnings: receipt.warnings,
-                  undo: { ...receipt.undo, snapshot: household },
-                  ...(receipt.persistenceScope
-                    ? {
-                        persistenceScope: receipt.persistenceScope,
-                        personalMemberId: receipt.personalMemberId,
-                      }
-                    : {}),
-                };
-              this.accepted.set(receipt.id, result);
-              if (this.accepted.size > 100) {
-                const oldest=this.accepted.keys().next().value!;
-                this.accepted.delete(oldest);this.confirmationIntents.delete(oldest);
-              }
-              this.waiters.get(receipt.id)?.resolve(result);
-              this.waiters.delete(receipt.id);
-              this.options.status(this.pending.size ? "saving" : "ready");
-              await this.sendPending();
+              await this.settleReceipt(message.receipt as Receipt);
             }
           })
           .catch((error) => {
@@ -328,6 +299,82 @@ export class LedgerSyncClient {
     } finally {
       if (generation === this.generation) this.connecting = false;
     }
+  }
+  private validateReceipt(receipt: Receipt, expectedId?: string) {
+    const strings = (value: unknown): value is string[] =>
+      Array.isArray(value) && value.every(id => typeof id === "string");
+    if (
+      !receipt || typeof receipt.id !== "string" ||
+      (expectedId !== undefined && receipt.id !== expectedId) ||
+      receipt.actor !== this.options.scope.memberId ||
+      !Number.isSafeInteger(receipt.sequence) || receipt.sequence < 0 ||
+      typeof receipt.digest !== "string" || !/^[a-f0-9]{64}$/.test(receipt.digest) ||
+      typeof receipt.commandKind !== "string" ||
+      !strings(receipt.postedIds) || !strings(receipt.warnings) ||
+      !receipt.undo || receipt.undo.id !== receipt.id ||
+      receipt.undo.actorMemberId !== receipt.actor ||
+      typeof receipt.undo.label !== "string" || !strings(receipt.undo.postedIds) ||
+      (receipt.undo.commandKind !== undefined && receipt.undo.commandKind !== receipt.commandKind) ||
+      (receipt.persistenceScope !== undefined &&
+        (receipt.persistenceScope !== "member-personal" || receipt.personalMemberId !== receipt.actor))
+    ) throw new Error("RECEIPT_RECOVERY_REQUIRED");
+  }
+  /** Both WS ACK and authenticated HTTP recovery enter through the receive lane. */
+  private async settleReceipt(receipt: Receipt): Promise<CommitResult> {
+    const current = () => {
+      if (this.stopped || !this.store) throw new Error("SCOPE_CLOSED");
+    };
+    current();
+    this.validateReceipt(receipt);
+    if (!this.replica || receipt.sequence > this.replica.sequence)
+      throw new Error("SEQUENCE_GAP");
+    const command = this.pending.get(receipt.id);
+    if (command) {
+      // Match authority.intentDigest; observedSequence is only a catch-up hint.
+      const expected = await digest({
+        version: command.version,
+        householdId: command.householdId,
+        environment: command.environment,
+        actor: this.options.scope.memberId,
+        steps: command.steps,
+      });
+      current();
+      if (receipt.digest !== expected || receipt.sequence <= command.observedSequence)
+        throw new Error("RECEIPT_RECOVERY_REQUIRED");
+    }
+    const household = await this.household(this.replica);
+    current();
+    const result: CommitResult = {
+      household,
+      postedIds: receipt.postedIds,
+      warnings: receipt.warnings,
+      undo: { ...receipt.undo, snapshot: household },
+      ...(receipt.persistenceScope ? {
+        persistenceScope: receipt.persistenceScope,
+        personalMemberId: receipt.personalMemberId,
+      } : {}),
+    };
+    // Old receipts and delayed duplicates must not announce another acceptance,
+    // cache an unverifiable intent, or release an unrelated pending command.
+    if (!command) return result;
+    await this.store!.acknowledge(receipt.id);
+    current();
+    this.confirmationIntents.set(receipt.id, canonical(command.steps.map(({kind, args}) => ({kind, args}))));
+    this.pending.delete(receipt.id);
+    this.previews.delete(receipt.id);
+    if (this.inFlight === receipt.id) this.inFlight = undefined;
+    this.accepted.set(receipt.id, result);
+    if (this.accepted.size > 100) {
+      const oldest = this.accepted.keys().next().value!;
+      this.accepted.delete(oldest);
+      this.confirmationIntents.delete(oldest);
+    }
+    this.waiters.get(receipt.id)?.resolve(result);
+    this.waiters.delete(receipt.id);
+    this.options.pendingChanged?.(this.pendingRows());
+    this.options.status(this.pending.size ? "saving" : "ready");
+    await this.sendPending();
+    return result;
   }
   private validateScope(r: Replica) {
     const scope = this.options.scope;
@@ -466,6 +513,7 @@ export class LedgerSyncClient {
 
     if(capture.steps.some(s=>s.kind==='executeHerculesAction')&&(!this.ready||!this.herculesActionsEnabled))throw new LedgerCommandRejectedError('HERCULES_ACTIONS_PAUSED: Conversational changes are not enabled on this Hearth server.');
     if(capture.steps.some(s=>s.kind==='saveNativeEvent')&&(!this.ready||this.nativeCalendarVersion!==1))throw new LedgerCommandRejectedError('CALENDAR_UPDATE_REQUIRED: Connect to an updated Hearth to save events.');
+    if(candidate.kittyNestDesigns?.some(row=>row.designRef)&&(!this.ready||this.nestDesignVersion!==1))throw new LedgerCommandRejectedError('NEST_DESIGN_UPDATE_REQUIRED: Connect to an updated Hearth to preserve collaborative Nest pottery.');
     if((hasKittyNestData(candidate)||capture.steps.some(s=>s.kind==='saveKittyNestDesign'))&&(!this.ready||this.kittyNestVersion!==1))throw new LedgerCommandRejectedError('BANK_UPDATE_REQUIRED: Connect to an updated Hearth to save bank designs.');
     if((hasTaskData(candidate)||capture.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.taskPlannerVersion!==1))throw new LedgerCommandRejectedError('PLANNER_UPDATE_REQUIRED: Connect to an updated Hearth to save planner tasks.');
     if(capture.steps.some(s=>['executeHerculesAction','cancelHerculesSubmission'].includes(s.kind)||s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set')&&(!this.ready||this.companionWorkflowVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving conversational drafts.');
@@ -561,23 +609,32 @@ export class LedgerSyncClient {
     const token=await this.options.token();current();
     const response=await fetch(this.path(`receipt?id=${encodeURIComponent(id)}`),{headers:{Authorization:`Bearer ${token}`},signal,cache:'no-store'}),value=await response.json();current();
     if(!response.ok){if(value.error==='RECEIPT_NOT_FOUND')return null;throw Error('RECEIPT_RECOVERY_FAILED');}
-    const receipt=value.receipt;
-    if(value.version!==2||receipt?.id!==id||receipt.actor!==this.options.scope.memberId||!Number.isSafeInteger(receipt.sequence)||receipt.sequence<0||typeof receipt.commandKind!=='string'||!Array.isArray(receipt.postedIds))throw Error('RECEIPT_RECOVERY_REQUIRED');
-    if(!this.replica||this.replica.sequence<receipt.sequence){this.retryPending();return null;}
-    const household=await this.household(this.replica);current();
-    if(household.environment!==this.options.scope.environment||household.householdId!==this.options.scope.householdId)throw Error('SCOPE_CLOSED');
-    return {environment:this.options.scope.environment,householdId:this.options.scope.householdId,memberId:this.options.scope.memberId,receipt,household};
+    const receipt = value.receipt as Receipt;
+    if (value.version !== 2) throw new Error("RECEIPT_RECOVERY_REQUIRED");
+    this.validateReceipt(receipt, id);
+    // Serialize HTTP with events/ACKs so delayed acknowledgements cannot both
+    // release the original waiter or advance the durable queue independently.
+    const recovered = this.receive.then(async () => {
+      current();
+      if (!this.replica || this.replica.sequence < receipt.sequence) {
+        this.retryPending();
+        return null;
+      }
+      const result = await this.settleReceipt(receipt);
+      current();
+      return {
+        environment: this.options.scope.environment,
+        householdId: this.options.scope.householdId,
+        memberId: this.options.scope.memberId,
+        receipt,
+        household: result.household,
+      };
+    });
+    this.receive = recovered.then(() => {}, () => {});
+    return recovered;
   }
   async acceptedHousehold(id:string):Promise<Household|null>{
-    await this.localReady;
-    if(this.stopped||!this.store)throw Error('SCOPE_CLOSED');
-    const response=await fetch(this.path(`receipt?id=${encodeURIComponent(id)}`),{headers:{Authorization:`Bearer ${await this.options.token()}`}}),value=await response.json();
-    if(this.stopped)throw Error('SCOPE_CLOSED');
-    if(!response.ok){if(value.error==='RECEIPT_NOT_FOUND')return null;throw Error('RECEIPT_RECOVERY_FAILED');}
-    const receipt=value.receipt;
-    if(value.version!==2||receipt?.id!==id||receipt.actor!==this.options.scope.memberId||!Number.isSafeInteger(receipt.sequence)||receipt.sequence<0)throw Error('RECEIPT_RECOVERY_REQUIRED');
-    if(!this.replica||this.replica.sequence<receipt.sequence){this.retryPending();return null;}
-    const household=await this.household(this.replica);if(this.stopped)throw Error('SCOPE_CLOSED');return household;
+    return (await this.acceptedCommand(id))?.household??null;
   }
   async verifyImport() {
     const response=await fetch(this.path('parity'),{method:'POST',headers:{Authorization:`Bearer ${await this.options.token()}`}});

@@ -1,3 +1,4 @@
+import {applyNestDesignReference} from './nestDesignSource.ts';
 import type { Household } from '../core/types.ts';
 import { defaultGoalEnvelope } from '../core/goalEnvelopes.ts';
 import { decodeHearthside } from './contracts.ts';
@@ -5,8 +6,9 @@ import { kittyDesignReference, projectKittyDesign } from './design.ts';
 import type { KittyDesignDocument } from './designContracts.ts';
 
 /** Authority-only reference update. It cannot change backing, targets, ownership, or financial timestamps. */
-export function applyAcceptedDesignReference(household:Household,document:KittyDesignDocument,bankId:string|null):Household {
+export function applyAcceptedDesignReference(household:Household,document:KittyDesignDocument,bankId:string|null,acceptedAt=new Date().toISOString()):Household {
   if(document.scope.environment!==household.environment || document.scope.householdId!==household.householdId)throw Error('SCOPE_MISMATCH');
+  if(document.nest){if(bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');household=applyNestDesignReference(household,document,acceptedAt);}
   const reference=kittyDesignReference(document), view=projectKittyDesign(document);
   const next={...household,goals:household.goals.map(goal=>{
     if(goal.id!==bankId)return goal;

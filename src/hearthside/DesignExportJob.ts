@@ -81,7 +81,7 @@ export class DesignExportJob {
     await new Promise<void>(resolve => setTimeout(resolve, 0));
     if (generation !== this.generation) return;
     try {
-      const selection = normalizeExportSelection({ version: 1, documentId: this.source.identity.designId, revision: this.source.identity.revision, piece: this.source.piece, ...options });
+      const selection = normalizeExportSelection({ version: 1, documentId: this.source.identity.designId, revision: this.source.identity.revision, piece: this.source.piece, ...(this.source.appearance?{appearance:this.source.appearance}:{}), ...options });
       const capture = this.deps.capture(selection);
       if (generation !== this.generation) return;
       this.selection = selection; this.requestId = crypto.randomUUID();

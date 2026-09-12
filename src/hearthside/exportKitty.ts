@@ -1,3 +1,4 @@
+import {decodeNestAppearance} from './nestDesignBinding.ts';
 import { shapeKittyPiece } from '../core/kittyStudio.ts';
 import { captureAuthoredKitty } from './exportCapture.ts';
 import { capMesh, inspectGeometry, isPlanar, sampleWallThickness, weldMesh } from './exportGeometry.ts';
@@ -28,10 +29,11 @@ function plain(value: unknown, depth = 0, allowBytes = false): void {
 }
 export function normalizeExportSelection(value: ExportSelection): ExportSelection {
   plain(value);
-  if (!value || value.version !== 1 || Object.keys(value).some(k => !['version', 'documentId', 'revision', 'piece', 'heightMm', 'construction', 'hollow'].includes(k)) || typeof value.documentId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$/.test(value.documentId) || !Number.isSafeInteger(value.revision) || value.revision < 0 || !['solid', 'hollow'].includes(value.construction)) throw Error('EXPORT_INVALID_SELECTION');
+  if (!value || value.version !== 1 || Object.keys(value).some(k => !['version', 'documentId', 'revision', 'piece', 'heightMm', 'construction', 'hollow', 'appearance'].includes(k)) || typeof value.documentId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$/.test(value.documentId) || !Number.isSafeInteger(value.revision) || value.revision < 0 || !['solid', 'hollow'].includes(value.construction)) throw Error('EXPORT_INVALID_SELECTION');
   if (!Number.isFinite(value.heightMm) || value.heightMm < 30 || value.heightMm > 1000) throw Error('EXPORT_HEIGHT_RANGE_30_1000_MM');
   if (jsonBytes(value).length > 256 * 1024) throw Error('EXPORT_DESIGN_TOO_LARGE');
   const result: ExportSelection = { version: 1, documentId: value.documentId, revision: value.revision, piece: shapeKittyPiece(value.piece), heightMm: value.heightMm, construction: value.construction };
+  if(value.appearance!==undefined)result.appearance=decodeNestAppearance(value.appearance);
   delete result.piece.firedBy; // An internal household actor identifier is not needed for geometry or paint.
   if (value.construction === 'hollow') {
     const h = value.hollow;
@@ -61,7 +63,7 @@ async function repairProposal(selection: ExportSelection, capture: ExportCapture
 export async function prepareKittyExport(input: ExportSelection, captured?: ExportCapture): Promise<PreparedKittyExport> {
   if (captured) plain(captured, 0, true);
   const selection = normalizeExportSelection(input), capture = structuredClone(captured ?? captureAuthoredKitty(selection));
-  if (capture.source !== 'authored-kitty-sculpture-v1' || !Number.isFinite(capture.crownY) || !Number.isFinite(capture.baseY) || [capture.crownCenter, capture.baseCenter].some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => !Number.isFinite(n))) || !capture.materials.length || capture.materials.length > 300 || capture.meshes.length > 300 || capture.meshes.reduce((n, m) => n + m.indices.length, 0) > 1_500_000 || capture.meshes.reduce((n, m) => n + m.positions.length, 0) > 4_500_000) throw Error('EXPORT_INVALID_CAPTURE');
+  if (capture.source !== (selection.appearance?'authored-kitty-nest-v1':'authored-kitty-sculpture-v1') || !Number.isFinite(capture.crownY) || !Number.isFinite(capture.baseY) || [capture.crownCenter, capture.baseCenter].some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => !Number.isFinite(n))) || !capture.materials.length || capture.materials.length > 300 || capture.meshes.length > 300 || capture.meshes.reduce((n, m) => n + m.indices.length, 0) > 1_500_000 || capture.meshes.reduce((n, m) => n + m.positions.length, 0) > 4_500_000) throw Error('EXPORT_INVALID_CAPTURE');
   for (const mesh of capture.meshes) if (!Number.isSafeInteger(mesh.material) || !capture.materials[mesh.material] || mesh.uv.length !== mesh.positions.length / 3 * 2 || mesh.uv.some(v => !Number.isFinite(v))) throw Error('EXPORT_INVALID_MATERIAL_BINDING');
   for (const m of capture.materials) if (m.color.length !== 4 || m.color.some(n => !Number.isFinite(n) || n < 0 || n > 1) || m.png && (m.png.length > 8 * 1024 * 1024 || ![137,80,78,71,13,10,26,10].every((n, i) => m.png![i] === n))) throw Error('EXPORT_INVALID_MATERIAL');
   const report = inspectGeometry(capture.meshes);
@@ -95,12 +97,12 @@ export async function finishKittyExport(prepared: PreparedKittyExport, options: 
   if (approved) files.set('source-authored.glb', writeGlb(capture.meshes, capture.materials, selection.piece.id));
   files.set('paint/source-paint.json', jsonBytes(selection.piece.paint));
   for (const [i, material] of capture.materials.entries()) if (material.png) files.set(`paint/material-${i}.png`, new Uint8Array(material.png));
-  files.set('source-design.json', jsonBytes({ documentId: selection.documentId, revision: selection.revision, piece: selection.piece }));
+  files.set('source-design.json', jsonBytes({ documentId: selection.documentId, revision: selection.revision, piece: selection.piece, ...(selection.appearance?{appearance:selection.appearance}:{}) }));
   files.set('geometry-report.json', jsonBytes({ ...report, openings: derived.openings, sourceReport: approved ? inspectGeometry(capture.meshes) : report }));
   const sheet = ['Hearthside - geometry and paint reference', `Piece: ${selection.piece.id} / revision ${selection.revision}`, `Requested authored height: ${selection.heightMm} mm`, `Construction: ${selection.construction}; reviewed repair: ${approved ? 'yes' : 'no'}`, `Measured X/Y/Z mm: ${report.dimensionsMm.map(n => n.toFixed(3)).join(' / ')}`, `Triangles: ${report.triangles}; components: ${report.connectedComponents}`, `Watertight: ${report.watertight}; self intersections: ${report.selfIntersections.status}`, `Wall check: ${report.wallThickness.status}; sampled minimum: ${report.wallThickness.minimumSampleMm?.toFixed(3) ?? 'not measured'} mm`, 'STL: mm import, Z-up. 3MF: explicit mm, Z-up. GLB: meters, Y-up.', 'Paint: embedded PNGs + source stroke/stamp JSON. No color in STL.', 'Maker tolerances, strength, fit and material shrinkage: UNVERIFIED.', ...report.warnings];
   if (derived.openings) sheet.splice(9, 0, `Coin slot: ${derived.openings.coinSlot.widthMm} x ${derived.openings.coinSlot.depthMm} mm; access ray clear.`, `Base opening: ${derived.openings.baseOpening.diameterMm} mm diameter; access ray clear.`);
   files.set('geometry-sheet.pdf', writeExportPdf(sheet, report.dimensionsMm));
-  const manifest: ExportManifest = { version: 1, documentId: selection.documentId, designRevision: selection.revision, pieceId: selection.piece.id, selectionDigest: prepared.selectionDigest, sourceGeometryDigest: prepared.sourceGeometryDigest, physicalGeometryDigest: await digestValue(derived.meshes), heightMm: selection.heightMm, construction: selection.construction, units: { stl: 'millimeter (unitless file; import as mm)', threeMf: 'millimeter', glb: 'meter' }, sourceGeometry: capture.source, sourceChanged: false, repair: approved ? structuredClone(prepared.proposal) : null, report, openings: derived.openings, files: await Promise.all([...files].map(async ([name, data]) => ({ name, bytes: data.length, sha256: await sha256(data) }))) };
+  const manifest: ExportManifest = { version: 1, documentId: selection.documentId, designRevision: selection.revision, pieceId: selection.piece.id, selectionDigest: prepared.selectionDigest, sourceGeometryDigest: prepared.sourceGeometryDigest, physicalGeometryDigest: await digestValue(derived.meshes), heightMm: selection.heightMm, construction: selection.construction, units: { stl: 'millimeter (unitless file; import as mm)', threeMf: 'millimeter', glb: 'meter' }, sourceGeometry: capture.source, ...(selection.appearance?{appearance:selection.appearance}:{}), sourceChanged: false, repair: approved ? structuredClone(prepared.proposal) : null, report, openings: derived.openings, files: await Promise.all([...files].map(async ([name, data]) => ({ name, bytes: data.length, sha256: await sha256(data) }))) };
   files.set('manifest.json', jsonBytes(manifest));
   return { manifest: freeze(manifest), files };
 }

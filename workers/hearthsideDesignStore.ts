@@ -1,3 +1,4 @@
+import {nestSourceKey,type NestDesignSource} from '../src/hearthside/nestDesignBinding.ts';
 import type { SqlStorage, R2Bucket } from '@cloudflare/workers-types';
 import { checkpointKittyDesign, restoreKittyDesignCheckpoint } from '../src/hearthside/design.ts';
 import { canonicalDesignJSON, KITTY_DESIGN_LIMITS, type KittyAcceptedDesignOperation, type KittyDesignDocument } from '../src/hearthside/designContracts.ts';
@@ -8,6 +9,7 @@ import { digest } from '../src/ledgerSync/patch.ts';
 export class HearthsideDesignStore {
   private cache=new Map<string,{hash:string;document:KittyDesignDocument}>();
   constructor(private sql: SqlStorage, private archive: R2Bucket) {
+    sql.exec('CREATE TABLE IF NOT EXISTS creative_source(source TEXT PRIMARY KEY,id TEXT UNIQUE)');
     sql.exec('CREATE TABLE IF NOT EXISTS creative_header(id TEXT PRIMARY KEY,bank TEXT,owner TEXT,reference TEXT,creator TEXT,request TEXT)');
     sql.exec('CREATE TABLE IF NOT EXISTS creative_baseline(id TEXT,part INTEGER,data TEXT,PRIMARY KEY(id,part))');
     sql.exec('CREATE TABLE IF NOT EXISTS creative_operation(id TEXT,revision INTEGER,operation TEXT UNIQUE,data TEXT,PRIMARY KEY(id,revision))');
@@ -21,6 +23,7 @@ export class HearthsideDesignStore {
     if(rows.length>1)throw Error('DESIGN_BANK_HISTORY_CONFLICT');
     return rows[0]?this.read(rows[0].id):null;
   }
+  forNest(source:NestDesignSource,owner:string|null){const row=this.sql.exec<{id:string}>('SELECT id FROM creative_source WHERE source=?',nestSourceKey(source,owner)).toArray()[0];return row?this.read(row.id):null;}
   references():DesignArchiveReference[] { return this.sql.exec<{reference:string}>('SELECT reference FROM creative_header ORDER BY id').toArray().map(r=>decodeDesignArchiveReference(JSON.parse(r.reference))); }
   eventReferences(sequence:number):DesignArchiveReference[] { return this.sql.exec<{reference:string}>('SELECT reference FROM creative_archive WHERE sequence=? ORDER BY id',sequence).toArray().map(r=>decodeDesignArchiveReference(JSON.parse(r.reference))); }
   read(id:string):KittyDesignDocument|null {
@@ -58,7 +61,10 @@ export class HearthsideDesignStore {
   commit(document:KittyDesignDocument,reference:DesignArchiveReference,sequence:number,created:{actor:string;request:string}) {
     const bytes=this.size(document);
     const existing=this.header(document.id);
+    if(document.nest&&reference.bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
+    if(existing&&canonicalDesignJSON(this.read(document.id)?.nest??null)!==canonicalDesignJSON(document.nest??null))throw Error('DESIGN_NEST_HISTORY_CONFLICT');
     if(reference.bankId){const prior=this.forBank(reference.bankId);if(prior&&prior.id!==document.id)throw Error('DESIGN_BANK_HISTORY_CONFLICT');}
+    if(document.nest){const prior=this.forNest(document.nest,document.scope.ownerMemberId);if(prior&&prior.id!==document.id)throw Error('DESIGN_NEST_HISTORY_CONFLICT');this.sql.exec('INSERT OR REPLACE INTO creative_source VALUES (?,?)',nestSourceKey(document.nest,document.scope.ownerMemberId),document.id);}
     if(!existing) {
       const baseline=checkpointKittyDesign({...document,revision:0,operations:[]});
       for(let at=0;at<baseline.length;at+=60000)this.sql.exec('INSERT INTO creative_baseline VALUES (?,?,?)',document.id,at/60000,baseline.slice(at,at+60000));

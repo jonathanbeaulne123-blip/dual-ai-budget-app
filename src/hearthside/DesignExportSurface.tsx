@@ -1,3 +1,4 @@
+import {NestProp} from '../kitty/NestProp.tsx';
 import { useEffect, useId, useRef, useState } from 'react';
 import { KittyFlat } from '../kitty/studio/flat.tsx';
 import { DesignExportJob, type ExportJobDependencies, type ExportJobState, type ExportOptions } from './DesignExportJob.ts';
@@ -41,7 +42,7 @@ function ExportSurface({ enabled, selection, theme, onClose, dependencies }: Des
   const close = () => { job.current?.cancel(); onClose(); };
   return <section className="design-surface design-export" data-design-theme={theme} aria-labelledby={heading} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
     <header className="design-surface-heading"><div><p className="design-eyebrow">{materials.eyebrow}</p><h2 id={heading} ref={title} tabIndex={-1}>{materials.exportTitle}</h2><p>A production package of the design you chose, at a size you choose.</p></div><button type="button" onClick={close}>Back to Studio</button></header>
-    <div className="design-surface-spread"><figure className="design-source-preview"><div className="design-preview-paper"><KittyFlat piece={selection.piece} step={0} title="The selected authored design"/><span className="design-measure" aria-hidden="true">{height || '—'} mm</span></div><figcaption>Selected design · revision {selection.identity.revision}<br/>Your original shape and paint stay kept.</figcaption><p className="design-surface-note">{materials.footer}</p></figure>
+    <div className="design-surface-spread"><figure className="design-source-preview"><div className="design-preview-paper"><KittyFlat piece={selection.piece} step={0} title="The selected authored design"/>{selection.appearance&&<NestProp ornament={selection.appearance}/>}<span className="design-measure" aria-hidden="true">{height || '—'} mm</span></div><figcaption>Selected design · revision {selection.identity.revision}<br/>Your original shape and paint stay kept.</figcaption><p className="design-surface-note">{materials.footer}</p></figure>
       <div className="design-surface-work">
         {!enabled ? <p role="status">Production files are not enabled for this household yet.</p> : <>
           <fieldset className="design-dimensions" disabled={busy}><legend>Choose the physical piece</legend>

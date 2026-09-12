@@ -99,6 +99,7 @@ export async function prepareCommand(
   let current = assembleHousehold(state.shared, personal, { linked: true });
   if (!current.members.some((m) => m.id === scope.memberId && m.active))
     throw new Error("MEMBERSHIP_CHANGED");
+  if(current.kittyNestDesigns?.some(row=>row.designRef)&&command.nestDesignVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve collaborative Nest pottery.');
   const kittyChange = command.steps.some(step => step.kind === "saveGoalEnvelope" || step.kind === "purchaseGoal" && Boolean((step.args[0] as {keepOpen?:unknown})?.keepOpen) || JSON.stringify(step.args).includes('"envelopeGoalId"') || step.kind === "addGoal" && Boolean((step.args[0] as {envelope?:unknown})?.envelope) || step.kind === "releaseHouseholdFundKitty" && Boolean((step.args[0] as {goalId?:unknown})?.goalId));
   if ((hasGoalEnvelopeData(current) || kittyChange) && command.goalEnvelopeVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve Kitty Bank reserves and links.");
   if ((current.accountOpeningCheckpoints?.length || current.transactions.some(t => t.openingSignedBalanceCents !== undefined)) && command.accountHistoryVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: This household uses reviewed account history. Reload Hearth before making changes.");

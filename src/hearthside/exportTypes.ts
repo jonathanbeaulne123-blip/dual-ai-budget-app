@@ -1,8 +1,9 @@
+import type {NestAppearance} from './nestDesignBinding.ts';
 import type { KittyPieceV1 } from '../core/types.ts';
 
 /** Export inputs contain a deliberate design copy, never a Household or live goal. */
 export type ExportSelection = {
-  version: 1; documentId: string; revision: number; piece: KittyPieceV1;
+  version: 1; documentId: string; revision: number; piece: KittyPieceV1; appearance?:NestAppearance;
   heightMm: number; construction: 'solid' | 'hollow';
   hollow?: { wallMm: number; coinSlotWidthMm: number; coinSlotDepthMm: number; baseOpeningDiameterMm: number };
 };
@@ -13,7 +14,7 @@ export type ExportMaterial = { name: string; color: [number, number, number, num
 export type ExportCapture = {
   meshes: ExportMesh[]; materials: ExportMaterial[];
   crownY: number; baseY: number; crownCenter: [number, number]; baseCenter: [number, number];
-  source: 'authored-kitty-sculpture-v1';
+  source: 'authored-kitty-sculpture-v1'|'authored-kitty-nest-v1';
 };
 export type GeometryReport = {
   vertices: number; triangles: number; dimensionsMm: [number, number, number];
@@ -33,7 +34,7 @@ export type ExportManifest = {
   selectionDigest: string; sourceGeometryDigest: string; physicalGeometryDigest: string;
   heightMm: number; construction: 'solid' | 'hollow';
   units: { stl: 'millimeter (unitless file; import as mm)'; threeMf: 'millimeter'; glb: 'meter' };
-  sourceGeometry: 'authored-kitty-sculpture-v1'; sourceChanged: false;
+  sourceGeometry: 'authored-kitty-sculpture-v1'|'authored-kitty-nest-v1'; appearance?:NestAppearance; sourceChanged: false;
   repair: RepairProposal | null; report: GeometryReport;
   openings: import('./exportManufacturing.ts').OpeningEvidence | null;
   files: { name: string; bytes: number; sha256: string }[];

@@ -1,3 +1,5 @@
+import {guestNestOrnament} from './nestGuestAppearance.ts';
+import type {NestAppearance} from './nestDesignBinding.ts';
 import {decodeRoomFurniture,type FurnitureRoom,type RoomFurnitureLayout} from './roomFurniture.ts';
 import type { KittyPieceV1 } from '../core/types.ts';
 import {
@@ -15,14 +17,14 @@ export interface GuestSourceCatalogue {
   note(id: string): { revision: number; shared: boolean; archived: boolean; text: string } | null;
   memory(id: string): { revision: number; shared: boolean; withdrawn: boolean; title: string; recollections: { memberId: string; text: string }[]; earlierNote?:{label:string;text:string}; approvals: { memberId: string; revision: number }[]; media: GuestSourceMedia[]; publicationId:string|null; designs:{designId:string;pieceId:string;revision:number}[] } | null;
   memoryAccess(binding:GuestMemoryBinding):Promise<boolean>;
-  piece(designId: string, pieceId: string, revision: number): Promise<{ revision: number; shared: boolean; archived: boolean; piece: KittyPieceV1 } | null>;
+  piece(designId: string, pieceId: string, revision: number): Promise<{ revision: number; shared: boolean; archived: boolean; piece: KittyPieceV1; ornament?:NestAppearance } | null>;
   /** Exact reviewed, metadata-clean image or voice-note bytes. May not resolve private Vault drafts/letters. */
   media(reference: GuestSourceMedia): Promise<{ mime: GuestMedia['mime']; sha256: string; bytes: ArrayBuffer } | null>;
 }
-function appearance(piece: KittyPieceV1): GuestAppearance {
+function appearance(piece: KittyPieceV1,ornament?:NestAppearance): GuestAppearance {
   // Read only authored appearance. Creation/firing timestamps and all original object/stamp IDs stay private.
   const paint = { ...piece.paint, stamps: piece.paint.stamps.map((stamp,index)=>({...stamp,id:`stamp-${index+1}`})) };
-  return decodeGuestAppearance({sculpt:piece.sculpt,paint});
+  return decodeGuestAppearance({sculpt:piece.sculpt,paint,...(ornament?{ornament:guestNestOrnament(ornament)}:{})});
 }
 function approvedMemory(row: ReturnType<GuestSourceCatalogue['memory']>, members: readonly string[]) {
   guestAssert(row && row.shared && !row.withdrawn && members.length >= 2 && new Set(members).size === members.length && members.every(memberId=>row.approvals.some(a=>a.memberId===memberId && a.revision===row.revision)), 'GUEST_SOURCE_UNAVAILABLE'); return row;
@@ -33,10 +35,10 @@ export async function captureGuestSources(raw: unknown, catalogue: GuestSourceCa
     const base={id:`object-${index+1}`,x:item.x,y:item.y};
     if(item.kind==='experience') { const row=catalogue.experience(item.id);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'experience',title:row.title,text:row.intention}); }
     else if(item.kind==='note') { const row=catalogue.note(item.id);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'note',text:row.text}); }
-    else if(item.kind==='piece') { const row=await catalogue.piece(item.designId!,item.id,item.revision);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'piece',appearance:appearance(row.piece),displaySize:'standard'}); }
+    else if(item.kind==='piece') { const row=await catalogue.piece(item.designId!,item.id,item.revision);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'piece',appearance:appearance(row.piece,row.ornament),displaySize:'standard'}); }
     else {
       const row=approvedMemory(catalogue.memory(item.id),catalogue.activeMemberIds);guestAssert(row.revision===item.revision,'GUEST_SOURCE_CHANGED');
-      guestAssert(row.media.length===0||row.publicationId!==null,'GUEST_SOURCE_UNAVAILABLE');const binding={id:item.id,revision:item.revision,publicationId:row.publicationId};guestAssert(await catalogue.memoryAccess(binding),'GUEST_SOURCE_UNAVAILABLE');memoryBindings.push(binding);const pieces:GuestAppearance[]=[];for(const ref of row.designs){const design=await catalogue.piece(ref.designId,ref.pieceId,ref.revision);guestAssert(design?.shared&&!design.archived&&design.revision===ref.revision,'GUEST_SOURCE_UNAVAILABLE');pieces.push(appearance(design.piece));}const images:GuestMedia[]=[];
+      guestAssert(row.media.length===0||row.publicationId!==null,'GUEST_SOURCE_UNAVAILABLE');const binding={id:item.id,revision:item.revision,publicationId:row.publicationId};guestAssert(await catalogue.memoryAccess(binding),'GUEST_SOURCE_UNAVAILABLE');memoryBindings.push(binding);const pieces:GuestAppearance[]=[];for(const ref of row.designs){const design=await catalogue.piece(ref.designId,ref.pieceId,ref.revision);guestAssert(design?.shared&&!design.archived&&design.revision===ref.revision,'GUEST_SOURCE_UNAVAILABLE');pieces.push(appearance(design.piece,design.ornament));}const images:GuestMedia[]=[];
       for(const reference of row.media) {
         const copied=await catalogue.media(reference);guestAssert(copied&&copied.bytes.byteLength>0&&copied.bytes.byteLength<=GUEST_LIMITS.mediaBytes,'GUEST_MEDIA_UNAVAILABLE');
         const sha256=await guestDigest(copied.bytes);guestAssert(sha256===copied.sha256,'GUEST_MEDIA_CHANGED');mediaBytes+=copied.bytes.byteLength;guestAssert(mediaBytes<=GUEST_LIMITS.totalMediaBytes,'GUEST_SELECTION_TOO_LARGE');

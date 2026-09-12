@@ -12,7 +12,7 @@ export function NativeWidgetEntry({selection,onClose}:{selection:DesignSurfaceSe
  const subject=loadSupabaseSession(environment)?.userId,scope=subject?{environment,householdId,memberId,subject}:null;
  const key=JSON.stringify([selection.identity,subject]);
  useEffect(()=>{const abort=new AbortController();setImage(null);setError('');
-  if(controller&&plugin&&scope)void captureNativeWidget({designId:selection.identity.designId,revision:selection.identity.revision,piece:selection.piece},abort.signal).then(image=>{if(!abort.signal.aborted)setImage(image);}).catch(()=>{if(!abort.signal.aborted)setError('This device could not capture the sculpture. Your piece is safe; you can retry.');});
+  if(controller&&plugin&&scope)void captureNativeWidget({designId:selection.identity.designId,revision:selection.identity.revision,piece:selection.piece,...(selection.appearance?{appearance:selection.appearance}:{})},abort.signal).then(image=>{if(!abort.signal.aborted)setImage(image);}).catch(()=>{if(!abort.signal.aborted)setError('This device could not capture the sculpture. Your piece is safe; you can retry.');});
   return()=>abort.abort();
  },[key,attempt,controller,plugin]);
  if(!controller||!plugin||!scope)return <section aria-label="Home-screen sculpture"><h2>Your sculpture, close by</h2><p>Open the native companion and sign in to choose a home-screen sculpture.</p><button onClick={onClose}>Return to Studio</button></section>;

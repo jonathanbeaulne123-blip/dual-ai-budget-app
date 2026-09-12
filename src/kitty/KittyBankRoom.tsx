@@ -256,7 +256,8 @@ function Room({
   );
   const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? (context?.bankId || initialBankId ? `nest:${context?.bankId ?? initialBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
   const bankScope={identity:creationIdentity??identity,environment:h.environment,householdId:h.householdId,memberId};
-  const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext);}});
+  const initiallyNeedsCreation=!selected.startsWith("nest:")&&!h.goals.some(g=>goalVisibleInView(g,memberId,view)&&!g.envelope?.archivedAt&&g.status!=="retired");
+  const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||initiallyNeedsCreation||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext||initiallyNeedsCreation);}});
   const [studioFor, setStudioFor] = useState("");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
   const visible = all.filter((goal) =>

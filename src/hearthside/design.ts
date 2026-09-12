@@ -1,3 +1,4 @@
+import {decodeNestSource} from './nestDesignBinding.ts';
 /** Canonical creative authority. No money, network, browser or room dependencies. */
 import { defaultKittySculpt, displayedKittyPiece, KITTY_PARTS, KITTY_STUDIO_LIMITS, newKittyPiece, shapeKittyPiece, shapeKittyStudio } from "../core/kittyStudio.ts";
 import type { KittyPart, KittyPieceV1, KittySculptV1, KittyStrokeV1, KittyStudioV1 } from "../core/types.ts";
@@ -346,7 +347,7 @@ export function snapshotKittyDesignRevision(document: KittyDesignDocument, piece
   const prefix = { ...document, revision, operations: document.operations.filter((entry) => entry.order <= revision) };
   const row = projectKittyDesign(prefix).pieces.find((piece) => piece.piece.id === pieceId);
   designAssert(row, "PIECE_UNAVAILABLE", "This piece did not exist at the selected revision.");
-  return { version: 1 as const, designId: document.id, pieceId, revision, piece: row.piece, recoveredPaint: row.recoverablePaint };
+  return { version: 1 as const, designId: document.id, pieceId, revision, piece: row.piece, ...(document.nest?{appearance:document.nest.appearance}:{}), recoveredPaint: row.recoverablePaint };
 }
 /** Journal-preserving checkpoint: attribution and inactive gestures are never raster-flattened. */
 export function checkpointKittyDesign(document: KittyDesignDocument): string {
@@ -365,10 +366,11 @@ export function restoreKittyDesignCheckpoint(serialized: string): KittyDesignDoc
 /** Validate each supplied operation before trusting a mutable/decoded document.
  * The returned value is deeply immutable and supports safe incremental reuse. */
 export function decodeKittyDesignDocument(raw: unknown): KittyDesignDocument {
-  designRecord(raw, ["version", "id", "scope", "legacy", "revision", "operations"]);
+  designRecord(raw, ["version", "id", "scope", "legacy", "revision", "operations", "nest"], ["version", "id", "scope", "legacy", "revision", "operations"]);
   designAssert(raw.version === 1, "UNSUPPORTED_VERSION", "This document needs a compatible reader.");
   designId(raw.id); designInteger(raw.revision);
   const document: KittyDesignDocument = { version: 1, id: raw.id, scope: decodeScope(raw.scope), legacy: null, revision: 0, operations: [] };
+  if(raw.nest!==undefined)document.nest=decodeNestSource(raw.nest,document.scope);
   if (raw.legacy !== null) {
     const legacy = raw.legacy;
     designRecord(legacy, ["version", "migrationId", "pieces", "displayPieceId", "authorship"]);

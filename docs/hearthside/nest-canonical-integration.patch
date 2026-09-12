@@ -1,0 +1,1019 @@
+diff --git a/src/core/kittyNestDesigns.ts b/src/core/kittyNestDesigns.ts
+index 903dba7..b21fb14 100644
+--- a/src/core/kittyNestDesigns.ts
++++ b/src/core/kittyNestDesigns.ts
+@@ -1,3 +1,5 @@
++import {decodeKittyDesignReference} from '../hearthside/designContracts.ts';
++import type {KittyDesignReference} from '../hearthside/designContracts.ts';
+ import { captureCommand } from "../ledgerSync/capture.ts";
+ import { canonical } from "../ledgerSync/patch.ts";
+ import { shapeKittyStudio, KITTY_STUDIO_LIMITS } from "./kittyStudio.ts";
+@@ -7,8 +9,10 @@ import { ValidationError, type CommitResult, type Household, type KittyGlaze, ty
+ export const NEST_CATEGORIES = ["protect", "everyday", "build", "prepare"] as const;
+ export type NestCategory = typeof NEST_CATEGORIES[number];
+ /** Cosmetic records only. Parent banks never enter Goals or claim money. */
+-export type KittyNestLook = { at: string; name: string; glaze: KittyGlaze; studio?: KittyStudioV1 };
++export type KittyNestLook = { designRef?:KittyDesignReference; at: string; name: string; glaze: KittyGlaze; studio?: KittyStudioV1 };
+ export type KittyNestDesign = {
++  designRef?:KittyDesignReference;
++  designHasFired?:boolean;
+   version: 1;
+   id: string;
+   bankKey: string;
+@@ -29,7 +33,7 @@ export const nestDesignId = (view: LedgerView, memberId: string, bankKey: string
+ export const nestDesignInView = (row: KittyNestDesign, memberId: string, view: LedgerView) => row.visibility === view && (view === "household" || row.createdBy === memberId);
+ const fail = (): never => { throw new ValidationError("This bank design needs an updated Hearth. Reload and try again."); };
+ const iso = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
+-const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history"];
++const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history", "designRef", "designHasFired"];
+ export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
+   if (value === undefined) return [];
+   if (!Array.isArray(value) || value.length > 4000) return fail();
+@@ -47,13 +51,17 @@ export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
+     if (r.bankKey === "king" && r.category !== null) return fail();
+     if (r.bankKey.startsWith("plan:") && r.category !== null && r.category !== r.bankKey.slice(5)) return fail();
+     const studio = shapeKittyStudio(r.studio);
++    const designRef=r.designRef===undefined?undefined:decodeKittyDesignReference(r.designRef);
++    if(designRef&&studio||r.designHasFired!==undefined&&(typeof r.designHasFired!=="boolean"||!designRef))return fail();
+     if (r.history !== undefined && !Array.isArray(r.history)) return fail();
+     const history = r.history?.map(look => {
+-      if (!look || Object.keys(look).some(key => !["at", "name", "glaze", "studio"].includes(key)) || !iso(look.at) || typeof look.name !== "string" || look.name.length > 120 || !["cream", "sea-glass", "terracotta", "midnight", "rose"].includes(look.glaze)) return fail();
+-      return { ...look, studio: shapeKittyStudio(look.studio) };
++      if (!look || Object.keys(look).some(key => !["at", "name", "glaze", "studio", "designRef"].includes(key)) || !iso(look.at) || typeof look.name !== "string" || look.name.length > 120 || !["cream", "sea-glass", "terracotta", "midnight", "rose"].includes(look.glaze)) return fail();
++      const ref=look.designRef===undefined?undefined:decodeKittyDesignReference(look.designRef);
++      if(ref&&look.studio)return fail();
++      return { ...look, studio: shapeKittyStudio(look.studio), ...(ref?{designRef:ref}:{}) };
+     });
+     if (history?.some((look, i) => look.at < r.createdAt || look.at > r.updatedAt || (i > 0 && look.at < history[i - 1]!.at))) return fail();
+-    return { ...r, name: r.name.trim(), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}) };
++    return { ...r, name: r.name.trim(), ...(designRef?{designRef}:{}), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}) };
+   });
+   if (new Set(rows.map(row => row.id)).size !== rows.length) return fail();
+   return rows;
+@@ -103,7 +111,8 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
+   if (!nestSourceVisible(h, input.memberId, input.view, input.bankKey)) throw new ValidationError("This bank is no longer available in this space.");
+   const source = input.bankKey.split(":")[0];
+   const now = new Date().toISOString();
+-  const history = old && !["king", "plan"].includes(source!) ? receiptLooks(h, old) : old?.history;
++  const history = old && !["king", "plan"].includes(source!) ? retainNestReceiptLooks(h, old) : old?.history;
++  if(old?.designRef&&(input.studio!==undefined||input.fire))throw new ValidationError("This pottery now uses the shared Studio. Its history cannot be replaced.");
+   let studio = shapeKittyStudio(input.studio ?? old?.studio);
+   if (input.fire) {
+     if (!studio?.draft) throw new ValidationError("Put some clay on the wheel first.");
+@@ -112,10 +121,10 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
+     if (fired.length > KITTY_STUDIO_LIMITS.fired) throw new ValidationError("Make room on your pottery shelf first.");
+     studio = { version: 1, draft: null, fired, displayId: piece.id };
+   }
+-  if (input.completeSetup && (source !== "king" || !studio?.fired.length)) throw new ValidationError("Fire your King before completing this chapter.");
++  if (input.completeSetup && (source !== "king" || !(old?.designRef?old.designHasFired:studio?.fired.length))) throw new ValidationError("Fire your King before completing this chapter.");
+   const row = shapeKittyNestDesigns([{ version: 1, id, bankKey: input.bankKey, visibility: input.view,
+     createdBy: old?.createdBy ?? input.memberId, revision: (old?.revision ?? 0) + 1,
+-    name: input.name, glaze: input.glaze, ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}), category: input.category ?? old?.category ?? null,
++    name: input.name, glaze: input.glaze, ...(old?.designRef?{designRef:old.designRef,designHasFired:old.designHasFired??false}:{}), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}), category: input.category ?? old?.category ?? null,
+     archivedAt: input.archived === undefined ? old?.archivedAt ?? null : input.archived ? now : null,
+     setupCompletedAt: old?.setupCompletedAt ?? (input.completeSetup ? now : null), createdAt: old?.createdAt ?? now, updatedAt: now }])[0]!;
+   return { household: { ...h, kittyNestDesigns: [...(h.kittyNestDesigns ?? []).filter(r => r.id !== id), row] }, postedIds: [id], warnings: [],
+@@ -125,9 +134,9 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
+ /** A paid pot is a keepsake: later series edits belong to future pots. */
+ export function nestLookAt(design: KittyNestDesign | undefined, paidAt: string): KittyNestDesign | undefined {
+   if (!design || design.createdAt > paidAt) return undefined;
+-  const looks: KittyNestLook[] = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, studio: design.studio }];
++  const looks: KittyNestLook[] = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, studio: design.studio, ...(design.designRef?{designRef:design.designRef}:{}) }];
+   const look = looks.filter(row => row.at <= paidAt).sort((a,b) => b.at.localeCompare(a.at))[0];
+-  return look ? { ...design, name: look.name, glaze: look.glaze, studio: look.studio } : undefined;
++  return look ? { ...design, name: look.name, glaze: look.glaze, studio: look.studio, designRef:look.designRef } : undefined;
+ }
+ /** Retain only appearances that an accepted receipt can reference. Repeated editing
+  * and archive/restore cannot exhaust a pot's history or rewrite a paid keepsake. */
+@@ -152,8 +161,8 @@ function sourceReceipts(h: Household, design: KittyNestDesign) {
+   }
+   return h.transactions.filter(tx => linked.has(tx.id) && tx.type === "expense" && !tx.refundOfId && !tx.reversalOfId && isVisibleInView(tx, design.createdBy, design.visibility));
+ }
+-function receiptLooks(h: Household, design: KittyNestDesign): KittyNestLook[] {
+-  const looks = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, ...(design.studio ? { studio: design.studio } : {}) }];
++export function retainNestReceiptLooks(h: Household, design: KittyNestDesign): KittyNestLook[] {
++  const looks = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, ...(design.studio ? { studio: design.studio } : {}), ...(design.designRef?{designRef:design.designRef}:{}) }];
+   const keep = new Set<number>();
+   for (const receipt of sourceReceipts(h, design)) {
+     if (receipt.type !== "expense" || receipt.createdAt < design.createdAt) continue;
+@@ -164,7 +173,7 @@ function receiptLooks(h: Household, design: KittyNestDesign): KittyNestLook[] {
+   return looks.filter((_, index) => keep.has(index));
+ }
+ export function assertNestKeepsakes(h: Household, old: KittyNestDesign, row: KittyNestDesign): void {
+-  const appearance = (design: KittyNestDesign | undefined) => design ? { name: design.name, glaze: design.glaze, studio: design.studio } : null;
++  const appearance = (design: KittyNestDesign | undefined) => design ? { name: design.name, glaze: design.glaze, studio: design.studio, ...(design.designRef?{designRef:design.designRef}:{}) } : null;
+   for (const receipt of sourceReceipts(h, old)) {
+     if (receipt.type === "expense" && canonical(appearance(nestLookAt(old, receipt.createdAt))) !== canonical(appearance(nestLookAt(row, receipt.createdAt)))) {
+       throw new ValidationError("A broken pot keeps its original appearance.");
+@@ -173,17 +182,18 @@ export function assertNestKeepsakes(h: Household, old: KittyNestDesign, row: Kit
+ }
+ export function assertKittyNestTransition(previous: Household | null | undefined, next: Household, actorMemberId?: string, commandKind?: string): void {
+   const nextRows = shapeKittyNestDesigns(next.kittyNestDesigns);
+-  if (!previous) return;
++  if (!previous) return; // Validated cloud replicas may hydrate current canonical references.
+   const oldRows = shapeKittyNestDesigns(previous.kittyNestDesigns);
+   for (const old of oldRows) {
+     const row = nextRows.find(r => r.id === old.id);
+-    if (!row || row.createdBy !== old.createdBy || row.visibility !== old.visibility || row.bankKey !== old.bankKey || row.createdAt !== old.createdAt || (old.setupCompletedAt && row.setupCompletedAt !== old.setupCompletedAt)) throw new ValidationError("An accepted bank design cannot disappear or change owner. Archive it instead.");
++    if (!row || canonical(row.designRef)!==canonical(old.designRef)||row.designHasFired!==old.designHasFired||row.createdBy !== old.createdBy || row.visibility !== old.visibility || row.bankKey !== old.bankKey || row.createdAt !== old.createdAt || (old.setupCompletedAt && row.setupCompletedAt !== old.setupCompletedAt)) throw new ValidationError("An accepted bank design cannot disappear or change owner. Archive it instead.");
+     if (row.revision < old.revision || (row.revision === old.revision && canonical(row) !== canonical(old))) throw new ValidationError("The bank design changed. Open its current version.");
+     if (!["king", "plan"].includes(old.bankKey.split(":")[0]!)) assertNestKeepsakes(previous, old, row);
+   }
+   for (const row of nextRows) {
+     const old = oldRows.find(r => r.id === row.id);
+     if (old && canonical(old) === canonical(row)) continue;
++    if(!old&&(row.designRef||row.history?.some(look=>look.designRef)))throw new ValidationError("Canonical pottery is owned by the creative authority.");
+     if (!commandKind?.startsWith("saveKittyNestDesign") || !actorMemberId || !next.members.some(m => m.id === actorMemberId && m.active) || !nestSourceVisible(next, actorMemberId, row.visibility, row.bankKey)
+       || (!old && row.createdBy !== actorMemberId) || (row.visibility === "personal" && row.createdBy !== actorMemberId) || row.revision !== (old?.revision ?? 0) + 1) throw new ValidationError("Open this bank in its own space before changing its design.");
+   }
+diff --git a/src/hearthside/CollaborativeStudio.tsx b/src/hearthside/CollaborativeStudio.tsx
+index 92c77b7..bf6621c 100644
+--- a/src/hearthside/CollaborativeStudio.tsx
++++ b/src/hearthside/CollaborativeStudio.tsx
+@@ -1,3 +1,7 @@
++import {NestProp} from '../kitty/NestProp.tsx';
++import {assertNestDocumentVisible} from './nestDesignSource.ts';
++import type {NestDesignSource} from './nestDesignBinding.ts';
++import type {KittySculptV1} from '../core/types.ts';
+ import {NativeWidgetEntry} from './NativeWidgetEntry.tsx';
+ import {nativeWidgetPlugin} from './nativeBootstrap.ts';
+ import {KeyboardPaint} from './KeyboardPaint.tsx';
+@@ -25,11 +29,11 @@ type Payload=KittyDesignOperation extends infer T?T extends KittyDesignOperation
+ const shapes={body:KITTY_BODIES,head:KITTY_HEADS,ears:KITTY_EARS,eyes:KITTY_EYES,mouth:KITTY_MOUTHS,whiskers:KITTY_WHISKERS,tail:KITTY_TAILS,nose:KITTY_NOSES};
+ const colourNames=[['#bb4964','Rose'],['#487d78','Sea glass'],['#4c6092','Evening blue'],['#dca540','Honey'],['#63453b','Cocoa'],['#f7eee0','Cream']] as const;
+ const uuid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
+-export type CollaborativeStudioProps={household:Household;memberId:string;bankId?:string;initialDesignId?:string;initialPieceId?:string;initialTab?:'shape'|'wardrobe';writesEnabled?:boolean;handoff?:(designId:string,pieceId:string,revision:number,pending:boolean)=>ReactNode;onKeep?:(designId:string,pieceId:string,revision:number)=>void;onFundingIntent?:(intent:NativeFundingIntent)=>void;acceptedReceipt?:NativeReceiptUpdate;wardrobe?:ReactNode};
++export type CollaborativeStudioProps={returnPath?:string;onSelection?:(designId:string,pieceId:string)=>void;nestSource?:NestDesignSource;initialSculpt?:KittySculptV1;household:Household;memberId:string;bankId?:string;initialDesignId?:string;initialPieceId?:string;initialTab?:'shape'|'wardrobe';writesEnabled?:boolean;handoff?:(designId:string,pieceId:string,revision:number,pending:boolean)=>ReactNode;onKeep?:(designId:string,pieceId:string,revision:number)=>void;onFundingIntent?:(intent:NativeFundingIntent)=>void;acceptedReceipt?:NativeReceiptUpdate;wardrobe?:ReactNode};
+ export function CollaborativeStudio(props:CollaborativeStudioProps){
+-  return <StudioSession key={`${props.household.environment}:${props.household.householdId}:${props.memberId}:${props.bankId??props.initialDesignId??'free'}`} {...props}/>;
++  return <StudioSession key={`${props.household.environment}:${props.household.householdId}:${props.memberId}:${props.bankId??(props.nestSource?JSON.stringify([props.nestSource.view,props.nestSource.designKey]):'free')}`} {...props}/>;
+ }
+-function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId,initialTab='shape',writesEnabled=HEARTHSIDE_FLAGS.collaborativeDesign,onKeep,onFundingIntent,acceptedReceipt,wardrobe,handoff}:CollaborativeStudioProps){
++function StudioSession({returnPath,onSelection,nestSource,initialSculpt,household,memberId,bankId,initialDesignId,initialPieceId,initialTab='shape',writesEnabled=HEARTHSIDE_FLAGS.collaborativeDesign,onKeep,onFundingIntent,acceptedReceipt,wardrobe,handoff}:CollaborativeStudioProps){
+   const client=useDesignClient(),bank=household.goals.find(g=>g.id===bankId);
+   const appearance=useAppearance(),[surface,setSurface]=useState<{kind:'export'|'ar'|'widget';revision:number}|null>(null);
+   const [designId,setDesignId]=useState(initialDesignId??bank?.envelope?.designRef?.designId??''),[pieceId,setPieceId]=useState(initialPieceId??'');
+@@ -39,9 +43,15 @@ function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId
+   const [peers,setPeers]=useState<CreativePeer[]>([]),[presenceState,setPresenceState]=useState('offline'),[fireReview,setFireReview]=useState<number|null>(null),[reveal,setReveal]=useState<string|null>(null);
+   const stage=useRef<KittyStageApi|null>(null),presence=useRef<ReturnType<typeof attachCreativePresence>|null>(null),active=useRef<{gestureId:string;stroke:KittyStrokeV1;epoch:number;surface:number;designId:string;pieceId:string;operationId:string}|null>(null),deviceId=useRef(uuid('DEVICE'));
+   const live=useRef({designId,pieceId,joined});live.current={designId,pieceId,joined};
+-  const document=client?.documents.get(designId),view=useMemo(()=>document?projectKittyDesign(document):null,[document]);
+-  const row=view?.pieces.find(p=>p.piece.id===(pieceId||view.displayPieceId))??view?.pieces[0];
+-  const currentId=row?.piece.id??'';
++  const cachedDocument=client?.documents.get(designId);
++  const document=useMemo(()=>{if(!cachedDocument)return undefined;try{assertNestDocumentVisible(household,memberId,cachedDocument);return cachedDocument;}catch{return undefined;}},[cachedDocument,household,memberId]);
++  const view=useMemo(()=>document?projectKittyDesign(document):null,[document]);
++  const row=pieceId?view?.pieces.find(p=>p.piece.id===pieceId):view?.pieces.find(p=>p.piece.id===view.displayPieceId)??view?.pieces[0];
++  const requestedSelection=useRef({designId:initialDesignId,pieceId:initialPieceId});
++  useEffect(()=>{const prior=requestedSelection.current;requestedSelection.current={designId:initialDesignId,pieceId:initialPieceId};if(prior.designId===initialDesignId&&prior.pieceId===initialPieceId)return;const target=initialDesignId??bank?.envelope?.designRef?.designId??'';if(target===live.current.designId&&(initialPieceId??'')===live.current.pieceId)return;finishStroke(false);setJoined(false);setSurface(null);setDesignId(target);setPieceId(initialPieceId??'');},[initialDesignId,initialPieceId]);
++  const currentId=row?.piece.id??'';live.current={designId,pieceId:currentId||pieceId,joined};
++  const selectionCallback=useRef(onSelection);selectionCallback.current=onSelection;
++  useEffect(()=>{if(document&&currentId&&projectKittyDesign(document).pieces.some(p=>p.piece.id===currentId))selectionCallback.current?.(document.id,currentId);},[document?.id,currentId]);
+   useEffect(()=>setSurface(null),[designId,currentId]);
+   const requests=client?.pending.filter(p=>p.request.kind==='operate'?p.request.operation.designId===designId:p.request.designId===designId)??[];
+   const blocked=Boolean(!joined||!writesEnabled||!client||client.storageError||requests.some(p=>p.status!=='queued'));
+@@ -51,10 +61,10 @@ function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId
+   useEffect(()=>{if(client&&designId)void client.load(designId,household.hearthside?.designs.find(d=>d.designId===designId)?.revision??bank?.envelope?.designRef?.revision??0);},[client,designId,household.hearthside?.designs,bank?.envelope?.designRef?.revision]);
+   useEffect(()=>{if(!designId&&bank?.envelope?.designRef)setDesignId(bank.envelope.designRef.designId);},[bank?.envelope?.designRef,designId]);
+   useEffect(()=>{
+-    if(!client||!joined||!designId||!currentId)return;
++    if(!client||!joined||!designId||!currentId||document?.scope.ownerMemberId)return;
+     presence.current=attachCreativePresence({environment:household.environment,householdId:household.householdId,target:{designId,pieceId:currentId,room:'studio',deviceId:deviceId.current},token:client.options.token,onPeers:setPeers,onState:setPresenceState});
+     return ()=>{finishStroke(false);presence.current?.close();presence.current=null;};
+-  },[client,joined,designId,currentId,household.environment,household.householdId]);
++  },[client,joined,designId,currentId,household.environment,household.householdId,document?.scope.ownerMemberId]);
+   const pendingStrokes=requests.flatMap(r=>r.request.kind==='operate'&&r.request.operation.kind==='append-stroke'&&r.request.operation.pieceId===currentId?[r.request.operation.stroke]:[]);
+   const ghostStrokes=peers.flatMap(p=>p.stroke?[p.stroke]:[]);
+   const stagePiece=useMemo(()=>row?{...row.piece,paint:{...row.piece.paint,strokes:[...row.piece.paint.strokes,...pendingStrokes,...ghostStrokes,...(active.current?[active.current.stroke]:[])]}}:null,[row,JSON.stringify(pendingStrokes),JSON.stringify(ghostStrokes),JSON.stringify(active.current?.stroke)]);
+@@ -70,10 +80,10 @@ function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId
+   async function start(){
+     if(!client||!writesEnabled)return;
+     const selected=designId||uuid('DESIGN');setDesignId(selected);setJoined(true);
+-    try{if(!client.documents.has(selected)){const ok=await client.enqueue({version:1,kind:'create',designId:selected,bankId:bankId??null});if(!ok)return;}
++    try{if(!client.documents.has(selected)){const ok=await client.enqueue({version:1,kind:'create',designId:selected,bankId:bankId??null,...(nestSource?{nestSource}:{})});if(!ok)return;}
+       // A repeated bank migration can resolve to a document another member already created.
+       const found=client.documents.get(client.resolutions.get(selected)??selected);
+-      if(found){setDesignId(found.id);if(!projectKittyDesign(found).pieces.length){const id=uuid('PIECE');setPieceId(id);await client.enqueue({version:1,kind:'operate',operation:{version:1,id:uuid('OP'),designId:found.id,pieceId:id,gestureId:uuid('GESTURE'),kind:'create-piece',base:'cream'}});}}
++      if(found){setDesignId(found.id);if(!projectKittyDesign(found).pieces.length){const id=uuid('PIECE');setPieceId(id);await client.enqueue({version:1,kind:'operate',operation:{version:1,id:uuid('OP'),designId:found.id,pieceId:id,gestureId:uuid('GESTURE'),kind:'create-piece',base:'cream',...(initialSculpt?{sculpt:initialSculpt}:{})}});}}
+     }catch(error){setMessage(error instanceof Error?error.message:'This Studio could not be opened.');}
+   }
+   function finishStroke(announce=true){
+@@ -95,10 +105,10 @@ function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId
+   useEffect(()=>{if(active.current&&row&&active.current.surface!==row.surfaceRevisions[active.current.stroke.part])finishStroke();},[row?.surfaceRevisions]);
+   async function shape(field:KittyShapeField,value:string|number){if(!row)return;await submit({kind:'change-shape-field',field,value,expectedFieldRevision:row.fieldRevisions[`shape:${field}`]??0,expectedEditEpoch:row.editEpoch});}
+   const selectedStamp=row?.piece.paint.stamps.find(s=>s.id===stampId);
+-  const selection=surface&&document?{identity:{environment:household.environment,householdId:household.householdId,memberId,designId:document.id,pieceId:currentId,revision:surface.revision},piece:snapshotKittyDesignRevision(document,currentId,surface.revision).piece}:null;
++  const selection=surface&&document?{identity:{environment:household.environment,householdId:household.householdId,memberId,designId:document.id,pieceId:currentId,revision:surface.revision},piece:snapshotKittyDesignRevision(document,currentId,surface.revision).piece,...(document.nest?{appearance:document.nest.appearance}:{})}:null;
+   const surfaceBank=bank??household.goals.find(goal=>goal.envelope?.designRef?.designId===designId),facts=surfaceBank?playBankFacts(household,surfaceBank.id,memberId):null;
+   function closeSurface(){setSurface(null);requestAnimationFrame(()=>window.document.getElementById('studio-accepted-design-tools')?.focus());}
+-  if(surface&&selection)return surface.kind==='widget'?<NativeWidgetEntry selection={selection} onClose={closeSurface}/>:surface.kind==='export'?<DesignExportSurface enabled={HEARTHSIDE_FLAGS.exports} selection={selection} theme={appearance.scene.theme} onClose={closeSurface}/>:<NativeSceneSurface enabled={HEARTHSIDE_FLAGS.nativeAR} selection={selection} theme={appearance.scene.theme} fundingEnabled={Boolean(surfaceBank&&onFundingIntent)} backing={surfaceBank&&facts?{status:'available',step:kittyBankBackingStep(household,surfaceBank,todayKey())}:{status:'unavailable'}} returnPath={hearthsidePath({version:1,householdId:household.householdId,room:'studio',mode:'present',object:{kind:'piece',id:currentId,designId}})} onFundingIntent={intent=>{if(onFundingIntent)onFundingIntent(intent);else setMessage('Open this piece’s bank in Hearthside to review backing.');}} acceptedReceipt={acceptedReceipt} onClose={closeSurface}/>;
++  if(surface&&selection)return surface.kind==='widget'?<NativeWidgetEntry selection={selection} onClose={closeSurface}/>:surface.kind==='export'?<DesignExportSurface enabled={HEARTHSIDE_FLAGS.exports} selection={selection} theme={appearance.scene.theme} onClose={closeSurface}/>:<NativeSceneSurface enabled={HEARTHSIDE_FLAGS.nativeAR} selection={selection} theme={appearance.scene.theme} fundingEnabled={Boolean(surfaceBank&&onFundingIntent)} backing={surfaceBank&&facts?{status:'available',step:kittyBankBackingStep(household,surfaceBank,todayKey())}:{status:'unavailable'}} returnPath={returnPath??hearthsidePath({version:1,householdId:household.householdId,room:'studio',mode:'present',object:{kind:'piece',id:currentId,designId}})} onFundingIntent={intent=>{if(onFundingIntent)onFundingIntent(intent);else setMessage('Open this piece’s bank in Hearthside to review backing.');}} acceptedReceipt={acceptedReceipt} onClose={closeSurface}/>;
+   return <section className="collaborative-studio" aria-label="Our pottery Studio" data-joined={joined}>
+     <header><p className="kicker">Clay, colour, and a little time together</p><h2>{bank?.name??'Our making table'}</h2><p>A piece can be something you make for its own sake.</p>
+       <div className="studio-presence" role="status">{joined?<><span className="studio-participant">You are at the table</span>{peers.map(peer=><span className="studio-participant" key={peer.deviceId}>{household.members.find(m=>m.id===peer.memberId)?.name??'A household member'} {peer.stroke?'is painting':'is here'}</span>)}{presenceState!=='present'&&<small>Live presence is reconnecting.</small>}</>:<span>Join the table when you want to make or share live presence.</span>}</div>
+@@ -106,22 +116,23 @@ function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId
+       {!writesEnabled&&<p>Collaborative making is awaiting activation. Saved artwork remains available.</p>}
+     </header>
+     {row&&document&&row.status!=='archived'&&handoff?.(designId,currentId,document.revision,waiting||Boolean(active.current))}
+-    {!bankId&&<nav className="studio-shelf" aria-label="Our pieces">{(household.hearthside?.designs??[]).map((index,i)=><button key={index.designId} aria-pressed={designId===index.designId} onClick={()=>{finishStroke();setJoined(false);setPieceId('');setDesignId(index.designId);}}>{index.bankId?household.goals.find(g=>g.id===index.bankId)?.name??'A painted bank':`Our piece ${i+1}`}</button>)}{wardrobe&&<button onClick={()=>{finishStroke();setTab('wardrobe');}}>Wardrobe and portraits</button>}</nav>}
++    {!bankId&&!nestSource&&<nav className="studio-shelf" aria-label="Our pieces">{(household.hearthside?.designs??[]).map((index,i)=><button key={index.designId} aria-pressed={designId===index.designId} onClick={()=>{finishStroke();setJoined(false);setPieceId('');setDesignId(index.designId);}}>{index.bankId?household.goals.find(g=>g.id===index.bankId)?.name??'A painted bank':`Our piece ${i+1}`}</button>)}{wardrobe&&<button onClick={()=>{finishStroke();setTab('wardrobe');}}>Wardrobe and portraits</button>}</nav>}
+     {client?.storageError&&<p role="alert">{client.storageError}</p>}
+     {row&&document&&<section className="studio-accepted-tools" aria-labelledby="studio-accepted-design-tools"><h3 id="studio-accepted-design-tools" tabIndex={-1}>A piece beyond the table</h3><p>Use the accepted piece at revision {document.revision}, or choose an earlier firing below.</p><button disabled={!HEARTHSIDE_FLAGS.exports} onClick={()=>{finishStroke();setSurface({kind:'export',revision:document.revision});}}>Make production files</button><button disabled={!HEARTHSIDE_FLAGS.nativeAR} onClick={()=>{finishStroke();setSurface({kind:'ar',revision:document.revision});}}>Place this piece beside me</button>{nativeWidgetPlugin()&&<button onClick={()=>{finishStroke();setSurface({kind:'widget',revision:document.revision});}}>Keep this sculpture on my home screen</button>}{(!HEARTHSIDE_FLAGS.exports||!HEARTHSIDE_FLAGS.nativeAR)&&<small>Production files and native AR have separate activation controls.</small>}</section>}
+     {client?.pending.some(p=>p.status==='uncertain')&&<div className="studio-recovery" role="status"><p>Some edits are waiting for a verified receipt. They remain on this device.</p><button onClick={()=>void client.retry()}>Check the same receipts</button></div>}
+     {client?.pending.filter(p=>p.status==='rejected'&&(p.request.kind==='create'?p.request.designId:p.request.operation.designId)===designId).map(p=><RejectedDesignEdit key={p.id} client={client} pending={p} enabled={joined&&writesEnabled}/>) }
+     {message&&<p role="status">{message}</p>}
+-    {designId&&!document&&<p role="status">{client?.errors.get(designId)?'This artwork is unavailable. Your saved work has not been replaced.':'Opening the saved clay…'}<button onClick={()=>void client?.load(designId)}>Try loading again</button></p>}
++    {designId&&!document&&<p role="status">{client?.errors.get(designId)||cachedDocument?'This artwork is unavailable. Your saved work has not been replaced.':'Opening the saved clay…'}<button onClick={()=>void client?.load(designId)}>Try loading again</button></p>}
++    {pieceId&&document&&!row&&<p role="status">This selected piece is unavailable. Choose a piece deliberately to continue.</p>}
+     {tab==='wardrobe'?<><button onClick={()=>setTab('shape')}>Back to clay and colour</button>{wardrobe}</>:row&&<>
+       <nav className="studio-benches" aria-label="Making benches">{(['shape','paint','kiln'] as const).map(bench=><button aria-pressed={tab===bench} key={bench} onClick={()=>{finishStroke();setTab(bench);}}>{bench==='shape'?'Shape the clay':bench==='paint'?'Paint and decorate':'The kiln'}</button>)}</nav>
+       <div className="collaborative-studio-workspace">
+-        <div className="collaborative-studio-stage"><KittyStage piece={stagePiece} glaze="cream" open={false} name={bank?.name??'Our piece'} mode={editable&&tab==='paint'?'paint':'view'} step={0} fired={row.status==='fired'} apiRef={stage} brush={{size,color:colour,erasing:eraser}} onPaint={paint}/><p className="studio-state">{waiting?'Your recent marks are awaiting receipts.':row.status==='fired'?'Fired and kept.':row.status==='archived'?'Kept in your archive.':'Working clay.'} {ghostStrokes.length?'Live partner marks are temporary until accepted.':''}</p></div>
++        <div className="collaborative-studio-stage"><KittyStage ornament={document?.nest?.appearance} piece={stagePiece} glaze="cream" open={false} name={bank?.name??'Our piece'} mode={editable&&tab==='paint'?'paint':'view'} step={0} fired={row.status==='fired'} apiRef={stage} brush={{size,color:colour,erasing:eraser}} onPaint={paint}/><p className="studio-state">{waiting?'Your recent marks are awaiting receipts.':row.status==='fired'?'Fired and kept.':row.status==='archived'?'Kept in your archive.':'Working clay.'} {ghostStrokes.length?'Live partner marks are temporary until accepted.':''}</p></div>
+         <div className="collaborative-studio-tools">
+           <div className="studio-history"><button disabled={!editable||waiting||!undo} onClick={()=>undo&&void submit({kind:'undo-gesture',targetGestureId:undo.id,expectedGestureRevision:undo.revision,expectedEditEpoch:row.editEpoch})}>Undo my last gesture</button><button disabled={!editable||waiting||!redo} onClick={()=>redo&&void submit({kind:'redo-gesture',targetGestureId:redo.id,expectedGestureRevision:redo.revision,expectedEditEpoch:row.editEpoch})}>Redo my gesture</button></div>
+           {tab==='shape'&&<fieldset disabled={!editable||waiting}><legend>The shape of this one</legend>{Object.entries(shapes).map(([field,choices])=><label key={field}>{field}<select value={row.piece.sculpt[field as keyof typeof shapes]} onChange={event=>void shape(field as KittyShapeField,event.target.value)}>{choices.map(choice=><option key={choice}>{choice}</option>)}</select></label>)}{row.piece.sculpt.profile.map((value,index)=><label key={index}>{['Belly','Waist','Shoulder','Neck'][index]}<input type="range" min={KITTY_STUDIO_LIMITS.profileMin} max={KITTY_STUDIO_LIMITS.profileMax} step="0.05" value={value} onChange={event=>void shape(`profile.${index}` as KittyShapeField,Number(event.target.value))}/></label>)}<details><summary>Fine details</summary>{KITTY_FEATURES.map(field=><label key={field}>{field} size<input type="range" min={KITTY_STUDIO_LIMITS.featureMin} max={KITTY_STUDIO_LIMITS.featureMax} step="0.05" value={row.piece.sculpt.features?.[field]??1} onChange={event=>void shape(`features.${field}`,Number(event.target.value))}/></label>)}</details></fieldset>}
+           {tab==='paint'&&<><fieldset disabled={!editable}><legend>Our paint tray</legend><div className="studio-colours">{colourNames.map(([value,label])=><button type="button" aria-label={label} aria-pressed={colour===value} style={{background:value}} key={value} onClick={()=>setColour(value)}/>)}</div><label>Mix a colour<input type="color" value={colour} onChange={e=>setColour(e.target.value)}/></label><label>Brush width<input type="range" min="2" max="70" value={size} onChange={e=>setSize(Number(e.target.value))}/></label><label>Opacity<input type="range" min="0.1" max="1" step="0.1" value={opacity} onChange={e=>setOpacity(Number(e.target.value))}/></label><label><input type="checkbox" checked={mirror} onChange={e=>setMirror(e.target.checked)}/>Mirror my brush</label><label><input type="checkbox" checked={eraser} onChange={e=>setEraser(e.target.checked)}/>Eraser</label><label>Surface<select value={part} onChange={e=>setPart(e.target.value as KittyPart)}>{KITTY_PARTS.map(p=><option key={p}>{p}</option>)}</select></label><button disabled={waiting} onClick={()=>void submit({kind:'change-dip',part,color:colour,expectedFieldRevision:row.fieldRevisions[`dip:${part}`]??0,expectedEditEpoch:row.editEpoch})}>Dip this surface</button>{client&&<KeyboardPaint client={client} designId={designId} pieceId={currentId} part={part} style={{tool:eraser?'eraser':'brush',color:colour,size,opacity,mirror}} epoch={row.editEpoch} surfaceRevision={row.surfaceRevisions[part]} u={u} v={v} enabled={editable} onU={setU} onV={setV}/>}<details><summary>Stamps and little additions</summary><label>Choose an addition<select value={stampKind} onChange={e=>setStampKind(e.target.value as KittyStampKind)}>{KITTY_STAMP_KINDS.map(kind=><option key={kind}>{kind}</option>)}</select></label>{stampKind==='initial'&&<label>Letter<input maxLength={2} value={stampText} onChange={e=>setStampText(e.target.value)}/></label>}<button disabled={waiting||stampKind==='initial'&&!stampText.trim()} onClick={()=>void submit({kind:'add-stamp',expectedEditEpoch:row.editEpoch,stamp:{id:uuid('STAMP'),anchor:'belly',kind:stampKind,color:colour,size:.22,rotation:0,part,u,v,...(stampKind==='initial'?{text:stampText}:{})}})}>Place at the chosen position</button><label>Adjust an addition<select value={stampId} onChange={e=>setStampId(e.target.value)}><option value="">Choose</option>{row.piece.paint.stamps.map((stamp,i)=><option key={stamp.id} value={stamp.id}>{stamp.kind} {i+1}</option>)}</select></label>{selectedStamp&&<><label>Size<input type="range" min={KITTY_STUDIO_LIMITS.stampSize[0]} max={KITTY_STUDIO_LIMITS.stampSize[1]} step="0.02" disabled={waiting} value={selectedStamp.size} onChange={e=>void submit({kind:'update-stamp',stampId,field:'size',value:Number(e.target.value),expectedFieldRevision:row.fieldRevisions[`stamp:${stampId}:size`]??0,expectedEditEpoch:row.editEpoch})}/></label><button disabled={waiting} onClick={()=>void submit({kind:'update-stamp',stampId,field:'placement',value:{part,u,v},expectedFieldRevision:row.fieldRevisions[`stamp:${stampId}:placement`]??0,expectedEditEpoch:row.editEpoch})}>Move to the chosen position</button></>}</details></fieldset></>}
+-          {tab==='kiln'&&<section aria-label="Firing review"><h3>{row.status==='fired'?'This firing is part of your story':'Ready for the kiln?'}</h3><p>Firing keeps this exact revision. You can return to the same piece and keep making later.</p>{row.recoverablePaint.length>0&&<p>{row.recoverablePaint.length} marks belong to an earlier surface. They remain in this piece’s history.</p>}{row.status==='clay'?<button disabled={blocked||waiting||Boolean(active.current)} onClick={()=>setFireReview(row.revision)}>Review this firing</button>:row.status==='fired'?<button disabled={blocked||waiting} onClick={()=>void submit({kind:'reopen',expectedRevision:row.revision})}>Bring it back to the table</button>:null}{fireReview!==null&&<div className="studio-firing-review" role="group" aria-label="Keep this firing"><KittyFlat piece={row.piece}/><p>Keep the piece shown here, at revision {fireReview}.</p>{peers.some(p=>p.stroke)&&<p>Someone is still painting. New marks may change this review.</p>}<button disabled={blocked||waiting||fireReview!==row.revision} onClick={async()=>{if(await submit({kind:'fire',expectedRevision:fireReview})){setReveal(currentId);setFireReview(null);}}}>Fire this revision</button><button onClick={()=>setFireReview(null)}>Back to making</button>{fireReview!==row.revision&&<p>The piece changed. Review it again before firing.</p>}</div>}{reveal===currentId&&row.status==='fired'&&<div className="studio-reveal" role="status"><strong>A little thing, made with care.</strong><p>This reveal stays in the piece’s history for later.</p></div>}<button disabled={blocked||waiting||view?.displayPieceId===currentId||row.status==='archived'} onClick={()=>view&&void submit({kind:'select-display',expectedDisplayRevision:view.displayRevision})}>Display this piece</button>{onKeep&&<button disabled={waiting} onClick={()=>onKeep(designId,currentId,view!.revision)}>Link this piece to our intention</button>}<details><summary>Earlier firings and recoverable paint</summary>{row.snapshots.map(snapshot=><figure key={snapshot.id}><KittyFlat piece={snapshot.piece}/><figcaption>Firing from {new Date(snapshot.acceptedAt).toLocaleDateString()} · revision {snapshot.revision}</figcaption><button disabled={!HEARTHSIDE_FLAGS.exports} onClick={()=>setSurface({kind:'export',revision:snapshot.revision})}>Make files from this firing</button><button disabled={!HEARTHSIDE_FLAGS.nativeAR} onClick={()=>setSurface({kind:'ar',revision:snapshot.revision})}>Place this firing beside me</button></figure>)}{row.recoverablePaint.map((paint,i)=><p key={paint.operationId??i}>Mark on {paint.stroke.part}, kept with its earlier shape.</p>)}</details><button disabled={blocked||waiting||row.status==='archived'} onClick={()=>void submit({kind:'archive-piece',expectedRevision:row.revision})}>Put this piece in the archive</button></section>}
++          {tab==='kiln'&&<section aria-label="Firing review"><h3>{row.status==='fired'?'This firing is part of your story':'Ready for the kiln?'}</h3><p>Firing keeps this exact revision. You can return to the same piece and keep making later.</p>{row.recoverablePaint.length>0&&<p>{row.recoverablePaint.length} marks belong to an earlier surface. They remain in this piece’s history.</p>}{row.status==='clay'?<button disabled={blocked||waiting||Boolean(active.current)} onClick={()=>setFireReview(row.revision)}>Review this firing</button>:row.status==='fired'?<button disabled={blocked||waiting} onClick={()=>void submit({kind:'reopen',expectedRevision:row.revision})}>Bring it back to the table</button>:null}{fireReview!==null&&<div className="studio-firing-review" role="group" aria-label="Keep this firing"><KittyFlat piece={row.piece}/>{document?.nest&&<NestProp ornament={document.nest.appearance}/>}<p>Keep the piece shown here, at revision {fireReview}.</p>{peers.some(p=>p.stroke)&&<p>Someone is still painting. New marks may change this review.</p>}<button disabled={blocked||waiting||fireReview!==row.revision} onClick={async()=>{if(await submit({kind:'fire',expectedRevision:fireReview})){setReveal(currentId);setFireReview(null);}}}>Fire this revision</button><button onClick={()=>setFireReview(null)}>Back to making</button>{fireReview!==row.revision&&<p>The piece changed. Review it again before firing.</p>}</div>}{reveal===currentId&&row.status==='fired'&&<div className="studio-reveal" role="status"><strong>A little thing, made with care.</strong><p>This reveal stays in the piece’s history for later.</p></div>}<button disabled={blocked||waiting||view?.displayPieceId===currentId||row.status==='archived'} onClick={()=>view&&void submit({kind:'select-display',expectedDisplayRevision:view.displayRevision})}>Display this piece</button>{onKeep&&<button disabled={waiting} onClick={()=>onKeep(designId,currentId,view!.revision)}>Link this piece to our intention</button>}<details><summary>Earlier firings and recoverable paint</summary>{row.snapshots.map(snapshot=><figure key={snapshot.id}><KittyFlat piece={snapshot.piece}/>{document?.nest&&<NestProp ornament={document.nest.appearance}/>}<figcaption>Firing from {new Date(snapshot.acceptedAt).toLocaleDateString()} · revision {snapshot.revision}</figcaption><button disabled={!HEARTHSIDE_FLAGS.exports} onClick={()=>setSurface({kind:'export',revision:snapshot.revision})}>Make files from this firing</button><button disabled={!HEARTHSIDE_FLAGS.nativeAR} onClick={()=>setSurface({kind:'ar',revision:snapshot.revision})}>Place this firing beside me</button></figure>)}{row.recoverablePaint.map((paint,i)=><p key={paint.operationId??i}>Mark on {paint.stroke.part}, kept with its earlier shape.</p>)}</details><button disabled={blocked||waiting||row.status==='archived'} onClick={()=>void submit({kind:'archive-piece',expectedRevision:row.revision})}>Put this piece in the archive</button></section>}
+         </div>
+       </div>
+       <nav className="studio-piece-shelf" aria-label="Pieces in this design">{view?.pieces.map((piece,i)=><button key={piece.piece.id} aria-pressed={piece.piece.id===currentId} onClick={()=>{finishStroke();setPieceId(piece.piece.id);setFireReview(null);}}><KittyFlat piece={piece.piece}/><span>Piece {i+1} · {piece.status}</span></button>)}<button disabled={blocked||waiting} onClick={()=>{const id=uuid('PIECE');void submit({kind:'create-piece',base:'cream'},uuid('GESTURE'),id).then(ok=>{if(ok)setPieceId(id);});}}>Start another piece</button></nav>
+diff --git a/src/hearthside/DesignExportJob.ts b/src/hearthside/DesignExportJob.ts
+index 3eb6b9a..303c7f4 100644
+--- a/src/hearthside/DesignExportJob.ts
++++ b/src/hearthside/DesignExportJob.ts
+@@ -81,7 +81,7 @@ export class DesignExportJob {
+     await new Promise<void>(resolve => setTimeout(resolve, 0));
+     if (generation !== this.generation) return;
+     try {
+-      const selection = normalizeExportSelection({ version: 1, documentId: this.source.identity.designId, revision: this.source.identity.revision, piece: this.source.piece, ...options });
++      const selection = normalizeExportSelection({ version: 1, documentId: this.source.identity.designId, revision: this.source.identity.revision, piece: this.source.piece, ...(this.source.appearance?{appearance:this.source.appearance}:{}), ...options });
+       const capture = this.deps.capture(selection);
+       if (generation !== this.generation) return;
+       this.selection = selection; this.requestId = crypto.randomUUID();
+diff --git a/src/hearthside/DesignExportSurface.tsx b/src/hearthside/DesignExportSurface.tsx
+index 1844ac5..6779985 100644
+--- a/src/hearthside/DesignExportSurface.tsx
++++ b/src/hearthside/DesignExportSurface.tsx
+@@ -1,3 +1,4 @@
++import {NestProp} from '../kitty/NestProp.tsx';
+ import { useEffect, useId, useRef, useState } from 'react';
+ import { KittyFlat } from '../kitty/studio/flat.tsx';
+ import { DesignExportJob, type ExportJobDependencies, type ExportJobState, type ExportOptions } from './DesignExportJob.ts';
+@@ -41,7 +42,7 @@ function ExportSurface({ enabled, selection, theme, onClose, dependencies }: Des
+   const close = () => { job.current?.cancel(); onClose(); };
+   return <section className="design-surface design-export" data-design-theme={theme} aria-labelledby={heading} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
+     <header className="design-surface-heading"><div><p className="design-eyebrow">{materials.eyebrow}</p><h2 id={heading} ref={title} tabIndex={-1}>{materials.exportTitle}</h2><p>A production package of the design you chose, at a size you choose.</p></div><button type="button" onClick={close}>Back to Studio</button></header>
+-    <div className="design-surface-spread"><figure className="design-source-preview"><div className="design-preview-paper"><KittyFlat piece={selection.piece} step={0} title="The selected authored design"/><span className="design-measure" aria-hidden="true">{height || '—'} mm</span></div><figcaption>Selected design · revision {selection.identity.revision}<br/>Your original shape and paint stay kept.</figcaption><p className="design-surface-note">{materials.footer}</p></figure>
++    <div className="design-surface-spread"><figure className="design-source-preview"><div className="design-preview-paper"><KittyFlat piece={selection.piece} step={0} title="The selected authored design"/>{selection.appearance&&<NestProp ornament={selection.appearance}/>}<span className="design-measure" aria-hidden="true">{height || '—'} mm</span></div><figcaption>Selected design · revision {selection.identity.revision}<br/>Your original shape and paint stay kept.</figcaption><p className="design-surface-note">{materials.footer}</p></figure>
+       <div className="design-surface-work">
+         {!enabled ? <p role="status">Production files are not enabled for this household yet.</p> : <>
+           <fieldset className="design-dimensions" disabled={busy}><legend>Choose the physical piece</legend>
+diff --git a/src/hearthside/GuestRoomView.tsx b/src/hearthside/GuestRoomView.tsx
+index 2b9ff75..093d017 100644
+--- a/src/hearthside/GuestRoomView.tsx
++++ b/src/hearthside/GuestRoomView.tsx
+@@ -1,3 +1,4 @@
++import {NestGuestOrnament} from './NestGuestOrnament.tsx';
+ import {useEffect,useId,useRef,useState} from 'react';
+ import {RoomScene} from './RoomScene.tsx';
+ import {KittyFlat} from '../kitty/studio/flat.tsx';
+@@ -6,4 +7,4 @@ import type {GuestPreviewProps} from './guestClient.ts';
+ import './guestVisits.css';
+ function Media({media,load}:{media:GuestMedia;load:NonNullable<GuestPreviewProps['loadMedia']>}){const [url,setUrl]=useState(''),[failed,setFailed]=useState(false);useEffect(()=>{const abort=new AbortController();let objectUrl='';void load(media.id,abort.signal).then(blob=>{if(abort.signal.aborted)return;objectUrl=URL.createObjectURL(blob);setUrl(objectUrl);}).catch(()=>{if(!abort.signal.aborted)setFailed(true);});return()=>{abort.abort();if(objectUrl)URL.revokeObjectURL(objectUrl);setUrl('');};},[media.id,load]);if(failed)return <p role="status">This shared media is unavailable.</p>;if(!url)return <p role="status">Opening shared media…</p>;return media.kind==='image'?<img src={url} alt={media.alt} loading="lazy" onError={()=>setFailed(true)}/>:<audio src={url} controls preload="metadata" aria-label={media.alt||'Shared voice recording'} onError={()=>setFailed(true)}/>;}
+ function objectTitle(object:GuestObject){return object.kind==='piece'?'Painted cat':object.kind==='note'?'Welcome note':object.title;}
+-export function GuestRoomView({arrangement,presence=[],toys=[],loadMedia}:GuestPreviewProps){const id=useId().replace(/:/g,''),[opened,setOpened]=useState<string|null>(null),detail=useRef<HTMLDivElement>(null);const object=arrangement.objects.find(o=>o.id===opened);const composition=JSON.stringify(arrangement);useEffect(()=>{setOpened(null);},[composition]);return <section className="guest-room" data-guest-theme={arrangement.theme} aria-label={`${arrangement.title}, ${arrangement.room} room`}><div className="guest-authored-room"><RoomScene room={arrangement.room} theme={arrangement.theme} furniture={arrangement.furniture} illustrated objects={arrangement.objects.map(o=>({id:id+'-'+o.id,kind:o.kind,label:objectTitle(o),surfaceLabel:o.kind==='memory'?'Memory':o.kind==='piece'?'Painted cat':o.kind==='note'?'Welcome note':'An intention',x:o.x,y:o.y,preview:o.kind==='piece'?<KittyFlat piece={guestDisplayPiece(o.appearance)} step={0} fired={false} title="Painted cat at a standard display size"/>:undefined,onActivate:()=>{setOpened(o.id);requestAnimationFrame(()=>detail.current?.focus());}}))}/><div className="guest-toy-layer" aria-hidden="true">{toys.map(toy=><span key={toy.id} className={`guest-toy guest-toy--${toy.toy}`} style={{left:`${toy.x*100}%`,top:`${toy.y*100}%`}}>{toy.toy==='chime'?'♪':toy.toy==='firefly'?'✦':'●'}</span>)}</div></div><p className="guest-welcome">{arrangement.welcome||'A room prepared for a visit.'}</p>{presence.length>0&&<p className="guest-presence" aria-live="polite">Here now: {presence.map(p=>`${p.label} (${p.host?'host':'guest'})`).join(', ')}</p>}{object&&<div className="guest-object-detail" ref={detail} tabIndex={-1} role="region" aria-label={objectTitle(object)}><h3>{objectTitle(object)}</h3>{object.kind==='piece'?<KittyFlat piece={guestDisplayPiece(object.appearance)} step={0} fired={false} title="Painted cat at a standard display size"/>:object.kind==='memory'?<>{object.captions.map((c,i)=><blockquote key={i}><p>{c.text}</p><cite>{c.label}</cite></blockquote>)}{object.pieces.map((appearance,i)=><KittyFlat key={i} piece={guestDisplayPiece(appearance)} step={0} fired={false} title={`Painted cat ${i+1} at a standard display size`}/>)}{loadMedia&&object.media.map(m=><Media key={m.id} media={m} load={loadMedia}/>)}</>:<p>{object.text}</p>}<button onClick={()=>{setOpened(null);document.getElementById(id+'index')?.focus();}}>Close detail</button></div>}<span id={id+'index'} tabIndex={-1} className="guest-sr">Room contents</span></section>;}
++export function GuestRoomView({arrangement,presence=[],toys=[],loadMedia}:GuestPreviewProps){const id=useId().replace(/:/g,''),[opened,setOpened]=useState<string|null>(null),detail=useRef<HTMLDivElement>(null);const object=arrangement.objects.find(o=>o.id===opened);const composition=JSON.stringify(arrangement);useEffect(()=>{setOpened(null);},[composition]);return <section className="guest-room" data-guest-theme={arrangement.theme} aria-label={`${arrangement.title}, ${arrangement.room} room`}><div className="guest-authored-room"><RoomScene room={arrangement.room} theme={arrangement.theme} furniture={arrangement.furniture} illustrated objects={arrangement.objects.map(o=>({id:id+'-'+o.id,kind:o.kind,label:objectTitle(o),surfaceLabel:o.kind==='memory'?'Memory':o.kind==='piece'?'Painted cat':o.kind==='note'?'Welcome note':'An intention',x:o.x,y:o.y,preview:o.kind==='piece'?<><KittyFlat piece={guestDisplayPiece(o.appearance)} step={0} fired={false} title="Painted cat at a standard display size"/>{o.appearance.ornament&&<NestGuestOrnament ornament={o.appearance.ornament}/>}</>:undefined,onActivate:()=>{setOpened(o.id);requestAnimationFrame(()=>detail.current?.focus());}}))}/><div className="guest-toy-layer" aria-hidden="true">{toys.map(toy=><span key={toy.id} className={`guest-toy guest-toy--${toy.toy}`} style={{left:`${toy.x*100}%`,top:`${toy.y*100}%`}}>{toy.toy==='chime'?'♪':toy.toy==='firefly'?'✦':'●'}</span>)}</div></div><p className="guest-welcome">{arrangement.welcome||'A room prepared for a visit.'}</p>{presence.length>0&&<p className="guest-presence" aria-live="polite">Here now: {presence.map(p=>`${p.label} (${p.host?'host':'guest'})`).join(', ')}</p>}{object&&<div className="guest-object-detail" ref={detail} tabIndex={-1} role="region" aria-label={objectTitle(object)}><h3>{objectTitle(object)}</h3>{object.kind==='piece'?<><KittyFlat piece={guestDisplayPiece(object.appearance)} step={0} fired={false} title="Painted cat at a standard display size"/>{object.appearance.ornament&&<NestGuestOrnament ornament={object.appearance.ornament}/>}</>:object.kind==='memory'?<>{object.captions.map((c,i)=><blockquote key={i}><p>{c.text}</p><cite>{c.label}</cite></blockquote>)}{object.pieces.map((appearance,i)=><span key={i}><KittyFlat piece={guestDisplayPiece(appearance)} step={0} fired={false} title={`Painted cat ${i+1} at a standard display size`}/>{appearance.ornament&&<NestGuestOrnament ornament={appearance.ornament}/>}</span>)}{loadMedia&&object.media.map(m=><Media key={m.id} media={m} load={loadMedia}/>)}</>:<p>{object.text}</p>}<button onClick={()=>{setOpened(null);document.getElementById(id+'index')?.focus();}}>Close detail</button></div>}<span id={id+'index'} tabIndex={-1} className="guest-sr">Room contents</span></section>;}
+diff --git a/src/hearthside/MemoryArtwork.tsx b/src/hearthside/MemoryArtwork.tsx
+index 01ad6bd..2cb00ba 100644
+--- a/src/hearthside/MemoryArtwork.tsx
++++ b/src/hearthside/MemoryArtwork.tsx
+@@ -1,3 +1,4 @@
++import {NestProp} from '../kitty/NestProp.tsx';
+ import {useEffect,useMemo} from 'react';
+ import {KittyFlat} from '../kitty/studio/flat.tsx';
+ import {useDesignClient} from './DesignProvider.tsx';
+@@ -15,10 +16,10 @@ export function useMemoryDesigns(references:DesignReference[]){
+   return {snapshots,ready:snapshots.every(Boolean),errors:references.map(ref=>client?.errors.get(ref.documentId)??'')};
+ }
+ export function MemoryArtwork({references,snapshots}:{references:DesignReference[];snapshots:Array<ReturnType<typeof snapshotKittyDesignRevision>|null>}){
+-  return <div className="hearthside-memory-artwork">{references.map((ref,index)=><figure key={JSON.stringify(ref)}>{snapshots[index]?<KittyFlat piece={snapshots[index]!.piece} title="The piece as it was when this memory was composed"/>:<p role="status">This saved piece is unavailable. Its chosen revision has not been replaced.</p>}<figcaption>Our piece, kept at revision {ref.revision}</figcaption></figure>)}</div>;
++  return <div className="hearthside-memory-artwork">{references.map((ref,index)=><figure key={JSON.stringify(ref)}>{snapshots[index]?<><KittyFlat piece={snapshots[index]!.piece} title="The piece as it was when this memory was composed"/>{snapshots[index]!.appearance&&<NestProp ornament={snapshots[index]!.appearance!}/>}</>:<p role="status">This saved piece is unavailable. Its chosen revision has not been replaced.</p>}<figcaption>Our piece, kept at revision {ref.revision}</figcaption></figure>)}</div>;
+ }
+ /** An immutable authored view for room objects; money scale is deliberately supplied nowhere here. */
+ export function SavedPiecePreview({reference}:{reference:DesignReference}){
+   const {snapshots}=useMemoryDesigns([reference]),snapshot=snapshots[0];
+-  return snapshot?<KittyFlat piece={snapshot.piece} title="Our authored piece"/>:<span role="status">Artwork unavailable</span>;
++  return snapshot?<><KittyFlat piece={snapshot.piece} title="Our authored piece"/>{snapshot.appearance&&<NestProp ornament={snapshot.appearance}/>}</>:<span role="status">Artwork unavailable</span>;
+ }
+diff --git a/src/hearthside/NativeSceneSurface.tsx b/src/hearthside/NativeSceneSurface.tsx
+index cff2607..bb7453f 100644
+--- a/src/hearthside/NativeSceneSurface.tsx
++++ b/src/hearthside/NativeSceneSurface.tsx
+@@ -1,3 +1,4 @@
++import {NestProp} from '../kitty/NestProp.tsx';
+ import { useEffect, useId, useRef, useState } from 'react';
+ import { BrowserSculpture } from './BrowserSculpture.tsx';
+ import { KittyFlat } from '../kitty/studio/flat.tsx';
+@@ -61,7 +62,7 @@ function NativeSurface({ enabled, selection, theme, backing, returnPath, onFundi
+   const close = () => { ++generation.current; void controller.current?.leaveScope().catch(() => {}); onClose(); };
+   return <section className="design-surface design-native" data-design-theme={theme} aria-labelledby={heading} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
+     <header className="design-surface-heading"><div><p className="design-eyebrow">{materials.eyebrow}</p><h2 id={heading} ref={title} tabIndex={-1}>{materials.nativeTitle}</h2><p>A familiar little piece of your shared home, wherever you are.</p></div><button type="button" onClick={close}>Back to Studio</button></header>
+-    <div className="design-surface-spread"><figure className="design-source-preview"><div className="design-preview-paper"><KittyFlat piece={selection.piece} step={0} title="The selected design for your room"/><span className="design-measure" aria-hidden="true">{NATIVE_AUTHORED_HEIGHT_MM} mm</span></div><figcaption>Selected design · revision {selection.identity.revision}<br/>The same authored shape and paint as your production files.</figcaption><p className="design-surface-note">{materials.footer}</p></figure>
++    <div className="design-surface-spread"><figure className="design-source-preview"><div className="design-preview-paper"><KittyFlat piece={selection.piece} step={0} title="The selected design for your room"/>{selection.appearance&&<NestProp ornament={selection.appearance}/>}<span className="design-measure" aria-hidden="true">{NATIVE_AUTHORED_HEIGHT_MM} mm</span></div><figcaption>Selected design · revision {selection.identity.revision}<br/>The same authored shape and paint as your production files.</figcaption><p className="design-surface-note">{materials.footer}</p></figure>
+       <div className="design-surface-work"><section className="design-ar-instructions"><h3>A place beside you</h3><ol><li>Find a clear, well-lit surface.</li><li>Tap to place your cat, then turn it with two fingers or the rotation buttons.</li><li>{fundingEnabled?'Open a contribution review from the coin control, or come straight back here.':'Turn and enjoy the piece, then come straight back here.'}</li></ol><p>Camera images and room scans stay on your device.</p></section>
+         {!enabled ? <p role="status">Interactive AR is not enabled for this household yet.</p> : available === null ? <p role="status">Checking this companion’s AR support…</p> : available ? <div className="design-ar-actions">
+           {phase === 'idle' && <button type="button" onClick={() => void prepare(true)}>Place this cat in my room</button>}
+diff --git a/src/hearthside/NativeWidgetEntry.tsx b/src/hearthside/NativeWidgetEntry.tsx
+index 88ed8bc..7af7c2e 100644
+--- a/src/hearthside/NativeWidgetEntry.tsx
++++ b/src/hearthside/NativeWidgetEntry.tsx
+@@ -12,7 +12,7 @@ export function NativeWidgetEntry({selection,onClose}:{selection:DesignSurfaceSe
+  const subject=loadSupabaseSession(environment)?.userId,scope=subject?{environment,householdId,memberId,subject}:null;
+  const key=JSON.stringify([selection.identity,subject]);
+  useEffect(()=>{const abort=new AbortController();setImage(null);setError('');
+-  if(controller&&plugin&&scope)void captureNativeWidget({designId:selection.identity.designId,revision:selection.identity.revision,piece:selection.piece},abort.signal).then(image=>{if(!abort.signal.aborted)setImage(image);}).catch(()=>{if(!abort.signal.aborted)setError('This device could not capture the sculpture. Your piece is safe; you can retry.');});
++  if(controller&&plugin&&scope)void captureNativeWidget({designId:selection.identity.designId,revision:selection.identity.revision,piece:selection.piece,...(selection.appearance?{appearance:selection.appearance}:{})},abort.signal).then(image=>{if(!abort.signal.aborted)setImage(image);}).catch(()=>{if(!abort.signal.aborted)setError('This device could not capture the sculpture. Your piece is safe; you can retry.');});
+   return()=>abort.abort();
+  },[key,attempt,controller,plugin]);
+  if(!controller||!plugin||!scope)return <section aria-label="Home-screen sculpture"><h2>Your sculpture, close by</h2><p>Open the native companion and sign in to choose a home-screen sculpture.</p><button onClick={onClose}>Return to Studio</button></section>;
+diff --git a/src/hearthside/ProjectorEntry.tsx b/src/hearthside/ProjectorEntry.tsx
+index 9e89645..3e69f17 100644
+--- a/src/hearthside/ProjectorEntry.tsx
++++ b/src/hearthside/ProjectorEntry.tsx
+@@ -36,7 +36,7 @@ export function ProjectorEntry({household,memberId,identity,source,theme,onClose
+       const memory=await currentMemory(scope);if(!memory.designs.some(ref=>JSON.stringify(ref)===JSON.stringify(reference)))return {status:'withdrawn'};
+       const document=await designs?.load(reference.documentId,reference.revision);assertCurrent(scope.signal);
+       if(!document||document.scope.ownerMemberId!==null||document.scope.environment!==household.environment||document.scope.householdId!==household.householdId)return {status:'unavailable'};
+-      const snapshot=snapshotKittyDesignRevision(document,reference.pieceId,reference.revision),blob=await paintedSnapshot(snapshot.piece,scope.signal);
++      const snapshot=snapshotKittyDesignRevision(document,reference.pieceId,reference.revision),blob=await paintedSnapshot(snapshot.piece,scope.signal,snapshot.appearance);
+       return {status:'available',reference,blob,rendering:'authored-flat'};
+     }}
+     validateDownload={async(proof,context)=>{
+diff --git a/src/hearthside/design.ts b/src/hearthside/design.ts
+index 82db608..751a98b 100644
+--- a/src/hearthside/design.ts
++++ b/src/hearthside/design.ts
+@@ -1,3 +1,4 @@
++import {decodeNestSource} from './nestDesignBinding.ts';
+ /** Canonical creative authority. No money, network, browser or room dependencies. */
+ import { defaultKittySculpt, displayedKittyPiece, KITTY_PARTS, KITTY_STUDIO_LIMITS, newKittyPiece, shapeKittyPiece, shapeKittyStudio } from "../core/kittyStudio.ts";
+ import type { KittyPart, KittyPieceV1, KittySculptV1, KittyStrokeV1, KittyStudioV1 } from "../core/types.ts";
+@@ -346,7 +347,7 @@ export function snapshotKittyDesignRevision(document: KittyDesignDocument, piece
+   const prefix = { ...document, revision, operations: document.operations.filter((entry) => entry.order <= revision) };
+   const row = projectKittyDesign(prefix).pieces.find((piece) => piece.piece.id === pieceId);
+   designAssert(row, "PIECE_UNAVAILABLE", "This piece did not exist at the selected revision.");
+-  return { version: 1 as const, designId: document.id, pieceId, revision, piece: row.piece, recoveredPaint: row.recoverablePaint };
++  return { version: 1 as const, designId: document.id, pieceId, revision, piece: row.piece, ...(document.nest?{appearance:document.nest.appearance}:{}), recoveredPaint: row.recoverablePaint };
+ }
+ /** Journal-preserving checkpoint: attribution and inactive gestures are never raster-flattened. */
+ export function checkpointKittyDesign(document: KittyDesignDocument): string {
+@@ -365,10 +366,11 @@ export function restoreKittyDesignCheckpoint(serialized: string): KittyDesignDoc
+ /** Validate each supplied operation before trusting a mutable/decoded document.
+  * The returned value is deeply immutable and supports safe incremental reuse. */
+ export function decodeKittyDesignDocument(raw: unknown): KittyDesignDocument {
+-  designRecord(raw, ["version", "id", "scope", "legacy", "revision", "operations"]);
++  designRecord(raw, ["version", "id", "scope", "legacy", "revision", "operations", "nest"], ["version", "id", "scope", "legacy", "revision", "operations"]);
+   designAssert(raw.version === 1, "UNSUPPORTED_VERSION", "This document needs a compatible reader.");
+   designId(raw.id); designInteger(raw.revision);
+   const document: KittyDesignDocument = { version: 1, id: raw.id, scope: decodeScope(raw.scope), legacy: null, revision: 0, operations: [] };
++  if(raw.nest!==undefined)document.nest=decodeNestSource(raw.nest,document.scope);
+   if (raw.legacy !== null) {
+     const legacy = raw.legacy;
+     designRecord(legacy, ["version", "migrationId", "pieces", "displayPieceId", "authorship"]);
+diff --git a/src/hearthside/designClient.ts b/src/hearthside/designClient.ts
+index b723bc5..1e589b2 100644
+--- a/src/hearthside/designClient.ts
++++ b/src/hearthside/designClient.ts
+@@ -1,12 +1,13 @@
++import {decodeNestSource,type NestDesignSource} from './nestDesignBinding.ts';
+ import {reviewRejectedEdit,type RejectedEditReview} from './designRecovery.ts';
+ import type { Environment } from '../core/types.ts';
+ import { acceptKittyDesignOperation, decodeKittyDesignDocument, type KittyDesignReceipt } from './design.ts';
+ import { canonicalDesignJSON, decodeKittyDesignOperation, designArray, designId, designRecord, type KittyAcceptedDesignOperation, type KittyDesignDocument, type KittyDesignOperation } from './designContracts.ts';
+
+-export type DesignRequest={version:1;kind:'create';designId:string;bankId:string|null}|{version:1;kind:'operate';operation:KittyDesignOperation};
++export type DesignRequest={version:1;kind:'create';designId:string;bankId:string|null;nestSource?:NestDesignSource}|{version:1;kind:'operate';operation:KittyDesignOperation};
+ export type PendingDesignRequest={id:string;request:DesignRequest;status:'queued'|'uncertain'|'rejected';message:string};
+ type Options={environment:Environment;householdId:string;memberId:string;identity:string;token:()=>Promise<string>;storage?:Storage;fetch?:typeof fetch};
+-const DEFINITE=new Set(['INVALID_ID','INVALID_VALUE','INVALID_REVISION','INVALID_FIELD','INVALID_SHAPE','INVALID_TIME','INVALID_BASELINE','OPERATION_TOO_LARGE','OPERATION_ID_REUSED','ORDER_CONFLICT','STALE_GESTURE','FIELD_REVISION_CONFLICT','STALE_FIELD','STALE_PIECE','PIECE_NOT_FOUND','PIECE_UNAVAILABLE','PIECE_ARCHIVED','PIECE_ALREADY_EXISTS','PIECE_LIMIT','HISTORY_LIMIT','CHECKPOINT_LIMIT','DESIGN_BANK_UNAVAILABLE','DESIGN_ID_CONFLICT','DESIGN_OWNERSHIP_CHANGED','KITTY_DESIGN_WRITES_PAUSED','STALE_EDIT_EPOCH','PIECE_FIRED','PIECE_NOT_FIRED','STALE_DISPLAY','GESTURE_CONFLICT','NOT_YOUR_GESTURE','UNKNOWN_SURFACE','PAINT_LIMIT','STAMP_LIMIT','STAMP_EXISTS','STAMP_UNAVAILABLE','FIRING_LIMIT','HOUSEHOLD_STORAGE_LIMIT','DESIGN_REVISION_AHEAD']);
++const DEFINITE=new Set(['INVALID_NEST_SOURCE','DESIGN_NEST_UNAVAILABLE','DESIGN_NEST_GOAL_CONFLICT','DESIGN_NEST_HISTORY_CONFLICT','INVALID_ID','INVALID_VALUE','INVALID_REVISION','INVALID_FIELD','INVALID_SHAPE','INVALID_TIME','INVALID_BASELINE','OPERATION_TOO_LARGE','OPERATION_ID_REUSED','ORDER_CONFLICT','STALE_GESTURE','FIELD_REVISION_CONFLICT','STALE_FIELD','STALE_PIECE','PIECE_NOT_FOUND','PIECE_UNAVAILABLE','PIECE_ARCHIVED','PIECE_ALREADY_EXISTS','PIECE_LIMIT','HISTORY_LIMIT','CHECKPOINT_LIMIT','DESIGN_BANK_UNAVAILABLE','DESIGN_ID_CONFLICT','DESIGN_OWNERSHIP_CHANGED','KITTY_DESIGN_WRITES_PAUSED','STALE_EDIT_EPOCH','PIECE_FIRED','PIECE_NOT_FIRED','STALE_DISPLAY','GESTURE_CONFLICT','NOT_YOUR_GESTURE','UNKNOWN_SURFACE','PAINT_LIMIT','STAMP_LIMIT','STAMP_EXISTS','STAMP_UNAVAILABLE','FIRING_LIMIT','HOUSEHOLD_STORAGE_LIMIT','DESIGN_REVISION_AHEAD']);
+ export class DesignTransportError extends Error { constructor(public code:string,public definite:boolean){super(code);} }
+ /** Accepted documents are a cache; retained requests are private and partitioned by authenticated identity. */
+ export class HearthsideDesignClient {
+@@ -105,7 +106,7 @@ export class HearthsideDesignClient {
+           const value=await this.request({...row.request,...(basis?{knownRevision:basis.revision}:{})});if(this.stopped)return;
+           const document=this.acceptResponse(value,basis);
+           if(row.request.kind==='operate'&&document.id!==row.request.operation.designId)throw Error('CREATIVE_RESPONSE_SCOPE');
+-          if(row.request.kind==='operate'){const operation=row.request.operation,entry=document.operations.find(item=>item.operation.id===operation.id),receipt=value.receipt as KittyDesignReceipt|undefined;if(!receipt||receipt.version!==1||receipt.designId!==document.id||receipt.id!==operation.id||receipt.actorId!==this.options.memberId||receipt.kind!==operation.kind||receipt.revision!==entry?.order||entry.actorId!==this.options.memberId||canonicalDesignJSON(entry.operation)!==canonicalDesignJSON(operation))throw Error('CREATIVE_RECEIPT_MISMATCH');this.receipts.set(receipt.id,receipt);}else this.resolutions.set(row.request.designId,document.id);
++          if(row.request.kind==='operate'){const operation=row.request.operation,entry=document.operations.find(item=>item.operation.id===operation.id),receipt=value.receipt as KittyDesignReceipt|undefined;if(!receipt||receipt.version!==1||receipt.designId!==document.id||receipt.id!==operation.id||receipt.actorId!==this.options.memberId||receipt.kind!==operation.kind||receipt.revision!==entry?.order||entry.actorId!==this.options.memberId||canonicalDesignJSON(entry.operation)!==canonicalDesignJSON(operation))throw Error('CREATIVE_RECEIPT_MISMATCH');this.receipts.set(receipt.id,receipt);}else {if(row.request.nestSource&&(!document.nest||document.nest.view!==row.request.nestSource.view||document.nest.designKey!==row.request.nestSource.designKey))throw Error('CREATIVE_RESPONSE_SCOPE');this.resolutions.set(row.request.designId,document.id);}
+           // Removal happens after accepted content and receipt were verified. Failure leaves the same identity retryable.
+           this.persist(this.pending.filter(item=>item.id!==row.id));
+         }catch(error){
+@@ -122,9 +123,10 @@ export class HearthsideDesignClient {
+   close(){this.stopped=true;this.controller.abort();this.documents.clear();this.receipts.clear();this.listeners.clear();}
+ }
+ function decodeRequest(value:unknown):DesignRequest {
+-  designRecord(value,['version','kind','designId','bankId','operation'],['version','kind']);
++  designRecord(value,['version','kind','designId','bankId','nestSource','operation'],['version','kind']);
+   if(value.version!==1)throw Error('CREATIVE_REQUEST_VERSION');
+   if(value.kind==='operate'){designRecord(value,['version','kind','operation']);return {version:1,kind:'operate',operation:decodeKittyDesignOperation(value.operation)};}
+-  designRecord(value,['version','kind','designId','bankId']);if(value.kind!=='create')throw Error('CREATIVE_REQUEST_KIND');designId(value.designId);if(value.bankId!==null)designId(value.bankId);
+-  return {version:1,kind:'create',designId:value.designId,bankId:value.bankId as string|null};
++  designRecord(value,['version','kind','designId','bankId','nestSource'],['version','kind','designId','bankId']);if(value.kind!=='create')throw Error('CREATIVE_REQUEST_KIND');designId(value.designId);if(value.bankId!==null)designId(value.bankId);
++  const nestSource=value.nestSource===undefined?undefined:decodeNestSource(value.nestSource);if(nestSource&&value.bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
++  return {version:1,kind:'create',designId:value.designId,bankId:value.bankId as string|null,...(nestSource?{nestSource}:{})};
+ }
+diff --git a/src/hearthside/designContracts.ts b/src/hearthside/designContracts.ts
+index 6f3b9d6..4407d74 100644
+--- a/src/hearthside/designContracts.ts
++++ b/src/hearthside/designContracts.ts
+@@ -1,3 +1,4 @@
++import type {NestDesignSource} from './nestDesignBinding.ts';
+ import type { KittyFeature, KittyPart, KittyPieceV1, KittySculptV1, KittyStampV1, KittyStrokeV1 } from "../core/types.ts";
+ import { defaultKittySculpt, isKittyColor, KITTY_FEATURES, KITTY_PARTS, shapeKittyPaint, shapeKittySculpt } from "../core/kittyStudio.ts";
+
+@@ -24,7 +25,7 @@ export type KittyDesignOperation = Base & (
+ export type KittyAcceptedDesignOperation = { operation: KittyDesignOperation; actorId: string; order: number; acceptedAt: string };
+ export type KittyLegacyBaseline = { version: 1; migrationId: string; pieces: KittyPieceV1[]; displayPieceId: string | null; authorship: "unknown" };
+ /** Separately loaded canonical document. Never put this journal in a goal envelope. */
+-export type KittyDesignDocument = { version: 1; id: string; scope: KittyDesignScope; legacy: KittyLegacyBaseline | null; revision: number; operations: KittyAcceptedDesignOperation[] };
++export type KittyDesignDocument = { nest?: NestDesignSource; version: 1; id: string; scope: KittyDesignScope; legacy: KittyLegacyBaseline | null; revision: number; operations: KittyAcceptedDesignOperation[] };
+ export type KittyDesignReference = { version: 1; designId: string; revision: number; displayPieceId: string | null };
+ /** Constructed by authenticated authority, never decoded from a client operation. */
+ export type KittyDesignAuthority = { environment: "development" | "production"; householdId: string; actorId: string; order: number; acceptedAt: string };
+diff --git a/src/hearthside/designProjection.ts b/src/hearthside/designProjection.ts
+index 305c6a2..bee1ea4 100644
+--- a/src/hearthside/designProjection.ts
++++ b/src/hearthside/designProjection.ts
+@@ -1,3 +1,4 @@
++import {applyNestDesignReference} from './nestDesignSource.ts';
+ import type { Household } from '../core/types.ts';
+ import { defaultGoalEnvelope } from '../core/goalEnvelopes.ts';
+ import { decodeHearthside } from './contracts.ts';
+@@ -5,8 +6,9 @@ import { kittyDesignReference, projectKittyDesign } from './design.ts';
+ import type { KittyDesignDocument } from './designContracts.ts';
+
+ /** Authority-only reference update. It cannot change backing, targets, ownership, or financial timestamps. */
+-export function applyAcceptedDesignReference(household:Household,document:KittyDesignDocument,bankId:string|null):Household {
++export function applyAcceptedDesignReference(household:Household,document:KittyDesignDocument,bankId:string|null,acceptedAt=new Date().toISOString()):Household {
+   if(document.scope.environment!==household.environment || document.scope.householdId!==household.householdId)throw Error('SCOPE_MISMATCH');
++  if(document.nest){if(bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');household=applyNestDesignReference(household,document,acceptedAt);}
+   const reference=kittyDesignReference(document), view=projectKittyDesign(document);
+   const next={...household,goals:household.goals.map(goal=>{
+     if(goal.id!==bankId)return goal;
+diff --git a/src/hearthside/designSurfaceContracts.ts b/src/hearthside/designSurfaceContracts.ts
+index c34848c..54ec240 100644
+--- a/src/hearthside/designSurfaceContracts.ts
++++ b/src/hearthside/designSurfaceContracts.ts
+@@ -1,8 +1,9 @@
++import type {NestAppearance} from './nestDesignBinding.ts';
+ import type { KittyPieceV1 } from '../core/types.ts';
+ import type { NativeIdentity } from './native.ts';
+
+ /** The caller resolves this exact revision through authenticated design authority. */
+-export type DesignSurfaceSelection = { identity: NativeIdentity; piece: KittyPieceV1 };
++export type DesignSurfaceSelection = { identity: NativeIdentity; piece: KittyPieceV1; appearance?:NestAppearance };
+ export type DesignSurfaceTheme = 'classic' | 'taylor' | 'newfoundland';
+ export const designSurfaceKey = (selection: DesignSurfaceSelection) => JSON.stringify(selection.identity);
+ export const designDownloadName = (selection: DesignSurfaceSelection, extension: string) => `Hearthside-${selection.identity.pieceId.replace(/[^A-Za-z0-9_-]/g, '-')}-r${selection.identity.revision}.${extension}`;
+diff --git a/src/hearthside/exportCapture.ts b/src/hearthside/exportCapture.ts
+index 5a5cd88..295ad78 100644
+--- a/src/hearthside/exportCapture.ts
++++ b/src/hearthside/exportCapture.ts
+@@ -1,3 +1,4 @@
++import {decodeNestAppearance} from './nestDesignBinding.ts';
+ import * as THREE from 'three';
+ import { createKittySculpture } from '../kitty/sculpture.ts';
+ import { shapeKittyPiece } from '../core/kittyStudio.ts';
+@@ -7,7 +8,8 @@ import type { ExportCapture, ExportMaterial, ExportMesh, ExportSelection } from
+ export function captureAuthoredKitty(selection: ExportSelection): ExportCapture {
+   if (typeof document === 'undefined') throw Error('EXPORT_CANVAS_REQUIRED: Capture the authored sculpture in a browser or supplied Canvas host.');
+   const piece = shapeKittyPiece(structuredClone(selection.piece));
+-  const sculpture = createKittySculpture(piece, { brass: '#b68a50', wood: '#6b4630', fired: true, reducedMotion: true });
++  const appearance=selection.appearance===undefined?undefined:decodeNestAppearance(selection.appearance);
++  const sculpture = createKittySculpture(piece, { brass: '#b68a50', wood: '#6b4630', fired: true, reducedMotion: true, ornament:appearance });
+   try {
+     sculpture.setOpen(false);
+     sculpture.setExpression(piece.sculpt.eyes);
+@@ -15,10 +17,12 @@ export function captureAuthoredKitty(selection: ExportSelection): ExportCapture
+     // The fixed turntable and sparkle pool are outside this subtree.
+     const clay = sculpture.group.children[0];
+     const sculpt = clay?.children.find(child => child.type === 'Group');
+-    if (!sculpt || !sculpture.paintables.every(mesh => { let p: THREE.Object3D | null = mesh; while (p && p !== sculpt) p = p.parent; return p === sculpt; })) throw Error('EXPORT_SCULPTURE_LAYOUT_CHANGED');
++    if (!clay || !sculpt || !sculpture.paintables.every(mesh => { let p: THREE.Object3D | null = mesh; while (p && p !== sculpt) p = p.parent; return p === sculpt; })) throw Error('EXPORT_SCULPTURE_LAYOUT_CHANGED');
+     sculpture.group.updateMatrixWorld(true);
+     const visible: THREE.Mesh[] = [];
+-    sculpt.traverseVisible(object => {
++    const ornaments=clay.children.filter(child=>child.name.startsWith('nest-prop:'));
++    if(appearance&&ornaments.length!==1)throw Error('EXPORT_NEST_LAYOUT_CHANGED');
++    for(const root of [sculpt,...(appearance?ornaments:[])])root.traverseVisible(object => {
+       if (!(object instanceof THREE.Mesh)) return;
+       if (Array.isArray(object.material)) throw Error('EXPORT_MULTIMATERIAL_LAYOUT_CHANGED');
+       if (!object.material.colorWrite || object.material.opacity === 0) return; // paint hit shells
+@@ -60,6 +64,6 @@ export function captureAuthoredKitty(selection: ExportSelection): ExportCapture
+       meshes.push({ name: `${mesh.userData.part ?? geometry.type}-${i}`, positions, uv: texcoords, indices: geometry.index ? Array.from(geometry.index.array) : Array.from({ length: p.count }, (_, n) => n), material: materialIds.get(material)! });
+     }
+     const headCenter = headBounds.getCenter(new THREE.Vector3()), bodyCenter = bodyBounds.getCenter(new THREE.Vector3());
+-    return { meshes, materials, crownY, baseY: 0, crownCenter: [(headCenter.x - centerX) * scale, (headCenter.z - centerZ) * scale], baseCenter: [(bodyCenter.x - centerX) * scale, (bodyCenter.z - centerZ) * scale], source: 'authored-kitty-sculpture-v1' };
++    return { meshes, materials, crownY, baseY: 0, crownCenter: [(headCenter.x - centerX) * scale, (headCenter.z - centerZ) * scale], baseCenter: [(bodyCenter.x - centerX) * scale, (bodyCenter.z - centerZ) * scale], source: appearance?'authored-kitty-nest-v1':'authored-kitty-sculpture-v1' };
+   } finally { sculpture.dispose(); }
+ }
+diff --git a/src/hearthside/exportKitty.ts b/src/hearthside/exportKitty.ts
+index 5422c14..72e0d8a 100644
+--- a/src/hearthside/exportKitty.ts
++++ b/src/hearthside/exportKitty.ts
+@@ -1,3 +1,4 @@
++import {decodeNestAppearance} from './nestDesignBinding.ts';
+ import { shapeKittyPiece } from '../core/kittyStudio.ts';
+ import { captureAuthoredKitty } from './exportCapture.ts';
+ import { capMesh, inspectGeometry, isPlanar, sampleWallThickness, weldMesh } from './exportGeometry.ts';
+@@ -28,10 +29,11 @@ function plain(value: unknown, depth = 0, allowBytes = false): void {
+ }
+ export function normalizeExportSelection(value: ExportSelection): ExportSelection {
+   plain(value);
+-  if (!value || value.version !== 1 || Object.keys(value).some(k => !['version', 'documentId', 'revision', 'piece', 'heightMm', 'construction', 'hollow'].includes(k)) || typeof value.documentId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$/.test(value.documentId) || !Number.isSafeInteger(value.revision) || value.revision < 0 || !['solid', 'hollow'].includes(value.construction)) throw Error('EXPORT_INVALID_SELECTION');
++  if (!value || value.version !== 1 || Object.keys(value).some(k => !['version', 'documentId', 'revision', 'piece', 'heightMm', 'construction', 'hollow', 'appearance'].includes(k)) || typeof value.documentId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,159}$/.test(value.documentId) || !Number.isSafeInteger(value.revision) || value.revision < 0 || !['solid', 'hollow'].includes(value.construction)) throw Error('EXPORT_INVALID_SELECTION');
+   if (!Number.isFinite(value.heightMm) || value.heightMm < 30 || value.heightMm > 1000) throw Error('EXPORT_HEIGHT_RANGE_30_1000_MM');
+   if (jsonBytes(value).length > 256 * 1024) throw Error('EXPORT_DESIGN_TOO_LARGE');
+   const result: ExportSelection = { version: 1, documentId: value.documentId, revision: value.revision, piece: shapeKittyPiece(value.piece), heightMm: value.heightMm, construction: value.construction };
++  if(value.appearance!==undefined)result.appearance=decodeNestAppearance(value.appearance);
+   delete result.piece.firedBy; // An internal household actor identifier is not needed for geometry or paint.
+   if (value.construction === 'hollow') {
+     const h = value.hollow;
+@@ -61,7 +63,7 @@ async function repairProposal(selection: ExportSelection, capture: ExportCapture
+ export async function prepareKittyExport(input: ExportSelection, captured?: ExportCapture): Promise<PreparedKittyExport> {
+   if (captured) plain(captured, 0, true);
+   const selection = normalizeExportSelection(input), capture = structuredClone(captured ?? captureAuthoredKitty(selection));
+-  if (capture.source !== 'authored-kitty-sculpture-v1' || !Number.isFinite(capture.crownY) || !Number.isFinite(capture.baseY) || [capture.crownCenter, capture.baseCenter].some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => !Number.isFinite(n))) || !capture.materials.length || capture.materials.length > 300 || capture.meshes.length > 300 || capture.meshes.reduce((n, m) => n + m.indices.length, 0) > 1_500_000 || capture.meshes.reduce((n, m) => n + m.positions.length, 0) > 4_500_000) throw Error('EXPORT_INVALID_CAPTURE');
++  if (capture.source !== (selection.appearance?'authored-kitty-nest-v1':'authored-kitty-sculpture-v1') || !Number.isFinite(capture.crownY) || !Number.isFinite(capture.baseY) || [capture.crownCenter, capture.baseCenter].some(p => !Array.isArray(p) || p.length !== 2 || p.some(n => !Number.isFinite(n))) || !capture.materials.length || capture.materials.length > 300 || capture.meshes.length > 300 || capture.meshes.reduce((n, m) => n + m.indices.length, 0) > 1_500_000 || capture.meshes.reduce((n, m) => n + m.positions.length, 0) > 4_500_000) throw Error('EXPORT_INVALID_CAPTURE');
+   for (const mesh of capture.meshes) if (!Number.isSafeInteger(mesh.material) || !capture.materials[mesh.material] || mesh.uv.length !== mesh.positions.length / 3 * 2 || mesh.uv.some(v => !Number.isFinite(v))) throw Error('EXPORT_INVALID_MATERIAL_BINDING');
+   for (const m of capture.materials) if (m.color.length !== 4 || m.color.some(n => !Number.isFinite(n) || n < 0 || n > 1) || m.png && (m.png.length > 8 * 1024 * 1024 || ![137,80,78,71,13,10,26,10].every((n, i) => m.png![i] === n))) throw Error('EXPORT_INVALID_MATERIAL');
+   const report = inspectGeometry(capture.meshes);
+@@ -95,12 +97,12 @@ export async function finishKittyExport(prepared: PreparedKittyExport, options:
+   if (approved) files.set('source-authored.glb', writeGlb(capture.meshes, capture.materials, selection.piece.id));
+   files.set('paint/source-paint.json', jsonBytes(selection.piece.paint));
+   for (const [i, material] of capture.materials.entries()) if (material.png) files.set(`paint/material-${i}.png`, new Uint8Array(material.png));
+-  files.set('source-design.json', jsonBytes({ documentId: selection.documentId, revision: selection.revision, piece: selection.piece }));
++  files.set('source-design.json', jsonBytes({ documentId: selection.documentId, revision: selection.revision, piece: selection.piece, ...(selection.appearance?{appearance:selection.appearance}:{}) }));
+   files.set('geometry-report.json', jsonBytes({ ...report, openings: derived.openings, sourceReport: approved ? inspectGeometry(capture.meshes) : report }));
+   const sheet = ['Hearthside - geometry and paint reference', `Piece: ${selection.piece.id} / revision ${selection.revision}`, `Requested authored height: ${selection.heightMm} mm`, `Construction: ${selection.construction}; reviewed repair: ${approved ? 'yes' : 'no'}`, `Measured X/Y/Z mm: ${report.dimensionsMm.map(n => n.toFixed(3)).join(' / ')}`, `Triangles: ${report.triangles}; components: ${report.connectedComponents}`, `Watertight: ${report.watertight}; self intersections: ${report.selfIntersections.status}`, `Wall check: ${report.wallThickness.status}; sampled minimum: ${report.wallThickness.minimumSampleMm?.toFixed(3) ?? 'not measured'} mm`, 'STL: mm import, Z-up. 3MF: explicit mm, Z-up. GLB: meters, Y-up.', 'Paint: embedded PNGs + source stroke/stamp JSON. No color in STL.', 'Maker tolerances, strength, fit and material shrinkage: UNVERIFIED.', ...report.warnings];
+   if (derived.openings) sheet.splice(9, 0, `Coin slot: ${derived.openings.coinSlot.widthMm} x ${derived.openings.coinSlot.depthMm} mm; access ray clear.`, `Base opening: ${derived.openings.baseOpening.diameterMm} mm diameter; access ray clear.`);
+   files.set('geometry-sheet.pdf', writeExportPdf(sheet, report.dimensionsMm));
+-  const manifest: ExportManifest = { version: 1, documentId: selection.documentId, designRevision: selection.revision, pieceId: selection.piece.id, selectionDigest: prepared.selectionDigest, sourceGeometryDigest: prepared.sourceGeometryDigest, physicalGeometryDigest: await digestValue(derived.meshes), heightMm: selection.heightMm, construction: selection.construction, units: { stl: 'millimeter (unitless file; import as mm)', threeMf: 'millimeter', glb: 'meter' }, sourceGeometry: capture.source, sourceChanged: false, repair: approved ? structuredClone(prepared.proposal) : null, report, openings: derived.openings, files: await Promise.all([...files].map(async ([name, data]) => ({ name, bytes: data.length, sha256: await sha256(data) }))) };
++  const manifest: ExportManifest = { version: 1, documentId: selection.documentId, designRevision: selection.revision, pieceId: selection.piece.id, selectionDigest: prepared.selectionDigest, sourceGeometryDigest: prepared.sourceGeometryDigest, physicalGeometryDigest: await digestValue(derived.meshes), heightMm: selection.heightMm, construction: selection.construction, units: { stl: 'millimeter (unitless file; import as mm)', threeMf: 'millimeter', glb: 'meter' }, sourceGeometry: capture.source, ...(selection.appearance?{appearance:selection.appearance}:{}), sourceChanged: false, repair: approved ? structuredClone(prepared.proposal) : null, report, openings: derived.openings, files: await Promise.all([...files].map(async ([name, data]) => ({ name, bytes: data.length, sha256: await sha256(data) }))) };
+   files.set('manifest.json', jsonBytes(manifest));
+   return { manifest: freeze(manifest), files };
+ }
+diff --git a/src/hearthside/exportTypes.ts b/src/hearthside/exportTypes.ts
+index 461ca7e..0981c67 100644
+--- a/src/hearthside/exportTypes.ts
++++ b/src/hearthside/exportTypes.ts
+@@ -1,8 +1,9 @@
++import type {NestAppearance} from './nestDesignBinding.ts';
+ import type { KittyPieceV1 } from '../core/types.ts';
+
+ /** Export inputs contain a deliberate design copy, never a Household or live goal. */
+ export type ExportSelection = {
+-  version: 1; documentId: string; revision: number; piece: KittyPieceV1;
++  version: 1; documentId: string; revision: number; piece: KittyPieceV1; appearance?:NestAppearance;
+   heightMm: number; construction: 'solid' | 'hollow';
+   hollow?: { wallMm: number; coinSlotWidthMm: number; coinSlotDepthMm: number; baseOpeningDiameterMm: number };
+ };
+@@ -13,7 +14,7 @@ export type ExportMaterial = { name: string; color: [number, number, number, num
+ export type ExportCapture = {
+   meshes: ExportMesh[]; materials: ExportMaterial[];
+   crownY: number; baseY: number; crownCenter: [number, number]; baseCenter: [number, number];
+-  source: 'authored-kitty-sculpture-v1';
++  source: 'authored-kitty-sculpture-v1'|'authored-kitty-nest-v1';
+ };
+ export type GeometryReport = {
+   vertices: number; triangles: number; dimensionsMm: [number, number, number];
+@@ -33,7 +34,7 @@ export type ExportManifest = {
+   selectionDigest: string; sourceGeometryDigest: string; physicalGeometryDigest: string;
+   heightMm: number; construction: 'solid' | 'hollow';
+   units: { stl: 'millimeter (unitless file; import as mm)'; threeMf: 'millimeter'; glb: 'meter' };
+-  sourceGeometry: 'authored-kitty-sculpture-v1'; sourceChanged: false;
++  sourceGeometry: 'authored-kitty-sculpture-v1'|'authored-kitty-nest-v1'; appearance?:NestAppearance; sourceChanged: false;
+   repair: RepairProposal | null; report: GeometryReport;
+   openings: import('./exportManufacturing.ts').OpeningEvidence | null;
+   files: { name: string; bytes: number; sha256: string }[];
+diff --git a/src/hearthside/guestContracts.ts b/src/hearthside/guestContracts.ts
+index 7fea83a..63ee9af 100644
+--- a/src/hearthside/guestContracts.ts
++++ b/src/hearthside/guestContracts.ts
+@@ -1,3 +1,4 @@
++import {decodeGuestNestOrnament,type GuestNestOrnament} from './nestGuestAppearance.ts';
+ import {decodeRoomFurniture,type RoomFurnitureLayout} from './roomFurniture.ts';
+ import type { KittyPaintV1, KittyPieceV1, KittySculptV1 } from '../core/types.ts';
+ import { shapeKittyPaint, shapeKittySculpt } from '../core/kittyStudio.ts';
+@@ -10,7 +11,7 @@ export type GuestPrincipal = { memberId: string; subject: string };
+ export type GuestIdentity = { environment: 'development'; subject: string; expires: number; checkedAt: number };
+ export type GuestSourceItem = { kind: 'experience' | 'note' | 'memory' | 'piece'; id: string; revision: number; designId?: string; x: number; y: number };
+ export type GuestPrepareInput = { publicationId: string; title: string; welcome: string; theme: GuestTheme; room: GuestRoomKind; mode: GuestMode; items: GuestSourceItem[] };
+-export type GuestAppearance = { sculpt: KittySculptV1; paint: KittyPaintV1 };
++export type GuestAppearance = { sculpt: KittySculptV1; paint: KittyPaintV1; ornament?:GuestNestOrnament };
+ export type GuestMedia = { id: string; kind: 'image' | 'audio'; mime: 'image/png' | 'image/jpeg' | 'audio/webm' | 'audio/mp4' | 'audio/ogg'; sha256: string; byteLength: number; alt: string };
+ export type GuestObject =
+   | { id: string; kind: 'experience'; x: number; y: number; title: string; text: string }
+@@ -60,14 +61,14 @@ export function decodeGuestPrepare(raw: unknown): GuestPrepareInput {
+ }
+ /** Closed nested cosmetic fields: source piece/stamp identities are remapped by the source projection. */
+ export function decodeGuestAppearance(raw: unknown): GuestAppearance {
+-  const r = guestRecord(raw,['sculpt','paint']), sculpt = guestRecord(r.sculpt,['body','profile','head','ears','eyes','mouth','whiskers','tail','nose','features']);
++  const r = guestRecord(raw,['sculpt','paint','ornament']), sculpt = guestRecord(r.sculpt,['body','profile','head','ears','eyes','mouth','whiskers','tail','nose','features']);
+   guestArray(sculpt.profile, v=>guestNumber(v,.55,1.15),4); if (sculpt.features !== undefined) { const f = guestRecord(sculpt.features,['head','ears','eyes','nose','mouth','whiskers','tail']); Object.values(f).forEach(v=>guestNumber(v,.5,1.8)); }
+   const paint = guestRecord(r.paint,['base','parts','strokes','stamps']); guestRecord(paint.parts,['body','head','earL','earR','tail','paws']);
+   guestArray(paint.strokes, raw=>{const s=guestRecord(raw,['part','tool','color','size','opacity','mirror','pts']);guestArray(s.pts,v=>guestNumber(v,0,1),6000);return s;},400);
+   guestArray(paint.stamps, raw=>guestRecord(raw,['id','anchor','kind','color','trim','part','u','v','size','rotation','text']),64);
+-  return {sculpt:shapeKittySculpt(sculpt),paint:shapeKittyPaint(paint)};
++  return {sculpt:shapeKittySculpt(sculpt),paint:shapeKittyPaint(paint),...(r.ornament?{ornament:decodeGuestNestOrnament(r.ornament)}:{})};
+ }
+-export function guestDisplayPiece(appearance: GuestAppearance): KittyPieceV1 { return { id:'guest-display',createdAt:'2000-01-01T00:00:00.000Z',firedAt:null,...decodeGuestAppearance(appearance) }; }
++export function guestDisplayPiece(appearance: GuestAppearance): KittyPieceV1 { const {sculpt,paint}=decodeGuestAppearance(appearance);return { id:'guest-display',createdAt:'2000-01-01T00:00:00.000Z',firedAt:null,sculpt,paint }; }
+ export function decodeGuestMedia(raw: unknown): GuestMedia { const r=guestRecord(raw,['id','kind','mime','sha256','byteLength','alt']);const kind=guestChoice(r.kind,['image','audio']),mime=guestChoice(r.mime,['image/png','image/jpeg','audio/webm','audio/mp4','audio/ogg']);guestAssert(mime.startsWith(kind+'/'));return {id:guestId(r.id),kind,mime,sha256:guestDigestValue(r.sha256),byteLength:guestInteger(r.byteLength,1,GUEST_LIMITS.mediaBytes),alt:guestText(r.alt,400,true)}; }
+ export function decodeGuestArrangement(raw: unknown): GuestArrangement {
+   const r=guestRecord(raw,['version','title','welcome','theme','room','mode','objects','furniture']);guestAssert(r.version===1);
+diff --git a/src/hearthside/guestProjection.ts b/src/hearthside/guestProjection.ts
+index b6b0814..20d2009 100644
+--- a/src/hearthside/guestProjection.ts
++++ b/src/hearthside/guestProjection.ts
+@@ -1,3 +1,5 @@
++import {guestNestOrnament} from './nestGuestAppearance.ts';
++import type {NestAppearance} from './nestDesignBinding.ts';
+ import {decodeRoomFurniture,type FurnitureRoom,type RoomFurnitureLayout} from './roomFurniture.ts';
+ import type { KittyPieceV1 } from '../core/types.ts';
+ import {
+@@ -15,14 +17,14 @@ export interface GuestSourceCatalogue {
+   note(id: string): { revision: number; shared: boolean; archived: boolean; text: string } | null;
+   memory(id: string): { revision: number; shared: boolean; withdrawn: boolean; title: string; recollections: { memberId: string; text: string }[]; earlierNote?:{label:string;text:string}; approvals: { memberId: string; revision: number }[]; media: GuestSourceMedia[]; publicationId:string|null; designs:{designId:string;pieceId:string;revision:number}[] } | null;
+   memoryAccess(binding:GuestMemoryBinding):Promise<boolean>;
+-  piece(designId: string, pieceId: string, revision: number): Promise<{ revision: number; shared: boolean; archived: boolean; piece: KittyPieceV1 } | null>;
++  piece(designId: string, pieceId: string, revision: number): Promise<{ revision: number; shared: boolean; archived: boolean; piece: KittyPieceV1; ornament?:NestAppearance } | null>;
+   /** Exact reviewed, metadata-clean image or voice-note bytes. May not resolve private Vault drafts/letters. */
+   media(reference: GuestSourceMedia): Promise<{ mime: GuestMedia['mime']; sha256: string; bytes: ArrayBuffer } | null>;
+ }
+-function appearance(piece: KittyPieceV1): GuestAppearance {
++function appearance(piece: KittyPieceV1,ornament?:NestAppearance): GuestAppearance {
+   // Read only authored appearance. Creation/firing timestamps and all original object/stamp IDs stay private.
+   const paint = { ...piece.paint, stamps: piece.paint.stamps.map((stamp,index)=>({...stamp,id:`stamp-${index+1}`})) };
+-  return decodeGuestAppearance({sculpt:piece.sculpt,paint});
++  return decodeGuestAppearance({sculpt:piece.sculpt,paint,...(ornament?{ornament:guestNestOrnament(ornament)}:{})});
+ }
+ function approvedMemory(row: ReturnType<GuestSourceCatalogue['memory']>, members: readonly string[]) {
+   guestAssert(row && row.shared && !row.withdrawn && members.length >= 2 && new Set(members).size === members.length && members.every(memberId=>row.approvals.some(a=>a.memberId===memberId && a.revision===row.revision)), 'GUEST_SOURCE_UNAVAILABLE'); return row;
+@@ -33,10 +35,10 @@ export async function captureGuestSources(raw: unknown, catalogue: GuestSourceCa
+     const base={id:`object-${index+1}`,x:item.x,y:item.y};
+     if(item.kind==='experience') { const row=catalogue.experience(item.id);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'experience',title:row.title,text:row.intention}); }
+     else if(item.kind==='note') { const row=catalogue.note(item.id);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'note',text:row.text}); }
+-    else if(item.kind==='piece') { const row=await catalogue.piece(item.designId!,item.id,item.revision);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'piece',appearance:appearance(row.piece),displaySize:'standard'}); }
++    else if(item.kind==='piece') { const row=await catalogue.piece(item.designId!,item.id,item.revision);guestAssert(row?.shared&&!row.archived&&row.revision===item.revision,'GUEST_SOURCE_UNAVAILABLE');objects.push({...base,kind:'piece',appearance:appearance(row.piece,row.ornament),displaySize:'standard'}); }
+     else {
+       const row=approvedMemory(catalogue.memory(item.id),catalogue.activeMemberIds);guestAssert(row.revision===item.revision,'GUEST_SOURCE_CHANGED');
+-      guestAssert(row.media.length===0||row.publicationId!==null,'GUEST_SOURCE_UNAVAILABLE');const binding={id:item.id,revision:item.revision,publicationId:row.publicationId};guestAssert(await catalogue.memoryAccess(binding),'GUEST_SOURCE_UNAVAILABLE');memoryBindings.push(binding);const pieces:GuestAppearance[]=[];for(const ref of row.designs){const design=await catalogue.piece(ref.designId,ref.pieceId,ref.revision);guestAssert(design?.shared&&!design.archived&&design.revision===ref.revision,'GUEST_SOURCE_UNAVAILABLE');pieces.push(appearance(design.piece));}const images:GuestMedia[]=[];
++      guestAssert(row.media.length===0||row.publicationId!==null,'GUEST_SOURCE_UNAVAILABLE');const binding={id:item.id,revision:item.revision,publicationId:row.publicationId};guestAssert(await catalogue.memoryAccess(binding),'GUEST_SOURCE_UNAVAILABLE');memoryBindings.push(binding);const pieces:GuestAppearance[]=[];for(const ref of row.designs){const design=await catalogue.piece(ref.designId,ref.pieceId,ref.revision);guestAssert(design?.shared&&!design.archived&&design.revision===ref.revision,'GUEST_SOURCE_UNAVAILABLE');pieces.push(appearance(design.piece,design.ornament));}const images:GuestMedia[]=[];
+       for(const reference of row.media) {
+         const copied=await catalogue.media(reference);guestAssert(copied&&copied.bytes.byteLength>0&&copied.bytes.byteLength<=GUEST_LIMITS.mediaBytes,'GUEST_MEDIA_UNAVAILABLE');
+         const sha256=await guestDigest(copied.bytes);guestAssert(sha256===copied.sha256,'GUEST_MEDIA_CHANGED');mediaBytes+=copied.bytes.byteLength;guestAssert(mediaBytes<=GUEST_LIMITS.totalMediaBytes,'GUEST_SELECTION_TOO_LARGE');
+diff --git a/src/hearthside/nativeBridge.ts b/src/hearthside/nativeBridge.ts
+index 16fa242..38b446e 100644
+--- a/src/hearthside/nativeBridge.ts
++++ b/src/hearthside/nativeBridge.ts
+@@ -23,7 +23,7 @@ export const NATIVE_AUTHORED_HEIGHT_MM = 160;
+ export function nativeSceneFromDesign(selection: DesignSurfaceSelection, backing: NativeBacking, returnPath: string, capture: (selection: ExportSelection) => ExportCapture = captureAuthoredKitty): NativeScene {
+   const identity = validateNativeIdentity(selection.identity), piece = shapeKittyPiece(structuredClone(selection.piece));
+   if (piece.id !== identity.pieceId) throw Error('NATIVE_DESIGN_IDENTITY_MISMATCH');
+-  const authored = capture({ version: 1, documentId: identity.designId, revision: identity.revision, piece, heightMm: NATIVE_AUTHORED_HEIGHT_MM, construction: 'solid' });
++  const authored = capture({ version: 1, documentId: identity.designId, revision: identity.revision, piece, ...(selection.appearance?{appearance:selection.appearance}:{}), heightMm: NATIVE_AUTHORED_HEIGHT_MM, construction: 'solid' });
+   const byMaterial = new Map<number, NativeMesh>();
+   const meshes: NativeMesh[] = [];
+   for (const mesh of authored.meshes) {
+diff --git a/src/hearthside/nativeWidgetCapture.ts b/src/hearthside/nativeWidgetCapture.ts
+index 385d14b..17aa659 100644
+--- a/src/hearthside/nativeWidgetCapture.ts
++++ b/src/hearthside/nativeWidgetCapture.ts
+@@ -1,8 +1,9 @@
++import {decodeNestAppearance,type NestAppearance} from './nestDesignBinding.ts';
+ import type {KittyPieceV1} from '../core/types.ts';
+ import {shapeKittyPiece} from '../core/kittyStudio.ts';
+ import type {NativeWidgetSelection} from './nativeWidget.ts';
+ /** Render the immutable authored piece once. No backing, target, animation, or household fields enter this API. */
+-export async function captureNativeWidget(selection:{designId:string;revision:number;piece:KittyPieceV1},signal:AbortSignal):Promise<NativeWidgetSelection>{
++export async function captureNativeWidget(selection:{designId:string;revision:number;piece:KittyPieceV1;appearance?:NestAppearance},signal:AbortSignal):Promise<NativeWidgetSelection>{
+  const piece=shapeKittyPiece(structuredClone(selection.piece)),identity={designId:selection.designId,revision:selection.revision,pieceId:selection.piece.id};
+  if(!identity.designId||!Number.isSafeInteger(identity.revision)||identity.revision<0||piece.id!==identity.pieceId)throw new Error('Choose an immutable sculpture revision.');
+  const [T,{createKittySculpture}]=await Promise.all([import('three'),import('../kitty/sculpture.ts')]);signal.throwIfAborted();
+@@ -10,7 +11,7 @@ export async function captureNativeWidget(selection:{designId:string;revision:nu
+  let sculpture:ReturnType<typeof createKittySculpture>|undefined;
+  try{
+   renderer.setPixelRatio(1);renderer.setSize(384,384);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;
+-  sculpture=createKittySculpture(piece,{brass:'#bda375',wood:'#62412b',fired:Boolean(piece.firedAt),reducedMotion:true});
++  sculpture=createKittySculpture(piece,{brass:'#bda375',wood:'#62412b',fired:Boolean(piece.firedAt),reducedMotion:true,ornament:selection.appearance?decodeNestAppearance(selection.appearance):undefined});
+   sculpture.group.rotation.y=-0.22;sculpture.group.updateMatrixWorld(true);
+   const scene=new T.Scene();scene.add(sculpture.group);scene.add(new T.HemisphereLight('#fff1d9','#77767c',2));const light=new T.DirectionalLight('#fff1d9',3);light.position.set(-3,5,4);scene.add(light);
+   const box=new T.Box3().setFromObject(sculpture.group),size=box.getSize(new T.Vector3()),center=box.getCenter(new T.Vector3()),extent=Math.max(size.x,size.y,size.z)*0.7;
+diff --git a/src/hearthside/paintedSnapshot.tsx b/src/hearthside/paintedSnapshot.tsx
+index 5e0794d..93d09b5 100644
+--- a/src/hearthside/paintedSnapshot.tsx
++++ b/src/hearthside/paintedSnapshot.tsx
+@@ -1,3 +1,6 @@
++import {NestProp} from '../kitty/NestProp.tsx';
++import {decodeNestAppearance,type NestAppearance} from './nestDesignBinding.ts';
++import {nestMotif} from '../kitty/nestAppearance.ts';
+ import {createElement} from 'react';
+ import {renderToStaticMarkup} from 'react-dom/server';
+ import type {KittyPieceV1} from '../core/types.ts';
+@@ -5,8 +8,11 @@ import {KittyFlat} from '../kitty/studio/flat.tsx';
+ import {awaitProjector} from './projectorComposition.ts';
+
+ /** Rasterizes the shared flat renderer at an immutable authored shape; no backing scale enters. */
+-export async function paintedSnapshot(piece:KittyPieceV1,signal:AbortSignal):Promise<Blob>{
+-  const svg=renderToStaticMarkup(createElement(KittyFlat,{piece,step:0,title:'Our saved piece'}));
++export async function paintedSnapshot(piece:KittyPieceV1,signal:AbortSignal,appearance?:NestAppearance):Promise<Blob>{
++  const ornament=appearance?decodeNestAppearance(appearance):undefined,motif=ornament?nestMotif(ornament):'none',crown=motif==='crown';
++  const cat=createElement(KittyFlat,{piece,step:0,title:'Our saved piece'});
++  const markup=renderToStaticMarkup(!ornament||motif==='none'?cat:createElement('svg',{xmlns:'http://www.w3.org/2000/svg',viewBox:'0 0 300 390'},createElement('svg',{x:0,y:30,width:300,height:360},cat),createElement('svg',{x:crown?105:114,y:crown?8:199,width:crown?90:75,height:90,color:['lighthouse','rowhouse','sailboat','lifering'].includes(motif)?'#37717a':['shield','sprout'].includes(motif)?'#60734e':'#b18a42'},createElement(NestProp,{ornament}))));
++  const svg=markup.includes('xmlns=')?markup:markup.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" ');
+   const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'})),image=new Image(),canvas=document.createElement('canvas');
+   canvas.width=1024;canvas.height=1024;
+   try{
+diff --git a/src/kitty/KittyNest.tsx b/src/kitty/KittyNest.tsx
+index 0764a22..14c4b71 100644
+--- a/src/kitty/KittyNest.tsx
++++ b/src/kitty/KittyNest.tsx
+@@ -1,3 +1,6 @@
++import {NestCanonicalArtwork} from '../hearthside/NestCanonicalArtwork.tsx';
++import {NestCanonicalStudio} from '../hearthside/NestCanonicalStudio.tsx';
++import {HEARTHSIDE_FLAGS} from '../hearthside/flags.ts';
+ import {CanonicalKittyFlat} from '../hearthside/DesignProvider.tsx';
+ import { NestProp } from "./NestProp.tsx";
+ import { useMemo, useState } from "react";
+@@ -17,8 +20,8 @@ export function NestPortrait({ bank, theme }: { bank: NestBank; theme: string })
+   const piece = bank.goal ? displayedKittyPiece(bank.goal.envelope?.studio) : displayedKittyPiece(bank.design?.studio) ?? nestDefaultPiece(bank);
+   const step = bank.amountCents!==null && bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor(bank.amountCents / bank.targetCents * 10))) : 0;
+   return <span className={`nest-portrait nest-portrait--${bank.tier}${bank.state === "broken" ? " is-broken" : ""}`} aria-hidden="true">
+-    {bank.goal ? <CanonicalKittyFlat goal={bank.goal} step={step}/> : <KittyFlat piece={piece} glaze={bank.design?.glaze ?? "cream"} step={step} />}
+-    <NestProp ornament={nestOrnament(bank, theme)} />
++    {bank.goal ? <CanonicalKittyFlat goal={bank.goal} step={step}/> : bank.design?.designRef ? <NestCanonicalArtwork design={bank.design} step={step}/> : <KittyFlat piece={piece} glaze={bank.design?.glaze ?? "cream"} step={step} />}
++    {!bank.design?.designRef&&<NestProp ornament={nestOrnament(bank, theme)} />}
+     {bank.state === "broken" && <svg className="nest-crack" viewBox="0 0 100 100"><path d="M51 15L43 38L62 48L39 66L54 88" fill="none" stroke="currentColor" strokeWidth="4"/></svg>}
+   </span>;
+ }
+@@ -45,7 +48,7 @@ export function KittyNest({ household, memberId, view, today, onSelect, compact
+   </section>;
+ }
+
+-export function NestBankDetail({ bank, h, memberId, view, identity, busy, theme, run, readLatest, onSelect, onOpenCalendar }: { bank: NestBank; h: Household; memberId: string; view: LedgerView; identity: string; busy: boolean; theme: string; run: StudioRun; readLatest: () => Household; onSelect: (bank: NestBank) => void; onOpenCalendar?: () => void }) {
++function LegacyNestBankDetail({ bank, h, memberId, view, identity, busy, theme, run, readLatest, onSelect, onOpenCalendar }: { bank: NestBank; h: Household; memberId: string; view: LedgerView; identity: string; busy: boolean; theme: string; run: StudioRun; readLatest: () => Household; onSelect: (bank: NestBank) => void; onOpenCalendar?: () => void }) {
+   const [editing, setEditing] = useState(bank.tier === "king" && !bank.design?.setupCompletedAt);
+   const [name, setName] = useState(bank.name);
+   const [glaze, setGlaze] = useState(bank.design?.glaze ?? "cream");
+@@ -78,3 +81,9 @@ export function NestBankDetail({ bank, h, memberId, view, identity, busy, theme,
+     {!!bank.children.length && <section className="nest-detail__children"><h3>Inside {bank.name}</h3><div>{bank.children.map(child=><NestButton key={child.id} bank={child} theme={theme} onSelect={onSelect}/>)}</div></section>}
+   </section>;
+ }
++
++export function NestBankDetail(props:Parameters<typeof LegacyNestBankDetail>[0]){
++ if(props.bank.state==='broken'&&props.bank.design?.designRef)return <section className="nest-detail nest-detail--bill" aria-label="Saved payment pottery"><h2>{props.bank.name}</h2><p>Paid. This pottery keeps the exact appearance saved with its receipt.</p><NestCanonicalArtwork design={props.bank.design}/>{props.onOpenCalendar&&<button type="button" onClick={props.onOpenCalendar}>See payment in Calendar</button>}</section>;
++ if((props.bank.tier==='king'&&props.view==='household'&&HEARTHSIDE_FLAGS.collaborativeDesign)||props.bank.design?.designRef)return <section className={`nest-detail nest-detail--${props.bank.tier}`} data-studio-mode={props.bank.tier}><header><p className="kicker">King · your foundation chapter</p><h2>{props.bank.name}</h2><strong>{props.bank.amountCents===null?'Backing unavailable':formatCad(props.bank.amountCents)}</strong></header><NestCanonicalStudio {...props}/>{!!props.bank.children.length&&<section className="nest-detail__children"><h3>Inside {props.bank.name}</h3><div>{props.bank.children.map(child=><NestButton key={child.id} bank={child} theme={props.theme} onSelect={props.onSelect}/>)}</div></section>}</section>;
++ return <LegacyNestBankDetail {...props}/>;
++}
+diff --git a/src/ledgerSync/authority.ts b/src/ledgerSync/authority.ts
+index ec183b0..1a81177 100644
+--- a/src/ledgerSync/authority.ts
++++ b/src/ledgerSync/authority.ts
+@@ -99,6 +99,7 @@ export async function prepareCommand(
+   let current = assembleHousehold(state.shared, personal, { linked: true });
+   if (!current.members.some((m) => m.id === scope.memberId && m.active))
+     throw new Error("MEMBERSHIP_CHANGED");
++  if(current.kittyNestDesigns?.some(row=>row.designRef)&&command.nestDesignVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve collaborative Nest pottery.');
+   const kittyChange = command.steps.some(step => step.kind === "saveGoalEnvelope" || step.kind === "purchaseGoal" && Boolean((step.args[0] as {keepOpen?:unknown})?.keepOpen) || JSON.stringify(step.args).includes('"envelopeGoalId"') || step.kind === "addGoal" && Boolean((step.args[0] as {envelope?:unknown})?.envelope) || step.kind === "releaseHouseholdFundKitty" && Boolean((step.args[0] as {goalId?:unknown})?.goalId));
+   if ((hasGoalEnvelopeData(current) || kittyChange) && command.goalEnvelopeVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve Kitty Bank reserves and links.");
+   if ((current.accountOpeningCheckpoints?.length || current.transactions.some(t => t.openingSignedBalanceCents !== undefined)) && command.accountHistoryVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: This household uses reviewed account history. Reload Hearth before making changes.");
+diff --git a/src/ledgerSync/backup.ts b/src/ledgerSync/backup.ts
+index b992212..dab174b 100644
+--- a/src/ledgerSync/backup.ts
++++ b/src/ledgerSync/backup.ts
+@@ -94,6 +94,9 @@ export async function restoreArchive(
+     const selected=goal.envelope?.designRef;if(!selected)continue;
+     const ref=designs.get(selected.designId);if(!ref||ref.revision!==selected.revision||ref.bankId!==goal.id)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
+   }
++  for(const row of [...(state.shared.kittyNestDesigns??[]),...state.personal.flatMap(([,own])=>own.kittyNestDesigns??[])]){
++    if(!row.designRef)continue;const ref=designs.get(row.designRef.designId);if(!ref||ref.revision!==row.designRef.revision||ref.bankId!==null)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
++  }
+   for (const [memberId, own] of state.personal) {
+     if (own.memberId !== memberId) throw new Error("PERSONAL_SCOPE_MISMATCH");
+     assertAcceptableBooks(
+diff --git a/src/ledgerSync/client.ts b/src/ledgerSync/client.ts
+index ef8e1c6..01f3728 100644
+--- a/src/ledgerSync/client.ts
++++ b/src/ledgerSync/client.ts
+@@ -73,6 +73,7 @@ export class LedgerSyncClient {
+   private companionProfileVersion = 0;
+   private hearthsideVersion = 0;
+   private kittyDesignVersion = 0;
++  private nestDesignVersion=0;
+   private companionPlayVersion = 0;
+   private companionDiscoveryVersion = 0;
+   private companionWardrobeVersion = 0;
+@@ -241,6 +242,7 @@ export class LedgerSyncClient {
+               }
+               this.companionProfileVersion = message.companionProfileVersion === 1 ? 1 : 0;
+               this.hearthsideVersion = message.hearthsideVersion === 1 ? 1 : 0;
++              this.nestDesignVersion=message.nestDesignVersion===1?1:0;
+               this.kittyDesignVersion = message.kittyDesignVersion === 1 ? 1 : 0;
+               this.companionPlayVersion = message.companionPlayVersion === 1 ? 1 : 0;
+               this.companionDiscoveryVersion = message.companionDiscoveryVersion === 1 ? 1 : 0;
+@@ -466,6 +468,7 @@ export class LedgerSyncClient {
+
+     if(capture.steps.some(s=>s.kind==='executeHerculesAction')&&(!this.ready||!this.herculesActionsEnabled))throw new LedgerCommandRejectedError('HERCULES_ACTIONS_PAUSED: Conversational changes are not enabled on this Hearth server.');
+     if(capture.steps.some(s=>s.kind==='saveNativeEvent')&&(!this.ready||this.nativeCalendarVersion!==1))throw new LedgerCommandRejectedError('CALENDAR_UPDATE_REQUIRED: Connect to an updated Hearth to save events.');
++    if(candidate.kittyNestDesigns?.some(row=>row.designRef)&&(!this.ready||this.nestDesignVersion!==1))throw new LedgerCommandRejectedError('NEST_DESIGN_UPDATE_REQUIRED: Connect to an updated Hearth to preserve collaborative Nest pottery.');
+     if((hasKittyNestData(candidate)||capture.steps.some(s=>s.kind==='saveKittyNestDesign'))&&(!this.ready||this.kittyNestVersion!==1))throw new LedgerCommandRejectedError('BANK_UPDATE_REQUIRED: Connect to an updated Hearth to save bank designs.');
+     if((hasTaskData(candidate)||capture.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.taskPlannerVersion!==1))throw new LedgerCommandRejectedError('PLANNER_UPDATE_REQUIRED: Connect to an updated Hearth to save planner tasks.');
+     if(capture.steps.some(s=>['executeHerculesAction','cancelHerculesSubmission'].includes(s.kind)||s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set')&&(!this.ready||this.companionWorkflowVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving conversational drafts.');
+diff --git a/src/ledgerSync/protocol.ts b/src/ledgerSync/protocol.ts
+index 1516b96..1e3b1c1 100644
+--- a/src/ledgerSync/protocol.ts
++++ b/src/ledgerSync/protocol.ts
+@@ -33,6 +33,7 @@ export type LedgerCommand = {
+   hearthsideVersion?: 1;
+   hearthsideEncounterVersion?:1;
+   kittyDesignVersion?: 1;
++  nestDesignVersion?:1;
+   companionPlayVersion?: 1;
+   companionWardrobeVersion?: 1;
+   companionWorkflowVersion?: 1;
+@@ -95,7 +96,7 @@ export async function commandFromCapture(
+     companionProfileVersion: 1,
+     hearthsideVersion: 1,
+     hearthsideEncounterVersion:1,
+-    kittyDesignVersion: 1,
++    kittyDesignVersion: 1, nestDesignVersion:1,
+     companionPlayVersion: 1,
+     companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, chapterAgreementVersion: 1, kittyNestVersion: 1,
+     id,
+@@ -132,6 +133,7 @@ export function parseCommand(value: unknown): LedgerCommand {
+     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
+     (c.hearthsideEncounterVersion !== undefined && c.hearthsideEncounterVersion !== 1) ||
+     (c.hearthsideVersion !== undefined && c.hearthsideVersion !== 1) ||
++    (c.nestDesignVersion !== undefined && c.nestDesignVersion !== 1) ||
+     (c.kittyDesignVersion !== undefined && c.kittyDesignVersion !== 1) ||
+     (c.companionPlayVersion !== undefined && c.companionPlayVersion !== 1) ||
+     (c.companionWardrobeVersion !== undefined && c.companionWardrobeVersion !== 1) ||
+diff --git a/workers/hearthsideDesignStore.ts b/workers/hearthsideDesignStore.ts
+index 41ac5dc..12d7795 100644
+--- a/workers/hearthsideDesignStore.ts
++++ b/workers/hearthsideDesignStore.ts
+@@ -1,3 +1,4 @@
++import {nestSourceKey,type NestDesignSource} from '../src/hearthside/nestDesignBinding.ts';
+ import type { SqlStorage, R2Bucket } from '@cloudflare/workers-types';
+ import { checkpointKittyDesign, restoreKittyDesignCheckpoint } from '../src/hearthside/design.ts';
+ import { canonicalDesignJSON, KITTY_DESIGN_LIMITS, type KittyAcceptedDesignOperation, type KittyDesignDocument } from '../src/hearthside/designContracts.ts';
+@@ -8,6 +9,7 @@ import { digest } from '../src/ledgerSync/patch.ts';
+ export class HearthsideDesignStore {
+   private cache=new Map<string,{hash:string;document:KittyDesignDocument}>();
+   constructor(private sql: SqlStorage, private archive: R2Bucket) {
++    sql.exec('CREATE TABLE IF NOT EXISTS creative_source(source TEXT PRIMARY KEY,id TEXT UNIQUE)');
+     sql.exec('CREATE TABLE IF NOT EXISTS creative_header(id TEXT PRIMARY KEY,bank TEXT,owner TEXT,reference TEXT,creator TEXT,request TEXT)');
+     sql.exec('CREATE TABLE IF NOT EXISTS creative_baseline(id TEXT,part INTEGER,data TEXT,PRIMARY KEY(id,part))');
+     sql.exec('CREATE TABLE IF NOT EXISTS creative_operation(id TEXT,revision INTEGER,operation TEXT UNIQUE,data TEXT,PRIMARY KEY(id,revision))');
+@@ -21,6 +23,7 @@ export class HearthsideDesignStore {
+     if(rows.length>1)throw Error('DESIGN_BANK_HISTORY_CONFLICT');
+     return rows[0]?this.read(rows[0].id):null;
+   }
++  forNest(source:NestDesignSource,owner:string|null){const row=this.sql.exec<{id:string}>('SELECT id FROM creative_source WHERE source=?',nestSourceKey(source,owner)).toArray()[0];return row?this.read(row.id):null;}
+   references():DesignArchiveReference[] { return this.sql.exec<{reference:string}>('SELECT reference FROM creative_header ORDER BY id').toArray().map(r=>decodeDesignArchiveReference(JSON.parse(r.reference))); }
+   eventReferences(sequence:number):DesignArchiveReference[] { return this.sql.exec<{reference:string}>('SELECT reference FROM creative_archive WHERE sequence=? ORDER BY id',sequence).toArray().map(r=>decodeDesignArchiveReference(JSON.parse(r.reference))); }
+   read(id:string):KittyDesignDocument|null {
+@@ -58,7 +61,10 @@ export class HearthsideDesignStore {
+   commit(document:KittyDesignDocument,reference:DesignArchiveReference,sequence:number,created:{actor:string;request:string}) {
+     const bytes=this.size(document);
+     const existing=this.header(document.id);
++    if(document.nest&&reference.bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
++    if(existing&&canonicalDesignJSON(this.read(document.id)?.nest??null)!==canonicalDesignJSON(document.nest??null))throw Error('DESIGN_NEST_HISTORY_CONFLICT');
+     if(reference.bankId){const prior=this.forBank(reference.bankId);if(prior&&prior.id!==document.id)throw Error('DESIGN_BANK_HISTORY_CONFLICT');}
++    if(document.nest){const prior=this.forNest(document.nest,document.scope.ownerMemberId);if(prior&&prior.id!==document.id)throw Error('DESIGN_NEST_HISTORY_CONFLICT');this.sql.exec('INSERT OR REPLACE INTO creative_source VALUES (?,?)',nestSourceKey(document.nest,document.scope.ownerMemberId),document.id);}
+     if(!existing) {
+       const baseline=checkpointKittyDesign({...document,revision:0,operations:[]});
+       for(let at=0;at<baseline.length;at+=60000)this.sql.exec('INSERT INTO creative_baseline VALUES (?,?,?)',document.id,at/60000,baseline.slice(at,at+60000));
+diff --git a/workers/ledgerRoom.ts b/workers/ledgerRoom.ts
+index 64e7dae..97c30ad 100644
+--- a/workers/ledgerRoom.ts
++++ b/workers/ledgerRoom.ts
+@@ -1,3 +1,5 @@
++import {decodeNestSource} from '../src/hearthside/nestDesignBinding.ts';
++import {visibleNestSource,assertNestDocumentVisible,migrateNestDesign} from '../src/hearthside/nestDesignSource.ts';
+ import {readSharedLifeRestorePreview,type RestoreDesignAccess} from '../src/hearthside/sharedLifeRestore.ts';
+ import {rejectLegacyWinPublication} from '../src/hearthside/winMemory.ts';
+ import {createEncounterDesign,encounterDesignIdentity} from '../src/hearthside/encounterDesign.ts';
+@@ -444,6 +446,7 @@ export class LedgerRoom extends DurableObject<Env> {
+         !/^HH-[a-zA-Z0-9_-]{1,96}$/.test(household.householdId)
+       )
+         throw new Error("INVALID_SCOPE");
++      for(const row of household.kittyNestDesigns??[]){if(!row.designRef)continue;const doc=this.designs.read(row.designRef.designId);if(!doc||!doc.nest||doc.nest.view!==row.visibility||doc.nest.designKey!==row.bankKey||doc.scope.ownerMemberId!==(row.visibility==='personal'?row.createdBy:null)||doc.revision<row.designRef.revision)throw Error('DESIGN_ARCHIVE_RESTORE_REQUIRED');}
+       assertAcceptableBooks(household);
+       const split = splitForSync(
+         { ...household, restorePoints: [], linked: true },
+@@ -512,6 +515,7 @@ export class LedgerRoom extends DurableObject<Env> {
+         household.householdId !== scope.householdId
+       )
+         throw new Error("IMPORT_SCOPE_MISMATCH");
++      for(const row of household.kittyNestDesigns??[]){if(!row.designRef)continue;const doc=this.designs.read(row.designRef.designId);if(!doc||!doc.nest||doc.nest.view!==row.visibility||doc.nest.designKey!==row.bankKey||doc.scope.ownerMemberId!==(row.visibility==='personal'?row.createdBy:null)||doc.revision<row.designRef.revision)throw Error('DESIGN_ARCHIVE_RESTORE_REQUIRED');}
+       assertAcceptableBooks(household);
+       const split = splitForSync(household, scope.memberId),
+         sourceHash = await digest(split);
+@@ -930,9 +934,9 @@ export class LedgerRoom extends DurableObject<Env> {
+     return {state,household:assembleHousehold(state.shared,personal,{linked:true})};
+   }
+   private sharedLifeRestoreDesignAccess(scope:Scope):RestoreDesignAccess {
+-    return reference=>{try{this.hearthsideMember(scope);const document=this.designs.read(reference.documentId);
++    return reference=>{try{const {household}=this.hearthsideMember(scope);const document=this.designs.read(reference.documentId);
+       if(!document||document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId||document.scope.ownerMemberId!==null)return false;
+-      snapshotKittyDesignRevision(document,reference.pieceId,reference.revision);
++      assertNestDocumentVisible(household,scope.memberId,document);snapshotKittyDesignRevision(document,reference.pieceId,reference.revision);
+       return projectKittyDesign(document).pieces.some(p=>p.piece.id===reference.pieceId&&p.status!=='archived');
+     }catch{return false;}};
+   }
+@@ -944,7 +948,7 @@ export class LedgerRoom extends DurableObject<Env> {
+   private memoryDesigns(scope:Scope,memory:MemoryComposition){
+     for(const ref of memory.designs){const document=this.designs.read(ref.documentId);
+       if(!document||document.scope.ownerMemberId!==null||document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId)throw Error('HEARTHSIDE_SHARED_DESIGN_REQUIRED');
+-      snapshotKittyDesignRevision(document,ref.pieceId,ref.revision);
++      assertNestDocumentVisible(this.hearthsideMember(scope).household,scope.memberId,document);snapshotKittyDesignRevision(document,ref.pieceId,ref.revision);
+     }
+   }
+   async workspaceExperience(scope:Scope,id:string){
+@@ -1061,7 +1065,7 @@ export class LedgerRoom extends DurableObject<Env> {
+       piece:(designId,pieceId,revision)=>this.serial(async()=>{this.guestScope(scope);const document=this.designs.read(designId);
+         if(!document||document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId||document.scope.ownerMemberId!==null)return null;
+         const current=projectKittyDesign(document).pieces.find(p=>p.piece.id===pieceId);if(!current)return null;
+-        try{return {revision,shared:true,archived:current.status==='archived',piece:snapshotKittyDesignRevision(document,pieceId,revision).piece};}catch{return null;}
++        try{assertNestDocumentVisible(this.hearthsideMember(scope).household,scope.memberId,document);const snapshot=snapshotKittyDesignRevision(document,pieceId,revision);return {revision,shared:true,archived:current.status==='archived',piece:snapshot.piece,...(snapshot.appearance?{ornament:snapshot.appearance}:{})};}catch{return null;}
+       }),
+       active:binding=>this.memoryVault(scope).isMemoryActiveFor(scope,binding),
+       media:(id,publicationId)=>this.memoryVault(scope).mediaFor(scope,id,publicationId,'active'),
+@@ -1112,7 +1116,7 @@ export class LedgerRoom extends DurableObject<Env> {
+       this.check(scope);
+       const state=this.load(), personal=state.personal.get(scope.memberId);
+       if(!personal || !state.shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');
+-      designRecord(raw,['version','kind','designId','bankId','operation','pieceId','revision','knownRevision'],['version','kind']);
++      designRecord(raw,['version','kind','designId','bankId','nestSource','operation','pieceId','revision','knownRevision'],['version','kind']);
+       if(raw.version!==1)throw Error('KITTY_DESIGN_UPDATE_REQUIRED');
+       const household=assembleHousehold(state.shared,personal,{linked:true});
+       const reply=(document:KittyDesignDocument,receipt:KittyDesignReceipt|null,sequence:number)=>{
+@@ -1127,7 +1131,7 @@ export class LedgerRoom extends DurableObject<Env> {
+         const document=this.designs.read(id);
+         if(!document || document.scope.ownerMemberId!==null&&document.scope.ownerMemberId!==scope.memberId)throw Error('DESIGN_NOT_FOUND');
+         if(document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId)throw Error('SCOPE_MISMATCH');
+-        return document;
++        assertNestDocumentVisible(household,scope.memberId,document);return document;
+       };
+       if(raw.kind==='read'||raw.kind==='snapshot') {
+         designRecord(raw,raw.kind==='read'?['version','kind','designId','knownRevision']:['version','kind','designId','pieceId','revision'],raw.kind==='read'?['version','kind','designId']:['version','kind','designId','pieceId','revision']);designId(raw.designId);
+@@ -1138,17 +1142,20 @@ export class LedgerRoom extends DurableObject<Env> {
+       if(this.env.HEARTHSIDE_DESIGN_WRITES!=='true'||scope.environment==='production')throw Error('KITTY_DESIGN_WRITES_PAUSED');
+       let document:KittyDesignDocument,bankId:string|null,id:string,creativeReceipt:KittyDesignReceipt|null=null;
+       if(raw.kind==='create') {
+-        designRecord(raw,['version','kind','designId','bankId']);designId(raw.designId);if(raw.bankId!==null)designId(raw.bankId);
++        designRecord(raw,['version','kind','designId','bankId','nestSource'],['version','kind','designId','bankId']);designId(raw.designId);if(raw.bankId!==null)designId(raw.bankId);
+         bankId=raw.bankId as string|null;
++        const nest=raw.nestSource===undefined?null:visibleNestSource(household,scope.memberId,decodeNestSource(raw.nestSource));
++        if(nest&&bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
++        if(nest){const existing=this.designs.forNest(nest.source,nest.source.view==='personal'?scope.memberId:null);if(existing){document=read(existing.id);return {version:1,document,receipt:null,sequence:state.sequence};}if(nest.row.designRef)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');}
+         const goal=bankId===null?null:household.goals.find(g=>g.id===bankId&&(g.shared||g.ownerMemberId===scope.memberId));
+         if(bankId!==null&&!goal)throw Error('DESIGN_BANK_UNAVAILABLE');
+         if(goal?.envelope?.designRef){document=read(goal.envelope.designRef.designId);return {version:1,document,receipt:null,sequence:state.sequence};}
+         const bankHistory=bankId===null?null:this.designs.forBank(bankId);
+         if(bankHistory)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');
+         const prior=this.designs.header(raw.designId);
+-        if(prior){document=read(raw.designId);if(prior.bank!==bankId)throw Error('DESIGN_ID_CONFLICT');return {version:1,document,receipt:null,sequence:state.sequence};}
++        if(prior){document=read(raw.designId);if(prior.bank!==bankId||JSON.stringify(document.nest??null)!==JSON.stringify(nest?.source??null))throw Error('DESIGN_ID_CONFLICT');return {version:1,document,receipt:null,sequence:state.sequence};}
+         const designScope={environment:scope.environment,householdId:scope.householdId,ownerMemberId:goal&&!goal.shared?scope.memberId:null};
+-        document=goal?migrateLegacyKittyStudio(raw.designId,designScope,goal.envelope?.studio,`migration:${await digest([raw.designId,bankId])}`):createKittyDesignDocument(raw.designId,designScope);
++        document=nest?migrateNestDesign(household,scope.memberId,raw.designId,nest.source):goal?migrateLegacyKittyStudio(raw.designId,designScope,goal.envelope?.studio,`migration:${await digest([raw.designId,bankId])}`):createKittyDesignDocument(raw.designId,designScope);
+         id=`design-create:${document.id}`;
+       } else if(raw.kind==='operate') {
+         designRecord(raw,['version','kind','operation','knownRevision'],['version','kind','operation']);const operation=decodeKittyDesignOperation(raw.operation);
+@@ -1161,9 +1168,9 @@ export class LedgerRoom extends DurableObject<Env> {
+       const intentHash=await digest({scope:`${scope.environment}/${scope.householdId}`,actor:scope.memberId,raw});
+       const existingReceipt=this.ctx.storage.sql.exec('SELECT id FROM receipts WHERE id=?',id).toArray()[0];
+       if(existingReceipt)throw Error('DESIGN_RECEIPT_CONFLICT');
+-      const projected=applyAcceptedDesignReference(household,document,bankId);
+-      const split=splitForSync({...projected,revision:state.sequence+1,baseRevision:state.sequence+1,commandReceipts:[],restorePoints:[]},scope.memberId);
+       const acceptedAt=new Date().toISOString();
++      const projected=applyAcceptedDesignReference(household,document,bankId,acceptedAt);
++      const split=splitForSync({...projected,revision:state.sequence+1,baseRevision:state.sequence+1,commandReceipts:[],restorePoints:[]},scope.memberId);
+       const event:AcceptedEvent={sequence:state.sequence+1,shared:difference(state.shared,split.shared),...(document.scope.ownerMemberId!==null?{personal:difference(personal,split.personal),memberId:scope.memberId}:{}),acceptedAt};
+       const receipt:Receipt={id,actor:scope.memberId,digest:intentHash,sequence:event.sequence,postedIds:[],warnings:[],commandKind:'kittyDesignOperation',undo:{id,label:'Creative edit',postedIds:[],actorMemberId:scope.memberId,commandKind:'kittyDesignOperation'},...(document.scope.ownerMemberId!==null?{persistenceScope:'member-personal',personalMemberId:scope.memberId}:{})};
+       const eventText=JSON.stringify(event);
+@@ -1467,7 +1474,7 @@ export class LedgerRoom extends DurableObject<Env> {
+             type: "ready",
+             companionProfileVersion: 1,
+             hearthsideVersion: 1,
+-            kittyDesignVersion: 1,
++            kittyDesignVersion: 1, nestDesignVersion:1,
+             companionPlayVersion: 1,
+             companionDiscoveryVersion: 1,
+             companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, chapterAgreementVersion: 1, kittyNestVersion: 1,

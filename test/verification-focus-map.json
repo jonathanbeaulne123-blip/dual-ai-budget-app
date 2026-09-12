@@ -683,7 +683,8 @@
         "workers/workspace/route.ts",
         "workers/workspace/tools.ts",
         "workers/ledgerRoom.ts",
-        "src/App.tsx"
+        "src/App.tsx",
+        "test/fixtures/workspaceMergeReviewProof.tsx"
       ],
       "tests": [
         "test/hearthside-workspace.test.ts",
@@ -697,7 +698,12 @@
         "test/workspace-command-authority.test.ts",
         "test/hearthside-contracts.test.ts",
         "test/hearthside-journeys.test.ts",
-        "test/app-startup-p1.test.ts"
+        "test/app-startup-p1.test.ts",
+        "test/workspace-merge-review-browser.test.ts",
+        "test/workspace-merge-review-client.test.ts",
+        "test/workspace-merge-review-runtime.test.ts",
+        "test/workspace-action-options.test.ts",
+        "test/workspace-action-options-authority.test.ts"
       ],
       "reason": "Selected experience continuity, private drafts, exact provider disclosure and immutable reviewed artifacts accepted by real LedgerRoom without private source leakage"
     },
@@ -882,6 +888,7 @@
     {
       "sources": [
         "src/hearthside/bankReceipt.ts",
+        "src/hearthside/legacyBankAcceptance.ts",
         "src/hearthside/bankCreation.ts",
         "src/hearthside/bankJourney.ts",
         "src/hearthside/BankCreationSurface.tsx",
@@ -897,7 +904,9 @@
       "tests": [
         "test/hearthside-bank-journey.test.ts",
         "test/hearthside-bank-journey-ui.test.ts",
+        "test/hearthside-bank-legacy-ui.test.ts",
         "test/hearthside-bank-journey-runtime.test.ts",
+        "test/hearthside-bank-ack-recovery.test.ts",
         "test/kitty-envelope-ui.test.ts",
         "test/kitty-envelope.test.ts",
         "test/kitty-studio-ui.test.ts",
@@ -939,6 +948,65 @@
         "test/month-rehearsal-mainline.test.ts"
       ],
       "reason": "Exact paired shared-life restore, current withdrawal and financial preservation, media exclusion and real authority recovery"
+    },
+    {
+      "sources": [
+        "src/core/kittyNestDesigns.ts",
+        "src/kitty/KittyNest.tsx",
+        "src/hearthside/NestCanonicalArtwork.tsx",
+        "src/hearthside/NestCanonicalStudio.tsx",
+        "src/hearthside/NestGuestOrnament.tsx",
+        "src/hearthside/nestCanonical.css",
+        "src/hearthside/nestDesignBinding.ts",
+        "src/hearthside/nestDesignSource.ts",
+        "src/hearthside/nestGuestAppearance.ts",
+        "src/hearthside/design.ts",
+        "src/hearthside/CollaborativeStudio.tsx",
+        "src/hearthside/ProjectorEntry.tsx",
+        "src/hearthside/exportCapture.ts",
+        "src/hearthside/nativeBridge.ts",
+        "src/hearthside/guestProjection.ts",
+        "workers/hearthsideDesignStore.ts",
+        "workers/ledgerRoom.ts"
+      ],
+      "tests": [
+        "test/hearthside-nest-design.test.ts",
+        "test/hearthside-nest-design-runtime.test.ts",
+        "test/hearthside-nest-design-ui.test.ts",
+        "test/hearthside-nest-export.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/kitty-nest-ui.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-design-client.test.ts",
+        "test/hearthside-design-runtime.test.ts",
+        "test/hearthside-design-surfaces.test.ts",
+        "test/hearthside-native.test.ts",
+        "test/hearthside-guests.test.ts",
+        "test/hearthside-projector.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Canonical Nest source authority, original paid receipt appearance, simultaneous King creation and immutable ornaments across memories, guests, native and exports"
+    },
+    {
+      "sources": [
+        "src/App.tsx",
+        "src/Hercules.tsx",
+        "src/hearthside/Hearthside.tsx",
+        "src/hearthside/routes.ts",
+        "src/hearthside/hearthside.css",
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/roomScene.css",
+        "test/fixtures/hearthsideActualApp.ts"
+      ],
+      "tests": [
+        "test/hearthside-actual-app-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/month-rehearsal-mainline.test.ts"
+      ],
+      "reason": "Actual App and PGlite intention reload, canonical Task/Calendar handoff and focus recovery, quiet resident, themed responsive room entry and unchanged financial truth"
     }
   ]
 }
