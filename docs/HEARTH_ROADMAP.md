@@ -16,6 +16,8 @@ Complete wardrobe implementation is in verification: 36 original pieces plus leg
 
 # Hearth living roadmap
 
+**2026-09-12 — The time machine (feedback row 8, D-246) implemented locally:** `asOf` and `period` separated through the Fund projector and the cumulative statements, dated goal history, a month ribbon with three month states, comparison, forecast, the year and a closed-month memory layer, plus month paging for Books statements and the Fund register. Local branch `claude/time-machine-row-8`; trust review, push, PR, merge and Development deploy pending. [Worksession](worksessions/2026-09-12-time-machine-row-8.md).
+
 **2026-09-12 — The planner (feedback row 9, D-245) implemented locally:** one Task object with money, private tasks, evidence-only completion, agenda and affordability, a Planner room in three themes. Local branch `claude/planner-row-9`; trust review, push, PR, merge and Development deploy pending. [Worksession](worksessions/2026-09-12-planner-row-9.md).
 
 **2026-09-10 — Hercules slice 4 implemented locally behind a flag:** one complete 3D fitting look, shared rig, authored reactions, three-theme room and local recovery. [Evidence](worksessions/2026-09-10-hercules-slice-4.md). Not deployed; likeness/fitting and physical-phone acceptance remain open. Full catalogue and Wear/Save/share are slice 5.
