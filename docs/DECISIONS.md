@@ -1,3 +1,11 @@
+## 2026-09-12 — Home setup and Kitty Bank doors (F-014 / F-015)
+
+The opening “See Our Shared Life” Move now offers separate Charter and Fund actions that open their existing setup surfaces. Following either action never marks the Move Done. Custom Moves keep their own meaning.
+
+“What we are building towards” shows the real displayed Kitty Studio design in 2D, with the existing accepted-backing steps and target. Each shared bank opens its exact gallery selection; an empty shelf reaches bank creation, and longer collections keep an all-banks door. Home uses the existing gallery command, receipt recovery and Final Confirm path. Back returns to the invoking Home control, including while global books validation locks money writes; an active in-room submission still locks dismissal.
+
+Risk Medium. Budget delta (5): direct setup and money-review routes with unchanged accounting meaning. Engagement delta (3): an interactive, recognizable shelf in Classic, Taylor and Newfoundland. [Worksession and verification](worksessions/2026-09-12-feedback-f014-f015.md). Local implementation; no hosted or Production change.
+
 ## 2026-09-12 — Hercules Workspace (D-249, local implementation)
 
 Jonathan approved a full Gemini Flash harness inside Hearth: private life projects, persistent conversation, editable artifacts, broad research/creation/learning tools, durable background work, and stable links to monthly Plans, Kitty Banks, Calendar and boards. The dedicated room and compact conversation share one workspace. Classic Hearth, Taylor’s Scrapbook and Newfoundland each have authored study treatments.

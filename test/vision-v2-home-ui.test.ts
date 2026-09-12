@@ -45,6 +45,7 @@ describe("Vision v2 Home UI review repairs", () => {
       busy: false,
       onCommand: vi.fn(),
       onGo: vi.fn(),
+      onOpenSetup: vi.fn(),
     })));
 
     const labels = [...host.querySelectorAll("button")].map((button) => button.textContent);

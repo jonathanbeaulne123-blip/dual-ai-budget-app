@@ -6741,6 +6741,7 @@ export function App() {
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
         <HouseholdHome
+          key={ledgerRenderScopeKey}
           household={household}
           memberId={actorId}
           today={today}
@@ -6748,6 +6749,8 @@ export function App() {
           busy={busy}
           onCommand={runKitchen}
           onGo={(next) => goTab(next)}
+          onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
+          onReadSubmission={async id => { const status = await readWorkShiftSubmission(id); if (status === "pending") ledgerSyncRef.current?.retryPending(); return status; }}
           rehearsal={(
             <div className="home-rehearsal-entry">
               <MonthRehearsalAccess

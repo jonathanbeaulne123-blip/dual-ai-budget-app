@@ -87,6 +87,8 @@ export type KittyRoomProps = {
     options?: KittyCommandOptions,
   ) => unknown;
   context?: KittyPlanContext;
+  initialGoalId?: string;
+  returnTo?: "Plan" | "Home";
   onClose: () => void;
 };
 type SavedReview = { id: string; title: string };
@@ -210,6 +212,8 @@ function Room({
   onReadSubmission,
   onCommand,
   context,
+  initialGoalId,
+  returnTo = "Plan",
   onClose,
 }: KittyRoomProps) {
   const recoveryKey = `hearth-kitty-pending:${identity}`;
@@ -230,7 +234,7 @@ function Room({
   const [filter, setFilter] = useState<"active" | "archived" | "completed">(
     "active",
   );
-  const [selected, setSelected] = useState(context?.goalId ?? "");
+  const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? "");
   const [creating, setCreating] = useState(false);
   const [studioFor, setStudioFor] = useState("");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
@@ -252,7 +256,7 @@ function Room({
   latest.current = h;
   const dialog = useDialog(
     true,
-    busy || saving || recovery ? undefined : onClose,
+    saving || recovery ? undefined : onClose,
   );
   const run = async (
     command: (h: Household) => CommitResult,
@@ -405,9 +409,9 @@ function Room({
           type="button"
           className="kitty-back"
           onClick={onClose}
-          disabled={busy || saving}
+          disabled={saving}
         >
-          ← Back to Plan
+          ← Back to {returnTo}
         </button>
         <div>
           <span className="kitty-eyebrow">
