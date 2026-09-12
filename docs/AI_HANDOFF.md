@@ -10,6 +10,8 @@ Verification from the source branch: `tsc` clean; `pnpm build` passes; 19 focuse
 
 Open for Jonathan, not decided here: today's Fund balance still counts Fund events dated in the future, exactly as it always has. The honest as-of reading would filter them — a one-line change in `fundLensToday` — but it moves a present-day figure, so it is a money-meaning call. Preserved byte-for-byte.
 
+Also pre-existing and left alone: `test/goal-fill-ui.test.ts` is red on `main` at the base SHA (6 of 7 tests), verified in a clean worktree. It is outside this branch's surface and outside the quick gate's selection.
+
 Uncertainty: the forecast reads `$0.00 expected in` where a household's Fund is fed by confirmed contributions rather than a projected recurrence; the memory layer covers goals, Wins, Sitdowns and month closures but not the board photo or a fired kitty bank; the page borrows the ledger scene rather than owning one; `KittyBanks.tsx` still renders the undated running total, although the dated readers now exist for it. Not exercised: physical devices, VoiceOver, a real Development snapshot, and months containing a reversal or correction.
 
 Data/environment: fictional catalog fixtures only; no hosted, schema, Production or real-household writes. Next owner: Codex for an independent trust review of the `asOf` axis; then Jonathan for the open decision and product review.
