@@ -8,6 +8,7 @@ import {
 } from "./auth/supabaseSession.ts";
 import { ConfirmSheet } from "./Confirm.tsx";
 import { KitchenNotice } from "./KitchenNotice.tsx";
+import { Whisper } from "./theme/Whisper.tsx";
 
 export function herculesProAuthorizationRequest(url = window.location.href): string | null {
   try {
@@ -134,9 +135,8 @@ export function HerculesProPermissionsCard({
     <>
       <section className="card">
         <header><h2>Hercules Pro permissions</h2><span className={`pill ${permissions.personalWrite || permissions.householdWrite ? "warn" : "good"}`}>{permissions.personalWrite || permissions.householdWrite ? "writes on" : "read-only"}</span></header>
-        <p className="muted">
-          Free Hercules is unchanged. ChatGPT reads stay available. Writing is member-owned, off by default, and can only add a prepared transaction after you confirm the exact preview in ChatGPT.
-        </p>
+        <Whisper mode="line">Writing is off by default and only adds a transaction you confirmed in ChatGPT.</Whisper>
+        <Whisper mode="aside" id="hercules-pro.writes">Free Hercules is unchanged. ChatGPT reads stay available. Writing is member-owned and can only add a prepared transaction after you confirm the exact preview in ChatGPT.</Whisper>
         <label style={{ marginTop: 10 }}>
           <input
             type="checkbox"
@@ -155,9 +155,8 @@ export function HerculesProPermissionsCard({
           />
           {" "}Allow {memberName} to post to the shared Household ledger from ChatGPT
         </label>
-        <p className="muted" style={{ marginTop: 10 }}>
-          No delete, bill payment, card payment, transfer to a bank, settings change, or silent write tool is enabled. Turn either switch off to block new and already-prepared confirmations for that ledger.
-        </p>
+        <Whisper mode="line">No delete, payment, transfer, settings or silent write tool is ever enabled.</Whisper>
+        <Whisper mode="aside" id="hercules-pro.limits">Turn either switch off to block new and already-prepared confirmations for that ledger.</Whisper>
         {environment === "production" ? <p className="muted">Production stays read-only until the September security cutover.</p> : null}
         <KitchenNotice message={error ?? ""} />
         <button className="ghost" style={{ width: "100%", marginTop: 8 }} type="button" onClick={launchHerculesPro}>

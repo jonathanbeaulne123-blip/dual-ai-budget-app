@@ -53,6 +53,7 @@ function sealColor(goal: Goal): string {
 }
 import type { PlanAsk } from "../PlanLensWorkbench.tsx";
 import "./kitty-room.css";
+import { Whisper } from "../theme/Whisper.tsx";
 
 export type KittyPlanContext = {
   selection: PlanSelection;
@@ -1189,11 +1190,7 @@ function Bank({
               <span className="kitty-eyebrow">A purpose across chapters</span>
               <h3>The bank stays. The plan evolves.</h3>
               {planStatus && <p role="status">{planStatus}</p>}
-              <p>
-                Protect keeps promises, Prepare anticipates recurring costs, and
-                Build makes room for an outcome. Each can refer to this same
-                bank.
-              </p>
+              <Whisper mode="aside" id="kitty.plan-lenses" label="What these mean">Protect keeps promises, Prepare anticipates recurring costs, and Build makes room for an outcome. Each can refer to this same bank.</Whisper>
               {linked.map((line) => (
                 <button
                   className="kitty-linked-plan"

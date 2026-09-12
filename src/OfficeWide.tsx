@@ -444,10 +444,10 @@ export function OfficeWide({
       ),
     },
     postcard: {
-      kind: "Sit-down",
-      name: "Sit-down",
+      kind: "Sitdown",
+      name: "Sitdown",
       glance: <PostcardGlance card={postcard} />,
-      aria: "Sit-down.",
+      aria: "Sitdown.",
       body: <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} memberId={memberId} card={postcard} onApply={onSitDown} />,
     },
     cookoff: {

@@ -521,6 +521,7 @@ import {
   loadOfficeSurface,
   loadWorkShiftSurface,
 } from "./deferredSurfaces.tsx";
+import { Whisper } from "./theme/Whisper.tsx";
 import {
   acceptedSnapshotRebuildCheck,
   booksWriteGate,
@@ -3575,7 +3576,7 @@ export function App() {
       const { status } = await ingestHouseholdBooks(candidate);
       if (!status.ok) throw new Error(status.error || "Those books could not be opened on this device.");
       const inspection = await inspectBrowserBooks(candidate);
-      if (!inspection.ok) throw new Error(inspection.message || "Those books do not match the accepted PGlite journal.");
+      if (!inspection.ok) throw new Error(inspection.message || "Those books do not match the accepted journal on this phone.");
       await saveHousehold(candidate, {
         operatingEnvironment: environment,
         memberId: nextMemberId,
@@ -3820,7 +3821,7 @@ export function App() {
     setWelcomeMode("join");
     try {
       if (!supabaseAuthEnabled()) {
-        throw new Error("Auth invites need an Auth-enabled kitchen build.");
+        throw new Error("Auth invites need an Auth-enabled Hearth build.");
       }
       if (!hostedContinuityAllowed(environment)) {
         throw new Error(inviteReasonMessage("continuity-disabled"));
@@ -3988,7 +3989,7 @@ export function App() {
           if (!shouldContinue()) return;
         } else if (!bound.ok && bound.reason === "bind-rpc-missing") {
           throw new Error(
-            "This kitchen needs migration 010 (bind Google memberships) pasted in the Supabase SQL Editor, then Continue with Google again.",
+            "This household needs migration 010 (bind Google memberships) pasted in the Supabase SQL Editor, then Continue with Google again.",
           );
         }
       }
@@ -4555,7 +4556,7 @@ export function App() {
   function openDemoTable(): void {
     if (pendingDemoAcceptanceRef.current) return;
     if (environment !== "development") {
-      setError("The demo kitchen is Development-only.");
+      setError("The demo household is Development-only.");
       return;
     }
     setError("");
@@ -5414,7 +5415,7 @@ export function App() {
       <div className="welcome">
         <ThemeSceneHeading />
         <div className="welcome-card">
-          <p className="kicker">Demo kitchen</p>
+          <p className="kicker">Demo household</p>
           <h1>Choose yourself</h1>
           <p>Hearth is here. The books are opening safely behind this table.</p>
           <KitchenNotice message={error} onDismiss={() => setError("")} />
@@ -5677,7 +5678,7 @@ export function App() {
               <KitchenNotice message={error} onDismiss={() => setError("")} />
               {!welcomeSignedIn && environment === "development" && (
                 <button className="ghost welcome-demo" onClick={openDemoTable}>
-                  Open the demo kitchen table
+                  Open the demo household table
                 </button>
               )}
               {!welcomeSignedIn && environment === "development" && (
@@ -7103,7 +7104,8 @@ export function App() {
           <section className="close-the-month" aria-label="Close the month">
             <p className="kicker">Close the month</p>
             <h2>Where leftover goes</h2>
-            <p className="muted">A bounded financial action with its own Final Confirm. The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</p>
+            <Whisper mode="line">A bounded action with its own Final Confirm.</Whisper>
+            <Whisper mode="aside" id="books.close-month">The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</Whisper>
             <SitDownGuide
               household={household}
               displayHousehold={displayHousehold}
@@ -7229,9 +7231,8 @@ export function App() {
           {environment === "development" && (
             <section className="card">
               <header><h2>Start from scratch</h2></header>
-              <p className="muted">
-                Deletes leftover Development households this Google account owns, leaves any you only joined, and clears this phone’s Development copies. Production stays.
-              </p>
+              <Whisper mode="line">Deletes this account’s leftover Development households and phone copies. Production stays.</Whisper>
+              <Whisper mode="aside" id="status.start-from-scratch">Households you only joined are left alone.</Whisper>
               <button
                 className="danger"
                 type="button"
@@ -7469,10 +7470,8 @@ export function App() {
                 </div>
               </>
             )}
-            <p className="muted" style={{ marginTop: 12 }}>
-              Sign out clears Google and Auth tokens on this phone only. The cloud household stays.
-              Native Keychain storage is a later release note — web builds keep tokens in localStorage until then.
-            </p>
+            <Whisper mode="line" className="status-signout-note">Signs out on this phone only. The cloud household stays.</Whisper>
+            <Whisper mode="aside" id="status.sign-out">Sign out clears Google and Auth tokens here. Web builds keep tokens in localStorage until native Keychain storage lands.</Whisper>
             <button
               className="ghost"
               style={{ width: "100%", marginTop: 8 }}
@@ -7483,9 +7482,8 @@ export function App() {
           </section>
           <section className="card">
             <header><h2>Clock &amp; place</h2></header>
-            <p className="muted">
-              Books civil dates stay America/Toronto. This phone may show another clock zone. Location is optional and off until you enable it here.
-            </p>
+            <Whisper mode="line">Books keep Toronto dates. This phone may show another clock.</Whisper>
+            <Whisper mode="aside" id="status.clock">Location is optional and off until you enable it here.</Whisper>
             <label htmlFor="phone-display-timezone">This phone’s clock</label>
             <select
               id="phone-display-timezone"
@@ -7553,9 +7551,7 @@ export function App() {
               />
               {" "}Share coordinates with Hercules’ model
             </label>
-            <p className="muted" style={{ marginTop: 8 }}>
-              Hosted open Development still treats published snapshots as disclosed until Auth. Model sharing is off unless you check it.
-            </p>
+            <Whisper mode="line">Development books are open until Auth lands. Model sharing is off unless you check it.</Whisper>
           </section>
           <h2 className="status-group" id="status-help">Help and transparency</h2>
           <section className="card hercules-capability-map" aria-labelledby="hercules-map-heading">
@@ -7569,10 +7565,8 @@ export function App() {
           </section>
           <section className="card storage">
             <header><h2>Where the books live</h2></header>
-            <p className="muted">
-              Commands write PGlite books (<code>{STORAGE_EXPLAINER.books}</code>) and keep a snapshot in IndexedDB.
-              Export follows the active ledger: Shared never includes Personal accounts, Personal rows, or private Fund reconciliation.
-            </p>
+            <Whisper mode="line">Your books live on this phone and follow the active ledger.</Whisper>
+            <Whisper mode="aside" id="status.storage">Commands write the on-phone books engine (<code>{STORAGE_EXPLAINER.books}</code>) and keep a copy in IndexedDB. Export follows the active ledger: Shared never includes Personal accounts, Personal rows, or private Fund reconciliation.</Whisper>
             <button className="primary" onClick={() => {
               if (!experience || !experience.ok) {
                 setError("Choose who is using this ledger before exporting.");
@@ -7580,16 +7574,15 @@ export function App() {
               }
               downloadJson(experience.exportHousehold);
             }}>
-              {view === "personal" ? "Export this Personal folio" : "Export Shared snapshot"}
+              {view === "personal" ? "Export this Personal folio" : "Export Shared books"}
             </button>
             {environment === "development" && <QuickSamplePanel key={`${household.householdId}:${actorId}:${view}`} household={household} memberId={actorId} visibility={view === "personal" ? "personal" : "household"} today={today} busy={busy} onReview={(input, preview) => setGuard({ kind: "quick-sample", input, preview })} />}
             {environment === "development" && (
               <div className="paper-panel sample-data-panel investor-data-panel" data-testid="demo-suite-panel">
                 <p className="kicker">Investor preview · Synthetic Demo Suite</p>
                 <h3>The full twelve-month story</h3>
-                <p className="muted" style={{ marginTop: 4 }}>
-                  A large fictional household with weighted income and spending, shift simulations, goals, claims, schedules and audit checks. Generation and verification take longer. Every run has a replay seed; schedule mail stays proposal-only until Confirm.
-                </p>
+                <Whisper mode="line">A large fictional household; slower to generate. Mail stays proposal-only until Confirm.</Whisper>
+                <Whisper mode="aside" id="status.demo-suite">Weighted income and spending, shift simulations, goals, claims, schedules and audit checks. Every run has a replay seed.</Whisper>
                 {household.syntheticFixture?.kind === "hearth-demo-suite" ? (
                   <p style={{ margin: "8px 0 0" }}><strong>Seed {household.syntheticFixture.seed}</strong> · generator {household.syntheticFixture.version}</p>
                 ) : (

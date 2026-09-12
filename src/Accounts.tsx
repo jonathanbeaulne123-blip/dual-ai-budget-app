@@ -294,7 +294,7 @@ export function AccountRoom({
           <p className="muted">
             {account.savings?.purpose === "goals"
               ? "Leftover goal cash parks here. Each goal tracks its share of this account — not extra bank logins."
-              : "Everyday high-interest parking. Sit-down leftover for goals goes to Goals savings instead."}
+              : "Everyday high-interest parking. Sitdown leftover for goals goes to Goals savings instead."}
           </p>
           <div className="chips">
             <button className="chip" type="button" onClick={() => onAdd(account)}>Move in</button>
@@ -510,7 +510,7 @@ export function AddAccountForm({
           </div>
           <p className="muted">
             {purpose === "goals"
-              ? "One sinking-fund account. Goals track their share here. Sit-down leftover parks here."
+              ? "One sinking-fund account. Goals track their share here. Sitdown leftover parks here."
               : "Everyday savings. Goal leftover still prefers Goals savings if one exists."}
           </p>
         </>

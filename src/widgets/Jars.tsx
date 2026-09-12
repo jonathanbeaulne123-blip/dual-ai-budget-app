@@ -203,7 +203,7 @@ export function JarsBody({
                 {pace ? ` · ${pace}` : item.goal.deadline ? ` · ${formatDateLabel(item.goal.deadline)}` : ""}
               </p>
               {status === "unfunded" && (
-                <p className="muted">Unfunded goal — cash still sits in chequing until you Fund goal or sit-down Confirm.</p>
+                <p className="muted">Unfunded goal — cash still sits in chequing until you Fund goal or Sitdown Confirm.</p>
               )}
               {full && status !== "unfunded" && onCommand && (
                 buying === item.goal.id ? (
