@@ -1,3 +1,4 @@
+import { normalizeFeedback, feedbackValues, feedbackFromValues, FEEDBACK_FIELDS, feedbackPage, missingFeedback, FEEDBACK_PAGES, FEEDBACK_OWNERS } from '../../src/workspace/feedback.ts';
 import { HERCULES_READ_TOOL_CATALOG } from '../../src/core/herculesTools.ts';
 import { herculesWorkspaceActionCatalogue } from '../../src/core/herculesActions.ts';
 import { latestArtifacts, workspaceText, workspaceId, WORKSPACE_ARTIFACT_LIMIT, type WorkspaceProject, type WorkspaceEvidence, type ArtifactVersion, type WorkspaceProposal } from '../../src/workspace/contracts.ts';
@@ -12,6 +13,7 @@ export type ToolContext = { project: WorkspaceProject; id: string; now: string;
 type Definition = { name: string; description: string; group: string; permission: string; approval: 'private-work' | 'review-required'; limit: number; properties: Record<string, unknown>; required: string[] };
 const str = { type: 'string' }, strings = { type: 'array', items: str };
 const defs: Definition[] = [
+  { name: 'prepare_bug_report', description: 'Draft a bug report for Hearth Feedback. Use appContext and what the person actually said. Ask only missing questions, one or two at a time. Never invent reproduction steps, expected results, urgency or a fix. Accept unknown or cannot reproduce as answers. Page choices: '+FEEDBACK_PAGES.join(', ')+'. Reporter choices: '+FEEDBACK_OWNERS.join(', ')+'. This saves a private editable draft; only the person can submit it.', group: 'feedback', permission: 'project', approval: 'review-required', limit: 1, properties: { page: str, feature: str, issue: str, expected: str, steps: str, example: str, owner: str, suggestedFix: str, urgency: str }, required: [] },
   { name: 'request_more_thinking', description: 'Ask free Flash to continue a difficult task with more reasoning. Save relevant decisions/artifacts first. This cannot bypass an exhausted quota.', group: 'analysis', permission: 'project', approval: 'private-work', limit: 1, properties: { reason: str }, required: ['reason'] },
   { name: 'discover_tools', description: 'Discover Hearth reads and prepared action groups. Tools never grant execution authority.', group: 'knowledge', permission: 'project', approval: 'private-work', limit: 1, properties: {}, required: [] },
   { name: 'project_read', description: 'Retrieve complete older messages, source excerpts or an artifact by id, with explicit paging. Search project conversation by query.', group: 'knowledge', permission: 'project', approval: 'private-work', limit: 24000, properties: { id: str, query: str, offset: { type: 'integer' } }, required: [] },
@@ -40,6 +42,14 @@ function evidence(c: ToolContext, origin: WorkspaceEvidence['origin'], scope: Wo
 export async function executeWorkspaceTool(name: string, args: Record<string, unknown>, c: ToolContext): Promise<ToolResult> {
   if (!defs.some(d => d.name === name)) throw new Error('UNKNOWN_TOOL');
   switch (name) {
+    case 'prepare_bug_report': {
+      const previous = c.project.proposals.filter(p => p.target === 'feedback' && p.status !== 'accepted' && !p.receiptId).at(-1);
+      const prior = previous ? feedbackFromValues(previous.values) : {};
+      const fields = Object.fromEntries(Object.keys(FEEDBACK_FIELDS).filter(k => args[k] !== undefined).map(k => [k, args[k]]));
+      const draft = normalizeFeedback({ page: feedbackPage(c.project.appContext ?? {}), ...prior, ...fields }, c.project.appContext);
+      const proposal: WorkspaceProposal = { id: previous?.id ?? c.id, revision: (previous?.revision ?? 0) + 1, artifactVersionId: null, target: 'feedback', scope: 'personal', actionId: 'report-bug', values: feedbackValues(draft), status: 'draft', receiptId: null, reviewedRevision: null };
+      return { result: { proposalId: proposal.id, missing: missingFeedback(draft), status: 'private-draft', instruction: 'Ask for the missing details, preserving all answers already given. The user reviews this report in Hearth before submitting. Nothing was sent to Sheets.' }, effect: { proposal } };
+    }
     case 'request_more_thinking': return { result: { requested: true, reason: workspaceText(args.reason, 1000) }, effect: { moreThinking: true } };
     case 'discover_tools': return { result: { reads: HERCULES_READ_TOOL_CATALOG, tools: defs.map(({ properties: _p, ...d }) => d),
       actions: herculesWorkspaceActionCatalogue(),

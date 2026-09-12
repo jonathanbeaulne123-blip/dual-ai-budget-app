@@ -76,6 +76,7 @@
     "HERCULES_WORKSPACE_DISCLOSURE": "disabled",
     "HERCULES_WORKSPACE_DATA": "synthetic",
     "HERCULES_WORKSPACE_GOOGLE_WRITES": "false",
+    "HERCULES_FEEDBACK_ENABLED": "false",
     "HERCULES_GEMINI_FREE_ONLY": "true"
   },
   "d1_databases": [

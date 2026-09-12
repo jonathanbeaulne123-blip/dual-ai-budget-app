@@ -26,6 +26,7 @@ export async function handleWorkspace(request: Request, env: WorkspaceEnv): Prom
     while (true) { const part = await reader.read(); if (part.done) break; size += part.value.length; if (size > 6_000_000) { await reader.cancel(); return reply({ error: 'INPUT_TOO_LARGE' }, 413); } chunks.push(part.value); }
     const bytes = new Uint8Array(size); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
     const body = JSON.parse(new TextDecoder().decode(bytes));
+    if (body.operation === 'feedback-submit') return reply(await workspace.feedbackFor(scope, body.review, String(body.confirmDigest)));
     if (body.operation === 'action-review') return reply(await workspace.actionReviewFor(scope, workspaceId(body.projectId), workspaceId(body.proposalId)));
     if (body.operation === 'action-confirm') return reply(await workspace.authorizeActionFor(scope, workspaceId(body.confirmationId)));
     if (body.operation === 'share') return reply(await workspace.shareFor(scope, body.review, String(body.confirmDigest)));

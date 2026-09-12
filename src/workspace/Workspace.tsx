@@ -1,3 +1,5 @@
+import { FeedbackReviewCard } from './FeedbackReview.tsx';
+import { feedbackContext, FEEDBACK_OWNERS, type FeedbackContext } from './feedback.ts';
 import { useEffect, useRef, useState } from 'react';
 import { WorkspaceClient, workspaceError, type WorkspaceRequest } from './client.ts';
 import { latestArtifacts, WORKSPACE_INPUT_LIMIT, type ArtifactVersion, type WorkspaceCommand, type WorkspaceProject, type WorkspaceProposal, type WorkspaceSnapshot, type ProjectLink } from './contracts.ts';
@@ -8,6 +10,7 @@ import { externalReviewDigest, type ExternalWorkspaceReview } from './external.t
 import './workspace.css';
 
 export type WorkspaceProps = {
+  reportRequest?: { id: string; context: FeedbackContext; text?: string } | null; onReportOpened?: () => void; getReportContext?: () => FeedbackContext; reporterName?: string;
   identity: string; environment: string; householdId: string; memberId: string; view: 'personal' | 'household';
   mode: 'room' | 'compact' | 'hidden'; getAccessToken: () => Promise<string>; isCurrent: () => boolean;
   onExpand: () => void; onClose: () => void; onLegacy: () => void;
@@ -94,6 +97,19 @@ export function HerculesWorkspaceRoom(props: WorkspaceProps) {
     if (!p || pending) return false;
     return submit({ commandId: crypto.randomUUID(), projectId: p.id, expectedRevision: p.revision, command: cmd });
   }
+  const reportOpening = useRef<string | null>(null);
+  async function newReport(request: { id: string; context: FeedbackContext; text: string } = { id: crypto.randomUUID(), context: props.getReportContext?.() ?? {}, text: '' }) {
+    if (pending || saving || !snapshot) return;
+    const owner = (FEEDBACK_OWNERS as readonly string[]).includes(props.reporterName ?? '') ? props.reporterName! : 'Person';
+    reportOpening.current = request.id;
+    props.onReportOpened?.();
+    setSelected(request.id); setSurface('conversation'); setComposer(request.text ?? '');
+    const ok = await submit({ commandId: request.id, projectId: request.id, expectedRevision: 0, command: { type: 'create', id: request.id, title: 'A bug to put right', feedback: { context: feedbackContext(request.context), owner } } });
+    if (ok) composerRef.current?.focus();
+  }
+  useEffect(() => {
+    if (props.reportRequest && snapshot && !saving && !pending && reportOpening.current !== props.reportRequest.id) void newReport({ ...props.reportRequest, text: props.reportRequest.text ?? '' });
+  }, [props.reportRequest, snapshot, saving, pending]);
   async function newProject(title = 'A new intention', message?: string) {
     if (pending || saving) return;
     const id = crypto.randomUUID();
@@ -147,14 +163,14 @@ export function HerculesWorkspaceRoom(props: WorkspaceProps) {
   async function send() {
     if (!composer.trim() || !project || pending) return;
     const text = composer, projectId=project.id;
-    if (await command({ type: 'message', id: crypto.randomUUID(), text })) {
+    if (await command({ type: 'message', id: crypto.randomUUID(), text, appContext: feedbackContext(props.getReportContext?.()) })) {
       if(selectedRef.current===projectId)setComposer(current => current === text ? '' : current);
       else if(readEntryLocal<{text:string}>(scopeKey+':composer:'+projectId)?.text===text)writeEntryLocal(scopeKey+':composer:'+projectId,{text:''});
     }
   }
   if (props.mode === 'hidden') return null;
   return <section className={`hercules-workspace hw--${props.mode} hw--${theme}`} data-workspace-scope={props.view} aria-label="Hercules workspace" onKeyDown={event => { if (event.key === 'Escape' && props.mode === 'compact') props.onClose(); }}>
-    <header className="hw-header"><div className="hw-monogram" aria-hidden="true">H<span>✦</span></div><div><p className="hw-eyebrow">Hercules · your private study</p><h1>{props.mode === 'compact' ? 'Here with you' : 'Bring an intention. Make something of it.'}</h1><p>Life, work, learning, and the plans that connect them.</p></div><div className="hw-window-controls">{props.mode === 'compact' && <button onClick={props.onExpand}>Open room ↗</button>}<button onClick={props.onClose} aria-label="Close Hercules workspace">Close</button></div></header>
+    <header className="hw-header"><div className="hw-monogram" aria-hidden="true">H<span>✦</span></div><div><p className="hw-eyebrow">Hercules · your private study</p><h1>{props.mode === 'compact' ? 'Here with you' : 'Bring an intention. Make something of it.'}</h1><p>Life, work, learning, and the plans that connect them.</p></div><div className="hw-window-controls"><button disabled={!snapshot || saving || !!pending} onClick={() => void newReport()}>Report a bug</button>{props.mode === 'compact' && <button onClick={props.onExpand}>Open room ↗</button>}<button onClick={props.onClose} aria-label="Close Hercules workspace">Close</button></div></header>
     {(notice || pending) && <div className="hw-notice" role="alert"><p>{notice || "The last save needs checking before another change."}</p><button disabled={saving} onClick={() => pending ? void submit(pending) : void refresh()}>{pending ? 'Check original save' : 'Reconnect'}</button><button onClick={props.onLegacy}>Existing conversations & guided actions</button></div>}
     {loading && <p role="status">Opening your private projects…</p>}
     {disclosureNotice && <p className="hw-notice" role="status">{disclosureNotice}</p>}
@@ -176,7 +192,8 @@ export function HerculesWorkspaceRoom(props: WorkspaceProps) {
           <section className="hw-conversation" aria-label="Conversation"><div className="hw-messages" role="log" aria-live="polite" aria-relevant="additions">{project.messages.length ? project.messages.map(m => <article key={m.id} className={`hw-message hw-message--${m.role}`}><strong>{m.role === 'user' ? 'You' : 'Hercules'}</strong><div>{m.text}</div></article>) : <p className="hw-first-message">Tell me what you have in mind. We can research, make a first draft, or work out where to begin.</p>}</div>
             {run && <div className="hw-run"><p role="status">{run.progress}</p><div>{['queued', 'running'].includes(run.status) && <button disabled={saving || !!pending} onClick={() => void command({ type: 'control', runId: run.id, action: 'pause' })}>Pause</button>}{['paused', 'failed'].includes(run.status) && <button disabled={saving || !!pending} onClick={() => void command({ type: 'control', runId: run.id, action: 'resume' })}>Resume</button>}{!['complete', 'cancelled', 'superseded'].includes(run.status) && <button disabled={saving || !!pending} onClick={() => void command({ type: 'control', runId: run.id, action: 'cancel' })}>Cancel task</button>}</div><details><summary>Work details</summary><p>{run.usage.modelCalls} Flash calls · {run.usage.toolCalls} tools · {run.usage.inputTokens + run.usage.outputTokens} tokens</p>{run.checkpoints.map((c, i) => <p key={i}>{c.tool.replaceAll('_', ' ')} · {c.status}</p>)}</details></div>}
             {project.proposedResearchQueries.length > 0 && <PublicResearchReview key={project.id+JSON.stringify(project.proposedResearchQueries)} project={project} busy={saving || !!pending} onApprove={async queries => { if(await command({type:'research-queries',queries})) setComposer('Continue the project using the public research queries I approved.'); }} />}
-            {project.proposals.map(proposal => <article key={proposal.id} className="hw-proposal"><strong>{proposal.actionId.replaceAll('-', ' ')}</strong><p>{proposal.scope === 'personal' ? 'Personal' : 'Household'} · {proposal.target === 'google' ? 'External change' : 'Hearth change'} · {proposal.status}</p><dl>{Object.entries(proposal.values).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><button disabled={(proposal.status==='accepted'||proposal.status==='stale'&&!proposal.receiptId) || saving || !!pending} onClick={() => reviewExternal(proposal)}>{proposal.receiptId?'Check review and receipt':'Review this change'}</button><small>Each action keeps its own confirmation and receipt.</small></article>)}
+            {project.proposals.filter(p => p.target === 'feedback' && (p.status === 'accepted' || p.receiptId || p.id === project.proposals.filter(v => v.target === 'feedback').at(-1)?.id)).map(proposal => <FeedbackReviewCard key={proposal.id} project={project} proposal={proposal} records={snapshot?.feedbackRecords ?? []} draftKey={`${scopeKey}:feedback:${project.id}:${proposal.id}`} connected={snapshot?.feedbackConnected === true} busy={saving || !!pending} onSave={(values, proposalRevision, projectRevision) => command({type:'edit-feedback', proposalId:proposal.id, proposalRevision, values}, {...project, revision:projectRevision})} onSubmit={(review,digest) => clientRef.current!.feedback(review,digest)} onRefresh={refresh} />)}
+            {project.proposals.filter(p => p.target !== 'feedback').map(proposal => <article key={proposal.id} className="hw-proposal"><strong>{proposal.actionId.replaceAll('-', ' ')}</strong><p>{proposal.scope === 'personal' ? 'Personal' : 'Household'} · {proposal.target === 'google' ? 'External change' : 'Hearth change'} · {proposal.status}</p><dl>{Object.entries(proposal.values).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><button disabled={(proposal.status==='accepted'||proposal.status==='stale'&&!proposal.receiptId) || saving || !!pending} onClick={() => reviewExternal(proposal)}>{proposal.receiptId?'Check review and receipt':'Review this change'}</button><small>Each action keeps its own confirmation and receipt.</small></article>)}
           </section>
           <section className="hw-work" aria-label="Working area"><div className="hw-artifact-tabs">{latestArtifacts(project).map(a => <button key={a.artifactId} aria-current={artifact?.artifactId === a.artifactId ? 'page' : undefined} onClick={() => setArtifactId(a.artifactId)}>{a.title}</button>)}</div>{artifact ? <ArtifactEditor key={`${project.id}:${artifact.artifactId}`} artifact={artifact} versions={project.artifacts.filter(a => a.artifactId === artifact.artifactId)} busy={saving || !!pending} onSave={(content, parentId) => command({ type: 'edit-artifact', artifactId: artifact.artifactId, parentId, content, id: crypto.randomUUID() })} draftKey={`${scopeKey}:artifact:${project.id}:${artifact.artifactId}`} onShare={() => {if(sharePending){setDisclosureNotice('Check the original shared copy before starting another.');return;}setDisclosureNotice('');setShareReview({id:crypto.randomUUID(),projectId:project.id,artifactVersionId:artifact.id,title:artifact.title,format:artifact.format,content:artifact.content});}} onExport={format => void exportFile(artifact, format)} onAsk={text => { setComposer(text); setSurface('conversation'); composerRef.current?.focus(); }} /> : <div className="hw-empty-artifact"><h3>Room to make something</h3><p>Your itinerary, lesson, comparison or document will take shape here. Ask Hercules to create a first version.</p><button onClick={() => {setComposer('Create a useful first draft for this project.');setSurface('conversation');}}>Make a first draft</button></div>}</section>
           <section className="hw-context" aria-label="Project context"><ProjectContext key={project.id} draftKey={`${scopeKey}:context:${project.id}`} project={project} busy={saving || !!pending} onSave={(cmd, revision) => command(cmd, { ...project, revision })} />

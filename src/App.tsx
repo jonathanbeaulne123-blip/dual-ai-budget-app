@@ -1,3 +1,4 @@
+import { feedbackContext, type FeedbackContext } from './workspace/feedback.ts';
 import { WorkspaceClient } from './workspace/client.ts';
 import { PlayBoundary } from "./play/PlayBoundary.tsx";
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
@@ -799,6 +800,7 @@ export function App() {
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
   const workspaceEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
   const [workspaceCompact, setWorkspaceCompact] = useState(false);
+  const [bugReportRequest, setBugReportRequest] = useState<{ id: string; context: FeedbackContext; text?: string; identity: string } | null>(null);
   const [workspaceSnapshot, setWorkspaceSnapshot] = useState<(WorkspaceSnapshot & { identity: string }) | null>(null);
   const [workspaceProjectId, setWorkspaceProjectId] = useState<string | null>(null);
   const [planContext, setPlanContext] = useState<import("./core/planSystem.ts").HerculesPlanContext | null>(null);
@@ -6121,9 +6123,21 @@ export function App() {
     if (load) void load().catch(() => undefined);
   }
 
+  function captureReportContext(): FeedbackContext {
+    const ua = navigator.userAgent;
+    return feedbackContext({ page: adding ? 'add' : tab, scope: view, environment, theme: appearance.scene.theme, scene: appearance.scene.id,
+      viewport: `${window.innerWidth} × ${window.innerHeight}`, browser: /Edg/.test(ua) ? 'Edge' : /Firefox/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'Other',
+      build: import.meta.env.VITE_GIT_SHA || 'local', online: navigator.onLine ? 'online' : 'offline', observedAt: new Date().toISOString() });
+  }
+  function openBugReport(text = '') {
+    setBugReportRequest({ id: crypto.randomUUID(), context: captureReportContext(), text, identity: ledgerRenderScopeKey });
+    setWorkspaceCompact(true);
+    // Use the existing presentation pause so an unfinished Add draft survives the report.
+    if (adding && !confirm) pauseAdd();
+  }
   function openLegacyHercules(proposal?: WorkspaceProposal) {
     if (!household || !session) return;
-    if (proposal?.target === "google") { setError("Open the external change review in the Hercules working area."); return; }
+    if (proposal && proposal.target !== "hearth") { setError("Open the external change review in the Hercules working area."); return; }
     const targetView = proposal?.scope ?? view;
     setWorkspaceCompact(false);
     if (targetView !== view) rememberSession({ memberId: actorId, view: targetView, householdId: household.householdId });
@@ -6727,6 +6741,8 @@ export function App() {
       ) : null}
 
       {workspaceEnabled && <HerculesWorkspaceRoom
+        getReportContext={captureReportContext} reporterName={household.members.find(m => m.id === actorId)?.name}
+        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)}
         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
         mode={tab === "hercules" ? "room" : workspaceCompact && !Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "compact" : "hidden"}
         getAccessToken={async () => {
@@ -7624,7 +7640,7 @@ export function App() {
           </section>
           </StatusFold>
           <StatusFold id="help" title="Help and transparency">
-            {workspaceEnabled && <button onClick={() => goTab("hercules")}>Hercules workspace</button>}
+            {workspaceEnabled && <><button onClick={() => goTab("hercules")}>Hercules workspace</button><button onClick={() => openBugReport()}>Report a bug with Hercules</button></>}
           <section className="card hercules-capability-map" aria-labelledby="hercules-map-heading">
             <header><h2 id="hercules-map-heading">What Hercules can see, infer, draft, and never decide</h2></header>
             <ul className="capability-map">
@@ -8444,6 +8460,7 @@ export function App() {
           await client.authorizeAction(id);
         } : undefined}
         onOpenWorkspace={workspaceEnabled ? () => setWorkspaceCompact(open => !open) : undefined}
+        onReportBug={workspaceEnabled ? openBugReport : undefined}
         planContext={tab === "plan" && planContext?.scope === view && planContext.contextIdentity === `${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}` ? planContext : null}
         planOpenRequest={planHerculesRequest}
         onPlanOpenConsumed={(id) => setPlanHerculesRequest(current => current?.id === id ? null : current)}
