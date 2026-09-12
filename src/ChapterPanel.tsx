@@ -26,6 +26,10 @@ import { sitdownBrief } from "./core/sitdownBrief.ts";
 
 type Run = (fn: (current: Household) => CommitResult) => Promise<unknown>;
 
+function commandAccepted(outcome: unknown): boolean {
+  return Boolean(outcome && typeof outcome === "object" && "ok" in outcome && outcome.ok === true && "household" in outcome);
+}
+
 const CUE_LABEL: Record<RitualCue, string> = {
   payday: "After payday",
   "pre-rent": "Before rent",
@@ -158,7 +162,7 @@ export function ChapterRoom({ household, memberId, today, onCommand, busy }: {
             ))}
           </ul>
           {ritualDraft ? (
-            <form className="ritual-form" onSubmit={(event) => { event.preventDefault(); void onCommand((current) => addRitual(current, { memberId, chapterId: chapter.id, ...ritualDraft })).then(() => setRitualDraft(null)); }}>
+            <form className="ritual-form" onSubmit={(event) => { event.preventDefault(); void onCommand((current) => addRitual(current, { memberId, chapterId: chapter.id, ...ritualDraft })).then((outcome) => { if (commandAccepted(outcome)) setRitualDraft(null); }); }}>
               <label>The Ritual<input value={ritualDraft.title} onChange={(e) => setRitualDraft({ ...ritualDraft, title: e.target.value })} placeholder="Pre-rent readiness check" /></label>
               <label>Its cue<select value={ritualDraft.cue} onChange={(e) => setRitualDraft({ ...ritualDraft, cue: e.target.value as RitualCue })}>{(Object.keys(CUE_LABEL) as RitualCue[]).map((cue) => <option key={cue} value={cue}>{CUE_LABEL[cue]}</option>)}</select></label>
               <label>What done looks like<input value={ritualDraft.doneDefinition} onChange={(e) => setRitualDraft({ ...ritualDraft, doneDefinition: e.target.value })} /></label>
@@ -184,7 +188,7 @@ export function ChapterRoom({ household, memberId, today, onCommand, busy }: {
               </li>
             ))}
           </ul>
-          <form className="move-form" onSubmit={(event) => { event.preventDefault(); if (!moveText.trim()) return; void onCommand((current) => offerMove(current, { memberId, chapterId: chapter.id, text: moveText })).then(() => setMoveText("")); }}>
+          <form className="move-form" onSubmit={(event) => { event.preventDefault(); if (!moveText.trim()) return; void onCommand((current) => offerMove(current, { memberId, chapterId: chapter.id, text: moveText })).then((outcome) => { if (commandAccepted(outcome)) setMoveText(""); }); }}>
             <label>Offer a small Move<input value={moveText} onChange={(e) => setMoveText(e.target.value)} placeholder="Write what done means for the hydro bill" /></label>
             <button type="submit" disabled={busy || !moveText.trim()}>Offer</button>
           </form>
@@ -283,7 +287,7 @@ export function RitualForm({ household, memberId, onCommand, busy }: { household
   if (!chapter) return <p className="muted">Open a Chapter first; a Ritual belongs to the Chapter it advances.</p>;
   const active = household.members.filter((row) => row.active);
   return (
-    <form className="ritual-form" onSubmit={(event) => { event.preventDefault(); void onCommand((current) => addRitual(current, { memberId, chapterId: chapter.id, ...draft })).then(() => { setSaved(draft.title); setDraft({ ...draft, title: "", doneDefinition: "", recoveryMove: "" }); }); }}>
+    <form className="ritual-form" onSubmit={(event) => { event.preventDefault(); void onCommand((current) => addRitual(current, { memberId, chapterId: chapter.id, ...draft })).then((outcome) => { if (!commandAccepted(outcome)) return; setSaved(draft.title); setDraft({ ...draft, title: "", doneDefinition: "", recoveryMove: "" }); }); }}>
       <label>The smallest repeatable action<input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Check the Fund the payday before rent" /></label>
       <label>Its real cue<select value={draft.cue} onChange={(e) => setDraft({ ...draft, cue: e.target.value as RitualCue })}>{(Object.keys(CUE_LABEL) as RitualCue[]).map((cue) => <option key={cue} value={cue}>{CUE_LABEL[cue]}</option>)}</select></label>
       <label>A detail about the cue<input value={draft.cueNote} onChange={(e) => setDraft({ ...draft, cueNote: e.target.value })} placeholder="The Friday before the first" /></label>

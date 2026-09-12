@@ -71,7 +71,10 @@ export function sitdownBrief(household: Household, options: { memberId: string; 
     const movesDone = moves.filter((row) => row.state === "done").length;
     const movesOpen = moves.filter((row) => row.state === "offered" || row.state === "accepted").length;
     chapterSummary = { title: chapter.title, ritualsHeld, movesDone, movesOpen };
-    if (ritualsHeld > 0) settled.push({ id: `chapter:${chapter.id}:held`, text: `"${rituals[0]?.title ?? chapter.title}" held ${ritualsHeld} ${ritualsHeld === 1 ? "time" : "times"} this Chapter.`, destination: "path" });
+    for (const ritual of rituals) {
+      const held = ritual.heldOn.length;
+      if (held > 0) settled.push({ id: `ritual:${ritual.id}:held`, text: `"${ritual.title}" held ${held} ${held === 1 ? "time" : "times"} this Chapter.`, destination: "path" });
+    }
     for (const move of moves) {
       if (move.needsAcknowledgment && move.state !== "done" && move.state !== "declined") {
         needsBoth.push({ id: `move:${move.id}`, text: `A Move needs both of you: ${move.text}`, destination: "path" });

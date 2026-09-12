@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 /**
  * Comfort controls (Vision v2 §4.7, §13): independent, per-device choices for
@@ -70,7 +70,7 @@ export function useComfort(environment: string): [Comfort, (patch: Partial<Comfo
     listeners.add(sync);
     return () => { listeners.delete(sync); };
   }, [environment]);
-  useEffect(() => { applyComfort(comfort); }, [comfort]);
+  useLayoutEffect(() => { applyComfort(comfort); }, [comfort]);
   const update = (patch: Partial<Comfort>) => {
     const next = parseComfort({ ...readComfort(environment), ...patch });
     writeComfort(environment, next);
