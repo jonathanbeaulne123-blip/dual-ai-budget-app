@@ -16,6 +16,8 @@ Complete wardrobe implementation is in verification: 36 original pieces plus leg
 
 # Hearth living roadmap
 
+**2026-09-12 — Plan V2 deployment guard (D-248) in progress:** live Development had a valid `main@d152a97` deploy replaced ten minutes later by a separately promoted artifact whose Plan flag compiled undefined, restoring the retired Categories/Sitdown UI. Missing build metadata now keeps current Plan V2/Horizon A active; only explicit `0`/`false` selects the legacy rollback. No ledger, schema, hosted row, Production setting, or money authority changes. [Worksession](worksessions/2026-09-12-plan-v2-deploy-guard.md).
+
 **2026-09-12 — The time machine (feedback row 8, D-247) rebased over #455:** `asOf` and `period` separated through the Fund projector and the cumulative statements, dated goal history, a month ribbon with three month states, comparison, forecast, the year and a closed-month memory layer, plus month paging for Books statements and the Fund register. Books is the door; Household tools and `+` go-verbs stay retired. Branch `cursor/time-machine-row-8-420a`; originally numbered D-246 on `claude/time-machine-row-8`. [Worksession](worksessions/2026-09-12-time-machine-row-8.md) · [Rebase](worksessions/2026-09-12-time-machine-row-8-rebase.md).
 
 **2026-09-12 — Feedback rows 5–7 (D-246) merged to main:** Calendar kinds, Whisper copy, and one-route chrome land on `origin/main@02a5539d` (#455). The planner room stays; Household tools and `+` go-verbs stay retired. Together opens the planner. [Worksession](worksessions/2026-09-12-feedback-rows-5-7.md) · [Rebase](worksessions/2026-09-12-feedback-rows-5-7-rebase.md).
