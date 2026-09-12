@@ -18,6 +18,7 @@ function stable(value: unknown): unknown {
 
 /** Bounded non-financial command facts that must survive command-event replay exactly. */
 export function commandMaterializationFacts(input: {
+  kittyNestDesigns?: Household["kittyNestDesigns"];
   accountOpeningCheckpoints?: Household["accountOpeningCheckpoints"];
   accountHistoryApprovals?: Household["accountHistoryApprovals"];
   recurrences?: Recurrence[];
@@ -37,6 +38,7 @@ export function commandMaterializationFacts(input: {
   wins?: Household["wins"];
 }): unknown {
   return stable({
+    ...(input.kittyNestDesigns?.length ? { kittyNestDesigns: byId(input.kittyNestDesigns) } : {}),
     ...(input.accountOpeningCheckpoints?.length ? {accountOpeningCheckpoints: byId(input.accountOpeningCheckpoints)} : {}),
     ...(input.accountHistoryApprovals?.length ? {accountHistoryApprovals: byId(input.accountHistoryApprovals)} : {}),
     ...(input.recurrences?.length ? { recurrences: byId(input.recurrences) } : {}),
@@ -346,6 +348,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     onboardingApprovals,
     onboardingAttestations,
     budgetPlans,
+    ...((next.kittyNestDesigns ?? []).some(row => posted.has(row.id)) ? { kittyNestDesigns: byId((next.kittyNestDesigns ?? []).filter(row => posted.has(row.id))) } : {}),
     ...(chapterFactsChanged ? {
       chapters: byId(next.chapters),
       rituals: byId(next.rituals),

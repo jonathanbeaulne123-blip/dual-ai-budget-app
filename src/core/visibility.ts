@@ -1,3 +1,4 @@
+import { nestDesignInView } from "./kittyNestDesigns.ts";
 import { COMPANION, JOINT, type Account, type Goal, type Household, type LedgerView, type Shift, type Transaction, type Visibility } from "./types.ts";
 import { taskInView } from "./tasks.ts";
 
@@ -61,6 +62,7 @@ export function visibleForDuplicateScan(
 function activitySafeForMember(household: Household, memberId: string) {
   const partnerPrivateTokens = [
     ...(household.nativeEvents??[]).filter(r=>r.visibility==='personal'&&r.createdBy!==memberId).flatMap(r=>[r.id,r.title,r.notes,r.location]),
+    ...(household.kittyNestDesigns??[]).filter(r=>r.visibility==='personal'&&r.createdBy!==memberId).flatMap(r=>[r.id,r.name]),
     ...(household.tasks??[]).filter(r=>r.visibility==='personal'&&r.createdBy!==memberId).flatMap(r=>[r.id,r.title,r.notes]),
     ...(household.taskLists??[]).filter(r=>r.visibility==='personal'&&r.createdBy!==memberId).flatMap(r=>[r.id,r.name]),
     ...household.transactions.filter((row) => row.visibility === "personal" && row.createdBy !== memberId).map((row) => row.id),
@@ -123,6 +125,7 @@ export function householdForAiDisclosure(
     shifts,
     goals,
     // Planner tasks and lists are not inputs to financial-model requests (D-245).
+    kittyNestDesigns: undefined,
     tasks: undefined,
     taskLists: undefined,
     kitchen: {
@@ -271,6 +274,7 @@ export function householdForView(household: Household, memberId: string, view: L
     )),
     transactions: (household.transactions ?? []).filter((tx) => isVisibleInView(tx, memberId, view)),
     nativeEvents:(household.nativeEvents??[]).filter(row=>isVisibleInView(row,memberId,view)),
+    kittyNestDesigns:(household.kittyNestDesigns??[]).filter(row=>nestDesignInView(row,memberId,view)),
     tasks:(household.tasks??[]).filter(row=>taskInView(row,memberId,view)),
     taskLists:(household.taskLists??[]).filter(row=>taskInView(row,memberId,view)),
     potentialExpenses: (household.potentialExpenses ?? []).filter((row) => isVisibleInView(row, memberId, view)),

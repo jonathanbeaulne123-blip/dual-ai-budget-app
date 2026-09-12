@@ -1,0 +1,109 @@
+{
+  "log": [
+    {
+      "flatPaint": {
+        "part": "head",
+        "tool": "brush",
+        "color": "#e3a534",
+        "size": 16,
+        "opacity": 0.9,
+        "mirror": true,
+        "pts": [
+          0.425,
+          0.65,
+          0.435,
+          0.646,
+          0.446,
+          0.642,
+          0.456,
+          0.637,
+          0.467,
+          0.633,
+          0.477,
+          0.629,
+          0.487,
+          0.625,
+          0.498,
+          0.621,
+          0.508,
+          0.617,
+          0.519,
+          0.613,
+          0.529,
+          0.608,
+          0.54,
+          0.604,
+          0.55,
+          0.6
+        ]
+      }
+    },
+    {
+      "threePaint": {
+        "part": "body",
+        "tool": "brush",
+        "color": "#e3a534",
+        "size": 16,
+        "opacity": 0.9,
+        "mirror": true,
+        "pts": [
+          0.43,
+          0.673,
+          0.448,
+          0.675,
+          0.465,
+          0.676,
+          0.481,
+          0.677,
+          0.496,
+          0.677,
+          0.511,
+          0.676,
+          0.525,
+          0.676,
+          0.54,
+          0.675,
+          0.555,
+          0.673,
+          0.569,
+          0.672,
+          0.584,
+          0.669,
+          0.599,
+          0.667,
+          0.615,
+          0.664
+        ]
+      }
+    },
+    {
+      "refired": true
+    },
+    {
+      "kingPaintBothViews": true,
+      "kingCompleted": true,
+      "stopSpin": true,
+      "emptyBackground": {
+        "empty": null,
+        "far": null,
+        "nearEdge": {
+          "part": "body",
+          "uv": {
+            "u": 0.2696360381625993,
+            "v": 0.20502482621648466
+          },
+          "outside": true
+        }
+      }
+    },
+    {
+      "exactGoal": "goal:GOAL-34327044d6",
+      "heading": "The harbour workshop\n\nA place for the things you’re making possible."
+    },
+    {
+      "brokenBothViews": true,
+      "focusRestored": true
+    }
+  ],
+  "errors": []
+}

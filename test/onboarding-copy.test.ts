@@ -18,7 +18,7 @@ const flavorSource = readFileSync(new URL("../src/core/onboarding/flavor.ts", im
 // the manual's own committed copy actually uses.
 const APPENDIX_E: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
   "invite.offer": { text: "When you're both ready to set up the household together, I can walk us through it.", announce: "none" },
-  "invite.explain": { text: "This puts both of us in setup mode until we finish or stop. Three sittings, about an hour all in — we can stop between any of them.", announce: "none" },
+  "invite.explain": { text: "This puts both of us in setup mode until we finish or stop. Our progress is saved at accepted checkpoints. The King workshop is optional, and we can pause whenever we need.", announce: "none" },
   "invite.propose": { text: "Start together", announce: "none" },
   "invite.confirm": { text: "Yes, let's start", announce: "none" },
   "invite.waiting": { text: "Waiting for {name} to say yes on their device.", announce: "polite" },
@@ -352,6 +352,29 @@ const SLICE_27_LIFECYCLE_COPY: Record<string, { text: string; announce: CopyEntr
   "lifecycle.new-member.intro": { text: "The household is already set up. I'll give you a short, private catch-up without interrupting anyone else.", announce: "none" },
 };
 
+const KING_CHAPTER_COPY: Record<string, { text: string; announce: CopyEntry["announce"] }> = {
+  "journey.guidance.1": { text: "Each person uses their own Google account to join this household.", announce: "none" },
+  "journey.guidance.2": { text: "Bring balances for your Shared accounts, or PDF, OFX/QFX or image statements.", announce: "none" },
+  "journey.guidance.3": { text: "You can stop. Accepted checkpoints save your progress; unfinished learning stays unfinished.", announce: "none" },
+  "journey.guidance.4": { text: "Shared accounts, accepted transactions, the household plan and boards are visible to both members. A Shared grocery expense is part of both people's household books.", announce: "none" },
+  "journey.guidance.5": { text: "Your Personal accounts, transactions and learning history stay in your Personal scope. A Personal purchase does not become Shared by appearing in a statement. Choose the scope before uploading; An upload draft stays on this device. Sharing a reviewed correction makes its proposed rows and balances visible to your partner before Final Confirm; only Final Confirm posts money.", announce: "none" },
+  "journey.guidance.6": { text: "Optional introductions can wait. Opening one does not mark its learning complete.", announce: "none" },
+  "journey.guidance.7": { text: "Notes hold thoughts; Photos share moments; To-do holds tasks; Goals hold milestones; Shift Ask helps with work planning. Board goals do not move money.", announce: "none" },
+  "journey.guidance.8": { text: "Hercules explains what you are seeing and can help prepare a draft. You review and confirm financial changes yourself.", announce: "none" },
+  "journey.guidance.9": { text: "What would you like help with?", announce: "none" },
+  "journey.guidance.10": { text: "Optional. Choose what interests you for this visit.", announce: "none" },
+  "onboarding.household.ch-13-king": { text: "A little clay, a crown, and four purposes. Let us build the King of your nest.", announce: "none" },
+  "onboarding.household.ch-13-king.flavor-1": { text: "The clay can wait. Your saved King will be here when you return.", announce: "none" },
+  "onboarding.household.ch-13-king.flavor-2": { text: "A crown is traditional. A gloriously lopsided crown is also welcome.", announce: "none" },
+  "onboarding.household.ch-13-king.flavor-3": { text: "Protect, Everyday, Build and Prepare each have a place in this nest.", announce: "none" },
+  "king.chapter-kicker": { text: "Your King \u00b7 a chapter of your own", announce: "none" },
+  "king.chapter-title": { text: "Make the heart of your nest", announce: "none" },
+  "king.chapter-body": { text: "Give your King a name, shape and paint the clay, then fire it. Its four children show how your Household Fund is divided.", announce: "none" },
+  "king.chapter-pause": { text: "You can save your work at any point and return from Home. Finishing this chapter is optional.", announce: "none" },
+  "king.open": { text: "Build your King", announce: "none" },
+  "king.skip": { text: "Save this chapter for later", announce: "none" },
+};
+
 describe("the onboarding copy deck", () => {
   it("carries every Appendix E key, byte-exact", () => {
     for (const [key, expected] of Object.entries(APPENDIX_E)) {
@@ -364,7 +387,7 @@ describe("the onboarding copy deck", () => {
 
   it("has no keys beyond Appendix E and the documented chapter repairs", () => {
     expect(Object.keys(ONBOARDING_COPY).sort())
-      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY, ...SLICE_25_READY_COPY, ...SLICE_26_PERSONAL_COPY, ...SLICE_27_LIFECYCLE_COPY }).sort());
+      .toEqual(Object.keys({ ...APPENDIX_E, ...SLICE_11_REPAIR_COPY, ...SLICE_12_CHARTER_COPY, ...SLICE_13_ACCOUNTS_COPY, ...SLICE_14_OPENING_COPY, ...SLICE_15_FUND_COPY, ...SLICE_16_RECURRENCES_COPY, ...SLICE_17_CADENCE_COPY, ...SLICE_19_CATEGORIES_COPY, ...SLICE_20_ESTIMATES_COPY, ...SLICE_24_PLAN_COPY, ...SLICE_25_READY_COPY, ...SLICE_26_PERSONAL_COPY, ...SLICE_27_LIFECYCLE_COPY, ...KING_CHAPTER_COPY }).sort());
     for (const [key, expected] of Object.entries({
       ...SLICE_11_REPAIR_COPY,
       ...SLICE_12_CHARTER_COPY,
@@ -379,6 +402,7 @@ describe("the onboarding copy deck", () => {
       ...SLICE_25_READY_COPY,
       ...SLICE_26_PERSONAL_COPY,
       ...SLICE_27_LIFECYCLE_COPY,
+      ...KING_CHAPTER_COPY,
     })) {
       expect(ONBOARDING_COPY[key]).toMatchObject(expected);
     }

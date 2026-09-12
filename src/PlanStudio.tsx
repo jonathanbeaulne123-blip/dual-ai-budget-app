@@ -1,4 +1,5 @@
 import { RememberedDetails } from "./theme/RememberedDetails.tsx";
+import { KittyNest } from "./kitty/KittyNest.tsx";
 import type { KittyPlanContext } from "./kitty/KittyBankRoom.tsx";
 import { useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from "react";
 import {
@@ -35,7 +36,7 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
 }) {
   const consumedSource=useRef<HerculesNumberSource|null>(null);
   const scope = view;
-  const [bankRequest,setBankRequest]=useState<{goalId?:string;lineId?:string}|null>(null);
+  const [bankRequest,setBankRequest]=useState<{goalId?:string;lineId?:string;bankId?:string}|null>(null);
   const openBanks=(goalId?:string,lineId?:string)=>setBankRequest({goalId,lineId});
   const [month, setMonth] = useState<MonthKey>(monthKeyFromDateKey(today));
   const [section, setSection] = useState<Section>("overview");
@@ -154,6 +155,7 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
     <div className="plan-quiet-navigation">{section !== "overview" && <button type="button" onClick={() => setSection("overview")}>Back to my Plan</button>}<RememberedDetails remember="plan-tools-0" className="plan-tool-menu"><summary>Plan tools</summary><nav className="plan-studio__rail" aria-label="Plan sections">{(["overview", ...PLAN_LENSES, "scenarios", "assumptions", "bridge", "learn", "reflection", "history", "sitdown", "review", "settings", ...(goalsContent ? ["goals"] : [])] as Section[]).map(item => <button key={item} aria-current={section === item ? "page" : undefined} className={section === item ? "active" : ""} onClick={event => {if(item === "goals") openBanks(); else setSection(item); const menu=event.currentTarget.closest("details"); if(menu){menu.open=false;menu.querySelector("summary")?.focus();}}}>{item === "goals" ? "Goals & reserves" : item === "settings" ? "Coaching & look ahead" : item === "review" ? "Review & agreement" : item[0]!.toUpperCase() + item.slice(1)}</button>)}</nav></RememberedDetails></div>
     <div className={`plan-studio__layout plan-studio__layout--quiet${section === "settings" ? " plan-studio__layout--settings" : ""}`}>
     <section className="plan-studio__canvas">
+      {section === "overview" && goalsContent && <KittyNest household={household} memberId={memberId} view={scope} today={today} compact onSelect={bank=>setBankRequest(bank.goal ? {goalId:bank.goal.id} : {bankId:bank.id})} />}
       {section === "overview" && <>
        {onOpenWorkspace && <section className="plan-workspace-invitation"><h3>What are you making room for?</h3><p>A date, a trip, studying, or a possibility. Explore it with Hercules and connect the right commitments to this month.</p><button onClick={onOpenWorkspace}>Start with an intention</button></section>}
        {workspaceCards?.(month)}

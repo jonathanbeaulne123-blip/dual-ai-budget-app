@@ -3,7 +3,7 @@ import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 const output = '.artifacts/feedback-home/actual-app'; mkdirSync(output,{recursive:true});
-const proof = await startHomeFeedbackProof(), browser = await chromium.launch({headless:true});
+const proof = await startHomeFeedbackProof(), browser = await chromium.launch({headless:true,...(process.env.HEARTH_CHROMIUM ? {executablePath:process.env.HEARTH_CHROMIUM} : {})});
 const records=[],errors=[]; let lastPage;
 try {
  for(const theme of (process.env.HEARTH_PROOF_THEMES || 'classic,taylor,newfoundland').split(',')) {
@@ -19,13 +19,14 @@ try {
    await home.locator('.chapter-setup').scrollIntoViewIfNeeded();
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
    expect(overflow).toBeLessThanOrEqual(1);
-   const buttons=home.locator('.chapter-setup button,.home-bank,.home-door');
+   const buttons=home.locator('.chapter-setup button,.nest-bank,.home-door');
    for(const box of await buttons.evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().toJSON()))) expect(box.height).toBeGreaterThanOrEqual(44);
    const result=await new AxeBuilder({page}).include('.household-home').withTags(['wcag2a','wcag2aa']).analyze();
    const serious=result.violations.filter(v=>['serious','critical'].includes(v.impact));
    await page.screenshot({path:`${output}/${theme}-${width}-home.png`,fullPage:true});
-   await home.locator('.home-growing').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/${theme}-${width}-shelf.png`});
-   const selected=home.locator('.home-bank').nth(1);await selected.click();
+   await home.locator('.kitty-nest').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/${theme}-${width}-shelf.png`});
+   const selected=home.getByRole('button',{name:/^Open Our kitchen garden in the 3D gallery\./});
+   await expect(selected).toHaveAccessibleName('Open Our kitchen garden in the 3D gallery. $0.00. Goal · $1200.00');await selected.click();
    await expect(page.locator('.kitty-bank-tabs [aria-pressed="true"]')).toContainText('Our kitchen garden');
    await expect(page.getByRole('button',{name:'← Back to Home',exact:true})).toBeVisible();
    await page.getByRole('button',{name:'Use money',exact:true}).click();

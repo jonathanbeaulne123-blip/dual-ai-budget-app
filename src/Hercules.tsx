@@ -1,4 +1,5 @@
 import { isBugReportIntent } from './workspace/feedback.ts';
+import { KittyBankRoom } from "./kitty/KittyBankRoom.tsx";
 import { useEasyRead } from "./useEasyRead.ts";
 import "./ux-readability.css";
 import type { HerculesPlanContext } from "./core/planSystem.ts";
@@ -323,6 +324,7 @@ export function HerculesPresence({
   onOpenReady?: () => void;
 }) {
   const [setupSelected,setSetupSelected]=useState(false);
+  const [kingOpen,setKingOpen]=useState(false);
   const [documentVisible,setDocumentVisible]=useState(()=>!document.hidden);
   useEffect(()=>{const update=()=>setDocumentVisible(!document.hidden);document.addEventListener('visibilitychange',update);return()=>document.removeEventListener('visibilitychange',update);},[]);
   const contextHousehold = useMemo(
@@ -1779,6 +1781,7 @@ export function HerculesPresence({
       <HerculesRigBridge mood={look.view.mood} pose={pose} begging={begging} bagPlay={bagPlay} chatRigUntilRef={chatRigUntilRef} />
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
     <div data-easy-read={easyRead} className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly && homeAutonomy ? "is-desktop-wander" : ""}`} aria-live="polite">
+      {kingOpen && onCompanionCommand && <KittyBankRoom household={actionHousehold ?? household} memberId={memberId} view="household" initialBankId="king" identity={`${household.environment}:${household.householdId}:${memberId}:household`} onCommand={onCompanionCommand} onClose={()=>setKingOpen(false)} returnTo="Hercules" />}
       {setup && activeMemberPresent && <HerculesSetup {...setup} key={`${setup.household.environment}:${setup.household.householdId}:${setup.memberId}:${setup.authUserId}`} open={open && setupSelected && !conversationHidden} onClose={closeChat} onHelp={()=>{setSetupSelected(false);openChatFromBeg(true);}} onPlay={()=>{closeChat();sitWithBag();}} />}
       {desktopFly && homeAutonomy && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />
@@ -1857,6 +1860,7 @@ export function HerculesPresence({
               onOpenEstimates={openOnboardingEstimates}
               onOpenPlan={openOnboardingPlan}
               onOpenReady={openOnboardingReady}
+              onOpenKing={onCompanionCommand ? () => { closeChat(); setKingOpen(true); } : undefined}
               personalOffer={activePersonalOffer}
               personalOfferSessionId={personalOfferSessionId}
               personalOfferRecorded={personalOfferRecorded}
@@ -2023,6 +2027,7 @@ export function HerculesPresence({
                 onOpenEstimates={openOnboardingEstimates}
                 onOpenPlan={openOnboardingPlan}
                 onOpenReady={openOnboardingReady}
+              onOpenKing={onCompanionCommand ? () => { closeChat(); setKingOpen(true); } : undefined}
                 personalOffer={activePersonalOffer}
                 personalOfferSessionId={personalOfferSessionId}
                 personalOfferRecorded={personalOfferRecorded}

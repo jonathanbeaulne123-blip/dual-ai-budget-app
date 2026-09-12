@@ -52,7 +52,7 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
   }),
   entry({
     key: "invite.explain", speaker: "hercules", surface: "chat", scope: "none", announce: "none",
-    text: "This puts both of us in setup mode until we finish or stop. Five stages, with progress saved at accepted checkpoints. We can pause whenever we need.", slots: [],
+    text: "This puts both of us in setup mode until we finish or stop. Our progress is saved at accepted checkpoints. The King workshop is optional, and we can pause whenever we need.", slots: [],
   }),
   entry({
     key: "invite.propose", speaker: "system", surface: "button", scope: "none", announce: "none",
@@ -733,6 +733,17 @@ export const ONBOARDING_COPY: Readonly<Record<string, CopyEntry>> = Object.freez
     key: "adopt.recovery", speaker: "hercules", surface: "status", scope: "none", announce: "polite",
     text: "The books may have accepted this plan, but this device couldn't save the receipt. Use recovery before trying again.", slots: [],
   }),
+
+  entry({ key: "onboarding.household.ch-13-king", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "A little clay, a crown, and four purposes. Let us build the King of your nest.", slots: [] }),
+  entry({ key: "onboarding.household.ch-13-king.flavor-1", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "The clay can wait. Your saved King will be here when you return.", slots: [] }),
+  entry({ key: "onboarding.household.ch-13-king.flavor-2", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "A crown is traditional. A gloriously lopsided crown is also welcome.", slots: [] }),
+  entry({ key: "onboarding.household.ch-13-king.flavor-3", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "Protect, Everyday, Build and Prepare each have a place in this nest.", slots: [] }),
+  entry({ key: "king.chapter-kicker", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "Your King \u00b7 a chapter of your own", slots: [] }),
+  entry({ key: "king.chapter-title", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "Make the heart of your nest", slots: [] }),
+  entry({ key: "king.chapter-body", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "Give your King a name, shape and paint the clay, then fire it. Its four children show how your Household Fund is divided.", slots: [] }),
+  entry({ key: "king.chapter-pause", speaker: "hercules", surface: "chat", scope: "none", announce: "none", text: "You can save your work at any point and return from Home. Finishing this chapter is optional.", slots: [] }),
+  entry({ key: "king.open", speaker: "hercules", surface: "button", scope: "none", announce: "none", text: "Build your King", slots: [] }),
+  entry({ key: "king.skip", speaker: "hercules", surface: "button", scope: "none", announce: "none", text: "Save this chapter for later", slots: [] }),
 
   // E.6 The finale
   entry({

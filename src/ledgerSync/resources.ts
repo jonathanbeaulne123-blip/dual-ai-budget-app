@@ -44,6 +44,7 @@ export function observedResources(
 ): Resource[] {
   if (kind === "addQuickSampleData" || kind === "addQuickSampleScenario") return [{ key: "quick-sample-catalog", value: { accounts: household.accounts, categories: household.categories, closedMonths: household.kitchen.books.closedMonths } }];
   if(kind==='saveNativeEvent'){const input=args[0] as {id:string};return [{key:`native-event/${input.id}`,value:household.nativeEvents?.find(r=>r.id===input.id)??null}];}
+  if(kind==='saveKittyNestDesign'){const input=args[0] as {view:string;memberId:string;bankKey:string};return [{key:`nest/${input.view}/${input.memberId}/${input.bankKey}`,value:household.kittyNestDesigns?.find(r=>r.bankKey===input.bankKey&&r.visibility===input.view&&(input.view==='household'||r.createdBy===input.memberId))??null}];}
   if(['saveTask','completeTask','reopenTask','acknowledgeTask'].includes(kind)){const input=args[0] as {id:string};return [{key:`task/${input.id}`,value:household.tasks?.find(r=>r.id===input.id)??null}];}
   if(kind==='saveTaskList'){const input=args[0] as {id:string};return [{key:`task-list/${input.id}`,value:household.taskLists?.find(r=>r.id===input.id)??null}];}
   if(kind==='adoptBoardTasks')return [{key:'boards/tasks',value:{rows:household.kitchen.boards?.tasks??[],adopted:(household.tasks??[]).filter(r=>r.id.startsWith('TASK-board-')).map(r=>r.id).sort()}}];

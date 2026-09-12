@@ -658,7 +658,7 @@ export const recordObservedChapterCompletion = captureCommand("recordObservedCha
     (attested.onboardingAttestations ?? []).filter(row => !priorIds.has(row.id)).map(row => row.id), [], "recordObservedChapterCompletion");
 });
 
-/** Skip only a personal module whose registry policy explicitly permits it. */
+/** Skip a Personal module or the optional King chapter; required household gates cannot be skipped. */
 export const skipPersonalStep = captureCommand("skipPersonalStep", function skipPersonalStep(household: Household, input: {
   memberId: string;
   chapterId: string;
@@ -666,10 +666,10 @@ export const skipPersonalStep = captureCommand("skipPersonalStep", function skip
   at?: string;
 }): CommitResult {
   const chapter = chapterById(input.chapterId);
-  if (!chapter || chapter.track !== "personal" || chapter.skip !== "member-skippable") {
+  if (!chapter || (chapter.track !== "personal" && chapter.id !== "ch-13-king") || chapter.skip !== "member-skippable") {
     throw new ValidationError("That setup chapter cannot be skipped.");
   }
-  return updateMemberProgress(household, input, "Personal onboarding module skipped", (progress, at) => ({
+  return updateMemberProgress(household, input, "Optional setup chapter skipped", (progress, at) => ({
     ...progress,
     rows: progress.rows.map((row) => row.chapterId === chapter.id
       ? { ...row, skippedAt: row.skippedAt ?? at, lastSafeResumePoint: chapter.id }
@@ -6743,6 +6743,7 @@ export const postVisit = captureCommand("postVisit", function postVisit(househol
     place,
     splits,
     source: "visit",
+    ...(appointment ? { sourceId: appointment.id } : {}),
     createdAt,
     createdBy: actor.createdBy,
     visibility: actor.visibility,

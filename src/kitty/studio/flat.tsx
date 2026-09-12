@@ -22,7 +22,7 @@ import { FLAT_TONES as T, studioHex } from "./palette.ts";
 
 const INK = "currentColor";
 /** Which slice of each part's wrap faces the viewer, and how the wrap's v maps up the silhouette. */
-const FRONT_WINDOW: Record<KittyPart, { u0: number; u1: number }> = {
+export const FRONT_WINDOW: Record<KittyPart, { u0: number; u1: number }> = {
   body: { u0: 0.25, u1: 0.75 },
   head: { u0: 0.25, u1: 0.75 },
   earL: { u0: 0.2, u1: 0.8 },
@@ -128,7 +128,8 @@ function kittyLayout(sculpt: KittySculptV1, step: number) {
     head: { cx: 150, cy: Y(headCy), rx: headRx * scale, ry: headRy * scale, topY: Y(headCy + headRy) },
   };
 }
-export function KittyFlat({ piece, glaze = "cream", step = 0, open = false, fired: firedOverride, className, style, title }: {
+export function KittyFlat({ preview, piece, glaze = "cream", step = 0, open = false, fired: firedOverride, className, style, title }: {
+  preview?: { hit: { part: KittyPart; uv: { u: number; v: number } }; size: number } | null;
   piece: KittyPieceV1 | null;
   glaze?: string;
   step?: number;
@@ -156,16 +157,16 @@ export function KittyFlat({ piece, glaze = "cream", step = 0, open = false, fire
   const earR = layout.scale * 0.2 * f("ears");
   const earY = layout.head.topY + earR * 0.35;
   /** Clip a part's painted wrap into the shape just drawn. */
-  const wrap = (part: KittyPart, shape: string, box: { x: number; y: number; w: number; h: number }, key: string) => {
-    const sheet = sheets[part];
-    if (!sheet) return null;
-    const clip = `${uid}-${key}`;
-    return (
-      <g key={`${key}-paint`}>
-        <clipPath id={clip}><path d={shape} /></clipPath>
-        <image href={sheet} x={box.x} y={box.y} width={box.w} height={box.h} preserveAspectRatio="none" clipPath={`url(#${clip})`} />
-      </g>
-    );
+  const wrap = (part: KittyPart, shape: string, box: { x: number; y: number; w: number; h: number }, key: string, strokeWidth?: number) => {
+    const sheet = sheets[part], clip = `${uid}-${key}`, window_ = FRONT_WINDOW[part];
+    const previewing = preview?.hit.part === part;
+    const clipProps = strokeWidth ? { mask: `url(#${clip})` } : { clipPath: `url(#${clip})` };
+    return <g key={`${key}-paint`}>
+      {strokeWidth ? <mask id={clip} maskUnits="userSpaceOnUse" x={box.x} y={box.y} width={box.w} height={box.h}><path d={shape} fill="none" stroke="white" strokeWidth={strokeWidth} strokeLinecap="round"/></mask> : <clipPath id={clip}><path d={shape}/></clipPath>}
+      <path d={shape} data-kitty-part={part} data-paint-box={`${box.x},${box.y},${box.w},${box.h}`} fill={strokeWidth ? "none" : "transparent"} stroke="transparent" strokeWidth={strokeWidth ?? 0} strokeLinecap="round" pointerEvents="none"/>
+      {sheet && <image href={sheet} x={box.x} y={box.y} width={box.w} height={box.h} preserveAspectRatio="none" {...clipProps}/>}
+      {previewing && <g {...clipProps}>{[-1,0,1].map(offset=><ellipse key={offset} cx={box.x + (preview.hit.uv.u + offset - window_.u0) / (window_.u1 - window_.u0) * box.w} cy={box.y + (1-preview.hit.uv.v)*box.h} rx={preview.size / 1024 / (window_.u1-window_.u0)*box.w} ry={preview.size / 1024*box.h} fill="none" stroke="white" strokeWidth="1.5" style={{filter:`drop-shadow(0 0 1px ${T.shadow})`}}/>)}</g>}
+    </g>;
   };
   const ear = (side: -1 | 1, fill: string, part: KittyPart) => {
     if (sculpt.ears === "none") return null;
@@ -259,7 +260,8 @@ export function KittyFlat({ piece, glaze = "cream", step = 0, open = false, fire
       : sculpt.tail === "up"
         ? `M${x - 10} ${base - 8} C${x + 28} ${base - 40} ${x + 34} ${base - 80} ${x + 20} ${base - 122}`
         : `M${150 - body.widest * 0.8} ${BASE_Y - 4} C${150 - 20} ${BASE_Y + 14} ${150 + 40} ${BASE_Y + 14} ${x + 10} ${BASE_Y - 4}`;
-    return <path d={d} fill="none" stroke={c.tail} strokeWidth={17 * sc} strokeLinecap="round" />;
+    const tailBox = { x: Math.min(150-body.widest-12, x-25), y: base-140-10*sc, w: body.widest*2+95, h: 182+20*sc };
+    return <g><path d={d} fill="none" stroke={c.tail} strokeWidth={17 * sc} strokeLinecap="round" />{wrap("tail", d, tailBox, "tail",17*sc)}</g>;
   };
   const headShape = sculpt.head === "heart"
     ? `M150 ${HY + headH} C${150 - headW * 1.3} ${HY + headH * 0.3} ${150 - headW * 0.9} ${HY - headH * 1.05} 150 ${HY - headH * 0.45} C${150 + headW * 0.9} ${HY - headH * 1.05} ${150 + headW * 1.3} ${HY + headH * 0.3} 150 ${HY + headH} Z`
@@ -343,4 +345,35 @@ export function KittyFlat({ piece, glaze = "cream", step = 0, open = false, fire
       {fired && <ellipse cx={150 - headW * 0.55} cy={HY - headH * 0.3} rx={5} ry={11} fill={c.tone(T.white)} opacity={0.35} transform={`rotate(-20 ${150 - headW * 0.55} ${HY - headH * 0.3})`} />}
     </svg>
   );
+}
+
+/** Hit the same painted silhouettes used for the flat wrap, from front to back. */
+export function flatKittyHit(root: Element, clientX: number, clientY: number, outside = false): { part: KittyPart; uv: { u:number; v:number }; outside?:boolean } | null {
+  const paths = [...root.querySelectorAll<SVGPathElement>("path[data-kitty-part]")].reverse();
+  let nearest: { hit: { part: KittyPart; uv: {u:number;v:number}; outside:true }; distance:number } | null = null;
+  for (const path of paths) {
+    const matrix = path.getScreenCTM(); if (!matrix) continue;
+    const point = new DOMPoint(clientX,clientY).matrixTransform(matrix.inverse());
+    const contains = (p: DOMPoint) => (path.getAttribute("fill") !== "none" && path.isPointInFill(p)) || path.isPointInStroke(p);
+    const [x,y,w,h] = path.dataset.paintBox!.split(",").map(Number) as [number,number,number,number];
+    const part = path.dataset.kittyPart as KittyPart, window_ = FRONT_WINDOW[part];
+    const uv = { u: Math.max(0,Math.min(1,window_.u0+(point.x-x)/w*(window_.u1-window_.u0))), v: Math.max(0,Math.min(1,1-(point.y-y)/h)) };
+    if (contains(point)) return {part,uv};
+    const boxDistance = Math.hypot(Math.max(x-point.x,0,point.x-x-w),Math.max(y-point.y,0,point.y-y-h));
+    if (!outside || boxDistance > 18) continue;
+    // A curved tail's box contains empty air. Search the painted silhouette,
+    // preserving a small edge allowance without painting an invisible part.
+    let edge: DOMPoint | null = null, distance = 0;
+    for (let radius = 2; radius <= Math.min(18, nearest?.distance ?? 18) && !edge; radius += 2) {
+      for (let angle = 0; angle < 24; angle += 1) {
+        const probe = new DOMPoint(point.x + radius * Math.cos(angle * Math.PI / 12), point.y + radius * Math.sin(angle * Math.PI / 12));
+        if (contains(probe)) { edge = probe; distance = radius; break; }
+      }
+    }
+    if (edge && (!nearest || distance < nearest.distance)) nearest = {hit:{part,uv:{
+      u: Math.max(0,Math.min(1,window_.u0+(edge.x-x)/w*(window_.u1-window_.u0))),
+      v: Math.max(0,Math.min(1,1-(edge.y-y)/h)),
+    },outside:true},distance};
+  }
+  return nearest?.hit ?? null;
 }

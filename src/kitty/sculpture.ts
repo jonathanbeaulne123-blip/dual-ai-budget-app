@@ -1,3 +1,5 @@
+import { createNestSculptedProp } from "./nestSculpture.ts";
+import type { NestOrnament } from "./nestAppearance.ts";
 /**
  * Parametric ceramic cat for the Kitty Bank Studio (2026-09-11).
  *
@@ -18,6 +20,8 @@ export type KittyExpression = KittyEyes;
 /** How far past the clay a brush still lands. The shell carries the same uv as the surface it hugs. */
 export const PAINT_SHELL = 0.26;
 export type KittySculptureOptions = {
+  ornament?: NestOrnament;
+  broken?: boolean;
   brass: string;
   wood: string;
   fired?: boolean;
@@ -93,6 +97,15 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
   const present = (part: KittyPart, rect?: { x: number; y: number; w: number; h: number }) => {
     presentPart(parts[part].layer, parts[part].display, fired, rect);
     parts[part].texture.needsUpdate = true;
+  };
+  let brushPreview: { hit: { part: KittyPart; uv: { u:number; v:number } }; size: number } | null = null;
+  const drawBrushPreview = () => {
+    if (!brushPreview) return;
+    const {hit,size} = brushPreview, canvas = parts[hit.part].display, ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.save(); ctx.strokeStyle="#ffffff"; ctx.lineWidth=1.5; ctx.shadowColor="#222222"; ctx.shadowBlur=2;
+    for (const offset of [-1,0,1]) { ctx.beginPath(); ctx.arc((hit.uv.u+offset)*canvas.width,(1-hit.uv.v)*canvas.height,size*canvas.width/1024,0,Math.PI*2);ctx.stroke(); }
+    ctx.restore();parts[hit.part].texture.needsUpdate=true;
   };
   const replayAll = () => {
     for (const part of KITTY_PARTS) {
@@ -184,6 +197,22 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     bodyTop = points[points.length - 1]!.y;
     const body = mesh(new THREE.LatheGeometry(points, 64, Math.PI), parts.body.mat, sculptGroup, "body");
     body.scale.z = 0.86;
+    if (options.broken) {
+      body.visible = false;
+      const source = body.geometry.toNonIndexed();
+      const positions = source.getAttribute("position"), normals = source.getAttribute("normal"), uv = source.getAttribute("uv");
+      const shards = Array.from({length:3},()=>({p:[] as number[],n:[] as number[],uv:[] as number[]}));
+      for (let i=0;i<positions.count;i+=3) {
+        const x=(positions.getX(i)+positions.getX(i+1)+positions.getX(i+2))/3;
+        const y=(positions.getY(i)+positions.getY(i+1)+positions.getY(i+2))/3;
+        const shard=shards[x < -.12 ? 0 : y > bodyTop*.5 ? 1 : 2]!;
+        for(let v=i;v<i+3;v++){shard.p.push(positions.getX(v),positions.getY(v),positions.getZ(v));shard.n.push(normals.getX(v),normals.getY(v),normals.getZ(v));shard.uv.push(uv.getX(v),uv.getY(v));}
+      }
+      source.dispose();
+      shards.forEach((row,index)=>{const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(row.p,3));geo.setAttribute("normal",new THREE.Float32BufferAttribute(row.n,3));geo.setAttribute("uv",new THREE.Float32BufferAttribute(row.uv,2));
+        const shard=mesh(geo,parts.body.mat,sculptGroup);shard.scale.copy(body.scale);shard.position.x=(index-1)*.10;shard.position.y=index===1?.08:0;shard.rotation.z=(index-1)*.035;});
+    }
+
     (body.userData.shell as THREE.Mesh | undefined)?.scale.copy(body.scale);
     const dial = (feature: Parameters<typeof kittyFeature>[1]) => kittyFeature(sculpt, feature);
     const headDial = dial("head"), earDial = dial("ears"), eyeDial = dial("eyes"), noseDial = dial("nose"), mouthDial = dial("mouth"), whiskerDial = dial("whiskers"), tailDial = dial("tail");
@@ -277,12 +306,13 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     // at thumbnail size. Every expression is built once and only one is shown.
     eyeMeshes = Object.fromEntries(EYE_KINDS.map((kind) => [kind, new THREE.Group()])) as Record<KittyExpression, THREE.Group>;
     const eyeY = 0.12 * headDial, spread = 0.21 * headDial;
-    const ez = onFace(spread, eyeY, 0.035);
+    // Shallow relief must sit on the surface: a fixed recess hides small eyes.
+    const ez = onFace(spread, eyeY, -0.006);
     const ball = (group: THREE.Group, x: number, side: number, r: number) => {
-      sphere(r * 1.2, [1, 1.04, 0.36], [x, eyeY, ez - 0.014], white, group);
-      sphere(r, [1, 1.12, 0.5], [x, eyeY, ez], ink, group);
-      sphere(r * 0.32, [1, 1, 0.5], [x + side * r * 0.3, eyeY + r * 0.46, ez + 0.03], white, group);
-      sphere(r * 0.15, [1, 1, 0.5], [x - side * r * 0.36, eyeY - r * 0.42, ez + 0.026], white, group);
+      sphere(r * 1.3, [1, 1.08, 0.36], [x, eyeY, ez], white, group);
+      sphere(r, [1, 1.12, 0.5], [x, eyeY, ez + r * 0.3], ink, group);
+      sphere(r * 0.32, [1, 1, 0.5], [x + side * r * 0.3, eyeY + r * 0.46, ez + r * 0.75], white, group);
+      sphere(r * 0.15, [1, 1, 0.5], [x - side * r * 0.36, eyeY - r * 0.42, ez + r * 0.72], white, group);
     };
     const arc = (group: THREE.Group, x: number, up: boolean, width: number) =>
       tube([[x - width, eyeY + (up ? -0.01 : 0), ez], [x, eyeY + (up ? 0.05 : -0.025) * eyeDial, ez + 0.02], [x + width, eyeY + (up ? -0.01 : 0), ez]], 0.013 * Math.min(1.5, eyeDial), ink, group);
@@ -377,6 +407,15 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
   type Anim = { kind: "grow"; from: number; start: number } | { kind: "shrink"; from: number; start: number } | null;
   let anim: Anim = null;
   let happyUntil = 0, sparkleUntil = 0, slotPulseUntil = 0, highlightUntil = 0;
+  let nestProp: ReturnType<typeof createNestSculptedProp> | null = null;
+  const updateNestProp = () => {
+    nestProp?.dispose();
+    nestProp = options.ornament ? createNestSculptedProp(options.ornament, fired) : null;
+    if (nestProp) {
+      nestProp.group.position.set(0, options.ornament?.tier === "king" ? headTop + .03 : bodyTop * .59, options.ornament?.tier === "king" ? .02 : .81);
+      cat.add(nestProp.group);
+    }
+  };
   let breathing = false, spinSpeed = 0, lastTick = 0;
   const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
   const kick = () => options.onAnimate?.();
@@ -387,6 +426,7 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
   };
 
   build();
+  updateNestProp();
   replayAll();
   applyFinish();
 
@@ -400,6 +440,7 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
       sculpt = next;
       expression = anim?.kind === "grow" && happyUntil > now() ? "happy" : sculpt.eyes;
       build();
+      updateNestProp();
       showEyes(expression);
       doorMat.color.set(fired ? partDip(paint, "body") : bisqueOf(partDip(paint, "body")));
     },
@@ -410,6 +451,11 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     replayPaint(next: KittyPaintV1) {
       paint = next;
       replayAll();
+    },
+    previewBrush(hit: { part: KittyPart; uv: {u:number;v:number} } | null, size = 0) {
+      if (brushPreview) present(brushPreview.hit.part);
+      brushPreview = hit && size ? {hit,size} : null;
+      drawBrushPreview();
     },
     /** Incremental: draw points from `fromIndex` of an in-progress stroke. */
     paintStroke(stroke: KittyStrokeV1, fromIndex = 0) {
@@ -425,10 +471,12 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
         }
         parts[part].texture.needsUpdate = true;
       }
+      drawBrushPreview();
     },
     setFired(next: boolean) {
       if (fired === next) return;
       fired = next;
+      updateNestProp();
       applyFinish();
       for (const part of KITTY_PARTS) present(part);
       doorMat.color.set(fired ? partDip(paint, "body") : bisqueOf(partDip(paint, "body")));
@@ -556,6 +604,7 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
       return read(raycaster.intersectObjects(shells, false)[0], true);
     },
     dispose() {
+      nestProp?.dispose();
       clearSculpt();
       group.clear();
       geometries.forEach((g) => g.dispose());
