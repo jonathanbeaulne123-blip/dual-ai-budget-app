@@ -1,6 +1,6 @@
 # Hearth worksession — Vision v2 Horizon A (A1–A12)
 
-- **Status:** OPEN — Codex-integrated local branch, replay trust gap closed, quick gate (High) passed, browser evidence captured
+- **Status:** DEVELOPMENT DEPLOYED — PR #449 merged; replay trust gap closed; post-merge checks and live smoke passed
 - **Opened:** 2026-09-12 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Claude (Horizon A implementation); Codex (integration and replay trust review)
@@ -9,11 +9,11 @@
 - **Integration branch:** `codex/vision-v2-horizon-a-integration`
 - **Baseline SHA:** `ecf936ac` (main, #447)
 - **Integration base:** `317a041` (current `origin/main`, #448); both mailbox commits rebased without conflict
-- **Head SHA:** see git log
-- **PR or issue:** none — this session's git proxy has no push credential for the repository
+- **Released SHA:** `a0dffc6` (squash merge)
+- **PR:** #449
 - **Risk:** High (new Shared-envelope collections, Household Home recomposition, Sitdown consolidation, navigation change). No command posts money; no PGlite or hosted schema change; no Auth/RLS change.
 - **Decision owner:** Jonathan — "complete A1–A12" (2026-09-12), after accepting Decisions 1, 2, 3 with a centred + on the Personal bar
-- **Environment impact:** none until deployed (Development only)
+- **Environment impact:** Development deployed; Production unchanged
 
 ## Household outcome
 
@@ -84,4 +84,4 @@ Expense Bridge, Bring into My Money, Seen/In discussion states, Bridge privacy d
 
 ## Handoff
 
-Local only on `codex/vision-v2-horizon-a-integration`, rebased over `origin/main@317a041` — not pushed, not a PR, not merged, not deployed, not live verified. Codex's clean-head High quick gate selected 41 test files / 519 tests and passed within the 300 s budget without a breach; `uiProofRequired` remains satisfied only by the existing synthetic browser matrix. Next owner: Jonathan (push/PR authorization; product review of Home on real Development data).
+PR #449 merged as `a0dffc6` and deployed to Development. Post-merge CI run `34678448836`, Hercules confirmed-actions run `34678448781`, and Cloudflare run `34678448802` passed. A fresh browser-UA smoke returned HTTP 200 for the Worker and `assets/index-bEalJOT6.js`; the served bundle contains Status Centre, Our Home, the private-chat label, and Close the month. Codex's exact clean-head High quick gate selected 41 test files / 519 tests and passed within the 300 s budget without a breach. Physical devices, VoiceOver, authenticated two-browser Chapter continuity, and product review on real Development data remain open; Production and schema were unchanged.
