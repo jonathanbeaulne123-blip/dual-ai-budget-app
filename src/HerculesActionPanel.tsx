@@ -330,7 +330,8 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         return /\?/.test(text)
             || /^(?:why|explain)\b/i.test(text)
             || /^(?:what|how|where|when|who|which)\s+(?:do|does|did|is|are|am|was|were|can|could|would|will|have|has|should)\b/i.test(text)
-            || /^(?:can|could|would|will|do|does|did|is|are|am|was|were|have|has|should)\s+(?:i|you|we|he|she|they|there)\b/i.test(text);
+            || /^(?:can|could|would|will|do|does|did|is|are|am|was|were|have|has|should)\s+(?:i|you|we|he|she|they|there)\b/i.test(text)
+            || /^(?:can|could|would|will|does|did|is|are|was|were|has|should)\s+(?:my|our|your|this|that|these|those|it)\b/i.test(text);
     }
     function guideRespond(message: string, explicitAnswer=false) {
         const d=draftRef.current;if(!d||d.actionId!==PLAN_GUIDE_ID)return false;

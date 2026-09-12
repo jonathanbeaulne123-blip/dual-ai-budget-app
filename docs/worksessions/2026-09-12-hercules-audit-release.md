@@ -22,7 +22,7 @@ The clean integrated gate at `cfb497ff6b755ff232b50a7e231c71b8e23ae383` failed i
 
 The corrected `0907f546efa9c55ee077f076b1b0af16aeb0b2dc` passed the focused High gate: 499 tests across 45 files, clean tree, 89.839 seconds, no budget breach. All 24 actual App handoff cases passed across three themes, both scopes and 320/390/720/1440 widths. Independent review also passed the timer correction.
 
-PR review identified an additional P2: the side-question heuristic rejected valid text answers such as “Do laundry” and “Will Smith tickets.” It now requires question punctuation or a clear question phrase. All 20 action UI tests pass, including four bare-title cases and side questions without punctuation. This review correction also requires a fresh exact-head gate and CI before merge.
+PR review identified an additional P2: the side-question heuristic rejected valid text answers such as “Do laundry” and “Will Smith tickets.” It now requires question punctuation or a clear question phrase. Independent follow-up retained possessive/demonstrative questions such as “Are my shifts posted this week” while preserving imperative titles such as “Do my taxes.” All 22 action UI tests pass, including six bare-title cases and side questions without punctuation. Intermediate `0947342` also passed the selected 503-test gate in 77.553 seconds; the final matcher correction requires a fresh exact-head gate and CI before merge.
 
 ## Compatibility and limits
 

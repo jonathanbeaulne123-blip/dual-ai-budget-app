@@ -92,7 +92,7 @@ it('keeps paused planning out of all implicit answer parsing and restores the pa
  await click('Continue planning');expect(host.textContent).not.toContain('planning conversation is paused');
  expect(s.household.companionProfile!.workflows![0]!.value!.values).toEqual(before);expect(s.writes).toBe(0);
 });
-it.each(['Do laundry','Do the laundry','Will Smith tickets','How to study'])('accepts the bare task title "%s" without treating it as a side question',async title=>{
+it.each(['Do laundry','Do the laundry','Do my taxes','Do it tomorrow','Will Smith tickets','How to study'])('accepts the bare task title "%s" without treating it as a side question',async title=>{
  const s=setup();await act(async()=>s.render());
  await act(async()=>s.ref.current!.propose({actionId:'task',values:{}}));
  await act(async()=>{expect(s.ref.current!.send(title)).toBe(true);});
@@ -103,7 +103,7 @@ it('routes real side questions out of an active guide and keeps its answers inta
  const s=setup();await act(async()=>s.render());
  await act(async()=>s.ref.current!.propose({actionId:'plan-guided-draft',values:{monthKey:'2026-09',purpose:'Keep Friday evenings free'}}));
  const before={...s.household.companionProfile!.workflows![0]!.value!.values};
- for(const message of ['Are my shifts posted this week?','Can you walk me through setup here?','How does a Kitty Bank work?','Can you explain this step','Do I need a Kitty Bank','How does a Kitty Bank work']){
+ for(const message of ['Are my shifts posted this week?','Can you walk me through setup here?','How does a Kitty Bank work?','Can you explain this step','Do I need a Kitty Bank','How does a Kitty Bank work','Are my shifts posted this week','Is this affordable','Will our savings cover this']){
   await act(async()=>{expect(s.ref.current!.send(message)).toBe(false);});
  }
  expect(s.household.companionProfile!.workflows![0]!.value!.values).toEqual(before);
