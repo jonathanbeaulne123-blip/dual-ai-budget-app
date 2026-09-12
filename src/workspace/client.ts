@@ -26,6 +26,7 @@ export class WorkspaceClient {
   async exportFile(projectId: string, versionId: string, format: string): Promise<{ base64: string; filename: string }> {
     return this.exchange({ operation: 'export', projectId, versionId, format });
   }
+  async feedback(review: import('./feedback.ts').FeedbackReview, confirmDigest: string): Promise<import('./feedback.ts').FeedbackReceipt> { return this.exchange({ operation: 'feedback-submit', review, confirmDigest }); }
   async actionReview(projectId:string,proposalId:string):Promise<import('./contracts.ts').WorkspaceProposal>{return this.exchange({operation:'action-review',projectId,proposalId});}
   async authorizeAction(confirmationId:string){return this.exchange({operation:'action-confirm',confirmationId});}
   async share(review: ArtifactDisclosureReview, confirmDigest: string): Promise<{ id: string }> { return this.exchange({ operation: 'share', review, confirmDigest }); }

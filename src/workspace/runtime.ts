@@ -15,7 +15,7 @@ export function projectContext(project: WorkspaceProject): string {
   const manifest = project.messages.map(m => ({ id: m.id, role: m.role, length: m.text.length }));
   const messages=bounded([...project.messages].reverse(),65000).reverse();
   const omitted=manifest.filter(m=>!messages.some(x=>x.id===m.id));
-  return JSON.stringify({ goal:project.goal.length<=4000?project.goal:{retrieve:'context',length:project.goal.length}, completionCriteria:project.completionCriteria,
+  return JSON.stringify({ appContext: project.appContext, goal:project.goal.length<=4000?project.goal:{retrieve:'context',length:project.goal.length}, completionCriteria:project.completionCriteria,
     constraints:bounded(project.constraints,8000),decisions:bounded(project.decisions,8000),questions:bounded(project.questions,4000),
     tasks:bounded(project.tasks,6000),preferences:project.preferences,links:bounded(project.links,5000),
     proposals:bounded([...project.proposals].reverse(),8000), approvedPublicQueries:project.publicResearchQueries,

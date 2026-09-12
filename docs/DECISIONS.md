@@ -1,3 +1,9 @@
+## 2026-09-12 — Hercules reports bugs to Hearth Feedback
+
+Jonathan asked for in-app bug reporting through Hercules questions and app context, connected to the existing FeedBack Sheet. Reports are private workspace proposals until the person submits the exact editable report. The destination and field mapping are constrained server-side; a dedicated service account avoids asking each reporter for Google Sheets access. App context is allowlisted and removable; automatic collection excludes books, full URLs, raw errors, screenshots and conversation history. New rows have a distinct H-UUID identity, Not started status and Done=false; priority, fixes actually implemented and resolution scores remain human triage fields.
+
+High risk for external disclosure and durable submission recovery. Budget (5): diagnose financial workflow friction without changing financial authority. Engagement (3): a conversational repair note in all three themes. A versioned local Agent table retains the exact review/receipt before dispatch; ambiguous outcomes only check the original atomic Sheets metadata receipt. Setup, release and live proof remain separate. [Worksession](worksessions/2026-09-12-hercules-bug-reports.md).
+
 ## 2026-09-12 — Free Gemini routing for synthetic Hercules activation (D-249 amendment)
 
 Jonathan authorizes the US$5/month Cloudflare Workers Paid upgrade and identifies all present app data as fictional simulation data. Ordinary conversation uses pinned Gemini 3.1 Flash-Lite; larger work uses pinned Gemini 3.8 Flash. Flash-Lite may ask for more thinking, transferring saved work as source text without replaying another model's thought signatures. Budget (5): one durable Google-project quota authority, 20% headroom, explicit model-call budgets and preserved Final Confirm. Engagement (3): natural everyday conversation, deeper work on request, saved progress during quota pauses.

@@ -1,3 +1,4 @@
+import { isBugReportIntent } from './workspace/feedback.ts';
 import { useEasyRead } from "./useEasyRead.ts";
 import "./ux-readability.css";
 import type { HerculesPlanContext } from "./core/planSystem.ts";
@@ -248,7 +249,7 @@ export function HerculesPresence({
   onOpenAdd, onDiscoveryNavigate, discoveryAccountId, discoveryFund,
   onGo,
   onLedger, onCompanionCommand,
-  onDraft, actionService, actionIdentity, actionHousehold, planContext, planOpenRequest, onPlanOpenConsumed, onOpenWorkspace,
+  onDraft, actionService, actionIdentity, actionHousehold, planContext, planOpenRequest, onPlanOpenConsumed, onOpenWorkspace, onReportBug,
   onPayCard,
   onAcceptPreset,
   onDismissNotice,
@@ -297,6 +298,7 @@ export function HerculesPresence({
   planOpenRequest?: PlanHerculesOpenRequest | null;
   onPlanOpenConsumed?: (id: string) => void;
   onOpenWorkspace?: () => void;
+  onReportBug?: (text?: string) => void;
   onWorkspaceConfirm?: (id: string) => Promise<void>;
   onPayCard?: () => void;
   onAcceptPreset?: (key: string, summary: string) => void;
@@ -1442,6 +1444,7 @@ export function HerculesPresence({
     if (!chatEnabled) return;
     const text = raw.trim();
     if (!text || busy) return;
+    if (onReportBug && isBugReportIntent(text)) { onReportBug(text); setQuestion(""); closeChat(); return; }
     if(actionRef.current?.send(text)){setSuggestedWorkflowIds([]);setQuestion("");return;}
     const requestedCoworkerIds = consumeWorkplaceRosterConsent();
     if (preferenceTurn(text)) return;
@@ -1472,6 +1475,7 @@ export function HerculesPresence({
     if (!chatEnabled) return;
     const message = raw.trim();
     if (!message || busy || modelPending.current!==null) return;
+    if (onReportBug && isBugReportIntent(message)) { onReportBug(message); setQuestion(""); closeChat(); return; }
     if(actionRef.current?.send(message)){setSuggestedWorkflowIds([]);setQuestion("");return;}
     // Consume consent on every Send. `speak` passes its already-consumed value
     // so suggested local replies cannot leak consent into a later turn.
@@ -1749,7 +1753,7 @@ export function HerculesPresence({
     </label>
   ) : null;
 
-  function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
+  function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><span>{onReportBug && <button type="button" onClick={() => { onReportBug(); closeChat(); }}>Report a bug</button>}</span><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
   function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} composerAvailable={chatEnabled} onWorkspaceConfirm={onWorkspaceConfirm} onReady={notifyActionPanelReady} context={{household:actionHousehold,memberId,view,today,planMonth:planContext?.scope===view?planContext.monthKey:undefined,planThrough:planContext?.scope===view?planContext.through:undefined}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
   return (
     <HerculesRigProvider

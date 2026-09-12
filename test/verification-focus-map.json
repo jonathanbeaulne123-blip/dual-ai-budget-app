@@ -14,6 +14,23 @@
     },
     {
       "sources": [
+        "src/workspace/feedback.ts",
+        "src/workspace/FeedbackReview.tsx",
+        "workers/workspace/feedbackSheets.ts",
+        "workers/workspace/service.ts",
+        "workers/workspace/tools.ts",
+        "workers/workspace/route.ts",
+        "src/workspace/Workspace.tsx"
+      ],
+      "tests": [
+        "test/workspace-feedback.test.ts",
+        "test/workspace-feedback-service.test.ts",
+        "test/workspace-feedback-ui.test.ts"
+      ],
+      "reason": "Hercules bug intake, manual corrections, scoped disclosure, fixed sheet mapping and original receipt recovery"
+    },
+    {
+      "sources": [
         "src/HouseholdHome.tsx",
         "src/ChapterPanel.tsx",
         "src/household-home.css",

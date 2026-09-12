@@ -1,3 +1,4 @@
+import { feedbackContext, feedbackFromValues, feedbackValues, type FeedbackContext } from './feedback.ts';
 /** Workspace data is deliberately outside Household, Plan digests and ledger hashes. */
 export const WORKSPACE_VERSION = 1;
 export const WORKSPACE_INPUT_LIMIT = 32_000;
@@ -21,7 +22,7 @@ export type ArtifactVersion = {
 };
 export type WorkspaceProposal = {
   id: string; revision: number; artifactVersionId: string | null; scope: WorkspaceScope;
-  target: 'hearth' | 'google'; actionId: string; values: Record<string, string>;
+  target: 'hearth' | 'google' | 'feedback'; actionId: string; values: Record<string, string>;
   status: 'draft' | 'reviewed' | 'submitting' | 'accepted' | 'uncertain' | 'stale';
   receiptId: string | null; reviewedRevision: number | null;
 };
@@ -34,6 +35,7 @@ export type WorkspaceRun = {
   checkpoints: Array<{ step: number; tool: string; status: string; at: string }>;
 };
 export type WorkspaceProject = {
+  appContext?: FeedbackContext;
   version: 1; id: string; ownerMemberId: string; visibility: 'private'; title: string;
   goal: string; completionCriteria: string; revision: number; instructionRevision: number;
   createdAt: string; updatedAt: string; decisions: string[]; constraints: string[];
@@ -44,10 +46,11 @@ export type WorkspaceProject = {
   preferences: { assistance: 'hints' | 'worked-examples' | 'complete'; detail: 'concise' | 'thorough' };
   followUp: { at: string; instruction: string } | null;
 };
-export type WorkspaceSnapshot = { externalReviews?: Array<{review:import('./external.ts').ExternalWorkspaceReview;receipt:import('./external.ts').ExternalWorkspaceReceipt}>; version: 1; sequence: number; projects: WorkspaceProject[]; executionEnabled: boolean };
+export type WorkspaceSnapshot = { feedbackConnected?: boolean; feedbackRecords?: import('./feedback.ts').FeedbackRecord[]; externalReviews?: Array<{review:import('./external.ts').ExternalWorkspaceReview;receipt:import('./external.ts').ExternalWorkspaceReceipt}>; version: 1; sequence: number; projects: WorkspaceProject[]; executionEnabled: boolean };
 export type WorkspaceCommand =
-  | { type: 'create'; id: string; title: string }
-  | { type: 'message'; text: string; id: string }
+  | { type: 'create'; id: string; title: string; feedback?: { context: FeedbackContext; owner: string } }
+  | { type: 'message'; text: string; id: string; appContext?: FeedbackContext }
+  | { type: 'edit-feedback'; proposalId: string; proposalRevision: number; values: Record<string, string> }
   | { type: 'attach'; id: string; filename: string; base64: string }
   | { type: 'research-queries'; queries: string[] }
   | { type: 'edit-artifact'; artifactId: string; parentId: string; content: string; id: string }
@@ -89,9 +92,18 @@ export function applyWorkspaceCommand(original: WorkspaceProject, command: Works
     case 'message':
       if (p.messages.some(m => m.id === command.id) || p.runs.some(r => r.id === command.id)) throw new Error('MESSAGE_EXISTS');
       steer();
+      if (command.appContext && !p.appContext) p.appContext = feedbackContext(command.appContext);
       p.messages.push({ id: workspaceId(command.id), role: 'user', text: workspaceText(command.text), createdAt: now });
       if (!p.goal) p.goal = command.text;
       break;
+    case 'edit-feedback': {
+      const proposal = p.proposals.find(v => v.id === command.proposalId && v.target === 'feedback');
+      if (!proposal || proposal.revision !== command.proposalRevision || proposal.receiptId || proposal.status === 'accepted') throw new Error('FEEDBACK_CHANGED');
+      const values = feedbackValues(feedbackFromValues(command.values));
+      steer();
+      proposal.values = values; proposal.revision++; proposal.status = 'draft'; proposal.reviewedRevision = null;
+      break;
+    }
     case 'edit-artifact': {
       if (p.artifacts.some(a => a.id === command.id)) throw new Error('ARTIFACT_EXISTS');
       const latest = latestArtifacts(p).find(a => a.artifactId === command.artifactId);

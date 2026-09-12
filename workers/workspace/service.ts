@@ -1,3 +1,5 @@
+import { feedbackContext, publishFeedbackProposal, feedbackPage, normalizeFeedback, feedbackValues, feedbackReviewDigest, type FeedbackReview, type FeedbackRecord, type FeedbackReceipt } from '../../src/workspace/feedback.ts';
+import { submitFeedbackSheet, retireFeedbackMetadata } from './feedbackSheets.ts';
 import { conversationModel, freeGeminiOnly, FLASH_LITE_MODEL, FLASH_MODEL } from '../geminiFree.js';
 import { workspaceConfirmationId } from '../../src/workspace/actionBridge.ts';
 import { Agent, getAgentByName } from 'agents';
@@ -29,6 +31,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
     this.sql`CREATE TABLE IF NOT EXISTS workspace_tool_receipts (id TEXT PRIMARY KEY, data TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS workspace_external_receipts (id TEXT PRIMARY KEY, data TEXT NOT NULL)`;
     this.sql`CREATE TABLE IF NOT EXISTS workspace_external_reviews (id TEXT PRIMARY KEY, data TEXT NOT NULL)`;
+    this.sql`CREATE TABLE IF NOT EXISTS workspace_feedback_v1 (id TEXT PRIMARY KEY, created TEXT NOT NULL, data TEXT NOT NULL)`;
   }
   private authenticate(scope: Scope) {
     if (scope.environment !== 'development' || !Number.isFinite(scope.expires) || scope.expires <= Date.now()) throw new Error('UNAUTHENTICATED');
@@ -65,7 +68,7 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
   private saveExecution(id: string, value: PrivateExecution) { this.sql`INSERT OR REPLACE INTO workspace_executions VALUES (${id},${JSON.stringify(value)})`; }
   async snapshotFor(scope: Scope): Promise<WorkspaceSnapshot> {
     this.authenticate(scope);
-    return { version: 1, sequence: Number(this.sql<{ value: string }>`SELECT value FROM workspace_meta WHERE key='sequence'`[0]?.value ?? 0),
+    return { version: 1, feedbackConnected: this.env.HERCULES_FEEDBACK_ENABLED === 'true' && !!this.env.HERCULES_FEEDBACK_SERVICE_ACCOUNT, feedbackRecords: this.sql<{data:string}>`SELECT data FROM workspace_feedback_v1 WHERE json_extract(data,'$.receipt.status') IN ('submitting','uncertain') OR id IN (SELECT id FROM workspace_feedback_v1 WHERE json_extract(data,'$.receipt.status')='accepted' ORDER BY created DESC LIMIT 100) ORDER BY created DESC`.map(r => JSON.parse(r.data)), sequence: Number(this.sql<{ value: string }>`SELECT value FROM workspace_meta WHERE key='sequence'`[0]?.value ?? 0),
       externalReviews: this.sql<{data:string;receipt:string}>`SELECT v.data,r.data AS receipt FROM workspace_external_reviews v JOIN workspace_external_receipts r ON r.id=v.id`.map(r=>({review:JSON.parse(r.data),receipt:JSON.parse(r.receipt)})).filter(r=>['submitting','uncertain'].includes(r.receipt.status)),
       projects: this.sql<{ id: string }>`SELECT id FROM workspace_projects`.map(r => this.getProject(r.id)), executionEnabled: this.env.HERCULES_WORKSPACE_EXECUTION === 'true' };
   }
@@ -115,6 +118,13 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
         if (this.sql`SELECT id FROM workspace_projects WHERE id=${body.projectId}`.length) throw new Error('PROJECT_EXISTS');
         if (this.sql`SELECT id FROM workspace_projects`.length >= 100) throw new Error('PROJECT_LIMIT');
         p = createWorkspaceProject(body.projectId, body.command.title, scope.memberId, new Date().toISOString());
+        if (body.command.feedback) {
+          p.appContext = feedbackContext(body.command.feedback.context);
+          const draft = normalizeFeedback({ page: feedbackPage(p.appContext), owner: body.command.feedback.owner }, p.appContext);
+          p.proposals.push({ id: body.projectId, revision: 1, target: 'feedback', scope: 'personal', actionId: 'report-bug', artifactVersionId: null, values: feedbackValues(draft), status: 'draft', receiptId: null, reviewedRevision: null });
+          p.goal = 'Prepare a useful bug report for Hearth Feedback. Ask only what is missing, use the supplied app context, and let me review before submitting.';
+          p.messages.push({ id: 'feedback-welcome', role: 'assistant', text: 'Something out of place? Tell me what you were trying to do and what happened. I’ll help put the report together. You can edit every detail before sending it to Hearth Feedback.', createdAt: new Date().toISOString() });
+        }
       } else if (body.command.type === 'attach') {
         const cmd = body.command; workspaceId(cmd.id);
         const before = this.getProject(body.projectId);
@@ -242,6 +252,81 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
     });
     return final;
   }
+  async feedbackFor(scope: Scope, review: FeedbackReview, confirmDigest: string): Promise<FeedbackReceipt> {
+    this.authenticate(scope);
+    const digest = feedbackReviewDigest(review);
+    if (digest !== confirmDigest) throw new Error('FEEDBACK_REVIEW_CHANGED');
+    const read = (): FeedbackRecord | null => {
+      const row = this.sql<{ data: string }>`SELECT data FROM workspace_feedback_v1 WHERE id=${review.id}`[0];
+      return row ? JSON.parse(row.data) : null;
+    };
+    const old = read();
+    if (old && old.receipt.digest !== digest) throw new Error('FEEDBACK_REVIEW_CHANGED');
+    if (old?.receipt.status === 'accepted') { this.retireFeedbackRecord(scope, old); return old.receipt; }
+    const check = () => {
+      this.authenticate(scope);
+      const project = this.getProject(review.projectId);
+      const unresolved = this.sql<{data:string}>`SELECT data FROM workspace_feedback_v1`.map(r => JSON.parse(r.data) as FeedbackRecord).find(r => r.review.projectId === review.projectId && r.review.id !== review.id && ['submitting', 'uncertain'].includes(r.receipt.status));
+      if (unresolved) throw new Error('FEEDBACK_RECEIPT_PENDING');
+      const proposal = project.proposals.find(p => p.id === review.proposalId && p.target === 'feedback');
+      if (!proposal || proposal.revision !== review.proposalRevision || project.instructionRevision !== review.instructionRevision || ['stale', 'accepted'].includes(proposal.status)) throw new Error('FEEDBACK_CHANGED');
+      if (proposal.receiptId && proposal.receiptId !== review.id) {
+        const previous = this.sql<{data:string}>`SELECT data FROM workspace_feedback_v1 WHERE id=${proposal.receiptId}`[0];
+        if (!previous || JSON.parse(previous.data).receipt.status !== 'prepared') throw new Error('FEEDBACK_RECEIPT_PENDING');
+      }
+      return { project, proposal };
+    };
+    // Receipt recovery precedes revision checks and remains available while new submissions are off.
+    if (!old || old.receipt.status === 'prepared') check();
+    if ((!old || old.receipt.status === 'prepared') && this.env.HERCULES_FEEDBACK_ENABLED !== 'true') return { id: review.id, digest, status: 'prepared', error: 'FEEDBACK_NOT_CONNECTED' };
+    if (!old) {
+      const cleanup = this.sql<{data:string}>`SELECT data FROM workspace_feedback_v1 WHERE json_extract(data,'$.receipt.status')='accepted' AND json_extract(data,'$.receipt.metadataRetired') IS NOT 1 LIMIT 1`[0];
+      if (cleanup) this.retireFeedbackRecord(scope, JSON.parse(cleanup.data));
+      const today = new Date().toISOString().slice(0, 10);
+      if (this.sql<{n:number}>`SELECT COUNT(*) AS n FROM workspace_feedback_v1 WHERE created>=${today}`[0]!.n >= 20) throw new Error('FEEDBACK_RATE_LIMIT');
+      this.sql`INSERT INTO workspace_feedback_v1 VALUES (${review.id},${new Date().toISOString()},${JSON.stringify({ review: { ...review, draft: normalizeFeedback(review.draft) }, receipt: { id: review.id, digest, status: 'prepared' } })})`;
+    }
+    const dispatch = () => {
+      const { project, proposal } = check();
+      const latest = read()!;
+      if (latest.receipt.status !== 'prepared') throw new Error('FEEDBACK_RECEIPT_PENDING');
+      latest.receipt.status = 'submitting'; proposal.receiptId = review.id; proposal.status = 'submitting';
+      project.revision++;
+      this.ctx.storage.transactionSync(() => {
+        this.sql`UPDATE workspace_feedback_v1 SET data=${JSON.stringify(latest)} WHERE id=${review.id}`;
+        this.saveProject(project);
+      });
+    };
+    let result: { reportId: string; url: string } | null = null, failure = '';
+    try { result = await submitFeedbackSheet(this.env, review, digest, `${scope.environment}/${scope.householdId}/${scope.memberId}/${scope.subject}`, !!old && old.receipt.status !== 'prepared', dispatch); }
+    catch (error) { failure = error instanceof Error && /^FEEDBACK_[A-Z_]+$/.test(error.message) ? error.message : 'FEEDBACK_CONNECTION_FAILED'; }
+    // Persist a receipt even if a short lease expired during Google I/O; the route reauthorizes the next read.
+    const latest = read()!;
+    if (latest.receipt.status === 'accepted') return latest.receipt;
+    latest.receipt = { id: review.id, digest, status: result ? 'accepted' : latest.receipt.status === 'prepared' || failure === 'FEEDBACK_SUBMISSION_REJECTED' ? 'prepared' : 'uncertain', ...(result ?? {}), ...(failure ? { error: failure } : {}) };
+    this.ctx.storage.transactionSync(() => {
+      this.sql`UPDATE workspace_feedback_v1 SET data=${JSON.stringify(latest)} WHERE id=${review.id}`;
+      const project = this.getProject(review.projectId), proposal = project.proposals.find(p => p.id === review.proposalId);
+      if (proposal && latest.receipt.status === 'prepared' && proposal.receiptId === review.id) { proposal.receiptId = null; if (proposal.status !== 'stale') proposal.status = 'draft'; project.revision++; }
+      if (proposal && latest.receipt.status !== 'prepared') { proposal.status = latest.receipt.status; proposal.receiptId = review.id; project.revision++; }
+      this.saveProject(project);
+    });
+    if (latest.receipt.status === 'accepted') this.retireFeedbackRecord(scope, latest);
+    return latest.receipt;
+  }
+  private retireFeedbackRecord(scope: Scope, record: FeedbackRecord) {
+    if (record.receipt.status !== 'accepted' || record.receipt.metadataRetired) return;
+    // Only temporary metadata is retired, after the accepted receipt is durable. Rows and reviews remain.
+    this.ctx.waitUntil((async () => {
+      try {
+        await retireFeedbackMetadata(this.env, record.review, record.receipt.digest, `${scope.environment}/${scope.householdId}/${scope.memberId}/${scope.subject}`);
+        const row = this.sql<{data:string}>`SELECT data FROM workspace_feedback_v1 WHERE id=${record.review.id}`[0];
+        if (!row) return;
+        const latest = JSON.parse(row.data) as FeedbackRecord;
+        if (latest.receipt.status === 'accepted') { latest.receipt.metadataRetired = true; this.sql`UPDATE workspace_feedback_v1 SET data=${JSON.stringify(latest)} WHERE id=${record.review.id}`; }
+      } catch { /* Retry on its next receipt check or a subsequent report submission. Never downgrade acceptance. */ }
+    })());
+  }
   private async startRun(scope: Scope, token: string, projectId: string, runId: string, attempt: string) {
     let p = this.getProject(projectId), run = p.runs.find(r => r.id === runId)!;
     if (!run || !['queued', 'failed', 'paused'].includes(run.status)) return;
@@ -338,7 +423,11 @@ export class HerculesWorkspace extends Agent<WorkspaceEnv> {
             publish.artifacts.push(effect.artifact);
           }
           if (effect?.evidence) publish.evidence.push(...effect.evidence);
-          if (effect?.proposal) publish.proposals.push(effect.proposal);
+          if (effect?.proposal) {
+            if (effect.proposal.target === 'feedback') {
+              if (!publishFeedbackProposal(publish, effect.proposal)) result = { error: 'FEEDBACK_CHANGED', instruction: 'The person reviewed or changed this report. Read its current state; do not replace the submitted version.' };
+            } else publish.proposals.push(effect.proposal);
+          }
           if (effect?.researchQuery && !publish.proposedResearchQueries.includes(effect.researchQuery)) publish.proposedResearchQueries.push(effect.researchQuery);
           if (effect?.memory) Object.assign(publish, effect.memory);
           if (effect?.moreThinking) moreThinking = true;
