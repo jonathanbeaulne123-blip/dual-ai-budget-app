@@ -324,7 +324,13 @@ export const HerculesActionPanel = forwardRef<HerculesActionHandle, Props>(funct
         void change({ ...d, values, updatedAt: new Date().toISOString() });
     }
     function sideQuestion(message: string) {
-        return /\?/.test(message) || /^(?:why|what|how|where|when|who|which|can|could|would|will|do|does|did|is|are|am|was|were|have|has|should|explain)\b/i.test(message.trim());
+        const text = message.trim();
+        // A leading auxiliary alone may be a title ("Do laundry", "Will Smith
+        // tickets"). Require question punctuation or a clear question phrase.
+        return /\?/.test(text)
+            || /^(?:why|explain)\b/i.test(text)
+            || /^(?:what|how|where|when|who|which)\s+(?:do|does|did|is|are|am|was|were|can|could|would|will|have|has|should)\b/i.test(text)
+            || /^(?:can|could|would|will|do|does|did|is|are|am|was|were|have|has|should)\s+(?:i|you|we|he|she|they|there)\b/i.test(text);
     }
     function guideRespond(message: string, explicitAnswer=false) {
         const d=draftRef.current;if(!d||d.actionId!==PLAN_GUIDE_ID)return false;

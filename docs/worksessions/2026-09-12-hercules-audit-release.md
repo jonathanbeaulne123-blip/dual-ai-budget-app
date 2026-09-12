@@ -20,6 +20,10 @@ The merge preserves both handoff entries. In Hercules it preserves main's King r
 
 The clean integrated gate at `cfb497ff6b755ff232b50a7e231c71b8e23ae383` failed in 118.642 seconds (no budget breach): all assertions passed, but an App post-success timer fired after unmount. Both post-success feedback timers now belong to effects that cancel on unmount. A focused real App acceptance/unmount regression passes. The corrected exact head must pass the complete selected gate before merge. Public live checks must not mutate books or private projects.
 
+The corrected `0907f546efa9c55ee077f076b1b0af16aeb0b2dc` passed the focused High gate: 499 tests across 45 files, clean tree, 89.839 seconds, no budget breach. All 24 actual App handoff cases passed across three themes, both scopes and 320/390/720/1440 widths. Independent review also passed the timer correction.
+
+PR review identified an additional P2: the side-question heuristic rejected valid text answers such as “Do laundry” and “Will Smith tickets.” It now requires question punctuation or a clear question phrase. All 20 action UI tests pass, including four bare-title cases and side questions without punctuation. This review correction also requires a fresh exact-head gate and CI before merge.
+
 ## Compatibility and limits
 
 New workspace reads require a fresh immutable grant; an older run pauses and Resume renews permission. Existing receipt identities and financial validators are retained. Do not roll back to a version predating the already-released nest capability. If rollback is required, use the verified preceding main deployment or disable new workspace execution while preserving records and receipt recovery; never restore older financial state.
