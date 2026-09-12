@@ -25,12 +25,14 @@ const ACTION_COPY: Record<string, string> = {
   "ch-10-estimates": "estimates.open",
   "ch-11-plan": "proposal.open",
   "ch-12-ready": "ready.open-books",
+  "ch-13-king": "king.open",
 };
 
 function destinationLabel(chapter: OnboardingChapter): string {
   if (!chapter.target) return "Here with Hercules";
   const names: Record<string, string> = {
     more: "More",
+    home: "Home",
     ledger: "Books",
     calendar: "Calendar",
     shift: "Shift",
@@ -40,6 +42,7 @@ function destinationLabel(chapter: OnboardingChapter): string {
 }
 
 function chapterTitle(chapter: OnboardingChapter): string {
+  if (chapter.id === "ch-13-king") return copy("king.open");
   return copy(`ready.chapter.${String(chapter.order).padStart(2, "0")}`);
 }
 

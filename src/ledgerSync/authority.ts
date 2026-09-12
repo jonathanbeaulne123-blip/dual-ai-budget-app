@@ -1,3 +1,4 @@
+import { hasKittyNestData } from "../core/kittyNestDesigns.ts";
 import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
@@ -96,6 +97,7 @@ export async function prepareCommand(
   if ((current.companionProfile || command.steps.some(step => step.kind === "commitCompanion")) && command.companionProfileVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth before changing Hercules preferences or conversations.");
   if((current.companionProfile?.workflows?.length||command.steps.some(s=>s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set'))&&command.companionWorkflowVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve conversational drafts.');
   if((current.nativeEvents?.length||command.steps.some(s=>s.kind==='saveNativeEvent'))&&command.nativeCalendarVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve calendar events.');
+  if((hasKittyNestData(current)||command.steps.some(s=>s.kind==='saveKittyNestDesign'))&&command.kittyNestVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve bank designs.');
   if((hasTaskData(current)||command.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&command.taskPlannerVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve planner tasks.');
   const extendedPlan = hasPlanDecisionData(current);
   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
@@ -295,6 +297,7 @@ export async function prepareCommand(
     candidate: current,
     validatedFundSourceClaimIds,
     validatedGoalEnvelopeVersion: 1,
+    validatedKittyNestVersion: 1,
     booksGuard: guardFor(scope.memberId)?.fork(),
     // Adoption has a proposal-bound domain identity; the transport receipt still uses the UUID.
     confirmationId: result.undo.commandKind === "adoptFirstBudget" ? result.undo.id : command.id,

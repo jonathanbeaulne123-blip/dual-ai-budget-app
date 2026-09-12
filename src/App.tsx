@@ -6790,6 +6790,7 @@ export function App() {
           )}
         />
       )}
+      {tab === "home" && dashboard && view === "personal" && <KittyBanks key={`${ledgerRenderScopeKey}:nest`} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="home" onCommand={runKitchen} onOpenCalendar={() => goTab("calendar")} />}
       {tab === "home" && dashboard && (
         <>
         <HomeInstruments collapsed={view === "household" && householdHomeV2Enabled()}>
@@ -6936,7 +6937,7 @@ export function App() {
         onOpenWorkspace={workspaceEnabled ? () => { setWorkspaceProjectId(null); goTab("hercules"); } : undefined}
               workspaceCards={workspaceEnabled && workspaceSnapshot?.identity === ledgerRenderScopeKey ? month => <WorkspaceProjectCards projects={workspaceSnapshot.projects} household={household} memberId={actorId} scope={view} month={month} today={today} onOpen={id => {setWorkspaceProjectId(id);goTab("hercules");}} /> : undefined}
               key={`${ledgerRenderScopeKey}:${view}`}
-              goalsContent={context => <KittyBanks planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
+              goalsContent={context => <KittyBanks planContext={context} environment={environment} household={displayHousehold} booksHousehold={household} view={view} createdBy={actorId} busy={busy} surface="plan" onOpenCalendar={() => goTab("calendar")} onReadSubmission={async id=>{const status=await readWorkShiftSubmission(id);if(status==="pending")ledgerSyncRef.current?.retryPending();return status;}} onCommand={runKitchen} onAskStartJar={(appointmentId, summary) => setGuard({ kind: "acceptVisitGoal", appointmentId, summary })} onShowHome={() => goTab("home")} />}
               onContextChange={setPlanContext}
               contextIdentity={`${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}`}
               onAskHercules={(prompt, proposal) => {

@@ -1,3 +1,4 @@
+import { hasKittyNestData } from "../core/kittyNestDesigns.ts";
 import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
@@ -72,6 +73,7 @@ export class LedgerSyncClient {
   private herculesActionsEnabled = false;
   private nativeCalendarVersion = 0;
   private taskPlannerVersion = 0;
+  private kittyNestVersion = 0;
   private planDecisionVersion = 0;
   private goalEnvelopeVersion = 0;
   private initialResolve?: () => void;
@@ -237,6 +239,7 @@ export class LedgerSyncClient {
               this.herculesActionsEnabled = message.herculesActionsEnabled === true;
               this.nativeCalendarVersion = message.nativeCalendarVersion === 1 ? 1 : 0;
               this.taskPlannerVersion = message.taskPlannerVersion === 1 ? 1 : 0;
+              this.kittyNestVersion = message.kittyNestVersion === 1 ? 1 : 0;
               this.goalEnvelopeVersion = message.goalEnvelopeVersion === 1 ? 1 : 0;
               this.planDecisionVersion = message.planDecisionVersion === 1 ? 1 : 0;
               this.ready = true;
@@ -451,6 +454,7 @@ export class LedgerSyncClient {
 
     if(capture.steps.some(s=>s.kind==='executeHerculesAction')&&(!this.ready||!this.herculesActionsEnabled))throw new LedgerCommandRejectedError('HERCULES_ACTIONS_PAUSED: Conversational changes are not enabled on this Hearth server.');
     if(capture.steps.some(s=>s.kind==='saveNativeEvent')&&(!this.ready||this.nativeCalendarVersion!==1))throw new LedgerCommandRejectedError('CALENDAR_UPDATE_REQUIRED: Connect to an updated Hearth to save events.');
+    if((hasKittyNestData(candidate)||capture.steps.some(s=>s.kind==='saveKittyNestDesign'))&&(!this.ready||this.kittyNestVersion!==1))throw new LedgerCommandRejectedError('BANK_UPDATE_REQUIRED: Connect to an updated Hearth to save bank designs.');
     if((hasTaskData(candidate)||capture.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.taskPlannerVersion!==1))throw new LedgerCommandRejectedError('PLANNER_UPDATE_REQUIRED: Connect to an updated Hearth to save planner tasks.');
     if(capture.steps.some(s=>['executeHerculesAction','cancelHerculesSubmission'].includes(s.kind)||s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set')&&(!this.ready||this.companionWorkflowVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving conversational drafts.');
     if(capture.steps.some(step=>companionActionEffect(step)!==null||step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')))&&(!this.ready||this.companionWardrobeVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving or sharing looks.');

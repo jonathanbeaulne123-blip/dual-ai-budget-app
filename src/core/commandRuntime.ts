@@ -54,6 +54,7 @@ import {
   seededOnboardingApprovalsValid,
   syntheticDemoOnboardingIsValid,
 } from "./onboarding/lifecycle.ts";
+import { assertKittyNestTransition, hasKittyNestData } from "./kittyNestDesigns.ts";
 import type { CommandReceipt, Household, PersonalEnvelope } from "./types.ts";
 import { NeedsConfirmationError, ValidationError } from "./types.ts";
 import { measureHearth, measureHearthSync } from "../performanceMetrics.ts";
@@ -100,6 +101,7 @@ export type AcceptWriteInput = {
   /** Server-only isolated owner-source validation; never populated from command input. */
   validatedFundSourceClaimIds?: ReadonlySet<string>;
   validatedGoalEnvelopeVersion?: 1;
+  validatedKittyNestVersion?: 1;
   confirmationId?: string;
   commandKind?: string;
   postedIds?: string[];
@@ -316,7 +318,9 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
     assertHouseholdFundTransition(validSyntheticDemoReplacement ? null : previous, candidate);
     if (hasGoalEnvelopeData(candidate) && input.transportRequested && input.validatedGoalEnvelopeVersion !== 1) throw new ValidationError("Reload Hearth with current ledger sync before saving envelope changes.");
     assertGoalEnvelopeTransition(validSyntheticDemoReplacement ? null : previous, candidate);
-    if (previous && !validSyntheticDemoReplacement) {
+    if (hasKittyNestData(candidate) && input.transportRequested && input.validatedKittyNestVersion !== 1) throw new ValidationError("Reload Hearth with current sync before saving nest changes.");
+    assertKittyNestTransition(validSyntheticDemoReplacement ? null : previous, candidate, input.actingMemberId, input.commandKind);
+    if (previous && !validSyntheticDemoCommand) {
       const newLinkedContribution = candidate.fundEvents?.some(event => event.sourceDeclaration?.kind === 'recorded-movement'
         && !previous.fundEvents?.some(old => old.id === event.id));
       if (newLinkedContribution && input.transportRequested && !input.validatedFundSourceClaimIds) {
@@ -406,7 +410,9 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
       identityHash,
       auditHash: "",
       commandKind: input.commandKind ?? "commit",
-      materializationHash: input.commandKind === "updateChapters"
+      materializationHash: input.commandKind?.startsWith("saveKittyNestDesign")
+        ? await sha256Hex(commandMaterializationFacts({ kittyNestDesigns: (accepted.kittyNestDesigns ?? []).filter(row => postedIds.includes(row.id)) }))
+        : input.commandKind === "updateChapters"
         ? await sha256Hex(commandMaterializationFacts({
           chapters: accepted.chapters,
           rituals: accepted.rituals,

@@ -839,7 +839,7 @@ export type KittyStudioV1 = {
 };
 export type GoalEnvelope = {
   version: 1;
-  kind: "protect" | "prepare" | "build";
+  kind: "protect" | "everyday" | "prepare" | "build";
   purpose: string;
   refill: "target" | "refill" | "repeat";
   glaze: KittyGlaze;
@@ -1375,6 +1375,7 @@ export type WeeklyDocumentStamp = {
 export type Household = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
+  kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
   tasks?: Task[];
   taskLists?: TaskList[];
   playRoom?: import("./playContracts.ts").PlayRoom;
@@ -1499,6 +1500,7 @@ export type RestorePoint = {
 export type SharedEnvelope = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
+  kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
   tasks?: Task[];
   taskLists?: TaskList[];
   playRoom?: import("./playContracts.ts").PlayRoom;
@@ -1588,6 +1590,7 @@ export type SharedEnvelope = {
 export type PersonalEnvelope = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
+  kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
   tasks?: Task[];
   taskLists?: TaskList[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */

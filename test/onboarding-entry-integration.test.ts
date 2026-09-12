@@ -287,7 +287,7 @@ describe("real household creation enters guided setup", () => {
 });
 
 describe("Development guided setup preview", () => {
-  it("shows all twelve chapters and navigation without a commit callback", () => {
+  it("shows thirteen chapters including the optional King and navigation without a commit callback", () => {
     const host = document.createElement("div");
     document.body.appendChild(host);
     const previewRoot = createRoot(host);
@@ -295,7 +295,8 @@ describe("Development guided setup preview", () => {
     const details = host.querySelector("details") as HTMLDetailsElement;
     act(() => { details.open = true; details.dispatchEvent(new Event("toggle", { bubbles: false })); });
     const chapterButtons = [...host.querySelectorAll<HTMLButtonElement>("[aria-label='Guided setup chapters'] button")];
-    expect(chapterButtons).toHaveLength(12);
+    expect(chapterButtons).toHaveLength(13);
+    expect(chapterButtons.at(-1)?.textContent).toContain("King");
     expect(chapterButtons[0]?.textContent).toContain("Meet Hercules");
     expect(chapterButtons[8]?.textContent).toContain("Plan categories");
     expect(host.textContent).toContain("Nothing is saved");
@@ -303,7 +304,7 @@ describe("Development guided setup preview", () => {
     const sampleAction = [...host.querySelectorAll<HTMLButtonElement>("button:disabled")]
       .find((candidate) => candidate.textContent?.includes("Next"));
     expect(sampleAction?.hasAttribute("aria-describedby")).toBe(false);
-    act(() => [...host.querySelectorAll("[aria-label='Guided setup chapters'] button")].at(-1)?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    act(() => [...host.querySelectorAll("[aria-label='Guided setup chapters'] button")].at(-2)?.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     expect(host.textContent).toContain("Let's prove one ordinary entry will be easy tomorrow");
     act(() => previewRoot.unmount());
     host.remove();

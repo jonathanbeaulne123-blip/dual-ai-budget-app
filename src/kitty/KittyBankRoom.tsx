@@ -53,12 +53,15 @@ function sealColor(goal: Goal): string {
 }
 import type { PlanAsk } from "../PlanLensWorkbench.tsx";
 import "./kitty-room.css";
+import { KittyNest, NestBankDetail } from "./KittyNest.tsx";
+import { projectKittyNest, nestCategoryFor, type NestBank } from "../core/kittyNest.ts";
 import { Whisper } from "../theme/Whisper.tsx";
 
 export type KittyPlanContext = {
   selection: PlanSelection;
   projection: PlanProjection;
   goalId?: string;
+  bankId?: string;
   lineId?: string;
   onClose: () => void;
   onSaveLine: (line: PlanLine, expected?: PlanLine) => Promise<boolean>;
@@ -88,7 +91,9 @@ export type KittyRoomProps = {
   ) => unknown;
   context?: KittyPlanContext;
   initialGoalId?: string;
-  returnTo?: "Plan" | "Home";
+  initialBankId?: string;
+  onOpenCalendar?: () => void;
+  returnTo?: "Plan" | "Home" | "setup" | "Hercules";
   onClose: () => void;
 };
 type SavedReview = { id: string; title: string };
@@ -135,9 +140,9 @@ function initialEnvelope(goal: Goal, context?: KittyPlanContext) {
   )?.lens;
   return {
     ...defaultGoalEnvelope(),
-    ...(lens === "protect" || lens === "prepare" || lens === "build"
+    ...(lens === "protect" || lens === "everyday" || lens === "prepare" || lens === "build"
       ? { kind: lens }
-      : {}),
+      : { kind: nestCategoryFor(goal.name) }),
   };
 }
 function bankEvidence(
@@ -213,6 +218,8 @@ function Room({
   onCommand,
   context,
   initialGoalId,
+  initialBankId,
+  onOpenCalendar,
   returnTo = "Plan",
   onClose,
 }: KittyRoomProps) {
@@ -234,7 +241,7 @@ function Room({
   const [filter, setFilter] = useState<"active" | "archived" | "completed">(
     "active",
   );
-  const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? "");
+  const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? (context?.bankId || initialBankId ? `nest:${context?.bankId ?? initialBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
   const [creating, setCreating] = useState(false);
   const [studioFor, setStudioFor] = useState("");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
@@ -247,6 +254,9 @@ function Room({
   );
   const requested = all.find((goal) => goal.id === selected);
   const goal = requested ?? visible[0];
+  const nest = useMemo(() => projectKittyNest(h, memberId, view, todayKey()), [h, memberId, view]);
+  const nestBanks = [nest.king, ...nest.categories, ...nest.categories.flatMap(row => row.children), ...nest.history];
+  const selectedNest = selected.startsWith("nest:") ? nestBanks.find(row => row.id === selected.slice(5)) : undefined;
   const [saving, setSaving] = useState(false),
     [error, setError] = useState(""),
     [receipt, setReceipt] = useState("");
@@ -434,7 +444,8 @@ function Room({
         <p>{world}</p>
         <span>A place for the things you’re making possible.</span>
       </div>
-      <nav className="kitty-collection" aria-label="Your Kitty Banks">
+      <details className="nest-gallery-map"><summary>Explore the nest</summary><KittyNest household={h} memberId={memberId} view={view} today={todayKey()} onSelect={bank => select(bank.goal?.id ?? `nest:${bank.id}`)} /></details>
+      {!selectedNest && <nav className="kitty-collection" aria-label="Your Kitty Banks">
         <div className="kitty-collection-filters">
           {(["active", "archived", "completed"] as const).map((value) => (
             <button
@@ -454,7 +465,7 @@ function Room({
           {visible.map((item) => (
             <button
               key={item.id}
-              aria-pressed={goal?.id === item.id && !creating}
+              aria-pressed={goal?.id === item.id && !creating && !selectedNest}
               onClick={() => select(item.id)}
             >
               <span
@@ -478,7 +489,7 @@ function Room({
             </button>
           ))}
         </div>
-      </nav>
+      </nav>}
       {error && (
         <p className="kitty-notice is-error" role="alert">
           {error}
@@ -490,7 +501,7 @@ function Room({
           ✓ {receipt}
         </p>
       )}
-      {creating || !goal ? (
+      {selectedNest && !creating ? <NestBankDetail key={selectedNest.id} bank={selectedNest} h={h} memberId={memberId} view={view} identity={identity} busy={busy || saving} theme={theme} run={run} readLatest={() => latest.current} onSelect={(bank: NestBank) => select(bank.goal?.id ?? `nest:${bank.id}`)} onOpenCalendar={onOpenCalendar} /> : creating || !goal ? (
         <CreateBank
           key={creating ? "new" : "empty"}
           view={view}
@@ -658,6 +669,7 @@ function CreateBank({
               }
             >
               <option value="build">Build · a future we choose</option>
+              <option value="everyday">Everyday · ordinary pleasures</option>
               <option value="protect">Protect · a promise or cushion</option>
               <option value="prepare">Prepare · a cost that comes around</option>
             </select>
@@ -1117,6 +1129,7 @@ function Bank({
                         <option value="protect">Protect</option>
                         <option value="prepare">Prepare</option>
                         <option value="build">Build</option>
+                        <option value="everyday">Everyday</option>
                       </select>
                     </label>
                     <label>
@@ -1232,7 +1245,7 @@ function Bank({
                     {context.selection.lines
                       .filter(
                         (line) =>
-                          ["protect", "prepare", "build"].includes(line.lens) &&
+                          ["protect", "everyday", "prepare", "build"].includes(line.lens) &&
                           (!line.sourceReference ||
                             line.sourceReference.type !== "goal" ||
                             line.sourceReference.id === goal.id),

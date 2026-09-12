@@ -1,3 +1,4 @@
+import { shapeKittyNestDesigns, mergeKittyNestDesigns, nestSourceVisible, nestDesignInView, assertNestKeepsakes } from "../core/kittyNestDesigns.ts";
 import {
   commandIdentityHash,
   commandMaterializationFacts,
@@ -100,6 +101,7 @@ export type ContinuityCommandEvent = {
 };
 
 export type ContinuityMaterializationFacts = {
+  kittyNestDesigns?: Household["kittyNestDesigns"];
   recurrences?: Recurrence[];
   transactions?: Transaction[];
   shifts?: Shift[];
@@ -759,6 +761,7 @@ function filterFactsForScope(
   facts: ContinuityMaterializationFacts,
 ): ContinuityMaterializationFacts {
   const scoped: ContinuityMaterializationFacts = {};
+  if (facts.kittyNestDesigns?.length) scoped.kittyNestDesigns = shapeKittyNestDesigns(facts.kittyNestDesigns).filter(row => nestDesignInView(row, event.member_id, event.ledger_scope === "shared" ? "household" : "personal"));
   if (facts.transactions?.length) {
     scoped.transactions = facts.transactions.filter((row) => scopeAllowsRow(event, row));
   }
@@ -850,6 +853,8 @@ export function extractMaterializationFacts(
     return false;
   };
   const facts: ContinuityMaterializationFacts = {};
+  const nest = shapeKittyNestDesigns(household.kittyNestDesigns).filter(row => posted.has(row.id) && allows(row));
+  if (nest.length) facts.kittyNestDesigns = nest;
   if (scope !== "personal" && options?.commandKind === "moveAskGoalClaimToNextMonth") {
     const recurrences = household.recurrences.filter((row) => posted.has(row.id));
     if (recurrences.length) facts.recurrences = recurrences;
@@ -1067,6 +1072,7 @@ async function applyEvent(
 
   let next: Household = {
     ...snapshot,
+    kittyNestDesigns: mergeKittyNestDesigns(snapshot.kittyNestDesigns, facts.kittyNestDesigns),
     revision: event.result_revision,
     baseRevision: Math.max(snapshot.baseRevision ?? 0, event.base_revision),
     lastCommittedAt: payload.acceptedAt || snapshot.lastCommittedAt,
@@ -1164,6 +1170,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     fundSettlementAllocations: [],
     fundKittyAllocations: [],
     weeklyDocumentStamps: [],
+    kittyNestDesigns: [],
     chapters: [],
     rituals: [],
     moves: [],
@@ -1201,7 +1208,9 @@ export async function materializedHashMatchesSnapshot(input: {
 }): Promise<boolean> {
   const materializedHash = await financialAuditHash(input.project(input.materialized, input.memberId));
   const snapshotHash = await financialAuditHash(input.project(input.snapshotTip, input.memberId));
-  return materializedHash === snapshotHash;
+  return materializedHash === snapshotHash
+    && await sha256Hex(commandMaterializationFacts({ kittyNestDesigns: input.project(input.materialized, input.memberId).kittyNestDesigns }))
+      === await sha256Hex(commandMaterializationFacts({ kittyNestDesigns: input.project(input.snapshotTip, input.memberId).kittyNestDesigns }));
 }
 
 export type ApplyCommandEventResult =
@@ -1298,6 +1307,45 @@ export async function applyCommandEventLocally(input: {
   if (!event.payload_json.materializationFacts) {
     return { ok: false, reason: "missing-materialization-facts", fallback: true };
   }
+  const nestCommands = readableCompactedCommands(event).filter(command => command.commandKind.startsWith("saveKittyNestDesign"));
+  if (event.command_type.startsWith("saveKittyNestDesign") && !nestCommands.length) nestCommands.push({ ...event.payload_json, ledgerScope: event.ledger_scope });
+  let incomingNest: NonNullable<Household["kittyNestDesigns"]>;
+  try {
+    incomingNest = shapeKittyNestDesigns(event.payload_json.materializationFacts.kittyNestDesigns);
+    if ((nestCommands.length > 0) !== (incomingNest.length > 0)) throw new Error("Missing bank designs.");
+    if (incomingNest.length && !local.members.some(member => member.id === event.member_id && member.active)) throw new Error("Inactive member.");
+    if (incomingNest.length) {
+      if (event.payload_json.commandKind !== event.command_type || event.payload_json.confirmationId !== event.confirmation_id || event.payload_json.identityHash !== event.identity_hash || event.payload_json.revision !== event.result_revision) throw new Error("Invalid bank receipt.");
+      const compacted = event.payload_json.compactedCommands;
+      if (compacted && !compacted.some(command => command.confirmationId === event.confirmation_id
+        && command.commandKind === event.command_type && command.ledgerScope === event.ledger_scope
+        && command.identityHash === event.identity_hash && command.revision === event.result_revision)) throw new Error("Missing primary receipt.");
+      if (compacted && (new Set(compacted.map(row => row.confirmationId)).size !== compacted.length || compacted.length !== event.payload_json.compactedConfirmationIds?.length || compacted.some(row => !event.payload_json.compactedConfirmationIds?.includes(row.confirmationId)))) throw new Error("Incomplete receipts.");
+      for (const command of nestCommands) {
+        if (command.ledgerScope !== event.ledger_scope || command.postedIds.length !== 1 || !incomingNest.some(row => row.id === command.postedIds[0]) || !event.payload_json.postedIds.includes(command.postedIds[0]!) || !command.identityHash || !command.auditHash || !command.revision || command.revision <= event.base_revision || command.revision > event.result_revision || !command.acceptedAt || !command.materializationHash) throw new Error("Incomplete bank receipt.");
+        if (compacted && command.receiptHash !== await commandReceiptEnvelopeHash({ ...command, identityHash: command.identityHash, auditHash: command.auditHash, revision: command.revision, acceptedAt: command.acceptedAt })) throw new Error("Bank receipt mismatch.");
+        if (command.confirmationId === event.confirmation_id && (command.identityHash !== event.identity_hash || command.commandKind !== event.command_type || command.revision !== event.result_revision)) throw new Error("Changed bank receipt.");
+      }
+    }
+    for (const row of incomingNest) {
+      const matching = nestCommands.filter(command => command.postedIds.includes(row.id));
+      const old = local.kittyNestDesigns?.find(candidate => candidate.id === row.id);
+      if (old && !["king", "plan"].includes(old.bankKey.split(":")[0]!)) assertNestKeepsakes(local, old, row);
+      const latestCommand = [...matching].sort((a,b) => (b.revision ?? 0) - (a.revision ?? 0))[0];
+      const candidate = { ...local, kittyNestDesigns: [row] };
+      if (!latestCommand || await sha256Hex(commandMaterializationFacts({ kittyNestDesigns: [row] })) !== latestCommand.materializationHash
+        || await commandIdentityHash({ ...local, revision: latestCommand.revision! - 1 }, candidate, latestCommand.postedIds) !== latestCommand.identityHash) throw new Error("Bank appearance does not match its receipt.");
+      const sourceFacts = filterFactsForScope(event, event.payload_json.materializationFacts);
+      const sources = { ...local,
+        recurrences: applyMoneyCollection(local.recurrences, sourceFacts.recurrences, []),
+        planVersions: applyMoneyCollection(local.planVersions ?? [], sourceFacts.planVersions, []),
+      };
+      if ((!old && row.createdBy !== event.member_id) || !nestSourceVisible(sources, event.member_id, row.visibility, row.bankKey) || !matching.length || !nestDesignInView(row, event.member_id, event.ledger_scope === "shared" ? "household" : "personal") || row.revision <= (old?.revision ?? 0)
+        || row.revision > (old?.revision ?? 0) + matching.length
+        || (old && (old.visibility !== row.visibility || old.createdBy !== row.createdBy || old.bankKey !== row.bankKey || old.createdAt !== row.createdAt))
+        || (old?.setupCompletedAt && old.setupCompletedAt !== row.setupCompletedAt)) throw new Error("Invalid bank design revision or owner.");
+    }
+  } catch { return { ok: false, reason: "kitty-nest-materialization-invalid", fallback: true }; }
   const incomingRehearsals = shapeMonthRehearsals(
     event.payload_json.materializationFacts.monthRehearsals,
   );
@@ -1552,11 +1600,12 @@ export async function applyCommandEventLocally(input: {
       return { ok: false, reason: "onboarding-adoption-authority-mismatch", fallback: true };
     }
   }
-  if (incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length
+  if (incomingNest.length || incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length
     || incomingCategoryProposals.length || incomingCategoryMerges.length || incomingApprovals.length
     || incomingBudgetPlans.length || containsChapterCommand || incomingChapters.length || incomingRituals.length
     || incomingMoves.length || incomingWins.length) {
     const expected = await sha256Hex(commandMaterializationFacts({
+      kittyNestDesigns: incomingNest,
       monthRehearsals: incomingRehearsals,
       recurrences: incomingRecurrences,
       householdOnboarding: incomingOnboarding,
@@ -1571,7 +1620,7 @@ export async function applyCommandEventLocally(input: {
       moves: incomingMoves,
       wins: incomingWins,
     }));
-    const legacyRehearsalHash = incomingRehearsals.length && !incomingRecurrences.length
+    const legacyRehearsalHash = !incomingNest.length && incomingRehearsals.length && !incomingRecurrences.length
       ? await sha256Hex(incomingRehearsals)
       : null;
     if (!event.payload_json.materializationHash

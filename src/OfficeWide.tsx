@@ -636,7 +636,7 @@ export function OfficeWide({
           )}
         </div>
         <div ref={noteRef} className="office-wide-notebook office-wide-banks">
-          <KittyBanks
+          {view === "household" && <KittyBanks
             environment={environment}
             household={household}
             booksHousehold={booksHousehold}
@@ -647,7 +647,8 @@ export function OfficeWide({
             onCommand={onKitchen}
             onAskStartJar={onAskStartJar}
             onOpenPlan={() => onGo("plan")}
-          />
+            onOpenCalendar={() => onGo("calendar")}
+          />}
         </div>
       </div>
 

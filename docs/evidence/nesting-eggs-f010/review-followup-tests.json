@@ -1,0 +1,9 @@
+{
+  "command": "pnpm exec vitest run test/kitty-nest.test.ts test/kitty-nest-ui.test.ts",
+  "tests": 26,
+  "files": 2,
+  "passed": 26,
+  "durationSeconds": 4.4,
+  "newRegressions": 8,
+  "readOnlyReview": "No remaining blocker in the focused fixes"
+}
