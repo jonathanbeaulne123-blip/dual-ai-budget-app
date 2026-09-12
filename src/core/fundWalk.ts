@@ -12,7 +12,7 @@ import {
   activeHouseholdFundEvents,
   householdFundContributionMotions,
   householdFundOperatingDelta,
-  projectHouseholdFund,
+  projectHouseholdFundAsOf,
   projectHouseholdFundOperatingBalanceBefore,
   shapeHouseholdFundConfig,
   shapeHouseholdFundMonthPlans,
@@ -191,7 +191,7 @@ export function prepareFundObligations(
   anchor: DateKey,
 ): { obligations: ReturnType<typeof monthObligations>; rows: ProjectedOutflow[] } {
   const obligations = monthObligations(household, monthKey, anchor);
-  const projection = projectHouseholdFund(household, anchor);
+  const projection = projectHouseholdFundAsOf(household, { anchor, period: monthKey, asOf: null });
   const outstandingByTransaction = new Map(
     projection.transactionPositions.map((position) => [position.transactionId, position.outstandingCents]),
   );

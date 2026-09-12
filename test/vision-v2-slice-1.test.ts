@@ -63,7 +63,7 @@ describe("Vision v2 slice 1 — adaptive action", () => {
     expect(fabActionsFor("household", "home")[0]!.id).toBe("record-expense");
     expect(fabActionsFor("household", "plan").slice(0, 2).map((row) => row.id)).toEqual(["record-expense", "move-money"]);
     expect(fabActionsFor("household", "ledger").slice(0, 3).map((row) => row.id)).toEqual(["record-expense", "add-income", "move-money"]);
-    for (const tab of ["home", "ledger", "plan", "together", "planner"]) {
+    for (const tab of ["home", "ledger", "plan", "together", "planner", "timeMachine"]) {
       const actions = fabActionsFor("household", tab);
       expect(actions).toHaveLength(4);
       expect(actions.every((row) => row.kind === "add" && row.money)).toBe(true);
@@ -72,7 +72,7 @@ describe("Vision v2 slice 1 — adaptive action", () => {
   });
 
   it("keeps every money verb on an Add mode and marks navigation verbs as non-money", () => {
-    for (const tab of ["home", "ledger", "plan", "together", "planner"]) {
+    for (const tab of ["home", "ledger", "plan", "together", "planner", "timeMachine"]) {
       for (const action of fabActionsFor("household", tab)) {
         if (action.kind === "add") expect(action.money).toBe(true);
         else expect(action.money).toBe(false);

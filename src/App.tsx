@@ -1,5 +1,6 @@
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
 import { Planner } from "./planner/Planner.tsx";
+import { TimeMachine } from "./timeMachine/TimeMachine.tsx";
 import { personalCalendarUpdateAllowed } from "./core/personalCalendarAuthority.ts";
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
@@ -537,7 +538,7 @@ import {
 
 type Tab = AppTab;
 
-function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner"> {
+function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine"> {
   if (tab === "planner" || tab === "till") return "home";
   const scene = sceneTabFor(tab);
   return scene === "till" ? "home" : scene;
@@ -6665,7 +6666,7 @@ export function App() {
         <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
 
-      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger"} />
+      <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger" || tab === "timeMachine"} />
       <WorldCharm page={sceneTabFor(tab)} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
@@ -6687,6 +6688,7 @@ export function App() {
       ) : null}
 
       {tab === "planner" && <Planner household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
+      {tab === "timeMachine" && <TimeMachine household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
       {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
@@ -7087,6 +7089,7 @@ export function App() {
           onPayAccount={openPayCard}
           onAddToAccount={(account) => openAddFor(account)}
           onGoMore={() => goTab("more")}
+          onOpenTimeMachine={() => goTab("timeMachine")}
           requestedPane={booksPaneRequest}
           onConsumeRequestedPane={() => setBooksPaneRequest(null)}
           onRemove={(transaction) => {
@@ -8576,8 +8579,8 @@ export function App() {
         )}
         {view === "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
-          className={tab === "ledger" ? "active" : ""}
-          aria-current={tab === "ledger" ? "page" : undefined}
+          className={tab === "ledger" || tab === "timeMachine" ? "active" : ""}
+          aria-current={tab === "ledger" || tab === "timeMachine" ? "page" : undefined}
           onPointerEnter={() => preloadTab("ledger")}
           onFocus={() => preloadTab("ledger")}
           onClick={() => goTab("ledger")}
@@ -8595,8 +8598,8 @@ export function App() {
         />
         {view !== "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
-          className={tab === "ledger" ? "active" : ""}
-          aria-current={tab === "ledger" ? "page" : undefined}
+          className={tab === "ledger" || tab === "timeMachine" ? "active" : ""}
+          aria-current={tab === "ledger" || tab === "timeMachine" ? "page" : undefined}
           onPointerEnter={() => preloadTab("ledger")}
           onFocus={() => preloadTab("ledger")}
           onClick={() => goTab("ledger")}

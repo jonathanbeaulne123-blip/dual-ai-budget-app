@@ -3,6 +3,7 @@ import {
   activeHouseholdFundEvents,
   assertHouseholdFundIntegrity,
   projectHouseholdFund,
+  projectHouseholdFundAsOf,
   projectHouseholdFundRecurrenceDates,
   projectHouseholdFundRecurrenceOccurrences,
   shapeHouseholdFundConfig,
@@ -118,7 +119,9 @@ export function monthObligations(household: Household, monthKey: string, today: 
   const fund = shapeHouseholdFundConfig(household.householdFund);
   if (!fund) return { monthKey, rows: [], owedCents: 0, tiesToProjection: false };
 
-  const projection = projectHouseholdFund(household, from);
+  // Period and observation, named apart: this month's obligations are read from
+  // where the month stands, not from whatever day the caller happens to hold.
+  const projection = projectHouseholdFundAsOf(household, { anchor: from, period: monthKey, asOf: null });
   const postedSources = postedPositionSources(household, fund.id);
   const recurrenceById = new Map(household.recurrences.map((row) => [row.id, row]));
   const postedRecurrenceOccurrences = new Set(household.transactions

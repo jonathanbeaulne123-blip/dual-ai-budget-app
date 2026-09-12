@@ -153,13 +153,24 @@ function lastEntryDate(books: CompiledBooks): DateKey | null {
   return books.entries.at(-1)?.date ?? null;
 }
 
+/**
+ * The books as they stood on a civil day. A balance sheet is cumulative, so it
+ * is the one statement that cannot be scoped by a month key alone: asking for
+ * July's position while standing in September has to drop August's postings or
+ * the answer is this month's position wearing July's title.
+ */
+function booksAsOf(books: CompiledBooks, asOf: DateKey | null): CompiledBooks {
+  if (!asOf) return books;
+  return { ...books, entries: books.entries.filter((entry) => entry.date <= asOf) };
+}
+
 function cashLike(kind: Household["accounts"][number]["kind"]): boolean {
   return isCashLikeKind(kind);
 }
 
-export function auditOpinion(household: Household): AuditOpinion {
+export function auditOpinion(household: Household, asOf: DateKey | null = null): AuditOpinion {
   const findings = runHealthCheck(household);
-  const books = compileHousehold(household);
+  const books = booksAsOf(compileHousehold(household), asOf);
   const trial = trialBalance(books, { recognizedOnly: true });
   const equation = booksEquation(books);
   let kind: AuditOpinionKind = "unmodified";
@@ -189,8 +200,8 @@ export function auditOpinion(household: Household): AuditOpinion {
   };
 }
 
-export function balanceSheet(household: Household): BalanceSheet {
-  const books = compileHousehold(household);
+export function balanceSheet(household: Household, asOf: DateKey | null = null): BalanceSheet {
+  const books = booksAsOf(compileHousehold(household), asOf);
   const trial = trialBalance(books, { recognizedOnly: true });
   const equation = booksEquation(books);
   const assets: StatementLine[] = [];
@@ -321,7 +332,7 @@ function recognizedNetThrough(household: Household, asOf: DateKey | null): numbe
   return net;
 }
 
-export function statementOfChangesInEquity(household: Household, monthKey: MonthKey): EquityMovement {
+export function statementOfChangesInEquity(household: Household, monthKey: MonthKey, asOf: DateKey | null = null): EquityMovement {
   const openingCents = recognizedNetThrough(household, addDays(monthStartKey(monthKey), -1));
   const netIncomeCents = incomeStatement(household, monthKey).netCents;
   const closingCents = recognizedNetThrough(household, monthEndKey(monthKey));
@@ -331,7 +342,9 @@ export function statementOfChangesInEquity(household: Household, monthKey: Month
     netIncomeCents,
     closingCents,
     rolls: openingCents + netIncomeCents === closingCents,
-    householdEquityCents: balanceSheet(household).equityCents,
+    // The household's standing equity is cumulative, so a month behind you must
+    // read it as of that month's end, not as of today.
+    householdEquityCents: balanceSheet(household, asOf).equityCents,
   };
 }
 
@@ -350,8 +363,8 @@ export function comparativeIncome(household: Household, monthKey: MonthKey): Com
   };
 }
 
-export function workingCapital(household: Household): WorkingCapital {
-  const sheet = balanceSheet(household);
+export function workingCapital(household: Household, asOf: DateKey | null = null): WorkingCapital {
+  const sheet = balanceSheet(household, asOf);
   return {
     currentAssetCents: sheet.assetCents,
     currentLiabilityCents: sheet.liabilityCents,

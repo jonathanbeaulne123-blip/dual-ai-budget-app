@@ -1,5 +1,5 @@
 import { shapeFundSourceDeclaration } from "./fundContributionSources.ts";
-import { addDays, monthKeyFromDateKey, type DateKey } from "./calendar.ts";
+import { monthEndKey, monthKeyFromDateKey, monthStartKey, type DateKey, type MonthKey } from "./calendar.ts";
 import type {
   Household,
   HouseholdFundConfig,
@@ -493,13 +493,59 @@ export function projectHouseholdFundRecurrenceOccurrences(
   return rows.sort((left, right) => left.date.localeCompare(right.date) || left.recurrenceId.localeCompare(right.recurrenceId));
 }
 
-function monthEnd(date: DateKey): DateKey {
-  const nextMonth = new Date(`${date.slice(0, 7)}-01T00:00:00.000Z`);
-  nextMonth.setUTCMonth(nextMonth.getUTCMonth() + 1);
-  return addDays(nextMonth.toISOString().slice(0, 10) as DateKey, -1);
+/**
+ * An observation date and a reported month, held apart.
+ *
+ * Hearth collapsed both into one `today` string, which is why nothing could
+ * travel: point the projector at July while it is September and the balance
+ * came from every event ever recorded while the reserve, the plan and the
+ * target came from September. `anchor` says where the month stands, `period`
+ * says which month is being reported, and `asOf` says what had happened yet.
+ */
+export type FundLens = {
+  /** Where the reported month stands. The reserve counts from here to its end. */
+  anchor: DateKey;
+  /** The month whose plan, target and reserve window are reported. */
+  period: MonthKey;
+  /**
+   * Nothing dated after this is known yet. `null` keeps every event, which is
+   * how present-day Hearth has always read the Fund; changing that default is
+   * a money-meaning decision and belongs to Jonathan, not to this projector.
+   */
+  asOf: DateKey | null;
+};
+
+/**
+ * The lens for looking at one month from a given day. The anchor is clamped
+ * into the month exactly the way `fundWalk` already clamps its own (`:228`),
+ * so the walk and the projection finally answer with the same arithmetic:
+ * a month behind you is read at its last day, a month ahead at its first.
+ */
+export function fundLensForPeriod(period: MonthKey, today: DateKey): FundLens {
+  const start = monthStartKey(period);
+  const end = monthEndKey(period);
+  const anchor = today < start ? start : today > end ? end : today;
+  return { anchor, period, asOf: anchor };
+}
+
+/** The present-day lens: today, this month, every event counted. */
+export function fundLensToday(today: DateKey): FundLens {
+  return { anchor: today, period: monthKeyFromDateKey(today), asOf: null };
 }
 
 export function projectHouseholdFund(household: Household, today: DateKey): HouseholdFundProjection {
+  return projectHouseholdFundAsOf(household, fundLensToday(today));
+}
+
+/**
+ * The Fund as one month saw it. Every figure below is scoped by the lens:
+ * cumulative ones (the operating balance, contributions, settlements, the
+ * kitty) by `asOf`, month-shaped ones (the reserve, the plan, the target and
+ * its progress) by `period` and `anchor`. With `fundLensToday` the arithmetic
+ * is identical to what Hearth has always produced.
+ */
+export function projectHouseholdFundAsOf(household: Household, lens: FundLens): HouseholdFundProjection {
+  const { anchor, period } = lens;
   const config = shapeHouseholdFundConfig(household.householdFund);
   if (!config) return {
     configured: false,
@@ -522,7 +568,13 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
     transactionPositions: [],
     destinationPositions: [],
   };
-  const events = activeHouseholdFundEvents(household, config.id);
+  // An as-of read must not count money that has not happened yet. `asOf: null`
+  // keeps every event, which is the reading every present-day surface has had.
+  const knownByDate = <T extends { date: DateKey }>(rows: T[]): T[] => (
+    lens.asOf === null ? rows : rows.filter((row) => row.date <= lens.asOf!)
+  );
+  const events = knownByDate(activeHouseholdFundEvents(household, config.id));
+  const transactions = knownByDate(household.transactions);
   const confirmedContributionsCents = events.filter((event) => event.kind === "contribution-confirmed").reduce((sum, event) => sum + event.amountCents, 0);
   const pendingContributionsCents = householdFundContributionMotions(household, config.id)
     .filter((motion) => motion.status === "open" || motion.status === "held")
@@ -533,7 +585,7 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
   const kittyCents = kittyAllocated - kittyReleased;
   const operatingBalanceCents = events.reduce((sum, event) => sum + householdFundOperatingDelta(event), 0);
 
-  const txById = new Map(household.transactions.map((tx) => [tx.id, tx]));
+  const txById = new Map(transactions.map((tx) => [tx.id, tx]));
   const positions = new Map<string, HouseholdFundTransactionPosition>();
   const fundingEvents = events.filter((event) => event.kind === "purchase-funded" || event.kind === "refund-funded");
   const fundingEventById = new Map(fundingEvents.map((event) => [event.id, event]));
@@ -562,7 +614,7 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
     positions.set(transactionId, current);
   }
   const representedTransactionIds = new Set(fundingEvents.flatMap((event) => event.relatedTransactionIds));
-  for (const tx of household.transactions) {
+  for (const tx of transactions) {
     if (representedTransactionIds.has(tx.id) || (tx.funding?.positionId && representedTransactionIds.has(tx.funding.positionId))) continue;
     const signed = signedFundingForTransaction(tx, txById);
     if (!signed) continue;
@@ -603,10 +655,12 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
   })).sort((left, right) => left.destinationAccountId.localeCompare(right.destinationAccountId));
   const transferDueCents = destinationPositions.reduce((sum, item) => sum + item.dueCents, 0);
   const transferCreditCents = destinationPositions.reduce((sum, item) => sum + item.creditCents, 0);
-  const upcomingReserveCents = projectHouseholdFundRecurrenceOccurrences(household, config.id, today, monthEnd(today))
+  // What the reported month still owes the Fund, counted from where that month
+  // stands — the whole of a month ahead, nothing at all of a month behind.
+  const upcomingReserveCents = projectHouseholdFundRecurrenceOccurrences(household, config.id, anchor, monthEndKey(period))
     .reduce((sum, occurrence) => sum + occurrence.amountCents, 0);
   const plan = shapeHouseholdFundMonthPlans(household.fundMonthPlans)
-    .filter((item) => item.fundId === config.id && item.monthKey === monthKeyFromDateKey(today))
+    .filter((item) => item.fundId === config.id && item.monthKey === period)
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
   const bufferCents = plan?.bufferCents ?? 0;
   const freeToSpendCents = operatingBalanceCents - transferDueCents + transferCreditCents - upcomingReserveCents;
@@ -620,7 +674,7 @@ export function projectHouseholdFund(household: Household, today: DateKey): Hous
   // "Monthly target" is a per-month plan, so its progress is this month's
   // confirmed contributions — not every contribution ever made to the Fund.
   const monthContributionsCents = events
-    .filter((event) => event.kind === "contribution-confirmed" && monthKeyFromDateKey(event.date) === monthKeyFromDateKey(today))
+    .filter((event) => event.kind === "contribution-confirmed" && monthKeyFromDateKey(event.date) === period)
     .reduce((sum, event) => sum + event.amountCents, 0);
   return {
     configured: true,

@@ -1,0 +1,444 @@
+{
+  "records": [
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "classic",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-320-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-390-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "classic",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-720-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-1100-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "classic",
+      "width": 1440,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-1440-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "taylor",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-320-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-390-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "taylor",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-720-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-1100-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1440,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-1440-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-320-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-390-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-720-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-1100-household-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1440,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-1440-household-month.png"
+    },
+    {
+      "pane": "compare",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-390-household-compare.png"
+    },
+    {
+      "pane": "compare",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-1100-household-compare.png"
+    },
+    {
+      "pane": "compare",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-390-household-compare.png"
+    },
+    {
+      "pane": "compare",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-1100-household-compare.png"
+    },
+    {
+      "pane": "compare",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-390-household-compare.png"
+    },
+    {
+      "pane": "compare",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-1100-household-compare.png"
+    },
+    {
+      "pane": "ahead",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-390-household-ahead.png"
+    },
+    {
+      "pane": "ahead",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-1100-household-ahead.png"
+    },
+    {
+      "pane": "ahead",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-390-household-ahead.png"
+    },
+    {
+      "pane": "ahead",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-1100-household-ahead.png"
+    },
+    {
+      "pane": "ahead",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-390-household-ahead.png"
+    },
+    {
+      "pane": "ahead",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-1100-household-ahead.png"
+    },
+    {
+      "pane": "year",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-390-household-year.png"
+    },
+    {
+      "pane": "year",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-1100-household-year.png"
+    },
+    {
+      "pane": "year",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-390-household-year.png"
+    },
+    {
+      "pane": "year",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-1100-household-year.png"
+    },
+    {
+      "pane": "year",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-390-household-year.png"
+    },
+    {
+      "pane": "year",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-1100-household-year.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "classic",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-320-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-390-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "classic",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-720-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-1100-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "classic",
+      "width": 1440,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/classic-1440-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-320-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-390-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-720-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-1100-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 1440,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/taylor-1440-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-320-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-390-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-720-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-1100-personal-month.png"
+    },
+    {
+      "pane": "month",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 1440,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/repo/docs/evidence/time-machine/newfoundland-1440-personal-month.png"
+    },
+    {
+      "pane": "keyboard",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "outlineStyle": "solid"
+    }
+  ],
+  "errors": []
+}

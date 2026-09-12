@@ -199,7 +199,12 @@ describe("Audit Office", () => {
     const asked = askHercules(household, "opinion", today);
     expect(asked.sentence).toMatch(/Unmodified|Qualified|Adverse/);
     const talk = talkHercules(household, "who are you", today, "ledger");
-    expect(talk.spoken).toMatch(/auditor|don't write/i);
+    // #425 rewrote the identity reply (`herculesTalk.ts:436`) and left this
+    // assertion on the retired "auditor / don't write" wording, so the suite
+    // has been red on `main` since 2026-09-10. The contract this test exists to
+    // hold is unchanged: asked who he is, Hercules says he prepares changes for
+    // Final Confirm rather than writing anything himself.
+    expect(talk.spoken).toMatch(/prepare changes for Final Confirm/i);
 
     const ink = COSMETIC_BY_ID.get("ink")!;
     expect(isCosmeticUnlocked(household, ink, today)).toBe(true);

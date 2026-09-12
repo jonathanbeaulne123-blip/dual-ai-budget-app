@@ -882,6 +882,16 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   border-radius: 10px;
 }
 .budget-edit .chip { width: auto; margin: 0; padding: 8px 12px; }
+/* Books reads a month at a time (D-247). The control pages what is read; the
+   write anchor stays the real current month, so history has no edit affordance. */
+.books-month {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin: 0 0 12px; color: var(--ink);
+}
+.books-month strong { font-family: var(--display); }
+.books-month .muted { font-size: .84rem; }
+.books-month .chip[disabled] { opacity: .45; cursor: default; }
+
 .budget-edit-trigger {
   width: auto;
   padding: 4px 0;

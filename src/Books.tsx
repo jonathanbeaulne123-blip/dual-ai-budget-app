@@ -32,6 +32,8 @@ import {
   likelyMiscoded,
   categoryName,
   monthKeyFromDateKey,
+  monthEndKey,
+  formatMonthLabel,
   notesToFinancialStatements,
   booksPresentationFloor,
   recordReconciliation,
@@ -114,6 +116,7 @@ function BooksSession({
   onGoMore,
   requestedPane,
   onConsumeRequestedPane,
+  onOpenTimeMachine,
 }: {
   pendingRows?: PendingPreview[];
   household: Household;
@@ -137,6 +140,8 @@ function BooksSession({
   onGoMore?: () => void;
   requestedPane?: "fund" | "fund-register" | "wallet" | "opening" | "register" | null;
   onConsumeRequestedPane?: () => void;
+  /** The time machine (D-247): one route from Books, never from + or a second chrome bar. */
+  onOpenTimeMachine?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "overview");
   const [accountFormOpenRequest, setAccountFormOpenRequest] = useState(0);
@@ -178,9 +183,13 @@ function BooksSession({
   const [sharedFocus, setSharedFocus] = useState<string | null>(null);
   const [activityFocus, setActivityFocus] = useState<HerculesNumberSource | null>(null);
   const monthKey = monthKeyFromDateKey(today);
+  // Reading pages; writing does not. `monthKey` stays the real current month so
+  // budget edits, reconciliation and close keep meaning exactly what they meant
+  // before a month control existed; `viewMonth` is only what is being read.
+  const [viewMonth, setViewMonth] = useState(monthKey);
   const fundRegister = useMemo(
-    () => contributionRegister(booksHousehold, monthKey, today),
-    [booksHousehold, monthKey, today],
+    () => contributionRegister(booksHousehold, viewMonth, today),
+    [booksHousehold, viewMonth, today],
   );
   const registerMembers = useMemo<RegisterMemberView[]>(() => {
     const custodianMemberId = booksHousehold.householdFund?.custodianMemberId ?? null;
@@ -286,6 +295,7 @@ function BooksSession({
           <div className="label">My books · CAD · {household.timezone}</div>
           <div className={`money ${wallet.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(wallet.netWorthCents)}</div>
           <div className="sub whisper-row">Rooms I can manage · accepted-books position<Whisper mode="aside" id="books.my-books">Partner-personal rooms stay off this floor. The figure is your accepted-books position, not a partner-hidden envelope.</Whisper></div>
+          {onOpenTimeMachine ? <button type="button" className="chip" onClick={onOpenTimeMachine}>My months</button> : null}
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
               Trial is off. Open Audit before treating the journal as closed.
@@ -366,6 +376,12 @@ function BooksSession({
             </button>}
           </div>
           <p className="muted">Accepted balances. Savings, Kitty and operating money are shown separately and are not added together. {LEDGER_CUSTODY_DISCLOSURE}</p>
+          {onOpenTimeMachine ? (
+            <button type="button" className="household-books-obligations" onClick={onOpenTimeMachine}>
+              <span><strong>Months</strong><small>See any month, behind or ahead. Reading only.</small></span>
+              <strong>{formatMonthLabel(monthKey)} <span aria-hidden="true">→</span></strong>
+            </button>
+          ) : null}
           <button type="button" className="household-books-obligations" onClick={() => setPane("fund-register")}>
             <span><strong>Obligations · {monthKey}</strong><small>{fundRegister.rows.length} planned obligations · {formatCad(fundRegister.unfundedCents)} unfunded</small></span>
             <strong>{formatCad(fundRegister.owedCents)} <span aria-hidden="true">→</span></strong>
@@ -428,7 +444,10 @@ function BooksSession({
         </>
       )}
       {pane === "fund-register" && sharedTable && (
-        <Register register={fundRegister} members={registerMembers} />
+        <>
+          <MonthControl monthKey={viewMonth} currentMonthKey={monthKey} onChange={setViewMonth} onOpenTimeMachine={onOpenTimeMachine} />
+          <Register register={fundRegister} members={registerMembers} />
+        </>
       )}
       {pane === "register" && (
         <LedgerPage
@@ -581,7 +600,7 @@ function BooksSession({
         </section>
       )}
       {pane === "statements" && (
-        <StatementsPane household={auditHousehold} writeHousehold={booksHousehold} monthKey={monthKey} today={today} onChange={onChange} />
+        <StatementsPane household={auditHousehold} writeHousehold={booksHousehold} monthKey={viewMonth} currentMonthKey={monthKey} today={today} onChange={onChange} onMonthChange={setViewMonth} onOpenTimeMachine={onOpenTimeMachine} />
       )}
       {pane === "rec" && (
         <section className="card">
@@ -835,26 +854,61 @@ function BooksStorageNotes({
   );
 }
 
+/**
+ * One month control, shared by every pane that reads a period. Stepping it
+ * changes what is read and nothing else: a month behind you is history, and
+ * history has no edit affordance here.
+ */
+function MonthControl({ monthKey, currentMonthKey, onChange, onOpenTimeMachine }: { monthKey: string; currentMonthKey: string; onChange: (monthKey: string) => void; onOpenTimeMachine?: () => void }) {
+  return (
+    <div className="books-month" role="group" aria-label="Month">
+      <button type="button" className="chip" aria-label="Previous month" onClick={() => onChange(shiftMonthKey(monthKey, -1))}>‹</button>
+      <strong>{formatMonthLabel(monthKey)}</strong>
+      <button
+        type="button"
+        className="chip"
+        aria-label="Next month"
+        disabled={monthKey >= currentMonthKey}
+        onClick={() => onChange(shiftMonthKey(monthKey, 1))}
+      >›</button>
+      {monthKey === currentMonthKey ? null : (
+        <button type="button" className="chip quiet" onClick={() => onChange(currentMonthKey)}>This month</button>
+      )}
+      {onOpenTimeMachine ? <button type="button" className="chip quiet" onClick={onOpenTimeMachine}>See any month</button> : null}
+      {monthKey === currentMonthKey ? null : <span className="muted">Reading a past month. Changes still belong to {formatMonthLabel(currentMonthKey)}.</span>}
+    </div>
+  );
+}
+
 function StatementsPane({
   household,
   writeHousehold = household,
   monthKey,
+  currentMonthKey,
   today,
   onChange,
+  onMonthChange,
+  onOpenTimeMachine,
 }: {
   household: Household;
   writeHousehold?: Household;
   monthKey: string;
+  currentMonthKey: string;
   today: string;
   onChange: (household: Household, undo?: UndoToken) => void;
+  onMonthChange: (monthKey: string) => void;
+  onOpenTimeMachine?: () => void;
 }) {
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [budgetError, setBudgetError] = useState("");
-  const sheet = useMemo(() => balanceSheet(household), [household]);
+  // A balance sheet is cumulative, so a month behind you is read as it stood at
+  // that month's end rather than as it stands today.
+  const asOf = monthKey < currentMonthKey ? monthEndKey(monthKey) : null;
+  const sheet = useMemo(() => balanceSheet(household, asOf), [household, asOf]);
   const income = useMemo(() => incomeStatement(household, monthKey), [household, monthKey]);
   const cash = useMemo(() => cashFlowStatement(household, monthKey), [household, monthKey]);
-  const equity = useMemo(() => statementOfChangesInEquity(household, monthKey), [household, monthKey]);
+  const equity = useMemo(() => statementOfChangesInEquity(household, monthKey, asOf), [household, monthKey, asOf]);
   const comparative = useMemo(() => comparativeIncome(household, monthKey), [household, monthKey]);
   const liq = useMemo(() => liquidityWatch(household, today), [household, today]);
   const notes = useMemo(() => notesToFinancialStatements(household, monthKey, today), [household, monthKey, today]);
@@ -878,8 +932,11 @@ function StatementsPane({
     }
   }
 
+  const readingHistory = monthKey !== currentMonthKey;
+
   return (
     <>
+      <MonthControl monthKey={monthKey} currentMonthKey={currentMonthKey} onChange={onMonthChange} onOpenTimeMachine={onOpenTimeMachine} />
       <section className="card">
         <header>
           <h2>Balance sheet</h2>
@@ -963,6 +1020,8 @@ function StatementsPane({
                   Cancel
                 </button>
               </span>
+            ) : readingHistory ? (
+              <span className="muted">{formatCad(row.actualCents)} / {formatCad(row.budgetedCents)}</span>
             ) : (
               <button
                 type="button"
