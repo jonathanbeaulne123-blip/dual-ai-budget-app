@@ -3,6 +3,7 @@ import {
   compareMonths,
   formatCad,
   formatDayLabel,
+  formatMonthLabel,
   monthForecast,
   monthKeyFromDateKey,
   monthKeysBetween,
@@ -49,11 +50,14 @@ const PANES: { id: Pane; label: string }[] = [
 
 const STATE_WORD: Record<MonthState, string> = { behind: "Behind you", now: "Now", ahead: "Ahead" };
 
-/** A bead's height is how much the month moved, floored so a quiet month is still a bead. */
+/**
+ * A bead's height is what the month took — the one figure that makes months
+ * look different from each other. What came in is in the bead's spoken label,
+ * where it belongs; a month with a big paycheque is not a big month.
+ */
 function beadHeight(bead: TimelineBead, peakCents: number): number {
-  const moved = Math.max(bead.expenseCents, bead.incomeCents);
   if (!peakCents) return 12;
-  return Math.round(12 + (moved / peakCents) * 30);
+  return Math.round(12 + (bead.expenseCents / peakCents) * 30);
 }
 
 function signCad(cents: number): string {
@@ -74,7 +78,7 @@ export function TimeMachine({ household, memberId, view, today, onOpenBooks }: T
   const comparison = useMemo(() => (pane === "compare" ? compareMonths(household, against, period) : null), [pane, household, against, period]);
   const forecast = useMemo(() => (pane === "ahead" ? monthForecast(household, today, 6) : null), [pane, household, today]);
   const lastYear = useMemo(() => thisTimeLastYear(household, today), [household, today]);
-  const peakCents = beads.reduce((peak, bead) => Math.max(peak, bead.expenseCents, bead.incomeCents), 0);
+  const peakCents = beads.reduce((peak, bead) => Math.max(peak, bead.expenseCents), 0);
 
   // The selected bead stays in view when the month changes from anywhere —
   // a keyboard step, a year cell, or a comparison.
@@ -226,6 +230,14 @@ export function TimeMachine({ household, memberId, view, today, onOpenBooks }: T
           <button type="button" className="time-machine__door" onClick={() => onOpenBooks(period)}>Open the books for {month.label}</button>
         ) : null}
 
+        <p className="time-machine__close">
+          {month.state === "ahead"
+            ? `${month.label} is still a plan.`
+            : month.summary.netActualCents >= 0
+              ? `${month.label}: ${formatCad(month.summary.expenseActualCents)} out, ${formatCad(month.summary.incomeActualCents)} in, ${formatCad(month.summary.netActualCents)} left over.`
+              : `${month.label}: ${formatCad(month.summary.expenseActualCents)} out against ${formatCad(month.summary.incomeActualCents)} in.`}
+        </p>
+
         {lastYear && period === currentMonth ? (
           <article className="time-machine__card time-machine__lastyear">
             <h3>This time last year</h3>
@@ -263,22 +275,22 @@ export function TimeMachine({ household, memberId, view, today, onOpenBooks }: T
             {comparison.headlines.map((line) => `${line.name} ${line.change === "new" ? "is new" : line.change === "stopped" ? "stopped" : `${signCad(line.deltaCents)}`}`).join(" · ")}
           </p>
         ) : null}
-        <table className="time-machine__table">
+        <div className="time-machine__scroll" role="region" tabIndex={0} aria-label="Two months side by side, as a table"><table className="time-machine__table">
           <caption className="time-machine__sr">{comparison.leftLabel} compared with {comparison.rightLabel}</caption>
           <thead>
             <tr><th scope="col">Where</th><th scope="col">{comparison.leftLabel}</th><th scope="col">{comparison.rightLabel}</th><th scope="col">Change</th></tr>
           </thead>
           <tbody>
             {comparison.lines.map((line) => (
-              <tr key={line.id} data-change={line.change}>
-                <th scope="row">{line.name}</th>
+              <tr key={line.id} data-change={line.change} data-type={line.type}>
+                <th scope="row">{line.name}{line.type === "income" ? <span className="time-machine__in">in</span> : null}</th>
                 <td>{formatCad(line.leftCents)}</td>
                 <td>{formatCad(line.rightCents)}</td>
                 <td>{line.change === "new" ? "new" : line.change === "stopped" ? "stopped" : line.change === "same" ? "—" : signCad(line.deltaCents)}</td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </section>
     ) : null}
 
@@ -293,7 +305,7 @@ export function TimeMachine({ household, memberId, view, today, onOpenBooks }: T
           {forecast.shortFrom ? (
             <p className="time-machine__warn">The Fund runs short on {formatDayLabel(forecast.shortFrom)} unless something moves.</p>
           ) : null}
-          <table className="time-machine__table">
+          <div className="time-machine__scroll" role="region" tabIndex={0} aria-label="Expected money month by month, as a table"><table className="time-machine__table">
             <caption className="time-machine__sr">Expected money, month by month</caption>
             <thead>
               <tr><th scope="col">Month</th><th scope="col">Expected in</th><th scope="col">Expected out</th><th scope="col">Lowest</th><th scope="col">Ends at</th></tr>
@@ -309,7 +321,7 @@ export function TimeMachine({ household, memberId, view, today, onOpenBooks }: T
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
           <ul className="time-machine__assumptions">
             {forecast.assumptions.map((line) => <li key={line}>{line}</li>)}
           </ul>
@@ -352,7 +364,7 @@ function YearPane({ household, today, period, onPick }: { household: Household; 
     </ol>
     <p className="time-machine__muted">
       {data.hardestMonthKey
-        ? `The year cost ${formatCad(data.expenseCents)}. ${data.hardestMonthKey} took the most.`
+        ? `The year cost ${formatCad(data.expenseCents)}. ${formatMonthLabel(data.hardestMonthKey)} took the most.`
         : "Nothing recorded in this year yet."}
     </p>
   </section>;
