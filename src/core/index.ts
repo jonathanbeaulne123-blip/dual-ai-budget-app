@@ -80,6 +80,7 @@ export * from "./environmentIsolation.ts";
 export * from "./journal.ts";
 export * from "./accounts.ts";
 export * from "./statements.ts";
+export * from "./timeMachine.ts";
 export * from "./appointments.ts";
 export * from "./rhythm.ts";
 export * from "./board.ts";
