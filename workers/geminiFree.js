@@ -61,7 +61,9 @@ export async function generateFreeGemini(env, model, body, reserveRun, identity 
     // Native fetch makes exactly one HTTP attempt: no SDK/provider retry or fallback.
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:${method}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.HERCULES_GEMINI_FREE_KEY },
-      body: JSON.stringify(payload), signal: AbortSignal.timeout(60000), redirect: 'error',
+      // Workers supports manual/follow only. Reject non-2xx below without
+      // following redirects or forwarding the credential to another origin.
+      body: JSON.stringify(payload), signal: AbortSignal.timeout(60000), redirect: 'manual',
     });
     if (response.status === 429) { await quota.pauseUntilReset(); throw Error('GEMINI_FREE_PROVIDER_LIMIT'); }
     if (!response.ok) throw Error('GEMINI_FREE_PROVIDER_UNAVAILABLE');

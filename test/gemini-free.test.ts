@@ -32,7 +32,7 @@ async function fixture() {
   const calls: any[] = [], reserve = vi.fn(async(request) => {calls.push(request); return {ok:true};}), pauseUntilReset=vi.fn();
   const env = {HERCULES_GEMINI_FREE_ONLY:'true',HERCULES_GEMINI_FREE_KEY:'synthetic-key',HERCULES_GEMINI_FREE_QUOTAS:JSON.stringify({...config,keySha256:await requestDigest('synthetic-key')}),HERCULES_GEMINI_QUOTA:{idFromName:vi.fn(name=>name),get:()=>({reserve,pauseUntilReset,begin:async()=>({ok:true,attempt:crypto.randomUUID()}),release:async()=>{}})}};
   const body={contents:[{role:'user',parts:[{text:'A fictional lesson'}]}],generationConfig:{maxOutputTokens:1000}};
-  const fetcher=vi.fn(async (url:string) => new Response(JSON.stringify(url.endsWith(':countTokens')?{totalTokens:100}:{candidates:[{content:{parts:[{text:'Ready',thoughtSignature:'preserved'}]}}]})));
+  const fetcher=vi.fn(async (url:string, _init?: RequestInit) => new Response(JSON.stringify(url.endsWith(':countTokens')?{totalTokens:100}:{candidates:[{content:{parts:[{text:'Ready',thoughtSignature:'preserved'}]}}]})));
   vi.stubGlobal('fetch',fetcher);
   return {env,body,fetcher,reserve,pauseUntilReset,calls};
 }
@@ -42,6 +42,17 @@ it('admits count and generation separately with the complete native envelope and
   expect(f.calls.map(c=>[c.id.split(':').at(-1),c.tokens])).toEqual([['count',0],['generate',169]]);
   expect(reserveRun).toHaveBeenCalledWith(100,1000);expect(f.fetcher).toHaveBeenCalledTimes(2);
   expect(result.candidates[0].content.parts[0].thoughtSignature).toBe('preserved');
+});
+it.each(['count', 'generate'])('rejects %s redirects with the Workers-compatible manual policy and no retry', async phase => {
+  const f=await fixture();
+  if (phase === 'generate') f.fetcher.mockResolvedValueOnce(new Response(JSON.stringify({totalTokens:100})));
+  f.fetcher.mockResolvedValueOnce(new Response(null,{status:302,headers:{Location:'https://untrusted.example/collect'}}));
+  await expect(generateFreeGemini(f.env,FLASH_LITE_MODEL,f.body,undefined,'redirect')).rejects.toThrow('GEMINI_FREE_PROVIDER_UNAVAILABLE');
+  expect(f.fetcher).toHaveBeenCalledTimes(phase === 'count' ? 1 : 2);
+  for (const [url,init] of f.fetcher.mock.calls) {
+    expect(new URL(url).origin).toBe('https://generativelanguage.googleapis.com');
+    expect(init?.redirect).toBe('manual');
+  }
 });
 it('makes zero provider requests for a quota or key refusal', async () => {
   const f=await fixture();f.reserve.mockResolvedValueOnce({ok:false,code:'GEMINI_FREE_DAILY_LIMIT'} as any);

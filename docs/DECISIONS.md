@@ -6,6 +6,8 @@ The dedicated Hearth Google project must remain unbilled and exclusive to this d
 
 Synthetic Workspace service and presentation can be released with the existing reviewed Sandbox image. Missing credentials, grant migration or quota evidence keep execution closed. Production, meaningful-data disclosure and Google writes remain off. A Cloudflare base plan is not an account-wide spending cap; storage and container usage retain their platform prices. Hosted activation and live proof are recorded in the [activation worksession](worksessions/2026-09-12-hercules-free-tier-activation.md). Rollback turns Workspace execution off while retaining the free-only guard, saved work and receipt recovery.
 
+The document container uses the matching stable Python image variant because the default Sandbox image omits Python. PR and release CI must build it and reopen all four generated document formats before Worker upload; a frontend build alone does not verify this dependency.
+
 ## 2026-09-12 — Home setup and Kitty Bank doors (F-014 / F-015)
 
 The opening “See Our Shared Life” Move now offers separate Charter and Fund actions that open their existing setup surfaces. Following either action never marks the Move Done. Custom Moves keep their own meaning.
