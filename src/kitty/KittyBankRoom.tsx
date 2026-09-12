@@ -607,9 +607,7 @@ function CreateBank({
       >
         <span className="kitty-eyebrow">The first page</span>
         <h2>What are we making room for?</h2>
-        <p>
-          A known cost, a little breathing room, or a future you can picture.
-        </p>
+        <p>Two things to start. Everything else can wait, or never happen at all.</p>
         <label>
           Bank name
           <input
@@ -621,7 +619,7 @@ function CreateBank({
           />
         </label>
         <label>
-          Target (CAD)
+          How much (CAD)
           <input
             required
             inputMode="decimal"
@@ -630,33 +628,36 @@ function CreateBank({
             placeholder="2,000"
           />
         </label>
-        <label>
-          Purpose
-          <textarea
-            maxLength={1000}
-            value={envelope.purpose}
-            onChange={(event) =>
-              setEnvelope({ ...envelope, purpose: event.target.value })
-            }
-            placeholder="What will this make possible?"
-          />
-        </label>
-        <label>
-          Belongs in
-          <select
-            value={envelope.kind}
-            onChange={(event) =>
-              setEnvelope({
-                ...envelope,
-                kind: event.target.value as typeof envelope.kind,
-              })
-            }
-          >
-            <option value="protect">Protect · a promise or cushion</option>
-            <option value="prepare">Prepare · a cost that comes around</option>
-            <option value="build">Build · a future we choose</option>
-          </select>
-        </label>
+        <details className="kitty-optional">
+          <summary>Say more (optional)</summary>
+          <label>
+            Why this one
+            <textarea
+              maxLength={1000}
+              value={envelope.purpose}
+              onChange={(event) =>
+                setEnvelope({ ...envelope, purpose: event.target.value })
+              }
+              placeholder="What will this make possible?"
+            />
+          </label>
+          <label>
+            Belongs in
+            <select
+              value={envelope.kind}
+              onChange={(event) =>
+                setEnvelope({
+                  ...envelope,
+                  kind: event.target.value as typeof envelope.kind,
+                })
+              }
+            >
+              <option value="build">Build · a future we choose</option>
+              <option value="protect">Protect · a promise or cushion</option>
+              <option value="prepare">Prepare · a cost that comes around</option>
+            </select>
+          </label>
+        </details>
         <div className="kitty-actions">
           <button
             className="kitty-primary"
@@ -671,7 +672,7 @@ function CreateBank({
           )}
         </div>
         <small>
-          This creates a purpose and a lump of clay to shape next. It does not
+          This makes the bank and a lump of clay to shape next. It does not
           assign or move money.
         </small>
       </form>
@@ -876,6 +877,7 @@ function Bank({
             fired={studio.stageFired}
             mode={studio.mode}
             spin={studio.spin}
+            brush={studio.stageBrush}
             apiRef={studio.apiRef}
             onPaint={(hit, phase) => studio.onPaintRef.current?.(hit, phase)}
             onThrow={(dy) => studio.onThrowRef.current?.(dy)}
@@ -1062,19 +1064,6 @@ function Bank({
                       onChange={(event) => setName(event.target.value)}
                     />
                   </label>
-                  <label>
-                    Purpose
-                    <textarea
-                      maxLength={1000}
-                      value={envelope.purpose}
-                      onChange={(event) =>
-                        setEnvelope({
-                          ...envelope,
-                          purpose: event.target.value,
-                        })
-                      }
-                    />
-                  </label>
                   <div className="kitty-fields">
                     <label>
                       Target (CAD)
@@ -1094,40 +1083,56 @@ function Bank({
                       />
                     </label>
                   </div>
-                  <label>
-                    Purpose type
-                    <select
-                      value={envelope.kind}
-                      onChange={(event) =>
-                        setEnvelope({
-                          ...envelope,
-                          kind: event.target.value as typeof envelope.kind,
-                        })
-                      }
-                    >
-                      <option value="protect">Protect</option>
-                      <option value="prepare">Prepare</option>
-                      <option value="build">Build</option>
-                    </select>
-                  </label>
-                  <label>
-                    After using it
-                    <select
-                      value={envelope.refill}
-                      onChange={(event) =>
-                        setEnvelope({
-                          ...envelope,
-                          refill: event.target.value as typeof envelope.refill,
-                        })
-                      }
-                    >
-                      <option value="target">
-                        Keep saving toward the target
-                      </option>
-                      <option value="refill">Refill when needed</option>
-                      <option value="repeat">Prepare for the next cycle</option>
-                    </select>
-                  </label>
+                  <details className="kitty-optional" open={Boolean(envelope.purpose)}>
+                    <summary>Say more (optional)</summary>
+                    <label>
+                      Purpose
+                      <textarea
+                        maxLength={1000}
+                        value={envelope.purpose}
+                        onChange={(event) =>
+                          setEnvelope({
+                            ...envelope,
+                            purpose: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Purpose type
+                      <select
+                        value={envelope.kind}
+                        onChange={(event) =>
+                          setEnvelope({
+                            ...envelope,
+                            kind: event.target.value as typeof envelope.kind,
+                          })
+                        }
+                      >
+                        <option value="protect">Protect</option>
+                        <option value="prepare">Prepare</option>
+                        <option value="build">Build</option>
+                      </select>
+                    </label>
+                    <label>
+                      After using it
+                      <select
+                        value={envelope.refill}
+                        onChange={(event) =>
+                          setEnvelope({
+                            ...envelope,
+                            refill: event.target.value as typeof envelope.refill,
+                          })
+                        }
+                      >
+                        <option value="target">
+                          Keep saving toward the target
+                        </option>
+                        <option value="refill">Refill when needed</option>
+                        <option value="repeat">Prepare for the next cycle</option>
+                      </select>
+                    </label>
+                  </details>
                   <button disabled={busy || !fillDraftCents(target)}>
                     Save details & glaze
                   </button>

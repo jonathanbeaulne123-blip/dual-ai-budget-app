@@ -488,7 +488,7 @@ it("Hercules distinguishes remaining reserve from lifetime contributions", async
   expect(result.results[0]!.sentence).not.toContain("% funded");
 });
 
-it("carries studio pieces in the shared half without touching the financial identity or fired pieces", async () => {
+it("carries studio pieces in the shared half without touching the financial identity", async () => {
   const { newKittyPiece } = await import("../src/core/kittyStudio.ts");
   const h = planLifeFixture("household"),
     goal = first(h);
@@ -520,8 +520,10 @@ it("carries studio pieces in the shared half without touching the financial iden
     fire: true,
   }).household;
   expect(first(fired).envelope?.studio?.fired[0]?.firedBy).toBe(memberId);
-  const tampered = structuredClone(fired);
-  tampered.goals[0]!.envelope!.studio!.fired[0]!.sculpt.head = "wedge";
-  expect(() => assertGoalEnvelopeTransition(fired, tampered)).toThrow(/final/);
+  // A fired piece is editable again (2026-09-12): reshaping one on the shelf is
+  // an ordinary envelope change, not a rejected transition.
+  const reshaped = structuredClone(fired);
+  reshaped.goals[0]!.envelope!.studio!.fired[0]!.sculpt.head = "wedge";
+  expect(() => assertGoalEnvelopeTransition(fired, reshaped)).not.toThrow();
   expect(shapeGoalEnvelope(defaultGoalEnvelope())?.studio).toBeUndefined();
 });

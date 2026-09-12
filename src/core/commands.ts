@@ -1,5 +1,5 @@
 import { shapeGoalEnvelope, goalFundReserve, goalRemainingClaim, goalEnvelopeUsedCents, assertGoalEnvelopeIntegrity } from "./goalEnvelopes.ts";
-import { KITTY_STUDIO_LIMITS, assertKittyStudioTransition } from "./kittyStudio.ts";
+import { KITTY_STUDIO_LIMITS } from "./kittyStudio.ts";
 
 import { categorySplitAmounts, partitionCategoryOwnership, type CategorySplit } from "./categorySplit.ts";
 import { matchPlanEvidence, planSourceVisible } from "./planProjection.ts";
@@ -4741,7 +4741,7 @@ export const adoptSitDownStandingOrders = captureCommand("adoptSitDownStandingOr
 export const saveGoalEnvelope = captureCommand("saveGoalEnvelope", function saveGoalEnvelope(household: Household, input: {
   goalId: string; expectedUpdatedAt: string; name: string; target: string | number;
   arrivalDate?: string | null; envelope: import("./types.ts").GoalEnvelope;
-  /** Kitty Bank Studio: move the unfired draft onto the fired shelf. The command stamps firedAt/firedBy; a fired piece is final. */
+  /** Kitty Bank Studio: move the clay on the wheel onto the shelf. The command stamps firedAt/firedBy and counts the firing. A piece can go back to the wheel and be fired again. */
   fire?: boolean;
 } & ActorInput): CommitResult {
   const actor = resolveActor(household, input);
@@ -4758,11 +4758,10 @@ export const saveGoalEnvelope = captureCommand("saveGoalEnvelope", function save
   if (input.fire) {
     const draft = envelope.studio?.draft;
     if (!draft) throw new ValidationError("There is no unfired clay to put in the kiln.");
-    const fired = [...envelope.studio!.fired, { ...draft, firedAt: at, firedBy: actor.createdBy }];
-    if (fired.length > KITTY_STUDIO_LIMITS.fired) throw new ValidationError(`The fired shelf holds ${KITTY_STUDIO_LIMITS.fired} pieces. This bank's shelf is full.`);
-    envelope = shapeGoalEnvelope({ ...envelope, studio: { version: 1, draft: null, fired } })!;
+    const fired = [...envelope.studio!.fired, { ...draft, firedAt: at, firedBy: actor.createdBy, firings: (draft.firings ?? 0) + 1 }];
+    if (fired.length > KITTY_STUDIO_LIMITS.fired) throw new ValidationError(`The shelf holds ${KITTY_STUDIO_LIMITS.fired} pieces. Take one off the shelf to make room.`);
+    envelope = shapeGoalEnvelope({ ...envelope, studio: { version: 1, draft: null, fired, displayId: draft.id } })!;
   }
-  assertKittyStudioTransition(goal.envelope?.studio, envelope.studio);
   Object.assign(live, { name, targetCents: parseAmount(input.target, "Bank target"), arrivalDate: input.arrivalDate ? parseDate(input.arrivalDate) : null,
     envelope: { ...envelope, archivedAt: envelope.archivedAt ? goal.envelope?.archivedAt ?? at : null }, updatedAt: at });
   return commit(previous, next, "Kitty Bank", `${input.fire ? "Fired" : envelope.archivedAt ? "Archived" : "Saved"} ${name}`, [goal.id]);

@@ -1,5 +1,6 @@
 /** Small original SVG glyphs for every Wheel option. Ink is currentColor; fills use the theme clay token. */
 import type { KittyBody, KittyEars, KittyEyes, KittyHead, KittyMouth, KittyNose, KittyStampKind, KittyTail, KittyWhiskers } from "../../core/types.ts";
+import { STAMP_ART } from "./stampArt.ts";
 
 const CLAY = "var(--studio-clay)";
 const S = { width: 34, height: 34, viewBox: "0 0 40 40", "aria-hidden": true as const, focusable: "false" as const };
@@ -45,6 +46,9 @@ export function EyesGlyph({ value }: { value: KittyEyes }) {
       {value === "happy" && <path d="M8 22q5-8 10 0M22 22q5-8 10 0" {...ink} strokeWidth={3} />}
       {value === "wide" && <><circle cx="13" cy="20" r="6.5" fill="currentColor" /><circle cx="27" cy="20" r="6.5" fill="currentColor" /><circle cx="15" cy="18" r="2" fill={CLAY} /><circle cx="29" cy="18" r="2" fill={CLAY} /></>}
       {value === "sleepy" && <path d="M8 19q5 6 10 0M22 19q5 6 10 0" {...ink} strokeWidth={3} />}
+      {value === "sparkle" && <><circle cx="13" cy="20" r="5" fill="currentColor" /><circle cx="27" cy="20" r="5" fill="currentColor" /><circle cx="15" cy="17.5" r="1.8" fill={CLAY} /><circle cx="29" cy="17.5" r="1.8" fill={CLAY} /><path d="M11 14l1.4 2.6L15 18l-2.6 1.4" fill={CLAY} /></>}
+      {value === "wink" && <><circle cx="13" cy="20" r="4.5" fill="currentColor" /><path d="M22 22q5-8 10 0" {...ink} strokeWidth={3} /></>}
+      {value === "closed" && <path d="M8 20h10M22 20h10" {...ink} strokeWidth={3} />}
     </svg>
   );
 }
@@ -56,6 +60,7 @@ export function MouthGlyph({ value }: { value: KittyMouth }) {
       {value === "tongue" && <><path d="M9 16q5.5 8 11 0q5.5 8 11 0" {...ink} strokeWidth={3} /><ellipse cx="20" cy="24" rx="4" ry="3.5" fill="currentColor" opacity="0.7" /></>}
       {value === "grin" && <path d="M8 16q12 16 24 0Z" {...clay} />}
       {value === "serene" && <path d="M14 20h12" {...ink} strokeWidth={3} />}
+      {value === "oh" && <ellipse cx="20" cy="20" rx="5" ry="6.5" {...clay} />}
     </svg>
   );
 }
@@ -94,15 +99,24 @@ export function StampGlyph({ value, text }: { value: KittyStampKind; text?: stri
   const r = 13;
   return (
     <svg {...S}>
-      <g transform="translate(20 20)" fill="currentColor">
-        {value === "heart" && <path d={`M0 ${r * 0.8} C${-r * 1.4} ${-r * 0.2} ${-r * 0.6} ${-r * 1.1} 0 ${-r * 0.35} C${r * 0.6} ${-r * 1.1} ${r * 1.4} ${-r * 0.2} 0 ${r * 0.8} Z`} />}
-        {value === "star" && <polygon points={Array.from({ length: 10 }, (_, i) => { const a = (i * Math.PI) / 5 - Math.PI / 2, rad = i % 2 ? r * 0.45 : r; return `${Math.cos(a) * rad},${Math.sin(a) * rad}`; }).join(" ")} />}
-        {value === "paw" && <><ellipse cx="0" cy={r * 0.3} rx={r * 0.6} ry={r * 0.5} />{[[-0.62, -0.2], [-0.22, -0.62], [0.22, -0.62], [0.62, -0.2]].map(([x, y], i) => <circle key={i} cx={x! * r} cy={y! * r} r={r * 0.25} />)}</>}
-        {value === "fish" && <path d={`M${-r} 0 Q${-r * 0.2} ${-r * 0.9} ${r * 0.5} 0 Q${-r * 0.2} ${r * 0.9} ${-r} 0 M${r * 0.45} 0 L${r} ${-r * 0.5} L${r} ${r * 0.5} Z`} />}
-        {value === "moon" && <path d={`M${Math.cos(0.2 * Math.PI) * r} ${Math.sin(0.2 * Math.PI) * r} A${r} ${r} 0 1 1 ${Math.cos(1.8 * Math.PI) * r} ${Math.sin(1.8 * Math.PI) * r} A${r * 0.75} ${r * 0.75} 0 1 0 ${Math.cos(0.2 * Math.PI) * r} ${Math.sin(0.2 * Math.PI) * r} Z`} />}
-        {value === "flower" && Array.from({ length: 6 }, (_, i) => <circle key={i} cx={Math.cos((i * Math.PI) / 3) * r * 0.55} cy={Math.sin((i * Math.PI) / 3) * r * 0.55} r={r * 0.42} />)}
-        {value === "bolt" && <polygon points={`${-r * 0.2},${-r} ${r * 0.45},${-r} ${r * 0.05},${-r * 0.15} ${r * 0.5},${-r * 0.15} ${-r * 0.35},${r} ${-r * 0.05},${r * 0.2} ${-r * 0.5},${r * 0.2}`} />}
-        {value === "initial" && <text textAnchor="middle" dominantBaseline="middle" fontFamily="Georgia, serif" fontWeight={700} fontSize={r * 1.5}>{(text ?? "Ab").slice(0, 2)}</text>}
+      {value === "initial" && (
+        <text x={20} y={20} textAnchor="middle" dominantBaseline="middle" fontFamily="Georgia, serif" fontWeight={700} fontSize={r * 1.5} fill="currentColor">{(text ?? "Ab").slice(0, 2)}</text>
+      )}
+      <g transform={`translate(20 20) scale(${r})`}>
+        {value !== "initial" && (
+          STAMP_ART[value].map((art, index) => (
+            <path
+              key={index}
+              d={art.d}
+              fill={art.stroke ? "none" : art.role === "trim" ? CLAY : "currentColor"}
+              stroke={art.stroke ? "currentColor" : undefined}
+              strokeWidth={art.stroke}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={art.role === "white" ? 0.5 : undefined}
+            />
+          ))
+        )}
       </g>
     </svg>
   );

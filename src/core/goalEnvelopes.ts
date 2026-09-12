@@ -7,7 +7,6 @@ import {
 import { activeHouseholdFundEvents } from "./householdFund.ts";
 import { goalVisibleInView, isVisibleInView } from "./visibility.ts";
 import {
-  assertKittyStudioTransition,
   displayedKittyPiece,
   kittyGlazeForBase,
   shapeKittyStudio,
@@ -461,7 +460,6 @@ export function assertGoalEnvelopeTransition(
       throw new ValidationError(
         "An accepted envelope cannot disappear or change owner. Archive it instead.",
       );
-    assertKittyStudioTransition(goal.envelope!.studio, current.envelope.studio);
   }
   for (const row of previous.goalPurchases ?? [])
     if (

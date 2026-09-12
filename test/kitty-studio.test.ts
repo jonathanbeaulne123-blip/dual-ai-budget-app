@@ -15,7 +15,8 @@ import {
 } from "../src/core/index.ts";
 import { kittyBankBackingStep, kittyBankStep } from "../src/core/kittyBanks.ts";
 import { defaultGoalEnvelope, shapeGoalEnvelope, assertGoalEnvelopeTransition } from "../src/core/goalEnvelopes.ts";
-import { KITTY_STUDIO_LIMITS, newKittyPiece, quantizeKittyStroke, shapeKittyStudio } from "../src/core/kittyStudio.ts";
+import { KITTY_ADDON_KINDS, KITTY_STAMP_KINDS, KITTY_STUDIO_LIMITS, displayedKittyPiece, kittyFeature, newKittyPiece, quantizeKittyStroke, removeKittyPiece, reopenKittyPiece, shapeKittyStudio, withKittyFeature } from "../src/core/kittyStudio.ts";
+import { STAMP_ART, nearestKittyAnchor, stampPlacement, stampTrim } from "../src/kitty/studio/stampArt.ts";
 import { financialAuditHash } from "../src/core/commandIdentity.ts";
 import { STUDIO_PALETTE } from "../src/kitty/studio/palette.ts";
 
@@ -58,7 +59,7 @@ describe("Kitty Bank Studio pieces", () => {
     expect(hexOnly.glaze).toBe("rose");
     expect(hexOnly.studio!.draft!.paint.base).toBe("#e3a534");
     expect(shapeGoalEnvelope(defaultGoalEnvelope())!.studio).toBeUndefined();
-    expect(quantizeKittyStroke({ part: "body", tool: "brush", color: "#000000", size: 900, opacity: 4, mirror: false, pts: [1.5, -1] }).size).toBe(64);
+    expect(quantizeKittyStroke({ part: "body", tool: "brush", color: "#000000", size: 900, opacity: 4, mirror: false, pts: [1.5, -1] }).size).toBe(96);
   });
   it("rejects bad enums, non-finite numbers, oversize caps and unknown studio versions", () => {
     const bad = (value: unknown) => expect(() => shapeGoalEnvelope({ ...defaultGoalEnvelope(), studio: value })).toThrow(/compatible envelope reader/);
@@ -96,7 +97,7 @@ describe("Kitty Bank Studio pieces", () => {
     expect(restored.envelope?.studio?.draft?.id).toBe("shared-draft");
     expect(restored.envelope?.studio?.draft?.paint.stamps[0]?.text).toBe("JB");
   });
-  it("fires a draft through the command, stamps firedAt/firedBy, and refuses to change a fired piece", () => {
+  it("fires a draft through the command, stamps firedAt/firedBy, and lets a fired piece be repainted, refired or thrown away", () => {
     let h = save(planLifeFixture("personal"), studio(piece("clay")));
     expect(first(h).envelope!.studio!.draft!.firedAt).toBeNull();
     h = save(h, undefined, { fire: true });
@@ -106,18 +107,24 @@ describe("Kitty Bank Studio pieces", () => {
     expect(fired.fired[0]!.firedBy).toBe(memberId);
     expect(Number.isFinite(Date.parse(fired.fired[0]!.firedAt!))).toBe(true);
     expect(() => save(h, undefined, { fire: true })).toThrow(/no unfired clay/);
-    const tampered = structuredClone(h);
-    tampered.goals[0]!.envelope!.studio!.fired[0]!.paint.base = "#000000";
-    expect(() => assertGoalEnvelopeTransition(h, tampered)).toThrow(/final/);
-    const removed = structuredClone(h);
-    removed.goals[0]!.envelope!.studio!.fired = [];
-    expect(() => assertGoalEnvelopeTransition(h, removed)).toThrow(/final/);
-    const unmade = structuredClone(h);
-    delete unmade.goals[0]!.envelope!.studio;
-    expect(() => assertGoalEnvelopeTransition(h, unmade)).toThrow(/un-made/);
-    expect(() => save(h, { ...fired, fired: [{ ...fired.fired[0]!, paint: { ...fired.fired[0]!.paint, base: "#111111" } }] })).toThrow(/final/);
-    // Throw another: a new draft beside the untouched shelf is fine.
-    const again = save(h, { ...fired, draft: piece("second") });
+    expect(fired.displayId).toBe("clay");
+    // Nothing is final (2026-09-12): a fired piece goes back to the wheel, is
+    // repainted, fired again with a higher count, and can leave the shelf.
+    const back = reopenKittyPiece(fired, "clay");
+    expect(back.draft!.firedAt).toBeNull();
+    expect(back.fired).toHaveLength(0);
+    let again2 = save(h, { ...back, draft: { ...back.draft!, paint: { ...back.draft!.paint, base: "#111111" } } });
+    expect(again2.goals[0]!.envelope!.studio!.draft!.paint.base).toBe("#111111");
+    again2 = save(again2, undefined, { fire: true });
+    const refired = again2.goals[0]!.envelope!.studio!;
+    expect(refired.fired).toHaveLength(1);
+    expect(refired.fired[0]!.firings).toBe(2);
+    expect(refired.fired[0]!.paint.base).toBe("#111111");
+    const emptied = save(again2, removeKittyPiece(refired, "clay"));
+    expect(emptied.goals[0]!.envelope!.studio!.fired).toHaveLength(0);
+    expect(() => assertGoalEnvelopeTransition(again2, emptied)).not.toThrow();
+    // Throw another: a new draft beside the shelf is fine.
+    const again = save(h, { ...fired, displayId: null, draft: piece("second") });
     expect(again.goals[0]!.envelope!.studio!.fired[0]).toEqual(fired.fired[0]);
     expect(again.goals[0]!.envelope!.studio!.draft!.id).toBe("second");
     // Another member cannot fire a personal bank.
@@ -128,7 +135,56 @@ describe("Kitty Bank Studio pieces", () => {
     for (let i = 0; i < KITTY_STUDIO_LIMITS.fired; i++) h = save(save(h, { ...(first(h).envelope?.studio ?? { version: 1, draft: null, fired: [] }), draft: piece(`p${i}`) }), undefined, { fire: true });
     expect(first(h).envelope!.studio!.fired).toHaveLength(6);
     h = save(h, { ...first(h).envelope!.studio!, draft: piece("seventh") });
-    expect(() => save(h, undefined, { fire: true })).toThrow(/shelf is full/);
+    expect(() => save(h, undefined, { fire: true })).toThrow(/Take one off the shelf/);
+  });
+  it("carries feature dials, free-placed extras and a chosen display piece", () => {
+    const dialled = shapeGoalEnvelope({
+      ...defaultGoalEnvelope(),
+      studio: studio(piece("dials", { sculpt: { ...newKittyPiece("dials", date).sculpt, features: { eyes: 1.45, head: 1, tail: 0.6 } } })),
+    })!;
+    // A dial sitting at 1 is the default and is not stored.
+    expect(dialled.studio!.draft!.sculpt.features).toEqual({ eyes: 1.45, tail: 0.6 });
+    expect(kittyFeature(dialled.studio!.draft!.sculpt, "eyes")).toBe(1.45);
+    expect(kittyFeature(dialled.studio!.draft!.sculpt, "head")).toBe(1);
+    expect(withKittyFeature(dialled.studio!.draft!.sculpt, "eyes", 1).features).toEqual({ tail: 0.6 });
+    const bad = (value: unknown) => expect(() => shapeGoalEnvelope({ ...defaultGoalEnvelope(), studio: value })).toThrow(/compatible envelope reader/);
+    bad(studio(piece("x", { sculpt: { ...newKittyPiece("x", date).sculpt, features: { eyes: 4 } } })));
+    bad(studio(piece("x", { sculpt: { ...newKittyPiece("x", date).sculpt, features: { ears: Number.NaN } } })));
+    bad(studio(piece("x", { sculpt: { ...newKittyPiece("x", date).sculpt, features: { elbow: 1.2 } as never } })));
+    // An add-on baked anywhere keeps its own part and uv, plus the nearest anchor for older readers.
+    const worn = shapeGoalEnvelope({
+      ...defaultGoalEnvelope(),
+      studio: studio(piece("worn", {
+        paint: { base: "#e3a534", parts: {}, strokes: [], stamps: [{ id: "hat", anchor: "forehead", part: "head", u: 0.41, v: 0.88, kind: "sun-hat", color: "#a3283d", trim: "#2b2926", size: 0.5, rotation: -20 }] },
+      })),
+    })!;
+    const stamp = worn.studio!.draft!.paint.stamps[0]!;
+    expect(stamp).toMatchObject({ kind: "sun-hat", part: "head", u: 0.41, v: 0.88, trim: "#2b2926" });
+    expect(stampPlacement(stamp)).toEqual({ part: "head", u: 0.41, v: 0.88 });
+    expect(nearestKittyAnchor("head", 0.41, 0.88)).toBe("forehead");
+    // A legacy stamp with only an anchor still lands on that anchor's spot.
+    expect(stampPlacement({ id: "s", anchor: "chest", kind: "heart", color: "#a3283d", size: 0.2, rotation: 0 })).toMatchObject({ part: "body" });
+    bad(studio(piece("x", { paint: { base: "#ffffff", parts: {}, strokes: [], stamps: [{ id: "s", anchor: "chest", part: "body", u: 0.5, kind: "heart", color: "#a3283d", size: 0.2, rotation: 0 } as never] } })));
+    // The bank can be told which fired piece to show.
+    const shelf: KittyStudioV1 = { version: 1, draft: null, fired: [{ ...piece("old"), firedAt: date + "T10:00:00.000Z" }, { ...piece("new"), firedAt: date + "T11:00:00.000Z" }] };
+    expect(displayedKittyPiece(shelf)!.id).toBe("new");
+    expect(displayedKittyPiece({ ...shelf, displayId: "old" })!.id).toBe("old");
+    expect(() => shapeGoalEnvelope({ ...defaultGoalEnvelope(), studio: { ...shelf, displayId: "ghost" } })).toThrow(/compatible envelope reader/);
+  });
+  it("draws every stamp and add-on kind from one artwork table", () => {
+    for (const kind of KITTY_STAMP_KINDS) {
+      if (kind === "initial") continue;
+      const art = STAMP_ART[kind as Exclude<typeof kind, "initial">];
+      expect(art.length, kind).toBeGreaterThan(0);
+      for (const piece of art) {
+        expect(piece.d, kind).toMatch(/^[Mm]/);
+        // Everything stays inside the -1..1 box the placement code scales by.
+        for (const n of piece.d.match(/-?\d+(\.\d+)?/g) ?? []) expect(Math.abs(Number(n)), `${kind} ${piece.d}`).toBeLessThanOrEqual(2.2);
+      }
+    }
+    expect(KITTY_ADDON_KINDS.every((kind) => (KITTY_STAMP_KINDS as readonly string[]).includes(kind))).toBe(true);
+    expect(stampTrim({ color: "#ffffff" })).not.toBe("#ffffff");
+    expect(stampTrim({ color: "#a3283d", trim: "#123456" })).toBe("#123456");
   });
   it("loads a legacy envelope without studio and a new bank with one", () => {
     const h = planLifeFixture("personal");

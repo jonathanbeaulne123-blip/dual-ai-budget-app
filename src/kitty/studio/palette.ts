@@ -61,3 +61,8 @@ export const FLAT_TONES = {
   paper: "#fff0d0",
   flap: "#b89665",
 } as const;
+
+/** Fixed studio inks used by stamp and add-on artwork (kept here with the other colour data). */
+export const STAMP_INK = "#2b2926";
+export const STAMP_WHITE = "#fff8ee";
+export const STAMP_FALLBACK = "#2b2926";

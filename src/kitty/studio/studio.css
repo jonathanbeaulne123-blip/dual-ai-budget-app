@@ -540,3 +540,126 @@
     transition: none;
   }
 }
+
+/* Feature dials, the extras drawer and the shelf (2026-09-12). One control at
+   a time: pick the feature, then size it. Everything else folds away. */
+.studio-more {
+  border: 1px dashed var(--room-line);
+  border-radius: 12px;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--studio-bench) 60%, transparent);
+}
+.studio-more > summary {
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px 0;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.studio-more[open] > summary {
+  margin-bottom: 8px;
+}
+.studio-size-picker .studio-chip-plain {
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  min-width: 74px;
+}
+.studio-size-picker .studio-chip-plain small {
+  font-size: 11px;
+  color: var(--room-muted);
+}
+.studio-size-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.studio-size-row label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.studio-size-row input[type="range"] {
+  width: 100%;
+}
+.studio-size-row > button {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 18px;
+  line-height: 1;
+}
+.studio-size-row output {
+  font-size: 12px;
+  color: var(--room-muted);
+  min-width: 84px;
+  text-align: right;
+}
+.studio-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--room-line);
+  padding-top: 12px;
+}
+.studio-kit {
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--studio-bench) 70%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.studio-shelf-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.studio-shelf-tabs > button {
+  font-size: 12px;
+  padding: 8px 12px;
+  min-height: 40px;
+}
+.studio-shelf-tabs > button[aria-pressed="true"] {
+  border-color: var(--room-accent);
+  box-shadow: inset 0 0 0 2px var(--room-accent);
+}
+.studio-stamp-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--studio-bench) 70%, transparent);
+}
+.studio-stamp-edit label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.studio-shelf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+}
+.studio-shelf-actions > button {
+  font-size: 12px;
+  padding: 8px 10px;
+  min-height: 40px;
+}
+.studio-shelf-piece[data-newest="true"] {
+  outline: 2px solid var(--room-accent);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+@media (max-width: 420px) {
+  .studio-size-row output {
+    min-width: 0;
+  }
+  .studio-size-picker .studio-chip-plain {
+    min-width: 64px;
+  }
+}

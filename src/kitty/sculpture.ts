@@ -8,12 +8,15 @@
  * turntable; the turntable itself never moves. No money is read here.
  */
 import * as THREE from "three";
-import type { KittyPaintV1, KittyPart, KittyPieceV1, KittySculptV1, KittyStrokeV1 } from "../core/types.ts";
-import { KITTY_PARTS, defaultKittyPaint, defaultKittySculpt } from "../core/kittyStudio.ts";
+import type { KittyEyes, KittyPaintV1, KittyPart, KittyPieceV1, KittySculptV1, KittyStrokeV1 } from "../core/types.ts";
+import { KITTY_EYES, KITTY_PARTS, defaultKittyPaint, defaultKittySculpt, kittyFeature } from "../core/kittyStudio.ts";
 import { PART_CANVAS_SIZE, appendStroke, partDip, presentPart, replayPart } from "./studio/paintCanvas.ts";
+import { KITTY_HEAD_SCALE as HEAD_SCALE, kittyBodyPoints } from "./studio/silhouette.ts";
 import { studioHex } from "./studio/palette.ts";
 
-export type KittyExpression = "open" | "happy" | "wide" | "sleepy";
+export type KittyExpression = KittyEyes;
+/** How far past the clay a brush still lands. The shell carries the same uv as the surface it hugs. */
+export const PAINT_SHELL = 0.26;
 export type KittySculptureOptions = {
   brass: string;
   wood: string;
@@ -28,32 +31,10 @@ const BASE_Y = 0.16;
 const GROW = 0.055;
 const V2 = (x: number, y: number) => new THREE.Vector2(x, y);
 
-/** Body silhouettes: [radius, height] pairs from base to neck; handles scale bands. */
-const BODY_OUTLINES: Record<KittySculptV1["body"], Array<[number, number]>> = {
-  round: [[0, 0], [0.42, 0.03], [0.73, 0.22], [0.85, 0.56], [0.83, 0.86], [0.73, 1.18], [0.56, 1.46], [0.36, 1.67], [0, 1.71]],
-  pear: [[0, 0], [0.5, 0.03], [0.86, 0.2], [0.94, 0.5], [0.86, 0.82], [0.68, 1.12], [0.5, 1.4], [0.33, 1.62], [0, 1.66]],
-  loaf: [[0, 0], [0.6, 0.03], [0.9, 0.16], [0.97, 0.42], [0.95, 0.7], [0.86, 0.98], [0.68, 1.2], [0.44, 1.36], [0, 1.4]],
-  tall: [[0, 0], [0.4, 0.03], [0.62, 0.24], [0.7, 0.66], [0.7, 1.06], [0.64, 1.44], [0.52, 1.76], [0.34, 1.98], [0, 2.02]],
-  bean: [[0, 0], [0.46, 0.03], [0.78, 0.2], [0.9, 0.5], [0.8, 0.8], [0.7, 1.08], [0.66, 1.36], [0.4, 1.62], [0, 1.66]],
-};
 function bodyPoints(sculpt: KittySculptV1) {
-  const outline = BODY_OUTLINES[sculpt.body];
-  const top = outline[outline.length - 1]![1];
-  const [belly, waist, shoulder, neck] = sculpt.profile;
-  return outline.map(([r, y]) => {
-    const t = y / top;
-    // Blend the four handles across height: belly 0.25, waist 0.5, shoulder 0.75, neck 1.
-    const handle = t < 0.25 ? 1 + (belly - 1) * (t / 0.25) : t < 0.5 ? belly + (waist - belly) * ((t - 0.25) / 0.25) : t < 0.75 ? waist + (shoulder - waist) * ((t - 0.5) / 0.25) : shoulder + (neck - shoulder) * ((t - 0.75) / 0.25);
-    return V2(r * handle, y);
-  });
+  return kittyBodyPoints(sculpt).map(([r, y]) => V2(r, y));
 }
-const HEAD_SCALE: Record<KittySculptV1["head"], [number, number, number]> = {
-  round: [1.04, 0.91, 0.79],
-  wedge: [1.12, 0.82, 0.86],
-  chubby: [1.22, 0.95, 0.88],
-  heart: [1.16, 0.88, 0.8],
-};
-
+const EYE_KINDS = KITTY_EYES;
 export function createKittySculpture(piece: KittyPieceV1 | null, options: KittySculptureOptions) {
   const group = new THREE.Group();
   const cat = new THREE.Group();
@@ -129,6 +110,9 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
 
   // ---- sculpt-dependent meshes (rebuilt on setSculpt) ----
   const sculptGeometries = new Set<THREE.BufferGeometry>();
+  const shellMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false, side: THREE.DoubleSide });
+  materials.add(shellMat);
+  let shells: THREE.Mesh[] = [];
   const sculptGroup = new THREE.Group();
   cat.add(sculptGroup);
   let eyeMeshes: Record<KittyExpression, THREE.Group> | null = null;
@@ -136,6 +120,18 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
   let hinge: THREE.Group | null = null;
   let compartment: THREE.Group | null = null;
   let headTop = 2.4, headY = 2.1, bodyTop = 1.71;
+  /** A copy of `geo` pushed out along its normals: same uv, a little more room. */
+  const inflated = (geo: THREE.BufferGeometry, amount: number) => {
+    const clone = geo.clone();
+    if (!clone.getAttribute("normal")) clone.computeVertexNormals();
+    const position = clone.getAttribute("position") as THREE.BufferAttribute;
+    const normal = clone.getAttribute("normal") as THREE.BufferAttribute;
+    for (let i = 0; i < position.count; i++)
+      position.setXYZ(i, position.getX(i) + normal.getX(i) * amount, position.getY(i) + normal.getY(i) * amount, position.getZ(i) + normal.getZ(i) * amount);
+    position.needsUpdate = true;
+    clone.computeBoundingSphere();
+    return clone;
+  };
   const mesh = (geo: THREE.BufferGeometry, mat: THREE.Material, parent: THREE.Object3D, paintable?: KittyPart) => {
     sculptGeometries.add(geo);
     const m = new THREE.Mesh(geo, mat);
@@ -145,6 +141,21 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     if (paintable) {
       m.userData.part = paintable;
       parts[paintable].meshes.push(m);
+      // Invisible breathing room so a stroke that runs off the edge still lands.
+      const shellGeo = inflated(geo, PAINT_SHELL);
+      sculptGeometries.add(shellGeo);
+      const shell = new THREE.Mesh(shellGeo, shellMat);
+      shell.userData.part = paintable;
+      shell.userData.decorative = true;
+      shell.castShadow = false;
+      shell.receiveShadow = false;
+      shell.renderOrder = -1;
+      parent.add(shell);
+      shells.push(shell);
+      shell.scale.copy(m.scale);
+      shell.position.copy(m.position);
+      shell.rotation.copy(m.rotation);
+      m.userData.shell = shell;
     }
     parent.add(m);
     return m;
@@ -155,6 +166,8 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     const m = mesh(new THREE.SphereGeometry(r, 32, 24, -Math.PI / 2), mat, parent, paintable);
     m.scale.set(...scale);
     m.position.set(...pos);
+    const shell = m.userData.shell as THREE.Mesh | undefined;
+    if (shell) { shell.scale.copy(m.scale); shell.position.copy(m.position); }
     return m;
   };
   const clearSculpt = () => {
@@ -162,6 +175,7 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     for (const g of sculptGeometries) g.dispose();
     sculptGeometries.clear();
     for (const part of KITTY_PARTS) parts[part].meshes = [];
+    shells = [];
     eyeMeshes = null;
   };
   const build = () => {
@@ -170,11 +184,15 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     bodyTop = points[points.length - 1]!.y;
     const body = mesh(new THREE.LatheGeometry(points, 64, Math.PI), parts.body.mat, sculptGroup, "body");
     body.scale.z = 0.86;
-    headY = bodyTop + 0.25;
-    const hs = HEAD_SCALE[sculpt.head];
+    (body.userData.shell as THREE.Mesh | undefined)?.scale.copy(body.scale);
+    const dial = (feature: Parameters<typeof kittyFeature>[1]) => kittyFeature(sculpt, feature);
+    const headDial = dial("head"), earDial = dial("ears"), eyeDial = dial("eyes"), noseDial = dial("nose"), mouthDial = dial("mouth"), whiskerDial = dial("whiskers"), tailDial = dial("tail");
+    headY = bodyTop + 0.25 * headDial;
+    const base = HEAD_SCALE[sculpt.head];
+    const hs: [number, number, number] = [base[0] * headDial, base[1] * headDial, base[2] * headDial];
     sphere(0.59, hs, [0, headY, 0.035], parts.head.mat, sculptGroup, "head");
     if (sculpt.head === "heart") {
-      for (const side of [-1, 1]) sphere(0.3, [1, 0.9, 0.9], [side * 0.36, headY + 0.36, 0.0], parts.head.mat, sculptGroup, "head");
+      for (const side of [-1, 1]) sphere(0.3 * headDial, [1, 0.9, 0.9], [side * 0.36 * headDial, headY + 0.36 * headDial, 0.0], parts.head.mat, sculptGroup, "head");
     }
     headTop = headY + 0.59 * hs[1];
     // Ears
@@ -185,68 +203,103 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
       earGroup.rotation.z = -side * 0.22;
       sculptGroup.add(earGroup);
       if (sculpt.ears === "none") continue;
-      if (sculpt.ears === "round") sphere(0.2, [1, 1, 0.55], [0, 0.1, 0], parts[part].mat, earGroup, part);
+      if (sculpt.ears === "round") sphere(0.2 * earDial, [1, 1, 0.55], [0, 0.1 * earDial, 0], parts[part].mat, earGroup, part);
       else {
-        const height = sculpt.ears === "folded" ? 0.26 : sculpt.ears === "tufted" ? 0.5 : 0.42;
-        const ear = mesh(new THREE.ConeGeometry(0.19, height, 24, 1, false, Math.PI), parts[part].mat, earGroup, part);
+        const height = (sculpt.ears === "folded" ? 0.26 : sculpt.ears === "tufted" ? 0.5 : 0.42) * earDial;
+        const ear = mesh(new THREE.ConeGeometry(0.19 * earDial, height, 24, 1, false, Math.PI), parts[part].mat, earGroup, part);
         ear.scale.z = 0.55;
         ear.position.y = height / 2 - 0.04;
+        const earShell = ear.userData.shell as THREE.Mesh | undefined;
+        if (earShell) { earShell.scale.copy(ear.scale); earShell.position.copy(ear.position); }
         if (sculpt.ears === "folded") ear.rotation.x = 0.9;
         if (sculpt.ears === "tufted") {
           const tuft = tube([[0, height - 0.08, 0], [side * 0.05, height + 0.08, 0.02], [side * 0.12, height + 0.2, 0.04]], 0.02, parts[part].mat, earGroup, part);
           tuft.castShadow = false;
         }
       }
-      const inner = mesh(new THREE.CircleGeometry(0.075, 16), blush, earGroup);
+      const inner = mesh(new THREE.CircleGeometry(0.075 * earDial, 16), blush, earGroup);
       inner.scale.set(0.7, sculpt.ears === "folded" ? 0.6 : 1.4, 1);
-      inner.position.set(0, 0.16, 0.115);
+      inner.position.set(0, 0.16 * earDial, 0.115 * earDial);
       inner.rotation.x = sculpt.ears === "folded" ? 0.9 : 0;
     }
-    // Face: nose, mouth, whiskers, eyes (all four expressions built, one visible)
-    const faceZ = 0.59 * hs[2];
+    // Face: nose, mouth, whiskers, eyes. Every feature is placed on the actual
+    // head surface — an ellipsoid, not a plane — so nothing sinks into the clay
+    // when the head shape or the size dials change.
+    const headR: [number, number, number] = [0.59 * hs[0], 0.59 * hs[1], 0.59 * hs[2]];
+    /** Front-of-head z at (x, y), minus a hair so the feature seats into the surface. */
+    const onFace = (x: number, y: number, sink = 0.02) => {
+      const k = 1 - (x / headR[0]) ** 2 - (y / headR[1]) ** 2;
+      return (k > 0.02 ? headR[2] * Math.sqrt(k) : headR[2] * 0.15) - sink;
+    };
     const face = new THREE.Group();
     face.position.set(0, headY, 0.035);
     sculptGroup.add(face);
-    const noseY = -0.05;
-    if (sculpt.nose === "button") sphere(0.047, [1, 0.6, 0.6], [0, noseY, faceZ - 0.02], blush, face);
-    else if (sculpt.nose === "tiny") sphere(0.028, [1, 0.7, 0.6], [0, noseY, faceZ - 0.01], blush, face);
+    const noseY = -0.05 * headDial;
+    const noseZ = onFace(0, noseY, 0.012);
+    if (sculpt.nose === "button") sphere(0.047 * noseDial, [1, 0.6, 0.6], [0, noseY, noseZ], blush, face);
+    else if (sculpt.nose === "tiny") sphere(0.028 * noseDial, [1, 0.7, 0.6], [0, noseY, noseZ], blush, face);
     else {
-      sphere(0.03, [1, 0.8, 0.5], [-0.02, noseY + 0.01, faceZ - 0.015], blush, face);
-      sphere(0.03, [1, 0.8, 0.5], [0.02, noseY + 0.01, faceZ - 0.015], blush, face);
-      sphere(0.03, [1, 0.8, 0.5], [0, noseY - 0.02, faceZ - 0.015], blush, face);
+      sphere(0.03 * noseDial, [1, 0.8, 0.5], [-0.02 * noseDial, noseY + 0.01, noseZ], blush, face);
+      sphere(0.03 * noseDial, [1, 0.8, 0.5], [0.02 * noseDial, noseY + 0.01, noseZ], blush, face);
+      sphere(0.03 * noseDial, [1, 0.8, 0.5], [0, noseY - 0.02 * noseDial, noseZ], blush, face);
     }
-    const mz = faceZ - 0.03;
-    const mouthY = noseY - 0.09;
+    const mouthY = noseY - 0.09 * headDial;
+    const mz = onFace(0, mouthY, 0.008);
+    const mw = mouthDial;
     if (sculpt.mouth === "w" || sculpt.mouth === "tongue") {
-      for (const side of [-1, 1]) tube([[side * 0.005, mouthY + 0.03, mz], [side * 0.05, mouthY - 0.01, mz - 0.01], [side * 0.1, mouthY + 0.03, mz - 0.03]], 0.011, ink, face);
-      if (sculpt.mouth === "tongue") sphere(0.03, [1, 0.8, 0.5], [0, mouthY - 0.03, mz - 0.01], blush, face);
-    } else if (sculpt.mouth === "smile") tube([[-0.12, mouthY + 0.03, mz - 0.03], [0, mouthY - 0.03, mz], [0.12, mouthY + 0.03, mz - 0.03]], 0.011, ink, face);
+      for (const side of [-1, 1]) tube([[side * 0.005, mouthY + 0.03 * mw, mz], [side * 0.05 * mw, mouthY - 0.01 * mw, mz - 0.01], [side * 0.1 * mw, mouthY + 0.03 * mw, mz - 0.03]], 0.011 * mw, ink, face);
+      if (sculpt.mouth === "tongue") sphere(0.03 * mw, [1, 0.8, 0.5], [0, mouthY - 0.03 * mw, mz - 0.01], blush, face);
+    } else if (sculpt.mouth === "smile") tube([[-0.12 * mw, mouthY + 0.03 * mw, mz - 0.03], [0, mouthY - 0.03 * mw, mz], [0.12 * mw, mouthY + 0.03 * mw, mz - 0.03]], 0.011 * mw, ink, face);
     else if (sculpt.mouth === "grin") {
-      tube([[-0.16, mouthY + 0.05, mz - 0.05], [0, mouthY - 0.04, mz], [0.16, mouthY + 0.05, mz - 0.05]], 0.012, ink, face);
-      const teeth = mesh(new THREE.BoxGeometry(0.16, 0.03, 0.01), white, face);
+      tube([[-0.16 * mw, mouthY + 0.05 * mw, mz - 0.05], [0, mouthY - 0.04 * mw, mz], [0.16 * mw, mouthY + 0.05 * mw, mz - 0.05]], 0.012 * mw, ink, face);
+      const teeth = mesh(new THREE.BoxGeometry(0.16 * mw, 0.03 * mw, 0.01), white, face);
       teeth.position.set(0, mouthY - 0.005, mz - 0.005);
-    } else tube([[-0.05, mouthY, mz - 0.005], [0.05, mouthY, mz - 0.005]], 0.009, ink, face);
+    } else if (sculpt.mouth === "oh") {
+      const o = mesh(new THREE.TorusGeometry(0.055 * mw, 0.014 * mw, 8, 24), ink, face);
+      o.position.set(0, mouthY, mz - 0.01);
+      o.scale.set(1, 1.25, 0.6);
+      sphere(0.05 * mw, [1, 1.2, 0.35], [0, mouthY, mz - 0.03], blush, face);
+    } else tube([[-0.05 * mw, mouthY, mz - 0.005], [0.05 * mw, mouthY, mz - 0.005]], 0.009 * mw, ink, face);
     if (sculpt.whiskers !== "none") {
-      const len = sculpt.whiskers === "long" ? 0.42 : 0.24;
+      const len = (sculpt.whiskers === "long" ? 0.42 : 0.24) * whiskerDial;
+      const root = 0.2 * headDial;
       for (const side of [-1, 1])
         for (let i = 0; i < (sculpt.whiskers === "curly" ? 2 : 3); i++) {
           const y = mouthY + 0.05 - i * 0.05;
+          const rz = onFace(root, y, 0.01);
           const pts: [number, number, number][] = sculpt.whiskers === "curly"
-            ? [[side * 0.2, y, mz - 0.06], [side * 0.34, y + 0.06 - i * 0.1, mz - 0.14], [side * 0.3, y + 0.16 - i * 0.2, mz - 0.18]]
-            : [[side * 0.2, y, mz - 0.06], [side * (0.2 + len), y + 0.04 - i * 0.05, mz - 0.14]];
-          tube(pts, 0.007, ink, face).castShadow = false;
+            ? [[side * root, y, rz], [side * (root + 0.14 * whiskerDial), y + 0.06 - i * 0.1, rz - 0.08], [side * (root + 0.1 * whiskerDial), y + 0.16 - i * 0.2, rz - 0.12]]
+            : [[side * root, y, rz], [side * (root + len), y + 0.04 - i * 0.05, rz - 0.08]];
+          tube(pts, 0.007 * Math.min(1.5, whiskerDial), ink, face).castShadow = false;
         }
     }
-    eyeMeshes = { open: new THREE.Group(), happy: new THREE.Group(), wide: new THREE.Group(), sleepy: new THREE.Group() };
-    const ez = faceZ - 0.09, eyeY = 0.1;
+    // Eyes: a proper eyeball — white, iris, two catch-lights — so the face reads
+    // at thumbnail size. Every expression is built once and only one is shown.
+    eyeMeshes = Object.fromEntries(EYE_KINDS.map((kind) => [kind, new THREE.Group()])) as Record<KittyExpression, THREE.Group>;
+    const eyeY = 0.12 * headDial, spread = 0.21 * headDial;
+    const ez = onFace(spread, eyeY, 0.035);
+    const ball = (group: THREE.Group, x: number, side: number, r: number) => {
+      sphere(r * 1.2, [1, 1.04, 0.36], [x, eyeY, ez - 0.014], white, group);
+      sphere(r, [1, 1.12, 0.5], [x, eyeY, ez], ink, group);
+      sphere(r * 0.32, [1, 1, 0.5], [x + side * r * 0.3, eyeY + r * 0.46, ez + 0.03], white, group);
+      sphere(r * 0.15, [1, 1, 0.5], [x - side * r * 0.36, eyeY - r * 0.42, ez + 0.026], white, group);
+    };
+    const arc = (group: THREE.Group, x: number, up: boolean, width: number) =>
+      tube([[x - width, eyeY + (up ? -0.01 : 0), ez], [x, eyeY + (up ? 0.05 : -0.025) * eyeDial, ez + 0.02], [x + width, eyeY + (up ? -0.01 : 0), ez]], 0.013 * Math.min(1.5, eyeDial), ink, group);
+    const line = (group: THREE.Group, x: number, width: number) =>
+      tube([[x - width, eyeY, ez], [x + width, eyeY, ez]], 0.012 * Math.min(1.5, eyeDial), ink, group);
     for (const side of [-1, 1]) {
-      const x = side * 0.19;
-      sphere(0.05, [1, 1.1, 0.5], [x, eyeY, ez], ink, eyeMeshes.open);
-      sphere(0.015, [1, 1, 0.5], [x + side * 0.015, eyeY + 0.025, ez + 0.03], white, eyeMeshes.open);
-      tube([[x - 0.06, eyeY - 0.01, ez], [x, eyeY + 0.05, ez + 0.02], [x + 0.06, eyeY - 0.01, ez]], 0.013, ink, eyeMeshes.happy);
-      sphere(0.075, [1, 1.15, 0.5], [x, eyeY + 0.01, ez - 0.01], ink, eyeMeshes.wide);
-      sphere(0.026, [1, 1, 0.5], [x + side * 0.02, eyeY + 0.04, ez + 0.035], white, eyeMeshes.wide);
-      tube([[x - 0.06, eyeY, ez], [x, eyeY - 0.025, ez + 0.015], [x + 0.06, eyeY, ez]], 0.012, ink, eyeMeshes.sleepy);
+      const x = side * spread;
+      const width = 0.06 * eyeDial;
+      ball(eyeMeshes.open, x, side, 0.05 * eyeDial);
+      ball(eyeMeshes.wide, x, side, 0.078 * eyeDial);
+      ball(eyeMeshes.sparkle, x, side, 0.062 * eyeDial);
+      sphere(0.018 * eyeDial, [1, 1, 0.5], [x + side * 0.055 * eyeDial, eyeY + 0.055 * eyeDial, ez + 0.035], white, eyeMeshes.sparkle);
+      arc(eyeMeshes.happy, x, true, width);
+      arc(eyeMeshes.sleepy, x, false, width);
+      line(eyeMeshes.closed, x, width * 0.9);
+      if (side < 0) ball(eyeMeshes.wink, x, side, 0.05 * eyeDial);
+      else arc(eyeMeshes.wink, x, true, width);
     }
     for (const g of Object.values(eyeMeshes)) { g.visible = false; face.add(g); }
     eyeMeshes[expression].visible = true;
@@ -262,9 +315,9 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     }
     // Tail
     const r0 = points[3]!.x;
-    if (sculpt.tail === "curl") tube([[r0 * 0.7, 0.13, -0.34], [r0 * 1.1, 0.28, -0.48], [r0 * 1.2, 0.6, -0.3], [r0 * 1.05, 0.81, -0.07], [r0 * 0.9, 0.76, 0.08]], 0.087, parts.tail.mat, sculptGroup, "tail");
-    else if (sculpt.tail === "up") tube([[0, 0.14, -r0 * 0.75], [0.05, 0.54, -r0 * 1.05], [0.12, 1.14, -r0 * 1.1], [0.05, 1.64, -r0 * 0.9]], 0.085, parts.tail.mat, sculptGroup, "tail");
-    else if (sculpt.tail === "wrap") tube([[-r0 * 0.4, 0.06, -r0 * 0.7], [-r0 * 1.05, 0.05, -r0 * 0.2], [-r0 * 1.15, 0.05, r0 * 0.4], [-r0 * 0.7, 0.08, r0 * 0.9], [0.05, 0.12, r0 * 1.05]], 0.085, parts.tail.mat, sculptGroup, "tail");
+    if (sculpt.tail === "curl") tube([[r0 * 0.7, 0.13, -0.34], [r0 * 1.1, 0.28, -0.48], [r0 * 1.2, 0.6, -0.3], [r0 * 1.05, 0.81, -0.07], [r0 * 0.9, 0.76, 0.08]], 0.087 * tailDial, parts.tail.mat, sculptGroup, "tail");
+    else if (sculpt.tail === "up") tube([[0, 0.14, -r0 * 0.75], [0.05, 0.54, -r0 * 1.05], [0.12, 1.14, -r0 * 1.1], [0.05, 1.64, -r0 * 0.9]], 0.085 * tailDial, parts.tail.mat, sculptGroup, "tail");
+    else if (sculpt.tail === "wrap") tube([[-r0 * 0.4, 0.06, -r0 * 0.7], [-r0 * 1.05, 0.05, -r0 * 0.2], [-r0 * 1.15, 0.05, r0 * 0.4], [-r0 * 0.7, 0.08, r0 * 0.9], [0.05, 0.12, r0 * 1.05]], 0.085 * tailDial, parts.tail.mat, sculptGroup, "tail");
     // Compartment ahead of the body, pinned to the sculpted belly
     const doorZ = 0.68 * (points[4]!.x / 0.83) * 0.86 + 0.12;
     compartment = new THREE.Group();
@@ -487,12 +540,20 @@ export function createKittySculpture(piece: KittyPieceV1 | null, options: KittyS
     get animating() {
       return Boolean(anim || breathing || spinSpeed || happyUntil || sparkleUntil || slotPulseUntil || highlightUntil);
     },
-    /** First paintable hit under the ray, as {part, uv}. */
-    raycastPart(raycaster: THREE.Raycaster): { part: KittyPart; uv: { u: number; v: number } } | null {
-      const hit = raycaster.intersectObjects(KITTY_PARTS.flatMap((part) => parts[part].meshes), false)[0];
-      if (!hit || !hit.uv) return null;
-      const u = ((hit.uv.x % 1) + 1) % 1;
-      return { part: hit.object.userData.part as KittyPart, uv: { u, v: Math.max(0, Math.min(1, hit.uv.y)) } };
+    /**
+     * First paintable hit under the ray, as {part, uv}. With `outside`, a miss
+     * falls through to the invisible shell around the clay, so a brush that
+     * runs past the edge keeps painting instead of stopping dead.
+     */
+    raycastPart(raycaster: THREE.Raycaster, outside = false): { part: KittyPart; uv: { u: number; v: number }; outside?: boolean } | null {
+      const read = (hit: THREE.Intersection | undefined, beyond: boolean) => {
+        if (!hit || !hit.uv) return null;
+        const u = ((hit.uv.x % 1) + 1) % 1;
+        return { part: hit.object.userData.part as KittyPart, uv: { u, v: Math.max(0, Math.min(1, hit.uv.y)) }, ...(beyond ? { outside: true } : {}) };
+      };
+      const direct = read(raycaster.intersectObjects(KITTY_PARTS.flatMap((part) => parts[part].meshes), false)[0], false);
+      if (direct || !outside || !shells.length) return direct;
+      return read(raycaster.intersectObjects(shells, false)[0], true);
     },
     dispose() {
       clearSculpt();
