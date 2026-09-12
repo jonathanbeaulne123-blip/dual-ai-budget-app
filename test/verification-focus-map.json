@@ -32,7 +32,9 @@
         "src/core/herculesExecution.ts",
         "src/ledgerSync/authority.ts",
         "workers/ledgerRoom.ts",
-        "supabase/migrations/022_hercules_run_grants.sql"
+        "supabase/migrations/022_hercules_run_grants.sql",
+        "workers/workspace/container-config.json",
+        "scripts/prepare-workspace-container-deploy.mjs"
       ],
       "tests": [
         "test/workspace-action-bridge-ui.test.ts",
@@ -46,7 +48,8 @@
         "test/hercules-actions.test.ts",
         "test/hercules-action-ui.test.ts",
         "test/plan-guide-ui.test.ts",
-        "test/month-rehearsal-mainline.test.ts"
+        "test/month-rehearsal-mainline.test.ts",
+        "test/workspace-deployment.test.ts"
       ],
       "reason": "Hercules Workspace D-249: scoped identity, provider budgets, private drafts, grants, disclosure and external receipts, immutable reviewed action identity, current Plan amounts and compound-command denial"
     },

@@ -203,13 +203,5 @@
       "name": "hearth-hercules-runs-development",
       "class_name": "HerculesRunWorkflow"
     }
-  ],
-  "containers": [
-    {
-      "class_name": "HerculesSandbox",
-      "image": "./workers/workspace/Dockerfile",
-      "max_instances": 3,
-      "instance_type": "lite"
-    }
   ]
 }
