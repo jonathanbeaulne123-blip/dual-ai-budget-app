@@ -30,7 +30,12 @@ export type OverlayEvent = {
   memberColor: string;
   hearthOwned: boolean;
   calendarId?: string;
+  /** Position inside a multi-day run, so the grid can draw one connected event instead of repeated chips. */
+  span?: BoardSpan;
 };
+
+/** `index` is 0-based from the run's first civil day; `length` is the run's total days, even when the grid clips it. */
+export type BoardSpan = { index: number; length: number };
 
 export type BoardItem = {
   id: string;
@@ -50,6 +55,7 @@ export type BoardItem = {
   workJobId?: string;
   workSettlementKind?: WorkOwedFact["kind"];
   shiftEnvelopeId?: string;
+  span?: BoardSpan;
   due: boolean;
 };
 
@@ -261,6 +267,7 @@ export function buildMonthBoard(
       calendarId: overlay.calendarId,
       memberId: overlay.memberId,
       memberColor: overlay.memberColor,
+      ...(overlay.span && overlay.span.length > 1 ? { span: overlay.span } : {}),
       due: false,
     });
   }
@@ -302,8 +309,13 @@ export function buildMonthBoard(
   }
 
   for(const event of household.nativeEvents??[])for(const occurrence of nativeEventOccurrences(event,gridStart,gridEnd)){
-    const start=occurrence.date<gridStart?gridStart:occurrence.date,end=occurrence.end.slice(0,10)>gridEnd?gridEnd:occurrence.end.slice(0,10);
-    for(let date=start;date<=end;date=addDays(date,1))items.push({id:`${event.id}:${occurrence.originalDate}:${date}`,date,title:`${event.title}${occurrence.warning?' · '+occurrence.warning:''}`,amountCents:0,direction:'busy',kind:'event',source:'event',due:false});
+    const runStart=occurrence.date,runEnd=occurrence.end.slice(0,10);
+    const length=Math.max(1,Math.round((Date.parse(runEnd)-Date.parse(runStart))/86400000)+1);
+    const start=runStart<gridStart?gridStart:runStart,end=runEnd>gridEnd?gridEnd:runEnd;
+    for(let date=start;date<=end;date=addDays(date,1)){
+      const index=Math.round((Date.parse(date)-Date.parse(runStart))/86400000);
+      items.push({id:`${event.id}:${occurrence.originalDate}:${date}`,date,title:`${event.title}${occurrence.warning?' · '+occurrence.warning:''}`,amountCents:0,direction:'busy',kind:'event',source:'event',due:false,...(length>1?{span:{index,length}}:{})});
+    }
   }
   const byDate = new Map<DateKey, BoardItem[]>();
   for (const item of items) {

@@ -1,3 +1,4 @@
+import { calendarKindGlyph, kindClassNames } from "./calendar/semantics.ts";
 import {RowReveal} from "./RowReveal.tsx";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
@@ -449,7 +450,7 @@ export function AppointmentsPage(props: {
                       <button type="button" className="visit-card-hit" onClick={() => openDetail(row.appointmentId)}>
                         <div className="row">
                           <span>
-                            <span className="kind-pill visit">{kindLabel(row.kind)}</span> {row.title}
+                            <span className={`kind-pill ${kindClassNames("visit")}`}><span className="cal-kind" aria-hidden="true">{calendarKindGlyph("visit")}</span> {kindLabel(row.kind)}</span> {row.title}
                             {row.overdue ? " · overdue" : ""}
                           </span>
                           <span>{row.typicalCostCents ? formatCad(row.typicalCostCents) : ""}</span>
@@ -474,7 +475,7 @@ export function AppointmentsPage(props: {
                       <button type="button" className="visit-card-hit" onClick={() => openDetail(item.id)}>
                         <div className="row">
                           <span>
-                            <span className="kind-pill visit">{kindLabel(item.kind)}</span> {appointmentPublicTitle(item, "card")}
+                            <span className={`kind-pill ${kindClassNames("visit")}`}><span className="cal-kind" aria-hidden="true">{calendarKindGlyph("visit")}</span> {kindLabel(item.kind)}</span> {appointmentPublicTitle(item, "card")}
                           </span>
                           <span>{item.typicalCostCents ? formatCad(item.typicalCostCents) : ""}</span>
                         </div>
