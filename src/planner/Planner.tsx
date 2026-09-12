@@ -149,7 +149,7 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
           {item.overdue && <span className="planner-overdue">from {dayName(item.date!, today)}</span>}
           {task.repeat !== "none" && <span>{REPEAT_LABEL[task.repeat].toLowerCase()}</span>}
           {task.cue === "after-payday" && <span>after payday</span>}
-          {assignee && <span>{assignee.id === memberId ? "you" : assignee.name}{backup ? ` · ${backup.id === memberId ? "you" : backup.name} knows how` : ""}</span>}
+          {assignee && <span>{assignee.id === memberId ? "you" : assignee.name}{backup ? ` · ${backup.id === memberId ? "you know how too" : `${backup.name} knows how`}` : ""}</span>}
           {unseenByThem && assignee && <span className="planner-quiet">{assignee.name} hasn’t seen this yet</span>}
         </p>
         {task.notes && <p className="planner-row__notes">{task.notes}</p>}
@@ -175,7 +175,7 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
       <span className="planner-row__mark" aria-hidden="true">{item.done ? "✓" : "·"}</span>
       <div className="planner-row__copy">
         <strong>{item.title}</strong>
-        <p className="planner-row__meta"><span className="planner-kind">{KIND_LABEL[item.kind]}</span>{line && <span className={`planner-money planner-money--${line.tone}`}>{line.text}</span>}{item.kind === "appointment" && item.amountCents ? <span>usually {formatCad(item.amountCents)}</span> : null}{item.overdue && <span className="planner-overdue">from {dayName(item.date!, today)}</span>}</p>
+        <p className="planner-row__meta"><span className="planner-kind">{item.kind === "bill" && (item.amountCents ?? 0) < 0 ? "Income" : KIND_LABEL[item.kind]}</span>{line && <span className={`planner-money planner-money--${line.tone}`}>{line.text}</span>}{item.kind === "appointment" && item.amountCents ? <span>usually {formatCad(item.amountCents)}</span> : null}{item.overdue && <span className="planner-overdue">from {dayName(item.date!, today)}</span>}</p>
       </div>
     </li>;
   }

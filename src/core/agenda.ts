@@ -34,6 +34,8 @@ export type AgendaItem = {
   task: Task | null;
   /** Evidence the books already hold for a linked money task (derived, never stored until confirmed). */
   evidence: TaskEvidence | null;
+  /** When it was handled (tasks); the logbook files by this, the week keeps the task on its own day. */
+  completedOn: DateKey | null;
 };
 export type AgendaView = "today" | "week" | "anytime" | "logbook" | "upcoming";
 export type AgendaOwnership = "all" | "mine" | "theirs" | "ours";
@@ -115,11 +117,12 @@ function taskItems(full: Household, visible: Household, input: AgendaInput, from
     const done = Boolean(task.completedAt) || (evidence !== null && task.moneyLink !== null);
     const base = { kind: "task" as const, id: task.id, title: task.title, amountCents: task.expectedAmountCents, money: taskIsFinancial(task), memberId: task.assigneeId, task, evidence, dueDate: task.dueDate };
     const own = dateOf(task);
-    if (done) return [{ ...base, key: task.id, date: task.completedAt ? dateKeyOfIso(task.completedAt) : evidence?.date ?? own, done: true, overdue: false }];
-    if (!own) return [{ ...base, key: task.id, date: null, done: false, overdue: false }];
-    if (task.repeat === "none") return [{ ...base, key: task.id, date: own, done: false, overdue: own < input.today }];
+    const completedOn = task.completedAt ? dateKeyOfIso(task.completedAt) : evidence?.date ?? null;
+    if (done) return [{ ...base, key: task.id, date: own ?? completedOn, completedOn, done: true, overdue: false }];
+    if (!own) return [{ ...base, key: task.id, date: null, completedOn: null, done: false, overdue: false }];
+    if (task.repeat === "none") return [{ ...base, key: task.id, date: own, completedOn: null, done: false, overdue: own < input.today }];
     const dates = own < from ? [own, ...taskOccurrences(task, from, to)] : taskOccurrences(task, from, to);
-    return dates.map((date) => ({ ...base, key: `${task.id}@${date}`, date, dueDate: task.dueDate && task.doDate ? addDays(task.dueDate, Math.round((Date.parse(date) - Date.parse(task.doDate)) / 86400000)) : task.dueDate, done: false, overdue: date < input.today }));
+    return dates.map((date) => ({ ...base, key: `${task.id}@${date}`, date, dueDate: task.dueDate && task.doDate ? addDays(task.dueDate, Math.round((Date.parse(date) - Date.parse(task.doDate)) / 86400000)) : task.dueDate, completedOn: null, done: false, overdue: date < input.today }));
   });
 }
 function booksItems(full: Household, visible: Household, input: AgendaInput, from: DateKey, to: DateKey): AgendaItem[] {
@@ -127,33 +130,33 @@ function booksItems(full: Household, visible: Household, input: AgendaInput, fro
   for (const row of visible.recurrences.filter((r) => recurrenceVisible(visible, r))) {
     for (const date of projectCadence(row.nextDate, row.cadence, from, to)) {
       const done = postedOccurrence(full, row, date);
-      items.push({ key: `bill:${row.id}:${date}`, kind: "bill", id: row.id, date, dueDate: null, title: row.note || (row.kind === "paycheck" ? "Payday" : "Recurring"), amountCents: row.type === "income" ? -row.amountCents : row.amountCents, money: true, memberId: null, done, overdue: !done && date < input.today, task: null, evidence: null });
+      items.push({ key: `bill:${row.id}:${date}`, kind: "bill", id: row.id, date, dueDate: null, title: row.note || (row.kind === "paycheck" ? "Payday" : "Recurring"), amountCents: row.type === "income" ? -row.amountCents : row.amountCents, money: true, memberId: null, done, overdue: !done && date < input.today, task: null, evidence: null, completedOn: null });
     }
   }
   // A bill paid early leaves the projection (its template advanced) but must not vanish: the posted occurrence is the done row.
   for (const tx of visible.transactions.filter((t) => !t.isDuplicate && t.source === "recurring" && t.sourceId && t.date >= from && t.date <= to)) {
     const row = visible.recurrences.find((r) => r.id === tx.sourceId);
     if (!row || items.some((item) => item.key === `bill:${row.id}:${tx.date}`)) continue;
-    items.push({ key: `bill:${row.id}:${tx.date}`, kind: "bill", id: row.id, date: tx.date, dueDate: null, title: row.note || tx.note || "Recurring", amountCents: tx.type === "income" ? -tx.amountCents : tx.amountCents, money: true, memberId: null, done: true, overdue: false, task: null, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } });
+    items.push({ key: `bill:${row.id}:${tx.date}`, kind: "bill", id: row.id, date: tx.date, dueDate: null, title: row.note || tx.note || "Recurring", amountCents: tx.type === "income" ? -tx.amountCents : tx.amountCents, money: true, memberId: null, done: true, overdue: false, task: null, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date }, completedOn: tx.date });
   }
   for (const row of (visible.potentialExpenses ?? []).filter((r) => r.status === "planned" && r.date >= from && r.date <= to)) {
-    items.push({ key: `planned:${row.id}`, kind: "planned-cost", id: row.id, date: row.date, dueDate: null, title: row.title, amountCents: row.expectedAmountCents, money: true, memberId: null, done: false, overdue: row.date < input.today, task: null, evidence: null });
+    items.push({ key: `planned:${row.id}`, kind: "planned-cost", id: row.id, date: row.date, dueDate: null, title: row.title, amountCents: row.expectedAmountCents, money: true, memberId: null, done: false, overdue: row.date < input.today, task: null, evidence: null, completedOn: null });
   }
   for (const row of (visible.appointments ?? []).filter((r) => r.active && r.nextDate >= from && r.nextDate <= to)) {
     const memberId = typeof row.memberId === "string" && visible.members.some((m) => m.id === row.memberId) ? row.memberId : null;
     if (input.view === "personal" && memberId && memberId !== input.memberId) continue;
-    items.push({ key: `appointment:${row.id}`, kind: "appointment", id: row.id, date: row.nextDate, dueDate: null, title: row.title, amountCents: row.typicalCostCents || null, money: false, memberId, done: false, overdue: false, task: null, evidence: null });
+    items.push({ key: `appointment:${row.id}`, kind: "appointment", id: row.id, date: row.nextDate, dueDate: null, title: row.title, amountCents: row.typicalCostCents || null, money: false, memberId, done: false, overdue: false, task: null, evidence: null, completedOn: null });
   }
   for (const row of visible.shifts.filter((r) => r.date >= from && r.date <= to && !r.correctedByShiftId)) {
-    items.push({ key: `shift:${row.id}`, kind: "shift", id: row.id, date: row.date, dueDate: null, title: `${visible.members.find((m) => m.id === row.memberId)?.name ?? "A"} shift`, amountCents: null, money: false, memberId: row.memberId, done: row.date < input.today, overdue: false, task: null, evidence: null });
+    items.push({ key: `shift:${row.id}`, kind: "shift", id: row.id, date: row.date, dueDate: null, title: `${visible.members.find((m) => m.id === row.memberId)?.name ?? "A"} shift`, amountCents: null, money: false, memberId: row.memberId, done: row.date < input.today, overdue: false, task: null, evidence: null, completedOn: null });
   }
   for (const row of visible.nativeEvents ?? []) {
     for (const occurrence of nativeEventOccurrences(row, from, to)) {
-      items.push({ key: `event:${row.id}:${occurrence.date}`, kind: "event", id: row.id, date: occurrence.date, dueDate: null, title: row.title, amountCents: null, money: false, memberId: row.visibility === "personal" ? row.createdBy : null, done: false, overdue: false, task: null, evidence: null });
+      items.push({ key: `event:${row.id}:${occurrence.date}`, kind: "event", id: row.id, date: occurrence.date, dueDate: null, title: row.title, amountCents: null, money: false, memberId: row.visibility === "personal" ? row.createdBy : null, done: false, overdue: false, task: null, evidence: null, completedOn: null });
     }
   }
   for (const row of visible.goals.filter((g) => g.status === "open" && g.deadline && g.deadline >= from && g.deadline <= to)) {
-    items.push({ key: `goal:${row.id}`, kind: "goal", id: row.id, date: row.deadline, dueDate: null, title: `${row.name} arrives`, amountCents: Math.max(0, row.targetCents - row.savedCents) || null, money: true, memberId: row.ownerMemberId, done: row.savedCents >= row.targetCents, overdue: false, task: null, evidence: null });
+    items.push({ key: `goal:${row.id}`, kind: "goal", id: row.id, date: row.deadline, dueDate: null, title: `${row.name} arrives`, amountCents: Math.max(0, row.targetCents - row.savedCents) || null, money: true, memberId: row.ownerMemberId, done: row.savedCents >= row.targetCents, overdue: false, task: null, evidence: null, completedOn: null });
   }
   return items;
 }
@@ -171,9 +174,9 @@ export function agenda(household: Household, view: AgendaView, input: AgendaInpu
   const tasks = taskItems(household, visible, input, from, to);
   if (view === "anytime") return { view, from, to, items: sortItems(tasks.filter((item) => !item.done && item.date === null)), days: [], months: [] };
   if (view === "logbook") {
-    const done = sortItems(tasks.filter((item) => item.done)).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+    const done = sortItems(tasks.filter((item) => item.done)).sort((a, b) => (b.completedOn ?? b.date ?? "").localeCompare(a.completedOn ?? a.date ?? ""));
     const months = new Map<string, AgendaItem[]>();
-    for (const item of done) { const key = item.date ? monthKeyFromDateKey(item.date) : "undated"; months.set(key, [...(months.get(key) ?? []), item]); }
+    for (const item of done) { const on = item.completedOn ?? item.date; const key = on ? monthKeyFromDateKey(on) : "undated"; months.set(key, [...(months.get(key) ?? []), item]); }
     return { view, from, to, items: done, days: [], months: [...months.entries()].map(([monthKey, items]) => ({ monthKey, items, handled: items.length, bills: items.filter((i) => i.money).length, billCents: items.reduce((sum, i) => sum + (i.evidence?.amountCents ?? i.amountCents ?? 0), 0) })) };
   }
   // Open tasks dated inside the window, overdue ones carried to the first day, and what already got done this period.

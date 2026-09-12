@@ -68,7 +68,7 @@
 .planner-day { display: grid; gap: 8px; }
 .planner-day h2 { font-family: var(--display); font-weight: 600; font-size: 18px; margin: 4px 0 0; display: flex; gap: 8px; align-items: baseline; }
 .planner-day h2 small { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-.planner-day.is-today h2 { color: var(--pine); }
+.planner-day.is-today h2 { color: var(--pine-2, var(--pine)); }
 .planner-month h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 10px 0 6px; }
 .planner-month h2 small { font-family: var(--font); font-size: 14px; color: var(--muted); font-weight: 400; }
 /* Lists tab */
@@ -103,7 +103,10 @@
   .planner-capture__row { grid-template-columns: 1fr; }
 }
 @media (min-width: 720px) {
-  .planner-week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .planner-week { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  /* Inside a week column a row is narrow: actions sit under the copy, never beside it. */
+  .planner-week .planner-row--task { grid-template-columns: 34px 1fr; }
+  .planner-week .planner-row--task .planner-row__actions { grid-column: 2; justify-content: flex-start; }
   .planner-week .planner-day.is-today { grid-column: 1 / -1; }
 }
 @media (min-width: 1000px) {
@@ -124,13 +127,14 @@
 :root[data-theme="taylor"] .planner-row__mark--money { border-radius: 4px; }
 
 /* ---- Newfoundland: a harbour. Horizon line, cool wayfinding, weather stays outside the decision. ---- */
-:root[data-theme="newfoundland"] .planner-afford { border-radius: 10px; border-top: 0; background: linear-gradient(180deg, var(--card) 0 68%, var(--paper-2) 68%); border-left: 4px solid var(--glass-night, #26303a); }
+:root[data-theme="newfoundland"] .planner-afford { border-radius: 10px; border-top: 0; background: linear-gradient(180deg, var(--card) 0 82%, var(--paper-2) 82%); border-left: 4px solid var(--glass-night, #26303a); }
 :root[data-theme="newfoundland"] .planner-row { border-radius: 8px; border-left: 3px solid var(--glass-rain, #9fb0b5); }
 :root[data-theme="newfoundland"] .planner-row.is-overdue { border-left-color: var(--copper); }
 :root[data-theme="newfoundland"] .planner-row--task.is-money { border-left-color: var(--gold); }
 :root[data-theme="newfoundland"] .planner-tabs button.is-active { background: var(--glass-night, #26303a); border-color: var(--glass-night, #26303a); }
 :root[data-theme="newfoundland"] .planner-capture { border-radius: 8px; border-left: 4px solid var(--pine); }
 :root[data-theme="newfoundland"] .planner-day h2 { letter-spacing: .01em; }
+:root[data-theme="newfoundland"] .planner-day.is-today h2 { color: var(--ink); text-decoration: underline; text-decoration-color: var(--pine); text-underline-offset: 4px; }
 
 /* Quiet, forced colours, reduced motion. */
 :root[data-quiet="true"] .planner-afford::before { display: none; }
