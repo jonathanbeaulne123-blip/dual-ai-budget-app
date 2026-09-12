@@ -37,7 +37,7 @@ jobs:
         env:
           HEARTH_TEST_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          if git diff --name-only "$HEARTH_TEST_BASE" HEAD -- src/HouseholdHome.tsx src/ChapterPanel.tsx src/household-home.css src/kitty/KittyBankRoom.tsx test/home-feedback-layout.mjs scripts/serve-home-feedback-proof.mjs | grep -q .; then
+          if git diff --name-only "$HEARTH_TEST_BASE" HEAD -- src/App.tsx src/HouseholdHome.tsx src/ChapterPanel.tsx src/household-home.css src/kitty/KittyBankRoom.tsx test/home-feedback-layout.mjs scripts/serve-home-feedback-proof.mjs | grep -q .; then
             node test/home-feedback-layout.mjs
           fi
       - name: Keep Home browser evidence
