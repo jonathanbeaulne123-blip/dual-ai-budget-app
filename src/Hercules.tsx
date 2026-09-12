@@ -244,6 +244,7 @@ export function HerculesPresence({
   visorPop,
   spark,
   activityBlocked = false,
+  conversationHidden = false,
   memberId,
   view,
   freshness,
@@ -281,6 +282,8 @@ export function HerculesPresence({
   spark?: boolean;
   /** Consequential sheets/palettes keep Hercules visible but pause autonomous work. */
   activityBlocked?: boolean;
+  /** Another Hercules surface owns presentation; retain this conversation's drafts. */
+  conversationHidden?: boolean;
   memberId: string;
   view: LedgerView;
   freshness?: FundPulseFreshness;
@@ -362,8 +365,10 @@ export function HerculesPresence({
   const chatReturnFocus=useRef<HTMLElement|null>(null);
   useEffect(() => {
     if (!planOpenRequest) return;
+    if (conversationHidden) return;
     const expectedScope = `${household.environment}:${household.householdId}:${memberId}:${view}:${actionIdentity ?? memberId}`;
-    if (planOpenRequest.scopeKey !== expectedScope || planOpenRequest.isCurrent?.() === false || activityBlocked || adding) { onPlanOpenConsumed?.(planOpenRequest.id); return; }
+    if (planOpenRequest.scopeKey !== expectedScope || planOpenRequest.isCurrent?.() === false) { onPlanOpenConsumed?.(planOpenRequest.id); return; }
+    if (activityBlocked || adding) return;
     if (!open && document.activeElement instanceof HTMLElement) chatReturnFocus.current=document.activeElement;
     if (phoneShell) setMobileFocus(true);
     openChatFromBeg(true);
@@ -377,7 +382,7 @@ export function HerculesPresence({
       onPlanOpenConsumed?.(planOpenRequest.id);
     });
     return () => cancelAnimationFrame(frame);
-  }, [planOpenRequest, household.environment, household.householdId, memberId, view, actionIdentity, activityBlocked, adding, actionPanelReady]);
+  }, [planOpenRequest, household.environment, household.householdId, memberId, view, actionIdentity, activityBlocked, adding, actionPanelReady, conversationHidden]);
 
   const modelPending=useRef<number|null>(null);
   const [chatExpanded,setChatExpanded]=useState(false);
@@ -426,6 +431,12 @@ export function HerculesPresence({
   const idleAt = useRef(0);
 
   const chatGen = useRef(0);
+  const previousConversationHidden = useRef(conversationHidden);
+  if (previousConversationHidden.current !== conversationHidden) {
+    previousConversationHidden.current = conversationHidden;
+    if (conversationHidden) { chatGen.current += 1; modelPending.current = null; }
+  }
+  useEffect(() => { if (conversationHidden) { setBusy(false); setReplyProvider(null); } }, [conversationHidden]);
   const chatRigUntilRef = useRef(0);
   const chatRigTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conversationGeneration = companionConversation(household, memberId, view).generation;
@@ -488,19 +499,20 @@ export function HerculesPresence({
   const showWidgetSnippets = Boolean(open && !setupSelected && tab === "home" && focusedWidget && !adding && !(phoneShell && mobileFocus));
   const showTalk = Boolean(open && !setupSelected && !adding && talk && !(proposal && !open && !begging) && !showWidgetSnippets);
   const hideLiveCat = phoneShell && !mobileFocus;
-  const focusShellOpen = phoneShell && mobileFocus && !adding && !setupSelected;
+  const focusShellMounted = phoneShell && mobileFocus && !adding && !setupSelected;
+  const focusShellOpen = focusShellMounted && !conversationHidden;
   const focusDialogRef = useDialog(focusShellOpen, closeChat, () => document.querySelector<HTMLButtonElement>(".plan-conversation-invitation button") ?? document.querySelector<HTMLButtonElement>(".hercules-pill"));
   useEffect(() => {
-    if (!open || focusShellOpen) return;
+    if (!open || focusShellOpen || conversationHidden) return;
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || (event.target as Element | null)?.closest?.('[data-dialog-escape-boundary]')) return;
       closeChat();
     };
     document.addEventListener('keydown', closeOnEscape);
     return () => document.removeEventListener('keydown', closeOnEscape);
-  }, [open, focusShellOpen]);
+  }, [open, focusShellOpen, conversationHidden]);
   useEffect(()=>{const input=composerRef.current;if(input){input.style.height="auto";input.style.height=`${Math.min(160,input.scrollHeight)}px`;}},[question,open,phoneShell]);
-  useEffect(()=>{if(open&&!phoneShell)composerRef.current?.focus();},[open,phoneShell]);
+  useEffect(()=>{if(open&&!phoneShell&&!conversationHidden)composerRef.current?.focus();},[open,phoneShell,conversationHidden]);
   const [phoneViewport,setPhoneViewport]=useState<{height:number;top:number}|null>(null);
   useEffect(()=>{
     if(!focusShellOpen||!window.visualViewport){setPhoneViewport(null);return;}
@@ -538,7 +550,7 @@ export function HerculesPresence({
   // what renders inside it changes while onboarding has the floor.
   const desktopOnboardingOpen = Boolean(!setup && !phoneShell && open && onboardingShellActive);
   const modalActive=useModalActive(focusDialogRef);
-  const rigBlocked = adding || activityBlocked || modalActive;
+  const rigBlocked = adding || activityBlocked || modalActive || conversationHidden;
   const autonomyBlocked = rigBlocked || focusShellOpen;
   const homeAutonomy = tab === "home" && !autonomyBlocked && documentVisible && !open && !setupSelected && !reducedMotion();
   idleCaptureAllowed.current = !(
@@ -1068,7 +1080,7 @@ export function HerculesPresence({
     setHelpAsked(false);
     setTalk(null);
     setBusy(false);
-    setQuestion("");
+    // Closing changes presentation; an unsent thought remains in its private scope.
     setBegging(false);
     setReplyProvider(null);
     setShareWorkplaceRoster(false);
@@ -1370,7 +1382,7 @@ export function HerculesPresence({
     setTalk(next);
     setTopic(next.topic);
     setMotion(next.pose === "sleep" ? "loaf" : next.pose);
-    setQuestion("");
+    if (userText !== undefined) setQuestion("");
     setOpen(true);
     if (focusedWidget && tab === "home") {
       pushSnippet(userText, next.spoken);
@@ -1443,7 +1455,7 @@ export function HerculesPresence({
   }
 
   function speak(raw: string) {
-    if (!chatEnabled) return;
+    if (!chatEnabled || conversationHidden) return;
     const text = raw.trim();
     if (!text || busy) return;
     if (onReportBug && isBugReportIntent(text)) { onReportBug(text); setQuestion(""); closeChat(); return; }
@@ -1455,10 +1467,11 @@ export function HerculesPresence({
       text,
     );
     if (helpCmd) applyHelpNav(helpCmd);
-    if (goShortcut(helpCmd?.prompt ?? text)) return;
+    if (goShortcut(helpCmd?.prompt ?? text)) { setQuestion(""); return; }
     if (calendarEventIntent(text)) directToCalendar();
     const plan = planHerculesTurn(contextHousehold, helpCmd?.prompt ?? text, today, adding ? "add" : tab, topic, { memberId, view, conversationActions:!!actionService });
     if (plan.draft) {
+      setQuestion("");
       onDraft?.(plan.draft);
       keepTalk(text, plan.talk.spoken, "journal");
       closeChat();
@@ -1474,7 +1487,7 @@ export function HerculesPresence({
   }
 
   async function sendChat(raw: string, preconsumedCoworkerIds?: string[]) {
-    if (!chatEnabled) return;
+    if (!chatEnabled || conversationHidden) return;
     const message = raw.trim();
     if (!message || busy || modelPending.current!==null) return;
     if (onReportBug && isBugReportIntent(message)) { onReportBug(message); setQuestion(""); closeChat(); return; }
@@ -1490,11 +1503,12 @@ export function HerculesPresence({
     );
     if (helpCmd) applyHelpNav(helpCmd);
     const text = helpCmd?.prompt ?? message;
-    if (goShortcut(text)) return;
+    if (goShortcut(text)) { setQuestion(""); return; }
     if (calendarEventIntent(message) || calendarEventIntent(text)) directToCalendar();
     const page = adding ? "add" : tab;
     const plan = planHerculesTurn(contextHousehold, text, today, page, topic, { memberId, view, conversationActions:!!actionService });
     if (plan.draft) {
+      setQuestion("");
       onDraft?.(plan.draft);
       keepTalk(message, plan.talk.spoken, "journal");
       closeChat();
@@ -1671,7 +1685,8 @@ export function HerculesPresence({
     if (!start) return;
     if (!start.moved) {
       setPurr(true);
-      if (open) closeChat();
+      if (conversationHidden && onOpenWorkspace) onOpenWorkspace();
+      else if (open) closeChat();
       else if (onOpenWorkspace) onOpenWorkspace(); else openChatFromBeg(true);
     } else {
       setMotion(look.view.mood === "restless" ? "pace" : pinned ? "sit" : "loaf");
@@ -1729,7 +1744,7 @@ export function HerculesPresence({
       viewH: typeof window === "undefined" ? 844 : window.innerHeight,
       avoid,
     });
-  const bubbleStyle = { left: bubble.left, top: bubble.top };
+  const bubbleStyle = { left: bubble.left, top: bubble.top, ...(conversationHidden ? { display: 'none' } : {}) };
   const bubbleSide = bubble.side === "left" ? "left" : "right";
   const groundedFacts = talk?.facts?.length
     ? talk.facts
@@ -1755,7 +1770,7 @@ export function HerculesPresence({
     </label>
   ) : null;
 
-  function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><span>{onReportBug && <button type="button" onClick={() => { onReportBug(); closeChat(); }}>Report a bug</button>}</span><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
+  function composer(){return chatEnabled ? <form className="hercules-chat-form" onSubmit={event=>{event.preventDefault();void sendChat(question);composerRef.current?.focus();}}><textarea ref={composerRef} data-autofocus aria-label={`Ask ${look.view.name}`} rows={2} value={question} placeholder="Tell me what you’d like to do…" onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();if(!busy&&question.trim())event.currentTarget.form?.requestSubmit();}}}/><button type="submit" disabled={busy||!question.trim()}>Send</button><span className="hercules-composer-actions">{onOpenWorkspace && <button type="button" onClick={onOpenWorkspace}>Open workspace</button>}{onReportBug && <button type="button" onClick={() => { onReportBug(); closeChat(); }}>Report a bug</button>}</span><small className="hercules-composer-help">Enter to send · Shift+Enter for a new line. Only Final Confirm posts.</small></form>:null;}
   function actionPanel(){return actionService&&actionHousehold?<><div className="hercules-replies">{suggestedWorkflowIds.filter(id=>availableDiscoveryActions().includes(id)).map(id=>{const item=HERCULES_WORKFLOW_CATALOGUE.find(r=>`start:${r.id}`===id);if(item)return <button key={id} type="button" onClick={()=>actionRef.current?.send(item.example)}>{item.title}</button>;const definition=HERCULES_CAPABILITIES.find(row=>row.action===id);return definition?<button key={id} type="button" onClick={()=>{const candidate=discoverySelection(discoveryInput).all.find(row=>row.capabilityId===definition.id);const answer=candidate&&explainDiscovery(discoveryInput,candidate.issueId);if(answer)keepTalk(definition.example,answer.text,"journal");}}>{definition.outcome}</button>:null;})}</div><HerculesActionPanel key={`${actionIdentity}:${view}:${household.companionProfile?.conversations.find(r=>r.view===view)?.generation??0}`} ref={actionRef} composerAvailable={chatEnabled} onWorkspaceConfirm={onWorkspaceConfirm} onReady={notifyActionPanelReady} context={{household:actionHousehold,memberId,view,today,planMonth:planContext?.scope===view?planContext.monthKey:undefined,planThrough:planContext?.scope===view?planContext.through:undefined}} service={actionService} identity={actionIdentity??memberId} onReply={(question,reply)=>{applyTalk({...surface,spoken:reply,lesson:null,replies:[],pose:"loaf",topic:"entry",attention:false} as HerculesTalk,question);keepTalk(question,reply,"journal");}}/></>:null;}
   return (
     <HerculesRigProvider
@@ -1767,7 +1782,7 @@ export function HerculesPresence({
       <HerculesOfficeRigBridge expandId={tab === "home" ? focusedWidget : null} />
     <div data-easy-read={easyRead} className={`hercules-world ${hideLiveCat ? "is-phone-compact" : ""} ${focusShellOpen ? "is-focus-open" : ""} ${desktopFly && homeAutonomy ? "is-desktop-wander" : ""}`} aria-live="polite">
       {kingOpen && onCompanionCommand && <KittyBankRoom household={actionHousehold ?? household} memberId={memberId} view="household" initialBankId="king" identity={`${household.environment}:${household.householdId}:${memberId}:household`} onCommand={onCompanionCommand} onClose={()=>setKingOpen(false)} returnTo="Hercules" />}
-      {setup && activeMemberPresent && <HerculesSetup {...setup} key={`${setup.household.environment}:${setup.household.householdId}:${setup.memberId}:${setup.authUserId}`} open={open && setupSelected} onClose={closeChat} onHelp={()=>{setSetupSelected(false);openChatFromBeg(true);}} onPlay={()=>{closeChat();sitWithBag();}} />}
+      {setup && activeMemberPresent && <HerculesSetup {...setup} key={`${setup.household.environment}:${setup.household.householdId}:${setup.memberId}:${setup.authUserId}`} open={open && setupSelected && !conversationHidden} onClose={closeChat} onHelp={()=>{setSetupSelected(false);openChatFromBeg(true);}} onPlay={()=>{closeChat();sitWithBag();}} />}
       {desktopFly && homeAutonomy && !reducedMotion() && (
         <HerculesLitterBox deadFlies={deadFlies} />
       )}
@@ -1803,7 +1818,7 @@ export function HerculesPresence({
           )}
         </div>
       )}
-      {phoneShell && !adding && !mobileFocus && (
+      {phoneShell && !adding && (!mobileFocus || conversationHidden) && (
         <button
           type="button"
           className={`hercules-pill${quietReminder?' has-reminder':''}`}
@@ -1822,8 +1837,8 @@ export function HerculesPresence({
           <span className="hercules-pill-name">{quietReminder?.title??'How can I help?'}</span>
         </button>
       )}
-      {focusShellOpen && (
-        <div ref={focusDialogRef} className="hercules-focus-shell" style={phoneViewport?{height:phoneViewport.height,top:phoneViewport.top,bottom:"auto"}:undefined} role="dialog" aria-modal="true" aria-label={`${look.view.name} focus`}>
+      {focusShellMounted && (
+        <div ref={focusDialogRef} className="hercules-focus-shell" hidden={conversationHidden} style={{...(phoneViewport?{height:phoneViewport.height,top:phoneViewport.top,bottom:"auto"}:{}),...(conversationHidden?{display:'none'}:{})}} role="dialog" aria-modal={conversationHidden?undefined:true} aria-label={`${look.view.name} focus`}>
           <button type="button" className="hercules-focus-close" onClick={closeChat} aria-label="Close focus mode">
             Close
           </button>
@@ -1932,7 +1947,7 @@ export function HerculesPresence({
         </div>
       )}
       {showProposal && proposal && phoneShell && !mobileFocus && (
-        <div className="hercules-pill-note" role="status">
+        <div className="hercules-pill-note" role="status" hidden={conversationHidden} style={conversationHidden?{display:'none'}:undefined}>
           <p>{proposal.spoken}</p>
           <div className="hercules-replies">
             {proposal.potentialExpenseId && (
@@ -1984,7 +1999,7 @@ export function HerculesPresence({
       {/* "Finish here, then open Hercules." Furniture, not an alert: no
           dismiss control and no timeout. Desktop reuses the existing status
           surface; mobile uses plate 13's bar above the nav. */}
-      {(desktopOnboardingOpen || (showTalk && talk)) && !focusShellOpen && (
+      {(desktopOnboardingOpen || (showTalk && talk)) && !focusShellMounted && (
         <div
           ref={bubbleRef}
           className={`hercules-bubble ${bubbleSide} ${open ? "chat" : ""} ${chatExpanded ? "is-expanded" : ""}`}
@@ -2110,7 +2125,7 @@ export function HerculesPresence({
         ].join(" ")}
         style={{ left: pos.x, top: pos.y, width: size, height: size, ["--herc-useful" as string]: String(usefulness.animation) }}
         aria-label={`Open ${look.view.name}${!phoneShell && !open && !adding && !activityBlocked ? ` — ${quietReminder?.title??'How can I help?'}` : ""}`}
-        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(open)closeChat();else if (onOpenWorkspace) onOpenWorkspace(); else openChatFromBeg(true);}}}
+        onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(conversationHidden&&onOpenWorkspace)onOpenWorkspace();else if(open)closeChat();else if (onOpenWorkspace) onOpenWorkspace(); else openChatFromBeg(true);}}}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

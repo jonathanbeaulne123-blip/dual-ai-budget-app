@@ -1,3 +1,11 @@
+## Hercules audit expansion — authorized Development release (2026-09-12)
+
+Jonathan explicitly requested push, merge and deployment after the local evidence and limits were reported. The candidate integrates Nesting Eggs main `49dbaf7`. [Release scope, checks and receipts](worksessions/2026-09-12-hercules-audit-release.md) supersede the earlier local-only boundary for this release. Production, schema, secrets, quota settings and household writes remain outside scope.
+
+## Hercules audit expansion — local candidate (2026-09-12)
+
+Branch `codex/hercules-audit-expansion`, base `1686ccc4`. Claude's downloaded journey audit informed conversation repairs, truthful take-home, scoped dynamic action discovery, reviewed hourly job setup and modern task lifecycle. High risk; Budget (5): current financial evidence and retained Confirm authority. Engagement (3): questions, useful actions and recoverable work. Focused High gate passed 472 tests across 43 files in 99.444 seconds with no budget breach; build, 13 local background-runtime cases and 96 browser matrix cases passed. Live Flash, authenticated continuity and physical-device evidence remain separate. No push, deployment, schema or provider changes. [Handoff](briefs/HERCULES_AUDIT_EXPANSION_HANDOFF.md) and [worksession](worksessions/2026-09-12-hercules-audit-expansion.md) distinguish local validation from live/physical acceptance.
+
 ## Nesting eggs + F-010 — PR #466 (2026-09-12)
 
 [PR #466](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/466), branch `codex/nesting-eggs-f010`, integrated main `1686ccc4`. High risk. Home and Plan now open a King → Protect / Everyday / Build / Prepare → existing Goals / automatic expense nest. Jonathan chose whole Household Fund allocation, exact child-to-King conservation, automatic recurring replacements, immutable broken-pot looks, collapsed history and skippable/resumable King setup. Budget (5): preserve accepted money, scoped receipts and Final Confirm. Engagement (3): four studio depths, original modeled props and all three authored themes.

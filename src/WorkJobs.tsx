@@ -3,6 +3,9 @@ import {
   TIMEZONE,
   copy,
   formatCad,
+  takeHomeBasis,
+  workRateForDate,
+  takeHomeHourlyRateCents,
   memberEarningSchedule,
   onboardingCadenceProbe,
   onboardingCadenceSentence,
@@ -120,6 +123,12 @@ function blankJob(household: Household, memberId: string, today: string): WorkJo
   };
 }
 
+/** Gross is never shown as take-home. Unknown take-home says so instead of borrowing a number. */
+function jobRateSummary(rate: WorkRatePeriod): string {
+  const basis = takeHomeBasis(rate);
+  if (basis === "unknown") return `${formatCad(rate.grossHourlyRateCents)}/hr gross · take-home not set`;
+  return `${formatCad(takeHomeHourlyRateCents(rate))}/hr take-home${basis === "calculated" ? " (calculated)" : ""}`;
+}
 function dollars(cents: number): string { return cents ? (cents / 100).toFixed(2) : ""; }
 function toCents(value: string): number { return Math.max(0, Math.round((Number(value) || 0) * 100)); }
 
@@ -297,10 +306,10 @@ export function WorkJobsCard({ household, memberId, today, busy, onAskSave, onAr
         <p className="muted">Employer rules power Timesheet, payday prompts, tip envelopes, owed balances, and reports. Saving a job does not post money.</p>
         {jobs.length === 0 ? <p>No jobs yet. Add the employer once; Timesheet remembers it.</p> : jobs.map((job) => {
           const role = job.roles.find((row) => row.active) ?? job.roles[0];
-          const rate = role?.rates.at(-1);
+          const rate = role ? workRateForDate(role, today) : undefined;
           return (
             <div className="work-job-row" key={job.id} style={{ borderLeftColor: job.color }}>
-              <div><strong>{job.name}</strong><div className="muted">{job.active ? `${job.roles.filter((row) => row.active).length} roles` : "Archived"}{rate ? ` · ${formatCad(rate.takeHomeHourlyRateCents || rate.grossHourlyRateCents)}/hr` : ""}</div></div>
+              <div><strong>{job.name}</strong><div className="muted">{job.active ? `${job.roles.filter((row) => row.active).length} ${job.roles.filter((row) => row.active).length === 1 ? "role" : "roles"}` : "Archived"}{rate ? ` · ${jobRateSummary(rate)}` : ""}</div></div>
               <button className="chip" type="button" onClick={() => setDraft(structuredClone(job))}>Edit</button>
             </div>
           );

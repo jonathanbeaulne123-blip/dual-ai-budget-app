@@ -3,6 +3,27 @@
   "mappings": [
     {
       "sources": [
+        "src/core/herculesTaskActions.ts",
+        "src/core/herculesWorkActions.ts",
+        "src/core/herculesExecution.ts",
+        "src/core/herculesPlanner.ts",
+        "src/WorkJobs.tsx",
+        "src/WorkShiftFlow.tsx",
+        "src/workspace/actionQueries.ts",
+        "src/workspace/client.ts",
+        "src/core/herculesChat.ts"
+      ],
+      "tests": [
+        "test/hercules-job-task-journeys.test.ts",
+        "test/hercules-journey-expansion.test.ts",
+        "test/hercules-conversation-deadlines.test.ts",
+        "test/workspace-action-options.test.ts",
+        "test/workspace-action-options-authority.test.ts"
+      ],
+      "reason": "Claude journey findings: reviewed hourly jobs and task lifecycle, scoped current action choices, unknown take-home and durable conversation deadlines"
+    },
+    {
+      "sources": [
         "src/calendar/presentation.ts",
         "src/theme/RememberedDetails.tsx"
       ],

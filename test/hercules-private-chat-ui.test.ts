@@ -102,6 +102,55 @@ describe("private chat pending continuity", () => {
 });
 
 describe("integrated session conversation", () => {
+ it.each(['milk','add coffee'])('clears a message consumed by the Add handoff: %s',async message=>{
+  const h=catalogHousehold(),onDraft=vi.fn();
+  await act(async()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-12',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:onDraft,onGo:vi.fn(),onLedger:vi.fn(),onOpenSource:vi.fn(),onDraft})));
+  await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
+  await send(message);expect(onDraft).toHaveBeenCalledTimes(1);
+  await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
+  expect((host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement).value).toBe('');
+ });
+ it('keeps an unsent thought when the conversation closes and opens again',async()=>{
+  const h=catalogHousehold();
+  await act(async()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-12',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onOpenSource:vi.fn()})));
+  await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
+  const composer=host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement;
+  await act(async()=>{Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(composer,'Keep my unfinished question');composer.dispatchEvent(new Event('input',{bubbles:true}));});
+  await act(async()=>(host.querySelector('[aria-label="Close focus mode"]') as HTMLButtonElement).click());
+  await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
+  expect((host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement).value).toBe('Keep my unfinished question');
+ });
+
+ it.each([390,1440])('preserves the composer and mounted action panel while the workspace owns presentation at %s pixels',async width=>{
+  Object.defineProperty(window,'innerWidth',{configurable:true,value:width});
+  const h=catalogHousehold();h.companionProfile=companionFor(h,'MEM-001');let hidden=false;
+  const onOpenWorkspace=vi.fn();
+  const render=()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-10',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',conversationHidden:hidden,onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onCompanionCommand:vi.fn().mockResolvedValue(null),onOpenSource:vi.fn(),...(hidden?{onOpenWorkspace}:{})}));
+  await act(async()=>render());
+  await act(async()=>{if(width===390)(host.querySelector('.hercules-pill') as HTMLButtonElement).click();else host.querySelector('.hercules-live')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));});
+  const composer=host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement;
+  await act(async()=>{Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(composer,'An unfinished thought');composer.dispatchEvent(new Event('input',{bubbles:true}));});
+  const panel=host.querySelector('.hercules-actions');
+  hidden=true;await act(async()=>render());
+  expect(host.querySelector('textarea[aria-label="Ask Hercules"]')).toBe(composer);
+  expect(host.querySelector('.hercules-actions')).toBe(panel);
+  expect(composer.closest<HTMLElement>(width===390?'.hercules-focus-shell':'.hercules-bubble')?.style.display).toBe('none');
+  await act(async()=>{if(width===390)(host.querySelector('.hercules-pill') as HTMLButtonElement).click();else host.querySelector('.hercules-live')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));});
+  expect(onOpenWorkspace).toHaveBeenCalledTimes(1);
+  hidden=false;await act(async()=>render());expect(composer.value).toBe('An unfinished thought');
+ });
+ it('ignores a hidden legacy reply and still sends two later messages after returning',async()=>{
+  let finish!:(response:Response)=>void,hidden=false;
+  const fetcher=vi.fn().mockImplementationOnce(()=>new Promise<Response>(resolve=>finish=resolve)).mockImplementation(async()=>new Response(JSON.stringify({ok:true,provider:'gemini',reply:'The blanket is soft and warm.'}),{headers:{'Content-Type':'application/json'}}));vi.stubGlobal('fetch',fetcher);
+  const h=catalogHousehold();h.companionProfile=companionFor(h,'MEM-001');
+  const command=vi.fn<KitchenCommand>().mockImplementation(()=>new Promise(()=>{}));
+  const render=()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-10',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',conversationHidden:hidden,onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onCompanionCommand:command,onOpenSource:vi.fn()}));
+  await act(async()=>render());await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());await send('Tell me about the windowsill');
+  hidden=true;await act(async()=>render());await act(async()=>finish(new Response(JSON.stringify({ok:true,provider:'gemini',reply:'OLD_DISPLAY_REPLY'}),{headers:{'Content-Type':'application/json'}})));
+  hidden=false;await act(async()=>render());expect(host.textContent).not.toContain('OLD_DISPLAY_REPLY');expect(command).not.toHaveBeenCalled();
+  await send('Tell me about the blanket');await send('Why is the blanket comfortable?');expect(fetcher).toHaveBeenCalledTimes(3);
+  expect(host.textContent).toContain('The blanket is soft and warm.');
+ });
  it("keeps an unsaved exchange in its view, recovers its receipt, and does not expose it to another person", async () => {
   vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify({ok:true,provider:"gemini",reply:"The blanket is excellent."}),{headers:{"Content-Type":"application/json"}})));
   let h=catalogHousehold();h.companionProfile=companionFor(h,"MEM-001");let view:"household"|"personal"="household",memberId="MEM-001",mutations=0;

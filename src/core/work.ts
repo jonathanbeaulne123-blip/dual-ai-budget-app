@@ -253,6 +253,14 @@ export function workRateForDate(role: WorkRole, date: DateKey): WorkRatePeriod {
   return rate;
 }
 
+/** Unknown take-home is not zero take-home. Callers must not render "unknown" as an amount. */
+export type WorkTakeHomeBasis = "unknown" | "supplied" | "calculated";
+
+export function takeHomeBasis(rate: WorkRatePeriod): WorkTakeHomeBasis {
+  if (rate.takeHomeMode === "deductions") return "calculated";
+  return rate.takeHomeHourlyRateCents > 0 ? "supplied" : "unknown";
+}
+
 export function takeHomeHourlyRateCents(rate: WorkRatePeriod): number {
   if (rate.takeHomeMode === "direct") return rate.takeHomeHourlyRateCents;
   const totalPct = Math.min(100, rate.deductions.reduce((sum, rule) => sum + rule.percent, 0));

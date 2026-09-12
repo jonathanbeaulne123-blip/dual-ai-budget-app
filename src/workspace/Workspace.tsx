@@ -48,6 +48,7 @@ export function HerculesWorkspaceRoom(props: WorkspaceProps) {
   const [artifactId, setArtifactId] = useState<string | null>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const clientRef = useRef<WorkspaceClient | null>(null);
+  const refreshFlight = useRef<Promise<void> | null>(null);
   if (!clientRef.current) clientRef.current = new WorkspaceClient(`/hercules/workspace/${props.environment}/${props.householdId}`, () => current.current.getAccessToken(), () => alive.current && current.current.isCurrent());
   const project = snapshot?.projects.find(p => p.id === selected) ?? null;
   const run = project?.runs.at(-1);
@@ -56,14 +57,20 @@ export function HerculesWorkspaceRoom(props: WorkspaceProps) {
     if (!alive.current || !current.current.isCurrent()) return;
     if (value.sequence >= (snapshotRef.current?.sequence ?? 0)) { snapshotRef.current = value; setSnapshot(value); current.current.onSnapshot?.(value); }
   }
-  async function refresh() {
-    try { adopt(await clientRef.current!.request()); if (alive.current && !readEntryLocal<{ pending?: WorkspaceRequest }>(scopeKey)?.pending) setNotice(''); }
-    catch (error) { if (alive.current) setNotice(workspaceError(error)); }
-    finally { if (alive.current) setLoading(false); }
+  function refresh(): Promise<void> {
+    if (refreshFlight.current) return refreshFlight.current;
+    const flight = (async () => {
+      try { adopt(await clientRef.current!.request()); if (alive.current && !readEntryLocal<{ pending?: WorkspaceRequest }>(scopeKey)?.pending) setNotice(''); }
+      catch (error) { if (alive.current) setNotice(workspaceError(error)); }
+      finally { if (alive.current) setLoading(false); }
+    })();
+    refreshFlight.current = flight;
+    void flight.finally(() => { if (refreshFlight.current === flight) refreshFlight.current = null; });
+    return flight;
   }
   useEffect(() => {
     alive.current = true; void refresh();
-    const interval = window.setInterval(() => { if (!document.hidden && current.current.mode !== 'hidden') void refresh(); }, 5000);
+    const interval = window.setInterval(() => { if (snapshotRef.current && !document.hidden && current.current.mode !== 'hidden') void refresh(); }, 5000);
     const reconnect = () => void refresh(); window.addEventListener('online', reconnect); window.addEventListener('focus', reconnect);
     return () => { alive.current = false; clearInterval(interval); window.removeEventListener('online', reconnect); window.removeEventListener('focus', reconnect); };
   }, []);

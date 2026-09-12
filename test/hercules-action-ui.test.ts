@@ -77,3 +77,65 @@ it('can skip account details and reviews the actual unverified defaults',async()
  await click('Review changes');expect(host.textContent).toContain('Hearth default, unverified');expect(host.textContent).toContain('19.99%');expect(s.writes).toBe(0);
  await click('Final Confirm');expect(s.household.accounts.at(-1)?.kind).toBe('credit');expect(s.writes).toBe(1);
 });
+
+it('keeps paused planning out of all implicit answer parsing and restores the pause after remount',async()=>{
+ const s=setup();await act(async()=>s.render());
+ await act(async()=>s.ref.current!.propose({actionId:'plan-guided-draft',values:{monthKey:'2026-09',purpose:'Keep Friday evenings free'}}));
+ const before={...s.household.companionProfile!.workflows![0]!.value!.values};
+ await act(async()=>{expect(s.ref.current!.send('pause planning')).toBe(true);});
+ for(const message of ['What can you do?','Are my shifts posted this week?','Let us talk about something else']){
+  await act(async()=>{expect(s.ref.current!.send(message)).toBe(false);});
+ }
+ expect(s.household.companionProfile!.workflows![0]!.value!.values).toEqual({...before,guidePaused:'true'});
+ await act(async()=>root.unmount());root=createRoot(host);await act(async()=>s.render());
+ expect(host.textContent).toContain('planning conversation is paused');
+ await click('Continue planning');expect(host.textContent).not.toContain('planning conversation is paused');
+ expect(s.household.companionProfile!.workflows![0]!.value!.values).toEqual(before);expect(s.writes).toBe(0);
+});
+it.each(['Do laundry','Do the laundry','Do my taxes','Do it tomorrow','Will Smith tickets','How to study'])('accepts the bare task title "%s" without treating it as a side question',async title=>{
+ const s=setup();await act(async()=>s.render());
+ await act(async()=>s.ref.current!.propose({actionId:'task',values:{}}));
+ await act(async()=>{expect(s.ref.current!.send(title)).toBe(true);});
+ expect(companionFor(s.household,'MEM-001').workflows!.find(row=>row.id==='task-household')!.value!.values.title).toBe(title);
+ expect(s.writes).toBe(0);
+});
+it('routes real side questions out of an active guide and keeps its answers intact',async()=>{
+ const s=setup();await act(async()=>s.render());
+ await act(async()=>s.ref.current!.propose({actionId:'plan-guided-draft',values:{monthKey:'2026-09',purpose:'Keep Friday evenings free'}}));
+ const before={...s.household.companionProfile!.workflows![0]!.value!.values};
+ for(const message of ['Are my shifts posted this week?','Can you walk me through setup here?','How does a Kitty Bank work?','Can you explain this step','Do I need a Kitty Bank','How does a Kitty Bank work','Are my shifts posted this week','Is this affordable','Will our savings cover this']){
+  await act(async()=>{expect(s.ref.current!.send(message)).toBe(false);});
+ }
+ expect(s.household.companionProfile!.workflows![0]!.value!.values).toEqual(before);
+ await act(async()=>{expect(s.ref.current!.send('Put the plan draft aside for a moment. Can we talk about setup?')).toBe(false);});
+ expect(s.household.companionProfile!.workflows![0]!.value!.values).toEqual({...before,guidePaused:'true'});
+ expect(s.writes).toBe(0);
+});
+it('the visible action library queues paused Workspace proposals with their original confirmation linkage',async()=>{
+ const s=setup();await act(async()=>s.render());
+ await act(async()=>s.ref.current!.propose({actionId:'plan-guided-draft',values:{monthKey:'2026-09',purpose:'Keep Friday evenings free'},workspaceConfirmationId:'workspace-confirmation'}));
+ await act(async()=>{s.ref.current!.send('pause planning');});
+ const original=structuredClone(s.household.companionProfile!.workflows![0]!.value!);
+ await click('Things we can do');await click('Add a to-do');
+ expect(s.household.companionProfile!.workflows![0]!.value!.queue![0]).toEqual({actionId:original.actionId,values:original.values,workspaceConfirmationId:'workspace-confirmation'});
+ await act(async()=>{s.ref.current!.send('cancel');});
+ expect(host.textContent).toContain('planning conversation is paused');
+ expect(s.household.companionProfile!.workflows![0]!.value!.workspaceConfirmationId).toBe('workspace-confirmation');
+ expect(s.writes).toBe(0);
+});
+
+
+it('sets up a missing job with a separate review and resumes the original shift', async () => {
+ const s=setup(); await act(async()=>s.render());
+ const bridge=crypto.randomUUID();
+ await act(async()=>s.ref.current!.propose({actionId:'worked-shift',workspaceConfirmationId:bridge,values:{date:'2026-09-10',workedHours:'6',paidBreakHours:'0'}}));
+ await click('Set up a job first');
+ expect(s.ref.current!.state()?.actionId).toBe('add-job');
+ await act(async()=>s.ref.current!.propose({actionId:'add-job',values:{name:'Cafe Moonbeam',roleName:'Server',effectiveDate:'2026-09-01',grossRate:'18',takeHomeMethod:'deductions',deductionPercent:'22',tipped:'no',wagesAccountId:'ACC-CHEQUING',overtime:'no',payCadence:'irregular'}}));
+ await click('Review changes'); expect(s.writes).toBe(0); await click('Final Confirm');
+ expect(s.writes).toBe(1);expect(s.household.transactions).toHaveLength(0);
+ expect(s.ref.current!.state()?.actionId).toBe('worked-shift');
+ const resumed=companionFor(s.household,'MEM-001').workflows!.find(w=>w.id==='task-household')!.value!;
+ expect(resumed).toMatchObject({values:{date:'2026-09-10',workedHours:'6',paidBreakHours:'0',jobId:s.household.workJobs[0]!.id,roleId:'ROLE-1'},workspaceConfirmationId:bridge,submission:null});
+ await act(async()=>s.ref.current!.send('final confirm'));expect(s.household.shifts).toHaveLength(0);
+});

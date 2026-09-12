@@ -925,6 +925,16 @@ export function App() {
   booksGateRef.current = activeBooksGate;
   const [spark, setSpark] = useState(false);
   const [visorPop, setVisorPop] = useState(false);
+  useEffect(() => {
+    if (!spark) return;
+    const timer = window.setTimeout(() => setSpark(false), 900);
+    return () => window.clearTimeout(timer);
+  }, [spark]);
+  useEffect(() => {
+    if (!visorPop) return;
+    const timer = window.setTimeout(() => setVisorPop(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [visorPop]);
   const [clinkOn, setClinkOn] = useState(false);
   const [addDetails, setAddDetails] = useState(false);
   const [shiftGate, setShiftGate] = useState<ShiftGate>("choose");
@@ -4799,13 +4809,11 @@ export function App() {
         if (result.warnings.length) setError(result.warnings.join(" "));
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
           setSpark(true);
-          window.setTimeout(() => setSpark(false), 900);
           if (comfort.sound) playClink();
           if (comfort.haptics && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(10);
         }
         if (result.household.activity.at(-1)?.action === "Post Recurring") {
           setVisorPop(true);
-          window.setTimeout(() => setVisorPop(false), 700);
         }
       } catch (caught) {
         if (options?.isCurrent?.() === false) return;
@@ -6129,6 +6137,10 @@ export function App() {
       viewport: `${window.innerWidth} × ${window.innerHeight}`, browser: /Edg/.test(ua) ? 'Edge' : /Firefox/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : 'Other',
       build: import.meta.env.VITE_GIT_SHA || 'local', online: navigator.onLine ? 'online' : 'offline', observedAt: new Date().toISOString() });
   }
+  function openWorkspaceConversation() {
+    setWorkspaceCompact(true);
+    if (adding && !confirm) pauseAdd();
+  }
   function openBugReport(text = '') {
     setBugReportRequest({ id: crypto.randomUUID(), context: captureReportContext(), text, identity: ledgerRenderScopeKey });
     setWorkspaceCompact(true);
@@ -6140,6 +6152,8 @@ export function App() {
     if (proposal && proposal.target !== "hearth") { setError("Open the external change review in the Hercules working area."); return; }
     const targetView = proposal?.scope ?? view;
     setWorkspaceCompact(false);
+    if (tab === "hercules") setTab(secondaryOrigin.current === "hercules" ? "home" : secondaryOrigin.current);
+    if (adding && !confirm) pauseAdd();
     if (targetView !== view) rememberSession({ memberId: actorId, view: targetView, householdId: household.householdId });
     setPlanHerculesRequest({ id: crypto.randomUUID(), scopeKey: `${environment}:${household.householdId}:${actorId}:${targetView}:${localLedgerIdentity(actorId) ?? actorId}:${replicaScopeGenerationRef.current}`,
       prompt: proposal ? "Review this proposed change. Keep its own Final Confirm and receipt." : "",
@@ -6493,6 +6507,8 @@ export function App() {
     return money ? `Post ${money}` : "Post";
   }
 
+  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
+
   return (
     <WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
       {["planner", "timeMachine", "hercules", "play"].includes(tab) && <button type="button" className="secondary-back chip" onClick={() => {goTab(secondaryOrigin.current); requestAnimationFrame(() => {if (secondaryTrigger.current?.isConnected) secondaryTrigger.current.focus(); else { const target = document.querySelector<HTMLElement>('nav.nav button[aria-current="page"]') ?? document.querySelector<HTMLElement>('.app'); if (target) { if (!target.hasAttribute("tabindex")) target.tabIndex = -1; target.focus(); } }});}}>Back to {secondaryOrigin.current === "ledger" ? "Books" : secondaryOrigin.current === "more" ? "Status Centre" : secondaryOrigin.current === "plan" ? "Plan" : secondaryOrigin.current === "together" ? "Together" : secondaryOrigin.current === "calendar" ? "Calendar" : secondaryOrigin.current === "shift" ? "Shifts" : secondaryOrigin.current === "till" ? "Till" : "Home"}</button>}
@@ -6743,8 +6759,8 @@ export function App() {
       {workspaceEnabled && <HerculesWorkspaceRoom
         getReportContext={captureReportContext} reporterName={household.members.find(m => m.id === actorId)?.name}
         reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)}
-        key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
-        mode={tab === "hercules" ? "room" : workspaceCompact && !Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "compact" : "hidden"}
+        key={`workspace:${ledgerRenderScopeKey}`} identity={ledgerRenderScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
+        mode={workspaceMode}
         getAccessToken={async () => {
           const identity = readGuardScopeIdentity(), local = localLedgerIdentity(actorId), expected = loadSupabaseSession(environment)?.userId;
           if (local) return local;
@@ -7807,7 +7823,7 @@ export function App() {
         <AddSlideshow
           key={addPresentationKey}
           draftStorageKey={readEntryKey(mode) ?? undefined}
-          recovery={<>{entryDraftVolatile && <p role="status">Browser storage is full or unavailable. Your latest draft is kept in this open tab; reloading may lose changes.</p>}{entrySubmission && !confirm ? <section className="entry-recovery" aria-label="Entry receipt"><p role="status">This reviewed entry is awaiting its receipt. Its details are kept here.</p><button type="button" className="ghost" onClick={()=>void recoverEntryReceipt()}>Check entry status</button></section> : null}</>}
+          recovery={<>{workspaceEnabled && <button type="button" className="ghost" disabled={Boolean(entrySubmission || confirm)} onClick={openWorkspaceConversation}>Ask Hercules</button>}{entryDraftVolatile && <p role="status">Browser storage is full or unavailable. Your latest draft is kept in this open tab; reloading may lose changes.</p>}{entrySubmission && !confirm ? <section className="entry-recovery" aria-label="Entry receipt"><p role="status">This reviewed entry is awaiting its receipt. Its details are kept here.</p><button type="button" className="ghost" onClick={()=>void recoverEntryReceipt()}>Check entry status</button></section> : null}</>}
           open={adding}
           recommendationHousehold={displayHousehold}
           initialAccountId={addLaunchAccountId}
@@ -8399,7 +8415,7 @@ export function App() {
             {commandChrome.toast.primary}
             {commandChrome.toast.secondary ? `. ${commandChrome.toast.secondary}` : ""}
             {commandChrome.toast.showUndo !== false
-              ? ` ${undoToastSecondaryCopy()} Find it later under More → Recent on this phone.`
+              ? ` ${undoToastSecondaryCopy()} Find it later in Recent changes on this phone.`
               : ""}
           </span>
           {commandChrome.toast.showUndo !== false && (
@@ -8460,7 +8476,8 @@ export function App() {
           const client=new WorkspaceClient(`/hercules/workspace/${environment}/${household.householdId}`,async()=>token,()=>readGuardScopeIdentity()===guard);
           await client.authorizeAction(id);
         } : undefined}
-        onOpenWorkspace={workspaceEnabled ? () => setWorkspaceCompact(open => !open) : undefined}
+        conversationHidden={workspaceMode !== "hidden"}
+        onOpenWorkspace={workspaceEnabled ? openWorkspaceConversation : undefined}
         onReportBug={workspaceEnabled ? openBugReport : undefined}
         planContext={tab === "plan" && planContext?.scope === view && planContext.contextIdentity === `${environment}:${household.householdId}:${actorId}:${view}:${replicaScopeGenerationRef.current}` ? planContext : null}
         planOpenRequest={planHerculesRequest}

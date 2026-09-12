@@ -4,16 +4,29 @@ import type { ExternalWorkspaceReview, ExternalWorkspaceReceipt } from './extern
 export type WorkspaceRequest = { commandId: string; projectId: string; expectedRevision: number; command: WorkspaceCommand };
 export class WorkspaceClient {
   private cached: WorkspaceSnapshot | null = null;
-  constructor(private endpoint: string, private token: () => Promise<string>, private current: () => boolean = () => true) {}
+  constructor(private endpoint: string, private token: () => Promise<string>, private current: () => boolean = () => true, private timeoutMs = 30000) {}
   private async exchange(body?: unknown, after?: number) {
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => { controller.abort(); reject(new Error('WORKSPACE_TIMEOUT')); }, this.timeoutMs);
+    });
+    try { return await Promise.race([this.exchangeBeforeDeadline(body, after, controller.signal), deadline]); }
+    finally { clearTimeout(timer); }
+  }
+  private async exchangeBeforeDeadline(body: unknown, after: number | undefined, signal: AbortSignal) {
     if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const token = await this.token();
+    // A token can resolve after the deadline. It must never dispatch a late write.
+    signal.throwIfAborted();
     if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const response = await fetch(this.endpoint+(after===undefined?'':`?after=${after}`), { method: body ? 'POST' : 'GET', credentials: 'omit', cache: 'no-store',
       headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
-      body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(30000) });
+      body: body ? JSON.stringify(body) : undefined, signal });
     if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const value = await response.json();
+    signal.throwIfAborted();
+    if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     if (!response.ok) throw new Error(value.error ?? 'WORKSPACE_UNAVAILABLE');
     return value;
   }
@@ -36,6 +49,7 @@ export class WorkspaceClient {
 export function workspaceError(error: unknown): string {
   const message = error instanceof Error ? error.message : '';
   if (message === 'WORKSPACE_NOT_ACTIVATED') return 'Your workspace service has not been activated yet. Existing Hercules conversations and guided actions are still available.';
+  if (message === 'WORKSPACE_TIMEOUT') return 'Hercules could not connect in time. Your text is still here. Retry to check the original save.';
   if (message === 'WORKSPACE_CHANGED' || message === 'ARTIFACT_CHANGED') return 'This work changed elsewhere. Your text is still here. Reload the current version before saving again.';
   if (/AUTH|FORBIDDEN/.test(message)) return 'Reconnect to your Hearth account to continue. Your saved work stays private.';
   if (message.startsWith('TEXT_REQUIRED_MAX')) return 'That text exceeds the supported limit. Attach it as a working file or split it into parts.';

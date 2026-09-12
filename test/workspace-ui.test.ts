@@ -22,7 +22,7 @@ beforeEach(async()=>{
    if(deferPost)return new Promise(resolve=>finishPost=()=>resolve(update()));return update();}
    return new Response(JSON.stringify(snapshot));}));await render();
 });
-afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.restoreAllMocks();});
+afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks();});
 it('retains distinct composer drafts across project changes and hidden mode',async()=>{
  await input(composer(),'Alpha instruction');await click('Project BAn open possibility');await input(composer(),'Beta instruction');await click('Project AAn open possibility');expect(composer().value).toBe('Alpha instruction');props={...props,mode:'hidden'};await render();props={...props,mode:'room'};await render();expect(composer().value).toBe('Alpha instruction');await click('Project BAn open possibility');expect(composer().value).toBe('Beta instruction');
 });
@@ -63,4 +63,34 @@ it('unlocks the Google review after an explicit stale-source refusal before disp
 });
 it('keeps household sharing editable when local disclosure validation fails',async()=>{
  snapshot.projects[0].artifacts.push({id:'v1',artifactId:'art',title:'Draft',format:'markdown',content:'Original',parentId:null,createdAt:now,author:'hercules',evidenceIds:[],validation:{status:'passed',details:'OK'}});snapshot.sequence++;await act(async()=>window.dispatchEvent(new Event('focus')));await click('Review sharing');await input(host.querySelector('[aria-label="Content to share"]'),'');await click('Share this reviewed copy');expect(host.querySelector('[aria-label="Content to share"]').disabled).toBe(false);expect(button('Close review')).toBeDefined();
+});
+
+it('uses one refresh flight across focus, reconnect and polling, then accepts a later refresh',async()=>{
+ vi.useFakeTimers();let finish!:(response:Response)=>void;
+ const fetcher=vi.fn(()=>new Promise<Response>(resolve=>finish=resolve));vi.stubGlobal('fetch',fetcher);
+ await act(async()=>window.dispatchEvent(new Event('focus')));
+ await act(async()=>{window.dispatchEvent(new Event('focus'));window.dispatchEvent(new Event('online'));await vi.advanceTimersByTimeAsync(10000);});
+ expect(fetcher).toHaveBeenCalledTimes(1);
+ await act(async()=>finish(new Response(JSON.stringify(snapshot))));
+ await act(async()=>window.dispatchEvent(new Event('focus')));expect(fetcher).toHaveBeenCalledTimes(2);
+ await act(async()=>finish(new Response(JSON.stringify(snapshot))));
+});
+
+it.each([['AUTH_REQUIRED',401,'Reconnect to your Hearth account'],['WORKSPACE_NOT_ACTIVATED',503,'has not been activated']])('separates %s from loading and recovers after reconnect',async(error,status,message)=>{
+ vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({error}),{status:status as number})));
+ props={...props,identity:'failed-opening'};await render();
+ expect(host.textContent).not.toContain('Opening your private projects');expect(host.textContent).toContain(message);
+ vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify(snapshot))));await click('Reconnect');
+ expect(host.querySelector('.hw-notice')).toBeNull();expect(host.textContent).toContain('Project A');
+});
+
+it('stops Opening when authentication stalls and can reconnect with the original draft',async()=>{
+ vi.useFakeTimers();let release!:(token:string)=>void;
+ props={...props,identity:'stalled-auth',getAccessToken:()=>new Promise<string>(resolve=>release=resolve)};await render();
+ expect(host.textContent).toContain('Opening your private projects');
+ await act(async()=>vi.advanceTimersByTimeAsync(30000));
+ expect(host.textContent).not.toContain('Opening your private projects');expect(host.textContent).toContain('could not connect in time');
+ props={...props,getAccessToken:async()=>'test'};await render();await click('Reconnect');
+ expect(host.querySelector('.hw-notice')).toBeNull();expect(host.textContent).toContain('Project A');
+ await act(async()=>release('late-token'));
 });

@@ -22,7 +22,7 @@ import { isLedgerWrite } from "./writeKind.ts";
 import { duplicateKey, describeSimilarMatches, findSimilarTransactions, refreshDuplicateFlags } from "./duplicate.ts";
 import { jointSplit } from "./splits.ts";
 import { calcShiftAmounts, parseShiftInput, shiftSettingsFingerprint, DEFAULT_SHIFT_SETTINGS } from "./shift.ts";
-import { calculateWorkShift, previousWorkWeekHours, shapeWorkJob, shapeWorkSchedule, workJobFingerprint, workPayScheduleIsValid, workShiftIsReversed } from "./work.ts";
+import { takeHomeBasis, workRateForDate, calculateWorkShift, previousWorkWeekHours, shapeWorkJob, shapeWorkSchedule, workJobFingerprint, workPayScheduleIsValid, workShiftIsReversed } from "./work.ts";
 import {
   incomeSubcategory,
   parseAmount,
@@ -2496,6 +2496,8 @@ export const postWorkShift = captureCommand("postWorkShift", function postWorkSh
   if (!job) throw new ValidationError("Choose one of this worker's active jobs.");
   const role = job.roles.find((row) => row.id === input.roleId && row.active);
   if (!role) throw new ValidationError("Choose an active role for this job.");
+  if ((Number(input.workedHours) > 0 || (Number(input.paidBreakHours) > 0 && job.paidBreakRate !== "custom")) && workRateForDate(role, date).grossHourlyRateCents > 0 && takeHomeBasis(workRateForDate(role, date)) === "unknown")
+    throw new ValidationError("This shift earned gross wages but its take-home is not set. Set a take-home rate or deductions on this job, then confirm.");
   const shiftEnvelope = input.shiftEnvelopeId
     ? shapeShiftEnvelope((household.shiftEnvelopes ?? []).find((row) => row.id === input.shiftEnvelopeId), member.id)
     : null;
