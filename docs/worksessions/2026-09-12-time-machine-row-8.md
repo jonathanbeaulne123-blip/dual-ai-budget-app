@@ -83,6 +83,10 @@ Facts (read in this session, at `6fa38ae`):
   running total. But `GoalContribution` and `GoalPurchase` both carry `date`, and
   `goalEnvelopes.ts:275` (`goalRemainingClaim`) already filters by `row.date <= asOf`
   — the shape existed, the reader did not.
+- `test/goal-fill-ui.test.ts` is also red on `main` at `6fa38ae` (6 of 7 tests,
+  verified in a clean worktree). It is untouched by this branch and left alone:
+  it is a Fill-dialog UI failure, not a statements assertion, and guessing at it
+  from here would be a change without a decision behind it.
 - `test/statements.test.ts:202` has been failing on `main` since #425 rewrote
   Hercules's identity reply (`herculesTalk.ts:436`) on 2026-09-10. Verified by
   running that suite in a clean worktree at `6fa38ae` before touching anything.
