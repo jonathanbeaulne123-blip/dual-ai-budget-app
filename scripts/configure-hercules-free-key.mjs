@@ -24,8 +24,9 @@ const quotas={version:1,projectId:'hearth-506304',tier:'free',exclusive:true,key
   'gemini-3.1-flash-lite':{rpm:15,tpm:250000,rpd:500,usedOnVerificationDay:0},
   'gemini-3.8-flash':{rpm:5,tpm:250000,rpd:20,usedOnVerificationDay:0},
 }};
-const child=spawn(process.execPath,[resolve(root,'node_modules/wrangler/bin/wrangler.js'),'secret','bulk'],{cwd:root,stdio:['pipe','inherit','inherit']});
+const versioned=process.argv.includes('--versioned');
+const child=spawn(process.execPath,[resolve(root,'node_modules/wrangler/bin/wrangler.js'),...(versioned?['versions']:[]),'secret','bulk'],{cwd:root,stdio:['pipe','inherit','inherit']});
 child.stdin.end(JSON.stringify({HERCULES_GEMINI_FREE_KEY:key,HERCULES_GEMINI_FREE_QUOTAS:JSON.stringify(quotas)}));
 const code=await new Promise((resolveCode,reject)=>{child.once('error',reject);child.once('close',resolveCode);});
 if(code!==0)throw Error('Wrangler did not confirm storage. Retry the setup; do not paste the key into chat.');
-console.log('Hearth free-project key and quota configuration stored. Key value was not printed or written to a local file.');
+console.log('Hearth free-project key and quota configuration stored'+(versioned?' in a new version awaiting explicit deployment':'')+'. Key value was not printed or written to a local file.');
