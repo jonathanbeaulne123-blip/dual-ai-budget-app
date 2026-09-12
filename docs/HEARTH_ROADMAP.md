@@ -16,6 +16,8 @@ Complete wardrobe implementation is in verification: 36 original pieces plus leg
 
 # Hearth living roadmap
 
+**2026-09-12 — The planner (feedback row 9, D-245) implemented locally:** one Task object with money, private tasks, evidence-only completion, agenda and affordability, a Planner room in three themes. Local branch `claude/planner-row-9`; trust review, push, PR, merge and Development deploy pending. [Worksession](worksessions/2026-09-12-planner-row-9.md).
+
 **2026-09-10 — Hercules slice 4 implemented locally behind a flag:** one complete 3D fitting look, shared rig, authored reactions, three-theme room and local recovery. [Evidence](worksessions/2026-09-10-hercules-slice-4.md). Not deployed; likeness/fitting and physical-phone acceptance remain open. Full catalogue and Wear/Save/share are slice 5.
 
 **2026-09-10 — Hercules slice 3 implemented locally:** useful discovery, explicit private suggestion controls and revalidated continuation. [Evidence](worksessions/2026-09-10-hercules-slice-3.md). Not deployed. Advanced locally by slice 4 below its acceptance flag.
