@@ -5,3 +5,5 @@ export { HerculesWorkspace } from './workspace/service.ts';
 export { HerculesSharedWorkspace } from './workspace/shared.ts';
 export { HerculesRunWorkflow } from './workspace/workflow.ts';
 export { HerculesSandbox, ContainerProxy } from './workspace/sandbox.ts';
+
+export { HerculesGeminiQuota } from './geminiQuota.ts';

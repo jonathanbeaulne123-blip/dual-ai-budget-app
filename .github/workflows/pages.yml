@@ -64,6 +64,7 @@ jobs:
           VITE_SYNC_PILOT_DIAGNOSTICS: "1"
           VITE_PLAN_SYSTEM_V2: ${{ inputs.plan_system_v2 || '1' }}
           VITE_HERCULES_ACTIONS: ${{ inputs.hercules_actions || vars.VITE_HERCULES_ACTIONS || '1' }}
+          VITE_HERCULES_WORKSPACE: "1"
           VITE_HERCULES_CHAT: ${{ inputs.hercules_chat || vars.VITE_HERCULES_CHAT || '1' }}
           VITE_HERCULES_DISCOVERY: ${{ inputs.hercules_discovery || vars.VITE_HERCULES_DISCOVERY || '1' }}
           VITE_HERCULES_DRESSING_ROOM: ${{ inputs.hercules_wardrobe || vars.VITE_HERCULES_DRESSING_ROOM || '1' }}

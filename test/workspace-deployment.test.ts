@@ -5,10 +5,10 @@ import { workspaceContainerConfig } from '../scripts/prepare-workspace-container
 
 const base = JSON.parse(readFileSync(resolve('wrangler.jsonc'), 'utf8'));
 const fragment = JSON.parse(readFileSync(resolve('workers/workspace/container-config.json'), 'utf8'));
-describe('disabled workspace release and explicit container preparation', () => {
-  it('ships no paid container application and keeps execution/disclosure off', () => {
-    expect(base.containers).toBeUndefined();
-    expect(base.vars).toMatchObject({ HERCULES_WORKSPACE_ENABLED: 'false', HERCULES_WORKSPACE_EXECUTION: 'false', HERCULES_WORKSPACE_DISCLOSURE: 'disabled', HERCULES_WORKSPACE_GOOGLE_WRITES: 'false' });
+describe('synthetic free-tier workspace activation', () => {
+  it('enables synthetic work behind verified free quotas and keeps external writes off', () => {
+    expect(base.containers).toEqual(fragment.containers);
+    expect(base.vars).toMatchObject({ HERCULES_WORKSPACE_ENABLED: 'true', HERCULES_WORKSPACE_EXECUTION: 'true', HERCULES_WORKSPACE_DATA: 'synthetic', HERCULES_GEMINI_FREE_ONLY: 'true', DOCUMENT_SCAN_ALLOW_PAID: 'false', HERCULES_WORKSPACE_DISCLOSURE: 'disabled', HERCULES_WORKSPACE_GOOGLE_WRITES: 'false' });
     expect(base.durable_objects.bindings).toContainEqual({ name: 'LEDGER_ROOMS', class_name: 'LedgerRoom' });
   });
   it('prepares the pinned container without changing identity, money bindings or activation', () => {
@@ -17,7 +17,7 @@ describe('disabled workspace release and explicit container preparation', () => 
     expect(config.containers).toEqual([{ class_name: 'HerculesSandbox', image: '/review/workers/workspace/Dockerfile', max_instances: 3, instance_type: 'lite' }]);
     expect(config.main).toBe('/review/workers/entry.js');
     expect(config.assets.directory).toBe('/review/dist');
-    expect(base.containers).toBeUndefined();
-    expect(() => workspaceContainerConfig({ ...base, vars: { ...base.vars, HERCULES_WORKSPACE_EXECUTION: 'true' } }, fragment, '/review')).toThrow('disabled');
+    expect(base.containers).toEqual(fragment.containers);
+    expect(() => workspaceContainerConfig({ ...base, vars: { ...base.vars, HERCULES_WORKSPACE_DATA: 'meaningful' } }, fragment, '/review')).toThrow('synthetic');
   });
 });

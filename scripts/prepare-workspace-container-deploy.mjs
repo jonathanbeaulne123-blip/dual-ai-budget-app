@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 /** Build an explicit container deployment profile without deploying or activating it. */
 export function workspaceContainerConfig(base, fragment, root) {
-  if (base.name !== 'hearth-books' || base.vars?.HERCULES_WORKSPACE_EXECUTION !== 'false' || base.vars?.HERCULES_WORKSPACE_DISCLOSURE !== 'disabled') {
-    throw new Error('Prepare this profile from the disabled Hearth release configuration.');
+  if (base.name !== 'hearth-books' || base.vars?.HERCULES_WORKSPACE_DATA !== 'synthetic' || base.vars?.HERCULES_WORKSPACE_GOOGLE_WRITES !== 'false') {
+    throw new Error('Prepare this profile from the synthetic Development configuration with Google writes off.');
   }
   if (fragment.containers?.length !== 1 || fragment.containers[0].class_name !== 'HerculesSandbox') {
     throw new Error('Expected only the reviewed Hercules Sandbox container.');
