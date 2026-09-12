@@ -7,6 +7,7 @@
   max-width: 1180px;
   margin: 0 auto;
 }
+.time-machine > * { min-width: 0; }
 .time-machine button { min-height: 44px; font: inherit; color: inherit; cursor: pointer; }
 .time-machine :focus-visible { outline: 3px solid var(--copper); outline-offset: 3px; }
 .time-machine__sr {
@@ -23,8 +24,10 @@
   border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px;
   font-size: .76rem; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); background: var(--paper-2);
 }
+/* A chip says its state with its border, never with a colour on top of a
+   scene's own paper: pine on Taylor's personal ground reads at 2.4:1. */
 .time-machine__chip[data-state="behind"] { border-color: var(--muted); }
-.time-machine__chip[data-state="now"] { border-color: var(--pine); color: var(--pine); }
+.time-machine__chip[data-state="now"] { border-color: var(--pine); border-width: 2px; font-weight: 600; }
 .time-machine__chip[data-state="ahead"] { border-style: dashed; }
 .time-machine__chip[data-state="closed"] { background: transparent; }
 .time-machine__today, .time-machine__door, .time-machine__link {
@@ -33,14 +36,20 @@
 .time-machine__link { background: none; border: 0; padding: 0; min-height: 0; text-align: left; text-decoration: underline; }
 
 /* ---- The ribbon: a month is a bead, and the thumb moves through your life. ---- */
-.time-machine__ribbon-row { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px; }
+.time-machine__ribbon-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; }
+.time-machine__ribbon-row > * { min-width: 0; }
 .time-machine__step { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 0; }
 .time-machine__step[disabled] { opacity: .4; cursor: default; }
 .time-machine__ribbon {
+  min-width: 0;
   display: flex; gap: 6px; overflow-x: auto; scroll-snap-type: x proximity;
   padding: 8px 4px; background: var(--paper-2); border: 1px solid var(--line); border-radius: 12px;
+  scroll-padding-inline: 10px;
 }
 .time-machine__bead {
+  /* The screen-reader line is absolute, so its bead must be its containing
+     block — otherwise it escapes the ribbon's scroller and widens the page. */
+  position: relative;
   flex: 0 0 auto; width: 52px; min-height: 76px; scroll-snap-align: center;
   display: grid; grid-template-rows: 1fr auto; justify-items: center; align-items: end; gap: 6px;
   background: none; border: 1px solid transparent; border-radius: 10px; padding: 6px 2px;
@@ -52,8 +61,10 @@
 .time-machine__bead[data-signal="kept"] .time-machine__bead-bar { background: var(--good, var(--pine)); }
 .time-machine__bead[data-signal="quiet"] .time-machine__bead-bar { background: var(--line); }
 .time-machine__bead[data-signal="planned"] .time-machine__bead-bar { background: repeating-linear-gradient(180deg, var(--muted) 0 3px, transparent 3px 6px); }
-.time-machine__bead-label { font-size: .74rem; color: var(--muted); }
-.time-machine__bead[aria-checked="true"] .time-machine__bead-label { color: var(--ink); font-weight: 600; }
+/* Every month's name stays in the page's ink; the chosen one is heavier, not
+   darker, so no theme has to buy legibility with a second colour. */
+.time-machine__bead-label { font-size: .74rem; color: var(--ink); }
+.time-machine__bead[aria-checked="true"] .time-machine__bead-label { font-weight: 700; }
 
 .time-machine__panes { display: flex; flex-wrap: wrap; gap: 6px; }
 .time-machine__pane-tab { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
@@ -83,13 +94,21 @@
 .time-machine__memories li[data-memory="goal-reached"] strong { color: var(--pine); }
 .time-machine__memories li[data-memory="month-closed"] strong { color: var(--copper); }
 
-.time-machine__table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+/* A table is the one thing allowed to be wider than the page, inside its own scroller. */
+.time-machine__scroll { overflow-x: auto; }
+.time-machine__scroll:focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; }
+.time-machine__table { width: 100%; min-width: 320px; border-collapse: collapse; font-size: .9rem; }
 .time-machine__table th, .time-machine__table td { text-align: right; padding: 8px 6px; border-bottom: 1px solid var(--line); }
 .time-machine__table th[scope="row"], .time-machine__table thead th:first-child { text-align: left; }
 .time-machine__table td { font-family: var(--mono, var(--font)); }
 .time-machine__table tr[data-change="new"] th[scope="row"]::after { content: " · new"; color: var(--pine); font-weight: 400; }
 .time-machine__table tr[data-change="stopped"] th[scope="row"]::after { content: " · stopped"; color: var(--muted); font-weight: 400; }
 .time-machine__table tr[data-low="true"] td { color: var(--danger); }
+.time-machine__in {
+  margin-left: 6px; font-size: .68rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); font-weight: 400;
+}
+.time-machine__close { margin: 0; color: var(--muted); font-family: var(--display); border-top: 1px solid var(--line); padding-top: 12px; }
 .time-machine__against { display: grid; gap: 4px; color: var(--muted); font-size: .84rem; }
 .time-machine__against select { min-height: 44px; font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 0 10px; background: var(--card); color: var(--ink); }
 .time-machine__headline { margin: 0; font-family: var(--display); }
@@ -102,7 +121,10 @@
 .time-machine__year-head button { background: var(--card); border: 1px solid var(--line); border-radius: 10px; width: 44px; }
 .time-machine__year-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .time-machine__year-grid button {
-  width: 100%; display: grid; justify-items: center; align-items: end; gap: 6px;
+  /* Every month is the same cell; only the bar inside it differs, so the year
+     reads as a shape rather than as a row of different-sized boxes. */
+  position: relative; height: 78px;
+  width: 100%; display: grid; grid-template-rows: 1fr auto; justify-items: center; align-items: end; gap: 6px;
   background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px;
 }
 .time-machine__year-grid button[aria-current="true"] { border-color: var(--pine); }
@@ -115,8 +137,11 @@
   .time-machine__head { flex-direction: column; align-items: stretch; }
   .time-machine__figures { grid-template-columns: 1fr; }
   .time-machine__figures p { display: flex; justify-content: space-between; align-items: baseline; }
-  .time-machine__table { font-size: .84rem; }
-  .time-machine__table th, .time-machine__table td { padding: 6px 4px; }
+  /* Four columns of money at 390: smaller type and tighter gutters keep the
+     whole comparison on screen, with the scroller left as a safety net. */
+  .time-machine__table { font-size: .78rem; min-width: 0; }
+  .time-machine__table th, .time-machine__table td { padding: 6px 3px; }
+  .time-machine__table thead th { font-size: .7rem; }
   .time-machine__year-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
@@ -126,7 +151,7 @@
   .time-machine__head h2 { font-size: 2rem; }
   .time-machine__figures { grid-template-columns: repeat(3, minmax(0, 220px)); }
   .time-machine__month { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-  .time-machine__figures, .time-machine__door { grid-column: 1 / -1; }
+  .time-machine__figures, .time-machine__door, .time-machine__memories, .time-machine__close, .time-machine__lastyear { grid-column: 1 / -1; }
   .time-machine__bead { width: 58px; }
 }
 @media (min-width: 1000px) {
@@ -155,10 +180,8 @@
   background: linear-gradient(180deg, var(--glass-night, #26303a) 0 52%, var(--paper-2) 52%);
   border-color: var(--glass-rain, #9fb0b5);
 }
-:root[data-theme="newfoundland"] .time-machine__bead-label { color: var(--glass-rain, #9fb0b5); }
-:root[data-theme="newfoundland"] .time-machine__bead[aria-checked="true"] .time-machine__bead-label { color: var(--ink); }
 :root[data-theme="newfoundland"] .time-machine__card { border-top: 2px solid var(--glass-rain, #9fb0b5); border-radius: 10px; }
-:root[data-theme="newfoundland"] .time-machine__chip[data-state="behind"] { color: var(--glass-rain, #9fb0b5); }
+:root[data-theme="newfoundland"] .time-machine__chip[data-state="behind"] { border-color: var(--glass-rain, #9fb0b5); }
 
 /* Quiet, forced colours, reduced motion. */
 :root[data-quiet="true"] .time-machine__card { transform: none; }
