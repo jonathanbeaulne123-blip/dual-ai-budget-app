@@ -104,7 +104,7 @@ describe("private chat pending continuity", () => {
 describe("integrated session conversation", () => {
  it.each(['milk','add coffee'])('clears a message consumed by the Add handoff: %s',async message=>{
   const h=catalogHousehold(),onDraft=vi.fn();
-  await act(async()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-12',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:onDraft,onGo:vi.fn(),onLedger:vi.fn(),onDraft})));
+  await act(async()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-12',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:onDraft,onGo:vi.fn(),onLedger:vi.fn(),onOpenSource:vi.fn(),onDraft})));
   await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
   await send(message);expect(onDraft).toHaveBeenCalledTimes(1);
   await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
@@ -112,7 +112,7 @@ describe("integrated session conversation", () => {
  });
  it('keeps an unsent thought when the conversation closes and opens again',async()=>{
   const h=catalogHousehold();
-  await act(async()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-12',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn()})));
+  await act(async()=>root.render(createElement(HerculesPresence,{household:h,today:'2026-09-12',tab:'ledger',adding:false,memberId:'MEM-001',view:'household',onOpenAdd:vi.fn(),onGo:vi.fn(),onLedger:vi.fn(),onOpenSource:vi.fn()})));
   await act(async()=>(host.querySelector('.hercules-pill') as HTMLButtonElement).click());
   const composer=host.querySelector('textarea[aria-label="Ask Hercules"]') as HTMLTextAreaElement;
   await act(async()=>{Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!.call(composer,'Keep my unfinished question');composer.dispatchEvent(new Event('input',{bubbles:true}));});
