@@ -1,0 +1,383 @@
+{
+  "records": [
+    {
+      "tab": "today",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-390-household-today.png"
+    },
+    {
+      "tab": "today",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-1100-household-today.png"
+    },
+    {
+      "tab": "today",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-390-household-today.png"
+    },
+    {
+      "tab": "today",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-1100-household-today.png"
+    },
+    {
+      "tab": "today",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-390-household-today.png"
+    },
+    {
+      "tab": "today",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-1100-household-today.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "classic",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-320-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-390-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "classic",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-720-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-1100-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "taylor",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-320-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-390-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "taylor",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-720-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-1100-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-320-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-390-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-720-household-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-1100-household-week.png"
+    },
+    {
+      "tab": "logbook",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-390-household-logbook.png"
+    },
+    {
+      "tab": "logbook",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-1100-household-logbook.png"
+    },
+    {
+      "tab": "logbook",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-390-household-logbook.png"
+    },
+    {
+      "tab": "logbook",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-1100-household-logbook.png"
+    },
+    {
+      "tab": "logbook",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-390-household-logbook.png"
+    },
+    {
+      "tab": "logbook",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-1100-household-logbook.png"
+    },
+    {
+      "tab": "lists",
+      "view": "household",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-390-household-lists.png"
+    },
+    {
+      "tab": "lists",
+      "view": "household",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-1100-household-lists.png"
+    },
+    {
+      "tab": "lists",
+      "view": "household",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-390-household-lists.png"
+    },
+    {
+      "tab": "lists",
+      "view": "household",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-1100-household-lists.png"
+    },
+    {
+      "tab": "lists",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-390-household-lists.png"
+    },
+    {
+      "tab": "lists",
+      "view": "household",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-1100-household-lists.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "classic",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-320-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "classic",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-390-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "classic",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-720-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "classic",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/classic-1100-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-320-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-390-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-720-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "taylor",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/taylor-1100-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 320,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-320-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 390,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-390-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 720,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-720-personal-week.png"
+    },
+    {
+      "tab": "week",
+      "view": "personal",
+      "theme": "newfoundland",
+      "width": 1100,
+      "overflow": 0,
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/docs/evidence/planner/newfoundland-1100-personal-week.png"
+    }
+  ],
+  "errors": []
+}

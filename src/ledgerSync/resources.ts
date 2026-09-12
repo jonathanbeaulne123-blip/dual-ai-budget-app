@@ -44,6 +44,9 @@ export function observedResources(
 ): Resource[] {
   if (kind === "addQuickSampleData" || kind === "addQuickSampleScenario") return [{ key: "quick-sample-catalog", value: { accounts: household.accounts, categories: household.categories, closedMonths: household.kitchen.books.closedMonths } }];
   if(kind==='saveNativeEvent'){const input=args[0] as {id:string};return [{key:`native-event/${input.id}`,value:household.nativeEvents?.find(r=>r.id===input.id)??null}];}
+  if(['saveTask','completeTask','reopenTask','acknowledgeTask'].includes(kind)){const input=args[0] as {id:string};return [{key:`task/${input.id}`,value:household.tasks?.find(r=>r.id===input.id)??null}];}
+  if(kind==='saveTaskList'){const input=args[0] as {id:string};return [{key:`task-list/${input.id}`,value:household.taskLists?.find(r=>r.id===input.id)??null}];}
+  if(kind==='adoptBoardTasks')return [{key:'boards/tasks',value:{rows:household.kitchen.boards?.tasks??[],adopted:(household.tasks??[]).filter(r=>r.id.startsWith('TASK-board-')).map(r=>r.id).sort()}}];
   if (kind === "commitCompanion" || kind === "commitCompanionGallery") return []; // Typed resource revisions and conversation generations are rechecked by the authority.
   if (['proposeHouseholdFundContribution','replaceHouseholdFundContributionSource'].includes(kind)) {
     return [{key:'fund-source-allocation',value:{fund:household.householdFund,events:household.fundEvents,claims:household.fundContributionSourceClaims,

@@ -3,6 +3,25 @@
   "mappings": [
     {
       "sources": [
+        "src/core/tasks.ts",
+        "src/core/agenda.ts",
+        "src/core/taskCapture.ts",
+        "src/planner/Planner.tsx",
+        "src/planner/planner.css"
+      ],
+      "tests": [
+        "test/planner-tasks.test.ts",
+        "test/planner-agenda.test.ts",
+        "test/planner-ui.test.ts",
+        "test/native-events.test.ts",
+        "test/shared-boards.test.ts",
+        "test/hercules-actions.test.ts",
+        "test/vision-v2-slice-1.test.ts"
+      ],
+      "reason": "Planner (D-245): private task envelope split and capability guard, evidence-only completion of money tasks, affordability and capture, board adoption, Hercules to-do action"
+    },
+    {
+      "sources": [
         "src/PlanStudio.tsx",
         "src/PlanLensWorkbench.tsx",
         "src/HouseholdLife.tsx",
