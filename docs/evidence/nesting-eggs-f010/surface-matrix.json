@@ -1,0 +1,1982 @@
+[
+  {
+    "label": "classic-household-320-home",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-320-plan",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 255.34375
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-320-king",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-320-category",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-320-setup",
+    "geometry": {
+      "viewport": 320,
+      "root": 320
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-390-home",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-390-plan",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 318
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-390-king",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-390-category",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-390-setup",
+    "geometry": {
+      "viewport": 390,
+      "root": 390
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-720-home",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 688
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-720-plan",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 635.21875
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-720-king",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-720-category",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-720-setup",
+    "geometry": {
+      "viewport": 720,
+      "root": 720
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1100-home",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1100-plan",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1000
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1100-king",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1100-category",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1100-setup",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1440-home",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1440-plan",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1096
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1440-king",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1440-category",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1440-setup",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1920-home",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1920-plan",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1096
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1920-king",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1920-category",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-household-1920-setup",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-320-home",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-320-plan",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 272
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-320-king",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-320-category",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-320-setup",
+    "geometry": {
+      "viewport": 320,
+      "root": 320
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-390-home",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-390-plan",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 342
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-390-king",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-390-category",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-390-setup",
+    "geometry": {
+      "viewport": 390,
+      "root": 390
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-720-home",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 688
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-720-plan",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 604.21875
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-720-king",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-720-category",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-720-setup",
+    "geometry": {
+      "viewport": 720,
+      "root": 720
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1100-home",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1068
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1100-plan",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 969
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1100-king",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1100-category",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1100-setup",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1440-home",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1408
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1440-plan",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1065
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1440-king",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1440-category",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1440-setup",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1920-home",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1568
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1920-plan",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1065
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1920-king",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1920-category",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "classic-personal-1920-setup",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-320-home",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-320-plan",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 255.34375
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-320-king",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-320-category",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-320-setup",
+    "geometry": {
+      "viewport": 320,
+      "root": 320
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-390-home",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-390-plan",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 318
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-390-king",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-390-category",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-390-setup",
+    "geometry": {
+      "viewport": 390,
+      "root": 390
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-720-home",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 688
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-720-plan",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 635.21875
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-720-king",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-720-category",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-720-setup",
+    "geometry": {
+      "viewport": 720,
+      "root": 720
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1100-home",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1100-plan",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1000
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1100-king",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1100-category",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1100-setup",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1440-home",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1440-plan",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1096
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1440-king",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1440-category",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1440-setup",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1920-home",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1920-plan",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1096
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1920-king",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1920-category",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-household-1920-setup",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-320-home",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-320-plan",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 272
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-320-king",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-320-category",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-320-setup",
+    "geometry": {
+      "viewport": 320,
+      "root": 320
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-390-home",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-390-plan",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 342
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-390-king",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-390-category",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-390-setup",
+    "geometry": {
+      "viewport": 390,
+      "root": 390
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-720-home",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 688
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-720-plan",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 604.21875
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-720-king",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-720-category",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-720-setup",
+    "geometry": {
+      "viewport": 720,
+      "root": 720
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1100-home",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1068
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1100-plan",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 969
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1100-king",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1100-category",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1100-setup",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1440-home",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1408
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1440-plan",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1065
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1440-king",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1440-category",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1440-setup",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1920-home",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1568
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1920-plan",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1065
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1920-king",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1920-category",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "taylor-personal-1920-setup",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-320-home",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-320-plan",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 255.34375
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-320-king",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-320-category",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-320-setup",
+    "geometry": {
+      "viewport": 320,
+      "root": 320
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-390-home",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-390-plan",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 318
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-390-king",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-390-category",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-390-setup",
+    "geometry": {
+      "viewport": 390,
+      "root": 390
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-720-home",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 688
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-720-plan",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 635.21875
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-720-king",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-720-category",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-720-setup",
+    "geometry": {
+      "viewport": 720,
+      "root": 720
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1100-home",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1100-plan",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1000
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1100-king",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1100-category",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1100-setup",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1440-home",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1440-plan",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1096
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1440-king",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1440-category",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1440-setup",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1920-home",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1040
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1920-plan",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1096
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1920-king",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1920-category",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-household-1920-setup",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-320-home",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-320-plan",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "nest": 272
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-320-king",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-320-category",
+    "geometry": {
+      "viewport": 320,
+      "root": 320,
+      "room": 320,
+      "nest": 286,
+      "controls": 288,
+      "controlsScroll": 288
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-320-setup",
+    "geometry": {
+      "viewport": 320,
+      "root": 320
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-390-home",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-390-plan",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "nest": 342
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-390-king",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-390-category",
+    "geometry": {
+      "viewport": 390,
+      "root": 390,
+      "room": 390,
+      "nest": 356,
+      "controls": 358,
+      "controlsScroll": 358
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-390-setup",
+    "geometry": {
+      "viewport": 390,
+      "root": 390
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-720-home",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 688
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-720-plan",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "nest": 604.21875
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-720-king",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-720-category",
+    "geometry": {
+      "viewport": 720,
+      "root": 720,
+      "room": 720,
+      "nest": 670,
+      "controls": 324,
+      "controlsScroll": 324
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-720-setup",
+    "geometry": {
+      "viewport": 720,
+      "root": 720
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1100-home",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 1068
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1100-plan",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "nest": 969
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1100-king",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1100-category",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100,
+      "room": 1100,
+      "nest": 1050,
+      "controls": 514,
+      "controlsScroll": 514
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1100-setup",
+    "geometry": {
+      "viewport": 1100,
+      "root": 1100
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1440-home",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1408
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1440-plan",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "nest": 1065
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1440-king",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1440-category",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440,
+      "room": 1440,
+      "nest": 1322.8125,
+      "controls": 650,
+      "controlsScroll": 650
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1440-setup",
+    "geometry": {
+      "viewport": 1440,
+      "root": 1440
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1920-home",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1568
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1920-plan",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "nest": 1065
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1920-king",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1920-category",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920,
+      "room": 1920,
+      "nest": 1766,
+      "controls": 872,
+      "controlsScroll": 872
+    },
+    "violations": [],
+    "errors": []
+  },
+  {
+    "label": "newfoundland-personal-1920-setup",
+    "geometry": {
+      "viewport": 1920,
+      "root": 1920
+    },
+    "violations": [],
+    "errors": []
+  }
+]

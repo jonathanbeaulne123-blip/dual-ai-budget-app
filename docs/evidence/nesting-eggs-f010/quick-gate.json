@@ -1,0 +1,100 @@
+{
+  "baseSha": "1686ccc4a569c99b5a2d92ae8b311b83873e211d",
+  "changeFingerprint": "5673fd99d4aa665bd985bca25d1c6f83501bdd77f30b3fbdc4b9dad6fcd5d0a1",
+  "workingTreeClean": true,
+  "breachPhase": null,
+  "budgetMs": 300000,
+  "elapsedMs": 83164,
+  "slowestPhase": "vitest-serial",
+  "timeBudgetBreached": false,
+  "classification": "quick-gate-passed",
+  "focusReason": "Four tier projections, immutable paid pottery, private continuity receipts, studio and King onboarding; App changes require full startup and rehearsal suites.",
+  "headSha": "c85c5b7df72ce12f3b475409b7c15bde451f5296",
+  "phases": [
+    {
+      "elapsedMs": 62,
+      "name": "diff-check",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 472,
+      "name": "ai-surface",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 26040,
+      "name": "typescript",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 4332,
+      "name": "test-discovery",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 12914,
+      "name": "vitest-fast",
+      "status": "passed"
+    },
+    {
+      "elapsedMs": 39106,
+      "name": "vitest-serial",
+      "status": "passed"
+    }
+  ],
+  "risk": "high",
+  "selectedTests": [
+    "test/add-slideshow-ui.test.ts",
+    "test/add-slideshow.test.ts",
+    "test/app-startup-p1.test.ts",
+    "test/cad-pad-ui.test.ts",
+    "test/command-contract.test.ts",
+    "test/command-runtime.test.ts",
+    "test/continuity-policy.test.ts",
+    "test/environment-isolation.test.ts",
+    "test/fund-horizon.test.ts",
+    "test/hercules-action-ui.test.ts",
+    "test/hercules-actions.test.ts",
+    "test/hercules-private-chat-ui.test.ts",
+    "test/hercules-reply-context.test.ts",
+    "test/home-feedback-ui.test.ts",
+    "test/household-fund.test.ts",
+    "test/kitchen-habit.test.ts",
+    "test/kitty-envelope-ui.test.ts",
+    "test/kitty-nest-ui.test.ts",
+    "test/kitty-nest.test.ts",
+    "test/kitty-studio-ui.test.ts",
+    "test/kitty-studio.test.ts",
+    "test/ledger-experience.test.ts",
+    "test/ledger-sync-authority.test.ts",
+    "test/materialize-snapshot-from-events.test.ts",
+    "test/mobile-entry-sheet.test.ts",
+    "test/month-rehearsal-mainline.test.ts",
+    "test/onboarding-copy.test.ts",
+    "test/onboarding-entry-integration.test.ts",
+    "test/onboarding-lifecycle.test.ts",
+    "test/onboarding-registry.test.ts",
+    "test/page-worlds.test.ts",
+    "test/personal-calendar-authority.test.ts",
+    "test/plan-guide-ui.test.ts",
+    "test/plan-guide.test.ts",
+    "test/plan-hercules-worker.test.ts",
+    "test/plan-life-contract.test.ts",
+    "test/plan-life-ui.test.ts",
+    "test/plan-projection.test.ts",
+    "test/plan-system.test.ts",
+    "test/potential-expenses.test.ts",
+    "test/proof-matrix.test.ts",
+    "test/vision-v2-home-ui.test.ts",
+    "test/workspace-action-bridge-ui.test.ts",
+    "test/workspace-command-authority.test.ts",
+    "test/workspace-contracts.test.ts",
+    "test/workspace-deployment.test.ts",
+    "test/workspace-grants.test.ts",
+    "test/workspace-links.test.ts",
+    "test/workspace-provider.test.ts",
+    "test/workspace-trust.test.ts",
+    "test/workspace-ui.test.ts"
+  ],
+  "uiProofRequired": true
+}

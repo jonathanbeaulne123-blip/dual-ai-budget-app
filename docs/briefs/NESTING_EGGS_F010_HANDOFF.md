@@ -2,6 +2,8 @@
 
 Jonathan can open a ranked nest from Home or Plan, select exactly one pot, and use a studio appropriate to that pot. All four category amounts add up to one King. Paid pots become keepsakes and recurring bills automatically receive their next pot.
 
+[PR #466](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/466) · [Measured evidence](../evidence/nesting-eggs-f010/README.md). Verified application source: `c85c5b7df72ce12f3b475409b7c15bde451f5296`.
+
 ## Authority and delivery
 
 - Repository: `jonathanbeaulne123-blip/dual-ai-budget-app`; branch `codex/nesting-eggs-f010`; initial base `5837bbdf253c8e253bcd53b0029fcfbe8bc796a0` after #464; integrated main `1686ccc4a569c99b5a2d92ae8b311b83873e211d` after #465.
@@ -52,9 +54,12 @@ Use an isolated fictional Development fixture, one browser page, and the install
 ```sh
 pnpm dev --host 127.0.0.1 --port 5181
 OUT=/tmp/hearth-nest-proof node scripts/fixtures/kitty-studio/nest-proof.mjs
+OUT=/tmp/hearth-nest-editor-proof ROUTES=king-shape,king-paint,king-kiln node scripts/fixtures/kitty-studio/nest-proof.mjs
 OUT=/tmp/hearth-nest-interactions node scripts/fixtures/kitty-studio/nest-interactions.mjs
 pnpm test -- --risk=high --focus=test/kitty-nest.test.ts --focus=test/kitty-nest-ui.test.ts --focus=test/kitty-studio.test.ts --focus=test/kitty-studio-ui.test.ts --focus=test/onboarding-lifecycle.test.ts --focus=test/onboarding-copy.test.ts --focus=test/onboarding-registry.test.ts --focus=test/materialize-snapshot-from-events.test.ts --focus=test/ledger-sync-authority.test.ts --focus=test/app-startup-p1.test.ts --focus=test/month-rehearsal-mainline.test.ts --focus-reason="Nest projections, paid keepsakes, private continuity, King setup and required App startup/rehearsal coverage"
 pnpm build
+node test/home-feedback-layout.mjs
+node docs/evidence/nesting-eggs-f010/authority-probe.mjs
 ```
 
 The proof script accepts `ORIGIN`, `CHROME`, `THEMES`, `VIEWS`, `WIDTHS` and `ROUTES`. It fingerprints source content before reusing results. Fixtures are labelled fictional; `window.books()` is an in-memory inspection hook only. No real household export, credentials or provider keys are used. Screenshot/probe summaries are under `docs/evidence/nesting-eggs-f010/`.
