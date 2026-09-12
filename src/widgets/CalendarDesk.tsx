@@ -15,17 +15,9 @@ import {
 import type { BoardItem } from "../core/board.ts";
 import type { Household } from "../core/types.ts";
 import type { DateKey } from "../core/calendar.ts";
+import { calendarKindLabel, kindClassNames } from "../calendar/semantics.ts";
 
-function kindLabel(kind: string): string {
-  if (kind === "paycheck") return "Pay";
-  if (kind === "subscription") return "Sub";
-  if (kind === "detected") return "New";
-  if (kind === "shift") return "Shift";
-  if (kind === "google") return "GCal";
-  if (kind === "visit") return "Visit";
-  if (kind === "claim") return "Owed";
-  return "Bill";
-}
+const kindLabel = calendarKindLabel;
 
 function amountFor(item: BoardItem): string {
   if (!item.amountCents) return item.kind;
@@ -44,7 +36,7 @@ function ItemRow({ item }: { item: BoardItem }) {
   return (
     <div className="row cal-desk-row">
       <span>
-        <span className={`kind-pill ${item.kind}`}>{kindLabel(item.kind)}</span>
+        <span className={`kind-pill ${kindClassNames(item.kind)}`}>{kindLabel(item.kind)}</span>
         {" "}{formatDayLabel(item.date)} · {item.title}
       </span>
       <span className={item.direction === "out" ? "right" : "muted"}>{amountFor(item)}</span>

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { kindClassNames } from "./calendar/semantics.ts";
 import { useDialog } from "./useDialog.ts";
 import { centsDigitsFromDollars, padToDollars } from "./core/cadPad.ts";
 import { CadPad } from "./CadPad.tsx";
@@ -70,7 +71,7 @@ export function PotentialExpenseEditor({ household, memberId, view, date, plan, 
       </div>
       <label htmlFor="potential-title">What might you spend on?</label>
       <input id="potential-title" data-autofocus maxLength={120} value={form.title} onChange={(event) => setForm({ ...form, title: event.currentTarget.value })} placeholder="Wedding travel and gift" />
-      {form.linkedCalendarItem ? <p className="potential-expense-event-link"><span className="kind-pill">Event</span> For {form.linkedCalendarItem.title}</p> : null}
+      {form.linkedCalendarItem ? <p className="potential-expense-event-link"><span className={`kind-pill ${kindClassNames("event")}`}>Event</span> For {form.linkedCalendarItem.title}</p> : null}
       <CadPad
         digits={centsDigitsFromDollars(form.amount)}
         onDigits={(digits) => setForm({ ...form, amount: padToDollars(digits) })}

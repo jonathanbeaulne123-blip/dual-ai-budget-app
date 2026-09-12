@@ -15,6 +15,7 @@ import "./charter.css";
 import "./hearth-theme.css";
 import "./hercules.css";
 import "./theme/worlds.css";
+import "./theme/kinds.css";
 import "./mobile-canon.css";
 import "./theme/mobile-worlds.css";
 import "./theme/mobile-worlds-refinement.css";

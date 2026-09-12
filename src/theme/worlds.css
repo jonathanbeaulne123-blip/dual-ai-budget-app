@@ -1189,31 +1189,11 @@
 :root[data-theme] .cal-day.is-hidden-phone { color: var(--muted); background: var(--world-sunk); opacity: 1; }
 :root[data-theme] .cal-title { color: var(--ink); font-size: 12px; }
 :root[data-theme] .cal-titles { color: var(--muted); }
-/* Category identity: a dot, an edge and a label. Three carriers, not one. */
+/* Kind identity — glyph, edge and hue — comes from src/theme/kinds.css, driven by src/calendar/semantics.ts. */
 :root[data-theme] .kind-pill {
   border: 1px solid var(--line); border-radius: var(--world-r-chip);
   background: var(--world-sunk); color: var(--ink); font-size: 12px;
 }
-:root[data-theme] .cal-title.kind-bill,
-:root[data-theme] .kind-pill.bill { border-left: 3px solid var(--copper); }
-:root[data-theme] .cal-title.kind-paycheck,
-:root[data-theme] .kind-pill.paycheck { border-left: 3px solid var(--theme-chart-positive); }
-:root[data-theme] .cal-title.kind-shift,
-:root[data-theme] .kind-pill.shift { border-left: 3px solid var(--theme-second); }
-:root[data-theme] .cal-title.kind-visit,
-:root[data-theme] .kind-pill.visit { border-left: 3px solid var(--theme-chart-neutral); }
-:root[data-theme] .cal-title.kind-claim,
-:root[data-theme] .kind-pill.claim { border-left: 3px solid var(--brass); }
-:root[data-theme] .cal-title.kind-subscription,
-:root[data-theme] .kind-pill.subscription { border-left: 3px solid var(--theme-chart-plan); }
-:root[data-theme] .cal-title.kind-google,
-:root[data-theme] .kind-pill.google { border-left: 3px dashed var(--muted); }
-:root[data-theme] .cal-title.kind-detected,
-:root[data-theme] .kind-pill.detected { border-left: 3px dotted var(--muted); }
-:root[data-theme] :is(.cal-title, .kind-pill):is(.kind-work-pay, .kind-work-tip, .kind-work-tipout, .work-pay, .work-tip, .work-tipout) {
-  border-left: 3px solid var(--theme-second);
-}
-:root[data-theme] .dots > * { border-radius: 999px; }
 :root[data-theme] .calendar-hero-actions .primary { min-height: 44px; }
 :root[data-theme] :is(.rhythm-card, .repeating-form, .visit-card, .visit-form) {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--world-r-card);

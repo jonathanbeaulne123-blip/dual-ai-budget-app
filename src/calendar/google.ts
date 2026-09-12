@@ -82,13 +82,33 @@ export function dateFromGoogleEvent(event: {
   return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
+/** Last civil day of a Google event. All-day `end.date` is exclusive; a timed end lands on the day it finishes. */
+export function endDateFromGoogleEvent(event: {
+  start?: { date?: string; dateTime?: string };
+  end?: { date?: string; dateTime?: string };
+}, start: DateKey, timeZone: string = TIMEZONE): DateKey {
+  if (event.end?.date && /^\d{4}-\d{2}-\d{2}$/.test(event.end.date)) {
+    const inclusive = addDays(event.end.date, -1);
+    return inclusive < start ? start : inclusive;
+  }
+  const endInstant = event.end?.dateTime ? new Date(event.end.dateTime).getTime() - 1 : NaN;
+  const end = Number.isFinite(endInstant) ? dateKeyInZone(new Date(endInstant), timeZone) : start;
+  return end < start ? start : end;
+}
+
+/** Civil days between two date keys, inclusive. */
+export function googleRunLength(start: DateKey, end: DateKey): number {
+  return Math.max(1, Math.round((Date.parse(end) - Date.parse(start)) / 86400000) + 1);
+}
+
 export function overlayFromGoogleEvent(
-  event: { id?: string; summary?: string; start?: { date?: string; dateTime?: string }; extendedProperties?: { private?: Record<string, string> } },
+  event: { id?: string; summary?: string; start?: { date?: string; dateTime?: string }; end?: { date?: string; dateTime?: string }; extendedProperties?: { private?: Record<string, string> } },
   memberId: string,
   memberColor: string,
 ): OverlayEvent | null {
   const date = dateFromGoogleEvent(event);
   if (!date || !event.id) return null;
+  const length = googleRunLength(date, endDateFromGoogleEvent(event, date));
   return {
     id: event.id,
     date,
@@ -96,6 +116,7 @@ export function overlayFromGoogleEvent(
     memberId,
     memberColor,
     hearthOwned: event.extendedProperties?.private?.hearth === "1",
+    ...(length > 1 ? { span: { index: 0, length } } : {}),
   };
 }
 
@@ -205,14 +226,16 @@ export async function readGoogleCalendars(input: {
                   if (event.status === "cancelled" || !event.id) continue;
                   const start = dateFromGoogleEvent(event, timeZone);
                   if (!start) continue;
-                  const endInstant = event.end?.dateTime ? new Date(event.end.dateTime).getTime() - 1 : NaN;
-                  const end = event.end?.date ? addDays(event.end.date, -1) : Number.isFinite(endInstant) ? dateKeyInZone(new Date(endInstant), timeZone) : start;
+                  const end = endDateFromGoogleEvent(event, start, timeZone);
+                  const length = googleRunLength(start, end);
                   for (let date = start < input.from ? input.from : start; date <= end && date <= input.to; date = addDays(date, 1)) {
                     const id = `${encodeURIComponent(calendar.id)}:${event.id}:${date}`;
                     if (seen.has(id)) continue;
                     seen.add(id);
+                    const index = googleRunLength(start, date) - 1;
                     result.overlays.push({ id, calendarId: calendar.id, date, title: event.summary?.trim() || "Google event", memberId: account.memberId,
-                      memberColor: input.memberColor(account.memberId), hearthOwned: event.extendedProperties?.private?.hearth === "1" });
+                      memberColor: input.memberColor(account.memberId), hearthOwned: event.extendedProperties?.private?.hearth === "1",
+                      ...(length > 1 ? { span: { index, length } } : {}) });
                   }
                 }
                 result.calendars.push(name);

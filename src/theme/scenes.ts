@@ -109,5 +109,30 @@ export function sceneTokens(value: ThemeScene): Record<string, string> {
     "--theme-chart-negative": value.dark ? "#f3aea3" : "#a54d42",
     "--theme-chart-neutral": value.dark ? "#b1c9ec" : "#526d8a",
     "--theme-chart-plan": value.dark ? "#e9cc8b" : "#8d702c",
+    ...kindHueTokens(value.dark),
   };
+}
+
+/**
+ * Kind hues (calendar/semantics.ts): one hue family per kind of calendar
+ * information, in a light and a dark-scene pair. They are meaning tokens, not
+ * decoration, so every scene shares the same nine; the scene only decides
+ * light or dark. Copper stays reserved for "scheduled, not posted" and ink for
+ * "posted" — no kind may borrow either.
+ */
+export const KIND_HUES = {
+  pay: ["#2e5f4a", "#9fd7bf"],
+  bill: ["#6f3583", "#dbb6ea"],
+  subscription: ["#2b5590", "#a9c4f0"],
+  planned: ["#6b5418", "#e9cc8b"],
+  work: ["#4f5a1b", "#cfd88f"],
+  visit: ["#8f4010", "#f4b98a"],
+  owed: ["#196459", "#97dcd0"],
+  event: ["#9a2f59", "#f4a8c6"],
+} as const;
+export function kindHueTokens(dark: boolean): Record<string, string> {
+  const tokens: Record<string, string> = {};
+  for (const [name, [light, night]] of Object.entries(KIND_HUES)) tokens[`--kind-${name}`] = dark ? night : light;
+  tokens["--kind-quiet"] = "var(--muted)";
+  return tokens;
 }
