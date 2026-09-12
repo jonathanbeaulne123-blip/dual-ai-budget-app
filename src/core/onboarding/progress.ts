@@ -215,7 +215,7 @@ export function shapeMemberOnboardingProgress(
       chapterId: chapter.id,
       observedCompleteAt: hasAcceptedProbe ? observedCompleteAt : null,
       probeEvidenceKey: hasAcceptedProbe ? probeEvidenceKey : null,
-      skippedAt: chapter.track === "personal" && chapter.skip === "member-skippable"
+      skippedAt: (chapter.track === "personal" || chapter.id === "ch-13-king") && chapter.skip === "member-skippable"
         ? isoOrNull(candidate?.skippedAt)
         : null,
       personalAccountSetupSkippedAt: chapter.id === "ch-04-accounts"
@@ -306,6 +306,9 @@ export function nextChapterFor(household: Household, memberId: string): Onboardi
   // keeps the waiting-member and interrupted-unlock repair UI reachable until
   // the shared completion record is accepted.
   if (onboardingIsActive(household)) return chapterById("ch-12-ready");
+  const king = chapterById("ch-13-king")!;
+  if (!household.kittyNestDesigns?.some(row => row.visibility === "household" && row.bankKey === "king" && row.setupCompletedAt)
+    && !chapterProgressSatisfied(progress.rows.find(row => row.chapterId === king.id))) return king;
   return nextEligible(personalModules(), progress);
 }
 

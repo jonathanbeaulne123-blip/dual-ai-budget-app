@@ -463,7 +463,7 @@ describe("onboarding lifecycle", () => {
       actingMemberId: household.members.find((member) => member.active)!.id,
       adapters,
     });
-    expect(acceptedSuite.ok).toBe(true);
+    expect(acceptedSuite.ok, acceptedSuite.userMessage ?? undefined).toBe(true);
 
     for (const [candidate, postedIds] of [
       [household, ["forged-posted-id"]],

@@ -3,9 +3,18 @@ import { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { KittyBankRoom } from '/src/kitty/KittyBankRoom.tsx';
 import { planLifeFixture } from '/test/fixtures/plan-life.ts';
-import { saveGoalEnvelope, fundGoal, allocateHouseholdFundSurplus } from '/src/core/index.ts';
+import { saveGoalEnvelope, fundGoal, recordBillPayment, allocateHouseholdFundSurplus } from '/src/core/index.ts';
 import { defaultGoalEnvelope } from '/src/core/goalEnvelopes.ts';
 import { newKittyPiece } from '/src/core/kittyStudio.ts';
+import { KittyNest } from '/src/kitty/KittyNest.tsx';
+import { HouseholdHome } from '/src/HouseholdHome.tsx';
+import { PlanStudio } from '/src/PlanStudio.tsx';
+import { OnboardingJourney } from '/src/OnboardingJourney.tsx';
+import { ThemeProvider, useSceneBinding } from '/src/theme/ThemeProvider.tsx';
+import { AppearanceStore } from '/src/theme/appearanceStore.ts';
+import '/src/theme/worlds.css';
+import '/src/theme/theme-reference.css';
+import '/src/theme/page-plan.css';
 import '/src/styles.css';
 import '/src/hearth-theme.css';
 const q = new URLSearchParams(location.search);
@@ -34,10 +43,24 @@ if (seed) {
   const studio = seed === 'fired' ? { version: 1 as const, draft: null, fired: [{ ...piece, firedAt: '2026-09-11T11:00:00.000Z', firedBy: member }] } : { version: 1 as const, draft: piece, fired: [] };
   initial = saveGoalEnvelope(initial, { goalId: goal.id, expectedUpdatedAt: goal.updatedAt, name: goal.name, target: goal.targetCents / 100, arrivalDate: goal.arrivalDate, envelope: { ...defaultGoalEnvelope(), studio }, createdBy: member }).household;
 }
+if(q.get('paid')){const r=initial.recurrences[0]!;initial=recordBillPayment(initial,{recurrenceId:r.id,occurrenceDate:r.nextDate,paymentDate:'2026-09-11',amount:r.amountCents/100,accountId:r.accountId,createdBy:member}).household;}
+const route=q.get('route') || 'gallery';
+const store=new AppearanceStore({read:async()=>null,write:async()=>{} } as any,null,()=>false);store.preview(theme as any);
 function Harness() {
+  useSceneBinding(route === 'home' ? 'home' : 'plan',view,true);
+  const [request,setRequest]=useState<{goalId?:string;bankId?:string}|null>(route === 'gallery' ? q.get('bank') ? {bankId:q.get('bank')!} : {goalId:goal.id} : null);
   const [h, setH] = useState(initial);
   const ref = useRef(h); ref.current = h;
   (window as any).deposit = () => { const g = ref.current.goals[0]!; const next = view === 'personal' ? fundGoal(ref.current, { goalId: g.id, amount: 150, fromAccountId: 'ACC-CHEQUING', date: '2026-09-11', createdBy: member }).household : allocateHouseholdFundSurplus(ref.current, { memberId: member, date: '2026-09-11', allocations: [{ goalId: g.id, amount: '150' }] }).household; ref.current = next; setH(next); };
-  return <KittyBankRoom household={h} view={view} memberId={member} identity={`development:fixture:${member}:${view}`} onClose={() => {}} onCommand={async (fn, options) => { const result = fn(ref.current); ref.current = result.household; setH(result.household); return { ok: true, household: result.household, confirmationId: options?.confirmationId }; }} />;
+  (window as any).books = () => ref.current;
+  const command=async (fn:any,options?:any) => {const result=fn(ref.current);ref.current=result.household;setH(result.household);return {ok:true,household:result.household,confirmationId:options?.confirmationId};};
+  const select=(bank:any)=>setRequest(bank.goal ? {goalId:bank.goal.id} : {bankId:bank.id});
+  return <div className="app" data-ledger-view={view} data-ledger-tab={route === 'home' ? 'home' : 'plan'} style={{maxWidth:1600,margin:'auto',padding:'16px 16px 100px'}}>
+    <p className="kicker">Fictional local fixture · Development · no connected accounts</p>
+    {route==='home' && (view==='household' ? <HouseholdHome household={h} memberId={member} today="2026-09-12" freshness="current" busy={false} onCommand={command} onGo={()=>{}} onOpenSetup={()=>{}} /> : <KittyNest household={h} memberId={member} view={view} today="2026-09-12" onSelect={select}/>)}
+    {route==='plan' && <PlanStudio household={h} view={view} memberId={member} today="2026-09-12" busy={false} onCommand={command} goalsContent={context=><KittyBankRoom household={h} view={view} memberId={member} identity="fixture-plan" context={context} onCommand={command} onClose={context.onClose}/>} />}
+    {route==='setup' && <OnboardingJourney household={h} memberId={member} onGo={destination=>{if(destination==='king')setRequest({bankId:'king'});}}/>}
+    {request && <KittyBankRoom household={h} view={view} memberId={member} identity={`development:fixture:${member}:${view}`} initialGoalId={request.goalId} initialBankId={request.bankId} onClose={()=>setRequest(null)} onCommand={command}/>}
+  </div>;
 }
-createRoot(document.getElementById('root')!).render(<Harness />);
+createRoot(document.getElementById('root')!).render(<ThemeProvider store={store}><Harness /></ThemeProvider>);

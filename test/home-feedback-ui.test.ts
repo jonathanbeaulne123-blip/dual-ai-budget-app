@@ -37,7 +37,7 @@ describe("F-014 and F-015 Home actions", () => {
 
   it("opens the exact second shared bank and restores focus to its Home portrait", async () => {
     const h = planLifeFixture("household"); command.mockClear(); await render(h);
-    const banks = host.querySelectorAll<HTMLButtonElement>(".home-bank"); expect(banks).toHaveLength(2);
+    const banks = h.goals.map(goal => host.querySelector<HTMLButtonElement>(`[data-bank-id="goal:${goal.id}"]`)!); expect(banks.every(Boolean)).toBe(true);
     banks[1]!.focus(); await act(async () => banks[1]!.click());
     expect(document.querySelector(".kitty-bank-tabs [aria-pressed='true']")?.textContent).toContain("A slower week away");
     expect(button("← Back to Home")).toBeTruthy(); expect(command).not.toHaveBeenCalled();
@@ -47,16 +47,16 @@ describe("F-014 and F-015 Home actions", () => {
   it("keeps Personal and archived banks off Home and makes empty creation reachable", async () => {
     let h = addGoal(catalogHousehold(), { name: "Private bank", target: "500", shared: false, ownerMemberId: "MEM-001" }).household;
     await render(h); expect(host.textContent).not.toContain("Private bank");
-    await click("Create a Kitty Bank"); expect(button("＋ New bank")).toBeTruthy(); await click("＋ New bank");
+    await click("Build your King"); expect(button("＋ New bank")).toBeTruthy(); await click("＋ New bank");
     expect(document.querySelector("form.kitty-folio h2")?.textContent).toBe("What are we making room for?");
     await click("← Back to Home");
     h = planLifeFixture("household"); h.goals.forEach(g => { g.envelope = { ...defaultGoalEnvelope(), archivedAt: "2026-09-12T10:00:00Z" }; });
-    await render(h); expect(host.querySelectorAll(".home-bank")).toHaveLength(0);
+    await render(h); expect(host.querySelectorAll(".nest-children .nest-bank--goal")).toHaveLength(0);
   });
 
   it("carries Final Confirm command identity through the Home gallery and keeps rejected review", async () => {
     command.mockClear(); await render(planLifeFixture("household"));
-    await act(async () => host.querySelector<HTMLButtonElement>(".home-bank")!.click()); await click("Use money");
+    await act(async () => host.querySelector<HTMLButtonElement>(".nest-children .nest-bank--goal")!.click()); await click("Use money");
     const label = [...document.querySelectorAll("label")].find(row => row.textContent?.trim() === "Amount (CAD)")!;
     const input = label.querySelector("input")!;
     await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "25"); input.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -68,14 +68,14 @@ describe("F-014 and F-015 Home actions", () => {
 
   it("allows returning Home while global books validation locks money controls", async () => {
     await render(planLifeFixture("household"), vi.fn(), true);
-    await click("Open the 3D gallery");
+    await click("Build your King");
     expect(button("＋ New bank").disabled).toBe(true);
     expect(button("← Back to Home").disabled).toBe(false);
     await click("← Back to Home"); expect(document.querySelector(".kitty-room")).toBeNull();
   });
 
   it("closes the old gallery when household identity changes", async () => {
-    const h = planLifeFixture("household"); await render(h); await click("Open the 3D gallery");
+    const h = planLifeFixture("household"); await render(h); await click("Build your King");
     await render({ ...h, householdId: "another-household" }); expect(document.querySelector(".kitty-room")).toBeNull();
   });
 });

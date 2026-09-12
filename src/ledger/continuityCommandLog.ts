@@ -1,3 +1,4 @@
+import { mergeKittyNestDesigns } from "../core/kittyNestDesigns.ts";
 import type { CommandReceipt, Household } from "../core/types.ts";
 import { commandMaterializationFacts, commandReceiptEnvelopeHash, sha256Hex } from "../core/commandIdentity.ts";
 import { mergeSubmissions } from "../core/onboarding/submissions.ts";
@@ -152,6 +153,7 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.fundSettlementAllocations ?? []).map((row) => row.id),
     ...(mergedFacts?.fundKittyAllocations ?? []).map((row) => row.id),
     ...(mergedFacts?.weeklyDocumentStamps ?? []).map((row) => row.id),
+    ...(mergedFacts?.kittyNestDesigns ?? []).map(row => row.id),
     ...(mergedFacts?.chapters ?? []).map((row) => row.id),
     ...(mergedFacts?.rituals ?? []).map((row) => row.id),
     ...(mergedFacts?.moves ?? []).map((row) => row.id),
@@ -176,7 +178,8 @@ export async function compactedCommandPayload(
     }));
   return {
     ...primary.commandPayload,
-    materializationHash: mergedFacts?.monthRehearsals?.length
+    materializationHash: mergedFacts?.kittyNestDesigns?.length
+      || mergedFacts?.monthRehearsals?.length
       || mergedFacts?.recurrences?.length
       || mergedFacts?.householdOnboarding
       || mergedFacts?.onboardingSubmissions?.length
@@ -199,6 +202,7 @@ export async function compactedCommandPayload(
         onboardingApprovals: mergedFacts.onboardingApprovals,
         categories: mergedFacts.categories,
         budgetPlans: mergedFacts.budgetPlans,
+        kittyNestDesigns: mergedFacts.kittyNestDesigns,
         chapters: mergedFacts.chapters,
         rituals: mergedFacts.rituals,
         moves: mergedFacts.moves,
@@ -301,6 +305,7 @@ function mergeMaterializationFacts(
         ...facts.weeklyDocumentStamps,
       ];
     }
+    if (facts.kittyNestDesigns !== undefined) merged.kittyNestDesigns = mergeKittyNestDesigns(merged.kittyNestDesigns, facts.kittyNestDesigns);
     if (facts.chapters !== undefined) merged.chapters = facts.chapters;
     if (facts.rituals !== undefined) merged.rituals = facts.rituals;
     if (facts.moves !== undefined) merged.moves = facts.moves;

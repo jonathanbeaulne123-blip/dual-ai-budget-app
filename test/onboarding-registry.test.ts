@@ -45,9 +45,9 @@ describe("onboarding registry", () => {
     expect(ONBOARDING_REGISTRY.every((chapter) => chapter.registryVersion === ONBOARDING_REGISTRY_VERSION)).toBe(true);
   });
 
-  it("returns exactly twelve household chapters in canonical order", () => {
+  it("returns twelve household chapters and the optional King workshop in canonical order", () => {
     const chapters = householdChapters();
-    expect(chapters).toHaveLength(12);
+    expect(chapters).toHaveLength(13);
     expect(chapters.map((chapter) => chapter.id)).toEqual([
       "ch-01-meet",
       "ch-02-household",
@@ -61,8 +61,9 @@ describe("onboarding registry", () => {
       "ch-10-estimates",
       "ch-11-plan",
       "ch-12-ready",
+      "ch-13-king",
     ]);
-    expect(chapters.map((chapter) => chapter.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(chapters.map((chapter) => chapter.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
     expect(chapters.map(({ id, sitting, conductor, approval, skip, target }) => ({
       id, sitting, conductor, approval, skip, target: target?.tab ?? null,
     }))).toEqual([
@@ -78,6 +79,7 @@ describe("onboarding registry", () => {
       { id: "ch-10-estimates", sitting: 3, conductor: "both", approval: "member", skip: "household-required", target: "plan" },
       { id: "ch-11-plan", sitting: 3, conductor: "both", approval: "joint", skip: "household-required", target: "plan" },
       { id: "ch-12-ready", sitting: 3, conductor: "both", approval: "joint", skip: "household-required", target: "ledger" },
+      { id: "ch-13-king", sitting: 3, conductor: "either", approval: "none", skip: "member-skippable", target: "home" },
     ]);
     expect(personalModules().map(({ id, order, sitting, conductor, approval, skip, target, contributesToFinalGate }) => ({
       id, order, sitting, conductor, approval, skip, target: target?.tab ?? null, contributesToFinalGate,

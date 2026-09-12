@@ -1,7 +1,9 @@
+import type { NestOrnament } from "./nestAppearance.ts";
+import { NestProp } from "./NestProp.tsx";
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { KittyGlaze, KittyPaintV1, KittyPart, KittyPieceV1, KittyStrokeV1 } from "../core/types.ts";
 import { defaultKittyPaint, defaultKittySculpt } from "../core/kittyStudio.ts";
-import { KittyFlat } from "./studio/flat.tsx";
+import { KittyFlat, flatKittyHit } from "./studio/flat.tsx";
 
 export type KittyHit = { part: KittyPart; uv: { u: number; v: number }; outside?: boolean };
 export type KittyStageApi = {
@@ -10,7 +12,7 @@ export type KittyStageApi = {
   rotate: (radians: number) => void;
 };
 /** Texture pixels → screen pixels for the brush ring. The wrap is 512 across a cat that fills most of the stage. */
-const brushRingPx = (size: number, stageHeight: number) => Math.max(6, Math.min(stageHeight * 0.9, (size / 512) * stageHeight * 1.75));
+
 export type KittyStageMode = "view" | "wheel" | "paint" | "kiln";
 const reducedMotion = () =>
   typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -18,6 +20,8 @@ const reducedMotion = () =>
 /** The canvas is decorative. Every interaction has a normal DOM control. */
 export function KittyStage({
   piece,
+  ornament,
+  broken = false,
   glaze,
   open,
   name,
@@ -33,6 +37,8 @@ export function KittyStage({
   onFlatChange,
   onSpinChange,
 }: {
+  ornament?: NestOrnament;
+  broken?: boolean;
   piece: KittyPieceV1 | null;
   glaze: KittyGlaze;
   open: boolean;
@@ -54,11 +60,13 @@ export function KittyStage({
   onSpinChange?: (spinning: boolean) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
-  const api = useRef<(KittyStageApi & { open: (v: boolean) => void; sculpt: (p: KittyPieceV1 | null) => void; fill: (n: number, animate: boolean) => void; fired: (v: boolean) => void; spin: (v: boolean) => void; idle: (v: boolean) => void; hit: (x: number, y: number, outside?: boolean) => KittyHit | null }) | null>(null);
+  const api = useRef<(KittyStageApi & { open: (v: boolean) => void; sculpt: (p: KittyPieceV1 | null) => void; fill: (n: number, animate: boolean) => void; fired: (v: boolean) => void; spin: (v: boolean) => void; idle: (v: boolean) => void; previewBrush: (hit: KittyHit | null, size?: number) => void; hit: (x: number, y: number, outside?: boolean) => KittyHit | null }) | null>(null);
   const [flat, setFlat] = useState(false), [failed, setFailed] = useState(false);
   // null = follow the bench; true/false = the choice made with the Spin button, which sticks.
   const [spinChoice, setSpinChoice] = useState<boolean | null>(null);
   const spinning = spinChoice ?? spin;
+  const [flatStroke, setFlatStroke] = useState<KittyStrokeV1 | null>(null);
+  const [flatPreview, setFlatPreview] = useState<{ hit: KittyHit; size: number } | null>(null);
   const [ring, setRing] = useState<{ x: number; y: number; d: number } | null>(null);
   const latest = useRef({ piece, glaze, open, step, fired, mode, spin: spinning, celebrate });
   latest.current = { piece, glaze, open, step, fired, mode, spin: spinning, celebrate };
@@ -133,6 +141,8 @@ export function KittyStage({
         const kick = () => { if (!raf && !dead && !document.hidden) raf = requestAnimationFrame(loop); };
         cleanup.push(() => { if (raf) cancelAnimationFrame(raf); raf = 0; });
         const cat = createKittySculpture(latest.current.piece, {
+          ornament,
+          broken,
           brass: "#bda375",
           wood: "#62412b",
           fired: latest.current.fired ?? (latest.current.piece ? Boolean(latest.current.piece.firedAt) : true),
@@ -171,6 +181,7 @@ export function KittyStage({
         let currentSculpt = latest.current.piece?.sculpt;
         api.current = {
           rotate(n) { cat.group.rotation.y += n; render(); },
+          previewBrush(hit,size=0) { cat.previewBrush(hit,size); render(); },
           open(v) { cat.setOpen(v); render(); },
           sculpt(p) {
             const sculptNext = p?.sculpt ?? defaultKittySculpt();
@@ -213,8 +224,17 @@ export function KittyStage({
       })
       .catch(() => { dispose(); if (!dead) setFailed(true); });
     return () => { dead = true; dispose(); };
-  }, [flat]);
+  }, [flat, broken, ornament?.tier, ornament?.category, ornament?.theme]);
   const live = !flat && !failed;
+  const hitAt = (x: number, y: number) => live ? api.current?.hit(x,y,true) ?? null : host.current ? flatKittyHit(host.current,x,y,true) : null;
+  useEffect(() => { setFlatStroke(null); }, [piece?.paint,flat,failed]);
+  useEffect(() => {
+    if (live || !apiRef) return;
+    apiRef.current = { paintStroke: stroke => setFlatStroke({...stroke,pts:[...stroke.pts]}), replayPaint: () => setFlatStroke(null), rotate: () => {} };
+    return () => { apiRef.current = null; };
+  },[live,apiRef]);
+  useEffect(() => { if (mode !== "paint") { api.current?.previewBrush(null);setFlatPreview(null);setRing(null); } },[mode]);
+  const flatPiece = piece && flatStroke ? {...piece,paint:{...piece.paint,strokes:[...piece.paint.strokes,flatStroke]}} : piece;
   return (
     <div className="kitty-stage-wrap" data-mode={mode} data-fired={firedState ? "true" : "false"}>
       <div className="kitty-window" aria-hidden="true"><i /><i /><i /><i /></div>
@@ -226,41 +246,44 @@ export function KittyStage({
         aria-hidden="true"
         data-painting={mode === "paint" ? "true" : undefined}
         onPointerDown={(event) => {
-          if (!live || !api.current) return;
+          if (live && !api.current) return;
           const painting = mode === "paint" && event.button === 0;
           drag.current = { x: event.clientX, y: event.clientY, id: event.pointerId, painting };
           event.currentTarget.setPointerCapture(event.pointerId);
-          if (painting) onPaint?.(api.current.hit(event.clientX, event.clientY, true), "down");
+          if (painting) onPaint?.(hitAt(event.clientX, event.clientY), "down");
         }}
         onPointerMove={(event) => {
-          if (mode === "paint" && brush && live) {
-            const box = event.currentTarget.getBoundingClientRect();
-            setRing({ x: event.clientX - box.left, y: event.clientY - box.top, d: brushRingPx(brush.size, box.height) });
+          if (mode === "paint" && brush) {
+            const box = event.currentTarget.getBoundingClientRect(), hit = hitAt(event.clientX,event.clientY);
+            setRing(hit && !hit.outside ? null : { x:event.clientX-box.left,y:event.clientY-box.top,d:8 });
+            if (live) api.current?.previewBrush(hit,brush.size); else setFlatPreview(hit ? {hit,size:brush.size} : null);
           }
-          if (!drag.current || !api.current) return;
+          if (!drag.current) return;
           if (drag.current.painting) {
-            onPaint?.(api.current.hit(event.clientX, event.clientY, true), "move");
+            onPaint?.(hitAt(event.clientX, event.clientY), "move");
             return;
           }
           const dx = event.clientX - drag.current.x, dy = event.clientY - drag.current.y;
           if (mode === "wheel" && onThrow && Math.abs(dy) > Math.abs(dx)) onThrow(dy);
-          else api.current.rotate(dx * 0.009);
+          else api.current?.rotate(dx * 0.009);
           drag.current.x = event.clientX;
           drag.current.y = event.clientY;
         }}
         onPointerUp={(event) => {
-          if (drag.current?.painting && api.current) onPaint?.(api.current.hit(event.clientX, event.clientY, true), "up");
+          if (drag.current?.painting) onPaint?.(hitAt(event.clientX, event.clientY), "up");
           drag.current = null;
+          setRing(null); setFlatPreview(null); api.current?.previewBrush(null);
         }}
         onPointerCancel={() => {
           if (drag.current?.painting) onPaint?.(null, "up");
           drag.current = null;
           setRing(null);
+          setFlatPreview(null); api.current?.previewBrush(null);
         }}
-        onPointerLeave={() => setRing(null)}
+        onPointerLeave={() => { setRing(null); setFlatPreview(null); api.current?.previewBrush(null); }}
       >
-        {!live && <KittyFlat className="kitty-flat" piece={piece} glaze={glaze} step={step} open={open} fired={firedState} />}
-        {live && mode === "paint" && brush && ring && (
+        {!live && <div className={`nest-stage-flat${broken ? " is-broken" : ""}`}><KittyFlat preview={flatPreview} className="kitty-flat" piece={flatPiece} glaze={glaze} step={step} open={open} fired={firedState} />{ornament && <NestProp ornament={ornament}/>} {broken && <svg className="nest-crack" viewBox="0 0 100 100" aria-hidden="true"><path d="M51 15L43 38L62 48L39 66L54 88" fill="none" stroke="currentColor" strokeWidth="4"/></svg>}</div>}
+        {mode === "paint" && brush && ring && (
           <span
             className="kitty-brush-ring"
             aria-hidden="true"

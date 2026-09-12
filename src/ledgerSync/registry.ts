@@ -1,3 +1,4 @@
+import { saveKittyNestDesign } from "../core/kittyNestDesigns.ts";
 import {commitCompanionPlay} from '../core/herculesPlay.ts';
 import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
 import { addQuickSampleData, addQuickSampleScenario } from '../core/quickSampleData.ts';
@@ -20,6 +21,7 @@ type Fn = (household: Household, ...args: never[]) => CommitResult;
 type Policy = { fn: Fn; bind: (args: unknown[], actor: string) => void };
 const policies = new Map<string, Policy>();
 const functions = {
+  saveKittyNestDesign,
   addQuickSampleData, addQuickSampleScenario,
   ...commands,
   executeHerculesAction, cancelHerculesSubmission,
@@ -82,6 +84,7 @@ register("executeHerculesAction cancelHerculesSubmission", ["memberId"]);
 register("recordBillPayment", ["createdBy"]);
 register("addQuickSampleData addQuickSampleScenario", ["memberId"]);
 register("saveNativeEvent", ["memberId"]);
+register("saveKittyNestDesign", ["memberId"]);
 register("saveTask completeTask reopenTask acknowledgeTask saveTaskList adoptBoardTasks", ["memberId"]);
 register("appendPlanSitdownTurn", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);

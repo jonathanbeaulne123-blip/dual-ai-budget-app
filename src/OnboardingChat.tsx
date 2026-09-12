@@ -90,6 +90,7 @@ type Props = {
   onOpenPlan?: () => void;
   /** Chapter 12 opens the isolated Practice and shared Ready finale on Books. */
   onOpenReady?: () => void;
+  onOpenKing?: () => void;
   /** Optional member-owned guide. It never enters or changes the household conductor. */
   personalOffer?: PersonalModuleOffer | null;
   personalOfferSessionId?: string;
@@ -182,6 +183,7 @@ export function OnboardingChat({
   onOpenEstimates,
   onOpenPlan,
   onOpenReady,
+  onOpenKing,
   personalOffer,
   personalOfferSessionId,
   personalOfferRecorded = false,
@@ -405,6 +407,13 @@ export function OnboardingChat({
         </p>
       </div>
     );
+  }
+
+  if (chapter?.id === "ch-13-king" && onOpenKing) {
+    return <section className="onboarding-shell king-onboarding-card" ref={shellRef} aria-label="Build your King chapter">
+      <p className="kicker">{copy("king.chapter-kicker")}</p><h3>{copy("king.chapter-title")}</h3><p>{copy("king.chapter-body")}</p><p>{copy("king.chapter-pause")}</p>
+      <div className="onboarding-actions"><button type="button" disabled={busy} onClick={onOpenKing}>{copy("king.open")}</button><button type="button" disabled={busy} onClick={() => onCommit(current => skipPersonalStep(current, { memberId, createdBy: memberId, chapterId: "ch-13-king" }))}>{copy("king.skip")}</button></div>
+    </section>;
   }
 
   if (personalOffer && personalOfferSessionId) {

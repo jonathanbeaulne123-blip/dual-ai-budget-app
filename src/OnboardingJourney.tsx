@@ -5,9 +5,10 @@ import {
 } from "./core/index.ts";
 import "./onboarding-journey.css";
 
-export type JourneyDestination = "people" | "books" | "plan" | "practice" | "ready" | "fund" | "bills" | "work" | "personal" | "boards" | "hercules";
+export type JourneyDestination = "people" | "books" | "plan" | "practice" | "ready" | "fund" | "bills" | "work" | "personal" | "boards" | "hercules" | "king";
 const stages: { title: string; destination: JourneyDestination; requirements: ChapterId[]; description: string }[] = [
   { title: "People and agreement", destination: "people", requirements: ["ch-01-meet", "ch-02-household", "ch-03-charter"], description: "Our identities, household and agreement." },
+  { title: "Build your King", destination: "king", requirements: ["ch-13-king"], description: "Name, shape, paint and fire your own King. Optional: save your clay and return whenever you like." },
   { title: "Starting books", destination: "books", requirements: ["ch-04-accounts", "ch-05-opening"], description: "Accounts and truthful opening balances." },
   { title: "Our first plan", destination: "plan", requirements: ["ch-09-categories", "ch-10-estimates", "ch-11-plan"], description: "Choose categories, review amounts and agree together." },
   { title: "Using Hearth day to day", destination: "practice", requirements: ["ch-12-ready"], description: "Practise an expense and its correction in discarded Practice." },
@@ -32,8 +33,8 @@ export function OnboardingJourney({ household, memberId, onGo }: {
   const state = acceptedHouseholdOnboarding(household);
   const members = household.members.filter(member => member.active);
   const finished = state?.state === "complete";
-  const satisfied = (id: string, requirements: ChapterId[]) => requirements.every(requirement => memberRequirementSatisfied(household, id, requirement));
-  const current = stages.findIndex(stage => stage.requirements.length ? !satisfied(memberId, stage.requirements) : !finished);
+  const satisfied = (id: string, requirements: ChapterId[]) => requirements.every(requirement => requirement === "ch-13-king" ? Boolean(household.kittyNestDesigns?.some(row => row.visibility === "household" && row.bankKey === "king" && row.setupCompletedAt)) : memberRequirementSatisfied(household, id, requirement));
+  const current = stages.findIndex(stage => stage.destination === "king" ? false : stage.requirements.length ? !satisfied(memberId, stage.requirements) : !finished);
   return <aside className="onboarding-journey" aria-label="Our setup journey">
     <p className="kicker">Setting up together</p><h2>Make Hearth yours</h2>
     <ol className="journey-stages">

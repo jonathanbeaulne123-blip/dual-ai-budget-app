@@ -14,6 +14,7 @@ import { AccountHistorySetup } from './AccountHistorySetup.tsx';
 import { Charter } from './Charter.tsx';
 import { CharterFounding } from './CharterFounding.tsx';
 import './hercules-setup.css';
+import { KittyBankRoom } from './kitty/KittyBankRoom.tsx';
 
 export type HerculesSetupProps = {
   household:Household; memberId:string; authUserId:string; today:string; busy:boolean;
@@ -28,7 +29,7 @@ export function HerculesSetup({open,onClose,onHelp,onPlay,...props}: HerculesSet
   const attempt=useRef('');
   const [retry,setRetry]=useState(0);
   useEffect(()=>{if(!open)attempt.current='';},[open]);
-  const root=useDialog(open,()=>destination ? setDestination(null) : onClose(),()=>document.querySelector<HTMLElement>(".hercules-pill,.hercules-live"));
+  const root=useDialog(open && destination !== "king",()=>destination ? setDestination(null) : onClose(),()=>document.querySelector<HTMLElement>(".hercules-pill,.hercules-live"));
   const title=useRef<HTMLHeadingElement>(null);
   const previousOpen=useRef(false);
   useEffect(()=>{if(open && !previousOpen.current) title.current?.focus();previousOpen.current=open;},[open]);
@@ -66,10 +67,11 @@ export function HerculesSetup({open,onClose,onHelp,onPlay,...props}: HerculesSet
           <div className="hercules-setup-overview"><OnboardingJourney household={household} memberId={memberId} onGo={go} />
           <OnboardingChat embedded household={household} memberId={memberId} today={today} busy={busy} onCommit={commit} onDismiss={onClose}
             onOpenCharter={()=>go('people')} onOpenAccounts={()=>go('books')} onOpenOpeningBalances={()=>go('books')}
-            onOpenCategories={()=>go('plan')} onOpenEstimates={()=>go('plan')} onOpenPlan={()=>go('plan')} onOpenReady={()=>go('ready')}
+            onOpenKing={()=>go('king')} onOpenCategories={()=>go('plan')} onOpenEstimates={()=>go('plan')} onOpenPlan={()=>go('plan')} onOpenReady={()=>go('ready')}
             onOpenHouseholdFund={()=>go('fund')} onOpenRecurrences={()=>go('bills')} onOpenEarningCadence={()=>go('work')} /></div>
         </div>
-        {destination==='people' && (household.charter ? <Charter embedded household={household} memberId={memberId} busy={busy} onCommit={commit} onDismiss={()=>setDestination(null)} />
+        {open && destination==='king' && <KittyBankRoom household={household} memberId={memberId} view="household" identity={`${household.environment}:${household.householdId}:${memberId}:household`} initialBankId="king" busy={busy} onCommand={onCommand} onClose={()=>setDestination(null)} returnTo="setup" />}
+        {destination==='people'  && (household.charter ? <Charter embedded household={household} memberId={memberId} busy={busy} onCommit={commit} onDismiss={()=>setDestination(null)} />
           : <CharterFounding embedded household={household} memberId={memberId} today={today} busy={busy} onCommit={commit} onDismiss={()=>setDestination(null)} />)}
         {visited.includes('books') && <div hidden={destination!=='books'}>
           <h3>Starting books</h3><p>Identify your Shared accounts, then confirm each opening balance or review a statement.</p>

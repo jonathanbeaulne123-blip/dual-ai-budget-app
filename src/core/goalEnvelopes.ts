@@ -40,7 +40,7 @@ export function shapeGoalEnvelope(value: unknown): GoalEnvelope | undefined {
   if (
     !row ||
     row.version !== 1 ||
-    !["protect", "prepare", "build"].includes(row.kind) ||
+    !["protect", "everyday", "prepare", "build"].includes(row.kind) ||
     !["target", "refill", "repeat"].includes(row.refill) ||
     !Object.hasOwn(KITTY_GLAZES, row.glaze) ||
     typeof row.purpose !== "string" ||
