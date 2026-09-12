@@ -27,7 +27,7 @@ import {
 import { CHAPTER_LESSONS, CURRICULUM_BY_CHAPTER, chapterLesson } from "../src/core/planLearning.ts";
 import { PLAN_CURRICULUM } from "../src/core/planSystem.ts";
 import { sitdownBrief } from "../src/core/sitdownBrief.ts";
-import { parseComfort, DEFAULT_COMFORT } from "../src/theme/comfort.ts";
+import { parseComfort, readComfort, DEFAULT_COMFORT } from "../src/theme/comfort.ts";
 import { compactedCommandPayload, primaryCommandRef, receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
 import { applyCommandEventLocally, extractMaterializationFacts, type ContinuityCommandEvent, type ContinuityCommandEventPayload } from "../src/ledger/materializeSnapshotFromEvents.ts";
 
@@ -285,5 +285,14 @@ describe("Comfort controls", () => {
     expect(parseComfort(null)).toEqual(DEFAULT_COMFORT);
     expect(parseComfort({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true })).toEqual({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true });
     expect(parseComfort({ celebration: "loud" }).celebration).toBe("full");
+  });
+
+  it("keeps a legacy device-local clink opt-in until a comfort record replaces it", () => {
+    const storage = new Map<string, string>();
+    storage.set("hearth:v1:clink:development", "on");
+    const fake = { getItem: (key: string) => storage.get(key) ?? null } as Storage;
+    expect(readComfort("development", fake).sound).toBe(true);
+    storage.set("hearth:comfort:v1:development", JSON.stringify({ sound: false }));
+    expect(readComfort("development", fake).sound).toBe(false);
   });
 });

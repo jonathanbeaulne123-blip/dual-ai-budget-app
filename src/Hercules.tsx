@@ -1317,7 +1317,7 @@ export function HerculesPresence({
     const instrument = currentInstrument();
     const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
     applyTalk({
-      spoken: "I can help you understand the books, pick up a task, or choose something excellent to wear. What shall we do?",
+      spoken: `${surface.spoken} I can help you understand the books, pick up a task, or choose something excellent to wear. What shall we do?`,
       lesson: null,
       fact: surface.fact,
       replies: discoveryEnabled && onDiscoveryNavigate ? [] : help.replies,

@@ -116,7 +116,7 @@ export function HouseholdHome({ household, memberId, today, freshness, busy, onC
             <div className="chapter-actions">
               {memberKeptMemory ? <p className="muted">You chose to keep this. It becomes a shared Memory when your partner chooses too.</p> : <>
                 <button type="button" disabled={busy} onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: win.id }))}>Keep as a Memory</button>
-                <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button>
+                {win.keptByMemberIds.length === 0 ? <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button> : null}
               </>}
             </div>
           )}

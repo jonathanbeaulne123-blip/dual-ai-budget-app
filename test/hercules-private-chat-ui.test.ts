@@ -3,7 +3,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HerculesPresence } from "../src/Hercules.tsx";
-import { catalogHousehold, addRecurrence, postEntry } from "../src/core/index.ts";
+import { catalogHousehold, configureHouseholdFund, addRecurrence, postEntry } from "../src/core/index.ts";
 import { companionFor, commitCompanion } from "../src/core/herculesCompanion.ts";
 import type { KitchenCommand } from "../src/kitchenCommand.ts";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -25,6 +25,26 @@ async function send(text: string) {
   await act(async () => { input.closest("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
 }
 describe("private chat pending continuity", () => {
+  it("keeps the household Home freshness warning visible when chat opens", async () => {
+    const h = configureHouseholdFund(catalogHousehold(), { custodianMemberId: "MEM-001", createdBy: "MEM-001", openedOn: "2026-09-01" }).household;
+    await act(async () => root.render(createElement(HerculesPresence, {
+      household: h,
+      today: "2026-09-10",
+      tab: "home",
+      adding: false,
+      memberId: "MEM-001",
+      view: "household",
+      freshness: "offline",
+      onOpenAdd: vi.fn(),
+      onGo: vi.fn(),
+      onLedger: vi.fn(),
+      onCompanionCommand: vi.fn(),
+      onOpenSource: vi.fn(),
+    })));
+    await act(async () => (host.querySelector(".hercules-pill") as HTMLButtonElement).click());
+    expect(host.textContent).toMatch(/offline|may have changed elsewhere/i);
+  });
+
   it("keeps talking and includes the complete pending exchange before cloud ACK", async () => {
     const requests: Record<string, any>[] = [];
     vi.stubGlobal("fetch", vi.fn(async (_url, init) => {
