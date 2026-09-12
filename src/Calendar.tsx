@@ -806,7 +806,7 @@ function CalendarPageScope(props: CalendarProps) {
             <h2>Google calendars</h2>
             <span className={`pill ${accounts.length ? "good" : ""}`}>{accounts.length ? `${accounts.length} connected` : "Optional"}</span>
           </header>
-          <Whisper mode="line">Reads your Google calendars in this browser only. Never posts money.</Whisper>
+          <Whisper mode="line">Reads your Google calendars in this browser only. They never post money.</Whisper>
           <Whisper mode="aside" id="calendar.google">Connect Calendar separately from Hearth sign-in. Hearth reads your own calendars and any shared with your Google account, including shared household calendars. Events appear only in your current browser.</Whisper>
           {household.members.filter((member) => member.active && member.id === props.memberId).sort((left, right) => {
             if (left.id === props.memberId) return -1;
