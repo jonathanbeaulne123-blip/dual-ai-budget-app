@@ -687,6 +687,10 @@ export function App() {
   const pendingDemoAcceptanceRef = useRef<Promise<CommandOutcome | null> | null>(null);
   const pendingDemoFramesRef = useRef<number[]>([]);
   const [tab, setTab] = useState<Tab>("home");
+  const currentTabRef = useRef<Tab>(tab);
+  currentTabRef.current = tab;
+  const secondaryOrigin = useRef<Tab>("home");
+  const secondaryTrigger = useRef<HTMLElement | null>(null);
   const [charterFoundingOpen, setCharterFoundingOpen] = useState(false);
   const [, setOnboardingInviteDismissedState] = useState<OnboardingModeState | null>(null);
   const [charterPageOpen, setCharterPageOpen] = useState(false);
@@ -825,7 +829,7 @@ export function App() {
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
   const [playInitialArea,setPlayInitialArea]=useState<"dressing"|undefined>();
-  useEffect(()=>{if(!PLAY_ENABLED)return;const open=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.environment===environment&&detail.householdId===household?.householdId&&detail.memberId===session?.memberId){event.stopImmediatePropagation();setPlayInitialArea("dressing");setTab("play");}};window.addEventListener('hearth:open-fitting',open,true);return()=>window.removeEventListener('hearth:open-fitting',open,true);},[environment,household?.householdId,session?.memberId]);
+  useEffect(()=>{if(!PLAY_ENABLED)return;const open=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.environment===environment&&detail.householdId===household?.householdId&&detail.memberId===session?.memberId){event.stopImmediatePropagation();if (!["planner", "timeMachine", "hercules", "play"].includes(currentTabRef.current)) { secondaryOrigin.current = currentTabRef.current; secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; } setPlayInitialArea("dressing");setTab("play");}};window.addEventListener('hearth:open-fitting',open,true);return()=>window.removeEventListener('hearth:open-fitting',open,true);},[environment,household?.householdId,session?.memberId]);
   useEffect(() => {
     const source = herculesSourceFocus;
     if (!source || source.view !== session?.view || source.route !== tab || herculesSourceScope.current !== `${environment}:${household?.householdId}:${session?.memberId}:${session?.view}`) return;
@@ -6130,6 +6134,10 @@ export function App() {
   }
 
   function goTab(next: Tab) {
+    if (["planner", "timeMachine", "hercules", "play"].includes(next) && !["planner", "timeMachine", "hercules", "play"].includes(tab)) {
+      secondaryOrigin.current = tab;
+      secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    }
     if(next === "play" && !PLAY_ENABLED)next="together";
     clearWorkHandoff(window.sessionStorage);
     preloadTab(next);
@@ -6473,6 +6481,7 @@ export function App() {
 
   return (
     <WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
+      {["planner", "timeMachine", "hercules", "play"].includes(tab) && <button type="button" className="secondary-back chip" onClick={() => {goTab(secondaryOrigin.current); requestAnimationFrame(() => {if (secondaryTrigger.current?.isConnected) secondaryTrigger.current.focus(); else { const target = document.querySelector<HTMLElement>('nav.nav button[aria-current="page"]') ?? document.querySelector<HTMLElement>('.app'); if (target) { if (!target.hasAttribute("tabindex")) target.tabIndex = -1; target.focus(); } }});}}>Back to {secondaryOrigin.current === "ledger" ? "Books" : secondaryOrigin.current === "more" ? "Status Centre" : secondaryOrigin.current === "plan" ? "Plan" : secondaryOrigin.current === "together" ? "Together" : secondaryOrigin.current === "calendar" ? "Calendar" : secondaryOrigin.current === "shift" ? "Shifts" : secondaryOrigin.current === "till" ? "Till" : "Home"}</button>}
       {charterFoundingVisible && household && session ? (
         <CharterFounding
           household={household}
@@ -7175,8 +7184,8 @@ export function App() {
       )}
 
       {tab === "more" && (
-        <div className="more-surfaces status-centre">{PLAY_ENABLED && <button type="button" className="play-status-entry" onClick={()=>goTab("play")}>✧ Hercules Play — dressing, portraits & curiosities</button>}
-          <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1><p className="muted">Health, sources, household, privacy, comfort, and help. Everyday work lives on its own page.</p></header>
+        <div className="more-surfaces status-centre">
+          <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1></header>
           <StatusFold id="needs-us" title="Needs us" defaultOpen forceOpen={appNeedsAttention}>
           <section className="card more-sync-help" id="hearth-sync-help" tabIndex={-1}>
             <header>
@@ -8680,7 +8689,7 @@ export function App() {
           {view === "household" ? "Our Path" : "Plan"}
         </button>
         )}
-        {PLAY_ENABLED && <button type="button" className={`play-desktop-entry ${tab === "play" ? "active" : ""}`} aria-current={tab === "play" ? "page" : undefined} onClick={()=>goTab("play")}>Play</button>}
+
         {kitchenPrimaryNav(view).includes("together") && <button className={tab === "together" ? "active" : ""} aria-current={tab === "together" ? "page" : undefined} onClick={() => goTab("together")}>Together</button>}
         {kitchenPrimaryNav(view).includes("more") && (
         <button

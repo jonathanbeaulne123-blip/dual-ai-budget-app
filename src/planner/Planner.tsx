@@ -185,7 +185,7 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
     <header className="planner__head">
       <p className="kicker">{view === "household" ? "Our week" : "My week"}</p>
       <h1 id="planner-title">Planner</h1>
-      <p className="planner__lede">Things to do, with what they cost. A tick is for the vet; money completes by its receipt.</p>
+      <p className="planner__lede">Tick off tasks. Money items complete only with a receipt.</p>
     </header>
     <form className="planner-capture" onSubmit={submitCapture}>
       <label htmlFor="planner-capture">Add something</label>

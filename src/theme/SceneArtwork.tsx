@@ -4,7 +4,7 @@ import { MoreHeadingArtwork } from "./MoreArtwork.tsx";
 import { PlanHeadingArtwork } from "./PlanArtwork.tsx";
 import { CalendarHeadingArtwork } from "./CalendarArtwork.tsx";
 import { HomeArtwork } from "./LivingArtwork.tsx";
-import { EraBracelet } from "./PageWorld.tsx";
+
 import { MEMORABILIA } from "./memorabilia.ts";
 import type { SceneRoute, ThemeScene } from "./scenes.ts";
 import { useAppearance } from "./ThemeProvider.tsx";
@@ -220,8 +220,6 @@ export function SceneArtwork({ scene }: { scene: ThemeScene }) {
 }
 export function ThemeSceneHeading({ home = false, calendar = false, plan = false, more = false, books = false }: { home?: boolean; calendar?: boolean; plan?: boolean; more?: boolean; books?: boolean }) {
   const { scene } = useAppearance();
-  const hasWrappedKeepsake = home || calendar || plan || more || books;
-  const page: SceneRoute = books ? "ledger" : more ? "more" : plan ? "plan" : calendar ? "calendar" : "home";
   const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   useEffect(() => {
@@ -236,7 +234,6 @@ export function ThemeSceneHeading({ home = false, calendar = false, plan = false
     {plan && scene.id === "summit" && <img className="plan-cannon-sticker" src="/theme-art/plan-cannon.webp" alt="Simple clip-art illustration of Jonathan sitting on the cannon at Signal Hill" width="240" height="160" />}
     {calendar && scene.id === "cape-spear" && <img className="calendar-couple" src="/theme-art/calendar-cape-couple.webp" alt="Clip-art illustration of Jonathan and Bianca at Cape Spear" />}
     <div className="theme-scene-copy"><span className="theme-scene-kicker">{scene.theme === "taylor" ? "A page from our scrapbook" : scene.theme === "newfoundland" ? "A little Newfoundland" : "Welcome home"}</span><p className="theme-scene-title">{scene.title}</p><p className="theme-scene-caption">{scene.caption}</p></div>
-    {hasWrappedKeepsake ? <div className="desktop-title-bracelets"><WrappedFriendshipBracelets page={page} scene={scene}/><EraBracelet /></div> : <EraBracelet />}
     <AtmosphereControl />
   </section>;
 }

@@ -12,7 +12,7 @@ import { join, relative } from "node:path";
 
 export const LONG_LINE = 120;
 export const WHISPER_LINE_MAX = 90;
-const DISCLOSED_TAGS = new Set(["details", "Whisper", "summary", "WhyAside"]);
+const DISCLOSED_TAGS = new Set(["details", "RememberedDetails", "Whisper", "summary", "WhyAside"]);
 
 export function listComponentFiles(root = "src") {
   const out = [];

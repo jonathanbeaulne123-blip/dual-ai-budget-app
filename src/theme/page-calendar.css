@@ -66,7 +66,6 @@
  :root[data-world-page="calendar"] .calendar-stage[data-calendar-pane="board"] .calendar-card { border-left:10px double var(--theme-second); }
  :root[data-world-page="calendar"] .calendar-stage[data-calendar-pane="board"] .calendar-binding-rings { display:none; }
  :root[data-world-page="calendar"] .theme-scene-heading>.era-light { display:none; }
- :root[data-world-page="calendar"] .desktop-title-bracelets { display:flex; }
  :root[data-world-page="calendar"] .calendar-stage>.pulse-banner { margin-bottom:22px; }
  :root[data-world-page="calendar"] .calendar-couple { width:170px; height:215px; right:24%; }
 }
@@ -112,8 +111,6 @@
 @media(min-width:720px) and (max-width:1099px) {
  :root[data-scene="cape-spear"][data-world-page="calendar"] .theme-scene-copy { max-width:43%; }
  :root[data-world-page="calendar"] .calendar-couple { right:27%; width:90px; height:140px; bottom:8px; }
- :root[data-world-page="calendar"] .desktop-title-bracelets { width:180px; align-self:flex-start; }
- :root[data-world-page="calendar"] .desktop-title-bracelets .friendship-bracelets { width:140px; }
 }
 
 :root[data-world-page="calendar"] .theme-scene-heading[data-calendar-scene] { background:linear-gradient(110deg,var(--paper),var(--card)); }

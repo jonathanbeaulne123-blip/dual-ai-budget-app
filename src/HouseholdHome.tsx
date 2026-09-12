@@ -79,7 +79,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
             {pulse.amountCents !== null && <span className="fund-pulse__amount">{formatCad(pulse.amountCents)} is the amount this is about.</span>}
           </span>
         </button>
-        <p className="fund-pulse__source">About {fundName}'s plan — never about the two of you.</p>
+        <p className="fund-pulse__source">{fundName}'s plan.</p>
       </section>
 
       <ChapterMoment household={household} memberId={memberId} today={today} onOpenPath={() => onGo("plan")} onOpenSetup={onOpenSetup} onCommand={onCommand} busy={busy} />
@@ -92,7 +92,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
             {obligations.map((row) => <li key={row.id}><span>{row.label}</span><span className="muted">{row.date}</span><span className="home-amount">{formatCad(row.amountCents)}</span></li>)}
             {planned.map((row) => <li key={row.id} className="is-planned"><span>{row.title}</span><span className="muted">{row.date} · planned, not posted</span><span className="home-amount">{formatCad(row.expectedAmountCents)}</span></li>)}
           </ul>
-          <button type="button" className="home-door" onClick={() => onGo("calendar")}>All dates and bills</button>
+
         </section>
       )}
 
@@ -119,9 +119,9 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
               );
             })}
           </ul>
-        ) : <p className="home-bank-empty">Give something you are saving for a Kitty Bank of its own.</p>}
+        ) : <p className="home-bank-empty">Create a Kitty Bank for a shared goal.</p>}
         <button type="button" className="home-door" onClick={() => setBankRequest({})}>{allBanks.length > 2 ? `See all ${allBanks.length} Kitty Banks in the 3D gallery` : banks.length ? "Open the 3D gallery" : "Create a Kitty Bank"}</button>
-        <p className="home-bank-hint">Contribute or move money inside a bank, then review and confirm.</p>
+        <p className="home-bank-hint">Review and confirm contributions inside a bank.</p>
       </section>
       {bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
         identity={`${household.environment}:${household.householdId}:${memberId}:household`}
@@ -142,7 +142,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
           <h3>{win.title}</h3>
           {memoryComplete ? <p className="muted">Kept as a Memory{win.authoredNote ? ` — “${win.authoredNote}”` : ""}.</p> : (
             <div className="chapter-actions">
-              {memberKeptMemory ? <p className="muted">You chose to keep this. It becomes a shared Memory when your partner chooses too.</p> : <>
+              {memberKeptMemory ? <p className="muted">Kept by you. Shared when your partner agrees.</p> : <>
                 <button type="button" disabled={busy} onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: win.id }))}>Keep as a Memory</button>
                 {win.keptByMemberIds.length === 0 ? <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button> : null}
               </>}
@@ -152,6 +152,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
       )}
 
       <nav className="home-doors" aria-label="Ways deeper">
+        <button type="button" onClick={() => onGo("calendar")}><strong>Calendar</strong><small>Dates and bills</small></button>
         <button type="button" onClick={() => onGo("ledger")}><strong>{fundName}</strong><small>What is true</small></button>
         <button type="button" onClick={() => onGo("plan")}><strong>Our Path</strong><small>Where we are going</small></button>
         <button type="button" onClick={() => onGo("together")}><strong>Together</strong><small>What needs us</small></button>

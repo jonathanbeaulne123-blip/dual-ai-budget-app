@@ -1,3 +1,4 @@
+import { WrappedFriendshipBracelets } from "./SceneArtwork.tsx";
 import { useState, type CSSProperties } from "react";
 import { useAppearance, useAtmosphereVisibility } from "./ThemeProvider.tsx";
 import { Crystal, Heart, Sprig } from "./LivingArtwork.tsx";
@@ -29,9 +30,11 @@ function MarginMotif({index,page}:{index:number;page:SceneRoute}) {
   </svg></div>;
 }
 export function PageWorld({page}:{page:SceneRoute}) {
+  const {scene}=useAppearance();
   const ref=useAtmosphereVisibility();
   if(!REFINED_PAGES.includes(page)) return null;
   return <aside ref={ref} className="page-world-art" aria-hidden="true" data-world-page={page}>
+    <div className="background-keepsake" aria-hidden="true"><WrappedFriendshipBracelets page={page} scene={scene}/><EraBracelet/></div>
     {[0,1,2,3].map(i=><MarginMotif key={i} index={i} page={page}/>)}
     {page==="ledger"?<BooksScenery/>:page==="more"?<MoreScenery/>:page==="home"?<DesktopHomeScenery/>:page==="plan"?<PlanScenery/>:<CalendarScenery/>}<div className="world-light-wash"/><div className="world-paper-grain"/>
   </aside>;

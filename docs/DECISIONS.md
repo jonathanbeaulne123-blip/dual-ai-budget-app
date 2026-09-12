@@ -892,3 +892,12 @@ Jonathan's approved Play plan introduces a dedicated creative room while retaini
 Kitty Bank presentation reuses accepted Plan evidence, separating available reserves, lifetime contributions and planned future contributions. Room interaction cannot post money. Ordinary wardrobe access is open; six exceptional awards add playable activities. Shared portrait records retain creator ownership; room placement references them instead of copying private looks or image blobs. The presentation can be disabled without erasing collections.
 
 Budget delta (5): shared banks are easier to revisit through truthful existing Plan flows. Engagement delta (3): dedicated fitting, household portraits, discovery activities and three room themes. This is local implementation evidence, not hosted continuity certification, release approval or a willingness-to-pay result. See [Hercules Play implementation and acceptance](features/HERCULES_PLAY.md) for detailed scope and outstanding gates.
+
+
+### 2026-09-12 — F-005/F-006/F-003/F-004: quieter pages and truthful Calendar
+
+Jonathan requested one PR across the main pages and Classic, Taylor and Newfoundland, informed by Claude's audit. Calendar now has Calendar, Appointments and Bills tabs, with Dates and Cash flow inside Calendar. Existing Month deep links still open Cash flow. Calendar type uses its existing glyph/edge/hue registry; ownership and status have separate text/symbol carriers. Completed recurring occurrences require live receipt evidence, use the occurrence date, and exist only in the display model; pressure, cash flow, commands and posting remain unchanged. Multi-day runs reserve stable lanes and overflow as complete runs.
+
+Home always offers Calendar. Books has one month-history entry. Secondary destinations offer Back with focus restoration. Play belongs to Together and existing contextual routes. Optional Calendar connections and tools remember disclosure state locally; repeated explanatory copy is shortened without changing confirmation terms. Bracelet pairs are fixed, quiet background discoveries across all three themes; Taylor's extra era motif remains Taylor-only. This supersedes the former prominent title bracelet requirement.
+
+Budget delta (5): clearer scope, receipt status and financial navigation. Engagement delta (3): calmer actions and authored background keepsakes. No new financial writer, recurrence schema, deployment, real household data or external-calendar write. Evidence and remaining acceptance limits: `docs/worksessions/2026-09-12-feedback-four-kinks.md`.

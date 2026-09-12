@@ -15,7 +15,7 @@ export function KindLegend({ kinds, visibility, onToggle, hiddenCount }: {
   onToggle: (layer: KindLayer) => void;
   hiddenCount?: number;
 }) {
-  if (kinds.length === 0) return null;
+  if (kinds.length === 0) return <p className="kind-legend-note">No dates this month. Select a day to add one.</p>;
   const layerLabel = new Map(KIND_LAYERS);
   return (
     <section className="kind-legend" aria-label="What the calendar shows">
