@@ -4,7 +4,7 @@ Jonathan can open a ranked nest from Home or Plan, select exactly one pot, and u
 
 ## Authority and delivery
 
-- Repository: `jonathanbeaulne123-blip/dual-ai-budget-app`; branch `codex/nesting-eggs-f010`; base `5837bbdf253c8e253bcd53b0029fcfbe8bc796a0` after #464.
+- Repository: `jonathanbeaulne123-blip/dual-ai-budget-app`; branch `codex/nesting-eggs-f010`; initial base `5837bbdf253c8e253bcd53b0029fcfbe8bc796a0` after #464; integrated main `1686ccc4a569c99b5a2d92ae8b311b83873e211d` after #465.
 - Decision owner: Jonathan. Implementer/integrator: Codex. Next owner: PR reviewer, then Jonathan for any separately authorized release.
 - High risk: monetary presentation, private cosmetic continuity, command compatibility, onboarding and shared studio rendering.
 - Budget delta (5): exact cents, original Goals/receipts, no new money authority. Engagement delta (3): authored rank, four studio depths, themed props and optional King chapter.

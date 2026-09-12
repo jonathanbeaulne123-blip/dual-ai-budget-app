@@ -69,7 +69,7 @@ describe("Four tiers of nesting banks",()=>{
  });
  it("includes appointments, undated cost tasks and unlinked active Plan costs",()=>{
   let h=planLifeFixture("personal");
-  h=addAppointment(h,{title:"Dental visit",memberId,nextDate:"2026-09-23",cadence:"monthly",typicalCost:100,subcategoryId:"SUB-HEALTH-DENTAL",accountId:"ACC-CHEQUING",sensitivity:"personal"}).household;
+  h=addAppointment(h,{title:"Dental visit",memberId,nextDate:"2026-09-23",cadence:"monthly",typicalCost:100,subcategoryId:"SUB-HEALTH-DENTAL",accountId:"ACC-CHEQUING",sensitivity:"quiet"}).household;
   const appointmentId=h.appointments.at(-1)!.id;
   h=saveTask(h,{memberId,id:"TASK-new-tires",expectedRevision:0,task:{visibility:"personal",title:"New tires",notes:"",listId:null,parentId:null,doDate:null,dueDate:null,repeat:"none",cue:"none",assigneeId:null,backupId:null,chapterId:null,planReference:null,moneyLink:null,expectedAmountCents:50000,deleted:false}}).household;
   const plan=h.planVersions!.find(row=>row.state==="active")!;plan.lines.push({...plan.lines[0]!,id:"unlinked-cost",sourceReference:undefined,labelSnapshot:"School supplies",amountCents:2500});

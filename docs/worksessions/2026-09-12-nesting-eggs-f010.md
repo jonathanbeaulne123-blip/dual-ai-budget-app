@@ -7,6 +7,7 @@
 - **Repository:** dual-ai-budget-app
 - **Branch:** `codex/nesting-eggs-f010`
 - **Baseline SHA:** `5837bbdf253c8e253bcd53b0029fcfbe8bc796a0`
+- **Integrated main:** `1686ccc4a569c99b5a2d92ae8b311b83873e211d` (#465 Hercules Feedback); retained both imports at the one Hercules conflict.
 - **Risk:** High — scope-safe projections, persistent cosmetic continuity, onboarding and financial display semantics
 - **Environment impact:** Development verification only. Delivery is an open PR; merge/deployment are separate.
 
