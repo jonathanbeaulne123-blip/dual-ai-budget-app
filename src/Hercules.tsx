@@ -1,6 +1,7 @@
 import { useEasyRead } from "./useEasyRead.ts";
 import "./ux-readability.css";
 import type { HerculesPlanContext } from "./core/planSystem.ts";
+import type { FundPulseFreshness } from "./core/fundPulse.ts";
 export type PlanHerculesOpenRequest = { id: string; scopeKey: string; isCurrent?: () => boolean; prompt?: string; proposal?: { actionId: string; values: Record<string, string> } };
 import { availableHerculesActions } from './core/herculesActions.ts';
 import { HERCULES_WORKFLOW_CATALOGUE } from "./core/herculesWorkflowCatalogue.ts";
@@ -243,6 +244,7 @@ export function HerculesPresence({
   activityBlocked = false,
   memberId,
   view,
+  freshness,
   onOpenAdd, onDiscoveryNavigate, discoveryAccountId, discoveryFund,
   onGo,
   onLedger, onCompanionCommand,
@@ -278,6 +280,7 @@ export function HerculesPresence({
   activityBlocked?: boolean;
   memberId: string;
   view: LedgerView;
+  freshness?: FundPulseFreshness;
   onDiscoveryNavigate?: (destination: DiscoveryDestination) => void;
   discoveryAccountId?: string | null;
   discoveryFund?: DiscoveryFund | null;
@@ -324,8 +327,8 @@ export function HerculesPresence({
 
   const proposal = useMemo(() => bubbleNotice(household, today), [household, today]);
   const surface = useMemo(
-    () => herculesPageSurface(adding ? "add" : tab, contextHousehold, today, new Date(), { memberId, view }),
-    [adding, tab, contextHousehold, today, memberId, view],
+    () => herculesPageSurface(adding ? "add" : tab, contextHousehold, today, new Date(), { memberId, view, freshness }),
+    [adding, tab, contextHousehold, today, memberId, view, freshness],
   );
   const chatEnabled = import.meta.env.VITE_HERCULES_CHAT !== '0';
   const discoveryEnabled = import.meta.env.VITE_HERCULES_DISCOVERY !== '0';
@@ -1314,7 +1317,7 @@ export function HerculesPresence({
     const instrument = currentInstrument();
     const help = openHelpState({ tab: page, instrument, household: contextHousehold, today, view });
     applyTalk({
-      spoken: "I can help you understand the books, pick up a task, or choose something excellent to wear. What shall we do?",
+      spoken: `${surface.spoken} I can help you understand the books, pick up a task, or choose something excellent to wear. What shall we do?`,
       lesson: null,
       fact: surface.fact,
       replies: discoveryEnabled && onDiscoveryNavigate ? [] : help.replies,

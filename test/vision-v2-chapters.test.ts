@@ -3,6 +3,7 @@ import { acceptHouseholdWrite, catalogHousehold, ensureHouseholdShape, financial
 import { commandIdentityHash } from "../src/core/commandIdentity.ts";
 import {
   FOUNDATION_CHAPTERS,
+  addRitual,
   celebrationLevel,
   closeChapter,
   completeMove,
@@ -26,7 +27,7 @@ import {
 import { CHAPTER_LESSONS, CURRICULUM_BY_CHAPTER, chapterLesson } from "../src/core/planLearning.ts";
 import { PLAN_CURRICULUM } from "../src/core/planSystem.ts";
 import { sitdownBrief } from "../src/core/sitdownBrief.ts";
-import { parseComfort, DEFAULT_COMFORT } from "../src/theme/comfort.ts";
+import { parseComfort, readComfort, DEFAULT_COMFORT } from "../src/theme/comfort.ts";
 import { compactedCommandPayload, primaryCommandRef, receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
 import { applyCommandEventLocally, extractMaterializationFacts, type ContinuityCommandEvent, type ContinuityCommandEventPayload } from "../src/ledger/materializeSnapshotFromEvents.ts";
 
@@ -259,11 +260,21 @@ describe("Lessons and the Sitdown brief", () => {
   });
 
   it("the brief reads only shared-scope evidence and names what needs both", () => {
-    const h = openChapter(catalogHousehold(), { memberId: ME, foundationId: "see-our-shared-life", at: AT }).household;
+    let h = openChapter(catalogHousehold(), { memberId: ME, foundationId: "see-our-shared-life", at: AT }).household;
+    const chapter = openChapterFor(h)!;
+    h = recordRitualHeld(h, { memberId: ME, ritualId: h.rituals![0]!.id, onDate: "2026-09-01", at: AT }).household;
+    h = addRitual(h, { memberId: ME, chapterId: chapter.id, title: "Sunday look-ahead", cue: "weekly", doneDefinition: "We look at the week", at: AT }).household;
+    const second = h.rituals!.find((row) => row.title === "Sunday look-ahead")!;
+    h = recordRitualHeld(h, { memberId: ME, ritualId: second.id, onDate: "2026-09-07", at: AT }).household;
+    h = recordRitualHeld(h, { memberId: ME, ritualId: second.id, onDate: "2026-09-12", at: AT }).household;
     const before = JSON.stringify(h);
     const brief = sitdownBrief(h, { memberId: ME, today: "2026-09-12" });
     expect(JSON.stringify(h)).toBe(before);
     expect(brief.chapter?.title).toBe("See Our Shared Life");
+    expect(brief.settled.map((row) => row.text)).toEqual(expect.arrayContaining([
+      expect.stringMatching(/Bring one shared question to the Sitdown.*1 time/),
+      expect.stringMatching(/Sunday look-ahead.*2 times/),
+    ]));
     expect(typeof brief.underPressure).toBe("boolean");
     for (const item of [...brief.changed, ...brief.settled, ...brief.needsBoth]) expect(item.text).not.toMatch(/owes|behind|failed us|score/i);
   });
@@ -274,5 +285,14 @@ describe("Comfort controls", () => {
     expect(parseComfort(null)).toEqual(DEFAULT_COMFORT);
     expect(parseComfort({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true })).toEqual({ quiet: true, celebration: "soft", motion: "reduced", haptics: false, sound: true });
     expect(parseComfort({ celebration: "loud" }).celebration).toBe("full");
+  });
+
+  it("keeps a legacy device-local clink opt-in until a comfort record replaces it", () => {
+    const storage = new Map<string, string>();
+    storage.set("hearth:v1:clink:development", "on");
+    const fake = { getItem: (key: string) => storage.get(key) ?? null } as Storage;
+    expect(readComfort("development", fake).sound).toBe(true);
+    storage.set("hearth:comfort:v1:development", JSON.stringify({ sound: false }));
+    expect(readComfort("development", fake).sound).toBe(false);
   });
 });

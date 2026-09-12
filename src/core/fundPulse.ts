@@ -73,7 +73,7 @@ export function fundPulse(input: FundPulseInput): FundPulse {
       destination: "fund",
     };
   }
-  if (input.freshness !== "current" || input.reconciliationTied === false) {
+  if (input.freshness !== "current" || input.reconciliationTied !== true) {
     return {
       state: "checking",
       glyph: "○",
@@ -82,7 +82,9 @@ export function fundPulse(input: FundPulseInput): FundPulse {
         ? "This device is offline. The shared picture may have changed elsewhere."
         : input.freshness === "stale"
           ? "The shared picture has not refreshed recently, so nothing here is certain yet."
-          : "The Fund's last reconciliation did not tie. Review it before trusting the balance.",
+          : input.reconciliationTied === null
+            ? "The Fund has not been reconciled yet. Review it before trusting the balance."
+            : "The Fund's last reconciliation did not tie. Review it before trusting the balance.",
       amountCents: null,
       destination: input.freshness === "current" ? "fund" : "status",
     };

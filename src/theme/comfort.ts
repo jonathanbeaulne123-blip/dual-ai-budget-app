@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
 /**
  * Comfort controls (Vision v2 §4.7, §13): independent, per-device choices for
@@ -38,7 +38,8 @@ export function parseComfort(raw: unknown): Comfort {
 export function readComfort(environment: string, storage: Storage | null = safeStorage()): Comfort {
   try {
     const raw = storage?.getItem(comfortKey(environment));
-    return parseComfort(raw ? JSON.parse(raw) : null);
+    if (raw) return parseComfort(JSON.parse(raw));
+    return { ...DEFAULT_COMFORT, sound: storage?.getItem(`hearth:v1:clink:${environment}`) === "on" };
   } catch {
     return DEFAULT_COMFORT;
   }
@@ -65,12 +66,13 @@ const listeners = new Set<() => void>();
 
 export function useComfort(environment: string): [Comfort, (patch: Partial<Comfort>) => void] {
   const [comfort, setComfort] = useState<Comfort>(() => readComfort(environment));
-  useEffect(() => {
+  useLayoutEffect(() => {
     const sync = () => setComfort(readComfort(environment));
+    sync();
     listeners.add(sync);
     return () => { listeners.delete(sync); };
   }, [environment]);
-  useEffect(() => { applyComfort(comfort); }, [comfort]);
+  useLayoutEffect(() => { applyComfort(comfort); }, [comfort]);
   const update = (patch: Partial<Comfort>) => {
     const next = parseComfort({ ...readComfort(environment), ...patch });
     writeComfort(environment, next);

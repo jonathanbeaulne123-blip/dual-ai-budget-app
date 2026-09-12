@@ -42,6 +42,9 @@ export function HouseholdHome({ household, memberId, today, freshness, busy, onC
   const planned = duePotentialExpenses(potentialExpensesForView(household.potentialExpenses, memberId, "household"), today).slice(0, 2);
   const banks = kittyBanksInView(household, "household", memberId).slice(0, 2);
   const win = recentWin(household);
+  const activeMemberIds = household.members.filter((row) => row.active).map((row) => row.id);
+  const memoryComplete = Boolean(win && activeMemberIds.every((id) => win.keptByMemberIds.includes(id)));
+  const memberKeptMemory = Boolean(win?.keptByMemberIds.includes(memberId));
   const fundName = fundDisplayName(household);
   const destinationTab = pulse.destination === "fund" ? "ledger" : pulse.destination === "path" ? "plan" : pulse.destination === "together" ? "together" : "more";
 
@@ -109,10 +112,12 @@ export function HouseholdHome({ household, memberId, today, freshness, busy, onC
         <section className={`home-win home-win--${win.level}`} aria-label="A recent Win">
           <p className="kicker">{win.level === "first" ? "A First" : win.level === "graduation" ? "Graduated" : "A shared Win"}</p>
           <h3>{win.title}</h3>
-          {win.keptByMemberIds.length ? <p className="muted">Kept as a Memory{win.authoredNote ? ` — “${win.authoredNote}”` : ""}.</p> : (
+          {memoryComplete ? <p className="muted">Kept as a Memory{win.authoredNote ? ` — “${win.authoredNote}”` : ""}.</p> : (
             <div className="chapter-actions">
-              <button type="button" disabled={busy} onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: win.id }))}>Keep as a Memory</button>
-              <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button>
+              {memberKeptMemory ? <p className="muted">You chose to keep this. It becomes a shared Memory when your partner chooses too.</p> : <>
+                <button type="button" disabled={busy} onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: win.id }))}>Keep as a Memory</button>
+                {win.keptByMemberIds.length === 0 ? <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button> : null}
+              </>}
             </div>
           )}
         </section>

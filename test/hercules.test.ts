@@ -450,6 +450,12 @@ describe("The Hercules Update", () => {
 
     const surface = herculesPageSurface("home", household, today);
     expect(surface.chips.join(" ")).toMatch(/Mastercard|Visa/);
+    const offlineSurface = herculesPageSurface("home", household, today, new Date(), {
+      memberId: household.members[0]!.id,
+      view: "household",
+      freshness: "offline",
+    });
+    expect(offlineSurface.spoken).toMatch(/offline|may have changed elsewhere/i);
   });
 
   it("excludes partner personal rows from the model ledger excerpt", () => {

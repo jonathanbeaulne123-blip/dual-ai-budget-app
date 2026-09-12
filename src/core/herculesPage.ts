@@ -13,7 +13,7 @@ import type { Household } from "./types.ts";
 import type { LedgerView } from "./types.ts";
 import type { HerculesNumberSource } from "./herculesProvenance.ts";
 import type { InstrumentId } from "./officeLayout.ts";
-import { deriveFundPulseInput, fundPulse } from "./fundPulse.ts";
+import { deriveFundPulseInput, fundPulse, type FundPulseFreshness } from "./fundPulse.ts";
 import { openChapterFor } from "./chapters.ts";
 
 function cardChip(name: string | null | undefined): string {
@@ -49,10 +49,10 @@ export function herculesPageSurface(
   household: Household,
   today: DateKey,
   now = new Date(),
-  context: { memberId: string; view: LedgerView } = { memberId: household.members[0]?.id ?? "", view: "household" },
+  context: { memberId: string; view: LedgerView; freshness?: FundPulseFreshness } = { memberId: household.members[0]?.id ?? "", view: "household" },
 ): HerculesPageSurface {
   const pulseFirst = tab === "home" && context.view === "household"
-    ? (() => { try { const pulse = fundPulse(deriveFundPulseInput(household, { memberId: context.memberId, today, freshness: "current", activeChapter: Boolean(openChapterFor(household)) })); return `${pulse.headline} ${pulse.detail}`; } catch { return null; } })()
+    ? (() => { try { const pulse = fundPulse(deriveFundPulseInput(household, { memberId: context.memberId, today, freshness: context.freshness ?? "stale", activeChapter: Boolean(openChapterFor(household)) })); return `${pulse.headline} ${pulse.detail}`; } catch { return null; } })()
     : null;
   const spoken = pulseFirst ?? herculesPageBrief(household, tab, today, now);
   const month = monthSummary(household, monthKeyFromDateKey(today));

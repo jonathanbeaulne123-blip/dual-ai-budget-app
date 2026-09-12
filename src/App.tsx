@@ -121,7 +121,6 @@ import {
   archivePreset,
   dismissNotice,
   dueRecurrencePreview,
-  readClinkOn,
   requestShiftEnvelope,
   requestCalendarPane,
   seedDemoHousehold,
@@ -466,6 +465,7 @@ import { fundDisplayName, spaceLabel } from "./core/spaceNames.ts";
 import { HouseholdHome } from "./HouseholdHome.tsx";
 import { ChapterRoom } from "./ChapterPanel.tsx";
 import { ComfortControls } from "./theme/ComfortControls.tsx";
+import { useComfort } from "./theme/comfort.ts";
 
 /** Under the Vision v2 Household Home, the Office stays reachable as collapsed instruments rather than the opening composition. */
 function HomeInstruments({ collapsed, children }: { collapsed: boolean; children: ReactNode }) {
@@ -641,6 +641,7 @@ export function App() {
     };
   });
   const [environment, setEnvironment] = useState<Environment>(initialStartup.environment);
+  const [comfort, updateComfort] = useComfort(environment);
   const environmentRef = useRef<Environment>(environment);
   environmentRef.current = environment;
   const replicaScopeGenerationRef = useRef(0);
@@ -2146,7 +2147,7 @@ export function App() {
   useEffect(() => {
     if (useLedgerSync || !household || !activeBooksGate.ready) return;
     touchVisitSpark(environment, todayKey());
-    setClinkOn(readClinkOn(environment));
+    setClinkOn(comfort.sound);
     const memberId = session?.memberId ?? null;
     const signedIn = Boolean(
       memberId && (
@@ -2172,7 +2173,7 @@ export function App() {
     } catch {
       /* soft presence only */
     }
-  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut, activeBooksGate.ready]);
+  }, [environment, household?.householdId, session?.memberId, softPresenceOptOut, activeBooksGate.ready, comfort.sound]);
 
   useEffect(() => {
     if (useLedgerSync || !household || !session?.memberId || !activeBooksGate.ready) {
@@ -4767,12 +4768,8 @@ export function App() {
         if (result.postedIds.some((id) => /^(TXN|SHF)/.test(id))) {
           setSpark(true);
           window.setTimeout(() => setSpark(false), 900);
-          if (readClinkOn(environment)) {
-            playClink();
-            if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
-              navigator.vibrate(10);
-            }
-          }
+          if (comfort.sound) playClink();
+          if (comfort.haptics && typeof navigator !== "undefined" && typeof navigator.vibrate === "function") navigator.vibrate(10);
         }
         if (result.household.activity.at(-1)?.action === "Post Recurring") {
           setVisorPop(true);
@@ -6746,7 +6743,7 @@ export function App() {
           error={error}
           categories={categories}
           postLabel={addPostLabel()}
-          onClinkOn={setClinkOn}
+          onClinkOn={(on) => { setClinkOn(on); updateComfort({ sound: on }); }}
           onForm={setForm}
           onPost={() => submit()}
           onMore={() => {
@@ -8366,6 +8363,7 @@ export function App() {
         activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded)}
         memberId={session.memberId}
         view={view}
+        freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
         onGo={(next) => {
           if (next === "add") {
             openAddFor(null);
