@@ -1,4 +1,5 @@
 import { HouseholdPathHome, HouseholdTogether } from "./HouseholdLife.tsx";
+import { Planner } from "./planner/Planner.tsx";
 import { personalCalendarUpdateAllowed } from "./core/personalCalendarAuthority.ts";
 import {WornLookContext} from './wardrobe/Appearance.tsx';
 import { QuickSamplePanel } from './QuickSamplePanel.tsx';
@@ -186,6 +187,7 @@ import {
   type LedgerView,
   type MonthKey,
   type MonthRehearsalTaskId,
+  suggestCategory,
   type Split,
   type UndoToken,
   type Visibility,
@@ -529,10 +531,14 @@ import {
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
 
-type Tab = "together" | "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
+type Tab = "together" | "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till" | "planner";
 
-function presenceTab(tab: Tab): Exclude<Tab, "till" | "together"> {
-  return tab === "till" ? "home" : tab === "together" ? "more" : tab;
+function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner"> {
+  return tab === "till" || tab === "planner" ? "home" : tab === "together" ? "more" : tab;
+}
+/** Together and the planner borrow the More scene until they earn their own (D-245 keeps the thirteen-file SceneRoute change out of scope). */
+function sceneTab(tab: Tab): Exclude<Tab, "together" | "planner"> {
+  return tab === "together" || tab === "planner" ? "more" : tab;
 }
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
@@ -3311,7 +3317,7 @@ export function App() {
 
   const view: LedgerView = session?.view ?? "household";
   const appearance = useAppearance();
-  useAppearanceBinding(environment, household && session ? tab === "together" ? "more" : tab : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
+  useAppearanceBinding(environment, household && session ? sceneTab(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
     if ((tab === "till" || tab === "together") && view !== "household") setTab("home");
   }, [tab, view]);
@@ -6023,6 +6029,18 @@ export function App() {
       }));
   };
 
+  /** A money task never posts: Record opens the ordinary Add flow prefilled from what the task expects, and ends at Final Confirm. */
+  const openTaskInAdd = (task: import("./core/tasks.ts").Task) => {
+    const guess = suggestCategory(displayHousehold, task.title);
+    openAddFor(null, "expense");
+    setForm(formForAccount(focusedAccountId, {
+      date: task.doDate && task.doDate >= today ? task.doDate : today,
+      amount: task.expectedAmountCents ? (task.expectedAmountCents / 100).toFixed(2) : "",
+      ...(guess && guess.confidence >= 0.5 ? { subcategoryId: guess.subcategoryId } : {}),
+      note: task.title,
+      visibility: task.visibility,
+    }));
+  };
   const openPotentialInAdd = (planId: string, amountOverride?: string) => {
     const current = householdRef.current;
     const plan = current?.potentialExpenses.find((item) => item.id === planId && item.status === "planned");
@@ -6639,14 +6657,14 @@ export function App() {
       </div>
       <div>
         <div className="world-page">
-      <PageWorld page={tab === "together" ? "more" : tab} />
+      <PageWorld page={sceneTab(tab)} />
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(presenceTab(tab)) ? (
         <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
 
       <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger"} />
-      <WorldCharm page={tab === "together" ? "more" : tab} />
+      <WorldCharm page={sceneTab(tab)} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
         <Till
@@ -6666,8 +6684,10 @@ export function App() {
         />
       ) : null}
 
-      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("more")}>Status Centre</button></nav>}
-      {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
+      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>Planner</button><button onClick={() => goTab("more")}>Status Centre</button></nav>}
+      {view !== "household" && <nav className="household-secondary" aria-label="Personal tools"><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>My planner</button></nav>}
+      {tab === "planner" && <Planner household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
+      {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
         <HouseholdHome

@@ -152,3 +152,6 @@
 .shared-boards .reach-check input[type=checkbox] { width: 44px; min-height: 44px; flex: none; }
 .shared-boards .chalk-save-status { display: grid; gap: 8px; padding-top: 12px; color: var(--board-ink); }
 .shared-boards .chalk-compose--live > [role=status] { grid-column: 1 / -1; }
+
+.shared-board-planner-door { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+.shared-board-planner-door button { min-height: 40px; }

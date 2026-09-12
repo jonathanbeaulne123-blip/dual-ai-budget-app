@@ -1,0 +1,145 @@
+/* The planner (D-245). Classic is the base; Taylor's Scrapbook and Newfoundland are authored below. */
+.planner { max-width: 1120px; margin: 0 auto; padding: 16px clamp(12px, 3vw, 28px) calc(var(--nav, 76px) + var(--fund-ledge-height, 0px) + var(--fund-return-height, 0px) + 96px); color: var(--ink); display: grid; gap: 14px; }
+.planner * { box-sizing: border-box; }
+.planner .kicker { margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.planner__head h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 5vw, 36px); margin: 2px 0 4px; line-height: 1.05; }
+.planner__lede { margin: 0; color: var(--muted); font-size: 15px; max-width: 60ch; }
+.planner button, .planner input, .planner select, .planner textarea { font: inherit; color: var(--ink); }
+.planner button { min-height: 44px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); cursor: pointer; }
+.planner button:hover:not(:disabled) { border-color: var(--pine); }
+.planner button:disabled { opacity: .55; cursor: not-allowed; }
+.planner :focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; }
+.planner-link { border: 0 !important; background: none !important; text-decoration: underline; padding: 6px 4px !important; color: var(--muted) !important; }
+.planner-danger { color: var(--danger) !important; }
+.planner__unavailable, .planner-empty { color: var(--muted); margin: 6px 0; }
+.planner-notice { margin: 0; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--pine) 12%, var(--card)); border-left: 3px solid var(--pine); font-size: 14px; }
+.planner-quiet { color: var(--muted); }
+/* Capture */
+.planner-capture { display: grid; gap: 6px; padding: 12px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--lift-0); }
+.planner-capture label { font-size: 13px; color: var(--muted); }
+.planner-capture__row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.planner-capture input { min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); min-width: 0; }
+.planner-capture__understood { margin: 0; font-size: 13px; color: var(--pine); }
+.planner-adopt { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--line); background: var(--paper-2); font-size: 14px; }
+/* Tabs and filters */
+.planner-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.planner-tabs::-webkit-scrollbar { display: none; }
+.planner-tabs button { white-space: nowrap; border-radius: 999px; background: var(--paper-2); }
+.planner-tabs button.is-active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.planner-ownership { display: flex; gap: 6px; flex-wrap: wrap; }
+.planner-ownership button { min-height: 36px; padding: 4px 12px; border-radius: 999px; font-size: 14px; background: transparent; }
+.planner-ownership button.is-active { background: var(--paper-2); border-color: var(--ink); }
+.planner-filter { margin: 0; font-size: 14px; color: var(--muted); }
+/* Affordability */
+.planner-afford { padding: 12px 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); border-top: 3px solid var(--pine); display: grid; gap: 4px; }
+.planner-afford p { margin: 0; font-size: 16px; }
+.planner-afford small { color: var(--muted); }
+/* Lists and rows */
+.planner-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.planner-row { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); }
+.planner-row--task { grid-template-columns: 34px 1fr auto; }
+.planner-row.is-done { opacity: .78; }
+.planner-row.is-done strong { text-decoration: line-through; text-decoration-color: var(--muted); }
+.planner-row.is-overdue { border-left: 3px solid var(--copper); }
+.planner-row__check { width: 30px; height: 30px; min-height: 30px; padding: 0; border-radius: 50%; border: 2px solid var(--pine); background: var(--card); color: var(--paper); font-size: 16px; line-height: 1; display: grid; place-items: center; margin-top: 2px; }
+.planner-row__check[aria-pressed="true"] { background: var(--pine); border-color: var(--pine); }
+.planner-row__mark { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+.planner-row__mark--money { border: 2px solid var(--gold); color: var(--ink); background: color-mix(in srgb, var(--gold) 18%, var(--card)); font-weight: 700; }
+.planner-row.is-done .planner-row__mark--money { background: var(--pine); border-color: var(--pine); color: var(--paper); }
+.planner-row__copy { min-width: 0; display: grid; gap: 2px; }
+.planner-row__copy strong { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.planner-row__meta { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13.5px; color: var(--muted); }
+.planner-row__notes { margin: 2px 0 0; font-size: 13.5px; color: var(--muted); white-space: pre-wrap; }
+.planner-money { font-family: var(--mono); font-size: 13px; }
+.planner-money--good { color: var(--good); }
+.planner-money--warn { color: var(--copper); font-weight: 600; }
+.planner-money--quiet { color: var(--muted); }
+.planner-kind { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; }
+.planner-overdue { color: var(--copper); }
+.planner-row__actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.planner-row__actions button { min-height: 36px; padding: 4px 10px; font-size: 14px; }
+.planner-take { border-color: var(--pine) !important; color: var(--pine); font-weight: 600; }
+.planner-attach { margin-top: 8px; padding: 10px; border-radius: 10px; background: var(--paper-2); display: grid; gap: 6px; font-size: 14px; }
+.planner-attach p { margin: 0; }
+.planner-attach ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.planner-attach li button { width: 100%; text-align: left; }
+/* Week */
+.planner-week { display: grid; gap: 12px; }
+.planner-day { display: grid; gap: 8px; }
+.planner-day h2 { font-family: var(--display); font-weight: 600; font-size: 18px; margin: 4px 0 0; display: flex; gap: 8px; align-items: baseline; }
+.planner-day h2 small { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.planner-day.is-today h2 { color: var(--pine); }
+.planner-month h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 10px 0 6px; }
+.planner-month h2 small { font-family: var(--font); font-size: 14px; color: var(--muted); font-weight: 400; }
+/* Lists tab */
+.planner-lists > ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.planner-lists > ul li { display: flex; gap: 8px; align-items: center; }
+.planner-lists > ul li > button:first-child { flex: 1; text-align: left; display: flex; justify-content: space-between; }
+.planner-lists > ul li > button.is-active { border-color: var(--ink); }
+.planner-lists small { color: var(--muted); }
+.planner-newlist { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 10px; }
+.planner-newlist label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.planner-newlist input { min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); min-width: 0; }
+.planner-coverage { margin-top: 18px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--paper-2); display: grid; gap: 6px; }
+.planner-coverage h2 { margin: 0; font-family: var(--display); font-size: 18px; font-weight: 600; }
+.planner-coverage ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14.5px; }
+.planner-coverage small { color: var(--muted); }
+.planner-add { display: flex; justify-content: flex-start; }
+/* Editor */
+.planner-editor { display: grid; gap: 10px; padding: 14px; border-radius: 14px; background: var(--card); border: 1px solid var(--line); box-shadow: var(--lift-1); }
+.planner-editor h2 { margin: 0; font-family: var(--display); font-size: 20px; font-weight: 600; }
+.planner-editor label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.planner-editor input, .planner-editor select, .planner-editor textarea { min-height: 44px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); min-width: 0; width: 100%; }
+.planner-editor textarea { resize: vertical; }
+.planner-editor__pair { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+.planner-editor__check { display: flex !important; gap: 8px; align-items: center; color: var(--ink) !important; font-size: 15px !important; }
+.planner-editor__check input { width: 22px; height: 22px; min-height: 0; accent-color: var(--pine); }
+.planner-editor__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.planner-editor__actions button[type="submit"] { background: var(--pine); color: var(--paper); border-color: var(--pine); }
+@media (max-width: 719px) {
+  .planner-editor__pair, .planner-newlist { grid-template-columns: 1fr; }
+  .planner-row--task { grid-template-columns: 34px 1fr; }
+  .planner-row--task .planner-row__actions { grid-column: 2; justify-content: flex-start; }
+  .planner-capture__row { grid-template-columns: 1fr; }
+}
+@media (min-width: 720px) {
+  .planner-week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .planner-week .planner-day.is-today { grid-column: 1 / -1; }
+}
+@media (min-width: 1000px) {
+  .planner-week { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ---- Classic Hearth: the household table. Pine rule, paper, a ledger tick. ---- */
+:root[data-theme="classic"] .planner-capture { border-top: 3px solid var(--pine); }
+:root[data-theme="classic"] .planner-row--bill { background: linear-gradient(180deg, var(--card), var(--paper)); }
+
+/* ---- Taylor's Scrapbook: pasted cards, tape, hand-set headings. ---- */
+:root[data-theme="taylor"] .planner-row, :root[data-theme="taylor"] .planner-capture, :root[data-theme="taylor"] .planner-afford, :root[data-theme="taylor"] .planner-editor { border-radius: 5px; box-shadow: 2px 3px 0 rgba(60, 42, 20, .12); }
+:root[data-theme="taylor"] .planner-afford { position: relative; transform: rotate(-.35deg); }
+:root[data-theme="taylor"] .planner-afford::before { content: ""; position: absolute; top: -8px; left: 22px; width: 58px; height: 15px; background: rgba(201, 162, 39, .38); transform: rotate(-3deg); border-radius: 2px; }
+:root[data-theme="taylor"] .planner-tabs button.is-active { background: var(--copper); border-color: var(--copper); }
+:root[data-theme="taylor"] .planner-day h2 { font-style: italic; }
+:root[data-theme="taylor"] .planner-row__check { border-radius: 4px; }
+:root[data-theme="taylor"] .planner-row__mark--money { border-radius: 4px; }
+
+/* ---- Newfoundland: a harbour. Horizon line, cool wayfinding, weather stays outside the decision. ---- */
+:root[data-theme="newfoundland"] .planner-afford { border-radius: 10px; border-top: 0; background: linear-gradient(180deg, var(--card) 0 68%, var(--paper-2) 68%); border-left: 4px solid var(--glass-night, #26303a); }
+:root[data-theme="newfoundland"] .planner-row { border-radius: 8px; border-left: 3px solid var(--glass-rain, #9fb0b5); }
+:root[data-theme="newfoundland"] .planner-row.is-overdue { border-left-color: var(--copper); }
+:root[data-theme="newfoundland"] .planner-row--task.is-money { border-left-color: var(--gold); }
+:root[data-theme="newfoundland"] .planner-tabs button.is-active { background: var(--glass-night, #26303a); border-color: var(--glass-night, #26303a); }
+:root[data-theme="newfoundland"] .planner-capture { border-radius: 8px; border-left: 4px solid var(--pine); }
+:root[data-theme="newfoundland"] .planner-day h2 { letter-spacing: .01em; }
+
+/* Quiet, forced colours, reduced motion. */
+:root[data-quiet="true"] .planner-afford::before { display: none; }
+:root[data-quiet="true"] .planner-afford { transform: none; }
+@media (forced-colors: active) {
+  .planner-row, .planner-capture, .planner-afford, .planner-editor, .planner-row__check, .planner-row__mark--money { border: 1px solid CanvasText; }
+  .planner-tabs button.is-active { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="taylor"] .planner-afford { transform: none; }
+  .planner * { transition: none !important; animation: none !important; }
+}

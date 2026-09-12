@@ -24,6 +24,8 @@ export type SharedBoardsProps = {
   household: Household; memberId: string; today: string; busy: boolean; view?: LedgerView;
   scenarioSource?: ScenarioSourceContext | null;
   onCommand: KitchenCommand; onOpenGoals: () => void;
+  /** The planner (D-245) is where to-dos live now; this page keeps the seed list and a door. */
+  onOpenPlanner?: () => void;
 };
 
 // A scope change retires drafts; a page/theme change deliberately does not.
@@ -39,7 +41,7 @@ const interactive = 'button,a,input,textarea,select,canvas,summary,video,audio,[
 function canSwipe(target: EventTarget | null) {
   return target instanceof Element && !target.closest(interactive);
 }
-function SharedBoardsSession({ scope, household, memberId, today, busy, view = "household", scenarioSource, onCommand, onOpenGoals }: SharedBoardsProps & { scope: SharedBoardScope }) {
+function SharedBoardsSession({ scope, household, memberId, today, busy, view = "household", scenarioSource, onCommand, onOpenGoals, onOpenPlanner }: SharedBoardsProps & { scope: SharedBoardScope }) {
   const allowedAsk = askBelongsOnDesk(memberId, household.householdFund?.custodianMemberId);
   const available = pages;
   const [phone, setPhone] = useState(() => typeof window !== "undefined" && window.innerWidth < 720);
@@ -94,7 +96,7 @@ function SharedBoardsSession({ scope, household, memberId, today, busy, view = "
   const content: Record<SharedBoard, ReactNode> = {
     notes: <ChalkboardBody liveSurface typingAlternative household={household} memberId={memberId} busy={busy} onCommand={command} />,
     photos: <BoardPhotos household={household} memberId={memberId} busy={busy} onCommand={command} />,
-    tasks: <BoardList kind="task" rows={boards.tasks} household={household} memberId={memberId} busy={busy} onCommand={command} />,
+    tasks: <>{onOpenPlanner && <p className="shared-board-planner-door"><button type="button" onClick={onOpenPlanner}>Open the planner</button> <span>Tasks with costs, the week you can afford, and the logbook live there.</span></p>}<BoardList kind="task" rows={boards.tasks} household={household} memberId={memberId} busy={busy} onCommand={command} /></>,
     goals: <><BoardList kind="milestone" rows={boards.milestones} household={household} memberId={memberId} busy={busy} onCommand={command} />
       <section className="shared-board-savings" aria-label="Shared savings goals"><h3>Saving together</h3>
         {household.goals.filter(goal => goal.shared && goal.status !== "retired").map(goal => <article key={goal.id} className="shared-board-goal">
