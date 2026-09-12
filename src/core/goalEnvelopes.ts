@@ -7,6 +7,12 @@ import {
 import { activeHouseholdFundEvents } from "./householdFund.ts";
 import { goalVisibleInView, isVisibleInView } from "./visibility.ts";
 import {
+  assertKittyStudioTransition,
+  displayedKittyPiece,
+  kittyGlazeForBase,
+  shapeKittyStudio,
+} from "./kittyStudio.ts";
+import {
   ValidationError,
   type Goal,
   type GoalEnvelope,
@@ -47,13 +53,21 @@ export function shapeGoalEnvelope(value: unknown): GoalEnvelope | undefined {
     throw new ValidationError(
       "This Kitty Bank needs a compatible envelope reader. Reload Hearth.",
     );
+  const studio = shapeKittyStudio(row.studio);
+  // Legacy readers (shelf seals, `.kitty-seal`) keep working: the displayed
+  // piece's dip colour wins whenever it is one of the five named glazes.
+  const displayedBase = displayedKittyPiece(studio)?.paint.base;
+  const glaze =
+    (displayedBase !== undefined && kittyGlazeForBase(displayedBase)) ||
+    row.glaze;
   return {
     version: 1,
     kind: row.kind,
     purpose: row.purpose,
     refill: row.refill,
-    glaze: row.glaze,
+    glaze,
     archivedAt: row.archivedAt,
+    ...(studio !== undefined ? { studio } : {}),
   };
 }
 export function goalEnvelopeDependencies(
@@ -447,6 +461,7 @@ export function assertGoalEnvelopeTransition(
       throw new ValidationError(
         "An accepted envelope cannot disappear or change owner. Archive it instead.",
       );
+    assertKittyStudioTransition(goal.envelope!.studio, current.envelope.studio);
   }
   for (const row of previous.goalPurchases ?? [])
     if (

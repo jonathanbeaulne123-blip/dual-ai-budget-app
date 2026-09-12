@@ -17,6 +17,7 @@ import {
 } from "../src/core/index.ts";
 import {
   defaultGoalEnvelope,
+  shapeGoalEnvelope,
   goalEnvelopeUsedCents,
   goalFundReserve,
   assertGoalEnvelopeTransition,
@@ -485,4 +486,42 @@ it("Hercules distinguishes remaining reserve from lifetime contributions", async
   expect(fact.value).toContain("lifetime contributions $300.00");
   expect(fact.source.goalId).toBe(first(h).id);
   expect(result.results[0]!.sentence).not.toContain("% funded");
+});
+
+it("carries studio pieces in the shared half without touching the financial identity or fired pieces", async () => {
+  const { newKittyPiece } = await import("../src/core/kittyStudio.ts");
+  const h = planLifeFixture("household"),
+    goal = first(h);
+  const draft = newKittyPiece("STUDIO-CANARY", "2026-09-11T10:00:00.000Z", "sea-glass");
+  const next = saveGoalEnvelope(h, {
+    goalId: goal.id,
+    expectedUpdatedAt: goal.updatedAt,
+    name: goal.name,
+    target: goal.targetCents / 100,
+    arrivalDate: goal.arrivalDate,
+    envelope: { ...defaultGoalEnvelope(), studio: { version: 1, draft, fired: [] } },
+    createdBy: memberId,
+  }).household;
+  expect(await financialAuditHash(next)).toBe(await financialAuditHash(h));
+  expect(first(next).envelope?.glaze).toBe("sea-glass");
+  const split = splitForSync(next, memberId);
+  expect(JSON.stringify(split.shared)).toContain("STUDIO-CANARY");
+  expect(JSON.stringify(split.personal)).not.toContain("STUDIO-CANARY");
+  const restored = assembleHousehold(split.shared, split.personal);
+  expect(first(restored).envelope?.studio?.draft?.id).toBe("STUDIO-CANARY");
+  const fired = saveGoalEnvelope(next, {
+    goalId: goal.id,
+    expectedUpdatedAt: first(next).updatedAt,
+    name: goal.name,
+    target: goal.targetCents / 100,
+    arrivalDate: goal.arrivalDate,
+    envelope: first(next).envelope!,
+    createdBy: memberId,
+    fire: true,
+  }).household;
+  expect(first(fired).envelope?.studio?.fired[0]?.firedBy).toBe(memberId);
+  const tampered = structuredClone(fired);
+  tampered.goals[0]!.envelope!.studio!.fired[0]!.sculpt.head = "wedge";
+  expect(() => assertGoalEnvelopeTransition(fired, tampered)).toThrow(/final/);
+  expect(shapeGoalEnvelope(defaultGoalEnvelope())?.studio).toBeUndefined();
 });

@@ -3,6 +3,7 @@ import { openGoals } from "./goalVault.ts";
 import { goalVisibleInView } from "./visibility.ts";
 import type { PaperBarRow } from "./officeWide.ts";
 import { activeHouseholdFundEvents, shapeHouseholdFundKittyAllocations } from "./householdFund.ts";
+import { goalFundReserve, goalRemainingClaim } from "./goalEnvelopes.ts";
 import type { Goal, Household, LedgerView } from "./types.ts";
 
 /** Existing goals shown as Kitty Banks. Shared Fund surplus (D-161) uses shared goals only. */
@@ -37,6 +38,25 @@ export function kittyBankStep(goal: Pick<Goal, "savedCents" | "targetCents">): n
   if (fill <= 0) return 0;
   if (fill >= 1) return 10;
   return Math.min(9, Math.floor(fill * 10));
+}
+
+/**
+ * The sculpted cat's size (2026-09-11, Jonathan): current backing toward target
+ * in the same ten steps as the shelf. Composes the existing readers only —
+ * remaining vault claim plus the Fund's reserved earmark over the target — so
+ * growth follows supported money and slims when money is used. Size never
+ * punishes: 0 is simply the resting clay. Unreadable receipts read as 0 rather
+ * than throwing inside a cosmetic view.
+ */
+export function kittyBankBackingStep(h: Household, goal: Goal, asOf: string): number {
+  if (goal.targetCents <= 0) return 0;
+  let backing = 0;
+  try {
+    backing = goalRemainingClaim(h, goal, asOf) + goalFundReserve(h, goal.id, asOf).reservedCents;
+  } catch {
+    return 0;
+  }
+  return kittyBankStep({ savedCents: backing, targetCents: goal.targetCents });
 }
 
 export function kittyBankBars(goals: Goal[], limit = 4): PaperBarRow[] {

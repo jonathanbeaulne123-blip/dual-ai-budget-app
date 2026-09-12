@@ -2192,16 +2192,25 @@ input, select, textarea {
   overflow: visible;
 }
 .paper-bank-body {
-  fill: color-mix(in srgb, var(--card) 82%, var(--gold));
+  fill: var(--kitty-glaze, color-mix(in srgb, var(--card) 82%, var(--gold)));
   stroke: var(--ink);
   stroke-width: 1.6;
+}
+.paper-bank-ear {
+  fill: var(--kitty-head, var(--paper));
+  stroke: var(--ink);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+.paper-bank[data-kitty-fired="true"] .paper-bank-body {
+  stroke-width: 1.2;
 }
 .paper-bank[data-kitty-step="0"] .paper-bank-body {
   fill: none;
   stroke-dasharray: 4 3;
 }
 .paper-bank-lid {
-  fill: color-mix(in srgb, var(--paper) 70%, var(--gold));
+  fill: var(--kitty-head, color-mix(in srgb, var(--paper) 70%, var(--gold)));
   stroke: var(--ink);
   stroke-width: 1.4;
 }

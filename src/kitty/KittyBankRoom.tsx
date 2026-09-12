@@ -12,6 +12,7 @@ import {
   goalVaultCapacity,
   projectHouseholdFund,
   isCashLikeKind,
+  kittyBankBackingStep,
   todayKey,
   type Goal,
   type Household,
@@ -39,6 +40,17 @@ import { ConfirmSheet } from "../Confirm.tsx";
 import { useDialog } from "../useDialog.ts";
 import { useAsyncScope } from "../asyncScope.ts";
 import { KittyStage } from "./KittyStage.tsx";
+import { StudioBench, useKittyStudio } from "./studio/KittyStudio.tsx";
+import { displayedKittyPiece, newKittyPiece } from "../core/kittyStudio.ts";
+import { studioHex } from "./studio/palette.ts";
+import { bisqueHex } from "./studio/paintCanvas.ts";
+/** Seal colour: the displayed studio piece's dip (chalky while unfired), else the legacy glaze. */
+function sealColor(goal: Goal): string {
+  const piece = displayedKittyPiece(goal.envelope?.studio);
+  if (!piece) return KITTY_GLAZES[goal.envelope?.glaze ?? "cream"];
+  const base = piece.paint.parts.body ?? piece.paint.base;
+  return piece.firedAt ? studioHex(base) : bisqueHex(base);
+}
 import type { PlanAsk } from "../PlanLensWorkbench.tsx";
 import "./kitty-room.css";
 
@@ -219,6 +231,7 @@ function Room({
   );
   const [selected, setSelected] = useState(context?.goalId ?? "");
   const [creating, setCreating] = useState(false);
+  const [studioFor, setStudioFor] = useState("");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));
   const visible = all.filter((goal) =>
     filter === "completed"
@@ -443,7 +456,7 @@ function Room({
                 className="kitty-seal"
                 style={
                   {
-                    "--glaze": KITTY_GLAZES[item.envelope?.glaze ?? "cream"],
+                    "--glaze": sealColor(item),
                   } as CSSProperties
                 }
                 aria-hidden="true"
@@ -488,6 +501,7 @@ function Room({
             }, "Bank created. Your new purpose is ready for its first plan.");
             if (saved) {
               setFilter("active");
+              setStudioFor(id);
               select(id);
             }
             return saved;
@@ -504,6 +518,9 @@ function Room({
           context={context}
           busy={busy || saving}
           submitError={error}
+          celebrate={Boolean(receipt)}
+          identity={identity}
+          initialPage={studioFor === goal.id ? "studio" : "bank"}
           run={run}
           readLatest={() => latest.current}
         />
@@ -564,10 +581,17 @@ function CreateBank({
 }) {
   const [name, setName] = useState(""),
     [target, setTarget] = useState(""),
-    [envelope, setEnvelope] = useState(defaultGoalEnvelope());
+    [envelope, setEnvelope] = useState(() => ({
+      ...defaultGoalEnvelope(),
+      studio: {
+        version: 1 as const,
+        draft: newKittyPiece(crypto.randomUUID().slice(0, 8), new Date().toISOString(), "cream"),
+        fired: [],
+      },
+    }));
   return (
     <div className="kitty-room-spread">
-      <KittyStage glaze={envelope.glaze} open={true} name="New bank" />
+      <KittyStage piece={envelope.studio.draft} glaze={envelope.glaze} open={true} name="New bank" />
       <form
         className="kitty-folio"
         onSubmit={(event) => {
@@ -646,7 +670,10 @@ function CreateBank({
             </button>
           )}
         </div>
-        <small>This creates a purpose. It does not assign or move money.</small>
+        <small>
+          This creates a purpose and a lump of clay to shape next. It does not
+          assign or move money.
+        </small>
       </form>
     </div>
   );
@@ -660,6 +687,9 @@ function Bank({
   context,
   busy,
   submitError,
+  celebrate,
+  identity,
+  initialPage,
   run,
   readLatest,
 }: {
@@ -671,6 +701,9 @@ function Bank({
   context?: KittyPlanContext;
   busy: boolean;
   submitError: string;
+  celebrate: boolean;
+  identity: string;
+  initialPage: "bank" | "studio";
   run: (
     command: (h: Household) => CommitResult,
     message: string,
@@ -697,9 +730,9 @@ function Bank({
       );
     }
   };
-  const [page, setPage] = useState<"bank" | "plan" | "money" | "history">(
-      "bank",
-    ),
+  const [page, setPage] = useState<
+      "bank" | "studio" | "plan" | "money" | "history"
+    >(initialPage),
     [open, setOpen] = useState(true),
     [editing, setEditing] = useState(false);
   const [editBasis, setEditBasis] = useState(goal.updatedAt);
@@ -721,6 +754,19 @@ function Bank({
     () => bankEvidence(h, goal, today, memberId, view),
     [h, goal, today, memberId, view],
   );
+  const step = useMemo(
+    () => kittyBankBackingStep(h, goal, today),
+    [h, goal, today],
+  );
+  const studio = useKittyStudio({
+    goal,
+    identity,
+    memberId,
+    envelope: initialEnvelope(goal, context),
+    active: page === "studio",
+    run,
+    readLatest,
+  });
   const linked =
     context?.selection.lines.filter(
       (line) =>
@@ -816,10 +862,25 @@ function Bank({
         className="kitty-room-spread"
         ref={bankRef}
         data-goal-id={goal.id}
+        data-page={page}
         tabIndex={-1}
       >
         <section className="kitty-object">
-          <KittyStage glaze={envelope.glaze} open={open} name={goal.name} />
+          <KittyStage
+            piece={studio.stagePiece}
+            glaze={envelope.glaze}
+            open={open}
+            name={goal.name}
+            step={step}
+            celebrate={celebrate}
+            fired={studio.stageFired}
+            mode={studio.mode}
+            spin={studio.spin}
+            apiRef={studio.apiRef}
+            onPaint={(hit, phase) => studio.onPaintRef.current?.(hit, phase)}
+            onThrow={(dy) => studio.onThrowRef.current?.(dy)}
+            onFlatChange={studio.setFlat}
+          />
           <div className="kitty-nameplate">
             <span>
               {goal.envelope?.kind ?? linked[0]?.lens ?? "Build"} ·{" "}
@@ -869,7 +930,7 @@ function Bank({
         </section>
         <section className="kitty-folio">
           <nav className="kitty-folio-tabs" aria-label="Inside this bank">
-            {(["bank", "plan", "money", "history"] as const).map((value) => (
+            {(["bank", "studio", "plan", "money", "history"] as const).map((value) => (
               <button
                 key={value}
                 aria-current={page === value ? "page" : undefined}
@@ -878,6 +939,7 @@ function Bank({
                 {
                   {
                     bank: "This bank",
+                    studio: "Studio",
                     plan: "Its plan",
                     money: "Use money",
                     history: "History",
@@ -915,6 +977,9 @@ function Bank({
               A past Fund release has no bank identity. Review it in the Fund
               before relying on this bank’s allocation.
             </p>
+          )}
+          {page === "studio" && (
+            <StudioBench state={studio} goal={goal} busy={busy} step={step} />
           )}
           {page === "bank" && (
             <>
