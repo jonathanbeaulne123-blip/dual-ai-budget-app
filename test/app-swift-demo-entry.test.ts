@@ -108,7 +108,7 @@ describe("swift demo entry", () => {
 
   it("paints member choice before starting database acceptance and locks entry until acceptance", async () => {
     act(() => {
-      const open = button(/Open the demo kitchen table/i);
+      const open = button(/Open the demo household table/i);
       open.click();
       open.click();
     });
@@ -136,7 +136,7 @@ describe("swift demo entry", () => {
 
   it("stays on the chooser and re-enables entry when books acceptance fails", async () => {
     acceptance.ok = false;
-    act(() => button(/Open the demo kitchen table/i).click());
+    act(() => button(/Open the demo household table/i).click());
     await act(async () => { await vi.advanceTimersByTimeAsync(34); });
     act(() => button(/I am Jonathan/i).click());
 

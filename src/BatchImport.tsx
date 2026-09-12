@@ -30,6 +30,7 @@ import { scanFinancialDocument } from "./imports/documentScanner.ts";
 import { FlinksConnectPanel } from "./FlinksConnectPanel.tsx";
 import { KitchenNotice } from "./KitchenNotice.tsx";
 import { useDialog } from "./useDialog.ts";
+import { Whisper } from "./theme/Whisper.tsx";
 
 const TABS: Array<{ id: DuplicateTier; label: string; hint: string }> = [
   { id: "confident", label: "Confident", hint: "Over 90% · imported row starts cancelled" },
@@ -522,9 +523,8 @@ export function BatchImportCard({
           <h2>Batch import</h2>
           <span className="pill">Inbox → duplicate review → Confirm</span>
         </header>
-        <p className="muted">
-          Bank exports are parsed on this device. Flinks evidence arrives through the secure Worker inbox, then runs the same duplicate review here. A photo is sent for detection only after you take or choose it; the image is not saved in the household.
-        </p>
+        <Whisper mode="line">Bank exports are read on this device and checked for duplicates here.</Whisper>
+        <Whisper mode="aside" id="import.sources">Flinks evidence arrives through the secure Worker inbox, then runs the same duplicate review. A photo is sent for detection only after you take or choose it; the image is not saved in the household.</Whisper>
         <FlinksConnectPanel
           environment={household.environment}
           householdId={household.householdId}

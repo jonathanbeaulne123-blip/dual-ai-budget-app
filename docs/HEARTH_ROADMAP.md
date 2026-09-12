@@ -16,6 +16,8 @@ Complete wardrobe implementation is in verification: 36 original pieces plus leg
 
 # Hearth living roadmap
 
+**2026-09-12 — Feedback rows 5–7 (D-246) rebased onto planner main:** Calendar kinds, Whisper copy, and one-route chrome land on `origin/main@6fa38aed` (#453). The planner room stays; Household tools and `+` go-verbs stay retired. Together opens the planner. [Worksession](worksessions/2026-09-12-feedback-rows-5-7.md) · [Rebase](worksessions/2026-09-12-feedback-rows-5-7-rebase.md).
+
 **2026-09-12 — The planner (feedback row 9, D-245) implemented locally:** one Task object with money, private tasks, evidence-only completion, agenda and affordability, a Planner room in three themes. Local branch `claude/planner-row-9`; trust review, push, PR, merge and Development deploy pending. [Worksession](worksessions/2026-09-12-planner-row-9.md).
 
 **2026-09-10 — Hercules slice 4 implemented locally behind a flag:** one complete 3D fitting look, shared rig, authored reactions, three-theme room and local recovery. [Evidence](worksessions/2026-09-10-hercules-slice-4.md). Not deployed; likeness/fitting and physical-phone acceptance remain open. Full catalogue and Wear/Save/share are slice 5.

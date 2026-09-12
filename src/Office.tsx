@@ -108,6 +108,7 @@ import { WardrobeBody, wardrobeGlance } from "./widgets/WardrobeDesk.tsx";
 import { HangmanBody, HangmanGlance, TicTacToeBody, TicTacToeGlance } from "./widgets/GamesDesk.tsx";
 import { pullDeskAppearance, pushDeskAppearance } from "./google/index.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
+import { Whisper } from "./theme/Whisper.tsx";
 
 const WIDE = 720;
 
@@ -793,9 +794,9 @@ export function Office({
     ),
     postcard: (index, pair) => frame(
       "postcard",
-      "Sit-down",
+      "Sitdown",
       <PostcardGlance card={postcard} />,
-      `Sit-down. ${postcard.sentence}`,
+      `Sitdown. ${postcard.sentence}`,
       <PostcardBody household={booksHousehold} displayHousehold={household} dashboard={dashboard} view={view} memberId={memberId} card={postcard} onApply={onSitDown} />,
       { index, pair },
     ),
@@ -1095,7 +1096,7 @@ export function Office({
       {sheet === "drawer" && (
         <div className="desk-sheet">
           <h3>Drawer</h3>
-          {breakpoint === "phone" && <p className="muted" id="desktop-desk-limit">Office modes, free placement and size controls apply on a larger screen. Your phone keeps its own layout. Desks and appearance are available here.</p>}
+          {breakpoint === "phone" && <Whisper mode="line" id="desktop-desk-limit" className="muted">Free placement and sizing are for larger screens. Desks and appearance work here.</Whisper>}
           <div className="desk-stock-row">
             <button
               type="button"

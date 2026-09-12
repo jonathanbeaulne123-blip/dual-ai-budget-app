@@ -69,6 +69,8 @@ import {
   householdForView,
   ledgerRouteContract,
   kitchenPrimaryNav,
+  sceneTabFor,
+  type AppTab,
   acceptedHouseholdOnboarding,
   copy,
   showsLedgerPurposeBanner,
@@ -521,6 +523,8 @@ import {
   loadOfficeSurface,
   loadWorkShiftSurface,
 } from "./deferredSurfaces.tsx";
+import { Whisper } from "./theme/Whisper.tsx";
+import { StatusFold } from "./theme/StatusFold.tsx";
 import {
   acceptedSnapshotRebuildCheck,
   booksWriteGate,
@@ -531,14 +535,12 @@ import {
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
 
-type Tab = "together" | "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till" | "planner";
+type Tab = AppTab;
 
 function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner"> {
-  return tab === "till" || tab === "planner" ? "home" : tab === "together" ? "more" : tab;
-}
-/** Together and the planner borrow the More scene until they earn their own (D-245 keeps the thirteen-file SceneRoute change out of scope). */
-function sceneTab(tab: Tab): Exclude<Tab, "together" | "planner"> {
-  return tab === "together" || tab === "planner" ? "more" : tab;
+  if (tab === "planner" || tab === "till") return "home";
+  const scene = sceneTabFor(tab);
+  return scene === "till" ? "home" : scene;
 }
 type WelcomeGoogleIntent = "create" | "login";
 type WelcomeIdentity = ContinuityIdentity & { displayName: string; grantedScopes: string[] };
@@ -3317,7 +3319,7 @@ export function App() {
 
   const view: LedgerView = session?.view ?? "household";
   const appearance = useAppearance();
-  useAppearanceBinding(environment, household && session ? sceneTab(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
+  useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
     if ((tab === "till" || tab === "together") && view !== "household") setTab("home");
   }, [tab, view]);
@@ -3575,7 +3577,7 @@ export function App() {
       const { status } = await ingestHouseholdBooks(candidate);
       if (!status.ok) throw new Error(status.error || "Those books could not be opened on this device.");
       const inspection = await inspectBrowserBooks(candidate);
-      if (!inspection.ok) throw new Error(inspection.message || "Those books do not match the accepted PGlite journal.");
+      if (!inspection.ok) throw new Error(inspection.message || "Those books do not match the accepted journal on this phone.");
       await saveHousehold(candidate, {
         operatingEnvironment: environment,
         memberId: nextMemberId,
@@ -3820,7 +3822,7 @@ export function App() {
     setWelcomeMode("join");
     try {
       if (!supabaseAuthEnabled()) {
-        throw new Error("Auth invites need an Auth-enabled kitchen build.");
+        throw new Error("Auth invites need an Auth-enabled Hearth build.");
       }
       if (!hostedContinuityAllowed(environment)) {
         throw new Error(inviteReasonMessage("continuity-disabled"));
@@ -3988,7 +3990,7 @@ export function App() {
           if (!shouldContinue()) return;
         } else if (!bound.ok && bound.reason === "bind-rpc-missing") {
           throw new Error(
-            "This kitchen needs migration 010 (bind Google memberships) pasted in the Supabase SQL Editor, then Continue with Google again.",
+            "This household needs migration 010 (bind Google memberships) pasted in the Supabase SQL Editor, then Continue with Google again.",
           );
         }
       }
@@ -4555,7 +4557,7 @@ export function App() {
   function openDemoTable(): void {
     if (pendingDemoAcceptanceRef.current) return;
     if (environment !== "development") {
-      setError("The demo kitchen is Development-only.");
+      setError("The demo household is Development-only.");
       return;
     }
     setError("");
@@ -5414,7 +5416,7 @@ export function App() {
       <div className="welcome">
         <ThemeSceneHeading />
         <div className="welcome-card">
-          <p className="kicker">Demo kitchen</p>
+          <p className="kicker">Demo household</p>
           <h1>Choose yourself</h1>
           <p>Hearth is here. The books are opening safely behind this table.</p>
           <KitchenNotice message={error} onDismiss={() => setError("")} />
@@ -5677,7 +5679,7 @@ export function App() {
               <KitchenNotice message={error} onDismiss={() => setError("")} />
               {!welcomeSignedIn && environment === "development" && (
                 <button className="ghost welcome-demo" onClick={openDemoTable}>
-                  Open the demo kitchen table
+                  Open the demo household table
                 </button>
               )}
               {!welcomeSignedIn && environment === "development" && (
@@ -6657,14 +6659,14 @@ export function App() {
       </div>
       <div>
         <div className="world-page">
-      <PageWorld page={sceneTab(tab)} />
+      <PageWorld page={sceneTabFor(tab)} />
       {guard?.kind==='duePreview'&&<a className='due-arrival' href='#due-reminders' onClick={event=>{event.preventDefault();const panel=document.getElementById('due-reminders');panel?.scrollIntoView({block:'start'});panel?.querySelector<HTMLElement>('h2')?.focus({preventScroll:true});}}>Repeating reminders <span>Review →</span></a>}
       {experience && experience.ok && showsLedgerPurposeBanner(presenceTab(tab)) ? (
         <LedgerPurposeBanner tab={presenceTab(tab)} view={view} label={experience.label} />
       ) : null}
 
       <ThemeSceneHeading home={tab === "home"} calendar={tab === "calendar"} plan={tab === "plan"} more={tab === "more"} books={tab === "ledger"} />
-      <WorldCharm page={sceneTab(tab)} />
+      <WorldCharm page={sceneTabFor(tab)} />
 
       {tab === "till" && view === "household" && experience && experience.ok ? (
         <Till
@@ -6684,8 +6686,6 @@ export function App() {
         />
       ) : null}
 
-      {view === "household" && <nav className="household-secondary" aria-label="Household tools"><button onClick={() => goTab("calendar")}>Calendar & bills</button><button onClick={() => goTab("shift")}>Work & shifts</button><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>Planner</button><button onClick={() => goTab("more")}>Status Centre</button></nav>}
-      {view !== "household" && <nav className="household-secondary" aria-label="Personal tools"><button onClick={() => goTab("planner")} aria-current={tab === "planner" ? "page" : undefined}>My planner</button></nav>}
       {tab === "planner" && <Planner household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
       {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
@@ -7103,7 +7103,8 @@ export function App() {
           <section className="close-the-month" aria-label="Close the month">
             <p className="kicker">Close the month</p>
             <h2>Where leftover goes</h2>
-            <p className="muted">A bounded financial action with its own Final Confirm. The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</p>
+            <Whisper mode="line">A bounded action with its own Final Confirm.</Whisper>
+            <Whisper mode="aside" id="books.close-month">The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</Whisper>
             <SitDownGuide
               household={household}
               displayHousehold={displayHousehold}
@@ -7120,7 +7121,7 @@ export function App() {
       {tab === "more" && (
         <div className="more-surfaces status-centre">
           <header className="status-centre__head"><p className="kicker">Status Centre</p><h1>{household && session ? spaceLabel(household, session.memberId, view) : "Hearth"}</h1><p className="muted">Health, sources, household, privacy, comfort, and help. Everyday work lives on its own page.</p></header>
-          <h2 className="status-group" id="status-needs-us">Needs us</h2>
+          <StatusFold id="needs-us" title="Needs us" defaultOpen forceOpen={appNeedsAttention}>
           <section className="card more-sync-help" id="hearth-sync-help" tabIndex={-1}>
             <header>
               <div><p className="kicker">Sync status</p><h2>{appNeedsAttention ? "How to fix it" : "Everything is connected"}</h2></div>
@@ -7191,7 +7192,8 @@ export function App() {
               <p className="muted">Nothing needs repair. Your local books, household sharing, and integrity checks are clear.</p>
             ) : null}
           </section>
-          <h2 className="status-group" id="status-household">Household</h2>
+          </StatusFold>
+          <StatusFold id="household" title="Household">
           {view === "household" ? (
             <section className="card">
               <header><h2>the charter</h2></header>
@@ -7229,9 +7231,8 @@ export function App() {
           {environment === "development" && (
             <section className="card">
               <header><h2>Start from scratch</h2></header>
-              <p className="muted">
-                Deletes leftover Development households this Google account owns, leaves any you only joined, and clears this phone’s Development copies. Production stays.
-              </p>
+              <Whisper mode="line">Deletes this account’s leftover Development households and phone copies. Production stays.</Whisper>
+              <Whisper mode="aside" id="status.start-from-scratch">Households you only joined are left alone.</Whisper>
               <button
                 className="danger"
                 type="button"
@@ -7243,7 +7244,8 @@ export function App() {
               </button>
             </section>
           )}
-          <h2 className="status-group" id="status-your-hearth">Your Hearth</h2>
+          </StatusFold>
+          <StatusFold id="your-hearth" title="Your Hearth">
           <section className="card">
             <header><h2>Account</h2></header>
             <p className="muted">
@@ -7259,10 +7261,12 @@ export function App() {
               Sign out
             </button>
           </section>
-          <h2 className="status-group" id="status-comfort">Appearance and comfort</h2>
+          </StatusFold>
+          <StatusFold id="comfort" title="Appearance and comfort">
           <AppearancePicker />
           <ComfortControls environment={environment} />
-          <h2 className="status-group" id="status-sources">Sources and continuity</h2>
+          </StatusFold>
+          <StatusFold id="sources" title="Sources and continuity">
           <section className="card">
             <header><h2>{view === "household" ? "Household table" : "My books"}</h2></header>
             <p className="muted">
@@ -7440,7 +7444,8 @@ export function App() {
               return accepted.herculesProPermissions ?? { ...permissions, updatedAt: null };
             }}
           />
-          <h2 className="status-group" id="status-privacy">Privacy, devices, and sharing</h2>
+          </StatusFold>
+          <StatusFold id="privacy" title="Privacy, devices, and sharing">
           <section className="card">
             <header><h2>This phone</h2></header>
             <p className="muted">
@@ -7469,10 +7474,8 @@ export function App() {
                 </div>
               </>
             )}
-            <p className="muted" style={{ marginTop: 12 }}>
-              Sign out clears Google and Auth tokens on this phone only. The cloud household stays.
-              Native Keychain storage is a later release note — web builds keep tokens in localStorage until then.
-            </p>
+            <Whisper mode="line" className="status-signout-note">Signs out on this phone only. The cloud household stays.</Whisper>
+            <Whisper mode="aside" id="status.sign-out">Sign out clears Google and Auth tokens here. Web builds keep tokens in localStorage until native Keychain storage lands.</Whisper>
             <button
               className="ghost"
               style={{ width: "100%", marginTop: 8 }}
@@ -7483,9 +7486,8 @@ export function App() {
           </section>
           <section className="card">
             <header><h2>Clock &amp; place</h2></header>
-            <p className="muted">
-              Books civil dates stay America/Toronto. This phone may show another clock zone. Location is optional and off until you enable it here.
-            </p>
+            <Whisper mode="line">Books keep Toronto dates. This phone may show another clock.</Whisper>
+            <Whisper mode="aside" id="status.clock">Location is optional and off until you enable it here.</Whisper>
             <label htmlFor="phone-display-timezone">This phone’s clock</label>
             <select
               id="phone-display-timezone"
@@ -7553,11 +7555,10 @@ export function App() {
               />
               {" "}Share coordinates with Hercules’ model
             </label>
-            <p className="muted" style={{ marginTop: 8 }}>
-              Hosted open Development still treats published snapshots as disclosed until Auth. Model sharing is off unless you check it.
-            </p>
+            <Whisper mode="line">Development books are open until Auth lands. Model sharing is off unless you check it.</Whisper>
           </section>
-          <h2 className="status-group" id="status-help">Help and transparency</h2>
+          </StatusFold>
+          <StatusFold id="help" title="Help and transparency">
           <section className="card hercules-capability-map" aria-labelledby="hercules-map-heading">
             <header><h2 id="hercules-map-heading">What Hercules can see, infer, draft, and never decide</h2></header>
             <ul className="capability-map">
@@ -7569,10 +7570,8 @@ export function App() {
           </section>
           <section className="card storage">
             <header><h2>Where the books live</h2></header>
-            <p className="muted">
-              Commands write PGlite books (<code>{STORAGE_EXPLAINER.books}</code>) and keep a snapshot in IndexedDB.
-              Export follows the active ledger: Shared never includes Personal accounts, Personal rows, or private Fund reconciliation.
-            </p>
+            <Whisper mode="line">Your books live on this phone and follow the active ledger.</Whisper>
+            <Whisper mode="aside" id="status.storage">Commands write the on-phone books engine (<code>{STORAGE_EXPLAINER.books}</code>) and keep a copy in IndexedDB. Export follows the active ledger: Shared never includes Personal accounts, Personal rows, or private Fund reconciliation.</Whisper>
             <button className="primary" onClick={() => {
               if (!experience || !experience.ok) {
                 setError("Choose who is using this ledger before exporting.");
@@ -7580,16 +7579,15 @@ export function App() {
               }
               downloadJson(experience.exportHousehold);
             }}>
-              {view === "personal" ? "Export this Personal folio" : "Export Shared snapshot"}
+              {view === "personal" ? "Export this Personal folio" : "Export Shared books"}
             </button>
             {environment === "development" && <QuickSamplePanel key={`${household.householdId}:${actorId}:${view}`} household={household} memberId={actorId} visibility={view === "personal" ? "personal" : "household"} today={today} busy={busy} onReview={(input, preview) => setGuard({ kind: "quick-sample", input, preview })} />}
             {environment === "development" && (
               <div className="paper-panel sample-data-panel investor-data-panel" data-testid="demo-suite-panel">
                 <p className="kicker">Investor preview · Synthetic Demo Suite</p>
                 <h3>The full twelve-month story</h3>
-                <p className="muted" style={{ marginTop: 4 }}>
-                  A large fictional household with weighted income and spending, shift simulations, goals, claims, schedules and audit checks. Generation and verification take longer. Every run has a replay seed; schedule mail stays proposal-only until Confirm.
-                </p>
+                <Whisper mode="line">A large fictional household; slower to generate. Mail stays proposal-only until Confirm.</Whisper>
+                <Whisper mode="aside" id="status.demo-suite">Weighted income and spending, shift simulations, goals, claims, schedules and audit checks. Every run has a replay seed.</Whisper>
                 {household.syntheticFixture?.kind === "hearth-demo-suite" ? (
                   <p style={{ margin: "8px 0 0" }}><strong>Seed {household.syntheticFixture.seed}</strong> · generator {household.syntheticFixture.version}</p>
                 ) : (
@@ -7705,6 +7703,7 @@ export function App() {
             )}
           </section>
           <AddCategoryForm household={household} onSave={(next, token) => persist(next, token)} />
+          </StatusFold>
         </div>
       )}
 

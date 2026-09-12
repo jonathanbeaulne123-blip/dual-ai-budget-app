@@ -1703,17 +1703,6 @@ input, select, textarea {
 .cal-day.outside { opacity: 0.38; }
 .cal-day.today { border-color: var(--pine); }
 .cal-day.selected { border-color: var(--ink); background: var(--card); }
-.cal-day .dots { display: flex; gap: 3px; flex-wrap: wrap; }
-.cal-day .dots i {
-  width: 6px;
-  height: 6px;
-  border-radius: 99px;
-  background: var(--copper);
-  display: block;
-}
-.cal-day .dots i.in { background: var(--pine); }
-.cal-day .dots i.work { background: var(--gold); }
-.cal-day .dots i.busy { background: #6b6258; }
 .cal-titles {
   display: flex;
   flex-direction: column;
@@ -1731,16 +1720,7 @@ input, select, textarea {
   color: var(--ink);
   text-align: left;
 }
-.cal-title.out { color: var(--copper); }
-.cal-title.in { color: var(--pine-2); }
-.cal-title.kind-paycheck, .cal-title.kind-work-pay { color: #6b4e12; }
-.cal-title.kind-subscription { color: var(--pine-2); }
-.cal-title.kind-bill, .cal-title.kind-detected { color: var(--danger); }
-.cal-title.kind-shift, .cal-title.kind-work-tip { color: #3a4a6b; }
-.cal-title.kind-google { color: #243c6b; }
-.cal-title.kind-visit { color: #5a2d6b; }
-.cal-title.kind-claim { color: #1d4a3a; }
-.cal-title.kind-work-tipout { color: #6b3a2a; }
+/* Kind meaning (glyph, edge, hue) lives in src/theme/kinds.css from one registry; direction never recolours the title. */
 .cal-title.more { color: var(--muted); font-weight: 700; }
 .kind-pill {
   display: inline-block;
@@ -1753,13 +1733,6 @@ input, select, textarea {
   background: var(--paper-2);
   color: var(--muted);
 }
-.kind-pill.bill, .kind-pill.detected { background: #f4d7d0; color: var(--danger); }
-.kind-pill.subscription { background: #dceadf; color: var(--pine-2); }
-.kind-pill.paycheck { background: #efe4c8; color: #6b4e12; }
-.kind-pill.shift { background: #ebe4d6; }
-.kind-pill.google { background: #dce4f4; color: #243c6b; }
-.kind-pill.visit { background: #e8d5ef; color: #5a2d6b; }
-.kind-pill.claim { background: #d7ebe4; color: #1d4a3a; }
 .rhythm-card {
   border-top: 1px solid var(--line);
   padding: 10px 0 4px;

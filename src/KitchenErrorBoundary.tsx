@@ -60,7 +60,7 @@ export class KitchenErrorBoundary extends Component<Props, State> {
       <div className="welcome kitchen-error-fallback" data-kitchen-recovery="1">
         <div className="welcome-card">
           <p className="kicker">On this device</p>
-          <h1>The kitchen could not open</h1>
+          <h1>Hearth could not open</h1>
           <p>
             Opening this household hit a bug. Nothing was posted. Reload, or sign out of Google. If it keeps happening, open welcome.
           </p>

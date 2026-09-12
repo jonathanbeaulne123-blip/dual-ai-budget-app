@@ -1,15 +1,11 @@
 import type { BoardItem } from "../core/board.ts";
+import { KIND_LAYERS, kindLayerFor, type KindLayer } from "./semantics.ts";
 
-export const calendarLayers = [
-  ["bill", "Bills"], ["paycheck", "Paycheques"], ["subscription", "Subscriptions"],
-  ["potential-expense", "Potential expenses"], ["event", "Hearth events"],
-  ["work", "Shifts and work pay"], ["visit", "Appointments and claims"],
-  ["detected", "Suggested patterns"], ["other", "Other reminders"], ["google", "Google events"],
-] as const;
+/** The filter list is the registry's layer list: one enumeration for kinds, legend and toggles. */
+export const calendarLayers = KIND_LAYERS;
 export type CalendarVisibility = Record<string, boolean>;
 export function calendarItemVisible(item: BoardItem, visibility: CalendarVisibility): boolean {
-  const layer = item.source === "work-settlement" || item.source === "shift" || item.source === "shift-envelope" ? "work"
-    : item.source === "appointment" || item.source === "claim" ? "visit" : item.kind;
+  const layer: KindLayer = kindLayerFor(item);
   return visibility[layer] !== false && (item.source !== "google" || !item.calendarId || visibility[`google:${item.calendarId}`] !== false);
 }
 export function loadCalendarVisibility(key: string): CalendarVisibility {

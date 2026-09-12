@@ -27,6 +27,7 @@ import {
 import { importSevenShiftsFromGmail, type GmailSevenShiftsImportProgress } from "./google/gmailSevenShifts.ts";
 import { coworkerRosterDraft, type CoworkerRosterImportDraft } from "./imports/coworkerRosterDraft.ts";
 import { approvedPunchShiftDrafts, type ApprovedPunchShiftDraft } from "./imports/evidenceShiftDraft.ts";
+import { Whisper } from "./theme/Whisper.tsx";
 
 function captureKind(file: File): string {
   const name = file.name.toLowerCase();
@@ -385,7 +386,7 @@ export function SevenShiftsEvidenceCenter({
         </div>
         <span className={`pill ${available ? "" : "proj"}`}>{available ? `${household.environment === "production" ? "Production" : "Development"} ready` : "Disabled"}</span>
       </header>
-      <p className="muted">{detail} Raw captures stay outside the household snapshot and books. Schedule rows remain outlook only.</p>
+      <p className="muted">{detail} Raw captures stay outside the household books. Schedule rows remain outlook only.</p>
       <p className="muted">Scope: {memberName} · {household.environment} · {today}</p>
       {error ? <p className="error" role="alert">{error}</p> : null}
       {notice ? <p className="preview" role="status">{notice}</p> : null}
@@ -394,7 +395,7 @@ export function SevenShiftsEvidenceCenter({
         <article>
           <p className="kicker">Selected files and screens</p>
           <h3>Add authorized evidence</h3>
-          <p className="muted">JSON, CSV, ICS, PDF, screenshots, and shared files up to 10 MB. Hearth encrypts the complete source before normalization.</p>
+          <Whisper mode="line">JSON, CSV, ICS, PDF, screenshots or shared files up to 10 MB.</Whisper><Whisper mode="aside" id="evidence.add">Hearth encrypts the complete source before normalization.</Whisper>
           <label className="chip">
             {busy ? "Working…" : "Choose evidence"}
             <input type="file" hidden disabled={disabled} accept=".json,.csv,.ics,.pdf,image/jpeg,image/png,image/webp,application/json,text/csv,text/calendar,application/pdf" onChange={(event) => { void chooseFile(event.target.files?.[0] ?? null); event.currentTarget.value = ""; }} />
@@ -415,10 +416,10 @@ export function SevenShiftsEvidenceCenter({
         <article>
           <p className="kicker">Direct Gmail · read-only</p>
           <h3>Import my 7shifts mail</h3>
-          <p className="muted">Google shows the consent screen. Hearth searches only mail matching 7shifts, verifies the sender domain again, encrypts each raw message, and cannot send, delete, label, archive, or forward mail.</p>
+          <Whisper mode="line">Reads only mail matching 7shifts. Hearth cannot send, delete or change your mail.</Whisper><Whisper mode="aside" id="evidence.gmail">Google shows the consent screen. Hearth verifies the sender domain again and encrypts each raw message; it cannot send, delete, label, archive or forward mail.</Whisper>
           <button type="button" className="chip" disabled={disabled} onClick={() => { void importGmail(); }}>{busy && gmailProgress ? "Scrubbing 7shifts mail…" : "Connect Gmail and scrub"}</button>
           {gmailProgress ? <p className="muted">Found {gmailProgress.discovered} · checked {gmailProgress.inspected} · new {gmailProgress.imported} · already saved {gmailProgress.duplicates} · rejected {gmailProgress.rejected}</p> : null}
-          <p className="muted">The scan starts at January 1, 2024 and stops at 1,000 messages. Run it again safely; encrypted-message digests prevent duplicates.</p>
+          <Whisper mode="aside" id="evidence.scan-range" label="How far back">The scan starts at January 1, 2024 and stops at 1,000 messages. Run it again safely; encrypted-message digests prevent duplicates.</Whisper>
         </article>
         <article>
           <p className="kicker">Chrome / Edge companion</p>
@@ -429,13 +430,13 @@ export function SevenShiftsEvidenceCenter({
           <p className="muted">Paste the code into the companion. It authorizes one bounded upload for this exact member and then burns itself.</p>
           <button type="button" className="chip" disabled={disabled || !extensionId.trim()} onClick={() => { void registerCompanion(); }}>Create revocable autonomous token</button>
           {companionToken ? <p><code>{companionToken}</code></p> : null}
-          <p className="muted">Capture-only. It cannot read evidence, books, household data, or commands. Automatic checks run only while Chrome is running. Development activation remains separately gated.</p>
+          <Whisper mode="line">Capture-only: it cannot read your books, evidence or commands.</Whisper><Whisper mode="aside" id="evidence.companion">Automatic checks run only while Chrome is running. Development activation remains separately gated.</Whisper>
           {companions.length ? <div className="stack-list" aria-label="Registered companions">{companions.map((row) => <div className="work-shift-history-row" key={row.registrationId}><div><strong>{row.label}</strong><p className="muted">Expires {new Date(row.expiresAt).toLocaleDateString()}</p></div><button type="button" className="chip danger" disabled={disabled} onClick={() => { void revokeCompanion(row.registrationId); }}>Revoke</button></div>)}</div> : null}
           {memberJobs.length ? <div className="work-form-grid">
             <label>My 7shifts job<select value={ownerJobId || memberJobs[0]?.id || ""} onChange={(event) => { setOwnerJobId(event.target.value); setOwnerRoleId(""); }}>{memberJobs.map((job) => <option value={job.id} key={job.id}>{job.name}</option>)}</select></label>
             <label>My usual role<select value={ownerRoleId || (memberJobs.find((job) => job.id === (ownerJobId || memberJobs[0]?.id))?.roles.find((role) => role.active)?.id ?? "")} onChange={(event) => setOwnerRoleId(event.target.value)}>{(memberJobs.find((job) => job.id === (ownerJobId || memberJobs[0]?.id))?.roles ?? []).filter((role) => role.active).map((role) => <option value={role.id} key={role.id}>{role.name}</option>)}</select></label>
             <button type="button" className="chip" disabled={disabled || !ownerMappingSource} onClick={() => { void saveOwnerMapping(); }}>Bind reviewed 7shifts role to this job</button>
-            {!ownerMappingSource ? <p className="muted">Review one captured self schedule or timesheet row first. Hearth binds its stable employee, location, and role identifiers—not a display name.</p> : null}
+            {!ownerMappingSource ? <Whisper mode="line">Review one captured schedule or timesheet row first.</Whisper> : null}
           </div> : null}
         </article>
       </div>
@@ -443,7 +444,7 @@ export function SevenShiftsEvidenceCenter({
       <hr />
       <p className="kicker">D-172 · visible authority</p>
       <h3>Autonomous collection, human Confirm</h3>
-      <p className="muted">Background sources may create and update Shift mail. They cannot post wages, tips, sales, corrections, or journal rows. Open the envelope and use the ordinary four-step Confirm.</p>
+      <Whisper mode="line">Sources only write Shift mail; nothing posts until you Confirm.</Whisper><Whisper mode="aside" id="evidence.autonomous">Background sources may create and update Shift mail. They cannot post wages, tips, sales, corrections or journal rows. Open the envelope and use the ordinary four-step Confirm.</Whisper>
 
       <hr />
       <header><h3>Encrypted captures</h3><span className="pill">{captures.length}</span></header>

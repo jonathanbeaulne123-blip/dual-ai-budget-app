@@ -47,7 +47,7 @@ export function DeferredSurface({ label, children }: { label: string; children: 
       <Suspense fallback={(
         <section className="card deferred-surface" role="status" aria-live="polite" aria-busy="true">
           <strong>Opening {label}…</strong>
-          <p className="muted">The cached kitchen stays available while this room arrives.</p>
+          <p className="muted">Your last view stays available while this room arrives.</p>
         </section>
       )}>
         {children}

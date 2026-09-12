@@ -1,0 +1,181 @@
+{
+  "records": [
+    {
+      "theme": "classic",
+      "dark": false,
+      "width": 320,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.91,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/classic-320-calendar.png"
+    },
+    {
+      "theme": "classic",
+      "dark": false,
+      "width": 390,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.91,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/classic-390-calendar.png"
+    },
+    {
+      "theme": "classic",
+      "dark": false,
+      "width": 720,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.91,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/classic-720-calendar.png"
+    },
+    {
+      "theme": "classic",
+      "dark": false,
+      "width": 1100,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.91,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/classic-1100-calendar.png"
+    },
+    {
+      "theme": "taylor",
+      "dark": false,
+      "width": 320,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.85,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/taylor-320-calendar.png"
+    },
+    {
+      "theme": "taylor",
+      "dark": false,
+      "width": 390,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.85,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/taylor-390-calendar.png"
+    },
+    {
+      "theme": "taylor",
+      "dark": false,
+      "width": 720,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.85,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/taylor-720-calendar.png"
+    },
+    {
+      "theme": "taylor",
+      "dark": false,
+      "width": 1100,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.85,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/taylor-1100-calendar.png"
+    },
+    {
+      "theme": "newfoundland",
+      "dark": false,
+      "width": 320,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.7,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/newfoundland-320-calendar.png"
+    },
+    {
+      "theme": "newfoundland",
+      "dark": false,
+      "width": 390,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.7,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/newfoundland-390-calendar.png"
+    },
+    {
+      "theme": "newfoundland",
+      "dark": false,
+      "width": 720,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.7,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/newfoundland-720-calendar.png"
+    },
+    {
+      "theme": "newfoundland",
+      "dark": false,
+      "width": 1100,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.7,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/newfoundland-1100-calendar.png"
+    },
+    {
+      "theme": "taylor",
+      "dark": true,
+      "width": 390,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 7.95,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/taylor-dark-390-calendar.png"
+    },
+    {
+      "theme": "taylor",
+      "dark": true,
+      "width": 1100,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 7.95,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/taylor-dark-1100-calendar.png"
+    },
+    {
+      "theme": "newfoundland",
+      "dark": true,
+      "width": 390,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.05,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/newfoundland-dark-390-calendar.png"
+    },
+    {
+      "theme": "newfoundland",
+      "dark": true,
+      "width": 1100,
+      "overflow": 0,
+      "legend": 6,
+      "minGlyphContrast": 6.05,
+      "axeSerious": [],
+      "seriousDetail": [],
+      "file": "docs/evidence/calendar-kinds/newfoundland-dark-1100-calendar.png"
+    }
+  ],
+  "errors": []
+}

@@ -46,7 +46,7 @@ describe("7shifts Evidence Center surface", () => {
     expect(container.textContent).toContain("Direct Gmail · read-only");
     expect(container.textContent).toContain("Connect Gmail and scrub");
     expect(container.textContent).not.toContain("Private evidence mailbox");
-    expect(container.textContent).toContain("Raw captures stay outside the household snapshot and books");
+    expect(container.textContent).toContain("Raw captures stay outside the household books");
     expect(container.textContent).not.toMatch(/onboarding|required setup/i);
   });
   it("keeps phone evidence under Jobs, wraps keyboard order, and collapses a resized desktop console", async () => {

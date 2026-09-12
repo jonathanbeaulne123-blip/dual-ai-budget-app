@@ -61,6 +61,7 @@ import "./books-household.css";
 import { DeferredSurface } from "./deferredSurfaces.tsx";
 import { Register } from "./Register.tsx";
 import { OpeningTruthCard } from "./OpeningTruthCard.tsx";
+import { Whisper } from "./theme/Whisper.tsx";
 
 const DeferredBatchImportCard = lazy(() => import("./BatchImport.tsx").then((module) => ({ default: module.BatchImportCard })));
 
@@ -70,7 +71,7 @@ const PANES = [
   { id: "fund-register", label: "Register", blurb: "What this month owes, and which confirmed Fund dollars cover each obligation." },
   { id: "register", label: "All activity", blurb: "Every posted row you can see in this view. Duplicate contrast lives here." },
   { id: "import", label: "Import", blurb: "QFX/OFX and selected document photos enter an inbox. Duplicate review and one final Confirm protect the books." },
-  { id: "journal", label: "Journal", blurb: "Debit and credit lines compiled from the snapshot. The books engine." },
+  { id: "journal", label: "Journal", blurb: "Debit and credit lines compiled from the books. The books engine." },
   { id: "trial", label: "Trial balance", blurb: "Account totals that must balance. Health refuses a lie." },
   { id: "statements", label: "Statements", blurb: "Balance sheet, P&L, cash flow, equity, working capital, notes." },
   { id: "rec", label: "Reconcile", blurb: "Tie a statement figure to the books. Never posts money by itself." },
@@ -81,6 +82,8 @@ const PANES = [
 
 const TABLE_PANE_IDS = ["fund", "fund-register", "wallet", "register", "import"] as const;
 const AUDIT_PANE_IDS = ["journal", "trial", "statements", "rec", "close", "accounts", "query"] as const;
+/** Rooms the My books seals already open; the tab row below them carries only what the seals do not (feedback row 5: one way to each place). */
+const SEAL_PANE_IDS = ["wallet", "register", "close"] as const;
 
 type Pane = (typeof PANES)[number]["id"] | "overview";
 
@@ -282,7 +285,7 @@ function BooksSession({
         <section className="hero">
           <div className="label">My books · CAD · {household.timezone}</div>
           <div className={`money ${wallet.netWorthCents < 0 ? "negative" : ""}`}>{formatCad(wallet.netWorthCents)}</div>
-          <div className="sub">Rooms I can manage. Partner-personal rooms stay off this floor. The figure is accepted-books position, not a partner-hidden envelope.</div>
+          <div className="sub whisper-row">Rooms I can manage · accepted-books position<Whisper mode="aside" id="books.my-books">Partner-personal rooms stay off this floor. The figure is your accepted-books position, not a partner-hidden envelope.</Whisper></div>
           {!trial.inBalance ? (
             <p className="opinion-banner adverse">
               Trial is off. Open Audit before treating the journal as closed.
@@ -335,7 +338,7 @@ function BooksSession({
         onPick={(id) => setPane(id as Pane)}
       />
       <div className="tabs" role="group" aria-label={sharedTable ? "Household table" : "My books"} data-books-tabs="table">
-        {tablePanes.map((item) => (
+        {tablePanes.filter((item) => !SEAL_PANE_IDS.includes(item.id as (typeof SEAL_PANE_IDS)[number])).map((item) => (
           <button key={item.id} aria-pressed={pane === item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
             {item.label}
           </button>
@@ -702,7 +705,7 @@ function BooksSession({
               type="button"
               onClick={() => downloadText(`hearth-sitdown-${packMonth}.txt`, sitDownExportText(auditHousehold, packMonth, today))}
             >
-              Download sit-down workbook
+              Download Sitdown workbook
             </button>
           </div>
           {auditHousehold.kitchen.books.closedMonths.length > 0 && (
@@ -802,11 +805,11 @@ function BooksStorageNotes({
         <p className="muted">
           {booksStatus.engine === "ledger-sync-v2"
             ? `${booksStatus.entryCount} journal entries checked against the cloud ledger. Your device keeps a scoped copy.`
-            : `Postgres ${booksStatus.postgresVersion ?? "PGlite"} is holding ${booksStatus.entryCount} journal entries on this phone.`}
+            : `This phone’s books engine (Postgres ${booksStatus.postgresVersion ?? "in the app"}) is holding ${booksStatus.entryCount} journal entries.`}
         </p>
       ) : booksStatus ? (
         <KitchenNotice
-          message={booksStatus.error || "The SQL books did not verify. The last valid snapshot on this phone is still saved."}
+          message={booksStatus.error || "The SQL books did not verify. The last valid copy on this phone is still saved."}
           onGoMore={onGoMore}
         />
       ) : null}
@@ -815,7 +818,7 @@ function BooksStorageNotes({
       ) : household.linked ? (
         booksStatus?.hosted?.schema ? (
           <p className="muted">
-            {`The shared snapshot is on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}
+            {`The shared books are on Supabase (${booksStatus.hosted.project}). Phrase join is not encryption.`}
           </p>
         ) : booksStatus?.hosted ? (
           <KitchenNotice
@@ -826,7 +829,7 @@ function BooksStorageNotes({
           <p className="muted">This household is linked. Sharing uses the reviewed transport path after a local accept.</p>
         )
       ) : (
-        <p className="muted">Sign in with Google to find your cloud household on another device. This device keeps an offline copy; a Hearth Pass is a separate backup.</p>
+        <p className="muted whisper-row">Sign in with Google to find your household on another device.<Whisper mode="aside" id="books.cloud-signin">This device keeps an offline copy of the books; a Hearth Pass is a separate backup.</Whisper></p>
       )}
     </>
   );

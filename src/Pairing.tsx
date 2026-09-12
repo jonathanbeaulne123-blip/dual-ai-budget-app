@@ -669,7 +669,7 @@ export function PairingCard({
         return;
       }
       if (pushed.conflict) {
-        onError(pushed.error || "Another phone posted a newer household snapshot. Nothing was overwritten.");
+        onError(pushed.error || "Another phone posted newer household books. Nothing was overwritten.");
         onSyncState("error");
         return;
       }
@@ -696,7 +696,7 @@ export function PairingCard({
       </header>
       <p>
         {supabaseAuthEnabled()
-          ? "Send a Google invite so your partner opens the same household on their phone. Sharing continues in the background while this kitchen stays open."
+          ? "Send a Google invite so your partner opens the same household on their phone. Sharing continues in the background while Hearth stays open."
           : "Say the phrase across the table, send the join link, or hand over a Hearth Pass. The pass is the shared ledger without anyone’s personal rows."}
       </p>
       <AuthInviteChrome
@@ -808,7 +808,7 @@ export function PairingCard({
         <div className="device-list">
           <h3>Devices on this household</h3>
           <p className="muted">
-            Soft presence from phones that touched the shared snapshot. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}
+            Soft presence from phones that touched the shared books. Not Auth. This device: {describeDeviceLabel()} · {localDeviceId()}
           </p>
           {onSoftPresenceOptOut && (
             <label className="soft-presence-opt-out">
@@ -818,11 +818,11 @@ export function PairingCard({
                 disabled={busy}
                 onChange={(event) => onSoftPresenceOptOut(event.target.checked)}
               />
-              <span>Hide that I&apos;m in the kitchen</span>
+              <span>Hide that I&apos;m in Hearth</span>
             </label>
           )}
           {(household.devices ?? []).filter((device) => device.active).length === 0 ? (
-            <p className="muted">No devices recorded yet. Sync or open the kitchen and one will appear.</p>
+            <p className="muted">No devices recorded yet. Sync or open Hearth and one will appear.</p>
           ) : (
             <ul>
               {(household.devices ?? []).filter((device) => device.active).map((device) => {

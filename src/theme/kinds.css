@@ -1,0 +1,89 @@
+/* Kind identity for calendar information — one registry (src/calendar/semantics.ts),
+   three carriers: glyph, edge and hue. Colour is additive to the glyph, never the
+   only channel. Hue tokens (--kind-*) are set per scene by sceneTokens() so they
+   sit on light and dark paper. Ink and copper stay reserved for posted/scheduled
+   (docs/DECISIONS.md, CalendarWeight legend); no kind borrows them. Solid vs
+   dashed remains the certainty channel: Google and Suggested stay dashed/dotted. */
+
+:root[data-theme] :is(.cal-title, .kind-pill) { --kind: var(--kind-quiet, var(--muted)); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-pay { --kind: var(--kind-pay); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-bill { --kind: var(--kind-bill); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-subscription { --kind: var(--kind-subscription); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-planned { --kind: var(--kind-planned); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-work { --kind: var(--kind-work); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-visit { --kind: var(--kind-visit); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-owed { --kind: var(--kind-owed); }
+:root[data-theme] :is(.cal-title, .kind-pill).hue-event { --kind: var(--kind-event); }
+
+/* Month-grid chip: edge + tinted paper + coloured glyph; the title stays ink. */
+:root[data-theme] .cal-title:not(.more) {
+  display: flex; align-items: center; gap: 3px;
+  padding: 1px 4px 1px 3px;
+  border-left: 3px solid var(--kind);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--kind) 8%, transparent);
+  color: var(--ink);
+}
+:root[data-theme] .cal-title.stroke-dashed { border-left-style: dashed; }
+:root[data-theme] .cal-title.stroke-dotted { border-left-style: dotted; }
+:root[data-theme] .cal-title .cal-kind { color: var(--kind); font-weight: 700; flex: 0 0 auto; }
+:root[data-theme] .cal-title .cal-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+:root[data-theme] .cal-title.kind-potential-expense { color: var(--ink); font-weight: 600; }
+
+/* Day-list pills share the same carriers at row size. */
+:root[data-theme] .kind-pill { border-left: 3px solid var(--kind); color: var(--ink); }
+:root[data-theme] .kind-pill.stroke-dashed { border-left-style: dashed; }
+:root[data-theme] .kind-pill.stroke-dotted { border-left-style: dotted; }
+:root[data-theme] .kind-pill .cal-kind { color: var(--kind); font-weight: 700; }
+
+/* Whose it is — a small dot on shared surfaces, from the member colour that the board already carries. */
+:root[data-theme] .cal-who { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 999px; background: var(--who, var(--muted)); box-shadow: 0 0 0 1px var(--card); }
+
+/* Multi-day runs: chips join across the cell gap and only the first chip in a row carries the title. */
+.cal-grid { --cal-gap: 4px; --cal-pad: 4px; --cal-edge: 1px; }
+:root[data-theme] .cal-title.span-r { margin-right: calc(-1 * (var(--cal-pad) + var(--cal-edge))); border-top-right-radius: 0; border-bottom-right-radius: 0; }
+:root[data-theme] .cal-title.span-l { margin-left: calc(-1 * (var(--cal-pad) + var(--cal-edge) + var(--cal-gap))); padding-left: calc(var(--cal-gap) + var(--cal-pad)); border-left-width: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+:root[data-theme] .cal-title.span-l .cal-kind { display: none; }
+:root[data-theme] .cal-title.span-quiet .cal-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:root[data-theme] .cal-title.span-quiet { min-height: 1.25em; }
+:root[data-theme] .cal-title.is-span { background: color-mix(in srgb, var(--kind) 14%, transparent); }
+
+/* Heavy day: a non-colour carrier for heat (the tint stays; the mark is the meaning). */
+:root[data-theme] .cal-day.hot .num { border-bottom: 2px solid var(--copper); padding-bottom: 1px; }
+
+/* Legend that is also the filter. */
+.kind-legend { margin: 4px 0 10px; }
+.kind-legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.kind-legend button {
+  --kind: var(--kind-quiet, var(--muted));
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 32px; padding: 4px 10px 4px 8px;
+  border: 1px solid var(--line); border-left: 3px solid var(--kind); border-radius: var(--world-r-chip, 999px);
+  background: color-mix(in srgb, var(--kind) 10%, var(--card)); color: var(--ink); font: inherit; font-size: 12px; cursor: pointer;
+}
+.kind-legend button .cal-kind { color: var(--kind); font-weight: 700; }
+.kind-legend button.stroke-dashed { border-left-style: dashed; }
+.kind-legend button.stroke-dotted { border-left-style: dotted; }
+.kind-legend button[aria-checked="false"] { background: transparent; color: var(--muted); text-decoration: line-through; border-left-color: var(--muted); }
+.kind-legend button[aria-checked="false"] .cal-kind { color: var(--muted); }
+.kind-legend button:focus-visible { outline: 2px solid var(--theme-accent, var(--pine)); outline-offset: 2px; }
+.kind-legend .kind-legend-note { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+:root[data-theme] .kind-legend button.hue-pay { --kind: var(--kind-pay); }
+:root[data-theme] .kind-legend button.hue-bill { --kind: var(--kind-bill); }
+:root[data-theme] .kind-legend button.hue-subscription { --kind: var(--kind-subscription); }
+:root[data-theme] .kind-legend button.hue-planned { --kind: var(--kind-planned); }
+:root[data-theme] .kind-legend button.hue-work { --kind: var(--kind-work); }
+:root[data-theme] .kind-legend button.hue-visit { --kind: var(--kind-visit); }
+:root[data-theme] .kind-legend button.hue-owed { --kind: var(--kind-owed); }
+:root[data-theme] .kind-legend button.hue-event { --kind: var(--kind-event); }
+
+@media (max-width: 719px) {
+  .cal-grid { --cal-gap: 2px; }
+  .kind-legend button { min-height: 44px; }
+}
+
+@media (forced-colors: active) {
+  :root[data-theme] :is(.cal-title, .kind-pill, .kind-legend button) { border-left-color: CanvasText !important; background: Canvas !important; }
+  :root[data-theme] .kind-legend button[aria-checked="false"] { border-style: dotted !important; }
+  :root[data-theme] .cal-day.hot .num { border-bottom-color: CanvasText; }
+}

@@ -28,6 +28,7 @@ import {
   type GoogleSuitePing,
 } from "./google/index.ts";
 import { useAsyncScope } from "./asyncScope.ts";
+import { Whisper } from "./theme/Whisper.tsx";
 
 export function GoogleBridgeCard(props: {
   household: Household;
@@ -160,11 +161,8 @@ export function GoogleBridgeCard(props: {
         <h2>Google household bridge</h2>
         <span className={`pill ${linkedCount ? "good" : ""}`}>{linkedCount ? `${linkedCount} linked` : "Set up identity"}</span>
       </header>
-      <p>
-        Google is how Jonathan and Bianca find their personal and household ledgers on another device.
-        Tokens stay on this device in the browser store (native Keychain is a later release). The shared snapshot only remembers who is linked — never the password.
-        Sign out and clear this phone removes local tokens; the cloud household remains. Development sync retries automatically after sign-in or reconnection. Google never posts money.
-      </p>
+      <Whisper mode="line">Google is how you find your books on another device. Google never posts money.</Whisper>
+      <Whisper mode="aside" id="google.bridge">Tokens stay on this device in the browser store (native Keychain is a later release). The shared books only remember who is linked — never the password. Sign out and clear this phone removes local tokens; the cloud household remains. Development sync retries automatically after sign-in or reconnection.</Whisper>
       {household.members.filter((member) => member.active).sort((left, right) => {
         if (left.id === memberId) return -1;
         if (right.id === memberId) return 1;
@@ -256,7 +254,7 @@ export function GoogleBridgeCard(props: {
       {pendingCopy && pendingService && (
         <ConfirmSheet
           title={`Turn on ${pendingCopy.label}?`}
-          body={`${pendingCopy.summary} Google never posts money. Google treats some of these as sensitive — add this kitchen site’s test users in Google Cloud until the app is verified.`}
+          body={`${pendingCopy.summary} Google never posts money. Google treats some of these as sensitive — add this Hearth site’s test users in Google Cloud until the app is verified.`}
           confirmLabel={`Turn on ${pendingCopy.label}`}
           busy={working}
           onCancel={() => setPendingService(null)}

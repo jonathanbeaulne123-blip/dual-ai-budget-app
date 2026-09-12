@@ -213,9 +213,9 @@ describe("real household creation enters guided setup", () => {
       root.render(createElement(App));
       await Promise.resolve();
     });
-    await waitFor(() => expect(container.textContent).toContain("Open the demo kitchen table"));
+    await waitFor(() => expect(container.textContent).toContain("Open the demo household table"));
 
-    act(() => button("Open the demo kitchen table").click());
+    act(() => button("Open the demo household table").click());
     await waitFor(() => expect(container.textContent).toContain("Choose yourself"));
     await act(async () => { button("I am Jonathan").click(); });
 
@@ -254,7 +254,7 @@ describe("real household creation enters guided setup", () => {
     expect(acceptedHouseholdOnboarding(writes.candidates.at(-1)!)?.state).toBe("offered");
 
     act(() => ([...document.querySelectorAll<HTMLButtonElement>(".hercules-setup button")].find(b=>b.textContent==="Close"))!.click());
-    act(() => button("Status Centre").click());
+    act(() => (document.querySelector(".sync-freshness__details") as HTMLButtonElement).click());
     await waitFor(() => expect(container.textContent).toContain("This is a later Development reliability exercise, not household setup"));
     expect(container.textContent).toContain("Preview guided setup");
     expect(container.textContent).not.toContain("Prove recovery before week 1");
