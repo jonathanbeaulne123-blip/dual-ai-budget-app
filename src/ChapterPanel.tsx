@@ -57,8 +57,8 @@ export function ModeLabel({ mode }: { mode: "private" | "shared" }) {
  * The Chapter on Home: title expressed as meaning, the next Move, and a quiet
  * door deeper. Nothing here is a score.
  */
-export function ChapterMoment({ household, memberId, today, onOpenPath, onCommand, busy }: {
-  household: Household; memberId: string; today: DateKey; onOpenPath: () => void; onCommand: Run; busy: boolean;
+export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSetup, onCommand, busy }: {
+  household: Household; memberId: string; today: DateKey; onOpenPath: () => void; onOpenSetup?: (destination: "charter" | "fund") => void; onCommand: Run; busy: boolean;
 }) {
   const chapter = openChapterFor(household);
   const move = nextMove(household, memberId);
@@ -90,6 +90,12 @@ export function ChapterMoment({ household, memberId, today, onOpenPath, onComman
             {move.ownerMemberId ? `${memberName(household, move.ownerMemberId)} owns this` : "Either of us can take this"}
             {move.needsAcknowledgment ? " · needs both of us" : ""}
           </p>
+          {chapter.foundationId === "see-our-shared-life" && move.text === FOUNDATION_CHAPTERS.find(row => row.id === "see-our-shared-life")?.firstMove && onOpenSetup && (
+            <div className="chapter-setup" aria-label="Set up our shared life">
+              <button type="button" onClick={() => onOpenSetup("charter")}><strong>{household.charter ? "Open the Charter" : "Create our Charter"}</strong><small>Read and sign your shared agreement</small><span aria-hidden="true">→</span></button>
+              <button type="button" onClick={() => onOpenSetup("fund")}><strong>{household.householdFund ? "Open the Fund" : "Set up the Fund"}</strong><small>Choose who holds it and review setup</small><span aria-hidden="true">→</span></button>
+            </div>
+          )}
           <div className="chapter-actions">
             {move.needsAcknowledgment && !move.acknowledgedByMemberIds.includes(memberId) && (
               <button type="button" disabled={busy} onClick={() => void onCommand((current) => respondToMove(current, { memberId, moveId: move.id, response: "acknowledge" }))}>I acknowledge this</button>
