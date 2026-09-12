@@ -5,5 +5,5 @@
     "strict": true, "skipLibCheck": true, "noEmit": true, "allowJs": true,
     "allowImportingTsExtensions": true, "jsx": "react-jsx"
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "../geminiQuota.ts"]
 }

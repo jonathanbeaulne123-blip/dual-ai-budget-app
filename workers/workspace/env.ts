@@ -18,6 +18,8 @@ export type WorkspaceEnv = AuthEnv & {
     resolveReceipt(scope: Scope, id: string): Promise<{version:number;receipt?:{id:string;actor:string;commandKind:string;postedIds:string[]}}>;
     workspaceQuery(scope: Scope, query: { name: string; args: Record<string, unknown>; view: 'personal' | 'household' }): Promise<Record<string, unknown>>;
   } };
+  HERCULES_GEMINI_FREE_ONLY?: string; HERCULES_GEMINI_FREE_KEY?: string; HERCULES_GEMINI_FREE_QUOTAS?: string;
+  HERCULES_GEMINI_QUOTA?: { idFromName(name: string): DurableObjectId; get(id: DurableObjectId): { begin(id:string): Promise<{ok:boolean;code?:string;attempt?:string}>; release(id:string,attempt:string): Promise<void>; reserve(request: {id:string;model:string;tokens:number;digest:string}): Promise<{ok:boolean;code?:string;retryAt?:number}>; pauseUntilReset(): Promise<void> } };
   HERCULES_WORKSPACE_ENABLED?: string; HERCULES_WORKSPACE_EXECUTION?: string;
   HERCULES_WORKSPACE_MODEL?: string; HERCULES_WORKSPACE_DISCLOSURE?: string;
   HERCULES_WORKSPACE_DATA?: string; GEMINI_API_KEY?: string; BRAVE_SEARCH_API_KEY?: string;

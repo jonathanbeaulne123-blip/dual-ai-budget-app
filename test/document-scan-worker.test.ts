@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("../workers/ledgerRoom.ts", () => ({ LedgerRoom: class {} }));
 import worker from "../workers/site.js";
 import { resetChatRateMemory } from "../workers/herculesGuard.js";
 

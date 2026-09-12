@@ -2,7 +2,7 @@ import { HERCULES_READ_TOOL_CATALOG } from '../../src/core/herculesTools.ts';
 import { herculesWorkspaceActionCatalogue } from '../../src/core/herculesActions.ts';
 import { latestArtifacts, workspaceText, workspaceId, WORKSPACE_ARTIFACT_LIMIT, type WorkspaceProject, type WorkspaceEvidence, type ArtifactVersion, type WorkspaceProposal } from '../../src/workspace/contracts.ts';
 import type { FunctionDeclaration } from '@google/genai';
-export type ToolEffect = { artifact?: ArtifactVersion; evidence?: WorkspaceEvidence[]; proposal?: WorkspaceProposal; researchQuery?: string; memory?: { decisions?: string[]; constraints?: string[]; questions?: string[]; tasks?: WorkspaceProject['tasks'] } };
+export type ToolEffect = { moreThinking?: boolean; artifact?: ArtifactVersion; evidence?: WorkspaceEvidence[]; proposal?: WorkspaceProposal; researchQuery?: string; memory?: { decisions?: string[]; constraints?: string[]; questions?: string[]; tasks?: WorkspaceProject['tasks'] } };
 export type ToolResult = { result: Record<string, unknown>; effect?: ToolEffect };
 export type ToolContext = { project: WorkspaceProject; id: string; now: string;
   read: (name: string, args: Record<string, unknown>, scope: 'personal' | 'household') => Promise<Record<string, unknown>>;
@@ -12,6 +12,7 @@ export type ToolContext = { project: WorkspaceProject; id: string; now: string;
 type Definition = { name: string; description: string; group: string; permission: string; approval: 'private-work' | 'review-required'; limit: number; properties: Record<string, unknown>; required: string[] };
 const str = { type: 'string' }, strings = { type: 'array', items: str };
 const defs: Definition[] = [
+  { name: 'request_more_thinking', description: 'Ask free Flash to continue a difficult task with more reasoning. Save relevant decisions/artifacts first. This cannot bypass an exhausted quota.', group: 'analysis', permission: 'project', approval: 'private-work', limit: 1, properties: { reason: str }, required: ['reason'] },
   { name: 'discover_tools', description: 'Discover Hearth reads and prepared action groups. Tools never grant execution authority.', group: 'knowledge', permission: 'project', approval: 'private-work', limit: 1, properties: {}, required: [] },
   { name: 'project_read', description: 'Retrieve complete older messages, source excerpts or an artifact by id, with explicit paging. Search project conversation by query.', group: 'knowledge', permission: 'project', approval: 'private-work', limit: 24000, properties: { id: str, query: str, offset: { type: 'integer' } }, required: [] },
   { name: 'hearth_read', description: 'Read one deterministic accepted Hearth query. Specify Personal or Household; never combine overlapping resources. discover_tools lists read names.', group: 'hearth', permission: 'ledger', approval: 'private-work', limit: 24000, properties: { name: str, scope: { type: 'string', enum: ['personal', 'household'] }, argsJson: { type: 'string', description: 'JSON object of query arguments: period, accountId, monthKey, etc.' } }, required: ['name', 'scope', 'argsJson'] },
@@ -39,6 +40,7 @@ function evidence(c: ToolContext, origin: WorkspaceEvidence['origin'], scope: Wo
 export async function executeWorkspaceTool(name: string, args: Record<string, unknown>, c: ToolContext): Promise<ToolResult> {
   if (!defs.some(d => d.name === name)) throw new Error('UNKNOWN_TOOL');
   switch (name) {
+    case 'request_more_thinking': return { result: { requested: true, reason: workspaceText(args.reason, 1000) }, effect: { moreThinking: true } };
     case 'discover_tools': return { result: { reads: HERCULES_READ_TOOL_CATALOG, tools: defs.map(({ properties: _p, ...d }) => d),
       actions: herculesWorkspaceActionCatalogue(),
       instruction: 'These are proposal identifiers only. The existing action review validates fields and availability in the chosen scope.' } };
