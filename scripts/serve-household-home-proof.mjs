@@ -17,7 +17,7 @@ function seeded(){let h=planLifeFixture('household');h=openChapter(h,{memberId:'
 function Proof(){const[state,setState]=useState(seeded);const ref=useRef(state);ref.current=state;const command=async fn=>{const result=fn(ref.current);ref.current=result.household;setState(result.household);return {...result,ok:true};};
 if(surface==='path')return React.createElement('div',{className:'app our-path our-path--household','data-ledger-tab':'plan'},React.createElement(ChapterRoom,{household:state,memberId:'MEM-001',today:'2026-09-12',onCommand:command,busy:false}));
 if(surface==='comfort')return React.createElement('div',{className:'app more-surfaces status-centre','data-ledger-tab':'more'},React.createElement(ComfortControls,{environment:'development'}));
-return React.createElement('div',{className:'app','data-ledger-tab':'home'},React.createElement(HouseholdHome,{household:state,memberId:'MEM-001',today:'2026-09-12',freshness:'current',busy:false,onCommand:command,onGo:()=>{}}));}
+return React.createElement('div',{className:'app','data-ledger-tab':'home'},React.createElement(HouseholdHome,{household:state,memberId:'MEM-001',today:'2026-09-12',freshness:'current',busy:false,onCommand:command,onGo:()=>{},onOpenSetup:()=>{}}));}
 createRoot(document.getElementById('root')).render(React.createElement(Proof));`;
 export async function startHouseholdHomeProof({port=5186}={}) {
 if(port===0){const probe=createPortProbe();await new Promise(resolve=>probe.listen(0,'127.0.0.1',resolve));port=probe.address().port;await new Promise(resolve=>probe.close(resolve));}

@@ -3,6 +3,20 @@
   "mappings": [
     {
       "sources": [
+        "src/HouseholdHome.tsx",
+        "src/ChapterPanel.tsx",
+        "src/household-home.css",
+        "src/kitty/KittyBankRoom.tsx"
+      ],
+      "tests": [
+        "test/home-feedback-ui.test.ts",
+        "test/vision-v2-home-ui.test.ts",
+        "test/kitty-envelope-ui.test.ts"
+      ],
+      "reason": "F-014/F-015 Home setup routes, selected shared bank, return focus, scoped gallery and retained confirmation identity"
+    },
+    {
+      "sources": [
         "src/workspace/ProjectCards.tsx",
         "src/workspace/Workspace.tsx",
         "src/workspace/actionBridge.ts",

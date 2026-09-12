@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { CommitResult, Household } from "./core/types.ts";
 import type { DateKey } from "./core/calendar.ts";
 import { monthKeyFromDateKey } from "./core/calendar.ts";
@@ -10,9 +10,12 @@ import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulseFreshness
 import { dismissWin, keepWinAsMemory, openChapterFor, recentWin } from "./core/chapters.ts";
 import { fundDisplayName } from "./core/spaceNames.ts";
 import { ChapterMoment } from "./ChapterPanel.tsx";
+import { displayedKittyPiece } from "./core/kittyStudio.ts";
+import { KittyFlat } from "./kitty/studio/flat.tsx";
+import { KittyBankRoom, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
 import "./household-home.css";
 
-type Run = (fn: (current: Household) => CommitResult) => Promise<unknown>;
+type Run = (fn: (current: Household) => CommitResult, options?: KittyCommandOptions) => Promise<unknown>;
 
 /**
  * Our Home (Vision v2 §4.2): the opening composition of the household space.
@@ -20,9 +23,14 @@ type Run = (fn: (current: Household) => CommitResult) => Promise<unknown>;
  * Identity · the Chapter moment · the Fund pulse · one next Move · coming up ·
  * what is growing · partner presence · a recent Win only when earned · quiet
  * doors deeper. No register, no seals, no duplicate balances, no scoreboard.
- * Everything here reads accepted books and posts nothing.
+ * The shelf reads accepted books; the gallery retains the existing reviewed
+ * command and Final Confirm boundary.
  */
-export function HouseholdHome({ household, memberId, today, freshness, busy, onCommand, onGo, rehearsal, identityArt }: {
+export function HouseholdHome(props: HouseholdHomeProps) {
+  return <HouseholdHomeSession key={`${props.household.environment}:${props.household.householdId}:${props.memberId}`} {...props} />;
+}
+
+type HouseholdHomeProps = {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -30,17 +38,23 @@ export function HouseholdHome({ household, memberId, today, freshness, busy, onC
   busy: boolean;
   onCommand: Run;
   onGo: (tab: "ledger" | "plan" | "together" | "calendar" | "more") => void;
+  onOpenSetup: (destination: "charter" | "fund") => void;
+  onReadSubmission?: KittySubmissionReader;
   /** Chapter 1 is the Month-One rehearsal; its access stays inside the Chapter area. */
   rehearsal?: ReactNode;
   identityArt?: ReactNode;
-}) {
+};
+
+function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt }: HouseholdHomeProps) {
+  const [bankRequest, setBankRequest] = useState<{ goalId?: string } | null>(null);
   const monthKey = monthKeyFromDateKey(today);
   const chapter = openChapterFor(household);
   const pulse = fundPulse(deriveFundPulseInput(household, { memberId, today, freshness, activeChapter: Boolean(chapter) }));
   const presence = presenceLines(household, { memberId, today });
   const obligations = monthObligations(household, monthKey, today).rows.filter((row) => row.date >= today).slice(0, 3);
   const planned = duePotentialExpenses(potentialExpensesForView(household.potentialExpenses, memberId, "household"), today).slice(0, 2);
-  const banks = kittyBanksInView(household, "household", memberId).slice(0, 2);
+  const allBanks = kittyBanksInView(household, "household", memberId);
+  const banks = allBanks.slice(0, 2);
   const win = recentWin(household);
   const activeMemberIds = household.members.filter((row) => row.active).map((row) => row.id);
   const memoryComplete = Boolean(win && activeMemberIds.every((id) => win.keptByMemberIds.includes(id)));
@@ -68,7 +82,7 @@ export function HouseholdHome({ household, memberId, today, freshness, busy, onC
         <p className="fund-pulse__source">About {fundName}'s plan — never about the two of you.</p>
       </section>
 
-      <ChapterMoment household={household} memberId={memberId} today={today} onOpenPath={() => onGo("plan")} onCommand={onCommand} busy={busy} />
+      <ChapterMoment household={household} memberId={memberId} today={today} onOpenPath={() => onGo("plan")} onOpenSetup={onOpenSetup} onCommand={onCommand} busy={busy} />
       {rehearsal}
 
       {(obligations.length > 0 || planned.length > 0) && (
@@ -82,23 +96,37 @@ export function HouseholdHome({ household, memberId, today, freshness, busy, onC
         </section>
       )}
 
-      {banks.length > 0 && (
-        <section className="home-growing" aria-label="What is growing">
-          <p className="kicker">What we are building</p>
-          <ul>
+      <section className="home-growing" aria-label="What we are building towards">
+        <p className="kicker">What we are building towards</p>
+        {banks.length ? (
+          <ul className="home-bank-shelf">
             {banks.map((goal) => {
               const step = kittyBankBackingStep(household, goal, today);
               return (
                 <li key={goal.id}>
-                  <span>{goal.name}</span>
-                  <span className="growing-steps" role="img" aria-label={`${step} of 10 steps backed`}>{Array.from({ length: 10 }, (_, index) => <i key={index} className={index < step ? "is-on" : ""} />)}</span>
-                  <span className="muted">{step}/10 backed</span>
+                  <button type="button" className="home-bank" onClick={() => setBankRequest({ goalId: goal.id })} aria-label={`Open ${goal.name} in the 3D gallery`}>
+                    <span className="home-bank__portrait" aria-hidden="true">
+                      <KittyFlat piece={displayedKittyPiece(goal.envelope?.studio)} glaze={goal.envelope?.glaze} step={step} />
+                    </span>
+                    <span className="home-bank__label">
+                      <strong>{goal.name}</strong>
+                      <span className="growing-steps" role="img" aria-label={`${step} of 10 steps backed`}>{Array.from({ length: 10 }, (_, index) => <i key={index} className={index < step ? "is-on" : ""} />)}</span>
+                      <small>Target {formatCad(goal.targetCents)}</small>
+                      <span className="home-bank__action">Open this bank →</span>
+                    </span>
+                  </button>
                 </li>
               );
             })}
           </ul>
-        </section>
-      )}
+        ) : <p className="home-bank-empty">Give something you are saving for a Kitty Bank of its own.</p>}
+        <button type="button" className="home-door" onClick={() => setBankRequest({})}>{allBanks.length > 2 ? `See all ${allBanks.length} Kitty Banks in the 3D gallery` : banks.length ? "Open the 3D gallery" : "Create a Kitty Bank"}</button>
+        <p className="home-bank-hint">Contribute or move money inside a bank, then review and confirm.</p>
+      </section>
+      {bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
+        identity={`${household.environment}:${household.householdId}:${memberId}:household`}
+        initialGoalId={bankRequest.goalId} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission}
+        onClose={() => setBankRequest(null)} />}
 
       {presence.length > 0 && (
         <section className="home-presence" aria-label="Partner presence">
