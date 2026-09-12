@@ -1,4 +1,5 @@
 import { shapeGoalEnvelope } from "./goalEnvelopes.ts";
+import { addDays, monthEndKey, monthKeyFromDateKey, monthStartKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { formatCad } from "./money.ts";
 import type { Goal, GoalContribution, GoalPurchase, GoalPurchaseLine, GoalStatus, Household } from "./types.ts";
 
@@ -18,6 +19,81 @@ export function savedCentsFromContributions(contributions: GoalContribution[], g
     if (row.goalId === goalId) sum += row.amountCents;
   }
   return sum;
+}
+
+/**
+ * What a bank held on a civil day. `savedCents` is a running total with no date
+ * on it, so it can only ever answer "now"; the contribution log is dated, and
+ * a jar that got spent has dated purchases too. Both axes already exist — this
+ * is the reader they never had.
+ */
+export function goalSavedAsOf(household: Pick<Household, "goalContributions" | "goalPurchases">, goalId: string, asOf: DateKey): number {
+  const added = (household.goalContributions ?? [])
+    .filter((row) => row.goalId === goalId && row.date <= asOf)
+    .reduce((sum, row) => sum + row.amountCents, 0);
+  const spent = (household.goalPurchases ?? [])
+    .filter((row) => row.goalId === goalId && row.date <= asOf)
+    .reduce((sum, row) => sum + row.spentCents, 0);
+  return added - spent;
+}
+
+export type GoalMonthPoint = {
+  monthKey: MonthKey;
+  addedCents: number;
+  spentCents: number;
+  /** The bank's balance at the end of this month. */
+  balanceCents: number;
+};
+
+/**
+ * One bank's month-by-month history, closing balance included, so a past month
+ * can say what the jar held when it ended instead of what it holds today.
+ * Months with no movement are kept: a flat stretch is part of the shape.
+ */
+export function goalMonthSeries(
+  household: Pick<Household, "goalContributions" | "goalPurchases">,
+  goalId: string,
+  range: { from: MonthKey; to: MonthKey },
+): GoalMonthPoint[] {
+  const contributions = (household.goalContributions ?? []).filter((row) => row.goalId === goalId);
+  const purchases = (household.goalPurchases ?? []).filter((row) => row.goalId === goalId);
+  const points: GoalMonthPoint[] = [];
+  let balanceCents = goalSavedAsOf(household, goalId, addDays(monthStartKey(range.from), -1));
+  for (let monthKey = range.from; monthKey <= range.to; monthKey = shiftMonthKey(monthKey, 1)) {
+    const addedCents = contributions
+      .filter((row) => monthKeyFromDateKey(row.date) === monthKey)
+      .reduce((sum, row) => sum + row.amountCents, 0);
+    const spentCents = purchases
+      .filter((row) => monthKeyFromDateKey(row.date) === monthKey)
+      .reduce((sum, row) => sum + row.spentCents, 0);
+    balanceCents += addedCents - spentCents;
+    points.push({ monthKey, addedCents, spentCents, balanceCents });
+  }
+  return points;
+}
+
+/** Every bank's movement in one month, for the month a person is looking at. */
+export function goalMonthMovements(
+  household: Pick<Household, "goals" | "goalContributions" | "goalPurchases">,
+  monthKey: MonthKey,
+): { goalId: string; name: string; addedCents: number; spentCents: number; balanceCents: number }[] {
+  const end = monthEndKey(monthKey);
+  const touched = new Set<string>([
+    ...(household.goalContributions ?? []).filter((row) => monthKeyFromDateKey(row.date) === monthKey).map((row) => row.goalId),
+    ...(household.goalPurchases ?? []).filter((row) => monthKeyFromDateKey(row.date) === monthKey).map((row) => row.goalId),
+  ]);
+  return [...touched]
+    .map((goalId) => {
+      const goal = (household.goals ?? []).find((row) => row.id === goalId);
+      const addedCents = (household.goalContributions ?? [])
+        .filter((row) => row.goalId === goalId && monthKeyFromDateKey(row.date) === monthKey)
+        .reduce((sum, row) => sum + row.amountCents, 0);
+      const spentCents = (household.goalPurchases ?? [])
+        .filter((row) => row.goalId === goalId && monthKeyFromDateKey(row.date) === monthKey)
+        .reduce((sum, row) => sum + row.spentCents, 0);
+      return { goalId, name: goal?.name ?? "A bank", addedCents, spentCents, balanceCents: goalSavedAsOf(household, goalId, end) };
+    })
+    .sort((left, right) => right.addedCents - left.addedCents || left.name.localeCompare(right.name));
 }
 
 export function applyGoalSavings(goals: Goal[], contributions: GoalContribution[]): Goal[] {
