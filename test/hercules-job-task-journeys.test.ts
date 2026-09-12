@@ -85,6 +85,10 @@ describe('to-dos remain usable after Hercules creates them', () => {
     const id = c.household.tasks![0]!.id;
     run(c, 'edit-task', { id, title: 'Compare hotels first' });
     expect(c.household.tasks![0]!.dueDate).toBe('2026-10-01');
+    if (view === 'household') {
+      expect(() => prepareAction(c, 'complete-task', { id })).toThrow(/Accept this exact assignment/);
+      run(c, 'accept-task', { id });
+    }
     run(c, 'complete-task', { id }); expect(c.household.tasks![0]!.completedAt).toBeTruthy();
     run(c, 'reopen-task', { id }); expect(c.household.tasks![0]!.completedAt).toBeNull();
     run(c, 'remove-task', { id }); expect(c.household.tasks![0]!.deleted).toBe(true);
@@ -104,8 +108,10 @@ describe('to-dos remain usable after Hercules creates them', () => {
     const task = c.household.tasks![0]!;
     c.household = saveTask(c.household, { memberId: c.memberId, id: task.id, expectedRevision: task.revision, task: { ...task, repeat: 'weekly' } }).household;
     const review = prepareAction(c, 'edit-task', { id: task.id, title: 'Water everything' });
+    run(c, 'accept-task', { id: task.id });
     run(c, 'complete-task', { id: task.id });
     expect(c.household.tasks).toHaveLength(2);
+    expect(c.household.tasks!.find(t => t.id !== task.id)!.acknowledgedBy).toEqual([]);
     expect(c.household.tasks!.find(t => t.id === task.id)!.completedAt).toBeTruthy();
     expect(() => executeReviewedAction(c, review, crypto.randomUUID())).toThrow(/changed/i);
   });
@@ -158,4 +164,42 @@ it('financial task completion uses matching accepted payment evidence, including
  const payment=c.household.transactions.at(-1)!;
  run(c,'complete-task',{id,evidence:`transaction:${payment.id}`});
  expect(c.household.tasks![0]!.completionEvidence).toMatchObject({kind:'transaction',transactionId:payment.id,amountCents:100000});
+});
+
+
+it('reviews exact self-acceptance without completing work, impersonating a partner or accepting an edited assignment', () => {
+  const c = context(); run(c, 'task', { title: 'Book the room', dueDate: '2026-10-01' });
+  const id = c.household.tasks![0]!.id, before = structuredClone(c.household);
+  const action = actionById('accept-task', c);
+  expect(action.match.test('Take the task')).toBe(true);
+  const review = prepareAction(c, 'accept-task', { id, memberId: 'MEM-002' });
+  expect(review.values).toEqual({ id });
+  expect(review.rows).toContainEqual({ label: 'Deadline', value: '2026-10-01' });
+  expect(review.rows).toContainEqual({ label: 'Your acceptance', value: c.household.members.find(m => m.id === c.memberId)!.name });
+  expect(c.household).toEqual(before);
+  const partner = { ...c, memberId: 'MEM-002' };
+  expect(actionFields(actionById('accept-task', partner), partner, {})[0]!.choices!(partner, {})).toEqual([]);
+  expect(() => prepareAction(partner, 'accept-task', { id })).toThrow();
+  const stale = structuredClone(review);
+  run(c, 'edit-task', { id, title: 'Compare rooms first', dueDate: '2026-10-02' });
+  expect(() => executeReviewedAction(c, stale, crypto.randomUUID())).toThrow(/changed/i);
+  run(c, 'accept-task', { id });
+  expect(c.household.tasks![0]).toMatchObject({ acknowledgedBy: [c.memberId], completedAt: null });
+  expect(c.household.transactions).toEqual(before.transactions);
+  run(c, 'edit-task', { id, title: 'Compare rooms nearby' });
+  expect(c.household.tasks![0]!.acknowledgedBy).toEqual([]);
+  expect(() => prepareAction(c, 'complete-task', { id })).toThrow(/Accept this exact assignment/);
+});
+
+
+it.each(['MEM-001', 'MEM-002'])('shows the resulting backup when claiming an unassigned task with backup %s', backupId => {
+  const c = context(); run(c, 'task', { title: 'Choose our weekend' });
+  const task = c.household.tasks![0]!;
+  c.household = saveTask(c.household, { memberId: c.memberId, id: task.id, expectedRevision: task.revision, task: { ...task, assigneeId: null, backupId } }).household;
+  const review = prepareAction(c, 'accept-task', { id: task.id });
+  const expectedBackup = backupId === c.memberId ? null : backupId;
+  const backupLabel = c.household.members.find(m => m.id === expectedBackup)?.name ?? 'None';
+  expect(review.rows.find(r => r.label === 'Responsibility')!.value).toContain(`backup: ${backupLabel}`);
+  c.household = executeReviewedAction(c, review, crypto.randomUUID()).household;
+  expect(c.household.tasks![0]).toMatchObject({ assigneeId: c.memberId, backupId: expectedBackup, acknowledgedBy: [c.memberId], completedAt: null });
 });

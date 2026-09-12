@@ -1,23 +1,22 @@
 import {afterAll,beforeAll,expect,it} from 'vitest';
 import {build} from 'esbuild';
 import {createServer,type Server} from 'node:http';
-import {mkdir,readFile} from 'node:fs/promises';
+import {mkdir} from 'node:fs/promises';
 import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
 import {chromium,expect as uiExpect,type Browser,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {encounterPatchPlugin} from './hearthside-encounter-patch.ts';
 import {encounterEntryWorker} from './fixtures/hearthside-encounter-entry-worker.ts';
 import {encounterEntryBrowser} from './fixtures/hearthside-encounter-entry-browser.ts';
 import {encounterPack} from '../src/hearthside/encounterPacks.ts';
 import type {EncounterContent} from '../src/hearthside/encounterEntryController.ts';
 import type {MemoryComposition} from '../src/hearthside/contracts.ts';
 let browser:Browser,server:Server,mf:Miniflare,base='',loseKind='',loseUpload=false;
+let holdComposition=false,releaseComposition:(()=>void)|null=null;
 const calls:{path:string;body:any;status:number;error?:string}[]=[];
 declare global{interface Window{entryProof:{theme(value:string):void;openEncounter(id:string):void;content():Promise<EncounterContent>;draft():MemoryComposition|null;dispose():void};entryTools:any;}}
 beforeAll(async()=>{
-  const vaultIntegrated=(await readFile('workers/hearthsideVault.ts','utf8')).includes('new HearthsideVaultEncounters(');
   const [worker,app]=await Promise.all([
-    build({stdin:{resolveDir:process.cwd(),contents:encounterEntryWorker},bundle:true,write:false,platform:'browser',format:'esm',target:'es2022',external:['cloudflare:*','node:*'],plugins:vaultIntegrated?[]:[encounterPatchPlugin()]}),
+    build({stdin:{resolveDir:process.cwd(),contents:encounterEntryWorker},bundle:true,write:false,platform:'browser',format:'esm',target:'es2022',external:['cloudflare:*','node:*']}),
     build({stdin:{resolveDir:process.cwd(),loader:'tsx',contents:encounterEntryBrowser},bundle:true,write:false,outfile:'entry.js',platform:'browser',format:'iife',target:'es2022'})]);
   mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:worker.outputFiles[0]!.text,compatibilityDate:'2026-08-27',compatibilityFlags:['nodejs_compat'],durableObjects:{VAULTS:{className:'EntryVault',useSQLite:true},ROOMS:{className:'EntryRoom',useSQLite:true}},r2Buckets:['MEDIA']}));
   const js=app.outputFiles.find(f=>f.path.endsWith('.js'))!.text,css=app.outputFiles.find(f=>f.path.endsWith('.css'))!.text;
@@ -25,6 +24,7 @@ beforeAll(async()=>{
     if(request.url==='/entry.js'){response.setHeader('Content-Type','text/javascript');response.end(js);return;}
     if(request.url?.startsWith('/api/')||request.url?.startsWith('/ledger-sync/')||request.url?.startsWith('/fixture/')){
       try{const chunks:Buffer[]=[];for await(const chunk of request)chunks.push(Buffer.from(chunk));const bytes=Buffer.concat(chunks),headers=new Headers();for(const [name,value]of Object.entries(request.headers))if(value)headers.set(name,Array.isArray(value)?value.join(','):value);
+        if(holdComposition&&request.url==='/fixture/compose')await new Promise<void>(resolve=>{releaseComposition=resolve;});
         const result=await mf.dispatchFetch('http://localhost'+request.url,{method:request.method,headers:Object.fromEntries(headers.entries()),...(bytes.length?{body:bytes}:{})});
         const body=headers.get('content-type')?.includes('application/json')&&bytes.length?JSON.parse(bytes.toString()):null;
         calls.push({path:request.url,body,status:result.status,...(!result.ok?{error:await result.clone().text()}:{})});
@@ -37,7 +37,7 @@ beforeAll(async()=>{
   await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const address=server.address();if(!address||typeof address==='string')throw Error('NO_SERVER');base=`http://127.0.0.1:${address.port}`;
   browser=await chromium.launch({headless:true});await mkdir('/tmp/hearthside-encounter-entry-proof',{recursive:true});
 },60000);
-afterAll(async()=>{await browser?.close();if(server)await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));await mf?.dispose();});
+afterAll(async()=>{releaseComposition?.();await browser?.close();if(server)await new Promise<void>((resolve,reject)=>server.close(e=>e?reject(e):resolve()));await mf?.dispose();});
 async function answer(page:Page,text:string){await page.locator('.encounter-private-paper textarea').fill(text);await page.getByRole('button',{name:'Save my private answer',exact:true}).click();await uiExpect(page.getByRole('status').filter({hasText:'Your answer is saved privately'})).toBeVisible();}
 async function reveal(page:Page){await page.getByRole('button',{name:'Review my choice to reveal',exact:true}).click();await page.getByRole('button',{name:'Choose to reveal this version',exact:true}).click();await uiExpect(page.getByRole('status').filter({hasText:'Your choice is saved'})).toBeVisible();}
 async function refresh(page:Page){await page.getByRole('button',{name:'Refresh our encounter',exact:true}).click();await uiExpect(page.getByRole('status').filter({hasText:'The current encounter is open.'})).toBeVisible();}
@@ -68,7 +68,23 @@ it('opens stable routes from all three seasonal worlds, uses two authenticated c
       await a.getByRole('button',{name:'Open this card as a memory draft',exact:true}).click();
       if(pack.theme==='taylor'){await a.getByRole('button',{name:'Resume this reviewed memory draft',exact:true}).waitFor();await a.reload();await a.getByRole('button',{name:'Resume this reviewed memory draft',exact:true}).click();}
       await a.getByRole('region',{name:'Actual memory draft and review'}).waitFor();const draft=await a.evaluate(()=>window.entryProof.draft());expect(draft!.recollections).toEqual([{memberId:'A',text:'Alex noticed the quiet light.'}]);expect(JSON.stringify(draft)).not.toContain('Sam noticed');
-      await a.getByRole('button',{name:'Share this composition for us to review',exact:true}).click();await a.getByRole('heading',{name:'We each choose this whole composition',exact:true}).waitFor();
+      const beforeComposition=calls.length;holdComposition=pack.theme==='taylor';
+      await a.getByRole('button',{name:'Share this composition for us to review',exact:true}).click();
+      if(holdComposition){
+        // The private publication exists, but its exact shared composition is not
+        // accepted yet. Keep controls and automatic review must wait for that write.
+        await expect.poll(()=>Boolean(releaseComposition)).toBe(true);
+        await a.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+        expect(calls.slice(beforeComposition).filter(c=>c.body?.operation==='review-memory')).toEqual([]);
+        await uiExpect(a.getByRole('heading',{name:'We each choose this whole composition',exact:true})).toHaveCount(0);
+        await uiExpect(a.getByRole('button',{name:'Keep this exact version',exact:true})).toHaveCount(0);
+        holdComposition=false;releaseComposition?.();releaseComposition=null;
+      }
+      await a.getByRole('heading',{name:'We each choose this whole composition',exact:true}).waitFor({timeout:10000}).catch(async e=>{throw Error(String(e)+'\n'+await a.locator('body').innerText()+'\n'+JSON.stringify(calls.slice(-12)));});
+      const publicationCalls=calls.slice(beforeComposition),acceptedComposition=publicationCalls.findIndex(c=>c.path==='/fixture/compose'&&c.status===200),freshReview=publicationCalls.findIndex(c=>c.body?.operation==='review-memory'&&c.status===200);
+      expect(acceptedComposition).toBeGreaterThanOrEqual(0);expect(freshReview).toBeGreaterThan(acceptedComposition);
+      expect(publicationCalls.filter(c=>c.body?.operation==='review-memory'&&c.status!==200)).toEqual([]);
+      await uiExpect(a.locator('.memory-publication [role="alert"]')).toHaveCount(0);
       await a.getByRole('button',{name:'Keep this exact version',exact:true}).click();await a.getByRole('button',{name:'You chose to keep this version',exact:true}).waitFor();
       await b.getByRole('button',{name:'Refresh the shared room',exact:true}).click();await b.getByRole('button',{name:'Open our memory review',exact:true}).click();await b.getByRole('button',{name:'Keep this exact version',exact:true}).click();await b.getByRole('button',{name:'You chose to keep this version',exact:true}).waitFor();
       await a.getByRole('button',{name:'Refresh the shared room',exact:true}).click();await a.getByRole('button',{name:'Open our memory review',exact:true}).click();

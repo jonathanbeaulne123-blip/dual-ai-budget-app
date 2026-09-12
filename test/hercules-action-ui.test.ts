@@ -139,3 +139,25 @@ it('sets up a missing job with a separate review and resumes the original shift'
  expect(resumed).toMatchObject({values:{date:'2026-09-10',workedHours:'6',paidBreakHours:'0',jobId:s.household.workJobs[0]!.id,roleId:'ROLE-1'},workspaceConfirmationId:bridge,submission:null});
  await act(async()=>s.ref.current!.send('final confirm'));expect(s.household.shifts).toHaveLength(0);
 });
+
+
+it('keeps accepting and completing a shared task as separate exact in-chat reviews', async () => {
+ const { prepareAction, executeReviewedAction } = await import('../src/core/herculesActions.ts');
+ const s=setup();
+ await act(async()=>s.changeCanonical(h=>{
+   const c={household:h,memberId:'MEM-001',view:'household' as const,today:'2026-09-10'};
+   return executeReviewedAction(c,prepareAction(c,'task',{title:'Choose our free evening',dueDate:'2026-10-01'}),crypto.randomUUID()).household;
+ }));
+ const id=s.household.tasks![0]!.id, transactions=structuredClone(s.household.transactions);
+ await act(async()=>s.ref.current!.propose({actionId:'accept-task',values:{id}}));
+ await click('Review changes');
+ expect(host.textContent).toContain('2026-10-01');expect(host.textContent).toContain('Your acceptance');
+ expect(s.household.tasks![0]!.acknowledgedBy).toEqual([]);expect(s.writes).toBe(0);
+ await click('Final Confirm');expect(s.writes).toBe(1);
+ expect(s.household.tasks![0]).toMatchObject({acknowledgedBy:['MEM-001'],completedAt:null});
+ await act(async()=>s.ref.current!.propose({actionId:'complete-task',values:{id}}));
+ expect(s.household.tasks![0]!.completedAt).toBeNull();
+ await click('Review changes');await click('Final Confirm');
+ expect(s.writes).toBe(2);expect(s.household.tasks![0]!.completedAt).toBeTruthy();
+ expect(s.household.transactions).toEqual(transactions);
+});

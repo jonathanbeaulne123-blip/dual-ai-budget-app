@@ -3,7 +3,8 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Hearthside from '../src/hearthside/Hearthside.tsx';
-import { catalogHousehold, type CommandOutcome } from '../src/core/index.ts';
+import { catalogHousehold, addGoal, fundGoal, type CommitResult, type Household, type CommandOutcome } from '../src/core/index.ts';
+import { saveNativeEvent } from '../src/core/nativeEvents.ts';
 import { splitForSync } from '../src/core/sync.ts';
 import { financialAuditHash } from '../src/core/commandIdentity.ts';
 import { capturedIntent } from '../src/ledgerSync/capture.ts';
@@ -20,7 +21,7 @@ beforeEach(() => {
   vi.stubGlobal('IntersectionObserver',class {observe(){} disconnect(){}});
   vi.stubGlobal('requestAnimationFrame', (fn:FrameRequestCallback) => {fn(0);return 1;});
 });
-afterEach(async () => {await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();});
+afterEach(async () => {await act(async()=>root.unmount());host.remove();vi.unstubAllGlobals();vi.restoreAllMocks();});
 
 function button(label:string) {
   const found=[...host.querySelectorAll('button')].find(b=>{const copy=b.cloneNode(true) as HTMLElement;for(const hidden of copy.querySelectorAll('[aria-hidden="true"]'))hidden.remove();return copy.textContent?.trim()===label;});
@@ -63,6 +64,7 @@ async function householdHarness() {
   };
   await act(async()=>render());
   return {read:()=>household,original,submissions,reference,
+    accept:async(fn:(current:Household)=>CommitResult)=>{await act(async()=>{await onCommand(fn,{confirmationId:crypto.randomUUID()});});},
     actor:async(id:string)=>{memberId=id;await act(async()=>render());},
     connect:async(value:boolean)=>{connected=value;await act(async()=>render());},
     loseAcknowledgement:()=>{loseNextAcknowledgement=true;},
@@ -100,6 +102,38 @@ describe('Connected Hearthside room journeys through the command authority',()=>
     expect(app.read().nativeEvents!.find(e=>e.id===eventId)).toMatchObject({start:'2026-09-20',end:'2026-09-20',visibility:'household'});
     expect(app.read().tasks!.filter(t=>t.id===taskId)).toHaveLength(1);expect(app.read().nativeEvents!.filter(e=>e.id===eventId)).toHaveLength(1);
     expect(await financialAuditHash(app.read())).toBe(before);
+  });
+  it('keeps one funded weekend through a changed date, a paused dream, lived memories and later return without duplicate financial or operational records',async()=>{
+    const errors=vi.spyOn(console,'error');
+    const app=await householdHarness();
+    // The existing funding command has its own reviewed UI suite; this harness supplies its accepted authority result.
+    await app.accept(h=>addGoal(h,{name:'Our slow weekend',target:'120',shared:true,ownerMemberId:null}));
+    const bankId=app.read().goals.at(-1)!.id;
+    await app.accept(h=>fundGoal(h,{goalId:bankId,amount:'120',fromAccountId:'ACC-CHEQUING',date:'2026-09-12',createdBy:'MEM-001'}));
+    const financial=await financialAuditHash(app.read()),transactions=structuredClone(app.read().transactions),contributions=structuredClone(app.read().goalContributions);
+    expect(contributions.filter(c=>c.goalId===bankId)).toHaveLength(1);
+    await click('Conservatory');await click('Make something happen');await field('What shall we call it?','Our slow weekend');await field('Why it matters','Time to breathe by the water.');
+    await act(async()=>{const input=[...host.querySelectorAll<HTMLLabelElement>('.hearthside-link-choices label')].find(l=>l.textContent?.includes('Our slow weekend'))!.querySelector<HTMLInputElement>('input')!;input.click();});
+    await save('Save our intention');const id=app.read().hearthside!.experiences[0]!.id;
+    await click('Make time for this');await field('Starts','2026-09-20');await save('Add this date to Calendar');
+    const eventId=app.read().hearthside!.experiences[0]!.references.find(r=>r.kind==='calendar-event')!.id;
+    const event=app.read().nativeEvents!.find(e=>e.id===eventId)!;
+    await app.accept(h=>saveNativeEvent(h,{memberId:'MEM-001',id:eventId,expectedRevision:event.revision,event:{...event,start:'2026-10-04',end:'2026-10-04'}}));
+    await click('Shape this intention');await field('Where we are','paused');await save('Save our intention');
+    await app.reload();expect(host.textContent).toContain('Resting for now');
+    expect(app.read().hearthside!.experiences[0]!.references).toEqual([{kind:'bank',id:bankId},{kind:'calendar-event',id:eventId}]);
+    expect(app.read().nativeEvents!.filter(e=>e.id===eventId)).toHaveLength(1);
+    expect(app.read().nativeEvents!.find(e=>e.id===eventId)!.start).toBe('2026-10-04');
+    await click('Shape this intention');await field('Where we are','lived');await save('Save our intention');
+    await click('Remember this');await field('A name for this moment','The windy weekend');await field('My words','We shared the last warm coffee.');await save('Share this composition for us to keep');
+    await app.actor('MEM-002');await click('Add or edit my recollection');await field('My words','I remember how loud the water sounded.');await save('Share this composition for us to keep');
+    await click('Keep this version');await app.actor('MEM-001');await click('Keep this version');
+    const memory=app.read().hearthside!.memories[0]!;
+    expect(memory).toMatchObject({experienceId:id,media:[],hideAmounts:true});expect(memoryKeptByEveryone(memory,['MEM-001','MEM-002'])).toBe(true);
+    await app.reload();expect(host.textContent).toContain('We both chose to keep this version.');await click('Return to the intention');
+    expect(location.pathname).toBe(`/hearthside/experiences/${id}`);expect(app.read().hearthside!.experiences).toHaveLength(1);expect(app.read().hearthside!.memories).toHaveLength(1);
+    expect(app.read().transactions).toEqual(transactions);expect(app.read().goalContributions).toEqual(contributions);expect(await financialAuditHash(app.read())).toBe(financial);
+    expect(errors.mock.calls.filter(args=>String(args[0]).includes('same key'))).toEqual([]);
   });
   it('prepares each anniversary as a fresh connected intention while retaining the earlier occurrence',async()=>{
     const app=await householdHarness(),before=await financialAuditHash(app.original);

@@ -2,14 +2,16 @@ import {describe,it,expect,beforeAll,afterAll,afterEach} from 'vitest';
 import {createServer,type ViteDevServer} from 'vite';
 import {chromium,type Browser,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {sharedLifeRestoreHarness} from './fixtures/hearthsideSharedLifeRestoreRuntime.ts';
 import type {LedgerCommand} from '../src/ledgerSync/protocol.ts';
 import type {SharedLifeRestoreIntent} from '../src/hearthside/sharedLifeRestoreContracts.ts';
 import type {} from './fixtures/hearthsideSharedLifeRestoreProof.tsx';
 
 describe('shared-life review: actual React surface and Worker authority',()=>{
- let server:ViteDevServer,browser:Browser,page:Page,address:string;const apps=new Map<string,Awaited<ReturnType<typeof sharedLifeRestoreHarness>>>(),commands=new Map<string,LedgerCommand>(),errors:string[]=[];
+ let server:ViteDevServer,browser:Browser,page:Page,address:string,cacheDir:string;const apps=new Map<string,Awaited<ReturnType<typeof sharedLifeRestoreHarness>>>(),commands=new Map<string,LedgerCommand>(),errors:string[]=[];
  beforeAll(async()=>{
   for(const householdId of ['HH-browser-a','HH-browser-b']){
    const app=await sharedLifeRestoreHarness(householdId);apps.set(householdId,app);
@@ -21,7 +23,9 @@ describe('shared-life review: actual React surface and Worker authority',()=>{
    expect(await app.submit({kind:'experience.save',expectedRevision:1,value:{...experience,revision:2,title:'A weekend away',intention:'Make space for a longer adventure.',state:'lived'}})).toMatchObject({type:'ack'});
    expect(await app.submit({kind:'note.save',expectedRevision:1,value:{...note,revision:2,text:'Bring the raincoat; we might walk by the water.'}})).toMatchObject({type:'ack'});
   }
-  server=await createServer({configFile:false,root:process.cwd(),cacheDir:'/tmp/hearthside-restore-vite-cache',esbuild:{jsx:'automatic'},logLevel:'error',server:{host:'127.0.0.1',port:0},plugins:[{name:'restore-proof',configureServer(vite){
+  cacheDir=await mkdtemp(join(tmpdir(),'hearthside-restore-vite-'));
+  // The middleware page is the only entry; unrelated app HTML must not enter this fixture's dependency crawl.
+  server=await createServer({configFile:false,root:process.cwd(),cacheDir,optimizeDeps:{entries:['test/fixtures/hearthsideSharedLifeRestoreProof.tsx']},esbuild:{jsx:'automatic'},logLevel:'error',server:{host:'127.0.0.1',port:0},plugins:[{name:'restore-proof',configureServer(vite){
    vite.middlewares.use('/__restore_proof',(_req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthetic shared-life restore proof</title><style>body{margin:0;background:#f6f2e8;font-family:system-ui;color:#352b24}*{box-sizing:border-box}</style></head><body><div id="root"></div><script type="module" src="/test/fixtures/hearthsideSharedLifeRestoreProof.tsx"></script></body></html>');});
    vite.middlewares.use('/__restore_api',(req,res)=>{void(async()=>{try{
     let text='';for await(const chunk of req)text+=String(chunk);const body=JSON.parse(text) as {householdId:string;memberId:string;action:string;input:SharedLifeRestoreIntent};const app=apps.get(body.householdId);if(!app)throw Error('FORBIDDEN');
@@ -35,7 +39,7 @@ describe('shared-life review: actual React surface and Worker authority',()=>{
   }}]});await server.listen();address=`http://127.0.0.1:${(server.httpServer!.address()as{port:number}).port}/__restore_proof`;browser=await chromium.launch({channel:'chrome',headless:true});page=await (await browser.newContext({viewport:{width:1440,height:1000}})).newPage();page.setDefaultTimeout(5000);page.on('pageerror',e=>{errors.push(e.message);console.error(e.message);});await mkdir('/tmp/hearthside-shared-life-restore-proof',{recursive:true});
  },60000);
  afterEach(async(context)=>{if(context.task.result?.state==='fail'){console.error(await page.locator('body').innerText());await page.screenshot({path:'/tmp/hearthside-shared-life-restore-proof/failure.png',fullPage:true});}});
- afterAll(async()=>{await browser?.close();await server?.close();for(const app of apps.values())await app.dispose();});
+ afterAll(async()=>{await browser?.close();await server?.close();for(const app of apps.values())await app.dispose();if(cacheDir)await rm(cacheDir,{recursive:true,force:true});});
  async function choosePoint(){await page.getByLabel('Saved point',{exact:true}).selectOption({label:'Accepted ledger revision 2'});await page.getByRole('checkbox',{name:/A weekend away/}).waitFor();}
  it('reviews exact words, survives uncertain reply/reload and scope changes, then requires both members before apply',async()=>{
   await page.goto(address);await choosePoint();await page.getByRole('checkbox',{name:/A weekend away/}).focus();await page.keyboard.press('Space');await page.getByRole('heading',{name:'A weekend away',exact:true}).waitFor();

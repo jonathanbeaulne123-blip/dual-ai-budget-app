@@ -1,7 +1,6 @@
 import {expect,it} from 'vitest';
 import {build} from 'esbuild';
 import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
-import {encounterPatchPlugin} from './hearthside-encounter-patch.ts';
 import type {EncounterPrivateView} from '../workers/hearthsideVaultEncounters.ts';
 it('uses actual authenticated Vault, SQLite/R2 and no-callback paired reveal evidence through interruption and restore',async()=>{
   const bundle=await build({stdin:{resolveDir:process.cwd(),contents:`
@@ -22,7 +21,7 @@ it('uses actual authenticated Vault, SQLite/R2 and no-callback paired reveal evi
     export class TestVault extends HearthsideVault{
       constructor(ctx,env){super(ctx,{...env,HEARTHSIDE_VAULT_AUTHORITY:{policy:async(scope,input)=>{const people=await env.LEDGER_ROOMS.get(env.LEDGER_ROOMS.idFromName('development/HH-ENCOUNTER')).roster(scope);return{recipients:people,approvers:people};},accept:async()=>{throw Error('Not used');},isReferenced:async()=>false}});}
     }export default{fetch:handleHearthsideVault};
-  `},bundle:true,write:false,platform:'browser',format:'esm',target:'es2022',external:['cloudflare:*','node:*'],plugins:[encounterPatchPlugin()]});
+  `},bundle:true,write:false,platform:'browser',format:'esm',target:'es2022',external:['cloudflare:*','node:*']});
   const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0]!.text,compatibilityDate:'2026-08-27',compatibilityFlags:['nodejs_compat'],
     durableObjects:{HEARTHSIDE_VAULTS:{className:'TestVault',useSQLite:true},LEDGER_ROOMS:{className:'ReferenceRoom',useSQLite:true}},r2Buckets:['HEARTHSIDE_VAULT_MEDIA'],bindings:{HEARTHSIDE_VAULT_ENABLED:'true',HEARTHSIDE_VAULT_PUBLICATION:'true',LEDGER_SYNC_LOCAL_AUTH:'true',SUPABASE_URL:'http://127.0.0.1:1',SUPABASE_PUBLISHABLE_KEY:'synthetic'}}));
   const scope=(memberId:string)=>({environment:'development',householdId:'HH-ENCOUNTER',memberId,subject:`local:${memberId}`,expires:Date.now()+3600000});

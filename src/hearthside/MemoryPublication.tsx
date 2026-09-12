@@ -43,18 +43,26 @@ function MemoryPublicationSurface({ client, scope, theme, candidate, roster, edi
   const [exact, setExact] = useState(false), reviewHeading = useRef<HTMLHeadingElement>(null);
   const copyHeading = useRef<HTMLHeadingElement>(null), copyReturn = useRef<HTMLButtonElement | null>(null), lettersButton = useRef<HTMLButtonElement>(null);
   const [proposalAccepted, setProposalAccepted] = useState(false);
+  const [composing, setComposing] = useState(false), focusPreparedReview = useRef(false);
   const recovery = useMemo<MemoryPublicationRecovery>(() => {
     try { return suppliedRecovery ?? new IndexedDbMemoryPublicationRecovery(); }
     catch { const fail = async (): Promise<never> => { throw new Error('PRIVATE_STORAGE_UNAVAILABLE'); }; return { reserve: fail, list: fail }; }
   }, [suppliedRecovery]);
   const name = (memberId: string) => roster.find(m => m.memberId === memberId)?.name ?? 'Household member';
   const binding = candidate.publication;
+  const requireCurrentComposition = async (digest: string, selectedBinding?: MemoryPublicationBinding) => {
+    const selected = current.current, actualDigest = await memoryCompositionDigest(selected);
+    vaultAssert(live.current, 'SCOPE_CHANGED');
+    vaultAssert(current.current === selected && !selected.withdrawn && actualDigest === digest &&
+      (!selectedBinding || sameBinding(selected.publication, selectedBinding)), 'COMPOSITION_CHANGED');
+  };
   const loadRecovery = async () => { const rows = await recovery.list(scope, current.current.id); if (live.current) setRecoveries(rows); };
   const refresh = async () => {
     const selectedBinding = current.current.publication;
     if (!selectedBinding) return;
     const value = await client.command({ operation: 'review-memory', id: selectedBinding.publicationId }) as VaultMemoryAuthorReview;
     vaultAssert(sameBinding(value.binding, selectedBinding) && await memoryCompositionDigest(value.memory.composition) === selectedBinding.compositionDigest, 'COMPOSITION_CHANGED');
+    await requireCurrentComposition(selectedBinding.compositionDigest, selectedBinding);
     if (live.current) { setReview(value); setProposalAccepted(true); }
   };
   useEffect(() => {
@@ -71,14 +79,26 @@ function MemoryPublicationSurface({ client, scope, theme, candidate, roster, edi
     return () => { cancelled = true; };
   }, [candidate, binding]);
   useEffect(() => {
-    if (!exact || !binding) { setReview(null); setProposalAccepted(false); return; }
+    // A private prepared publication is not reviewable until its exact shared
+    // composition is accepted. Re-run after that write, even if props keep the
+    // same candidate object and binding identity.
+    if (!exact || !binding || composing) { setReview(null); setProposalAccepted(false); return; }
     let cancelled = false;
-    void client.command({ operation: 'review-memory', id: binding.publicationId }).then(value => {
+    void client.command({ operation: 'review-memory', id: binding.publicationId }).then(async value => {
       const r = value as VaultMemoryAuthorReview; vaultAssert(sameBinding(r.binding, binding), 'COMPOSITION_CHANGED');
-      if (!cancelled) { setReview(r); setProposalAccepted(true); setError(''); }
-    }).catch(e => { if (!cancelled) setError(errorMessage(e)); });
+      await requireCurrentComposition(binding.compositionDigest, binding);
+      if (!cancelled) {
+        setReview(r); setProposalAccepted(true); setError('');
+        if (focusPreparedReview.current) setNotice('This exact composition is ready for each of us to review and keep.');
+      }
+    }).catch(e => { if (!cancelled) { setError(errorMessage(e)); setNotice(''); } });
     return () => { cancelled = true; };
-  }, [exact, binding?.publicationId, binding?.publicationDigest, client]);
+  }, [exact, binding?.publicationId, binding?.publicationDigest, client, composing]);
+  useEffect(() => {
+    if (review && exact && proposalAccepted && focusPreparedReview.current) {
+      focusPreparedReview.current = false; reviewHeading.current?.focus();
+    }
+  }, [review, exact, proposalAccepted]);
   useEffect(() => { if (selected) copyHeading.current?.focus(); }, [selected?.mediaId, selected?.publicationId]);
   const run = async (label: string, action: () => Promise<void>) => {
     if (busy) return; setBusy(label); setError(''); setNotice('');
@@ -99,13 +119,16 @@ function MemoryPublicationSurface({ client, scope, theme, candidate, roster, edi
     setNotice('Your photo is privately uploaded with its original metadata removed.');
   };
   const prepare = async () => {
-    setProposalAccepted(false);
-    const value = current.current, r = await prepareMemoryReview(client, recovery, scope, value, roster.filter(m => m.active !== false).map(m => m.memberId));
-    if (!live.current) return;
-    vaultAssert(await memoryCompositionDigest(current.current) === r.binding.compositionDigest, 'COMPOSITION_CHANGED');
-    const prepared = { ...value, publication: r.binding }; onChange(prepared); setReview(r);
-    vaultAssert(await compose(prepared), 'MEMORY_COMPOSE_UNCERTAIN');
-    if (live.current) { setProposalAccepted(true); setNotice('This exact composition is ready for each of us to review and keep.'); reviewHeading.current?.focus(); }
+    setComposing(true); setProposalAccepted(false);
+    try {
+      const value = current.current, r = await prepareMemoryReview(client, recovery, scope, value, roster.filter(m => m.active !== false).map(m => m.memberId));
+      if (!live.current) return;
+      await requireCurrentComposition(r.binding.compositionDigest);
+      const prepared = { ...value, publication: r.binding }; onChange(prepared);
+      vaultAssert(await compose(prepared), 'MEMORY_COMPOSE_UNCERTAIN');
+      await requireCurrentComposition(r.binding.compositionDigest, r.binding);
+      if (live.current) { focusPreparedReview.current = true; setNotice('The shared composition was saved. Loading our current review…'); }
+    } finally { if (live.current) setComposing(false); }
   };
   const mineKept = candidate.approvals.some(a => a.memberId === scope.memberId && a.revision === candidate.revision);
   const allKept = roster.filter(m => m.active !== false).length >= 2 && roster.filter(m => m.active !== false).every(m => candidate.approvals.some(a => a.memberId === m.memberId && a.revision === candidate.revision));

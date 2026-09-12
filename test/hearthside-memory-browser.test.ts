@@ -7,7 +7,7 @@ import AxeBuilder from '@axe-core/playwright';
 import sharp from 'sharp';
 let browser: Browser, server: Server, base = '';
 declare global { interface Window {
-  memoryProof: { render(theme: string, member?: string): void; dispose(): void; loseCopy(): void; loseActivation(): void; calls(): { operation: string; id?: string; input?: { id?: string } }[]; shared(): unknown; uploads: { blob: Blob }[] };
+  memoryProof: { render(theme: string, member?: string): void; dispose(): void; loseCopy(): void; loseActivation(): void; hold(kind: 'review' | 'compose'): void; held(): boolean; release(): void; changeCandidate(): void; calls(): { operation: string; id?: string; input?: { id?: string } }[]; shared(): unknown; uploads: { blob: Blob }[] };
   memoryObjectUrls: Set<string>;
 } }
 const proof = '/tmp/hearthside-memory-proof';
@@ -20,6 +20,7 @@ beforeAll(async () => {
     let actor='MEM-A',theme='classic',loseCopy=false,loseActivation=false;const uploads=[],root=createRoot(document.getElementById('root'));
     const original=()=>({version:1,id:'MEMORY-SYNTHETIC',revision:1,title:'A little time together',date:null,experienceId:null,media:[{version:1,contentId:'own-photo',revision:1,kind:'image',alt:'A synthetic teal square for this local proof'}],designs:[],recollections:[{memberId:actor,text:'A slow morning, warm tea, and room for our own words.'}],hideAmounts:true,approvals:[],withdrawn:false});
     let current=JSON.parse(localStorage.getItem('memory-proof-draft')||'null')||original(),canonical=JSON.parse(localStorage.getItem('memory-proof-canonical')||'null');
+    let held=null;const pause=async kind=>{if(held?.kind===kind){held.entered=true;await held.wait;}};
     const reviews=JSON.parse(localStorage.getItem('memory-proof-reviews')||'{}'),calls=JSON.parse(localStorage.getItem('memory-proof-calls')||'[]');
     const save=()=>{localStorage.setItem('memory-proof-draft',JSON.stringify(current));localStorage.setItem('memory-proof-canonical',JSON.stringify(canonical));localStorage.setItem('memory-proof-reviews',JSON.stringify(reviews));localStorage.setItem('memory-proof-calls',JSON.stringify(calls));};
     const manifest=id=>({id,contentType:'image/jpeg',sha256:'b'.repeat(64),byteLength:bytes.length,status:'uploaded'});
@@ -29,7 +30,7 @@ beforeAll(async () => {
         if(input.operation==='copy-media'){const m=manifest(input.input.id);if(loseCopy){loseCopy=false;throw Error('Lost copy acknowledgement');}return{...m,copySource:{publicationId:'private-source-letter'},owner:{subject:'private-actor-subject'}};}
         if(input.operation==='prepare-memory'){const v=input.input,digest=await memoryCompositionDigest(v.candidate);const r={version:1,id:v.id,ownerMemberId:actor,recipientMemberIds:['MEM-A','MEM-B'],digest:'a'.repeat(64),state:'prepared',memory:{composition:v.candidate,compositionDigest:digest,expectedRevision:v.expectedRevision},binding:{version:1,publicationId:v.id,publicationDigest:'a'.repeat(64),memoryId:v.candidate.id,memoryRevision:v.candidate.revision,compositionDigest:digest},media:v.candidate.media.map(m=>manifest(m.contentId)),approvedMemberIds:[]};reviews[v.id]=reviews[v.id]||r;save();return structuredClone(reviews[v.id]);}
         const r=reviews[input.id];if(!r||r.state==='revoked')throw Error('NOT_FOUND');
-        if(input.operation==='review-memory'){if(canonical?.publication?.publicationId!==r.id||await memoryCompositionDigest(canonical)!==r.binding.compositionDigest)throw Error('MEMORY_CHANGED');return structuredClone(r);}
+        if(input.operation==='review-memory'){if(canonical?.publication?.publicationId!==r.id||await memoryCompositionDigest(canonical)!==r.binding.compositionDigest)throw Error('MEMORY_CHANGED');const reviewed=structuredClone(r);await pause('review');return reviewed;}
         if(input.operation==='approve'){if(input.digest!==r.digest)throw Error('COMPOSITION_CHANGED');if(!r.approvedMemberIds.includes(actor))r.approvedMemberIds.push(actor);save();return{};}
         if(input.operation==='activate'){if(canonical.approvals.length!==2)throw Error('APPROVAL_REQUIRED');r.state='active';save();if(loseActivation){loseActivation=false;throw Error('Lost activation acknowledgement');}return{version:1,publicationId:r.id,digest:r.digest,state:'active',memory:r.binding};}
         if(input.operation==='withdraw'){r.state='revoked';save();return{version:1,publicationId:r.id,digest:r.digest,state:'revoked',memory:r.binding};}
@@ -37,10 +38,10 @@ beforeAll(async () => {
       },media:async()=>blob,queueMedia:async(manifest,blob)=>uploads.push({manifest,blob}),resumeUploads:async()=>[]};
     function render(){const scope={environment:'development',householdId:'HH-SYNTHETIC',memberId:actor,subject:actor==='MEM-A'?'synthetic-a':'synthetic-b'};
       root.render(<React.StrictMode><MemoryPublication client={client} scope={scope} theme={theme} candidate={current} roster={[{memberId:'MEM-A',name:'Alex'},{memberId:'MEM-B',name:'Sam'}]} editable={!canonical}
-        onChange={value=>{current=value;save();render();}} compose={async value=>{canonical=structuredClone(value);current=structuredClone(value);save();render();return true;}}
+        onChange={value=>{current=value;save();render();}} compose={async value=>{canonical=structuredClone(value);current=structuredClone(value);save();render();await pause('compose');return true;}}
         keep={async binding=>{const r=reviews[binding.publicationId];if(!r.approvedMemberIds.includes(actor))throw Error('APPROVAL_REQUIRED');canonical.approvals=[...canonical.approvals.filter(a=>a.memberId!==actor),{memberId:actor,revision:canonical.revision}];current=structuredClone(canonical);save();render();return true;}}
         withdraw={async()=>{canonical.withdrawn=true;canonical.approvals=[];current=structuredClone(canonical);save();render();return true;}}/></React.StrictMode>);}
-    window.memoryProof={render:(next,member)=>{theme=next;if(member&&member!==actor){actor=member;current=canonical?structuredClone(canonical):original();}render();},dispose:()=>root.unmount(),loseCopy:()=>{loseCopy=true;},loseActivation:()=>{loseActivation=true;},calls:()=>calls,shared:()=>canonical,uploads};render();
+    window.memoryProof={render:(next,member)=>{theme=next;if(member&&member!==actor){actor=member;current=canonical?structuredClone(canonical):original();}render();},dispose:()=>root.unmount(),loseCopy:()=>{loseCopy=true;},loseActivation:()=>{loseActivation=true;},hold:kind=>{let release;const wait=new Promise(resolve=>release=resolve);held={kind,wait,release,entered:false};},held:()=>Boolean(held?.entered),release:()=>{held?.release();held=null;},changeCandidate:()=>{const{publication,...next}=current;current={...next,revision:current.revision+1,title:'A changed composition',approvals:[]};save();render();},calls:()=>calls,shared:()=>canonical,uploads};render();
   ` }, bundle: true, write: false, outfile: 'memory-proof.js', platform: 'browser', format: 'iife', target: 'es2022' });
   const js = result.outputFiles.find(f => f.path.endsWith('.js'))!.text, css = result.outputFiles.find(f => f.path.endsWith('.css'))!.text;
   server = createServer((request, response) => {
@@ -52,6 +53,28 @@ beforeAll(async () => {
   browser = await chromium.launch({ headless: true }); await mkdir(proof, { recursive: true });
 }, 60_000);
 afterAll(async () => { await browser?.close(); if (server) await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve())); });
+it('rejects a stale compose acknowledgement or manual review after the same memory candidate changes', async () => {
+  for (const kind of ['compose', 'review'] as const) {
+    const context = await browser.newContext(), page = await context.newPage();
+    try {
+      await page.goto(base);
+      if (kind === 'review') {
+        await page.getByRole('button', { name: 'Share this composition for us to review' }).click();
+        await page.getByRole('heading', { name: 'We each choose this whole composition' }).waitFor();
+      }
+      await page.evaluate(kind => window.memoryProof.hold(kind), kind);
+      await page.getByRole('button', { name: kind === 'compose' ? 'Share this composition for us to review' : 'Refresh our choices', exact: true }).click();
+      await expect.poll(() => page.evaluate(() => window.memoryProof.held())).toBe(true);
+      await page.evaluate(() => window.memoryProof.changeCandidate());
+      await page.getByRole('heading', { name: 'We each choose this whole composition' }).waitFor({ state: 'hidden' });
+      await page.evaluate(() => window.memoryProof.release());
+      await page.getByRole('alert').filter({ hasText: 'This memory or its audience changed.' }).waitFor({ timeout: 5000 });
+      expect(await page.getByRole('button', { name: 'Keep this exact version', exact: true }).count()).toBe(0);
+      expect(await page.getByText('This exact composition is ready for each of us to review and keep.', { exact: true }).count()).toBe(0);
+      expect(await page.evaluate(() => window.memoryProof.calls().filter(c => c.operation === 'approve' || c.operation === 'activate'))).toEqual([]);
+    } finally { await context.close(); }
+  }
+}, 30000);
 it('renders the exact shared review in all themes and required widths with keyboard and accessibility proof', async () => {
   for (const theme of ['classic', 'taylor', 'newfoundland']) {
     const context = await browser.newContext({ reducedMotion: 'reduce' }), page = await context.newPage();

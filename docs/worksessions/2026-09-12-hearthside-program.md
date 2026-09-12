@@ -1,13 +1,13 @@
 # Hearth worksession — Hearthside full program
 
-- **Status:** OPEN — implementation in progress; no package completion claimed yet
+- **Status:** OPEN — integrated local program under final verification; full acceptance remains open
 - **Opened:** 2026-09-12 (`America/Toronto`)
 - **Owner / decision owner:** Jonathan
 - **Integration owner:** Codex
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `codex/hearthside-program`
-- **Baseline SHA:** `429db8ef0447dac6347e89e945dd04aad05e84fb`
-- **Head SHA:** baseline plus local implementation; see evidence log
+- **Baseline SHA:** `a96c1ffb0905957d20c16491846ff0ca4b9b5e3c` (current-main reconciliation; initial base `429db8e`)
+- **Head SHA:** `4ae12f866062a225ab22dfbfef65b15a36ec650a` plus recorded gate repairs; final tested head pending
 - **Risk:** High; hosted activation and native distribution require Release review
 - **Environment impact:** local and synthetic Development
 
@@ -25,7 +25,7 @@ Simultaneous making, affection, presence, discovery and four authored rooms in C
 
 ## Verified baseline
 
-The requested baseline `5cc8c12` (#461) is an ancestor of current main. The only intervening commit, `429db8e` (#462), changes Hercules free-tier routing. Home's painted cats and selected-bank return flow are retained. This work uses a dedicated checkout; other active tasks remain independent.
+The requested baseline `5cc8c12` (#461) is an ancestor of the integrated main. Implementation began at `429db8e` (#462), then reconciled `a96c1ff` (#463–467) at merge `2db4891`. Home’s painted cats and selected-bank return flow, new Nest/King, Calendar and Hercules work are retained. This dedicated checkout preserves other active tasks.
 
 ## Scope and package register
 
@@ -33,9 +33,9 @@ All packages include changed-state tests, recovery, applicable theme treatments 
 
 | Package | Depends on | Scope | Status |
 | --- | --- | --- | --- |
-| P0 | — | Current baseline, six journey storyboards, 12 room compositions, synthetic fixtures | In progress |
-| P1 | P0 | Shared identities, scoped commands, routes, capabilities, continuity and restore | In progress |
-| P2 | P1 | Connected room shell, focused tools, stable addresses and returns | Integrated local room/object/tool routes; focus and app-chrome verification ongoing |
+| P0 | — | Current baseline, six journey storyboards, 12 room compositions, synthetic fixtures | Local interactive specimen, authored room manifest and paid/free/interrupted fixtures implemented; final acceptance remains separate |
+| P1 | P0 | Shared identities, scoped commands, routes, capabilities, continuity and restore | Versioned authority, replay, compatibility and explicit paired shared-life restore integrated; local runtime recovery proven |
+| P2 | P1 | Connected room shell, focused tools, stable addresses and returns | Integrated local room/object/tool routes; actual App/PGlite reload, handoff, focus and themed chrome proof passes |
 | P3 | P1 | Recipient-only Vault, media, drafts and recoverable publication | Vault letters/media/audience/archive and exact memory binding integrated; actual LedgerRoom admission proven locally |
 | P4 | P1 | Canonical creative documents, operation history, migration and render projection | Canonical operations, migration, SQL/R2 history, delta reads and render projection integrated |
 | P5 | P2, P4 | Simultaneous Studio, previews, individual undo, firing and handoff | Studio, live preview/receipt runtime, durable async handoff, shelf, keyboard draft and rejected-edit recovery integrated; physical concurrency proof open |
@@ -45,7 +45,7 @@ All packages include changed-state tests, recovery, applicable theme treatments 
 | P9 | P1, P7, P8 | Scoped Hercules context, drafts and reviewed shared artifacts | Selected-intention compact/full Workspace, resumable drafts and reviewed shared artifact references integrated; shared-copy R2 archive and atomic initialization repair integrated; actual archive restart/recovery tests pass |
 | P10 | P2, P5, P8 | Four complete rooms in three themes and imagined futures | 12 authored rooms, 14 semantic furniture pieces, arrangement recovery, canonical future horizons and recorded layouts integrated; final app/physical polish gates open |
 | P11 | P3, P8, P10 | Four seasonal packs per theme, capsules, room history and projector film | Capsules, downloadable Projector and mutually kept room history integrated; all 12 seasonal encounters and connected entry integrated |
-| P12 | P3, P8, P10 | Mutually published guest copies, visits, revocation and private street | Guest namespace, reviewed copies, own-auth Street and actual LedgerRoom/Vault source projection integrated; final whole-worker/application evidence open |
+| P12 | P3, P8, P10 | Mutually published guest copies, visits, revocation and private street | Guest namespace, reviewed copies, own-auth Street and actual LedgerRoom/Vault source projection integrated; whole-worker/App guest assembly and revoked-access evidence pass locally; hosted visitor continuity open |
 | P13 | P2, P4, P5, P10 | Capacitor 8 companions, native authentication, interactive AR and widget | Native source, interactive AR, secure startup/system-browser auth recovery, widget controls and actual Studio entry integrated; SDK builds, distribution and physical gates open |
 | P14 | P4, P8 | Immutable STL, 3MF, GLB and paint/geometry production packages | Production kernels and Studio export surface integrated; integrated evidence and physical acceptance open |
 | P15 | P0–P14 | Integrated acceptance, independent reviews and release evidence | Open; no integrated frozen-head high gate or root build yet |
@@ -173,3 +173,21 @@ Codex continues integration. The full program remains open through P15. No deplo
 - Focus-map entries retain existing regressions and include canonical Nest and Workspace merge reviews. No test selection or time budget is reduced to obtain a pass. Source freeze, integrated gate/build and actual compiled web-copy comparison remain next.
 
 - Final actual-App package `f8cff02a573d6eba5a18c1cbed6a5c90359d8b55` passes against combined Nest/Workspace source in 24.93 seconds. All 27 geometry cases, 320px/200% text keyboard entry, exact Task/Calendar returns, Task reload focus, wardrobe, quiet Hearthside resident and restored Home reminder pass. No provider request, financial hash/receipt change, shared metadata change or page error occurred. The fixture explicitly uses local legacy-shell mode; it does not claim authenticated v2 writes, expanded-Fund clearance or physical acceptance. New fixture/test/docs are integrated and registered.
+
+
+## First combined High gate and reproduced repairs
+
+- Clean source `7482fb3` first stopped at diff checking on imported patch context/SVG trailing whitespace (1.664 seconds). Whitespace and the asset generator were normalized; no product check ran in that attempt.
+- Clean source `4ae12f866062a225ab22dfbfef65b15a36ec650a`, base `a96c1ffb0905957d20c16491846ff0ca4b9b5e3c`: TypeScript/AI/diff checks passed. The High gate selected 159 files; the fast phase completed 153 files with 1,067 passed and 10 failed tests across 7 files. Total 177.116 seconds, no 300-second budget breach. Serial tests were not reached. This is failed evidence, not a passing package.
+- Three old Calendar Weight tests still selected the removed “Month” tab after current-main navigation changes. They now enter the actual Calendar → Cash flow control and retain all date-clamping/payment/read-only/drag/scope assertions.
+- Two Hercules Task tests exposed a real missing action: shared assignments now require acceptance, but Hercules only offered create/edit/complete. The new reviewed `accept-task` calls canonical `acknowledgeTask`, shows work/dates/responsibility, and leaves completion separate. New tests deny partner acceptance and stale reviews, prove material edits invalidate acceptance, and exercise actual in-chat acceptance followed by separately confirmed completion. The four-file Task/Calendar group passes 54 tests; test work 1.25 seconds (69.06 seconds total with cold transforms).
+- Encounter runtime used obsolete pre-integration source injection. Repair `bc458db` bundles the actual integrated Vault directly and retains its authentication/SQLite/R2/reveal/recovery assertions. The same commit gives the restore browser a fixture-specific dependency entry and a fresh isolated cache; all original 5-second navigation deadlines and full interaction assertions remain. Three tests pass in 11.26 seconds.
+- The remaining Encounter Entry memory race and furniture/guest browser startup failures are being reproduced and repaired independently. No test selection, deadline or acceptance budget is weakened.
+
+- Independent review of Task acceptance found an omitted retained backup on previously unassigned work. The exact review now shows the resulting assignee and backup, including clearing the actor’s old backup role when claiming the task. Two changed-state regressions prove both cases. Final Task/in-chat/Workspace-options group passes 52 tests in 4.72 seconds.
+- Furniture/guest browser repair `defa2f74145539cd8e4ebd2925e54712f836c2ea` is integrated. Entire suites passed together from cold caches in 59.17 seconds; startup 407/766 ms. Their original deadlines, all 3×4×7 matrices and every consent/recovery/accessibility assertion remain.
+- The deterministic Encounter Entry reproduction holds the actual composition request: prepare succeeds, premature review gets `MEMORY_CHANGED`, composition subsequently succeeds, and the old UI loses its review controls. The repair is under exact real-service race validation; an isolated happy-path pass was deliberately not accepted as closure.
+
+- Memory race repair `22808e18b08c435d2e0ed9ff8e1819d8e0ec62e9` is integrated after root diff review. Compose must finish before automatic review; prepare/compose/manual refresh verify the current live candidate binding and digest after awaits. Seven browser tests pass in 19.18 seconds, including deliberately held composition and stale same-memory responses. The changed-candidate regression fails the original component and passes the repaired source. No worker admission was relaxed.
+- Added an observable funded-weekend journey through actual Hearthside controls and canonical command authority: one accepted bank contribution, one linked date changed in place, paused state after reload, lived state, separate recollections, both exact Keeps and later return. It preserves the same financial hash, contribution, bank, date and memory identities. The funding review UI remains covered separately; this harness supplies its accepted canonical command. The journey exposed duplicate React keys between bank/future sections in Conservatory; distinct stable keys fix the real identity warning. Nine journey/future tests pass in 4.89 seconds.
+- All native authored assets regenerate reproducibly from the original Hearth mark (30 PNG outputs; no byte changes). Eight native CI boundary tests pass. SDK and physical acceptance remain open.
