@@ -82,6 +82,8 @@ const PANES = [
 
 const TABLE_PANE_IDS = ["fund", "fund-register", "wallet", "register", "import"] as const;
 const AUDIT_PANE_IDS = ["journal", "trial", "statements", "rec", "close", "accounts", "query"] as const;
+/** Rooms the My books seals already open; the tab row below them carries only what the seals do not (feedback row 5: one way to each place). */
+const SEAL_PANE_IDS = ["wallet", "register", "close"] as const;
 
 type Pane = (typeof PANES)[number]["id"] | "overview";
 
@@ -336,7 +338,7 @@ function BooksSession({
         onPick={(id) => setPane(id as Pane)}
       />
       <div className="tabs" role="group" aria-label={sharedTable ? "Household table" : "My books"} data-books-tabs="table">
-        {tablePanes.map((item) => (
+        {tablePanes.filter((item) => !SEAL_PANE_IDS.includes(item.id as (typeof SEAL_PANE_IDS)[number])).map((item) => (
           <button key={item.id} aria-pressed={pane === item.id} className={pane === item.id ? "active" : ""} onClick={() => setPane(item.id)}>
             {item.label}
           </button>

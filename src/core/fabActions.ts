@@ -1,15 +1,16 @@
 import type { LedgerView } from "./types.ts";
 
 /**
- * The adaptive action (Vision v2 §4.5). One control in a stable position whose
- * verb set changes with the space and destination.
+ * The adaptive action (Vision v2 §4.5, narrowed by feedback row 5).
+ * One control in a stable position; + means add. Every verb opens an Add
+ * flow that ends at Final Confirm; none of them navigate. Household verbs
+ * are verb-first and reorder by destination; My Money keeps its direct four
+ * in their known order. Shift stays available in Our Home because shared
+ * income is often shift income; it sits last because Work is a My Money job.
  *
- * Rules kept from the original speed dial: actions open a flow, they never
- * post; every financial verb still ends at Final Confirm; the active ledger is
- * named by the space before any money verb. Household verbs are verb-first and
- * reorder by destination; My Money keeps its direct four in their known order.
- * Shift stays available in Our Home because shared income is often shift income;
- * it sits last because Work itself is a My Money job.
+ * "Plan a cost" lives on the Calendar's own +, "Decide together" is the
+ * Together tab, and "Plan the week" is the planner room (D-245): the +
+ * stopped carrying a second route to any of them (row 5).
  */
 export type FabAddMode = "shift" | "income" | "expense" | "transfer";
 
@@ -17,7 +18,7 @@ export type FabAction =
   | { id: string; kind: "add"; mode: FabAddMode; label: string; aria: string; money: true }
   | { id: string; kind: "go"; tab: "calendar" | "together" | "plan" | "ledger" | "planner"; label: string; aria: string; money: false };
 
-export type FabActionTab = "home" | "calendar" | "shift" | "ledger" | "plan" | "together" | "more" | string;
+export type FabActionTab = "home" | "calendar" | "shift" | "ledger" | "plan" | "together" | "more" | "planner" | string;
 
 const PERSONAL: readonly FabAction[] = [
   { id: "shift", kind: "add", mode: "shift", label: "Shift", aria: "Add shift", money: true },
@@ -30,29 +31,21 @@ const RECORD: FabAction = { id: "record-expense", kind: "add", mode: "expense", 
 const ADD_INCOME: FabAction = { id: "add-income", kind: "add", mode: "income", label: "Add income", aria: "Add income", money: true };
 const MOVE_MONEY: FabAction = { id: "move-money", kind: "add", mode: "transfer", label: "Move money", aria: "Add transfer", money: true };
 const ADD_SHIFT: FabAction = { id: "add-shift", kind: "add", mode: "shift", label: "Add a shift", aria: "Add shift", money: true };
-const PLAN_COST: FabAction = { id: "plan-cost", kind: "go", tab: "calendar", label: "Plan a cost", aria: "Plan an upcoming cost", money: false };
-const DECIDE: FabAction = { id: "decide-together", kind: "go", tab: "together", label: "Decide together", aria: "Open what needs us together", money: false };
-/** The planner (D-245): tasks that carry money. Navigation only; a task never posts. */
-const PLAN_WEEK: FabAction = { id: "plan-week", kind: "go", tab: "planner", label: "Plan the week", aria: "Open the planner", money: false };
-
 /** Ordered actions for the + control. Household order follows the destination's job. */
 export function fabActionsFor(view: LedgerView, tab: FabActionTab): readonly FabAction[] {
   if (view !== "household") return PERSONAL;
   switch (tab) {
-    case "together":
-      return [DECIDE, PLAN_WEEK, RECORD, PLAN_COST, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
-    case "plan":
-      return [PLAN_COST, RECORD, DECIDE, PLAN_WEEK, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
     case "ledger":
-      return [RECORD, ADD_INCOME, MOVE_MONEY, PLAN_COST, DECIDE, PLAN_WEEK, ADD_SHIFT];
-    case "planner":
-      return [PLAN_WEEK, RECORD, PLAN_COST, DECIDE, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+      return [RECORD, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+    case "plan":
+      return [RECORD, MOVE_MONEY, ADD_INCOME, ADD_SHIFT];
     default:
-      return [RECORD, PLAN_COST, PLAN_WEEK, DECIDE, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
+      return [RECORD, ADD_INCOME, MOVE_MONEY, ADD_SHIFT];
   }
 }
 
-/** The closed control's name: "Add money" in My Money, the question itself in Our Home. */
+/** The closed control's name is the same in both spaces: it adds money. The space names the ledger before any verb. */
 export function fabClosedLabel(view: LedgerView): string {
-  return view === "household" ? "What can we do?" : "Add money";
+  void view;
+  return "Add money";
 }

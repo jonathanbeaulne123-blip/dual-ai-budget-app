@@ -381,6 +381,13 @@
 .office-phone .ph-fold-line {
   position: relative; width: 100%; border: 0; border-top: 1px dashed var(--line); margin: 3px 0;
 }
+/* The fold is a button when there is something below it. Laid out but unseen while folded, so measurement stays stable. */
+.office-phone button.ph-fold-line { display: block; min-height: 44px; padding: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; text-align: right; }
+.office-phone button.ph-fold-line > span { top: 50%; transform: translateY(-50%); }
+.office-phone button.ph-fold-line.is-folded > span::after { content: " ▾"; }
+.office-phone button.ph-fold-line.is-open > span::after { content: " ▴"; }
+.office-phone button.ph-fold-line:focus-visible { outline: 2px solid var(--theme-accent, var(--pine)); outline-offset: 2px; }
+.office-phone .ph-fold-below.is-folded { height: 0; overflow: hidden; visibility: hidden; margin: 0; }
 .office-phone .ph-fold-line > span { position: absolute; right: 0; top: -8px;
   background: var(--paper); padding: 0 5px; color: var(--muted);
   font-family: var(--mono, ui-monospace, monospace); font-size: 10.5px;
