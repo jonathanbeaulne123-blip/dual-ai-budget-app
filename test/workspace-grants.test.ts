@@ -1,0 +1,41 @@
+import {it,expect} from 'vitest';
+import {PGlite} from '@electric-sql/pglite';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+it('applies prepared grant SQL locally: scoped leases, revocation, expiry, immutable budgets and denied table access',async()=>{
+ const db=new PGlite(),user='11111111-1111-4111-a111-111111111111',session='22222222-2222-4222-a222-222222222222',run='33333333-3333-4333-a333-333333333333',project='44444444-4444-4444-a444-444444444444',token='a'.repeat(64);
+ try{
+ await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE SCHEMA auth; CREATE SCHEMA hearth_private;
+ CREATE TABLE auth.users(id uuid primary key);CREATE TABLE auth.sessions(id uuid primary key,user_id uuid);
+ CREATE TABLE public.continuity_memberships(environment text,household_id text,member_id text,auth_user_id uuid,role text,active boolean,revoked_at timestamptz,primary key(environment,household_id,member_id));
+ CREATE TABLE public.hearth_member_sessions(environment text,household_id text,member_id text,auth_user_id uuid,session_id uuid,revoked_at timestamptz);
+ CREATE TABLE hearth_private.ledger_sync_cutovers(environment text,household_id text,deleted_at timestamptz);
+ CREATE TABLE public.schema_migrations(id integer primary key,applied_at text);
+ CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$SELECT '${user}'::uuid$$;
+ CREATE FUNCTION hearth_private.current_session_id() RETURNS uuid LANGUAGE sql AS $$SELECT '${session}'::uuid$$;
+ CREATE FUNCTION hearth_private.own_member_id(text,text) RETURNS text LANGUAGE sql AS $$SELECT 'MEM-001'::text$$;
+ CREATE FUNCTION hearth_private.session_is_live() RETURNS boolean LANGUAGE sql AS $$SELECT true$$;
+ INSERT INTO auth.users VALUES('${user}');INSERT INTO auth.sessions VALUES('${session}','${user}');
+ INSERT INTO public.continuity_memberships VALUES('development','HH-FIXTURE','MEM-001','${user}','owner',true,null);`);
+ await db.exec(readFileSync('supabase/migrations/022_hercules_run_grants.sql','utf8'));
+ const expiry=new Date(Date.now()+3600000).toISOString(),digest=createHash('sha256').update(token).digest('hex');
+ const budget={maxSteps:24,maxTokens:120000,maxDurationMs:1800000};
+ const issue=(override:unknown=budget,whichProject=project)=>db.query('SELECT public.hercules_issue_run_grant($1,$2,$3,$4,$5,$6,$7,$8) AS grant',['development','HH-FIXTURE',run,whichProject,digest,['read_books_summary'],JSON.stringify(override),expiry]);
+ await db.exec('SET ROLE authenticated');await issue();await issue();
+ await expect(db.query('SELECT * FROM hearth_private.hercules_run_grants')).rejects.toThrow(/permission denied/);
+ await expect(issue({...budget,maxSteps:'24'})).rejects.toThrow('INVALID_HERCULES_BUDGET');
+ await expect(issue({...budget,maxTokens:120001})).rejects.toThrow('HERCULES_BUDGET_EXCEEDED');
+ await expect(issue(budget,'55555555-5555-4555-a555-555555555555')).rejects.toThrow('HERCULES_RUN_GRANT_CONFLICT');
+ await db.exec('RESET ROLE; SET ROLE anon');
+ await expect(issue()).rejects.toThrow(/permission denied/);
+ const lease=()=>db.query<{lease:any}>('SELECT public.hercules_lease_run_grant($1,$2,$3) AS lease',[token,run,project]);
+ expect((await lease()).rows[0]!.lease.memberId).toBe('MEM-001');
+ await expect(db.query('SELECT public.hercules_lease_run_grant($1,$2,$3)',['b'.repeat(64),run,project])).rejects.toThrow('HERCULES_RUN_GRANT_DENIED');
+ await db.exec("RESET ROLE; UPDATE public.continuity_memberships SET active=false; SET ROLE anon");await expect(lease()).rejects.toThrow('HERCULES_RUN_GRANT_DENIED');
+ await db.exec("RESET ROLE; UPDATE public.continuity_memberships SET active=true; DELETE FROM auth.sessions; SET ROLE anon");await expect(lease()).rejects.toThrow('HERCULES_RUN_GRANT_DENIED');
+ await db.exec(`RESET ROLE; INSERT INTO auth.sessions VALUES('${session}','${user}'); INSERT INTO public.hearth_member_sessions VALUES('development','HH-FIXTURE','MEM-001','${user}','${session}',clock_timestamp());SET ROLE anon`);
+ await expect(lease()).rejects.toThrow('HERCULES_RUN_GRANT_DENIED');
+ await db.exec("RESET ROLE; DELETE FROM public.hearth_member_sessions; SET ROLE authenticated");
+ await db.query('SELECT public.hercules_revoke_run_grant($1,$2,$3)',['development','HH-FIXTURE',run]);await db.exec('RESET ROLE; SET ROLE anon');await expect(lease()).rejects.toThrow('HERCULES_RUN_GRANT_DENIED');
+ }finally{await db.close();}
+},30000);

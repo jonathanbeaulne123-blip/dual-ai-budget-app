@@ -1,0 +1,10 @@
+{
+  "containers": [
+    {
+      "class_name": "HerculesSandbox",
+      "image": "./workers/workspace/Dockerfile",
+      "max_instances": 3,
+      "instance_type": "lite"
+    }
+  ]
+}

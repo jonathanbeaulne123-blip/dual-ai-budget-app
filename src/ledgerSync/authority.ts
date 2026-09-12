@@ -101,6 +101,7 @@ export async function prepareCommand(
   const wardrobeStep=command.steps.some(step=>companionActionEffect(step)!==null||step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')));
   if((wardrobeStep||current.companionProfile?.wornLook.revision||current.companionProfile?.savedLooks.length||current.companionGallery?.length)&&command.companionWardrobeVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth before changing this wardrobe.');
   if(wardrobeStep&&command.steps.length!==1)throw new Error('WARDROBE_SINGLE_OPERATION_REQUIRED');
+  if(command.steps.some(step=>step.kind==='executeHerculesAction')&&command.steps.length!==1)throw new Error('HERCULES_SINGLE_OPERATION_REQUIRED');
   const before = current,
     ids = new Map<string, string>();
   // Legacy receipts use another hash contract and do not bind an actor. They

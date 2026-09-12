@@ -120,3 +120,6 @@ Start from the repository [README](../README.md) to run the app. Compatibility f
 - [Three complete visual worlds](THREE_VISUAL_WORLDS.md) — approved Classic/Taylor/Newfoundland scene, account, asset and verification authority; implementation candidate in progress.
 
 - [Three worlds on the completed mobile UX](briefs/MOBILE_WORLDS_HANDOFF.md) — integrated candidate, Claude CSS provenance, fictional keepsakes, source-component/browser proof and release limits.
+
+- [Hercules Workspace](HERCULES_WORKSPACE.md) — D-249 private projects, Flash runtime, artifacts, authority and staged activation.
+- [Hercules Workspace handoff](briefs/HERCULES_WORKSPACE_HANDOFF.md) — exact baseline, reproducible local proof and remaining Release acceptance.

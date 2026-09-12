@@ -36,6 +36,7 @@ export default defineConfig({
     // without publishing the live kitchen. Localhost stays allowed by default.
     allowedHosts: [".trycloudflare.com"],
     proxy: {
+      "/hercules/workspace": { target: process.env.HEARTH_WORKSPACE_PROXY ?? process.env.HEARTH_LEDGER_PROXY ?? "http://127.0.0.1:8792" },
       "/sync/clock": { target: process.env.HEARTH_LEDGER_PROXY ?? "http://127.0.0.1:8792" },
       "/ledger-sync": { target: process.env.HEARTH_LEDGER_PROXY ?? "http://127.0.0.1:8792", ws: true },
       "/hercules/chat": {

@@ -1,3 +1,9 @@
+## Hercules Workspace — local implementation (2026-09-12)
+
+Branch `codex/hercules-workspace`, baseline `origin/main@02a5539dfc4dfadf6c7cae67b98f17db278c9eaa`; D-249; High risk. Jonathan approved the full workspace implementation. Private projects, a Flash-only Agent/Workflow runtime, versioned artifacts, scoped ledger reads, Plan links and existing confirmation bridges are implemented behind disabled activation flags. Budget (5): verified resources and retained financial authority. Engagement (3): enduring conversation, broad work and three authored rooms.
+
+Final focused gate: 493 tests across 45 files, TypeScript/AI/diff checks, 102.143 seconds with no time-budget breach. Local Agent/Workflow/R2 runtime: 12/12 cases. Themed browser matrix: 36/36 cases. Four export formats reopen locally. Production build and separate Worker type-check/bundling pass. Separate live Flash comparison, hosted/container execution, authenticated continuity and physical-device acceptance remain open. No hosted migration, infrastructure application, deployment, secret or provider activation occurred. The [durable handoff](briefs/HERCULES_WORKSPACE_HANDOFF.md) gives exact commands and remaining work; the [worksession](worksessions/2026-09-12-hercules-workspace.md) retains measured evidence and prior failures.
+
 ## The time machine — row 8, rebased over #455 (2026-09-12)
 
 Branch `cursor/time-machine-row-8-420a`, rebase of `claude/time-machine-row-8@64bdf46b` onto `origin/main@02a5539d` (feedback rows 5–7 #455). Original cut from `main@6fa38aed` (planner #453). Jonathan chose row 8, asked for the whole product in one slice, and decided goal history should be derived from `goalContributions` rather than left out of v1. Risk High: `projectHouseholdFund` gains an observation axis and the cumulative statements gain an optional `asOf`. Budget (5): +5. Engagement (3): +3. Decision id is **D-247** because main already has D-245 (planner) and D-246 (rows 5–7).

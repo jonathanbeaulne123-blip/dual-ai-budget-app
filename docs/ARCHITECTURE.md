@@ -129,3 +129,7 @@ Current Supabase code supports legacy **linked** transport plus automatic Develo
 Commands currently clone the snapshot per write, which is honest and simple at household scale. The SQL journal is the queryable, constraint-backed record of those writes. **D-148** schedules Tier 2 command-log primary and Tier 4 normalized hosted journal as the scale path; do not populate `001` normalized tables as transport until Tier 4 design passes review ([`SYNC_ARCHITECTURE.md`](SYNC_ARCHITECTURE.md)).
 
 Sheets-era architecture (museum): [reference/sheets-era/ARCHITECTURE.md](reference/sheets-era/ARCHITECTURE.md). Retired Cursor roadmaps: [nostalgia/](nostalgia/).
+
+## Hercules Workspace (D-249)
+
+The separately gated Hercules workspace adds member-scoped Agent SQLite, Workflows and R2 alongside the existing LedgerRoom and Supabase control plane. Read tools query current accepted scope without Plan activation. Projects and artifacts do not enter financial digests. Private action proposals bridge to the existing reviewed command and receipt authority; sharing creates an exact reviewed copy in a separate namespace. See [the runtime, data and release contract](HERCULES_WORKSPACE.md). Hosted resources and migration 022 are prepared, not applied.

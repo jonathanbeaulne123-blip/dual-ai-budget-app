@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf dist && tsc --noEmit && vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects",
+    "build": "rm -rf dist && tsc --noEmit && pnpm typecheck:workspace && vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects",
+    "typecheck:workspace": "node --max-old-space-size=6144 node_modules/typescript/bin/tsc -p workers/workspace/tsconfig.json --pretty false",
     "build:hercules-pro-ui": "node scripts/build-hercules-pro-ui.mjs",
     "preview": "vite preview",
     "test": "node scripts/run-quick-gate.mjs",
@@ -45,8 +46,11 @@
     "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
   },
   "dependencies": {
+    "@cloudflare/sandbox": "0.12.9",
     "@electric-sql/pglite": "^0.5.5",
+    "@google/genai": "2.22.0",
     "@supabase/supabase-js": "^2.112.4",
+    "agents": "0.23.0",
     "jsqr": "1.4.0",
     "pdfjs-dist": "^6.3.289",
     "postgres": "^3.4.9",

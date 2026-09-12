@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "hearth-books",
   "account_id": "7dfdfbba3053d8b857cbc359e0761c00",
-  "main": "workers/site.js",
+  "main": "workers/entry.js",
   "compatibility_date": "2026-08-21",
   "workers_dev": true,
   "assets": {
@@ -69,7 +69,13 @@
     "EVIDENCE_RETENTION_ENABLED": "true",
     "EVIDENCE_PRODUCTION_QUEUE_NAME": "hearth-evidence-derive-production",
     "LEDGER_SYNC_LOCAL_AUTH": "false",
-    "LEDGER_SYNC_ENABLED": "true"
+    "LEDGER_SYNC_ENABLED": "true",
+    "HERCULES_WORKSPACE_ENABLED": "false",
+    "HERCULES_WORKSPACE_EXECUTION": "false",
+    "HERCULES_WORKSPACE_MODEL": "gemini-3.8-flash",
+    "HERCULES_WORKSPACE_DISCLOSURE": "disabled",
+    "HERCULES_WORKSPACE_DATA": "meaningful",
+    "HERCULES_WORKSPACE_GOOGLE_WRITES": "false"
   },
   "d1_databases": [
     {
@@ -113,6 +119,10 @@
     {
       "binding": "LEDGER_ARCHIVE",
       "bucket_name": "hearth-ledger-sync-archive-development"
+    },
+    {
+      "binding": "HERCULES_FILES",
+      "bucket_name": "hearth-hercules-files-development"
     }
   ],
   "queues": {
@@ -153,6 +163,18 @@
       {
         "name": "LEDGER_ROOMS",
         "class_name": "LedgerRoom"
+      },
+      {
+        "name": "HERCULES_WORKSPACES",
+        "class_name": "HerculesWorkspace"
+      },
+      {
+        "name": "HERCULES_SANDBOX",
+        "class_name": "HerculesSandbox"
+      },
+      {
+        "name": "HERCULES_SHARED_WORKSPACES",
+        "class_name": "HerculesSharedWorkspace"
       }
     ]
   },
@@ -162,6 +184,24 @@
       "new_sqlite_classes": [
         "LedgerRoom"
       ]
+    },
+    {
+      "tag": "hercules-workspace-v1",
+      "new_sqlite_classes": [
+        "HerculesWorkspace",
+        "HerculesSandbox",
+        "HerculesSharedWorkspace"
+      ]
+    }
+  ],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workflows": [
+    {
+      "binding": "HERCULES_RUNS",
+      "name": "hearth-hercules-runs-development",
+      "class_name": "HerculesRunWorkflow"
     }
   ]
 }

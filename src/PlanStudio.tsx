@@ -20,7 +20,7 @@ type Section = "overview" | "review" | "settings" | PlanLens | "scenarios" | "as
 /** The eight human steps of the Sitdown (Vision v2 §6). One ritual; a Chapter runs from one Sitdown to the next. */
 const stages = ["Arrive together", "Close the previous Chapter", "Orient to shared reality", "Learn one useful thing", "Make the shared decisions", "Turn the decision into a Ritual", "Look ahead", "Open the next Chapter"];
 
-export function PlanStudio({ household, view, memberId, today, busy, onCommand, onSharedHerculesReply, onAskHercules, onContextChange, sourceFocus, goalsContent, contextIdentity }: {
+export function PlanStudio({ household, view, memberId, today, busy, onCommand, onSharedHerculesReply, onAskHercules, onContextChange, sourceFocus, goalsContent, contextIdentity, onOpenWorkspace, workspaceCards }: {
   household: Household; view: LedgerView; memberId: string; today: DateKey; busy: boolean;
   onCommand: (fn: (current: Household) => CommitResult) => Promise<unknown>;
   onSharedHerculesReply?: (sessionId: string, inReplyToTurnId: string) => Promise<void>;
@@ -29,6 +29,8 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
   sourceFocus?: HerculesNumberSource | null;
   goalsContent?: ReactNode | ((context: KittyPlanContext) => ReactNode);
   contextIdentity?: string;
+  onOpenWorkspace?: () => void;
+  workspaceCards?: (month: string) => ReactNode;
 }) {
   const consumedSource=useRef<HerculesNumberSource|null>(null);
   const scope = view;
@@ -152,7 +154,9 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
     <div className={`plan-studio__layout plan-studio__layout--quiet${section === "settings" ? " plan-studio__layout--settings" : ""}`}>
     <section className="plan-studio__canvas">
       {section === "overview" && <>
-       <section className="plan-conversation-invitation"><HerculesPortrait pose="loaf" size={72} mood="content" hat={null} chain={null} house={null} collar={null} /><div><p className="kicker">Start with a conversation</p><h3>We can figure this month out together.</h3><p>I’ll ask one question at a time and say why it matters. Pause whenever you like.</p><button type="button" disabled={locked} onClick={() => ask(undefined, {actionId:"plan-guided-draft",values: household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? {} : {monthKey:month}})}>{household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? "Continue planning with Hercules" : "Help me create a plan"}</button><small>Your answers stay private until you choose what to share.</small></div></section>
+       {onOpenWorkspace && <section className="plan-workspace-invitation"><h3>What are you making room for?</h3><p>A date, a trip, studying, or a possibility. Explore it with Hercules and connect the right commitments to this month.</p><button onClick={onOpenWorkspace}>Start with an intention</button></section>}
+       {workspaceCards?.(month)}
+       <section className="plan-conversation-invitation"><HerculesPortrait pose="loaf" size={72} mood="content" hat={null} chain={null} house={null} collar={null} /><div><p className="kicker">Start with a conversation</p><h3>We can figure this month out together.</h3><p>I’ll ask one question at a time and say why it matters. Pause whenever you like.</p><button type="button" disabled={locked} onClick={() => ask(undefined, {actionId:"plan-guided-draft",values: household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? {} : {monthKey:month}})}>{household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? "Continue planning with Hercules" : onOpenWorkspace ? "Open guided monthly planning" : "Help me create a plan"}</button><small>Your answers stay private until you choose what to share.</small></div></section>
        {working.length > 0 ? <PlanConsequence projection={projection} /> : <p className="plan-empty">Start with what matters this month. You do not need to fill in every part before you begin.</p>}
        <section className="plan-purpose-list" aria-label="Explore your Plan">{PLAN_LENSES.map(lens => <button type="button" key={lens} onClick={() => setSection(lens)}><span><strong>{PLAN_LENS_COPY[lens].title}</strong><small>{PLAN_LENS_COPY[lens].prompt}</small></span><span>{working.filter(row=>row.lens===lens).length ? `${working.filter(row=>row.lens===lens).length} ${working.filter(row=>row.lens===lens).length===1?'decision':'decisions'}` : "Still open"} →</span></button>)}</section>
        {(draft || version) && <button type="button" className="plan-open-review" onClick={() => {if(scope==="personal"&&version){setVersionId(version.id);setScenarioId(null);}setSection("review");}}>{version?.state === "proposed" ? "Review our proposal" : "Review my Plan"}</button>}

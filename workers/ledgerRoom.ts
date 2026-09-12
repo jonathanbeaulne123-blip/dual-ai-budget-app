@@ -12,6 +12,7 @@ import {
 } from "../src/ledgerSync/backup.ts";
 import type {
   DurableObjectState,
+  DurableObjectNamespace,
   R2Bucket,
   WebSocket,
   Request as WorkerRequest,
@@ -23,6 +24,7 @@ import { splitForSync } from "../src/core/sync.ts";
 import { assembleHousehold } from "../src/core/sync.ts";
 import { activateScheduledPlans, appendTrustedPlanHerculesTurn } from "../src/core/commands.ts";
 import { todayKey } from "../src/core/calendar.ts";
+import { executeHerculesReadToolPlan, HERCULES_READ_TOOL_NAMES } from "../src/core/herculesTools.ts";
 import { planActivationInstant, type PlanHerculesTurn } from "../src/core/planSystem.ts";
 import { assertAcceptableBooks } from "../src/core/commandRuntime.ts";
 import type {
@@ -56,7 +58,7 @@ import {
 } from "../src/ledgerSync/wire.ts";
 import { importLegacy, supabase, type AuthEnv } from "./ledgerSyncAuth.ts";
 import { importReservationDigests, reservationDigest } from "./ledgerReservations.ts";
-type Env = AuthEnv & { LEDGER_ARCHIVE: R2Bucket; HERCULES_ACTIONS_ENABLED?: string; HERCULES_EXTERNAL_CALENDAR_WRITES?: string };
+type Env = AuthEnv & { LEDGER_ARCHIVE: R2Bucket; HERCULES_ACTIONS_ENABLED?: string; HERCULES_EXTERNAL_CALENDAR_WRITES?: string; HERCULES_WORKSPACES?: DurableObjectNamespace; HERCULES_WORKSPACE_EXECUTION?: string };
 type Attachment = {
   scope?: Scope;
   deadline: number;
@@ -879,6 +881,21 @@ export class LedgerRoom extends DurableObject<Env> {
       }
     }
   }
+  /** Workspace reads never activate a Plan or import/bootstrap financial state. */
+  async workspaceQuery(scope: Scope, query: { name: string; args: Record<string, unknown>; view: 'personal' | 'household' }) {
+    return this.serial(async () => {
+      this.check(scope);
+      await this.archiveBarrier();
+      this.check(scope);
+      if (!['personal', 'household'].includes(query.view) || !(HERCULES_READ_TOOL_NAMES as readonly string[]).includes(query.name)) throw new Error('INVALID_READ');
+      const state = this.load();
+      const personal = state.personal.get(scope.memberId);
+      if (!state.shared || !personal) throw new Error('LEDGER_NOT_READY');
+      const household = assembleHousehold(state.shared, personal, { linked: true });
+      const result = executeHerculesReadToolPlan(household, { calls: [{ id: 'workspace-read', name: query.name, args: query.args }] }, todayKey(new Date(), 'America/Toronto'), { memberId: scope.memberId, view: query.view });
+      return { scope: query.view, acceptedSequence: state.sequence, observedAt: new Date().toISOString(), results: result.results };
+    });
+  }
   async snapshot(scope: Scope) {
     return this.serial(async () => {
       this.check(scope);
@@ -1162,6 +1179,17 @@ export class LedgerRoom extends DurableObject<Env> {
         const eventText = JSON.stringify(prepared.event),
           eventHash = await digest(prepared.event);
         this.check(a.scope);
+        // Workspace proposals use the existing command writer, with their current
+        // private review checked at the final server admission point as well.
+        if(command.steps.some(step=>step.kind==='executeHerculesAction')){
+          const claim=state.personal.get(a.scope.memberId)?.companionProfile?.workflows?.find(r=>r.value?.submission?.id===command.id)?.value;
+          if(claim?.workspaceConfirmationId){
+            if(claim.workspaceConfirmationId!==command.id || !this.env.HERCULES_WORKSPACES || this.env.HERCULES_WORKSPACE_EXECUTION!=='true')throw new Error('WORKSPACE_ACTION_PAUSED');
+            const workspace=this.env.HERCULES_WORKSPACES.get(this.env.HERCULES_WORKSPACES.idFromName(`${a.scope.environment}/${a.scope.householdId}/${a.scope.memberId}`)) as unknown as {authorizeActionFor(scope:Scope,id:string):Promise<unknown>};
+            await workspace.authorizeActionFor(a.scope,command.id);
+            this.check(a.scope);
+          }
+        }
         commitAttempted = true;
         this.ctx.storage.transactionSync(() => {
           if (command.steps[0]!.kind === "undoConfirm")

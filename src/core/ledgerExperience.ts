@@ -14,11 +14,12 @@ export const LEDGER_CUSTODY_DISCLOSURE =
 
 export type LedgerExperienceMode = LedgerView;
 export type LedgerTab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more" | "till";
-/** Every destination the App can stand on: the route-contract tabs plus Together, the planner (More's scene) and the time machine (the ledger's). One vocabulary (feedback row 5). */
-export type AppTab = LedgerTab | "together" | "planner" | "timeMachine";
-/** The scene a destination is drawn in. Together and the planner borrow More's; the time machine is the books read by month and borrows the ledger's (D-247). Till is a Home door. */
-export function sceneTabFor(tab: AppTab): Exclude<AppTab, "together" | "planner" | "timeMachine"> {
+/** All App destinations, including the planner, Time Machine and Hercules workspace. */
+export type AppTab = LedgerTab | "together" | "planner" | "timeMachine" | "hercules";
+/** Time Machine borrows Books materials; Hercules borrows Plan materials. */
+export function sceneTabFor(tab: AppTab): Exclude<AppTab, "together" | "planner" | "timeMachine" | "hercules"> {
   if (tab === "timeMachine") return "ledger";
+  if (tab === "hercules") return "plan";
   return tab === "together" || tab === "planner" ? "more" : tab;
 }
 

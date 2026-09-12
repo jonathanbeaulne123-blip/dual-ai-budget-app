@@ -54,10 +54,10 @@ export type CompanionSuggestionState = {
   issueId: string; capabilityId: HerculesCapabilityId; view: LedgerView; revision: number;
   status: "snoozed" | "disabled" | "resume"; until: string | null; targetId: string | null;
 };
-export type CompanionQueuedAction = { actionId: string; values: Record<string,string> };
+export type CompanionQueuedAction = { actionId: string; values: Record<string,string>; workspaceConfirmationId?: string };
 export type CompanionWorkflow = {
   version: 1; actionId: string; view: LedgerView; generation: number;
-  values: Record<string,string>; updatedAt: string; queue?: CompanionQueuedAction[];
+  values: Record<string,string>; updatedAt: string; queue?: CompanionQueuedAction[]; workspaceConfirmationId?: string;
   submission: { id: string; review: string } | null;
 };
 export type CompanionWorkflowResource = { id: string; revision: number; value: CompanionWorkflow | null };
@@ -222,7 +222,7 @@ function suggestion(value: unknown): CompanionSuggestionState {
   return { issueId: id(row.issueId), capabilityId: literal(row.capabilityId, HERCULES_CAPABILITY_IDS), view: view(row.view), revision: revision(row.revision), status, until, targetId };
 }
 export function decodeCompanionWorkflow(value: unknown): CompanionWorkflow {
-  const row=object(value,['version','actionId','view','generation','values','updatedAt','submission','queue']);
+  const row=object(value,['version','actionId','view','generation','values','updatedAt','submission','queue','workspaceConfirmationId']);
   requireContract(row.version===1,'WORKFLOW_VERSION');
   requireContract(row.values && typeof row.values==='object' && !Array.isArray(row.values),'WORKFLOW_VALUES');
   const values:Record<string,string>={};
@@ -230,8 +230,8 @@ export function decodeCompanionWorkflow(value: unknown): CompanionWorkflow {
   for(const [key,value] of Object.entries(row.values)) { requireContract(/^[a-zA-Z][a-zA-Z0-9_]{0,63}$/.test(key)&&!['constructor','prototype','__proto__'].includes(key),'WORKFLOW_FIELD'); requireContract(typeof value==='string'&&value.length<=1000,'WORKFLOW_VALUE');values[key]=value as string; }
   let submission:CompanionWorkflow['submission']=null;
   if(row.submission!==null){const entry=object(row.submission,['id','review']);submission={id:id(entry.id),review:text(entry.review,30_000)};}
-  const queue=row.queue===undefined?undefined:list(row.queue,12,item=>{const next=object(item,['actionId','values']);const parsed=decodeCompanionWorkflow({version:1,actionId:next.actionId,values:next.values,view:row.view,generation:row.generation,updatedAt:row.updatedAt,submission:null});return {actionId:parsed.actionId,values:parsed.values};});
-  return {version:1,actionId:id(row.actionId),view:view(row.view),generation:revision(row.generation),values,updatedAt:timestamp(row.updatedAt),submission,...(queue?.length?{queue}: {})};
+  const queue=row.queue===undefined?undefined:list(row.queue,12,item=>{const next=object(item,['actionId','values','workspaceConfirmationId']);const parsed=decodeCompanionWorkflow({version:1,actionId:next.actionId,values:next.values,view:row.view,generation:row.generation,updatedAt:row.updatedAt,submission:null,...(next.workspaceConfirmationId?{workspaceConfirmationId:next.workspaceConfirmationId}:{})});return {actionId:parsed.actionId,values:parsed.values,...(parsed.workspaceConfirmationId?{workspaceConfirmationId:parsed.workspaceConfirmationId}:{})};});
+  return {version:1,actionId:id(row.actionId),view:view(row.view),generation:revision(row.generation),values,updatedAt:timestamp(row.updatedAt),submission,...(row.workspaceConfirmationId!==undefined?{workspaceConfirmationId:id(row.workspaceConfirmationId)}:{}),...(queue?.length?{queue}: {})};
 }
 export function decodeCompanionProfile(value: unknown, expected: CompanionScope): CompanionProfileV1 {
   if (value === undefined) return createCompanionProfile(expected);
