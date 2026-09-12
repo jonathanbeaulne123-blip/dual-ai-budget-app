@@ -1,5 +1,5 @@
 import { FeedbackReviewCard } from './FeedbackReview.tsx';
-import { feedbackContext, FEEDBACK_OWNERS, type FeedbackContext } from './feedback.ts';
+import { feedbackContext, feedbackOwner, type FeedbackContext } from './feedback.ts';
 import { useEffect, useRef, useState } from 'react';
 import { WorkspaceClient, workspaceError, type WorkspaceRequest } from './client.ts';
 import { latestArtifacts, WORKSPACE_INPUT_LIMIT, type ArtifactVersion, type WorkspaceCommand, type WorkspaceProject, type WorkspaceProposal, type WorkspaceSnapshot, type ProjectLink } from './contracts.ts';
@@ -100,7 +100,7 @@ export function HerculesWorkspaceRoom(props: WorkspaceProps) {
   const reportOpening = useRef<string | null>(null);
   async function newReport(request: { id: string; context: FeedbackContext; text: string } = { id: crypto.randomUUID(), context: props.getReportContext?.() ?? {}, text: '' }) {
     if (pending || saving || !snapshot) return;
-    const owner = (FEEDBACK_OWNERS as readonly string[]).includes(props.reporterName ?? '') ? props.reporterName! : 'Person';
+    const owner = feedbackOwner(props.reporterName);
     reportOpening.current = request.id;
     props.onReportOpened?.();
     setSelected(request.id); setSurface('conversation'); setComposer(request.text ?? '');

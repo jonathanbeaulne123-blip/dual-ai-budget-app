@@ -10,15 +10,15 @@ Main page, feature, issue, expected result, reproduction steps, reporter and urg
 
 Context accepts only bounded page/scope/theme/scene, viewport dimensions, coarse browser family, build, environment, time and online state. URLs, tokens, account names, balances, raw errors, screenshots, files and conversation history are excluded from automatic collection. The reporter reviews all text before it is disclosed to collaborators on the spreadsheet. Their private project and receipt stay in their authenticated member workspace. No financial query or command is required to file a report.
 
-## One-time setup — requires Jonathan's approval
+## Authorized connection setup
 
-1. In the Hearth Google Cloud project, enable Google Sheets API and create a dedicated service account named `hearth-feedback`. It needs no Google Cloud project-wide role and no domain-wide delegation.
+1. In the Hearth Google Cloud project, enable Google Sheets API. Jonathan created the dedicated identity `hearth-feedback-sheets-975@hearth-506304.iam.gserviceaccount.com` (Hearth Feedback Sheets). It needs no Google Cloud project-wide role and no domain-wide delegation.
 2. Share only the target spreadsheet with that service account's email as Editor. Existing users and permissions stay unchanged; do not publish the sheet or enable link-wide editing.
 3. Create its JSON credential and store it directly as the Cloudflare `HERCULES_FEEDBACK_SERVICE_ACCOUNT` secret. Never put it in source, a VITE variable, chat, a project artifact or an app snapshot. The Worker uses its private key to obtain short-lived Sheets-only tokens from Google's fixed token endpoint.
 4. Set `HERCULES_FEEDBACK_ENABLED=true` for the approved Development release. This flag is separate from arbitrary Google document/calendar writes, which remain controlled by their existing flag.
 5. Run one labelled synthetic in-app report after deployment. Verify its columns and receipt in the supplied sheet; retry its exact receipt and verify one row. Exercise another signed-in member, expired/revoked membership, a reconnect and another device. Record the results before claiming live acceptance.
 
-The build currently defaults feedback submission off. The normal workspace and drafts remain usable without the connector. Users do not need spreadsheet access, a Google Sheets consent screen or an API key. Browser-based live setup and authentication have not been performed for this change.
+Jonathan approved this connection and its Development release on 2026-09-12. The release sets feedback submission on; the credential and Sheets API must also be available. The normal workspace and drafts remain usable without the connector. Users do not need spreadsheet access, a Google Sheets consent screen or an API key. Live acceptance is recorded separately in the worksession.
 
 ## Recovery and lifecycle
 

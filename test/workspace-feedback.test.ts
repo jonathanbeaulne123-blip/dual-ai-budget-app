@@ -1,5 +1,5 @@
 import { beforeAll, afterEach, it, expect, vi } from 'vitest';
-import { FEEDBACK_HEADERS, FEEDBACK_SHEET_ID, FEEDBACK_TAB_ID, feedbackContext, normalizeFeedback, feedbackReviewDigest, feedbackValues, missingFeedback, publishFeedbackProposal, isBugReportIntent } from '../src/workspace/feedback.ts';
+import { FEEDBACK_HEADERS, FEEDBACK_SHEET_ID, FEEDBACK_TAB_ID, feedbackContext, feedbackOwner, normalizeFeedback, feedbackReviewDigest, feedbackValues, missingFeedback, publishFeedbackProposal, isBugReportIntent } from '../src/workspace/feedback.ts';
 import { feedbackRow, submitFeedbackSheet } from '../workers/workspace/feedbackSheets.ts';
 import { createWorkspaceProject, applyWorkspaceCommand } from '../src/workspace/contracts.ts';
 import { executeWorkspaceTool } from '../workers/workspace/tools.ts';
@@ -14,6 +14,11 @@ beforeAll(async()=>{
  env={HERCULES_FEEDBACK_SERVICE_ACCOUNT:JSON.stringify({type:'service_account',client_email:'feedback@test.iam.gserviceaccount.com',private_key:`-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`})};
 });
 afterEach(()=>vi.unstubAllGlobals());
+it('preserves established first-name reporters and full sheet choices without guessing other people',()=>{
+ expect(feedbackOwner('Jonathan')).toBe('Jonathan Beaulne');expect(feedbackOwner(' Bianca ')).toBe('Bianca Sbrocchi');
+ expect(feedbackOwner('jonathan beaulne')).toBe('Jonathan Beaulne');expect(feedbackOwner('Bianca Bot')).toBe('Bianca Bot');
+ expect(feedbackOwner('Jonathan Smith')).toBe('Person');expect(feedbackOwner()).toBe('Person');
+});
 it('only carries whitelisted diagnostic values, never a household, URL, token, or raw error',()=>{
  const safe=feedbackContext({page:'plan',scope:'personal',theme:'classic',scene:'fearless',viewport:'390 × 844',browser:'Safari',build:'a0d76e99',environment:'development',online:'online',observedAt:now,url:'https://app/#access_token=SECRET',error:'ACCOUNT CANARY',household:{balance:100},token:'SECRET'});
  expect(safe).toEqual({page:'plan',scope:'personal',theme:'classic',scene:'fearless',viewport:'390 × 844',browser:'Safari',build:'a0d76e99',environment:'development',online:'online',observedAt:now});
@@ -58,7 +63,7 @@ it('maps columns by header and writes formula-shaped input as literal cells, lea
  expect(row[names.indexOf('Solved - AI Review (1-10)')]!.userEnteredValue).toEqual({stringValue:''});
  expect(row[names.indexOf('Example')]!.userEnteredValue).toHaveProperty('stringValue',expect.stringContaining('Expected: An answer'));
 });
-function sheetMock(options:{lost?:boolean;schema?:string[];badValidation?:boolean}={}) {
+function sheetMock(options:{lost?:boolean;schema?:string[];badValidation?:boolean;doneValidation?:any}={}) {
  const metadata=new Map<number,any>();const batches:any[]=[];
  const fn=vi.fn(async(input:any,init:any)=>{
   const url=String(input);
@@ -70,7 +75,8 @@ function sheetMock(options:{lost?:boolean;schema?:string[];badValidation?:boolea
    const query=new URL(url).searchParams, template=query.get('ranges')!.endsWith('A2:Z2');
    if(template)expect(query.get('fields')).not.toContain('userEnteredValue');
    else expect(query.get('ranges')).toBe("'FeedBack Sheet'!A1:Z1");
-   const values=template?(options.badValidation?[{}, {dataValidation:{strict:true,condition:{type:'ONE_OF_LIST',values:[{userEnteredValue:'Other'}]}}}]:[]):(options.schema??FEEDBACK_HEADERS).map(h=>({userEnteredValue:{stringValue:h}}));
+   const values:any[]=template?(options.badValidation?[{}, {dataValidation:{strict:true,condition:{type:'ONE_OF_LIST',values:[{userEnteredValue:'Other'}]}}}]:[]):(options.schema??FEEDBACK_HEADERS).map(h=>({userEnteredValue:{stringValue:h}}));
+   if(template && options.doneValidation){while(values.length<=FEEDBACK_HEADERS.indexOf('Done'))values.push({});values[FEEDBACK_HEADERS.indexOf('Done')]={dataValidation:options.doneValidation};}
    return Response.json({sheets:[{data:[{rowData:[{values}]}]}]});
   }
   if(url.endsWith(':batchUpdate')){
@@ -95,6 +101,16 @@ it('never writes on absent uncertain receipt, changed headers or unavailable cre
  sheetMock({schema:['Changed']});await expect(submitFeedbackSheet(env,r,feedbackReviewDigest(r),'member',false,before)).rejects.toThrow('FEEDBACK_SCHEMA_CHANGED');
  sheetMock({badValidation:true});await expect(submitFeedbackSheet(env,r,feedbackReviewDigest(r),'member',false,before)).rejects.toThrow('FEEDBACK_SCHEMA_CHANGED');
  await expect(submitFeedbackSheet({} as any,r,feedbackReviewDigest(r),'member',false,before)).rejects.toThrow('FEEDBACK_NOT_CONNECTED');expect(before).not.toHaveBeenCalled();
+});
+it('accepts standard Done checkboxes and the current FALSE dropdown but rejects custom checkbox values',async()=>{
+ const r=review(),digest=feedbackReviewDigest(r);
+ for(const condition of [{type:'BOOLEAN'},{type:'ONE_OF_LIST',values:[{userEnteredValue:'TRUE'},{userEnteredValue:'FALSE'}]}]){
+  const f=sheetMock({doneValidation:{strict:true,condition}});
+  expect((await submitFeedbackSheet(env,r,digest,'member',false,()=>{}))?.reportId).toBe(`H-${r.id}`);
+  expect(f.batches[0].requests[1].appendCells.rows[0].values[FEEDBACK_HEADERS.indexOf('Done')].userEnteredValue).toEqual({boolValue:false});
+ }
+ const f=sheetMock({doneValidation:{strict:true,condition:{type:'BOOLEAN',values:[{userEnteredValue:'Done'},{userEnteredValue:'Open'}]}}});
+ await expect(submitFeedbackSheet(env,r,digest,'member',false,()=>{})).rejects.toThrow('FEEDBACK_SCHEMA_CHANGED');expect(f.batches).toHaveLength(0);
 });
 it('does not accept a metadata collision as a submission receipt',async()=>{
  const f=sheetMock(),r=review(),digest=feedbackReviewDigest(r);await submitFeedbackSheet(env,r,digest,'member',false,()=>{});

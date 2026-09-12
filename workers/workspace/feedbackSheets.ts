@@ -79,6 +79,7 @@ export async function submitFeedbackSheet(env: WorkspaceEnv, review: FeedbackRev
   const d = normalizeFeedback(review.draft);
   for (const [name, value] of [['Main Page', d.page], ['Owner', d.owner], ['Urgency (1-10)', d.urgency], ['Status', 'Not started'], ['Done', 'FALSE']]) {
     const validation = templateCells[names.indexOf(name!)]?.dataValidation;
+    if (name === 'Done' && validation?.condition?.type === 'BOOLEAN' && !validation.condition.values?.length) continue;
     if (validation?.strict && (validation.condition?.type !== 'ONE_OF_LIST' || !validation.condition.values?.some(v => v.userEnteredValue === value))) throw new Error('FEEDBACK_SCHEMA_CHANGED');
   }
   beforeWrite();

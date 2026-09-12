@@ -7,6 +7,12 @@ export const FEEDBACK_URL = `https://docs.google.com/spreadsheets/d/${FEEDBACK_S
 export const FEEDBACK_HEADERS = ['ID', 'Main Page', 'Function', 'Issue/Suggestion', 'Example', 'Owner', 'Suggested Fix', 'Urgency (1-10)', 'Status', 'Priority', 'Done', 'What was actually implemented', 'Solved - Jonathan (1-10)', 'Solved - Bianca (1-10)', 'Solved - AI Review (1-10)', 'What to do next', 'Source tab', 'Cleanup notes'] as const;
 export const FEEDBACK_PAGES = ['All', 'Cal - Household', 'General UX', 'Hercules', 'Home - Household', 'Plan - Household', 'Add -', 'More'] as const;
 export const FEEDBACK_OWNERS = ['Bianca Sbrocchi', 'Jonathan Beaulne', 'Person', 'Jonathan Bot', 'Bianca Bot'] as const;
+export function feedbackOwner(name?: string): string {
+  const normalized = name?.trim().toLowerCase();
+  if (normalized === 'jonathan') return 'Jonathan Beaulne';
+  if (normalized === 'bianca') return 'Bianca Sbrocchi';
+  return FEEDBACK_OWNERS.find(owner => owner.toLowerCase() === normalized) ?? 'Person';
+}
 export type FeedbackContext = Partial<Record<'page' | 'scope' | 'theme' | 'scene' | 'viewport' | 'browser' | 'build' | 'environment' | 'observedAt' | 'online', string>>;
 const contextPatterns: Record<keyof FeedbackContext, RegExp> = {
   page: /^[a-zA-Z][a-zA-Z0-9-]{0,39}$/, scope: /^(personal|household)$/,
