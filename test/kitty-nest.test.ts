@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
-import { acceptHouseholdWrite, addPotentialExpense, postPotentialExpense, addAppointment, postVisit, postEntry, assembleHousehold, catalogHousehold, financialAuditHash, householdForView, recordBillPayment, reversePostedMoney, splitForSync, type Household, type LedgerView } from "../src/core/index.ts";
+import { acceptHouseholdWrite, addPotentialExpense, postPotentialExpense, removePotentialExpense, addAppointment, postVisit, postEntry, assembleHousehold, catalogHousehold, financialAuditHash, householdForView, recordBillPayment, reversePostedMoney, splitForSync, type Household, type LedgerView } from "../src/core/index.ts";
 import { saveTask } from "../src/core/tasks.ts";
 import { allocateNestTotal, nestCategoryFor, projectKittyNest } from "../src/core/kittyNest.ts";
 import { assertKittyNestTransition, nestDesignId, saveKittyNestDesign } from "../src/core/kittyNestDesigns.ts";
@@ -12,6 +12,9 @@ import { skipPersonalStep } from "../src/core/commands.ts";
 import { compactedCommandPayload, primaryCommandRef, receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
 import { applyCommandEventLocally, extractMaterializationFacts, materializedHashMatchesSnapshot, type ContinuityCommandEvent } from "../src/ledger/materializeSnapshotFromEvents.ts";
 import { commandMaterializationFacts, sha256Hex } from "../src/core/commandIdentity.ts";
+import { capturedIntent, clearCapturedIntent } from "../src/ledgerSync/capture.ts";
+import { commandFromCapture, type Scope } from "../src/ledgerSync/protocol.ts";
+import { prepareCommand } from "../src/ledgerSync/authority.ts";
 const memberId="MEM-001",today="2026-09-21";
 const nest=(h:Household,view:LedgerView="household")=>projectKittyNest(h,memberId,view,today);
 const banks=(h:Household,view:LedgerView="household")=>nest(h,view).categories.flatMap(row=>row.children);
@@ -54,6 +57,56 @@ describe("Four tiers of nesting banks",()=>{
   let h=planLifeFixture("household");for(const title of ["Wedding travel","Wedding gift"]) h=addPotentialExpense(h,{date:"2026-09-29",title,amount:"100",accountId:"ACC-CHEQUING",subcategoryId:"SUB-LIFE-FUN",createdBy:memberId,visibility:"household"}).household;
   h.potentialExpenses=h.potentialExpenses.map(row=>({...row,linkedCalendarItemId:"same-event"}));
   expect(banks(h).filter(row=>row.designKey.startsWith("potential:"))).toHaveLength(2);
+ });
+ it.each(["household", "personal"] as const)("retains a both-visible paid expense's old appearance in %s", view=>{
+  vi.useFakeTimers();vi.setSystemTime(new Date("2026-09-18T12:00:00Z"));
+  let h=addPotentialExpense(planLifeFixture(view),{date:"2026-09-19",title:"Wedding gift",amount:"10",accountId:"ACC-CHEQUING",subcategoryId:"SUB-LIFE-FUN",createdBy:memberId,visibility:view==="personal"?"personal":"both"}).household;
+  const expense=h.potentialExpenses.at(-1)!,key=`potential:${expense.id}`;
+  h=save(h,key,view,"Our rose keepsake").household;
+  vi.setSystemTime(new Date("2026-09-19T12:00:00Z"));
+  h=postPotentialExpense(h,{id:expense.id,createdBy:view==="household"?"MEM-002":memberId}).household;
+  // Current Personal writes are Personal-only; imported legacy receipts may be Both.
+  if(view==="personal") {const receiptId=h.potentialExpenses.find(row=>row.id===expense.id)!.transactionId;h={...h,potentialExpenses:h.potentialExpenses.map(row=>row.id===expense.id?{...row,visibility:"both"}:row),transactions:h.transactions.map(row=>row.id===receiptId?{...row,visibility:"both"}:row)};}
+  const paid=h;
+  vi.setSystemTime(new Date("2026-09-20T12:00:00Z"));
+  h=saveKittyNestDesign(h,{memberId,view,bankKey:key,expectedRevision:1,name:"Future cream pot",glaze:"cream"}).household;
+  expect(nest(h,view).history.find(row=>row.designKey===key)).toMatchObject({name:"Our rose keepsake",design:{glaze:"rose"}});
+  expect(()=>assertKittyNestTransition(paid,h,memberId,"saveKittyNestDesign")).not.toThrow();
+  const rewritten=structuredClone(h);rewritten.kittyNestDesigns![0]!.history=[];
+  expect(()=>assertKittyNestTransition(paid,rewritten,memberId,"saveKittyNestDesign")).toThrow(/broken pot/);
+ });
+ it("does not use another member's both-visible receipt for Personal appearance history",()=>{
+  vi.useFakeTimers();vi.setSystemTime(new Date("2026-09-18T12:00:00Z"));
+  let h=addPotentialExpense(planLifeFixture("personal"),{date:"2026-09-19",title:"Private gift",amount:"10",accountId:"ACC-CHEQUING",subcategoryId:"SUB-LIFE-FUN",createdBy:memberId,visibility:"personal"}).household;
+  const expense=h.potentialExpenses.at(-1)!,key=`potential:${expense.id}`;h=save(h,key,"personal").household;
+  vi.setSystemTime(new Date("2026-09-19T12:00:00Z"));h=postPotentialExpense(h,{id:expense.id,createdBy:memberId}).household;
+  const receiptId=h.potentialExpenses.find(row=>row.id===expense.id)!.transactionId;
+  h={...h,transactions:h.transactions.map(row=>row.id===receiptId?{...row,createdBy:"MEM-002",visibility:"both"}:row)};
+  vi.setSystemTime(new Date("2026-09-20T12:00:00Z"));h=save(h,key,"personal","My future pot").household;
+  expect(h.kittyNestDesigns![0]!.history??[]).toEqual([]);
+ });
+ it("rejects a captured design save after another device removes its potential expense",async()=>{
+  let h=addPotentialExpense(planLifeFixture("household"),{date:"2026-09-29",title:"Wedding gift",amount:"10",accountId:"ACC-CHEQUING",subcategoryId:"SUB-LIFE-FUN",createdBy:memberId,visibility:"household"}).household;
+  const expense=h.potentialExpenses.at(-1)!,key=`potential:${expense.id}`;h=save(h,key).household;
+  const scope:Scope={environment:h.environment,householdId:h.householdId,memberId,subject:"synthetic-one",role:"owner",expires:Date.now()+60000,aclEpoch:1};
+  clearCapturedIntent(h);
+  const stale=save(h,key,"household","Open editor draft").household;
+  const command=await commandFromCapture(capturedIntent(stale)!,scope,crypto.randomUUID());
+  expect(command.steps).toHaveLength(1);
+  const removed=removePotentialExpense(h,{id:expense.id,createdBy:memberId}).household;
+  expect(banks(removed).some(row=>row.designKey===key)).toBe(false);
+  expect(()=>save(removed,key)).toThrow(/no longer available/);
+  expect(()=>assertKittyNestTransition(removed,{...removed,kittyNestDesigns:stale.kittyNestDesigns},memberId,"saveKittyNestDesign")).toThrow(/own space/);
+  const one=splitForSync(removed,memberId),two=splitForSync(removed,"MEM-002");
+  await expect(prepareCommand({sequence:removed.revision,shared:one.shared,personal:new Map([[memberId,one.personal],["MEM-002",two.personal]])},command,scope,()=>{})).rejects.toThrow(/no longer available/);
+ });
+ it.each(["deleted","no cost","linked cost"])("rejects a stale cost-task pot after the source becomes %s",change=>{
+  let h=saveTask(planLifeFixture("personal"),{memberId,id:"TASK-cost",expectedRevision:0,task:{visibility:"personal",title:"New tires",notes:"",listId:null,parentId:null,doDate:null,dueDate:null,repeat:"none",cue:"none",assigneeId:null,backupId:null,chapterId:null,planReference:null,moneyLink:null,expectedAmountCents:50000,deleted:false}}).household;
+  const key="task:TASK-cost";h=save(h,key,"personal").household;
+  const task=h.tasks!.find(row=>row.id==="TASK-cost")!;
+  h=saveTask(h,{memberId,id:task.id,expectedRevision:task.revision,task:{...task,...(change==="deleted"?{deleted:true}:change==="no cost"?{expectedAmountCents:0}:{moneyLink:{kind:"recurrence" as const,recurrenceId:h.recurrences[0]!.id,date:h.recurrences[0]!.nextDate}})}}).household;
+  expect(banks(h,"personal").some(row=>row.designKey===key)).toBe(false);
+  expect(()=>save(h,key,"personal")).toThrow(/no longer available/);
  });
  it("retains an undecorated paid source name and supports years of edits and archive cycles",()=>{
   vi.useFakeTimers();vi.setSystemTime(new Date("2026-09-18T12:00:00Z"));

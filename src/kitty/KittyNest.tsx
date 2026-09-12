@@ -22,11 +22,12 @@ export function NestPortrait({ bank, theme }: { bank: NestBank; theme: string })
   </span>;
 }
 function NestButton({ bank, theme, onSelect }: { bank: NestBank; theme: string; onSelect: (bank: NestBank) => void }) {
-  return <button type="button" className={`nest-bank nest-bank--${bank.tier}`} data-bank-id={bank.id} data-category={bank.category ?? undefined} onClick={() => onSelect(bank)} aria-label={`Open ${bank.name} in the 3D gallery`}>
+  const detail = bank.tier === "bill" ? bank.state === "broken" ? "Paid · a promise kept" : `${bank.date ?? "Coming up"} · ${formatCad(bank.targetCents)} needed` : bank.tier === "goal" ? `Goal · ${formatCad(bank.targetCents)}` : null;
+  const accessibleName = [`Open ${bank.name} in the 3D gallery`, formatCad(bank.amountCents), detail, bank.state === "archived" ? "Archived" : null].filter(Boolean).join(". ");
+  return <button type="button" className={`nest-bank nest-bank--${bank.tier}`} data-bank-id={bank.id} data-category={bank.category ?? undefined} onClick={() => onSelect(bank)} aria-label={accessibleName}>
     <NestPortrait bank={bank} theme={theme}/><span className="nest-bank__name">{bank.name}</span>
     <strong className="nest-bank__amount">{formatCad(bank.amountCents)}</strong>
-    {bank.tier === "bill" && <small>{bank.state === "broken" ? "Paid · a promise kept" : `${bank.date ?? "Coming up"} · ${formatCad(bank.targetCents)} needed`}</small>}
-    {bank.tier === "goal" && <small>Goal · {formatCad(bank.targetCents)}</small>}
+    {detail && <small>{detail}</small>}
   </button>;
 }
 export function KittyNest({ household, memberId, view, today, onSelect, compact = false }: { household: Household; memberId: string; view: LedgerView; today: string; onSelect: (bank: NestBank) => void; compact?: boolean }) {

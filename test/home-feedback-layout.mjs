@@ -25,7 +25,8 @@ try {
    const serious=result.violations.filter(v=>['serious','critical'].includes(v.impact));
    await page.screenshot({path:`${output}/${theme}-${width}-home.png`,fullPage:true});
    await home.locator('.kitty-nest').scrollIntoViewIfNeeded();await page.screenshot({path:`${output}/${theme}-${width}-shelf.png`});
-   const selected=home.getByRole('button',{name:'Open Our kitchen garden in the 3D gallery',exact:true});await selected.click();
+   const selected=home.getByRole('button',{name:/^Open Our kitchen garden in the 3D gallery\./});
+   await expect(selected).toHaveAccessibleName('Open Our kitchen garden in the 3D gallery. $0.00. Goal · $1200.00');await selected.click();
    await expect(page.locator('.kitty-bank-tabs [aria-pressed="true"]')).toContainText('Our kitchen garden');
    await expect(page.getByRole('button',{name:'← Back to Home',exact:true})).toBeVisible();
    await page.getByRole('button',{name:'Use money',exact:true}).click();

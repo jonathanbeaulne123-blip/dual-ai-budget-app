@@ -9,7 +9,7 @@
 - **Baseline SHA:** `5837bbdf253c8e253bcd53b0029fcfbe8bc796a0`
 - **Integrated main:** `1686ccc4a569c99b5a2d92ae8b311b83873e211d` (#465 Hercules Feedback); retained both imports at the one Hercules conflict.
 - **PR:** https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/466
-- **Application source verified:** `c85c5b7df72ce12f3b475409b7c15bde451f5296`; `f7f00c6` changes only the existing App browser proof.
+- **Original implementation source verified:** `c85c5b7df72ce12f3b475409b7c15bde451f5296`; `f7f00c6` changes only the existing App browser proof.
 - **Risk:** High — scope-safe projections, persistent cosmetic continuity, onboarding and financial display semantics
 - **Environment impact:** Development verification only. Delivery is an open PR; merge/deployment are separate.
 
@@ -78,3 +78,12 @@ Largest fully authored King; category pots with modeled theme-specific props; ex
 ## Remaining uncertainty / handoff
 
 Implementation is delivered in PR #466; the next owner is the PR reviewer, followed by Jonathan for any separately authorized release. Authenticated cross-device, physical-device, hosted deployment and exhaustive-suite acceptance remain separate from local synthetic checks. See the evidence index for exact coverage limits.
+
+
+## Authorized Development release review follow-up
+
+Jonathan requested “merge and deploy” on 2026-09-12. The clean `772ce22` High gate passed 563 tests in 205.700 seconds, with no time-budget breach. Before merging, review comments posted after the initial delivery identified three valid issues: strict visibility equality dropped paid `both` receipt looks; a removed potential source still accepted stale design saves; and the bank button name hid visible financial facts from assistive technology.
+
+The corrected receipt filter uses the existing view/creator predicate. Potential source admission rejects removed rows. Independent review found the same issue for task pots, so deleted tasks, tasks without a positive cost and tasks linked to another money source also reject stale saves. Existing unchanged designs remain preserved. Bank accessible names now include their displayed amount, target/date or paid state, and archive status.
+
+Eight added regression cases cover shared Both payments (including a partner paying), legacy Personal Both ownership, keepsake tampering, current server admission after source removal, task eligibility and accessible bank financial details. The focused core/UI run passes 26/26 tests. The actual App browser proof also asserts the computed accessible name: six theme/width cases plus three setup routes pass with no page errors, failures or serious/critical Axe findings. A focused independent rereview found no remaining blocker. The follow-up release build also passes app/workspace TypeScript, Vite (6.92 seconds) and Hercules UI. No layout, painting, monetary projection, schema or deployment configuration changes are introduced by this follow-up. Final release-gate and deployment receipts are linked from PR #466; prior evidence below remains identified by its source commit.

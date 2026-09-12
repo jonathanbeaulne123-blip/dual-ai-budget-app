@@ -2,7 +2,9 @@
 
 Jonathan can open a ranked nest from Home or Plan, select exactly one pot, and use a studio appropriate to that pot. All four category amounts add up to one King. Paid pots become keepsakes and recurring bills automatically receive their next pot.
 
-[PR #466](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/466) · [Measured evidence](../evidence/nesting-eggs-f010/README.md). Verified application source: `c85c5b7df72ce12f3b475409b7c15bde451f5296`.
+[PR #466](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/466) · [Measured evidence](../evidence/nesting-eggs-f010/README.md). Original implementation evidence source: `c85c5b7df72ce12f3b475409b7c15bde451f5296`.
+
+Release review follow-up: preserve Both receipt looks using the existing view/creator rule, reject removed potential and ineligible task sources, and expose financial facts in bank accessible names. These corrections retain the same scope and financial authority.
 
 ## Authority and delivery
 

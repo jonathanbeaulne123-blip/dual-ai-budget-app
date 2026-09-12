@@ -1,6 +1,7 @@
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 import { shapeKittyStudio, KITTY_STUDIO_LIMITS } from "./kittyStudio.ts";
+import { isVisibleInView } from "./visibility.ts";
 import { ValidationError, type CommitResult, type Household, type KittyGlaze, type KittyStudioV1, type LedgerView } from "./types.ts";
 
 export const NEST_CATEGORIES = ["protect", "everyday", "build", "prepare"] as const;
@@ -86,9 +87,9 @@ export function nestSourceVisible(h: Household, memberId: string, view: LedgerVi
   const accountVisible = (accountId: string) => h.accounts.some(a => a.id === accountId && (view === "household" ? a.scope !== "personal" : a.scope === "personal" && a.ownerMemberId === memberId));
   const sourceVisible = source === "king" || (source === "plan" && (NEST_CATEGORIES as readonly string[]).includes(sourceId))
     || (source === "recurrence" && h.recurrences.some(r => r.id === sourceId && r.type === "expense" && accountVisible(r.accountId)))
-    || (source === "potential" && h.potentialExpenses.some(r => r.id === sourceId && accountVisible(r.accountId) && (view === "household" ? r.visibility !== "personal" : r.createdBy === memberId && r.visibility !== "household")))
+    || (source === "potential" && h.potentialExpenses.some(r => r.id === sourceId && r.status !== "removed" && accountVisible(r.accountId) && isVisibleInView(r, memberId, view)))
     || (source === "appointment" && h.appointments.some(r => r.id === sourceId && accountVisible(r.accountId) && (view === "household" ? r.sensitivity === "household" : r.memberId === memberId || r.memberId === "joint" || r.memberId === "companion")))
-    || (source === "task" && h.tasks?.some(r => r.id === sourceId && r.visibility === view && (view === "household" || r.createdBy === memberId)))
+    || (source === "task" && h.tasks?.some(r => r.id === sourceId && !r.deleted && !r.moneyLink && (r.expectedAmountCents ?? 0) > 0 && r.visibility === view && (view === "household" || r.createdBy === memberId)))
     || (source === "plan-line" && h.planVersions?.some(v => v.scope === view && (view === "household" || v.ownerMemberId === memberId) && v.lines.some(line => line.id === sourceId)));
   return Boolean(sourceVisible);
 }
@@ -149,7 +150,7 @@ function sourceReceipts(h: Household, design: KittyNestDesign) {
     const evidence = h.tasks?.find(row => row.id === id)?.completionEvidence;
     if (evidence?.kind === "transaction") linked.add(evidence.transactionId);
   }
-  return h.transactions.filter(tx => linked.has(tx.id) && tx.type === "expense" && !tx.refundOfId && !tx.reversalOfId && tx.visibility === design.visibility);
+  return h.transactions.filter(tx => linked.has(tx.id) && tx.type === "expense" && !tx.refundOfId && !tx.reversalOfId && isVisibleInView(tx, design.createdBy, design.visibility));
 }
 function receiptLooks(h: Household, design: KittyNestDesign): KittyNestLook[] {
   const looks = [...(design.history ?? []), { at: design.updatedAt, name: design.name, glaze: design.glaze, ...(design.studio ? { studio: design.studio } : {}) }];

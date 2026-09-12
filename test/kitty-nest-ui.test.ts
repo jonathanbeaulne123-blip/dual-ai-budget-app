@@ -6,7 +6,7 @@ vi.mock("../src/kitty/KittyStage.tsx",()=>({KittyStage:({name}: {name:string})=>
 import { KittyBankRoom } from "../src/kitty/KittyBankRoom.tsx";
 import { KittyNest } from "../src/kitty/KittyNest.tsx";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
-import { financialAuditHash, type Household, type CommitResult } from "../src/core/index.ts";
+import { financialAuditHash, recordBillPayment, type Household, type CommitResult } from "../src/core/index.ts";
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
 const buttons=(text:string)=>[...document.querySelectorAll<HTMLButtonElement>('button')].filter(row=>row.textContent?.trim()===text || row.getAttribute('aria-label')===text || row.matches('.studio-benches button') && row.querySelector('span')?.textContent===text);
 async function click(text:string,last=false){const found=buttons(text);const target=last?found.at(-1):found[0];expect(target,text).toBeTruthy();await act(async()=>target!.click());}
@@ -15,6 +15,19 @@ async function fixture(bankId:string){let h=planLifeFixture('household'),calls=0
  return {get h(){return h;},get calls(){return calls;},set fail(value:boolean){fail=value;},close:async()=>{await act(async()=>root.unmount());host.remove();sessionStorage.clear();}};
 }
 describe('Nest gallery modes',()=>{
+ it('includes each visible bank amount, target and paid status in its accessible name',async()=>{
+  let h=planLifeFixture('household');const bill=h.recurrences[0]!;
+  h=recordBillPayment(h,{recurrenceId:bill.id,occurrenceDate:bill.nextDate,paymentDate:'2026-09-19',amount:'900',accountId:bill.accountId,createdBy:'MEM-001'}).household;
+  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
+  try{await act(async()=>root.render(createElement(KittyNest,{household:h,memberId:'MEM-001',view:'household',today:'2026-09-21',onSelect:()=>{}})));
+   for(const door of host.querySelectorAll('.nest-bank')){
+    const name=door.getAttribute('aria-label');expect(name).toContain(door.querySelector('.nest-bank__name')!.textContent);expect(name).toContain(door.querySelector('.nest-bank__amount')!.textContent);
+    const detail=door.querySelector('small');if(detail)expect(name).toContain(detail.textContent);
+   }
+   expect(host.querySelector('.nest-history .nest-bank')?.getAttribute('aria-label')).toContain('Paid');
+   expect(host.querySelector<HTMLDetailsElement>('.nest-history')?.open).toBe(false);
+  }finally{await act(async()=>root.unmount());host.remove();}
+ });
  it('builds, keeps and fires the King through its own cosmetic command and completes the optional chapter',async()=>{
   const f=await fixture('king');try{const before=await financialAuditHash(f.h),goals=structuredClone(f.h.goals);expect(document.querySelector('[data-stage-name="Our King"]')).toBeTruthy();expect(document.body.textContent).toContain('Make the bank that holds your whole nest');
    await click('Throw a piece');await click('pear');await click('Keep the clay');expect(f.h.kittyNestDesigns?.[0]?.studio?.draft?.sculpt.body).toBe('pear');expect(f.h.goals).toEqual(goals);
