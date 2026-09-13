@@ -1007,6 +1007,22 @@
         "test/month-rehearsal-mainline.test.ts"
       ],
       "reason": "Actual App and PGlite intention reload, canonical Task/Calendar handoff and focus recovery, quiet resident, themed responsive room entry and unchanged financial truth"
+    },
+    {
+      "sources": [
+        "src/wardrobe/modelAsset.ts",
+        "src/wardrobe/collectionLoader.ts",
+        "src/wardrobe/scene.ts",
+        "native/android/app/build.gradle",
+        "native/plugin/android/build.gradle"
+      ],
+      "tests": [
+        "test/hearthside-native-wardrobe.test.ts",
+        "test/hercules-wardrobe-catalogue.test.ts",
+        "test/hercules-wardrobe-ui.test.ts",
+        "test/hercules-wardrobe-navigation.test.ts"
+      ],
+      "reason": "Actual Android packaged wardrobe models preserve every base and collection while web/iOS retain gzip, cancellation and existing fitting workflows"
     }
   ]
 }

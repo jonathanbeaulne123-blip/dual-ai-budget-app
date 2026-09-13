@@ -1,6 +1,7 @@
 import {createPlayRoom,PLAY_CAMERAS,type DisplayImage,type PlayPerformance} from '../play/room.ts';
 import type {PlayArea,PlayDecor} from '../core/playContracts.ts';
 import {loadCollection} from './collectionLoader.ts';
+import {readWardrobeModel} from './modelAsset.ts';
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {Reflector} from 'three/addons/objects/Reflector.js';
@@ -52,9 +53,7 @@ export async function createWardrobeScene(host:HTMLElement,options:{play?:boolea
  function dispose(){collectionAbort.abort();if(disposed)return;disposed=true;cancelAnimationFrame(frame);resizeObserver.disconnect();intersection?.disconnect();document.removeEventListener('visibilitychange',visibility);renderer.domElement.removeEventListener('webglcontextlost',lose);renderer.domElement.removeEventListener('pointerup',pick);mixer?.stopAllAction();if(model)mixer?.uncacheRoot(model);scene.traverse(n=>{if(n instanceof T.SkinnedMesh)skeletons.add(n.skeleton);if(n instanceof T.Mesh){geometries.add(n.geometry);for(const m of Array.isArray(n.material)?n.material:[n.material])materials.add(m);}});for(const skeleton of skeletons)skeleton.dispose();for(const g of geometries)g.dispose();for(const m of materials)m.dispose();mirror.getRenderTarget().dispose();room.dispose();renderer.dispose();renderer.domElement.remove();host.dataset.animating='false';}
  options.signal.addEventListener('abort',dispose,{once:true});
  try{
-  const compressed=typeof DecompressionStream!=='undefined';const response=await fetch(WARDROBE_ASSET+(compressed?'.gz':''),{signal:options.signal});if(!response.ok)throw Error('Asset unavailable');let buffer=await response.arrayBuffer();host.dataset.transferBytes=String(buffer.byteLength);
-  // Explicit gzip asset works without host-specific Content-Encoding rules. A CDN may already decode it.
-  if(compressed&&new Uint8Array(buffer)[0]===0x1f&&new Uint8Array(buffer)[1]===0x8b)buffer=await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  const {bytes:buffer,transferBytes}=await readWardrobeModel(WARDROBE_ASSET,options.signal);host.dataset.transferBytes=String(transferBytes);
   if(disposed)throw new DOMException('Closed','AbortError');const gltf=await new GLTFLoader().parseAsync(buffer,'');model=gltf.scene;clips=gltf.animations;
   if(disposed){const lateSkeletons=new Set<T.Skeleton>();model.traverse(n=>{if(n instanceof T.SkinnedMesh)lateSkeletons.add(n.skeleton);if(n instanceof T.Mesh){n.geometry.dispose();for(const m of Array.isArray(n.material)?n.material:[n.material])m.dispose();}});for(const skeleton of lateSkeletons)skeleton.dispose();throw new DOMException('Closed','AbortError');}
   model.position.y=.047;scene.add(model);mixer=new T.AnimationMixer(model);
