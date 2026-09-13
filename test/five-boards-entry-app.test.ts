@@ -396,6 +396,8 @@ describe("five boards entry App integration", () => {
   }, 30000);
 
   it.each([true, false])("Plan uses hero, Categories, sit-down and Kitty Banks DOM order (mobile=%s)", async phone => {
+    // The five-boards Plan is the documented Plan V2 rollback (D-239/D-248); V2 is the default, so exercise the rollback explicitly.
+    vi.stubEnv("VITE_PLAN_SYSTEM_V2", "0");
     mobile = phone; await mount();
     await act(async () => button("Open plan").click());
     expect(container.querySelector("[data-add-slideshow]")).toBeNull();
@@ -405,7 +407,8 @@ describe("five boards entry App integration", () => {
     expect(plan.children[0]!.classList.contains('hero')).toBe(true);
     expect(plan.children[1]!.querySelector('h2')!.textContent).toBe('Categories');
     expect(plan.children[2]!.classList.contains('sit-guide')).toBe(true);
-    expect(plan.children[3]!.querySelector('h2')?.textContent).toBe('Kitty Banks');
-    expect(plan.children[3]!.querySelector('button')?.textContent).toBe('Enter Kitty Banks');
+    // Since #466 the fourth board is the nest itself: one door per bank, the King first.
+    expect(plan.children[3]!.classList.contains('kitty-nest')).toBe(true);
+    expect(plan.children[3]!.querySelector('.nest-bank--king')).not.toBeNull();
   }, 30000);
 });
