@@ -1,18 +1,22 @@
-import { useId, useLayoutEffect, useMemo, useRef, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import type { CommitResult, Household } from "../core/types.ts";
 import { formatDayLabel, monthKeyFromDateKey, type DateKey } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
 import { monthObligations } from "../core/monthObligations.ts";
 import { duePotentialExpenses, potentialExpensesForView } from "../core/potentialExpenses.ts";
 import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulseFreshness } from "../core/fundPulse.ts";
-import { completeMove, keepWinAsMemory, nextMove, openChapterFor, recentWin, respondToMove } from "../core/chapters.ts";
+import { completeMove, nextMove, openChapterFor, respondToMove } from "../core/chapters.ts";
 import { projectKittyNest, NEST_CATEGORY_LABELS } from "../core/kittyNest.ts";
 import { fundDisplayName } from "../core/spaceNames.ts";
 import {
-  queenBloom, queenBody, queenBuds, queenCrown, queenHands, queenHem, queenLimits, queenNestDoors, queenSeams, queenStill, queenTrace, queenVine,
-  type QueenRegionId, type QueenStill,
+  QUEEN_BANK_LABELS, QUEEN_BANK_MEANINGS,
+  queenBanks, queenBody, queenBuds, queenCrown, queenFeet, queenHands, queenHem, queenLine, queenRibbons, queenSeams, queenShelf, queenStill, queenTrace, queenVine,
+  type QueenBankId,
 } from "../core/queenPresentation.ts";
 import { useEasyRead } from "../useEasyRead.ts";
+import { QueenFigure, QueenBankVessel } from "./QueenFigure.tsx";
+import { QueenCellar } from "./QueenCellar.tsx";
+import { QueenLoft } from "./QueenLoft.tsx";
 import "./queen-home.css";
 
 type Run = (fn: (current: Household) => CommitResult) => Promise<unknown>;
@@ -26,31 +30,30 @@ export type QueenHomeProps = {
   onCommand: Run;
   onGo: (tab: "ledger" | "plan" | "together" | "calendar" | "more") => void;
   onOpenSetup: (destination: "charter" | "fund") => void;
-  /** Opens the existing nest gallery at a goal or a category bank. */
+  /** Opens the existing nest gallery at a goal or a category bank — the reviewed command and Final Confirm boundary. */
   onOpenBank: (request: { goalId?: string; bankId?: string }) => void;
   identityArt?: ReactNode;
 };
 
-/** The figure's drawing space. Overlay controls are placed in the same coordinates so they never drift from the art. */
-const VIEW_W = 240;
-const VIEW_H = 330;
+/** Doors: the two field doors carry everything that is not money; the three bank doors are the money hierarchy. */
+type Door = "together" | "status" | QueenBankId;
+type Scene = "home" | "cellar" | "loft";
+const ROOM_FOR: Partial<Record<Door, Scene>> = { protect: "cellar", build: "loft" };
+/** The glass panel slides in from the edge opposite its door, so the door you came through stays visible and is the way deeper. */
+const PANEL_SIDE: Record<Door, "left" | "right"> = { together: "right", protect: "right", whatnow: "right", build: "left", status: "left" };
+const REVEAL_MS = 1800;
+const sentence = (text: string) => text.trim().replace(/[.!?]+$/, "");
+const PULL_THRESHOLD = 80;
 
-/** Posture is the pose: a static scale and lean per state. The drawing and its overlay controls share these numbers. */
-const POSTURE: Record<QueenStill["posture"], { scale: number; lean: number }> = {
+/** Posture is the pose: a static scale and lean per state. */
+const POSTURE: Record<ReturnType<typeof queenStill>["posture"], { scale: number; lean: number }> = {
   upright: { scale: 1, lean: 0 },
   "leaning-in": { scale: 0.97, lean: -1.5 },
   attentive: { scale: 0.98, lean: 0 },
-  tilted: { scale: 0.88, lean: 3 },
-  depleted: { scale: 0.8, lean: 2 },
-  matte: { scale: 0.94, lean: 0 },
+  tilted: { scale: 0.9, lean: 3 },
+  depleted: { scale: 0.82, lean: 2 },
+  matte: { scale: 0.95, lean: 0 },
 };
-
-/** Place a control over a drawn region, following the body's scale about her feet so the control never drifts from the art. */
-function place(x: number, y: number, w: number, h: number, scale = 1): CSSProperties {
-  const left = VIEW_W / 2 + (x - VIEW_W / 2) * scale;
-  const top = VIEW_H + (y - VIEW_H) * scale;
-  return { left: `${(left / VIEW_W) * 100}%`, top: `${(top / VIEW_H) * 100}%`, width: `${((w * scale) / VIEW_W) * 100}%`, height: `${((h * scale) / VIEW_H) * 100}%` };
-}
 
 const WIDE_QUERY = "(min-width: 720px)";
 function subscribeWide(callback: () => void): () => void {
@@ -63,64 +66,66 @@ function readWide(): boolean {
   return typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(WIDE_QUERY).matches;
 }
 
-/** The pupils turn toward the region that needs the household. Offsets in drawing units. */
-const GAZE: Record<QueenRegionId | "rest", { dx: number; dy: number }> = {
-  rest: { dx: 0, dy: 0 },
-  crown: { dx: 0, dy: -3 },
-  vine: { dx: -2, dy: -3 },
-  face: { dx: 0, dy: 0 },
-  hands: { dx: 0, dy: 3 },
-  body: { dx: 0, dy: 3.5 },
-  belly: { dx: 0, dy: 3.5 },
-  hem: { dx: 0, dy: 4 },
-};
-
-const MOUTH: Record<QueenStill["mouth"], string> = {
-  serene: "M111 132 q9 6 18 0",
-  level: "M111 133 q9 2 18 0",
-  set: "M111 135 q9 -3 18 0",
-};
-
 /**
- * The Queen's Nest, Stage 1: Household Home as one body.
+ * The Still Queen: Household Home as one figure in a field of nothing.
  *
- * Crown · vine and buds · face · hands · body and belly · hem. Every region is
- * a real control that leads to an existing destination; the pose is the data
- * and motion is garnish. Amounts are confirmation inside accessible names and
- * small labels, never the opening line. She shows; Hercules says (not here).
+ * At rest the whole inventory is her, one quiet line beneath her and — only
+ * when one exists — the Move at her hands. Her body carries state and no text.
+ * Navigation lives elsewhere: two near-invisible doors in the field (Together,
+ * Status) that breathe in when the empty field is tapped, and the expand —
+ * tapping her opens her into three banks (Protect · What Now · Build) with a
+ * button above each. Panels peek; the cellar and the loft are the rooms, and
+ * she does not follow you in.
  */
 export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt }: QueenHomeProps) {
   const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
   const [easyRead] = useEasyRead(`${household.environment}:${household.householdId}:${memberId}`);
-  const limits = queenLimits(wide);
+  const ids = useId();
+  const panelId = `${ids}-panel`;
+
+  // ---- what she shows: pure selectors over shipped projections ----
   const monthKey = monthKeyFromDateKey(today);
   const chapter = openChapterFor(household);
   const move = nextMove(household, memberId);
   const pulse = fundPulse(deriveFundPulseInput(household, { memberId, today, freshness, activeChapter: Boolean(chapter) }));
   const still = queenStill(pulse, freshness);
-  const crown = queenCrown(presenceLines(household, { memberId, today }), limits.presence);
+  const presence = presenceLines(household, { memberId, today });
+  const crown = queenCrown(presence);
   const nest = useMemo(() => projectKittyNest(household, memberId, "household", today), [household, memberId, today]);
-  const doors = queenNestDoors(nest);
-  const buds = queenBuds(nest, limits.buds);
+  const banks = queenBanks(nest);
+  const buds = queenBuds(nest, 4);
   const vine = queenVine(household, chapter, today);
   const hands = queenHands(household, memberId, chapter, move);
   const body = queenBody(nest, freshness, queenSeams(household, today));
   const trace = queenTrace(household, memberId, today);
-  const stones = queenHem(
-    monthObligations(household, monthKey, today).rows,
-    duePotentialExpenses(potentialExpensesForView(household.potentialExpenses, memberId, "household"), today),
-    today,
-    limits.stones,
-  );
-  const activeMemberIds = household.members.filter((row) => row.active).map((row) => row.id);
-  const bloom = queenBloom(recentWin(household), memberId, activeMemberIds);
+  const obligations = monthObligations(household, monthKey, today).rows;
+  const planned = duePotentialExpenses(potentialExpensesForView(household.potentialExpenses, memberId, "household"), today);
+  const stones = queenHem(obligations, planned, today, 4);
+  const feet = queenFeet(stones);
+  const line = queenLine(chapter, still);
   const fundName = fundDisplayName(household);
-  const destinationTab = pulse.destination === "fund" ? "ledger" : pulse.destination === "path" ? "plan" : pulse.destination === "together" ? "together" : "more";
-  const ids = useId();
-  const root = useRef<HTMLDivElement>(null);
-  const figure = useRef<HTMLDivElement>(null);
+  const ribbons = useMemo(() => queenRibbons(household, today), [household, today]);
+  const shelf = useMemo(() => queenShelf(nest, household), [nest, household]);
+  const freshBud = trace && trace.region.startsWith("bud:") ? buds.findIndex((bud) => `bud:${bud.goalId}` === trace.region) : -1;
+  const pose = POSTURE[still.posture];
 
-  // Home does not scroll: the composition takes the height left under the chrome above it.
+  // ---- where you are: rest · expanded · a peek · a room ----
+  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState<Door | null>(null);
+  const [scene, setScene] = useState<Scene>("home");
+  const [revealed, setRevealed] = useState(false);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const returnTo = useRef<HTMLElement | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const queenRef = useRef<HTMLButtonElement>(null);
+  const bankRefs = useRef<Record<QueenBankId, HTMLButtonElement | null>>({ protect: null, whatnow: null, build: null });
+  const cellarStair = useRef<HTMLButtonElement>(null);
+  const loftStair = useRef<HTMLButtonElement>(null);
+  const pull = useRef<{ y: number } | null>(null);
+
+  // Home does not scroll: the composition takes exactly the height left under the chrome above it.
   useLayoutEffect(() => {
     const element = root.current;
     if (!element || typeof window === "undefined") return;
@@ -130,225 +135,283 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     };
     measure();
     window.addEventListener("resize", measure);
-    // The office holds the Move in her hands: the pill follows the drawn figure's height.
-    const drawn = figure.current;
-    const observer = drawn && typeof ResizeObserver === "function"
-      ? new ResizeObserver((entries) => { for (const entry of entries) element.style.setProperty("--queen-figure-h", `${Math.round(entry.contentRect.height)}px`); })
-      : null;
-    if (drawn) observer?.observe(drawn);
-    return () => { window.removeEventListener("resize", measure); observer?.disconnect(); };
+    return () => window.removeEventListener("resize", measure);
   }, [wide]);
 
-  const gaze = GAZE[still.eyes === "open" ? still.gaze : "rest"];
-  const pose = POSTURE[still.posture];
-  const at = (x: number, y: number, w: number, h: number) => place(x, y, w, h, pose.scale);
-  const fillTop = 302 - (body.level / 10) * 118;
-  const vineScale = vine.chapter ? 0.72 + vine.growth * 0.09 : 0.55;
-  const leaves = vine.chapter ? 1 + vine.growth : 0;
-  const bodyName = `${body.fullness === "empty" ? "Empty" : body.fullness === "low" ? "Low" : body.fullness === "half" ? "Half full" : body.fullness === "full" ? "Full" : "Holding"}; ${body.glaze === "glazed" ? "fresh glaze" : body.glaze === "offline" ? "offline, unglazed" : "matte, evidence not current"}${body.seams ? `; ${body.seams} mended ${body.seams === 1 ? "correction" : "corrections"} left visible` : ""}`;
-  const protectBanks = doors.protect.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
-  const buildBanks = doors.build.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
-  const bellyBanks = doors.belly.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
+  useEffect(() => () => { if (revealTimer.current) clearTimeout(revealTimer.current); }, []);
 
-  const onHands = () => {
-    if (hands.kind !== "move") { onGo("plan"); return; }
-    const request = hands;
-    if (request.act === "setup") { onOpenSetup(household.charter ? "fund" : "charter"); return; }
-    if (request.act === "waiting") { onGo("plan"); return; }
-    if (request.act === "acknowledge") { void onCommand((current) => respondToMove(current, { memberId, moveId: request.move.id, response: "acknowledge" })); return; }
-    void onCommand((current) => completeMove(current, { memberId, moveId: request.move.id }));
+  const reveal = useCallback(() => {
+    setRevealed(true);
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+    revealTimer.current = setTimeout(() => setRevealed(false), REVEAL_MS);
+  }, []);
+
+  const closePanel = useCallback(() => {
+    setOpen((current) => {
+      if (current === null) return current;
+      const back = returnTo.current;
+      returnTo.current = null;
+      if (back) requestAnimationFrame(() => back.focus({ preventScroll: true }));
+      return null;
+    });
+  }, []);
+
+  const enterRoom = useCallback((room: Scene) => {
+    returnTo.current = null;
+    setOpen(null);
+    setRevealed(false);
+    setScene(room);
+    requestAnimationFrame(() => (room === "cellar" ? cellarStair : loftStair).current?.focus({ preventScroll: true }));
+  }, []);
+
+  const exitRoom = useCallback(() => {
+    const from = scene;
+    setScene("home");
+    setExpanded(true);
+    const bank: QueenBankId = from === "cellar" ? "protect" : "build";
+    requestAnimationFrame(() => bankRefs.current[bank]?.focus({ preventScroll: true }));
+  }, [scene]);
+
+  /** One gesture, two depths: the first tap opens the peek; the same door again from inside the peek goes in. */
+  const openDoor = useCallback((door: Door, from: HTMLElement | null) => {
+    setRevealed(false);
+    if (open === door) {
+      const room = ROOM_FOR[door];
+      if (room) enterRoom(room); else closePanel();
+      return;
+    }
+    returnTo.current = from;
+    setOpen(door);
+    requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }));
+  }, [open, enterRoom, closePanel]);
+
+  const onFieldClick = (event: MouseEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("button, a, [role=dialog]")) return;
+    if (open) { closePanel(); return; }
+    reveal();
   };
-  const handsVerb = hands.kind !== "move" ? null : hands.act === "done" ? "Done" : hands.act === "acknowledge" ? "I acknowledge this" : hands.act === "setup" ? (household.charter ? "Set up the Fund" : "Create our Charter") : "Waiting on both of us";
+
+  const toggleQueen = () => {
+    if (open) closePanel();
+    setExpanded((current) => !current);
+  };
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (scene !== "home") { exitRoom(); return; }
+      if (open) { closePanel(); return; }
+      if (expanded) { setExpanded(false); queenRef.current?.focus({ preventScroll: true }); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [scene, open, expanded, exitRoom, closePanel]);
+
+  // The sheet: keep pulling past a threshold and you are in the room.
+  const onPullStart = (event: PointerEvent<HTMLDivElement>) => {
+    pull.current = { y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    panelRef.current?.classList.add("is-pulling");
+  };
+  const onPullMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!pull.current || !panelRef.current) return;
+    const dy = Math.min(0, event.clientY - pull.current.y);
+    panelRef.current.style.setProperty("--queen-pull", `${dy}px`);
+  };
+  const onPullEnd = (event: PointerEvent<HTMLDivElement>) => {
+    if (!pull.current) return;
+    const dy = event.clientY - pull.current.y;
+    pull.current = null;
+    panelRef.current?.classList.remove("is-pulling");
+    panelRef.current?.style.removeProperty("--queen-pull");
+    const room = open ? ROOM_FOR[open] : undefined;
+    if (dy < -PULL_THRESHOLD && room) enterRoom(room);
+  };
+
+  // ---- the Move: one act, from the Together peek ----
+  const onMoveAct = () => {
+    if (hands.kind !== "move") return;
+    if (hands.act === "setup") { onOpenSetup(household.charter ? "fund" : "charter"); return; }
+    if (hands.act === "waiting") { onGo("plan"); return; }
+    if (hands.act === "acknowledge") { void onCommand((current) => respondToMove(current, { memberId, moveId: hands.move.id, response: "acknowledge" })); return; }
+    void onCommand((current) => completeMove(current, { memberId, moveId: hands.move.id }));
+  };
+  const moveVerb = hands.kind !== "move" ? null : hands.act === "done" ? "Done" : hands.act === "acknowledge" ? "I acknowledge this" : hands.act === "setup" ? (household.charter ? "Set up the Fund" : "Create our Charter") : "Waiting on both of us";
+
+  // ---- words for the still: pose is the data, so every channel has a sentence ----
+  const glazeWords = still.glaze === "glazed" ? "Glazed: the evidence is fresh." : still.glaze === "offline" ? "Unglazed: this device is offline." : "Matte: the evidence is not certain yet, so she claims nothing.";
+  const bodyWords = `${body.fullness === "empty" ? "Empty" : body.fullness === "low" ? "Low" : body.fullness === "half" ? "Half full" : body.fullness === "full" ? "Full" : "Holding"}; ${formatCad(body.amountCents)} in ${fundName}.`;
+  const crownWords = crown.light === "both" ? "Crown lit: both of you are here." : crown.light === "waiting-me" ? "Crown unlit; something waits for you." : crown.light === "waiting-partner" ? "Crown unlit; something waits on your partner." : "Crown unlit; one of you is here.";
+  const seamWords = body.seams === 0 ? "No gold seams this month." : `${body.seams} gold ${body.seams === 1 ? "seam" : "seams"}: ${body.seams === 1 ? "a correction" : "corrections"} mended and left visible.`;
+  const vineWords = vine.chapter ? `The vine is ${vine.title}, week ${vine.week}, grown by ${vine.acts} ${vine.acts === 1 ? "act" : "acts"}.` : "No Chapter is open; the vine is short.";
+  const budWords = buds.length === 0 ? "No buds: nothing is growing yet." : `${buds.length} ${buds.length === 1 ? "bud" : "buds"}: ${buds.map((bud) => bud.name).join(", ")}.`;
+  const feetWords = feet.count === 0 ? "Nothing dated is at her feet." : `${feet.count} dated ${feet.count === 1 ? "obligation" : "obligations"} at her feet; the nearest is ${feet.nearness[0] === "near" ? "within the week" : feet.nearness[0] === "soon" ? "within two weeks" : "later this month"}.`;
+  const handsWords = hands.kind === "move" ? `At her hands, one Move: ${sentence(hands.move.text)}.` : "Her hands are empty. Nothing needs doing.";
+  const stillWords = `${still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}`;
+  const bankWords = (id: QueenBankId) => banks[id].banks.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
+  const waiting = presence.filter((row) => row.waitingOn).length + (hands.kind === "move" ? 1 : 0);
+
+  const mode = wide ? "panel" : "sheet";
+  const inRoom = scene !== "home";
 
   return (
     <div
       ref={root}
-      className={`queen-home${wide ? " queen-home--wide" : " queen-home--phone"}`}
+      className={`queen-home${wide ? " queen-home--wide" : " queen-home--phone"}${expanded ? " is-expanded" : ""}${open ? " is-open" : ""}${revealed ? " is-revealed" : ""}`}
       data-pulse={still.state}
       data-posture={still.posture}
       data-eyes={still.eyes}
       data-gaze={still.gaze}
       data-brow={still.brow}
-      data-glaze={body.glaze}
+      data-glaze={still.glaze}
       data-grave={still.grave ? "true" : "false"}
       data-crown={crown.light}
       data-hands={hands.kind}
+      data-mode={mode}
+      data-scene={scene}
+      data-open={open ?? "none"}
+      data-side={open ? PANEL_SIDE[open] : "right"}
       data-easy-read={easyRead ? "true" : "false"}
       style={{ "--queen-scale": String(pose.scale), "--queen-lean": `${pose.lean}deg` } as CSSProperties}
     >
-      <header className="queen-identity">
-        {identityArt}
-        <p className="kicker">Our Home</p>
-        <h1>{household.name}</h1>
-      </header>
+      {identityArt ? <div className="queen-identity-art" aria-hidden="true">{identityArt}</div> : null}
+      <h1 className="sr-only">{household.name} — Our Home</h1>
 
-      {wide && (
-        <aside className="queen-aside queen-aside--left" aria-label="Who is here and this Chapter">
-          <p className="kicker">Who is here</p>
-          {crown.lines.length > 0 ? (
-            <ul className="queen-presence">{crown.lines.map((line) => <li key={line.id} className={line.waitingOn ? `is-waiting-${line.waitingOn}` : ""}>{line.text}</li>)}</ul>
-          ) : <p className="muted">Quiet for now.</p>}
-          <p className="kicker">This Chapter</p>
-          {vine.chapter ? <p><strong>{vine.title}</strong><br /><span className="muted">week {vine.week} · grown by {vine.acts} {vine.acts === 1 ? "act" : "acts"}</span></p> : <p className="muted">No Chapter is open. Open one from Our Path.</p>}
-        </aside>
-      )}
+      <div className="queen-field" onClick={onFieldClick} inert={inRoom}>
+        <div className="queen-rings" aria-hidden="true" />
 
-      <div className="queen-stage">
-        <ul className="queen-buds" aria-label="What is growing">
-          {bloom && (
-            <li>
-              <button
-                type="button"
-                className={`queen-bloom${bloom.complete ? " is-kept" : ""}`}
-                disabled={busy || bloom.complete || bloom.keptByMe}
-                aria-label={`${bloom.label} — ${bloom.win.title}. ${bloom.complete ? "Kept as a Memory." : bloom.keptByMe ? "Kept by you. Shared when your partner agrees." : "Keep as a Memory."}`}
-                onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: bloom.win.id }))}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" className="queen-bloom__flower"><circle cx="12" cy="12" r="3.2" /><circle cx="12" cy="5" r="3.4" /><circle cx="18.1" cy="8.5" r="3.4" /><circle cx="18.1" cy="15.5" r="3.4" /><circle cx="12" cy="19" r="3.4" /><circle cx="5.9" cy="15.5" r="3.4" /><circle cx="5.9" cy="8.5" r="3.4" /></svg>
-                <span className="queen-bud__name">{bloom.win.title}</span>
-              </button>
-            </li>
-          )}
-          {buds.map((bud) => {
-            const fresh = trace?.region === `bud:${bud.goalId}`;
-            return (
-              <li key={bud.id}>
-                <button
-                  type="button"
-                  className={`queen-bud queen-bud--${bud.size}${fresh ? " is-fresh" : ""}`}
-                  data-bank-id={bud.bank.id}
-                  aria-label={`${bud.name} — growing. Opens this goal. ${formatCad(bud.bank.amountCents)} set aside${fresh && trace ? `. ${trace.who} touched this recently` : ""}`}
-                  onClick={() => onOpenBank({ goalId: bud.goalId })}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="queen-bud__dot"><circle cx="12" cy="12" r="9" />{fresh && <circle className="queen-trace" cx="9" cy="9" r="2.6" />}</svg>
-                  <span className="queen-bud__name">{bud.name}</span>
-                </button>
-              </li>
-            );
-          })}
-          {buds.length === 0 && !bloom && <li className="queen-buds__empty muted">Nothing is growing yet.</li>}
-        </ul>
+        <button type="button" className="queen-door queen-door--together" aria-label={`Together — decisions waiting on both of you${waiting ? `: ${waiting} waiting` : ""}`}
+          aria-expanded={open === "together"} aria-controls={panelId} onClick={(event) => openDoor("together", event.currentTarget)}>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="10" r="4.5" /><circle cx="12.5" cy="10" r="4.5" /></svg>
+          <span className="queen-door__label">Together</span>
+        </button>
 
-        <div className="queen-figure" ref={figure} data-trace={trace?.region ?? "none"}>
-          <svg className="queen-svg" viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} aria-hidden="true" focusable="false">
-            <defs>
-              <clipPath id={`${ids}-vessel`}>
-                <path d="M34 302 C24 250 40 196 76 180 C92 172 148 172 164 180 C200 196 216 250 206 302 Z" />
-              </clipPath>
-            </defs>
-            <ellipse className="queen-foot" cx="120" cy="306" rx="96" ry="12" />
-            <g className="queen-body">
-              {/* Body */}
-              <path className="queen-vessel" d="M34 302 C24 250 40 196 76 180 C92 172 148 172 164 180 C200 196 216 250 206 302 Z" />
-              <rect className="queen-fill" clipPath={`url(#${ids}-vessel)`} x="34" y={fillTop} width="172" height={302 - fillTop} />
-              <path className="queen-shade" d="M156 180 C194 198 212 252 206 302 L180 302 C187 252 176 202 150 184 Z" />
-              <path className="queen-glaze" d="M56 290 C46 246 60 204 86 188 C64 210 56 252 62 290 Z" />
-              {body.seams >= 1 && <path className="queen-seam" d="M74 302 L88 248 L76 214 L90 186" />}
-              {body.seams >= 2 && <path className="queen-seam" d="M176 298 L164 254 L174 226" />}
-              {body.seams >= 3 && <path className="queen-seam" d="M120 300 L126 268 L116 246" />}
-              {trace?.region === "body" && <ellipse className="queen-trace" cx="150" cy="236" rx="7" ry="4" />}
-              {/* Shoulders */}
-              <path className="queen-vessel" d="M80 182 C80 146 96 126 120 126 C144 126 160 146 160 182 Z" />
-              {/* Hands */}
-              <path className="queen-vessel queen-hands-shape" d="M88 214 C88 198 104 190 120 190 C136 190 152 198 152 214 C140 222 100 222 88 214 Z" />
-              {hands.kind === "move" && <><circle className="queen-move-glow" cx="120" cy="196" r="17" /><path className="queen-move-object" d="M120 182 l9 10 l-9 10 l-9 -10 Z" /></>}
-              {/* Face */}
-              <ellipse className="queen-vessel" cx="120" cy="112" rx="40" ry="39" />
-              <path className="queen-shade" d="M142 84 C158 94 162 124 150 142 C162 120 158 94 142 84 Z" />
-              <path className="queen-brow" d="M98 100 q9 -5 18 -1" />
-              <path className="queen-brow" d="M124 99 q9 -4 18 1" />
-              {still.eyes === "open" ? (
-                <>
-                  <circle className="queen-pupil" cx={106 + gaze.dx} cy={114 + gaze.dy} r="3.6" />
-                  <circle className="queen-pupil" cx={134 + gaze.dx} cy={114 + gaze.dy} r="3.6" />
-                  <ellipse className="queen-eye-open" cx="106" cy="114" rx="8" ry="5.5" />
-                  <ellipse className="queen-eye-open" cx="134" cy="114" rx="8" ry="5.5" />
-                </>
-              ) : (
-                <>
-                  <path className="queen-eye" d="M98 114 q8 6 16 0" />
-                  <path className="queen-eye" d="M126 114 q8 6 16 0" />
-                </>
+        <div className="queen-centre">
+          <div className="queen-banks">
+            <div className="queen-bank queen-bank--protect" inert={!expanded}>
+              <button ref={(node) => { bankRefs.current.protect = node; }} type="button" className="queen-bank__button" aria-expanded={open === "protect"} aria-controls={panelId}
+                aria-label={`Protect — ${QUEEN_BANK_MEANINGS.protect} ${bankWords("protect")}. Opens a peek; again for the cellar`} onClick={(event) => openDoor("protect", event.currentTarget)}>Protect</button>
+              <QueenBankVessel kind="protect" share={banks.protect.share} />
+            </div>
+
+            <div className="queen-bank queen-bank--queen">
+              {expanded && (
+                <button ref={(node) => { bankRefs.current.whatnow = node; }} type="button" className="queen-bank__button" aria-expanded={open === "whatnow"} aria-controls={panelId}
+                  aria-label={`What now — ${QUEEN_BANK_MEANINGS.whatnow} ${bankWords("whatnow")}. Opens a peek`} onClick={(event) => openDoor("whatnow", event.currentTarget)}>What now</button>
               )}
-              <path className="queen-mouth" d={MOUTH[still.mouth]} />
-              {/* Crown */}
-              <path className="queen-crown" d="M90 78 L97 60 L109 72 L120 52 L131 72 L143 60 L150 78" />
-              {crown.light === "both" && <><circle className="queen-crown-point" cx="97" cy="60" r="2.4" /><circle className="queen-crown-point" cx="120" cy="52" r="2.8" /><circle className="queen-crown-point" cx="143" cy="60" r="2.4" /></>}
-              {crown.light === "waiting-me" && <path className="queen-crown-mark" d="M120 46 l5 6 l-5 6 l-5 -6 Z" />}
-              {/* Vine */}
-              <g className="queen-vine" style={{ transform: `scale(${vineScale})` }}>
-                <path className="queen-stem" d="M120 72 C120 46 104 30 84 20" />
-                <path className="queen-stem" d="M120 72 C124 44 142 30 162 22" />
-                {leaves >= 1 && <ellipse className="queen-leaf" cx="104" cy="50" rx="9" ry="4.4" transform="rotate(-20 104 50)" />}
-                {leaves >= 2 && <ellipse className="queen-leaf" cx="94" cy="34" rx="11" ry="5.4" transform="rotate(-36 94 34)" />}
-                {leaves >= 3 && <ellipse className="queen-leaf" cx="148" cy="36" rx="11" ry="5.4" transform="rotate(34 148 36)" />}
-                {leaves >= 4 && <ellipse className="queen-leaf" cx="136" cy="52" rx="8" ry="4" transform="rotate(30 136 52)" />}
-                {leaves >= 5 && <ellipse className="queen-leaf" cx="158" cy="24" rx="7" ry="3.6" transform="rotate(20 158 24)" />}
-              </g>
-            </g>
-            {trace?.region === "hem" && <ellipse className="queen-trace" cx="160" cy="304" rx="8" ry="3.5" />}
-          </svg>
+              <div className="queen-mount">
+                <button ref={queenRef} type="button" className="queen-figure" aria-expanded={expanded} aria-describedby={`${ids}-still`}
+                  aria-label={`The Queen — ${line.word}. ${expanded ? "Closes her banks" : "Opens her into her banks"}`} onClick={toggleQueen}>
+                  <QueenFigure still={still} body={body} crown={crown.light} vine={vine} buds={buds.length} feet={feet} freshBud={freshBud >= 0 ? freshBud : null} />
+                </button>
+                {hands.kind === "move" && (
+                  <button type="button" className="queen-move" aria-label={`A Move is waiting: ${sentence(hands.move.text)}. ${hands.ownerLine}. Opens Together`}
+                    aria-controls={panelId} aria-expanded={open === "together"} onClick={(event) => openDoor("together", event.currentTarget)}>
+                    <svg viewBox="0 0 40 40" aria-hidden="true"><circle className="queen-move__glow" cx="20" cy="20" r="17" /><path className="queen-move__object" d="M20 9 l10 11 l-10 11 l-10 -11 Z" /></svg>
+                  </button>
+                )}
+              </div>
+              <p id={`${ids}-still`} className="sr-only">{stillWords}</p>
+            </div>
 
-          {/* Regions — real controls placed in the drawing's own coordinates, in reading order: who is here · what is growing · how we are · what to do · what is held · the doors. Stacking is explicit in CSS. */}
-          <button type="button" className="queen-region queen-region--crown" style={at(84, 44, 72, 34)} aria-label={`Crown — ${crown.light === "both" ? "both of you are here" : crown.light === "waiting-me" ? "something is waiting for you" : crown.light === "waiting-partner" ? "something is waiting on your partner" : "quiet"}${crown.lines.length ? `. ${crown.lines.map((line) => line.text).join(" ")}` : ""}. Opens Together`} onClick={() => onGo("together")} />
-          <button type="button" className="queen-region queen-region--vine" style={at(70, 8, 100, 46)} aria-label={vine.chapter ? `Vine — ${vine.title}, week ${vine.week}, grown by ${vine.acts} ${vine.acts === 1 ? "act" : "acts"}. Opens Our Path` : "Vine — no Chapter is open. Opens Our Path"} onClick={() => onGo("plan")} />
-          <button type="button" className="queen-region queen-region--face" style={at(78, 70, 84, 84)} aria-label={`Face — ${pulse.headline}`} aria-describedby={`${ids}-still`} onClick={() => onGo(destinationTab)} />
-          <button type="button" className="queen-region queen-region--hands" style={at(82, 176, 76, 50)} aria-label={hands.kind === "move" ? `Hands — the next Move: ${hands.move.text}. ${hands.ownerLine}. Opens Our Path` : "Hands — empty. Nothing needs doing. Opens Our Path"} onClick={() => onGo("plan")} />
-          <button type="button" className="queen-region queen-region--body" style={at(34, 176, 172, 60)} aria-label={`Body — what is held. ${bodyName}. ${formatCad(body.amountCents)} in ${fundName}. Opens ${fundName}`} onClick={() => onGo("ledger")} />
-          <button type="button" className="queen-region queen-region--belly" style={at(82, 232, 76, 70)} data-bank-id="plan:everyday" aria-label={`Belly — What Now: day-to-day choices. ${bellyBanks}. Opens the Everyday bank`} onClick={() => onOpenBank({ bankId: "plan:everyday" })}>
-            <span className="queen-door__label" aria-hidden="true">What now</span>
-          </button>
-          <button type="button" className="queen-region queen-region--door queen-region--protect" style={at(30, 232, 52, 72)} data-bank-id="plan:protect" aria-label={`Protect — the future we did not choose: bills, breathing room and costs coming around. ${protectBanks}. Opens the Protect bank`} onClick={() => onOpenBank({ bankId: "plan:protect" })}>
-            <span className="queen-door__label" aria-hidden="true">Protect</span>
-          </button>
-          <button type="button" className="queen-region queen-region--door queen-region--build" style={at(158, 232, 52, 72)} data-bank-id="plan:build" aria-label={`Build — the future we chose. ${buildBanks}. Opens the Build bank`} onClick={() => onOpenBank({ bankId: "plan:build" })}>
-            <span className="queen-door__label" aria-hidden="true">Build</span>
-          </button>
-          <p id={`${ids}-still`} className="sr-only">{still.description} {pulse.detail}</p>
-        </div>
+            <div className="queen-bank queen-bank--build" inert={!expanded}>
+              <button ref={(node) => { bankRefs.current.build = node; }} type="button" className="queen-bank__button" aria-expanded={open === "build"} aria-controls={panelId}
+                aria-label={`Build — ${QUEEN_BANK_MEANINGS.build} ${bankWords("build")}. Opens a peek; again for the loft`} onClick={(event) => openDoor("build", event.currentTarget)}>Build</button>
+              <QueenBankVessel kind="build" share={banks.build.share} />
+            </div>
+          </div>
 
-        {hands.kind === "move" ? (
-          <p className="queen-held" data-act={hands.act}>
-            <button type="button" className="queen-move" disabled={busy || hands.act === "waiting"} aria-label={`${handsVerb} — ${hands.move.text}. ${hands.ownerLine}`} onClick={onHands}>
-              <span className="queen-move__text">{hands.move.text}</span>
-              <span className="queen-move__verb">{handsVerb}</span>
-            </button>
+          <p className="queen-line">
+            <span className="queen-line__chapter">{line.chapter ?? fundName}</span>
+            <span className="queen-line__dot" aria-hidden="true">·</span>
+            <em className="queen-line__word">{line.word}</em>
           </p>
-        ) : null}
-
-        <div className="queen-floor">
-        <p className="queen-caption" aria-hidden="true"><span className="queen-caption__glyph">{pulse.glyph}</span> {pulse.headline}</p>
-
-        <ul className="queen-hem" aria-label="Hem — what is coming">
-          {stones.map((stone) => (
-            <li key={stone.id}>
-              <button
-                type="button"
-                className={`queen-stone queen-stone--${stone.size}${stone.kind === "planned" ? " is-planned" : ""}`}
-                aria-label={`${stone.label}, ${formatDayLabel(stone.date)}${stone.kind === "planned" ? ", planned, not posted" : ""}. ${formatCad(stone.amountCents)}. Opens the Calendar`}
-                onClick={() => onGo("calendar")}
-              >
-                <svg viewBox="0 0 28 20" aria-hidden="true" className="queen-stone__shape"><ellipse cx="14" cy="11" rx="12" ry="8" /></svg>
-                <span className="queen-stone__label"><span className="queen-stone__name">{stone.label}</span><span className="queen-stone__date">{formatDayLabel(stone.date)}</span>{wide && <span className="queen-stone__amount">{formatCad(stone.amountCents)}</span>}</span>
-              </button>
-            </li>
-          ))}
-          {stones.length === 0 && <li className="queen-hem__empty"><button type="button" className="queen-stone queen-stone--later is-empty" aria-label="Nothing dated is near her feet. Opens the Calendar" onClick={() => onGo("calendar")}><span className="queen-stone__label"><span className="queen-stone__name muted">Nothing dated is near</span></span></button></li>}
-        </ul>
         </div>
+
+        <button type="button" className="queen-door queen-door--status" aria-label={`Status — freshness, sources, settings. ${glazeWords}`}
+          aria-expanded={open === "status"} aria-controls={panelId} onClick={(event) => openDoor("status", event.currentTarget)}>
+          <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" /><circle cx="10" cy="10" r="1.4" fill="currentColor" /></svg>
+          <span className="queen-door__label">Status</span>
+        </button>
       </div>
 
-      {wide && (
-        <aside className="queen-aside queen-aside--right" aria-label="What is held">
-          <p className="kicker">{fundName}</p>
-          <p className="queen-aside__still">{still.description}</p>
-          <dl className="queen-doors-list">
-            <div><dt>Protect</dt><dd>{doors.protect.map((bank) => <span key={bank.id}>{NEST_CATEGORY_LABELS[bank.category!]} <b>{formatCad(bank.amountCents)}</b></span>)}</dd></div>
-            <div><dt>What now</dt><dd>{doors.belly.map((bank) => <span key={bank.id}>{NEST_CATEGORY_LABELS[bank.category!]} <b>{formatCad(bank.amountCents)}</b></span>)}</dd></div>
-            <div><dt>Build</dt><dd>{doors.build.map((bank) => <span key={bank.id}>{NEST_CATEGORY_LABELS[bank.category!]} <b>{formatCad(bank.amountCents)}</b></span>)}</dd></div>
-          </dl>
-        </aside>
-      )}
+      <div className="queen-dim" onClick={closePanel} aria-hidden="true" />
+
+      <aside ref={panelRef} id={panelId} className="queen-panel" role="dialog" aria-modal={mode === "sheet"} aria-labelledby={`${ids}-panel-title`} inert={!open}>
+        <div className="queen-panel__handle" aria-hidden="true" onPointerDown={onPullStart} onPointerMove={onPullMove} onPointerUp={onPullEnd} onPointerCancel={onPullEnd} />
+        <button ref={closeRef} type="button" className="queen-panel__close" aria-label="Close" onClick={closePanel}>×</button>
+        {open === "together" && (
+          <>
+            <p className="queen-eyebrow">Together</p>
+            <h2 id={`${ids}-panel-title`} className="queen-panel__title">Waiting on both of you</h2>
+            <p className="queen-panel__sub">Decisions neither of you makes alone.</p>
+            <p>{crown.light === "both" ? <><b>Both of you are here.</b> The crown is lit.</> : <><b>{crown.light === "unlit" ? "Quiet for now." : "One of you is here."}</b> The crown lights when you are both in the kitchen.</>}</p>
+            {hands.kind === "move" && (
+              <div className="queen-decision">
+                <p><b>{hands.move.text}</b></p>
+                <p className="queen-panel__muted">{hands.ownerLine}</p>
+                <div className="queen-acts">
+                  <button type="button" className="queen-act queen-act--primary" disabled={busy || hands.act === "waiting"} onClick={onMoveAct}>{moveVerb}</button>
+                  <button type="button" className="queen-act" onClick={closePanel}>Not yet</button>
+                </div>
+              </div>
+            )}
+            {presence.length > 0 ? (
+              <ul className="queen-rows">{presence.map((row) => <li key={row.id} className={row.waitingOn ? `queen-row is-waiting-${row.waitingOn}` : "queen-row"}>{row.text}</li>)}</ul>
+            ) : hands.kind !== "move" ? <p className="queen-panel__muted">Nothing waiting on the two of you. Healthy is quiet.</p> : null}
+            <button type="button" className="queen-go" onClick={() => onGo("together")}>Go to Together</button>
+          </>
+        )}
+        {open === "status" && (
+          <>
+            <p className="queen-eyebrow">Status</p>
+            <h2 id={`${ids}-panel-title`} className="queen-panel__title">{pulse.headline}</h2>
+            <p className="queen-panel__sub">{pulse.detail}</p>
+            <ul className="queen-rows queen-rows--key">
+              <li className="queen-row"><span>Glaze</span><span>{glazeWords}</span></li>
+              <li className="queen-row"><span>Seams</span><span>{seamWords}</span></li>
+              <li className="queen-row"><span>Feet</span><span>{feetWords}</span></li>
+            </ul>
+            <button type="button" className="queen-go" onClick={() => onGo("more")}>Open the Status Centre</button>
+          </>
+        )}
+        {(open === "protect" || open === "build" || open === "whatnow") && (
+          <>
+            <p className="queen-eyebrow">{QUEEN_BANK_LABELS[open]}</p>
+            <h2 id={`${ids}-panel-title`} className="queen-panel__title">{open === "protect" ? "What arrives" : open === "build" ? "What we chose" : "What now"}</h2>
+            <p className="queen-panel__sub">{QUEEN_BANK_MEANINGS[open]}</p>
+            <ul className="queen-rows">
+              {banks[open].banks.map((bank) => <li key={bank.id} className="queen-row"><span>{NEST_CATEGORY_LABELS[bank.category!]}</span><span className="queen-amount">{formatCad(bank.amountCents)}</span></li>)}
+            </ul>
+            {open === "protect" && (
+              <ul className="queen-rows queen-rows--dated">
+                {stones.map((stone) => <li key={stone.id} className="queen-row"><span>{stone.label}<small>{formatDayLabel(stone.date)}{stone.kind === "planned" ? " · planned, not posted" : ""}</small></span><span className="queen-amount">{formatCad(stone.amountCents)}</span></li>)}
+                {stones.length === 0 && <li className="queen-row queen-panel__muted">Nothing dated is ahead this month.</li>}
+              </ul>
+            )}
+            {open === "build" && (
+              <ul className="queen-rows queen-rows--dated">
+                {shelf.slice(0, 5).map((item) => <li key={item.id} className="queen-row"><span>{item.name}<small>{item.mouth === "open" ? "open-mouthed" : "lidded"}{item.date ? ` · ${formatDayLabel(item.date)}` : ""}</small></span><span className="queen-amount">{formatCad(item.bank.amountCents)}</span></li>)}
+                {shelf.length === 0 && <li className="queen-row queen-panel__muted">Nothing chosen yet. A goal would grow a bud on her vine.</li>}
+              </ul>
+            )}
+            {open === "whatnow" && <p>{pulse.detail}</p>}
+            <div className="queen-acts">
+              {ROOM_FOR[open] && (
+                <button type="button" className="queen-go queen-go--primary" data-door={open} onClick={() => enterRoom(ROOM_FOR[open]!)}>
+                  {open === "protect" ? "Protect · down to the cellar" : "Build · up to the loft"}
+                </button>
+              )}
+              <button type="button" className="queen-go" onClick={() => onOpenBank({ bankId: `plan:${open === "whatnow" ? "everyday" : open}` })}>Open {QUEEN_BANK_LABELS[open]} in the banks</button>
+              {open === "whatnow" && <button type="button" className="queen-go" onClick={() => onGo("ledger")}>Open {fundName}</button>}
+            </div>
+            {ROOM_FOR[open] && mode === "sheet" && <p className="queen-panel__hint">Keep pulling up to go {open === "protect" ? "down to the cellar" : "up to the loft"}.</p>}
+          </>
+        )}
+      </aside>
+
+      <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} />
+      <QueenLoft shelf={shelf} open={scene === "loft"} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} />
     </div>
   );
 }

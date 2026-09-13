@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
-import { catalogHousehold, offerMove, openChapter, respondToMove, reversePostedMoney, postEntry } from "../src/core/index.ts";
+import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, respondToMove, reversePostedMoney, postEntry } from "../src/core/index.ts";
 import { fundPulse, type FundPulse, type FundPulseDestination, type FundPulseState } from "../src/core/fundPulse.ts";
 import { allocateNestTotal, projectKittyNest } from "../src/core/kittyNest.ts";
 import { NEST_CATEGORIES } from "../src/core/kittyNestDesigns.ts";
 import { openChapterFor, nextMove } from "../src/core/chapters.ts";
 import { queensNestEnabled } from "../src/core/planFeature.ts";
 import {
-  queenBody, queenBuds, queenCrown, queenFullness, queenHands, queenHem, queenLimits, queenNestDoors, queenNestPlaceFor, queenSeams, queenStill, queenTrace, queenVine,
+  QUEEN_BANK_FOR_PLACE, QUEEN_PULSE_WORDS,
+  queenBanks, queenBody, queenBuds, queenCrown, queenFeet, queenFullness, queenHands, queenHem, queenLimits, queenLine, queenNestDoors, queenNestPlaceFor, queenRibbon, queenRibbons, queenSeams, queenShelf, queenStill, queenTrace, queenVine,
 } from "../src/core/queenPresentation.ts";
 
 const STATES: FundPulseState[] = ["checking", "reset", "needs-us", "covered", "building"];
@@ -204,5 +205,97 @@ describe("The Queen's Nest — the flag", () => {
     expect(queensNestEnabled("true", undefined, undefined)).toBe(true);
     expect(queensNestEnabled("1", "0", undefined)).toBe(false);
     expect(queensNestEnabled("1", undefined, "false")).toBe(false);
+  });
+});
+
+describe("The Still Queen — three banks, her feet, her line", () => {
+  it("routes protect and prepare to the Protect bank, everyday to her belly (What Now) and build to Build, banks passed through", () => {
+    expect(QUEEN_BANK_FOR_PLACE[queenNestPlaceFor("protect")]).toBe("protect");
+    expect(QUEEN_BANK_FOR_PLACE[queenNestPlaceFor("prepare")]).toBe("protect");
+    expect(QUEEN_BANK_FOR_PLACE[queenNestPlaceFor("everyday")]).toBe("whatnow");
+    expect(QUEEN_BANK_FOR_PLACE[queenNestPlaceFor("build")]).toBe("build");
+    const nest = projectKittyNest(planLifeFixture("household"), memberId, "household", "2026-09-21");
+    const banks = queenBanks(nest);
+    expect(banks.protect.banks.map((bank) => bank.category)).toEqual(["protect", "prepare"]);
+    expect(banks.whatnow.banks.map((bank) => bank.category)).toEqual(["everyday"]);
+    expect(banks.build.banks.map((bank) => bank.category)).toEqual(["build"]);
+    const shown = [...banks.protect.banks, ...banks.whatnow.banks, ...banks.build.banks];
+    for (const bank of shown) expect(nest.categories).toContain(bank);
+    // Conservation still holds: the four categories sum to the King to the cent, and grouping adds nothing.
+    expect(nest.categories.reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
+    expect(shown.reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
+    for (const bank of Object.values(banks)) { expect(bank.share).toBeGreaterThanOrEqual(0); expect(bank.share).toBeLessThanOrEqual(10); }
+  });
+
+  it("keeps allocateNestTotal's remainder exact under the three-bank grouping, including debt", () => {
+    for (const total of [0, 1, 99, 12345, -1, -50000]) {
+      const allocation = allocateNestTotal(total, { build: 400, protect: 900, prepare: 250 });
+      expect((allocation.protect + allocation.prepare) + allocation.everyday + allocation.build).toBe(total);
+    }
+  });
+
+  it("puts obligations at her feet as pure form — how many, how near — with no label, date or amount", () => {
+    const h = planLifeFixture("household");
+    const stones = queenHem([{ id: "a", label: "Fictional rent", date: "2026-09-20", amountCents: 90000, source: "recurrence", recurrenceId: null, goalId: null, transactionId: null }, { id: "b", label: "Later", date: "2026-09-28", amountCents: 100, source: "posted", recurrenceId: null, goalId: null, transactionId: null }], [], "2026-09-12", 4);
+    const feet = queenFeet(stones);
+    expect(feet.count).toBe(2);
+    expect(feet.nearness).toEqual(["soon", "later"]);
+    expect(JSON.stringify(feet)).not.toMatch(/rent|2026|900/);
+    expect(queenFeet(queenHem([], [], "2026-09-12", 4))).toEqual({ count: 0, nearness: [] });
+    void h;
+  });
+
+  it("gives the quiet line a distinct word for every pulse state, and a grave word when obligations are not covered", () => {
+    const words = STATES.map((state) => queenLine({ title: "Make Rent Boring" }, queenStill({ state, destination: "together" }, "current")).word);
+    expect(new Set(words).size).toBe(STATES.length);
+    for (const state of STATES) expect(words).toContain(QUEEN_PULSE_WORDS[state]);
+    const grave = queenLine({ title: "Make Rent Boring" }, queenStill({ state: "needs-us", destination: "fund" }, "current"));
+    expect(grave.word).toBe("not yet covered");
+    expect(grave.chapter).toBe("Make Rent Boring");
+    expect(queenLine(null, queenStill({ state: "covered", destination: "fund" }, "current")).chapter).toBeNull();
+    for (const word of [...words, grave.word]) { expect(word).toMatch(/\S/); expect(word).not.toMatch(/\$\d/); }
+  });
+});
+
+describe("The Still Queen — the cellar's ribbon and the loft's shelf", () => {
+  function withHistory() {
+    let h = planLifeFixture("household");
+    const rent = h.recurrences.find((row) => row.note === "Fictional rent")!;
+    for (const [month, amount] of [["03", "900"], ["04", "900"], ["05", "900"], ["06", "1380"], ["07", "900"], ["08", "900"]] as const) {
+      h = postEntry(h, { type: "expense", date: `2026-${month}-20`, amount, accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Fictional rent", createdBy: memberId, visibility: "household", source: "recurring", sourceId: rent.id, confirmDuplicate: true }).household;
+    }
+    h = addRecurrence(h, { cadence: "monthly", nextDate: "2026-09-26", type: "expense", amount: "60", accountId: "ACC-VISA", subcategoryId: "SUB-LIFE-FUN", note: "Fictional date night" }).household;
+    h = addGoal(h, { name: "Fictional trip to the shore", target: "2000", shared: true, ownerMemberId: memberId }).household;
+    return { h, rent };
+  }
+
+  it("draws one jar per month, marks the month that swelled as the outlier, and carries no amounts", () => {
+    const { h, rent } = withHistory();
+    const ribbon = queenRibbon(h, rent, today, 12);
+    expect(ribbon.jars).toHaveLength(12);
+    expect(ribbon.jars.map((jar) => jar.monthKey)).toEqual(["2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"]);
+    expect(ribbon.outlierMonth).toBe("2026-06");
+    expect(ribbon.jars.filter((jar) => jar.outlier).map((jar) => jar.monthKey)).toEqual(["2026-06"]);
+    expect(ribbon.jars.filter((jar) => jar.beat === "posted")).toHaveLength(6);
+    expect(ribbon.jars.find((jar) => jar.monthKey === "2026-09")).toMatchObject({ beat: "expected", now: true });
+    expect(ribbon.posted).toBe(6);
+    expect(JSON.stringify(ribbon)).not.toMatch(/1380|90000|138000|\$/);
+    // A steady beat has no outlier; fewer than three beats never earns one.
+    const steady = queenRibbon({ transactions: h.transactions.filter((tx) => tx.date !== "2026-06-20") }, rent, today);
+    expect(steady.outlierMonth).toBeNull();
+    expect(queenRibbon(planLifeFixture("household"), rent, today).outlierMonth).toBeNull();
+    const ribbons = queenRibbons(h, today);
+    expect(ribbons.map((row) => row.label)).toEqual(["Fictional rent", "Fictional date night"]);
+  });
+
+  it("shelves Build's goals open-mouthed and its bills lidded, with contributions as marks", () => {
+    const { h } = withHistory();
+    const nest = projectKittyNest(h, memberId, "household", today);
+    const shelf = queenShelf(nest, h);
+    expect(shelf.map((item) => [item.name, item.mouth])).toEqual([["Fictional trip to the shore", "open"], ["Fictional date night", "lidded"]]);
+    expect(shelf[0]!.goalId).toBe(h.goals.find((goal) => goal.name === "Fictional trip to the shore")!.id);
+    expect(shelf[1]!.goalId).toBeNull();
+    for (const item of shelf) expect(item.marks).toBeGreaterThanOrEqual(0);
+    expect(queenShelf({ categories: [] }, h)).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
 /** Actual Household Home / Our Path / Status Centre surfaces with exclusively fictional local books (Vision v2 Horizon A evidence).
-    `?composition=queen&state=checking|needs-us|building|reset|grave|empty|win` renders the Queen's Nest (Stage 1) from the same fictional books; `chrome=1` adds stand-ins for the App's top bar, sync line and collapsed instruments so the no-scroll rule can be measured. */
+    `?composition=queen&state=checking|needs-us|building|reset|grave|empty|win` renders the Still Queen from the same fictional books (`reduced=1` asks for reduced motion through the comfort attribute); `chrome=1` adds stand-ins for the App's top bar, sync line and collapsed instruments so the no-scroll rule can be measured. */
 import { createServer } from 'vite';
 import { createServer as createPortProbe } from 'node:net';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
@@ -12,7 +12,7 @@ import React,{useState,useRef} from 'react';import{createRoot}from'react-dom/cli
 import{HouseholdHome}from'/src/HouseholdHome.tsx';import{ChapterRoom}from'/src/ChapterPanel.tsx';import{ComfortControls}from'/src/theme/ComfortControls.tsx';
 import{planLifeFixture}from'/test/fixtures/plan-life.ts';import{resolveThemeScene,sceneTokens}from'/src/theme/scenes.ts';
 import{openChapter,recordRitualHeld,offerMove,respondToMove,movesForChapter,openChapterFor}from'/src/core/chapters.ts';
-import{recordHouseholdFundReconciliation,acknowledgeHouseholdPlan,postEntry,reversePostedMoney,recordWin}from'/src/core/index.ts';import{currentPlanVersion}from'/src/core/planSystem.ts';
+import{recordHouseholdFundReconciliation,acknowledgeHouseholdPlan,postEntry,reversePostedMoney,recordWin,addRecurrence,addGoal}from'/src/core/index.ts';import{currentPlanVersion}from'/src/core/planSystem.ts';
 const q=new URLSearchParams(location.search),theme=q.get('theme')||'classic',surface=q.get('surface')||'home',quiet=q.get('quiet')==='1',composition=q.get('composition')||'panels',state=q.get('state')||'needs-us',chrome=q.get('chrome')==='1';
 const scene=resolveThemeScene(theme,surface==='home'?'home':surface==='path'?'plan':'more','household');Object.assign(document.documentElement.dataset,{theme,scene:scene.id,material:scene.material,sceneLighting:scene.dark?'dark':'light',atmosphere:'paused',quiet:quiet?'true':'false'});for(const[key,value]of Object.entries(sceneTokens(scene)))document.documentElement.style.setProperty(key,value);
 function seeded(){let h=planLifeFixture('household');h=openChapter(h,{memberId:'MEM-001',foundationId:'make-rent-boring',at:'2026-09-01T12:00:00.000Z'}).household;const ritual=h.rituals[0];h=recordRitualHeld(h,{memberId:'MEM-001',ritualId:ritual.id,onDate:'2026-09-04'}).household;h=offerMove(h,{memberId:'MEM-002',chapterId:h.chapters[0].id,text:'Confirm which payday the pre-rent check belongs to',needsAcknowledgment:true}).household;return h;}
@@ -20,6 +20,11 @@ function seeded(){let h=planLifeFixture('household');h=openChapter(h,{memberId:'
 function queenSeeded(){let h=seeded();h={...h,name:'Fictional household'};
   if(state==='checking')return h; // the fixture Fund is not reconciled yet, so the pulse says Checking.
   h=recordHouseholdFundReconciliation(h,{memberId:'MEM-001',date:'2026-09-12',bankTotal:'4000',personalRemainder:'0'}).household;
+  /* The cellar's ribbon: six fictional months of the rent recurrence on the card, one of which swelled; and a lidded Build bill for the loft's ledge. */
+  const rent=h.recurrences.find(row=>row.note==='Fictional rent');
+  for(const [month,amount] of [['03','900'],['04','900'],['05','900'],['06','1380'],['07','900'],['08','900']])h=postEntry(h,{type:'expense',date:'2026-'+month+'-20',amount,accountId:'ACC-VISA',subcategoryId:'SUB-HOUSING-ELECTRIC',note:'Fictional rent',createdBy:'MEM-001',visibility:'household',source:'recurring',sourceId:rent.id,confirmDuplicate:true}).household;
+  h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-26',type:'expense',amount:'60',accountId:'ACC-VISA',subcategoryId:'SUB-LIFE-FUN',note:'Fictional date night'}).household;
+  h=addGoal(h,{name:'Fictional trip to the shore',target:'2000',shared:true,ownerMemberId:'MEM-001'}).household;
   const posted=postEntry(h,{type:'expense',date:'2026-09-10',amount:'40',accountId:'ACC-CHEQUING',subcategoryId:'SUB-LIFE-FUN',createdBy:'MEM-002',visibility:'household'});
   h=reversePostedMoney(posted.household,posted.postedIds[0],{createdBy:'MEM-001',reversalDate:'2026-09-11'}).household;
   if(state==='needs-us')return h; // the September Plan is waiting on both people.
@@ -39,7 +44,7 @@ if(surface==='path')return React.createElement('div',{className:'app our-path ou
 if(surface==='comfort')return React.createElement('div',{className:'app more-surfaces status-centre','data-ledger-tab':'more'},React.createElement(ComfortControls,{environment:'development'}));
 return React.createElement('div',{className:'app','data-ledger-tab':'home'},React.createElement(HouseholdHome,{household:state,memberId:'MEM-001',today:'2026-09-12',freshness:'current',busy:false,onCommand:command,onGo:()=>{},onOpenSetup:()=>{}}));}
 function QueenProof(){const[household,setHousehold]=useState(()=>{const h=queenSeeded();if(q.get('easy')==='1')localStorage.setItem('hearth:hercules-easy-read:'+h.environment+':'+h.householdId+':MEM-001','1');return h;});const ref=useRef(household);ref.current=household;const command=async fn=>{const result=fn(ref.current);ref.current=result.household;setHousehold(result.household);return {...result,ok:true};};
-const freshness=q.get('freshness')||'current';
+const freshness=q.get('freshness')||'current';if(q.get('reduced')==='1')document.documentElement.dataset.motion='reduced';
 return React.createElement('div',{className:'app','data-ledger-tab':'home'},
   chrome?React.createElement('header',{className:'topbar','data-proof-chrome':'top'},React.createElement('div',{className:'brand'},React.createElement('div',null,React.createElement('h1',null,'Hearth'),React.createElement('p',{className:'brand__identity'},'Alex (fictional) · Fictional household · 12:00')))):null,
   chrome?React.createElement('p',{className:'sync-freshness','data-proof-chrome':'sync'},'Fictional sync line'):null,
