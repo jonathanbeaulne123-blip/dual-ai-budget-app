@@ -15,6 +15,7 @@ repositories { google(); mavenCentral() }
 dependencies {
     implementation project(':capacitor-android')
     // These Android types are used directly; Capacitor/SceneView implementation dependencies do not export them.
+    implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'androidx.activity:activity:1.11.0'
     implementation 'androidx.lifecycle:lifecycle-runtime:2.9.4'
     implementation 'androidx.browser:browser:1.9.0'
