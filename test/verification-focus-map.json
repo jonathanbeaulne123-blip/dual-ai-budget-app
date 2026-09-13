@@ -3,6 +3,24 @@
   "mappings": [
     {
       "sources": [
+        "src/core/queenPresentation.ts",
+        "src/queen/QueenHome.tsx",
+        "src/queen/queen-home.css",
+        "src/HouseholdHome.tsx",
+        "src/core/planFeature.ts",
+        "scripts/serve-household-home-proof.mjs"
+      ],
+      "tests": [
+        "test/queens-nest.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/home-feedback-ui.test.ts",
+        "test/vision-v2-home-ui.test.ts"
+      ],
+      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag"
+    },
+    {
+      "sources": [
         "src/core/herculesTaskActions.ts",
         "src/core/herculesWorkActions.ts",
         "src/core/herculesExecution.ts",

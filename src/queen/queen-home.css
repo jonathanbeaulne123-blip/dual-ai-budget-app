@@ -1,0 +1,258 @@
+/* The Queen's Nest (Stage 1) — one body, six regions, no scroll.
+   Theme-neutral grammar. Every state carries a pose, a glyph and words; colour
+   is never the only carrier. Motion is garnish; the still is the data.
+   The three theme expressions are Stage 4: they remap the --queen-* tokens
+   below and nothing else. */
+
+.queen-home {
+  --queen-clay: var(--paper-2);
+  --queen-clay-deep: var(--line);
+  --queen-fill: var(--sill, #b9a68a);
+  --queen-ink: var(--ink);
+  --queen-gold: var(--gold);
+  --queen-leaf: var(--pine);
+  --queen-bud: var(--copper);
+  --queen-focus: var(--copper);
+  --queen-trace: var(--card);
+  --queen-scale: 1;
+  --queen-lean: 0deg;
+  --queen-top: 0px;
+  /* Space the App keeps under Home: its own bottom padding over the fixed navigation, plus the
+     collapsed instruments summary (--queen-under; the App may override it when that row changes). */
+  --queen-under: 100px;
+  --queen-below: calc(var(--nav, 76px) + 28px + env(safe-area-inset-bottom, 0px) + var(--queen-under));
+
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px;
+  box-sizing: border-box;
+  height: calc(100dvh - var(--queen-top) - var(--queen-below));
+  min-height: 300px;
+  max-width: 720px;
+  margin: 0 auto;
+  overflow: hidden;
+  color: var(--ink);
+}
+.queen-home .kicker { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 2px; }
+.queen-home h1 { font-family: var(--display); font-weight: 600; font-size: clamp(20px, 5vw, 30px); margin: 0; line-height: 1.1; text-wrap: balance; }
+.queen-home .muted { color: var(--muted); }
+.queen-identity { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 0 4px; }
+.queen-home--phone .queen-identity h1 { font-size: 17px; }
+.queen-home--phone .queen-identity .kicker { margin: 0; }
+
+/* ---- the stage: buds · figure · hands · caption · hem ---- */
+.queen-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 4px;
+  min-height: 0;
+  min-width: 0;
+  align-content: stretch;
+  justify-items: center;
+}
+.queen-floor { display: grid; gap: 4px; width: 100%; justify-items: center; }
+
+.queen-figure {
+  position: relative;
+  height: 100%;
+  min-height: 150px;
+  aspect-ratio: 240 / 330;
+  max-width: 100%;
+}
+.queen-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+/* Posture is the pose: the component sets --queen-scale and --queen-lean per state and places its
+   controls with the same numbers. Transitions exist only when motion is welcome. */
+.queen-body { transform: scale(var(--queen-scale)) rotate(var(--queen-lean)); transform-origin: 50% 100%; }
+
+.queen-foot { fill: var(--queen-clay-deep); opacity: .45; }
+.queen-vessel { fill: var(--queen-clay); stroke: var(--queen-clay-deep); stroke-width: 1; }
+.queen-shade { fill: var(--queen-clay-deep); opacity: .45; }
+.queen-fill { fill: var(--queen-fill); opacity: .5; }
+.queen-glaze { fill: #fff; opacity: .45; }
+.queen-home[data-glaze="matte"] .queen-glaze, .queen-home[data-glaze="offline"] .queen-glaze { opacity: 0; }
+.queen-home[data-glaze="matte"] .queen-vessel { fill: var(--queen-clay-deep); }
+.queen-home[data-glaze="offline"] .queen-vessel { stroke-dasharray: 4 3; stroke-width: 1.6; }
+.queen-seam { fill: none; stroke: var(--queen-gold); stroke-width: 2.2; stroke-linecap: round; }
+.queen-trace { fill: var(--queen-trace); opacity: .75; }
+
+.queen-eye { fill: none; stroke: var(--queen-ink); stroke-width: 2.4; stroke-linecap: round; }
+.queen-eye-open { fill: none; stroke: var(--queen-ink); stroke-width: 1.6; }
+.queen-pupil { fill: var(--queen-ink); }
+.queen-brow { fill: none; stroke: var(--queen-ink); stroke-width: 2.2; stroke-linecap: round; opacity: 0; }
+.queen-home[data-brow="weighted"] .queen-brow { opacity: .85; }
+.queen-mouth { fill: none; stroke: var(--queen-ink); stroke-width: 2; stroke-linecap: round; opacity: .65; }
+
+.queen-crown { fill: none; stroke: var(--queen-gold); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; opacity: .3; stroke-dasharray: 2 4; }
+.queen-home[data-crown="both"] .queen-crown { opacity: 1; stroke-dasharray: none; }
+.queen-home[data-crown="waiting-me"] .queen-crown { opacity: .9; stroke-dasharray: none; }
+.queen-home[data-crown="waiting-partner"] .queen-crown { opacity: .7; stroke-dasharray: 6 3; }
+.queen-crown-point { fill: var(--queen-gold); }
+.queen-crown-mark { fill: var(--queen-bud); }
+
+.queen-stem { fill: none; stroke: var(--queen-leaf); stroke-width: 2.8; stroke-linecap: round; }
+.queen-leaf { fill: var(--queen-leaf); opacity: .8; }
+.queen-vine { transform-origin: 120px 72px; }
+
+.queen-move-glow { fill: none; stroke: var(--queen-bud); stroke-width: 1.6; opacity: .4; }
+.queen-move-object { fill: var(--queen-bud); }
+
+/* ---- regions: real controls in the drawing's coordinates ---- */
+.queen-region {
+  position: absolute;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.queen-region:hover { background: color-mix(in srgb, var(--queen-bud) 9%, transparent); }
+.queen-region:focus-visible { background: color-mix(in srgb, var(--queen-bud) 9%, transparent); }
+/* One focus ring for every control on her; specific enough to outrank the world-level ring while honouring its colour. */
+.queen-home[data-pulse] :is(button.queen-region, button.queen-bud, button.queen-bloom, button.queen-stone, button.queen-move):focus-visible { outline: 3px solid var(--world-focus, var(--queen-focus)); outline-offset: 2px; }
+.queen-region--face, .queen-region--crown { border-radius: 999px; }
+/* Reading order is top to bottom; stacking puts the small regions over the large ones. */
+.queen-region--body { z-index: 1; }
+.queen-region--belly, .queen-region--door { z-index: 2; }
+.queen-region--hands { z-index: 3; }
+.queen-region--face { z-index: 4; }
+.queen-region--vine { z-index: 5; }
+.queen-region--crown { z-index: 6; }
+.queen-region--door { display: grid; align-items: end; justify-items: center; padding-bottom: 2px; }
+.queen-region--belly { display: grid; align-items: end; justify-items: center; padding-bottom: 18px; }
+.queen-door__label { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; color: var(--muted); pointer-events: none; }
+
+/* ---- buds ---- */
+.queen-buds, .queen-hem { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: nowrap; justify-content: center; align-items: flex-end; gap: 6px; width: 100%; min-width: 0; }
+.queen-buds li, .queen-hem li { min-width: 0; flex: 0 1 auto; }
+.queen-bud, .queen-bloom, .queen-stone {
+  display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 2px;
+  min-width: 44px; min-height: 44px; max-width: 150px; padding: 4px 8px;
+  border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--ink);
+  font: inherit; cursor: pointer;
+}
+.queen-bud:hover, .queen-stone:hover { border-color: var(--line); }
+.queen-bud__dot { display: block; fill: var(--queen-bud); }
+.queen-bud--large .queen-bud__dot { width: 22px; height: 22px; }
+.queen-bud--medium .queen-bud__dot { width: 18px; height: 18px; }
+.queen-bud--small .queen-bud__dot { width: 14px; height: 14px; }
+.queen-bud__name { font-size: 12.5px; line-height: 1.2; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.queen-bloom__flower { width: 24px; height: 24px; fill: var(--queen-gold); }
+.queen-bloom.is-kept .queen-bloom__flower { opacity: .6; }
+.queen-bloom:disabled { cursor: default; }
+.queen-buds__empty { font-size: 12.5px; padding: 12px 0 0; }
+
+/* ---- hands: the one Move, held out ---- */
+.queen-held { margin: 0; width: 100%; display: grid; justify-items: center; }
+.queen-move {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  width: min(100%, 420px); min-height: 48px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink);
+  font: inherit; text-align: left; cursor: pointer; box-shadow: var(--lift-0);
+}
+.queen-move:disabled { cursor: default; opacity: .8; }
+.queen-move__text { font-size: 14.5px; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.queen-move__verb { font-weight: 600; font-size: 13px; white-space: nowrap; padding: 6px 10px; border-radius: 999px; background: var(--ink); color: var(--paper); }
+.queen-held[data-act="waiting"] .queen-move__verb, .queen-held[data-act="setup"] .queen-move__verb { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line); }
+
+/* ---- caption: the pulse in words, always visible beside the pose ---- */
+.queen-caption { margin: 0; font-family: var(--display); font-size: 15px; color: var(--ink); text-align: center; }
+.queen-caption__glyph { color: var(--pine); }
+.queen-home[data-pulse="needs-us"] .queen-caption__glyph { color: var(--copper); }
+.queen-home[data-pulse="reset"] .queen-caption__glyph { color: var(--danger); }
+.queen-home[data-pulse="checking"] .queen-caption__glyph { color: var(--muted); }
+
+/* ---- hem: what is coming, gathered at her feet ---- */
+.queen-hem { padding-top: 2px; border-top: 1px solid var(--line); }
+.queen-stone { gap: 0; }
+.queen-stone__shape { display: block; fill: var(--queen-clay-deep); }
+.queen-stone--near .queen-stone__shape { width: 30px; height: 21px; }
+.queen-stone--soon .queen-stone__shape { width: 24px; height: 17px; }
+.queen-stone--later .queen-stone__shape { width: 20px; height: 14px; }
+.queen-stone.is-planned .queen-stone__shape { fill: none; stroke: var(--queen-clay-deep); stroke-width: 2; stroke-dasharray: 3 2; }
+.queen-stone__label { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 6px; min-width: 0; max-width: 100%; }
+.queen-home--wide .queen-stone__label { display: grid; justify-items: center; gap: 0; }
+.queen-stone__name { font-size: 12.5px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.queen-stone__date { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.queen-stone__amount { font-family: var(--mono); font-size: 11px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.queen-stone.is-empty { min-height: 44px; }
+
+/* ---- wide: the office. She sits with room around her. ---- */
+.queen-home--wide {
+  max-width: 1100px;
+  grid-template-columns: minmax(180px, .8fr) minmax(0, 1.6fr) minmax(180px, .8fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "identity identity identity" "left stage right";
+  column-gap: 20px;
+}
+.queen-home--wide .queen-identity { grid-area: identity; }
+.queen-home--wide .queen-stage { grid-area: stage; grid-template-rows: auto minmax(0, 1fr) auto; }
+/* The office: she holds the Move. The pill sits over her hands, following the drawn height. */
+.queen-home--wide .queen-figure { grid-row: 2; grid-column: 1; }
+.queen-home--wide .queen-held { grid-row: 2; grid-column: 1; align-self: start; justify-self: center; z-index: 1; width: 100%; max-width: 360px; margin-top: calc(var(--queen-figure-h, 300px) * .53); }
+.queen-home--wide .queen-move { width: 100%; }
+.queen-home--wide .queen-floor { grid-template-columns: minmax(150px, auto) minmax(0, 1fr); align-items: center; column-gap: 16px; }
+.queen-home--wide .queen-caption { text-align: left; }
+.queen-home--wide .queen-hem { border-top: 0; padding-top: 0; justify-content: flex-start; }
+.queen-aside { display: grid; align-content: start; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); font-size: 14px; min-height: 0; overflow: hidden; }
+.queen-aside--left { grid-area: left; }
+.queen-aside--right { grid-area: right; }
+.queen-aside p { margin: 0; }
+.queen-aside .kicker + .kicker { margin-top: 8px; }
+.queen-presence { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.queen-presence li { padding-left: 14px; position: relative; }
+.queen-presence li::before { content: "·"; position: absolute; left: 2px; color: var(--muted); }
+.queen-presence li.is-waiting-me::before { content: "◆"; color: var(--copper); font-size: 10px; top: 4px; }
+.queen-aside__still { color: var(--ink); }
+.queen-doors-list { margin: 8px 0 0; display: grid; gap: 6px; }
+.queen-doors-list div { display: grid; gap: 2px; }
+.queen-doors-list dt { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.queen-doors-list dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; }
+.queen-doors-list b { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.queen-home--wide .queen-bud, .queen-home--wide .queen-stone { max-width: 190px; }
+.queen-home--wide .queen-door__label { font-size: 11px; }
+
+/* ---- easy read: larger words, larger targets, stronger focus ---- */
+.queen-home[data-easy-read="true"] { font-size: 17px; }
+.queen-home[data-easy-read="true"] .queen-bud__name, .queen-home[data-easy-read="true"] .queen-stone__name, .queen-home[data-easy-read="true"] .queen-move__text { font-size: 16px; }
+.queen-home[data-easy-read="true"] .queen-stone__date, .queen-home[data-easy-read="true"] .queen-door__label { font-size: 13px; }
+.queen-home[data-easy-read="true"] .queen-bud, .queen-home[data-easy-read="true"] .queen-stone, .queen-home[data-easy-read="true"] .queen-move { min-height: 48px; }
+.queen-home[data-easy-read="true"][data-pulse] :is(button.queen-region, button.queen-bud, button.queen-bloom, button.queen-stone, button.queen-move):focus-visible { outline-width: 4px; }
+
+/* ---- motion is garnish ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .queen-body { transition: transform .6s cubic-bezier(.3, .9, .35, 1); }
+  .queen-vessel, .queen-glaze, .queen-crown, .queen-fill { transition: fill .45s ease, opacity .45s ease, height .45s ease; }
+  .queen-vine { transition: transform .7s cubic-bezier(.3, .9, .35, 1); }
+  .queen-trace { animation: queen-sheen 3.4s ease-in-out infinite; }
+}
+@keyframes queen-sheen { 0%, 100% { opacity: .35; } 50% { opacity: .85; } }
+@media (prefers-reduced-motion: reduce) {
+  .queen-body, .queen-vessel, .queen-glaze, .queen-crown, .queen-fill, .queen-vine { transition: none !important; }
+  .queen-trace { animation: none !important; opacity: .75 !important; }
+}
+:root[data-motion="reduced"] .queen-trace { animation: none !important; opacity: .75 !important; }
+
+/* ---- forced colours: shape carries every state ---- */
+@media (forced-colors: active) {
+  .queen-vessel, .queen-foot, .queen-stone__shape { fill: Canvas; stroke: CanvasText; stroke-width: 1.5; }
+  .queen-fill { fill: CanvasText; opacity: .35; }
+  .queen-eye, .queen-eye-open, .queen-brow, .queen-mouth, .queen-crown, .queen-stem, .queen-seam { stroke: CanvasText; }
+  .queen-pupil, .queen-leaf, .queen-bud__dot, .queen-move-object, .queen-crown-point, .queen-bloom__flower { fill: CanvasText; }
+  .queen-home[data-pulse] :is(button.queen-region, button.queen-bud, button.queen-bloom, button.queen-stone, button.queen-move):focus-visible { outline: 3px solid Highlight; }
+  .queen-move, .queen-aside { border: 1px solid CanvasText; }
+}
+
+/* Very short viewports: keep the hem and Move; let the figure give first. */
+@media (max-height: 560px) {
+  .queen-home { min-height: 280px; }
+  .queen-figure { min-height: 130px; }
+}

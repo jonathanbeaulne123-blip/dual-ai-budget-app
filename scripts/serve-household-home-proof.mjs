@@ -1,4 +1,5 @@
-/** Actual Household Home / Our Path / Status Centre surfaces with exclusively fictional local books (Vision v2 Horizon A evidence). */
+/** Actual Household Home / Our Path / Status Centre surfaces with exclusively fictional local books (Vision v2 Horizon A evidence).
+    `?composition=queen&state=checking|needs-us|building|reset|grave|empty|win` renders the Queen's Nest (Stage 1) from the same fictional books; `chrome=1` adds stand-ins for the App's top bar, sync line and collapsed instruments so the no-scroll rule can be measured. */
 import { createServer } from 'vite';
 import { createServer as createPortProbe } from 'node:net';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
@@ -10,15 +11,41 @@ const entry = `${css}
 import React,{useState,useRef} from 'react';import{createRoot}from'react-dom/client';
 import{HouseholdHome}from'/src/HouseholdHome.tsx';import{ChapterRoom}from'/src/ChapterPanel.tsx';import{ComfortControls}from'/src/theme/ComfortControls.tsx';
 import{planLifeFixture}from'/test/fixtures/plan-life.ts';import{resolveThemeScene,sceneTokens}from'/src/theme/scenes.ts';
-import{openChapter,recordRitualHeld,offerMove}from'/src/core/chapters.ts';
-const q=new URLSearchParams(location.search),theme=q.get('theme')||'classic',surface=q.get('surface')||'home',quiet=q.get('quiet')==='1';
+import{openChapter,recordRitualHeld,offerMove,respondToMove,movesForChapter,openChapterFor}from'/src/core/chapters.ts';
+import{recordHouseholdFundReconciliation,acknowledgeHouseholdPlan,postEntry,reversePostedMoney,recordWin}from'/src/core/index.ts';import{currentPlanVersion}from'/src/core/planSystem.ts';
+const q=new URLSearchParams(location.search),theme=q.get('theme')||'classic',surface=q.get('surface')||'home',quiet=q.get('quiet')==='1',composition=q.get('composition')||'panels',state=q.get('state')||'needs-us',chrome=q.get('chrome')==='1';
 const scene=resolveThemeScene(theme,surface==='home'?'home':surface==='path'?'plan':'more','household');Object.assign(document.documentElement.dataset,{theme,scene:scene.id,material:scene.material,sceneLighting:scene.dark?'dark':'light',atmosphere:'paused',quiet:quiet?'true':'false'});for(const[key,value]of Object.entries(sceneTokens(scene)))document.documentElement.style.setProperty(key,value);
 function seeded(){let h=planLifeFixture('household');h=openChapter(h,{memberId:'MEM-001',foundationId:'make-rent-boring',at:'2026-09-01T12:00:00.000Z'}).household;const ritual=h.rituals[0];h=recordRitualHeld(h,{memberId:'MEM-001',ritualId:ritual.id,onDate:'2026-09-04'}).household;h=offerMove(h,{memberId:'MEM-002',chapterId:h.chapters[0].id,text:'Confirm which payday the pre-rent check belongs to',needsAcknowledgment:true}).household;return h;}
+/* The Queen's Nest: fictional households shaped so each pulse state has a legible still. Nothing here is real. */
+function queenSeeded(){let h=seeded();h={...h,name:'Fictional household'};
+  if(state==='checking')return h; // the fixture Fund is not reconciled yet, so the pulse says Checking.
+  h=recordHouseholdFundReconciliation(h,{memberId:'MEM-001',date:'2026-09-12',bankTotal:'4000',personalRemainder:'0'}).household;
+  const posted=postEntry(h,{type:'expense',date:'2026-09-10',amount:'40',accountId:'ACC-CHEQUING',subcategoryId:'SUB-LIFE-FUN',createdBy:'MEM-002',visibility:'household'});
+  h=reversePostedMoney(posted.household,posted.postedIds[0],{createdBy:'MEM-001',reversalDate:'2026-09-11'}).household;
+  if(state==='needs-us')return h; // the September Plan is waiting on both people.
+  const version=currentPlanVersion(h,'household','2026-09');
+  for(const memberId of['MEM-001','MEM-002'])h=acknowledgeHouseholdPlan(h,{planVersionId:version.id,expectedDigest:version.digest,memberId,createdBy:memberId}).household;
+  if(state==='reset'||state==='grave'){
+    // A large Fund-funded surprise: the accepted Plan's protected promise no longer fits (reset). Without an accepted Plan for the month there is nothing to drift, so the same books read as a top-up the Fund needs before rent (grave).
+    h=postEntry(h,{type:'expense',date:'2026-09-11',amount:'3500',accountId:'ACC-VISA',subcategoryId:'SUB-LIFE-FUN',note:'Fictional emergency vet',createdBy:'MEM-001',visibility:'household',funding:{fundId:h.householdFund.id,fundedCents:350000,destinationAccountId:'ACC-VISA'}}).household;
+    if(state==='grave')h={...h,planVersions:[]};
+    return h;}
+  if(state==='empty'){for(const move of movesForChapter(h,openChapterFor(h).id).filter(row=>row.state==='offered'||row.state==='accepted'))h=respondToMove(h,{memberId:'MEM-002',moveId:move.id,response:'decline'}).household;return h;}
+  if(state==='win'){h=recordWin(h,{memberId:'MEM-001',level:'shared-win',title:'We chose the rent payday',at:'2026-09-12T10:00:00.000Z'}).household;return h;}
+  return h; // building: covered, and the Chapter is open.
+}
 function Proof(){const[state,setState]=useState(seeded);const ref=useRef(state);ref.current=state;const command=async fn=>{const result=fn(ref.current);ref.current=result.household;setState(result.household);return {...result,ok:true};};
 if(surface==='path')return React.createElement('div',{className:'app our-path our-path--household','data-ledger-tab':'plan'},React.createElement(ChapterRoom,{household:state,memberId:'MEM-001',today:'2026-09-12',onCommand:command,busy:false}));
 if(surface==='comfort')return React.createElement('div',{className:'app more-surfaces status-centre','data-ledger-tab':'more'},React.createElement(ComfortControls,{environment:'development'}));
 return React.createElement('div',{className:'app','data-ledger-tab':'home'},React.createElement(HouseholdHome,{household:state,memberId:'MEM-001',today:'2026-09-12',freshness:'current',busy:false,onCommand:command,onGo:()=>{},onOpenSetup:()=>{}}));}
-createRoot(document.getElementById('root')).render(React.createElement(Proof));`;
+function QueenProof(){const[household,setHousehold]=useState(()=>{const h=queenSeeded();if(q.get('easy')==='1')localStorage.setItem('hearth:hercules-easy-read:'+h.environment+':'+h.householdId+':MEM-001','1');return h;});const ref=useRef(household);ref.current=household;const command=async fn=>{const result=fn(ref.current);ref.current=result.household;setHousehold(result.household);return {...result,ok:true};};
+const freshness=q.get('freshness')||'current';
+return React.createElement('div',{className:'app','data-ledger-tab':'home'},
+  chrome?React.createElement('header',{className:'topbar','data-proof-chrome':'top'},React.createElement('div',{className:'brand'},React.createElement('div',null,React.createElement('h1',null,'Hearth'),React.createElement('p',{className:'brand__identity'},'Alex (fictional) · Fictional household · 12:00')))):null,
+  chrome?React.createElement('p',{className:'sync-freshness','data-proof-chrome':'sync'},'Fictional sync line'):null,
+  React.createElement(HouseholdHome,{household,memberId:'MEM-001',today:'2026-09-12',freshness,busy:false,onCommand:command,onGo:()=>{},onOpenSetup:()=>{},composition:'queen'}),
+  chrome?React.createElement('details',{className:'home-instruments','data-proof-chrome':'instruments'},React.createElement('summary',null,'The office · instruments and boards')):null);}
+createRoot(document.getElementById('root')).render(React.createElement(composition==='queen'?QueenProof:Proof));`;
 export async function startHouseholdHomeProof({port=5186}={}) {
 if(port===0){const probe=createPortProbe();await new Promise(resolve=>probe.listen(0,'127.0.0.1',resolve));port=probe.address().port;await new Promise(resolve=>probe.close(resolve));}
 const cacheDir=mkdtempSync(join(tmpdir(),'hearth-home-'));
