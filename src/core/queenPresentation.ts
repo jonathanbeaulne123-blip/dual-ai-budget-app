@@ -4,10 +4,12 @@ import type { FundPulse, FundPulseDestination, FundPulseFreshness, FundPulseStat
 import type { KittyNest, NestBank } from "./kittyNest.ts";
 import type { NestCategory } from "./kittyNestDesigns.ts";
 import type { MonthObligation } from "./monthObligations.ts";
-import type { Household, PotentialExpensePlan } from "./types.ts";
+import type { Household, PotentialExpensePlan, Recurrence } from "./types.ts";
 
 /**
- * The Queen's Nest (Stage 1): Household Home as one body.
+ * The Queen's Nest: Household Home as one body. Stage 1 drew her regions;
+ * the Still Queen (this pass) keeps her as pure state and moves navigation
+ * to invisible doors, the expand into her three banks, and two rooms.
  *
  * Every function here is a pure selector over projections that already exist.
  * It reads `fundPulse`, `presenceLines`, `projectKittyNest`, the Chapter
@@ -25,6 +27,9 @@ import type { Household, PotentialExpensePlan } from "./types.ts";
 
 export type QueenRegionId = "crown" | "vine" | "face" | "hands" | "body" | "belly" | "hem";
 export type QueenNestPlace = "protect" | "build" | "belly";
+/** The three banks she opens into. `belly` is What Now — the present, the remainder. */
+export type QueenBankId = "protect" | "whatnow" | "build";
+export const QUEEN_BANK_FOR_PLACE: Readonly<Record<QueenNestPlace, QueenBankId>> = { protect: "protect", belly: "whatnow", build: "build" };
 
 export const QUEEN_NEST_PLACE: Readonly<Record<NestCategory, QueenNestPlace>> = {
   protect: "protect",
@@ -336,4 +341,176 @@ export type QueenLimits = { buds: number; stones: number; presence: number };
 
 export function queenLimits(wide: boolean): QueenLimits {
   return wide ? { buds: 4, stones: 4, presence: 4 } : { buds: 2, stones: 2, presence: 2 };
+}
+
+// ---------------------------------------------------------------------------
+// The Still Queen — her banks, her feet, her line, and the two rooms.
+
+export type QueenBank = {
+  id: QueenBankId;
+  /** The category banks that sit behind this door, passed through untouched. */
+  banks: NestBank[];
+  /** A drawn share of the King, quantized to ten steps. Display only; never a money figure. */
+  share: number;
+};
+export type QueenBanks = Readonly<Record<QueenBankId, QueenBank>>;
+
+/**
+ * Three banks over four categories at the presentation layer only:
+ * protect + prepare → Protect, everyday → What Now (her belly), build → Build.
+ * The banks are grouped, never re-summed; conservation stays where
+ * `allocateNestTotal` guarantees it. The share is a drawing ratio, quantized.
+ */
+export function queenBanks(nest: Pick<KittyNest, "categories" | "king">): QueenBanks {
+  const doors = queenNestDoors(nest);
+  const share = (banks: NestBank[]): number => {
+    if (nest.king.amountCents <= 0) return 0;
+    const held = banks.reduce((sum, bank) => sum + Math.max(0, bank.amountCents), 0);
+    return Math.max(0, Math.min(10, Math.round((held / nest.king.amountCents) * 10)));
+  };
+  return {
+    protect: { id: "protect", banks: doors.protect, share: share(doors.protect) },
+    whatnow: { id: "whatnow", banks: doors.belly, share: share(doors.belly) },
+    build: { id: "build", banks: doors.build, share: share(doors.build) },
+  };
+}
+
+export const QUEEN_BANK_LABELS: Readonly<Record<QueenBankId, string>> = { protect: "Protect", whatnow: "What now", build: "Build" };
+export const QUEEN_BANK_MEANINGS: Readonly<Record<QueenBankId, string>> = {
+  protect: "The future you did not choose.",
+  whatnow: "The present, the remainder.",
+  build: "The future you chose.",
+};
+
+/** At her feet: the nearest dated obligations as pure form — how many and how near. No dates, no labels. */
+export type QueenFeet = { count: number; nearness: Array<QueenStone["size"]> };
+
+export function queenFeet(stones: QueenStone[]): QueenFeet {
+  return { count: stones.length, nearness: stones.map((stone) => stone.size) };
+}
+
+/** One quiet line beneath her: the Chapter and the pulse, in words. */
+export type QueenLine = { chapter: string | null; word: string };
+
+export const QUEEN_PULSE_WORDS: Readonly<Record<FundPulseState, string>> = {
+  covered: "covered",
+  building: "building",
+  "needs-us": "one thing needs us",
+  reset: "time to reset",
+  checking: "checking",
+};
+
+export function queenLine(chapter: Pick<Chapter, "title"> | null, still: Pick<QueenStill, "state" | "grave">): QueenLine {
+  const word = still.state === "needs-us" && still.grave ? "not yet covered" : QUEEN_PULSE_WORDS[still.state];
+  return { chapter: chapter?.title ?? null, word };
+}
+
+// ---------------------------------------------------------------------------
+// The cellar: a ribbon of near-identical vessels, one per month.
+
+export type QueenJar = {
+  monthKey: string;
+  /** `posted` has a receipt in the books; `expected` is the next beat still ahead; `quiet` had no beat. */
+  beat: "posted" | "expected" | "quiet";
+  /** The one that swelled and stepped out of the rail. A read with no number attached. */
+  outlier: boolean;
+  now: boolean;
+};
+
+export type QueenRibbon = {
+  recurrenceId: string;
+  label: string;
+  jars: QueenJar[];
+  /** Months with a posted beat. */
+  posted: number;
+  outlierMonth: string | null;
+};
+
+function monthKeysBack(today: DateKey, months: number): string[] {
+  const [year, month] = today.slice(0, 7).split("-").map(Number) as [number, number];
+  const keys: string[] = [];
+  for (let back = months - 1; back >= 0; back -= 1) {
+    const index = year * 12 + (month - 1) - back;
+    const y = Math.floor(index / 12);
+    const m = index % 12 + 1;
+    keys.push(`${y}-${String(m).padStart(2, "0")}`);
+  }
+  return keys;
+}
+
+/**
+ * One recurring cost, month by month. Each jar is the same jar; the outlier is
+ * the month whose posted receipt swelled well past the usual beat. Amounts
+ * decide the swell and never leave this function — the ribbon carries form.
+ */
+export function queenRibbon(household: Pick<Household, "transactions">, recurrence: Pick<Recurrence, "id" | "note" | "nextDate" | "payments">, today: DateKey, months = 12): QueenRibbon {
+  const keys = monthKeysBack(today, months);
+  const postedByMonth = new Map<string, number>();
+  const linked = new Set((recurrence.payments ?? []).map((payment) => payment.transactionId));
+  for (const payment of recurrence.payments ?? []) {
+    const key = payment.occurrenceDate.slice(0, 7);
+    postedByMonth.set(key, (postedByMonth.get(key) ?? 0) + Math.max(0, payment.amountCents));
+  }
+  for (const tx of household.transactions) {
+    if (tx.type !== "expense" || tx.source !== "recurring" || tx.sourceId !== recurrence.id || tx.isDuplicate || tx.reversalOfId || tx.refundOfId || linked.has(tx.id)) continue;
+    const key = tx.date.slice(0, 7);
+    postedByMonth.set(key, (postedByMonth.get(key) ?? 0) + Math.max(0, tx.amountCents));
+  }
+  const amounts = [...postedByMonth.values()].filter((amount) => amount > 0).sort((a, b) => a - b);
+  const usual = amounts.length ? amounts[Math.floor(amounts.length / 2)]! : 0;
+  const nowKey = today.slice(0, 7);
+  const nextKey = recurrence.nextDate.slice(0, 7);
+  let outlierMonth: string | null = null;
+  const jars: QueenJar[] = keys.map((monthKey) => {
+    const posted = postedByMonth.get(monthKey) ?? 0;
+    const outlier = amounts.length >= 3 && posted > 0 && posted * 100 > usual * 135;
+    if (outlier && outlierMonth === null) outlierMonth = monthKey;
+    return {
+      monthKey,
+      beat: posted > 0 ? "posted" : monthKey === nextKey && monthKey >= nowKey ? "expected" : "quiet",
+      outlier,
+      now: monthKey === nowKey,
+    };
+  });
+  return { recurrenceId: recurrence.id, label: recurrence.note.trim() || "Recurring cost", jars, posted: amounts.length, outlierMonth };
+}
+
+/** Every household recurring expense as a ribbon; the one that broke its beat comes first. */
+export function queenRibbons(household: Pick<Household, "transactions" | "recurrences" | "accounts">, today: DateKey, months = 12): QueenRibbon[] {
+  const householdAccounts = new Set(household.accounts.filter((account) => account.scope !== "personal").map((account) => account.id));
+  return household.recurrences
+    .filter((row) => row.type === "expense" && householdAccounts.has(row.accountId))
+    .map((row) => queenRibbon(household, row, today, months))
+    .sort((a, b) => Number(Boolean(b.outlierMonth)) - Number(Boolean(a.outlierMonth)) || b.posted - a.posted || a.label.localeCompare(b.label));
+}
+
+// ---------------------------------------------------------------------------
+// The loft: goals on a ledge. Open-mouthed things accept; lidded things refuse.
+
+export type QueenShelfItem = {
+  id: string;
+  name: string;
+  /** A goal has a decision inside it and accepts; a bill was never a decision and refuses. */
+  mouth: "open" | "lidded";
+  bank: NestBank;
+  goalId: string | null;
+  /** Contributions so far, as marks. A count, never a sum. */
+  marks: number;
+  date: DateKey | null;
+};
+
+export function queenShelf(nest: Pick<KittyNest, "categories">, household: Pick<Household, "goalContributions">): QueenShelfItem[] {
+  const build = nest.categories.find((bank) => bank.category === "build");
+  if (!build) return [];
+  return build.children
+    .filter((bank) => bank.state === "open")
+    .map((bank) => ({
+      id: bank.id,
+      name: bank.name,
+      mouth: bank.tier === "goal" && bank.goal ? "open" : "lidded",
+      bank,
+      goalId: bank.goal?.id ?? null,
+      marks: bank.goal ? (household.goalContributions ?? []).filter((row) => row.goalId === bank.goal!.id).length : 0,
+      date: bank.date,
+    }));
 }

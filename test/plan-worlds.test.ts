@@ -47,7 +47,10 @@ it('preserves the Kitty Bank room contribution review through theme changes with
  try {
   await act(async()=>root.render(h(ThemeProvider,{store,children:h(Screen)})));
   const click=async(name:string)=>act(async()=>[...document.querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent?.trim()===name)!.click());
-  await click('Enter Kitty Banks');await click('Use money');
+  // Since #466 the nest is the door: the Everyday bank opens the room and the goal's own bank selects it.
+  await act(async()=>document.querySelector<HTMLButtonElement>('.nest-bank[data-bank-id="plan:everyday"]')!.click());
+  await act(async()=>document.querySelector<HTMLButtonElement>(`.kitty-room .nest-bank[data-bank-id="goal:${household.goals[0]!.id}"]`)!.click());
+  await click('Use money');
   const action=document.querySelector('.kitty-money-action')!;
   const amount=action.querySelector<HTMLInputElement>('input')!;
   await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(amount,'25');amount.dispatchEvent(new Event('input',{bubbles:true}));});
