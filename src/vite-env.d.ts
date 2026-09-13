@@ -14,6 +14,8 @@ interface ImportMetaEnv {
   readonly VITE_SYNC_PILOT_DIAGNOSTICS?: string;
   readonly VITE_HERCULES_PRO_URL?: string;
   readonly VITE_PLAN_SYSTEM_V2?: string;
+  readonly VITE_HOUSEHOLD_HOME_V2?: string;
+  readonly VITE_QUEENS_NEST?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
 }
 
