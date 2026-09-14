@@ -5,6 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HouseholdHome } from "../src/HouseholdHome.tsx";
 import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, postEntry, recordHouseholdFundReconciliation, recordRitualHeld, respondToMove, type CommitResult, type Household } from "../src/core/index.ts";
 import { movesForChapter, openChapterFor } from "../src/core/chapters.ts";
+import { saveKittyNestDesign } from "../src/core/kittyNestDesigns.ts";
+import { queenCharmKindsEarned } from "../src/core/queenCharms.ts";
+import { guardQueenDesignSave } from "../src/queen/world/queenAuthoring.ts";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 
 vi.mock("../src/kitty/KittyStage.tsx", () => ({ KittyStage: () => null }));
@@ -196,6 +199,132 @@ describe("The Queen's world — the flat path is the whole reading", () => {
     expect(king.setupCompletedAt).toBeNull();
     // No kiln control exists on her.
     expect([...host.querySelectorAll("button")].some((row) => /fire|kiln/i.test(row.textContent ?? ""))).toBe(false);
+  });
+});
+
+describe("The Queen's charms — pressed on from Status, without a pointer, kept as you go", () => {
+  const statusOpen = async (h: Household, overrides: Parameters<typeof render>[1] = {}) => { const handles = await render(h, overrides); await click($(".queen-door--status")); return handles; };
+  const bin = () => [...host.querySelectorAll<HTMLButtonElement>(".queen-charm-pick")];
+  const rows = () => [...host.querySelectorAll<HTMLButtonElement>(".queen-charm-row__pick")];
+  const bench = (label: string) => [...host.querySelectorAll<HTMLButtonElement>(".queen-charm-bench button")].find((row) => (row.getAttribute("aria-label") ?? row.textContent)?.startsWith(label))!;
+  const drawn = () => [...host.querySelectorAll<SVGGElement>(".queen-svg .queen-charm")];
+  const still = () => document.getElementById($(".queen-figure").getAttribute("aria-describedby")!)!.textContent ?? "";
+
+  it("offers the whole bin with earned and not-yet charms named as such, and an empty bench to begin", async () => {
+    await statusOpen(seeded());
+    expect($(".queen-charms-tool")).not.toBeNull();
+    expect(bin()).toHaveLength(12);
+    const earned = bin().filter((row) => !row.getAttribute("aria-disabled"));
+    const notYet = bin().filter((row) => row.getAttribute("aria-disabled") === "true");
+    // This fixture has done none of the earning acts yet, so the starters are the whole bin and each earned charm says what earns it.
+    expect(earned.map((row) => row.textContent)).toEqual(["Cat", "Teapot", "Mushroom", "Boat", "Bird", "Die"]);
+    expect(notYet.map((row) => row.getAttribute("aria-label"))).toEqual([
+      "A paper airplane — not yet: earned by a travel goal filled and bought",
+      "A coffee mug — not yet: earned by one Ritual held ten times",
+      "A snail — not yet: earned by a Chapter closed after a hard month",
+      "A key — not yet: earned by the Charter signed by both of you",
+      "A bell — not yet: earned by the first Sitdown completed",
+      "A spool of thread — not yet: earned by a correction mended — a gold seam",
+    ]);
+    expect($(".queen-charm-empty").textContent).toMatch(/Nothing on her yet/);
+    expect(drawn()).toHaveLength(0);
+    expect(still()).not.toMatch(/She wears/);
+    // A not-yet charm does nothing when pressed: no bench, nothing on her.
+    await click(notYet[3]!);
+    expect(rows()).toHaveLength(0);
+  });
+
+  it("presses a charm onto a free seat from the keyboard, walks it with the arrows, and keeps it on the King's draft with the presser's name", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const h = seeded();
+    const { onCommand } = await statusOpen(h);
+    await click(bin().find((row) => row.textContent === "Cat")!);
+    expect(rows()).toHaveLength(1);
+    expect(rows()[0]!.getAttribute("aria-label")).toBe("A sitting cat on her left flank, pressed on by Alex (fictional); selected, press her to move it");
+    expect(rows()[0]!.getAttribute("aria-pressed")).toBe("true");
+    expect(drawn().map((el) => el.dataset.charm)).toEqual(["sitting-cat"]);
+    expect(still()).toMatch(/She wears 1 charm: a sitting cat on her left flank\./);
+    expect(home().dataset.charms).toBe("1");
+    // The bench is real controls in a sensible order: Move · Turn · − · + · Lean · colours · Take off.
+    const controls = [...host.querySelectorAll<HTMLButtonElement>(".queen-charm-bench > button")].map((row) => row.textContent);
+    expect(controls).toEqual(["Move", "Turn", "−", "+", "Lean", "Take off"]);
+    const before = drawn()[0]!.getAttribute("transform")!;
+    const move = bench("Move with the arrow keys");
+    move.focus();
+    await act(async () => { move.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true })); });
+    const after = drawn()[0]!.getAttribute("transform")!;
+    expect(after).not.toBe(before);
+    expect(parseFloat(after.slice("translate(".length))).toBeGreaterThan(parseFloat(before.slice("translate(".length)));
+    await click(bench("Turn"));
+    expect(drawn()[0]!.getAttribute("transform")).toMatch(/rotate\(-30\)/);
+    await click(bench("Bigger"));
+    await click([...host.querySelectorAll<HTMLButtonElement>(".queen-charm-bench .queen-swatch")].find((row) => row.getAttribute("aria-label") === "Dory blue")!);
+    expect(drawn()[0]!.querySelector<SVGPathElement>(".queen-charm__body")!.style.fill).toMatch(/#3f6fa3|rgb\(63, 111, 163\)/);
+    // Kept as you go: one write after the last press, through the guard, to the household King.
+    expect(onCommand).not.toHaveBeenCalled();
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(onCommand).toHaveBeenCalledTimes(1);
+    const next = (onCommand.mock.calls[0]![0] as (current: Household) => CommitResult)(h).household;
+    const king = next.kittyNestDesigns!.find((row) => row.bankKey === "king" && row.visibility === "household")!;
+    expect(king.studio?.draft?.charms).toHaveLength(1);
+    expect(king.studio?.draft?.charms?.[0]).toMatchObject({ kind: "sitting-cat", part: "body", spin: 30, scale: 1.2, color: "#3f6fa3", by: memberId });
+    expect(king.studio?.draft?.firedAt).toBeNull();
+    expect(king.studio?.draft?.charms?.[0]?.u).toBeGreaterThan(0.62);
+    // Taking it off is one press and empties her.
+    await click(bench("Take off"));
+    expect(rows()).toHaveLength(0);
+    expect(drawn()).toHaveLength(0);
+    expect(still()).not.toMatch(/She wears/);
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    expect(onCommand).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it("moves a picked-up charm to where she is pressed, and a press on a reserved zone leaves it where it can sit", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    await statusOpen(seeded());
+    await click(bin().find((row) => row.textContent === "Bird")!);
+    const target = $<HTMLButtonElement>(".queen-charm-target");
+    expect(target.getAttribute("aria-label")).toBe("Press to move a small bird here; Enter moves it to the next free seat");
+    expect(home().dataset.charmSelected).toBe("true");
+    target.getBoundingClientRect = () => ({ x: 0, y: 0, width: 240, height: 340, top: 0, left: 0, right: 240, bottom: 340, toJSON() { return {}; } });
+    const press = async (x: number, y: number) => act(async () => { target.dispatchEvent(new MouseEvent("pointerdown", { clientX: x, clientY: y, bubbles: true })); });
+    await press(176, 250); // her right flank
+    expect(rows()[0]!.getAttribute("aria-label")).toMatch(/A small bird on her right flank/);
+    await press(120, 112); // her eye: it will not take; the bird stays on the flank
+    expect(rows()[0]!.getAttribute("aria-label")).toMatch(/A small bird on her right flank/);
+    await press(120, 60); // her crown: nothing there to press onto
+    expect(rows()[0]!.getAttribute("aria-label")).toMatch(/A small bird on her right flank/);
+    await press(90, 128); // her left cheek
+    expect(rows()[0]!.getAttribute("aria-label")).toMatch(/A small bird on her left cheek/);
+    // Enter on the target walks it to the next free keyboard seat; tapping the field puts the bin down.
+    await act(async () => { target.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 })); });
+    expect(rows()[0]!.getAttribute("aria-label")).not.toMatch(/left cheek/);
+    await click($(".queen-field"));
+    expect(host.querySelector(".queen-charm-target")).toBeNull();
+    expect(home().dataset.charmSelected).toBe("false");
+    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    vi.useRealTimers();
+  });
+
+  it("wears what the King's draft already carries, from both members, and says so", async () => {
+    let h = seeded();
+    const design = h.kittyNestDesigns?.find((row) => row.bankKey === "king" && row.visibility === "household");
+    h = saveKittyNestDesign(h, guardQueenDesignSave({
+      memberId: "MEM-002", view: "household", bankKey: "king", expectedRevision: design?.revision ?? 0, name: "Our Queen", glaze: "cream", category: null,
+      studio: { version: 1, draft: { id: "queen", createdAt: "2026-09-01T00:00:00.000Z", firedAt: null, sculpt: { body: "round", profile: [1, 1, 1, 1], head: "round", ears: "none", eyes: "closed", mouth: "serene", whiskers: "none", tail: "none", nose: "tiny" }, paint: { base: "cream", parts: {}, strokes: [], stamps: [] },
+        charms: [
+          { id: "a", kind: "teapot", part: "body", u: 0.88, v: 0.45, spin: 0, tilt: 0, scale: 1, color: "#e3a534", by: "MEM-002" },
+          { id: "b", kind: "die", part: "head", u: 0.3, v: 0.5, spin: 0, tilt: 0, scale: 1, color: "#3f6fa3", by: "MEM-001" },
+          { id: "c", kind: "key", part: "body", u: 0.62, v: 0.45, spin: 0, tilt: 0, scale: 1, color: "#3f6fa3", by: "MEM-001" },
+        ] }, fired: [] },
+    }, { earned: queenCharmKindsEarned(h) })).household;
+    await statusOpen(h);
+    // The key was not earned, so the guard dropped it; the other two are hers, each with its author.
+    expect(rows().map((row) => row.getAttribute("aria-label"))).toEqual(["A teapot on her right flank, pressed on by Sam (fictional)", "A die on her left cheek, pressed on by Alex (fictional)"]);
+    expect(drawn().map((el) => el.dataset.charm)).toEqual(["teapot", "die"]);
+    expect(still()).toMatch(/She wears 2 charms: a teapot on her right flank, a die on her left cheek\./);
+    expect($(".queen-charms-tool").textContent).toMatch(/2 charms kept; each says who pressed it on/);
   });
 });
 

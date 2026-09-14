@@ -378,3 +378,44 @@
 .queen-look__row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
 .queen-swatch { width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 50%; border: 2px solid var(--line); background: var(--swatch); cursor: pointer; padding: 0; }
 .queen-swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+
+/* ---- her charms: the couple's small things, on her and in the bin ---- */
+.queen-charm__body { stroke: var(--queen-clay-deep); stroke-width: .6; stroke-linejoin: round; }
+.queen-charm__ink { fill: var(--queen-ink); }
+.queen-charm-icon { display: block; flex: none; }
+/* while a charm is picked up she is the place to press it; the target is a real control over her */
+.queen-charm-target { position: absolute; inset: 0; z-index: 3; border: 0; padding: 0; margin: 0; background: transparent; cursor: crosshair; touch-action: none; border-radius: 40% 40% 30% 30%; }
+.queen-charm-target:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.queen-home[data-charm-selected="true"] .queen-figure { cursor: default; }
+.queen-charms-tool { margin: 18px 0 6px; }
+.queen-charm-bin { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.queen-charm-pick {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-width: 56px; min-height: 56px; padding: 6px 4px 4px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer;
+  font: inherit; font-family: var(--mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+}
+.queen-charm-pick:hover { border-color: var(--muted); }
+.queen-charm-pick.is-unearned { opacity: .5; cursor: default; border-style: dashed; }
+.queen-charm-pick[aria-disabled="true"]:not(.is-unearned) { cursor: default; opacity: .6; }
+.queen-charm-pick__label { max-width: 64px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queen-charm-list { list-style: none; margin: 0 0 8px; padding: 0; border-top: 1px solid var(--line); }
+.queen-charm-row { border-bottom: 1px solid var(--line); }
+.queen-charm-row__pick {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0; background: transparent; color: var(--ink); cursor: pointer; text-align: left; font: inherit; font-size: 13.5px;
+}
+.queen-charm-row__pick small { display: block; color: var(--muted); font-size: 12px; }
+.queen-charm-row__pick[aria-pressed="true"] { background: color-mix(in srgb, var(--queen-clay) 35%, transparent); border-radius: 8px; }
+.queen-charm-bench { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 4px 10px; }
+.queen-charm-bench__colours { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.queen-swatch--small { width: 26px; height: 26px; min-width: 26px; min-height: 26px; border-width: 1px; }
+.queen-pick--off { color: var(--ink); border-color: var(--ink); }
+.queen-charm-empty { font-size: 13px; }
+.queen-home[data-easy-read="true"] .queen-charm-pick, .queen-home[data-easy-read="true"] .queen-charm-row__pick { font-size: 12px; min-height: 48px; }
+.queen-home[data-easy-read="true"] .queen-charm-row__pick { font-size: 16px; }
+.queen-home[data-easy-read="true"] .queen-swatch--small { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
+@media (forced-colors: active) {
+  .queen-charm__body { fill: Canvas !important; stroke: CanvasText; stroke-width: 1; }
+  .queen-charm__ink { fill: CanvasText; }
+  .queen-charm-target:focus-visible { outline: 3px solid Highlight; }
+  .queen-charm-pick, .queen-charm-row__pick[aria-pressed="true"] { border: 1px solid ButtonText; }
+}

@@ -10,16 +10,24 @@
         "src/queen/QueenFigure.tsx",
         "src/kitty/sculpture.ts",
         "src/kitty/nestSculpture.ts",
-        "src/kitty/studio/flat.tsx"
+        "src/kitty/studio/flat.tsx",
+        "src/queen/world/queenCharmSurface.ts",
+        "src/queen/world/queenCharmLibrary.ts",
+        "src/queen/world/queenCharmSet.ts",
+        "src/queen/QueenCharmGlyph.tsx",
+        "src/queen/QueenCharmTool.tsx",
+        "src/core/queenCharms.ts",
+        "src/core/kittyStudio.ts"
       ],
       "tests": [
         "test/queen-world.test.ts",
+        "test/queen-charms.test.ts",
         "test/queens-nest-ui.test.ts",
         "test/queens-nest.test.ts",
         "test/kitty-nest.test.ts",
         "test/kitty-studio.test.ts"
       ],
-      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched"
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero"
     },
     {
       "sources": [
@@ -35,7 +43,8 @@
         "test/queens-nest-ui.test.ts",
         "test/kitty-nest.test.ts",
         "test/home-feedback-ui.test.ts",
-        "test/vision-v2-home-ui.test.ts"
+        "test/vision-v2-home-ui.test.ts",
+        "test/queen-charms.test.ts"
       ],
       "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag"
     },

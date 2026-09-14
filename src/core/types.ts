@@ -828,6 +828,8 @@ export type KittyPieceV1 = {
   firings?: number;
   sculpt: KittySculptV1;
   paint: KittyPaintV1;
+  /** Charms for the Queen (2026-09-14): small add-ons pressed onto the household King's draft. Absent on every other piece. Cosmetic only. */
+  charms?: import("./queenCharms.ts").QueenCharmV1[];
 };
 export type KittyStudioV1 = {
   version: 1;

@@ -16,8 +16,12 @@ import {
 import { useEasyRead } from "../useEasyRead.ts";
 import { QueenFigure } from "./QueenFigure.tsx";
 import { QueenWorld, type QueenWorldMode } from "./QueenWorld.tsx";
-import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenGlazeAxis, queenLook, queenPose, queenWorldStill } from "./world/queenAuthoring.ts";
-import type { WorldBankInput, WorldQueenInput, WorldStats } from "./world/queenWorld.ts";
+import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenGlazeAxis, queenLook, queenPose, queenWorldStill, queenWornCharms } from "./world/queenAuthoring.ts";
+import type { WorldBankInput, WorldPick, WorldQueenInput, WorldStats } from "./world/queenWorld.ts";
+import { queenCharmKindsEarned, queenCharmLabel, queenCharmsEarned, type QueenCharmKind, type QueenCharmV1 } from "../core/queenCharms.ts";
+import { queenCharmFlatPick, queenCharmFreeSeat, queenCharmSettle, QUEEN_CHARM_KEYBOARD_SEATS } from "./world/queenCharmSurface.ts";
+import { QueenCharmTool, queenCharmSeatWords } from "./QueenCharmTool.tsx";
+import { STUDIO_PALETTE } from "../kitty/studio/palette.ts";
 import { KittyFlat } from "../kitty/studio/flat.tsx";
 import { saveKittyNestDesign } from "../core/kittyNestDesigns.ts";
 import { KITTY_GLAZES } from "../core/goalEnvelopes.ts";
@@ -124,6 +128,16 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const [lookDraft, setLookDraft] = useState<{ base: KittyGlaze; stamp: KittyStampKind | null } | null>(null);
   const look = useMemo(() => queenLook(kingDesign), [kingDesign]);
   const paint = useMemo<KittyPaintV1>(() => lookDraft ? draftPaint(look.paint, lookDraft) : look.paint, [look, lookDraft]);
+  // ---- her charms: the couple's, earned by acts, drafted here and kept as they go ----
+  const worn = useMemo(() => queenWornCharms(kingDesign), [kingDesign]);
+  const earnings = useMemo(() => queenCharmsEarned(household), [household]);
+  const [charmDraft, setCharmDraft] = useState<QueenCharmV1[] | null>(null);
+  const [selectedCharm, setSelectedCharm] = useState<string | null>(null);
+  const committed = useRef<string | null>(null);
+  const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const charms = charmDraft ?? worn;
+  // The draft yields to the record once the record says the same thing.
+  useEffect(() => { if (committed.current && JSON.stringify(worn) === committed.current) { committed.current = null; setCharmDraft(null); } }, [worn]);
   const worldQueen = useMemo<WorldQueenInput>(() => ({
     pose: queenPose(still),
     fill: body.level,
@@ -133,7 +147,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     vine: { chapter: Boolean(vine.chapter), growth: vine.growth, buds: buds.length },
     feet: feet.nearness,
     paint,
-  }), [still, body.level, body.seams, crown.light, vine.chapter, vine.growth, buds.length, feet.nearness, paint]);
+    charms,
+  }), [still, body.level, body.seams, crown.light, vine.chapter, vine.growth, buds.length, feet.nearness, paint, charms]);
   const bankPieces = useMemo(() => {
     const protectBank = nest.categories.find((bank) => bank.category === "protect")!;
     const buildBank = nest.categories.find((bank) => bank.category === "build")!;
@@ -147,9 +162,11 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const worldBanks = useMemo<WorldBankInput[]>(() => bankPieces.map(({ id, piece, fired, step }) => ({ id, piece, fired, step })), [bankPieces]);
   const [worldLive, setWorldLive] = useState(false);
   const worldStats = useRef<(() => WorldStats) | null>(null);
-  const onWorldLive = useCallback((live: boolean, stats?: () => WorldStats) => {
+  const worldPick = useRef<WorldPick | null>(null);
+  const onWorldLive = useCallback((live: boolean, stats?: () => WorldStats, pick?: WorldPick) => {
     setWorldLive(live);
     worldStats.current = stats ?? null;
+    worldPick.current = pick ?? null;
     // Evidence hook only: the proof page reads frame timings from here. Never present in a production bundle.
     if (import.meta.env.DEV && typeof window !== "undefined") (window as unknown as { __queenWorldStats?: (() => WorldStats) | null }).__queenWorldStats = stats ?? null;
   }, []);
@@ -184,6 +201,77 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   }, [wide]);
 
   useEffect(() => () => { if (revealTimer.current) clearTimeout(revealTimer.current); }, []);
+
+  // ---- the one write path for her look and her charms: the household King, through the guard ----
+  const keepDesign = useCallback((next: { paint?: KittyPaintV1; base?: KittyGlaze; charms?: QueenCharmV1[] }) => {
+    return onCommand((current) => {
+      const design = current.kittyNestDesigns?.find((row) => row.bankKey === "king" && row.visibility === "household");
+      const draft = design?.studio?.draft;
+      return saveKittyNestDesign(current, guardQueenDesignSave({
+        memberId, view: "household", bankKey: "king", expectedRevision: design?.revision ?? 0,
+        name: design?.name ?? "Our Queen", glaze: next.base ?? design?.glaze ?? "cream", category: null,
+        studio: {
+          version: 1,
+          draft: { id: draft?.id ?? "queen", createdAt: draft?.createdAt ?? new Date().toISOString(), firedAt: null, sculpt: draft?.sculpt ?? defaultQueenSculpt(), paint: next.paint ?? queenLook(design).paint, charms: next.charms ?? queenWornCharms(design) },
+          fired: design?.studio?.fired ?? [],
+          ...(design?.studio?.displayId ? { displayId: design.studio.displayId } : {}),
+        },
+      }, { earned: queenCharmKindsEarned(current) }));
+    });
+  }, [memberId, onCommand]);
+  /** Charms are kept as you go: a short pause after the last press, or at once when the panel or the page lets go. */
+  const flushCharms = useCallback((next: QueenCharmV1[]) => {
+    if (commitTimer.current) clearTimeout(commitTimer.current);
+    commitTimer.current = null;
+    committed.current = JSON.stringify(next);
+    void keepDesign({ charms: next });
+  }, [keepDesign]);
+  const pendingCharms = useRef<QueenCharmV1[] | null>(null);
+  const draftCharms = useCallback((next: QueenCharmV1[]) => {
+    setCharmDraft(next);
+    pendingCharms.current = next;
+    if (commitTimer.current) clearTimeout(commitTimer.current);
+    commitTimer.current = setTimeout(() => { pendingCharms.current = null; flushCharms(next); }, 700);
+  }, [flushCharms]);
+  // Leaving Home with a press still pending keeps it rather than losing it.
+  useEffect(() => () => { if (commitTimer.current) { clearTimeout(commitTimer.current); commitTimer.current = null; } if (pendingCharms.current) { const next = pendingCharms.current; pendingCharms.current = null; flushCharms(next); } }, [flushCharms]);
+  const addCharm = useCallback((kind: QueenCharmKind) => {
+    const seat = queenCharmFreeSeat(charms);
+    const id = `ch-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+    const color = STUDIO_PALETTE[(charms.length * 7 + 5) % STUDIO_PALETTE.length]!.hex;
+    draftCharms([...charms, { id, kind, ...seat, spin: 0, tilt: 0, scale: 1, color, by: memberId }]);
+    setSelectedCharm(id);
+  }, [charms, draftCharms, memberId]);
+  const changeCharm = useCallback((charm: QueenCharmV1) => draftCharms(charms.map((row) => (row.id === charm.id ? charm : row))), [charms, draftCharms]);
+  const removeCharm = useCallback((id: string) => { draftCharms(charms.filter((row) => row.id !== id)); setSelectedCharm((current) => (current === id ? null : current)); }, [charms, draftCharms]);
+  const selected = charms.find((row) => row.id === selectedCharm) ?? null;
+  /** A press on her: the world's ray when it is live, the drawn figure's own geometry when it is not. The seat settles; a refused seat is not taken. */
+  const pressCharm = useCallback((clientX: number, clientY: number, target: HTMLElement) => {
+    if (!selected) return;
+    let pick = worldPick.current?.(clientX, clientY) ?? null;
+    if (!pick) {
+      const rect = target.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      // Undo the figure's posture transform (rotate + scale about the hem) before reading the viewBox.
+      const ox = 120, oy = 302, k = pose.scale || 1, a = (-pose.lean * Math.PI) / 180;
+      const vx = ((clientX - rect.x) / rect.width) * 240 - ox, vy = ((clientY - rect.y) / rect.height) * 340 - oy;
+      const ux = (vx * Math.cos(a) - vy * Math.sin(a)) / k, uy = (vx * Math.sin(a) + vy * Math.cos(a)) / k;
+      pick = queenCharmFlatPick(ux + ox, uy + oy);
+    }
+    if (!pick) return;
+    const settled = queenCharmSettle(pick.part, pick.u, pick.v);
+    if (!settled) return;
+    changeCharm({ ...selected, part: pick.part, ...settled });
+  }, [selected, changeCharm, pose.scale, pose.lean]);
+  const nextSeat = useCallback(() => {
+    if (!selected) return;
+    const others = charms.filter((row) => row.id !== selected.id);
+    const at = QUEEN_CHARM_KEYBOARD_SEATS.findIndex((seat) => seat.part === selected.part && Math.abs(seat.u - selected.u) < 0.03 && Math.abs(seat.v - selected.v) < 0.03);
+    const order = [...QUEEN_CHARM_KEYBOARD_SEATS.slice(at + 1), ...QUEEN_CHARM_KEYBOARD_SEATS.slice(0, at + 1)];
+    const free = order.find((seat) => others.every((row) => !(row.part === seat.part && Math.abs(row.u - seat.u) < 0.03 && Math.abs(row.v - seat.v) < 0.03))) ?? queenCharmFreeSeat(others);
+    const settled = queenCharmSettle(free.part, free.u, free.v);
+    if (settled) changeCharm({ ...selected, part: free.part, ...settled });
+  }, [selected, charms, changeCharm]);
 
   const reveal = useCallback(() => {
     setRevealed(true);
@@ -232,6 +320,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
 
   const onFieldClick = (event: MouseEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest("button, a, [role=dialog]")) return;
+    if (selectedCharm) { setSelectedCharm(null); return; }
     if (open) { closePanel(); return; }
     reveal();
   };
@@ -246,11 +335,12 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       if (event.key !== "Escape") return;
       if (scene !== "home") { exitRoom(); return; }
       if (open) { closePanel(); return; }
+      if (selectedCharm) { setSelectedCharm(null); return; }
       if (expanded) { setExpanded(false); queenRef.current?.focus({ preventScroll: true }); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [scene, open, expanded, exitRoom, closePanel]);
+  }, [scene, open, expanded, exitRoom, closePanel, selectedCharm]);
 
   // The sheet: keep pulling past a threshold and you are in the room.
   const onPullStart = (event: PointerEvent<HTMLDivElement>) => {
@@ -292,7 +382,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const budWords = buds.length === 0 ? "No buds: nothing is growing yet." : `${buds.length} ${buds.length === 1 ? "bud" : "buds"}: ${buds.map((bud) => bud.name).join(", ")}.`;
   const feetWords = feet.count === 0 ? "Nothing dated is at her feet." : `${feet.count} dated ${feet.count === 1 ? "obligation" : "obligations"} at her feet; the nearest is ${feet.nearness[0] === "near" ? "within the week" : feet.nearness[0] === "soon" ? "within two weeks" : "later this month"}.`;
   const handsWords = hands.kind === "move" ? `At her hands, one Move: ${sentence(hands.move.text)}.` : "Her hands are empty. Nothing needs doing.";
-  const stillWords = `${worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}`;
+  const charmWords = charms.length === 0 ? "" : ` She wears ${charms.length} ${charms.length === 1 ? "charm" : "charms"}: ${charms.map((charm) => `${queenCharmLabel(charm.kind).toLowerCase()} on ${queenCharmSeatWords(charm)}`).join(", ")}.`;
+  const stillWords = `${worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}${charmWords}`;
   const bankWords = (id: QueenBankId) => banks[id].banks.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
   const waiting = presence.filter((row) => row.waitingOn).length + (hands.kind === "move" ? 1 : 0);
 
@@ -318,6 +409,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       data-side={open ? PANEL_SIDE[open] : "right"}
       data-easy-read={easyRead ? "true" : "false"}
       data-world={worldLive ? "3d" : "flat"}
+      data-charms={charms.length}
+      data-charm-selected={selected ? "true" : "false"}
       style={{ "--queen-scale": String(pose.scale), "--queen-lean": `${pose.lean}deg` } as CSSProperties}
     >
       {identityArt ? <div className="queen-identity-art" aria-hidden="true">{identityArt}</div> : null}
@@ -349,8 +442,14 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
               <div className="queen-mount">
                 <button ref={queenRef} type="button" className="queen-figure" aria-expanded={expanded} aria-describedby={`${ids}-still`}
                   aria-label={`The Queen — ${line.word}. ${expanded ? "Closes her banks" : "Opens her into her banks"}`} onClick={toggleQueen}>
-                  <QueenFigure still={still} body={body} crown={crown.light} vine={vine} buds={buds.length} feet={feet} freshBud={freshBud >= 0 ? freshBud : null} />
+                  <QueenFigure still={still} body={body} crown={crown.light} vine={vine} buds={buds.length} feet={feet} freshBud={freshBud >= 0 ? freshBud : null} charms={charms} />
                 </button>
+                {selected && (
+                  <button type="button" className="queen-charm-target" aria-label={`Press to move ${queenCharmLabel(selected.kind).toLowerCase()} here; Enter moves it to the next free seat`}
+                    onPointerDown={(event) => { event.preventDefault(); if (typeof event.currentTarget.setPointerCapture === "function") { try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* not a pointer */ } } pressCharm(event.clientX, event.clientY, event.currentTarget); }}
+                    onPointerMove={(event) => { if (event.buttons) pressCharm(event.clientX, event.clientY, event.currentTarget); }}
+                    onClick={(event) => { if (event.detail === 0) nextSeat(); }} />
+                )}
                 {hands.kind === "move" && (
                   <button type="button" className="queen-move" aria-label={`A Move is waiting: ${sentence(hands.move.text)}. ${hands.ownerLine}. Opens Together`}
                     aria-controls={panelId} aria-expanded={open === "together"} onClick={(event) => openDoor("together", event.currentTarget)}>
@@ -440,17 +539,15 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
               <div className="queen-acts">
                 <button type="button" className="queen-act queen-act--primary" disabled={busy || !lookDraft} onClick={() => {
                   if (!lookDraft) return;
-                  const draft = lookDraft;
-                  void onCommand((current) => saveKittyNestDesign(current, guardQueenDesignSave({
-                    memberId, view: "household", bankKey: "king", expectedRevision: current.kittyNestDesigns?.find((row) => row.id === kingDesign?.id)?.revision ?? kingDesign?.revision ?? 0,
-                    name: kingDesign?.name ?? "Our Queen", glaze: draft.base, category: null,
-                    studio: { version: 1, draft: { id: kingDesign?.studio?.draft?.id ?? "queen", createdAt: kingDesign?.studio?.draft?.createdAt ?? new Date().toISOString(), firedAt: null, sculpt: kingDesign?.studio?.draft?.sculpt ?? defaultQueenSculpt(), paint: draftPaint(look.paint, draft) }, fired: kingDesign?.studio?.fired ?? [], ...(kingDesign?.studio?.displayId ? { displayId: kingDesign.studio.displayId } : {}) },
-                  })));
+                  void keepDesign({ base: lookDraft.base, paint: draftPaint(look.paint, lookDraft) });
                   setLookDraft(null);
                 }}>Keep her look</button>
                 {lookDraft && <button type="button" className="queen-act" onClick={() => setLookDraft(null)}>Undo</button>}
               </div>
             </section>
+            <QueenCharmTool earnings={earnings} charms={charms} selectedId={selectedCharm} members={household.members} busy={busy}
+              keptLine={worn.length ? `${worn.length} ${worn.length === 1 ? "charm" : "charms"} kept; each says who pressed it on.` : "Kept as you go; each charm says who pressed it on."}
+              onAdd={addCharm} onSelect={setSelectedCharm} onChange={changeCharm} onRemove={removeCharm} />
             <button type="button" className="queen-go" onClick={() => onGo("more")}>Open the Status Centre</button>
           </>
         )}
