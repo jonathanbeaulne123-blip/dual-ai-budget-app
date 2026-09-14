@@ -43,7 +43,10 @@ function queenSeeded(){let h=seeded();h={...h,name:'Fictional household'};
     h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-10',type:'expense',amount:'45',accountId:'ACC-VISA',subcategoryId:'SUB-HEALTH-CARE',note:'Fictional gym',kind:'subscription'}).household;
     h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-18',type:'expense',amount:'128',accountId:'ACC-CHEQUING',subcategoryId:'SUB-TRANSPORT-TRANSIT',note:'Fictional transit pass',kind:'other'}).household;
     h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-22',type:'expense',amount:'65',accountId:'ACC-CHEQUING',subcategoryId:'SUB-LIFE-PHONE',note:'Fictional phone',kind:'bill'}).household;
-    h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-28',type:'expense',amount:'250',accountId:'ACC-CHEQUING',subcategoryId:'SUB-DEBT-VISA',note:'Fictional card payment',kind:'other'}).household;}
+    h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-28',type:'expense',amount:'250',accountId:'ACC-CHEQUING',subcategoryId:'SUB-DEBT-VISA',note:'Fictional card payment',kind:'other'}).household;
+    /* two more planned expenses in other groups, so the frosted glass reads in olive and slate beside the plum one */
+    h=addPotentialExpense(h,{date:'2026-09-13',title:'Fictional big shop',amount:'120',accountId:'ACC-CHEQUING',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:'MEM-002',visibility:'household'}).household;
+    h=addPotentialExpense(h,{date:'2026-09-19',title:'Fictional oil change',amount:'90',accountId:'ACC-VISA',subcategoryId:'SUB-TRANSPORT-FUEL',createdBy:'MEM-001',visibility:'household'}).household;}
   const posted=postEntry(h,{type:'expense',date:'2026-09-10',amount:'40',accountId:'ACC-CHEQUING',subcategoryId:'SUB-LIFE-FUN',createdBy:'MEM-002',visibility:'household'});
   h=reversePostedMoney(posted.household,posted.postedIds[0],{createdBy:'MEM-001',reversalDate:'2026-09-11'}).household;
   if(state==='needs-us')return h; // the September Plan is waiting on both people.

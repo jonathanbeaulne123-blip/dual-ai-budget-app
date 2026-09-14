@@ -33,7 +33,7 @@ import type { KittySculptV1 } from "../../core/types.ts";
 export type BankForm = "jar" | "goal" | "bill" | "recurring" | "subscription" | "appointment" | "planned";
 
 /** Head size dial per form, matching `nestDefaultPiece`: a bill's head is small. */
-const HEAD_DIAL: Record<BankForm, number> = { jar: 0.75, goal: 1, bill: 0.75, recurring: 0.8, subscription: 0.85, appointment: 0.72, planned: 0.75 };
+const HEAD_DIAL: Record<BankForm, number> = { jar: 0.75, goal: 1, bill: 0.75, recurring: 0.72, subscription: 0.85, appointment: 0.8, planned: 0.8 };
 
 /** The tier sculpts, straight from the nest's own defaults. */
 export const BANK_SCULPT: Record<BankForm, Pick<KittySculptV1, "body" | "head" | "ears" | "tail" | "profile">> = {
@@ -44,14 +44,14 @@ export const BANK_SCULPT: Record<BankForm, Pick<KittySculptV1, "body" | "head" |
   // A lidded obligation: bean, round ears, no tail.
   bill: { body: "bean", head: "round", ears: "round", tail: "none", profile: defaultKittySculpt().profile },
   // The cellar's purposes (2026-09-14), one body each so a purpose is a shape before it is a word:
-  // a recurring payment (a loan, an insurance) is the low loaf with pointed ears — it sits and stays;
-  recurring: { body: "loaf", head: "wedge", ears: "pointed", tail: "none", profile: defaultKittySculpt().profile },
+  // a recurring payment (a loan, an insurance) is the tall cat with pointed ears — upright, it stands and stays;
+  recurring: { body: "tall", head: "wedge", ears: "pointed", tail: "none", profile: defaultKittySculpt().profile },
   // a subscription is the round cat with its tail wrapped round — the loop that comes back every month;
   subscription: { body: "round", head: "round", ears: "pointed", tail: "wrap", profile: defaultKittySculpt().profile },
-  // an appointment is the tall cat, upright, waiting on a date;
-  appointment: { body: "tall", head: "round", ears: "round", tail: "none", profile: defaultKittySculpt().profile },
-  // a planned expense is the bill's bean, but it is always drawn hollow until it posts.
-  planned: { body: "bean", head: "round", ears: "round", tail: "none", profile: defaultKittySculpt().profile },
+  // an appointment is the low loaf, sitting, waiting on a date;
+  appointment: { body: "loaf", head: "round", ears: "round", tail: "none", profile: defaultKittySculpt().profile },
+  // a planned expense is a round cat with no tail, and it is frosted glass until it posts: the shape of what might be.
+  planned: { body: "round", head: "round", ears: "round", tail: "none", profile: defaultKittySculpt().profile },
 };
 
 /** Every measurement a room needs to seat a bank of this form, in the cat's own units. */
