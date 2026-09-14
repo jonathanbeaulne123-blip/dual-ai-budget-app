@@ -1,5 +1,5 @@
 import type { QueenCharmKind, QueenCharmV1 } from "../core/queenCharms.ts";
-import { queenCharmFlatSeat } from "./world/queenCharmSurface.ts";
+import { queenCharmFlatSeat, QUEEN_FORM_BASE, type QueenForm } from "./world/queenCharmSurface.ts";
 
 /**
  * The flat twins of the charm library: the same dozen silhouettes drawn in a
@@ -22,13 +22,13 @@ const GLYPHS: Record<QueenCharmKind, { body: string; accent?: string }> = {
   spool: { body: "M-8,-9 H8 V-6 H-8 Z M-8,6 H8 V9 H-8 Z M-5,-6 H5 V6 H-5 Z", accent: "M-5.4,-4.6 H5.4 V4.6 H-5.4 Z M5,-3 L9.6,7 L8.6,7.4 L4,-2.6 Z" },
 };
 
-export function QueenCharmGlyphs({ charms, part }: { charms: readonly QueenCharmV1[]; part: QueenCharmV1["part"] }) {
+export function QueenCharmGlyphs({ charms, part, form = QUEEN_FORM_BASE }: { charms: readonly QueenCharmV1[]; part: QueenCharmV1["part"]; form?: QueenForm }) {
   const rows = charms.filter((charm) => charm.part === part);
   if (!rows.length) return null;
   return (
     <g className={`queen-charms queen-charms--${part}`} data-charms={rows.length}>
       {rows.map((charm) => {
-        const seat = queenCharmFlatSeat(charm);
+        const seat = queenCharmFlatSeat(charm, form);
         const glyph = GLYPHS[charm.kind];
         // Foreshortened by how much the seat faces the room; SVG's y runs down, so the spin turns the other way.
         const transform = `translate(${seat.x.toFixed(1)} ${seat.y.toFixed(1)}) scale(${Math.max(0.45, seat.facing).toFixed(2)} 1) rotate(${-charm.spin}) scale(${seat.size.toFixed(3)})`;

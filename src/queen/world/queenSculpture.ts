@@ -5,7 +5,7 @@ import { studioHex } from "../../kitty/studio/palette.ts";
 import { QUEEN_GLAZE_AXIS, QUEEN_PAINTABLE_PARTS, queenSanitizePaint, type QueenGlazeAxis, type QueenPaintablePart, type QueenPose } from "./queenAuthoring.ts";
 import type { QueenStone } from "../../core/queenPresentation.ts";
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
-import { QUEEN_HEAD, QUEEN_SKIRT_PHI_START, QUEEN_SKIRT_PROFILE } from "./queenCharmSurface.ts";
+import { QUEEN_FORM_BASE, QUEEN_HEAD, QUEEN_SKIRT_PHI_START, queenSeamPathsFor, queenSkirtProfilePoints, type QueenForm } from "./queenCharmSurface.ts";
 import { createQueenCharmSet } from "./queenCharmSet.ts";
 
 /**
@@ -22,8 +22,11 @@ import { createQueenCharmSet } from "./queenCharmSet.ts";
  * scale move the body group; her fill widens the belly; her surface follows
  * evidence freshness through the same roughness/clearcoat axis a fired bank
  * uses. Charms — the couple's small add-ons — are instanced on the body
- * group by `queenCharmSet` and never touch a reserved mesh. No money is read
- * here.
+ * group by `queenCharmSet` and never touch a reserved mesh. Her form — the
+ * handles thrown on the wheel and the rings her closed Chapters leave — is
+ * the skirt's lathe, rebuilt only when the form changes; the gold seams
+ * follow it. Her underside carries the makers' marks and is never painted.
+ * No money is read here.
  */
 export type QueenSculptureOptions = {
   clay?: string;
@@ -95,11 +98,18 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   const belly = new THREE.Group();
   belly.name = "queen-belly";
   body.add(belly);
-  const skirt = mesh(new THREE.LatheGeometry(QUEEN_SKIRT_PROFILE.map(([r, y]) => V2(r, y)), 48, QUEEN_SKIRT_PHI_START, Math.PI * 2), parts.body.mat, belly, "queen-skirt");
+  let form: QueenForm = QUEEN_FORM_BASE;
+  const lathe = (f: QueenForm) => new THREE.LatheGeometry(queenSkirtProfilePoints(f).map(([r, y]) => V2(r, y)), 48, QUEEN_SKIRT_PHI_START, Math.PI * 2);
+  const skirt = mesh(lathe(form), parts.body.mat, belly, "queen-skirt");
   skirt.position.y = BODY_ORIGIN_Y;
-  // Shoulders and neck: reserved clay, so the paint cannot creep over the collar where the seams meet.
+  // Her underside: the base disc she tips over to show, with the makers' marks. Reserved clay; never painted, never a charm seat.
+  const undersideMat = mat(new THREE.MeshStandardMaterial({ color: clayColor, roughness: 0.92, metalness: 0 }));
+  const underside = mesh(new THREE.CircleGeometry(0.9, 40), undersideMat, belly, "queen-underside");
+  underside.rotation.x = Math.PI / 2;
+  underside.position.y = -0.004;
+  let marksTexture: THREE.CanvasTexture | null = null;
+  // Shoulders and neck: reserved clay, so the paint cannot creep over the collar where the seams meet. They open with the rim.
   const shoulders = mesh(new THREE.LatheGeometry([V2(0.58, 1.84), V2(0.66, 2.02), V2(0.5, 2.24), V2(0.28, 2.34)], 40), reservedClay, body, "queen-shoulders");
-  void shoulders;
   // Hands, held at the front: the Move's seat. Reserved.
   const hands = mesh(new THREE.SphereGeometry(0.34, 24, 16), reservedClay, body, "queen-hands");
   hands.scale.set(1.35, 0.55, 0.8);
@@ -157,12 +167,22 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   crown.add(crownLight);
 
   // Gold seams on the belly: kintsugi, left visible on purpose. Reserved.
-  const seams = [
-    tube([[-0.55, 0.06, 1.0], [-0.42, 0.7, 1.08], [-0.58, 1.1, 0.96], [-0.4, 1.5, 0.8]], 0.022, goldSeam, belly, "queen-seam"),
-    tube([[0.72, 0.1, 0.92], [0.62, 0.62, 1.02], [0.74, 0.98, 0.9]], 0.02, goldSeam, belly, "queen-seam"),
-    tube([[0.05, 0.05, 1.18], [0.12, 0.5, 1.16], [0.0, 0.86, 1.06]], 0.02, goldSeam, belly, "queen-seam"),
-  ];
+  const seamRadii = [0.022, 0.02, 0.02];
+  const seams = queenSeamPathsFor(form).map((path, i) => tube(path.map((p) => [...p] as [number, number, number]), seamRadii[i]!, goldSeam, belly, "queen-seam"));
   for (const seam of seams) seam.visible = false;
+  let seamCount = 0;
+  /** The skirt and the seams follow the form; everything else keeps its place. Rebuilt only when the form actually changes. */
+  const rebuildForm = () => {
+    const nextSkirt = lathe(form);
+    geometries.delete(skirt.geometry); skirt.geometry.dispose();
+    skirt.geometry = geo(nextSkirt);
+    for (const [i, path] of queenSeamPathsFor(form).entries()) {
+      const seam = seams[i]!;
+      geometries.delete(seam.geometry); seam.geometry.dispose();
+      seam.geometry = geo(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(path.map((p) => new THREE.Vector3(...p))), 24, seamRadii[i]!, 8, false));
+    }
+    shoulders.scale.set(form.handles.neck, 1, form.handles.neck);
+  };
 
   // The mandevilla vine: her hair, the Chapter, grown by acts. Buds are goals in motion. Reserved.
   const vine = new THREE.Group();
@@ -179,8 +199,9 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   });
   const budSeats: Array<[number, number, number, number]> = [[-0.9, 1.16, 0.22, 0.12], [1.02, 1.06, 0.26, 0.1], [-0.45, 0.72, 0.16, 0.085], [0.72, 0.62, 0.14, 0.08]];
   const buds = budSeats.map(([x, y, z, r]) => {
+    // A bud is a long, tightly furled spiral held upright, not a ball: the honest form for a Chapter in progress.
     const b = mesh(new THREE.SphereGeometry(r, 16, 12), bud, vine, "queen-bud");
-    b.position.set(x, y, z); b.visible = false;
+    b.position.set(x, y, z); b.scale.set(0.62, 1.7, 0.62); b.rotation.z = -x * 0.25; b.visible = false;
     return b;
   });
 
@@ -224,11 +245,14 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   };
 
   // ---- state ----
-  let restScale = 1, lean = 0, breathOffset = 0;
+  let restScale = 1, lean = 0, breathOffset = 0, tipped = false;
   const applyBody = () => {
     body.scale.setScalar(restScale);
     body.rotation.z = lean;
-    body.position.y = breathOffset;
+    // Tipped over toward the room: her underside faces the camera. A deliberate gesture, one still, no motion of its own.
+    body.rotation.x = tipped ? -Math.PI * 0.47 : 0;
+    body.position.y = breathOffset + (tipped ? 2.0 : 0);
+    body.position.z = tipped ? 0.3 : 0;
   };
   present();
   applyAxis();
@@ -239,13 +263,43 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     height: QUEEN_HEIGHT,
     get disposed() { return disposed; },
     /** Names of the reserved groups and meshes, for tests that assert the paint never reaches them. */
-    reserved: { vine, crown, crownLight, face, eyesOpen, eyesClosed, hands, seams, feet, stones, belly },
+    reserved: { vine, crown, crownLight, face, eyesOpen, eyesClosed, hands, seams, feet, stones, belly, underside, shoulders },
     paintable: { body: skirt, head },
     materials: { body: parts.body.mat, head: parts.head.mat, reservedClay, gold, goldSeam, leaf, bud, ink },
     counts() { const c = charms.counts(); return { geometries: geometries.size + c.geometries, materials: materials.size + (c.geometries ? c.materials : 0), textures: textures.size }; },
     charmCounts() { return charms.counts(); },
     /** The charms on her, in the piece's own coordinates. Sanitized by the caller; drawn here. */
     setCharms(next: QueenCharmV1[]) { charms.setCharms(next); },
+    /** Her form: the thrown handles and the ring count. The lathe is rebuilt only when it changes. */
+    setForm(next: QueenForm) {
+      if (next.rings === form.rings && next.handles.belly === form.handles.belly && next.handles.waist === form.handles.waist && next.handles.shoulder === form.handles.shoulder && next.handles.neck === form.handles.neck) return;
+      form = next;
+      rebuildForm();
+      charms.setForm(next);
+    },
+    get form() { return form; },
+    /** Tipped over to show her underside, or seated. */
+    setTipped(next: boolean) { tipped = next; applyBody(); },
+    get tipped() { return tipped; },
+    /** The makers' marks on her underside: both partners' marks and the date she was last worked on. Drawn once into one small texture. */
+    setMarks(marks: { initials: readonly string[]; date: string } | null) {
+      if (marksTexture) { textures.delete(marksTexture); marksTexture.dispose(); marksTexture = null; undersideMat.map = null; undersideMat.needsUpdate = true; }
+      if (!marks || !canvasOk) return;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 256;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.fillStyle = clayColor; ctx.fillRect(0, 0, 256, 256);
+      ctx.fillStyle = options.ink ?? "#1b1712"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = "600 56px ui-serif, Georgia, serif";
+      ctx.fillText(marks.initials.slice(0, 2).join(" · "), 128, 104);
+      ctx.font = "30px ui-monospace, Menlo, monospace";
+      ctx.fillText(marks.date, 128, 166);
+      marksTexture = new THREE.CanvasTexture(canvas);
+      marksTexture.colorSpace = THREE.SRGBColorSpace;
+      textures.add(marksTexture);
+      undersideMat.map = marksTexture; undersideMat.needsUpdate = true;
+    },
     /** Where a ray lands on her paintable surface: the part and its uv, or null off her or on a reserved mesh. */
     pick(raycaster: THREE.Raycaster): { part: QueenCharmPart; u: number; v: number } | null {
       const hit = raycaster.intersectObjects(pickable, false)[0];
@@ -286,7 +340,8 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       gold.emissiveIntensity = lit ? 0.5 : 0;
     },
     setSeams(count: number) {
-      for (const [index, seam] of seams.entries()) seam.visible = index < count;
+      seamCount = count;
+      for (const [index, seam] of seams.entries()) seam.visible = index < seamCount;
     },
     setVine(chapter: boolean, growth: number, budCount: number) {
       const scale = chapter ? 0.74 + Math.max(0, Math.min(4, growth)) * 0.09 : 0.56;

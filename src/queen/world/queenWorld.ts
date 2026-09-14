@@ -6,6 +6,8 @@ import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture
 import { createQueenSculpture, QUEEN_HEIGHT, type QueenSculpture } from "./queenSculpture.ts";
 import type { QueenGlazeAxis, QueenPose } from "./queenAuthoring.ts";
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
+import { queenLampShare, type QueenLight } from "../../core/queenLight.ts";
+import type { QueenForm } from "./queenCharmSurface.ts";
 
 /**
  * The Home world: one renderer, one scene, one still camera. A diorama you
@@ -27,9 +29,17 @@ export type WorldQueenInput = {
   paint: KittyPaintV1 | null;
   /** Already through the guard; drawn as given. */
   charms: QueenCharmV1[];
+  /** The thrown handles and the ring count. */
+  form: QueenForm;
+  /** Tipped over to show her underside. */
+  tipped: boolean;
+  /** The makers' marks on her underside. Null draws bare clay. */
+  marks: { initials: readonly string[]; date: string } | null;
+  /** Where the sun is over the household's day. Scales the lamps within a floor; never the material axis. */
+  light: QueenLight;
 };
 export type WorldLayout = { host: WorldRect; queen: WorldRect; banks: Record<string, WorldRect> };
-export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; charms: number; charmDrawCalls: number; charmGeometries: number };
+export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; charms: number; charmDrawCalls: number; charmGeometries: number; keyLight: number; keyHeight: number; keyColor: string; rings: number; tipped: boolean };
 export type WorldPick = (clientX: number, clientY: number) => { part: QueenCharmPart; u: number; v: number } | null;
 
 const VISIBLE_HEIGHT = 10;
@@ -61,13 +71,30 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     scene.environment = env.texture;
     cleanup.push(() => { env.dispose(); pmrem.dispose(); });
   } catch { pmrem.dispose(); }
-  scene.add(new THREE.HemisphereLight("#fff1d9", "#8a8276", 1.1));
+  // The rig: a sky, a key and a rim. The living light scales them within a floor and moves the key with the sun's height; it never touches a material.
+  const sky = new THREE.HemisphereLight("#fff1d9", "#8a8276", 1.1);
+  scene.add(sky);
   const key = new THREE.DirectionalLight("#ffe9ca", 1.9);
   key.position.set(-4, 7, 6);
   scene.add(key);
   const rim = new THREE.DirectionalLight("#d9ecfa", 0.9);
   rim.position.set(4, 4, -4);
   scene.add(rim);
+  const WARM = new THREE.Color("#ffe2b8"), COOL = new THREE.Color("#c9d6ea"), SKY_WARM = new THREE.Color("#fff1d9"), SKY_COOL = new THREE.Color("#dfe6f2");
+  let lightKey = "";
+  const setLight = (light: QueenLight) => {
+    const next = `${light.level}:${light.warmth}`;
+    if (next === lightKey) return;
+    lightKey = next;
+    const share = queenLampShare(light);
+    key.intensity = 1.9 * share;
+    sky.intensity = 1.1 * share;
+    rim.intensity = 0.9 * (0.8 + 0.2 * (1 - light.level));
+    key.color.copy(COOL).lerp(WARM, light.warmth);
+    sky.color.copy(SKY_COOL).lerp(SKY_WARM, light.warmth);
+    // The key climbs with the sun: low across the room at dusk, high at noon.
+    key.position.set(-4, 3 + 5 * light.level, 6);
+  };
 
   const queen: QueenSculpture = createQueenSculpture({ reducedMotion: options.reducedMotion });
   scene.add(queen.group);
@@ -77,8 +104,9 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   let pending = 0;
   let unitsPerPx = VISIBLE_HEIGHT / Math.max(1, host.clientHeight);
   let lastLayoutKey = "";
-  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, charms: 0, charmDrawCalls: 0, charmGeometries: 0 };
+  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 1.9, keyHeight: 7, keyColor: "#ffe9ca", rings: 0, tipped: false };
   const raycaster = new THREE.Raycaster();
+  let marksKey = "null";
   let hostRect: WorldRect = { x: 0, y: 0, w: host.clientWidth, h: host.clientHeight };
   const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
@@ -135,7 +163,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     camera,
     renderer,
     queen,
-    stats: () => { const c = queen.charmCounts(); return { ...stats, sculptures: 1 + banks.size, charms: c.instances, charmDrawCalls: c.drawCalls, charmGeometries: c.geometries }; },
+    stats: () => { const c = queen.charmCounts(); return { ...stats, sculptures: 1 + banks.size, charms: c.instances, charmDrawCalls: c.drawCalls, charmGeometries: c.geometries, keyLight: +key.intensity.toFixed(3), keyHeight: +key.position.y.toFixed(2), keyColor: `#${key.color.getHexString()}`, rings: queen.form.rings, tipped: queen.tipped }; },
     /** A viewport point → where it lands on her paintable surface. Null off her. */
     pick(clientX: number, clientY: number) {
       if (dead || !hostRect.w || !hostRect.h) return null;
@@ -155,7 +183,11 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       queen.setVine(input.vine.chapter, input.vine.growth, input.vine.buds);
       queen.setFeet(input.feet);
       queen.setPaint(input.paint);
+      queen.setForm(input.form);
       queen.setCharms(input.charms);
+      queen.setTipped(input.tipped);
+      if (JSON.stringify(input.marks) !== marksKey) { marksKey = JSON.stringify(input.marks); queen.setMarks(input.marks); }
+      setLight(input.light);
       invalidate();
     },
     /** Banks are studio sculptures. Rebuilt only when the piece or its firing changes; disposed when they leave. */

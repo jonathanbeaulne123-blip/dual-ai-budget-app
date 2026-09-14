@@ -1,6 +1,7 @@
 import type { QueenBody, QueenCrown, QueenFeet, QueenRegionId, QueenStill, QueenVine } from "../core/queenPresentation.ts";
 import type { QueenCharmV1 } from "../core/queenCharms.ts";
 import { QueenCharmGlyphs } from "./QueenCharmGlyph.tsx";
+import { QUEEN_FLAT, QUEEN_FORM_BASE, queenRingSeatsOn, queenSkirtAt, type QueenForm } from "./world/queenCharmSurface.ts";
 
 /**
  * The Queen, drawn. Her body carries state and nothing else: no text, no
@@ -10,9 +11,49 @@ import { QueenCharmGlyphs } from "./QueenCharmGlyph.tsx";
  * corrections kept visible, the vine is the Chapter grown by acts, buds are
  * goals in motion and the stones at her feet are the nearest dated
  * obligations as pure form. Charms are the couple's, drawn at the seats they
- * chose and carrying nothing. The artwork is a stand-in for the mandevilla form.
+ * chose and carrying nothing. Her vessel is drawn from the same lathe profile
+ * the sculpture and the charm surface use — the thrown handles and the growth
+ * rings included — so the flat path and the 3D path are one form. Tipped
+ * over, she shows her underside: the makers' marks, never painted.
+ * The artwork is a stand-in for the mandevilla form.
  */
 export const QUEEN_VIEW = { w: 240, h: 340 } as const;
+
+/** The vessel's outline in the belly group's space, from the profile: the hem, up the right, over the top, down the left. */
+export function queenFlatVessel(form: QueenForm = QUEEN_FORM_BASE, samples = 40): string {
+  const { cx, hemY, sx, sy } = QUEEN_FLAT.body;
+  const right: string[] = [], left: string[] = [];
+  for (let i = 0; i <= samples; i += 1) {
+    const v = 0.03 + (i / samples) * 0.97;
+    const { r, y } = queenSkirtAt(v, form);
+    const px = (r * sx).toFixed(1), py = (hemY - y * sy).toFixed(1);
+    right.push(`${(cx + Number(px)).toFixed(1)} ${py}`);
+    left.push(`${(cx - Number(px)).toFixed(1)} ${py}`);
+  }
+  return `M${right[0]} L${right.slice(1).join(" L")} L${left.reverse().join(" L")} Z`;
+}
+/** A band inside the outline on one side, for the shade (right) and the glaze highlight (left). */
+export function queenFlatBand(form: QueenForm, side: 1 | -1, inner: number, from = 0.03, to = 1, samples = 24): string {
+  const { cx, hemY, sx, sy } = QUEEN_FLAT.body;
+  const outer: string[] = [], within: string[] = [];
+  for (let i = 0; i <= samples; i += 1) {
+    const v = from + (i / samples) * (to - from);
+    const { r, y } = queenSkirtAt(v, form);
+    const py = (hemY - y * sy).toFixed(1);
+    outer.push(`${(cx + side * r * sx).toFixed(1)} ${py}`);
+    within.push(`${(cx + side * r * sx * inner).toFixed(1)} ${py}`);
+  }
+  return `M${outer[0]} L${outer.slice(1).join(" L")} L${within.reverse().join(" L")} Z`;
+}
+/** The rings as shallow front arcs at their heights and widths. */
+export function queenFlatRings(form: QueenForm): { key: number; d: string }[] {
+  const { cx, hemY, sx, sy } = QUEEN_FLAT.body;
+  return queenRingSeatsOn(form).map((v) => {
+    const { r, y } = queenSkirtAt(v, form);
+    const w = r * sx * 0.985, py = hemY - y * sy;
+    return { key: v, d: `M${(cx - w).toFixed(1)} ${(py - 1.2).toFixed(1)} Q${cx} ${(py + 4).toFixed(1)} ${(cx + w).toFixed(1)} ${(py - 1.2).toFixed(1)}` };
+  });
+}
 
 /** Where open eyes turn. Together is her left; Status her right; what is held is below; the Chapter is above. */
 const GAZE: Record<QueenRegionId | "rest", { dx: number; dy: number }> = {
@@ -59,25 +100,49 @@ export type QueenFigureProps = {
   freshBud?: number | null;
   /** The charms she wears; already through the guard. */
   charms?: readonly QueenCharmV1[];
+  /** The thrown handles and the ring count. */
+  form?: QueenForm;
+  /** Tipped over: her underside with the makers' marks instead of her face. */
+  tipped?: boolean;
+  marks?: { initials: readonly string[]; date: string } | null;
 };
 
-export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = null, charms = [] }: QueenFigureProps) {
+export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = null, charms = [], form = QUEEN_FORM_BASE, tipped = false, marks = null }: QueenFigureProps) {
   const gaze = GAZE[still.eyes === "open" ? still.gaze : "rest"];
   const vineScale = vine.chapter ? 0.74 + vine.growth * 0.09 : 0.56;
   const leaves = vine.chapter ? 1 + vine.growth : 0;
   const fill = 0.86 + (body.level / 10) * 0.14;
+  if (tipped) {
+    // The underside: the base disc, seen from the room, the makers' marks pressed in. Not paintable; no charm seat.
+    const rx = 0.9 * QUEEN_FLAT.body.sx * fill;
+    return (
+      <svg className="queen-svg queen-svg--tipped" viewBox={`0 0 ${QUEEN_VIEW.w} ${QUEEN_VIEW.h}`} aria-hidden="true" focusable="false">
+        <ellipse className="queen-foot" cx="120" cy="306" rx="92" ry="11" />
+        <path className="queen-vessel" d={`M${120 - rx * 1.1} 300 Q120 330 ${120 + rx * 1.1} 300 L${120 + rx * 1.02} 214 L${120 - rx * 1.02} 214 Z`} />
+        <ellipse className="queen-underside" cx="120" cy="200" rx={rx} ry={rx * 0.72} />
+        <ellipse className="queen-underside-ring" cx="120" cy="200" rx={rx * 0.86} ry={rx * 0.72 * 0.86} />
+        {marks && (
+          <>
+            <text className="queen-mark queen-mark--initials" x="120" y="192" textAnchor="middle">{marks.initials.slice(0, 2).join(" · ")}</text>
+            <text className="queen-mark queen-mark--date" x="120" y="216" textAnchor="middle">{marks.date}</text>
+          </>
+        )}
+      </svg>
+    );
+  }
   return (
     <svg className="queen-svg" viewBox={`0 0 ${QUEEN_VIEW.w} ${QUEEN_VIEW.h}`} aria-hidden="true" focusable="false">
       <ellipse className="queen-foot" cx="120" cy="306" rx="92" ry="11" />
       <g className="queen-body">
         <g className="queen-belly" style={{ transform: `scaleX(${fill})` }}>
-          <path className="queen-vessel" d="M34 302 C24 250 40 196 76 180 C92 172 148 172 164 180 C200 196 216 250 206 302 Z" />
-          <path className="queen-shade" d="M156 180 C194 198 212 252 206 302 L180 302 C187 252 176 202 150 184 Z" />
-          <path className="queen-glaze" d="M56 290 C46 246 60 204 86 188 C64 210 56 252 62 290 Z" />
+          <path className="queen-vessel" d={queenFlatVessel(form)} />
+          <path className="queen-shade" d={queenFlatBand(form, 1, 0.74)} />
+          <path className="queen-glaze" d={queenFlatBand(form, -1, 0.8, 0.22, 0.86)} />
+          {queenFlatRings(form).map((ring) => <path key={ring.key} className="queen-ring" data-ring={ring.key} d={ring.d} />)}
           {body.seams >= 1 && <path className="queen-seam" d="M74 302 L88 248 L76 214 L90 186" />}
           {body.seams >= 2 && <path className="queen-seam" d="M176 298 L164 254 L174 226" />}
           {body.seams >= 3 && <path className="queen-seam" d="M120 300 L126 268 L116 246" />}
-          <QueenCharmGlyphs charms={charms} part="body" />
+          <QueenCharmGlyphs charms={charms} part="body" form={form} />
         </g>
         {/* Shoulders and hands */}
         <path className="queen-vessel" d="M80 182 C80 146 96 126 120 126 C144 126 160 146 160 182 Z" />
@@ -102,7 +167,7 @@ export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = n
           </>
         )}
         <path className="queen-mouth" d={MOUTH[still.mouth]} />
-        <QueenCharmGlyphs charms={charms} part="head" />
+        <QueenCharmGlyphs charms={charms} part="head" form={form} />
         {/* Crown */}
         <path className="queen-crown" d="M90 78 L97 60 L109 72 L120 52 L131 72 L143 60 L150 78" />
         {crown === "both" && <><circle className="queen-crown-point" cx="97" cy="60" r="2.4" /><circle className="queen-crown-point" cx="120" cy="52" r="2.8" /><circle className="queen-crown-point" cx="143" cy="60" r="2.4" /></>}
@@ -117,7 +182,8 @@ export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = n
           {leaves >= 5 && <ellipse className="queen-leaf" cx="158" cy="24" rx="7" ry="3.6" transform="rotate(20 158 24)" />}
           {BUD_SEATS.slice(0, Math.max(0, Math.min(BUD_SEATS.length, buds))).map((seat, index) => (
             <g key={seat.cx}>
-              <circle className="queen-bud" cx={seat.cx} cy={seat.cy} r={seat.r} />
+              {/* A bud is a long, furled spiral held upright, not a ball. */}
+              <ellipse className="queen-bud" cx={seat.cx} cy={seat.cy} rx={seat.r * 0.55} ry={seat.r * 1.25} transform={`rotate(${(seat.cx - 120) / 6} ${seat.cx} ${seat.cy})`} />
               {freshBud === index && <circle className="queen-trace" cx={seat.cx - 3} cy={seat.cy - 3} r={seat.r * 0.38} />}
             </g>
           ))}

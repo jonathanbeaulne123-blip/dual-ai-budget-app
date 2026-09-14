@@ -156,7 +156,7 @@ describe("Charms refuse the reserved zones — physically, and in the guard", ()
     for (const id of covered) expect(channels.includes(id), id).toBe(true);
     queen.dispose();
     // Posture and the glaze axis are not places: a charm never returns them, never carries them, and never changes them.
-    expect(QUEEN_RESERVED_CHANNELS.map((row) => row.id)).toEqual(["vine", "posture", "fill", "eyes", "crown", "seams", "hands", "feet", "glaze"]);
+    expect(QUEEN_RESERVED_CHANNELS.map((row) => row.id)).toEqual(["vine", "posture", "fill", "eyes", "crown", "seams", "hands", "feet", "glaze", "rings"]);
     const [kept] = queenSanitizeCharms([{ ...charm(), glaze: "glazed", fired: true, firedAt: "2026-09-01", posture: "depleted", scaleQueen: 2 }]);
     expect(kept).toBeDefined();
     expect(Object.keys(kept!).sort()).toEqual(["color", "id", "kind", "part", "scale", "spin", "tilt", "u", "v"]);
@@ -196,7 +196,8 @@ describe("Charms refuse the reserved zones — physically, and in the guard", ()
     // Posture: a charm cannot scale or lean her — the record has no such field to carry, and hers is a reading.
     const posture = guardQueenDesignSave(draftWith([{ ...charm({ id: "p" }), posture: "depleted", lean: 30 }]), { earned: ALL });
     expect(posture.studio?.draft?.charms?.[0]).not.toHaveProperty("posture");
-    expect(posture.studio?.draft?.sculpt).toEqual(newKittyPiece("q", "2026-09-01T00:00:00.000Z").sculpt);
+    // The four handles are the wheel's, read within her bounds (2026-09-14); nothing else on the sculpt moves.
+    expect(posture.studio?.draft?.sculpt).toEqual({ ...newKittyPiece("q", "2026-09-01T00:00:00.000Z").sculpt, profile: [1, 0.92, 0.9, 0.9] });
     // Glaze: a charm cannot carry a firing or a material axis, and the piece stays wet.
     const glaze = guardQueenDesignSave(draftWith([{ ...charm({ id: "g" }), glaze: "glazed", firedAt: "2026-09-02T00:00:00.000Z" }]), { earned: ALL });
     expect(glaze.studio?.draft?.charms?.[0]).not.toHaveProperty("glaze");

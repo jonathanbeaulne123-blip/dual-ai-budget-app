@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { QUEEN_CHARM_LIMITS, type QueenCharmKind, type QueenCharmV1 } from "../../core/queenCharms.ts";
 import { QUEEN_GLAZE_AXIS, type QueenGlazeAxis } from "./queenAuthoring.ts";
-import { QUEEN_CHARM_UNIT, queenSurfaceSeat } from "./queenCharmSurface.ts";
+import { QUEEN_CHARM_UNIT, QUEEN_FORM_BASE, queenSurfaceSeat, type QueenForm } from "./queenCharmSurface.ts";
 import { buildCharmGeometry, type CharmGeometry } from "./queenCharmLibrary.ts";
 
 /**
@@ -25,6 +25,7 @@ export function createQueenCharmSet(parent: THREE.Object3D, options: { ink?: str
   const inkMaterial = new THREE.MeshStandardMaterial({ color: options.ink ?? "#1b1712", roughness: 0.75 });
   let charms: QueenCharmV1[] = [];
   let bellyWidth = 1;
+  let form: QueenForm = QUEEN_FORM_BASE;
   let disposed = false;
   const matrix = new THREE.Matrix4(), basis = new THREE.Matrix4(), quaternion = new THREE.Quaternion(), local = new THREE.Quaternion(), color = new THREE.Color();
   const position = new THREE.Vector3(), normal = new THREE.Vector3(), x = new THREE.Vector3(), y = new THREE.Vector3(), scale = new THREE.Vector3();
@@ -50,7 +51,7 @@ export function createQueenCharmSet(parent: THREE.Object3D, options: { ink?: str
   };
 
   const seatMatrix = (charm: QueenCharmV1) => {
-    const seat = queenSurfaceSeat(charm.part, charm.u, charm.v, bellyWidth);
+    const seat = queenSurfaceSeat(charm.part, charm.u, charm.v, bellyWidth, form);
     position.set(...seat.position);
     normal.set(...seat.normal);
     // A brooch, not a hat: the charm's back is against her, its up is the world's up along her surface.
@@ -99,6 +100,11 @@ export function createQueenCharmSet(parent: THREE.Object3D, options: { ink?: str
     },
     setCharms(next: QueenCharmV1[]) {
       charms = next;
+      lay();
+    },
+    /** The thrown form moves the surface; charms on it ride along. */
+    setForm(next: QueenForm) {
+      form = next;
       lay();
     },
     /** The fill widens the belly; charms on it ride along. */
