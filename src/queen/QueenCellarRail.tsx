@@ -1,6 +1,7 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from "react";
 import type { CellarDay, CellarJar, CellarReading } from "../core/queenCellar.ts";
 import { QueenBankFlat } from "./QueenBankFlat.tsx";
+import type { BankForm } from "./world/queenBankSculpture.ts";
 import "./queen-cellar.css";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -15,10 +16,14 @@ export const cellarDayLabel = (date: string) => `${MONTHS[Number(date.slice(5, 7
  * once it is paid, a dotted ghost for a planned expense that has not posted.
  * The type is carried on the button (`data-type`) for a tint and in words.
  */
+/** One body per purpose: the bill's bean, the recurring loaf, the subscription's wrapped-tail round, the appointment's tall cat, the planned expense's hollow bean. */
+export const cellarBankForm = (type: CellarJar["type"]): BankForm =>
+  type === "house" ? "bill" : type === "subscription" ? "subscription" : type === "appointment" ? "appointment" : type === "potential" ? "planned" : "recurring";
+
 export function CellarJarGlyph({ jar, held = false }: { jar: CellarJar; held?: boolean }) {
   return (
-    <span className={`queen-billjar queen-billjar--${jar.type}${jar.paid ? " is-shard" : ""}${held ? " is-held" : ""}`} aria-hidden="true">
-      <QueenBankFlat form="bill" className="queen-bank-flat queen-billjar__cat" fill={jar.paid ? 0 : jar.fill} hollow={jar.type === "potential" || jar.paid} />
+    <span className={`queen-billjar queen-billjar--${jar.type} queen-billjar--size-${jar.size}${jar.paid ? " is-shard" : ""}${held ? " is-held" : ""}`} data-hue={jar.hue} data-finish={jar.finish} aria-hidden="true">
+      <QueenBankFlat form={cellarBankForm(jar.type)} className="queen-bank-flat queen-billjar__cat" fill={jar.paid ? 0 : jar.fill} hollow={jar.type === "potential" || jar.paid} tint={jar.hue === "clay" ? undefined : `var(--queen-hue-${jar.hue})`} finish={jar.finish} />
       {(jar.paid || jar.strike === "crack") && (
         <svg viewBox="0 0 100 100" className={`queen-billjar__crack${jar.paid ? " queen-billjar__crack--shard" : " queen-billjar__crack--due"}`}>
           <path d={jar.paid ? "M52 34 L44 52 L56 62 L46 86" : "M54 40 L47 56 L57 66"} />
@@ -92,7 +97,7 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId }: {
                   {here.map((jar) => (
                     <button key={jar.id} type="button" className={`queen-jar queen-jar--bill queen-jar--${jar.strike}${heldId === jar.id ? " is-held" : ""}${index === at ? " is-in-gate" : ""}`}
                       data-room-vessel={jar.id} data-type={jar.type} aria-current={index === at ? "true" : undefined}
-                      aria-label={`${jar.label} — ${jar.type === "house" ? "house bill" : jar.type === "subscription" ? "subscription" : jar.type === "potential" ? "planned, not posted" : jar.type === "appointment" ? "appointment" : "recurring payment"}, ${cellarDayLabel(jar.date)}${jar.paid ? ", paid" : jar.full ? ", full" : ", filling"}${jar.strike === "hammer" ? ". The hammer is out" : jar.strike === "crack" ? ". Cracked: due and not full" : ""}`}
+                      aria-label={`${jar.label} — ${jar.type === "house" ? "house bill" : jar.type === "subscription" ? "subscription" : jar.type === "potential" ? "planned, not posted" : jar.type === "appointment" ? "appointment" : "recurring payment"}${jar.groupName ? ` (${jar.groupName}${jar.lineName && jar.lineName !== jar.groupName ? ` › ${jar.lineName}` : ""})` : ""}, ${jar.size >= 5 ? "the month's largest" : jar.size === 4 ? "large" : jar.size === 3 ? "middling" : jar.size === 2 ? "small" : "the smallest"}, ${cellarDayLabel(jar.date)}${jar.paid ? ", paid" : jar.full ? ", full" : ", filling"}${jar.strike === "hammer" ? ". The hammer is out" : jar.strike === "crack" ? ". Cracked: due and not full" : ""}`}
                       onClick={() => onCursor(index)}>
                       <CellarJarGlyph jar={jar} held={heldId === jar.id} />
                     </button>

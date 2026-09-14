@@ -5,7 +5,7 @@ import { addPotentialExpense, addRecurrence, postDueRecurrences, postEntry, reco
 import { projectKittyNest } from "../src/core/kittyNest.ts";
 import { fundWalk } from "../src/core/fundWalk.ts";
 import { formatCad } from "../src/core/money.ts";
-import { cellarDays, cellarGateWords, cellarJarType, cellarJars, cellarReading, cellarStrike, type CellarJar } from "../src/core/queenCellar.ts";
+import { cellarDays, cellarFinish, cellarGateWords, cellarHue, cellarJarType, cellarJars, cellarReading, cellarSize, cellarStrike, type CellarJar } from "../src/core/queenCellar.ts";
 
 const memberId = "MEM-001";
 
@@ -162,14 +162,52 @@ describe("The line beneath the gate", () => {
     const rent = byLabel(reading.jars, "Fictional rent");
     const day = reading.days.find((row) => row.date === rent.date)!;
     const words = cellarGateWords(rent, day, formatCad);
-    expect(words).toMatch(/^Fictional rent · house bill · due today · /);
+    expect(words).toMatch(/^Fictional rent · house bill · Housing › Electric · due today · /);
     expect(words).toContain(`${formatCad(rent.savedCents)} saved of ${formatCad(rent.targetCents)}, ${formatCad(rent.leftCents)} to be safe`);
     expect(words).toContain(`water at ${formatCad(day.balanceCents)} after`);
     const hydro = byLabel(reading.jars, "Fictional hydro");
     expect(cellarGateWords(hydro, reading.days.find((row) => row.date === hydro.date)!, formatCad)).toMatch(/5 days overdue · \$140\.00 saved, ready/);
     const shard = byLabel(reading.jars, "Fictional streaming");
-    expect(cellarGateWords(shard, null, formatCad)).toBe("Fictional streaming · subscription · paid · $16.00 paid.");
+    expect(cellarGateWords(shard, null, formatCad)).toBe("Fictional streaming · subscription · Life › Fun · paid · $16.00 paid.");
     expect(cellarGateWords(null, reading.days[0]!, formatCad)).toBe("No jar on this day.");
     expect(cellarGateWords(null, null, formatCad)).toBe("Nothing on the rail this month.");
+  });
+});
+
+describe("Three ways to tell a jar apart, every one a band", () => {
+  it("tints by the category group's name, and keeps the bare clay for a group it does not know", () => {
+    expect(cellarHue("Housing")).toBe("housing");
+    expect(cellarHue("Utilities")).toBe("housing");
+    expect(cellarHue("Food")).toBe("food");
+    expect(cellarHue("Transport")).toBe("transport");
+    expect(cellarHue("Life")).toBe("life");
+    expect(cellarHue("Health")).toBe("health");
+    expect(cellarHue("Debt")).toBe("debt");
+    expect(cellarHue("Miscellany")).toBe("clay");
+    expect(cellarHue(null)).toBe("clay");
+  });
+  it("finishes by the line's place in its group, cycling four glazes", () => {
+    expect([0, 1, 2, 3, 4].map(cellarFinish)).toEqual(["plain", "speckle", "banded", "crackle", "plain"]);
+  });
+  it("sizes in five bands against the month's largest due, never proportionally", () => {
+    expect(cellarSize(90000, 90000)).toBe(5);
+    expect(cellarSize(72000, 90000)).toBe(5);
+    expect(cellarSize(48000, 90000)).toBe(4);
+    expect(cellarSize(25000, 90000)).toBe(3);
+    expect(cellarSize(14000, 90000)).toBe(2);
+    expect(cellarSize(1600, 90000)).toBe(1);
+    expect(cellarSize(0, 90000)).toBe(1);
+    expect(cellarSize(500, 0)).toBe(1);
+  });
+  it("files each jar under its group and line from the books, and gives rent the largest band on the rail", () => {
+    const rows = jarsOn(withRail(), "2026-09-12");
+    const hydro = byLabel(rows, "Fictional hydro"), rent = byLabel(rows, "Fictional rent"), streaming = byLabel(rows, "Fictional streaming"), tires = byLabel(rows, "Fictional winter tires");
+    expect([hydro.groupName, hydro.lineName, hydro.hue, hydro.finish]).toEqual(["Housing", "Electric", "housing", "speckle"]);
+    expect([streaming.groupName, streaming.lineName, streaming.hue]).toEqual(["Life", "Fun", "life"]);
+    expect([tires.groupName, tires.lineName, tires.hue]).toEqual(["Life", "Fun", "life"]);
+    expect(rent.size).toBe(5);
+    expect(tires.size).toBe(4);
+    expect(hydro.size).toBe(2);
+    expect(streaming.size).toBe(1);
   });
 });

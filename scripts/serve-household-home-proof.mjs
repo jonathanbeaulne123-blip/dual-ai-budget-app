@@ -38,7 +38,12 @@ function queenSeeded(){let h=seeded();h={...h,name:'Fictional household'};
   /* The cellar's bill rail (bills=1): a fictional subscription already paid this month (a shard), a fictional hydro bill filling for the 15th, and a fictional planned expense (a ghost) — beside the rent, which is the hammer on the 20th and a crack once it is overdue. */
   if(bills){h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-08',type:'expense',amount:'16',accountId:'ACC-VISA',subcategoryId:'SUB-LIFE-FUN',note:'Fictional streaming',kind:'subscription'}).household;h=postDueRecurrences(h,'2026-09-08',[h.recurrences.find(row=>row.note==='Fictional streaming').id],{createdBy:'MEM-002'}).household;
     h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-15',type:'expense',amount:'140',accountId:'ACC-CHEQUING',subcategoryId:'SUB-HOUSING-ELECTRIC',note:'Fictional hydro',kind:'bill'}).household;
-    h=addPotentialExpense(h,{date:'2026-09-24',title:'Fictional winter tires',amount:'480',accountId:'ACC-VISA',subcategoryId:'SUB-LIFE-FUN',createdBy:'MEM-001',visibility:'household'}).household;}
+    h=addPotentialExpense(h,{date:'2026-09-24',title:'Fictional winter tires',amount:'480',accountId:'ACC-VISA',subcategoryId:'SUB-LIFE-FUN',createdBy:'MEM-001',visibility:'household'}).household;
+    /* and one of each other purpose and group, so the rail shows every body, tint and finish: a gym subscription (Health), a transit pass as a recurring payment (Transport), a phone bill (Life), a card payment (Debt). */
+    h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-10',type:'expense',amount:'45',accountId:'ACC-VISA',subcategoryId:'SUB-HEALTH-CARE',note:'Fictional gym',kind:'subscription'}).household;
+    h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-18',type:'expense',amount:'128',accountId:'ACC-CHEQUING',subcategoryId:'SUB-TRANSPORT-TRANSIT',note:'Fictional transit pass',kind:'other'}).household;
+    h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-22',type:'expense',amount:'65',accountId:'ACC-CHEQUING',subcategoryId:'SUB-LIFE-PHONE',note:'Fictional phone',kind:'bill'}).household;
+    h=addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-28',type:'expense',amount:'250',accountId:'ACC-CHEQUING',subcategoryId:'SUB-DEBT-VISA',note:'Fictional card payment',kind:'other'}).household;}
   const posted=postEntry(h,{type:'expense',date:'2026-09-10',amount:'40',accountId:'ACC-CHEQUING',subcategoryId:'SUB-LIFE-FUN',createdBy:'MEM-002',visibility:'household'});
   h=reversePostedMoney(posted.household,posted.postedIds[0],{createdBy:'MEM-001',reversalDate:'2026-09-11'}).household;
   if(state==='needs-us')return h; // the September Plan is waiting on both people.

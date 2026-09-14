@@ -10,7 +10,7 @@
  */
 
 /* The rail takes the room's leftover height (the grid's 1fr row) and never pushes its neighbours; when a frame is short the jars' heads are what gets cropped. */
-.queen-room--cellar .queen-cellar-rail { align-self: stretch; padding-top: 8px; padding-bottom: 0; min-height: 96px; }
+.queen-room--cellar .queen-cellar-rail { align-self: stretch; padding-top: 8px; padding-bottom: 0; min-height: 108px; }
 .queen-room--cellar .queen-cellar-rail .queen-gate::before { left: -22px; }
 .queen-room--cellar .queen-cellar-rail .queen-gate::after { left: 22px; }
 
@@ -31,12 +31,12 @@
 /* The track hangs from the gate: its left edge is the middle of the rail, and the cursor slides it left one cell a day. */
 .queen-room--cellar .queen-cellar-track { position: absolute; left: 50%; bottom: 4px; z-index: 1; }
 .queen-cellar-days { display: flex; align-items: flex-end; }
-.queen-cellar-day { position: relative; width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 108px; }
+.queen-cellar-day { position: relative; width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 116px; }
 .queen-cellar-day::before { content: ""; position: absolute; left: 0; right: 0; bottom: 18px; border-bottom: 1px solid var(--queen-clay-shadow); opacity: .5; }
 .queen-cellar-day::after { content: ""; position: absolute; left: 50%; bottom: 14px; width: 1px; height: 4px; margin-left: -.5px; background: var(--line); }
 .queen-cellar-day.is-today::after { width: 6px; height: 6px; margin-left: -3px; bottom: 12px; border-radius: 1px; background: var(--ink); transform: rotate(45deg); }
 .queen-cellar-day.is-dry::before { border-bottom-style: dashed; }
-.queen-cellar-day__seats { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 2px; margin-bottom: 18px; min-height: 52px; }
+.queen-cellar-day__seats { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 2px; margin-bottom: 18px; min-height: 64px; }
 .queen-cellar-day__tick { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; color: var(--muted); line-height: 16px; height: 18px; }
 .queen-cellar-day__tick:not(:empty) { background: color-mix(in srgb, var(--paper) 78%, transparent); border-radius: 6px; padding: 0 4px; }
 .queen-cellar-day.is-today .queen-cellar-day__tick { color: var(--ink); }
@@ -45,13 +45,30 @@
 /* The bill jars. Same jar grammar as the months view; the water inside is the saved amount. */
 /* The bill on the rail is the nest's own lidded kitty bank (QueenBankFlat, form "bill"); its water is what the bank has saved. */
 .queen-room--cellar .queen-jar--bill { width: 44px; min-height: 52px; gap: 0; }
-.queen-room--cellar .queen-billjar { position: relative; display: block; width: 44px; height: 44px; }
-.queen-room--cellar .queen-billjar__cat { width: 44px; height: 44px; }
+.queen-room--cellar .queen-billjar { position: relative; display: block; }
+.queen-room--cellar .queen-billjar__cat { display: block; }
 .queen-room--cellar .queen-jar--bill.is-in-gate .queen-billjar { transform: translateY(-2px); }
-/* A subscription is a cooler clay, a planned expense a ghost, an appointment paler; the shape stays the bank's. */
-.queen-room--cellar .queen-billjar--subscription .queen-bank-flat__clay { fill: color-mix(in srgb, var(--queen-clay) 70%, var(--queen-water, #6f8fa6)); }
-.queen-room--cellar .queen-billjar--appointment .queen-bank-flat__clay { fill: color-mix(in srgb, var(--queen-clay) 60%, var(--paper)); }
+/* Three axes, all bands (src/core/queenCellar.ts): the body is the purpose (QueenBankFlat form), the tint is the
+   category group, the finish is the line inside it, the size is one of five bands against the month's largest due. */
+.queen-room--cellar {
+  --queen-hue-housing: #c4794f; --queen-hue-food: #8f9a5a; --queen-hue-transport: #6f8fa6;
+  --queen-hue-life: #b76b8a; --queen-hue-health: #6fa391; --queen-hue-debt: #7a7470;
+}
+.queen-room--cellar .queen-bank-flat[style*="--bank-tint"] .queen-bank-flat__clay:not(.is-hollow), .queen-room--cellar .queen-bank-flat[style*="--bank-tint"] .queen-bank-flat__ear { fill: color-mix(in srgb, var(--bank-tint) 78%, var(--paper-2)); }
+.queen-room--cellar .queen-bank-flat[style*="--bank-tint"] .queen-bank-flat__edge, .queen-room--cellar .queen-bank-flat[style*="--bank-tint"] .queen-bank-flat__tail { stroke: color-mix(in srgb, var(--bank-tint) 70%, var(--ink)); }
+.queen-room--cellar .queen-bank-flat__finish { fill: color-mix(in srgb, var(--ink) 34%, transparent); }
+.queen-room--cellar .queen-bank-flat__finish-line { fill: none; stroke: color-mix(in srgb, var(--ink) 38%, transparent); stroke-width: .9; }
+.queen-room--cellar .queen-bank-flat__finish-coat { opacity: .9; }
+/* Five sizes. The cell stays 44px; the cat grows through it, and the sculpture behind it follows the drawn seat. */
+.queen-room--cellar .queen-billjar--size-1, .queen-room--cellar .queen-billjar--size-1 .queen-billjar__cat { width: 28px; height: 28px; }
+.queen-room--cellar .queen-billjar--size-2, .queen-room--cellar .queen-billjar--size-2 .queen-billjar__cat { width: 34px; height: 34px; }
+.queen-room--cellar .queen-billjar--size-3, .queen-room--cellar .queen-billjar--size-3 .queen-billjar__cat { width: 42px; height: 42px; }
+.queen-room--cellar .queen-billjar--size-4, .queen-room--cellar .queen-billjar--size-4 .queen-billjar__cat { width: 52px; height: 52px; }
+.queen-room--cellar .queen-billjar--size-5, .queen-room--cellar .queen-billjar--size-5 .queen-billjar__cat { width: 64px; height: 64px; }
+.queen-room--cellar .queen-jar--bill { min-height: 64px; justify-content: flex-end; }
 .queen-room--cellar .queen-billjar .queen-bank-flat__glaze { fill: color-mix(in srgb, var(--queen-water, #6f8fa6) 70%, var(--queen-clay-deep)); opacity: .9; }
+/* A tinted cat's level is the same clay, deeper — so the group still reads on a full jar, and the finish lies over both. */
+.queen-room--cellar .queen-bank-flat[style*="--bank-tint"] .queen-bank-flat__glaze { fill: color-mix(in srgb, var(--bank-tint) 62%, var(--ink)); opacity: .85; }
 /* The crack: due and not full is a hairline in copper; paid is the bank broken — hollow, with the break in ink. */
 .queen-room--cellar .queen-billjar__crack { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .queen-room--cellar .queen-billjar__crack path { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -82,7 +99,7 @@
   .queen-cellar-day { min-height: 88px; }
   .queen-cellar-day__seats { min-height: 44px; }
   .queen-room--cellar .queen-jar--bill { min-height: 44px; }
-  .queen-room--cellar .queen-billjar, .queen-room--cellar .queen-billjar__cat { width: 38px; height: 38px; }
+  .queen-room--cellar .queen-billjar, .queen-room--cellar .queen-billjar__cat { transform: scale(.82); transform-origin: 50% 100%; }
   .queen-room--cellar .queen-cellar-views .queen-pick { min-height: 28px; padding: 2px 8px; font-size: 9px; }
 }
 @container queen (max-height: 400px) {
@@ -103,4 +120,6 @@
   .queen-tidemark { border-top-color: CanvasText; }
   .queen-room--cellar .queen-billjar__crack path { stroke: CanvasText; }
   .queen-room--cellar .queen-jar--hammer::before { background: CanvasText; }
+  .queen-room--cellar .queen-bank-flat__finish { fill: CanvasText; }
+  .queen-room--cellar .queen-bank-flat__finish-line { stroke: CanvasText; }
 }

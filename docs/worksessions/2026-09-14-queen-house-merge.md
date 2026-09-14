@@ -67,6 +67,20 @@ Jonathan's ask (2026-09-14): "merge these patches with your patches … mix and 
 - The 320×568 chrome-stand-in frame remains the compromised one (rooms' evidence).
 - Data/environment: fictional fixtures only; no hosted, schema, Production or real-household writes.
 
+
+## Addendum — each model in the cellar, unique and understandable (2026-09-14)
+
+Jonathan: "make each model in the cellar feel unique but understandable at the same time … one different shaped model for each purpose: bill, recurring expense, subscription, potential expense … break those down into different colours and textures (utilities gas vs electric; subscriptions entertainment vs productivity vs gym) … differentiate by size depending on how large the due is: rent should be significantly larger than an electricity bill."
+
+Three axes, every one a band, all read from what the books already hold — nothing new is stored:
+
+- **Body = purpose.** `BankForm` gains `recurring` (the low loaf, pointed ears), `subscription` (the round cat, tail wrapped round — the loop that comes back), `appointment` (the tall cat) and `planned` (the bill's bean, always hollow until it posts); `bill` stays the lidded bean. `cellarBankForm(type)` maps the jar's type; `RoomVessel.form` carries it to the sculpture, `QueenBankFlat` draws the same points.
+- **Tint = category group, finish = line.** `cellarFiling` follows the bank to its recurrence or planned expense, to its subcategory, to its group; `cellarHue(groupName)` picks one of six clays by the group's name (Housing, Food, Transport, Life, Health, Debt; unknown keeps the bare clay), `cellarFinish(index)` picks plain / speckle / banded / crackle by the line's place among its group's active lines — so Electric and Household gas are the same clay in two glazes, and a gym subscription and a streaming one are two clays. In 3D a finish is one 64px greyscale canvas per finish multiplied by the tint (four textures for any number of hues; skipped silently where `getContext` fails); in the flat twin it is an SVG pattern laid over clay and glaze.
+- **Size = five bands** of the due against the month's largest (`cellarSize`: ≥80% → 5, ≥45% → 4, ≥20% → 3, ≥7% → 2, else 1), drawn as 28 / 34 / 42 / 52 / 64 px cats; the sculpture follows the drawn seat, so the 3D rent is the 3D room's largest too. Bands, never proportion — the rooms' rule that no figure can be read off a shape holds.
+- **Understandable:** every jar's accessible name says its purpose, its group › line and its size band in words; the line beneath the gate says purpose and filing; with no jar in the gate the line is the key ("its shape is what it is for, its colour where it is filed, its size how large the due is"). The proof (`bills=1`) seeds one of every purpose across six groups.
+
+Verification: 5 new tests (`cellarHue`, `cellarFinish`, `cellarSize`, the filing on the fixture, the three axes in the DOM); `pnpm check` → `quick-gate-passed` (17 files / 221 tests); `queen-cellar-layout.mjs` → 23 records, nine jars named with purpose and filing at every width, 0 axe hits, 0 errors; evidence regenerated. Known: the fixture files its rent under Housing › Electric (a fixture quirk, so rent and hydro share a finish there); a Confirm sheet or gate line names the filing exactly as the books do.
+
 ## Handoff
 
 Local branch `claude/queen-house-merged` and `queen-house-merged.patch` only (three commits on `origin/main@b462df0`). Not pushed, not a PR, not merged, not deployed, not live verified. Next owner: Jonathan to push and to try the swipe and the glass on his phone; Codex for the independent read of the hammer's path and of `useHouseAxis` sitting under every control on Home.

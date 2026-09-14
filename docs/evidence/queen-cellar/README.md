@@ -6,14 +6,20 @@ path), fictional Development books on the `composition=queen` proof page with
 `test/queen-cellar-layout.mjs`; 23 records in `records.json`, **0 page errors,
 0 serious/critical axe hits, `overflowY` 0 everywhere**.
 
-The fictional month on the rail: *Fictional streaming* (subscription, the 8th,
-already posted → a shard), *Fictional hydro* (house bill, the 15th, full),
-*Fictional rent* (house bill, the 20th, $760 of $900), *Fictional winter tires*
-(planned expense, the 24th) and *Fictional date night* (the 26th).
+The fictional month on the rail, nine jars: *Fictional streaming* (subscription,
+Life › Fun, the 8th, already posted → a shard), *Fictional gym* (subscription,
+Health › Care, the 10th, full and overdue → its hammer is out from the 12th),
+*Fictional hydro* (house bill, Housing › Electric, the 15th, full), *Fictional
+transit pass* (recurring payment, Transport › Transit, the 18th), *Fictional
+rent* (house bill, Housing › Electric in this fixture, the 20th, $760 of $900 —
+the month's largest), *Fictional phone* (house bill, Life › Phone, the 22nd),
+*Fictional winter tires* (planned expense, Life › Fun, the 24th), *Fictional
+date night* (the 26th) and *Fictional card payment* (recurring, Debt › Card
+payment, the 28th).
 
 | Set | What it shows |
 |---|---|
-| `early-*` (320×568, 320×700, 390×844, 720×900, 1100×800) | The 12th. The gate opens on today; the water stands at 93% of the month's crest; five jars on their days. Nothing is due, so **no hammer and no crack anywhere** — the full hydro jar just holds its water (`early-gate-*`: *"Filling. … $140.00 saved, ready"*, and the only act is the rehearsal). The shard of the paid subscription stays on the 8th. |
+| `early-*` (320×568, 320×700, 390×844, 720×900, 1100×800) | The 12th. The gate opens on today; the water stands at 93% of the month's crest; nine jars on their days, **each told apart three ways** — a body per purpose, a tint per category group, a finish per line, a size band per due. Only the overdue full gym has its hammer out; everything ahead just holds its water (`early-gate-*`: *"Filling. Fictional hydro · house bill · Housing › Electric · in 3 days · $140.00 saved, ready"*, and the only act is the rehearsal). The line with no jar in the gate is the key: *shape is what it is for, colour where it is filed, size how large the due is.* |
 | `due-crack-*` (320, 390, 1100) | The 20th. The gate opens on today, where the rent stands **cracked**: due and $140 short. The line names it; the act reads *Pay it anyway · from the water*. The strikes down the rail read `shard, hammer, crack, none, none`. |
 | `due-lifted-*` | The rent lifted out for a rehearsal: the jar floats over a dotted hole, the water on its day rises from 70% to 93% of the crest, the line ends *"Lifted out — a rehearsal; nothing is written."* `Set it back` restores it. No command is called. |
 | `due-hammer-*` / `due-confirm-*` | The overdue, full hydro jar in the gate: **the hammer is out**, by hand only. Pressing it opens the app's Confirm sheet (*"Break the bank: Fictional hydro … does not move money at your bank"*). Cancel leaves the hammer out and posts nothing. |
@@ -26,12 +32,21 @@ already posted → a shard), *Fictional hydro* (house bill, the 15th, full),
 ## Reading the rail
 
 - Time runs along the rail, one cell a day. A bill stands on its due day as
-  the nest's own kitty bank — the lidded bean cat every bill already has
-  (`QueenBankFlat`, form "bill"; the same cat the 3D room sculpts) — with the
-  water inside as what the bank has saved; a subscription is a cooler clay, a
-  planned expense a dotted ghost; a crack across the cat is "due and not
-  full", the broken cat is "paid". **No figure is on the rail** — the amounts
-  are confirmation in the line beneath the gate.
+  the studio's own kitty bank, and three things tell one from another, every
+  one a band read from the books (`src/core/queenCellar.ts`): **the body is
+  the purpose** — a house bill is the lidded bean cat, a recurring payment the
+  low loaf with pointed ears, a subscription the round cat with its tail
+  wrapped round, an appointment the tall cat, a planned expense the bean drawn
+  hollow until it posts; **the tint is the category group** the bill is filed
+  under (Housing terracotta, Food olive, Transport slate, Life plum, Health
+  sage, Debt graphite; an unknown group keeps the bare clay) and **the finish
+  is the line inside it** (plain, speckled, banded, crackled by the line's
+  place in its group, so Electric and Household gas read apart); **the size
+  is one of five bands** of the due against the month's largest, so rent
+  stands over a phone bill. The water inside is what the bank has saved; a
+  crack across the cat is "due and not full", the broken cat is "paid".
+  **No figure is on the rail** — the amounts are confirmation in the line
+  beneath the gate, which also names the purpose and the filing.
 - Every pane in the room is glass (`queen-glass.css`): a thin tint, a strong
   blur, a bright hairline; in the live 3D cellar the panes are smoked with
   paper text so they read on stone. Regenerated after the merge with the

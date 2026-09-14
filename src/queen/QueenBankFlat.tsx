@@ -27,7 +27,7 @@ function draw(form: BankForm) {
   const right = points.map(([r, y]) => `L${across(r).toFixed(2)} ${up(y).toFixed(2)}`);
   const left = [...points].reverse().map(([r, y]) => `L${across(-r).toFixed(2)} ${up(y).toFixed(2)}`);
   const body = `M${cx} ${FOOT}${right.join("")}${left.join("")}Z`;
-  const dial = form === "goal" ? 1 : 0.75;
+  const dial = form === "goal" ? 1 : form === "subscription" ? 0.85 : form === "recurring" ? 0.8 : form === "appointment" ? 0.72 : 0.75;
   const head = KITTY_HEAD_SCALE[sculpt.head];
   return {
     body,
@@ -59,8 +59,14 @@ const shapeOf = (form: BankForm) => {
   return built;
 };
 
-export function QueenBankFlat({ form, fill = 0, parts = 0, hollow = false, lidded, className }: {
+export type BankFinish = "plain" | "speckle" | "banded" | "crackle";
+
+export function QueenBankFlat({ form, fill = 0, parts = 0, hollow = false, lidded, className, tint, finish = "plain" }: {
   form: BankForm;
+  /** The clay's tint — a CSS colour from the category group. Absent, the bare clay. */
+  tint?: string;
+  /** The category line's finish: a pattern laid over the clay. */
+  finish?: BankFinish;
   /** 0–1, already banded. How high the glaze stands inside her. */
   fill?: number;
   /** Necks on the shoulder: how many parts are inside. Never a figure. */
@@ -78,11 +84,19 @@ export function QueenBankFlat({ form, fill = 0, parts = 0, hollow = false, lidde
   const glazeTop = FOOT - (FOOT - shape.shoulder) * level;
   const necks = Math.min(3, Math.max(0, parts));
   return (
-    <svg className={className} viewBox={`0 0 ${VIEW} ${VIEW}`} aria-hidden="true" focusable="false" data-form={form} data-hollow={hollow ? "true" : "false"}>
+    <svg className={className} viewBox={`0 0 ${VIEW} ${VIEW}`} aria-hidden="true" focusable="false" data-form={form} data-hollow={hollow ? "true" : "false"} data-finish={finish} style={tint ? { ["--bank-tint" as string]: tint } : undefined}>
       <clipPath id={`${uid}-body`}><path d={shape.body} /></clipPath>
+      {finish !== "plain" && !hollow && (
+        <pattern id={`${uid}-finish`} patternUnits="userSpaceOnUse" width="12" height="12">
+          {finish === "speckle" && <><circle className="queen-bank-flat__finish" cx="3" cy="4" r="1.2" /><circle className="queen-bank-flat__finish" cx="9" cy="9" r="1" /><circle className="queen-bank-flat__finish" cx="8" cy="2" r=".8" /></>}
+          {finish === "banded" && <rect className="queen-bank-flat__finish" x="0" y="4" width="12" height="2.4" />}
+          {finish === "crackle" && <path className="queen-bank-flat__finish-line" d="M0 2 L5 7 L3 12 M7 0 L12 6" />}
+        </pattern>
+      )}
       {shape.tail && <path className="queen-bank-flat__tail" d={shape.tail} fill="none" strokeWidth="5" strokeLinecap="round" />}
       <path className={`queen-bank-flat__clay${hollow ? " is-hollow" : ""}`} d={shape.body} />
       {!hollow && level > 0.02 && <rect className="queen-bank-flat__glaze" clipPath={`url(#${uid}-body)`} x="0" y={glazeTop} width={VIEW} height={FOOT - glazeTop + 1} />}
+      {finish !== "plain" && !hollow && <path className="queen-bank-flat__finish-coat" d={shape.body} fill={`url(#${uid}-finish)`} />}
       <path className="queen-bank-flat__edge" d={shape.body} fill="none" strokeWidth="2" />
       {[-1, 1].map((side) => (shape.earUp
         ? <path key={side} className="queen-bank-flat__ear" d={`M${shape.headX + side * shape.earSpread - shape.earR * 0.8} ${shape.earY + 2}L${shape.headX + side * shape.earSpread} ${shape.earY - shape.earR * 1.6}L${shape.headX + side * shape.earSpread + shape.earR * 0.8} ${shape.earY + 2}Z`} />
