@@ -3,6 +3,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HouseholdHome } from "../src/HouseholdHome.tsx";
+import type { QueenShell } from "../src/queen/QueenHome.tsx";
 import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, postEntry, recordHouseholdFundReconciliation, recordRitualHeld, respondToMove, type CommitResult, type Household } from "../src/core/index.ts";
 import { movesForChapter, openChapterFor } from "../src/core/chapters.ts";
 import { saveKittyNestDesign } from "../src/core/kittyNestDesigns.ts";
@@ -44,13 +45,13 @@ function wide(matches: boolean) {
   (window as { matchMedia?: unknown }).matchMedia = (query: string) => ({ matches: matches && query.includes("min-width: 720px"), media: query, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false });
 }
 
-async function render(household: Household, overrides: Partial<{ freshness: "current" | "stale" | "offline"; busy: boolean; onGo: ReturnType<typeof vi.fn>; onCommand: ReturnType<typeof vi.fn>; onOpenSetup: ReturnType<typeof vi.fn>; composition: "panels" | "queen" }> = {}) {
+async function render(household: Household, overrides: Partial<{ freshness: "current" | "stale" | "offline"; busy: boolean; onGo: ReturnType<typeof vi.fn>; onCommand: ReturnType<typeof vi.fn>; onOpenSetup: ReturnType<typeof vi.fn>; composition: "panels" | "queen"; shell: QueenShell }> = {}) {
   const onGo = overrides.onGo ?? vi.fn();
   const onCommand = overrides.onCommand ?? vi.fn(async (fn: (h: Household) => CommitResult) => ({ ok: true, household: fn(household).household }));
   const onOpenSetup = overrides.onOpenSetup ?? vi.fn();
   await act(async () => root.render(createElement(HouseholdHome, {
     household, memberId, today: "2026-09-12", freshness: overrides.freshness ?? "current", busy: overrides.busy ?? false,
-    onCommand, onGo, onOpenSetup, composition: overrides.composition ?? "queen",
+    onCommand, onGo, onOpenSetup, composition: overrides.composition ?? "queen", shell: overrides.shell,
   })));
   return { onGo, onCommand, onOpenSetup };
 }
@@ -145,6 +146,61 @@ describe("The Still Queen — emptiness and stillness", () => {
     await render(catalogHousehold());
     expect(host.querySelector(".queen-move")).toBeNull();
     expect($(".queen-line__chapter").textContent).toMatch(/\S/);
+  });
+});
+
+describe("The Queen's world page — the App's shell readings behind her Status door", () => {
+  const shell = (attention: boolean): QueenShell & { sync: QueenShell["sync"] & { onAction: ReturnType<typeof vi.fn>; onOpenDetails: ReturnType<typeof vi.fn> }; onOpenOffice: ReturnType<typeof vi.fn>; onSwitchEnvironment: ReturnType<typeof vi.fn> } => ({
+    member: "Alex (fictional)", household: "Fictional household", time: "Sep 12, 2026, 12:00 p.m.", timeIso: "2026-09-12T16:00:00.000Z", environment: "development",
+    onSwitchEnvironment: vi.fn(),
+    sync: { visible: true, transportPrimary: "Live", revisionLine: "rev 14", updatedLine: "Updated 3 hours ago", tone: attention ? "warning" : "neutral", attentionLabel: attention ? "Needs attention" : null, attentionDetail: attention ? "Sign in again to keep the household in step." : null, actionLabel: attention ? "Reconnect" : null, onAction: vi.fn(), onOpenDetails: vi.fn() },
+    households: createElement("details", { className: "ledger-switcher" }, createElement("summary", null, "Switch household")),
+    onOpenOffice: vi.fn(),
+  });
+
+  it("keeps the field exactly as it was when the App passes no shell", async () => {
+    await render(seeded());
+    expect($(".queen-door--status").dataset.attention).toBeUndefined();
+    expect(host.querySelector(".queen-door__badge")).toBeNull();
+    await click($(".queen-door--status"));
+    expect(host.querySelector(".queen-shell")).toBeNull();
+  });
+
+  it("wears the App's 'Needs attention' on the Status door and opens its explanation and recovery in one tap", async () => {
+    const s = shell(true);
+    await render(seeded(), { shell: s });
+    const door = $(".queen-door--status");
+    expect(door.dataset.attention).toBe("true");
+    expect(door.getAttribute("aria-label")).toMatch(/Needs attention/);
+    expect($(".queen-door__badge").textContent).toBe("Needs attention");
+    const order = [...host.querySelectorAll<HTMLButtonElement>(".queen-field button")].filter((button) => !button.closest("[inert]")).map((button) => button.className.split(" ")[0]);
+    expect(order).toEqual(["queen-door", "queen-figure", "queen-move", "queen-door"]);
+    await click(door);
+    const panel = $(".queen-shell");
+    expect(panel.dataset.attention).toBe("true");
+    expect(panel.textContent).toMatch(/Needs attention\. Sign in again to keep the household in step\./);
+    expect(panel.textContent).toMatch(/Alex \(fictional\) · Fictional household/);
+    expect(panel.textContent).toMatch(/Live · rev 14 · Updated 3 hours ago/);
+    expect(panel.textContent).toMatch(/Development/);
+    expect(panel.querySelector(".ledger-switcher summary")?.textContent).toBe("Switch household");
+    await click([...panel.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Reconnect")!);
+    expect(s.sync.onAction).toHaveBeenCalledTimes(1);
+    await click([...panel.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Sync help")!);
+    expect(s.sync.onOpenDetails).toHaveBeenCalledTimes(1);
+    await click(panel.querySelector<HTMLButtonElement>(".queen-shell__office")!);
+    expect(s.onOpenOffice).toHaveBeenCalledTimes(1);
+    await click([...panel.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Switch environment")!);
+    expect(s.onSwitchEnvironment).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the door quiet when nothing needs attention, with the readings still one tap away", async () => {
+    await render(seeded(), { shell: shell(false) });
+    expect($(".queen-door--status").dataset.attention).toBeUndefined();
+    expect(host.querySelector(".queen-door__badge")).toBeNull();
+    await click($(".queen-door--status"));
+    expect($(".queen-shell").dataset.attention).toBe("false");
+    expect(host.querySelector(".queen-shell__attention")).toBeNull();
+    expect($(".queen-shell").textContent).toMatch(/Fictional household/);
   });
 });
 

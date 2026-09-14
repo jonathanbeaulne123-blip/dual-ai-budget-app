@@ -41,7 +41,8 @@
         "src/queen/queen-home.css",
         "src/HouseholdHome.tsx",
         "src/core/planFeature.ts",
-        "scripts/serve-household-home-proof.mjs"
+        "scripts/serve-household-home-proof.mjs",
+        "scripts/serve-queen-world-page-proof.mjs"
       ],
       "tests": [
         "test/queens-nest.test.ts",
@@ -51,7 +52,7 @@
         "test/vision-v2-home-ui.test.ts",
         "test/queen-charms.test.ts"
       ],
-      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag"
+      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell \u2014 the no-scroll, chrome-free, \u226555% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
     },
     {
       "sources": [

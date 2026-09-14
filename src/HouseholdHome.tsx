@@ -12,7 +12,7 @@ import { ChapterMoment } from "./ChapterPanel.tsx";
 import { KittyNest } from "./kitty/KittyNest.tsx";
 import { KittyBankRoom, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
 import { queensNestEnabled } from "./core/planFeature.ts";
-import { QueenHome } from "./queen/QueenHome.tsx";
+import { QueenHome, type QueenShell } from "./queen/QueenHome.tsx";
 import "./household-home.css";
 
 type Run = (fn: (current: Household) => CommitResult, options?: KittyCommandOptions) => Promise<unknown>;
@@ -54,9 +54,11 @@ type HouseholdHomeProps = {
   world?: "auto" | "flat" | "3d";
   /** The Queen's living light: the local clock as a fractional hour. Absent, the device clock. Evidence only. */
   clock?: number;
+  /** The App's shell readings the Queen's world takes off the page and keeps behind her Status door. */
+  shell?: QueenShell;
 };
 
-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt, composition, world, clock }: HouseholdHomeProps) {
+function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt, composition, world, clock, shell }: HouseholdHomeProps) {
   const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(null);
   const queen = (composition ?? (queensNestEnabled() ? "queen" : "panels")) === "queen";
   const gallery = bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
@@ -66,7 +68,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
   if (queen) {
     return (
       <>
-        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} clock={clock} />
+        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} clock={clock} shell={shell} />
         {gallery}
       </>
     );
