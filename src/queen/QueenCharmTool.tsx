@@ -2,7 +2,7 @@ import { useId, type CSSProperties, type KeyboardEvent } from "react";
 import { QUEEN_CHARM_LIMITS, type QueenCharmEarning, type QueenCharmKind, type QueenCharmV1 } from "../core/queenCharms.ts";
 import { STUDIO_PALETTE } from "../kitty/studio/palette.ts";
 import { QueenCharmIcon } from "./QueenCharmGlyph.tsx";
-import { queenCharmDu, queenCharmNudge } from "./world/queenCharmSurface.ts";
+import { queenCharmDu, queenCharmNudge, type QueenForm } from "./world/queenCharmSurface.ts";
 
 /**
  * The bin and the bench: real DOM controls for pressing charms onto her,
@@ -19,6 +19,8 @@ export type QueenCharmToolProps = {
   members: readonly { id: string; name: string }[];
   busy: boolean;
   keptLine: string;
+  /** Her form, so a walked charm settles off a ring. */
+  form?: QueenForm;
   onAdd: (kind: QueenCharmKind) => void;
   onSelect: (id: string | null) => void;
   onChange: (charm: QueenCharmV1) => void;
@@ -39,7 +41,7 @@ export function queenCharmSeatWords(charm: Pick<QueenCharmV1, "part" | "u" | "v"
   return side === "front" ? "her belly" : `her ${side} flank`;
 }
 
-export function QueenCharmTool({ earnings, charms, selectedId, members, busy, keptLine, onAdd, onSelect, onChange, onRemove }: QueenCharmToolProps) {
+export function QueenCharmTool({ earnings, charms, selectedId, members, busy, keptLine, form, onAdd, onSelect, onChange, onRemove }: QueenCharmToolProps) {
   const ids = useId();
   const full = charms.length >= QUEEN_CHARM_LIMITS.count;
   const selected = charms.find((charm) => charm.id === selectedId) ?? null;
@@ -50,7 +52,7 @@ export function QueenCharmTool({ earnings, charms, selectedId, members, busy, ke
     const delta = step[event.key];
     if (!delta) return;
     event.preventDefault();
-    onChange({ ...selected, ...queenCharmNudge(selected, delta[0], delta[1]) });
+    onChange({ ...selected, ...queenCharmNudge(selected, delta[0], delta[1], form) });
   };
   return (
     <section className="queen-charms-tool" aria-labelledby={`${ids}-title`}>

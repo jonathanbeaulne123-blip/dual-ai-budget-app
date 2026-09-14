@@ -37,7 +37,7 @@ function everywherePaint(): KittyPaintV1 {
 
 describe("The Queen in the studio — what is hers and theirs, and what is reserved", () => {
   it("names every reserved channel with the reading it carries", () => {
-    expect(QUEEN_RESERVED_CHANNELS.map((row) => row.id)).toEqual(["vine", "posture", "fill", "eyes", "crown", "seams", "hands", "feet", "glaze"]);
+    expect(QUEEN_RESERVED_CHANNELS.map((row) => row.id)).toEqual(["vine", "posture", "fill", "eyes", "crown", "seams", "hands", "feet", "glaze", "rings"]);
     for (const row of QUEEN_RESERVED_CHANNELS) expect(row.reading).toMatch(/\S/);
     expect(QUEEN_PAINTABLE_PARTS).toEqual(["body", "head"]);
   });

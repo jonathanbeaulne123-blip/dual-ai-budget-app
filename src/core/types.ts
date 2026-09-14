@@ -830,6 +830,10 @@ export type KittyPieceV1 = {
   paint: KittyPaintV1;
   /** Charms for the Queen (2026-09-14): small add-ons pressed onto the household King's draft. Absent on every other piece. Cosmetic only. */
   charms?: import("./queenCharms.ts").QueenCharmV1[];
+  /** The Queen's wheel (2026-09-14): who pulled the form and who opened the rim, and when. The form itself is `sculpt.profile`. Absent on every other piece. */
+  wheel?: import("./queenForm.ts").QueenWheelV1;
+  /** The Queen's yearly portraits (2026-09-14): stored stills, one per sealed year, never replaced. Absent on every other piece. */
+  portraits?: import("./queenForm.ts").QueenPortraitV1[];
 };
 export type KittyStudioV1 = {
   version: 1;

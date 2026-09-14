@@ -1,4 +1,5 @@
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
+import { QUEEN_FORM_REST, QUEEN_RING, queenRingSeats, type QueenFormHandles } from "../../core/queenForm.ts";
 import type { QueenReservedChannel } from "./queenAuthoring.ts";
 
 /**
@@ -11,12 +12,15 @@ import type { QueenReservedChannel } from "./queenAuthoring.ts";
  *
  * The numbers below are her geometry: `queenSculpture.ts` builds the skirt
  * and the head from these same constants, so the maths cannot drift from the
- * mesh.
+ * mesh. Her *form* — the four handles the couple threw on the wheel and the
+ * growth rings her closed Chapters leave — modulates the skirt's radius as a
+ * function of v and never its height, so a charm's (u, v) means the same seat
+ * on every form and the uv the raycaster returns stays the base uv.
  */
 export const QUEEN_SKIRT_PROFILE: readonly (readonly [r: number, y: number])[] = [[0.04, 0], [0.92, 0.04], [1.14, 0.42], [1.2, 0.92], [1.08, 1.42], [0.82, 1.72], [0.6, 1.86]];
 export const QUEEN_SKIRT_PHI_START = Math.PI / 2;
 export const QUEEN_HEAD = { radius: 0.52, position: [0, 2.78, 0.04] as const, scale: [1, 1.02, 0.96] as const, phiStart: -Math.PI / 2 } as const;
-/** The three gold seam paths on the belly, in the belly's own space (belly width 1). Reserved corridors. */
+/** The three gold seam paths on the belly, in the belly's own space (belly width 1), on her rest form. Reserved corridors. */
 export const QUEEN_SEAM_PATHS: readonly (readonly (readonly [number, number, number])[])[] = [
   [[-0.55, 0.06, 1.0], [-0.42, 0.7, 1.08], [-0.58, 1.1, 0.96], [-0.4, 1.5, 0.8]],
   [[0.72, 0.1, 0.92], [0.62, 0.62, 1.02], [0.74, 0.98, 0.9]],
@@ -25,6 +29,16 @@ export const QUEEN_SEAM_PATHS: readonly (readonly (readonly [number, number, num
 /** One charm at scale 1 spans about this many world units; the flat glyph is drawn in a 20-unit box. */
 export const QUEEN_CHARM_UNIT = 0.38;
 export const QUEEN_CHARM_GLYPH_BOX = 20;
+
+/** Her form: the thrown handles and how many rings she carries. */
+export type QueenForm = { handles: QueenFormHandles; rings: number };
+export const QUEEN_FORM_BASE: QueenForm = { handles: QUEEN_FORM_REST, rings: 0 };
+/** Which handle each point of the rest profile follows: the hem and belly pull, the waist gathers, the shoulder and neck open. */
+const POINT_HANDLE: readonly (keyof QueenFormHandles | null)[] = [null, "belly", "belly", "belly", "waist", "shoulder", "neck"];
+/** How many rings the lathe is sampled with: fine enough for a ring band three samples wide. */
+export const QUEEN_SKIRT_SAMPLES = 128;
+/** Her underside: the base disc, the first stretch of v. Not paintable, no charm seat — it lies inside the feet channel. */
+export const QUEEN_UNDERSIDE_V = 1 / (QUEEN_SKIRT_PROFILE.length - 1);
 
 export type Vec3 = readonly [number, number, number];
 export type QueenSurfaceSeat = { position: Vec3; normal: Vec3 };
@@ -38,24 +52,63 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 const FRONT: Record<QueenCharmPart, number> = { body: 0.75, head: 0.5 };
 export const queenCharmDu = (part: QueenCharmPart, u: number): number => { const d = u - FRONT[part]; return d - Math.round(d); };
 
-function skirtAt(v: number): { r: number; y: number; nr: number; ny: number } {
+function baseAt(v: number): { r: number; y: number; j: number; f: number } {
   const n = QUEEN_SKIRT_PROFILE.length - 1;
   const t = clamp01(v) * n;
   const j = Math.min(n - 1, Math.floor(t));
   const f = t - j;
   const [r0, y0] = QUEEN_SKIRT_PROFILE[j]!, [r1, y1] = QUEEN_SKIRT_PROFILE[j + 1]!;
-  const dr = r1 - r0, dy = y1 - y0;
+  return { r: r0 + (r1 - r0) * f, y: y0 + (y1 - y0) * f, j, f };
+}
+/** The thrown handles as one multiplier over v, blended between the profile's points. */
+function handleAt(v: number, handles: QueenFormHandles): number {
+  const { j, f } = baseAt(v);
+  const a = POINT_HANDLE[j], b = POINT_HANDLE[j + 1];
+  const ma = a ? handles[a] : 1, mb = b ? handles[b] : 1;
+  return ma + (mb - ma) * f;
+}
+/** The rings as one multiplier over v: a shallow cosine band per closed Chapter. */
+function ringAt(v: number, rings: number): number {
+  let m = 1;
+  for (const seat of queenRingSeats(rings)) {
+    const d = Math.abs(v - seat);
+    if (d < QUEEN_RING.halfWidth) m *= 1 - QUEEN_RING.depth * 0.5 * (1 + Math.cos((d / QUEEN_RING.halfWidth) * Math.PI));
+  }
+  return m;
+}
+/** The ring seats of a form. */
+export const queenRingSeatsOn = (form: QueenForm): number[] => queenRingSeats(form.rings);
+/** Whether v lies on a ring band. */
+export const queenOnRing = (v: number, rings: number): boolean => queenRingSeats(rings).some((seat) => Math.abs(v - seat) < QUEEN_RING.halfWidth);
+
+/** The skirt at v on a given form: radius, height and the outward normal in the (r, y) plane. */
+export function queenSkirtAt(v: number, form: QueenForm = QUEEN_FORM_BASE): { r: number; y: number; nr: number; ny: number } {
+  const at = (t: number) => { const b = baseAt(t); return { r: b.r * handleAt(t, form.handles) * ringAt(t, form.rings), y: b.y }; };
+  const here = at(v);
+  const e = 0.004;
+  const lo = at(Math.max(0, v - e)), hi = at(Math.min(1, v + e));
+  const dr = hi.r - lo.r, dy = hi.y - lo.y;
   const l = Math.hypot(dr, dy) || 1;
-  return { r: r0 + dr * f, y: y0 + dy * f, nr: dy / l, ny: -dr / l };
+  return { r: here.r, y: here.y, nr: dy / l, ny: -dr / l };
+}
+const skirtAt = queenSkirtAt;
+/** The lathe's points for a form, sampled uniformly in v so the mesh uv is the base uv whatever the form or the ring count. */
+export function queenSkirtProfilePoints(form: QueenForm = QUEEN_FORM_BASE, samples = QUEEN_SKIRT_SAMPLES): [r: number, y: number][] {
+  return Array.from({ length: samples }, (_, i) => { const { r, y } = queenSkirtAt(i / (samples - 1), form); return [r, y]; });
+}
+/** The seam paths on a form: each point keeps its height and follows the surface's radius, so a seam is never buried or left floating. */
+export function queenSeamPathsFor(form: QueenForm = QUEEN_FORM_BASE): readonly (readonly Vec3[])[] {
+  if (form.handles === QUEEN_FORM_REST) return QUEEN_SEAM_PATHS;
+  return QUEEN_SEAM_PATHS.map((path) => path.map(([x, y, z]) => { const k = handleAt(queenSurfaceUv("body", [0, y, 1]).v, form.handles); return [x * k, y, z * k] as Vec3; }));
 }
 /** Profile arc length, for turning a world distance into a step in v. */
 const SKIRT_ARC = QUEEN_SKIRT_PROFILE.slice(1).reduce((sum, [r, y], i) => sum + Math.hypot(r - QUEEN_SKIRT_PROFILE[i]![0], y - QUEEN_SKIRT_PROFILE[i]![1]), 0);
 
 /** Where (part, u, v) sits in the body group's space. `bellyWidth` is the fill's scale of the belly (0.86..1). */
-export function queenSurfaceSeat(part: QueenCharmPart, u: number, v: number, bellyWidth = 1): QueenSurfaceSeat {
+export function queenSurfaceSeat(part: QueenCharmPart, u: number, v: number, bellyWidth = 1, form: QueenForm = QUEEN_FORM_BASE): QueenSurfaceSeat {
   if (part === "body") {
     const phi = QUEEN_SKIRT_PHI_START + wrap(u) * TAU;
-    const { r, y, nr, ny } = skirtAt(v);
+    const { r, y, nr, ny } = skirtAt(v, form);
     const s = Math.sin(phi), c = Math.cos(phi);
     return { position: [r * s * bellyWidth, y, r * c * bellyWidth], normal: norm([nr * s / bellyWidth, ny, nr * c / bellyWidth]) };
   }
@@ -108,14 +161,15 @@ const SEAM_CORRIDOR = 0.16;
  * them because it rides the body group and carries no material axis — so they
  * are never returned here.
  */
-export function queenCharmRefusal(part: QueenCharmPart, u: number, v: number): QueenCharmRefusal | null {
+export function queenCharmRefusal(part: QueenCharmPart, u: number, v: number, form: QueenForm = QUEEN_FORM_BASE): QueenCharmRefusal | null {
   const du = Math.abs(queenCharmDu(part, u));
-  const seat = queenSurfaceSeat(part, u, v);
+  const seat = queenSurfaceSeat(part, u, v, 1, form);
   if (part === "body") {
     if (v < 0.2) return "feet";
     if (v > 0.72 && du < 0.13) return "hands";
-    for (const path of QUEEN_SEAM_PATHS) for (let i = 1; i < path.length; i += 1) if (segmentDistance(seat.position, path[i - 1]!, path[i]!) < SEAM_CORRIDOR) return "seams";
+    for (const path of queenSeamPathsFor(form)) for (let i = 1; i < path.length; i += 1) if (segmentDistance(seat.position, path[i - 1]!, path[i]!) < SEAM_CORRIDOR) return "seams";
     if (du < 0.07 && v >= 0.2 && v <= 0.66) return "fill";
+    if (queenOnRing(v, form.rings)) return "rings";
   } else {
     if (du > 0.25 && v > 0.58) return "vine";
     if (v > 0.75) return "crown";
@@ -124,7 +178,7 @@ export function queenCharmRefusal(part: QueenCharmPart, u: number, v: number): Q
   if (seat.normal[2] < 0.12) return "unseen";
   return null;
 }
-export const queenCharmAllowed = (part: QueenCharmPart, u: number, v: number): boolean => queenCharmRefusal(part, u, v) === null;
+export const queenCharmAllowed = (part: QueenCharmPart, u: number, v: number, form: QueenForm = QUEEN_FORM_BASE): boolean => queenCharmRefusal(part, u, v, form) === null;
 
 /** How far (in world units) a charm may slide before it will not take at all. */
 export const QUEEN_CHARM_SLIDE = 0.3;
@@ -135,10 +189,10 @@ export const QUEEN_CHARM_SLIDE = 0.3;
  * coin; pressed too deep into one, it will not take and returns null. No
  * words, no dialog — the caller simply has a charm somewhere else, or none.
  */
-export function queenCharmSettle(part: QueenCharmPart, u: number, v: number): { u: number; v: number } | null {
-  if (queenCharmAllowed(part, u, v)) return { u: wrap(u), v: clamp01(v) };
-  const origin = queenSurfaceSeat(part, u, v).position;
-  const circumference = part === "body" ? TAU * Math.max(0.3, skirtAt(v).r) : TAU * QUEEN_HEAD.radius * Math.max(0.3, Math.sin((1 - clamp01(v)) * Math.PI));
+export function queenCharmSettle(part: QueenCharmPart, u: number, v: number, form: QueenForm = QUEEN_FORM_BASE): { u: number; v: number } | null {
+  if (queenCharmAllowed(part, u, v, form)) return { u: wrap(u), v: clamp01(v) };
+  const origin = queenSurfaceSeat(part, u, v, 1, form).position;
+  const circumference = part === "body" ? TAU * Math.max(0.3, skirtAt(v, form).r) : TAU * QUEEN_HEAD.radius * Math.max(0.3, Math.sin((1 - clamp01(v)) * Math.PI));
   const along = part === "body" ? SKIRT_ARC : Math.PI * QUEEN_HEAD.radius;
   for (let ring = 1; ring * 0.03 <= QUEEN_CHARM_SLIDE; ring += 1) {
     const radius = ring * 0.03;
@@ -146,8 +200,8 @@ export function queenCharmSettle(part: QueenCharmPart, u: number, v: number): { 
     for (let k = 0; k < 24; k += 1) {
       const a = (k / 24) * TAU;
       const cu = wrap(u + (Math.cos(a) * radius) / circumference), cv = clamp01(v + (Math.sin(a) * radius) / along);
-      if (!queenCharmAllowed(part, cu, cv)) continue;
-      const d = dist(origin, queenSurfaceSeat(part, cu, cv).position);
+      if (!queenCharmAllowed(part, cu, cv, form)) continue;
+      const d = dist(origin, queenSurfaceSeat(part, cu, cv, 1, form).position);
       if (d <= QUEEN_CHARM_SLIDE && (!best || d < best.d)) best = { u: cu, v: cv, d };
     }
     if (best) return { u: best.u, v: best.v };
@@ -162,25 +216,25 @@ export const QUEEN_CHARM_KEYBOARD_SEATS: readonly { part: QueenCharmPart; u: num
   { part: "body", u: 0.55, v: 0.22 }, { part: "body", u: 0.95, v: 0.22 }, { part: "head", u: 0.31, v: 0.32 }, { part: "head", u: 0.69, v: 0.32 },
   { part: "body", u: 0.66, v: 0.2 }, { part: "body", u: 0.84, v: 0.2 }, { part: "head", u: 0.5, v: 0.16 }, { part: "body", u: 0.75, v: 0.72 },
 ];
-export function queenCharmFreeSeat(placed: readonly Pick<QueenCharmV1, "part" | "u" | "v">[]): { part: QueenCharmPart; u: number; v: number } {
-  const taken = placed.map((row) => queenSurfaceSeat(row.part, row.u, row.v).position);
+export function queenCharmFreeSeat(placed: readonly Pick<QueenCharmV1, "part" | "u" | "v">[], form: QueenForm = QUEEN_FORM_BASE): { part: QueenCharmPart; u: number; v: number } {
+  const taken = placed.map((row) => queenSurfaceSeat(row.part, row.u, row.v, 1, form).position);
   for (const seat of QUEEN_CHARM_KEYBOARD_SEATS) {
-    const settled = queenCharmSettle(seat.part, seat.u, seat.v);
+    const settled = queenCharmSettle(seat.part, seat.u, seat.v, form);
     if (!settled) continue;
-    const position = queenSurfaceSeat(seat.part, settled.u, settled.v).position;
+    const position = queenSurfaceSeat(seat.part, settled.u, settled.v, 1, form).position;
     if (taken.every((p) => dist(p, position) > QUEEN_CHARM_UNIT * 0.7)) return { part: seat.part, ...settled };
   }
   const first = QUEEN_CHARM_KEYBOARD_SEATS[0]!;
-  return { part: first.part, ...(queenCharmSettle(first.part, first.u, first.v) ?? { u: first.u, v: first.v }) };
+  return { part: first.part, ...(queenCharmSettle(first.part, first.u, first.v, form) ?? { u: first.u, v: first.v }) };
 }
 /** A nudge in world units becomes a step on the surface; the result settles so it never lands on a reserved zone. */
-export function queenCharmNudge(charm: Pick<QueenCharmV1, "part" | "u" | "v">, dx: number, dy: number): { u: number; v: number } {
-  const circumference = charm.part === "body" ? TAU * Math.max(0.3, skirtAt(charm.v).r) : TAU * QUEEN_HEAD.radius * Math.max(0.3, Math.sin((1 - clamp01(charm.v)) * Math.PI));
+export function queenCharmNudge(charm: Pick<QueenCharmV1, "part" | "u" | "v">, dx: number, dy: number, form: QueenForm = QUEEN_FORM_BASE): { u: number; v: number } {
+  const circumference = charm.part === "body" ? TAU * Math.max(0.3, skirtAt(charm.v, form).r) : TAU * QUEEN_HEAD.radius * Math.max(0.3, Math.sin((1 - clamp01(charm.v)) * Math.PI));
   const along = charm.part === "body" ? SKIRT_ARC : Math.PI * QUEEN_HEAD.radius;
   // Screen right is +x, and on both parts u grows to the right of the front centre (x = r·sin φ on the skirt; x = −R·cos φ·sin θ on the head).
   const du = dx / circumference;
   const next = { u: wrap(charm.u + du), v: clamp01(charm.v + dy / along) };
-  return queenCharmSettle(charm.part, next.u, next.v) ?? { u: charm.u, v: charm.v };
+  return queenCharmSettle(charm.part, next.u, next.v, form) ?? { u: charm.u, v: charm.v };
 }
 
 // ---------------------------------------------------------------------------
@@ -189,15 +243,16 @@ export function queenCharmNudge(charm: Pick<QueenCharmV1, "part" | "u" | "v">, d
 export type QueenCharmFlatSeat = { x: number; y: number; facing: number; size: number; part: QueenCharmPart };
 const FLAT = { body: { cx: 120, hemY: 302, sx: 71.7, sy: 65.6 }, head: { cx: 120, cy: 112, sx: 76.9, sy: 73.6 } } as const;
 /** A seat in the figure's viewBox. Body seats are in the belly group's unscaled space (the group's own `scaleX(fill)` widens them, as the belly does in 3D). */
-export function queenCharmFlatSeat(charm: Pick<QueenCharmV1, "part" | "u" | "v" | "scale">): QueenCharmFlatSeat {
-  const seat = queenSurfaceSeat(charm.part, charm.u, charm.v);
+export const QUEEN_FLAT = FLAT;
+export function queenCharmFlatSeat(charm: Pick<QueenCharmV1, "part" | "u" | "v" | "scale">, form: QueenForm = QUEEN_FORM_BASE): QueenCharmFlatSeat {
+  const seat = queenSurfaceSeat(charm.part, charm.u, charm.v, 1, form);
   const facing = Math.max(0, seat.normal[2]);
   const size = (charm.scale * QUEEN_CHARM_UNIT * FLAT.body.sy) / QUEEN_CHARM_GLYPH_BOX;
   if (charm.part === "body") return { part: "body", x: FLAT.body.cx + seat.position[0] * FLAT.body.sx, y: FLAT.body.hemY - seat.position[1] * FLAT.body.sy, facing, size };
   return { part: "head", x: FLAT.head.cx + seat.position[0] * FLAT.head.sx, y: FLAT.head.cy - (seat.position[1] - QUEEN_HEAD.position[1]) * FLAT.head.sy, facing, size };
 }
 /** The inverse for a pointer on the drawn figure: a viewBox point → the nearest (part, u, v), or null off her. */
-export function queenCharmFlatPick(x: number, y: number): { part: QueenCharmPart; u: number; v: number } | null {
+export function queenCharmFlatPick(x: number, y: number, form: QueenForm = QUEEN_FORM_BASE): { part: QueenCharmPart; u: number; v: number } | null {
   const hx = (x - FLAT.head.cx) / FLAT.head.sx, hy = (FLAT.head.cy - y) / FLAT.head.sy;
   const hr = Math.hypot(hx / QUEEN_HEAD.scale[0], hy / QUEEN_HEAD.scale[1]);
   if (hr <= QUEEN_HEAD.radius * 1.02) {
@@ -207,7 +262,7 @@ export function queenCharmFlatPick(x: number, y: number): { part: QueenCharmPart
   }
   const bx = (x - FLAT.body.cx) / FLAT.body.sx, by = (FLAT.body.hemY - y) / FLAT.body.sy;
   if (by < 0 || by > QUEEN_SKIRT_PROFILE[QUEEN_SKIRT_PROFILE.length - 1]![1]) return null;
-  const { r } = skirtAt(queenSurfaceUv("body", [0, by, 1]).v);
+  const { r } = skirtAt(queenSurfaceUv("body", [0, by, 1]).v, form);
   if (Math.abs(bx) > r * 1.04) return null;
   const inside = Math.min(1, Math.abs(bx) / r);
   const z = Math.sqrt(Math.max(0, 1 - inside * inside)) * r;

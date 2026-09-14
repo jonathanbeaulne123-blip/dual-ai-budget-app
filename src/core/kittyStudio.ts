@@ -9,6 +9,7 @@
  */
 import { ValidationError, type KittyFeature, type KittyGlaze, type KittyPaintV1, type KittyPart, type KittyPieceV1, type KittySculptV1, type KittyStampV1, type KittyStrokeV1, type KittyStudioV1 } from "./types.ts";
 import { shapeQueenCharms } from "./queenCharms.ts";
+import { shapeQueenPortraits, shapeQueenWheel } from "./queenForm.ts";
 
 export const KITTY_BODIES = ["round", "pear", "loaf", "tall", "bean"] as const;
 export const KITTY_HEADS = ["round", "wedge", "chubby", "heart"] as const;
@@ -200,6 +201,8 @@ export function shapeKittyPiece(value: unknown): KittyPieceV1 {
     (row.firings !== undefined && (typeof row.firings !== "number" || !Number.isInteger(row.firings) || row.firings < 1 || row.firings > 999))
   ) throw bad();
   const charms = shapeQueenCharms(row.charms);
+  const wheel = shapeQueenWheel(row.wheel);
+  const portraits = shapeQueenPortraits(row.portraits);
   return {
     id: row.id,
     createdAt: row.createdAt,
@@ -209,6 +212,8 @@ export function shapeKittyPiece(value: unknown): KittyPieceV1 {
     sculpt: shapeKittySculpt(row.sculpt),
     paint: shapeKittyPaint(row.paint),
     ...(charms !== undefined && charms.length ? { charms } : {}),
+    ...(wheel ? { wheel } : {}),
+    ...(portraits !== undefined && portraits.length ? { portraits } : {}),
   };
 }
 export function shapeKittyStudio(value: unknown): KittyStudioV1 | undefined {

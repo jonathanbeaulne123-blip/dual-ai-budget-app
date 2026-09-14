@@ -17,7 +17,11 @@
         "src/queen/QueenCharmGlyph.tsx",
         "src/queen/QueenCharmTool.tsx",
         "src/core/queenCharms.ts",
-        "src/core/kittyStudio.ts"
+        "src/core/kittyStudio.ts",
+        "src/core/queenForm.ts",
+        "src/core/queenLight.ts",
+        "src/queen/QueenWheel.tsx",
+        "src/queen/QueenPortraits.tsx"
       ],
       "tests": [
         "test/queen-world.test.ts",
@@ -25,9 +29,10 @@
         "test/queens-nest-ui.test.ts",
         "test/queens-nest.test.ts",
         "test/kitty-nest.test.ts",
-        "test/kitty-studio.test.ts"
+        "test/kitty-studio.test.ts",
+        "test/queen-ceremony.test.ts"
       ],
-      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero"
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her"
     },
     {
       "sources": [

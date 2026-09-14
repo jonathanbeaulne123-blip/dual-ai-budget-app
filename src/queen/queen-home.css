@@ -419,3 +419,52 @@
   .queen-charm-target:focus-visible { outline: 3px solid Highlight; }
   .queen-charm-pick, .queen-charm-row__pick[aria-pressed="true"] { border: 1px solid ButtonText; }
 }
+
+/* ---- Her creation and her history (2026-09-14): rings, the wheel, the underside, the shelf, the living light ---- */
+/* Growth rings: a shallow band per closed Chapter. A band, not a stripe. */
+.queen-ring { fill: none; stroke: var(--queen-clay-deep); stroke-width: 1.1; stroke-linecap: round; opacity: .42; }
+/* The living light tints the field across hours; it never touches her glaze classes. */
+.queen-field::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% calc(88% - 60% * var(--queen-light-level, .8)), color-mix(in srgb, #ffd9a6 calc(28% * var(--queen-light-warmth, .6)), transparent), transparent 62%),
+    linear-gradient(color-mix(in srgb, #7a8db0 calc(14% * (1 - var(--queen-light-level, .8))), transparent), transparent 70%);
+}
+.queen-field { isolation: isolate; }
+/* Tipped over: her underside, the makers' marks. */
+.queen-underside { fill: var(--queen-clay-deep); stroke: var(--queen-clay-shadow); stroke-width: 1; }
+.queen-underside-ring { fill: none; stroke: var(--queen-clay-shadow); stroke-width: .8; opacity: .6; }
+.queen-mark { fill: var(--ink); }
+.queen-mark--initials { font: 600 22px ui-serif, Georgia, serif; letter-spacing: .04em; }
+.queen-mark--date { font: 11px var(--mono, ui-monospace, monospace); letter-spacing: .06em; }
+.queen-home[data-tipped="true"] .queen-move, .queen-home[data-tipped="true"] .queen-charm-target { display: none; }
+/* The wheel. */
+.queen-wheel { margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.queen-wheel__title { margin: 2px 0 4px; font-size: 16px; font-weight: 600; }
+.queen-wheel__stage { width: min(180px, 60%); aspect-ratio: 240 / 340; margin: 8px auto; cursor: ew-resize; touch-action: pan-y; user-select: none; }
+.queen-wheel__preview { display: block; width: 100%; height: 100%; overflow: visible; }
+.queen-wheel__part.is-turning .queen-vessel { stroke: var(--queen-gold); stroke-width: 2; }
+.queen-wheel__label { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 8px 0 4px; }
+.queen-wheel__turn { display: block; width: 100%; min-height: 32px; accent-color: var(--queen-gold); }
+.queen-home[data-pulse][data-scene] .queen-wheel__turn:focus-visible { outline: 3px solid var(--queen-focus); outline-offset: 4px; }
+/* Our Story's shelf: stored stills, drawn flat, wrapping — never wider than the panel. */
+.queen-story { margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.queen-shelf-portraits { list-style: none; margin: 8px 0 0; padding: 0 0 6px; display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; border-bottom: 2px solid var(--queen-clay-shadow); }
+.queen-portrait { flex: 0 0 auto; width: 54px; }
+.queen-portrait figure { margin: 0; text-align: center; }
+.queen-portrait__svg { width: 54px; height: 76px; }
+.queen-portrait figcaption { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--muted); }
+.queen-marks { margin-top: 14px; }
+.queen-home[data-easy-read="true"] .queen-wheel__turn { min-height: 48px; }
+.queen-home[data-easy-read="true"] .queen-portrait figcaption, .queen-home[data-easy-read="true"] .queen-wheel__label { font-size: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .queen-field::before { transition: none; }
+}
+@media (forced-colors: active) {
+  .queen-field::before { display: none; }
+  .queen-ring { stroke: CanvasText; opacity: .6; }
+  .queen-underside { fill: Canvas; stroke: CanvasText; }
+  .queen-mark { fill: CanvasText; }
+  .queen-wheel__part.is-turning .queen-vessel { stroke: Highlight; }
+  .queen-shelf-portraits { border-bottom-color: CanvasText; }
+}

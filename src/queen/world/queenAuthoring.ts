@@ -1,4 +1,4 @@
-import type { KittyPaintV1, KittyPart, KittyPieceV1, KittyStampV1 } from "../../core/types.ts";
+import type { KittyPaintV1, KittyPart, KittyPieceV1, KittyStampV1, KittyStrokeV1 } from "../../core/types.ts";
 import { defaultKittyPaint, displayedKittyPiece } from "../../core/kittyStudio.ts";
 import type { NestBank } from "../../core/kittyNest.ts";
 import type { KittyNestDesign, SaveNestDesignInput } from "../../core/kittyNestDesigns.ts";
@@ -7,7 +7,8 @@ import type { QueenStill } from "../../core/queenPresentation.ts";
 import { stampPlacement } from "../../kitty/studio/stampArt.ts";
 import { nestDefaultPiece } from "../../kitty/nestAppearance.ts";
 import { QUEEN_CHARM_LIMITS, QUEEN_CHARM_STARTER_SET, shapeQueenCharm, type QueenCharmKind, type QueenCharmV1 } from "../../core/queenCharms.ts";
-import { queenCharmAllowed } from "./queenCharmSurface.ts";
+import { queenCharmAllowed, QUEEN_UNDERSIDE_V, type QueenForm } from "./queenCharmSurface.ts";
+import { QUEEN_FORM_REST, queenFormHandles, queenFormProfile, queenRingCount, shapeQueenPortraits, shapeQueenWheel, type QueenPortraitV1, type QueenWheelV1 } from "../../core/queenForm.ts";
 
 /**
  * The Queen in the studio — what is hers and theirs, and what is reserved.
@@ -36,6 +37,7 @@ export const QUEEN_RESERVED_CHANNELS = [
   { id: "hands", label: "Her hands", reading: "where the Move sits" },
   { id: "feet", label: "Her feet and the ground around them", reading: "where obligations gather" },
   { id: "glaze", label: "The glaze / fired axis", reading: "evidence freshness" },
+  { id: "rings", label: "Growth rings", reading: "closed Chapters; one shallow band each, permanent" },
 ] as const;
 export type QueenReservedChannel = typeof QUEEN_RESERVED_CHANNELS[number]["id"];
 
@@ -66,14 +68,17 @@ export function queenSanitizePaint(paint: KittyPaintV1 | null | undefined): Kitt
   const source = paint ?? defaultKittyPaint();
   const parts: Partial<Record<KittyPart, string>> = {};
   for (const part of QUEEN_PAINTABLE_PARTS) if (source.parts[part]) parts[part] = source.parts[part];
-  const strokes = source.strokes.filter((stroke) => isPaintable(stroke.part)).map((stroke) => ({ ...stroke, mirror: false }));
+  const strokes = source.strokes.filter((stroke) => isPaintable(stroke.part) && !onUnderside(stroke)).map((stroke) => ({ ...stroke, mirror: false }));
   const stamps = source.stamps.filter((stamp) => queenStampAllowed(stamp));
   return { base: source.base, parts, strokes, stamps };
 }
 
+/** Her underside — the base disc she tips over to show — is not paintable: a stroke that dips below the hem is dropped. */
+const onUnderside = (stroke: Pick<KittyStrokeV1, "part" | "pts">): boolean => stroke.part === "body" && stroke.pts.some((n, i) => i % 2 === 1 && n < QUEEN_UNDERSIDE_V);
 export function queenStampAllowed(stamp: KittyStampV1): boolean {
   const placement = stampPlacement(stamp);
   if (!isPaintable(placement.part)) return false;
+  if (placement.part === "body" && placement.v < QUEEN_UNDERSIDE_V) return false;
   if (RESERVED_STAMP_KINDS.has(stamp.kind)) return false;
   // The upper third of her head wrap is where the eyes, brow and crown sit; nothing bakes there.
   if (placement.part === "head" && placement.v > 0.55) return false;
@@ -89,8 +94,31 @@ export function queenLook(design: Pick<KittyNestDesign, "studio" | "glaze"> | un
 
 export class QueenAuthoringError extends Error {}
 
-/** What the guard may be told about the household. Absent, only the starter charms can be written. */
-export type QueenGuardContext = { earned: ReadonlySet<QueenCharmKind> };
+/** Her form, draft-first: the thrown handles within her bounds and one ring per closed Chapter. Rings come from the household, never from the piece. */
+export function queenForm(design: Pick<KittyNestDesign, "studio"> | undefined, household: Parameters<typeof queenRingCount>[0]): QueenForm {
+  const piece: KittyPieceV1 | null = design?.studio?.draft ?? displayedKittyPiece(design?.studio);
+  const handles = piece?.sculpt?.profile ? queenFormHandles(piece.sculpt.profile) : QUEEN_FORM_REST;
+  const rest = handles.belly === 1 && handles.waist === 1 && handles.shoulder === 1 && handles.neck === 1;
+  return { handles: rest ? QUEEN_FORM_REST : handles, rings: queenRingCount(household) };
+}
+/** Who threw her, if she has been thrown. */
+export function queenWheel(design: Pick<KittyNestDesign, "studio"> | undefined): QueenWheelV1 | null {
+  const piece: KittyPieceV1 | null = design?.studio?.draft ?? displayedKittyPiece(design?.studio);
+  return piece?.wheel ?? null;
+}
+/** The shelf, oldest first. */
+export function queenPortraits(design: Pick<KittyNestDesign, "studio"> | undefined): QueenPortraitV1[] {
+  const piece: KittyPieceV1 | null = design?.studio?.draft ?? displayedKittyPiece(design?.studio);
+  return piece?.portraits ?? [];
+}
+
+/**
+ * What the guard may be told about the household. Absent, only the starter
+ * charms can be written. `rings` lets seats on a ring band be refused; `kept`
+ * is the shelf as it stands, and a year already on it can never be replaced
+ * or removed through the guard — only new years may join.
+ */
+export type QueenGuardContext = { earned: ReadonlySet<QueenCharmKind>; rings?: number; kept?: readonly QueenPortraitV1[] };
 
 /**
  * Keep only the charms she can wear: an earned or starter kind, a seat on her
@@ -100,7 +128,7 @@ export type QueenGuardContext = { earned: ReadonlySet<QueenCharmKind> };
  * physical refusal already happened in the tool; this is the same rule for a
  * caller that never saw the tool.
  */
-export function queenSanitizeCharms(charms: readonly unknown[] | null | undefined, earned: ReadonlySet<QueenCharmKind> = QUEEN_CHARM_STARTER_SET): QueenCharmV1[] {
+export function queenSanitizeCharms(charms: readonly unknown[] | null | undefined, earned: ReadonlySet<QueenCharmKind> = QUEEN_CHARM_STARTER_SET, form?: QueenForm): QueenCharmV1[] {
   if (!charms?.length) return [];
   const seen = new Set<string>();
   const kept: QueenCharmV1[] = [];
@@ -111,7 +139,7 @@ export function queenSanitizeCharms(charms: readonly unknown[] | null | undefine
     let charm: QueenCharmV1;
     try { charm = shapeQueenCharm(slim, seen); } catch { continue; }
     if (!earned.has(charm.kind)) { seen.delete(charm.id); continue; }
-    if (!queenCharmAllowed(charm.part, charm.u, charm.v)) { seen.delete(charm.id); continue; }
+    if (!queenCharmAllowed(charm.part, charm.u, charm.v, form)) { seen.delete(charm.id); continue; }
     kept.push(charm);
     if (kept.length >= QUEEN_CHARM_LIMITS.count) break;
   }
@@ -125,11 +153,13 @@ export function queenWornCharms(design: Pick<KittyNestDesign, "studio"> | undefi
 
 /**
  * The only way the Home world writes her look. It refuses the kiln outright,
- * refuses setup completion (which fires the King), drops any sculpt (her posture
- * and form are readings, not dials), sanitizes the paint and sanitizes the
- * charms against what the household has earned and what is reserved.
- * Everything it returns is a plain `saveKittyNestDesign` input for the
- * household King.
+ * refuses setup completion (which fires the King), reads the thrown form
+ * within her own bounds (posture and fill stay readings; the four handles are
+ * the wheel's and nothing else on the sculpt is hers), keeps the wheel's two
+ * attributed turns, keeps the shelf immutable, sanitizes the paint and
+ * sanitizes the charms against what the household has earned and what is
+ * reserved — rings included. Everything it returns is a plain
+ * `saveKittyNestDesign` input for the household King.
  */
 export function guardQueenDesignSave(input: SaveNestDesignInput, context?: QueenGuardContext): SaveNestDesignInput {
   if (input.bankKey !== "king" || input.view !== "household") throw new QueenAuthoringError("Only the shared Fund's King is the Queen.");
@@ -140,10 +170,24 @@ export function guardQueenDesignSave(input: SaveNestDesignInput, context?: Queen
   if (!studio) return { ...input, fire: false, completeSetup: false };
   const draft = studio.draft ?? displayedKittyPiece(studio);
   if (!draft) return { ...input, fire: false, completeSetup: false, studio: { ...studio, draft: null } };
-  const charms = queenSanitizeCharms(draft.charms, context?.earned);
-  const keep: KittyPieceV1 = { ...draft, firedAt: null, paint: queenSanitizePaint(draft.paint), ...(charms.length ? { charms } : {}) };
+  const handles = queenFormHandles(draft.sculpt?.profile);
+  const form: QueenForm = { handles, rings: context?.rings ?? 0 };
+  const charms = queenSanitizeCharms(draft.charms, context?.earned, form);
+  let wheel: QueenWheelV1 | undefined;
+  try { wheel = shapeQueenWheel(draft.wheel); } catch { wheel = undefined; }
+  const kept = context?.kept ?? [];
+  const keptYears = new Set(kept.map((row) => row.year));
+  let offered: QueenPortraitV1[] = [];
+  try { offered = shapeQueenPortraits(draft.portraits) ?? []; } catch { offered = []; }
+  const portraits = [...kept.map((row) => ({ ...row, charms: row.charms.map((charm) => ({ ...charm })) })), ...offered.filter((row) => !keptYears.has(row.year))].sort((a, b) => a.year - b.year);
+  const keep: KittyPieceV1 = {
+    ...draft, firedAt: null, sculpt: { ...draft.sculpt, profile: queenFormProfile(handles) }, paint: queenSanitizePaint(draft.paint),
+    ...(charms.length ? { charms } : {}), ...(wheel ? { wheel } : {}), ...(portraits.length ? { portraits } : {}),
+  };
   delete (keep as Partial<KittyPieceV1>).firedBy;
   if (!charms.length) delete (keep as Partial<KittyPieceV1>).charms;
+  if (!wheel) delete (keep as Partial<KittyPieceV1>).wheel;
+  if (!portraits.length) delete (keep as Partial<KittyPieceV1>).portraits;
   return { ...input, fire: false, completeSetup: false, studio: { ...studio, draft: keep } };
 }
 

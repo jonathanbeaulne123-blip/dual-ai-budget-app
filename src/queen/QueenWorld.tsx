@@ -61,7 +61,7 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, mode = "au
     };
   }, [wanted, reduced]);
 
-  useEffect(() => { onLive?.(live, live ? () => world.current?.stats() ?? { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 0, breathing: false, charms: 0, charmDrawCalls: 0, charmGeometries: 0 } : undefined, live ? (x, y) => world.current?.pick(x, y) ?? null : undefined); }, [live, onLive]);
+  useEffect(() => { onLive?.(live, live ? () => world.current?.stats() ?? { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 0, breathing: false, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 0, keyHeight: 0, keyColor: "", rings: 0, tipped: false } : undefined, live ? (x, y) => world.current?.pick(x, y) ?? null : undefined); }, [live, onLive]);
   useEffect(() => { world.current?.setQueen(queen); }, [queen, live]);
   useEffect(() => { world.current?.setBanks(banks); }, [banks, live]);
   useEffect(() => { world.current?.setBreathing(breathing); }, [breathing, live]);
