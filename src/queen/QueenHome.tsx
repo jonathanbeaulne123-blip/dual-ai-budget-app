@@ -16,6 +16,9 @@ import {
 import { useEasyRead } from "../useEasyRead.ts";
 import { QueenFigure } from "./QueenFigure.tsx";
 import { QueenWorld, type QueenWorldMode } from "./QueenWorld.tsx";
+import { queenSceneryKind } from "./world/queenScenery.ts";
+import { QueenSceneryFlat } from "./QueenSceneryFlat.tsx";
+import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenForm, queenGlazeAxis, queenLook, queenPortraits, queenPose, queenWheel, queenWorldStill, queenWornCharms, type QueenPaintablePart } from "./world/queenAuthoring.ts";
 import { queenFormProfile, queenPortraitDue, queenPortraitOf, queenRingCount, type QueenFormHandles, type QueenPortraitV1, type QueenWheelV1 } from "../core/queenForm.ts";
 import { localHour, queenLight } from "../core/queenLight.ts";
@@ -242,6 +245,21 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const [expanded, setExpanded] = useState(false);
   const [open, setOpen] = useState<Door | null>(null);
   const [scene, setScene] = useState<Scene>("home");
+  // The place she is in: shared home resolves to exactly three scenes, and each
+  // has a world. `paused` already carries reduced motion, a hidden tab, a field
+  // being typed in and the atmosphere switch. A host that writes the scene
+  // tokens without mounting the provider (the proof harness) is read from the
+  // same datasets the provider itself writes — the same truth, not a second one.
+  const appearance = useAppearance();
+  const providerMounted = Boolean(appearance.store);
+  const placeId = providerMounted ? appearance.scene.id : (typeof document !== "undefined" ? document.documentElement.dataset.scene ?? appearance.scene.id : appearance.scene.id);
+  const atmospherePaused = providerMounted ? appearance.paused : (typeof document === "undefined" || document.documentElement.dataset.atmosphere !== "playing");
+  const world3d = useMemo(() => queenSceneryKind(placeId), [placeId]);
+  const worldPaper = useMemo(() => {
+    if (providerMounted) return appearance.scene.palette.paper;
+    if (typeof getComputedStyle !== "function" || typeof document === "undefined") return undefined;
+    return getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || undefined;
+  }, [providerMounted, appearance.scene.palette.paper, placeId]);
   const [revealed, setRevealed] = useState(false);
   const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const returnTo = useRef<HTMLElement | null>(null);
@@ -543,8 +561,9 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       <h1 className="sr-only">{household.name} — Our Home</h1>
 
       <div className="queen-field" onClick={onFieldClick} inert={inRoom}>
+        <QueenSceneryFlat kind={world3d} />
         <div className="queen-rings" aria-hidden="true" />
-        <QueenWorld root={root} queen={worldQueen} banks={worldBanks} expanded={expanded} breathing={scene === "home" && !expanded && !open} mode={world} onLive={onWorldLive} />
+        <QueenWorld root={root} queen={worldQueen} banks={worldBanks} expanded={expanded} breathing={scene === "home" && !expanded && !open} scenery={world3d} sceneryPaper={worldPaper} ambient={!atmospherePaused} mode={world} onLive={onWorldLive} />
 
         <button type="button" className="queen-door queen-door--together" aria-label={`Together — decisions waiting on both of you${waiting ? `: ${waiting} waiting` : ""}`}
           aria-expanded={open === "together"} aria-controls={panelId} onClick={(event) => openDoor("together", event.currentTarget)}>

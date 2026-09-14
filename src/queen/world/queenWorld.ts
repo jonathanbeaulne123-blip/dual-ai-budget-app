@@ -4,6 +4,7 @@ import type { KittyPaintV1, KittyPieceV1 } from "../../core/types.ts";
 import type { QueenStone } from "../../core/queenPresentation.ts";
 import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture.ts";
 import { createQueenSculpture, QUEEN_HEIGHT, type QueenSculpture } from "./queenSculpture.ts";
+import { createQueenScenery, type QueenScenery, type QueenSceneryKind } from "./queenScenery.ts";
 import type { QueenGlazeAxis, QueenPose } from "./queenAuthoring.ts";
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
 import { queenLampShare, type QueenLight } from "../../core/queenLight.ts";
@@ -39,7 +40,7 @@ export type WorldQueenInput = {
   light: QueenLight;
 };
 export type WorldLayout = { host: WorldRect; queen: WorldRect; banks: Record<string, WorldRect> };
-export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; charms: number; charmDrawCalls: number; charmGeometries: number; keyLight: number; keyHeight: number; keyColor: string; rings: number; tipped: boolean };
+export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; scenery: QueenSceneryKind | "none"; ambient: boolean; sceneryGeometries: number; charms: number; charmDrawCalls: number; charmGeometries: number; keyLight: number; keyHeight: number; keyColor: string; rings: number; tipped: boolean };
 export type WorldPick = (clientX: number, clientY: number) => { part: QueenCharmPart; u: number; v: number } | null;
 
 const VISIBLE_HEIGHT = 10;
@@ -98,13 +99,22 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
 
   const queen: QueenSculpture = createQueenSculpture({ reducedMotion: options.reducedMotion });
   scene.add(queen.group);
+  /** The place she is in. One at a time, rebuilt only when the scene changes, disposed with the world. */
+  let scenery: QueenScenery | null = null;
+  let sceneryFloor = 0, sceneryScale = 1;
+  let sceneryPaper: string | undefined;
+  const placeScenery = () => {
+    if (!scenery) return;
+    scenery.group.position.set(0, sceneryFloor, 0);
+    scenery.group.scale.setScalar(sceneryScale);
+  };
   const banks = new Map<string, { sculpture: KittySculpture; height: number; fired: boolean; pieceId: string; paintKey: string }>();
 
   let dead = false;
   let pending = 0;
   let unitsPerPx = VISIBLE_HEIGHT / Math.max(1, host.clientHeight);
   let lastLayoutKey = "";
-  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 1.9, keyHeight: 7, keyColor: "#ffe9ca", rings: 0, tipped: false };
+  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, scenery: "none", ambient: false, sceneryGeometries: 0, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 1.9, keyHeight: 7, keyColor: "#ffe9ca", rings: 0, tipped: false };
   const raycaster = new THREE.Raycaster();
   let marksKey = "null";
   let hostRect: WorldRect = { x: 0, y: 0, w: host.clientWidth, h: host.clientHeight };
@@ -125,26 +135,32 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     pending = requestAnimationFrame(() => { pending = 0; render(); });
   };
 
-  // ---- breath: the only ambient motion, and only while asked ----
+  // ---- the ambient clock: her breath and the world she is in, on one loop ----
+  // A page with neither running asks for no frames at all, which is the whole
+  // reason render-on-demand exists. Reduced motion and a hidden tab stop both.
   let breathRaf = 0;
   let breathStart = 0;
+  const running = () => stats.breathing || (stats.ambient && Boolean(scenery?.animated));
   const breathFrame = (t: number) => {
     breathRaf = 0;
-    if (dead || !stats.breathing) return;
+    if (dead || !running()) return;
     if (!breathStart) breathStart = t;
-    const phase = ((t - breathStart) / BREATH_MS) * Math.PI * 2;
-    queen.setBreath(Math.sin(phase) * BREATH_PX * unitsPerPx);
+    const elapsed = t - breathStart;
+    if (stats.breathing) queen.setBreath(Math.sin((elapsed / BREATH_MS) * Math.PI * 2) * BREATH_PX * unitsPerPx);
+    if (stats.ambient && scenery) scenery.tick(elapsed / 1000);
     render();
     breathRaf = requestAnimationFrame(breathFrame);
   };
+  const pump = () => { if (!dead && running() && !breathRaf) { breathStart = 0; breathRaf = requestAnimationFrame(breathFrame); } };
+  const halt = () => { if (breathRaf) cancelAnimationFrame(breathRaf); breathRaf = 0; };
   const setBreathing = (on: boolean) => {
     const next = on && !options.reducedMotion;
     if (next === stats.breathing) return;
     stats.breathing = next;
-    if (next) { breathStart = 0; if (!breathRaf) breathRaf = requestAnimationFrame(breathFrame); }
-    else { if (breathRaf) cancelAnimationFrame(breathRaf); breathRaf = 0; queen.setBreath(0); invalidate(); }
+    if (next) pump();
+    else { if (!running()) halt(); queen.setBreath(0); invalidate(); }
   };
-  const onHidden = () => { if (document.hidden) { if (breathRaf) cancelAnimationFrame(breathRaf); breathRaf = 0; } else if (stats.breathing && !breathRaf) { breathStart = 0; breathRaf = requestAnimationFrame(breathFrame); } };
+  const onHidden = () => { if (document.hidden) halt(); else pump(); };
   document.addEventListener("visibilitychange", onHidden);
   cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
 
@@ -170,6 +186,37 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       raycaster.setFromCamera(new THREE.Vector2(((clientX - hostRect.x) / hostRect.w) * 2 - 1, -((clientY - hostRect.y) / hostRect.h) * 2 + 1), camera);
       scene.updateMatrixWorld(true);
       return queen.pick(raycaster);
+    },
+    /**
+     * The place she is in. `null` is the bare field the first version had, and
+     * remains the honest fallback for any scene with no world of its own.
+     */
+    setScenery(kind: QueenSceneryKind | null, paper?: string) {
+      if (dead || ((scenery?.kind ?? null) === kind && sceneryPaper === paper)) return;
+      sceneryPaper = paper;
+      scenery?.group.removeFromParent();
+      scenery?.dispose();
+      scenery = null;
+      stats.scenery = kind ?? "none";
+      stats.sceneryGeometries = 0;
+      if (kind) {
+        try {
+          scenery = createQueenScenery(kind, { reducedMotion: options.reducedMotion, paper });
+          scene.add(scenery.group);
+          stats.sceneryGeometries = scenery.counts().geometries;
+          placeScenery();
+        } catch { scenery = null; stats.scenery = "none"; }
+      }
+      if (!running()) halt(); else pump();
+      invalidate();
+    },
+    /** Whether the world moves on its own. Off under reduced motion, a paused atmosphere, or a hidden tab. */
+    setAmbient(on: boolean) {
+      const next = on && !options.reducedMotion;
+      if (next === stats.ambient) return;
+      stats.ambient = next;
+      if (next) pump();
+      else { if (!running()) halt(); scenery?.tick(0); invalidate(); }
     },
     invalidate,
     render,
@@ -234,6 +281,11 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       const queenScale = (next.queen.h * unitsPerPx) / QUEEN_HEIGHT;
       queen.group.position.set(qx, qy, 0);
       queen.group.scale.setScalar(queenScale);
+      // The world's floor is her floor, and it grows with her: a mug beside a
+      // ceramic cat has to stay a mug at every width.
+      sceneryFloor = qy;
+      sceneryScale = queenScale;
+      placeScenery();
       for (const [id, bank] of banks) {
         const rect = next.banks[id];
         bank.sculpture.group.visible = Boolean(rect);
@@ -248,9 +300,11 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       if (dead) return;
       dead = true;
       if (pending) cancelAnimationFrame(pending);
-      if (breathRaf) cancelAnimationFrame(breathRaf);
+      halt();
       for (const bank of banks.values()) { bank.sculpture.group.removeFromParent(); bank.sculpture.dispose(); }
       banks.clear();
+      scenery?.dispose();
+      scenery = null;
       queen.dispose();
       for (const release of cleanup.splice(0).reverse()) { try { release(); } catch { /* keep releasing */ } }
       scene.clear();

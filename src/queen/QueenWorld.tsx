@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import type { WorldBankInput, WorldPick, WorldQueenInput, WorldRect, QueenWorld as World, WorldStats } from "./world/queenWorld.ts";
+import type { QueenSceneryKind } from "./world/queenScenery.ts";
 
 /**
  * The WebGL host for the Home world. Decorative: `aria-hidden`, no controls of
@@ -13,7 +14,7 @@ import type { WorldBankInput, WorldPick, WorldQueenInput, WorldRect, QueenWorld 
  */
 export type QueenWorldMode = "auto" | "flat" | "3d";
 
-export function QueenWorld({ root, queen, banks, expanded, breathing, mode = "auto", onLive }: {
+export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = null, sceneryPaper, ambient = false, mode = "auto", onLive }: {
   /** The Home root; sculptures are placed where its `.queen-mount` and `[data-world-bank]` elements sit. */
   root: RefObject<HTMLElement | null>;
   queen: WorldQueenInput;
@@ -21,14 +22,20 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, mode = "au
   expanded: boolean;
   /** She breathes only at rest, only when motion is welcome. */
   breathing: boolean;
+  /** The place she is in: the shared-home scene's own world, or null for the bare field. */
+  scenery?: QueenSceneryKind | null;
+  /** The page's own paper, so the world's sky fades into it and the canvas has no visible edge. */
+  sceneryPaper?: string;
+  /** Whether that world moves on its own. Off under reduced motion or a paused atmosphere. */
+  ambient?: boolean;
   mode?: QueenWorldMode;
   onLive?: (live: boolean, stats?: () => WorldStats, pick?: WorldPick) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const world = useRef<World | null>(null);
   const [live, setLive] = useState(false);
-  const latest = useRef({ queen, banks, expanded, breathing });
-  latest.current = { queen, banks, expanded, breathing };
+  const latest = useRef({ queen, banks, expanded, breathing, scenery, sceneryPaper, ambient });
+  latest.current = { queen, banks, expanded, breathing, scenery, sceneryPaper, ambient };
 
   const wanted = mode !== "flat" && (mode === "3d" || (typeof matchMedia !== "function" || !matchMedia("(forced-colors: active)").matches));
   const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -51,6 +58,8 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, mode = "au
         world.current = created;
         created.setQueen(latest.current.queen);
         created.setBanks(latest.current.banks);
+        created.setScenery(latest.current.scenery, latest.current.sceneryPaper);
+        created.setAmbient(latest.current.ambient);
         setLive(true);
       })
       .catch(() => { if (!dead) setLive(false); });
@@ -61,10 +70,12 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, mode = "au
     };
   }, [wanted, reduced]);
 
-  useEffect(() => { onLive?.(live, live ? () => world.current?.stats() ?? { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 0, breathing: false, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 0, keyHeight: 0, keyColor: "", rings: 0, tipped: false } : undefined, live ? (x, y) => world.current?.pick(x, y) ?? null : undefined); }, [live, onLive]);
+  useEffect(() => { onLive?.(live, live ? () => world.current?.stats() ?? { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 0, breathing: false, scenery: "none", ambient: false, sceneryGeometries: 0, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 0, keyHeight: 0, keyColor: "", rings: 0, tipped: false } : undefined, live ? (x, y) => world.current?.pick(x, y) ?? null : undefined); }, [live, onLive]);
   useEffect(() => { world.current?.setQueen(queen); }, [queen, live]);
   useEffect(() => { world.current?.setBanks(banks); }, [banks, live]);
   useEffect(() => { world.current?.setBreathing(breathing); }, [breathing, live]);
+  useEffect(() => { world.current?.setScenery(scenery, sceneryPaper); }, [scenery, sceneryPaper, live]);
+  useEffect(() => { world.current?.setAmbient(ambient); }, [ambient, live]);
 
   // Layout: follow the DOM. Measured on resize, on expand/collapse (through the CSS transition) and whenever a bank element appears.
   useLayoutEffect(() => {
