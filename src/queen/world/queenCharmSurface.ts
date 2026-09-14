@@ -43,6 +43,8 @@ export const QUEEN_UNDERSIDE_V = 1 / (QUEEN_SKIRT_PROFILE.length - 1);
 export type Vec3 = readonly [number, number, number];
 export type QueenSurfaceSeat = { position: Vec3; normal: Vec3 };
 export type QueenCharmRefusal = QueenReservedChannel | "unseen";
+/** Where the flower crown's footprint begins on her head wrap. Below this is her face; above it is the garland. */
+export const QUEEN_CROWN_V = 0.66;
 
 const TAU = Math.PI * 2;
 const norm = (v: Vec3): Vec3 => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
@@ -172,8 +174,9 @@ export function queenCharmRefusal(part: QueenCharmPart, u: number, v: number, fo
     if (queenOnRing(v, form.rings)) return "rings";
   } else {
     if (du > 0.25 && v > 0.58) return "vine";
-    if (v > 0.75) return "crown";
-    if (du < 0.14 && v >= 0.3 && v <= 0.75) return "eyes";
+    // Her flower crown is a garland resting on her brow and behind her ears, lower and wider than a gold band. Its lowest petal reaches v ≈ 0.70, so the zone starts below that with a margin: nothing seats under the garland.
+    if (v > QUEEN_CROWN_V) return "crown";
+    if (du < 0.14 && v >= 0.3 && v <= QUEEN_CROWN_V) return "eyes";
   }
   if (seat.normal[2] < 0.12) return "unseen";
   return null;

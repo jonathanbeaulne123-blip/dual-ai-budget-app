@@ -16,7 +16,7 @@ import {
 import { useEasyRead } from "../useEasyRead.ts";
 import { QueenFigure } from "./QueenFigure.tsx";
 import { QueenWorld, type QueenWorldMode } from "./QueenWorld.tsx";
-import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenForm, queenGlazeAxis, queenLook, queenPortraits, queenPose, queenWheel, queenWorldStill, queenWornCharms } from "./world/queenAuthoring.ts";
+import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenForm, queenGlazeAxis, queenLook, queenPortraits, queenPose, queenWheel, queenWorldStill, queenWornCharms, type QueenPaintablePart } from "./world/queenAuthoring.ts";
 import { queenFormProfile, queenPortraitDue, queenPortraitOf, queenRingCount, type QueenFormHandles, type QueenPortraitV1, type QueenWheelV1 } from "../core/queenForm.ts";
 import { localHour, queenLight } from "../core/queenLight.ts";
 import { QueenWheel } from "./QueenWheel.tsx";
@@ -167,7 +167,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
 
   // ---- the world: her look, her banks as studio sculptures ----
   const kingDesign = nest.king.design;
-  const [lookDraft, setLookDraft] = useState<{ base: KittyGlaze; stamp: KittyStampKind | null } | null>(null);
+  const [lookDraft, setLookDraft] = useState<{ base: KittyGlaze; stamp: KittyStampKind | null; part: QueenPaintablePart | "all" } | null>(null);
   const look = useMemo(() => queenLook(kingDesign), [kingDesign]);
   const paint = useMemo<KittyPaintV1>(() => lookDraft ? draftPaint(look.paint, lookDraft) : look.paint, [look, lookDraft]);
   // ---- her charms: the couple's, earned by acts, drafted here and kept as they go ----
@@ -301,7 +301,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       const kept = queenPortraits(design);
       return saveKittyNestDesign(current, guardQueenDesignSave({
         memberId, view: "household", bankKey: "king", expectedRevision: design?.revision ?? 0,
-        name: design?.name ?? "Our Queen", glaze: next.base ?? design?.glaze ?? "cream", category: null,
+        name: design?.name ?? "Our Queen", glaze: next.base ?? design?.glaze ?? "terracotta", category: null,
         studio: {
           version: 1,
           draft: {
@@ -677,16 +677,22 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             <section className="queen-look" aria-labelledby={`${ids}-look`}>
               <p id={`${ids}-look`} className="queen-eyebrow">Her look</p>
               <p className="queen-panel__muted">{kingDesign ? `Kept ${formatDateLabel(kingDesign.updatedAt.slice(0, 10))}. Both of you author her; a kept look is visible to both.` : "Not yet dressed. Both of you author her; a kept look is visible to both."} She is never fired: her surface follows the evidence, not a kiln.</p>
+              <div className="queen-look__row" role="group" aria-label="Where the clay goes">
+                {QUEEN_LOOK_PARTS.map((part) => (
+                  <button key={part.id} type="button" className="queen-pick" aria-pressed={(lookDraft?.part ?? "all") === part.id}
+                    onClick={() => setLookDraft({ base: lookDraft?.base ?? (look.base as KittyGlaze), stamp: lookDraft?.stamp ?? null, part: part.id })}>{part.label}</button>
+                ))}
+              </div>
               <div className="queen-look__row" role="group" aria-label="Her clay">
                 {(Object.keys(KITTY_GLAZES) as KittyGlaze[]).map((glaze) => (
                   <button key={glaze} type="button" className="queen-swatch" style={{ "--swatch": KITTY_GLAZES[glaze] } as CSSProperties} aria-pressed={(lookDraft?.base ?? look.base) === glaze} aria-label={`Clay: ${glaze.replace("-", " ")}`}
-                    onClick={() => setLookDraft({ base: glaze, stamp: lookDraft?.stamp ?? null })} />
+                    onClick={() => setLookDraft({ base: glaze, stamp: lookDraft?.stamp ?? null, part: lookDraft?.part ?? "all" })} />
                 ))}
               </div>
               <div className="queen-look__row" role="group" aria-label="A mark on her belly">
                 {(["none", "heart", "star", "flower", "leaf", "moon", "sun"] as const).map((kind) => (
                   <button key={kind} type="button" className="queen-pick" aria-pressed={(lookDraft?.stamp ?? null) === (kind === "none" ? null : kind)}
-                    onClick={() => setLookDraft({ base: lookDraft?.base ?? (look.base as KittyGlaze), stamp: kind === "none" ? null : kind })}>{kind}</button>
+                    onClick={() => setLookDraft({ base: lookDraft?.base ?? (look.base as KittyGlaze), stamp: kind === "none" ? null : kind, part: lookDraft?.part ?? "all" })}>{kind}</button>
                 ))}
               </div>
               <div className="queen-acts">
@@ -761,12 +767,30 @@ function BankPortrait({ row, small = false }: { row: { id: string; piece: import
   );
 }
 
-function draftPaint(base: KittyPaintV1, draft: { base: KittyGlaze; stamp: KittyStampKind | null }): KittyPaintV1 {
+/**
+ * Her look as a draft: a clay dip on one of her six parts or on all of her,
+ * and one mark on her belly. A dip on a part is exactly what the studio's own
+ * part dip is, so what is kept here reads the same in the studio.
+ */
+function draftPaint(base: KittyPaintV1, draft: { base: KittyGlaze; stamp: KittyStampKind | null; part: QueenPaintablePart | "all" }): KittyPaintV1 {
   const stamps = base.stamps.filter((stamp) => stamp.id !== "queen-belly");
   if (draft.stamp) stamps.push({ id: "queen-belly", anchor: "belly", part: "body", u: 0.5, v: 0.62, kind: draft.stamp, color: "#2b2926", size: 0.22, rotation: 0 });
-  return { ...base, base: draft.base, stamps };
+  // All of her: the dip becomes her clay and no part holds a colour of its own any more.
+  if (draft.part === "all") return { ...base, base: draft.base, parts: {}, stamps };
+  return { ...base, parts: { ...base.parts, [draft.part]: KITTY_GLAZES[draft.base] }, stamps };
 }
+/** Her six parts as the panel offers them, in the order a person meets them. */
+const QUEEN_LOOK_PARTS: readonly { id: QueenPaintablePart | "all"; label: string }[] = [
+  { id: "all", label: "All of her" },
+  { id: "body", label: "Body" },
+  { id: "head", label: "Head" },
+  { id: "earL", label: "Left ear" },
+  { id: "earR", label: "Right ear" },
+  { id: "tail", label: "Tail" },
+  { id: "paws", label: "Paws" },
+];
 
 function defaultQueenSculpt() {
-  return { body: "round" as const, profile: [1, 1, 1, 1] as [number, number, number, number], head: "round" as const, ears: "none" as const, eyes: "closed" as const, mouth: "serene" as const, whiskers: "none" as const, tail: "none" as const, nose: "tiny" as const };
+  // Her sculpt agrees with her model: pointed ears, a tail that wraps her base, long whiskers, eyes closed and serene.
+  return { body: "round" as const, profile: [1, 1, 1, 1] as [number, number, number, number], head: "round" as const, ears: "pointed" as const, eyes: "closed" as const, mouth: "serene" as const, whiskers: "long" as const, tail: "wrap" as const, nose: "tiny" as const };
 }
