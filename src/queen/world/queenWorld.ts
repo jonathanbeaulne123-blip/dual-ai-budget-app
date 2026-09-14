@@ -5,6 +5,7 @@ import type { QueenStone } from "../../core/queenPresentation.ts";
 import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture.ts";
 import { createQueenSculpture, QUEEN_HEIGHT, type QueenSculpture } from "./queenSculpture.ts";
 import type { QueenGlazeAxis, QueenPose } from "./queenAuthoring.ts";
+import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
 
 /**
  * The Home world: one renderer, one scene, one still camera. A diorama you
@@ -24,9 +25,12 @@ export type WorldQueenInput = {
   vine: { chapter: boolean; growth: number; buds: number };
   feet: QueenStone["size"][];
   paint: KittyPaintV1 | null;
+  /** Already through the guard; drawn as given. */
+  charms: QueenCharmV1[];
 };
 export type WorldLayout = { host: WorldRect; queen: WorldRect; banks: Record<string, WorldRect> };
-export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean };
+export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; charms: number; charmDrawCalls: number; charmGeometries: number };
+export type WorldPick = (clientX: number, clientY: number) => { part: QueenCharmPart; u: number; v: number } | null;
 
 const VISIBLE_HEIGHT = 10;
 const FOV = 34;
@@ -73,7 +77,9 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   let pending = 0;
   let unitsPerPx = VISIBLE_HEIGHT / Math.max(1, host.clientHeight);
   let lastLayoutKey = "";
-  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false };
+  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, charms: 0, charmDrawCalls: 0, charmGeometries: 0 };
+  const raycaster = new THREE.Raycaster();
+  let hostRect: WorldRect = { x: 0, y: 0, w: host.clientWidth, h: host.clientHeight };
   const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
 
   const render = () => {
@@ -129,7 +135,14 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     camera,
     renderer,
     queen,
-    stats: () => ({ ...stats, sculptures: 1 + banks.size }),
+    stats: () => { const c = queen.charmCounts(); return { ...stats, sculptures: 1 + banks.size, charms: c.instances, charmDrawCalls: c.drawCalls, charmGeometries: c.geometries }; },
+    /** A viewport point → where it lands on her paintable surface. Null off her. */
+    pick(clientX: number, clientY: number) {
+      if (dead || !hostRect.w || !hostRect.h) return null;
+      raycaster.setFromCamera(new THREE.Vector2(((clientX - hostRect.x) / hostRect.w) * 2 - 1, -((clientY - hostRect.y) / hostRect.h) * 2 + 1), camera);
+      scene.updateMatrixWorld(true);
+      return queen.pick(raycaster);
+    },
     invalidate,
     render,
     setBreathing,
@@ -142,6 +155,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       queen.setVine(input.vine.chapter, input.vine.growth, input.vine.buds);
       queen.setFeet(input.feet);
       queen.setPaint(input.paint);
+      queen.setCharms(input.charms);
       invalidate();
     },
     /** Banks are studio sculptures. Rebuilt only when the piece or its firing changes; disposed when they leave. */
@@ -172,8 +186,8 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     },
     /** Put her and the banks exactly where the DOM keeps their controls. */
     layout(next: WorldLayout) {
-      const { host: hostRect } = next;
-      if (!hostRect.w || !hostRect.h) return;
+      if (!next.host.w || !next.host.h) return;
+      hostRect = next.host;
       // Measured often (through CSS transitions); rendered only when something actually moved.
       const key = JSON.stringify([hostRect, next.queen, next.banks, [...banks.keys()]]);
       if (key === lastLayoutKey) return;

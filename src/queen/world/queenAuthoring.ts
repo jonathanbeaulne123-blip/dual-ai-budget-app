@@ -6,6 +6,8 @@ import type { FundPulseFreshness } from "../../core/fundPulse.ts";
 import type { QueenStill } from "../../core/queenPresentation.ts";
 import { stampPlacement } from "../../kitty/studio/stampArt.ts";
 import { nestDefaultPiece } from "../../kitty/nestAppearance.ts";
+import { QUEEN_CHARM_LIMITS, QUEEN_CHARM_STARTER_SET, shapeQueenCharm, type QueenCharmKind, type QueenCharmV1 } from "../../core/queenCharms.ts";
+import { queenCharmAllowed } from "./queenCharmSurface.ts";
 
 /**
  * The Queen in the studio — what is hers and theirs, and what is reserved.
@@ -16,6 +18,8 @@ import { nestDefaultPiece } from "../../kitty/nestAppearance.ts";
  * reading: her reserved channels are separate geometry the paint can never
  * reach, the glaze axis belongs to evidence freshness rather than to a kiln,
  * and she is never final — her look is read draft-first and never fired.
+ * Charms ride the same draft and pass the same guard: unearned kinds and
+ * seats on a reserved channel are dropped there, not only in the tool.
  */
 
 /** Parts of her the couple may paint. Everything else on her is a reading. */
@@ -85,13 +89,49 @@ export function queenLook(design: Pick<KittyNestDesign, "studio" | "glaze"> | un
 
 export class QueenAuthoringError extends Error {}
 
+/** What the guard may be told about the household. Absent, only the starter charms can be written. */
+export type QueenGuardContext = { earned: ReadonlySet<QueenCharmKind> };
+
+/**
+ * Keep only the charms she can wear: an earned or starter kind, a seat on her
+ * paintable surface that covers no reserved channel and faces the room, the
+ * stored fields and nothing else (a charm cannot smuggle a glaze, a firing or
+ * a reading), at most the cap. Anything else is dropped, quietly — the
+ * physical refusal already happened in the tool; this is the same rule for a
+ * caller that never saw the tool.
+ */
+export function queenSanitizeCharms(charms: readonly unknown[] | null | undefined, earned: ReadonlySet<QueenCharmKind> = QUEEN_CHARM_STARTER_SET): QueenCharmV1[] {
+  if (!charms?.length) return [];
+  const seen = new Set<string>();
+  const kept: QueenCharmV1[] = [];
+  for (const raw of charms) {
+    if (!raw || typeof raw !== "object") continue;
+    const row = raw as Record<string, unknown>;
+    const slim = { id: row.id, kind: row.kind, part: row.part, u: row.u, v: row.v, spin: row.spin, tilt: row.tilt, scale: row.scale, color: row.color, ...(row.by !== undefined ? { by: row.by } : {}) };
+    let charm: QueenCharmV1;
+    try { charm = shapeQueenCharm(slim, seen); } catch { continue; }
+    if (!earned.has(charm.kind)) { seen.delete(charm.id); continue; }
+    if (!queenCharmAllowed(charm.part, charm.u, charm.v)) { seen.delete(charm.id); continue; }
+    kept.push(charm);
+    if (kept.length >= QUEEN_CHARM_LIMITS.count) break;
+  }
+  return kept;
+}
+/** The charms she wears, draft-first, unsanitized against earning (the reader shows what was kept; the guard decides what is kept). */
+export function queenWornCharms(design: Pick<KittyNestDesign, "studio"> | undefined): QueenCharmV1[] {
+  const piece: KittyPieceV1 | null = design?.studio?.draft ?? displayedKittyPiece(design?.studio);
+  return piece?.charms ?? [];
+}
+
 /**
  * The only way the Home world writes her look. It refuses the kiln outright,
  * refuses setup completion (which fires the King), drops any sculpt (her posture
- * and form are readings, not dials) and sanitizes the paint. Everything it
- * returns is a plain `saveKittyNestDesign` input for the household King.
+ * and form are readings, not dials), sanitizes the paint and sanitizes the
+ * charms against what the household has earned and what is reserved.
+ * Everything it returns is a plain `saveKittyNestDesign` input for the
+ * household King.
  */
-export function guardQueenDesignSave(input: SaveNestDesignInput): SaveNestDesignInput {
+export function guardQueenDesignSave(input: SaveNestDesignInput, context?: QueenGuardContext): SaveNestDesignInput {
   if (input.bankKey !== "king" || input.view !== "household") throw new QueenAuthoringError("Only the shared Fund's King is the Queen.");
   if (input.fire) throw new QueenAuthoringError("The kiln is unavailable for her. She is never final.");
   if (input.completeSetup) throw new QueenAuthoringError("Her setup is the couple's ceremony in the banks, not here.");
@@ -100,8 +140,10 @@ export function guardQueenDesignSave(input: SaveNestDesignInput): SaveNestDesign
   if (!studio) return { ...input, fire: false, completeSetup: false };
   const draft = studio.draft ?? displayedKittyPiece(studio);
   if (!draft) return { ...input, fire: false, completeSetup: false, studio: { ...studio, draft: null } };
-  const keep: KittyPieceV1 = { ...draft, firedAt: null, paint: queenSanitizePaint(draft.paint) };
+  const charms = queenSanitizeCharms(draft.charms, context?.earned);
+  const keep: KittyPieceV1 = { ...draft, firedAt: null, paint: queenSanitizePaint(draft.paint), ...(charms.length ? { charms } : {}) };
   delete (keep as Partial<KittyPieceV1>).firedBy;
+  if (!charms.length) delete (keep as Partial<KittyPieceV1>).charms;
   return { ...input, fire: false, completeSetup: false, studio: { ...studio, draft: keep } };
 }
 

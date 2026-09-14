@@ -1,4 +1,6 @@
 import type { QueenBody, QueenCrown, QueenFeet, QueenRegionId, QueenStill, QueenVine } from "../core/queenPresentation.ts";
+import type { QueenCharmV1 } from "../core/queenCharms.ts";
+import { QueenCharmGlyphs } from "./QueenCharmGlyph.tsx";
 
 /**
  * The Queen, drawn. Her body carries state and nothing else: no text, no
@@ -7,7 +9,8 @@ import type { QueenBody, QueenCrown, QueenFeet, QueenRegionId, QueenStill, Queen
  * evidence is fresh, the crown lights when both are here, gold seams are the
  * corrections kept visible, the vine is the Chapter grown by acts, buds are
  * goals in motion and the stones at her feet are the nearest dated
- * obligations as pure form. The artwork is a stand-in for the mandevilla form.
+ * obligations as pure form. Charms are the couple's, drawn at the seats they
+ * chose and carrying nothing. The artwork is a stand-in for the mandevilla form.
  */
 export const QUEEN_VIEW = { w: 240, h: 340 } as const;
 
@@ -54,9 +57,11 @@ export type QueenFigureProps = {
   feet: QueenFeet;
   /** Lets the vine's "fresh glaze" sheen sit on a bud when the partner touched it recently. */
   freshBud?: number | null;
+  /** The charms she wears; already through the guard. */
+  charms?: readonly QueenCharmV1[];
 };
 
-export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = null }: QueenFigureProps) {
+export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = null, charms = [] }: QueenFigureProps) {
   const gaze = GAZE[still.eyes === "open" ? still.gaze : "rest"];
   const vineScale = vine.chapter ? 0.74 + vine.growth * 0.09 : 0.56;
   const leaves = vine.chapter ? 1 + vine.growth : 0;
@@ -72,6 +77,7 @@ export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = n
           {body.seams >= 1 && <path className="queen-seam" d="M74 302 L88 248 L76 214 L90 186" />}
           {body.seams >= 2 && <path className="queen-seam" d="M176 298 L164 254 L174 226" />}
           {body.seams >= 3 && <path className="queen-seam" d="M120 300 L126 268 L116 246" />}
+          <QueenCharmGlyphs charms={charms} part="body" />
         </g>
         {/* Shoulders and hands */}
         <path className="queen-vessel" d="M80 182 C80 146 96 126 120 126 C144 126 160 146 160 182 Z" />
@@ -96,6 +102,7 @@ export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = n
           </>
         )}
         <path className="queen-mouth" d={MOUTH[still.mouth]} />
+        <QueenCharmGlyphs charms={charms} part="head" />
         {/* Crown */}
         <path className="queen-crown" d="M90 78 L97 60 L109 72 L120 52 L131 72 L143 60 L150 78" />
         {crown === "both" && <><circle className="queen-crown-point" cx="97" cy="60" r="2.4" /><circle className="queen-crown-point" cx="120" cy="52" r="2.8" /><circle className="queen-crown-point" cx="143" cy="60" r="2.4" /></>}

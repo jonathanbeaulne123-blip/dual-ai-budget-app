@@ -4,6 +4,9 @@ import { PART_CANVAS_SIZE, partDip, presentPart, replayPart } from "../../kitty/
 import { studioHex } from "../../kitty/studio/palette.ts";
 import { QUEEN_GLAZE_AXIS, QUEEN_PAINTABLE_PARTS, queenSanitizePaint, type QueenGlazeAxis, type QueenPaintablePart, type QueenPose } from "./queenAuthoring.ts";
 import type { QueenStone } from "../../core/queenPresentation.ts";
+import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
+import { QUEEN_HEAD, QUEEN_SKIRT_PHI_START, QUEEN_SKIRT_PROFILE } from "./queenCharmSurface.ts";
+import { createQueenCharmSet } from "./queenCharmSet.ts";
 
 /**
  * The Queen as a sculpture: a seated, matriarchal ceramic vessel with a
@@ -18,7 +21,9 @@ import type { QueenStone } from "../../core/queenPresentation.ts";
  * brow, the gold seams, her hands, the stones at her feet. Her posture and
  * scale move the body group; her fill widens the belly; her surface follows
  * evidence freshness through the same roughness/clearcoat axis a fired bank
- * uses. No money is read here.
+ * uses. Charms — the couple's small add-ons — are instanced on the body
+ * group by `queenCharmSet` and never touch a reserved mesh. No money is read
+ * here.
  */
 export type QueenSculptureOptions = {
   clay?: string;
@@ -90,7 +95,7 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   const belly = new THREE.Group();
   belly.name = "queen-belly";
   body.add(belly);
-  const skirt = mesh(new THREE.LatheGeometry([V2(0.04, 0), V2(0.92, 0.04), V2(1.14, 0.42), V2(1.2, 0.92), V2(1.08, 1.42), V2(0.82, 1.72), V2(0.6, 1.86)], 48, Math.PI / 2, Math.PI * 2), parts.body.mat, belly, "queen-skirt");
+  const skirt = mesh(new THREE.LatheGeometry(QUEEN_SKIRT_PROFILE.map(([r, y]) => V2(r, y)), 48, QUEEN_SKIRT_PHI_START, Math.PI * 2), parts.body.mat, belly, "queen-skirt");
   skirt.position.y = BODY_ORIGIN_Y;
   // Shoulders and neck: reserved clay, so the paint cannot creep over the collar where the seams meet.
   const shoulders = mesh(new THREE.LatheGeometry([V2(0.58, 1.84), V2(0.66, 2.02), V2(0.5, 2.24), V2(0.28, 2.34)], 40), reservedClay, body, "queen-shoulders");
@@ -100,10 +105,10 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   hands.scale.set(1.35, 0.55, 0.8);
   hands.position.set(0, 1.86, 0.92);
   // Head.
-  const head = mesh(new THREE.SphereGeometry(0.52, 40, 28, -Math.PI / 2), parts.head.mat, body, "queen-head");
-  head.position.set(0, 2.78, 0.04);
-  head.scale.set(1, 1.02, 0.96);
-  const headTop = 2.78 + 0.52 * 1.02;
+  const head = mesh(new THREE.SphereGeometry(QUEEN_HEAD.radius, 40, 28, QUEEN_HEAD.phiStart), parts.head.mat, body, "queen-head");
+  head.position.set(...QUEEN_HEAD.position);
+  head.scale.set(...QUEEN_HEAD.scale);
+  const headTop = QUEEN_HEAD.position[1] + QUEEN_HEAD.radius * QUEEN_HEAD.scale[1];
 
   // Face: eyes closed (arcs), open (whites + pupils), brow, three mouths. Reserved.
   const face = new THREE.Group();
@@ -193,6 +198,11 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   plinth.scale.z = 0.72;
   plinth.position.y = -0.02;
 
+  // ---- charms: instanced on the body group, riding posture and fill, never on a reserved mesh ----
+  const charms = createQueenCharmSet(body, { ink: options.ink });
+  const pickable = [skirt, head];
+  const partOf: Record<string, QueenCharmPart> = { "queen-skirt": "body", "queen-head": "head" };
+
   // ---- paint ----
   let paint: KittyPaintV1 = queenSanitizePaint(null);
   let axis: QueenGlazeAxis = QUEEN_GLAZE_AXIS.glazed;
@@ -232,7 +242,17 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     reserved: { vine, crown, crownLight, face, eyesOpen, eyesClosed, hands, seams, feet, stones, belly },
     paintable: { body: skirt, head },
     materials: { body: parts.body.mat, head: parts.head.mat, reservedClay, gold, goldSeam, leaf, bud, ink },
-    counts() { return { geometries: geometries.size, materials: materials.size, textures: textures.size }; },
+    counts() { const c = charms.counts(); return { geometries: geometries.size + c.geometries, materials: materials.size + (c.geometries ? c.materials : 0), textures: textures.size }; },
+    charmCounts() { return charms.counts(); },
+    /** The charms on her, in the piece's own coordinates. Sanitized by the caller; drawn here. */
+    setCharms(next: QueenCharmV1[]) { charms.setCharms(next); },
+    /** Where a ray lands on her paintable surface: the part and its uv, or null off her or on a reserved mesh. */
+    pick(raycaster: THREE.Raycaster): { part: QueenCharmPart; u: number; v: number } | null {
+      const hit = raycaster.intersectObjects(pickable, false)[0];
+      if (!hit || !hit.uv) return null;
+      const part = partOf[hit.object.name];
+      return part ? { part, u: hit.uv.x, v: hit.uv.y } : null;
+    },
     setPose(pose: QueenPose) {
       restScale = pose.scale;
       lean = pose.lean;
@@ -250,12 +270,14 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       const n = Math.max(0, Math.min(10, level));
       const width = 0.86 + (n / 10) * 0.14;
       belly.scale.set(width, 1, width);
+      charms.setBellyWidth(width);
     },
     /** Evidence freshness owns the surface. There is no setFired: nobody fires her. */
     setGlaze(next: QueenGlazeAxis) {
       if (next === axis) return;
       axis = next;
       applyAxis();
+      charms.setGlaze(next);
       present();
     },
     setCrown(lit: boolean) {
@@ -293,6 +315,7 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      charms.dispose();
       group.removeFromParent();
       group.clear();
       for (const g of geometries) g.dispose();
