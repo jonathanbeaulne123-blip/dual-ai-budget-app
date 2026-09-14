@@ -415,7 +415,20 @@ export type QueenJar = {
   /** The one that swelled and stepped out of the rail. A read with no number attached. */
   outlier: boolean;
   now: boolean;
+  /**
+   * How much the month took against its usual, as a *shape*: 0.85 to 1.45,
+   * quantised to the nearest twentieth. Quantising is the point — a swell you
+   * can read a dollar figure off is a chart, and this is a jar. Quiet months
+   * are 1: they claim nothing.
+   */
+  swell: number;
+  /** How full the jar looks, 0 to 1, quantised the same way. A quiet month is empty, not zero-dollars. */
+  fill: number;
 };
+
+/** A ratio becomes a shape here and nowhere else: clamped into a band and stepped, so no amount survives the trip. */
+const band = (ratio: number, low: number, high: number, step = 0.05) =>
+  Math.round(Math.max(low, Math.min(high, ratio)) / step) * step;
 
 export type QueenRibbon = {
   recurrenceId: string;
@@ -465,11 +478,14 @@ export function queenRibbon(household: Pick<Household, "transactions">, recurren
     const posted = postedByMonth.get(monthKey) ?? 0;
     const outlier = amounts.length >= 3 && posted > 0 && posted * 100 > usual * 135;
     if (outlier && outlierMonth === null) outlierMonth = monthKey;
+    const ratio = usual > 0 && posted > 0 ? posted / usual : 1;
     return {
       monthKey,
       beat: posted > 0 ? "posted" : monthKey === nextKey && monthKey >= nowKey ? "expected" : "quiet",
       outlier,
       now: monthKey === nowKey,
+      swell: posted > 0 ? band(ratio, 0.85, 1.45) : 1,
+      fill: posted > 0 ? band(ratio, 0, 1) : 0,
     };
   });
   return { recurrenceId: recurrence.id, label: recurrence.note.trim() || "Recurring cost", jars, posted: amounts.length, outlierMonth };
@@ -497,14 +513,39 @@ export type QueenShelfItem = {
   /** Contributions so far, as marks. A count, never a sum. */
   marks: number;
   date: DateKey | null;
+  /** How high the glaze stands, 0 to 1, quantised to a twentieth. Progress as a level, not a percentage. */
+  fullness: number;
+  /** How wide the vessel stands. Three bands, so the shelf reads at a glance and no amount leaks out of one. */
+  size: "small" | "middling" | "large";
+  /** How many parts are inside it: the necks on its shoulder. A count, never a sum. */
+  parts: number;
+  /** Its design key: the stable name the shelf's stored order is written in. */
+  designKey: string;
+  /** Where the stored order puts it, or null when the order does not name it. */
+  place: number | null;
 };
 
-export function queenShelf(nest: Pick<KittyNest, "categories">, household: Pick<Household, "goalContributions">): QueenShelfItem[] {
+/** Three widths, chosen so a shelf reads as a shelf. The thresholds are shape, not money, and never surface as figures. */
+const shelfSize = (targetCents: number): QueenShelfItem["size"] =>
+  targetCents >= 300_000 ? "large" : targetCents >= 80_000 ? "middling" : "small";
+
+/**
+ * The ledge, in the order the household put it in. The order is one list of
+ * design keys on the Build plan bank's own row, so a rearrangement is one save
+ * and the last save wins; banks the list does not name keep the nest's own
+ * order behind the ones it does.
+ */
+export function queenShelf(
+  nest: Pick<KittyNest, "categories">,
+  household: Pick<Household, "goalContributions">,
+  order: readonly string[] = [],
+): QueenShelfItem[] {
+  const place = new Map(order.map((key, index) => [key, index]));
   const build = nest.categories.find((bank) => bank.category === "build");
   if (!build) return [];
-  return build.children
+  const rows = build.children
     .filter((bank) => bank.state === "open")
-    .map((bank) => ({
+    .map((bank, index): QueenShelfItem & { nestOrder: number } => ({
       id: bank.id,
       name: bank.name,
       mouth: bank.tier === "goal" && bank.goal ? "open" : "lidded",
@@ -512,5 +553,36 @@ export function queenShelf(nest: Pick<KittyNest, "categories">, household: Pick<
       goalId: bank.goal?.id ?? null,
       marks: bank.goal ? (household.goalContributions ?? []).filter((row) => row.goalId === bank.goal!.id).length : 0,
       date: bank.date,
+      fullness: bank.targetCents > 0 ? band(bank.amountCents / bank.targetCents, 0, 1) : 0,
+      size: shelfSize(bank.targetCents > 0 ? bank.targetCents : bank.amountCents),
+      parts: bank.children?.length ?? 0,
+      designKey: bank.designKey,
+      place: place.get(bank.designKey) ?? null,
+      nestOrder: index,
     }));
+  return rows
+    .sort((a, b) => (a.place ?? Number.POSITIVE_INFINITY) - (b.place ?? Number.POSITIVE_INFINITY) || a.nestOrder - b.nestOrder)
+    .map(({ nestOrder: _drop, ...row }) => row);
+}
+
+/** The bank key the shelf's order is stored on. */
+export const QUEEN_SHELF_BANK_KEY = "plan:build";
+/** The stored order of the ledge: one list of design keys on the Build plan bank's own household row. */
+export function queenShelfOrder(designs: readonly { bankKey: string; visibility: string; order?: string[] }[] | undefined): string[] {
+  return designs?.find((row) => row.bankKey === QUEEN_SHELF_BANK_KEY && row.visibility === "household")?.order ?? [];
+}
+
+/**
+ * The ledge with one bank moved to `index`: the whole shelf as design keys, in
+ * the order it now stands. One list, one save, and the last save wins.
+ */
+export function queenShelfReorder(shelf: readonly QueenShelfItem[], movingId: string, index: number): string[] {
+  const keys = shelf.map((row) => row.designKey);
+  const from = shelf.findIndex((row) => row.id === movingId);
+  if (from < 0) return keys;
+  const moving = keys[from]!;
+  const rest = keys.filter((_key, i) => i !== from);
+  const at = Math.max(0, Math.min(rest.length, index > from ? index - 1 : index));
+  rest.splice(at, 0, moving);
+  return rest;
 }

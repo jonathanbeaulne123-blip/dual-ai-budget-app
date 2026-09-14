@@ -265,7 +265,7 @@
   opacity: 0; visibility: hidden; pointer-events: none;
   transition: opacity .5s var(--queen-ease), transform .5s var(--queen-ease), visibility 0s linear .5s;
 }
-.queen-room--cellar { background: var(--queen-cellar); transform: translateY(28px); grid-template-rows: auto auto auto minmax(0, 1fr) auto auto; }
+.queen-room--cellar { background: var(--queen-cellar); transform: translateY(28px); grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto; }
 .queen-room--loft { background: var(--queen-loft); transform: translateY(-28px); grid-template-rows: auto minmax(0, 1fr) auto; }
 .queen-home[data-scene="cellar"] .queen-room--cellar, .queen-home[data-scene="loft"] .queen-room--loft { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition: opacity .5s var(--queen-ease), transform .5s var(--queen-ease), visibility 0s; }
 .queen-room--loft::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 55% at 86% 18%, color-mix(in srgb, #fff 22%, transparent), transparent 70%); }
@@ -288,21 +288,61 @@
 .queen-stair svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .queen-stair:hover { color: var(--ink); }
 
-/* the cellar's ribbon scrubs inside its own rail; the page never scrolls */
-.queen-rail {
-  position: relative; align-self: center; width: 100%; overflow-x: auto; overflow-y: hidden; padding: 30px 0 8px;
-  scrollbar-width: thin; scrollbar-color: var(--line) transparent; cursor: grab;
-  -webkit-overflow-scrolling: touch;
+/* A room's 3D world: one canvas behind the room's own controls, never a control itself. */
+.queen-room-world { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.queen-room-world__canvas { display: block; }
+/* The drawn room yields to a live canvas; every control above it stays exactly where it was. */
+.queen-room[data-world="3d"] .queen-vessel, .queen-room[data-world="3d"] .queen-jar__mouth,
+.queen-room[data-world="3d"] .queen-lid, .queen-room[data-world="3d"] .queen-goal__mouth,
+.queen-room[data-world="3d"] .queen-goal__glaze, .queen-room[data-world="3d"] .queen-goal__neck { visibility: hidden; }
+/* With a sculpture behind it, the pose belongs to the sculpture: the button stays square so its label stays level. */
+.queen-room[data-world="3d"] .queen-goal, .queen-room[data-world="3d"] .queen-jar { transform: none !important; }
+/* Room text sits on its own paper, so it reads against whatever the room is made of. */
+.queen-room__head, .queen-room__line, .queen-room__picks, .queen-scrub, .queen-room__acts, .queen-hand, .queen-stair {
+  border-radius: 12px; background: color-mix(in srgb, var(--paper) 82%, transparent); backdrop-filter: blur(3px);
 }
-.queen-rail.is-dragging { cursor: grabbing; user-select: none; }
-.queen-ribbon { position: relative; display: flex; align-items: flex-end; width: max-content; padding-inline: clamp(16px, 6cqw, 96px); }
-.queen-ribbon::before { content: ""; position: absolute; left: 0; right: 0; bottom: 22px; border-bottom: 1px solid var(--queen-clay-shadow); opacity: .5; }
-.queen-jar-seat { display: flex; align-items: flex-end; }
-.queen-jar { width: 64px; display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
-.queen-home--wide .queen-jar { width: 92px; }
-.queen-jar svg { display: block; width: 30px; height: 44px; overflow: visible; }
+.queen-room__head { padding: 6px 10px; justify-self: start; }
+.queen-room__line { padding: 6px 12px; }
+.queen-room__picks, .queen-scrub, .queen-room__acts { padding: 4px 10px; justify-self: center; }
+.queen-room > .queen-go { justify-self: center; padding: 6px 12px; border-radius: 12px; background: color-mix(in srgb, var(--paper) 82%, transparent); backdrop-filter: blur(3px); border-bottom-color: transparent; }
+.queen-goal__name, .queen-months span, .queen-scrub__end {
+  background: color-mix(in srgb, var(--paper) 78%, transparent); border-radius: 6px; padding: 1px 5px;
+}
+.queen-room > *:not(.queen-room-world) { position: relative; z-index: 1; }
+
+/* the cellar: the ribbon scrubs past a fixed gate; the page never scrolls */
+.queen-gate-view {
+  position: relative; align-self: center; width: 100%; overflow: hidden; padding: 26px 0 4px; min-height: 148px;
+  cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; border-radius: 10px;
+}
+.queen-gate-view:active { cursor: grabbing; }
+.queen-gate-view:focus-visible { outline: 2px solid var(--queen-focus); outline-offset: 2px; }
+/* The gate is the fixed thing: the month standing inside it is the one the line is about. */
+.queen-gate { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; pointer-events: none; z-index: 2; }
+.queen-gate::before, .queen-gate::after { content: ""; position: absolute; top: 6px; bottom: 6px; width: 0; border-left: 1px solid var(--ink); opacity: .45; }
+.queen-gate::before { left: -50px; } .queen-gate::after { left: 50px; }
+.queen-gate__tab { position: absolute; top: 0; left: 0; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid var(--ink); }
+.queen-ribbon-track { position: relative; width: max-content; transition: transform .28s var(--queen-ease); }
+.queen-sprockets, .queen-months { display: flex; }
+.queen-sprockets i { width: 100px; display: block; height: 6px; position: relative; }
+.queen-sprockets i::after { content: ""; position: absolute; left: 50%; top: 0; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 1px; background: var(--line); }
+.queen-sprockets i.is-now::after { background: var(--ink); width: 6px; height: 6px; margin-left: -3px; transform: rotate(45deg); }
+.queen-ribbon { position: relative; display: flex; align-items: flex-end; }
+.queen-ribbon::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; border-bottom: 1px solid var(--queen-clay-shadow); opacity: .5; }
+.queen-jar-seat { position: relative; width: 100px; display: flex; align-items: flex-end; justify-content: center; }
+.queen-jar { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.queen-jar svg { display: block; width: 32px; height: 46px; overflow: visible; }
 .queen-jar__mouth { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 1.4; }
-.queen-jar__month { height: 14px; line-height: 14px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.queen-jar--expected .queen-vessel, .queen-jar--quiet .queen-vessel { fill: none; stroke-dasharray: 3 3; }
+.queen-jar.is-outlier { transform: translateY(-14px) rotate(6deg); }
+.queen-jar.is-in-gate svg { filter: drop-shadow(0 5px 5px color-mix(in srgb, var(--ink) 18%, transparent)); }
+/* Where the beat should have been: a dotted hole the month stepped out of. */
+.queen-jar-ghost { position: absolute; bottom: 0; left: 50%; width: 28px; height: 42px; margin-left: -14px; border: 1.5px dotted var(--queen-clay-shadow); border-radius: 46% 46% 12% 12%; opacity: .55; }
+.queen-months span { width: 100px; text-align: center; font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.queen-months span.is-now { color: var(--ink); }
+.queen-scrub { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; justify-self: center; width: min(100%, 460px); }
+.queen-scrub__end { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.queen-scrub input { width: 100%; min-height: 30px; accent-color: var(--ink); }
 .queen-jar.is-outlier svg { width: 42px; height: 62px; transform: translateY(-18px) rotate(-7deg); transform-origin: 50% 100%; }
 .queen-jar--ghost .queen-vessel { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 4; }
 .queen-jar--expected .queen-vessel { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 1.4; stroke-dasharray: 2 3; }
@@ -317,8 +357,21 @@
 .queen-ledge-wrap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 0; }
 .queen-ledge { display: flex; align-items: flex-end; justify-content: center; flex-wrap: nowrap; gap: clamp(10px, 4cqw, 40px); padding: 0 20px; max-width: 100%; border-bottom: 2px solid var(--queen-clay-shadow); }
 .queen-goal { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 44px; border: 0; background: transparent; padding: 0 0 6px; cursor: pointer; transition: transform .5s var(--queen-ease); }
-.queen-goal svg { display: block; width: 48px; height: 74px; overflow: visible; }
-.queen-home--wide .queen-goal svg { width: 60px; height: 92px; }
+.queen-goal svg { display: block; width: calc(48px * var(--goal-w, 1)); height: 74px; overflow: visible; }
+.queen-home--wide .queen-goal svg { width: calc(60px * var(--goal-w, 1)); height: 92px; }
+/* Three widths, so the shelf reads at a glance. The band is form; no figure is on the ledge. */
+.queen-goal--small { --goal-w: .82; } .queen-goal--middling { --goal-w: 1; } .queen-goal--large { --goal-w: 1.2; }
+.queen-goal__glaze { fill: var(--queen-clay-deep); opacity: .85; }
+.queen-goal__neck { fill: var(--queen-clay-shadow); }
+.queen-goal.is-dragging { opacity: .9; transform: translateY(-10px) scale(1.05); z-index: 2; }
+.queen-goal.is-drop { box-shadow: -3px 0 0 var(--queen-bud); }
+.queen-goal[aria-pressed="true"] { transform: translateY(-10px); }
+.queen-goal--lidded[aria-pressed="true"] { transform: rotate(-7deg) translate(-3px, -11px); }
+/* In hand: the one place on the ledge a figure is allowed. */
+.queen-hand { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--queen-glass); max-width: 34ch; }
+.queen-hand__name { margin: 0; font-family: var(--display); font-weight: 300; font-size: 17px; color: var(--ink); }
+.queen-hand__facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; margin: 0; padding: 0; list-style: none; }
+.queen-hand__facts li { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
 .queen-goal__mouth { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 2; }
 .queen-goal__mark { fill: var(--queen-bud); }
 .queen-goal__name { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
@@ -373,6 +426,8 @@
   .queen-bank-fill { fill: CanvasText; opacity: .35; }
   .queen-eye, .queen-eye-open, .queen-brow, .queen-mouth, .queen-crown, .queen-stem, .queen-strand, .queen-whisker, .queen-tail, .queen-seam, .queen-jar__mouth, .queen-goal__mouth { stroke: CanvasText; }
   .queen-speck { display: none; }
+  .queen-goal__glaze, .queen-goal__neck, .queen-jar-ghost { forced-color-adjust: none; }
+  .queen-goal__glaze, .queen-goal__neck { fill: CanvasText; }
   .queen-pupil, .queen-leaf, .queen-bud, .queen-move__object, .queen-crown-point, .queen-stone, .queen-lid, .queen-goal__mark, .queen-nose, .queen-paw-toe, .queen-ear-fold, .queen-bloom-eye, .queen-bloom-tip { fill: CanvasText; }
   /* Her two flower colours must not both collapse to one system colour: the white blooms hollow out, the crimson fill. */
   .queen-bloom--white .queen-petal { fill: Canvas; stroke: CanvasText; stroke-width: 1; }

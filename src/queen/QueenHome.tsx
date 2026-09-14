@@ -10,7 +10,7 @@ import { projectKittyNest, NEST_CATEGORY_LABELS } from "../core/kittyNest.ts";
 import { fundDisplayName } from "../core/spaceNames.ts";
 import {
   QUEEN_BANK_LABELS, QUEEN_BANK_MEANINGS,
-  queenBanks, queenBody, queenBuds, queenCrown, queenFeet, queenHands, queenHem, queenLine, queenRibbons, queenSeams, queenShelf, queenStill, queenTrace, queenVine,
+  queenBanks, queenBody, queenBuds, queenCrown, queenFeet, queenHands, queenHem, queenLine, queenRibbons, queenSeams, queenShelf, queenShelfOrder, QUEEN_SHELF_BANK_KEY, queenStill, queenTrace, queenVine,
   type QueenBankId,
 } from "../core/queenPresentation.ts";
 import { useEasyRead } from "../useEasyRead.ts";
@@ -164,7 +164,20 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const line = queenLine(chapter, still);
   const fundName = fundDisplayName(household);
   const ribbons = useMemo(() => queenRibbons(household, today), [household, today]);
-  const shelf = useMemo(() => queenShelf(nest, household), [nest, household]);
+  // The ledge, in the order the household put it in: one list of design keys on the Build plan bank's own row.
+  const shelfOrder = useMemo(() => queenShelfOrder(household.kittyNestDesigns), [household.kittyNestDesigns]);
+  const shelf = useMemo(() => queenShelf(nest, household, shelfOrder), [nest, household, shelfOrder]);
+  /** Moving a bank writes the shelf's whole order once. The last save wins, as it does everywhere else here. */
+  const keepShelfOrder = useCallback((order: string[]) => {
+    void onCommand((current) => {
+      const design = current.kittyNestDesigns?.find((row) => row.bankKey === QUEEN_SHELF_BANK_KEY && row.visibility === "household");
+      return saveKittyNestDesign(current, {
+        memberId, view: "household", bankKey: QUEEN_SHELF_BANK_KEY, expectedRevision: design?.revision ?? 0,
+        name: design?.name ?? "Build", glaze: design?.glaze ?? "cream", category: design?.category ?? null,
+        ...(design?.studio ? { studio: design.studio } : {}), order,
+      });
+    });
+  }, [memberId, onCommand]);
   const freshBud = trace && trace.region.startsWith("bud:") ? buds.findIndex((bud) => `bud:${bud.goalId}` === trace.region) : -1;
   const pose = POSTURE[still.posture];
 
@@ -771,8 +784,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
         )}
       </aside>
 
-      <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} />
-      <QueenLoft shelf={shelf} open={scene === "loft"} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} />
+      <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} world={world} />
+      <QueenLoft shelf={shelf} open={scene === "loft"} busy={busy} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} onReorder={keepShelfOrder} world={world} />
     </div>
   );
 }

@@ -426,8 +426,9 @@ describe("The Still Queen — two interactions, and they are different", () => {
     const cellar = $(".queen-room--cellar");
     expect(cellar.hasAttribute("inert")).toBe(false);
     expect(cellar.querySelectorAll(".queen-jar-seat")).toHaveLength(12);
-    expect(cellar.querySelector(".queen-jar.is-outlier")?.getAttribute("aria-label")).toMatch(/^Jun — swelled/);
-    expect(cellar.querySelector(".queen-jar--ghost")).not.toBeNull();
+    expect(cellar.querySelector(".queen-jar.is-outlier")?.getAttribute("aria-label")).toMatch(/^June 2026 — swelled/);
+    // The beat that stepped out leaves a dotted hole where it should have been.
+    expect(cellar.querySelector(".queen-jar-ghost")).not.toBeNull();
     expect(cellar.textContent).not.toMatch(/\$\d/);
     await settle();
     expect(document.activeElement).toBe($(".queen-stair--up"));
