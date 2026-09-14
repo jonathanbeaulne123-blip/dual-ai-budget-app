@@ -54,6 +54,41 @@ export type QueenHomeProps = {
   world?: QueenWorldMode;
   /** The local clock as a fractional hour, for the living light. Absent, the device clock. Evidence only. */
   clock?: number;
+  /** The App's shell readings her world takes off the page (Vision v2 §4.2: nothing but her, the tabs and the nav). Kept behind the Status door, never dropped. */
+  shell?: QueenShell;
+};
+
+/**
+ * What the App's top bar, sync line and household switcher used to say on Home. In her world those surfaces are
+ * gone from the page, so their readings live here: the Status door wears the attention label, and the Status panel
+ * carries the person, the household, the device time, the environment, the transport, the revision, the freshness,
+ * the recovery action, the household switcher and the office door. Nothing here posts money.
+ */
+export type QueenShell = {
+  member: string;
+  household: string;
+  time: string;
+  timeIso: string;
+  environment: "development" | "production";
+  onSwitchEnvironment?: () => void;
+  sync: {
+    visible: boolean;
+    transportPrimary: string;
+    revisionLine: string | null;
+    updatedLine: string | null;
+    tone: "neutral" | "warning" | "danger";
+    /** The App's "Needs attention": books validation, sync freshness, integrity findings or the desk. */
+    attentionLabel: string | null;
+    attentionDetail: string | null;
+    actionLabel: string | null;
+    onAction?: () => void;
+    /** Opens the Status Centre at the sync help — the same route the sync line offered. */
+    onOpenDetails: () => void;
+  };
+  /** The household switcher, when more than one household is on this device. */
+  households?: ReactNode;
+  /** The office (instruments and boards) now lives at the Status Centre; this opens it there. */
+  onOpenOffice?: () => void;
 };
 
 /** Doors: the two field doors carry everything that is not money; the three bank doors are the money hierarchy. */
@@ -98,7 +133,7 @@ function readWide(): boolean {
  * button above each. Panels peek; the cellar and the loft are the rooms, and
  * she does not follow you in.
  */
-export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock }: QueenHomeProps) {
+export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock, shell }: QueenHomeProps) {
   const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
   const [easyRead] = useEasyRead(`${household.environment}:${household.householdId}:${memberId}`);
   const ids = useId();
@@ -219,17 +254,40 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const loftStair = useRef<HTMLButtonElement>(null);
   const pull = useRef<{ y: number } | null>(null);
 
-  // Home does not scroll: the composition takes exactly the height left under the chrome above it.
+  // Home does not scroll: the composition takes exactly the height left between the chrome above it and the chrome
+  // under it. Both are measured, never reserved — the Stage 1 `--queen-under` constant stood in for the App's real
+  // page and was wrong by about five times. In the App's world-home frame (`.app[data-world-home]`, fixed and
+  // edge to edge) what survives under her is the fixed nav with its safe-area inset; whatever the App puts above
+  // her (the two-space tabs, a transient books or sync banner) moves her top and is re-measured as it appears.
   useLayoutEffect(() => {
     const element = root.current;
     if (!element || typeof window === "undefined") return;
+    const app = element.closest<HTMLElement>('.app[data-world-home="true"]');
+    const nav = app?.querySelector<HTMLElement>("nav.nav") ?? null;
+    const tabs = app?.querySelector<HTMLElement>(".view-switch") ?? null;
     const measure = () => {
       const top = Math.max(0, Math.round(element.getBoundingClientRect().top + window.scrollY));
       element.style.setProperty("--queen-top", `${top}px`);
+      if (!app) { element.style.removeProperty("--queen-below"); delete element.dataset.frameNav; delete element.dataset.frameTabs; return; }
+      const below = nav ? Math.ceil(nav.getBoundingClientRect().height) : 0;
+      element.style.setProperty("--queen-below", `${below}px`);
+      element.dataset.frameNav = String(below);
+      element.dataset.frameTabs = String(tabs ? Math.ceil(tabs.getBoundingClientRect().height) : 0);
     };
     measure();
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
+    const sizes = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    for (const watched of [nav, tabs]) if (watched) sizes?.observe(watched);
+    const shellNode = app?.querySelector<HTMLElement>(".app-shell") ?? null;
+    const children = shellNode && typeof MutationObserver !== "undefined" ? new MutationObserver(measure) : null;
+    if (shellNode) children?.observe(shellNode, { childList: true });
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
+      sizes?.disconnect();
+      children?.disconnect();
+    };
   }, [wide]);
 
   useEffect(() => () => { if (revealTimer.current) clearTimeout(revealTimer.current); }, []);
@@ -548,10 +606,12 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
           </p>
         </div>
 
-        <button type="button" className="queen-door queen-door--status" aria-label={`Status — freshness, sources, settings. ${glazeWords}`}
+        <button type="button" className="queen-door queen-door--status" aria-label={`Status — freshness, sources, settings.${shell?.sync.attentionLabel ? ` ${shell.sync.attentionLabel}.` : ""} ${glazeWords}`}
+          data-attention={shell?.sync.attentionLabel ? "true" : undefined}
           aria-expanded={open === "status"} aria-controls={panelId} onClick={(event) => openDoor("status", event.currentTarget)}>
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5" /><circle cx="10" cy="10" r="1.4" fill="currentColor" /></svg>
           <span className="queen-door__label">Status</span>
+          {shell?.sync.attentionLabel ? <span className="queen-door__badge">{shell.sync.attentionLabel}</span> : null}
         </button>
       </div>
 
@@ -587,6 +647,28 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             <p className="queen-eyebrow">Status</p>
             <h2 id={`${ids}-panel-title`} className="queen-panel__title">{pulse.headline}</h2>
             <p className="queen-panel__sub">{pulse.detail}</p>
+            {shell && (
+              <section className={`queen-shell queen-shell--${shell.sync.tone}`} aria-labelledby={`${ids}-shell`} data-attention={shell.sync.attentionLabel ? "true" : "false"}>
+                <p id={`${ids}-shell`} className="queen-eyebrow">This device</p>
+                {shell.sync.attentionLabel && (
+                  <div className="queen-shell__attention" role="status">
+                    <p><b>{shell.sync.attentionLabel}.</b>{shell.sync.attentionDetail ? ` ${shell.sync.attentionDetail}` : ""}</p>
+                    {shell.sync.actionLabel && shell.sync.onAction ? <button type="button" className="queen-act queen-act--primary" disabled={busy} onClick={shell.sync.onAction}>{shell.sync.actionLabel}</button> : null}
+                  </div>
+                )}
+                <ul className="queen-rows queen-rows--key">
+                  <li className="queen-row"><span>Who</span><span>{shell.member} · {shell.household}</span></li>
+                  <li className="queen-row"><span>When</span><time dateTime={shell.timeIso}>{shell.time}</time></li>
+                  <li className="queen-row"><span>Books</span><span>{shell.sync.visible ? shell.sync.transportPrimary : "Local books"}{shell.sync.revisionLine ? ` · ${shell.sync.revisionLine}` : ""}{shell.sync.updatedLine ? ` · ${shell.sync.updatedLine}` : ""}</span></li>
+                  <li className="queen-row"><span>Env</span><span>{shell.environment === "production" ? "Production" : "Development"}{shell.onSwitchEnvironment ? <> · <button type="button" className="queen-link" disabled={busy} onClick={shell.onSwitchEnvironment}>Switch environment</button></> : null}</span></li>
+                </ul>
+                {shell.households}
+                <div className="queen-acts">
+                  <button type="button" className="queen-act" onClick={shell.sync.onOpenDetails}>Sync help</button>
+                  {shell.onOpenOffice ? <button type="button" className="queen-act queen-shell__office" onClick={shell.onOpenOffice}>The office · instruments and boards</button> : null}
+                </div>
+              </section>
+            )}
             <ul className="queen-rows queen-rows--key">
               <li className="queen-row"><span>Glaze</span><span>{glazeWords}</span></li>
               <li className="queen-row"><span>Seams</span><span>{seamWords}</span></li>

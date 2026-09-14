@@ -22,7 +22,9 @@
   --queen-scale: 1;
   --queen-lean: 0deg;
   --queen-top: 0px;
-  /* Space the App keeps under Home: its own bottom padding over the fixed navigation plus the collapsed instruments summary. */
+  /* Space under Home. Outside the App's world-home frame (the stand-alone proof, a future embed) this is the App's
+     own bottom padding over the fixed navigation plus the collapsed instruments summary. Inside the frame the
+     component measures the real nav (with its safe-area inset) and writes --queen-below itself; see QueenHome. */
   --queen-under: 100px;
   --queen-below: calc(var(--nav, 76px) + 28px + env(safe-area-inset-bottom, 0px) + var(--queen-under));
   --queen-h: min(40dvh, 62cqh);
@@ -468,3 +470,55 @@
   .queen-wheel__part.is-turning .queen-vessel { stroke: Highlight; }
   .queen-shelf-portraits { border-bottom-color: CanvasText; }
 }
+
+/* ---- the world-home frame: Our Home as one fixed, edge-to-edge world (App.tsx sets data-world-home while the
+   Queen's Nest composes the household Home). No page scroll at any width; the two-space tabs above her and the
+   fixed nav under her are the only chrome; the theme's page world stays as the ground. Every other destination,
+   the personal Home and the panel composition keep the ordinary shell. ---- */
+.app[data-world-home="true"] {
+  position: fixed; inset: 0;
+  max-width: none; margin: 0; padding: 0;
+  min-height: 0; height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.app[data-world-home="true"] > .app-shell { height: 100%; min-height: 0; }
+.app[data-world-home="true"] .view-switch {
+  position: relative; z-index: 3;
+  box-sizing: border-box; width: min(100%, 760px); margin: 0 auto;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 8px;
+}
+.app[data-world-home="true"] [data-app-page="true"], .app[data-world-home="true"] .world-page { min-height: 0; }
+.app[data-world-home="true"] .page-world-art { border-radius: 0; }
+.app[data-world-home="true"] .queen-home { min-height: 180px; }
+/* Transient trust surfaces the App keeps above her (books validation, sync banners, notices) stay compact so they push her, not the page. */
+.app[data-world-home="true"] > .app-shell > :is(.command-banner, .command-chip, .card) { margin: 6px auto; width: min(100% - 24px, 760px); }
+
+/* The Status door wears the App's attention label: visible at rest only while something needs attention. */
+.queen-door__badge {
+  position: absolute; right: 0; bottom: calc(100% + 6px);
+  font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
+  padding: 3px 8px; border-radius: 999px; border: 1px solid var(--queen-bud); color: var(--queen-bud); background: var(--queen-glass);
+}
+.queen-door[data-attention="true"], .queen-door[data-attention="true"] .queen-door__label { opacity: 1; }
+.queen-door[data-attention="true"]::before { transform: scale(1); opacity: 1; }
+.queen-door[data-attention="true"] { color: var(--queen-bud); }
+
+/* Behind the Status door: what the top bar, the sync line and the switcher used to say. */
+.queen-shell { margin: 12px 0 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--card) 70%, transparent); }
+.queen-shell--warning { border-color: var(--queen-bud); }
+.queen-shell--danger { border-color: var(--queen-bud); box-shadow: inset 3px 0 0 var(--queen-bud); }
+.queen-shell__attention { margin: 8px 0 12px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--queen-bud) 12%, transparent); }
+.queen-shell__attention p { margin: 0 0 8px; }
+.queen-shell .ledger-switcher { margin: 12px 0 0; }
+.queen-shell .queen-acts { margin-top: 12px; }
+.queen-link { font: inherit; padding: 0; border: 0; background: none; color: var(--queen-ink); text-decoration: underline; cursor: pointer; min-height: 0; }
+.queen-link:disabled { cursor: default; opacity: .6; }
+@media (forced-colors: active) {
+  .queen-door__badge { border-color: CanvasText; color: CanvasText; background: Canvas; }
+  .queen-shell { border-color: CanvasText; }
+}
+/* Due repeating items are reviewed in place on the ordinary page; over the world they rise as a sheet the arrival link opens, so nothing dated is lost under her. */
+.due-preview-host[data-world-sheet="true"] .due-preview-inline { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0 auto; max-width: 760px; max-height: min(78dvh, calc(100dvh - 72px)); overflow: auto; border-radius: 14px 14px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.app[data-world-home="true"] .due-arrival { position: relative; z-index: 3; width: min(100% - 28px, 732px); margin: 0 auto 4px; }
+.due-preview-host[hidden] { display: none; }
