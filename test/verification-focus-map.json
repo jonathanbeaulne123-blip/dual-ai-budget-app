@@ -21,7 +21,10 @@
         "src/core/queenForm.ts",
         "src/core/queenLight.ts",
         "src/queen/QueenWheel.tsx",
-        "src/queen/QueenPortraits.tsx"
+        "src/queen/QueenPortraits.tsx",
+        "src/queen/world/queenScenery.ts",
+        "src/queen/QueenSceneryFlat.tsx",
+        "src/theme/scenes.ts"
       ],
       "tests": [
         "test/queen-world.test.ts",
@@ -30,9 +33,10 @@
         "test/queens-nest.test.ts",
         "test/kitty-nest.test.ts",
         "test/kitty-studio.test.ts",
-        "test/queen-ceremony.test.ts"
+        "test/queen-ceremony.test.ts",
+        "test/queen-scenery.test.ts"
       ],
-      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her"
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount"
     },
     {
       "sources": [
@@ -52,7 +56,7 @@
         "test/vision-v2-home-ui.test.ts",
         "test/queen-charms.test.ts"
       ],
-      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell \u2014 the no-scroll, chrome-free, \u226555% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
+      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell — the no-scroll, chrome-free, ≥55% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
     },
     {
       "sources": [

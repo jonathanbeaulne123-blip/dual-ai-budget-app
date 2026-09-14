@@ -1,0 +1,233 @@
+[
+  {
+    "name": "lover-320x568",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "lover-390x844",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "lover-720x900",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "lover-1100x800",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "lover-390x844-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "flat",
+    "rootWorld": "flat",
+    "flatHidden": false,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "lover-1100x800-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "flat",
+    "rootWorld": "flat",
+    "flatHidden": false,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "lover-1100x800-reduced",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "row-320x568",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "row-390x844",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "row-720x900",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "row-1100x800",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "row-390x844-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "flat",
+    "rootWorld": "flat",
+    "flatHidden": false,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "row-1100x800-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "flat",
+    "rootWorld": "flat",
+    "flatHidden": false,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "row-1100x800-reduced",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "office-320x568",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "office-390x844",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "office-720x900",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "office-1100x800",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "office-390x844-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "flat",
+    "rootWorld": "flat",
+    "flatHidden": false,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "office-1100x800-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "flat",
+    "rootWorld": "flat",
+    "flatHidden": false,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  },
+  {
+    "name": "office-1100x800-reduced",
+    "overflowX": 0,
+    "overflowY": 0,
+    "world": "3d",
+    "rootWorld": "flat",
+    "flatHidden": true,
+    "flatScene": true,
+    "stats": null,
+    "errors": []
+  }
+]

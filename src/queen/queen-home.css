@@ -393,6 +393,49 @@
 }
 
 /* ---- the world: one scene behind the controls ---- */
+/* The world she sits in, drawn: the no-WebGL twin of the 3D scenery. It sits
+   behind everything in the field and carries no state, so hiding it when the
+   3D world is live costs no reading. */
+.queen-flat-scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.queen-home[data-world="3d"] .queen-flat-scene { visibility: hidden; }
+/* The canvas's own live flag is the one that is always right, so the drawn world
+   yields to it directly rather than through the root's data-world mirror. */
+.queen-field:has(.queen-world[data-live="true"]) .queen-flat-scene { visibility: hidden; }
+.queen-flat-scene--clouds .flat-sky { fill: var(--queen-sky-lover, #f7cfdf); }
+.queen-flat-scene--row .flat-sky { fill: var(--queen-sky-row, #cbdde2); }
+.queen-flat-scene--office .flat-sky { fill: var(--queen-sky-office, #e7dbc8); }
+.flat-puff ellipse { fill: #ffd7e6; }
+.flat-puff--1 ellipse { fill: #ffbcd6; } .flat-puff--2 ellipse { fill: #f3bde4; }
+.flat-puff--3 ellipse { fill: #cfc4f2; } .flat-puff--4 ellipse { fill: #b9d2f7; }
+.queen-flat-scene .flat-far { opacity: .62; }
+.queen-flat-scene .flat-mid { opacity: .85; }
+.flat-harbour { fill: #6d8c9c; }
+.flat-roof { fill: #4b5a60; } .flat-chimney { fill: #fbf6ea; } .flat-pane { fill: #fff1c4; }
+.flat-road { fill: #8e9890; } .flat-pavement { fill: #a5ada3; } .flat-kerb { fill: #c6ccc0; }
+.flat-bollard { fill: #4a5a60; } .flat-lamp rect { fill: #4a5a60; } .flat-lamp-head { fill: #ffeec0; }
+.flat-gull path { fill: none; stroke: #fdfbf4; stroke-width: 3; }
+.flat-window { fill: #cfe3ef; } .flat-frame rect { fill: #6f5946; } .flat-shelf { fill: #9a7350; } .flat-desk { fill: #9a7350; }
+.queen-flat-scene--office .flat-desk { stroke: #7d5b3c; stroke-width: 3; }
+.flat-leaf { fill: #3f7a45; }
+.flat-stem { fill: none; stroke: #2f5f3a; stroke-width: 3; } .flat-plant:nth-child(even) .flat-leaf { fill: #57924f; } .flat-pot { fill: #b4744f; }
+.flat-mug path { fill: #f4efe2; } .flat-brew { fill: #4a2d1c; }
+.flat-mug-handle { fill: none; stroke: #f4efe2; stroke-width: 9; }
+.flat-steam path { fill: none; stroke: #fffaf0; stroke-width: 4; opacity: .5; stroke-linecap: round; }
+.flat-book rect { fill: #efe7d6; } .flat-pen { fill: #8a3b2d; }
+/* Ambient motion, the drawn path's own: the same three gestures the 3D clock makes. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-atmosphere="playing"] .queen-flat-scene--clouds .flat-mid { animation: queen-drift 54s linear infinite; }
+  :root[data-atmosphere="playing"] .queen-flat-scene--clouds .flat-near { animation: queen-drift 86s linear infinite reverse; }
+  :root[data-atmosphere="playing"] .flat-gull { animation: queen-cross 22s linear infinite; }
+  :root[data-atmosphere="playing"] .flat-vine { animation: queen-sway 7s ease-in-out infinite; transform-origin: top center; }
+  :root[data-atmosphere="playing"] .flat-vine--1 { animation-duration: 9s; } :root[data-atmosphere="playing"] .flat-vine--2 { animation-duration: 8s; }
+  :root[data-atmosphere="playing"] .flat-steam path { animation: queen-rise 4.5s ease-in-out infinite; }
+  :root[data-atmosphere="playing"] .flat-steam path:last-child { animation-delay: 2.2s; }
+}
+@keyframes queen-drift { from { transform: translateX(-3%); } to { transform: translateX(3%); } }
+@keyframes queen-cross { from { transform: translate(-60px, 150px); } to { transform: translate(1060px, 110px); } }
+@keyframes queen-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes queen-rise { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: .55; } 100% { opacity: 0; transform: translateY(-22px); } }
 .queen-world { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .queen-world__canvas { display: block; }
 .queen-centre, .queen-door { z-index: 1; }
