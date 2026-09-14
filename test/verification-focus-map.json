@@ -3,6 +3,26 @@
   "mappings": [
     {
       "sources": [
+        "src/queen/world/queenAuthoring.ts",
+        "src/queen/world/queenSculpture.ts",
+        "src/queen/world/queenWorld.ts",
+        "src/queen/QueenWorld.tsx",
+        "src/queen/QueenFigure.tsx",
+        "src/kitty/sculpture.ts",
+        "src/kitty/nestSculpture.ts",
+        "src/kitty/studio/flat.tsx"
+      ],
+      "tests": [
+        "test/queen-world.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/queens-nest.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/kitty-studio.test.ts"
+      ],
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched"
+    },
+    {
+      "sources": [
         "src/core/queenPresentation.ts",
         "src/queen/QueenHome.tsx",
         "src/queen/queen-home.css",

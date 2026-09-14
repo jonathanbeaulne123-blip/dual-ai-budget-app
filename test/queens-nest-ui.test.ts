@@ -145,6 +145,60 @@ describe("The Still Queen — emptiness and stillness", () => {
   });
 });
 
+describe("The Queen's world — the flat path is the whole reading", () => {
+  it("renders every bank as the studio's own flat piece when there is no WebGL, and never shows an error or an empty box", async () => {
+    // jsdom has no WebGL: `auto` must try, fail silently and leave the drawn figure and the flat portraits in place.
+    await render(seeded());
+    await settle();
+    await settle();
+    expect(home().dataset.world).toBe("flat");
+    expect(host.querySelector(".queen-world")?.getAttribute("data-live")).toBe("false");
+    expect(host.querySelector(".queen-render-note, .queen-error, [role=alert]")).toBeNull();
+    expect(host.querySelector(".queen-svg")).not.toBeNull();
+    await click($(".queen-figure"));
+    const portraits = [...host.querySelectorAll<HTMLElement>(".queen-bank-portrait")];
+    expect(portraits.map((el) => el.dataset.worldBank)).toEqual(expect.arrayContaining(["protect", "build"]));
+    for (const portrait of portraits) {
+      expect(portrait.querySelector("svg"), portrait.dataset.worldBank).not.toBeNull(); // KittyFlat is mocked to a bare svg in this file
+      expect(["true", "false"]).toContain(portrait.dataset.fired);
+    }
+    expect(portraits.some((el) => el.dataset.worldBank?.startsWith("goal:"))).toBe(true);
+    expect($(".queen-bank--build .queen-bank__button").getAttribute("aria-label")).toMatch(/Goals: Fictional trip to the shore/);
+    expect(host.querySelector(".nest-prop")).toBeNull();
+  });
+
+  it("keeps the drawn figure as the flat still with every channel, and the 3D still only when the world is live", async () => {
+    await render(seeded(), { });
+    const described = document.getElementById($(".queen-figure").getAttribute("aria-describedby")!)!;
+    expect(described.textContent).not.toMatch(/In the world:/);
+    expect(described.textContent).toMatch(/Glazed|Matte/);
+    expect(described.textContent).toMatch(/gold seam|No gold seams/);
+    expect(described.textContent).toMatch(/vine/);
+  });
+
+  it("lets the couple dress her from Status and keeps the look without a kiln, on the shared King design", async () => {
+    const h = seeded();
+    const { onCommand } = await render(h);
+    await click($(".queen-door--status"));
+    expect($(".queen-look")).not.toBeNull();
+    expect($(".queen-look").textContent).toMatch(/never fired/);
+    await click([...host.querySelectorAll<HTMLButtonElement>(".queen-swatch")].find((row) => row.getAttribute("aria-label") === "Clay: rose")!);
+    await click([...host.querySelectorAll<HTMLButtonElement>(".queen-look .queen-pick")].find((row) => row.textContent === "star")!);
+    await click([...host.querySelectorAll<HTMLButtonElement>(".queen-look .queen-act")].find((row) => row.textContent === "Keep her look")!);
+    expect(onCommand).toHaveBeenCalledTimes(1);
+    const next = (onCommand.mock.calls[0]![0] as (current: Household) => CommitResult)(h).household;
+    const king = next.kittyNestDesigns!.find((row) => row.bankKey === "king" && row.visibility === "household")!;
+    expect(king.glaze).toBe("rose");
+    expect(king.studio?.draft?.firedAt).toBeNull();
+    expect(king.studio?.draft?.paint.base).toBe("rose");
+    expect(king.studio?.draft?.paint.stamps.map((row) => `${row.part}:${row.kind}`)).toEqual(["body:star"]);
+    expect(king.studio?.fired ?? []).toHaveLength(0);
+    expect(king.setupCompletedAt).toBeNull();
+    // No kiln control exists on her.
+    expect([...host.querySelectorAll("button")].some((row) => /fire|kiln/i.test(row.textContent ?? ""))).toBe(false);
+  });
+});
+
 describe("The Still Queen — two interactions, and they are different", () => {
   it("expands into three banks with a button above each, and collapses again", async () => {
     await render(seeded());

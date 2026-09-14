@@ -14,7 +14,15 @@ import {
   type QueenBankId,
 } from "../core/queenPresentation.ts";
 import { useEasyRead } from "../useEasyRead.ts";
-import { QueenFigure, QueenBankVessel } from "./QueenFigure.tsx";
+import { QueenFigure } from "./QueenFigure.tsx";
+import { QueenWorld, type QueenWorldMode } from "./QueenWorld.tsx";
+import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenGlazeAxis, queenLook, queenPose, queenWorldStill } from "./world/queenAuthoring.ts";
+import type { WorldBankInput, WorldQueenInput, WorldStats } from "./world/queenWorld.ts";
+import { KittyFlat } from "../kitty/studio/flat.tsx";
+import { saveKittyNestDesign } from "../core/kittyNestDesigns.ts";
+import { KITTY_GLAZES } from "../core/goalEnvelopes.ts";
+import { formatDateLabel } from "../core/calendar.ts";
+import type { KittyGlaze, KittyPaintV1, KittyStampKind } from "../core/types.ts";
 import { QueenCellar } from "./QueenCellar.tsx";
 import { QueenLoft } from "./QueenLoft.tsx";
 import "./queen-home.css";
@@ -33,6 +41,8 @@ export type QueenHomeProps = {
   /** Opens the existing nest gallery at a goal or a category bank — the reviewed command and Final Confirm boundary. */
   onOpenBank: (request: { goalId?: string; bankId?: string }) => void;
   identityArt?: ReactNode;
+  /** The world: `auto` tries WebGL and degrades silently; `flat` keeps the drawn figure; `3d` insists (evidence only). */
+  world?: QueenWorldMode;
 };
 
 /** Doors: the two field doors carry everything that is not money; the three bank doors are the money hierarchy. */
@@ -77,7 +87,7 @@ function readWide(): boolean {
  * button above each. Panels peek; the cellar and the loft are the rooms, and
  * she does not follow you in.
  */
-export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt }: QueenHomeProps) {
+export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto" }: QueenHomeProps) {
   const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
   const [easyRead] = useEasyRead(`${household.environment}:${household.householdId}:${memberId}`);
   const ids = useId();
@@ -108,6 +118,41 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const shelf = useMemo(() => queenShelf(nest, household), [nest, household]);
   const freshBud = trace && trace.region.startsWith("bud:") ? buds.findIndex((bud) => `bud:${bud.goalId}` === trace.region) : -1;
   const pose = POSTURE[still.posture];
+
+  // ---- the world: her look, her banks as studio sculptures ----
+  const kingDesign = nest.king.design;
+  const [lookDraft, setLookDraft] = useState<{ base: KittyGlaze; stamp: KittyStampKind | null } | null>(null);
+  const look = useMemo(() => queenLook(kingDesign), [kingDesign]);
+  const paint = useMemo<KittyPaintV1>(() => lookDraft ? draftPaint(look.paint, lookDraft) : look.paint, [look, lookDraft]);
+  const worldQueen = useMemo<WorldQueenInput>(() => ({
+    pose: queenPose(still),
+    fill: body.level,
+    axis: queenGlazeAxis(still.glaze),
+    crown: crown.light === "both",
+    seams: body.seams,
+    vine: { chapter: Boolean(vine.chapter), growth: vine.growth, buds: buds.length },
+    feet: feet.nearness,
+    paint,
+  }), [still, body.level, body.seams, crown.light, vine.chapter, vine.growth, buds.length, feet.nearness, paint]);
+  const bankPieces = useMemo(() => {
+    const protectBank = nest.categories.find((bank) => bank.category === "protect")!;
+    const buildBank = nest.categories.find((bank) => bank.category === "build")!;
+    const rows = [
+      { id: "protect", bank: protectBank, step: banks.protect.share },
+      { id: "build", bank: buildBank, step: banks.build.share },
+      ...shelf.filter((item) => item.goalId).slice(0, 3).map((item) => ({ id: `goal:${item.goalId}`, bank: item.bank, step: item.bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor((item.bank.amountCents / item.bank.targetCents) * 10))) : 0 })),
+    ];
+    return rows.map((row) => { const piece = queenBankPiece(row.bank); return { id: row.id, piece, fired: queenBankFired(piece), glaze: queenBankGlaze(row.bank), step: row.step, name: row.bank.name }; });
+  }, [nest, banks.protect.share, banks.build.share, shelf]);
+  const worldBanks = useMemo<WorldBankInput[]>(() => bankPieces.map(({ id, piece, fired, step }) => ({ id, piece, fired, step })), [bankPieces]);
+  const [worldLive, setWorldLive] = useState(false);
+  const worldStats = useRef<(() => WorldStats) | null>(null);
+  const onWorldLive = useCallback((live: boolean, stats?: () => WorldStats) => {
+    setWorldLive(live);
+    worldStats.current = stats ?? null;
+    // Evidence hook only: the proof page reads frame timings from here. Never present in a production bundle.
+    if (import.meta.env.DEV && typeof window !== "undefined") (window as unknown as { __queenWorldStats?: (() => WorldStats) | null }).__queenWorldStats = stats ?? null;
+  }, []);
 
   // ---- where you are: rest · expanded · a peek · a room ----
   const [expanded, setExpanded] = useState(false);
@@ -247,7 +292,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const budWords = buds.length === 0 ? "No buds: nothing is growing yet." : `${buds.length} ${buds.length === 1 ? "bud" : "buds"}: ${buds.map((bud) => bud.name).join(", ")}.`;
   const feetWords = feet.count === 0 ? "Nothing dated is at her feet." : `${feet.count} dated ${feet.count === 1 ? "obligation" : "obligations"} at her feet; the nearest is ${feet.nearness[0] === "near" ? "within the week" : feet.nearness[0] === "soon" ? "within two weeks" : "later this month"}.`;
   const handsWords = hands.kind === "move" ? `At her hands, one Move: ${sentence(hands.move.text)}.` : "Her hands are empty. Nothing needs doing.";
-  const stillWords = `${still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}`;
+  const stillWords = `${worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}`;
   const bankWords = (id: QueenBankId) => banks[id].banks.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
   const waiting = presence.filter((row) => row.waitingOn).length + (hands.kind === "move" ? 1 : 0);
 
@@ -272,6 +317,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       data-open={open ?? "none"}
       data-side={open ? PANEL_SIDE[open] : "right"}
       data-easy-read={easyRead ? "true" : "false"}
+      data-world={worldLive ? "3d" : "flat"}
       style={{ "--queen-scale": String(pose.scale), "--queen-lean": `${pose.lean}deg` } as CSSProperties}
     >
       {identityArt ? <div className="queen-identity-art" aria-hidden="true">{identityArt}</div> : null}
@@ -279,6 +325,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
 
       <div className="queen-field" onClick={onFieldClick} inert={inRoom}>
         <div className="queen-rings" aria-hidden="true" />
+        <QueenWorld root={root} queen={worldQueen} banks={worldBanks} expanded={expanded} breathing={scene === "home" && !expanded && !open} mode={world} onLive={onWorldLive} />
 
         <button type="button" className="queen-door queen-door--together" aria-label={`Together — decisions waiting on both of you${waiting ? `: ${waiting} waiting` : ""}`}
           aria-expanded={open === "together"} aria-controls={panelId} onClick={(event) => openDoor("together", event.currentTarget)}>
@@ -291,7 +338,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             <div className="queen-bank queen-bank--protect" inert={!expanded}>
               <button ref={(node) => { bankRefs.current.protect = node; }} type="button" className="queen-bank__button" aria-expanded={open === "protect"} aria-controls={panelId}
                 aria-label={`Protect — ${QUEEN_BANK_MEANINGS.protect} ${bankWords("protect")}. Opens a peek; again for the cellar`} onClick={(event) => openDoor("protect", event.currentTarget)}>Protect</button>
-              <QueenBankVessel kind="protect" share={banks.protect.share} />
+              <BankPortrait row={bankPieces[0]!} />
             </div>
 
             <div className="queen-bank queen-bank--queen">
@@ -316,8 +363,11 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
 
             <div className="queen-bank queen-bank--build" inert={!expanded}>
               <button ref={(node) => { bankRefs.current.build = node; }} type="button" className="queen-bank__button" aria-expanded={open === "build"} aria-controls={panelId}
-                aria-label={`Build — ${QUEEN_BANK_MEANINGS.build} ${bankWords("build")}. Opens a peek; again for the loft`} onClick={(event) => openDoor("build", event.currentTarget)}>Build</button>
-              <QueenBankVessel kind="build" share={banks.build.share} />
+                aria-label={`Build — ${QUEEN_BANK_MEANINGS.build} ${bankWords("build")}${shelf.some((item) => item.goalId) ? `. Goals: ${shelf.filter((item) => item.goalId).map((item) => item.name).join(", ")}` : ""}. Opens a peek; again for the loft`} onClick={(event) => openDoor("build", event.currentTarget)}>Build</button>
+              <BankPortrait row={bankPieces[1]!} />
+              {expanded && bankPieces.length > 2 && (
+                <span className="queen-goalrow" aria-hidden="true">{bankPieces.slice(2).map((row) => <BankPortrait key={row.id} row={row} small />)}</span>
+              )}
             </div>
           </div>
 
@@ -372,6 +422,35 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
               <li className="queen-row"><span>Seams</span><span>{seamWords}</span></li>
               <li className="queen-row"><span>Feet</span><span>{feetWords}</span></li>
             </ul>
+            <section className="queen-look" aria-labelledby={`${ids}-look`}>
+              <p id={`${ids}-look`} className="queen-eyebrow">Her look</p>
+              <p className="queen-panel__muted">{kingDesign ? `Kept ${formatDateLabel(kingDesign.updatedAt.slice(0, 10))}. Both of you author her; a kept look is visible to both.` : "Not yet dressed. Both of you author her; a kept look is visible to both."} She is never fired: her surface follows the evidence, not a kiln.</p>
+              <div className="queen-look__row" role="group" aria-label="Her clay">
+                {(Object.keys(KITTY_GLAZES) as KittyGlaze[]).map((glaze) => (
+                  <button key={glaze} type="button" className="queen-swatch" style={{ "--swatch": KITTY_GLAZES[glaze] } as CSSProperties} aria-pressed={(lookDraft?.base ?? look.base) === glaze} aria-label={`Clay: ${glaze.replace("-", " ")}`}
+                    onClick={() => setLookDraft({ base: glaze, stamp: lookDraft?.stamp ?? null })} />
+                ))}
+              </div>
+              <div className="queen-look__row" role="group" aria-label="A mark on her belly">
+                {(["none", "heart", "star", "flower", "leaf", "moon", "sun"] as const).map((kind) => (
+                  <button key={kind} type="button" className="queen-pick" aria-pressed={(lookDraft?.stamp ?? null) === (kind === "none" ? null : kind)}
+                    onClick={() => setLookDraft({ base: lookDraft?.base ?? (look.base as KittyGlaze), stamp: kind === "none" ? null : kind })}>{kind}</button>
+                ))}
+              </div>
+              <div className="queen-acts">
+                <button type="button" className="queen-act queen-act--primary" disabled={busy || !lookDraft} onClick={() => {
+                  if (!lookDraft) return;
+                  const draft = lookDraft;
+                  void onCommand((current) => saveKittyNestDesign(current, guardQueenDesignSave({
+                    memberId, view: "household", bankKey: "king", expectedRevision: current.kittyNestDesigns?.find((row) => row.id === kingDesign?.id)?.revision ?? kingDesign?.revision ?? 0,
+                    name: kingDesign?.name ?? "Our Queen", glaze: draft.base, category: null,
+                    studio: { version: 1, draft: { id: kingDesign?.studio?.draft?.id ?? "queen", createdAt: kingDesign?.studio?.draft?.createdAt ?? new Date().toISOString(), firedAt: null, sculpt: kingDesign?.studio?.draft?.sculpt ?? defaultQueenSculpt(), paint: draftPaint(look.paint, draft) }, fired: kingDesign?.studio?.fired ?? [], ...(kingDesign?.studio?.displayId ? { displayId: kingDesign.studio.displayId } : {}) },
+                  })));
+                  setLookDraft(null);
+                }}>Keep her look</button>
+                {lookDraft && <button type="button" className="queen-act" onClick={() => setLookDraft(null)}>Undo</button>}
+              </div>
+            </section>
             <button type="button" className="queen-go" onClick={() => onGo("more")}>Open the Status Centre</button>
           </>
         )}
@@ -414,4 +493,23 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       <QueenLoft shelf={shelf} open={scene === "loft"} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} />
     </div>
   );
+}
+
+/** A bank in the flat path: the studio's own 2D twin of the piece its owner authored. Fired reads fired. */
+function BankPortrait({ row, small = false }: { row: { id: string; piece: import("../core/types.ts").KittyPieceV1; fired: boolean; glaze: string; step: number; name: string }; small?: boolean }) {
+  return (
+    <span className={`queen-bank-portrait${small ? " queen-bank-portrait--small" : ""}`} data-world-bank={row.id} data-fired={row.fired ? "true" : "false"} aria-hidden="true">
+      <KittyFlat piece={row.piece} glaze={row.glaze} step={row.step} fired={row.fired} className="queen-bank-flat" />
+    </span>
+  );
+}
+
+function draftPaint(base: KittyPaintV1, draft: { base: KittyGlaze; stamp: KittyStampKind | null }): KittyPaintV1 {
+  const stamps = base.stamps.filter((stamp) => stamp.id !== "queen-belly");
+  if (draft.stamp) stamps.push({ id: "queen-belly", anchor: "belly", part: "body", u: 0.5, v: 0.62, kind: draft.stamp, color: "#2b2926", size: 0.22, rotation: 0 });
+  return { ...base, base: draft.base, stamps };
+}
+
+function defaultQueenSculpt() {
+  return { body: "round" as const, profile: [1, 1, 1, 1] as [number, number, number, number], head: "round" as const, ears: "none" as const, eyes: "closed" as const, mouth: "serene" as const, whiskers: "none" as const, tail: "none" as const, nose: "tiny" as const };
 }

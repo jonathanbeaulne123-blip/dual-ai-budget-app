@@ -44,11 +44,11 @@ if(surface==='path')return React.createElement('div',{className:'app our-path ou
 if(surface==='comfort')return React.createElement('div',{className:'app more-surfaces status-centre','data-ledger-tab':'more'},React.createElement(ComfortControls,{environment:'development'}));
 return React.createElement('div',{className:'app','data-ledger-tab':'home'},React.createElement(HouseholdHome,{household:state,memberId:'MEM-001',today:'2026-09-12',freshness:'current',busy:false,onCommand:command,onGo:()=>{},onOpenSetup:()=>{}}));}
 function QueenProof(){const[household,setHousehold]=useState(()=>{const h=queenSeeded();if(q.get('easy')==='1')localStorage.setItem('hearth:hercules-easy-read:'+h.environment+':'+h.householdId+':MEM-001','1');return h;});const ref=useRef(household);ref.current=household;const command=async fn=>{const result=fn(ref.current);ref.current=result.household;setHousehold(result.household);return {...result,ok:true};};
-const freshness=q.get('freshness')||'current';if(q.get('reduced')==='1')document.documentElement.dataset.motion='reduced';
+const freshness=q.get('freshness')||'current';if(q.get('reduced')==='1')document.documentElement.dataset.motion='reduced';const world=q.get('world')||'auto';
 return React.createElement('div',{className:'app','data-ledger-tab':'home'},
   chrome?React.createElement('header',{className:'topbar','data-proof-chrome':'top'},React.createElement('div',{className:'brand'},React.createElement('div',null,React.createElement('h1',null,'Hearth'),React.createElement('p',{className:'brand__identity'},'Alex (fictional) · Fictional household · 12:00')))):null,
   chrome?React.createElement('p',{className:'sync-freshness','data-proof-chrome':'sync'},'Fictional sync line'):null,
-  React.createElement(HouseholdHome,{household,memberId:'MEM-001',today:'2026-09-12',freshness,busy:false,onCommand:command,onGo:()=>{},onOpenSetup:()=>{},composition:'queen'}),
+  React.createElement(HouseholdHome,{household,memberId:'MEM-001',today:'2026-09-12',freshness,busy:false,onCommand:command,onGo:()=>{},onOpenSetup:()=>{},composition:'queen',world}),
   chrome?React.createElement('details',{className:'home-instruments','data-proof-chrome':'instruments'},React.createElement('summary',null,'The office · instruments and boards')):null);}
 createRoot(document.getElementById('root')).render(React.createElement(composition==='queen'?QueenProof:Proof));`;
 export async function startHouseholdHomeProof({port=5186}={}) {
