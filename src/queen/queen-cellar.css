@@ -1,0 +1,106 @@
+/*
+ * The cellar's bill rail. (This sheet loads before queen-home.css, so the rules that meet its
+ * single-class ones — the gate view, the jar — are scoped to .queen-room--cellar to win.)
+ * Time runs along the rail, one cell a day; the
+ * month's bills stand on their due days as jars; the water behind the rail
+ * is the Fund's balance on the day in the gate, drawn against the month's
+ * crest; the tidemark is the buffer. Form over figures: the jar's shape is
+ * its type, its water is what has been saved, a crack is "due and not
+ * full", a shard is "paid". The page never scrolls; the rail scrubs.
+ */
+
+/* The rail takes the room's leftover height (the grid's 1fr row) and never pushes its neighbours; when a frame is short the jars' heads are what gets cropped. */
+.queen-room--cellar .queen-cellar-rail { align-self: stretch; padding-top: 8px; padding-bottom: 0; min-height: 96px; }
+.queen-room--cellar .queen-cellar-rail .queen-gate::before { left: -22px; }
+.queen-room--cellar .queen-cellar-rail .queen-gate::after { left: 22px; }
+
+/* The water: the Fund's balance on the day in the gate. It rises and falls as the gate moves. */
+.queen-water {
+  position: absolute; left: 0; right: 0; bottom: 18px; z-index: 0; pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--queen-water, #6f8fa6) 22%, transparent), color-mix(in srgb, var(--queen-water, #6f8fa6) 4%, transparent) 70%, transparent);
+  border-top: 1.5px solid color-mix(in srgb, var(--queen-water, #6f8fa6) 70%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, #fff 45%, transparent);
+  transition: height .32s var(--queen-ease);
+}
+.queen-room--cellar .queen-cellar-rail.is-under .queen-water { background: linear-gradient(to top, color-mix(in srgb, var(--copper) 18%, transparent), color-mix(in srgb, var(--copper) 4%, transparent) 70%, transparent); border-top-color: color-mix(in srgb, var(--copper) 70%, transparent); }
+.queen-room--cellar .queen-cellar-rail.is-dry .queen-water { background: transparent; border-top: 1px dashed color-mix(in srgb, var(--ink) 40%, transparent); }
+/* The tidemark: the buffer. A ruled line the water should stay above. */
+.queen-tidemark { position: absolute; left: 0; right: 0; height: 0; z-index: 1; pointer-events: none; margin-bottom: 18px; border-top: 1px dashed color-mix(in srgb, var(--ink) 45%, transparent); }
+.queen-tidemark::after { content: ""; position: absolute; right: 6px; top: -3px; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); opacity: .45; }
+
+/* The track hangs from the gate: its left edge is the middle of the rail, and the cursor slides it left one cell a day. */
+.queen-room--cellar .queen-cellar-track { position: absolute; left: 50%; bottom: 4px; z-index: 1; }
+.queen-cellar-days { display: flex; align-items: flex-end; }
+.queen-cellar-day { position: relative; width: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; min-height: 108px; }
+.queen-cellar-day::before { content: ""; position: absolute; left: 0; right: 0; bottom: 18px; border-bottom: 1px solid var(--queen-clay-shadow); opacity: .5; }
+.queen-cellar-day::after { content: ""; position: absolute; left: 50%; bottom: 14px; width: 1px; height: 4px; margin-left: -.5px; background: var(--line); }
+.queen-cellar-day.is-today::after { width: 6px; height: 6px; margin-left: -3px; bottom: 12px; border-radius: 1px; background: var(--ink); transform: rotate(45deg); }
+.queen-cellar-day.is-dry::before { border-bottom-style: dashed; }
+.queen-cellar-day__seats { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 2px; margin-bottom: 18px; min-height: 52px; }
+.queen-cellar-day__tick { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; color: var(--muted); line-height: 16px; height: 18px; }
+.queen-cellar-day__tick:not(:empty) { background: color-mix(in srgb, var(--paper) 78%, transparent); border-radius: 6px; padding: 0 4px; }
+.queen-cellar-day.is-today .queen-cellar-day__tick { color: var(--ink); }
+.queen-cellar-day.is-in-gate .queen-cellar-day__tick { color: var(--ink); font-weight: 600; }
+
+/* The bill jars. Same jar grammar as the months view; the water inside is the saved amount. */
+/* The bill on the rail is the nest's own lidded kitty bank (QueenBankFlat, form "bill"); its water is what the bank has saved. */
+.queen-room--cellar .queen-jar--bill { width: 44px; min-height: 52px; gap: 0; }
+.queen-room--cellar .queen-billjar { position: relative; display: block; width: 44px; height: 44px; }
+.queen-room--cellar .queen-billjar__cat { width: 44px; height: 44px; }
+.queen-room--cellar .queen-jar--bill.is-in-gate .queen-billjar { transform: translateY(-2px); }
+/* A subscription is a cooler clay, a planned expense a ghost, an appointment paler; the shape stays the bank's. */
+.queen-room--cellar .queen-billjar--subscription .queen-bank-flat__clay { fill: color-mix(in srgb, var(--queen-clay) 70%, var(--queen-water, #6f8fa6)); }
+.queen-room--cellar .queen-billjar--appointment .queen-bank-flat__clay { fill: color-mix(in srgb, var(--queen-clay) 60%, var(--paper)); }
+.queen-room--cellar .queen-billjar .queen-bank-flat__glaze { fill: color-mix(in srgb, var(--queen-water, #6f8fa6) 70%, var(--queen-clay-deep)); opacity: .9; }
+/* The crack: due and not full is a hairline in copper; paid is the bank broken — hollow, with the break in ink. */
+.queen-room--cellar .queen-billjar__crack { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.queen-room--cellar .queen-billjar__crack path { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.queen-room--cellar .queen-billjar__crack--due path { stroke: var(--copper); }
+.queen-room--cellar .queen-billjar.is-shard { opacity: .8; }
+.queen-room--cellar .queen-jar--shard svg { opacity: .8; }
+/* Lifted out for a rehearsal: it floats, and the rail beneath it is a hole. */
+.queen-room--cellar .queen-jar--bill.is-held .queen-billjar { transform: translateY(-10px) rotate(-6deg); transform-origin: 50% 100%; opacity: .7; }
+.queen-room--cellar .queen-jar--bill.is-held::after { content: ""; position: absolute; bottom: 0; left: 50%; width: 22px; height: 30px; margin-left: -11px; border: 1.5px dotted var(--queen-clay-shadow); border-radius: 46% 46% 12% 12%; opacity: .55; }
+/* Due and full: the hammer leans on the rail beside the jar. Always by hand. */
+.queen-room--cellar .queen-jar--hammer::before { content: ""; position: absolute; right: -6px; bottom: 6px; width: 14px; height: 18px; border-radius: 2px; background: var(--ink); opacity: .85; clip-path: polygon(0 0, 100% 0, 100% 34%, 62% 34%, 62% 100%, 38% 100%, 38% 34%, 0 34%); transform: rotate(18deg); transform-origin: 50% 100%; }
+
+/* View toggle and the after-strike notice */
+.queen-room--cellar .queen-cellar-views { justify-self: center; }
+.queen-cellar-notice { color: var(--ink); }
+.queen-hammer { border-bottom-width: 2px; }
+.queen-hammer--crack { border-bottom-style: dashed; }
+
+/* Under 3D the flat jars go quiet the way the months view's do; the water and marks stay, they are the reading. */
+.queen-room[data-world="3d"] .queen-water { background: linear-gradient(to top, color-mix(in srgb, var(--queen-water, #6f8fa6) 16%, transparent), transparent 60%); border-top-width: 2px; border-top-color: color-mix(in srgb, var(--queen-water, #6f8fa6) 85%, #fff); }
+.queen-room[data-world="3d"] .queen-jar--bill.is-held .queen-billjar, .queen-room[data-world="3d"] .queen-jar--bill.is-in-gate .queen-billjar { transform: none !important; }
+/* Under 3D the drawn cat yields to the sculpture (queen-home.css hides .queen-bank-flat); the crack and the hammer stay drawn over it. */
+
+/* Short frames: the rail loses its headroom first, then the slider (the rail still drags and takes the arrow keys), then the sub-line. The stair never gives. */
+.queen-room--cellar .queen-cellar-views { flex-wrap: nowrap; max-width: 100%; }
+.queen-room--cellar .queen-cellar-views .queen-pick { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+@container queen (max-height: 560px) {
+  .queen-cellar-day { min-height: 88px; }
+  .queen-cellar-day__seats { min-height: 44px; }
+  .queen-room--cellar .queen-jar--bill { min-height: 44px; }
+  .queen-room--cellar .queen-billjar, .queen-room--cellar .queen-billjar__cat { width: 38px; height: 38px; }
+  .queen-room--cellar .queen-cellar-views .queen-pick { min-height: 28px; padding: 2px 8px; font-size: 9px; }
+}
+@container queen (max-height: 400px) {
+  .queen-cellar-day { min-height: 76px; }
+  .queen-room--cellar .queen-cellar-rail + .queen-scrub { display: none; }
+  .queen-room--cellar .queen-cellar-rail { min-height: 80px; padding-top: 2px; }
+  .queen-room--cellar .queen-cellar-views { padding: 2px 6px; }
+  .queen-room--cellar .queen-cellar-views .queen-pick { min-height: 26px; padding: 1px 6px; letter-spacing: .06em; }
+  .queen-room--cellar .queen-room__sub { display: none; }
+  .queen-cellar-notice { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .queen-water, .queen-cellar-track { transition: none; }
+}
+:root[data-motion="reduced"] .queen-water, :root[data-motion="reduced"] .queen-cellar-track { transition: none; }
+@media (forced-colors: active) {
+  .queen-water { background: Highlight; opacity: .35; border-top-color: Highlight; forced-color-adjust: none; }
+  .queen-tidemark { border-top-color: CanvasText; }
+  .queen-room--cellar .queen-billjar__crack path { stroke: CanvasText; }
+  .queen-room--cellar .queen-jar--hammer::before { background: CanvasText; }
+}

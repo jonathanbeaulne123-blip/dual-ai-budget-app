@@ -29,7 +29,14 @@
         "src/queen/QueenRoomWorld.tsx",
         "src/queen/QueenCellar.tsx",
         "src/queen/QueenLoft.tsx",
-        "src/core/kittyNestDesigns.ts"
+        "src/core/kittyNestDesigns.ts",
+        "src/queen/world/queenBankSculpture.ts",
+        "src/queen/QueenBankFlat.tsx",
+        "src/queen/queenHouse.ts",
+        "src/queen/useHouseAxis.ts",
+        "src/queen/QueenHouseRail.tsx",
+        "src/queen/QueenHome.tsx",
+        "src/kitty/studio/silhouette.ts"
       ],
       "tests": [
         "test/queen-world.test.ts",
@@ -40,9 +47,10 @@
         "test/kitty-studio.test.ts",
         "test/queen-ceremony.test.ts",
         "test/queen-scenery.test.ts",
-        "test/queen-rooms.test.ts"
+        "test/queen-rooms.test.ts",
+        "test/queen-house.test.ts"
       ],
-      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount; the two rooms in three dimensions: the ledge's order is one list of design keys on the Build plan bank's own row so one rearrangement is one save and the last save wins, a malformed order is refused and a key for a bank that has left the shelf is ignored, moving one bank leaves every other bank where it was, and the jar's swell and the bank's glaze are quantised bands so no figure can be read off a shape"
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount; the two rooms in three dimensions: the ledge's order is one list of design keys on the Build plan bank's own row so one rearrangement is one save and the last save wins, a malformed order is refused and a key for a bank that has left the shelf is ignored, moving one bank leaves every other bank where it was, and the jar's swell and the bank's glaze are quantised bands so no figure can be read off a shape; the kitty banks in the rooms and the one axis that reaches them: every bank form is the studio's own silhouette normalised to a single unit and the nest's own tier rather than a new shape, the house stacks loft over hearth over cellar and clamps at both ends, a swipe counts only when it leans vertical and travels far enough or is flicked, and a control that already owns the pointer or the arrow keeps them — she keeps the pull down that tips her over and lets the climb up pass through"
     },
     {
       "sources": [
@@ -404,6 +412,20 @@
         "test/sync-pilot-diagnostics.test.ts"
       ],
       "reason": "Exact-release daily sync evidence, privacy-safe diagnostics, two-client visibility, reconnect, poll fallback, and relaunch proof"
+    },
+    {
+      "sources": [
+        "src/core/queenCellar.ts",
+        "src/queen/QueenCellarRail.tsx",
+        "src/queen/queen-cellar.css"
+      ],
+      "tests": [
+        "test/queen-cellar.test.ts",
+        "test/queen-cellar-ui.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/kitty-nest.test.ts"
+      ],
+      "reason": "The cellar's bill rail: every bill of the month is a jar on its due day and the Fund walk is the water behind it; the strike rule is exactly Jonathan's (the hammer only by hand, only when due and full, and only where the cellar can post; a crack when due and not full, still payable and named as paying from the water; a shard when paid anywhere else in the app; nothing early); breaking the bank calls the existing postDueRecurrences command behind Final Confirm and moves no bank money; lifting a jar out is the walk's deferObligationIds hypothetical and writes nothing; the rail carries no figure; and conservation is untouched"
     }
   ]
 }

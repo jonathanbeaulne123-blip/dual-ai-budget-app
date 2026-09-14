@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const entry = `
 import { completedExistingBooksHousehold } from '/test/fixtures/existing-books-onboarding.ts';
-import { addGoal, openChapter, recordRitualHeld, offerMove, openChapterFor } from '/src/core/index.ts';
+import { addGoal, addRecurrence, postEntry, openChapter, recordRitualHeld, offerMove, openChapterFor } from '/src/core/index.ts';
 import { saveHousehold } from '/src/storage.ts';
 import { saveSession } from '/src/session.ts';
 import { financialAuditHash } from '/src/core/commandIdentity.ts';
@@ -24,6 +24,16 @@ const chapter = openChapterFor(h); const ritual = h.rituals.find(row => row.chap
 if (ritual) h = recordRitualHeld(h, {memberId:'MEM-001',ritualId:ritual.id,onDate:'2026-09-04'}).household;
 h = offerMove(h, {memberId:'MEM-002',chapterId:chapter.id,text:'Confirm which payday the pre-rent check belongs to',needsAcknowledgment:true}).household;
 for (const name of ['A slower week away','Our kitchen garden']) h = addGoal(h,{name,target:'1200',shared:true,ownerMemberId:'MEM-001'}).household;
+/* rooms=1 fills the two rooms the way a household in use fills them: months on the cellar's ribbon (one of them
+   swollen, one month quiet), and a goal plus a lidded bill on the loft's ledge. All fictional. */
+if (q.get('rooms') === '1') {
+  const beat = h.recurrences.find(row => /rent/i.test(row.note || '')) || h.recurrences[0];
+  if (beat) for (const [month, amount] of [['04','900'],['05','900'],['06','1380'],['07','900'],['08','900']])
+    h = postEntry(h,{type:'expense',date:'2026-'+month+'-20',amount,accountId:beat.accountId,subcategoryId:beat.subcategoryId,note:beat.note,createdBy:'MEM-001',visibility:'household',source:'recurring',sourceId:beat.id,confirmDuplicate:true}).household;
+  h = addGoal(h,{name:'A fictional trip to the shore',target:'2400',shared:true,ownerMemberId:'MEM-001'}).household;
+  h = addGoal(h,{name:'A fictional weekend away',target:'700',shared:true,ownerMemberId:'MEM-001'}).household;
+  if (beat) h = addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-26',type:'expense',amount:'60',accountId:beat.accountId,subcategoryId:beat.subcategoryId,note:'Fictional date night'}).household;
+}
 /* The fictional books carry their accepted-books receipt so the PGlite gate settles; gate=blocked leaves it off to show the books banner above her. */
 if (q.get('gate') !== 'blocked') h.booksAcceptedHash = await financialAuditHash(h);
 await saveHousehold(h);
