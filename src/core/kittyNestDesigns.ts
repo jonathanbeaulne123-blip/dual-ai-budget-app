@@ -20,6 +20,16 @@ export type KittyNestDesign = {
   studio?: KittyStudioV1;
   history?: KittyNestLook[];
   category: NestCategory | null;
+  /**
+   * The order of the banks on this plan bank's shelf, as design keys. Lower is
+   * first: first defended on Protect, first fed on Build. It lives on the
+   * shelf's own row rather than on each bank, because a goal bank has no design
+   * row of its own and because one rearrangement should be one save — the last
+   * save wins, exactly as every other shared change in Hearth does. Keys the
+   * shelf no longer holds are ignored; banks the list does not name keep the
+   * nest's own order behind the ones it does. Carries no money.
+   */
+  order?: string[];
   archivedAt: string | null;
   setupCompletedAt: string | null;
   createdAt: string;
@@ -29,7 +39,7 @@ export const nestDesignId = (view: LedgerView, memberId: string, bankKey: string
 export const nestDesignInView = (row: KittyNestDesign, memberId: string, view: LedgerView) => row.visibility === view && (view === "household" || row.createdBy === memberId);
 const fail = (): never => { throw new ValidationError("This bank design needs an updated Hearth. Reload and try again."); };
 const iso = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
-const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history"];
+const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "order", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history"];
 export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 4000) return fail();
@@ -41,6 +51,8 @@ export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
       || r.id !== nestDesignId(r.visibility, r.createdBy, r.bankKey) || !Number.isSafeInteger(r.revision) || r.revision < 1
       || typeof r.name !== "string" || r.name.length > 120 || !["cream", "sea-glass", "terracotta", "midnight", "rose"].includes(r.glaze)
       || (r.category !== null && !(NEST_CATEGORIES as readonly string[]).includes(r.category))
+      || (r.order !== undefined && !(Array.isArray(r.order) && r.order.length <= 200 && r.order.every(key => typeof key === "string" && key.length > 0 && key.length <= 300) && new Set(r.order).size === r.order.length))
+      || (r.order !== undefined && !r.bankKey.startsWith("plan:"))
       || (r.archivedAt !== null && !iso(r.archivedAt)) || (r.setupCompletedAt !== null && !iso(r.setupCompletedAt))
       || !iso(r.createdAt) || !iso(r.updatedAt)) return fail();
     if ((r.bankKey === "king" || r.bankKey.startsWith("plan:")) && r.archivedAt !== null) return fail();
@@ -77,6 +89,8 @@ export type SaveNestDesignInput = {
   glaze: KittyGlaze;
   studio?: KittyStudioV1;
   category?: NestCategory | null;
+  /** The shelf's order, as design keys. Omit to leave it as it was. */
+  order?: string[];
   archived?: boolean;
   fire?: boolean;
   completeSetup?: boolean;
@@ -116,6 +130,7 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
   const row = shapeKittyNestDesigns([{ version: 1, id, bankKey: input.bankKey, visibility: input.view,
     createdBy: old?.createdBy ?? input.memberId, revision: (old?.revision ?? 0) + 1,
     name: input.name, glaze: input.glaze, ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}), category: input.category ?? old?.category ?? null,
+    ...((input.order ?? old?.order) !== undefined ? { order: [...(input.order ?? old?.order ?? [])] } : {}),
     archivedAt: input.archived === undefined ? old?.archivedAt ?? null : input.archived ? now : null,
     setupCompletedAt: old?.setupCompletedAt ?? (input.completeSetup ? now : null), createdAt: old?.createdAt ?? now, updatedAt: now }])[0]!;
   return { household: { ...h, kittyNestDesigns: [...(h.kittyNestDesigns ?? []).filter(r => r.id !== id), row] }, postedIds: [id], warnings: [],

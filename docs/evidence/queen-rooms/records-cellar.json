@@ -1,0 +1,72 @@
+[
+  {
+    "name": "cellar-320x568",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 13,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "cellar-390x844",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 13,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "cellar-720x900",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 13,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "cellar-1100x800",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 13,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "cellar-1100x800-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "flat",
+    "seats": 13,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "cellar-390x844-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "flat",
+    "seats": 13,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "cellar-1100x800-reduced",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 13,
+    "money": false,
+    "errors": []
+  }
+]

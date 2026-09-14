@@ -1,0 +1,72 @@
+[
+  {
+    "name": "loft-320x568",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 2,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "loft-390x844",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 2,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "loft-720x900",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 2,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "loft-1100x800",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 2,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "loft-1100x800-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "flat",
+    "seats": 2,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "loft-390x844-flat",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "flat",
+    "seats": 2,
+    "money": false,
+    "errors": []
+  },
+  {
+    "name": "loft-1100x800-reduced",
+    "overflowX": 0,
+    "overflowY": 0,
+    "open": true,
+    "world": "3d",
+    "seats": 2,
+    "money": false,
+    "errors": []
+  }
+]
