@@ -1,5 +1,5 @@
 import type { KittyPaintV1, KittyPart, KittyPieceV1, KittyStampV1, KittyStrokeV1 } from "../../core/types.ts";
-import { defaultKittyPaint, displayedKittyPiece } from "../../core/kittyStudio.ts";
+import { KITTY_PARTS, defaultKittyPaint, displayedKittyPiece } from "../../core/kittyStudio.ts";
 import type { NestBank } from "../../core/kittyNest.ts";
 import type { KittyNestDesign, SaveNestDesignInput } from "../../core/kittyNestDesigns.ts";
 import type { FundPulseFreshness } from "../../core/fundPulse.ts";
@@ -23,18 +23,36 @@ import { QUEEN_FORM_REST, queenFormHandles, queenFormProfile, queenRingCount, sh
  * seats on a reserved channel are dropped there, not only in the tool.
  */
 
-/** Parts of her the couple may paint. Everything else on her is a reading. */
-export const QUEEN_PAINTABLE_PARTS = ["body", "head"] as const;
-export type QueenPaintablePart = typeof QUEEN_PAINTABLE_PARTS[number];
+/**
+ * Parts of her the couple may paint: all six the studio knows, so she can be
+ * worked on there exactly like a bank. Everything else on her — the hair, the
+ * flower crown, the eyes and brow, the seams, her cupped hands, the stones at
+ * her feet — is separate geometry carrying a reading, and no brush reaches it.
+ */
+export const QUEEN_PAINTABLE_PARTS = KITTY_PARTS;
+export type QueenPaintablePart = KittyPart;
+
+/**
+ * Her clay, from the real pot she is drawn from: the terracotta ground, the
+ * two mottling tones fired earthenware is never without, and the mandevilla's
+ * two colours — white on her left, crimson on her right.
+ */
+export const QUEEN_CLAY = {
+  base: "#c4794f",
+  deep: "#a8603b",
+  light: "#d89066",
+  petalWhite: "#f7f1e4",
+  petalRed: "#c8103c",
+} as const;
 
 export const QUEEN_RESERVED_CHANNELS = [
-  { id: "vine", label: "The mandevilla vine", reading: "the Chapter; her identity and the growth channel" },
+  { id: "vine", label: "The mandevilla — her hair", reading: "the Chapter; her identity and the growth channel" },
   { id: "posture", label: "Body posture and scale", reading: "the pulse" },
   { id: "fill", label: "The belly's fill", reading: "how much is held" },
   { id: "eyes", label: "Eyes and brow", reading: "gaze — closed and serene, opening toward what needs you" },
   { id: "crown", label: "The crown", reading: "both partners present" },
   { id: "seams", label: "Gold seams", reading: "mended corrections, left visible on purpose" },
-  { id: "hands", label: "Her hands", reading: "where the Move sits" },
+  { id: "hands", label: "Her cupped hands", reading: "where the Move sits — between her paws, never under them" },
   { id: "feet", label: "Her feet and the ground around them", reading: "where obligations gather" },
   { id: "glaze", label: "The glaze / fired axis", reading: "evidence freshness" },
   { id: "rings", label: "Growth rings", reading: "closed Chapters; one shallow band each, permanent" },
@@ -56,19 +74,21 @@ export function queenGlazeAxis(glaze: QueenStill["glaze"] | FundPulseFreshness):
   return glaze === "glazed" || glaze === "current" ? QUEEN_GLAZE_AXIS.glazed : QUEEN_GLAZE_AXIS.matte;
 }
 
-const isPaintable = (part: KittyPart | undefined): part is QueenPaintablePart => part === "body" || part === "head";
+const isPaintable = (part: KittyPart | undefined): part is QueenPaintablePart => Boolean(part) && (KITTY_PARTS as readonly string[]).includes(part as string);
 
 /**
- * Keep only the paint that lands on her paintable parts. Strokes and stamps
- * aimed at parts she does not have (ears, tail, paws) are dropped, and stamps
- * that would sit a false crown or cover her eyes are dropped too. Colour,
- * pattern, marks and decoration on body and head pass through untouched.
+ * Keep only the paint that lands on her paintable parts. She has all six, so
+ * strokes reach her ears, her tail and her paws the way they reach a bank's,
+ * mirroring included. What is still dropped is paint aimed at a reading: her
+ * underside, where the makers' marks are pressed, and stamps that would sit a
+ * false crown on her or cover her eyes. Colour, pattern, marks and decoration
+ * everywhere else pass through untouched.
  */
 export function queenSanitizePaint(paint: KittyPaintV1 | null | undefined): KittyPaintV1 {
   const source = paint ?? defaultKittyPaint();
   const parts: Partial<Record<KittyPart, string>> = {};
   for (const part of QUEEN_PAINTABLE_PARTS) if (source.parts[part]) parts[part] = source.parts[part];
-  const strokes = source.strokes.filter((stroke) => isPaintable(stroke.part) && !onUnderside(stroke)).map((stroke) => ({ ...stroke, mirror: false }));
+  const strokes = source.strokes.filter((stroke) => isPaintable(stroke.part) && !onUnderside(stroke));
   const stamps = source.stamps.filter((stamp) => queenStampAllowed(stamp));
   return { base: source.base, parts, strokes, stamps };
 }
@@ -80,7 +100,7 @@ export function queenStampAllowed(stamp: KittyStampV1): boolean {
   if (!isPaintable(placement.part)) return false;
   if (placement.part === "body" && placement.v < QUEEN_UNDERSIDE_V) return false;
   if (RESERVED_STAMP_KINDS.has(stamp.kind)) return false;
-  // The upper third of her head wrap is where the eyes, brow and crown sit; nothing bakes there.
+  // The upper third of her head wrap is where the eyes, brow and the flower crown sit; nothing bakes there.
   if (placement.part === "head" && placement.v > 0.55) return false;
   return true;
 }
@@ -88,7 +108,8 @@ export function queenStampAllowed(stamp: KittyStampV1): boolean {
 /** Her look, draft-first: she is worked on over time and is never a fired keepsake. */
 export function queenLook(design: Pick<KittyNestDesign, "studio" | "glaze"> | undefined): { paint: KittyPaintV1; base: string } {
   const piece: KittyPieceV1 | null = design?.studio?.draft ?? displayedKittyPiece(design?.studio);
-  const paint = queenSanitizePaint(piece?.paint ?? defaultKittyPaint(design?.glaze ?? "cream"));
+  // Terracotta is her clay, not a choice the couple has yet to make: unpainted, she is the pot she was thrown from.
+  const paint = queenSanitizePaint(piece?.paint ?? defaultKittyPaint(design?.glaze ?? "terracotta"));
   return { paint, base: paint.base };
 }
 

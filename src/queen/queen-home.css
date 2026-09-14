@@ -5,9 +5,18 @@
    the page never scrolls; every state has a legible still, so motion is garnish. */
 
 .queen-home {
-  --queen-clay: var(--paper-2);
-  --queen-clay-deep: var(--line);
-  --queen-clay-shadow: color-mix(in srgb, var(--line), var(--ink) 22%);
+  /* Her clay is terracotta — the pot she was thrown from — still mixed with the
+     theme's own paper and line so the three expressions tint her rather than
+     replace her. */
+  --queen-terracotta: #c4794f;
+  --queen-terracotta-deep: #a8603b;
+  --queen-terracotta-shadow: #8a4b2c;
+  --queen-petal-white: #f7f1e4;
+  --queen-petal-red: #c8103c;
+  --queen-petal-eye: #e8a33a;
+  --queen-clay: color-mix(in srgb, var(--queen-terracotta) 78%, var(--paper-2));
+  --queen-clay-deep: color-mix(in srgb, var(--queen-terracotta-deep) 76%, var(--line));
+  --queen-clay-shadow: color-mix(in srgb, var(--queen-terracotta-shadow) 72%, var(--ink) 16%);
   --queen-fill: var(--sill, #b9a68a);
   --queen-ink: var(--ink);
   --queen-gold: var(--gold);
@@ -130,6 +139,22 @@
 .queen-vine { transform-origin: 120px 72px; }
 .queen-bud { fill: var(--queen-bud); }
 .queen-stone { fill: var(--queen-clay-shadow); }
+/* She is a cat, and reads as one with no WebGL at all. */
+.queen-speck { fill: #fff; opacity: .55; }
+.queen-home[data-glaze="offline"] .queen-speck { opacity: .25; }
+.queen-tail { fill: none; stroke: var(--queen-clay); stroke-width: 13; stroke-linecap: round; }
+.queen-ear-fold { fill: var(--queen-clay-deep); opacity: .72; }
+.queen-muzzle { opacity: .96; }
+.queen-nose { fill: var(--queen-clay-shadow); }
+.queen-whisker { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 1.1; stroke-linecap: round; opacity: .7; }
+.queen-paw { fill: var(--queen-clay); stroke: var(--queen-clay-deep); stroke-width: 1; }
+.queen-paw-toe { fill: var(--queen-clay-deep); opacity: .8; }
+/* Her hair: the mandevilla, white her left and crimson her right, the two meeting only in the crown. */
+.queen-strand { fill: none; stroke: var(--queen-leaf); stroke-width: 3.2; stroke-linecap: round; opacity: .9; }
+.queen-bloom--white .queen-petal { fill: var(--queen-petal-white); stroke: var(--queen-clay-deep); stroke-width: .5; }
+.queen-bloom--red .queen-petal { fill: var(--queen-petal-red); stroke: var(--queen-clay-shadow); stroke-width: .5; }
+.queen-bloom-eye { fill: var(--queen-petal-eye); }
+.queen-bloom-tip { fill: #e9a0b4; }
 .queen-stone--near { opacity: .85; } .queen-stone--soon { opacity: .6; } .queen-stone--later { opacity: .4; }
 .queen-home[data-grave="true"] .queen-stone--near { stroke: var(--queen-bud); stroke-width: 1.5; }
 .queen-lid { fill: var(--queen-clay-shadow); }
@@ -346,8 +371,13 @@
   .queen-door__label { opacity: 1 !important; }
   .queen-vessel, .queen-foot { fill: Canvas; stroke: CanvasText; stroke-width: 1.5; }
   .queen-bank-fill { fill: CanvasText; opacity: .35; }
-  .queen-eye, .queen-eye-open, .queen-brow, .queen-mouth, .queen-crown, .queen-stem, .queen-seam, .queen-jar__mouth, .queen-goal__mouth { stroke: CanvasText; }
-  .queen-pupil, .queen-leaf, .queen-bud, .queen-move__object, .queen-crown-point, .queen-stone, .queen-lid, .queen-goal__mark { fill: CanvasText; }
+  .queen-eye, .queen-eye-open, .queen-brow, .queen-mouth, .queen-crown, .queen-stem, .queen-strand, .queen-whisker, .queen-tail, .queen-seam, .queen-jar__mouth, .queen-goal__mouth { stroke: CanvasText; }
+  .queen-speck { display: none; }
+  .queen-pupil, .queen-leaf, .queen-bud, .queen-move__object, .queen-crown-point, .queen-stone, .queen-lid, .queen-goal__mark, .queen-nose, .queen-paw-toe, .queen-ear-fold, .queen-bloom-eye, .queen-bloom-tip { fill: CanvasText; }
+  /* Her two flower colours must not both collapse to one system colour: the white blooms hollow out, the crimson fill. */
+  .queen-bloom--white .queen-petal { fill: Canvas; stroke: CanvasText; stroke-width: 1; }
+  .queen-bloom--red .queen-petal { fill: CanvasText; stroke: CanvasText; }
+  .queen-paw { fill: Canvas; stroke: CanvasText; }
   .queen-panel, .queen-room { border: 1px solid CanvasText; }
   .queen-home[data-pulse][data-scene] button:focus-visible { outline: 3px solid Highlight; }
 }

@@ -15,7 +15,11 @@ import { QUEEN_FLAT, QUEEN_FORM_BASE, queenRingSeatsOn, queenSkirtAt, type Queen
  * the sculpture and the charm surface use — the thrown handles and the growth
  * rings included — so the flat path and the 3D path are one form. Tipped
  * over, she shows her underside: the makers' marks, never painted.
- * The artwork is a stand-in for the mandevilla form.
+ *
+ * She is a cat, and reads as one without a pixel of WebGL: ears with an inner
+ * fold, a muzzle, whiskers, front paws folded in her lap and a tail curled
+ * round her base. Her hair is the mandevilla — white blooms on her left,
+ * crimson on her right, the two meeting only in the flower crown.
  */
 export const QUEEN_VIEW = { w: 240, h: 340 } as const;
 
@@ -73,12 +77,61 @@ const MOUTH: Record<QueenStill["mouth"], string> = {
   set: "M111 135 q9 -3 18 0",
 };
 
-/** Bud seats along the vine, nearest the crown first. */
+/** Bud seats along her hair, nearest the crown first: one per goal in motion. */
 const BUD_SEATS = [
-  { cx: 82, cy: 18, r: 8 },
-  { cx: 164, cy: 20, r: 6.5 },
-  { cx: 100, cy: 42, r: 5.5 },
-  { cx: 150, cy: 46, r: 5 },
+  { cx: 84, cy: 132, r: 8 },
+  { cx: 156, cy: 134, r: 6.5 },
+  { cx: 62, cy: 198, r: 5.5 },
+  { cx: 178, cy: 200, r: 5 },
+];
+
+/** The white splatter the real pot was finished with: a fixed scatter, so the flat path carries her clay the way the 3D grain does. */
+const CLAY_SPECKS: readonly (readonly [number, number, number])[] = [
+  [96, 236, 2.6], [134, 212, 1.8], [158, 258, 2.2], [78, 268, 1.6], [112, 284, 2.9], [150, 292, 1.7],
+  [88, 196, 2], [166, 228, 1.5], [104, 252, 1.4], [142, 246, 2.4], [70, 240, 1.9], [176, 266, 2.1],
+  [120, 268, 1.6], [92, 220, 1.5], [162, 200, 1.8], [130, 232, 1.4], [106, 208, 2.2], [148, 274, 1.5],
+];
+
+/** A mandevilla bloom, flat: five petals lapping the same way round, and the throat at the centre. The lap is what makes it a mandevilla and not a daisy. */
+function QueenBloom({ x, y, r, tone }: { x: number; y: number; r: number; tone: "white" | "red" }) {
+  return (
+    <g className={`queen-bloom queen-bloom--${tone}`} transform={`translate(${x} ${y})`}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <ellipse key={i} className="queen-petal" cx={0} cy={-r * 0.78} rx={r * 0.62} ry={r * 0.44} transform={`rotate(${i * 72}) rotate(16 0 ${-r * 0.78})`} />
+      ))}
+      <circle className="queen-bloom-eye" r={r * 0.28} />
+    </g>
+  );
+}
+/** A furled bud on a strand: long, held upright, the pink flush at its tip. */
+function QueenHairBud({ x, y, r, tone }: { x: number; y: number; r: number; tone: "white" | "red" }) {
+  return (
+    <g className={`queen-bloom queen-bloom--${tone}`} transform={`translate(${x} ${y})`}>
+      <ellipse className="queen-petal" rx={r * 0.42} ry={r * 1.1} />
+      <circle className="queen-bloom-tip" cy={-r * 1.05} r={r * 0.26} />
+    </g>
+  );
+}
+
+/** Her hair: seven strands a side falling from the crown, white on her left and crimson on her right. */
+const HAIR_STRANDS: readonly { side: -1 | 1; d: string; blooms: readonly [number, number][]; bud?: readonly [number, number] }[] = [
+  { side: -1, d: "M98 74 C74 108 62 166 64 236", blooms: [[70, 150], [66, 226]] },
+  { side: -1, d: "M94 76 C66 112 50 172 52 244", blooms: [[56, 170]], bud: [53, 232] },
+  { side: -1, d: "M102 72 C84 104 78 158 82 220", blooms: [[80, 196]] },
+  { side: 1, d: "M142 74 C166 108 178 166 176 236", blooms: [[170, 150], [174, 226]] },
+  { side: 1, d: "M146 76 C174 112 190 172 188 244", blooms: [[184, 170]], bud: [187, 232] },
+  { side: 1, d: "M138 72 C156 104 162 158 158 220", blooms: [[160, 196]] },
+];
+
+/** The flower crown: the two colours interweave here, bound on the gold band. */
+const CROWN_NODES: readonly { x: number; y: number; tone: "white" | "red"; bud?: true }[] = [
+  { x: 88, y: 76, tone: "white" },
+  { x: 100, y: 66, tone: "red" },
+  { x: 111, y: 61, tone: "white", bud: true },
+  { x: 122, y: 59, tone: "red" },
+  { x: 133, y: 62, tone: "white" },
+  { x: 144, y: 68, tone: "red", bud: true },
+  { x: 154, y: 78, tone: "white" },
 ];
 
 const STONE_SEATS = [
@@ -134,23 +187,49 @@ export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = n
     <svg className="queen-svg" viewBox={`0 0 ${QUEEN_VIEW.w} ${QUEEN_VIEW.h}`} aria-hidden="true" focusable="false">
       <ellipse className="queen-foot" cx="120" cy="306" rx="92" ry="11" />
       <g className="queen-body">
+        {/* Her tail, curled round her base with the tip lifted */}
+        <path className="queen-tail" d="M44 300 C14 290 10 250 34 234 C54 221 76 231 78 250" />
         <g className="queen-belly" style={{ transform: `scaleX(${fill})` }}>
           <path className="queen-vessel" d={queenFlatVessel(form)} />
           <path className="queen-shade" d={queenFlatBand(form, 1, 0.74)} />
           <path className="queen-glaze" d={queenFlatBand(form, -1, 0.8, 0.22, 0.86)} />
+          {CLAY_SPECKS.map(([sx, sy, sr]) => <circle key={`${sx}-${sy}`} className="queen-speck" cx={sx} cy={sy} r={sr} />)}
           {queenFlatRings(form).map((ring) => <path key={ring.key} className="queen-ring" data-ring={ring.key} d={ring.d} />)}
           {body.seams >= 1 && <path className="queen-seam" d="M74 302 L88 248 L76 214 L90 186" />}
           {body.seams >= 2 && <path className="queen-seam" d="M176 298 L164 254 L174 226" />}
           {body.seams >= 3 && <path className="queen-seam" d="M120 300 L126 268 L116 246" />}
           <QueenCharmGlyphs charms={charms} part="body" form={form} />
         </g>
-        {/* Shoulders and hands */}
+        {/* Shoulders, her cupped hands — the Move's seat — and the front paws folded either side of it */}
         <path className="queen-vessel" d="M80 182 C80 146 96 126 120 126 C144 126 160 146 160 182 Z" />
+        <g className="queen-paws">
+          {[-1, 1].map((side) => (
+            <g key={side}>
+              <ellipse className="queen-paw" cx={120 + side * 34} cy="212" rx="20" ry="13" />
+              {[-1, 0, 1].map((toe) => <ellipse key={toe} className="queen-paw-toe" cx={120 + side * 34 + toe * 8} cy="205" rx="3.2" ry="2.4" />)}
+            </g>
+          ))}
+        </g>
         <path className="queen-vessel" d="M88 214 C88 198 104 190 120 190 C136 190 152 198 152 214 C140 222 100 222 88 214 Z" />
         <path className="queen-shade" d="M136 192 C148 196 152 206 152 214 C146 218 138 220 130 221 C140 214 142 202 136 192 Z" />
+        {/* Ears, with the inner fold, behind the skull so they read as hers */}
+        {[-1, 1].map((side) => (
+          <g key={side} className="queen-ear-group">
+            <path className="queen-vessel queen-ear" d={`M${120 + side * 20} 88 L${120 + side * 38} 52 L${120 + side * 44} 92 Z`} />
+            <path className="queen-ear-fold" d={`M${120 + side * 25} 86 L${120 + side * 37} 62 L${120 + side * 40} 88 Z`} />
+          </g>
+        ))}
         {/* Face */}
         <ellipse className="queen-vessel" cx="120" cy="112" rx="40" ry="39" />
         <path className="queen-shade" d="M142 84 C158 94 162 124 150 142 C162 120 158 94 142 84 Z" />
+        {/* Muzzle, cheeks, nose and whiskers: she is a cat with no pixel of WebGL */}
+        <ellipse className="queen-vessel queen-muzzle" cx="106" cy="128" rx="15" ry="11" />
+        <ellipse className="queen-vessel queen-muzzle" cx="134" cy="128" rx="15" ry="11" />
+        <ellipse className="queen-vessel queen-muzzle" cx="120" cy="126" rx="14" ry="12" />
+        <path className="queen-nose" d="M116 122 L124 122 L120 127 Z" />
+        {[-1, 1].map((side) => [0, 1, 2].map((i) => (
+          <path key={`${side}-${i}`} className="queen-whisker" d={`M${120 + side * 12} ${126 + i * 4} q${side * 18} ${-3 + i * 3} ${side * 34} ${-6 + i * 6}`} />
+        )))}
         <path className="queen-brow" d="M98 100 q9 -5 18 -1" />
         <path className="queen-brow" d="M124 99 q9 -4 18 1" />
         {still.eyes === "open" ? (
@@ -168,18 +247,31 @@ export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = n
         )}
         <path className="queen-mouth" d={MOUTH[still.mouth]} />
         <QueenCharmGlyphs charms={charms} part="head" form={form} />
-        {/* Crown */}
-        <path className="queen-crown" d="M90 78 L97 60 L109 72 L120 52 L131 72 L143 60 L150 78" />
-        {crown === "both" && <><circle className="queen-crown-point" cx="97" cy="60" r="2.4" /><circle className="queen-crown-point" cx="120" cy="52" r="2.8" /><circle className="queen-crown-point" cx="143" cy="60" r="2.4" /></>}
-        {/* Vine: the Chapter, grown by acts */}
-        <g className="queen-vine" style={{ transform: `scale(${vineScale})` }}>
-          <path className="queen-stem" d="M120 72 C120 46 104 30 84 20" />
-          <path className="queen-stem" d="M120 72 C124 44 142 30 162 22" />
-          {leaves >= 1 && <ellipse className="queen-leaf" cx="104" cy="50" rx="9" ry="4.4" transform="rotate(-20 104 50)" />}
-          {leaves >= 2 && <ellipse className="queen-leaf" cx="94" cy="34" rx="11" ry="5.4" transform="rotate(-36 94 34)" />}
-          {leaves >= 3 && <ellipse className="queen-leaf" cx="148" cy="36" rx="11" ry="5.4" transform="rotate(34 148 36)" />}
-          {leaves >= 4 && <ellipse className="queen-leaf" cx="136" cy="52" rx="8" ry="4" transform="rotate(30 136 52)" />}
-          {leaves >= 5 && <ellipse className="queen-leaf" cx="158" cy="24" rx="7" ry="3.6" transform="rotate(20 158 24)" />}
+        {/* Her hair: the mandevilla falling from the crown, white her left, crimson her right */}
+        <g className="queen-hair" style={{ transform: `scale(${vineScale})`, transformOrigin: "120px 72px" }}>
+          {HAIR_STRANDS.map((strand) => <path key={strand.d} className="queen-strand" d={strand.d} />)}
+          {HAIR_STRANDS.map((strand) => (
+            <g key={`f${strand.d}`}>
+              {strand.blooms.map(([bx, by]) => <QueenBloom key={`${bx}-${by}`} x={bx} y={by} r={9} tone={strand.side < 0 ? "white" : "red"} />)}
+              {strand.bud && <QueenHairBud x={strand.bud[0]} y={strand.bud[1]} r={6} tone={strand.side < 0 ? "white" : "red"} />}
+            </g>
+          ))}
+        </g>
+        {/* The flower crown: where the two colours interweave, bound on the gold band */}
+        <g className="queen-flower-crown">
+          <path className="queen-crown" d="M86 80 C98 58 142 58 154 80" />
+          {crown === "both" && <><circle className="queen-crown-point" cx="97" cy="66" r="2.4" /><circle className="queen-crown-point" cx="120" cy="60" r="2.8" /><circle className="queen-crown-point" cx="143" cy="66" r="2.4" /></>}
+          {CROWN_NODES.map((node) => node.bud
+            ? <QueenHairBud key={`${node.x}-${node.y}`} x={node.x} y={node.y} r={6} tone={node.tone} />
+            : <QueenBloom key={`${node.x}-${node.y}`} x={node.x} y={node.y} r={9.5} tone={node.tone} />)}
+        </g>
+        {/* Vine: the Chapter, grown by acts — the leaves and buds her hair carries */}
+        <g className="queen-vine" style={{ transform: `scale(${vineScale})`, transformOrigin: "120px 72px" }}>
+          {leaves >= 1 && <ellipse className="queen-leaf" cx="78" cy="114" rx="9" ry="4.4" transform="rotate(-54 78 114)" />}
+          {leaves >= 2 && <ellipse className="queen-leaf" cx="162" cy="116" rx="11" ry="5.4" transform="rotate(54 162 116)" />}
+          {leaves >= 3 && <ellipse className="queen-leaf" cx="68" cy="176" rx="11" ry="5.4" transform="rotate(-74 68 176)" />}
+          {leaves >= 4 && <ellipse className="queen-leaf" cx="172" cy="178" rx="8" ry="4" transform="rotate(74 172 178)" />}
+          {leaves >= 5 && <ellipse className="queen-leaf" cx="86" cy="228" rx="7" ry="3.6" transform="rotate(-82 86 228)" />}
           {BUD_SEATS.slice(0, Math.max(0, Math.min(BUD_SEATS.length, buds))).map((seat, index) => (
             <g key={seat.cx}>
               {/* A bud is a long, furled spiral held upright, not a ball. */}

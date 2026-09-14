@@ -2,31 +2,39 @@ import * as THREE from "three";
 import type { KittyPaintV1 } from "../../core/types.ts";
 import { PART_CANVAS_SIZE, partDip, presentPart, replayPart } from "../../kitty/studio/paintCanvas.ts";
 import { studioHex } from "../../kitty/studio/palette.ts";
-import { QUEEN_GLAZE_AXIS, QUEEN_PAINTABLE_PARTS, queenSanitizePaint, type QueenGlazeAxis, type QueenPaintablePart, type QueenPose } from "./queenAuthoring.ts";
+import { QUEEN_CLAY, QUEEN_GLAZE_AXIS, QUEEN_PAINTABLE_PARTS, queenSanitizePaint, type QueenGlazeAxis, type QueenPaintablePart, type QueenPose } from "./queenAuthoring.ts";
 import type { QueenStone } from "../../core/queenPresentation.ts";
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
 import { QUEEN_FORM_BASE, QUEEN_HEAD, QUEEN_SKIRT_PHI_START, queenSeamPathsFor, queenSkirtProfilePoints, type QueenForm } from "./queenCharmSurface.ts";
 import { createQueenCharmSet } from "./queenCharmSet.ts";
 
 /**
- * The Queen as a sculpture: a seated, matriarchal ceramic vessel with a
- * mandevilla vine for hair. Her own geometry, her own proportions, her own
- * anchors — not the thrown cat.
+ * The Queen as a sculpture: a seated, matriarchal terracotta cat with a
+ * mandevilla vine for hair — white blooms down one side, crimson down the
+ * other. Her own geometry, her own proportions, her own
+ * anchors — not the thrown cat, though she is unmistakably a cat: ears with
+ * an inner fold, a muzzle, whiskers, a tail curled around her base and front
+ * paws folded in her lap.
  *
- * Two kinds of surface live on her. Her body and head are paintable in the
- * manner of the studio (a canvas per part → texture → material), so the
- * couple's colour, pattern and stamps land where they put them. Everything
- * that carries a reading is separate geometry with its own material that the
- * paint pipeline never touches: the vine and buds, the crown, the eyes and
- * brow, the gold seams, her hands, the stones at her feet. Her posture and
+ * Two kinds of surface live on her. All six studio parts — body, head, both
+ * ears, tail and paws — are paintable in the manner of the studio (a canvas
+ * per part → texture → material), so the couple's colour, pattern and stamps
+ * land where they put them, and so she can be worked on in the kitty bank
+ * studio exactly like the banks. Everything that carries a reading is
+ * separate geometry with its own material that the paint pipeline never
+ * touches: the hair and its buds, the flower crown, the eyes and brow, the
+ * gold seams, her cupped hands, the stones at her feet. Her posture and
  * scale move the body group; her fill widens the belly; her surface follows
  * evidence freshness through the same roughness/clearcoat axis a fired bank
  * uses. Charms — the couple's small add-ons — are instanced on the body
- * group by `queenCharmSet` and never touch a reserved mesh. Her form — the
- * handles thrown on the wheel and the rings her closed Chapters leave — is
- * the skirt's lathe, rebuilt only when the form changes; the gold seams
- * follow it. Her underside carries the makers' marks and is never painted.
- * No money is read here.
+ * group by `queenCharmSet` and never touch a reserved mesh; they seat on her
+ * body and head only, where the surface maths lives. Her form — the handles
+ * thrown on the wheel and the rings her closed Chapters leave — is the
+ * skirt's lathe, rebuilt only when the form changes; the gold seams follow
+ * it. Her underside carries the makers' marks and is never painted. Under
+ * whatever is painted, the fired-earthenware grain of the real pot reads
+ * through: mottled clay and its white splatter, composited over the paint so
+ * it tints the couple's work rather than replacing it. No money is read here.
  */
 export type QueenSculptureOptions = {
   clay?: string;
@@ -37,11 +45,50 @@ export type QueenSculptureOptions = {
   reducedMotion?: boolean;
 };
 
-/** Framing height: her body plus the vine above her head, at scale 1. */
-export const QUEEN_HEIGHT = 4.6;
+/**
+ * Framing height: her base to the tips of her ears, at scale 1. Her hair
+ * falls rather than reaches, so nothing rises above the ears and the world
+ * frames her silhouette rather than empty air over her head.
+ */
+export const QUEEN_HEIGHT = 3.75;
 const BODY_ORIGIN_Y = 0;
 
 type PartState = { layer: HTMLCanvasElement | null; display: HTMLCanvasElement | null; texture: THREE.CanvasTexture | null; mat: THREE.MeshPhysicalMaterial };
+
+/**
+ * The fired-earthenware grain of the real pot: mottling that is never flat,
+ * and the white splatter it was finished with. Drawn once per canvas size and
+ * composited over whatever the couple painted, so it reads as her clay under
+ * their work instead of as a pattern on top of it. Deterministic — the same
+ * grain every mount, so a screenshot is a screenshot.
+ */
+function queenClayGrain(size: number): HTMLCanvasElement | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  let seed = 0x5eed;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0x100000000; };
+  const blobs = Math.round(size / 2);
+  for (let i = 0; i < blobs; i += 1) {
+    ctx.globalAlpha = 0.05 + rnd() * 0.06;
+    ctx.fillStyle = rnd() < 0.5 ? QUEEN_CLAY.deep : QUEEN_CLAY.light;
+    ctx.beginPath();
+    ctx.arc(rnd() * size, rnd() * size, (0.06 + rnd() * 0.23) * size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#ffffff";
+  const specks = Math.round(size * 1.2);
+  for (let i = 0; i < specks; i += 1) {
+    const r = (rnd() < 0.86 ? 1 + rnd() * 2.6 : 3 + rnd() * 5) * (size / 1024);
+    ctx.globalAlpha = 0.5 + rnd() * 0.5;
+    ctx.beginPath();
+    ctx.arc(rnd() * size, rnd() * size, Math.max(0.6, r), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  return canvas;
+}
 
 export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   const group = new THREE.Group();
@@ -54,7 +101,7 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   const geo = <G extends THREE.BufferGeometry>(g: G): G => { geometries.add(g); return g; };
   const mat = <M extends THREE.Material>(m: M): M => { materials.add(m); return m; };
 
-  const clayColor = options.clay ?? "#d9cfbd";
+  const clayColor = options.clay ?? QUEEN_CLAY.base;
   const gold = mat(new THREE.MeshStandardMaterial({ color: options.gold ?? "#c9a227", roughness: 0.35, metalness: 0.8, emissive: "#000000" }));
   const goldSeam = mat(new THREE.MeshStandardMaterial({ color: options.gold ?? "#c9a227", roughness: 0.3, metalness: 0.85, emissive: options.gold ?? "#c9a227", emissiveIntensity: 0.35 }));
   const leaf = mat(new THREE.MeshStandardMaterial({ color: options.leaf ?? "#2c6a4e", roughness: 0.8 }));
@@ -63,11 +110,19 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   const ink = mat(new THREE.MeshStandardMaterial({ color: options.ink ?? "#1b1712", roughness: 0.8 }));
   const white = mat(new THREE.MeshStandardMaterial({ color: "#fff8ee", roughness: 0.5 }));
   const stone = mat(new THREE.MeshStandardMaterial({ color: "#8e8474", roughness: 0.95 }));
-  /** Reserved clay for her hands and shoulders: the same clay as her body, never painted. */
+  /** The mandevilla's two colours: white down one side of her hair, crimson down the other — white to the room's left. They meet only in the crown. */
+  const petalWhite = mat(new THREE.MeshPhysicalMaterial({ color: QUEEN_CLAY.petalWhite, roughness: 0.5, clearcoat: 0.35 }));
+  const petalRed = mat(new THREE.MeshPhysicalMaterial({ color: QUEEN_CLAY.petalRed, roughness: 0.45, clearcoat: 0.4 }));
+  const petalEye = mat(new THREE.MeshStandardMaterial({ color: "#e8a33a", roughness: 0.55 }));
+  const budTip = mat(new THREE.MeshStandardMaterial({ color: "#e9a0b4", roughness: 0.55 }));
+  /** Reserved clay for her hands, shoulders and the small dark reads of her face. The same clay as her body, never painted. */
   const reservedClay = mat(new THREE.MeshPhysicalMaterial({ color: clayColor, roughness: QUEEN_GLAZE_AXIS.glazed.roughness, clearcoat: QUEEN_GLAZE_AXIS.glazed.clearcoat, metalness: 0.02 }));
+  const clayDeep = mat(new THREE.MeshStandardMaterial({ color: QUEEN_CLAY.deep, roughness: 0.7 }));
 
-  // ---- paintable parts: body, head ----
+  // ---- paintable parts: the six studio parts, so the studio reaches her exactly as it reaches a bank ----
   const canvasOk = typeof document !== "undefined" && (() => { try { return Boolean(document.createElement("canvas").getContext("2d")); } catch { return false; } })();
+  const grain = new Map<number, HTMLCanvasElement | null>();
+  const grainFor = (size: number) => { if (!grain.has(size)) grain.set(size, queenClayGrain(size)); return grain.get(size) ?? null; };
   const parts = Object.fromEntries(QUEEN_PAINTABLE_PARTS.map((part) => {
     const material = mat(new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: QUEEN_GLAZE_AXIS.glazed.roughness, clearcoat: QUEEN_GLAZE_AXIS.glazed.clearcoat, clearcoatRoughness: 0.08, metalness: 0.02, envMapIntensity: QUEEN_GLAZE_AXIS.glazed.envMapIntensity }));
     if (!canvasOk) { material.color.set(clayColor); return [part, { layer: null, display: null, texture: null, mat: material }]; }
@@ -81,6 +136,7 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     material.map = texture;
     return [part, { layer, display, texture, mat: material }];
   })) as Record<QueenPaintablePart, PartState>;
+  const paintMaterials = QUEEN_PAINTABLE_PARTS.map((part) => parts[part].mat);
 
   const mesh = (g: THREE.BufferGeometry, m: THREE.Material, parent: THREE.Object3D, name: string) => {
     const object = new THREE.Mesh(geo(g), m);
@@ -91,8 +147,9 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     return object;
   };
   const V2 = (x: number, y: number) => new THREE.Vector2(x, y);
+  const curveOf = (points: [number, number, number][]) => new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p)));
   const tube = (points: [number, number, number][], radius: number, m: THREE.Material, parent: THREE.Object3D, name: string) =>
-    mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map((p) => new THREE.Vector3(...p))), 24, radius, 8, false), m, parent, name);
+    mesh(new THREE.TubeGeometry(curveOf(points), 24, radius, 8, false), m, parent, name);
 
   // Her belly and skirt: a seated vessel, widest low, gathered at the shoulders.
   const belly = new THREE.Group();
@@ -110,22 +167,72 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   let marksTexture: THREE.CanvasTexture | null = null;
   // Shoulders and neck: reserved clay, so the paint cannot creep over the collar where the seams meet. They open with the rim.
   const shoulders = mesh(new THREE.LatheGeometry([V2(0.58, 1.84), V2(0.66, 2.02), V2(0.5, 2.24), V2(0.28, 2.34)], 40), reservedClay, body, "queen-shoulders");
-  // Hands, held at the front: the Move's seat. Reserved.
+  // Her cupped hands, held at the front between her paws: the Move's seat, and the one thing the paws never cover. Reserved.
   const hands = mesh(new THREE.SphereGeometry(0.34, 24, 16), reservedClay, body, "queen-hands");
-  hands.scale.set(1.35, 0.55, 0.8);
-  hands.position.set(0, 1.86, 0.92);
-  // Head.
+  hands.scale.set(0.72, 0.34, 0.5);
+  hands.position.set(0, 1.62, 0.6);
+
+  // Her front paws, folded in her lap on either side of the cradle. Paintable: they are hers to decorate, and the Move still sits above them.
+  const paws = new THREE.Group();
+  paws.name = "queen-paws";
+  paws.position.set(0, 1.5, 0.86);
+  body.add(paws);
+  for (const side of [-1, 1]) {
+    const pad = mesh(new THREE.SphereGeometry(0.23, 22, 16), parts.paws.mat, paws, "queen-paw");
+    pad.position.set(side * 0.31, 0, 0);
+    pad.scale.set(0.9, 0.62, 1.4);
+    for (let toe = -1; toe <= 1; toe += 1) {
+      const t = mesh(new THREE.SphereGeometry(0.04, 10, 8), clayDeep, paws, "queen-paw-toe");
+      t.position.set(side * 0.31 + toe * 0.078, 0.09, 0.26);
+      t.scale.set(1, 0.5, 1);
+    }
+  }
+
+  // Her tail, curled around the base with the tip lifted. Paintable.
+  const tailCurve = curveOf([[-0.3, 0.16, -1.0], [-1.28, 0.14, -0.42], [-1.46, 0.14, 0.5], [-1.12, 0.16, 1.12], [-0.6, 0.22, 1.46], [-0.14, 0.52, 1.54]]);
+  const tail = mesh(new THREE.TubeGeometry(tailCurve, 56, 0.115, 10, false), parts.tail.mat, body, "queen-tail");
+  const tailTip = mesh(new THREE.SphereGeometry(0.115, 14, 10), parts.tail.mat, body, "queen-tail-tip");
+  tailTip.position.copy(tailCurve.getPoint(1));
+
+  // Head: the skull the charm surface knows, plus the muzzle and cheeks that make her a cat. All on the head's paint.
   const head = mesh(new THREE.SphereGeometry(QUEEN_HEAD.radius, 40, 28, QUEEN_HEAD.phiStart), parts.head.mat, body, "queen-head");
   head.position.set(...QUEEN_HEAD.position);
   head.scale.set(...QUEEN_HEAD.scale);
   const headTop = QUEEN_HEAD.position[1] + QUEEN_HEAD.radius * QUEEN_HEAD.scale[1];
+  const muzzle = mesh(new THREE.SphereGeometry(0.22, 26, 18), parts.head.mat, body, "queen-muzzle");
+  muzzle.position.set(QUEEN_HEAD.position[0], QUEEN_HEAD.position[1] - 0.13, QUEEN_HEAD.position[2] + 0.41);
+  muzzle.scale.set(1.25, 0.78, 0.86);
+  for (const side of [-1, 1]) {
+    const cheek = mesh(new THREE.SphereGeometry(0.17, 20, 14), parts.head.mat, body, "queen-cheek");
+    cheek.position.set(side * 0.22, QUEEN_HEAD.position[1] - 0.11, QUEEN_HEAD.position[2] + 0.33);
+    cheek.scale.set(1, 0.86, 0.9);
+  }
 
-  // Face: eyes closed (arcs), open (whites + pupils), brow, three mouths. Reserved.
+  // Her ears, with the inner fold. Their own parts, and their own paint.
+  const ears: Record<"earL" | "earR", THREE.Group> = { earL: new THREE.Group(), earR: new THREE.Group() };
+  for (const [key, side] of [["earL", -1], ["earR", 1]] as const) {
+    const ear = ears[key];
+    ear.name = `queen-${key}`;
+    // Seated on the crown of her head, tilted out, so the cone clears the skull and reads at a glance.
+    ear.position.set(side * 0.27, headTop - 0.05, QUEEN_HEAD.position[2] - 0.03);
+    ear.rotation.z = side * -0.34;
+    ear.rotation.x = -0.1;
+    body.add(ear);
+    const outer = mesh(new THREE.ConeGeometry(0.23, 0.52, 5), parts[key].mat, ear, `queen-${key}-outer`);
+    outer.scale.set(1, 1, 0.6);
+    const inner = mesh(new THREE.ConeGeometry(0.14, 0.35, 5), clayDeep, ear, `queen-${key}-fold`);
+    inner.position.set(0, -0.03, 0.065);
+    inner.scale.set(1, 1, 0.5);
+  }
+
+  // Face: eyes closed (arcs), open (whites + pupils), brow, three mouths, nose and whiskers. Reserved.
   const face = new THREE.Group();
   face.name = "queen-face";
   face.position.set(0, 2.78, 0.04);
   body.add(face);
   const fz = 0.5 * 0.96 - 0.02;
+  /** The muzzle's own front, where the nose and the mouths sit: out past the skull, not buried in it. */
+  const mz = 0.41 + 0.19;
   const eyesClosed = new THREE.Group(); eyesClosed.name = "queen-eyes-closed";
   const eyesOpen = new THREE.Group(); eyesOpen.name = "queen-eyes-open";
   const pupils: THREE.Mesh[] = [];
@@ -139,27 +246,150 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     pupils.push(pupil);
     const brow = tube([[x - 0.11, y + 0.13, fz - 0.06], [x, y + 0.17, fz - 0.02], [x + 0.11, y + 0.14, fz - 0.06]], 0.013, ink, face, "queen-brow");
     brow.visible = false;
+    // Three whiskers a side: thin, swept back, unmistakably cat.
+    for (let i = 0; i < 3; i += 1) {
+      const whisker = mesh(new THREE.CylinderGeometry(0.005, 0.003, 0.5, 5), clayDeep, face, "queen-whisker");
+      whisker.position.set(side * 0.26, -0.08 - i * 0.045, mz - 0.14);
+      whisker.rotation.z = side * (Math.PI / 2 - 0.18 + i * 0.12);
+      whisker.rotation.y = side * -0.3;
+    }
   }
+  const nose = mesh(new THREE.SphereGeometry(0.058, 14, 10), clayDeep, face, "queen-nose");
+  nose.position.set(0, -0.05, mz - 0.01);
+  nose.scale.set(1.25, 0.8, 0.7);
   face.add(eyesClosed, eyesOpen);
   eyesOpen.visible = false;
   const mouths = {
-    serene: tube([[-0.11, -0.16, fz - 0.03], [0, -0.21, fz], [0.11, -0.16, fz - 0.03]], 0.012, ink, face, "queen-mouth-serene"),
-    level: tube([[-0.1, -0.17, fz - 0.03], [0, -0.185, fz], [0.1, -0.17, fz - 0.03]], 0.012, ink, face, "queen-mouth-level"),
-    set: tube([[-0.1, -0.2, fz - 0.03], [0, -0.17, fz], [0.1, -0.2, fz - 0.03]], 0.012, ink, face, "queen-mouth-set"),
+    serene: tube([[-0.1, -0.19, mz - 0.07], [0, -0.24, mz - 0.03], [0.1, -0.19, mz - 0.07]], 0.012, ink, face, "queen-mouth-serene"),
+    level: tube([[-0.09, -0.2, mz - 0.07], [0, -0.215, mz - 0.03], [0.09, -0.2, mz - 0.07]], 0.012, ink, face, "queen-mouth-level"),
+    set: tube([[-0.09, -0.23, mz - 0.07], [0, -0.2, mz - 0.03], [0.09, -0.23, mz - 0.07]], 0.012, ink, face, "queen-mouth-set"),
   };
   mouths.level.visible = false; mouths.set.visible = false;
 
-  // Crown: five gold points on a ring, and a light that comes up when both are here. Reserved.
+  // ---- the mandevilla: one bloom, one bud, one leaf, built once and reused ----
+  /** A mandevilla bloom: five petals that lap the same way round, and the yellow throat at the centre. The handedness is what makes it a mandevilla and not a daisy. */
+  const bloom = (petal: THREE.Material) => {
+    const flower = new THREE.Group();
+    for (let i = 0; i < 5; i += 1) {
+      const holder = new THREE.Group();
+      const p = mesh(new THREE.SphereGeometry(0.093, 12, 9), petal, holder, "queen-petal");
+      p.scale.set(1, 0.2, 1.55);
+      p.position.set(0, 0, 0.093);
+      holder.rotation.y = i * ((Math.PI * 2) / 5);
+      holder.rotation.x = -0.34;
+      holder.rotation.z = 0.2;
+      flower.add(holder);
+    }
+    const throat = mesh(new THREE.SphereGeometry(0.034, 10, 8), petalEye, flower, "queen-throat");
+    throat.position.y = 0.02;
+    return flower;
+  };
+  /** A bud: a long, tightly furled spiral held upright — five facets read as furled — with the pink flush at its tip. The honest form for a Chapter in progress. */
+  const budForm = (petal: THREE.Material) => {
+    const g = new THREE.Group();
+    const pts = Array.from({ length: 10 }, (_, i) => { const t = i / 9; return V2(0.042 * Math.sin(Math.PI * (0.15 + t * 0.72)) * (1 - t * 0.55) + 0.003, t * 0.24); });
+    const furl = mesh(new THREE.LatheGeometry(pts, 5), petal, g, "queen-bud-furl");
+    furl.rotation.y = 0.4;
+    const tip = mesh(new THREE.SphereGeometry(0.021, 8, 6), budTip, g, "queen-bud-tip");
+    tip.position.y = 0.24;
+    return g;
+  };
+  /** A leaf: a broad blade, not a sliver — a leaf thin enough to vanish edge-on reads as a stray wire, and the Chapter's growth stops being visible. */
+  const leafForm = (parent: THREE.Object3D, name: string) => {
+    const l = mesh(new THREE.SphereGeometry(0.1, 12, 9), leaf, parent, name);
+    l.scale.set(0.62, 0.2, 1);
+    return l;
+  };
+
+  // Her hair: the mandevilla, the Chapter, grown by acts. White on her left, crimson on her right.
+  // Buds are goals in motion. Reserved — the studio cannot recolour, cover or remove a strand.
+  const vine = new THREE.Group();
+  vine.name = "queen-vine";
+  vine.position.set(0, headTop - 0.1, -0.03);
+  body.add(vine);
+  /** Seats along the strands where a leaf cluster or a bud can sit, gathered so the counts stay the Chapter's. */
+  const leafSeats: THREE.Vector3[][] = [];
+  const budSeats: { at: THREE.Vector3; side: -1 | 1 }[] = [];
+  for (const side of [-1, 1] as const) {
+    for (let i = 0; i < 7; i += 1) {
+      const a = (i / 6 - 0.5) * 1.7;
+      // Out past the width of her head at the very first point, or the whole fall hides behind her skull.
+      const out = 0.58 + (i % 3) * 0.13 + (i > 3 ? 0.1 : 0);
+      const z = Math.sin(a) * 0.44 + 0.1;
+      // Hair is not a bowl cut: every strand falls a different length, or fourteen of them read as one green hoop.
+      const drop = 1.5 + ((i * 7) % 5) * 0.22;
+      const sway = side * (0.1 + (i % 2) * 0.12);
+      const strand = curveOf([
+        [side * 0.4, 0.08, z * 0.55],
+        [side * out, -drop * 0.24, z * 0.9],
+        [side * (out + 0.2) + sway, -drop * 0.56, z],
+        [side * (out + 0.26), -drop * 0.85, z * 0.86],
+        [side * (out + 0.06) + sway, -drop, z * 0.6],
+      ]);
+      mesh(new THREE.TubeGeometry(strand, 32, 0.022 + (i % 2) * 0.008, 6, false), stem, vine, "queen-stem");
+      // Her flowers, permanent: they are who she is, not a reward. One colour a side; they meet only in the crown.
+      for (const [t, scale] of [[0.38, 1.15], [0.72, 0.95], [0.98, 0.8]] as const) {
+        const flower = bloom(side < 0 ? petalWhite : petalRed);
+        flower.name = "queen-bloom";
+        flower.position.copy(strand.getPoint(t));
+        flower.rotation.set(0.55 + (i % 3) * 0.14, i * 0.9, side * 0.35);
+        flower.scale.setScalar(scale * (0.9 + (i % 3) * 0.12));
+        vine.add(flower);
+      }
+      if (i % 2 === 0) leafSeats.push([strand.getPoint(0.3), strand.getPoint(0.58), strand.getPoint(0.82)]);
+      if (i === 1 || i === 5) budSeats.push({ at: strand.getPoint(0.72), side });
+    }
+  }
+  /** Leaf clusters: one per act, up to five. Each is a direct child of the hair so the Chapter's growth is countable. */
+  const leaves = leafSeats.slice(0, 5).map((seats, index) => {
+    const cluster = new THREE.Group();
+    cluster.name = "queen-leaf";
+    for (const [k, seat] of seats.entries()) {
+      const l = leafForm(cluster, "queen-leaf-blade");
+      l.position.copy(seat);
+      // Tilted face-on to the room rather than edge-on, so a leaf reads as a leaf from the one angle the camera has.
+      l.rotation.set(0.95 + k * 0.16, (index % 2 ? 1 : -1) * (0.45 + k * 0.2), (index % 2 ? 1 : -1) * 0.45);
+    }
+    cluster.visible = false;
+    vine.add(cluster);
+    return cluster;
+  });
+  /** Buds: one per goal in motion, up to four, furled on the strands where a bloom has not opened. */
+  const buds = budSeats.slice(0, 4).map((seat, index) => {
+    // A bud keeps its strand's colour, the same as the blooms beside it.
+    const b = budForm(seat.side < 0 ? petalWhite : petalRed);
+    b.name = "queen-bud";
+    b.position.copy(seat.at);
+    b.rotation.set(0.3, index * 1.4, seat.side * 0.2);
+    b.visible = false;
+    vine.add(b);
+    return b;
+  });
+
+  // Her flower crown: where the two colours interweave, bound on a gold band. Both partners present lights it. Reserved.
   const crown = new THREE.Group();
   crown.name = "queen-crown";
-  crown.position.set(0, headTop - 0.06, 0);
+  crown.position.set(0, headTop - 0.16, QUEEN_HEAD.position[2] - 0.01);
   body.add(crown);
-  const crownRing = mesh(new THREE.TorusGeometry(0.34, 0.035, 10, 32), gold, crown, "queen-crown-ring");
+  const crownRing = mesh(new THREE.TorusGeometry(0.46, 0.028, 10, 40), gold, crown, "queen-crown-ring");
   crownRing.rotation.x = Math.PI / 2;
+  crownRing.scale.set(1, 1, 0.92);
+  const crownBand = mesh(new THREE.TorusGeometry(0.455, 0.022, 8, 40), stem, crown, "queen-crown-band");
+  crownBand.rotation.x = Math.PI / 2;
+  crownBand.scale.set(1, 1, 0.92);
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i / 12) * Math.PI * 2;
+    const node = i % 3 === 2 ? budForm(i % 2 ? petalRed : petalWhite) : bloom(i % 2 ? petalRed : petalWhite);
+    node.name = i % 3 === 2 ? "queen-crown-bud" : "queen-crown-bloom";
+    node.position.set(Math.cos(angle) * 0.46, 0.03, Math.sin(angle) * 0.42);
+    node.rotation.set(-0.5, -angle, 0);
+    node.scale.setScalar(0.78);
+    crown.add(node);
+  }
   for (let i = 0; i < 5; i += 1) {
-    const a = (i / 5) * Math.PI * 2;
-    const point = mesh(new THREE.ConeGeometry(0.07, 0.24, 5), gold, crown, "queen-crown-point");
-    point.position.set(Math.sin(a) * 0.32, 0.14, Math.cos(a) * 0.32);
+    const a = (i / 5) * Math.PI * 2 + 0.3;
+    const point = mesh(new THREE.ConeGeometry(0.045, 0.16, 4), gold, crown, "queen-crown-point");
+    point.position.set(Math.cos(a) * 0.46, 0.14, Math.sin(a) * 0.42);
   }
   const crownLight = new THREE.PointLight("#ffe08a", 0, 3.2, 2);
   crownLight.name = "queen-crown-light";
@@ -179,31 +409,10 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     for (const [i, path] of queenSeamPathsFor(form).entries()) {
       const seam = seams[i]!;
       geometries.delete(seam.geometry); seam.geometry.dispose();
-      seam.geometry = geo(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(path.map((p) => new THREE.Vector3(...p))), 24, seamRadii[i]!, 8, false));
+      seam.geometry = geo(new THREE.TubeGeometry(curveOf(path.map((p) => [...p] as [number, number, number])), 24, seamRadii[i]!, 8, false));
     }
     shoulders.scale.set(form.handles.neck, 1, form.handles.neck);
   };
-
-  // The mandevilla vine: her hair, the Chapter, grown by acts. Buds are goals in motion. Reserved.
-  const vine = new THREE.Group();
-  vine.name = "queen-vine";
-  vine.position.set(0, headTop - 0.1, -0.05);
-  body.add(vine);
-  tube([[0, 0, 0], [-0.25, 0.45, 0.05], [-0.62, 0.78, 0.12], [-0.86, 1.1, 0.2]], 0.032, stem, vine, "queen-stem");
-  tube([[0, 0, 0], [0.22, 0.5, 0.02], [0.6, 0.86, 0.12], [0.98, 1.0, 0.24]], 0.03, stem, vine, "queen-stem");
-  const leafSeats: Array<[number, number, number, number]> = [[-0.3, 0.55, 0.1, -0.6], [-0.66, 0.9, 0.2, -0.9], [0.5, 0.8, 0.14, 0.8], [0.3, 0.5, 0.06, 0.5], [0.9, 1.02, 0.3, 0.4]];
-  const leaves = leafSeats.map(([x, y, z, rz]) => {
-    const l = mesh(new THREE.SphereGeometry(0.16, 14, 10), leaf, vine, "queen-leaf");
-    l.position.set(x, y, z); l.scale.set(1.6, 0.6, 0.35); l.rotation.z = rz; l.visible = false;
-    return l;
-  });
-  const budSeats: Array<[number, number, number, number]> = [[-0.9, 1.16, 0.22, 0.12], [1.02, 1.06, 0.26, 0.1], [-0.45, 0.72, 0.16, 0.085], [0.72, 0.62, 0.14, 0.08]];
-  const buds = budSeats.map(([x, y, z, r]) => {
-    // A bud is a long, tightly furled spiral held upright, not a ball: the honest form for a Chapter in progress.
-    const b = mesh(new THREE.SphereGeometry(r, 16, 12), bud, vine, "queen-bud");
-    b.position.set(x, y, z); b.scale.set(0.62, 1.7, 0.62); b.rotation.z = -x * 0.25; b.visible = false;
-    return b;
-  });
 
   // Stones at her feet: how many, how near. Reserved.
   const feet = new THREE.Group();
@@ -234,12 +443,17 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       try {
         replayPart(state.layer, paint, part);
         presentPart(state.layer, state.display, axis.clearcoat === 1);
+        // Her clay, over their paint: the mottling and the white splatter the real pot was finished with.
+        const size = state.display.width;
+        const texture = grainFor(size);
+        const ctx = texture ? state.display.getContext("2d") : null;
+        if (texture && ctx) { ctx.save(); ctx.globalAlpha = 0.85; ctx.drawImage(texture, 0, 0, size, size); ctx.restore(); }
         state.texture.needsUpdate = true;
       } catch { state.mat.color.set(studioHex(partDip(paint, part))); }
     }
   };
   const applyAxis = () => {
-    for (const m of [parts.body.mat, parts.head.mat, reservedClay]) {
+    for (const m of [...paintMaterials, reservedClay]) {
       m.roughness = axis.roughness; m.clearcoat = axis.clearcoat; m.envMapIntensity = axis.envMapIntensity; m.needsUpdate = true;
     }
   };
@@ -264,8 +478,8 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     get disposed() { return disposed; },
     /** Names of the reserved groups and meshes, for tests that assert the paint never reaches them. */
     reserved: { vine, crown, crownLight, face, eyesOpen, eyesClosed, hands, seams, feet, stones, belly, underside, shoulders },
-    paintable: { body: skirt, head },
-    materials: { body: parts.body.mat, head: parts.head.mat, reservedClay, gold, goldSeam, leaf, bud, ink },
+    paintable: { body: skirt, head, earL: ears.earL, earR: ears.earR, tail, paws },
+    materials: { body: parts.body.mat, head: parts.head.mat, earL: parts.earL.mat, earR: parts.earR.mat, tail: parts.tail.mat, paws: parts.paws.mat, reservedClay, gold, goldSeam, leaf, bud, ink, petalWhite, petalRed },
     counts() { const c = charms.counts(); return { geometries: geometries.size + c.geometries, materials: materials.size + (c.geometries ? c.materials : 0), textures: textures.size }; },
     charmCounts() { return charms.counts(); },
     /** The charms on her, in the piece's own coordinates. Sanitized by the caller; drawn here. */
@@ -300,7 +514,7 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       textures.add(marksTexture);
       undersideMat.map = marksTexture; undersideMat.needsUpdate = true;
     },
-    /** Where a ray lands on her paintable surface: the part and its uv, or null off her or on a reserved mesh. */
+    /** Where a ray lands on her charm surface: the part and its uv, or null off her or on a reserved mesh. */
     pick(raycaster: THREE.Raycaster): { part: QueenCharmPart; u: number; v: number } | null {
       const hit = raycaster.intersectObjects(pickable, false)[0];
       if (!hit || !hit.uv) return null;
@@ -344,8 +558,9 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       for (const [index, seam] of seams.entries()) seam.visible = index < seamCount;
     },
     setVine(chapter: boolean, growth: number, budCount: number) {
-      const scale = chapter ? 0.74 + Math.max(0, Math.min(4, growth)) * 0.09 : 0.56;
-      vine.scale.setScalar(scale);
+      // Acts lengthen her hair. Width barely moves — hair that narrows as well as shortens disappears behind her head.
+      const grown = Math.max(0, Math.min(4, growth));
+      vine.scale.set(chapter ? 0.94 + grown * 0.015 : 0.9, chapter ? 0.78 + grown * 0.055 : 0.62, chapter ? 0.94 + grown * 0.015 : 0.9);
       const leafCount = chapter ? 1 + Math.max(0, Math.min(4, growth)) : 0;
       for (const [index, l] of leaves.entries()) l.visible = index < leafCount;
       for (const [index, b] of buds.entries()) b.visible = index < budCount;
@@ -377,6 +592,7 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       for (const m of materials) m.dispose();
       for (const t of textures) t.dispose();
       geometries.clear(); materials.clear(); textures.clear();
+      grain.clear();
     },
   };
 }

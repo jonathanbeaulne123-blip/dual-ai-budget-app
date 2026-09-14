@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
+import * as THREE from "three";
 import type { KittyPaintV1, KittyStampV1, KittyStrokeV1 } from "../src/core/types.ts";
 import { KITTY_PARTS, defaultKittyPaint, newKittyPiece } from "../src/core/kittyStudio.ts";
 import type { FundPulseState } from "../src/core/fundPulse.ts";
@@ -39,30 +40,44 @@ describe("The Queen in the studio — what is hers and theirs, and what is reser
   it("names every reserved channel with the reading it carries", () => {
     expect(QUEEN_RESERVED_CHANNELS.map((row) => row.id)).toEqual(["vine", "posture", "fill", "eyes", "crown", "seams", "hands", "feet", "glaze", "rings"]);
     for (const row of QUEEN_RESERVED_CHANNELS) expect(row.reading).toMatch(/\S/);
-    expect(QUEEN_PAINTABLE_PARTS).toEqual(["body", "head"]);
+    // She has the studio's six parts, so the couple can work on her exactly as they work on a bank.
+    expect(QUEEN_PAINTABLE_PARTS).toEqual(["body", "head", "earL", "earR", "tail", "paws"]);
   });
 
-  it("keeps colour, pattern and marks on her body and head, and drops everything aimed elsewhere", () => {
+  it("keeps colour, pattern and marks on all six of her parts, and drops only what is aimed at a reading", () => {
     const paint = queenSanitizePaint(everywherePaint());
     expect(paint.base).toBe("midnight");
-    expect(Object.keys(paint.parts).sort()).toEqual(["body", "head"]);
-    expect(paint.strokes.map((row) => row.part)).toEqual(["body", "head"]);
-    expect(paint.strokes.every((row) => row.mirror === false)).toBe(true);
-    expect(paint.stamps.map((row) => `${row.part}:${row.kind}:${row.v}`)).toEqual(["body:heart:0.6", "head:star:0.3"]);
+    expect(Object.keys(paint.parts).sort()).toEqual(["body", "earL", "earR", "head", "paws", "tail"]);
+    expect(paint.strokes.map((row) => row.part)).toEqual(["body", "head", "earL", "earR", "tail", "paws"]);
+    // Mirroring works on her the way it works on a bank: her ears are a pair.
+    expect(paint.strokes.every((row) => row.mirror === true)).toBe(true);
+    expect(paint.stamps.map((row) => `${row.part}:${row.kind}:${row.v}`)).toEqual(["body:heart:0.6", "head:star:0.3", "earL:heart:0.5", "tail:heart:0.5", "paws:heart:0.5"]);
   });
 
-  it("refuses a stamp on each reserved zone individually: the crown, the eyes and brow, the ears she has not got, the tail, the paws", () => {
+  it("drops a stroke that dips onto her underside, where the makers' marks are pressed", () => {
+    const under: KittyStrokeV1 = { part: "body", tool: "brush", color: "#b33a63", size: 40, opacity: 1, mirror: false, pts: [0.5, 0.02, 0.6, 0.5] };
+    const kept = queenSanitizePaint({ ...defaultKittyPaint(), strokes: [under, stroke("body")] });
+    expect(kept.strokes).toHaveLength(1);
+    expect(kept.strokes[0]!.pts).toEqual([0.5, 0.5, 0.6, 0.6]);
+  });
+
+  it("refuses a stamp on each reserved zone individually, and lets her ears, tail and paws take one", () => {
     expect(queenStampAllowed(stamp({ part: "head", v: 0.9, kind: "star" }))).toBe(false); // the crown's seat
     expect(queenStampAllowed(stamp({ part: "head", v: 0.6, kind: "star" }))).toBe(false); // the eyes and brow
     expect(queenStampAllowed(stamp({ part: "head", v: 0.3, kind: "crown" }))).toBe(false); // a false crown anywhere
     for (const kind of ["party-hat", "sun-hat", "beanie", "glasses", "sunglasses"] as const) expect(queenStampAllowed(stamp({ kind, part: "head", v: 0.3 }))).toBe(false);
-    expect(queenStampAllowed(stamp({ part: "earL", anchor: "leftEar" }))).toBe(false);
-    expect(queenStampAllowed(stamp({ part: "tail", anchor: "tailTip" }))).toBe(false);
-    expect(queenStampAllowed(stamp({ part: "paws", anchor: "chest" }))).toBe(false);
+    expect(queenStampAllowed(stamp({ part: "body", v: 0.02 }))).toBe(false); // her underside and its marks
+    // Her own anatomy is hers: a mark on an ear, the tail or a paw takes.
+    expect(queenStampAllowed(stamp({ part: "earL", anchor: "leftEar" }))).toBe(true);
+    expect(queenStampAllowed(stamp({ part: "tail", anchor: "tailTip" }))).toBe(true);
+    expect(queenStampAllowed(stamp({ part: "paws", anchor: "chest" }))).toBe(true);
+    // A kind that would impersonate a reading is still refused wherever it is put.
+    expect(queenStampAllowed(stamp({ part: "earL", anchor: "leftEar", kind: "crown" }))).toBe(false);
     expect(queenStampAllowed(stamp({ part: "body", v: 0.6 }))).toBe(true);
     expect(queenStampAllowed(stamp({ part: "head", v: 0.3, kind: "moon" }))).toBe(true);
     // Anchor-only stamps resolve through the same placement.
     expect(queenStampAllowed({ ...stamp({}), part: undefined, u: undefined, v: undefined, anchor: "forehead" })).toBe(false);
+    expect(queenStampAllowed({ ...stamp({}), part: undefined, u: undefined, v: undefined, anchor: "tailTip" })).toBe(true);
     expect(queenStampAllowed({ ...stamp({}), part: undefined, u: undefined, v: undefined, anchor: "belly" })).toBe(true);
   });
 
@@ -87,7 +102,8 @@ describe("The Queen in the studio — what is hers and theirs, and what is reser
     const fired = { ...newKittyPiece("f", "2026-09-01T00:00:00.000Z", "midnight"), firedAt: "2026-09-02T00:00:00.000Z" };
     expect(queenLook({ glaze: "cream", studio: { version: 1, draft, fired: [fired], displayId: "f" } }).base).toBe("sea-glass");
     expect(queenLook({ glaze: "cream", studio: { version: 1, draft: null, fired: [fired], displayId: "f" } }).base).toBe("midnight");
-    expect(queenLook(undefined).base).toBe("cream");
+    // Unpainted she is the pot she was thrown from: terracotta is her clay, not a choice left unmade.
+    expect(queenLook(undefined).base).toBe("terracotta");
     expect(queenLook({ glaze: "terracotta", studio: undefined }).base).toBe("terracotta");
   });
 
@@ -104,8 +120,8 @@ describe("The Queen in the studio — what is hers and theirs, and what is reser
     expect(kept.completeSetup).toBe(false);
     expect(kept.studio?.draft?.firedAt).toBeNull();
     expect(kept.studio?.draft).not.toHaveProperty("firedBy");
-    expect(kept.studio?.draft?.paint.strokes.map((row) => row.part)).toEqual(["body", "head"]);
-    expect(kept.studio?.draft?.paint.stamps).toHaveLength(2);
+    expect(kept.studio?.draft?.paint.strokes.map((row) => row.part)).toEqual(["body", "head", "earL", "earR", "tail", "paws"]);
+    expect(kept.studio?.draft?.paint.stamps).toHaveLength(5);
     // Her sculpture offers no kiln at all.
     const queen = createQueenSculpture();
     expect((queen as unknown as { setFired?: unknown }).setFired).toBeUndefined();
@@ -132,7 +148,7 @@ describe("The Queen in the studio — what is hers and theirs, and what is reser
 describe("The Queen as a sculpture — reserved geometry the paint never reaches", () => {
   it("keeps every reserved channel on its own material, with no texture map, whatever is painted", () => {
     const queen = createQueenSculpture();
-    const paintables = new Set([queen.materials.body, queen.materials.head]);
+    const paintables = new Set([queen.materials.body, queen.materials.head, queen.materials.earL, queen.materials.earR, queen.materials.tail, queen.materials.paws]);
     const reservedObjects = [queen.reserved.vine, queen.reserved.crown, queen.reserved.face, queen.reserved.hands, queen.reserved.feet, ...queen.reserved.seams];
     const before = new Map<string, string>();
     for (const root of reservedObjects) root.traverse((object) => {
@@ -178,7 +194,8 @@ describe("The Queen as a sculpture — reserved geometry the paint never reaches
     expect(queen.reserved.crownLight.intensity).toBe(0);
     queen.setVine(false, 0, 0);
     expect(queen.reserved.vine.visible).toBe(true);
-    expect(queen.reserved.vine.scale.x).toBeCloseTo(0.56);
+    expect(queen.reserved.vine.scale.x).toBeCloseTo(0.9);
+    expect(queen.reserved.vine.scale.y).toBeCloseTo(0.62);
     queen.dispose();
   });
 
@@ -216,6 +233,74 @@ describe("The Queen as a sculpture — reserved geometry the paint never reaches
     expect(disposed.filter((row) => row === "geometry").length).toBe(counts.geometries);
     expect(disposed.filter((row) => row === "material").length).toBeGreaterThanOrEqual(counts.materials - 1);
     expect(queen.group.children).toHaveLength(0);
+    queen.dispose();
+  });
+
+  it("is a cat: ears with a fold, a muzzle, whiskers, a tail and front paws, each of the six on its own paint", () => {
+    const queen = createQueenSculpture();
+    const named = new Map<string, number>();
+    queen.group.traverse((object) => named.set(object.name, (named.get(object.name) ?? 0) + 1));
+    for (const name of ["queen-earL", "queen-earR", "queen-muzzle", "queen-nose", "queen-tail", "queen-paws"]) {
+      expect(named.get(name), `${name} is on her`).toBeGreaterThanOrEqual(1);
+    }
+    expect(named.get("queen-whisker")).toBe(6);
+    expect(named.get("queen-cheek")).toBe(2);
+    expect(named.get("queen-paw")).toBe(2);
+    // The inner fold of each ear is its own material, so paint on the ear never flattens it.
+    for (const key of ["earL", "earR"] as const) {
+      const ear = queen.paintable[key];
+      const outer = ear.getObjectByName(`queen-${key}-outer`) as { material?: unknown } | undefined;
+      const fold = ear.getObjectByName(`queen-${key}-fold`) as { material?: unknown } | undefined;
+      expect(outer?.material).toBe(queen.materials[key]);
+      expect(fold?.material).not.toBe(queen.materials[key]);
+    }
+    // Six parts, six materials, six textures — the same pipeline a bank is painted through.
+    const six = [queen.materials.body, queen.materials.head, queen.materials.earL, queen.materials.earR, queen.materials.tail, queen.materials.paws];
+    expect(new Set(six).size).toBe(6);
+    queen.dispose();
+  });
+
+  it("holds her cupped hands above the paws, so the Move's seat survives any paint on them", () => {
+    const queen = createQueenSculpture();
+    const paws = queen.group.getObjectByName("queen-paws")!;
+    expect(queen.reserved.hands.visible).toBe(true);
+    // Reserved clay, never a paint material, and seated above the paws rather than under them.
+    expect(queen.reserved.hands.material).toBe(queen.materials.reservedClay);
+    expect(queen.reserved.hands.position.y).toBeGreaterThan(paws.position.y);
+    queen.setPaint(everywherePaint());
+    expect(queen.reserved.hands.material).toBe(queen.materials.reservedClay);
+    expect((queen.reserved.hands.material as { map?: unknown }).map).toBeFalsy();
+    queen.dispose();
+  });
+
+  it("grows the mandevilla as her hair: one colour down each side, the two meeting only in the crown", () => {
+    const queen = createQueenSculpture();
+    const side = (root: THREE.Object3D, material: unknown) => {
+      const xs: number[] = [];
+      root.traverse((object) => {
+        const mesh = object as unknown as { isMesh?: boolean; material?: unknown };
+        if (!mesh.isMesh || mesh.material !== material) return;
+        xs.push(object.getWorldPosition(new THREE.Vector3()).x);
+      });
+      return xs;
+    };
+    const white = side(queen.reserved.vine, queen.materials.petalWhite);
+    const red = side(queen.reserved.vine, queen.materials.petalRed);
+    expect(white.length).toBeGreaterThan(0);
+    expect(red.length).toBeGreaterThan(0);
+    expect(Math.max(...white)).toBeLessThan(0);
+    expect(Math.min(...red)).toBeGreaterThan(0);
+    // The crown is where they interweave, and it is the crown that lights — not a texture swap.
+    expect(side(queen.reserved.crown, queen.materials.petalWhite).length).toBeGreaterThan(0);
+    expect(side(queen.reserved.crown, queen.materials.petalRed).length).toBeGreaterThan(0);
+    queen.setCrown(true);
+    expect(queen.reserved.crownLight.intensity).toBeGreaterThan(0);
+    // Her hair is the Chapter: it lengthens from acts, and buds are goals in motion.
+    queen.setVine(false, 0, 0);
+    const closed = queen.reserved.vine.scale.x;
+    queen.setVine(true, 4, 3);
+    expect(queen.reserved.vine.scale.x).toBeGreaterThan(closed);
+    expect(queen.reserved.vine.children.filter((child) => child.visible && child.name === "queen-bud")).toHaveLength(3);
     queen.dispose();
   });
 });
