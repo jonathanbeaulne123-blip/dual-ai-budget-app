@@ -359,3 +359,22 @@
   .queen-goal svg { width: 40px; height: 60px; }
   .queen-home[data-mode="sheet"] .queen-panel { max-height: 78%; }
 }
+
+/* ---- the world: one scene behind the controls ---- */
+.queen-world { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.queen-world__canvas { display: block; }
+.queen-centre, .queen-door { z-index: 1; }
+/* When the world is live the drawn figure and the flat portraits keep their boxes and lose their paint. */
+.queen-home[data-world="3d"] .queen-svg, .queen-home[data-world="3d"] .queen-bank-flat { visibility: hidden; }
+.queen-home[data-world="3d"] .queen-mount { animation: none !important; }
+/* Banks in the flat path are the studio's own 2D twins: fired reads fired there too. */
+.queen-bank-portrait { display: block; width: var(--queen-bank-w); aspect-ratio: 300 / 360; color: var(--queen-clay-shadow); }
+.queen-bank-flat { display: block; width: 100%; height: 100%; overflow: visible; }
+.queen-bank-portrait[data-fired="false"] .queen-bank-flat { filter: saturate(.8) brightness(1.04); }
+.queen-goalrow { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
+.queen-bank-portrait--small { width: calc(var(--queen-bank-w) * .42); }
+/* her look */
+.queen-look { margin: 14px 0 6px; }
+.queen-look__row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.queen-swatch { width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 50%; border: 2px solid var(--line); background: var(--swatch); cursor: pointer; padding: 0; }
+.queen-swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }

@@ -1,4 +1,3 @@
-import { useId } from "react";
 import type { QueenBody, QueenCrown, QueenFeet, QueenRegionId, QueenStill, QueenVine } from "../core/queenPresentation.ts";
 
 /**
@@ -124,37 +123,6 @@ export function QueenFigure({ still, body, crown, vine, buds, feet, freshBud = n
           return <ellipse key={seat.cx} className={`queen-stone queen-stone--${size}`} cx={seat.cx} cy={seat.cy} rx={STONE_SIZE[size].rx} ry={STONE_SIZE[size].ry} />;
         })}
       </g>
-    </svg>
-  );
-}
-
-/** A child vessel for Protect or Build: the same clay, a smaller body, filled by its drawn share. */
-export function QueenBankVessel({ kind, share, mouth }: { kind: "protect" | "build"; share: number; mouth?: "open" | "lidded" }) {
-  const id = useId();
-  const clip = `${id}-clip`;
-  const fillTop = 144 - Math.max(0, Math.min(10, share)) * 6.4;
-  const bodyPath = kind === "protect" ? "M25 144 C17 110 23 78 65 78 C107 78 113 110 105 144 Z" : "M38 144 C34 104 40 62 65 50 C90 62 96 104 92 144 Z";
-  return (
-    <svg className="queen-bank-svg" viewBox="0 0 130 160" aria-hidden="true" focusable="false">
-      <defs><clipPath id={clip}><path d={bodyPath} /></clipPath></defs>
-      <ellipse className="queen-foot" cx="65" cy="150" rx="46" ry="7" />
-      <path className="queen-vessel" d={bodyPath} />
-      <rect className="queen-bank-fill" clipPath={`url(#${clip})`} x="10" y={fillTop} width="110" height={Math.max(0, 144 - fillTop)} />
-      {kind === "protect" ? (
-        <>
-          <path className="queen-shade" d="M84 80 C104 88 110 114 105 144 L90 144 C96 114 94 90 84 80 Z" />
-          <path className="queen-vessel" d="M41 80 C41 63 52 55 65 55 C78 55 89 63 89 80 Z" />
-        </>
-      ) : (
-        <>
-          <path className="queen-shade" d="M75 58 C89 76 92 110 90 144 L79 144 C83 110 82 76 75 58 Z" />
-          <path className="queen-stem" d="M65 50 C65 40 61 34 57 29" />
-          <ellipse className="queen-leaf" cx="54" cy="32" rx="7" ry="3.6" transform="rotate(-30 54 32)" />
-        </>
-      )}
-      {mouth === "lidded" && <rect className="queen-lid" x="47" y="50" width="36" height="7" rx="3.5" />}
-      <path className="queen-eye" d={kind === "protect" ? "M52 71 q5 4 10 0" : "M53 72 q5 4 10 0"} />
-      <path className="queen-eye" d={kind === "protect" ? "M68 71 q5 4 10 0" : "M67 72 q5 4 10 0"} />
     </svg>
   );
 }

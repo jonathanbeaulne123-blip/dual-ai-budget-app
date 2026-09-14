@@ -50,9 +50,11 @@ type HouseholdHomeProps = {
   identityArt?: ReactNode;
   /** Defaults to the `VITE_QUEENS_NEST` flag inside the Plan V2 family. */
   composition?: "panels" | "queen";
+  /** The Queen's world: `auto` (default) tries WebGL and degrades silently; `flat` keeps the drawn figure. */
+  world?: "auto" | "flat" | "3d";
 };
 
-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt, composition }: HouseholdHomeProps) {
+function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt, composition, world }: HouseholdHomeProps) {
   const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(null);
   const queen = (composition ?? (queensNestEnabled() ? "queen" : "panels")) === "queen";
   const gallery = bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
@@ -62,7 +64,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
   if (queen) {
     return (
       <>
-        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} />
+        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} />
         {gallery}
       </>
     );
