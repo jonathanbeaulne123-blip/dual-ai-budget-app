@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type 
 import { formatDayLabel } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
 import { queenShelfReorder, type QueenShelfItem } from "../core/queenPresentation.ts";
+import { QueenBankFlat } from "./QueenBankFlat.tsx";
 import { QueenRoomWorld } from "./QueenRoomWorld.tsx";
 import type { RoomVessel } from "./world/queenRoomWorld.ts";
 
@@ -14,6 +15,8 @@ import type { RoomVessel } from "./world/queenRoomWorld.ts";
  * The lean is a pose, so the rule reads with motion off.
  *
  * **Arrangement is the data.** Left is first: first fed when money comes in.
+ Across the ledge is arranging; up and
+ * down is the house leaving the room, and the two never mean each other.
  * Dragging a bank, or Shift with an arrow key, writes one rank on that bank's
  * own design row — one save, and the last save wins, which is how every shared
  * change in Hearth already works. The shelf itself carries no figures; they
@@ -40,7 +43,7 @@ export function QueenLoft({ shelf, open, busy, stairRef, onExit, onOpenGoal, onO
   const [live, setLive] = useState(false);
   const room = useRef<HTMLDivElement>(null);
   const ledge = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: string; x: number; moved: boolean } | null>(null);
+  const drag = useRef<{ id: string; x: number; y: number; moved: boolean } | null>(null);
   const justDragged = useRef(false);
 
   const held = shelf.find((item) => item.id === heldId) ?? null;
@@ -70,15 +73,18 @@ export function QueenLoft({ shelf, open, busy, stairRef, onExit, onOpenGoal, onO
 
   const onPointerDown = (item: QueenShelfItem) => (event: PointerEvent<HTMLButtonElement>) => {
     if (!canMove || (event.pointerType === "mouse" && event.button !== 0)) return;
-    drag.current = { id: item.id, x: event.clientX, moved: false };
+    drag.current = { id: item.id, x: event.clientX, y: event.clientY, moved: false };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
   const onPointerMove = (event: PointerEvent<HTMLButtonElement>) => {
     const held = drag.current;
     if (!held || !ledge.current) return;
-    if (!held.moved && Math.abs(event.clientX - held.x) < 8) return;
+    const dx = event.clientX - held.x, dy = event.clientY - held.y;
+    // Arranging runs across the ledge. Up and down belong to the house, so a
+    // drag that leans vertical never rearranges anything on the way past.
+    if (!held.moved && (Math.abs(dx) < 8 || Math.abs(dy) > Math.abs(dx))) return;
     if (!held.moved) { held.moved = true; setDragId(held.id); }
-    const seats = [...ledge.current.querySelectorAll<HTMLElement>("[data-room-vessel]")];
+    const seats = [...ledge.current.querySelectorAll<HTMLElement>("[data-ledge-bank]")];
     let index = seats.length;
     for (const [i, seat] of seats.entries()) {
       const rect = seat.getBoundingClientRect();
@@ -104,7 +110,7 @@ export function QueenLoft({ shelf, open, busy, stairRef, onExit, onOpenGoal, onO
     if (item.mouth === "lidded") refuse(item.id);
   };
   const onKeyDown = (item: QueenShelfItem, index: number) => (event: KeyboardEvent<HTMLButtonElement>) => {
-    const seats = ledge.current?.querySelectorAll<HTMLElement>("[data-room-vessel]");
+    const seats = ledge.current?.querySelectorAll<HTMLElement>("[data-ledge-bank]");
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       const step = event.key === "ArrowLeft" ? -1 : 1;
@@ -134,7 +140,7 @@ export function QueenLoft({ shelf, open, busy, stairRef, onExit, onOpenGoal, onO
             <button
               key={item.id}
               type="button"
-              data-room-vessel={item.id}
+              data-ledge-bank={item.id}
               className={`queen-goal queen-goal--${item.mouth} queen-goal--${item.size}${refusedId === item.id ? " is-refusing" : ""}${dragId === item.id ? " is-dragging" : ""}${dropAt === index ? " is-drop" : ""}`}
               aria-pressed={heldId === item.id}
               aria-label={`${item.name} — ${item.mouth === "open" ? "open-mouthed, accepts" : "lidded, nothing to open"}, ${index + 1} of ${shown.length} on the ledge${canMove ? ". Shift with an arrow key to move it" : ""}`}
@@ -142,14 +148,9 @@ export function QueenLoft({ shelf, open, busy, stairRef, onExit, onOpenGoal, onO
               onKeyDown={onKeyDown(item, index)}
               onClick={onPick(item)}
             >
-              <svg viewBox="0 0 60 92" aria-hidden="true">
-                <path className="queen-vessel" d="M5 88 C0 50 5 12 30 12 C55 12 60 50 55 88 Z" />
-                {item.fullness > 0.02 && <path className="queen-goal__glaze" d={`M5 88 C2 ${88 - 38 * item.fullness} 4 ${88 - 76 * item.fullness} 30 ${88 - 76 * item.fullness} C56 ${88 - 76 * item.fullness} 58 ${88 - 38 * item.fullness} 55 88 Z`} />}
-                {item.mouth === "open"
-                  ? <ellipse className="queen-goal__mouth" cx="30" cy="12" rx="20" ry="5.5" />
-                  : <rect className="queen-lid" x="10" y="6" width="40" height="8" rx="4" />}
-                {Array.from({ length: Math.min(3, item.parts) }).map((_, i) => <rect key={i} className="queen-goal__neck" x={26 + (i - Math.min(3, item.parts) / 2) * 9} y="2" width="6" height="12" rx="3" />)}
-              </svg>
+              <span className="queen-goal__vessel" data-room-vessel={item.id}>
+                <QueenBankFlat className="queen-bank-flat queen-goal__flat" form={item.mouth === "open" ? "goal" : "bill"} fill={item.fullness} parts={item.parts} />
+              </span>
               <span className="queen-goal__name">{item.name}</span>
             </button>
           ))}

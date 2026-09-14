@@ -31,6 +31,9 @@ import { queenCharmFlatPick, queenCharmFreeSeat, queenCharmSettle, QUEEN_CHARM_K
 import { QueenCharmTool, queenCharmSeatWords } from "./QueenCharmTool.tsx";
 import { STUDIO_PALETTE } from "../kitty/studio/palette.ts";
 import { KittyFlat } from "../kitty/studio/flat.tsx";
+import { QueenHouseRail } from "./QueenHouseRail.tsx";
+import { houseStep, type HouseMove, type HousePlace } from "./queenHouse.ts";
+import { useHouseAxis } from "./useHouseAxis.ts";
 import { saveKittyNestDesign } from "../core/kittyNestDesigns.ts";
 import { KITTY_GLAZES } from "../core/goalEnvelopes.ts";
 import { formatDateLabel } from "../core/calendar.ts";
@@ -38,6 +41,7 @@ import type { KittyGlaze, KittyPaintV1, KittyStampKind } from "../core/types.ts"
 import { QueenCellar } from "./QueenCellar.tsx";
 import { QueenLoft } from "./QueenLoft.tsx";
 import "./queen-home.css";
+import "./queen-glass.css";
 
 type Run = (fn: (current: Household) => CommitResult) => Promise<unknown>;
 
@@ -96,7 +100,8 @@ export type QueenShell = {
 
 /** Doors: the two field doors carry everything that is not money; the three bank doors are the money hierarchy. */
 type Door = "together" | "status" | QueenBankId;
-type Scene = "home" | "cellar" | "loft";
+/** The three floors of the house, and the only axis the shared home has. */
+type Scene = HousePlace;
 const ROOM_FOR: Partial<Record<Door, Scene>> = { protect: "cellar", build: "loft" };
 /** The glass panel slides in from the edge opposite its door, so the door you came through stays visible and is the way deeper. */
 const PANEL_SIDE: Record<Door, "left" | "right"> = { together: "right", protect: "right", whatnow: "right", build: "left", status: "left" };
@@ -312,7 +317,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     for (const watched of [nav, tabs]) if (watched) sizes?.observe(watched);
     const shellNode = app?.querySelector<HTMLElement>(".app-shell") ?? null;
     const children = shellNode && typeof MutationObserver !== "undefined" ? new MutationObserver(measure) : null;
-    if (shellNode) children?.observe(shellNode, { childList: true });
+    // Subtree, because a transient banner (books validation, a sync notice) can grow inside a wrapper the shell already had; her top moves with it.
+    if (shellNode) children?.observe(shellNode, { childList: true, subtree: true });
     return () => {
       window.removeEventListener("resize", measure);
       window.visualViewport?.removeEventListener("resize", measure);
@@ -454,6 +460,29 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     requestAnimationFrame(() => bankRefs.current[bank]?.focus({ preventScroll: true }));
   }, [scene]);
 
+  /**
+   * One axis, one rule: **up goes up.** A swipe, a haul with the mouse or
+   * ArrowUp climbs a floor; down descends. The rail does the same thing with a
+   * button, so no floor is reachable only by gesture.
+   */
+  const travel = useCallback((to: Scene) => {
+    setSelectedCharm(null);
+    if (to === "home") { if (scene !== "home") exitRoom(); return; }
+    if (to !== scene) enterRoom(to);
+  }, [scene, exitRoom, enterRoom]);
+  const moveFloor = useCallback((move: HouseMove) => {
+    const next = houseStep(scene, move);
+    if (next !== scene) travel(next);
+  }, [scene, travel]);
+  /** Across Home: her three banks, in the order the eye reads them. */
+  const turnHome = useCallback((turn: -1 | 1) => {
+    if (scene !== "home" || !expanded) return;
+    const order: QueenBankId[] = ["protect", "whatnow", "build"];
+    const at = order.findIndex((bank) => bankRefs.current[bank] === document.activeElement);
+    const next = order[Math.max(0, Math.min(order.length - 1, (at < 0 ? (turn < 0 ? 1 : -1) : at) + turn))];
+    if (next) bankRefs.current[next]?.focus({ preventScroll: true });
+  }, [scene, expanded]);
+
   /** One gesture, two depths: the first tap opens the peek; the same door again from inside the peek goes in. */
   const openDoor = useCallback((door: Door, from: HTMLElement | null) => {
     setRevealed(false);
@@ -542,6 +571,19 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
 
   const mode = wide ? "panel" : "sheet";
   const inRoom = scene !== "home";
+  // The whole house answers the hand: the field and both rooms sit inside this
+  // root, so one grab carries wherever you are standing. A panel being open, a
+  // charm being placed or her being tipped over all borrow the gesture, so the
+  // house lets go while any of them is true. Under a paused atmosphere (which
+  // already carries reduced motion) the stairs still work; the house just does
+  // not slide under the hand.
+  const house = useHouseAxis({
+    place: scene,
+    onMove: moveFloor,
+    onTurn: turnHome,
+    enabled: !open && !tipped && !selectedCharm,
+    feedback: !atmospherePaused,
+  });
 
   return (
     <div
@@ -568,7 +610,9 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       data-thrown={wheel ? "true" : "false"}
       data-tipped={tipped ? "true" : "false"}
       data-portraits={portraits.length}
-      style={{ "--queen-scale": String(pose.scale), "--queen-lean": `${pose.lean}deg`, "--queen-light-level": String(light.level), "--queen-light-warmth": String(light.warmth) } as CSSProperties}
+      data-hauling={house.hauling ? "true" : "false"}
+      style={{ "--queen-scale": String(pose.scale), "--queen-lean": `${pose.lean}deg`, "--queen-light-level": String(light.level), "--queen-light-warmth": String(light.warmth), "--queen-haul": `${house.haul}px` } as CSSProperties}
+      {...house.bind}
     >
       {identityArt ? <div className="queen-identity-art" aria-hidden="true">{identityArt}</div> : null}
       <h1 className="sr-only">{household.name} — Our Home</h1>
@@ -598,7 +642,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
                   aria-label={`What now — ${QUEEN_BANK_MEANINGS.whatnow} ${bankWords("whatnow")}. Opens a peek`} onClick={(event) => openDoor("whatnow", event.currentTarget)}>What now</button>
               )}
               <div className="queen-mount">
-                <button ref={queenRef} type="button" className="queen-figure" aria-expanded={expanded} aria-describedby={`${ids}-still`}
+                <button ref={queenRef} type="button" className="queen-figure" data-house-hold="down" aria-expanded={expanded} aria-describedby={`${ids}-still`}
                   aria-label={tipped ? `The Queen, tipped over — her underside: marks ${marks.initials.join(" and ")}, last worked ${marks.date}. Rights her` : `The Queen — ${line.word}. ${expanded ? "Closes her banks" : "Opens her into her banks"}. Pull her down or press ArrowDown to see her underside`}
                   onPointerDown={onTipStart} onPointerMove={onTipMove} onPointerUp={onTipEnd} onPointerCancel={onTipEnd}
                   onKeyDown={(event) => { if (event.key === "ArrowDown" && !tipped) { event.preventDefault(); setTipped(true); } else if ((event.key === "ArrowUp" || event.key === "Escape") && tipped) { event.preventDefault(); event.stopPropagation(); setTipped(false); } }}
@@ -784,7 +828,9 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
         )}
       </aside>
 
-      <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} world={world} />
+      <QueenHouseRail place={scene} onGo={travel} />
+
+      <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} world={world} household={household} memberId={memberId} today={today} busy={busy} onCommand={onCommand} />
       <QueenLoft shelf={shelf} open={scene === "loft"} busy={busy} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} onReorder={keepShelfOrder} world={world} />
     </div>
   );

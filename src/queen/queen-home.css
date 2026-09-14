@@ -292,9 +292,7 @@
 .queen-room-world { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .queen-room-world__canvas { display: block; }
 /* The drawn room yields to a live canvas; every control above it stays exactly where it was. */
-.queen-room[data-world="3d"] .queen-vessel, .queen-room[data-world="3d"] .queen-jar__mouth,
-.queen-room[data-world="3d"] .queen-lid, .queen-room[data-world="3d"] .queen-goal__mouth,
-.queen-room[data-world="3d"] .queen-goal__glaze, .queen-room[data-world="3d"] .queen-goal__neck { visibility: hidden; }
+.queen-room[data-world="3d"] .queen-bank-flat, .queen-room[data-world="3d"] .queen-jar-ghost { visibility: hidden; }
 /* With a sculpture behind it, the pose belongs to the sculpture: the button stays square so its label stays level. */
 .queen-room[data-world="3d"] .queen-goal, .queen-room[data-world="3d"] .queen-jar { transform: none !important; }
 /* Room text sits on its own paper, so it reads against whatever the room is made of. */
@@ -650,3 +648,82 @@
 .due-preview-host[data-world-sheet="true"] .due-preview-inline { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0 auto; max-width: 760px; max-height: min(78dvh, calc(100dvh - 72px)); overflow: auto; border-radius: 14px 14px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 .app[data-world-home="true"] .due-arrival { position: relative; z-index: 3; width: min(100% - 28px, 732px); margin: 0 auto 4px; }
 .due-preview-host[hidden] { display: none; }
+
+
+/* ---- the kitty bank, drawn: the same cat the studio throws, flat ---- */
+/* `queenBankSculpture` spins this silhouette on a lathe; `QueenBankFlat` traces
+   the same points. A room with no WebGL keeps the cat, not a pot. */
+.queen-bank-flat { display: block; overflow: visible; }
+.queen-bank-flat__clay { fill: var(--queen-clay); }
+.queen-bank-flat__clay.is-hollow { fill: none; }
+.queen-bank-flat__edge { stroke: var(--queen-clay-deep); }
+.queen-bank-flat__glaze { fill: var(--queen-clay-deep); opacity: .85; }
+.queen-bank-flat__ear { fill: var(--queen-clay); stroke: var(--queen-clay-deep); stroke-width: 1.5; }
+.queen-bank-flat__eye { fill: var(--queen-clay-shadow); }
+.queen-bank-flat__nose { fill: var(--queen-clay-shadow); }
+.queen-bank-flat__tail { stroke: var(--queen-clay-deep); }
+/* Lidded refuses; an open slot accepts. The rim is the brass one the studio fires. */
+.queen-bank-flat__lid { fill: var(--queen-clay-shadow); }
+.queen-bank-flat__rim { fill: var(--queen-brass, var(--copper)); }
+.queen-bank-flat__slot { fill: var(--ink); }
+.queen-bank-flat__neck { fill: var(--queen-clay-shadow); }
+[data-hollow="true"] .queen-bank-flat__eye, .queen-bank-flat[data-hollow="true"] .queen-bank-flat__eye { display: none; }
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__clay,
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__ear { fill: none; }
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__edge { stroke-dasharray: 3 3; }
+.queen-jar .queen-bank-flat { width: 52px; height: 52px; }
+.queen-jar.is-outlier .queen-bank-flat { width: 70px; height: 70px; transform: translateY(-16px) rotate(-7deg); transform-origin: 50% 100%; }
+.queen-goal__vessel { display: block; }
+.queen-goal .queen-bank-flat { width: calc(70px * var(--goal-w, 1)); height: calc(70px * var(--goal-w, 1)); }
+.queen-home--wide .queen-goal .queen-bank-flat { width: calc(96px * var(--goal-w, 1)); height: calc(96px * var(--goal-w, 1)); }
+
+/* ---- the house axis: one line, three floors, and up goes up ---- */
+/* Across belongs to the room — the ribbon runs through time, the ledge through
+   order — so the browser keeps horizontal panning and the house takes vertical. */
+.queen-home { touch-action: pan-x; }
+.queen-field, .queen-room { cursor: grab; }
+.queen-home[data-hauling="true"] .queen-field, .queen-home[data-hauling="true"] .queen-room { cursor: grabbing; }
+.queen-field button, .queen-field a, .queen-room button, .queen-room a, .queen-room input { cursor: pointer; }
+/* The house follows the hand. `translate` rather than `transform`, so the rooms
+   keep the slide they enter and leave on. */
+.queen-home[data-hauling="true"] .queen-field, .queen-home[data-hauling="true"] .queen-room { translate: 0 var(--queen-haul, 0px); }
+.queen-ledge, .queen-gate-view { cursor: auto; }
+
+/* The rail: the door for everyone who did not find the gesture. */
+.queen-house-rail {
+  position: absolute; left: 10px; top: 50%; translate: 0 -50%; z-index: 4;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 5px; border: 1px solid var(--line); border-radius: 12px;
+  background: color-mix(in srgb, var(--paper) 78%, transparent); backdrop-filter: blur(4px);
+}
+.queen-house-rail__stop {
+  display: flex; align-items: center; gap: 7px;
+  min-height: 30px; padding: 3px 8px 3px 5px; border: 0; border-radius: 8px;
+  background: transparent; cursor: pointer; color: var(--muted); text-align: left;
+}
+.queen-house-rail__mark { width: 22px; height: 7px; border-radius: 2px; border: 1px solid var(--muted); flex: 0 0 auto; }
+.queen-house-rail__stop[aria-current="true"] { color: var(--ink); }
+.queen-house-rail__stop[aria-current="true"] .queen-house-rail__mark { background: var(--ink); border-color: var(--ink); }
+.queen-house-rail__stop:hover { color: var(--ink); }
+.queen-house-rail__name { font-family: var(--display); font-weight: 300; font-size: 13px; white-space: nowrap; }
+.queen-house-rail__role { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; opacity: .75; white-space: nowrap; }
+/* A room's content clears the rail rather than running under it. */
+.queen-home--phone .queen-room { padding-left: 52px; }
+.queen-home--wide .queen-room { padding-left: 196px; }
+/* On a phone the rail is the marks alone: the floor names live on the doors. */
+.queen-home--phone .queen-house-rail { left: 6px; padding: 4px; }
+.queen-home--phone .queen-house-rail__name, .queen-home--phone .queen-house-rail__role { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.queen-home--phone .queen-house-rail__stop { padding: 3px 5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .queen-home[data-hauling="true"] .queen-field, .queen-home[data-hauling="true"] .queen-room { translate: none; }
+}
+@media (forced-colors: active) {
+  .queen-bank-flat__clay, .queen-bank-flat__ear { fill: Canvas; }
+  .queen-bank-flat__edge { stroke: CanvasText; stroke-width: 2; }
+  .queen-bank-flat__glaze, .queen-bank-flat__neck, .queen-bank-flat__lid, .queen-bank-flat__rim, .queen-bank-flat__slot, .queen-bank-flat__eye { forced-color-adjust: none; fill: CanvasText; }
+  .queen-bank-flat__tail { stroke: CanvasText; }
+  .queen-house-rail { border: 1px solid CanvasText; background: Canvas; }
+  .queen-house-rail__mark { border-color: CanvasText; }
+  .queen-house-rail__stop[aria-current="true"] .queen-house-rail__mark { background: Highlight; }
+}

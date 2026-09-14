@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { bankGeometry, buildBankVessel, type BankForm, type BankGeometry, type BankMaterials } from "./queenBankSculpture.ts";
 
 /**
  * The two rooms, in three dimensions: **the cellar**, where Protect runs a
@@ -132,10 +133,12 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     // Middle: the stone rail the ribbon stands on, running off both ends.
     const rail = mesh(box, mat(new THREE.MeshStandardMaterial({ color: "#6b6152", roughness: 0.95 })), interior, "queen-cellar-rail");
     rail.scale.set(90, 0.5, 3.2);
-    rail.position.set(0, -0.3, -1);
+    // The slab ends behind the banks. A shelf that runs toward the lens is seen
+    // from slightly above, and its top surface is then drawn over their feet.
+    rail.position.set(0, -0.3, -2.1);
     const railEdge = mesh(box, stoneDark, interior, "queen-cellar-rail-edge");
-    railEdge.scale.set(90, 0.12, 0.16);
-    railEdge.position.set(0, -0.02, 0.55);
+    railEdge.scale.set(90, 0.16, 0.18);
+    railEdge.position.set(0, -0.12, -0.46);
     // The floor, and crates at the near edge the camera looks past.
     const floor = mesh(new THREE.PlaneGeometry(90, 40), mat(new THREE.MeshStandardMaterial({ color: "#3f3a33", roughness: 1 })), interior, "queen-cellar-floor");
     floor.rotation.x = -Math.PI / 2;
@@ -217,10 +220,11 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     // Middle: the ledge the shelf stands on, and the wall it is fixed to.
     const ledge = mesh(box, mat(new THREE.MeshStandardMaterial({ color: "#a5835a", roughness: 0.7 })), interior, "queen-loft-ledge");
     ledge.scale.set(90, 0.42, 3.4);
-    ledge.position.set(0, -0.25, -1);
+    // As in the cellar: the ledge ends behind the banks, so nothing is drawn over their feet.
+    ledge.position.set(0, -0.25, -2.2);
     const lip = mesh(box, beam, interior, "queen-loft-lip");
-    lip.scale.set(90, 0.12, 0.2);
-    lip.position.set(0, 0, 0.66);
+    lip.scale.set(90, 0.14, 0.22);
+    lip.position.set(0, -0.11, -0.48);
     // The floorboards below, and a crate at the near edge.
     const boards = mesh(new THREE.PlaneGeometry(90, 40), mat(new THREE.MeshStandardMaterial({ color: "#9b7c57", roughness: 0.95 })), interior, "queen-loft-floor");
     boards.rotation.x = -Math.PI / 2;
@@ -249,23 +253,29 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     interior.add(motes);
   }
 
-  // ---- the vessels -------------------------------------------------------
-  const clay = mat(new THREE.MeshPhysicalMaterial({ color: "#a89479", roughness: 0.62, clearcoat: 0.28, clearcoatRoughness: 0.25, metalness: 0.02 }));
+  // ---- the vessels: the studio's kitty banks, not pots --------------------
+  // The rooms stood generic ceramic pots here until 2026-09-14. They stand the
+  // Kitty Bank Studio's own cat now — same thrown silhouette, same head, same
+  // brass slot on the crown — so a bank looks like itself on a ledge, on a rail
+  // and on the wheel. Geometry is shared per form: a dozen banks is a dozen
+  // draws, not a dozen canvases.
+  const clay = mat(new THREE.MeshPhysicalMaterial({ color: "#c0a67e", roughness: 0.6, clearcoat: 0.3, clearcoatRoughness: 0.25, metalness: 0.02 }));
   const glaze = mat(new THREE.MeshPhysicalMaterial({ color: "#7d6a52", roughness: 0.26, clearcoat: 0.75, metalness: 0.03 }));
-  const shadowClay = mat(new THREE.MeshStandardMaterial({ color: "#7a6a55", roughness: 0.9 }));
+  const deepClay = mat(new THREE.MeshStandardMaterial({ color: "#8a6a47", roughness: 0.8 }));
+  const brassMat = mat(new THREE.MeshStandardMaterial({ color: "#c99a4b", roughness: 0.34, metalness: 0.7 }));
+  const inkMat = mat(new THREE.MeshStandardMaterial({ color: "#2f2a26", roughness: 0.55 }));
   const ghostMat = mat(new THREE.MeshBasicMaterial({ color: "#8a8071", wireframe: true, transparent: true, opacity: 0.4 }));
   const shadowMat = mat(new THREE.MeshBasicMaterial({ color: "#000000", transparent: true, opacity: 0.2, depthWrite: false }));
-  /** A jar: the same jar every month. Its lathe is built once and the swell is a scale, so a month costs nothing to draw. */
-  const jarGeo = geo(new THREE.LatheGeometry([
-    [0.02, 0], [0.3, 0.02], [0.38, 0.16], [0.4, 0.46], [0.34, 0.74], [0.27, 0.86], [0.28, 0.94], [0.25, 0.98],
-  ].map(([r, y]) => new THREE.Vector2(r, y)), 28));
-  const goalGeo = geo(new THREE.LatheGeometry([
-    [0.02, 0], [0.26, 0.02], [0.36, 0.18], [0.38, 0.52], [0.3, 0.78], [0.22, 0.86], [0.21, 1], [0.19, 1],
-  ].map(([r, y]) => new THREE.Vector2(r, y)), 28));
-  const lidGeo = geo(new THREE.CylinderGeometry(0.25, 0.23, 0.07, 20));
-  const knobGeo = geo(new THREE.SphereGeometry(0.06, 10, 8));
-  const mouthGeo = geo(new THREE.TorusGeometry(0.2, 0.022, 8, 24));
-  const neckGeo = geo(new THREE.CylinderGeometry(0.035, 0.04, 0.16, 8));
+  const bankMaterials: BankMaterials = { clay, glaze, deep: deepClay, brass: brassMat, ink: inkMat, ghost: ghostMat };
+  const shapes = new Map<BankForm, BankGeometry>();
+  /** One set of geometry per form, built the first time a room needs that form. */
+  const shapeFor = (form: BankForm) => {
+    const known = shapes.get(form);
+    if (known) return known;
+    const built = bankGeometry(form, geo);
+    shapes.set(form, built);
+    return built;
+  };
   const shadowGeo = geo(new THREE.CircleGeometry(0.5, 20));
 
   type Seat = { group: THREE.Group; body: THREE.Mesh; glazeMesh: THREE.Mesh; shadow: THREE.Mesh; vessel: RoomVessel };
@@ -274,45 +284,18 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   vesselsGroup.name = "queen-room-vessels";
   scene.add(vesselsGroup);
 
-  /** Build one vessel in the form it is given. One unit tall at rest; the seat's height is its scale. */
+  /** Build one bank in the form it is given. One unit tall at rest; the seat's height is its scale. */
   const buildVessel = (vessel: RoomVessel): Seat => {
-    const group = new THREE.Group();
+    const built = buildBankVessel(shapeFor(vessel.kind), bankMaterials, {
+      form: vessel.kind,
+      hollow: vessel.hollow,
+      // Open-mouthed things accept; lidded things refuse. A month on the rail is
+      // a bill, so it is lidded too: there was never a decision inside it.
+      lidded: vessel.kind !== "goal",
+      parts: vessel.parts,
+    });
+    const group = built.group;
     group.name = `queen-room-vessel-${vessel.id}`;
-    const shape = vessel.kind === "jar" ? jarGeo : goalGeo;
-    const body = new THREE.Mesh(shape, vessel.hollow ? ghostMat : clay);
-    body.name = "queen-room-vessel-body";
-    group.add(body);
-    // The glaze standing inside it: the same lathe, scaled down from the foot, so the level is a level and never a bar.
-    const glazeMesh = new THREE.Mesh(shape, glaze);
-    glazeMesh.name = "queen-room-vessel-glaze";
-    glazeMesh.scale.set(0.94, Math.max(0.001, vessel.fill ?? 0), 0.94);
-    glazeMesh.visible = !vessel.hollow && (vessel.fill ?? 0) > 0.01;
-    group.add(glazeMesh);
-    if (vessel.kind === "bill") {
-      // Lidded: sealed, because there was never a decision inside it.
-      const lid = new THREE.Mesh(lidGeo, shadowClay);
-      lid.name = "queen-room-vessel-lid";
-      lid.position.y = 1.02;
-      group.add(lid);
-      const knob = new THREE.Mesh(knobGeo, shadowClay);
-      knob.name = "queen-room-vessel-knob";
-      knob.position.y = 1.1;
-      group.add(knob);
-    } else if (vessel.kind === "goal") {
-      // Open-mouthed: it accepts.
-      const mouth = new THREE.Mesh(mouthGeo, shadowClay);
-      mouth.name = "queen-room-vessel-mouth";
-      mouth.rotation.x = Math.PI / 2;
-      mouth.position.y = 1;
-      group.add(mouth);
-      const parts = Math.min(3, vessel.parts ?? 0);
-      for (let i = 0; i < parts; i += 1) {
-        const neck = new THREE.Mesh(neckGeo, shadowClay);
-        neck.name = "queen-room-vessel-neck";
-        neck.position.set((i - (parts - 1) / 2) * 0.13, 1.06, 0);
-        group.add(neck);
-      }
-    }
     const shadow = new THREE.Mesh(shadowGeo, shadowMat);
     shadow.name = "queen-room-vessel-shadow";
     shadow.rotation.x = -Math.PI / 2;
@@ -320,15 +303,15 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     shadow.scale.setScalar(0.8);
     group.add(shadow);
     vesselsGroup.add(group);
-    return { group, body, glazeMesh, shadow, vessel };
+    return { group, body: built.body, glazeMesh: built.glaze, shadow, vessel };
   };
   /** The pose that carries the reading: the swell, the lift, the lean a lidded thing answers with. */
   const poseVessel = (seat: Seat) => {
     const v = seat.vessel;
     const swell = v.swell ?? 1;
     seat.group.rotation.z = v.refusing ? 0.16 : v.outlier ? 0.1 : 0;
-    seat.body.scale.set(swell, 1, swell);
-    seat.glazeMesh.scale.set(swell * 0.94, Math.max(0.001, v.fill ?? 0), swell * 0.94);
+    seat.body.scale.set(swell, 1, swell * 0.86);
+    seat.glazeMesh.scale.set(swell * 0.94, Math.max(0.001, v.fill ?? 0), swell * 0.94 * 0.86);
     seat.glazeMesh.visible = !v.hollow && (v.fill ?? 0) > 0.01;
     seat.shadow.scale.setScalar(v.lifted ? 1.05 : 0.8);
     (seat.shadow.material as THREE.Material & { opacity: number }).opacity = v.lifted ? 0.12 : 0.2;
