@@ -51,10 +51,10 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     expect($(".queen-cellar-rail")).not.toBeNull();
     expect($$(".queen-cellar-day")).toHaveLength(30);
     expect($$(".queen-jar--bill").map((row) => row.getAttribute("aria-label"))).toEqual([
-      "Fictional streaming — subscription, Sep 8, paid",
-      "Fictional hydro — house bill, Sep 15, full",
-      "Fictional rent — house bill, Sep 20, filling",
-      "Fictional winter tires — planned, not posted, Sep 24, full",
+      "Fictional streaming — subscription (Life › Fun), the smallest, Sep 8, paid",
+      "Fictional hydro — house bill (Housing › Electric), small, Sep 15, full",
+      "Fictional rent — house bill (Housing › Electric), the month's largest, Sep 20, filling",
+      "Fictional winter tires — planned, not posted (Life › Fun), large, Sep 24, full",
     ]);
     expect($(".queen-cellar-day.is-today .queen-cellar-day__tick").textContent).toBe("12");
     expect($(".queen-room__sub").textContent).toBe("4 bills on the rail");
@@ -69,7 +69,7 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
   it("an early jar, full or filling, has no hammer: the water just sits there", async () => {
     await render(seeded(), "2026-09-12");
     await click(jar("Fictional hydro"));
-    expect(line()).toMatch(/^Filling\. Fictional hydro · house bill · in 3 days · \$140\.00 saved, ready · water at \$[\d,.]+ after\./);
+    expect(line()).toMatch(/^Filling\. Fictional hydro · house bill · Housing › Electric · in 3 days · \$140\.00 saved, ready · water at \$[\d,.]+ after\./);
     expect($$(".queen-hammer")).toHaveLength(0);
     expect(acts()).toEqual(["Lift it out · what if not"]);
     expect(jar("Fictional hydro").className).toContain("queen-jar--none");
@@ -79,7 +79,7 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     const h = seeded();
     const { onCommand } = await render(h, "2026-09-20");
     await click(jar("Fictional hydro"));
-    expect(line()).toMatch(/^The hammer is out\. Fictional hydro · house bill · 5 days overdue · \$140\.00 saved, ready/);
+    expect(line()).toMatch(/^The hammer is out\. Fictional hydro · house bill · Housing › Electric · 5 days overdue · \$140\.00 saved, ready/);
     const hammer = $<HTMLButtonElement>(".queen-hammer");
     expect(hammer.textContent).toBe("Break the bank");
     expect(hammer.className).not.toContain("queen-hammer--crack");
@@ -110,8 +110,8 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
   it("on the day and not full, the jar cracks: paying is allowed, named as paying from the cellar's water", async () => {
     await render(seeded(), "2026-09-20");
     await click(jar("Fictional rent"));
-    expect(jar("Fictional rent").getAttribute("aria-label")).toBe("Fictional rent — house bill, Sep 20, filling. Cracked: due and not full");
-    expect(line()).toMatch(/^Cracked\. Fictional rent · house bill · due today · \$[\d,.]+ saved of \$900\.00, \$[\d,.]+ to be safe/);
+    expect(jar("Fictional rent").getAttribute("aria-label")).toBe("Fictional rent — house bill (Housing › Electric), the month's largest, Sep 20, filling. Cracked: due and not full");
+    expect(line()).toMatch(/^Cracked\. Fictional rent · house bill · Housing › Electric · due today · \$[\d,.]+ saved of \$900\.00, \$[\d,.]+ to be safe/);
     const crack = $<HTMLButtonElement>(".queen-hammer--crack");
     expect(crack.textContent).toBe("Pay it anyway · from the water");
     expect($$(".queen-hammer")).toHaveLength(1);
@@ -125,7 +125,7 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
   it("a bill paid somewhere else in the app is a shard: no hammer, no crack, nothing to lift", async () => {
     await render(seeded(), "2026-09-20");
     await click(jar("Fictional streaming"));
-    expect(line()).toMatch(/^A shard, kept\. Fictional streaming · subscription · paid · \$16\.00 paid/);
+    expect(line()).toMatch(/^A shard, kept\. Fictional streaming · subscription · Life › Fun · paid · \$16\.00 paid/);
     expect($$(".queen-hammer")).toHaveLength(0);
     expect(acts()).toEqual([]);
     expect(jar("Fictional streaming").querySelector(".queen-billjar.is-shard")).not.toBeNull();
@@ -188,5 +188,30 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     expect($(".queen-room__sub").textContent).toBe("No bills on the rail");
     expect($$(".queen-jar--bill")).toHaveLength(0);
     expect($$(".queen-cellar-day")).toHaveLength(30);
+  });
+
+  it("tells each jar apart three ways — a body per purpose, a tint per group, a finish per line, a size band per due — and says so", async () => {
+    let h = seeded();
+    h = addRecurrence(h, { cadence: "monthly", nextDate: "2026-09-18", type: "expense", amount: "128", accountId: "ACC-CHEQUING", subcategoryId: "SUB-TRANSPORT-TRANSIT", note: "Fictional transit pass", kind: "other" }).household;
+    await render(h, "2026-09-12");
+    const cat = (label: string) => jar(label).querySelector<SVGElement>(".queen-bank-flat")!;
+    const glyph = (label: string) => jar(label).querySelector<HTMLElement>(".queen-billjar")!;
+    expect(cat("Fictional streaming").dataset.form).toBe("subscription");
+    expect(cat("Fictional hydro").dataset.form).toBe("bill");
+    expect(cat("Fictional transit pass").dataset.form).toBe("recurring");
+    expect(cat("Fictional winter tires").dataset.form).toBe("planned");
+    expect(glyph("Fictional hydro").dataset.hue).toBe("housing");
+    expect(glyph("Fictional transit pass").dataset.hue).toBe("transport");
+    expect(glyph("Fictional streaming").dataset.hue).toBe("life");
+    // Electric is the second Housing line: speckled. Transit is the second Transport line: speckled too — the tint tells them apart, the finish tells lines of one group apart.
+    expect(glyph("Fictional hydro").dataset.finish).toBe("speckle");
+    expect(cat("Fictional hydro").querySelector(".queen-bank-flat__finish-coat")).not.toBeNull();
+    expect(cat("Fictional hydro").style.getPropertyValue("--bank-tint")).toBe("var(--queen-hue-housing)");
+    expect(glyph("Fictional rent").className).toContain("queen-billjar--size-5");
+    expect(glyph("Fictional streaming").className).toContain("queen-billjar--size-1");
+    expect(glyph("Fictional winter tires").className).toContain("queen-billjar--size-4");
+    // A hollow jar (planned, or paid) wears no finish coat: nothing is inside it to glaze.
+    expect(cat("Fictional winter tires").querySelector(".queen-bank-flat__finish-coat")).toBeNull();
+    expect(cat("Fictional streaming").querySelector(".queen-bank-flat__finish-coat")).toBeNull();
   });
 });

@@ -10,7 +10,11 @@ import { postDueRecurrences } from "../core/commands.ts";
 import { projectKittyNest } from "../core/kittyNest.ts";
 import { cellarGateWords, cellarReading, type CellarJar } from "../core/queenCellar.ts";
 import { ConfirmSheet } from "../Confirm.tsx";
-import { QueenCellarRail, cellarDayLabel } from "./QueenCellarRail.tsx";
+import { QueenCellarRail, cellarBankForm, cellarDayLabel } from "./QueenCellarRail.tsx";
+import type { CellarHue } from "../core/queenCellar.ts";
+
+/** The category groups' clays for the sculptures; the flat twin reads the same six from `--queen-hue-*` in queen-cellar.css. */
+export const CELLAR_HUE_HEX: Record<Exclude<CellarHue, "clay">, string> = { housing: "#c4794f", food: "#8f9a5a", transport: "#6f8fa6", life: "#b76b8a", health: "#6fa391", debt: "#7a7470" };
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const monthName = (monthKey: string) => MONTH_NAMES[Number(monthKey.slice(5, 7)) - 1] ?? monthKey;
@@ -84,7 +88,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const vessels = useMemo<RoomVessel[]>(() => {
     const rows: RoomVessel[] = [];
     if (view === "bills" && reading) {
-      for (const jar of reading.jars) rows.push({ id: jar.id, kind: "bill", swell: 1, fill: jar.paid ? 0 : jar.fill, hollow: jar.type === "potential" || jar.paid, outlier: false, lifted: heldId === jar.id });
+      for (const jar of reading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue], finish: jar.finish, swell: 1, fill: jar.paid ? 0 : jar.fill, hollow: jar.type === "potential" || jar.paid, outlier: false, lifted: heldId === jar.id });
       return rows;
     }
     for (const jar of jars) {
@@ -164,6 +168,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
           <p className="queen-room__line" aria-live="polite">
             <em>{gateJar ? (gateJar.strike === "hammer" ? "The hammer is out." : gateJar.strike === "crack" ? "Cracked." : gateJar.paid ? "A shard, kept." : "Filling.") : gateDay?.today ? "Today." : "The rail."}</em> {cellarGateWords(gateJar, gateDay, formatCad)}
             {heldId && gateJar?.id === heldId ? " Lifted out — a rehearsal; nothing is written." : ""}
+            {!gateJar && reading.jars.length > 0 ? " Its shape is what it is for, its colour where it is filed, its size how large the due is; pick one to read it." : ""}
           </p>
           <div className="queen-room__acts">
             {gateJar?.strike === "hammer" && gateJar.recurrenceId && (

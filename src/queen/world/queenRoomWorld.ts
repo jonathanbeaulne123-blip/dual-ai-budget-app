@@ -44,6 +44,11 @@ export type RoomVessel = {
   parts?: number;
   /** Three widths on the loft's ledge. */
   size?: "small" | "middling" | "large";
+  /** The cellar's purposes: a body per purpose. Absent, the kind's own form stands. */
+  form?: BankForm;
+  /** The clay's tint (a hex colour from the category group) and its finish. Absent, the bare clay. */
+  tint?: string;
+  finish?: "plain" | "speckle" | "banded" | "crackle";
 };
 export type RoomRect = { x: number; y: number; w: number; h: number };
 export type RoomLayout = { host: RoomRect; seats: Record<string, RoomRect> };
@@ -267,6 +272,43 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   const ghostMat = mat(new THREE.MeshBasicMaterial({ color: "#8a8071", wireframe: true, transparent: true, opacity: 0.4 }));
   const shadowMat = mat(new THREE.MeshBasicMaterial({ color: "#000000", transparent: true, opacity: 0.2, depthWrite: false }));
   const bankMaterials: BankMaterials = { clay, glaze, deep: deepClay, brass: brassMat, ink: inkMat, ghost: ghostMat };
+  // The cellar's tinted, finished clays: one small greyscale canvas per finish (a speckle, bands, a crackle),
+  // multiplied by the group's tint, so six hues × four finishes cost four textures and a material per pair in use.
+  const finishMaps = new Map<string, THREE.Texture | null>();
+  const finishMap = (finish: NonNullable<RoomVessel["finish"]>): THREE.Texture | null => {
+    if (finishMaps.has(finish)) return finishMaps.get(finish)!;
+    let texture: THREE.Texture | null = null;
+    if (finish !== "plain" && typeof document !== "undefined") {
+      const canvas = document.createElement("canvas");
+      canvas.width = 64; canvas.height = 64;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, 64, 64);
+        ctx.fillStyle = "rgba(60,40,20,.42)";
+        if (finish === "speckle") { let seed = 7; for (let i = 0; i < 90; i += 1) { seed = (seed * 9301 + 49297) % 233280; const x = (seed / 233280) * 64; seed = (seed * 9301 + 49297) % 233280; const y = (seed / 233280) * 64; ctx.beginPath(); ctx.arc(x, y, 1.1 + (i % 3) * 0.5, 0, Math.PI * 2); ctx.fill(); } }
+        if (finish === "banded") { for (let y = 4; y < 64; y += 12) ctx.fillRect(0, y, 64, 3); }
+        if (finish === "crackle") { ctx.strokeStyle = "rgba(60,40,20,.5)"; ctx.lineWidth = 1; for (let i = 0; i < 9; i += 1) { ctx.beginPath(); ctx.moveTo((i * 23) % 64, 0); ctx.lineTo(((i * 23) % 64) + 18 - (i % 2) * 30, 64); ctx.stroke(); } }
+        texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(finish === "banded" ? 1 : 2, finish === "banded" ? 2 : 2);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        textures.add(texture);
+      }
+    }
+    finishMaps.set(finish, texture);
+    return texture;
+  };
+  const tintedClays = new Map<string, THREE.Material>();
+  const clayFor = (tint?: string, finish: NonNullable<RoomVessel["finish"]> = "plain"): THREE.Material => {
+    if (!tint) return clay;
+    const key = `${tint}:${finish}`;
+    const known = tintedClays.get(key);
+    if (known) return known;
+    const map = finishMap(finish);
+    const built = mat(new THREE.MeshPhysicalMaterial({ color: tint, roughness: finish === "crackle" ? 0.72 : 0.6, clearcoat: finish === "banded" ? 0.45 : 0.3, clearcoatRoughness: 0.25, metalness: 0.02, ...(map ? { map } : {}) }));
+    tintedClays.set(key, built);
+    return built;
+  };
   const shapes = new Map<BankForm, BankGeometry>();
   /** One set of geometry per form, built the first time a room needs that form. */
   const shapeFor = (form: BankForm) => {
@@ -286,8 +328,9 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
 
   /** Build one bank in the form it is given. One unit tall at rest; the seat's height is its scale. */
   const buildVessel = (vessel: RoomVessel): Seat => {
-    const built = buildBankVessel(shapeFor(vessel.kind), bankMaterials, {
-      form: vessel.kind,
+    const form = vessel.form ?? vessel.kind;
+    const built = buildBankVessel(shapeFor(form), { ...bankMaterials, clay: clayFor(vessel.tint, vessel.finish) }, {
+      form,
       hollow: vessel.hollow,
       // Open-mouthed things accept; lidded things refuse. A month on the rail is
       // a bill, so it is lidded too: there was never a decision inside it.
@@ -385,7 +428,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
         seen.add(vessel.id);
         const old = seats.get(vessel.id);
         // A change of kind, hollowness or part count is a different vessel; everything else is a pose.
-        if (old && old.vessel.kind === vessel.kind && old.vessel.hollow === vessel.hollow && old.vessel.parts === vessel.parts) {
+        if (old && old.vessel.kind === vessel.kind && old.vessel.form === vessel.form && old.vessel.tint === vessel.tint && old.vessel.finish === vessel.finish && old.vessel.hollow === vessel.hollow && old.vessel.parts === vessel.parts) {
           old.vessel = vessel;
           poseVessel(old);
           continue;

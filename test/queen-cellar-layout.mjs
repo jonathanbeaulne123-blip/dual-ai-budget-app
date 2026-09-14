@@ -24,7 +24,7 @@ async function measure(page) {
   return page.evaluate(() => {
     const doc = document.documentElement, home = document.querySelector('.queen-home'), cellar = document.querySelector('.queen-room--cellar');
     const rect = el => { const r = el.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; };
-    const jars = [...cellar.querySelectorAll('.queen-jar--bill')].map(el => ({ label: el.getAttribute('aria-label'), strike: [...el.classList].find(c => /^queen-jar--(hammer|crack|shard|none)$/.test(c))?.slice(11), held: el.classList.contains('is-held'), inGate: el.classList.contains('is-in-gate'), ...rect(el) }));
+    const jars = [...cellar.querySelectorAll('.queen-jar--bill')].map(el => ({ label: el.getAttribute('aria-label'), strike: [...el.classList].find(c => /^queen-jar--(hammer|crack|shard|none)$/.test(c))?.slice(11), held: el.classList.contains('is-held'), inGate: el.classList.contains('is-in-gate'), form: el.querySelector('.queen-bank-flat')?.dataset.form, hue: el.querySelector('.queen-billjar')?.dataset.hue, finish: el.querySelector('.queen-billjar')?.dataset.finish, size: [...(el.querySelector('.queen-billjar')?.classList ?? [])].find(c => /--size-/.test(c))?.slice(-1), ...rect(el) }));
     const inRoom = el => { const r = el.getBoundingClientRect(), c = cellar.getBoundingClientRect(); return r.width === 0 || (r.top >= c.top - 1 && r.bottom <= c.bottom + 1); };
     return {
       overflowX: doc.scrollWidth - doc.clientWidth, overflowY: doc.scrollHeight - doc.clientHeight,
@@ -88,22 +88,25 @@ try {
     const m = await measure(page);
     noScroll(m, label);
     assert.ok(m.rail && m.days === 30, `${label}: the rail is the month (${m.days} days)`);
-    assert.equal(m.jars.length, 5, `${label}: five jars on the rail`);
-    assert.ok(m.jars.every(j => j.strike !== 'hammer' && j.strike !== 'crack'), `${label}: nothing to strike before the day (${m.jars.map(j => j.strike).join(', ')})`);
+    assert.equal(m.jars.length, 9, `${label}: nine jars on the rail — every purpose, six groups`);
+    // The gym subscription fell due on the 10th and is full, so its hammer is out already; everything after today just holds its water.
+    assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'none', 'none', 'none', 'none', 'none', 'none', 'none'], `${label}: only the overdue full one can be struck (${m.jars.map(j => j.strike).join(', ')})`);
+    assert.deepEqual(m.jars.map(j => j.label.replace(/^[^—]+— /, '').replace(/, (the month's largest|large|middling|small|the smallest),.*$/, '')), ['subscription (Life › Fun)', 'subscription (Health › Care)', 'house bill (Housing › Electric)', 'recurring payment (Transport › Transit)', 'house bill (Housing › Electric)', 'house bill (Life › Phone)', 'planned, not posted (Life › Fun)', 'house bill (Life › Fun)', 'recurring payment (Debt › Card payment)'], `${label}: every jar names its purpose and its filing`);
+    assert.ok(m.jars.some(j => /the month's largest/.test(j.label)) && m.jars.some(j => /the smallest/.test(j.label)), `${label}: the size bands are said`);
     assert.equal(m.jars.filter(j => j.strike === 'shard').length, 1, `${label}: the paid subscription is a shard`);
     assert.equal(m.railMoney, false, `${label}: no figure on the rail`);
     await stamp(page, `early-${width}x${height}`);
     // 320x568 with the chrome stand-ins leaves the room about 240px tall — the same compromised frame the rooms' own evidence shows. The stair, head, pills and rail must still be inside it; the acts may give there.
     assert.ok(m.stairVisible && (width === 320 && height === 568 ? m.partsInRoom.slice(0, 4).every(Boolean) : m.allInRoom), `${label}: head, rail, scrub, line, acts and stair all inside the room ${JSON.stringify(m.parts)}`);
-    assert.ok(m.sub.startsWith('5 bills on the rail'), `${label}: ${m.sub}`);
+    assert.ok(m.sub.startsWith('9 bills on the rail'), `${label}: ${m.sub}`);
     await stamp(page, `early-${width}x${height}`);
-    records.push({ scene: 'early', width, height, world: m.world, overflowY: m.overflowY, jars: m.jars.map(j => `${j.label} [${j.strike}]`), water: m.water, tidemark: m.tidemark, line: m.line, acts: m.acts.map(a => a.text) });
+    records.push({ scene: 'early', width, height, world: m.world, overflowY: m.overflowY, jars: m.jars.map(j => `${j.label} [${j.strike}; ${j.form} ${j.hue}/${j.finish} size ${j.size}]`), water: m.water, tidemark: m.tidemark, line: m.line, acts: m.acts.map(a => a.text) });
     // The jar in the gate: pick the full early one; the words say ready, and there is no hammer.
     await pickJar(page, 'Fictional hydro');
     await page.waitForTimeout(400);
     const g = await measure(page);
     noScroll(g, `${label} gate`);
-    assert.match(g.line, /^Filling\. Fictional hydro · house bill · in 3 days · \$140\.00 saved, ready/, `${label} gate: ${g.line}`);
+    assert.match(g.line, /^Filling\. Fictional hydro · house bill · Housing › Electric · in 3 days · \$140\.00 saved, ready/, `${label} gate: ${g.line}`);
     assert.ok(!g.acts.some(a => a.hammer), `${label} gate: no hammer early`);
     await stamp(page, `early-gate-${width}x${height}`);
     await page.locator('.queen-stair--up').click();
@@ -118,9 +121,9 @@ try {
     const label = `due ${width}x${height}`;
     const m = await measure(page);
     noScroll(m, label);
-    assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'crack', 'none', 'none'], `${label}: shard, hammer, crack, early (${m.jars.map(j => j.strike).join(', ')})`);
+    assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'hammer', 'hammer', 'crack', 'none', 'none', 'none', 'none'], `${label}: shard, hammers, crack, early (${m.jars.map(j => j.strike).join(', ')})`);
     // The gate opens on today, where the rent stands cracked.
-    assert.match(m.line, /^Cracked\. Fictional rent · house bill · due today/, `${label}: ${m.line}`);
+    assert.match(m.line, /^Cracked\. Fictional rent · house bill · Housing › Electric · due today/, `${label}: ${m.line}`);
     assert.ok(m.acts.some(a => a.crack && a.text === 'Pay it anyway · from the water'), `${label}: the crack pays from the water (${m.acts.map(a => a.text).join(' | ')})`);
     await stamp(page, `due-crack-${width}x${height}`);
     records.push({ scene: 'due-crack', width, height, world: m.world, overflowY: m.overflowY, line: m.line, acts: m.acts.map(a => a.text) });
@@ -142,7 +145,7 @@ try {
     await page.waitForTimeout(400);
     const h = await measure(page);
     noScroll(h, `${label} hammer`);
-    assert.match(h.line, /^The hammer is out\. Fictional hydro · house bill · 5 days overdue · \$140\.00 saved, ready/, `${label} hammer: ${h.line}`);
+    assert.match(h.line, /^The hammer is out\. Fictional hydro · house bill · Housing › Electric · 5 days overdue · \$140\.00 saved, ready/, `${label} hammer: ${h.line}`);
     assert.ok(h.acts.some(a => a.hammer && !a.crack && a.text === 'Break the bank'), `${label} hammer: ${h.acts.map(a => a.text).join(' | ')}`);
     await stamp(page, `due-hammer-${width}x${height}`);
     await page.locator('.queen-hammer').click();
@@ -155,7 +158,7 @@ try {
     records.push({ scene: 'due-confirm', width, height, sheet: sheet.sheet });
     await page.locator('[role=dialog].sheet button', { hasText: 'Cancel' }).click();
     await page.waitForTimeout(300);
-    assert.equal((await measure(page)).jars[1].strike, 'hammer', `${label}: cancelled — the hammer is still out, nothing posted`);
+    assert.equal((await measure(page)).jars.find(j => j.label.startsWith('Fictional hydro')).strike, 'hammer', `${label}: cancelled — the hammer is still out, nothing posted`);
     if (width === 390) {
       // Break it for real on the proof page's in-memory books: the jar becomes a shard and the hammer is gone.
       await page.locator('.queen-hammer').click();
@@ -164,7 +167,7 @@ try {
       await page.waitForTimeout(700);
       const broke = await measure(page);
       noScroll(broke, `${label} broken`);
-      assert.equal(broke.jars[1].strike, 'shard', `${label} broken: ${broke.jars.map(j => j.strike).join(', ')}`);
+      assert.equal(broke.jars.find(j => j.label.startsWith('Fictional hydro')).strike, 'shard', `${label} broken: ${broke.jars.map(j => j.strike).join(', ')}`);
       assert.ok(!broke.acts.some(a => a.hammer), `${label} broken: no hammer on a shard`);
       await stamp(page, `due-broken-${width}x${height}`);
       records.push({ scene: 'due-broken', width, height, jars: broke.jars.map(j => `${j.label} [${j.strike}]`), notice: await page.locator('.queen-cellar-notice').textContent() });
@@ -225,7 +228,7 @@ try {
       const label = `no-webgl ${width}x${height}`;
       noScroll(m, label);
       assert.equal(m.world, 'flat', `${label}: the room degraded to flat`);
-      assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'crack', 'none', 'none'], `${label}: the same reading`);
+      assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'hammer', 'hammer', 'crack', 'none', 'none', 'none', 'none'], `${label}: the same reading`);
       const visible = await flat.evaluate(() => getComputedStyle(document.querySelector('.queen-billjar .queen-bank-flat')).visibility);
       assert.equal(visible, 'visible', `${label}: the drawn kitty banks stand in for the sculptures`);
       await stamp(flat, `no-webgl-${width}x${height}`);

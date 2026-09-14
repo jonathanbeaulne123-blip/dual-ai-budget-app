@@ -122,7 +122,9 @@
 
 /* On a phone a room is short. The head reads on one line, the slider is a bare control under the rail, and the acts
    sit tight, so the rail — the thing the room is for — keeps its height. */
-.queen-home--phone .queen-room__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 4px 10px; }
+/* Every width: the room head is one line (title, then its sub), so the rail — the thing the room is for — keeps its height. */
+.queen-home .queen-room__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 4px 10px; }
+.queen-home .queen-room__sub { margin: 0; }
 .queen-home--phone .queen-room__title { font-size: 18px; }
 .queen-home--phone .queen-room__sub { margin: 0; font-size: 12px; }
 .queen-home--phone .queen-scrub { padding: 0 8px; background: transparent; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
