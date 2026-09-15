@@ -397,6 +397,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           ...top.slice(0, 5).map((s): [Lantern, string] => [1, `${PATH_SIGNAL_LABELS[s].label}${month.why[s] ? ` — ${month.why[s]}` : ""}`]),
           ...top.slice(0, 5).map((s): [Lantern, string] => [2, `${PATH_SIGNAL_LABELS[s].label} score ${month.scores[s].toFixed(2)}`]),
           ...(month.why.milestone ? [[0, `Milestone: ${month.why.milestone}`] as [Lantern, string]] : []),
+          ...(m === last && m === shown ? [[1, "You walked here together."] as [Lantern, string]] : []),
         ],
       };
     }
@@ -492,6 +493,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
 
   // ------------------------------------------------------------ render
   const nowMonth = months[shown];
+  const flatScale = 54 / Math.max(20, Math.hypot(island.spot(last).x, island.spot(last).z));
   const recipeRows = shapePathWorld(household.pathWorld).filter((row): row is PathRecipeRow => row.kind === "recipe");
   return (
     <div className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern}>
@@ -516,9 +518,20 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             <div className="path-world__flat" aria-hidden="true">
               <svg viewBox="-60 -60 120 120" role="presentation">
                 {months.slice(0, shown + 1).map((month, m) => {
-                  const p = island.spot(m), k = 54 / Math.max(20, Math.hypot(island.spot(last).x, island.spot(last).z));
+                  const p = island.spot(m), k = flatScale;
                   return <circle key={month.key} cx={p.x * k} cy={p.z * k} r={m === shown ? 3.4 : 2.4} className={`path-world__dot path-world__dot--${characters[m]}`} />;
                 })}
+                {months.length > 0 && (() => {
+                  // Us: the two of you, side by side on the current month.
+                  const p = island.spot(shown), k = flatScale;
+                  return (
+                    <g className="path-world__us" transform={`translate(${(p.x * k).toFixed(2)} ${(p.z * k).toFixed(2)})`}>
+                      <line x1={-2.2} y1={-4.6} x2={2.2} y2={-4.6} />
+                      <circle cx={-2.2} cy={-4.6} r={1.3} className="path-world__us-one" />
+                      <circle cx={2.2} cy={-4.6} r={1.3} className="path-world__us-two" />
+                    </g>
+                  );
+                })()}
               </svg>
             </div>
           )}

@@ -18,6 +18,11 @@
 .path-world__flat { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; }
 .path-world__flat svg { width: min(100%, 460px); height: auto; }
 .path-world__dot { stroke: var(--card); stroke-width: 0.8; }
+/* Us: two small figures sharing one lantern (flat fallback). Coats follow the theme's accent and second. */
+.path-world__us line { stroke: #ffc860; stroke-width: 0.9; stroke-linecap: round; }
+.path-world__us circle { stroke: var(--card); stroke-width: 0.5; }
+.path-world__us-one { fill: var(--theme-accent, #b5653e); }
+.path-world__us-two { fill: var(--theme-second, #4f6b4a); }
 
 .path-world__marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
 .path-mark { position: absolute; left: 0; top: 0; pointer-events: auto; display: grid; justify-items: center; gap: 2px; transform-origin: 0 0; border: 0; background: transparent; padding: 0; min-width: 44px; min-height: 44px; place-content: end center; color: var(--ink); will-change: transform; translate: -50% -100%; }

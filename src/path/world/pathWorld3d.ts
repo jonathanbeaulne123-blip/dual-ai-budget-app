@@ -3,6 +3,7 @@ import type { ThemeId } from "../../theme/scenes.ts";
 import type { KittyPieceV1 } from "../../core/types.ts";
 import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture.ts";
 import { CELL, GRID, HALF, SIZE, heightAt, idx, islandHash, type GrownIsland, type Piece } from "../grow.ts";
+import { walkPath, walkSeconds, type WalkPoint } from "../walk.ts";
 
 /**
  * The Our Path world (D-262): one renderer, one island, an orbiting camera
@@ -37,6 +38,8 @@ export type PathWorldStats = {
   sleeping: boolean;
   /** Ambient motion is on but nobody has touched the island for a while, so the loop has stopped. */
   idle: boolean;
+  /** The two walkers are on the road between months. */
+  walking: boolean;
 };
 /** With ambient motion on, the loop still stops after this long without interaction or a scene change. */
 export const IDLE_MS = 20_000;
@@ -201,6 +204,7 @@ export function createPathWorld(host: HTMLElement, options: {
     if (themeKey === theme) return;
     themeKey = theme;
     palette = PALETTES[theme];
+    coatA.color.set(palette.accent); coatB.color.set(palette.second);
     const g = skyCanvas.getContext("2d");
     if (g) {
       const gr = g.createLinearGradient(0, 0, 0, 256);
@@ -572,9 +576,12 @@ export function createPathWorld(host: HTMLElement, options: {
       const p = island.spot(m), y = heightAt(island, p.x, p.z);
       const now = m === island.cur;
       const stone = part(G.cyl, CHARACTER_COLOR[input.characters[m] ?? "steady"], 0.75, 0.3, 0.75, p.x, y + 0.25, p.z, now ? { emissive: palette.second, emissiveIntensity: 0.25 } : {});
-      anchor(`month:${m}`, stone, 1.2);
+      if (now) { stone.userData.pickId = `month:${m}`; pickables.push(stone); } else anchor(`month:${m}`, stone, 1.2);
       dynamic.add(stone);
     }
+    // "We are here" is wherever the two walkers are, so its mark follows them along the road.
+    anchor(`month:${island.cur}`, us, US_MARK_LIFT);
+    arrive(island);
 
     // Campfires at each Chapter's opening month
     for (const fire of input.campfires) {
@@ -730,6 +737,7 @@ export function createPathWorld(host: HTMLElement, options: {
     for (const obj of appearing) { obj.userData.pop = options.reducedMotion || !animate ? 1 : 0; obj.scale.setScalar(obj.userData.pop ? 1 : 0.01); }
     sun.intensity = monthSeason === "winter" ? 1.8 : 2.2;
     dynamic.updateMatrixWorld(true);
+    us.updateMatrixWorld(true);
     syncAnchors();
   }
   function seasonOfIndex(input: PathWorldInput): string {
@@ -750,6 +758,144 @@ export function createPathWorld(host: HTMLElement, options: {
       trail.add(paw);
     }
     dynamic.add(trail);
+  }
+
+  // ------------------------------------------------------------------ us: two small walkers sharing one lantern
+  const US_LIFT = 0.4, US_SCALE = 1.35, US_MARK_LIFT = 2.2, US_SIDE = 0.42, STRIDE = 0.55, FOOT_LIFE = 6, FEET = 24, LANTERN_GLOW = 2.4;
+  const coatA = new THREE.MeshStandardMaterial({ roughness: 0.75 });
+  const coatB = new THREE.MeshStandardMaterial({ roughness: 0.75 });
+  const glowMat = new THREE.MeshStandardMaterial({ color: "#fff0c0", emissive: "#ffc860", emissiveIntensity: 1.3, roughness: 0.4 });
+  cleanup.push(() => { coatA.dispose(); coatB.dispose(); glowMat.dispose(); });
+  const us = new THREE.Group();
+  us.name = "us";
+  const walkers: THREE.Group[] = [];
+  for (const [coat, side] of [[coatA, -1], [coatB, 1]] as const) {
+    const f = new THREE.Group();
+    f.position.x = side * US_SIDE;
+    const body = new THREE.Mesh(G.cone, coat); body.scale.set(0.26, 0.82, 0.26); body.position.y = 0.41; body.castShadow = true;
+    const head = part(G.sph, "#f3dcc6", 0.17, 0.17, 0.17, 0, 0.98, 0, { flatShading: false });
+    // The inner arm reaches toward the shared lantern.
+    const arm = part(G.cyl, "#f3dcc6", 0.035, 0.36, 0.035, -side * 0.16, 0.6, 0.08, { flatShading: false });
+    arm.rotation.z = side * 1.05; arm.castShadow = false;
+    f.add(body, head, arm);
+    walkers.push(f); us.add(f);
+  }
+  const handle = part(G.cyl, "#6b523a", 0.02, 0.16, 0.02, 0, 0.62, 0.1); handle.castShadow = false;
+  const globe = new THREE.Mesh(G.sph, glowMat); globe.scale.setScalar(0.1); globe.position.set(0, 0.48, 0.1);
+  const glow = new THREE.PointLight(0xffc860, LANTERN_GLOW, 8, 2); glow.position.set(0, 0.5, 0.18);
+  us.add(handle, globe, glow);
+  us.scale.setScalar(US_SCALE);
+  us.visible = false;
+  scene.add(us);
+
+  // Footprints: a fixed pool, reused oldest-first; nothing is allocated while walking.
+  const trailGroup = new THREE.Group();
+  scene.add(trailGroup);
+  const feet: { mesh: THREE.Mesh; mat: THREE.MeshBasicMaterial; age: number }[] = [];
+  for (let i = 0; i < FEET; i++) {
+    const m = new THREE.MeshBasicMaterial({ color: "#6b5a44", transparent: true, opacity: 0, depthWrite: false });
+    const mesh = new THREE.Mesh(G.disc, m);
+    mesh.rotation.order = "YXZ"; mesh.rotation.x = -Math.PI / 2; mesh.scale.set(0.09, 0.14, 1); mesh.visible = false;
+    trailGroup.add(mesh); feet.push({ mesh, mat: m, age: FOOT_LIFE });
+  }
+  cleanup.push(() => { for (const f of feet) f.mat.dispose(); });
+  let footNext = 0, footLive = 0;
+  const shownGround = { H: shownH };
+
+  let lastCur = -1, usMonth = 0, usYaw = 0, usYawTarget = 0;
+  let walk: { pts: WalkPoint[]; from: number; to: number; t: number; dur: number; len: number; nextStep: number; left: boolean } | null = null;
+  function groundAt(island: GrownIsland, x: number, z: number): number { return morph < 1 ? heightAt(shownGround, x, z) : heightAt(island, x, z); }
+  function forwardYaw(island: GrownIsland, m: number): number {
+    const p = island.spot(m), q = island.spot(m + 1);
+    return Math.atan2(q.x - p.x, q.z - p.z);
+  }
+  function standAt(island: GrownIsland, m: number) {
+    const p = island.spot(m);
+    us.position.set(p.x, heightAt(island, p.x, p.z) + US_LIFT, p.z);
+    usYaw = usYawTarget = forwardYaw(island, m);
+    us.rotation.y = usYaw;
+    for (const f of walkers) f.position.y = 0;
+    usMonth = m;
+  }
+  function clearFeet() { for (const f of feet) { f.age = FOOT_LIFE; f.mesh.visible = false; f.mat.opacity = 0; } footLive = 0; }
+  /** The shown month changed (or the scene was rebuilt): walk there, or simply stand there. */
+  function arrive(island: GrownIsland) {
+    const cur = island.cur;
+    us.visible = true;
+    if (cur === lastCur) {
+      // Same month, rebuilt scene (theme, layers, a new piece): stay put, or keep walking.
+      if (!walk) standAt(island, cur);
+      return;
+    }
+    const from = walk ? usMonth : lastCur;
+    lastCur = cur;
+    // Reduced motion, the first scene, or a change that arrived while the world slept: no walk from a stale spot.
+    if (options.reducedMotion || from < 0 || sleeping) { walk = null; clearFeet(); standAt(island, cur); return; }
+    const pts = walkPath(island, from, cur, Math.max(8, Math.ceil(Math.abs(cur - from) * 16)));
+    let len = 0;
+    for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i]!.x - pts[i - 1]!.x, pts[i]!.z - pts[i - 1]!.z);
+    walk = { pts, from, to: cur, t: 0, dur: Math.max(0.35, walkSeconds(from, cur)), len, nextStep: STRIDE * 0.5, left: false };
+  }
+  function dropFeet(x: number, y: number, z: number, yaw: number, left: boolean) {
+    const cx = Math.cos(yaw), cz = -Math.sin(yaw), fx = Math.sin(yaw), fz = Math.cos(yaw);
+    for (let s = 0; s < 2; s++) {
+      const foot = feet[footNext]!;
+      footNext = (footNext + 1) % FEET;
+      if (foot.age >= FOOT_LIFE) footLive++;
+      const side = (s ? 1 : -1) * US_SIDE * US_SCALE + ((s === 0) === left ? -0.08 : 0.08);
+      const along = (s === 0) === left ? 0.12 : -0.12;
+      foot.mesh.position.set(x + cx * side + fx * along, y + 0.03, z + cz * side + fz * along);
+      foot.mesh.rotation.y = yaw;
+      foot.age = 0; foot.mat.opacity = 0.5; foot.mesh.visible = true;
+    }
+  }
+  /** One frame of the walkers. Returns true while anything of theirs still moves. */
+  function stepUs(dt: number, drifting: boolean): boolean {
+    let moving = false;
+    const island = current?.island;
+    if (walk && island) {
+      walk.t = Math.min(1, walk.t + dt / walk.dur);
+      const e = 0.5 - 0.5 * Math.cos(Math.PI * walk.t);
+      const last = walk.pts.length - 1, f = e * last, i = Math.min(last - 1, Math.floor(f)), u = f - i;
+      const a = walk.pts[i]!, b = walk.pts[i + 1]!;
+      const x = a.x + (b.x - a.x) * u, z = a.z + (b.z - a.z) * u;
+      const y = groundAt(island, x, z) + US_LIFT;
+      us.position.set(x, y, z);
+      usMonth = walk.from + (walk.to - walk.from) * e;
+      if (Math.abs(b.x - a.x) + Math.abs(b.z - a.z) > 1e-6) usYawTarget = Math.atan2(b.x - a.x, b.z - a.z);
+      const travelled = e * walk.len;
+      const phase = travelled / STRIDE * Math.PI;
+      walkers[0]!.position.y = Math.abs(Math.sin(phase)) * 0.07;
+      walkers[1]!.position.y = Math.abs(Math.cos(phase)) * 0.07;
+      while (travelled >= walk.nextStep) { dropFeet(x, y - US_LIFT, z, usYawTarget, walk.left); walk.left = !walk.left; walk.nextStep += STRIDE; }
+      if (walk.t >= 1) {
+        walk = null;
+        usMonth = island.cur;
+        for (const w of walkers) w.position.y = 0;
+        usYawTarget = forwardYaw(island, island.cur);
+      }
+      moving = true;
+    }
+    const turn = Math.atan2(Math.sin(usYawTarget - usYaw), Math.cos(usYawTarget - usYaw));
+    if (Math.abs(turn) > 0.003) { usYaw += turn * Math.min(1, dt * 9); moving = true; } else usYaw = usYawTarget;
+    us.rotation.y = usYaw;
+    if (footLive) {
+      footLive = 0;
+      for (const foot of feet) {
+        if (foot.age >= FOOT_LIFE) continue;
+        foot.age += dt;
+        if (foot.age >= FOOT_LIFE) { foot.mesh.visible = false; foot.mat.opacity = 0; continue; }
+        foot.mat.opacity = 0.5 * (1 - foot.age / FOOT_LIFE);
+        footLive++;
+      }
+      if (footLive) moving = true;
+    }
+    // At "now" the lantern breathes a little, only with ambient motion on Full.
+    const atNow = Boolean(current && current.island.cur === current.characters.length - 1);
+    glow.intensity = drifting && atNow && quality === "full" && !walk
+      ? LANTERN_GLOW * (1 + 0.09 * Math.sin(clock * 13.1) + 0.05 * Math.sin(clock * 7.7))
+      : LANTERN_GLOW;
+    return moving;
   }
 
   // ------------------------------------------------------------------ camera
@@ -878,8 +1024,11 @@ export function createPathWorld(host: HTMLElement, options: {
       busy = true;
     }
     for (const bank of sculptures.values()) if (bank.sculpture.update(now)) busy = true;
+    // A walk (and its fading footprints) keeps the loop awake even with ambient motion on, then lets it rest.
+    const walking = stepUs(dt, drifting);
+    if (walking) busy = true;
     // Idle is counted from when the island last settled or was touched.
-    const settling = busy && !drifting;
+    const settling = (busy && !drifting) || walking;
     if (settling || pointers.size) lastActivity = performance.now();
     place();
     renderer.render(scene, camera);
@@ -977,7 +1126,7 @@ export function createPathWorld(host: HTMLElement, options: {
     setLevel(next: PathLevel) { flyTo(next === 0 ? 0 : cam.tx, next === 0 ? 0 : cam.tz, PATH_LEVEL_RADIUS[next]!); },
     zoom(factor: number) { fly = null; cam.r = Math.max(14, Math.min(200, cam.r * factor)); invalidate(); },
     turn(delta: number) { cam.theta += delta; invalidate(); },
-    stats(): PathWorldStats { return { frames, lastFrameMs, pieces: pickables.length, level, ambient, quality, sleeping, idle }; },
+    stats(): PathWorldStats { return { frames, lastFrameMs, pieces: pickables.length, level, ambient, quality, sleeping, idle, walking: walk !== null }; },
     dispose() {
       if (dead) return;
       dead = true;

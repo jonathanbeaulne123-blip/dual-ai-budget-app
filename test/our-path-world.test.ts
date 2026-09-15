@@ -25,6 +25,7 @@ import {
 } from "../src/core/pathWorld.ts";
 import { pathMonthCharacter, pathMonths, pathTripType } from "../src/core/pathSignals.ts";
 import { growIsland, heightAt } from "../src/path/grow.ts";
+import { walkPath, walkSeconds } from "../src/path/walk.ts";
 import type { Goal, GoalContribution, Household, Transaction } from "../src/core/types.ts";
 import { capturedIntent } from "../src/ledgerSync/capture.ts";
 import { commandFromCapture, parseCommand, type Scope } from "../src/ledgerSync/protocol.ts";
@@ -343,5 +344,41 @@ describe("pathWorld capability guard", () => {
     delete (old as { pathWorldVersion?: 1 }).pathWorldVersion;
     await expect(prepareCommand(next, old, scope, () => {})).rejects.toThrow(/CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island/);
     await expect(prepareCommand(next, { ...old, pathWorldVersion: 1 }, scope, () => {})).resolves.toBeTruthy();
+  });
+});
+
+describe("Our Path journey — the road the two of us walk", () => {
+  const h = { ...catalogHousehold(), transactions: [tx("T-OLD", "2025-09-05", "expense", 100, "SUB-LIFE-FUN")] };
+  const months = pathMonths(h, "2026-09-15");
+  const island = growIsland(months, effectivePathRecipes(h), months.length - 1);
+
+  it("starts and ends on the month spots, reads the ground, and is the same every time", () => {
+    expect(months.length).toBeGreaterThanOrEqual(6);
+    const from = 1, to = months.length - 1;
+    const pts = walkPath(island, from, to, 24);
+    expect(pts).toHaveLength(25);
+    expect(pts[0]).toMatchObject({ x: island.spot(from).x, z: island.spot(from).z });
+    expect(pts.at(-1)).toMatchObject({ x: island.spot(to).x, z: island.spot(to).z });
+    for (const p of pts) expect(p.y).toBe(heightAt(island, p.x, p.z));
+    expect(walkPath(island, from, to, 24)).toEqual(pts);
+    // It follows the spiral road rather than cutting across: halfway is the spot halfway between the months.
+    const mid = island.spot(from + (to - from) / 2);
+    expect(pts[12]!.x).toBeCloseTo(mid.x, 9);
+    expect(pts[12]!.z).toBeCloseTo(mid.z, 9);
+  });
+
+  it("walks back along the same road when scrubbed backwards", () => {
+    const to = months.length - 1;
+    const forward = walkPath(island, 0, to, 12);
+    expect(walkPath(island, to, 0, 12)).toEqual([...forward].reverse());
+    expect(walkPath(island, 1, 1, 0)).toHaveLength(2);
+  });
+
+  it("takes about 0.8 s per month and never drags on", () => {
+    expect(walkSeconds(3, 4)).toBeCloseTo(0.8);
+    expect(walkSeconds(4, 3)).toBeCloseTo(0.8);
+    expect(walkSeconds(0, 2)).toBeCloseTo(1.6);
+    expect(walkSeconds(0, 30)).toBe(3.2);
+    expect(walkSeconds(2, 2)).toBe(0);
   });
 });

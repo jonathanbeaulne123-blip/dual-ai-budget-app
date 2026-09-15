@@ -61,6 +61,10 @@ function Harness({ initial, today }: { initial: Household; today: string }) {
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) => host.querySelector<T>(selector)!;
 const byText = (text: string | RegExp) => [...host.querySelectorAll<HTMLButtonElement>("button")].find((b) => (typeof text === "string" ? b.textContent?.trim() === text : text.test(b.textContent ?? "")))!;
 const click = async (element: HTMLElement) => act(async () => { element.click(); });
+const scrub = async (slider: HTMLInputElement, value: number) => act(async () => {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(slider, String(value));
+  slider.dispatchEvent(new Event("input", { bubbles: true }));
+});
 const settle = async () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 
 describe("Our Path world page (D-262)", () => {
@@ -217,6 +221,62 @@ describe("Our Path world page (D-262)", () => {
     await click(byText("Suggest this change"));
     expect($(".path-world__proposals").textContent).toContain("Good months bloom");
     expect($(".path-recipe").textContent).toContain("a change is waiting");
+  });
+
+  it("draws the two of us at the current month without WebGL, and they move when the months are scrubbed", async () => {
+    await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
+    await settle();
+    const us = () => host.querySelector(".path-world__flat .path-world__us")!;
+    expect(us()).toBeTruthy();
+    expect(us().querySelectorAll("circle").length).toBe(2);
+    expect(us().querySelectorAll("line").length).toBe(1);
+    const slider = $<HTMLInputElement>(".path-world__slider input");
+    const last = Number(slider.max);
+    expect(last).toBeGreaterThanOrEqual(2);
+    const at = () => us().getAttribute("transform");
+    const spotOf = (dot: Element) => `translate(${Number(dot.getAttribute("cx")).toFixed(2)} ${Number(dot.getAttribute("cy")).toFixed(2)})`;
+    const dots = () => [...host.querySelectorAll(".path-world__flat .path-world__dot")];
+    // At "now" the glyph stands on the current (newest) month dot.
+    expect(at()).toBe(spotOf(dots().at(-1)!));
+    const before = at();
+    await scrub(slider, 0);
+    expect(at()).not.toBe(before);
+    expect(at()).toBe(spotOf(dots()[0]!));
+    await scrub(slider, last);
+    expect(at()).toBe(before);
+
+    // The newest month's card says they walked here together (Warm and up), with no numbers.
+    await click(byText(/^We are here/));
+    expect($(".path-world__card h3").textContent).toBe("This month, so far");
+    expect($(".path-world__card").textContent).toContain("You walked here together.");
+    await click(byText("Dim"));
+    expect($(".path-world__card").textContent).not.toContain("You walked here together.");
+    await click(byText("Warm"));
+    // An earlier month does not claim it.
+    await scrub(slider, 0);
+    await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent?.includes("·"))!);
+    expect($(".path-world__card h3").textContent).not.toBe("This month, so far");
+    expect($(".path-world__card").textContent).not.toContain("You walked here together.");
+  });
+
+  it("hands the live world each new month so the walkers can walk there", async () => {
+    created.mode = "fake";
+    await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
+    await settle();
+    const world = created.worlds[0] as FakeWorld;
+    const slider = $<HTMLInputElement>(".path-world__slider input");
+    const last = Number(slider.max);
+    const lastScene = () => world.setScene.mock.calls.at(-1)![0] as { island: { cur: number } };
+    expect(lastScene().island.cur).toBe(last);
+    await scrub(slider, last - 2);
+    expect(lastScene().island.cur).toBe(last - 2);
+    await scrub(slider, last - 1);
+    expect(lastScene().island.cur).toBe(last - 1);
+    // "Where we are" returns to now and travels to the walkers.
+    await click(byText("Where we are"));
+    await settle();
+    expect(lastScene().island.cur).toBe(last);
+    expect(world.focus).toHaveBeenLastCalledWith("now", 2);
   });
 
   it("opens on a household with no Chapter yet: no Move, no tent campfire, and still a place to stand", async () => {
