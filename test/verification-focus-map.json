@@ -455,6 +455,16 @@
         "test/desk-plates-dom.test.ts"
       ],
       "reason": "The Standing Book: the Fund board as a book behind the default-off VITE_FUND_STANDING_BOOK flag; its fore-edge keeps FundBoard's tablist contract id for id; the running head and plinth print the Level plate's own glance, edge, footing and verdict; bookmark geometry is read from each plate's edge and a household with every plate clear leaves the fore-edge flush; the six primitives stand as paper mechanisms drawn from plates.ts and bookLeaf.ts geometry only; nothing projected stands; the hosts render the book in place of the board only when the flag is on; nothing posts, settles, or moves a cent"
+    },
+    {
+      "sources": [
+        "src/demoSuiteIdentity.ts"
+      ],
+      "tests": [
+        "test/demo-suite-seat.test.ts",
+        "test/demo-suite-ui.test.ts"
+      ],
+      "reason": "The seat a person takes in a generated Demo Suite or habitat is one of the showcase's own two members (the one with their name, else Jonathan's), for the Google link, the ledger creation and the remembered session; the fixture's ids never change, so the seed still replays"
     }
   ]
 }

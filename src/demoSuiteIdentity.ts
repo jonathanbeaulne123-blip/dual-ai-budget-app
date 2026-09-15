@@ -19,3 +19,22 @@ export function requireDemoSuiteContinuityIdentity(input: {
   }
   return identity;
 }
+
+/**
+ * The seat the person pressing "Create Demo Suite" (or a habitat) takes in the
+ * generated household. The showcase keeps its own two members and their fixed
+ * ids so the seed replays byte-for-byte; the person steps into the seat with
+ * their name, or into Jonathan's (`MEM-002`) when no name matches. Replacing an
+ * existing fixture keeps the seat they already hold. Never a seat that is not in
+ * the household — that is what "Household member is no longer active" meant when
+ * a household with its own member ids pressed the button.
+ */
+export function demoSuiteSeatFor(current: Household, memberId: string, generated: Household): string {
+  const active = generated.members.filter((row) => row.active);
+  if (current.syntheticFixture?.kind === "hearth-demo-suite" && active.some((row) => row.id === memberId)) return memberId;
+  const name = (current.members.find((row) => row.id === memberId)?.name ?? "").trim().toLowerCase();
+  const byName = name ? active.find((row) => row.name.trim().toLowerCase() === name) : undefined;
+  const seat = byName ?? active.find((row) => row.id === "MEM-002") ?? active[0];
+  if (!seat) throw new Error("The synthetic household has no active member to step into.");
+  return seat.id;
+}
