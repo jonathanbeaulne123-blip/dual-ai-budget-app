@@ -7,6 +7,8 @@ import "./fund-ledge.css";
 import { createPortal } from "react-dom";
 import { useDialog } from "./useDialog.ts";
 import { FundBoard } from "./FundBoard.tsx";
+import { FundStandingBook } from "./FundStandingBook.tsx";
+import { fundStandingBookEnabled } from "./core/planFeature.ts";
 import { FundDrawer, FUND_WIDGET_CARD } from "./FundDrawer.tsx";
 import { FundStage, type FundDestination } from "./FundStage.tsx";
 
@@ -166,8 +168,11 @@ export function FundLedge({ household, today, view, memberId, busy, onOpen, onKi
           <button className="fund-ledge-grip is-sheet-grip" data-autofocus {...gripProps}>{gripContent}</button>
           <div className="fund-ledge-content">
           <div className="fund-ledge-board" hidden={detent !== "full" || drawer} inert={!expanded || undefined}>
-            <FundBoard household={household} memberId={memberId} today={today} presentation="phone"
-              selected={selectedId} panelId={`${sheetId}-stage`} onSelect={selectWidget} />
+            {fundStandingBookEnabled()
+              ? <FundStandingBook household={household} memberId={memberId} today={today} presentation="phone"
+                selected={selectedId} panelId={`${sheetId}-stage`} onSelect={selectWidget} />
+              : <FundBoard household={household} memberId={memberId} today={today} presentation="phone"
+                selected={selectedId} panelId={`${sheetId}-stage`} onSelect={selectWidget} />}
             <button type="button" className="fund-ledge-arrange" onClick={() => { setDrawer(true); queueMicrotask(() => stage.current?.focus()); }}>Arrange</button>
           </div>
           <div ref={stage} className="fund-ledge-stage" id={`${sheetId}-stage`} role="tabpanel" aria-labelledby={detent === "full" && !drawer ? `${sheetId}-stage-tab-${selectedId}` : undefined} tabIndex={-1} inert={!expanded || busy || undefined}

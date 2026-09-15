@@ -1,0 +1,559 @@
+/* The Standing Book — the Fund board as a book.
+   One anatomy, three dressings. Every --fund-book-* local is mixed from the
+   paper grammar (--paper, --ink, --line, --copper, --gold, --theme-*), never a
+   literal tint. Semantic positions never move between themes: the running head
+   rides both wall tops, the plinth stands at the floor's near edge, bookmarks
+   sit on the fore-edge, and the corner is today. */
+
+.fund-book {
+  --fund-book-paper: var(--card);
+  --fund-book-paper-shade: color-mix(in srgb, var(--paper-2) 85%, var(--ink));
+  --fund-book-paper-deep: color-mix(in srgb, var(--paper-2) 70%, var(--ink));
+  --fund-book-ink: var(--ink);
+  --fund-book-pencil: var(--muted);
+  --fund-book-feint: color-mix(in srgb, var(--line) 55%, transparent);
+  --fund-book-rule: var(--theme-accent, var(--copper));
+  --fund-book-cover: color-mix(in srgb, var(--pine-2) 78%, var(--ink));
+  --fund-book-spine: color-mix(in srgb, var(--felt) 70%, var(--ink));
+  --fund-book-gilt: var(--gold);
+  --fund-book-edge: repeating-linear-gradient(180deg, var(--fund-book-gilt) 0 2px, color-mix(in srgb, var(--fund-book-gilt) 70%, var(--ink)) 2px 3px);
+  --fund-book-mark-bg: linear-gradient(90deg, color-mix(in srgb, var(--felt) 78%, var(--ink)), color-mix(in srgb, var(--felt) 62%, var(--ink)));
+  --fund-book-mark-fg: var(--paper);
+  --fund-book-mark-on: color-mix(in srgb, var(--pine-2) 85%, var(--ink));
+  --fund-book-pocket: var(--fund-book-paper-shade);
+  --fund-book-water: color-mix(in srgb, var(--pine) 55%, var(--paper));
+  --fund-book-shadow: color-mix(in srgb, var(--ink) 28%, transparent);
+  --fund-book-shadow-soft: color-mix(in srgb, var(--ink) 12%, transparent);
+  --fund-book-rulings: repeating-linear-gradient(180deg, transparent 0 21px, var(--fund-book-feint) 21px 22px);
+  --fund-book-half: 26deg;
+  --fund-book-tilt: 42deg;
+  --fund-book-fit: .9;
+  --fund-book-ease: cubic-bezier(.62, .04, .22, 1);
+  --fund-book-turn: 1.1s;
+  --fund-book-stage: color-mix(in srgb, var(--desk, var(--paper-2)) 90%, var(--ink));
+  position: relative;
+  display: grid;
+  gap: 10px;
+  color: var(--fund-book-ink);
+  font-family: var(--font);
+}
+
+/* ---- the fore-edge: bookmarks are the tablist ---- */
+.fund-book-edge { display: flex; gap: 6px; min-width: 0; }
+.fund-book .fund-book-mark, :root[data-theme] .fund-book .fund-book-mark {
+  --fund-book-reach: 0;
+  position: relative;
+  min-height: 44px;
+  min-width: 0;
+  border: 0;
+  border-radius: 0 4px 4px 0;
+  padding: 6px 10px 6px 14px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--fund-book-mark-bg);
+  color: var(--fund-book-mark-fg);
+  box-shadow: inset 0 -2px 0 var(--fund-book-gilt), 2px 3px 6px var(--fund-book-shadow-soft);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  line-height: 1.15;
+}
+.fund-book-mark[data-reach="1"] { --fund-book-reach: 1; }
+.fund-book-mark[data-reach="2"] { --fund-book-reach: 2; }
+.fund-book-mark-glance {
+  color: inherit;
+  font-family: var(--theme-display, var(--display));
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  overflow-wrap: anywhere;
+}
+.fund-book .fund-book-mark[aria-selected="true"], :root[data-theme] .fund-book .fund-book-mark[aria-selected="true"] {
+  font-weight: 500;
+  background: var(--fund-book-mark-on);
+  color: var(--paper);
+  box-shadow: inset 3px 0 0 var(--fund-book-rule), 2px 3px 6px var(--fund-book-shadow-soft);
+}
+.fund-book-mark:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
+/* the dog-ear: only an attention bookmark folds a corner */
+.fund-book-mark.is-dogeared::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(225deg, var(--fund-book-stage) 50%, var(--fund-book-paper-deep) 50%);
+}
+
+/* ---- the cover, shown when shut ---- */
+.fund-book-cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 3px 6px 6px 3px;
+  background: var(--fund-book-cover);
+  box-shadow: 0 14px 30px var(--fund-book-shadow);
+  transform-origin: 0 50%;
+  pointer-events: none;
+  z-index: 2;
+}
+.fund-book-cover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 26px;
+  background: var(--fund-book-spine);
+  border-right: 1px solid var(--fund-book-gilt);
+}
+.fund-book-plate {
+  display: grid;
+  gap: 4px;
+  padding: 14px 18px;
+  border: 1px solid var(--fund-book-gilt);
+  outline: 1px solid color-mix(in srgb, var(--fund-book-gilt) 50%, transparent);
+  outline-offset: -5px;
+  color: var(--fund-book-gilt);
+  text-align: center;
+}
+.fund-book-plate b { font-family: var(--theme-display, var(--display)); font-size: 22px; font-weight: 500; letter-spacing: .04em; }
+.fund-book-plate small { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+.fund-book-dogear {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  background: linear-gradient(135deg, var(--fund-book-stage) 0 50%, var(--fund-book-paper-shade) 50% 52%, var(--fund-book-paper) 52%);
+}
+.fund-book[data-fund-book-edge="proud"] .fund-book-dogear { opacity: 1; }
+.fund-book[data-fund-book-open="true"] .fund-book-cover { opacity: 0; visibility: hidden; transform: rotateY(-150deg); }
+.fund-book[data-fund-book-open="false"] .fund-book-room { opacity: 0; visibility: hidden; }
+
+/* ---- the room ---- */
+.fund-book-room {
+  position: relative;
+  overflow: hidden;
+  perspective: 1600px;
+  perspective-origin: 50% 30%;
+  padding: 12px 18px 8px;
+  border-radius: 8px;
+  background:
+    radial-gradient(70% 55% at 50% 8%, color-mix(in srgb, var(--fund-book-gilt) 14%, transparent), transparent 70%),
+    var(--fund-book-stage);
+}
+.fund-book-fold {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "left right" "floor floor";
+  transform-style: preserve-3d;
+  transform-origin: 50% 0;
+  transform: scale(var(--fund-book-fit));
+}
+.fund-book-leaf {
+  position: relative;
+  min-width: 0;
+  min-height: 250px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--fund-book-rule) 35%, transparent) 0 1px, transparent 1px) 24px 0 / 100% 100% no-repeat, var(--fund-book-rulings), var(--fund-book-paper);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+.fund-book-leaf.is-left { grid-area: left; transform-origin: 100% 50%; box-shadow: inset -22px 0 26px -20px var(--fund-book-shadow); }
+.fund-book-leaf.is-right { grid-area: right; transform-origin: 0 50%; box-shadow: inset 22px 0 26px -20px var(--fund-book-shadow); }
+.fund-book.is-desk[data-fund-book-open="true"] .fund-book-leaf.is-left { transform: rotateY(var(--fund-book-half)); }
+.fund-book.is-desk[data-fund-book-open="true"] .fund-book-leaf.is-right { transform: rotateY(calc(-1 * var(--fund-book-half))); }
+.fund-book-leaf[hidden] { display: none; }
+.fund-book-spine { grid-column: 1 / -1; grid-row: 1; justify-self: center; pointer-events: none; display: none; }
+
+/* the running head: printed on both walls, meeting at the corner */
+.fund-book-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--fund-book-pencil);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.fund-book-head-level { font-family: var(--theme-display, var(--display)); font-size: 19px; letter-spacing: 0; text-transform: none; color: var(--fund-book-ink); }
+.fund-book-head-state::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; background: var(--good); }
+.fund-book-head-state[data-edge="attention"]::before { background: var(--fund-book-gilt); }
+.fund-book-head-state[data-edge="live"]::before { background: var(--copper); }
+.fund-book-head-state[data-edge="quiet"]::before { background: transparent; border: 1px dashed var(--fund-book-pencil); }
+
+/* today: the corner in the office, a rule down the leading edge on the phone */
+.fund-book-today {
+  position: absolute;
+  top: 52px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--fund-book-rule);
+  writing-mode: vertical-rl;
+}
+.fund-book-leaf.is-left .fund-book-today { right: 4px; }
+.fund-book-leaf.is-right .fund-book-today { left: 4px; transform: rotate(180deg); }
+.fund-book.is-desk .fund-book-leaf.is-right .fund-book-today { display: none; }
+
+.fund-book-wall { padding: 12px 16px 14px 30px; }
+.fund-book-leaf.is-right .fund-book-wall { padding: 12px 22px 14px 18px; }
+.fund-book-kicker { margin: 0 0 3px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--fund-book-pencil); }
+.fund-book-chapter { margin: 0; font-family: var(--theme-display, var(--display)); font-size: 17px; font-weight: 500; line-height: 1.15; }
+.fund-book-figure { margin: 8px 0 0; font-family: var(--theme-display, var(--display)); font-size: 24px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fund-book-verdict { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; }
+.fund-book-pencil-note { margin: 6px 0 0; font-family: var(--theme-display, var(--display)); font-style: italic; font-weight: 300; font-size: 12.5px; line-height: 1.35; color: var(--fund-book-pencil); }
+.fund-book-handle {
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--fund-book-paper);
+  color: var(--fund-book-ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.fund-book-handle:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
+
+/* the floor flap and the things that stand on it */
+.fund-book-floor {
+  grid-area: floor;
+  position: relative;
+  min-height: 150px;
+  padding: 14px 18px 56px;
+  background: var(--fund-book-rulings), var(--fund-book-paper);
+  box-shadow: inset 0 30px 30px -24px var(--fund-book-shadow);
+  transform-origin: 50% 0;
+  transform-style: preserve-3d;
+}
+.fund-book.is-desk[data-fund-book-open="true"] .fund-book-floor { transform: rotateX(var(--fund-book-tilt)); }
+.fund-book-stand {
+  max-width: 440px;
+  margin: 26px auto 0;
+  transform-origin: 50% 100%;
+  background: var(--fund-book-paper);
+  box-shadow: 0 0 0 1.5px var(--card), 8px 10px 12px -4px var(--fund-book-shadow);
+  padding: 8px 10px 4px;
+}
+.fund-book.is-desk[data-fund-book-open="true"] .fund-book-stand { transform: rotateX(calc(-1 * var(--fund-book-tilt))); }
+.fund-book-stand[data-plate-primitive="track"] { max-width: 560px; }
+.fund-book-floor-note { margin: 0; font-family: var(--theme-display, var(--display)); font-style: italic; font-weight: 300; font-size: 11.5px; color: var(--fund-book-pencil); text-align: center; }
+.fund-book-plinth {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  padding: 6px 14px;
+  border-top: 3px double var(--line);
+  background: var(--fund-book-paper);
+  box-shadow: 0 0 0 1.5px var(--card), 0 -10px 16px -8px var(--fund-book-shadow);
+  transform-origin: 50% 100%;
+  font-family: var(--theme-display, var(--display));
+  font-style: italic;
+  font-weight: 300;
+  font-size: 12.5px;
+  line-height: 1.25;
+}
+.fund-book.is-desk[data-fund-book-open="true"] .fund-book-plinth { transform: rotateX(calc(-1 * var(--fund-book-tilt))); }
+.fund-book-plinth-footing { font-family: var(--mono); font-style: normal; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--fund-book-rule); }
+
+/* ---- the mechanisms ---- */
+.fund-book-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.fund-book-rail, .fund-book-tick { stroke: var(--line); stroke-width: 1; }
+.fund-book-panel { stroke: var(--card); stroke-width: 1; }
+.fund-book-panel.is-a { fill: var(--fund-book-paper); }
+.fund-book-panel.is-b { fill: var(--fund-book-paper-shade); }
+.fund-book-ink { fill: none; stroke: var(--fund-book-ink); stroke-width: 1.6; stroke-linejoin: round; }
+.fund-book-pencil { fill: none; stroke: var(--fund-book-pencil); stroke-width: 1.4; stroke-dasharray: 4 3; stroke-linejoin: round; }
+.fund-book-corner { stroke: var(--fund-book-rule); stroke-width: 1; stroke-dasharray: 1 2; opacity: .9; }
+.fund-book-ghost {
+  fill: color-mix(in srgb, var(--fund-book-pencil) 18%, var(--fund-book-paper));
+  stroke: var(--fund-book-pencil);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+.fund-book-ghost.is-in-gate { stroke: var(--fund-book-ink); stroke-dasharray: none; }
+.fund-book-well { fill: var(--fund-book-paper-deep); stroke: var(--line); stroke-width: 1; }
+.fund-book-well-rule { stroke: var(--fund-book-pencil); stroke-width: .6; opacity: .7; }
+.fund-book-water { fill: var(--fund-book-water); opacity: .9; }
+.fund-book-pocket { fill: var(--fund-book-pocket); stroke: var(--line); stroke-width: 1; }
+.fund-book-card { fill: var(--fund-book-paper); stroke: var(--fund-book-pencil); stroke-width: 1; stroke-dasharray: 2 2; }
+.fund-book-ribbon.is-up { fill: var(--pine); }
+.fund-book-ribbon.is-down { fill: var(--copper); }
+.fund-book-band-ground { fill: var(--fund-book-paper-deep); stroke: var(--line); stroke-width: 1; }
+.fund-book-band-fill { fill: var(--pine); }
+.fund-book-band-fill.is-over { fill: var(--copper); }
+.fund-book-threshold { stroke: var(--copper); stroke-width: 1.5; }
+.fund-book-caption { font-family: var(--mono); font-size: 7px; font-weight: 400; letter-spacing: .04em; fill: var(--fund-book-pencil); }
+.fund-book-caption.is-figure { fill: var(--fund-book-ink); }
+.fund-book-caption.is-down { fill: var(--copper); }
+
+/* the gate: fixed. the strip: moves. */
+.fund-book-gate-room { display: grid; gap: 6px; }
+.fund-book-gate-view { position: relative; overflow: hidden; border-radius: 3px; background: var(--fund-book-paper-shade); box-shadow: inset 0 0 0 1px var(--line); }
+.fund-book-gate-view:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
+.fund-book-gate {
+  position: absolute;
+  left: calc(50% - 18px);
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  border-inline: 2px solid var(--fund-book-gilt);
+  background: color-mix(in srgb, var(--fund-book-gilt) 8%, transparent);
+  pointer-events: none;
+}
+.fund-book-gate-marks { display: flex; align-items: flex-start; gap: 6px; flex-wrap: wrap; }
+.fund-book-gate-list { display: flex; gap: 4px; flex-wrap: wrap; min-width: 0; }
+.fund-book-gate-step, .fund-book-gate-mark {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px dashed var(--fund-book-pencil);
+  border-radius: 3px;
+  background: var(--fund-book-paper);
+  color: var(--fund-book-pencil);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.fund-book-gate-step { border-style: solid; border-color: var(--line); text-transform: uppercase; }
+.fund-book-gate-step:disabled { opacity: .5; cursor: default; }
+.fund-book-gate-mark.is-in-gate { border-style: solid; border-color: var(--fund-book-ink); color: var(--fund-book-ink); }
+.fund-book-gate-step:focus-visible, .fund-book-gate-mark:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
+.fund-book-gate-line { margin: 0; font-size: 12px; line-height: 1.4; }
+
+/* ---- crossing the corner (phone), the clasp ---- */
+.fund-book-cross { display: flex; justify-content: center; gap: 10px; }
+.fund-book-cross-button, .fund-book-clasp {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--fund-book-paper);
+  color: var(--fund-book-ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.fund-book-cross-button[aria-pressed="true"] { background: var(--fund-book-ink); color: var(--paper); border-color: var(--fund-book-ink); }
+.fund-book-cross-button:focus-visible, .fund-book-clasp:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
+.fund-book-clasp { justify-self: start; }
+
+/* ---- desk: the full room, the fore-edge a column at its right ---- */
+.fund-book.is-desk {
+  grid-template-columns: minmax(0, 1fr) 150px;
+  grid-template-areas: "room edge" "clasp edge";
+  align-items: start;
+}
+.fund-book.is-desk .fund-book-room { grid-area: room; }
+.fund-book.is-desk .fund-book-edge { grid-area: edge; flex-direction: column; padding-top: 34px; }
+.fund-book.is-desk .fund-book-mark, :root[data-theme] .fund-book.is-desk .fund-book-mark { width: calc(120px + var(--fund-book-reach) * 14px); margin-left: -6px; }
+.fund-book.is-desk .fund-book-clasp { grid-area: clasp; }
+.fund-book.is-desk .fund-book-cover { right: 150px; }
+
+/* ---- phone: glance plus one tap. One wall and the floor, today a rule down the leading edge ---- */
+.fund-book.is-phone { grid-template-columns: minmax(0, 1fr); grid-template-areas: "edge" "room" "cross" "clasp"; }
+.fund-book.is-phone .fund-book-edge { grid-area: edge; }
+.fund-book.is-phone .fund-book-room { grid-area: room; }
+.fund-book.is-phone .fund-book-cross { grid-area: cross; }
+.fund-book.is-phone .fund-book-clasp { grid-area: clasp; }
+.fund-book.is-phone .fund-book-edge { overflow-x: auto; padding: 10px 0 2px; scrollbar-width: thin; }
+.fund-book.is-phone .fund-book-mark, :root[data-theme] .fund-book.is-phone .fund-book-mark { flex: 0 0 auto; width: 104px; border-radius: 4px 4px 0 0; transform: translateY(calc(-1 * var(--fund-book-reach) * 5px)); }
+.fund-book.is-phone .fund-book-room { perspective: none; padding: 10px 10px 8px; }
+.fund-book.is-phone .fund-book-fold { grid-template-columns: minmax(0, 1fr); grid-template-areas: "wall" "floor"; transform: none; }
+.fund-book.is-phone .fund-book-leaf { grid-area: wall; min-height: 0; box-shadow: none; }
+.fund-book.is-phone .fund-book-leaf .fund-book-wall { padding: 12px 14px 14px 22px; }
+.fund-book.is-phone .fund-book-leaf.is-left::after, .fund-book.is-phone .fund-book-leaf.is-right::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--fund-book-rule);
+  opacity: .85;
+}
+.fund-book.is-phone .fund-book-leaf.is-left::after { right: 0; }
+.fund-book.is-phone .fund-book-leaf.is-right::after { left: 0; }
+.fund-book.is-phone .fund-book-leaf .fund-book-today { top: 48px; }
+.fund-book.is-phone .fund-book-floor { padding-bottom: 60px; }
+.fund-book.is-phone .fund-book-stand { margin-top: 0; }
+.fund-book.is-phone .fund-book-head { padding: 0 8px; gap: 8px; font-size: 9.5px; }
+.fund-book.is-phone .fund-book-head-month { display: none; }
+.fund-book.is-phone .fund-book-cover { position: relative; min-height: 120px; }
+.fund-book.is-phone[data-fund-book-open="true"] .fund-book-cover { display: none; }
+.fund-book.is-phone[data-fund-book-open="false"] .fund-book-room { display: none; }
+
+@media (max-width: 899px) {
+  .fund-book.is-desk .fund-book-head-month { display: none; }
+}
+
+/* below 720 even a desk-marked book folds to one column, so nothing scrolls sideways */
+@media (max-width: 719px) {
+  .fund-book.is-desk { grid-template-columns: minmax(0, 1fr); grid-template-areas: "edge" "room" "clasp"; }
+  .fund-book.is-desk .fund-book-edge { flex-direction: row; flex-wrap: wrap; padding-top: 0; }
+  .fund-book.is-desk .fund-book-mark, :root[data-theme] .fund-book.is-desk .fund-book-mark { width: auto; margin-left: 0; }
+  .fund-book.is-desk .fund-book-room { perspective: none; }
+  .fund-book.is-desk .fund-book-fold { grid-template-columns: minmax(0, 1fr); grid-template-areas: "left" "right" "floor"; transform: none; }
+  .fund-book.is-desk[data-fund-book-open="true"] .fund-book-leaf.is-left, .fund-book.is-desk[data-fund-book-open="true"] .fund-book-leaf.is-right,
+  .fund-book.is-desk[data-fund-book-open="true"] .fund-book-floor, .fund-book.is-desk[data-fund-book-open="true"] .fund-book-stand, .fund-book.is-desk[data-fund-book-open="true"] .fund-book-plinth { transform: none; }
+  .fund-book.is-desk .fund-book-leaf.is-right .fund-book-today { display: block; }
+  .fund-book.is-desk .fund-book-cover { right: 0; }
+}
+
+/* ---- three dressings: same anatomy, different paper, ink and joinery ---- */
+/* Classic Hearth: sewn cloth and gilt at the corner, cloth bookmarks with a gilt edge, marbled endpaper. */
+:root[data-theme="classic"] .fund-book-spine {
+  display: block;
+  align-self: stretch;
+  width: 10px;
+  background: linear-gradient(90deg, var(--fund-book-spine), var(--fund-book-cover) 45%, var(--fund-book-spine));
+  box-shadow: inset 2px 0 0 -1px var(--fund-book-gilt), inset -2px 0 0 -1px var(--fund-book-gilt);
+  transform: translateZ(4px);
+  pointer-events: none;
+  z-index: 1;
+}
+:root[data-theme="classic"] .fund-book .fund-book-mark { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 6%, transparent) 0 1px, transparent 1px 3px), var(--fund-book-mark-bg); }
+
+/* Taylor's Scrapbook: cloud light, rings at the corner, washi and photo-corner bookmarks, glassine pockets. */
+:root[data-theme="taylor"] .fund-book {
+  --fund-book-paper: color-mix(in srgb, var(--card) 82%, white);
+  --fund-book-rulings: radial-gradient(var(--line) 1px, transparent 1.3px) 8px 8px / 16px 16px;
+  --fund-book-cover: linear-gradient(160deg, color-mix(in srgb, var(--theme-second, var(--paper-2)) 70%, white) 0, color-mix(in srgb, var(--theme-second, var(--paper-2)) 85%, var(--ink)) 100%);
+  --fund-book-spine: transparent;
+  --fund-book-gilt: color-mix(in srgb, var(--theme-accent, var(--copper)) 55%, white);
+  --fund-book-edge: repeating-linear-gradient(180deg, var(--fund-book-paper) 0 2px, var(--fund-book-paper-deep) 2px 3px);
+  --fund-book-mark-bg: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent, var(--copper)) 40%, var(--paper)) 0 5px, var(--paper) 5px);
+  --fund-book-mark-fg: var(--ink);
+  --fund-book-mark-on: color-mix(in srgb, var(--theme-accent, var(--copper)) 22%, var(--paper));
+  --fund-book-pocket: color-mix(in srgb, white 55%, transparent);
+  --fund-book-stage: linear-gradient(180deg, color-mix(in srgb, var(--paper-2) 82%, var(--theme-accent, var(--copper))), color-mix(in srgb, var(--paper-2) 84%, var(--theme-second, var(--paper-2))));
+}
+:root[data-theme="taylor"] .fund-book .fund-book-mark { box-shadow: 2px 3px 6px var(--fund-book-shadow-soft); }
+:root[data-theme="taylor"] .fund-book .fund-book-mark[aria-selected="true"] { color: var(--ink); }
+:root[data-theme="taylor"] .fund-book-leaf::before, :root[data-theme="taylor"] .fund-book-leaf::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: -1px;
+  left: -1px;
+  background: linear-gradient(135deg, var(--fund-book-paper-deep) 50%, transparent 50%);
+  pointer-events: none;
+}
+:root[data-theme="taylor"] .fund-book-leaf::after { left: auto; right: -1px; transform: scaleX(-1); }
+:root[data-theme="taylor"] .fund-book-spine {
+  display: block;
+  align-self: stretch;
+  margin-block: 10px 12px;
+  width: 22px;
+  background: radial-gradient(circle, transparent 5px, var(--fund-book-pencil) 5px 7px, transparent 7px) 0 0 / 22px 34px repeat-y;
+  transform: translateZ(4px);
+  pointer-events: none;
+  z-index: 1;
+}
+:root[data-theme="taylor"] .fund-book-plinth { border-top: 0; box-shadow: 0 0 0 1.5px var(--card), 0 -10px 16px -8px var(--fund-book-shadow), inset 0 4px 0 color-mix(in srgb, var(--theme-accent, var(--copper)) 32%, white); }
+:root[data-theme="taylor"] .fund-book-plate { border: 0; outline: 0; background: var(--fund-book-paper); color: var(--ink); transform: rotate(-2deg); box-shadow: 0 1px 3px var(--fund-book-shadow-soft); }
+:root[data-theme="taylor"] .fund-book-cover::before { display: none; }
+:root[data-theme="taylor"] .fund-book-card { stroke-dasharray: none; stroke: color-mix(in srgb, var(--theme-accent, var(--copper)) 45%, white); }
+
+/* Newfoundland: harbour light and a quay line, string and buttons at the corner, oilcloth bookmarks written in pencil. */
+:root[data-theme="newfoundland"] .fund-book {
+  --fund-book-paper: color-mix(in srgb, var(--card) 82%, var(--pine));
+  --fund-book-paper-shade: color-mix(in srgb, var(--paper-2) 78%, var(--pine));
+  --fund-book-paper-deep: color-mix(in srgb, var(--paper-2) 68%, var(--ink));
+  --fund-book-ink: color-mix(in srgb, var(--ink) 74%, var(--muted));
+  --fund-book-rulings: repeating-linear-gradient(180deg, transparent 0 21px, var(--fund-book-pencil) 21px 22px, transparent 22px 25px, var(--fund-book-pencil) 25px 26px), repeating-linear-gradient(90deg, transparent 0 63px, var(--fund-book-pencil) 63px 64px);
+  --fund-book-cover: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 8%, transparent) 0 2px, transparent 2px 6px), linear-gradient(0deg, color-mix(in srgb, var(--ink) 72%, var(--pine)), color-mix(in srgb, var(--ink) 72%, var(--pine)));
+  --fund-book-spine: transparent;
+  --fund-book-gilt: var(--paper);
+  --fund-book-mark-bg: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 10%, transparent) 0 2px, transparent 2px 6px), linear-gradient(0deg, color-mix(in srgb, var(--ink) 70%, var(--pine)), color-mix(in srgb, var(--ink) 70%, var(--pine)));
+  --fund-book-mark-fg: var(--paper-2);
+  --fund-book-mark-on: color-mix(in srgb, var(--ink) 55%, var(--pine));
+  --fund-book-pocket: color-mix(in srgb, var(--ink) 55%, var(--pine));
+  --fund-book-stage: linear-gradient(180deg, color-mix(in srgb, var(--paper-2) 72%, var(--pine)) 0 60%, color-mix(in srgb, var(--paper-2) 70%, var(--ink)) 60% 100%);
+}
+:root[data-theme="newfoundland"] .fund-book .fund-book-mark { font-family: var(--theme-hand, var(--display)); font-style: italic; font-size: 13px; text-transform: none; letter-spacing: 0; box-shadow: 2px 3px 6px var(--fund-book-shadow-soft); }
+:root[data-theme="newfoundland"] .fund-book-mark::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--fund-book-paper-deep);
+}
+:root[data-theme="newfoundland"] .fund-book .fund-book-mark[aria-selected="true"] { color: var(--paper); }
+:root[data-theme="newfoundland"] .fund-book-spine {
+  display: block;
+  align-self: stretch;
+  width: 6px;
+  background: repeating-linear-gradient(180deg, var(--fund-book-pencil) 0 3px, transparent 3px 7px);
+  opacity: .9;
+  transform: translateZ(4px);
+  pointer-events: none;
+  z-index: 1;
+}
+:root[data-theme="newfoundland"] .fund-book-plinth { background: var(--fund-book-pocket); color: var(--paper); border-top-color: var(--fund-book-paper-deep); }
+:root[data-theme="newfoundland"] .fund-book-plinth-footing { color: var(--paper); }
+:root[data-theme="newfoundland"] .fund-book-plate { border: 0; outline: 0; text-align: left; color: var(--paper); }
+:root[data-theme="newfoundland"] .fund-book-plate b { font-family: var(--mono); font-size: 18px; letter-spacing: .12em; text-transform: uppercase; }
+:root[data-theme="newfoundland"] .fund-book-cover::before { display: none; }
+:root[data-theme="newfoundland"] .fund-book-pocket, :root[data-theme="newfoundland"] .fund-book-card { stroke: var(--fund-book-paper-deep); stroke-dasharray: none; }
+:root[data-theme="newfoundland"] .fund-book-caption { fill: var(--fund-book-ink); }
+
+.fund-book.is-phone .fund-book-spine { display: none; }
+
+/* ---- motion is garnish; the still is the data ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .fund-book-cover { transition: transform var(--fund-book-turn) var(--fund-book-ease), opacity .3s ease var(--fund-book-turn), visibility 0s linear var(--fund-book-turn); }
+  .fund-book-room { transition: opacity .4s ease, visibility 0s linear; }
+  .fund-book[data-fund-book-open="false"] .fund-book-room { transition: opacity .3s ease, visibility 0s linear .3s; }
+  .fund-book-leaf { transition: transform var(--fund-book-turn) var(--fund-book-ease); }
+  .fund-book-floor { transition: transform var(--fund-book-turn) var(--fund-book-ease); }
+  .fund-book-stand, .fund-book-plinth { transition: transform .6s var(--fund-book-ease); }
+  .fund-book-mark { transition: width .3s var(--fund-book-ease), transform .3s var(--fund-book-ease), background .2s; }
+  .fund-book-strip { transition: transform .35s var(--fund-book-ease); }
+  .fund-book-dogear { transition: opacity .3s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fund-book *, .fund-book *::before, .fund-book *::after { transition: none !important; animation: none !important; }
+}
+:root[data-motion="reduced"] .fund-book *, :root[data-motion="reduced"] .fund-book *::before, :root[data-motion="reduced"] .fund-book *::after { transition: none !important; animation: none !important; }
+
+@media (forced-colors: active) {
+  .fund-book-mark, .fund-book-gate-mark, .fund-book-gate-step, .fund-book-cross-button, .fund-book-clasp, .fund-book-handle { border: 1px solid ButtonText; }
+  .fund-book-mark[aria-selected="true"] { outline: 2px solid Highlight; }
+  .fund-book-ink { stroke: CanvasText; }
+  .fund-book-panel.is-a, .fund-book-panel.is-b { fill: Canvas; stroke: CanvasText; }
+  .fund-book-water, .fund-book-band-fill, .fund-book-ribbon.is-up, .fund-book-ribbon.is-down { fill: CanvasText; forced-color-adjust: none; }
+}
