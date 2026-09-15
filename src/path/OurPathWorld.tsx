@@ -40,8 +40,17 @@ import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { bottleNote } from "./bottle.ts";
 import { growIsland, type Piece } from "./grow.ts";
 import { firedRecently, pathMonthAsOf } from "./landmarks.ts";
-import { charterPurposeWords, charterSpot, pathSitdownClosedMonths, pathSitdownFor, type PathSitdown } from "./together.ts";
+import { charterPurposeWords, pathSitdownClosedMonths, pathSitdownFor, type PathSitdown } from "./together.ts";
 import { acceptedPlan } from "../HouseholdLife.tsx";
+import { HerculesDress } from "../HerculesDress.tsx";
+import { HerculesFigure, type HerculesFigurePose } from "../HerculesFigure.tsx";
+import { useWornLook } from "../wardrobe/Appearance.tsx";
+import { fittingLayers } from "../wardrobe/FittingFigure.tsx";
+import { shapeSharedBoards } from "../core/sharedBoards.ts";
+import type { BoardMediaClient } from "../boardMedia/index.ts";
+import { useBoardPhotoUrls } from "../boardMedia/householdBoardMedia.tsx";
+import { memoryPhotoMatches } from "./memoryPhotos.ts";
+import { PathMiniMap } from "./PathMiniMap.tsx";
 import type { PathAnchor, PathCharacter, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
 
@@ -58,7 +67,7 @@ type Mark = {
   id: string;
   label: string;
   sub?: string;
-  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork" | "sunrise" | "mist" | "stone";
+  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork" | "sunrise" | "mist" | "stone" | "cottage";
   minLevel: PathLevel;
   lantern: Lantern;
 };
@@ -80,7 +89,7 @@ const PIECE_LABEL: Record<Piece["kind"], string> = {
 const LANTERN_KEY = "hearth:pathWorld:lantern";
 const QUALITY_KEY = "hearth:pathWorld:quality";
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
-  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, bill: 6, mist: 6, charter: 6, name: 7, sunrise: 7, fork: 8, memory: 8, stone: 8, cove: 9, lamp: 10, piece: 11, month: 12,
+  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, cottage: 6, bill: 6, mist: 6, charter: 6, name: 7, sunrise: 7, fork: 8, memory: 8, stone: 8, cove: 9, lamp: 10, piece: 11, month: 12,
 };
 /** The island shows at most this many clouds (the full timeline lives in the Fund and the Calendar). */
 const WEATHER_CLOUDS = 8;
@@ -133,7 +142,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -152,6 +161,12 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   onOpenTogether?: () => void;
   /** The Charter's stone square opens the Charter. */
   onOpenCharter?: () => void;
+  /** A month is a door into the Time Machine at that month (`YYYY-MM`). Only a link. */
+  onOpenTimeMachine?: (monthKey: string) => void;
+  /** Hercules's cottage is Play, his room. Without it there is no cottage. */
+  onOpenPlay?: () => void;
+  /** Household board photos for the memory flags. Reads only; nothing is uploaded from the island. */
+  boardMedia?: BoardMediaClient | null;
   /** 1 = just me; 2 or more = the other member is live too. Nothing is stored. */
   presentMembers?: number;
   /** The tent opened or closed. */
@@ -241,6 +256,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   }, [goals, asOf]);
   const rhythm = useMemo(() => ourRhythm(household), [household]);
   const kept = useMemo(() => memories(household), [household]);
+  // Memory flags carry the household board photos (shared with both already). See memoryPhotos.ts for the matching rule.
+  const boardPhotos = useMemo(() => shapeSharedBoards(household.kitchen?.boards).photos, [household.kitchen?.boards]);
+  const keptPhotos = useMemo(() => memoryPhotoMatches(kept, boardPhotos), [kept, boardPhotos]);
+  const keptMediaIds = useMemo(() => [...keptPhotos.values()].map((row) => row.mediaId), [keptPhotos]);
+  const photoUrls = useBoardPhotoUrls(boardMedia, keptMediaIds);
   // The Calendar as weather (household scope only; the read-model carries no amounts).
   const weather = useMemo(() => {
     if (!atNow) return null;
@@ -357,7 +377,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     goals: landmarks.map(({ goal, piece, step }) => ({ id: `goal:${goal.id}`, step, piece, fired: Boolean(piece?.firedAt) })),
     kiln: kiln ? { warm: kiln.warm } : null,
     lamps: rhythm.map((row) => ({ id: `lamp:${row.id}`, month: Math.max(0, monthIndexOf(months, row.heldOn.at(-1) ?? row.updatedAt)) })),
-    memories: kept.map((row) => ({ id: `memory:${row.id}`, month: Math.max(0, monthIndexOf(months, row.shownAt)) })).filter((row) => row.month <= shown),
+    memories: kept.map((row) => {
+      const url = photoUrls[keptPhotos.get(row.id)?.mediaId ?? ""];
+      return { id: `memory:${row.id}`, month: Math.max(0, monthIndexOf(months, row.shownAt)), ...(url ? { photo: url } : {}) };
+    }).filter((row) => row.month <= shown),
+    cottage: Boolean(onOpenPlay),
     weather: [
       ...bills.map((row) => ({ id: row.id, kind: row.kind as "cloud" | "storm", weight: row.weight, dayOffset: daysFrom(today, row.date) })),
       ...sunrises.map((row) => ({ id: row.id, kind: "sunrise" as const, weight: row.weight, dayOffset: daysFrom(today, row.date) })),
@@ -368,7 +392,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
-  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks]);
+  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks, photoUrls, keptPhotos, onOpenPlay]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -402,10 +426,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     if (mist) list.push({ id: "mist", label: mist.label, sub: "why?", kind: "mist", minLevel: 1, lantern: 0 });
     for (const { stone } of shownStones) list.push({ id: `stone:${stone.id}`, label: stone.label, sub: stone.why.split(" · ")[0], kind: "stone", minLevel: 3, lantern: 0 });
     for (const row of unknown) list.push({ id: row.id, label: "Something new", sub: row.label, kind: "unknown", minLevel: 1, lantern: 0 });
-    if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
+    if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: unknown.length ? "Hercules has a suggestion" : "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
+    if (onOpenPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Play", kind: "cottage", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     return list;
-  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks]);
+  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks, onOpenPlay]);
 
   // ------------------------------------------------------------ the world host
   const host = useRef<HTMLDivElement>(null);
@@ -562,6 +587,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           ...(land[month.key]?.why ? [[1, land[month.key]!.why] as [Lantern, string]] : []),
           ...(sitdownClosed.has(month.key) ? [[1, "Sitdown closed — this month's land is set."] as [Lantern, string]] : []),
         ],
+        actions: onOpenTimeMachine ? <button type="button" onClick={() => onOpenTimeMachine(month.key)}>Open the time machine</button> : undefined,
       };
     }
     if (id.startsWith("fire:")) {
@@ -576,6 +602,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           [0, row.meaning || "A Sitdown-to-Sitdown month."],
           ...(sitdown === "open" ? [[0, "Your Sitdown is open. The fire is blazing."] as [Lantern, string]] : sitdown === "closed" ? [[0, "Sitdown closed — the fire has settled to embers."] as [Lantern, string]] : []),
           ...(lit && sitdown !== "closed" && presentMembers >= 2 ? [[1, "You're both here."] as [Lantern, string]] : []),
+          ...(lit && unknown.length ? [[0, "Hercules has a suggestion. Follow the pawprints."] as [Lantern, string]] : []),
           [1, `Opened ${row.openedAt.slice(0, 10)}${row.closedAt ? ` · closed ${row.closedAt.slice(0, 10)}` : ""}`],
           [1, row.state === "open" ? "Still being lived" : `Closed as ${row.state.replace("-", " ")}`],
           ...(row.carryForward ? [[2, `Carried forward: ${row.carryForward}`] as [Lantern, string]] : []),
@@ -660,7 +687,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     }
     if (id.startsWith("memory:")) {
       const row = kept.find((r) => `memory:${r.id}` === id);
-      return row ? { eyebrow: "Our Story", title: row.title || "A Memory", lines: [[0, row.authoredNote || "Kept by both of you."], [1, `Kept ${row.shownAt.slice(0, 10)}`]] } : null;
+      const caption = row ? keptPhotos.get(row.id)?.caption.trim() : "";
+      return row ? { eyebrow: "Our Story", title: row.title || "A Memory", lines: [[0, row.authoredNote || "Kept by both of you."], ...(caption ? [[1, `On the flag: “${caption}”`] as [Lantern, string]] : []), [1, `Kept ${row.shownAt.slice(0, 10)}`]] } : null;
     }
     if (id.startsWith("bill:")) {
       const row = bills.find((b) => b.id === id);
@@ -749,6 +777,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         actions: <button type="button" className="primary" onClick={() => { onOpenInTent?.({ route: "plan", view: "household", label: line.labelSnapshot, planVersionId: accepted.id, planLineId: line.id }); openTent(true); }}>Read the agreement</button>,
       };
     }
+    if (id === "cottage" && onOpenPlay) {
+      return {
+        eyebrow: "Play · his room",
+        title: "Hercules's cottage",
+        lines: [[0, "Hercules keeps our favourite things here."], [1, "A cat door, a lit window, and his room behind it. Nothing in here moves money."]],
+        actions: <button type="button" className="primary" onClick={onOpenPlay}>Enter the cottage</button>,
+      };
+    }
     if (id === "name" && islandName) return { eyebrow: "Our island", title: islandName, lines: [[0, "Named together. The sign stands by your first month."]] };
     return null;
   }
@@ -756,7 +792,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
 
   // ------------------------------------------------------------ render
   const nowMonth = months[shown];
-  const flatScale = 54 / Math.max(20, Math.hypot(island.spot(last).x, island.spot(last).z));
+  // Hercules waits at the tent; with a "?" signpost on the island he leans toward the pawprints.
+  const herculesPose: HerculesFigurePose = unknown.length ? "stretch" : "sit";
   const recipeRows = shapePathWorld(household.pathWorld).filter((row): row is PathRecipeRow => row.kind === "recipe");
   return (
     <div className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern}>
@@ -779,44 +816,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <div ref={host} className="path-world__host" data-live={live} />
           {!live && (
             <div className="path-world__flat" aria-hidden="true">
-              <svg viewBox="-60 -60 120 120" role="presentation">
-                {months.slice(0, shown + 1).map((month, m) => {
-                  // Set land (closed Sitdown or closed books) gets a kerb; each stamped week a small dot.
-                  const row = land[month.key], set = Boolean(row?.closed) || sitdownClosed.has(month.key);
-                  const stamps = Math.min(5, row?.stampedWeeks.length ?? 0);
-                  if (!set && !stamps) return null;
-                  const p = island.spot(m), k = flatScale, r = (m === shown ? 3.4 : 2.4) + 1.3;
-                  return (
-                    <g key={`land-${month.key}`} transform={`translate(${(p.x * k).toFixed(2)} ${(p.z * k).toFixed(2)})`}>
-                      {set && <circle r={r} className={`path-world__kerb${row?.closed ? " path-world__kerb--closed" : ""}`} />}
-                      {Array.from({ length: stamps }, (_, i) => {
-                        const a = -Math.PI / 2 + (i - (stamps - 1) / 2) * 0.55;
-                        return <circle key={i} className="path-world__stamp" r={0.55} cx={(Math.cos(a) * (r + 1.3)).toFixed(2)} cy={(Math.sin(a) * (r + 1.3)).toFixed(2)} />;
-                      })}
-                    </g>
-                  );
-                })}
-                {months.slice(0, shown + 1).map((month, m) => {
-                  const p = island.spot(m), k = flatScale;
-                  return <circle key={month.key} cx={p.x * k} cy={p.z * k} r={m === shown ? 3.4 : 2.4} className={`path-world__dot path-world__dot--${characters[m]}`} />;
-                })}
-                {charterView && charterShown && (() => {
-                  // The Charter's stone square. Decision forks are left off the flat map.
-                  const p = charterSpot(island), k = flatScale;
-                  return <rect className="path-world__charter" x={(p.x * k - 2.2).toFixed(2)} y={(p.z * k - 2.2).toFixed(2)} width={4.4} height={4.4} rx={0.6} />;
-                })()}
-                {months.length > 0 && (() => {
-                  // Us: the two of you, side by side on the current month.
-                  const p = island.spot(shown), k = flatScale;
-                  return (
-                    <g className="path-world__us" transform={`translate(${(p.x * k).toFixed(2)} ${(p.z * k).toFixed(2)})`}>
-                      <line x1={-2.2} y1={-4.6} x2={2.2} y2={-4.6} />
-                      <circle cx={-2.2} cy={-4.6} r={1.3} className="path-world__us-one" />
-                      <circle cx={2.2} cy={-4.6} r={1.3} className="path-world__us-two" />
-                    </g>
-                  );
-                })()}
-              </svg>
+              <PathMiniMap household={household} today={today} shown={shown} theme={theme} />
             </div>
           )}
           <div className="path-world__marks" hidden={!live}>
@@ -832,6 +832,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
               >
                 <span className="path-mark__label">{mark.label}</span>
                 {mark.sub && lantern > 0 && <span className="path-mark__sub">{mark.sub}</span>}
+                {mark.id === "tent" && live && <PathHercules pose={herculesPose} size={narrow ? 64 : 88} />}
               </button>
             ))}
           </div>
@@ -866,6 +867,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <div className="path-world__now">
             <button type="button" className="path-world__compass" onClick={() => { setFollowNow(true); setCur(last); setSelected(null); window.setTimeout(() => world.current?.focus("now", 2), 0); }}>Where we are</button>
             {next && atNow && <button type="button" className="path-world__next" onClick={() => select(`move:${next.id}`)}><span>Next Move</span>{next.text}</button>}
+            {!live && <PathHercules pose={herculesPose} size={narrow ? 56 : 72} flat />}
             <button ref={tentButton} type="button" className="primary path-world__tent" onClick={() => openTent(true)}>Open the Plan Studio tent</button>
           </div>
 
@@ -893,6 +895,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
               aria-valuetext={nowMonth ? `${monthName(nowMonth.key)}, ${CHARACTER_LABEL[characters[shown]!]}` : undefined}
               onChange={(e) => { setPlaying(false); const v = Number(e.target.value); setFollowNow(v === last); setCur(v); }} />
           </label>
+          {nowMonth && onOpenTimeMachine && <button type="button" className="path-world__link path-world__time" onClick={() => onOpenTimeMachine(nowMonth.key)}>Open this month in the time machine</button>}
           <ol className="path-world__ticks" aria-hidden="true">
             {months.map((month, m) => <li key={month.key} className={`path-chip--${characters[m]}`} data-current={m === shown} />)}
           </ol>
@@ -950,6 +953,18 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         {classicRoom}
       </section>
     </div>
+  );
+}
+
+/** Hercules, dressed in his saved outfit, waiting by the tent. Decoration only: never a control, never announced. */
+function PathHercules({ pose, size, flat = false }: { pose: HerculesFigurePose; size: number; flat?: boolean }) {
+  const look = useWornLook();
+  return (
+    <span className={`path-hercules${flat ? " path-hercules--flat" : ""}`} aria-hidden="true" data-pose={pose}>
+      <HerculesFigure pose={pose} mood="content" size={size} {...(look ? fittingLayers(look) : {})}>
+        {!look && <HerculesDress hat={null} chain={null} house={null} collar={null} />}
+      </HerculesFigure>
+    </span>
   );
 }
 

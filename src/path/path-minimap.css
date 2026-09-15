@@ -1,0 +1,28 @@
+/* The island in miniature (flat SVG): Our Path's no-WebGL map and Home's window share it. */
+.path-minimap { display: block; width: 100%; height: auto; }
+.path-world__dot { stroke: var(--card); stroke-width: 0.8; }
+.path-world__dot--steady { fill: #a9b98f; }
+.path-world__dot--bloom { fill: #e79ab2; }
+.path-world__dot--milestone { fill: #e0ad3c; }
+.path-world__dot--uphill { fill: #c9a36a; }
+.path-world__dot--storm { fill: #8e9cb2; }
+.path-world__dot--paused { fill: #cfc5b3; }
+.path-minimap__thread { fill: none; stroke: var(--theme-accent, #b5653e); stroke-width: 0.7; stroke-linecap: round; stroke-linejoin: round; opacity: 0.55; }
+.path-minimap__shore { fill: color-mix(in srgb, var(--theme-second, #4f6b4a) 12%, transparent); stroke: color-mix(in srgb, var(--theme-second, #4f6b4a) 45%, transparent); stroke-width: 0.6; }
+.path-world__cove { fill: none; stroke: var(--theme-second, #4f6b4a); stroke-width: 0.9; stroke-linecap: round; }
+/* Us: two small figures sharing one lantern. Coats follow the theme's accent and second. */
+.path-world__us line { stroke: #ffc860; stroke-width: 0.9; stroke-linecap: round; }
+.path-world__us circle { stroke: var(--card); stroke-width: 0.5; }
+.path-world__us-one { fill: var(--theme-accent, #b5653e); }
+.path-world__us-two { fill: var(--theme-second, #4f6b4a); }
+.path-world__charter { fill: #a39a8c; stroke: var(--card); stroke-width: 0.6; }
+.path-minimap--taylor .path-world__charter { fill: #9c9387; }
+.path-minimap--newfoundland .path-world__charter { fill: #8a8a86; }
+/* Set land: a kerb ring (a shade darker for closed books) and a dot per stamped week. */
+.path-world__kerb { fill: none; stroke: #a39a8c; stroke-width: 0.7; stroke-dasharray: 1.1 0.5; }
+.path-world__kerb--closed { stroke: #7d756a; stroke-dasharray: none; }
+.path-world__stamp { fill: #ffc860; stroke: var(--card); stroke-width: 0.25; }
+.path-minimap--taylor .path-world__kerb { stroke: #9c9387; }
+.path-minimap--newfoundland .path-world__kerb { stroke: #8a8a86; }
+.path-minimap--newfoundland .path-world__kerb--closed { stroke: #5f5f5b; }
+@media (forced-colors: active) { .path-minimap * { forced-color-adjust: auto; } }

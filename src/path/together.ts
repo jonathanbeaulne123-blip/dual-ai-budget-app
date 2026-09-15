@@ -57,6 +57,19 @@ export function charterPurposeWords(purpose: string, max = 120): string {
  * landmarks and the kiln). Deterministic; falls back to the first candidate.
  */
 export function charterSpot(island: GrownIsland, avoid: { x: number; z: number; r: number }[] = []): { x: number; z: number; a: number } {
+  return clearSpotNearFirstMonth(island, avoid, Math.PI);
+}
+
+/**
+ * Where Hercules's cottage (Play) stands: the same search as the Charter, turned
+ * a quarter away from it, and clear of the Charter's square as well.
+ */
+export function cottageSpot(island: GrownIsland, avoid: { x: number; z: number; r: number }[] = [], charter = false): { x: number; z: number; a: number } {
+  const blockers = charter ? [...avoid, { ...charterSpot(island, avoid), r: 6 }] : avoid;
+  return clearSpotNearFirstMonth(island, blockers, Math.PI / 2);
+}
+
+function clearSpotNearFirstMonth(island: GrownIsland, avoid: { x: number; z: number; r: number }[], turn: number): { x: number; z: number; a: number } {
   const p = island.spot(0);
   const blockers = [
     ...avoid,
@@ -66,7 +79,7 @@ export function charterSpot(island: GrownIsland, avoid: { x: number; z: number; 
   let first: { x: number; z: number; a: number } | null = null;
   for (const radius of [8, 11, 14]) {
     for (let k = 0; k < 12; k++) {
-      const a = p.a + Math.PI + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.45;
+      const a = p.a + turn + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.45;
       const x = p.x + Math.cos(a) * radius, z = p.z + Math.sin(a) * radius;
       const candidate = { x, z, a: Math.atan2(p.z - z, p.x - x) };
       first ??= candidate;

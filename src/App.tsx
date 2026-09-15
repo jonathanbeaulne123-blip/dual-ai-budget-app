@@ -480,6 +480,7 @@ import { fundDisplayName, spaceLabel } from "./core/spaceNames.ts";
 import { HouseholdHome } from "./HouseholdHome.tsx";
 import { ChapterRoom } from "./ChapterPanel.tsx";
 import { OurPathWorld } from "./path/OurPathWorld.tsx";
+import { HouseholdBoardMedia } from "./boardMedia/householdBoardMedia.tsx";
 import { ComfortControls } from "./theme/ComfortControls.tsx";
 import { useComfort } from "./theme/comfort.ts";
 
@@ -842,6 +843,10 @@ export function App() {
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
   const [playInitialArea,setPlayInitialArea]=useState<"dressing"|undefined>();
+  // An island month opened the Time Machine: it starts on that month.
+  const [timeMachineRequest, setTimeMachineRequest] = useState<{ monthKey: string } | null>(null);
+  // The request is spent once the Time Machine is left, so its other doors still open on today.
+  useEffect(() => { if (tab !== "timeMachine") setTimeMachineRequest(null); }, [tab]);
   useEffect(()=>{if(!PLAY_ENABLED)return;const open=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.environment===environment&&detail.householdId===household?.householdId&&detail.memberId===session?.memberId){event.stopImmediatePropagation();if (!["planner", "timeMachine", "hercules", "play"].includes(currentTabRef.current)) { secondaryOrigin.current = currentTabRef.current; secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; } setPlayInitialArea("dressing");setTab("play");}};window.addEventListener('hearth:open-fitting',open,true);return()=>window.removeEventListener('hearth:open-fitting',open,true);},[environment,household?.householdId,session?.memberId]);
   useEffect(() => {
     const source = herculesSourceFocus;
@@ -6829,7 +6834,7 @@ export function App() {
         onSnapshot={value => setWorkspaceSnapshot({ ...value, identity: ledgerRenderScopeKey })} openProjectId={workspaceProjectId} onProjectOpened={()=>setWorkspaceProjectId(null)}
       />}
       {tab === "planner" && <Planner household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
-      {tab === "timeMachine" && <TimeMachine household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
+      {tab === "timeMachine" && <TimeMachine household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} initialPeriod={timeMachineRequest?.monthKey} />}
       {PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>goTab("together")}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
       {tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlay={PLAY_ENABLED ? () => {setPlayInitialArea(undefined);goTab("play");} : undefined} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
@@ -7040,7 +7045,11 @@ export function App() {
               );
               // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
               return view === "household" ? (
+                <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
+                  boardMedia={boardMedia}
+                  onOpenTimeMachine={monthKey => { setTimeMachineRequest({ monthKey }); goTab("timeMachine"); }}
+                  onOpenPlay={PLAY_ENABLED ? () => { setPlayInitialArea(undefined); goTab("play"); } : undefined}
                   onOpenCalendar={() => goTab("calendar")}
                   onOpenPlanner={() => goTab("planner")}
                   onOpenInTent={source => setPathTentFocus({ focus: source, supersedes: herculesSourceFocus })}
@@ -7055,6 +7064,7 @@ export function App() {
                   <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>
                   {studio}
                 </>} />
+                )}</HouseholdBoardMedia>
               ) : studio;
             })()}
             </div>

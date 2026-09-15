@@ -17,23 +17,7 @@
 .path-world__host canvas:active { cursor: grabbing; }
 .path-world__flat { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; }
 .path-world__flat svg { width: min(100%, 460px); height: auto; }
-.path-world__dot { stroke: var(--card); stroke-width: 0.8; }
-/* Us: two small figures sharing one lantern (flat fallback). Coats follow the theme's accent and second. */
-.path-world__us line { stroke: #ffc860; stroke-width: 0.9; stroke-linecap: round; }
-.path-world__us circle { stroke: var(--card); stroke-width: 0.5; }
-.path-world__charter { fill: #a39a8c; stroke: var(--card); stroke-width: 0.6; }
-.path-world--taylor .path-world__charter { fill: #9c9387; }
-.path-world--newfoundland .path-world__charter { fill: #8a8a86; }
-/* Set land on the flat map: a kerb ring (a shade darker for closed books) and a dot per stamped week. */
-.path-world__kerb { fill: none; stroke: #a39a8c; stroke-width: 0.7; stroke-dasharray: 1.1 0.5; }
-.path-world__kerb--closed { stroke: #7d756a; stroke-dasharray: none; }
-.path-world__stamp { fill: #ffc860; stroke: var(--card); stroke-width: 0.25; }
-.path-world--taylor .path-world__kerb { stroke: #9c9387; }
-.path-world--newfoundland .path-world__kerb { stroke: #8a8a86; }
-.path-world--newfoundland .path-world__kerb--closed { stroke: #5f5f5b; }
-.path-world__us-one { fill: var(--theme-accent, #b5653e); }
-.path-world__us-two { fill: var(--theme-second, #4f6b4a); }
-
+/* The flat map's own marks (dots, kerbs, the walkers) live in path-minimap.css, shared with Home's window. */
 .path-world__marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
 .path-mark { position: absolute; left: 0; top: 0; pointer-events: auto; display: grid; justify-items: center; gap: 2px; transform-origin: 0 0; border: 0; background: transparent; padding: 0; min-width: 44px; min-height: 44px; place-content: end center; color: var(--ink); will-change: transform; translate: -50% -100%; }
 .path-mark__label { font-family: var(--theme-hand, var(--display)); font-size: 15px; line-height: 1.1; background: var(--card); padding: 3px 9px 4px; border-radius: 6px; box-shadow: 0 3px 10px -5px rgb(0 0 0 / 0.45); white-space: nowrap; max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
@@ -145,3 +129,14 @@
 }
 @media (prefers-reduced-motion: reduce) { .path-mark { transition: none; } }
 @media (forced-colors: active) { .path-mark__label, .path-chip { forced-color-adjust: auto; border: 1px solid CanvasText; } }
+
+/* Hercules waits at the tent (decoration: aria-hidden, never a target). He sits beside the tent's label, clear of it. */
+.path-hercules { pointer-events: none; display: block; line-height: 0; }
+.path-mark .path-hercules { position: absolute; left: calc(100% - 6px); bottom: -6px; filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.18)); }
+.path-world__now > .path-hercules { flex: none; align-self: flex-end; margin-right: -4px; }
+.path-world__time { font-size: 13px; min-height: 40px; grid-column: 2; justify-self: start; padding: 4px 12px; }
+.path-mark--cottage .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
+@media (max-width: 719px) { .path-world__time { grid-column: auto; } }
+/* No idle tail or breathing for Hercules when motion is reduced. */
+@media (prefers-reduced-motion: reduce) { .path-hercules *, .path-hercules *::before, .path-hercules *::after { animation: none !important; transition: none !important; } }
+:root[data-motion="reduced"] .path-hercules * { animation: none !important; transition: none !important; }

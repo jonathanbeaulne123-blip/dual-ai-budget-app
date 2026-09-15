@@ -51,7 +51,7 @@ function seeded(): Household {
   return h;
 }
 
-function Harness({ initial, today }: { initial: Household; today: string }) {
+function Harness({ initial, today, extra }: { initial: Household; today: string; extra?: Record<string, unknown> }) {
   const [household, setHousehold] = useState(initial);
   const [member, setMember] = useState("MEM-001");
   const onCommand = async (fn: (h: Household) => CommitResult) => {
@@ -63,7 +63,7 @@ function Harness({ initial, today }: { initial: Household; today: string }) {
   return createElement("div", null,
     createElement("button", { id: "switch", onClick: () => setMember(member === "MEM-001" ? "MEM-002" : "MEM-001") }, "switch"),
     createElement(OurPathWorld, {
-      household, memberId: member, today, busy: false, onCommand, theme: "taylor",
+      household, memberId: member, today, busy: false, onCommand, theme: "taylor", ...extra,
       classicRoom: createElement("div", { id: "classic" }, createElement("input", { id: "draft", defaultValue: "" })),
     }));
 }
@@ -709,5 +709,106 @@ describe("Our Path world page (D-262)", () => {
     expect(outline.some((t) => t.startsWith("We are here"))).toBe(true);
     expect(outline.some((t) => t.startsWith("Plan Studio"))).toBe(false);
     expect(byText("Open the Plan Studio tent")).toBeTruthy();
+  });
+
+  describe("Hercules the guide, his cottage, the time machine door, and photos on the flags", () => {
+    const withMemory = (): Household => {
+      const h = seeded();
+      const members = h.members.filter((m) => m.active).map((m) => m.id);
+      const win = (id: string, title: string, shownAt: string) => ({ version: 1, id, chapterId: null, level: "first", title, evidenceRefs: [], shownAt, fadedAt: null, keptByMemberIds: members, authoredNote: "Fictional: kept by both.", hideAmounts: true, updatedAt: shownAt });
+      const photo = (slot: 1 | 2, mediaId: string, caption: string) => ({ id: `BOARD-PHOTO-${slot}`, version: 1, createdBy: "MEM-001", createdAt: `2026-08-0${slot}T12:00:00.000Z`, updatedAt: `2026-08-0${slot}T12:00:00.000Z`, mediaId, caption, crop: { x: 50, y: 50, zoom: 1 } });
+      return {
+        ...h,
+        wins: [win("W-SHORE", "Shore day", "2026-08-10T12:00:00.000Z"), win("W-KEYS", "New keys", "2026-08-20T12:00:00.000Z")] as never,
+        kitchen: { ...h.kitchen, boards: { photos: [photo(1, "media-keys", "Fictional porch"), photo(2, "media-shore", "Our fictional shore day, sandy")], tasks: [], milestones: [] } as never },
+      };
+    };
+
+    it("opens the time machine from any month card and from the Replay area", async () => {
+      const onOpenTimeMachine = vi.fn();
+      await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15", extra: { onOpenTimeMachine } })));
+      await settle();
+      await click(byText(/^We are here/));
+      await click(byText("Open the time machine"));
+      expect(onOpenTimeMachine).toHaveBeenLastCalledWith("2026-09");
+      await scrub($<HTMLInputElement>(".path-world__slider input"), 0);
+      const first = pathMonths(seeded(), "2026-09-15")[0]!.key;
+      await click(byText("Open this month in the time machine"));
+      expect(onOpenTimeMachine).toHaveBeenLastCalledWith(first);
+      await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => !b.textContent?.startsWith("We are here") && b.textContent?.includes("·"))!);
+      expect($(".path-world__card h3").textContent).toMatch(/^How /);
+      await click(byText("Open the time machine"));
+      expect(onOpenTimeMachine).toHaveBeenLastCalledWith(first);
+      // Without the prop there is no door.
+      await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
+      expect(byText("Open this month in the time machine")).toBeUndefined();
+    });
+
+    it("stands Hercules's cottage only when Play can open, and its card enters Play", async () => {
+      created.mode = "fake";
+      await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
+      await settle();
+      const world = created.worlds[0] as FakeWorld;
+      const outline = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")];
+      expect(outline().some((b) => b.textContent?.startsWith("Hercules's cottage"))).toBe(false);
+      expect(host.querySelector(".path-mark--cottage")).toBeNull();
+      expect((world.setScene.mock.calls.at(-1)![0] as { cottage?: boolean }).cottage).toBe(false);
+
+      const onOpenPlay = vi.fn();
+      await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15", extra: { onOpenPlay } })));
+      await settle();
+      expect((world.setScene.mock.calls.at(-1)![0] as { cottage?: boolean }).cottage).toBe(true);
+      expect(host.querySelector(".path-mark--cottage")?.getAttribute("aria-label")).toBe("Hercules's cottage, Play");
+      await click(outline().find((b) => b.textContent === "Hercules's cottage · Play")!);
+      expect($(".path-world__card").textContent).toContain("Hercules keeps our favourite things here.");
+      await click(byText("Enter the cottage"));
+      expect(onOpenPlay).toHaveBeenCalledTimes(1);
+      // Hercules waits in the tent's mark, as decoration: the tent's name stays the text.
+      const tent = $<HTMLButtonElement>(".path-mark--tent");
+      expect(tent.querySelector(".path-hercules")?.getAttribute("aria-hidden")).toBe("true");
+      expect(tent.getAttribute("aria-label")).toMatch(/^Plan Studio, /);
+    });
+
+    it("sits Hercules, aria-hidden, beside the tent button when there is no WebGL", async () => {
+      await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
+      await settle();
+      const tentButton = byText("Open the Plan Studio tent");
+      const hercules = tentButton.previousElementSibling as HTMLElement;
+      expect(hercules.classList.contains("path-hercules")).toBe(true);
+      expect(hercules.getAttribute("aria-hidden")).toBe("true");
+      expect(hercules.querySelector("svg")).toBeTruthy();
+      expect(hercules.querySelector("button")).toBeNull();
+      expect(host.querySelector(".path-mark--tent .path-hercules")).toBeNull();
+    });
+
+    it("hangs a matching board photo on its memory flag once the media client resolves it", async () => {
+      created.mode = "fake";
+      const made: string[] = [];
+      const create = vi.fn((blob: Blob) => { const url = `blob:fake-${made.length + 1}-${blob.size}`; made.push(url); return url; });
+      const revoke = vi.fn();
+      Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke });
+      const getBoardPhoto = vi.fn(async (mediaId: string) => new Blob([mediaId], { type: "image/jpeg" }));
+      const boardMedia = { getBoardPhoto };
+      await act(async () => root.render(createElement(Harness, { initial: withMemory(), today: "2026-09-15", extra: { boardMedia } })));
+      await settle();
+      await settle();
+      const world = created.worlds[0] as FakeWorld;
+      expect(getBoardPhoto.mock.calls.map(([id]) => id).sort()).toEqual(["media-keys", "media-shore"]);
+      const scene = world.setScene.mock.calls.at(-1)![0] as { memories: { id: string; photo?: string }[] };
+      const byId = Object.fromEntries(scene.memories.map((m) => [m.id, m.photo]));
+      // "Shore day" is in photo 2's caption; the newest Memory takes the spare photo 1.
+      // (Each fake URL ends with its blob's size: "media-shore" is 11 bytes, "media-keys" 10.)
+      expect(byId["memory:W-SHORE"]).toMatch(/^blob:fake-\d-11$/);
+      expect(byId["memory:W-KEYS"]).toMatch(/^blob:fake-\d-10$/);
+      // The card names the photo at Warm and up.
+      await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent === "Shore day")!);
+      expect($(".path-world__card").textContent).toContain("On the flag: “Our fictional shore day, sandy”");
+      await click(byText("Dim"));
+      expect($(".path-world__card").textContent).not.toContain("On the flag");
+      // Leaving the island revokes every URL it made.
+      await act(async () => root.unmount());
+      expect(revoke.mock.calls.map(([url]) => url).sort()).toEqual([...made].sort());
+      root = createRoot(host);
+    });
   });
 });

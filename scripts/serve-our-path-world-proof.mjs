@@ -58,6 +58,24 @@ function withFictionalStones(h) {
 function withFictionalMist(h) {
   try { return setHouseholdFundMonthPlan(h, { memberId: h.householdFund?.custodianMemberId ?? 'MEM-001', monthKey: '2026-09', target: '0', buffer: '99999' }).household; } catch (error) { console.warn('proof mist skipped', error); return h; }
 }
+// Proof only (?photos=1): two fictional kept Memories and two drawn board photos, served by an in-memory media client.
+function withFictionalPhotos(h) {
+  const members = h.members.filter((m) => m.active).map((m) => m.id);
+  const win = (id, title, shownAt) => ({ version: 1, id, chapterId: null, level: 'first', title, evidenceRefs: [], shownAt, fadedAt: null, keptByMemberIds: members, authoredNote: 'Fictional: kept by both of us.', hideAmounts: true, updatedAt: shownAt });
+  const photo = (slot, mediaId, caption) => ({ id: 'BOARD-PHOTO-' + slot, version: 1, createdBy: 'MEM-001', createdAt: '2026-08-0' + slot + 'T12:00:00.000Z', updatedAt: '2026-08-0' + slot + 'T12:00:00.000Z', mediaId, caption, crop: { x: 50, y: 50, zoom: 1 } });
+  return { ...h, wins: [...(h.wins ?? []), win('W-PROOF-SHORE', 'Shore day', '2026-08-10T12:00:00.000Z'), win('W-PROOF-GARDEN', 'First tomatoes', '2026-09-02T12:00:00.000Z')],
+    kitchen: { ...h.kitchen, boards: { tasks: [], milestones: [], ...(h.kitchen?.boards ?? {}), photos: [photo(1, 'proof-garden', 'Fictional garden'), photo(2, 'proof-shore', 'Our fictional shore day')] } } };
+}
+const proofMedia = { async getBoardPhoto(mediaId) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256; const g = c.getContext('2d');
+  const shore = mediaId === 'proof-shore';
+  const sky = g.createLinearGradient(0, 0, 0, 256); sky.addColorStop(0, shore ? '#8fd0e8' : '#f6d7a8'); sky.addColorStop(1, shore ? '#e9f5f2' : '#fbeee0');
+  g.fillStyle = sky; g.fillRect(0, 0, 256, 256);
+  g.fillStyle = '#ffcf5a'; g.beginPath(); g.arc(186, 70, 30, 0, Math.PI * 2); g.fill();
+  g.fillStyle = shore ? '#3f93a8' : '#6f9a5c'; g.fillRect(0, 150, 256, 106);
+  g.fillStyle = shore ? '#efdcaa' : '#c9483c'; if (shore) g.fillRect(0, 205, 256, 51); else for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(40 + i * 44, 190, 14, 0, Math.PI * 2); g.fill(); }
+  return await new Promise((resolve) => c.toBlob(resolve, 'image/png'));
+} };
 function Proof() {
   const [state, setState] = useState(null);
   const [member, setMember] = useState('MEM-001');
@@ -68,6 +86,7 @@ function Proof() {
       // Proof only (?story=well): the habitat has a Charter but no accepted decisions or Shared Sitdown, so add fictional ones in memory.
       if (story === 'well') household = withFictionalTogether(household);
       if (q.get('mist') === '1') household = withFictionalMist(household);
+      if (q.get('photos') === '1') household = withFictionalPhotos(household);
       ref.current = household; setState(household); window.__ready = true;
     });
   }, []);
@@ -78,6 +97,8 @@ function Proof() {
       React.createElement('button', { id: 'switch-member', onClick: () => setMember(member === 'MEM-001' ? 'MEM-002' : 'MEM-001') }, 'Switch fictional member')),
     React.createElement(OurPathWorld, { household: state, memberId: member, today, busy: false, onCommand: command, theme, proofWorld, presentMembers: present,
       onOpenTogether: () => { window.__opened = 'together'; }, onOpenCharter: () => { window.__opened = 'charter'; }, onOpenFund: () => { window.__opened = 'fund'; }, onOpenCalendar: () => { window.__opened = 'calendar'; }, onOpenPlanner: () => { window.__opened = 'planner'; }, onOpenInTent: (source) => { window.__opened = source; },
+      onOpenPlay: q.get('play') === '0' ? undefined : () => { window.__opened = 'play'; }, onOpenTimeMachine: (monthKey) => { window.__opened = 'timeMachine:' + monthKey; },
+      boardMedia: q.get('photos') === '1' ? proofMedia : null,
       classicRoom: React.createElement('div', { id: 'classic-room' }, React.createElement('h2', null, "Today's Our Path"), React.createElement('p', null, 'Chapter room and Plan Studio render here in the app.')) }));
 }
 window.__ready = story === 'empty';

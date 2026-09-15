@@ -55,7 +55,7 @@ function household(): Household {
 
 let host: HTMLDivElement;
 
-function render(): HTMLDivElement {
+function render(initialPeriod?: string): HTMLDivElement {
   const root = createRoot(host);
   act(() => {
     root.render(createElement(TimeMachine, {
@@ -63,6 +63,7 @@ function render(): HTMLDivElement {
       memberId: BIANCA,
       view: "household",
       today: TODAY,
+      initialPeriod,
     }));
   });
   return host;
@@ -130,5 +131,13 @@ describe("the time machine surface", () => {
       expect(actions.some((row) => row.id === "see-a-month")).toBe(false);
     }
     expect(sceneTabFor("timeMachine")).toBe("ledger");
+  });
+  it("opens on the month an island door asks for, and ignores a month outside the timeline", () => {
+    const page = render("2026-07");
+    expect(page.querySelector("#time-machine-title")?.textContent).toBe("July 2026");
+    host = document.createElement("div");
+    document.body.append(host);
+    const far = render("2019-01");
+    expect(far.querySelector("#time-machine-title")?.textContent).toBe("September 2026");
   });
 });

@@ -37,6 +37,8 @@ export type TimeMachineProps = {
   today: string;
   /** Open the books on the month being looked at. Reading only; nothing posts from here. */
   onOpenBooks?: (monthKey: string) => void;
+  /** Open on this month (`YYYY-MM`), e.g. from a month on the Our Path island. Ignored outside the timeline. */
+  initialPeriod?: string;
 };
 
 type Pane = "month" | "compare" | "ahead" | "year";
@@ -64,7 +66,7 @@ function signCad(cents: number): string {
   return `${cents < 0 ? "−" : "+"}${formatCad(Math.abs(cents))}`;
 }
 
-export function TimeMachine({ household, memberId, view, today, onOpenBooks }: TimeMachineProps) {
+export function TimeMachine({ household, memberId, view, today, onOpenBooks, initialPeriod }: TimeMachineProps) {
   const active = household.members.some((member) => member.id === memberId && member.active);
   const currentMonth = monthKeyFromDateKey(today);
   const [period, setPeriod] = useState(currentMonth);
@@ -73,6 +75,10 @@ export function TimeMachine({ household, memberId, view, today, onOpenBooks }: T
   const ribbon = useRef<HTMLDivElement | null>(null);
 
   const range = useMemo(() => timelineRange(household, today), [household, today]);
+  // A door from elsewhere (an island month) aims the ribbon; a month outside the timeline keeps the default.
+  useEffect(() => {
+    if (initialPeriod && /^\d{4}-\d{2}$/.test(initialPeriod) && initialPeriod >= range.from && initialPeriod <= range.to) setPeriod(initialPeriod);
+  }, [initialPeriod, range.from, range.to]);
   const beads = useMemo(() => timelineBeads(household, today, range), [household, today, range]);
   const month = useMemo(() => monthView(household, period, today), [household, period, today]);
   const comparison = useMemo(() => (pane === "compare" ? compareMonths(household, against, period) : null), [pane, household, against, period]);
