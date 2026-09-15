@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { acceptHouseholdWrite, catalogHousehold, ensureHouseholdShape, financialAuditHash, householdForAiDisclosure, splitForSync } from "../src/core/index.ts";
+import { acceptHouseholdWrite, assembleHousehold, catalogHousehold, ensureHouseholdShape, financialAuditHash, householdForAiDisclosure, postEntry, splitForSync } from "../src/core/index.ts";
 import { commandIdentityHash, commandMaterializationFacts, sha256Hex } from "../src/core/commandIdentity.ts";
 import { closeChapter, openChapter, recordRitualHeld } from "../src/core/chapters.ts";
 import {
   PATH_BASE_RECIPES,
   PATH_NAME_ID,
+  PATH_WORLD_COMMAND_KINDS,
   agreePathProposal,
   declinePathProposal,
   effectivePathRecipes,
   guessCategorySignal,
+  hasPathWorldData,
   herculesPathSuggestion,
   mergePathWorld,
   pathCategoryMappings,
@@ -24,6 +26,9 @@ import {
 import { pathMonthCharacter, pathMonths, pathTripType } from "../src/core/pathSignals.ts";
 import { growIsland, heightAt } from "../src/path/grow.ts";
 import type { Goal, GoalContribution, Household, Transaction } from "../src/core/types.ts";
+import { capturedIntent } from "../src/ledgerSync/capture.ts";
+import { commandFromCapture, parseCommand, type Scope } from "../src/ledgerSync/protocol.ts";
+import { prepareCommand, type AuthorityState } from "../src/ledgerSync/authority.ts";
 import { receiptToCommandRef } from "../src/ledger/continuityCommandLog.ts";
 import { applyCommandEventLocally, extractMaterializationFacts, type ContinuityCommandEvent } from "../src/ledger/materializeSnapshotFromEvents.ts";
 
@@ -300,5 +305,43 @@ describe("Our Path world — the months it grows from", () => {
     const months = pathMonths(h, "2026-09-15");
     expect(months).toHaveLength(36);
     expect(months.at(-1)!.key).toBe("2026-09");
+  });
+});
+
+describe("pathWorld capability guard", () => {
+  const scope: Scope = { environment: "development", householdId: catalogHousehold().householdId, memberId: PARTNER, subject: "test-one" } as Scope;
+
+  it("knows when a household holds island rows", () => {
+    const base = catalogHousehold();
+    expect(hasPathWorldData(base)).toBe(false);
+    expect(hasPathWorldData({ pathWorld: [{ bogus: true }] as never })).toBe(false);
+    const named = proposePathName(base, { memberId: ME, name: "Fictional Isle", at: AT }).household;
+    expect(hasPathWorldData(named)).toBe(true);
+    expect(PATH_WORLD_COMMAND_KINDS).toEqual(expect.arrayContaining(["proposePathRecipe", "proposePathName", "agreePathProposal", "declinePathProposal", "setPathCategorySignal"]));
+  });
+
+  it("carries the island capability and refuses an old client once the island exists or is being changed", async () => {
+    const h = catalogHousehold();
+    const one = splitForSync(h, PARTNER), two = splitForSync(h, ME);
+    const state: AuthorityState = { sequence: h.revision, shared: one.shared, personal: new Map([[PARTNER, one.personal], [ME, two.personal]]) };
+    const naming = await commandFromCapture(capturedIntent(proposePathName(h, { memberId: PARTNER, name: "Fictional Isle", at: AT }).household)!, scope, crypto.randomUUID());
+    expect(naming.pathWorldVersion).toBe(1);
+    expect(() => parseCommand({ ...naming, pathWorldVersion: 2 })).toThrow();
+
+    // An old client proposing a change is refused even before any row exists.
+    const oldNaming = { ...naming };
+    delete (oldNaming as { pathWorldVersion?: 1 }).pathWorldVersion;
+    expect(hasPathWorldData(assembleHousehold(state.shared, state.personal.get(PARTNER)!))).toBe(false);
+    await expect(prepareCommand(state, oldNaming, scope, () => {})).rejects.toThrow(/CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island/);
+
+    const accepted = await prepareCommand(state, naming, scope, () => {});
+    expect(hasPathWorldData({ pathWorld: accepted.shared.pathWorld })).toBe(true);
+    const next: AuthorityState = { sequence: accepted.receipt.sequence, shared: accepted.shared, personal: new Map([...state.personal, [PARTNER, accepted.personal]]) };
+
+    // A money-only command from an old client is refused once the island holds rows.
+    const old = { ...(await commandFromCapture(capturedIntent(postEntry(assembleHousehold(accepted.shared, accepted.personal), { date: "2026-09-12", type: "expense", amount: 5, accountId: "ACC-CHEQUING", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: PARTNER, note: "Fictional coffee", confirmDuplicate: true }).household)!, scope, crypto.randomUUID())), observedSequence: accepted.receipt.sequence };
+    delete (old as { pathWorldVersion?: 1 }).pathWorldVersion;
+    await expect(prepareCommand(next, old, scope, () => {})).rejects.toThrow(/CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island/);
+    await expect(prepareCommand(next, { ...old, pathWorldVersion: 1 }, scope, () => {})).resolves.toBeTruthy();
   });
 });

@@ -497,6 +497,14 @@ export const setPathCategorySignal = captureCommand("setPathCategorySignal", fun
  * own name, fix a category as themselves, and promote a proposal when theirs
  * is the last agreement missing (or they are the household's only member).
  */
+/** Ledger step kinds that write the Our Path world, plus its undo/continuity kind (D-262). */
+export const PATH_WORLD_COMMAND_KINDS = ["proposePathRecipe", "proposePathName", "agreePathProposal", "declinePathProposal", "setPathCategorySignal", "updatePathWorld"];
+
+/** True once the household holds any Our Path world row; older clients must not write over it. */
+export function hasPathWorldData(household: Pick<Household, "pathWorld">): boolean {
+  return shapePathWorld(household.pathWorld).length > 0;
+}
+
 export function pathWorldChangeAuthorized(household: Pick<Household, "members" | "pathWorld">, incoming: PathWorldRow[], actorId: string): boolean {
   const local = new Map(shapePathWorld(household.pathWorld).map((row) => [row.id, row]));
   const active = activeMemberIds(household);
