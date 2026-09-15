@@ -1,8 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  ACCOUNT_CARD_MARK,
   BOOK_GATE_X,
   PLATE_VIEW,
+  accountRowEdge,
+  accountRowFigure,
+  accountRows,
   bookHeadState,
   bookmarkStance,
   concertinaCornerX,
@@ -15,6 +19,7 @@ import {
   gateIndex,
   gateShift,
   pocketCards,
+  registerStrip,
   ribbonHeights,
   seedDemoHousehold,
   sparkHeights,
@@ -22,6 +27,7 @@ import {
   trackX,
   wellColumns,
   wellWater,
+  type AccountRow,
   type PlateEdge,
 } from "../src/core/index.ts";
 
@@ -31,6 +37,25 @@ const bookSource = readFileSync(new URL("../src/FundStandingBook.tsx", import.me
 const featureSource = readFileSync(new URL("../src/core/planFeature.ts", import.meta.url), "utf8");
 const ledgeSource = readFileSync(new URL("../src/FundLedge.tsx", import.meta.url), "utf8");
 const officeSource = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
+const cssSource = readFileSync(new URL("../src/fund-standing-book.css", import.meta.url), "utf8");
+
+/** Every `fn(` call in the stylesheet with the text between its parentheses, brackets balanced. */
+function cssCalls(source: string, names: readonly string[]): { name: string; args: string; line: number }[] {
+  const calls: { name: string; args: string; line: number }[] = [];
+  const pattern = new RegExp(`(${names.join("|")})\\(`, "g");
+  for (const match of source.matchAll(pattern)) {
+    let depth = 1;
+    let index = match.index! + match[0].length;
+    const start = index;
+    while (depth && index < source.length) {
+      if (source[index] === "(") depth += 1;
+      else if (source[index] === ")") depth -= 1;
+      index += 1;
+    }
+    calls.push({ name: match[1]!, args: source.slice(start, index - 1), line: source.slice(0, match.index).split("\n").length });
+  }
+  return calls;
+}
 
 describe("the Standing Book flag", () => {
   it("is off unless asked for, and cannot outlive the Household Home it presents", () => {
@@ -170,6 +195,104 @@ describe("the book's paper geometry", () => {
   });
 });
 
+describe("the register as a strip", () => {
+  it("keeps the ink running line as written, folds where it stops, and lays one flat pencil panel per uncounted row level with the last ink point", () => {
+    const strip = registerStrip([100, 250, -40, 900], 2);
+    expect(strip.points).toEqual([100, 250, -40, 900, 900, 900]);
+    expect(strip.actualCount).toBe(4);
+    const panels = concertinaPanels(strip.points, 28, strip.actualCount);
+    expect(panels.map((panel) => panel.standing)).toEqual([true, true, true, false, false]);
+    // A flat pencil panel carries no height of its own: both ends sit on the last ink point.
+    for (const panel of panels.filter((panel) => !panel.standing)) expect(panel.y0).toBe(panel.y1);
+    expect(concertinaCornerX(strip.points.length, strip.actualCount)).toBe(panels[2]!.x1);
+  });
+
+  it("windows a long register to its newest points, keeps room for pencil, and lays nothing when there is no ink", () => {
+    const long = Array.from({ length: 60 }, (_, index) => index * 10);
+    const plain = registerStrip(long, 0);
+    expect(plain.points).toHaveLength(24);
+    expect(plain.points.at(-1)).toBe(590);
+    expect(plain.actualCount).toBe(24);
+    const withPencil = registerStrip(long, 5);
+    expect(withPencil.actualCount).toBe(19);
+    expect(withPencil.points).toHaveLength(24);
+    expect(new Set(withPencil.points.slice(19))).toEqual(new Set([590]));
+    // Pencil never crowds out the ink past half the room.
+    const crowded = registerStrip(long, 40);
+    expect(crowded.actualCount).toBe(12);
+    expect(crowded.points).toHaveLength(24);
+    expect(registerStrip([], 3)).toEqual({ points: [], actualCount: 0 });
+    expect(registerStrip([500], 2).points).toEqual([500, 500, 500]);
+    expect(registerStrip([500], 2).actualCount).toBe(1);
+  });
+
+  it("gives a sticky the accounts plate's own edge and figure, never a second threshold", () => {
+    const base: AccountRow = {
+      accountId: "A", name: "A", accessibilityName: "A", detailLabel: null, kind: "chequing", scope: "shared",
+      balanceCents: 100, balanceLabel: "book balance", utilization: null, isFundCard: false, booksTarget: { tab: "ledger", accountId: "A" },
+    };
+    expect(accountRowEdge(base)).toBe("clear");
+    expect(accountRowEdge({ ...base, balanceCents: -1 })).toBe("attention");
+    const card: AccountRow = { ...base, kind: "credit", balanceLabel: "owed", utilization: 0.3 };
+    expect(accountRowEdge(card)).toBe("clear");
+    expect(accountRowEdge({ ...card, utilization: 0.31 })).toBe("attention");
+    // A card below zero is not the non-card rule's business.
+    expect(accountRowEdge({ ...card, balanceCents: -5, utilization: 0.1 })).toBe("clear");
+    expect(accountRowFigure(card)).toEqual({ primitive: "gauge", pct: 0.3, threshold: ACCOUNT_CARD_MARK, label: "A" });
+    expect(accountRowFigure(base)).toEqual({ primitive: "tally", count: 1 });
+    // The plate and the stickies read one rule: the seeded accounts plate's edge is the chosen row's edge.
+    const household = seedDemoHousehold({ today: TODAY, environment: "development" });
+    const accounts = fundPlates({ household, memberId: "MEM-001", today: TODAY }).find((plate) => plate.id === "accounts")!;
+    const rows = accountRows(household, "MEM-001", TODAY);
+    const chosen = rows.find((row) => accounts.glance.startsWith(`${row.name} ·`))!;
+    expect(accountRowEdge(chosen)).toBe(accounts.edge);
+    expect(accountRowFigure(chosen)).toEqual(accounts.figure);
+  });
+});
+
+describe("the stylesheet's fences", () => {
+  it("never stands a token a dressing may paint as an image where a colour belongs", () => {
+    // The tokens at risk are read from the stylesheet itself: any --fund-book-* that some rule sets to a gradient.
+    const imageTokens = [...new Set([...cssSource.matchAll(/(--fund-book-[a-z-]+):\s*[^;]*gradient\(/g)].map((match) => match[1]!))];
+    expect(imageTokens).toEqual(expect.arrayContaining(["--fund-book-stage", "--fund-book-cover", "--fund-book-mark-bg", "--fund-book-edge", "--fund-book-rulings"]));
+    const colourPositions = cssCalls(cssSource, ["linear-gradient", "radial-gradient", "repeating-linear-gradient", "repeating-radial-gradient", "conic-gradient", "color-mix", "rgb", "rgba", "hsl", "oklch"]);
+    expect(colourPositions.length).toBeGreaterThan(40);
+    const offences = colourPositions.flatMap((call) => imageTokens
+      .filter((token) => new RegExp(`var\\(${token}\\s*[,)]`).test(call.args))
+      .map((token) => `line ${call.line}: ${call.name}(… var(${token}) …)`));
+    expect(offences).toEqual([]);
+  });
+
+  it("fades the head strip by mask, cuts every dog-ear out of its paper, and mixes the Classic spine from a colour", () => {
+    // The fade needs no colour at all, so it paints under any dressing and degrades to an un-faded strip, never to nothing.
+    for (const more of ["start", "end", "both"]) {
+      const rule = cssSource.slice(cssSource.indexOf(`.fund-book-head-shelf[data-head-more="${more}"] .fund-book-head-edge {`));
+      expect(rule.slice(0, rule.indexOf("}"))).toMatch(/\n\s+mask-image: linear-gradient\(/);
+      expect(rule.slice(0, rule.indexOf("}"))).toContain("-webkit-mask-image: linear-gradient(");
+    }
+    expect(cssSource).not.toMatch(/\.fund-book-head-shelf::(before|after)/);
+    // A dog-ear is a real cut in the bookmark, the sticky and the cover, so the stage shows through it whatever it is painted with.
+    for (const selector of ["\n.fund-book-mark.is-dogeared {", '\n.fund-book-sticky[data-sticky-state="attention"] {', '\n.fund-book[data-fund-book-edge="proud"] .fund-book-cover {']) {
+      expect(cssSource.indexOf(selector), selector).toBeGreaterThan(0);
+      const rule = cssSource.slice(cssSource.indexOf(selector));
+      expect(rule.slice(0, rule.indexOf("}"))).toContain("clip-path: polygon(");
+    }
+    for (const flap of [".fund-book-mark.is-dogeared::after {", '.fund-book-sticky[data-sticky-state="attention"]::after {']) {
+      const rule = cssSource.slice(cssSource.indexOf(flap));
+      expect(rule.slice(0, rule.indexOf("}"))).toContain("background: var(--fund-book-paper-deep);");
+    }
+    expect(cssSource).toContain("--fund-book-cover-tone: color-mix(in srgb, var(--pine-2) 78%, var(--ink));");
+    expect(cssSource).toContain("var(--fund-book-spine), var(--fund-book-cover-tone) 45%, var(--fund-book-spine)");
+    // Every colour token the fade and the dog-ears lean on is defined once on the bare .fund-book as a colour, not an image.
+    const base = cssSource.slice(cssSource.indexOf(".fund-book {"), cssSource.indexOf("/* ---- the fore-edge"));
+    for (const token of ["--fund-book-paper-deep", "--fund-book-paper-shade", "--fund-book-paper", "--fund-book-cover-tone"]) {
+      const declaration = base.match(new RegExp(`${token}: ([^;]+);`));
+      expect(declaration, token).toBeTruthy();
+      expect(declaration![1]).not.toMatch(/gradient\(|url\(/);
+    }
+  });
+});
+
 describe("the book's fences", () => {
   it("keeps money, households and commands out of the geometry", () => {
     expect(leafSource).not.toMatch(/formatCad|Household|fundWalk|balanceCents|todayBalance/);
@@ -186,5 +309,21 @@ describe("the book's fences", () => {
     expect(bookSource).not.toMatch(/postEntry|postTransfer|confirmHouseholdFundContribution|onKitchen|sessionStorage|localStorage/);
     expect(bookSource).not.toMatch(/id === "now"|"attention" as|"change"/);
     expect(bookSource).not.toMatch(/\bcents\s*[-+*/]\s*\w|\w\s*[-+*/]\s*cents\b/i);
+  });
+
+  it("keeps the stickies a separate group on the head, a deep link into the accounts chapter, and no new id or persisted value", () => {
+    expect(bookSource).toContain('role="group" aria-label={`Accounts linked to the Fund, ${rows.length}`}');
+    // The host is synced only when the accounts chapter is on the rail it gave us; the spread never waits for it.
+    expect(bookSource).toContain('const accountsOnRail = slots.includes("accounts");');
+    expect(bookSource).toContain('if (accountsOnRail) onSelect("accounts");');
+    expect(bookSource).toContain('const focusedRow = focusedAccountId ? rows.find(');
+    expect(bookSource).toContain("booksPresentationFloor(household, memberId, \"household\")");
+    expect(bookSource).toContain("accountRegister(books, accountId)");
+    expect(bookSource).toContain("{ recognizedOnly: false }");
+    expect(bookSource).not.toMatch(/reduce\(|accountBookBalance|creditCardView\(|householdWallet|trialBalance/);
+    // The sticky group never borrows the tablist's vocabulary.
+    const stickies = bookSource.slice(bookSource.indexOf("function Stickies"), bookSource.indexOf("/** The running head"));
+    expect(stickies).not.toMatch(/role="tab"|aria-selected|aria-controls|FundWidgetId|DeskPlateId/);
+    expect(stickies).toContain("aria-pressed={pressed}");
   });
 });

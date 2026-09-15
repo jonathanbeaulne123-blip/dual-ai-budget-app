@@ -445,6 +445,7 @@
         "src/FundStandingBook.tsx",
         "src/fund-standing-book.css",
         "src/core/bookLeaf.ts",
+        "src/core/fundPlates.ts",
         "src/core/planFeature.ts"
       ],
       "tests": [
@@ -452,9 +453,10 @@
         "test/fund-standing-book-dom.test.ts",
         "test/fund-ledge.test.ts",
         "test/fund-plates.test.ts",
+        "test/accounts-widget.test.ts",
         "test/desk-plates-dom.test.ts"
       ],
-      "reason": "The Standing Book: the Fund board as a book behind the default-off VITE_FUND_STANDING_BOOK flag; its fore-edge keeps FundBoard's tablist contract id for id; the running head and plinth print the Level plate's own glance, edge, footing and verdict; bookmark geometry is read from each plate's edge and a household with every plate clear leaves the fore-edge flush; the six primitives stand as paper mechanisms drawn from plates.ts and bookLeaf.ts geometry only; nothing projected stands; the hosts render the book in place of the board only when the flag is on; nothing posts, settles, or moves a cent"
+      "reason": "The Standing Book: the Fund board as a book behind the default-off VITE_FUND_STANDING_BOOK flag; its fore-edge keeps FundBoard's tablist contract id for id; the running head and plinth print the Level plate's own glance, edge, footing and verdict; bookmark geometry is read from each plate's edge and a household with every plate clear leaves the fore-edge flush; the six primitives stand as paper mechanisms drawn from plates.ts and bookLeaf.ts geometry only; nothing projected stands; the head carries one sticky per shared account from accountRows with the accounts plate's own edge rule, a sticky is a deep link into the accounts chapter whose spread is the account's register from accountRegister over the Books page's presentation floor (counted rows in ink, uncounted in pencil, a pop-up concertina over runningCents that never stands an uncounted row); the hosts render the book in place of the board only when the flag is on; nothing posts, settles, or moves a cent"
     },
     {
       "sources": [
