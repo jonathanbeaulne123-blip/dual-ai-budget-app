@@ -111,6 +111,7 @@ export * from "./sharedLedgerStory.ts";
 export * from "./monthSpread.ts";
 export * from "./plates.ts";
 export * from "./deskPlates.ts";
+export * from "./bookLeaf.ts";
 export * from "./personalLedgerStory.ts";
 export * from "./herculesChat.ts";
 export * from "./herculesLedger.ts";

@@ -60,6 +60,8 @@ import { DeskPlate } from "./DeskPlates.tsx";
 import { FundDrawer } from "./FundDrawer.tsx";
 import { FundStage, type FundDestination } from "./FundStage.tsx";
 import { FundBoard } from "./FundBoard.tsx";
+import { FundStandingBook } from "./FundStandingBook.tsx";
+import { fundStandingBookEnabled } from "./core/planFeature.ts";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { useFurniture } from "./widgets/useFurniture.ts";
 import type { DeskForm, DeskMode } from "./widgets/deskTypes.ts";
@@ -548,9 +550,13 @@ export function OfficeWide({
           <StoryStrip heading="Today's stories" className="office-wide-mosaic office-wide-plates" actions={fundConfigured && spreadIsStage ? <button type="button" className="fund-rail-arrange" aria-haspopup="dialog" aria-expanded={fundDrawerOpen} onClick={openFundDrawer}>Arrange widgets</button> : undefined}>
             <div className="fund-rail-list">
               {fundConfigured && spreadIsStage ? (
-                <FundBoard household={household} memberId={memberId} today={today} presentation="desk"
-                  selected={activeFundWidget ?? "level"} onSelect={stageFundWidget} plates={plates}
-                  onOpenCabinet={plate => openPlateCabinet(plate.id)} />
+                fundStandingBookEnabled()
+                  ? <FundStandingBook household={household} memberId={memberId} today={today} presentation="desk"
+                    selected={activeFundWidget ?? "level"} onSelect={stageFundWidget} plates={plates}
+                    onOpenCabinet={plate => openPlateCabinet(plate.id)} />
+                  : <FundBoard household={household} memberId={memberId} today={today} presentation="desk"
+                    selected={activeFundWidget ?? "level"} onSelect={stageFundWidget} plates={plates}
+                    onOpenCabinet={plate => openPlateCabinet(plate.id)} />
               ) : (<>
               {plates.map((plate) => {
                 const active = fundConfigured && spreadIsStage && selectedFundPlate?.id === plate.id;

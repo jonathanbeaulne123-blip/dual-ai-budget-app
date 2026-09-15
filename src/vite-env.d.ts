@@ -16,6 +16,7 @@ interface ImportMetaEnv {
   readonly VITE_PLAN_SYSTEM_V2?: string;
   readonly VITE_HOUSEHOLD_HOME_V2?: string;
   readonly VITE_QUEENS_NEST?: string;
+  readonly VITE_FUND_STANDING_BOOK?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
 }
 
