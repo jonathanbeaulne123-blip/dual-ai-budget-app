@@ -25,6 +25,11 @@ Uncertainty:
 - The loft's size now shows a goal's order of magnitude.
 - The 3D path was checked in SwiftShader only, and each studio cat carries six canvases.
 
+**Follow-up commit (D-265).**
+- The cellar's water, tidemark and jars share one dollar scale, so a $1,000 jar is as tall as $1,000 of water. Jars have a 14px floor, and zoom runs to 800%.
+- The loft zooms like the cellar.
+- Quick gate (medium): passed, 253 tests.
+
 Data: fictional only. Next owner: Codex trust review, then Jonathan's bot opens the PR.
 
 ## The loft's rack — shelves as weights, pins as marks, dividers as splits, and the jug that pours (2026-09-15)

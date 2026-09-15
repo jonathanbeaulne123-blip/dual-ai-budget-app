@@ -4,6 +4,7 @@ import { formatCad } from "../core/money.ts";
 import type { QueenShelfItem } from "../core/queenPresentation.ts";
 import { RACK_LIMITS, pourWords, rackHangShelf, rackMoveKey, rackPour, rackSetCutoff, rackSetShare, rackSetSplit, rackSlideDivider, rackTakeDown, shelfShareWords, type QueenRackV1, type RackBank } from "../core/queenRack.ts";
 import { useOutsideClose } from "../useOutsideClose.ts";
+import { LOFT_ZOOM, clampLoftZoom, readLoftZoom, stepLoftZoom, storeLoftZoom } from "./loftZoom.ts";
 import { GUN_BILLS, gunFire, gunLanded, gunRoundTotal, gunStep, gunWords, type GunBill, type GunRound } from "../core/queenGun.ts";
 import { ConfirmSheet } from "../Confirm.tsx";
 import { KittyFlat } from "../kitty/studio/flat.tsx";
@@ -89,6 +90,36 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
   const [sending, setSending] = useState(false);
   const gunRef = useRef<HTMLButtonElement>(null);
   const cashLayer = useRef<HTMLDivElement>(null);
+  // ---- the size of the banks: pinch, ctrl-scroll, the pane, the +/− keys; remembered on this device ----
+  const [zoom, setZoom] = useState(() => readLoftZoom(typeof localStorage === "undefined" ? null : localStorage));
+  const onZoom = (next: number) => { const z = clampLoftZoom(next); setZoom(z); storeLoftZoom(z, typeof localStorage === "undefined" ? null : localStorage); };
+  const fingers = useRef(new Map<number, { x: number; y: number }>());
+  const pinch = useRef<{ span: number; zoom: number } | null>(null);
+  const fingerSpan = () => { const [a, b] = [...fingers.current.values()]; return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0; };
+  const onRackPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "touch") return;
+    fingers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (fingers.current.size === 2) {
+      // Two fingers are a pinch, never a drag: let go of whatever the first finger picked up.
+      drag.current = null; slide.current = null; dropAt.current = null; setDragId(null); setDrop(null);
+      pinch.current = { span: fingerSpan(), zoom };
+    }
+  };
+  const onRackPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!fingers.current.has(event.pointerId)) return;
+    fingers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const p = pinch.current;
+    if (p && fingers.current.size === 2) { const now = fingerSpan(); if (p.span > 0 && now > 0) onZoom(p.zoom * (now / p.span)); event.stopPropagation(); }
+  };
+  const onRackPointerEnd = (event: PointerEvent<HTMLDivElement>) => { fingers.current.delete(event.pointerId); if (fingers.current.size < 2) pinch.current = null; };
+  useEffect(() => {
+    // Ctrl-scroll (and a trackpad pinch) sizes the banks; a plain scroll still scrolls the rack. Not passive, so the page does not zoom instead.
+    const el = wall.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => { if (!event.ctrlKey) return; event.preventDefault(); setZoom((z) => { const next = clampLoftZoom(z * (event.deltaY < 0 ? 1.08 : 1 / 1.08)); storeLoftZoom(next, typeof localStorage === "undefined" ? null : localStorage); return next; }); };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
   const room = useRef<HTMLDivElement>(null);
   const wall = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: string; x: number; y: number; moved: boolean } | null>(null);
@@ -359,12 +390,17 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
       : <><em>Open-mouthed things accept.</em> Lidded things refuse. {shelfCount > 1 ? "A higher, heavier shelf takes more of a pour; its pin is where it stops." : "Slide the weight along the shelf, the pin up its post, or hang a shelf below."}</>;
 
   return (
-    <section ref={room} className="queen-room queen-room--loft" aria-label="The loft — Build" inert={!open} data-world={live ? "3d" : "flat"} data-shelves={shelfCount} data-voice={armed ? "gun" : held ? "held" : pour && tilt > 0 ? "pour" : "hint"} data-armed={armed ? "true" : undefined}>
+    <section ref={room} className="queen-room queen-room--loft" aria-label="The loft — Build" inert={!open} data-world={live ? "3d" : "flat"} data-shelves={shelfCount} data-voice={armed ? "gun" : held ? "held" : pour && tilt > 0 ? "pour" : "hint"} data-armed={armed ? "true" : undefined} style={{ ["--loft-zoom" as string]: zoom }}>
       <div ref={cashLayer} className="queen-cash-layer" aria-hidden="true" />
       <QueenRoomWorld room="loft" root={room} vessels={vessels} ambient={open} mode={world} onLive={(isLive) => setLive(isLive)} />
       <div className="queen-room__head">
         <p className="queen-room__title">The loft</p>
         <p className="queen-room__sub">{shown.length === 0 ? "Nothing on the shelves yet." : <>{shown.length === 1 ? "One thing" : `${shown.length} things`} on {shelfCount === 1 ? "the shelf" : `${shelfCount} shelves`}<span className="queen-room__sub-hint"> · the top shelf is fed first</span></>}</p>
+        <span className="queen-loft-zoom" role="group" aria-label="Size of the kitty banks">
+          <button type="button" className="queen-loft-zoom__step" aria-label="Smaller banks" disabled={zoom <= LOFT_ZOOM.min} onClick={() => onZoom(stepLoftZoom(zoom, -1))}>−</button>
+          <span className="queen-loft-zoom__read" aria-live="polite">{Math.round(zoom * 100)}%</span>
+          <button type="button" className="queen-loft-zoom__step" aria-label="Larger banks" disabled={zoom >= LOFT_ZOOM.max} onClick={() => onZoom(stepLoftZoom(zoom, 1))}>+</button>
+        </span>
         {dirty && onDone && (
           <span className="queen-held queen-held--head">
             <span className="queen-held__mark" role="status">Rack not saved yet</span>
@@ -374,7 +410,9 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
       </div>
       <div className="queen-ledge-wrap">
         {/* A bank, a pin, a weight and a divider own the hand in both directions (a bank goes down onto a lower shelf; the pin rides up its post); a grab on a bare board, the peg or the jug is still the house's haul. */}
-        <div ref={wall} className="queen-rack" role="group" aria-label="The rack — shelves on the wall; higher takes more">
+        <div ref={wall} className="queen-rack" role="group" aria-label="The rack — shelves on the wall; higher takes more. Pinch, ctrl-scroll or press plus and minus to size the banks"
+          onPointerDownCapture={onRackPointerDown} onPointerMoveCapture={onRackPointerMove} onPointerUpCapture={onRackPointerEnd} onPointerCancelCapture={onRackPointerEnd}
+          onKeyDown={(event) => { if (["+", "=", "-", "_"].includes(event.key) && !(event.target as HTMLElement).matches("input")) { event.preventDefault(); onZoom(stepLoftZoom(zoom, event.key === "-" || event.key === "_" ? -1 : 1)); } }}>
           {rows.map((row, shelfIndex) => {
             const share = sliding?.shelf === row.id && sliding.kind === "weight" ? sliding.value : row.share;
             const cutoff = sliding?.shelf === row.id && sliding.kind === "pin" ? sliding.value : row.cutoff;

@@ -55,6 +55,18 @@ for (const [theme, width, height] of RUNS.filter(([t, w, h]) => !only || only.in
   assert.ok(rest.kitty >= 1, `${tag}: studio cats on the rack`);
   const s0 = await scroll(page); assert.ok(s0.x <= 1 && s0.y <= 0, `${tag}: page scrolls ${JSON.stringify(s0)}`);
   await shot(page, `loft-${tag}`);
+  // Zoom in on the rack, like the cellar: the pane twice, then back.
+  const larger = page.locator('.queen-loft-zoom__step[aria-label="Larger banks"]');
+  await larger.click(); await larger.click();
+  await page.waitForTimeout(400);
+  const zoomed = await page.evaluate(() => ({ zoom: document.querySelector('.queen-room--loft').style.getPropertyValue('--loft-zoom'), h: Math.round(document.querySelector('.queen-room--loft [data-room-vessel]').getBoundingClientRect().height) }));
+  assert.equal(zoomed.zoom, '1.5', `${tag}: the pane sizes the banks`);
+  assert.ok(zoomed.h > rest.cats[0].h, `${tag}: a zoomed bank stands taller (${rest.cats[0].h} → ${zoomed.h})`);
+  const sz = await scroll(page); assert.ok(sz.x <= 1 && sz.y <= 0, `${tag}: page scrolls when zoomed ${JSON.stringify(sz)}`);
+  await shot(page, `loft-zoom-${tag}`);
+  const smaller = page.locator('.queen-loft-zoom__step[aria-label="Smaller banks"]');
+  await smaller.click(); await smaller.click();
+  await page.waitForTimeout(300);
   // The weight's card.
   await page.locator('.queen-shelf__weight').first().click();
   await page.waitForSelector('.queen-tool-card');
@@ -105,7 +117,21 @@ for (const [theme, width, height] of RUNS.filter(([t, w, h]) => !only || only.in
   const water = await cellar.evaluate(() => { const el = document.querySelector('.queen-water'); return { height: el?.style.height, name: el?.querySelector('.queen-water__name')?.textContent, body: getComputedStyle(el.querySelector('.queen-water__body')).backgroundImage.includes('gradient') }; });
   assert.ok(water.body, `${tag}: the water has a body`);
   await shot(cellar, `cellar-water-${tag}`);
-  records.push({ tag, water });
+  // One dollar scale: the jars stand on the water's floor, and the size pane deepens both.
+  // The rail's own keys (the pane hides on the shortest frame): + six times, then walk the gate to the rent's day.
+  await cellar.locator('.queen-cellar-rail').focus();
+  for (let i = 0; i < 6; i += 1) await cellar.keyboard.press('+');
+  await cellar.keyboard.press('Home');
+  for (let i = 0; i < 19; i += 1) await cellar.keyboard.press('ArrowRight');
+  await cellar.waitForTimeout(900);
+  const scale = await cellar.evaluate(() => {
+    const w = document.querySelector('.queen-water').getBoundingClientRect();
+    const jars = [...document.querySelectorAll('.queen-jar--bill .queen-billjar')].map((j) => { const r = j.getBoundingClientRect(); return { h: Math.round(r.height), bottom: Math.round(r.bottom), px: j.parentElement.style.getPropertyValue('--jar-px') }; });
+    return { waterBottom: Math.round(w.bottom), waterH: Math.round(w.height), deep: document.querySelector('.queen-water').classList.contains('is-deep'), jars: jars.slice(0, 6), read: document.querySelector('.queen-cellar-zoom__read')?.textContent };
+  });
+  for (const jar of scale.jars) assert.ok(Math.abs(jar.bottom - scale.waterBottom) <= 2, `${tag}: a jar stands on the water's floor (${jar.bottom} vs ${scale.waterBottom})`);
+  await shot(cellar, `cellar-scale-${tag}`);
+  records.push({ tag, water, scale });
   await cellar.close();
 }
 await browser.close();

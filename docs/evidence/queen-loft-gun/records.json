@@ -6,9 +6,9 @@
         "world": "3d",
         "cats": [
           {
-            "name": "Fictional wedding weekend",
-            "scale": 1.05,
-            "h": 47
+            "name": "Fictional trip to the shore",
+            "scale": 0.98,
+            "h": 44
           },
           {
             "name": "Fictional porch renovation",
@@ -16,9 +16,9 @@
             "h": 38
           },
           {
-            "name": "Fictional trip to the shore",
-            "scale": 0.98,
-            "h": 44
+            "name": "Fictional wedding weekend",
+            "scale": 1.05,
+            "h": 47
           },
           {
             "name": "Fictional date night",
@@ -33,7 +33,7 @@
         "title": "The weight \u00b7 the shelf"
       },
       "gun": {
-        "line": "The money gun. $400.00 at Fictional wedding weekend \u2014 $400.00 thrown, $2400.00 still loaded.",
+        "line": "The money gun. $400.00 at Fictional trip to the shore \u2014 $400.00 thrown, $2400.00 still loaded.",
         "send": [
           "Send $400.00",
           "Take the shots back",
@@ -44,9 +44,47 @@
     {
       "tag": "classic-320x568",
       "water": {
-        "height": "83%",
+        "height": "26.6px",
         "name": "The Fund's water",
         "body": true
+      },
+      "scale": {
+        "waterBottom": 247,
+        "waterH": 32,
+        "deep": true,
+        "jars": [
+          {
+            "h": 14,
+            "bottom": 247,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 247,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 247,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 247,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 247,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 247,
+            "px": "14px"
+          }
+        ],
+        "read": "364%"
       }
     },
     {
@@ -60,14 +98,14 @@
             "h": 64
           },
           {
-            "name": "Fictional porch renovation",
-            "scale": 0.86,
-            "h": 53
-          },
-          {
             "name": "Fictional trip to the shore",
             "scale": 0.98,
             "h": 60
+          },
+          {
+            "name": "Fictional porch renovation",
+            "scale": 0.86,
+            "h": 53
           },
           {
             "name": "Fictional date night",
@@ -93,13 +131,138 @@
     {
       "tag": "classic-390x844",
       "water": {
-        "height": "83%",
+        "height": "100.7px",
         "name": "The Fund's water",
         "body": true
+      },
+      "scale": {
+        "waterBottom": 335,
+        "waterH": 98,
+        "deep": true,
+        "jars": [
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          }
+        ],
+        "read": "364%"
       }
     },
     {
       "tag": "classic-720x900",
+      "rest": {
+        "world": "3d",
+        "cats": [
+          {
+            "name": "Fictional porch renovation",
+            "scale": 0.86,
+            "h": 65
+          },
+          {
+            "name": "Fictional trip to the shore",
+            "scale": 0.98,
+            "h": 75
+          },
+          {
+            "name": "Fictional wedding weekend",
+            "scale": 1.05,
+            "h": 80
+          },
+          {
+            "name": "Fictional date night",
+            "scale": 0.48,
+            "h": 36
+          }
+        ],
+        "kitty": 4
+      },
+      "card": {
+        "overlapsShelf": false,
+        "title": "The weight \u00b7 the shelf"
+      },
+      "gun": {
+        "line": "The money gun. $400.00 at Fictional porch renovation \u2014 $400.00 thrown, $2400.00 still loaded.",
+        "send": [
+          "Send $400.00",
+          "Take the shots back",
+          "Open Build in the banks"
+        ]
+      }
+    },
+    {
+      "tag": "classic-720x900",
+      "water": {
+        "height": "117.4px",
+        "name": "The Fund's water",
+        "body": true
+      },
+      "scale": {
+        "waterBottom": 429,
+        "waterH": 117,
+        "deep": true,
+        "jars": [
+          {
+            "h": 14,
+            "bottom": 429,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 429,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 429,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 429,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 429,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 429,
+            "px": "14px"
+          }
+        ],
+        "read": "364%"
+      }
+    },
+    {
+      "tag": "classic-1100x800",
       "rest": {
         "world": "3d",
         "cats": [
@@ -109,14 +272,14 @@
             "h": 75
           },
           {
-            "name": "Fictional porch renovation",
-            "scale": 0.86,
-            "h": 65
-          },
-          {
             "name": "Fictional wedding weekend",
             "scale": 1.05,
             "h": 80
+          },
+          {
+            "name": "Fictional porch renovation",
+            "scale": 0.86,
+            "h": 65
           },
           {
             "name": "Fictional date night",
@@ -140,60 +303,49 @@
       }
     },
     {
-      "tag": "classic-720x900",
+      "tag": "classic-1100x800",
       "water": {
-        "height": "83%",
+        "height": "50px",
         "name": "The Fund's water",
         "body": true
-      }
-    },
-    {
-      "tag": "classic-1100x800",
-      "rest": {
-        "world": "3d",
-        "cats": [
+      },
+      "scale": {
+        "waterBottom": 369,
+        "waterH": 50,
+        "deep": true,
+        "jars": [
           {
-            "name": "Fictional wedding weekend",
-            "scale": 1.05,
-            "h": 80
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
           },
           {
-            "name": "Fictional trip to the shore",
-            "scale": 0.98,
-            "h": 75
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
           },
           {
-            "name": "Fictional porch renovation",
-            "scale": 0.86,
-            "h": 65
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
           },
           {
-            "name": "Fictional date night",
-            "scale": 0.48,
-            "h": 36
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
           }
         ],
-        "kitty": 4
-      },
-      "card": {
-        "overlapsShelf": false,
-        "title": "The weight \u00b7 the shelf"
-      },
-      "gun": {
-        "line": "The money gun. $400.00 at Fictional wedding weekend \u2014 $400.00 thrown, $2400.00 still loaded.",
-        "send": [
-          "Send $400.00",
-          "Take the shots back",
-          "Open Build in the banks"
-        ]
-      }
-    },
-    {
-      "tag": "classic-1100x800",
-      "water": {
-        "height": "83%",
-        "name": "The Fund's water",
-        "body": true
+        "read": "364%"
       }
     },
     {
@@ -207,14 +359,14 @@
             "h": 53
           },
           {
-            "name": "Fictional trip to the shore",
-            "scale": 0.98,
-            "h": 60
-          },
-          {
             "name": "Fictional wedding weekend",
             "scale": 1.05,
             "h": 64
+          },
+          {
+            "name": "Fictional trip to the shore",
+            "scale": 0.98,
+            "h": 60
           },
           {
             "name": "Fictional date night",
@@ -240,9 +392,47 @@
     {
       "tag": "newfoundland-390x844",
       "water": {
-        "height": "83%",
+        "height": "100.7px",
         "name": "The Fund's water",
         "body": true
+      },
+      "scale": {
+        "waterBottom": 397,
+        "waterH": 98,
+        "deep": true,
+        "jars": [
+          {
+            "h": 14,
+            "bottom": 397,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 397,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 397,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 397,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 397,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 397,
+            "px": "14px"
+          }
+        ],
+        "read": "364%"
       }
     },
     {
@@ -250,11 +440,6 @@
       "rest": {
         "world": "3d",
         "cats": [
-          {
-            "name": "Fictional trip to the shore",
-            "scale": 0.98,
-            "h": 75
-          },
           {
             "name": "Fictional wedding weekend",
             "scale": 1.05,
@@ -264,6 +449,11 @@
             "name": "Fictional porch renovation",
             "scale": 0.86,
             "h": 65
+          },
+          {
+            "name": "Fictional trip to the shore",
+            "scale": 0.98,
+            "h": 75
           },
           {
             "name": "Fictional date night",
@@ -278,7 +468,7 @@
         "title": "The weight \u00b7 the shelf"
       },
       "gun": {
-        "line": "The money gun. $400.00 at Fictional trip to the shore \u2014 $400.00 thrown, $2400.00 still loaded.",
+        "line": "The money gun. $400.00 at Fictional wedding weekend \u2014 $400.00 thrown, $2400.00 still loaded.",
         "send": [
           "Send $400.00",
           "Take the shots back",
@@ -289,9 +479,47 @@
     {
       "tag": "newfoundland-1100x800",
       "water": {
-        "height": "83%",
+        "height": "50px",
         "name": "The Fund's water",
         "body": true
+      },
+      "scale": {
+        "waterBottom": 369,
+        "waterH": 50,
+        "deep": true,
+        "jars": [
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          }
+        ],
+        "read": "364%"
       }
     },
     {
@@ -338,9 +566,47 @@
     {
       "tag": "taylor-390x844",
       "water": {
-        "height": "83%",
+        "height": "100.7px",
         "name": "The Fund's water",
         "body": true
+      },
+      "scale": {
+        "waterBottom": 335,
+        "waterH": 98,
+        "deep": true,
+        "jars": [
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 335,
+            "px": "14px"
+          }
+        ],
+        "read": "364%"
       }
     },
     {
@@ -349,14 +615,14 @@
         "world": "3d",
         "cats": [
           {
-            "name": "Fictional wedding weekend",
-            "scale": 1.05,
-            "h": 80
-          },
-          {
             "name": "Fictional porch renovation",
             "scale": 0.86,
             "h": 65
+          },
+          {
+            "name": "Fictional wedding weekend",
+            "scale": 1.05,
+            "h": 80
           },
           {
             "name": "Fictional trip to the shore",
@@ -376,7 +642,7 @@
         "title": "The weight \u00b7 the shelf"
       },
       "gun": {
-        "line": "The money gun. $400.00 at Fictional wedding weekend \u2014 $400.00 thrown, $2400.00 still loaded.",
+        "line": "The money gun. $400.00 at Fictional porch renovation \u2014 $400.00 thrown, $2400.00 still loaded.",
         "send": [
           "Send $400.00",
           "Take the shots back",
@@ -387,9 +653,47 @@
     {
       "tag": "taylor-1100x800",
       "water": {
-        "height": "83%",
+        "height": "50px",
         "name": "The Fund's water",
         "body": true
+      },
+      "scale": {
+        "waterBottom": 369,
+        "waterH": 50,
+        "deep": true,
+        "jars": [
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          },
+          {
+            "h": 14,
+            "bottom": 369,
+            "px": "14px"
+          }
+        ],
+        "read": "364%"
       }
     }
   ],

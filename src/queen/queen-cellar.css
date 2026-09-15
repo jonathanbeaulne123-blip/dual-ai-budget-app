@@ -215,3 +215,18 @@
 @media (prefers-reduced-motion: reduce) { .queen-water__wave { animation: none; } }
 :root[data-motion="reduced"] .queen-water__wave { animation: none; }
 @media (forced-colors: active) { .queen-water__body, .queen-water__wave { background: Highlight; opacity: .3; } .queen-water__name { forced-color-adjust: none; background: Canvas; color: CanvasText; border: 1px solid CanvasText; } }
+
+/* ---- one dollar scale (2026-09-15): a jar stands as tall as the water would for the same amount ----
+   The rail sets --jar-px per jar from cellarScale(); it outranks the five size bands. The button stays pressable
+   (the theme's 44px) and stands the drawn jar at its foot; the 3D sculpture fills the drawn seat, not the button. */
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] { min-height: 44px; height: auto; justify-content: flex-end; overflow: visible; }
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] .queen-billjar,
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] .queen-billjar .queen-billjar__cat { width: var(--jar-px); height: var(--jar-px); flex: 0 0 auto; }
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-cellar-day__seats { min-height: 44px; overflow: visible; }
+.queen-room--cellar .queen-cellar-rail .queen-water { transition: height .18s var(--queen-ease); }
+.queen-room--cellar .queen-cellar-rail .queen-water.is-deep .queen-water__wave { display: none; }
+.queen-room--cellar .queen-cellar-rail .queen-water.is-deep .queen-water__body { border-radius: 0; box-shadow: none; }
+/* The dollar scale is exact: no frame shrinks a jar on its own; the size pane is the one way to change it. */
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] .queen-billjar,
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] .queen-billjar .queen-billjar__cat { transform: none; }
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"].is-in-gate .queen-billjar { transform: none; }
