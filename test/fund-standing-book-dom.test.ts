@@ -8,19 +8,26 @@ import { FundLedge } from "../src/FundLedge.tsx";
 import {
   accountRegister,
   accountRowAmount,
+  accountRowEdge,
   accountRowVerdict,
   accountRows,
   booksPresentationFloor,
+  categoryRowVerdict,
+  categoryShape,
   compileHousehold,
   formatCad,
   formatDateLabel,
   fundPlates,
+  phoneRail,
+  railFor,
   registerStrip,
+  sectionIsPaged,
   seedDemoHousehold,
   type DeskPlateModel,
   type FundWidgetId,
   type Household,
 } from "../src/core/index.ts";
+import { FUND_WIDGET_CARD } from "../src/FundDrawer.tsx";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -77,12 +84,35 @@ function cells(host: HTMLElement, tone: "ink" | "pencil") {
   return [...host.querySelectorAll<HTMLTableRowElement>(`[data-ledger-row="${tone}"]`)].map((tr) => [...tr.cells].map((cell) => cell.textContent));
 }
 
+/** The dividers: the fore-edge tablist's tabs, never the flags'. The rail's lead; the rest of the library follows. */
 function tabs(host: HTMLElement) {
-  return [...host.querySelectorAll<HTMLElement>('[role="tab"]')];
+  return [...host.querySelectorAll<HTMLElement>('.fund-book-edge [role="tab"]')];
+}
+function railTabs(host: HTMLElement) {
+  return [...host.querySelectorAll<HTMLElement>('.fund-book-edge [role="tab"][data-divider="rail"]')];
+}
+function libraryTabs(host: HTMLElement) {
+  return [...host.querySelectorAll<HTMLElement>('.fund-book-edge [role="tab"][data-divider="library"]')];
 }
 
+/** The page flags' tablist, if the open section has one. */
+function flagList(host: HTMLElement) {
+  return host.querySelector<HTMLElement>('.fund-book-flags[role="tablist"]');
+}
+
+function flags(host: HTMLElement) {
+  return [...host.querySelectorAll<HTMLButtonElement>('.fund-book-flags [role="tab"]')];
+}
+
+function selectedFlag(host: HTMLElement) {
+  return host.querySelector<HTMLButtonElement>('.fund-book-flags [role="tab"][aria-selected="true"]');
+}
+
+const key = (target: HTMLElement, key: string) => act(async () => { target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })); });
+
+/** The fore-edge contract, read the same way off the book and off the board: the board's tabs, and the book's rail dividers. */
 function tabContract(host: HTMLElement) {
-  return tabs(host).map((tab) => ({
+  return [...host.querySelectorAll<HTMLElement>('[role="tablist"][aria-label="Fund board"] [role="tab"]:not([data-divider="library"])')].map((tab) => ({
     id: tab.id,
     controls: tab.getAttribute("aria-controls"),
     selected: tab.getAttribute("aria-selected"),
@@ -113,8 +143,14 @@ describe("The Standing Book", () => {
         const list = host.querySelector('[role="tablist"]');
         expect(list?.getAttribute("aria-label")).toBe("Fund board");
         expect(list?.classList.contains("fund-book-edge")).toBe(true);
-        expect(tabs(host)).toHaveLength(presentation === "phone" ? 6 : 8);
-        expect(host.querySelectorAll('[aria-selected="true"]')).toHaveLength(1);
+        expect(railTabs(host)).toHaveLength(presentation === "phone" ? 6 : 8);
+        // Every permitted section is bound in after the rail: fifteen for the custodian, whom the Ask never joins.
+        expect(tabs(host)).toHaveLength(15);
+        expect(libraryTabs(host)).toHaveLength(presentation === "phone" ? 9 : 7);
+        expect(tabs(host).slice(0, presentation === "phone" ? 6 : 8)).toEqual(railTabs(host));
+        expect(host.querySelectorAll('.fund-book-edge [aria-selected="true"]')).toHaveLength(1);
+        // The Level is one reading: no page flags, so the only tablist on the page is the fore-edge.
+        expect(host.querySelectorAll('[role="tablist"]')).toHaveLength(1);
         // The room sits beside the tablist, never inside it: no button nests in a tab.
         expect(list?.querySelector("button button")).toBeNull();
         const book = tabContract(host);
@@ -130,6 +166,13 @@ describe("The Standing Book", () => {
         expect(book.map((tab) => tab.selected)).toEqual(board.map((tab) => tab.selected));
         expect(book.map((tab) => tab.current)).toEqual(board.map((tab) => tab.current));
         expect(book.map((tab) => tab.tabIndex)).toEqual(board.map((tab) => tab.tabIndex));
+        // A library divider follows the same id pattern, controls the book's own page, and is never selected while the host's section shows.
+        for (const tab of libraryTabs(host)) {
+          expect(tab.id).toBe(presentation === "desk" ? `fund-rail-tab-${tab.getAttribute("data-plate-id") ?? tab.getAttribute("data-fund-widget")}` : `fund-stage-panel-tab-${tab.getAttribute("data-fund-widget")}`);
+          expect(tab.getAttribute("aria-controls")).toBe(host.querySelector(".fund-book-room")?.id);
+          expect(tab.getAttribute("aria-selected")).toBe("false");
+          expect(tab.tabIndex).toBe(-1);
+        }
       }
       await act(async () => tabs(host)[2]!.click());
       expect(seen).toEqual(["waiting"]);
@@ -143,7 +186,6 @@ describe("The Standing Book", () => {
     try {
       await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "level", onSelect: () => {} });
       const all = tabs(host);
-      const key = (target: HTMLElement, key: string) => act(async () => { target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })); });
       all[0]!.focus();
       await key(all[0]!, "ArrowRight");
       expect(document.activeElement).toBe(all[1]);
@@ -309,16 +351,25 @@ describe("The Standing Book", () => {
     } finally { await unmount(); }
   });
 
-  it("gives every rail slot a mechanism from its own plate, and a bare floor where the plate is empty", async () => {
+  it("gives every rail slot a mechanism from its own plate, a bare floor where the plate is empty, and its first page where the section is paged", async () => {
     const household = demo();
     const models = fundPlates({ household, memberId: BIANCA, today: TODAY });
     const { host, root, unmount } = mount();
     try {
       for (const plate of models) {
-        const id = plate.id === "fund-level" ? "level" : plate.id === "saving" ? "shelf" : plate.id;
-        await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: id as FundWidgetId, onSelect: () => {}, plates: models });
+        const id = (plate.id === "fund-level" ? "level" : plate.id === "saving" ? "shelf" : plate.id) as FundWidgetId;
+        await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: id, onSelect: () => {}, plates: models });
+        const first = flags(host)[0] ?? null;
+        if (first) {
+          // A paged section opens on its first page: the chapter is the first flag's item, not the plate's reading.
+          expect(sectionIsPaged(id)).toBe(true);
+          expect(host.querySelector(".fund-book-chapter")?.textContent).toContain(first.querySelector(".fund-book-sticky-name")?.textContent);
+          expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe(id === "accounts" ? "account" : "page");
+          continue;
+        }
         expect(host.querySelector(".fund-book-chapter")?.textContent).toBe(plate.kicker);
         expect(host.querySelector(".fund-book-figure")?.textContent).toBe(plate.glance);
+        expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
         if (plate.empty) {
           expect(host.querySelector(".fund-book-floor-note")?.textContent).toBe(plate.empty);
           expect(host.querySelector(".fund-book-stand svg")).toBeNull();
@@ -330,54 +381,132 @@ describe("The Standing Book", () => {
     } finally { await unmount(); }
   });
 
-  it("stands one sticky per shared account on the head, none for a personal one, marks the Fund's card, and keeps the tablist as it was", async () => {
-    const household = seeded();
-    const before = JSON.stringify(household);
-    const rows = accountRows(household, BIANCA, TODAY);
+  it("stands one divider per rail slot in rail order, wide and labelled, each with its slot and its place in the sequence", async () => {
+    const household = demo();
     const { host, root, unmount } = mount();
     try {
       for (const presentation of ["phone", "desk"] as const) {
         await render(root, { household, memberId: BIANCA, today: TODAY, presentation, selected: "level", onSelect: () => {} });
-        const group = host.querySelector('.fund-book-head-edge[role="group"]');
-        expect(group?.getAttribute("aria-label")).toBe(`Accounts linked to the Fund, ${rows.length}`);
-        const all = stickies(host);
-        expect(all).toHaveLength(rows.length);
-        expect(all.map((sticky) => sticky.getAttribute("data-account-id"))).toEqual(rows.map((row) => row.accountId));
-        expect(all.some((sticky) => sticky.getAttribute("data-account-id") === "ACC-PERSONAL")).toBe(false);
-        expect(all.every((sticky) => sticky.tagName === "BUTTON" && sticky.getAttribute("type") === "button")).toBe(true);
-        // A separate control group: never a tab, never selected, never inside the tablist.
-        expect(all.every((sticky) => sticky.getAttribute("role") === null && sticky.getAttribute("aria-selected") === null)).toBe(true);
-        expect(host.querySelector('[role="tablist"] .fund-book-sticky')).toBeNull();
-        expect(tabs(host)).toHaveLength(presentation === "phone" ? 6 : 8);
-        expect(host.querySelectorAll('[aria-selected="true"]')).toHaveLength(1);
-        // The Fund's backing card is the one marked sticky.
-        const fund = rows.filter((row) => row.isFundCard);
-        expect(fund).toHaveLength(1);
-        const marked = all.filter((sticky) => sticky.classList.contains("is-fund-card"));
-        expect(marked.map((sticky) => sticky.getAttribute("data-account-id"))).toEqual(fund.map((row) => row.accountId));
-        expect(marked[0]!.getAttribute("aria-label")).toContain("The Fund's card");
-        // Each sticky says the figure the accounts plate says, and its state is the plate's test.
-        for (const row of rows) {
-          const sticky = all.find((item) => item.getAttribute("data-account-id") === row.accountId)!;
-          const lines = booksLines(household, row.accountId);
-          if (lines.ink.length || lines.pencil.length) {
-            expect(sticky.querySelector(".fund-book-sticky-figure")?.textContent).toBe(accountRowAmount(row));
-          }
-          const attention = (row.utilization ?? 0) > 0.3 || (row.kind !== "credit" && row.balanceCents < 0);
-          expect(sticky.getAttribute("data-sticky-state")).toBe(attention ? "attention" : "clear");
-        }
-        expect(host.querySelector('[data-account-id="ACC-VISA"]')?.getAttribute("data-sticky-state")).toBe("attention");
-        expect(host.querySelector('[data-account-id="ACC-MC"]')?.getAttribute("data-sticky-state")).toBe("clear");
+        const rail = railFor(household, BIANCA, presentation);
+        const slots = presentation === "phone" ? phoneRail(rail) : rail;
+        const marks = tabs(host);
+        expect(railTabs(host).map((mark) => mark.getAttribute("data-fund-widget"))).toEqual(slots);
+        const rest = ["level", "swipe", "contribute", "waiting", "next-out", "spoken-for", "week", "shape", "streams", "seven-days", "shelf", "record", "minutes", "ask", "accounts", "settle"]
+          .filter((id) => !slots.includes(id as FundWidgetId) && id !== "ask");
+        expect(libraryTabs(host).map((mark) => mark.getAttribute("data-fund-widget"))).toEqual(rest);
+        marks.forEach((mark, index) => {
+          const id = mark.getAttribute("data-fund-widget") as FundWidgetId;
+          expect(mark.querySelector(".fund-book-mark-name")?.textContent).toBe(FUND_WIDGET_CARD[id].name);
+          // The band is the slot: the stylesheet gives each divider its own band down the edge from it.
+          expect((mark as HTMLElement).style.getPropertyValue("--fund-book-slot")).toBe(String(index));
+          expect(mark.getAttribute("data-hue")).toBe(String((index % 6) + 1));
+          expect(mark.querySelector(".fund-book-mark-name")?.children).toHaveLength(0);
+        });
+        // The rail is never written by the book.
+        expect(JSON.stringify(household.members.find((member) => member.id === BIANCA)?.fundRail ?? null)).toBe(JSON.stringify(seedDemoHousehold({ today: TODAY, environment: "development" }).members.find((member) => member.id === BIANCA)?.fundRail ?? null));
       }
-      // A member with no personal Fund card sees every shared sticky and no mark.
-      await render(root, { household, memberId: "MEM-002", today: TODAY, presentation: "desk", selected: "level", onSelect: () => {} });
-      expect(stickies(host)).toHaveLength(accountRows(household, "MEM-002", TODAY).length);
-      expect(host.querySelector(".fund-book-sticky.is-fund-card")).toBeNull();
+    } finally { await unmount(); }
+  });
+
+  it("shows page flags only for the open section and only where that section has items; a section with no items renders no strip", async () => {
+    const household = seeded();
+    const before = JSON.stringify(household);
+    const rows = accountRows(household, BIANCA, TODAY);
+    const shape = categoryShape(household, "2026-09", TODAY);
+    const models = fundPlates({ household, memberId: BIANCA, today: TODAY });
+    const nextOut = models.find((plate) => plate.id === "next-out")!;
+    expect(nextOut.figure.primitive).toBe("track");
+    const marks = nextOut.figure.primitive === "track" ? nextOut.figure.marks : [];
+    expect(marks.length).toBeGreaterThan(1);
+    const { host, root, unmount } = mount();
+    try {
+      const expected: Partial<Record<FundWidgetId, { names: string[]; ids: string[] }>> = {
+        accounts: { names: rows.map((row) => row.name), ids: rows.map((row) => row.accountId) },
+        "next-out": { names: marks.map((mark) => mark.label), ids: marks.map((_, index) => `mark-${index}`) },
+        shape: { names: shape.map((row) => row.label), ids: shape.map((row) => row.subcategoryId) },
+      };
+      for (const id of ["level", "waiting", "settle", "next-out", "spoken-for", "week", "accounts", "shape", "shelf", "streams"] as FundWidgetId[]) {
+        await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: id, onSelect: () => {}, plates: models });
+        const want = expected[id];
+        const list = flagList(host);
+        if (!want) {
+          // The seed's waiting plate counts nothing, so it is paged by name and has no pages; every other section here is one reading.
+          expect(list).toBeNull();
+          expect(host.querySelector(".fund-book-flags-shelf")).toBeNull();
+          expect(host.querySelectorAll('[role="tablist"]')).toHaveLength(1);
+          if (id === "waiting") expect(host.querySelector(".fund-book-leaf.is-left .fund-book-pencil-note")?.textContent).toBe("Nothing on this section's list yet, so it has no pages.");
+          continue;
+        }
+        expect(list?.getAttribute("aria-label")).toBe(`Pages in ${FUND_WIDGET_CARD[id].name}`);
+        const all = flags(host);
+        expect(all.map((flag) => flag.querySelector(".fund-book-sticky-name")?.textContent)).toEqual(want.names);
+        expect(all.map((flag) => flag.getAttribute("data-flag-id"))).toEqual(want.ids);
+        expect(all.every((flag) => flag.tagName === "BUTTON" && flag.getAttribute("type") === "button")).toBe(true);
+        // Two tablists, siblings: neither contains the other, and each has exactly one selected tab and one in the tab order.
+        expect(host.querySelectorAll('[role="tablist"]')).toHaveLength(2);
+        expect(host.querySelector('[role="tablist"] [role="tablist"]')).toBeNull();
+        expect(host.querySelector('.fund-book-edge .fund-book-sticky')).toBeNull();
+        expect(all.filter((flag) => flag.getAttribute("aria-selected") === "true")).toHaveLength(1);
+        expect(all.filter((flag) => flag.tabIndex === 0)).toHaveLength(1);
+        expect(all[0]!.getAttribute("aria-selected")).toBe("true");
+        // The divider for the open section is the selected one, whether it leads on the rail or follows from the library.
+        const selectedDividers = tabs(host).filter((tab) => tab.getAttribute("aria-selected") === "true");
+        expect(selectedDividers.map((tab) => tab.getAttribute("data-fund-widget"))).toEqual([id]);
+        expect(selectedDividers[0]!.getAttribute("data-divider")).toBe(railFor(household, BIANCA, "desk").includes(id) ? "rail" : "library");
+        // The flags control the page: a real tabpanel labelled by the open flag.
+        const page = document.getElementById(all[0]!.getAttribute("aria-controls")!)!;
+        expect(page.classList.contains("fund-book-room")).toBe(true);
+        expect(page.getAttribute("role")).toBe("tabpanel");
+        expect(page.getAttribute("aria-labelledby")).toBe(all[0]!.id);
+        // Colour is position in the sequence; state is the item's own rule and nothing else.
+        all.forEach((flag, index) => expect(flag.getAttribute("data-hue")).toBe(String((index % 6) + 1)));
+        if (id === "accounts") {
+          expect(all.some((flag) => flag.getAttribute("data-account-id") === "ACC-PERSONAL")).toBe(false);
+          for (const row of rows) {
+            const flag = all.find((item) => item.getAttribute("data-account-id") === row.accountId)!;
+            expect(flag.getAttribute("data-sticky-state")).toBe(accountRowEdge(row));
+            expect(flag.getAttribute("aria-label")).toContain(row.accessibilityName);
+            expect(flag.textContent).not.toContain("$");
+          }
+          expect(host.querySelector('[data-account-id="ACC-VISA"]')?.getAttribute("data-sticky-state")).toBe("attention");
+          expect(host.querySelector('[data-account-id="ACC-MC"]')?.getAttribute("data-sticky-state")).toBe("clear");
+          const fund = rows.filter((row) => row.isFundCard);
+          expect(fund).toHaveLength(1);
+          expect(all.filter((flag) => flag.classList.contains("is-fund-card")).map((flag) => flag.getAttribute("data-account-id"))).toEqual(fund.map((row) => row.accountId));
+        }
+        if (id === "shape") {
+          shape.forEach((row, index) => expect(all[index]!.getAttribute("data-sticky-state")).toBe(row.verdict === "above" ? "attention" : "clear"));
+          expect(all.filter((flag) => flag.getAttribute("data-sticky-state") === "attention")).toHaveLength(shape.filter((row) => row.verdict === "above").length);
+        }
+        if (id === "next-out") {
+          // A mark carries no rule of its own, so its flag carries no state — never a borrowed or invented one.
+          expect(all.every((flag) => flag.getAttribute("data-sticky-state") === null)).toBe(true);
+        }
+      }
+      // A waiting plate that counts cards offers one flag per card; an uncountable tally offers none.
+      const three = TEN.map((id) => id === "waiting" ? plateWith(id, "attention", { primitive: "tally", count: 3 }) : plateWith(id, "clear"));
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "waiting", onSelect: () => {}, plates: three });
+      expect(flags(host).map((flag) => flag.querySelector(".fund-book-sticky-name")?.textContent)).toEqual(["Card 1 of 3", "Card 2 of 3", "Card 3 of 3"]);
+      expect(host.querySelectorAll(".fund-book-pocket-svg .fund-book-card")).toHaveLength(3);
+      expect(host.querySelectorAll(".fund-book-pocket-svg .fund-book-card.is-drawn")).toHaveLength(1);
+      const many = TEN.map((id) => id === "waiting" ? plateWith(id, "attention", { primitive: "tally", count: 40 }) : plateWith(id, "clear"));
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "waiting", onSelect: () => {}, plates: many });
+      expect(flagList(host)).toBeNull();
+      // A section that is one reading never grows a strip, whatever its figure counts.
+      const tallies = TEN.map((id) => id === "settle" ? plateWith(id, "live", { primitive: "tally", count: 4 }) : id === "week" ? plateWith(id, "live", { primitive: "track", days: 7, room: 28, marks: [{ day: 2, cents: 100, label: "Hydro" }, { day: 5, cents: 200, label: "Rent" }] }) : plateWith(id, "clear"));
+      for (const id of ["settle", "week", "streams"] as FundWidgetId[]) {
+        await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: id, onSelect: () => {}, plates: tallies });
+        expect(flagList(host)).toBeNull();
+      }
+      // The phone shows the same flags for the same section, one row.
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "phone", selected: "next-out", onSelect: () => {} });
+      expect(host.querySelector(".fund-book.is-phone .fund-book-flags[role=\"tablist\"]")).not.toBeNull();
+      expect(flags(host)).toHaveLength(marks.length);
       expect(JSON.stringify(household)).toBe(before);
     } finally { await unmount(); }
   });
 
-  it("picks a sticky as a deep link: onSelect(\"accounts\") fires, the account is focused, and the spread becomes its books view", async () => {
+  it("opens an item's own page from its flag: an account's books view, an obligation with the gate beneath it, a category against its band", async () => {
     const household = seeded();
     const before = JSON.stringify(household);
     const level = fundPlates({ household, memberId: BIANCA, today: TODAY }).find((plate) => plate.id === "fund-level")!;
@@ -385,20 +514,18 @@ describe("The Standing Book", () => {
     const seen: FundWidgetId[] = [];
     const { host, root, unmount } = mount();
     try {
-      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "level", onSelect: (id) => seen.push(id) });
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
-      await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-VISA"]')!.click());
-      expect(seen).toEqual(["accounts"]);
-      // The spread is the book's own: it has already turned, before the host answers.
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
-      // The host answers by selecting the chapter, as it does for a bookmark.
       await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: (id) => seen.push(id) });
+      const tabsBefore = tabContract(host);
+      await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-VISA"]')!.click());
+      // A flag is a page inside the section, not a deep link: the host is never asked to move.
+      expect(seen).toEqual([]);
       const book = host.querySelector(".fund-book")!;
       expect(book.getAttribute("data-fund-book-spread")).toBe("account");
       expect(book.getAttribute("data-fund-book-account")).toBe("ACC-VISA");
-      expect(host.querySelector('[data-account-id="ACC-VISA"]')?.getAttribute("aria-pressed")).toBe("true");
-      expect(host.querySelectorAll('.fund-book-sticky[aria-pressed="true"]')).toHaveLength(1);
-      expect(host.querySelector('[data-fund-widget="accounts"]')?.getAttribute("aria-selected")).toBe("true");
+      expect(book.getAttribute("data-fund-book-page")).toBe("ACC-VISA");
+      expect(selectedFlag(host)?.getAttribute("data-account-id")).toBe("ACC-VISA");
+      expect(host.querySelectorAll('.fund-book-flags [aria-selected="true"]')).toHaveLength(1);
+      expect(host.querySelector(".fund-book-room")?.getAttribute("aria-labelledby")).toBe(selectedFlag(host)?.id);
       // The books view: the counted register as the Books page prints it, row for row, in ink on the left wall.
       const lines = booksLines(household, "ACC-VISA");
       expect(lines.ink.length).toBeGreaterThan(2);
@@ -406,89 +533,177 @@ describe("The Standing Book", () => {
         formatDateLabel(row.date), row.memo, row.debitCents ? formatCad(row.debitCents) : "", row.creditCents ? formatCad(row.creditCents) : "", formatCad(row.runningCents),
       ]));
       expect(host.querySelector(".fund-book-leaf.is-left .fund-book-lines.is-ink")).not.toBeNull();
-      expect(host.querySelector(".fund-book-leaf.is-right .fund-book-lines")).toBeNull();
       expect(cells(host, "pencil")).toEqual([]);
-      // The chapter and figure are the account's, said the plate's way; the running head keeps the Fund's level; the plinth carries the account.
       expect(host.querySelector(".fund-book-chapter")?.textContent).toBe("Visa");
       expect(host.querySelector(".fund-book-figure")?.textContent).toBe(accountRowAmount(visa));
       expect(host.querySelector(".fund-book-head-level")?.textContent).toBe(level.glance);
-      expect(host.querySelector(".fund-book-plinth-footing")?.textContent).toContain("Visa");
       expect(host.querySelector(".fund-book-plinth-footing")?.textContent).toContain("the Fund's card");
       expect(host.querySelector(".fund-book-plinth-verdict")?.textContent).toBe(accountRowVerdict(visa));
-      // Nothing here is a tab; the tablist is exactly what it was.
-      expect(tabs(host)).toHaveLength(8);
-      expect(host.querySelectorAll('[aria-selected="true"]')).toHaveLength(1);
-      // Picking the same sticky again lets go of it: the chapter shows its plate, as before.
-      await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-VISA"]')!.click());
-      expect(seen).toEqual(["accounts", "accounts"]);
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
-      expect(host.querySelector(".fund-book-chapter")?.textContent).toBe("The accounts");
-      // The host moving to another chapter lets the account go, and it does not linger: the accounts chapter comes back as its plate.
-      await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-SAVINGS"]')!.click());
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe("ACC-SAVINGS");
-      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "waiting", onSelect: (id) => seen.push(id) });
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
-      expect(host.querySelectorAll('.fund-book-sticky[aria-pressed="true"]')).toHaveLength(0);
-      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: (id) => seen.push(id) });
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBeNull();
-      // A bookmark pressed on the book itself lets the account go the same way.
-      await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-SAVINGS"]')!.click());
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
-      await act(async () => host.querySelector<HTMLButtonElement>('[data-fund-widget="level"]')!.click());
-      expect(seen.at(-1)).toBe("level");
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
+      // The fore-edge is exactly what it was.
+      expect(tabContract(host)).toEqual(tabsBefore);
+      // Next out: the flag and the gate are one cursor. Picking a flag stands that mark in the gate; the gate's own keys move the flag.
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "next-out", onSelect: (id) => seen.push(id) });
+      const nextOut = fundPlates({ household, memberId: BIANCA, today: TODAY }).find((plate) => plate.id === "next-out")!;
+      const marks = nextOut.figure.primitive === "track" ? nextOut.figure.marks : [];
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("page");
+      expect(host.querySelector(".fund-book-chapter")?.textContent).toBe(marks[0]!.label);
+      expect(host.querySelector(".fund-book-figure")?.textContent).toBe(formatCad(marks[0]!.cents));
+      expect(host.querySelector(".fund-book-gate-view")).not.toBeNull();
+      await act(async () => flags(host)[2]!.click());
+      expect(host.querySelector(".fund-book-chapter")?.textContent).toBe(marks[2]!.label);
+      expect(host.querySelector(".fund-book-figure")?.textContent).toBe(formatCad(marks[2]!.cents));
+      expect(host.querySelector(".fund-book-verdict")?.textContent).toContain(`day ${marks[2]!.day}`);
+      expect([...host.querySelectorAll(".fund-book-gate-mark")].map((mark) => mark.getAttribute("aria-current"))).toEqual(marks.map((_, index) => index === 2 ? "true" : null));
+      expect(host.querySelector(".fund-book-gate-line")?.textContent).toContain(`${marks[2]!.label} stands in the gate`);
+      expect(host.querySelector(".fund-book-plinth-footing")?.textContent).toBe(`Next out · page 3 of ${marks.length}`);
+      await key(host.querySelector<HTMLElement>(".fund-book-gate-view")!, "ArrowLeft");
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe("mark-1");
+      expect(host.querySelector(".fund-book-chapter")?.textContent).toBe(marks[1]!.label);
+      await act(async () => host.querySelector<HTMLButtonElement>(".fund-book-gate-step:last-of-type")!.click());
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe("mark-2");
+      // A mark is ghost paper: standing, never projected pencil, never a fold.
+      expect(host.querySelector(".is-projected.is-standing")).toBeNull();
+      expect(host.querySelectorAll(".fund-book-ghost")).toHaveLength(marks.length);
+      // The shape: a category page draws the row's own band and month to date, and says the row's own verdict.
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "shape", onSelect: (id) => seen.push(id) });
+      const shape = categoryShape(household, "2026-09", TODAY);
+      const over = shape.findIndex((row) => row.verdict === "above");
+      const unknown = shape.findIndex((row) => row.verdict === "unknown" || row.verdict === "one-off");
+      expect(over).toBeGreaterThanOrEqual(0);
+      expect(unknown).toBeGreaterThanOrEqual(0);
+      await act(async () => flags(host)[over]!.click());
+      expect(host.querySelector(".fund-book-chapter")?.textContent).toBe(shape[over]!.label);
+      expect(host.querySelector(".fund-book-figure")?.textContent).toBe(`${formatCad(shape[over]!.monthToDateCents)} this month`);
+      expect(host.querySelector(".fund-book-verdict")?.textContent).toBe(categoryRowVerdict(shape[over]!));
+      expect(host.querySelector(".fund-book-plinth-verdict")?.textContent).toBe(categoryRowVerdict(shape[over]!));
+      expect(host.querySelector(".fund-book-leaf.is-right .fund-book-pencil-note")?.textContent).toContain(formatCad(shape[over]!.bandHighCents));
+      expect(host.querySelectorAll(".fund-book-stand .fund-book-panel")).toHaveLength(2);
+      expect(host.querySelector(".fund-book-stand .fund-book-corner")).toBeNull();
+      expect(host.querySelector(".is-projected.is-standing")).toBeNull();
+      await act(async () => flags(host)[unknown]!.click());
+      expect(host.querySelector(".fund-book-chapter")?.textContent).toBe(shape[unknown]!.label);
+      expect(host.querySelector(".fund-book-stand svg")).toBeNull();
+      expect(host.querySelector(".fund-book-floor-note")?.textContent).toContain("Not enough history yet");
+      expect(host.querySelector(".fund-book-leaf.is-right .fund-book-pencil-note")?.textContent).toContain("a band would be a guess");
+      expect(seen).toEqual([]);
       expect(JSON.stringify(household)).toBe(before);
     } finally { await unmount(); }
   });
 
-  it("turns the spread for a sticky whether or not the accounts chapter is on the rail, and syncs the host only when it can accept it", async () => {
+  it("remembers the page each section was left on, opens a section never visited on its first, and roves each strip on its own", async () => {
+    const household = seeded();
+    const { host, root, unmount } = mount();
+    try {
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: () => {} });
+      await act(async () => flags(host)[3]!.click());
+      const third = flags(host)[3]!.getAttribute("data-flag-id");
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe(third);
+      // The host moves to a section never visited: its first page opens, and no account flag survives on the page.
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "next-out", onSelect: () => {} });
+      expect(host.querySelectorAll('.fund-book-flags [aria-selected="true"]')).toHaveLength(1);
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe("mark-0");
+      expect(host.querySelector("[data-account-id]")).toBeNull();
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBeNull();
+      await act(async () => flags(host)[1]!.click());
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe("mark-1");
+      // To a section with no pages: no strip, no selected flag anywhere, the plate's own reading.
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "level", onSelect: () => {} });
+      expect(flagList(host)).toBeNull();
+      expect(host.querySelector('[role="tab"][aria-selected="true"]')?.getAttribute("data-fund-widget")).toBe("level");
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-page")).toBeNull();
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
+      // Back to the accounts: the page it was left on, as a reader's binder keeps its place — and next out keeps its own.
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: () => {} });
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe(third);
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe(third);
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "next-out", onSelect: () => {} });
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe("mark-1");
+      // A section visited for the first time still opens on its first page.
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "shape", onSelect: () => {} });
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe(flags(host)[0]!.getAttribute("data-flag-id"));
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: () => {} });
+      expect(selectedFlag(host)?.getAttribute("data-flag-id")).toBe(third);
+      // Nothing about the place is written anywhere: the household is untouched and no storage is used.
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-page")).toBe(third);
+      // Arrows in the flag strip rove the flags and never the dividers; arrows on a divider rove the dividers and never the flags.
+      const strip = flags(host);
+      strip[0]!.focus();
+      await key(strip[0]!, "ArrowRight");
+      expect(document.activeElement).toBe(strip[1]);
+      await key(strip[1]!, "End");
+      expect(document.activeElement).toBe(strip[strip.length - 1]);
+      await key(strip[strip.length - 1]!, "ArrowRight");
+      expect(document.activeElement).toBe(strip[0]);
+      await key(strip[0]!, "ArrowUp");
+      expect(document.activeElement).toBe(strip[strip.length - 1]);
+      await key(strip[strip.length - 1]!, "Home");
+      expect(document.activeElement).toBe(strip[0]);
+      // Roving is focus only: the open page is still the one remembered, as the board's own dividers behave.
+      expect(selectedFlag(host)).toBe(strip[3]);
+      const dividers = tabs(host);
+      const selectedDivider = dividers.find((tab) => tab.tabIndex === 0)!;
+      selectedDivider.focus();
+      await key(selectedDivider, "ArrowRight");
+      expect(dividers).toContain(document.activeElement);
+      expect(strip).not.toContain(document.activeElement);
+      // One tab stop per strip: the selected divider and the open flag; every other tab is reached by arrow.
+      expect(dividers.filter((tab) => tab.tabIndex === 0)).toHaveLength(1);
+      expect(strip.filter((flag) => flag.tabIndex === 0)).toHaveLength(1);
+      expect(strip.filter((flag) => flag.tabIndex === 0)[0]).toBe(selectedFlag(host));
+      // Every flag is at least a 44px hit target by rule, however thin the paper: the stylesheet says so on the button itself.
+      expect(strip.every((flag) => flag.classList.contains("fund-book-sticky"))).toBe(true);
+    } finally { await unmount(); }
+  });
+
+  it("lets a phone member whose rail has no accounts slot open the accounts section from a library divider and read an account's page, without moving the host", async () => {
     const household = seeded();
     const before = JSON.stringify(household);
-    // Bianca's phone rail and Jonathan's desk rail carry no accounts chapter; Bianca's desk rail does.
-    const cases = [
-      { memberId: BIANCA, presentation: "phone" as const, onRail: false },
-      { memberId: "MEM-002", presentation: "desk" as const, onRail: false },
-      { memberId: "MEM-002", presentation: "phone" as const, onRail: false },
-      { memberId: BIANCA, presentation: "desk" as const, onRail: true },
-    ];
-    for (const { memberId, presentation, onRail } of cases) {
-      const { host, root, unmount } = mount();
-      const seen: FundWidgetId[] = [];
-      try {
-        await render(root, { household, memberId, today: TODAY, presentation, selected: "level", onSelect: (id) => seen.push(id) });
-        expect([...host.querySelectorAll('[role="tab"]')].some((tab) => tab.getAttribute("data-fund-widget") === "accounts")).toBe(onRail);
-        const tabsBefore = tabContract(host);
-        const all = stickies(host);
-        expect(all.length).toBe(accountRows(household, memberId, TODAY).length);
-        for (const sticky of all) {
-          const accountId = sticky.getAttribute("data-account-id")!;
-          const lines = booksLines(household, accountId);
-          await act(async () => sticky.click());
-          // The spread turns and the press shows, with the host's tab state left exactly as the host has it.
-          expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
-          expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe(accountId);
-          expect(sticky.getAttribute("aria-pressed")).toBe("true");
-          expect(host.querySelectorAll('.fund-book-sticky[aria-pressed="true"]')).toHaveLength(1);
-          expect(cells(host, "ink").map((row) => row[4])).toEqual(lines.ink.map((row) => formatCad(row.runningCents)));
-          if (!lines.ink.length) expect(host.querySelector(".fund-book-leaf.is-left .fund-book-pencil-note")?.textContent).toBe("No postings yet.");
-          expect(tabContract(host)).toEqual(tabsBefore);
-          await act(async () => sticky.click());
-          expect(sticky.getAttribute("aria-pressed")).toBe("false");
-          expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
-        }
-        // onSelect("accounts") fires once per press only where the rail can take it; never where it would be snapped back.
-        expect(seen).toEqual(onRail ? all.flatMap(() => ["accounts", "accounts"] as FundWidgetId[]) : []);
-        // On the phone a bookmark press lets the account go, so what is pressed is what is on the page.
-        await act(async () => all[0]!.click());
-        expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
-        await act(async () => tabs(host)[1]!.click());
-        expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
-        expect(host.querySelectorAll('.fund-book-sticky[aria-pressed="true"]')).toHaveLength(0);
-        expect(host.querySelector(".fund-book-head-shelf")?.getAttribute("data-head-more")).toBe("none");
-      } finally { await unmount(); }
-    }
-    expect(JSON.stringify(household)).toBe(before);
+    const seen: FundWidgetId[] = [];
+    const { host, root, unmount } = mount();
+    try {
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "phone", selected: "level", onSelect: (id) => seen.push(id) });
+      expect(railFor(household, BIANCA, "phone")).not.toContain("accounts");
+      expect(railTabs(host).map((tab) => tab.getAttribute("data-fund-widget"))).not.toContain("accounts");
+      const tabsBefore = tabContract(host);
+      const accounts = host.querySelector<HTMLButtonElement>('.fund-book-edge [data-fund-widget="accounts"]')!;
+      expect(accounts.getAttribute("data-divider")).toBe("library");
+      await act(async () => accounts.click());
+      // The book opened the section itself: the host was never asked, the rail's ids and targets are what they were,
+      // and the one selected tab on the fore-edge is now the library divider, so the tablist still has exactly one.
+      expect(seen).toEqual([]);
+      expect(tabContract(host).map((tab) => [tab.id, tab.controls])).toEqual(tabsBefore.map((tab) => [tab.id, tab.controls]));
+      expect(tabContract(host).every((tab) => tab.selected === "false" && tab.tabIndex === -1)).toBe(true);
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-section")).toBe("accounts");
+      expect(accounts.getAttribute("aria-selected")).toBe("true");
+      expect(host.querySelectorAll('.fund-book-edge [aria-selected="true"]')).toHaveLength(1);
+      expect(flagList(host)?.getAttribute("aria-label")).toBe("Pages in The accounts");
+      const rows = accountRows(household, BIANCA, TODAY);
+      expect(flags(host)).toHaveLength(rows.length);
+      // An account's page, on the phone: the counted lines as the Books page prints them, and the pop-up control.
+      await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-CHEQUING"]')!.click());
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe("ACC-CHEQUING");
+      const lines = booksLines(household, "ACC-CHEQUING");
+      expect(lines.ink.length).toBeGreaterThan(0);
+      expect(cells(host, "ink").map((row) => row[4])).toEqual(lines.ink.map((row) => formatCad(row.runningCents)));
+      expect(host.querySelector(".fund-book-raise")).not.toBeNull();
+      expect(seen).toEqual([]);
+      // A rail divider lets the library section go through the host, as always.
+      await act(async () => railTabs(host)[2]!.click());
+      expect(seen).toEqual(["waiting"]);
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "phone", selected: "waiting", onSelect: (id) => seen.push(id) });
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-section")).toBe("waiting");
+      expect(accounts.getAttribute("aria-selected")).toBe("false");
+      // Reopened from the library, the section is on the page it was left on; the host moving on lets it go again.
+      await act(async () => accounts.click());
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe("ACC-CHEQUING");
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "phone", selected: "level", onSelect: (id) => seen.push(id) });
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-section")).toBe("level");
+      // A contributor's phone gets the Ask as well; nobody gets a section they may not open.
+      await render(root, { household, memberId: "MEM-002", today: TODAY, presentation: "phone", selected: "level", onSelect: () => {} });
+      expect(tabs(host)).toHaveLength(16);
+      expect(tabs(host).map((tab) => tab.getAttribute("data-fund-widget"))).toContain("ask");
+      expect(JSON.stringify(household)).toBe(before);
+    } finally { await unmount(); }
   });
 
   it("captions the pop-up with the paper actually folded on the page, never the whole register", async () => {
@@ -517,7 +732,6 @@ describe("The Standing Book", () => {
           expect(caption).toBe("One line is not a walk yet.");
           expect(standing).toBe(0);
         }
-        await act(async () => host.querySelector<HTMLButtonElement>(`[data-account-id="${accountId}"]`)!.click());
       }
       // The sentence by hand: a windowed register, a whole one, a windowed pencil, and a single line.
       const row = (runningCents: number) => ({ entryId: "e", date: "2026-09-01", memo: "m", debitCents: 0, creditCents: 0, runningCents, recognized: true });
@@ -615,8 +829,8 @@ describe("The Standing Book", () => {
       expect(second.host.querySelector(".fund-book-raise")?.getAttribute("aria-expanded")).toBe("true");
       await act(async () => second.host.querySelector<HTMLButtonElement>(".fund-book-raise")!.click());
       expect(second.host.querySelector(".fund-book-popup")?.getAttribute("data-fund-book-popup")).toBe("flat");
-      // On the phone the head is still a group of real buttons above the room.
-      expect(second.host.querySelector(".fund-book.is-phone .fund-book-head-edge[role=\"group\"]")).not.toBeNull();
+      // On the phone the flags are still a tablist of real buttons above the room.
+      expect(second.host.querySelector(".fund-book.is-phone .fund-book-flags[role=\"tablist\"]")).not.toBeNull();
       expect(stickies(second.host).length).toBeGreaterThan(0);
     } finally { await second.unmount(); }
   });
@@ -631,7 +845,8 @@ describe("The Standing Book", () => {
       await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: () => {} });
       for (const row of empty) {
         const sticky = host.querySelector<HTMLButtonElement>(`[data-account-id="${row.accountId}"]`)!;
-        expect(sticky.querySelector(".fund-book-sticky-figure")?.textContent).toBe("No postings yet");
+        expect(sticky.getAttribute("aria-label")).toContain("No postings yet");
+        expect(sticky.getAttribute("aria-label")).not.toContain("$");
         expect(sticky.textContent).not.toContain("$");
         await act(async () => sticky.click());
         expect(host.querySelector(".fund-book-figure")?.textContent).toBe("No postings yet");
@@ -641,11 +856,12 @@ describe("The Standing Book", () => {
         expect(host.querySelector(".fund-book-floor-note")?.textContent).toBe("No postings yet. Nothing to raise.");
         expect(host.querySelector(".fund-book-plinth-verdict")?.textContent).toBe("No postings yet.");
         expect(host.querySelector(".fund-book-floor")?.textContent).not.toContain("$0.00");
-        await act(async () => sticky.click());
       }
-      // A posted account with a real figure still prints it.
+      // A posted account with a real figure still says it, in the flag's spoken name and on the page.
       const posted = rows.find((row) => booksLines(household, row.accountId).ink.length > 0)!;
-      expect(host.querySelector(`[data-account-id="${posted.accountId}"] .fund-book-sticky-figure`)?.textContent).toBe(accountRowAmount(posted));
+      expect(host.querySelector(`[data-account-id="${posted.accountId}"]`)?.getAttribute("aria-label")).toContain(accountRowAmount(posted));
+      await act(async () => host.querySelector<HTMLButtonElement>(`[data-account-id="${posted.accountId}"]`)!.click());
+      expect(host.querySelector(".fund-book-figure")?.textContent).toBe(accountRowAmount(posted));
     } finally { await unmount(); }
   });
 
@@ -673,7 +889,7 @@ describe("The Standing Book", () => {
       await open(on.host);
       expect(document.querySelector(".fund-board.is-phone")).toBeNull();
       expect(document.querySelector(".fund-book.is-phone [role='tablist']")).not.toBeNull();
-      expect(document.querySelectorAll(".fund-book [role='tab']")).toHaveLength(6);
+      expect(document.querySelectorAll(".fund-book .fund-book-edge [role='tab'][data-divider='rail']")).toHaveLength(6);
       await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     } finally { await on.unmount(); sessionStorage.clear(); }
   });

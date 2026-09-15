@@ -11,7 +11,7 @@ import { formatCad } from "./money.ts";
 import { isCreditKind } from "./accounts.ts";
 import { accountRows, chosenAccount, type AccountRow } from "./accountsWidget.ts";
 import { claimRemainingCents, outstandingClaims } from "./appointments.ts";
-import { categoryShape } from "./categoryShape.ts";
+import { categoryShape, type CategoryShape } from "./categoryShape.ts";
 import { fundWalk, fundWeekMovements, type FundWalk, type WalkPoint } from "./fundWalk.ts";
 import {
   householdFundContributionMotions,
@@ -356,6 +356,43 @@ function shelfPlate(household: Household): DeskPlateModel {
   };
 }
 
+/** The shape plate's one rule for a category row, shared with the Standing Book's page flags: over its own trailing shape, or not. */
+export function categoryRowEdge(row: CategoryShape): PlateEdge {
+  return row.verdict === "above" ? "attention" : "clear";
+}
+
+/** The row's month-to-date figure the way the plate would print it. */
+export function categoryRowAmount(row: CategoryShape): string {
+  return `${formatCad(row.monthToDateCents)} this month`;
+}
+
+/** The plate's sentence for one row. An unknown or one-off shape says so rather than drawing one. */
+export function categoryRowVerdict(row: CategoryShape): string {
+  switch (row.verdict) {
+    case "above": return `${row.label} has run ${formatCad(row.deltaCents)} over its own trailing shape.`;
+    case "in-shape": return `${row.label} is inside its own trailing shape.`;
+    case "quiet": return `${row.label} is running under its own trailing shape.`;
+    case "one-off": return `${row.label} has one posting this month and no shape yet.`;
+    case "unknown": return `${row.label} has not enough history yet to draw a shape.`;
+    default: {
+      const never: never = row.verdict;
+      return never;
+    }
+  }
+}
+
+/** Whether a row's band is a shape and not a guess: three real months behind it. */
+export function categoryRowHasShape(row: CategoryShape): boolean {
+  return row.verdict === "above" || row.verdict === "in-shape" || row.verdict === "quiet";
+}
+
+/** The plate's mechanism for one row: the band's low and high and the month to date, as one strip; an empty strip where there is no shape to draw. */
+export function categoryRowFigure(row: CategoryShape): PlateFigure {
+  return categoryRowHasShape(row)
+    ? { primitive: "spark", points: [row.bandLowCents, row.bandHighCents, row.monthToDateCents], room: TRACK_ROOM }
+    : { primitive: "spark", points: [], room: TRACK_ROOM };
+}
+
 /** Six sparklines is a desktop idea — the plate only ever names the worst one. */
 function shapePlate(household: Household, monthKey: MonthKey, today: DateKey): DeskPlateModel {
   const rows = categoryShape(household, monthKey, today);
@@ -369,18 +406,16 @@ function shapePlate(household: Household, monthKey: MonthKey, today: DateKey): D
     kicker: "The shape",
     glance: worst ? `${worst.label} ${formatCad(worst.deltaCents)} above` : comparable.length ? "Nothing over shape" : "Not enough yet",
     verdict: worst
-      ? `${worst.label} has run ${formatCad(worst.deltaCents)} over its own trailing shape.`
+      ? categoryRowVerdict(worst)
       : comparable.length
         ? "No category with enough history is above its own trailing shape."
         : "Not enough history yet to draw a shape for anything.",
     footing: over.length > 1
       ? `${over.length} categories are running over their own shape this month.`
       : "Each category against its own trailing three months. Never a household total.",
-    edge: worst ? "attention" : "clear",
+    edge: worst ? categoryRowEdge(worst) : "clear",
     copperVerdict: Boolean(worst),
-    figure: worst
-      ? { primitive: "spark", points: [worst.bandLowCents, worst.bandHighCents, worst.monthToDateCents], room: TRACK_ROOM }
-      : { primitive: "spark", points: [], room: TRACK_ROOM },
+    figure: worst ? categoryRowFigure(worst) : { primitive: "spark", points: [], room: TRACK_ROOM },
     empty: rows.length ? null : "Not enough history yet to draw a shape for anything.",
     // No office instrument is a real match for "a category against its own
     // history" — the blotter is the household's own income/expense read,

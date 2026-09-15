@@ -7,19 +7,31 @@ import {
   accountRowEdge,
   accountRowFigure,
   accountRows,
+  binderDividers,
   bookHeadState,
   bookmarkStance,
+  categoryRowEdge,
+  categoryRowFigure,
+  categoryRowHasShape,
+  categoryRowVerdict,
+  categoryShape,
   concertinaCornerX,
   concertinaPanels,
   concertinaView,
+  figureFlags,
+  flagHue,
   floorRulings,
   foreEdgeIsFlush,
+  formatCad,
   fundPlates,
   fundStandingBookEnabled,
   gateIndex,
   gateShift,
+  openPage,
+  PAGED_SECTIONS,
   pocketCards,
   registerStrip,
+  sectionIsPaged,
   ribbonHeights,
   seedDemoHousehold,
   sparkHeights,
@@ -28,6 +40,8 @@ import {
   wellColumns,
   wellWater,
   type AccountRow,
+  type CategoryShape,
+  type FundWidgetId,
   type PlateEdge,
 } from "../src/core/index.ts";
 
@@ -250,6 +264,76 @@ describe("the register as a strip", () => {
   });
 });
 
+describe("the binder's two levels", () => {
+  it("pages a section by name, never by the shape of its figure, and offers flags only off a list the plate already carries", () => {
+    expect([...PAGED_SECTIONS].sort()).toEqual(["accounts", "next-out", "shape", "waiting"]);
+    for (const id of ["level", "week", "settle", "streams", "shelf", "spoken-for", "swipe", "contribute"] as FundWidgetId[]) expect(sectionIsPaged(id)).toBe(false);
+    // A strip offers one flag per mark, in the strip's order; a countable pocket one per card; everything else is one page.
+    const marks = figureFlags({ primitive: "track", days: 31, room: 28, marks: [{ day: 18, cents: 14230, label: "Hydro" }, { day: 25, cents: 185000, label: "Rent" }] });
+    expect(marks).toEqual([{ id: "mark-0", name: "Hydro", detail: "day 18" }, { id: "mark-1", name: "Rent", detail: "day 25" }]);
+    expect(figureFlags({ primitive: "tally", count: 3 }).map((flag) => flag.name)).toEqual(["Card 1 of 3", "Card 2 of 3", "Card 3 of 3"]);
+    expect(figureFlags({ primitive: "tally", count: 0 })).toEqual([]);
+    expect(figureFlags({ primitive: "tally", count: 40 })).toEqual([]);
+    expect(figureFlags({ primitive: "spark", points: [1, 2, 3], room: 28 })).toEqual([]);
+    expect(figureFlags({ primitive: "gauge", pct: .5, threshold: .3, label: "x" })).toEqual([]);
+    expect(figureFlags({ primitive: "fill", wells: [{ savedCents: 1, targetCents: 2, name: "w" }] })).toEqual([]);
+    expect(figureFlags({ primitive: "pair", upCents: 1, downCents: 2, upLabel: "a", downLabel: "b", room: 28 })).toEqual([]);
+    // No flag carries a figure or a state of its own: the marks' cents stay on the strip.
+    for (const flag of marks) expect(JSON.stringify(flag)).not.toMatch(/cents|edge|\$/);
+  });
+
+  it("opens a section never visited on its first page, reopens a visited one on the page it was left on, and clamps onto the flags there are", () => {
+    expect(openPage({}, "accounts", 12)).toBe(0);
+    expect(openPage({ accounts: 4 }, "accounts", 12)).toBe(4);
+    // Another section's page is never this section's: next-out opens on its first page whatever the accounts left open.
+    expect(openPage({ accounts: 4 }, "next-out", 6)).toBe(0);
+    expect(openPage({ accounts: 4, "next-out": 2 }, "next-out", 6)).toBe(2);
+    expect(openPage({ accounts: 4, "next-out": 2 }, "accounts", 12)).toBe(4);
+    // Clamped onto the flags the section has now, never past the end.
+    expect(openPage({ "next-out": 9 }, "next-out", 6)).toBe(5);
+    expect(openPage({ "next-out": -1 }, "next-out", 6)).toBe(0);
+    expect(openPage({ "next-out": 2 }, "next-out", 0)).toBe(0);
+    // Position in the sequence, one to six, round and round; never a meaning.
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 11, 12].map(flagHue)).toEqual([1, 2, 3, 4, 5, 6, 1, 2, 6, 1]);
+    expect(flagHue(-1)).toBe(6);
+    expect(flagHue(Number.NaN)).toBe(1);
+  });
+
+  it("binds a divider for every permitted section: the rail's slots first in rail order, then the rest of the library, nothing twice", () => {
+    const permitted: FundWidgetId[] = ["level", "swipe", "contribute", "waiting", "next-out", "spoken-for", "week", "shape", "streams", "seven-days", "shelf", "record", "minutes", "accounts", "settle"];
+    const slots: FundWidgetId[] = ["level", "swipe", "waiting", "settle", "next-out", "spoken-for"];
+    const dividers = binderDividers(slots, permitted);
+    expect(dividers.slice(0, 6)).toEqual(slots);
+    expect(dividers.slice(6)).toEqual(["contribute", "week", "shape", "streams", "seven-days", "shelf", "record", "minutes", "accounts"]);
+    expect(new Set(dividers).size).toBe(dividers.length);
+    expect(dividers).not.toContain("ask");
+    expect(binderDividers([], permitted)).toEqual(permitted);
+    expect(binderDividers(["level", "level"], ["level"])).toEqual(["level"]);
+  });
+
+  it("gives a category flag the shape plate's own edge, figure and sentence, never a second threshold", () => {
+    const row = (verdict: CategoryShape["verdict"], extra: Partial<CategoryShape> = {}): CategoryShape => ({
+      subcategoryId: "CAT-RENT", label: "Rent", monthToDateCents: 330000, bandLowCents: 185000, bandHighCents: 185000, deltaCents: 145000, verdict, monthsSeen: 3, ...extra,
+    });
+    expect(categoryRowEdge(row("above"))).toBe("attention");
+    for (const verdict of ["in-shape", "quiet", "one-off", "unknown"] as const) expect(categoryRowEdge(row(verdict))).toBe("clear");
+    expect(categoryRowFigure(row("above"))).toEqual({ primitive: "spark", points: [185000, 185000, 330000], room: 28 });
+    expect(categoryRowFigure(row("quiet", { monthToDateCents: 1000 }))).toEqual({ primitive: "spark", points: [185000, 185000, 1000], room: 28 });
+    expect(categoryRowFigure(row("unknown", { monthsSeen: 1 }))).toEqual({ primitive: "spark", points: [], room: 28 });
+    expect(categoryRowHasShape(row("one-off"))).toBe(false);
+    expect(categoryRowVerdict(row("above"))).toBe(`Rent has run ${formatCad(145000)} over its own trailing shape.`);
+    expect(categoryRowVerdict(row("unknown"))).toBe("Rent has not enough history yet to draw a shape.");
+    // The plate and the flags read one rule: the seeded shape plate's edge, figure and verdict are its worst row's.
+    const household = seedDemoHousehold({ today: TODAY, environment: "development" });
+    const plate = fundPlates({ household, memberId: "MEM-001", today: TODAY }).find((item) => item.id === "shape")!;
+    const rows = categoryShape(household, "2026-09", TODAY);
+    const worst = rows.find((item) => item.verdict === "above")!;
+    expect(categoryRowEdge(worst)).toBe(plate.edge);
+    expect(categoryRowFigure(worst)).toEqual(plate.figure);
+    expect(categoryRowVerdict(worst)).toBe(plate.verdict);
+  });
+});
+
 describe("the stylesheet's fences", () => {
   it("never stands a token a dressing may paint as an image where a colour belongs", () => {
     // The tokens at risk are read from the stylesheet itself: any --fund-book-* that some rule sets to a gradient.
@@ -311,19 +395,56 @@ describe("the book's fences", () => {
     expect(bookSource).not.toMatch(/\bcents\s*[-+*/]\s*\w|\w\s*[-+*/]\s*cents\b/i);
   });
 
-  it("keeps the stickies a separate group on the head, a deep link into the accounts chapter, and no new id or persisted value", () => {
-    expect(bookSource).toContain('role="group" aria-label={`Accounts linked to the Fund, ${rows.length}`}');
-    // The host is synced only when the accounts chapter is on the rail it gave us; the spread never waits for it.
-    expect(bookSource).toContain('const accountsOnRail = slots.includes("accounts");');
-    expect(bookSource).toContain('if (accountsOnRail) onSelect("accounts");');
-    expect(bookSource).toContain('const focusedRow = focusedAccountId ? rows.find(');
+  it("keeps the flags a second tablist on the open section's top edge, a sibling of the fore-edge, with no deep link, no new id and no persisted value", () => {
+    expect(bookSource).toContain('role="tablist" aria-label={`Pages in ${sectionName}`}');
+    expect(bookSource).toContain('role="tabpanel" aria-labelledby={flags.length ? `${bookId}-flag-${page}` : dividerId(section)}');
+    // The page left open in each section is remembered by section and derived in the same render, so a change of section never shows another section's page.
+    expect(bookSource).toContain("const page = openPage(remembered, section, flags.length);");
+    expect(bookSource).toContain("const [remembered, setRemembered] = useState<OpenPages>({});");
+    expect(bookSource).toContain("const focusedRow = section === \"accounts\" ? rows[page] ?? null : null;");
+    // A flag never asks the host to move, and a library divider opens on the book itself: the only onSelect is a rail divider's.
+    expect(bookSource.match(/onSelect\(/g)).toHaveLength(1);
+    expect(bookSource).toContain("if (onRail) { setPicked(null); onSelect(id); } else { setPicked({ section: id, host: selected }); }");
+    expect(bookSource).toContain("binderDividers(slots, FUND_WIDGETS.filter((id) => widgetAllowedFor(id, household, memberId)))");
+    expect(bookSource).not.toMatch(/onSelect\("accounts"\)|accountsOnRail|focusedAccountId|aria-pressed=\{pressed\}|fundRail\s*[:=]|setRail|storeRail|saveRail/);
     expect(bookSource).toContain("booksPresentationFloor(household, memberId, \"household\")");
     expect(bookSource).toContain("accountRegister(books, accountId)");
     expect(bookSource).toContain("{ recognizedOnly: false }");
-    expect(bookSource).not.toMatch(/reduce\(|accountBookBalance|creditCardView\(|householdWallet|trialBalance/);
-    // The sticky group never borrows the tablist's vocabulary.
-    const stickies = bookSource.slice(bookSource.indexOf("function Stickies"), bookSource.indexOf("/** The running head"));
-    expect(stickies).not.toMatch(/role="tab"|aria-selected|aria-controls|FundWidgetId|DeskPlateId/);
-    expect(stickies).toContain("aria-pressed={pressed}");
+    expect(bookSource).toContain("categoryShape(household, monthKey, today)");
+    expect(bookSource).not.toMatch(/reduce\(|accountBookBalance|creditCardView\(|householdWallet|trialBalance|householdFundContributionMotions|fundWalk\(/);
+    // The flags borrow nothing from the fore-edge's contract: no host panel id, no widget id, no plate id.
+    const strip = bookSource.slice(bookSource.indexOf("function PageFlags"), bookSource.indexOf("/** The running head"));
+    expect(strip).toContain('role="tab"');
+    expect(strip).toContain("aria-controls={pageId}");
+    expect(strip).toContain("aria-selected={index === page}");
+    expect(strip).toContain("tabIndex={index === page ? 0 : -1}");
+    expect(strip).toContain("onKeyDown={navigate}");
+    expect(strip).not.toMatch(/panelId|data-fund-widget|data-plate-id|fund-rail-tab|aria-pressed|DeskPlateId/);
+    // The fore-edge keeps FundBoard's ids, aria-controls and roving tabindex on the rail's dividers; a library divider controls the book's own page.
+    expect(bookSource).toContain('const dividerId = (id: FundWidgetId) => presentation === "desk" ? `fund-rail-tab-${byId.get(id)?.id ?? id}` : `${panelId}-tab-${id}`;');
+    const edge = bookSource.slice(bookSource.indexOf('role="tablist" aria-label="Fund board"'));
+    expect(edge).toContain("id={dividerId(id)}");
+    expect(edge).toContain("aria-controls={onRail ? panelId : pageId}");
+    expect(edge).toContain("aria-selected={section === id}");
+    expect(edge).toContain("tabIndex={section === id ? 0 : -1}");
+    expect(edge).toContain("onKeyDown={navigate}");
+    // Every flag is a 44px hit target by rule: the stylesheet sets it on the button, and the drawn paper is only its lower part.
+    const sticky = cssSource.slice(cssSource.indexOf(".fund-book .fund-book-sticky, :root[data-theme] .fund-book .fund-book-sticky {"));
+    expect(sticky.slice(0, sticky.indexOf("}"))).toContain("min-height: 44px;");
+    expect(sticky.slice(0, sticky.indexOf("}"))).toMatch(/transparent 0 18px/);
+    const mark = cssSource.slice(cssSource.indexOf(".fund-book .fund-book-mark, :root[data-theme] .fund-book .fund-book-mark {"));
+    expect(mark.slice(0, mark.indexOf("}"))).toContain("min-height: 44px;");
+    // A divider is a sheet bound into the block: flat cloth, the name printed on it, cut corners, no chip, no rounding, no sideways stagger.
+    expect(mark.slice(0, mark.indexOf("}"))).toContain("border-radius: 0;");
+    expect(mark.slice(0, mark.indexOf("}"))).toContain("clip-path: polygon(-12px 0, calc(100% - 5px) 0, 100% 5px,");
+    expect(mark.slice(0, mark.indexOf("}"))).toContain("padding: 4px 8px 4px calc(var(--fund-book-tuck) + 10px);");
+    expect(cssSource).not.toMatch(/--fund-book-slot\) \* 3px|fund-book-mark-sheet|--fund-book-mark-label/);
+    expect(cssSource).toContain("margin-left: calc(-1 * var(--fund-book-tuck));");
+    expect(cssSource).toContain(".fund-book.is-desk .fund-book-room { grid-area: room; z-index: 1; align-self: stretch; }");
+    // Colour on a divider or a flag is the theme's sequence of six; copper is never among them.
+    const hues = [1, 2, 3, 4, 5, 6].map((n) => cssSource.match(new RegExp(`--fund-book-hue-${n}: ([^;]+);`))?.[1] ?? "");
+    expect(hues.every(Boolean)).toBe(true);
+    expect(hues.join(" ")).not.toContain("--copper");
+    expect(new Set(hues).size).toBe(6);
   });
 });
