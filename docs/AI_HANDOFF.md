@@ -1,3 +1,17 @@
+## The Queen is Jonathan's Mandevilla Queen model (2026-09-15)
+
+Branch `claude/queen-mandevilla-model`, one commit on `origin/main@25deb6d` (#491). **Risk: Medium-Low.** Presentation only, behind `VITE_QUEENS_NEST`; one new static asset (3.2 MB, 2.4 MB gzipped) loaded by the Home 3D world.
+
+What changed:
+- `src/queen/world/queenModel.ts` loads, measures and fingerprints the model; `queenSculpture.ts` gains `setModel` / `setAwaitingModel` and stands the readings around it; `queenWorld.ts` loads it and reports `model` in stats; `QueenHome` switches the still words (`queenModelStill`) and sets `data-queen-model`.
+- The model is never altered. Crown light, coins (fill and freshness), kintsugi on the planter, new growth on her vines, stones and marks carry the readings.
+
+Details: D-266 and the [worksession](worksessions/2026-09-15-queen-mandevilla-model.md).
+
+Verification: `tsc` clean; `test/queen-model.test.ts` 8/8; quick gate Medium `quick-gate-passed` (15 files, 178 tests, 89.8 s of 300 s); `test/queen-model-layout.mjs` 13 browser records (3 themes; 320/390/720/1100; model refused → drawn, silent), in `docs/evidence/queen-model/`. `test/queen-world-layout.mjs` times out at its first 15 s wait here on this branch **and on untouched `main`** (environmental), so it is not claimed.
+
+Next owner: Jonathan (look at her; decide the open items in D-266), then the delivery bot. Not pushed, not merged, not deployed.
+
 ## The loft's studio cats and money gun, held saves, outside-click close, shelf-tool cards, cellar water (2026-09-15)
 
 Branch `claude/loft-kitty-gun`, one commit on `origin/main@fe0cb3b` (#489). **Risk: Medium.** The gun is a second room-side door to the existing `allocateHouseholdFundSurplus`, and the shared `useDialog` now also closes on an outside tap.

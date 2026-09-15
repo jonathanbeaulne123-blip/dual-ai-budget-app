@@ -14,7 +14,7 @@ import type { QueenSceneryKind } from "./world/queenScenery.ts";
  */
 export type QueenWorldMode = "auto" | "flat" | "3d";
 
-export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = null, sceneryPaper, ambient = false, mode = "auto", onLive }: {
+export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = null, sceneryPaper, ambient = false, mode = "auto", onLive, onModel }: {
   /** The Home root; sculptures are placed where its `.queen-mount` and `[data-world-bank]` elements sit. */
   root: RefObject<HTMLElement | null>;
   queen: WorldQueenInput;
@@ -30,12 +30,14 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = 
   ambient?: boolean;
   mode?: QueenWorldMode;
   onLive?: (live: boolean, stats?: () => WorldStats, pick?: WorldPick) => void;
+  /** Whether Jonathan's sculpted Queen is the one standing in the world, or her drawn figure. */
+  onModel?: (state: "model" | "drawn") => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const world = useRef<World | null>(null);
   const [live, setLive] = useState(false);
-  const latest = useRef({ queen, banks, expanded, breathing, scenery, sceneryPaper, ambient });
-  latest.current = { queen, banks, expanded, breathing, scenery, sceneryPaper, ambient };
+  const latest = useRef({ queen, banks, expanded, breathing, scenery, sceneryPaper, ambient, onModel });
+  latest.current = { queen, banks, expanded, breathing, scenery, sceneryPaper, ambient, onModel };
 
   const wanted = mode !== "flat" && (mode === "3d" || (typeof matchMedia !== "function" || !matchMedia("(forced-colors: active)").matches));
   const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -50,7 +52,7 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = 
       .then(({ createQueenWorld }) => {
         if (dead) return;
         try {
-          created = createQueenWorld(element, { reducedMotion: reduced, onLost: () => { created?.dispose(); world.current = null; if (!dead) setLive(false); } });
+          created = createQueenWorld(element, { reducedMotion: reduced, onModel: (state) => { if (!dead) latest.current.onModel?.(state); }, onLost: () => { created?.dispose(); world.current = null; if (!dead) setLive(false); } });
         } catch {
           if (!dead) setLive(false);
           return;
@@ -70,7 +72,7 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = 
     };
   }, [wanted, reduced]);
 
-  useEffect(() => { onLive?.(live, live ? () => world.current?.stats() ?? { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 0, breathing: false, scenery: "none", ambient: false, sceneryGeometries: 0, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 0, keyHeight: 0, keyColor: "", rings: 0, tipped: false } : undefined, live ? (x, y) => world.current?.pick(x, y) ?? null : undefined); }, [live, onLive]);
+  useEffect(() => { onLive?.(live, live ? () => world.current?.stats() ?? { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 0, breathing: false, scenery: "none", ambient: false, sceneryGeometries: 0, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 0, keyHeight: 0, keyColor: "", rings: 0, tipped: false, model: "drawn" } : undefined, live ? (x, y) => world.current?.pick(x, y) ?? null : undefined); }, [live, onLive]);
   useEffect(() => { world.current?.setQueen(queen); }, [queen, live]);
   useEffect(() => { world.current?.setBanks(banks); }, [banks, live]);
   useEffect(() => { world.current?.setBreathing(breathing); }, [breathing, live]);
