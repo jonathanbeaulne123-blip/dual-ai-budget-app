@@ -39,6 +39,7 @@ async function measure(page) {
       partsInRoom: [...cellar.querySelectorAll('.queen-stair, .queen-room__head, .queen-cellar-views, .queen-cellar-rail, .queen-scrub, .queen-room__line, .queen-room__acts')].map(inRoom),
       stairVisible: rect(cellar.querySelector('.queen-stair')).w > 0,
       sheet: document.querySelector('[role=dialog].sheet')?.textContent ?? null,
+      card: (() => { const card = cellar.querySelector('.queen-jar-card'); if (!card) return null; const r = card.getBoundingClientRect(), c = cellar.getBoundingClientRect(); return { title: card.querySelector('.queen-jar-card__title')?.textContent, kicker: card.querySelector('.queen-jar-card__kicker')?.textContent, facts: Object.fromEntries([...card.querySelectorAll('.queen-jar-card__facts > div')].map(row => [row.querySelector('dt')?.textContent, row.querySelector('dd')?.textContent])), inRoom: r.top >= c.top - 1 && r.bottom <= c.bottom + 1, scrolls: card.scrollHeight > card.clientHeight + 1 }; })(),
       canvases: document.querySelectorAll('canvas').length,
       focus: (() => { const el = document.activeElement; if (!el || el === document.body) return null; const s = getComputedStyle(el); return { className: el.className.split(' ')[0], outline: s.outlineStyle, width: parseFloat(s.outlineWidth) }; })(),
     };
@@ -98,7 +99,7 @@ try {
     await stamp(page, `early-${width}x${height}`);
     // 320x568 with the chrome stand-ins leaves the room about 240px tall — the same compromised frame the rooms' own evidence shows. The stair, head, pills and rail must still be inside it; the acts may give there.
     assert.ok(m.stairVisible && (width === 320 && height === 568 ? m.partsInRoom.slice(0, 4).every(Boolean) : m.allInRoom), `${label}: head, rail, scrub, line, acts and stair all inside the room ${JSON.stringify(m.parts)}`);
-    assert.ok(m.sub.startsWith('11 bills on the rail'), `${label}: ${m.sub}`);
+    assert.ok(m.sub.startsWith('11 kitty jars on the rail'), `${label}: ${m.sub}`);
     await stamp(page, `early-${width}x${height}`);
     records.push({ scene: 'early', width, height, world: m.world, overflowY: m.overflowY, jars: m.jars.map(j => `${j.label} [${j.strike}; ${j.form} ${j.hue}/${j.finish} size ${j.size}]`), water: m.water, tidemark: m.tidemark, line: m.line, acts: m.acts.map(a => a.text) });
     // The jar in the gate: pick the full early one; the words say ready, and there is no hammer.
@@ -127,6 +128,27 @@ try {
     assert.ok(m.acts.some(a => a.crack && a.text === 'Pay it anyway · from the water'), `${label}: the crack pays from the water (${m.acts.map(a => a.text).join(' | ')})`);
     await stamp(page, `due-crack-${width}x${height}`);
     records.push({ scene: 'due-crack', width, height, world: m.world, overflowY: m.overflowY, line: m.line, acts: m.acts.map(a => a.text) });
+    // The kitty jar's card: press the rent in the gate and it opens in the room with everything it has to say; × closes it and the jar takes focus back.
+    // Pressed as a hand or a keyboard would: in the 320×568 stand-in frame the panes overlap the jar's foot, so the press is Enter on the focused jar.
+    await page.locator('.queen-jar--bill.is-in-gate[aria-label^="Fictional rent"]').focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    const opened = await measure(page);
+    noScroll(opened, `${label} card`);
+    assert.ok(opened.card, `${label}: the card opens`);
+    assert.equal(opened.card.title, 'Fictional rent', `${label}: the card's title`);
+    assert.equal(opened.card.kicker, "house bill, wearing a postman's cap and an envelope", `${label}: the card's kicker`);
+    assert.equal(opened.card.facts['The jar holds'], '$760.00 of $900.00', `${label}: the card's holdings`);
+    assert.equal(opened.card.facts['In the kiln'], 'glazed to 8 of 10 — the rest still bisque', `${label}: the card's kiln`);
+    assert.equal(opened.card.facts['The strike'], 'cracked — due and not full; you can still pay it from the water', `${label}: the card's strike`);
+    assert.ok(opened.card.inRoom, `${label}: the card stands inside the room`);
+    assert.ok(opened.stairVisible && opened.allInRoom, `${label}: everything else still inside the room with the card open`);
+    await stamp(page, `card-${width}x${height}`);
+    records.push({ scene: 'card', width, height, world: opened.world, overflowY: opened.overflowY, card: opened.card });
+    await page.locator('.queen-jar-card__close').click();
+    await page.waitForTimeout(300);
+    assert.equal((await measure(page)).card, null, `${label}: the card closes`);
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-label')?.slice(0, 14)), 'Fictional rent', `${label}: focus returns to the jar`);
     // Lift the rent out: the water on its day rises; nothing is written.
     const waterBefore = m.water;
     await page.locator('.queen-room__acts .queen-go', { hasText: 'Lift it out' }).click();
@@ -146,13 +168,13 @@ try {
     const h = await measure(page);
     noScroll(h, `${label} hammer`);
     assert.match(h.line, /^The hammer is out\. Fictional hydro · house bill · Housing › Electric · 5 days overdue · \$140\.00 saved, ready/, `${label} hammer: ${h.line}`);
-    assert.ok(h.acts.some(a => a.hammer && !a.crack && a.text === 'Break the bank'), `${label} hammer: ${h.acts.map(a => a.text).join(' | ')}`);
+    assert.ok(h.acts.some(a => a.hammer && !a.crack && a.text === 'Break the kitty jar'), `${label} hammer: ${h.acts.map(a => a.text).join(' | ')}`);
     await stamp(page, `due-hammer-${width}x${height}`);
     await page.locator('.queen-hammer').click();
     await page.waitForSelector('[role=dialog].sheet');
     await page.waitForTimeout(300);
     const sheet = await measure(page);
-    assert.match(sheet.sheet, /Break the bank: Fictional hydro/, `${label} sheet: ${sheet.sheet}`);
+    assert.match(sheet.sheet, /Break the kitty jar: Fictional hydro/, `${label} sheet: ${sheet.sheet}`);
     assert.match(sheet.sheet, /does not move money at your bank/, `${label} sheet: the boundary is said`);
     await stamp(page, `due-confirm-${width}x${height}`);
     records.push({ scene: 'due-confirm', width, height, sheet: sheet.sheet });

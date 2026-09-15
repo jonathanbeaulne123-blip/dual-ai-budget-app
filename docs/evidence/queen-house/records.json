@@ -28,7 +28,7 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": false,
+    "liveCanvas": true,
     "errors": 0,
     "money": false
   },
@@ -622,7 +622,7 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": false,
+    "liveCanvas": true,
     "errors": 0,
     "money": false
   },
@@ -1131,7 +1131,7 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": false,
+    "liveCanvas": true,
     "errors": 0,
     "money": false
   },

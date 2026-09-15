@@ -258,3 +258,41 @@ export function cellarGateWords(jar: CellarJar | null, day: CellarDay | null, fo
   const water = day ? (day.dry ? "the cellar is dry here" : day.belowBuffer ? "the water is under the mark here" : `water at ${format(day.balanceCents)} after`) : "";
   return `${jar.label} · ${kind} · ${when} · ${saved}${water ? ` · ${water}` : ""}.`;
 }
+
+/** How far the kiln has taken a jar, in words: bare, glazed to a mark, fired to the crown. Never a figure. */
+export function cellarGlazeWords(jar: Pick<CellarJar, "fill" | "paid" | "full" | "type">): string {
+  if (jar.type === "potential" && !jar.paid) return "frosted glass — a plan, not posted";
+  if (jar.paid || jar.full || jar.fill >= 0.995) return "fired to the crown";
+  const mark = Math.round(Math.max(0, Math.min(1, jar.fill)) * 10);
+  if (mark <= 0) return "bare, unfired";
+  return mark >= 5 ? `glazed ${mark === 5 ? "halfway" : `to ${mark} of 10`} — the rest still bisque` : `glazed to ${mark} of 10 from the foot`;
+}
+
+export type CellarJarFact = { label: string; value: string };
+
+/**
+ * What a picked jar has to say for itself (2026-09-15, "clicking on a jar needs
+ * to display more info about it"): its filing, its day, its amounts, its kiln
+ * state, how it is paid and what the cellar's water does after it. Read from
+ * the reading and the books; nothing here posts.
+ */
+export function cellarJarFacts(jar: CellarJar, day: CellarDay | null, household: Pick<Household, "recurrences" | "accounts" | "householdFund">, format: (cents: number) => string): CellarJarFact[] {
+  const recurrence = jar.recurrenceId ? household.recurrences.find((row) => row.id === jar.recurrenceId) ?? null : null;
+  const account = recurrence ? household.accounts.find((row) => row.id === recurrence.accountId) ?? null : null;
+  const cadence = recurrence ? ({ daily: "every day", weekly: "every week", biweekly: "every two weeks", monthly: "every month" } as const)[recurrence.cadence] : null;
+  const when = jar.paid ? "paid" : jar.daysAway === 0 ? "due today" : jar.daysAway < 0 ? `${-jar.daysAway} ${jar.daysAway === -1 ? "day" : "days"} overdue` : `in ${jar.daysAway} ${jar.daysAway === 1 ? "day" : "days"}`;
+  const facts: CellarJarFact[] = [
+    { label: "Filed under", value: jar.groupName ? `${jar.groupName}${jar.lineName ? ` › ${jar.lineName}` : ""}` : "not filed yet" },
+    { label: "Its day", value: `${jar.date.slice(8, 10).replace(/^0/, "")} of the month · ${when}${cadence ? ` · ${cadence}` : ""}` },
+    { label: "The jar holds", value: jar.paid ? `${format(jar.targetCents)} · paid` : `${format(jar.savedCents)} of ${format(jar.targetCents)}` },
+    { label: "In the kiln", value: cellarGlazeWords(jar) },
+  ];
+  if (!jar.paid && jar.leftCents > 0) facts.push({ label: "Still to go", value: format(jar.leftCents) });
+  if (recurrence) {
+    const fund = recurrence.fundingDefault && household.householdFund ? `the Household Fund's water${account ? `, landing in ${account.name}` : ""}` : account ? account.name : "the books";
+    facts.push({ label: "Paid from", value: fund });
+  } else if (jar.type === "potential") facts.push({ label: "Paid from", value: "nowhere yet — it has not posted" });
+  if (day) facts.push({ label: "The water after", value: day.dry ? "dry — the cellar runs out here" : day.belowBuffer ? `${format(day.balanceCents)} · under the mark` : format(day.balanceCents) });
+  facts.push({ label: "The strike", value: jar.paid ? "a shard — paid elsewhere in the books" : jar.strike === "hammer" ? "the hammer is out — due and full, break it by hand" : jar.strike === "crack" ? "cracked — due and not full; you can still pay it from the water" : jar.type === "potential" ? "none — a planned expense posts from the banks" : "none yet — nothing before its day" });
+  return facts;
+}

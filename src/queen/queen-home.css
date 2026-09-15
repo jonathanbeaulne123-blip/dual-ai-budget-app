@@ -654,7 +654,11 @@
 /* `queenBankSculpture` spins this silhouette on a lathe; `QueenBankFlat` traces
    the same points. A room with no WebGL keeps the cat, not a pot. */
 .queen-bank-flat { display: block; overflow: visible; }
-.queen-bank-flat__clay { fill: var(--queen-clay); }
+/* The kiln (2026-09-15): the clay is chalky bisque until money stands in her; the glaze below the fill line is the fired look,
+   deep and glossy, with a sheen down its flank; when she is full the head, ears and paws fire with her — glazed to the crown. */
+.queen-bank-flat__clay { fill: var(--queen-bisque, color-mix(in srgb, var(--queen-clay) 62%, #e9e1d3)); }
+.queen-bank-flat__sheen { stroke: color-mix(in srgb, #fff 55%, transparent); opacity: .9; }
+.queen-bank-flat[data-fired="true"] .queen-bank-flat__clay:not(.is-hollow), .queen-bank-flat[data-fired="true"] .queen-bank-flat__ear { fill: var(--queen-clay-deep); }
 .queen-bank-flat__clay.is-hollow { fill: none; }
 .queen-bank-flat__edge { stroke: var(--queen-clay-deep); }
 .queen-bank-flat__glaze { fill: var(--queen-clay-deep); opacity: .85; }

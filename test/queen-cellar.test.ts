@@ -5,7 +5,7 @@ import { addPotentialExpense, addRecurrence, postDueRecurrences, postEntry, reco
 import { projectKittyNest } from "../src/core/kittyNest.ts";
 import { fundWalk } from "../src/core/fundWalk.ts";
 import { formatCad } from "../src/core/money.ts";
-import { cellarDays, cellarFinish, cellarGateWords, cellarHue, cellarJarType, cellarJars, cellarReading, cellarSize, cellarStrike, type CellarJar } from "../src/core/queenCellar.ts";
+import { cellarDays, cellarFinish, cellarGateWords, cellarGlazeWords, cellarHue, cellarJarFacts, cellarJarType, cellarJars, cellarReading, cellarSize, cellarStrike, type CellarJar } from "../src/core/queenCellar.ts";
 
 const memberId = "MEM-001";
 
@@ -209,5 +209,45 @@ describe("Three ways to tell a jar apart, every one a band", () => {
     expect(tires.size).toBe(4);
     expect(hydro.size).toBe(2);
     expect(streaming.size).toBe(1);
+  });
+});
+
+describe("The kiln, and what a kitty jar says for itself", () => {
+  it("names the glaze as a mark from the foot — bare, halfway, to the crown — never a figure", () => {
+    const base = { paid: false, full: false, type: "house" as const };
+    expect(cellarGlazeWords({ ...base, fill: 0 })).toBe("bare, unfired");
+    expect(cellarGlazeWords({ ...base, fill: 0.31 })).toBe("glazed to 3 of 10 from the foot");
+    expect(cellarGlazeWords({ ...base, fill: 0.5 })).toBe("glazed halfway — the rest still bisque");
+    expect(cellarGlazeWords({ ...base, fill: 0.84 })).toBe("glazed to 8 of 10 — the rest still bisque");
+    expect(cellarGlazeWords({ ...base, fill: 1 })).toBe("fired to the crown");
+    expect(cellarGlazeWords({ ...base, fill: 0.2, paid: true })).toBe("fired to the crown");
+    expect(cellarGlazeWords({ ...base, fill: 1, type: "potential" })).toBe("frosted glass — a plan, not posted");
+    for (const words of [cellarGlazeWords({ ...base, fill: 0.5 }), cellarGlazeWords({ ...base, fill: 1 })]) expect(words).not.toMatch(/\$|\d{2,}/);
+  });
+
+  it("reads a jar's card from the reading and the books: filing, day, holdings, kiln, what pays it, the water after, the strike", () => {
+    const h = withRail();
+    const reading = cellarReading(h, projectKittyNest(h, memberId, "household", "2026-09-12"), "2026-09-12");
+    const rent = byLabel(reading.jars, "Fictional rent");
+    const facts = Object.fromEntries(cellarJarFacts(rent, reading.days.find((row) => row.date === rent.date) ?? null, h, formatCad).map((row) => [row.label, row.value]));
+    expect(facts["Filed under"]).toBe("Housing › Electric");
+    expect(facts["Its day"]).toBe("20 of the month · in 8 days · every month");
+    expect(facts["The jar holds"]).toBe("$760.00 of $900.00");
+    expect(facts["In the kiln"]).toBe("glazed to 8 of 10 — the rest still bisque");
+    expect(facts["Still to go"]).toBe("$140.00");
+    expect(facts["Paid from"]).toBe("the Household Fund's water, landing in Visa");
+    expect(facts["The strike"]).toBe("none yet — nothing before its day");
+    expect(facts["The water after"]).toMatch(/^\$/);
+    const paid = byLabel(reading.jars, "Fictional streaming");
+    const paidFacts = Object.fromEntries(cellarJarFacts(paid, null, h, formatCad).map((row) => [row.label, row.value]));
+    expect(paidFacts["The jar holds"]).toBe("$16.00 · paid");
+    expect(paidFacts["Still to go"]).toBeUndefined();
+    expect(paidFacts["The water after"]).toBeUndefined();
+    expect(paidFacts["The strike"]).toBe("a shard — paid elsewhere in the books");
+    expect(paidFacts["Paid from"]).toBe("Visa");
+    const planned = byLabel(reading.jars, "Fictional winter tires");
+    const plannedFacts = Object.fromEntries(cellarJarFacts(planned, null, h, formatCad).map((row) => [row.label, row.value]));
+    expect(plannedFacts["Paid from"]).toBe("nowhere yet — it has not posted");
+    expect(plannedFacts["The strike"]).toBe("none — a planned expense posts from the banks");
   });
 });

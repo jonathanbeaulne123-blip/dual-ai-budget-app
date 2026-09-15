@@ -8,9 +8,9 @@ import type { DateKey } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
 import { postDueRecurrences } from "../core/commands.ts";
 import { projectKittyNest } from "../core/kittyNest.ts";
-import { cellarGateWords, cellarReading, type CellarJar } from "../core/queenCellar.ts";
+import { cellarGateWords, cellarJarFacts, cellarReading, type CellarJar } from "../core/queenCellar.ts";
 import { ConfirmSheet } from "../Confirm.tsx";
-import { CellarZoomPane, QueenCellarRail, cellarBankForm, cellarDayLabel } from "./QueenCellarRail.tsx";
+import { CellarZoomPane, QueenCellarRail, cellarBankForm, cellarDayLabel, cellarPurposeWords } from "./QueenCellarRail.tsx";
 import { readCellarZoom, storeCellarZoom } from "./cellarZoom.ts";
 import type { CellarHue } from "../core/queenCellar.ts";
 
@@ -55,6 +55,9 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const [view, setView] = useState<"bills" | "months">(household && today ? "bills" : "months");
   const [heldId, setHeldId] = useState<string | null>(null);
   const [striking, setStriking] = useState<CellarJar | null>(null);
+  // The jar that was picked: its card opens over the rail with everything it has to say for itself.
+  const [openJarId, setOpenJarId] = useState<string | null>(null);
+  const card = useRef<HTMLElement>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // The size of the banks on the rail: remembered on this device, never synced.
   const [zoom, setZoom] = useState(() => readCellarZoom(typeof localStorage === "undefined" ? null : localStorage));
@@ -73,12 +76,23 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const gateDay = reading?.days[billAt] ?? null;
   const gateJars = reading && gateDay ? reading.jars.filter((jar) => jar.date === gateDay.date) : [];
   const gateJar: CellarJar | null = gateJars[0] ?? null;
+  const openJar: CellarJar | null = openJarId && reading ? reading.jars.find((jar) => jar.id === openJarId) ?? null : null;
   const gateRibbon = gateJar?.recurrenceId ? ribbons.find((row) => row.recurrenceId === gateJar.recurrenceId) ?? null : null;
   const ribbon = (view === "months" && gateRibbon) ? gateRibbon : ribbons.find((row) => row.recurrenceId === picked) ?? ribbons[0] ?? null;
   const jars = ribbon?.jars ?? [];
   const nowIndex = Math.max(0, jars.findIndex((jar) => jar.now));
   const [cursor, setCursor] = useState(nowIndex);
   const room = useRef<HTMLDivElement>(null);
+  const closeCard = () => {
+    const id = openJarId;
+    setOpenJarId(null);
+    if (id) requestAnimationFrame(() => {
+      const jar = [...(room.current?.querySelectorAll<HTMLButtonElement>(".queen-jar--bill[data-room-vessel]") ?? [])].find((el) => el.dataset.roomVessel === id);
+      jar?.focus();
+    });
+  };
+  useEffect(() => { if (openJarId) card.current?.focus(); }, [openJarId]);
+  useEffect(() => { if (view !== "bills") setOpenJarId(null); }, [view]);
   const viewport = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; from: number; pointerId: number; live: boolean } | null>(null);
   const [live, setLive] = useState(false);
@@ -92,7 +106,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const vessels = useMemo<RoomVessel[]>(() => {
     const rows: RoomVessel[] = [];
     if (view === "bills" && reading) {
-      for (const jar of reading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue], finish: jar.finish, swell: 1, fill: jar.paid ? 0 : jar.fill, hollow: jar.paid, frosted: jar.type === "potential" && !jar.paid, outlier: false, lifted: heldId === jar.id });
+      for (const jar of reading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue], finish: jar.finish, swell: 1, fill: jar.paid ? 1 : jar.fill, hollow: false, frosted: jar.type === "potential" && !jar.paid, outlier: false, lifted: heldId === jar.id });
       return rows;
     }
     for (const jar of jars) {
@@ -147,7 +161,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
         <p className="queen-room__title">The cellar</p>
         <p className="queen-room__sub">
           {reading && view === "bills"
-            ? `${reading.jars.length === 0 ? "No bills on the rail" : reading.jars.length === 1 ? "One bill on the rail" : `${reading.jars.length} bills on the rail`}${reading.walk.dryDate ? " · the cellar runs dry" : reading.walk.belowBufferRuns.length ? " · the water dips under the mark" : ""}`
+            ? `${reading.jars.length === 0 ? "No kitty jars on the rail" : reading.jars.length === 1 ? "One kitty jar on the rail" : `${reading.jars.length} kitty jars on the rail`}${reading.walk.dryDate ? " · the cellar runs dry" : reading.walk.belowBufferRuns.length ? " · the water dips under the mark" : ""}`
             : ribbon
             ? `${ribbon.label} · ${ribbon.posted === 0 ? "no months yet" : ribbon.posted === 1 ? "one month" : `${ribbon.posted} months`} on the ribbon${outlierName ? ` · ${outlierName} broke the beat` : ""}`
             : "Nothing recurring is on the ribbon yet."}
@@ -161,7 +175,8 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
       )}
       {reading && view === "bills" && (
         <>
-          <QueenCellarRail reading={reading} cursor={billCursor} onCursor={(next) => setBillCursor((current) => typeof next === "function" ? next(current) : next)} heldId={heldId} zoom={zoom} onZoom={onZoom} />
+          <QueenCellarRail reading={reading} cursor={billCursor} onCursor={(next) => setBillCursor((current) => typeof next === "function" ? next(current) : next)} heldId={heldId} zoom={zoom} onZoom={onZoom}
+            openId={openJarId} onPick={(jar) => setOpenJarId((current) => (current === jar.id ? null : jar.id))} />
           <div className="queen-scrub">
             <span className="queen-scrub__end">1</span>
             <input type="range" min={0} max={reading.days.length - 1} step={1} value={billAt}
@@ -170,14 +185,39 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
             <span className="queen-scrub__end">{reading.days.length}</span>
             <CellarZoomPane zoom={zoom} onZoom={onZoom} />
           </div>
-          <p className="queen-room__line" aria-live="polite">
+          {openJar && household && (
+            <section ref={card} className="queen-jar-card" aria-label={`${openJar.label} — the kitty jar's card`} tabIndex={-1}
+              onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeCard(); } }}>
+              <header className="queen-jar-card__head">
+                <p className="queen-jar-card__kicker">{cellarPurposeWords(openJar.type)}</p>
+                <h3 className="queen-jar-card__title">{openJar.label}</h3>
+                <button type="button" className="queen-jar-card__close" aria-label="Close the card" onClick={closeCard}>×</button>
+              </header>
+              <p className="queen-room__line queen-jar-card__line" aria-live="polite">
+                <em>{openJar.strike === "hammer" ? "The hammer is out." : openJar.strike === "crack" ? "Cracked." : openJar.paid ? "A shard, kept." : "Filling."}</em> {cellarGateWords(openJar, reading.days.find((row) => row.date === openJar.date) ?? null, formatCad)}
+                {heldId === openJar.id ? " Lifted out — a rehearsal; nothing is written." : ""}
+              </p>
+              <dl className="queen-jar-card__facts">
+                {cellarJarFacts(openJar, reading.days.find((row) => row.date === openJar.date) ?? null, household, formatCad).map((fact) => (
+                  <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>
+                ))}
+              </dl>
+              <div className="queen-jar-card__more">
+                {openJar.recurrenceId && ribbons.some((row) => row.recurrenceId === openJar.recurrenceId) && (
+                  <button type="button" className="queen-go" onClick={() => { setPicked(openJar.recurrenceId); setView("months"); }}>Its months</button>
+                )}
+                {(!openJar.recurrenceId || openJar.type === "potential") && <button type="button" className="queen-go" onClick={onOpenBanks}>Open it in the banks</button>}
+              </div>
+            </section>
+          )}
+          {!openJar && <p className="queen-room__line" aria-live="polite">
             <em>{gateJar ? (gateJar.strike === "hammer" ? "The hammer is out." : gateJar.strike === "crack" ? "Cracked." : gateJar.paid ? "A shard, kept." : "Filling.") : gateDay?.today ? "Today." : "The rail."}</em> {cellarGateWords(gateJar, gateDay, formatCad)}
             {heldId && gateJar?.id === heldId ? " Lifted out — a rehearsal; nothing is written." : ""}
-            {!gateJar && reading.jars.length > 0 ? " Its shape and what it wears are what it is for, its colour where it is filed, its size how large the due is; pick one to read it." : ""}
-          </p>
+            {!gateJar && reading.jars.length > 0 ? " A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it." : ""}
+          </p>}
           <div className="queen-room__acts">
             {gateJar?.strike === "hammer" && gateJar.recurrenceId && (
-              <button type="button" className="queen-go queen-go--primary queen-hammer" disabled={busy} onClick={() => setStriking(gateJar)}>Break the bank</button>
+              <button type="button" className="queen-go queen-go--primary queen-hammer" disabled={busy} onClick={() => setStriking(gateJar)}>Break the kitty jar</button>
             )}
             {gateJar?.strike === "crack" && gateJar.recurrenceId && (
               <button type="button" className="queen-go queen-go--primary queen-hammer queen-hammer--crack" disabled={busy} onClick={() => setStriking(gateJar)}>Pay it anyway · from the water</button>
@@ -192,7 +232,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
           {notice && <p className="queen-room__line queen-cellar-notice" role="status">{notice}</p>}
           {striking && onCommand && today && (
             <ConfirmSheet
-              title={striking.strike === "crack" ? `Pay ${striking.label} from the cellar's water` : `Break the bank: ${striking.label}`}
+              title={striking.strike === "crack" ? `Pay ${striking.label} from the cellar's water` : `Break the kitty jar: ${striking.label}`}
               body={`Post ${formatCad(striking.targetCents)} for ${striking.label} in the books, dated ${cellarDayLabel(striking.date)}, its day.${striking.strike === "crack" ? ` Its jar holds ${formatCad(striking.savedCents)}; the rest comes from the Fund's water and the walk shows the buffer take it.` : " Its jar is full; the bank breaks and stays on the rail as a shard."}`}
               extra="Hearth records the payment in your books. It does not move money at your bank."
               confirmLabel={striking.strike === "crack" ? "Pay it anyway" : "Break it"}

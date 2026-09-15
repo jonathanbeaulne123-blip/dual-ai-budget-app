@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { bankGeometry, buildBankVessel, type BankForm, type BankGeometry, type BankMaterials } from "./queenBankSculpture.ts";
+import { bisqueHex } from "../../kitty/studio/paintCanvas.ts";
 
 /**
  * The two rooms, in three dimensions: **the cellar**, where Protect runs a
@@ -323,6 +324,98 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     tintedClays.set(key, built);
     return built;
   };
+  // ---- the kiln (2026-09-15) ---------------------------------------------
+  // Jonathan: "they start off bare and unfired. as money gets put in or they
+  // get paid they slowly get more and more glazed from the ground up." The
+  // studio's own two looks — chalky bisque, and the deep clearcoated glaze of
+  // a fired piece — meet on the body at the fill line: one colour map and one
+  // roughness/clearcoat map per fill band (eleven bands, the nest's own
+  // quantisation), shared by every jar at that band. The head, ears, paws and
+  // tail fire only once she is full: glazed to the crown.
+  const BANDS = 10;
+  const fillBand = (fill: number | undefined) => Math.round(Math.max(0, Math.min(1, fill ?? 0)) * BANDS);
+  const kilnMaps = new Map<number, THREE.Texture | null>();
+  /** R = clearcoat, G = roughness, by height: fired below the line, bisque above. */
+  const kilnMapFor = (band: number): THREE.Texture | null => {
+    if (kilnMaps.has(band)) return kilnMaps.get(band)!;
+    let texture: THREE.Texture | null = null;
+    if (typeof document !== "undefined") {
+      const canvas = document.createElement("canvas");
+      canvas.width = 4; canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const line = Math.round((1 - band / BANDS) * 128);
+        ctx.fillStyle = "rgb(0,238,0)"; ctx.fillRect(0, 0, 4, line);
+        ctx.fillStyle = "rgb(255,38,0)"; ctx.fillRect(0, line, 4, 128 - line);
+        texture = new THREE.CanvasTexture(canvas);
+        texture.minFilter = THREE.NearestFilter; texture.magFilter = THREE.NearestFilter;
+        textures.add(texture);
+      }
+    }
+    kilnMaps.set(band, texture);
+    return texture;
+  };
+  const drawFinish = (ctx: CanvasRenderingContext2D, finish: NonNullable<RoomVessel["finish"]>, top: number) => {
+    ctx.save(); ctx.translate(0, top);
+    ctx.fillStyle = "rgba(60,40,20,.42)";
+    if (finish === "speckle") { let seed = 7; for (let i = 0; i < 90; i += 1) { seed = (seed * 9301 + 49297) % 233280; const x = (seed / 233280) * 64; seed = (seed * 9301 + 49297) % 233280; const y = (seed / 233280) * 64; ctx.beginPath(); ctx.arc(x, y, 1.1 + (i % 3) * 0.4, 0, Math.PI * 2); ctx.fill(); } }
+    if (finish === "banded") { for (let y = 4; y < 64; y += 12) ctx.fillRect(0, y, 64, 3); }
+    if (finish === "crackle") { ctx.strokeStyle = "rgba(60,40,20,.5)"; ctx.lineWidth = 1; for (let i = 0; i < 9; i += 1) { ctx.beginPath(); ctx.moveTo((i * 23) % 64, 0); ctx.lineTo(((i * 23) % 64) + 18 - (i % 2) * 30, 34); ctx.lineTo(((i * 23) % 64) + 6, 64); ctx.stroke(); } }
+    ctx.restore();
+  };
+  const glazeMaps = new Map<string, THREE.Texture | null>();
+  /** The colour by height: the tint's glaze below the line, its chalky bisque above, the line's finish over both. */
+  const glazeMapFor = (tint: string, finish: NonNullable<RoomVessel["finish"]>, band: number): THREE.Texture | null => {
+    const key = `${tint}:${finish}:${band}`;
+    if (glazeMaps.has(key)) return glazeMaps.get(key)!;
+    let texture: THREE.Texture | null = null;
+    if (typeof document !== "undefined") {
+      const canvas = document.createElement("canvas");
+      canvas.width = 64; canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const line = Math.round((1 - band / BANDS) * 128);
+        ctx.fillStyle = bisqueHex(tint); ctx.fillRect(0, 0, 64, line);
+        ctx.fillStyle = tint; ctx.fillRect(0, line, 64, 128 - line);
+        if (finish !== "plain") { drawFinish(ctx, finish, 0); drawFinish(ctx, finish, 64); }
+        texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping; texture.repeat.x = 2;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        textures.add(texture);
+      }
+    }
+    glazeMaps.set(key, texture);
+    return texture;
+  };
+  const BARE_CLAY = "#c0a67e";
+  const bodyMats = new Map<string, THREE.Material>();
+  /** The body's material at this fill: white under its maps, so the maps carry the colour, the gloss and the line. */
+  const bodyFor = (tint: string | undefined, finish: NonNullable<RoomVessel["finish"]> = "plain", fill: number | undefined): THREE.Material => {
+    const band = fillBand(fill);
+    const key = `${tint ?? BARE_CLAY}:${finish}:${band}`;
+    const known = bodyMats.get(key);
+    if (known) return known;
+    const map = glazeMapFor(tint ?? BARE_CLAY, finish, band);
+    const kiln = kilnMapFor(band);
+    const built = map && kiln
+      ? mat(new THREE.MeshPhysicalMaterial({ color: "#ffffff", map, roughness: 1, roughnessMap: kiln, clearcoat: 1, clearcoatMap: kiln, clearcoatRoughness: 0.12, metalness: 0.02 }))
+      : clayFor(tint, finish);
+    bodyMats.set(key, built);
+    return built;
+  };
+  const skinMats = new Map<string, THREE.Material>();
+  /** Her other clay: bisque until she is full, then fired with her. */
+  const skinFor = (tint: string | undefined, fired: boolean): THREE.Material => {
+    const key = `${tint ?? BARE_CLAY}:${fired ? "fired" : "bisque"}`;
+    const known = skinMats.get(key);
+    if (known) return known;
+    const built = mat(fired
+      ? new THREE.MeshPhysicalMaterial({ color: tint ?? BARE_CLAY, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.12, metalness: 0.02 })
+      : new THREE.MeshPhysicalMaterial({ color: bisqueHex(tint ?? BARE_CLAY), roughness: 0.92, clearcoat: 0, metalness: 0 }));
+    skinMats.set(key, built);
+    return built;
+  };
+
   const shapes = new Map<BankForm, BankGeometry>();
   /** One set of geometry per form, built the first time a room needs that form. */
   const shapeFor = (form: BankForm) => {
@@ -334,7 +427,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   };
   const shadowGeo = geo(new THREE.CircleGeometry(0.5, 20));
 
-  type Seat = { group: THREE.Group; body: THREE.Mesh; glazeMesh: THREE.Mesh; shadow: THREE.Mesh; vessel: RoomVessel };
+  type Seat = { group: THREE.Group; body: THREE.Mesh; glazeMesh: THREE.Mesh; skin: THREE.Mesh[]; shadow: THREE.Mesh; vessel: RoomVessel };
   const seats = new Map<string, Seat>();
   const vesselsGroup = new THREE.Group();
   vesselsGroup.name = "queen-room-vessels";
@@ -361,7 +454,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     shadow.scale.setScalar(0.8);
     group.add(shadow);
     vesselsGroup.add(group);
-    return { group, body: built.body, glazeMesh: built.glaze, shadow, vessel };
+    return { group, body: built.body, glazeMesh: built.glaze, skin: built.skin, shadow, vessel };
   };
   /** The pose that carries the reading: the swell, the lift, the lean a lidded thing answers with. */
   const poseVessel = (seat: Seat) => {
@@ -369,8 +462,15 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     const swell = v.swell ?? 1;
     seat.group.rotation.z = v.refusing ? 0.16 : v.outlier ? 0.1 : 0;
     seat.body.scale.set(swell, 1, swell * 0.86);
-    seat.glazeMesh.scale.set(swell * 0.94, Math.max(0.001, v.fill ?? 0), swell * 0.94 * 0.86);
-    seat.glazeMesh.visible = !v.hollow && (v.fill ?? 0) > 0.01;
+    // The kiln: a hollow or frosted thing keeps its ghost; anything else is glazed from the foot to its fill line, and fired to the crown when full.
+    const inKiln = !v.hollow && !v.frosted;
+    if (inKiln) {
+      seat.body.material = bodyFor(v.tint, v.finish, v.fill);
+      const fired = fillBand(v.fill) >= BANDS;
+      const skinMat = skinFor(v.tint, fired);
+      for (const piece of seat.skin) piece.material = skinMat;
+    }
+    seat.glazeMesh.visible = false;
     seat.shadow.scale.setScalar(v.lifted ? 1.05 : 0.8);
     (seat.shadow.material as THREE.Material & { opacity: number }).opacity = v.lifted ? 0.12 : 0.2;
   };

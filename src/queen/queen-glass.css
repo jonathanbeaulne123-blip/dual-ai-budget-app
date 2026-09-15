@@ -49,6 +49,11 @@
 .queen-room--cellar[data-world="3d"] .queen-goal__name, .queen-room--cellar[data-world="3d"] .queen-months span, .queen-room--cellar[data-world="3d"] .queen-scrub__end, .queen-room--cellar[data-world="3d"] .queen-cellar-day__tick:not(:empty) { background: color-mix(in srgb, var(--ink) 50%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 22%, transparent); }
 .queen-room--cellar[data-world="3d"] .queen-months span.is-now { color: var(--paper); }
 .queen-room--cellar[data-world="3d"] .queen-cellar-notice { color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card, .queen-room--cellar[data-world="3d"] .queen-jar-card__title, .queen-room--cellar[data-world="3d"] .queen-jar-card__facts dd, .queen-room--cellar[data-world="3d"] .queen-jar-card__note { color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card__kicker, .queen-room--cellar[data-world="3d"] .queen-jar-card__facts dt { color: var(--queen-glass-muted); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card__close { border-color: color-mix(in srgb, #fff 40%, transparent); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card:focus-visible, .queen-room--cellar[data-world="3d"] .queen-jar-card__close:focus-visible { outline-color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card .queen-go { color: var(--paper); border-bottom-color: color-mix(in srgb, #fff 40%, transparent); }
 .queen-room--cellar[data-world="3d"] .queen-cellar-zoom { color: var(--paper); border-left: 1px solid color-mix(in srgb, #fff 30%, transparent); }
 .queen-home .queen-cellar-zoom { border-left: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); }
 .queen-room--cellar[data-world="3d"] .queen-cellar-zoom__step:focus-visible { outline-color: var(--paper); }
@@ -56,7 +61,7 @@
 /* The pane: one recipe, every chip. */
 .queen-home .queen-room__head, .queen-home .queen-room__line, .queen-home .queen-room__picks, .queen-home .queen-scrub,
 .queen-home .queen-room__acts, .queen-home .queen-hand, .queen-home .queen-stair, .queen-home .queen-room > .queen-go,
-.queen-home .queen-house-rail, .queen-home .queen-bank__button, .queen-home .queen-panel {
+.queen-home .queen-house-rail, .queen-home .queen-bank__button, .queen-home .queen-panel, .queen-home .queen-jar-card {
   background: var(--queen-glass);
   -webkit-backdrop-filter: var(--queen-glass-blur); backdrop-filter: var(--queen-glass-blur);
   border: 1px solid var(--queen-glass-edge);

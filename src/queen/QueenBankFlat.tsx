@@ -91,7 +91,7 @@ export function QueenBankFlat({ form, fill = 0, parts = 0, hollow = false, frost
   const dress = BANK_DRESS[form];
   const keyY = shape.foot - (shape.foot - shape.shoulder) * 0.62;
   return (
-    <svg className={className} viewBox={`0 0 ${VIEW} ${VIEW}`} aria-hidden="true" focusable="false" data-form={form} data-dress={bankDressPieces(form).join(" ") || "bare"} data-hollow={hollow ? "true" : "false"} data-frosted={frosted ? "true" : "false"} data-finish={finish} style={tint ? { ["--bank-tint" as string]: tint } : undefined}>
+    <svg className={className} viewBox={`0 0 ${VIEW} ${VIEW}`} aria-hidden="true" focusable="false" data-form={form} data-dress={bankDressPieces(form).join(" ") || "bare"} data-fired={!hollow && !frosted && level >= 0.995 ? "true" : "false"} data-hollow={hollow ? "true" : "false"} data-frosted={frosted ? "true" : "false"} data-finish={finish} style={tint ? { ["--bank-tint" as string]: tint } : undefined}>
       <clipPath id={`${uid}-body`}><path d={shape.body} /></clipPath>
       {finish !== "plain" && !hollow && !frosted && (
         <pattern id={`${uid}-finish`} patternUnits="userSpaceOnUse" width="12" height="12">
@@ -116,6 +116,7 @@ export function QueenBankFlat({ form, fill = 0, parts = 0, hollow = false, frost
       )}
       <path className={`queen-bank-flat__clay${hollow ? " is-hollow" : ""}`} d={shape.body} />
       {!hollow && level > 0.02 && <rect className="queen-bank-flat__glaze" clipPath={`url(#${uid}-body)`} x="0" y={glazeTop} width={VIEW} height={FOOT - glazeTop + 1} />}
+      {!hollow && !frosted && level > 0.02 && <path className="queen-bank-flat__sheen" clipPath={`url(#${uid}-body)`} d={`M${shape.headX - shape.headRx * 0.9} ${Math.max(glazeTop + 3, shape.shoulder + 6)}q-4 ${(FOOT - Math.max(glazeTop + 3, shape.shoulder + 6)) * 0.5} 3 ${FOOT - Math.max(glazeTop + 3, shape.shoulder + 6) - 6}`} fill="none" strokeWidth="3.5" strokeLinecap="round" />}
       {finish !== "plain" && !hollow && !frosted && <path className="queen-bank-flat__finish-coat" d={shape.body} fill={`url(#${uid}-finish)`} />}
       <path className="queen-bank-flat__edge" d={shape.body} fill="none" strokeWidth="2" />
       {[-1, 1].map((side) => (shape.earUp

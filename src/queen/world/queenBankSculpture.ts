@@ -190,8 +190,10 @@ export type BankVessel = {
   group: THREE.Group;
   /** The thrown body. The room swells this one, and nothing else, so a fat month is a fat belly. */
   body: THREE.Mesh;
-  /** The level standing inside her: the same lathe, scaled from the foot. */
+  /** The level standing inside her: the same lathe, scaled from the foot. Unused since the kiln (2026-09-15); kept for the months ribbon's hollow jars. */
   glaze: THREE.Mesh;
+  /** Every other piece of clay on her — head, ears, paws, tail — which the kiln fires only once she is full. */
+  skin: THREE.Mesh[];
 };
 
 /**
@@ -207,10 +209,12 @@ export function buildBankVessel(shape: BankGeometry, materials: BankMaterials, o
   group.add(norm);
   const clay = options.hollow ? materials.ghost : materials.clay;
   const deep = options.hollow ? materials.ghost : materials.deep;
+  const skin: THREE.Mesh[] = [];
   const put = (geometry: THREE.BufferGeometry, material: THREE.Material, name: string, parent: THREE.Object3D = norm) => {
     const object = new THREE.Mesh(geometry, material);
     object.name = name;
     parent.add(object);
+    if (material === clay && name !== "queen-bank-body") skin.push(object);
     return object;
   };
 
@@ -371,5 +375,5 @@ export function buildBankVessel(shape: BankGeometry, materials: BankMaterials, o
       neck.position.set((i - (parts - 1) / 2) * 0.16, metrics.bodyTop + 0.02, -0.22);
     }
   }
-  return { group, body, glaze };
+  return { group, body, glaze, skin };
 }
