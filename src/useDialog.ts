@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { useOutsideClose } from "./useOutsideClose.ts";
 
 const dialogStack: HTMLElement[] = [];
 const modalListeners = new Set<() => void>();
@@ -30,6 +31,23 @@ function focusable(root: HTMLElement): HTMLElement[] {
   });
 }
 
+/** The part of a sheet that is the pop-up. A sheet that fills the screen with its own opaque paper has no "outside"
+    (null: a click beside a wide form never closes it); one over a see-through veil is its panel. */
+function dialogPanel(node: HTMLElement | null): Element | null {
+  if (!node || typeof window === "undefined") return node;
+  const r = node.getBoundingClientRect();
+  const fills = r.width >= window.innerWidth - 2 && r.height >= window.innerHeight - 2;
+  if (!fills) return node;
+  const inner = [...node.querySelectorAll<HTMLElement>(":scope > .sheet-inner, :scope > [role=dialog], :scope > * > .sheet-inner, :scope > [role=document]")].find((el) => {
+    const b = el.getBoundingClientRect();
+    return b.width > 0 && (b.width < window.innerWidth - 2 || b.height < window.innerHeight - 2);
+  });
+  if (!inner) return null;
+  const bg = getComputedStyle(node).backgroundColor;
+  const alpha = bg === "transparent" ? 0 : Number(/rgba?\([^)]*?,\s*([\d.]+)\)/.exec(bg)?.[1] ?? (bg.startsWith("rgba") ? 0 : 1));
+  return alpha >= 0.95 ? null : inner;
+}
+
 /**
  * Modal behaviour for a hand-rolled sheet: move focus in on open, keep Tab
  * inside it, close on Escape, and put focus back where it came from.
@@ -43,6 +61,9 @@ export function useDialog(open: boolean, onClose?: () => void, returnFocusFallba
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
   const fallbackRef=useRef(returnFocusFallback);fallbackRef.current=returnFocusFallback;
+  // A tap off the sheet closes it, exactly as Escape does — only the topmost sheet, and never one that cannot close right now (busy).
+  const panel = useRef<{ readonly current: Element | null }>({ get current() { return dialogPanel(ref.current); } }).current;
+  useOutsideClose([panel], open && Boolean(onClose), () => closeRef.current?.(), { enabled: () => Boolean(ref.current && dialogStack.at(-1) === ref.current && closeRef.current && dialogPanel(ref.current)) });
 
   useEffect(() => {
     const node = ref.current;

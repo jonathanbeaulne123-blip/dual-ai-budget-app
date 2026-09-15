@@ -1,4 +1,5 @@
 import { ReadingReceipt } from "./ReadingReceipt.tsx";
+import { useOutsideClose } from "./useOutsideClose.ts";
 import { createReadingReceiptReader } from "./readingReceipt.ts";
 import { applyDuplicateReview } from "./core/duplicateReviewCommand.ts";
 import { createPortal } from "react-dom";
@@ -329,6 +330,8 @@ function LedgerRow({
   const amountRef = useRef<HTMLButtonElement>(null);
   const receiptId = `reading-receipt-${transaction.id}`;
   const closeSource = () => { setSourceOpen(false); amountRef.current?.focus(); };
+  const sourceRef = useRef<HTMLDivElement>(null);
+  useOutsideClose([amountRef, sourceRef], sourceOpen, () => setSourceOpen(false));
   const pair = transaction.transferPairId
     ? household.transactions.find((item) => item.id === transaction.transferPairId)
     : undefined;
@@ -359,7 +362,7 @@ function LedgerRow({
         )}
         <button className="chip" onClick={onRemove}>Reverse</button>
       </div>
-      {sourceOpen && <div id={receiptId} className="ledger-source-slot"><ReadingReceipt receipt={readReceipt(transaction)} onClose={closeSource}/></div>}
+      {sourceOpen && <div ref={sourceRef} id={receiptId} className="ledger-source-slot"><ReadingReceipt receipt={readReceipt(transaction)} onClose={closeSource}/></div>}
     </div>
   );
 }

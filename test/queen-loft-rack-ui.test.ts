@@ -54,7 +54,7 @@ describe("The loft's rack — shelves you hang, weight, mark and divide by hand"
     expect($(".queen-rack__hang").textContent).toBe("Hang a shelf below");
     // No divider before the first bank; one between each pair.
     expect($$(".queen-divider")).toHaveLength(2);
-    expect($$(".queen-divider")[0]!.getAttribute("aria-label")).toBe("Divider between Fictional date night and Fictional porch renovation");
+    expect($$(".queen-divider")[0]!.getAttribute("aria-label")).toBe("Divider between Fictional date night and Fictional porch renovation. Enter shows how it works");
   });
 
   it("hangs a shelf, moves a bank down onto it with Shift+ArrowDown, and writes the whole rack once each time", async () => {

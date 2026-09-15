@@ -316,9 +316,12 @@ describe("The Queen's charms — pressed on from Status, without a pointer, kept
     await click(bench("Bigger"));
     await click([...host.querySelectorAll<HTMLButtonElement>(".queen-charm-bench .queen-swatch")].find((row) => row.getAttribute("aria-label") === "Dory blue")!);
     expect(drawn()[0]!.querySelector<SVGPathElement>(".queen-charm__body")!.style.fill).toMatch(/#3f6fa3|rgb\(63, 111, 163\)/);
-    // Kept as you go: one write after the last press, through the guard, to the household King.
+    // Held, then kept once (2026-09-15): no write while she is being dressed, however long the pause; one write on Done, through the guard, to the household King.
     expect(onCommand).not.toHaveBeenCalled();
-    await act(async () => { await vi.advanceTimersByTimeAsync(800); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    expect(onCommand).not.toHaveBeenCalled();
+    expect(host.querySelector(".queen-held__mark")?.textContent).toBe("Not saved yet");
+    await click([...host.querySelectorAll<HTMLButtonElement>(".queen-held__done")].find((row) => row.textContent === "Done")!);
     expect(onCommand).toHaveBeenCalledTimes(1);
     const next = (onCommand.mock.calls[0]![0] as (current: Household) => CommitResult)(h).household;
     const king = next.kittyNestDesigns!.find((row) => row.bankKey === "king" && row.visibility === "household")!;
@@ -326,7 +329,8 @@ describe("The Queen's charms — pressed on from Status, without a pointer, kept
     expect(king.studio?.draft?.charms?.[0]).toMatchObject({ kind: "sitting-cat", part: "body", spin: 30, scale: 1.2, color: "#3f6fa3", by: memberId });
     expect(king.studio?.draft?.firedAt).toBeNull();
     expect(king.studio?.draft?.charms?.[0]?.u).toBeGreaterThan(0.62);
-    // Taking it off is one press and empties her.
+    // Taking it off is one press and empties her; pick it up again first, since Done put it down.
+    await click(rows()[0]!);
     await click(bench("Take off"));
     expect(rows()).toHaveLength(0);
     expect(drawn()).toHaveLength(0);

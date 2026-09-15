@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
+import { useOutsideClose } from "../useOutsideClose.ts";
 import type { QueenRibbon } from "../core/queenPresentation.ts";
 import { QueenBankFlat } from "./QueenBankFlat.tsx";
 import { QueenRoomWorld } from "./QueenRoomWorld.tsx";
@@ -92,6 +93,8 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
     });
   };
   useEffect(() => { if (openJarId) card.current?.focus(); }, [openJarId]);
+  // A tap off the card puts it away; pressing a jar still toggles it, and the acts beneath still act on it.
+  useOutsideClose([card], Boolean(openJarId) && !striking, () => setOpenJarId(null), { keep: ".queen-jar, .queen-room__acts, .queen-scrub, [role=dialog]" });
   useEffect(() => { if (view !== "bills") setOpenJarId(null); }, [view]);
   const viewport = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; from: number; pointerId: number; live: boolean } | null>(null);
