@@ -36,6 +36,8 @@ export type RoomVessel = {
   outlier?: boolean;
   /** Nothing was posted: the jar is drawn as an outline, claiming nothing. */
   hollow?: boolean;
+  /** A planned expense: not posted, but not nothing either — frosted glass in its group's tint, the shape of what might be. */
+  frosted?: boolean;
   /** Picked up. It lifts off the shelf; its shadow spreads. */
   lifted?: boolean;
   /** Leaning away, because something was offered to a lidded thing. */
@@ -298,6 +300,15 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     finishMaps.set(finish, texture);
     return texture;
   };
+  const frostedClays = new Map<string, THREE.Material>();
+  const frostedFor = (tint?: string): THREE.Material => {
+    const key = tint ?? "clay";
+    const known = frostedClays.get(key);
+    if (known) return known;
+    const built = mat(new THREE.MeshPhysicalMaterial({ color: tint ?? "#c0a67e", roughness: 0.55, transmission: 0, transparent: true, opacity: 0.42, clearcoat: 0.6, clearcoatRoughness: 0.35, depthWrite: false }));
+    frostedClays.set(key, built);
+    return built;
+  };
   const tintedClays = new Map<string, THREE.Material>();
   const clayFor = (tint?: string, finish: NonNullable<RoomVessel["finish"]> = "plain"): THREE.Material => {
     if (!tint) return clay;
@@ -329,9 +340,10 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   /** Build one bank in the form it is given. One unit tall at rest; the seat's height is its scale. */
   const buildVessel = (vessel: RoomVessel): Seat => {
     const form = vessel.form ?? vessel.kind;
-    const built = buildBankVessel(shapeFor(form), { ...bankMaterials, clay: clayFor(vessel.tint, vessel.finish) }, {
+    const frosted = Boolean(vessel.frosted);
+    const built = buildBankVessel(shapeFor(form), { ...bankMaterials, clay: clayFor(vessel.tint, vessel.finish), ...(frosted ? { ghost: frostedFor(vessel.tint) } : {}) }, {
       form,
-      hollow: vessel.hollow,
+      hollow: vessel.hollow || frosted,
       // Open-mouthed things accept; lidded things refuse. A month on the rail is
       // a bill, so it is lidded too: there was never a decision inside it.
       lidded: vessel.kind !== "goal",
@@ -428,7 +440,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
         seen.add(vessel.id);
         const old = seats.get(vessel.id);
         // A change of kind, hollowness or part count is a different vessel; everything else is a pose.
-        if (old && old.vessel.kind === vessel.kind && old.vessel.form === vessel.form && old.vessel.tint === vessel.tint && old.vessel.finish === vessel.finish && old.vessel.hollow === vessel.hollow && old.vessel.parts === vessel.parts) {
+        if (old && old.vessel.kind === vessel.kind && old.vessel.form === vessel.form && old.vessel.tint === vessel.tint && old.vessel.finish === vessel.finish && old.vessel.hollow === vessel.hollow && old.vessel.frosted === vessel.frosted && old.vessel.parts === vessel.parts) {
           old.vessel = vessel;
           poseVessel(old);
           continue;

@@ -88,17 +88,17 @@ try {
     const m = await measure(page);
     noScroll(m, label);
     assert.ok(m.rail && m.days === 30, `${label}: the rail is the month (${m.days} days)`);
-    assert.equal(m.jars.length, 9, `${label}: nine jars on the rail — every purpose, six groups`);
+    assert.equal(m.jars.length, 11, `${label}: eleven jars on the rail — every purpose, six groups`);
     // The gym subscription fell due on the 10th and is full, so its hammer is out already; everything after today just holds its water.
-    assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'none', 'none', 'none', 'none', 'none', 'none', 'none'], `${label}: only the overdue full one can be struck (${m.jars.map(j => j.strike).join(', ')})`);
-    assert.deepEqual(m.jars.map(j => j.label.replace(/^[^—]+— /, '').replace(/, (the month's largest|large|middling|small|the smallest),.*$/, '')), ['subscription (Life › Fun)', 'subscription (Health › Care)', 'house bill (Housing › Electric)', 'recurring payment (Transport › Transit)', 'house bill (Housing › Electric)', 'house bill (Life › Phone)', 'planned, not posted (Life › Fun)', 'house bill (Life › Fun)', 'recurring payment (Debt › Card payment)'], `${label}: every jar names its purpose and its filing`);
+    assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none', 'none'], `${label}: only the overdue full one can be struck (${m.jars.map(j => j.strike).join(', ')})`);
+    assert.deepEqual(m.jars.map(j => j.label.replace(/^[^—]+— /, '').replace(/, (the month's largest|large|middling|small|the smallest),.*$/, '')), ['subscription (Life › Fun)', 'subscription (Health › Care)', 'planned, not posted (Food › Groceries)', 'house bill (Housing › Electric)', 'recurring payment (Transport › Transit)', 'planned, not posted (Transport › Fuel)', 'house bill (Housing › Electric)', 'house bill (Life › Phone)', 'planned, not posted (Life › Fun)', 'house bill (Life › Fun)', 'recurring payment (Debt › Card payment)'], `${label}: every jar names its purpose and its filing`);
     assert.ok(m.jars.some(j => /the month's largest/.test(j.label)) && m.jars.some(j => /the smallest/.test(j.label)), `${label}: the size bands are said`);
     assert.equal(m.jars.filter(j => j.strike === 'shard').length, 1, `${label}: the paid subscription is a shard`);
     assert.equal(m.railMoney, false, `${label}: no figure on the rail`);
     await stamp(page, `early-${width}x${height}`);
     // 320x568 with the chrome stand-ins leaves the room about 240px tall — the same compromised frame the rooms' own evidence shows. The stair, head, pills and rail must still be inside it; the acts may give there.
     assert.ok(m.stairVisible && (width === 320 && height === 568 ? m.partsInRoom.slice(0, 4).every(Boolean) : m.allInRoom), `${label}: head, rail, scrub, line, acts and stair all inside the room ${JSON.stringify(m.parts)}`);
-    assert.ok(m.sub.startsWith('9 bills on the rail'), `${label}: ${m.sub}`);
+    assert.ok(m.sub.startsWith('11 bills on the rail'), `${label}: ${m.sub}`);
     await stamp(page, `early-${width}x${height}`);
     records.push({ scene: 'early', width, height, world: m.world, overflowY: m.overflowY, jars: m.jars.map(j => `${j.label} [${j.strike}; ${j.form} ${j.hue}/${j.finish} size ${j.size}]`), water: m.water, tidemark: m.tidemark, line: m.line, acts: m.acts.map(a => a.text) });
     // The jar in the gate: pick the full early one; the words say ready, and there is no hammer.
@@ -121,7 +121,7 @@ try {
     const label = `due ${width}x${height}`;
     const m = await measure(page);
     noScroll(m, label);
-    assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'hammer', 'hammer', 'crack', 'none', 'none', 'none', 'none'], `${label}: shard, hammers, crack, early (${m.jars.map(j => j.strike).join(', ')})`);
+    assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'none', 'hammer', 'hammer', 'none', 'crack', 'none', 'none', 'none', 'none'], `${label}: shard, hammers, crack, early (${m.jars.map(j => j.strike).join(', ')})`);
     // The gate opens on today, where the rent stands cracked.
     assert.match(m.line, /^Cracked\. Fictional rent · house bill · Housing › Electric · due today/, `${label}: ${m.line}`);
     assert.ok(m.acts.some(a => a.crack && a.text === 'Pay it anyway · from the water'), `${label}: the crack pays from the water (${m.acts.map(a => a.text).join(' | ')})`);
@@ -228,7 +228,7 @@ try {
       const label = `no-webgl ${width}x${height}`;
       noScroll(m, label);
       assert.equal(m.world, 'flat', `${label}: the room degraded to flat`);
-      assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'hammer', 'hammer', 'crack', 'none', 'none', 'none', 'none'], `${label}: the same reading`);
+      assert.deepEqual(m.jars.map(j => j.strike), ['shard', 'hammer', 'none', 'hammer', 'hammer', 'none', 'crack', 'none', 'none', 'none', 'none'], `${label}: the same reading`);
       const visible = await flat.evaluate(() => getComputedStyle(document.querySelector('.queen-billjar .queen-bank-flat')).visibility);
       assert.equal(visible, 'visible', `${label}: the drawn kitty banks stand in for the sculptures`);
       await stamp(flat, `no-webgl-${width}x${height}`);

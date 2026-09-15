@@ -59,6 +59,11 @@
 .queen-room--cellar .queen-bank-flat__finish { fill: color-mix(in srgb, var(--ink) 34%, transparent); }
 .queen-room--cellar .queen-bank-flat__finish-line { fill: none; stroke: color-mix(in srgb, var(--ink) 38%, transparent); stroke-width: .9; }
 .queen-room--cellar .queen-bank-flat__finish-coat { opacity: .9; }
+/* A planned expense is frosted glass: its tint at a third, a dashed edge, no eyes yet — the shape of what might be. */
+.queen-room--cellar .queen-bank-flat[data-frosted="true"] .queen-bank-flat__clay, .queen-room--cellar .queen-bank-flat[data-frosted="true"] .queen-bank-flat__ear { fill: color-mix(in srgb, var(--bank-tint, var(--queen-clay)) 34%, transparent); }
+.queen-room--cellar .queen-bank-flat[data-frosted="true"] .queen-bank-flat__edge { stroke: color-mix(in srgb, var(--bank-tint, var(--queen-clay-deep)) 75%, var(--ink)); stroke-dasharray: 3 3; }
+.queen-room--cellar .queen-bank-flat[data-frosted="true"] .queen-bank-flat__eye { opacity: .45; }
+.queen-room--cellar .queen-bank-flat[data-frosted="true"] .queen-bank-flat__glaze { opacity: .5; }
 /* Five sizes. The cell stays 44px; the cat grows through it, and the sculpture behind it follows the drawn seat. */
 .queen-room--cellar .queen-billjar--size-1, .queen-room--cellar .queen-billjar--size-1 .queen-billjar__cat { width: 28px; height: 28px; }
 .queen-room--cellar .queen-billjar--size-2, .queen-room--cellar .queen-billjar--size-2 .queen-billjar__cat { width: 34px; height: 34px; }

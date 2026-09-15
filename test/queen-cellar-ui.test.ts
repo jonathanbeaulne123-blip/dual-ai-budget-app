@@ -210,8 +210,11 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     expect(glyph("Fictional rent").className).toContain("queen-billjar--size-5");
     expect(glyph("Fictional streaming").className).toContain("queen-billjar--size-1");
     expect(glyph("Fictional winter tires").className).toContain("queen-billjar--size-4");
-    // A hollow jar (planned, or paid) wears no finish coat: nothing is inside it to glaze.
+    // A planned expense is frosted glass (not an empty outline) and wears no finish coat; a paid one is hollow.
+    expect(cat("Fictional winter tires").dataset.frosted).toBe("true");
+    expect(cat("Fictional winter tires").dataset.hollow).toBe("false");
     expect(cat("Fictional winter tires").querySelector(".queen-bank-flat__finish-coat")).toBeNull();
+    expect(cat("Fictional streaming").dataset.hollow).toBe("true");
     expect(cat("Fictional streaming").querySelector(".queen-bank-flat__finish-coat")).toBeNull();
   });
 });
