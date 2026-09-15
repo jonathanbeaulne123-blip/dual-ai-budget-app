@@ -127,6 +127,8 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
     consumedSource.current=sourceFocus;
     if (sourceFocus.goalId || sourceFocus.label === "Goals & reserves") openBanks(sourceFocus.goalId,sourceFocus.planLineId);
     if (sourceFocus.planSitDownSessionId) setSection("sitdown");
+    // Our Path's bridges open the Bridge section (a link only; the Bridge editor keeps its own review and Confirm).
+    if (sourceFocus.label === "Bridge") setSection("bridge");
     if (sourceFocus.planDraftId) {
       const privateDraft = household.planDrafts?.find(row => row.id === sourceFocus.planDraftId && row.ownerMemberId === memberId && row.scope === scope);
       if (!privateDraft) { setError("That exact private draft is no longer available. Choose your current Plan."); return; }

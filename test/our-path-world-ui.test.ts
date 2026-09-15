@@ -17,6 +17,7 @@ import { addRecurrence, setHouseholdFundMonthPlan, stampWeeklyDocument } from ".
 import { pathWeather } from "../src/core/pathWeather.ts";
 import { pathStones } from "../src/core/pathStones.ts";
 import { completeTask, saveTask, type TaskInput } from "../src/core/tasks.ts";
+import { savePlanBridgeDraft, sharePlanBridgeDraft } from "../src/core/index.ts";
 
 // jsdom has no WebGL: by default the world fails to load and the page must stay fully usable.
 // The "fake" variant hands back a stand-in world so the page's calls into it can be counted.
@@ -603,7 +604,8 @@ describe("Our Path world page (D-262)", () => {
       ]));
       expect(scene().stones).toHaveLength(2);
       expect(outline().map((b) => b.textContent)).toContain("Fictional: book the ferry · Owned by Alex (fictional), Sam (fictional) as backup");
-      expect(JSON.stringify(outline().map((b) => b.textContent))).not.toContain("surprise");
+      // The private task is never a stepping stone; for its owner it is a private footpath instead.
+      expect(outline().map((b) => b.textContent).filter((t) => t?.includes("surprise"))).toEqual(["Fictional surprise picnic · only you see this"]);
 
       await openFromOutline("Fictional: pay hydro");
       expect(cardText()).toContain("Owned by Sam (fictional)");
@@ -810,5 +812,101 @@ describe("Our Path world page (D-262)", () => {
       expect(revoke.mock.calls.map(([url]) => url).sort()).toEqual([...made].sort());
       root = createRoot(host);
     });
+  });
+});
+
+describe("Private footpaths and bridges on Our Path", () => {
+  const TODAY = "2026-09-15";
+  type Scene = { footpaths: { id: string; month: number; done: boolean }[]; bridges: { id: string; month: number; stage: number }[] };
+  const outline = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].map((b) => b.textContent ?? "");
+  const openFromOutline = async (prefix: string) => click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent?.startsWith(prefix))!);
+  const privateTask = (memberId: string, id: string, title: string): TaskInput => ({ memberId, id, expectedRevision: 0, task: {
+    visibility: "personal", title, notes: "", listId: null, parentId: null, doDate: null, dueDate: "2026-09-20", repeat: "none", cue: "none",
+    assigneeId: null, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: null, deleted: false,
+  } });
+  function withPaths(): Household {
+    let h = seeded();
+    h = saveTask(h, privateTask("MEM-001", "TASK-MINE", "Fictional: my own long walk")).household;
+    h = saveTask(h, privateTask("MEM-002", "TASK-THEIRS", "Fictional: partner's private errand")).household;
+    h = savePlanBridgeDraft(h, { monthKey: "2026-09", kind: "contribution", label: "Fictional: I could cover the ferry", amountCents: 7_321, memberId: "MEM-001", createdBy: "MEM-001" }).household;
+    h = savePlanBridgeDraft(h, { monthKey: "2026-09", kind: "responsibility", label: "Fictional: I'll handle the vet", amountCents: 6_543, memberId: "MEM-002", createdBy: "MEM-002" }).household;
+    const theirs = h.planBridgeDrafts!.find((row) => row.ownerMemberId === "MEM-002")!;
+    return sharePlanBridgeDraft(h, { draftId: theirs.id, memberId: "MEM-002", createdBy: "MEM-002" }).household;
+  }
+
+  it("draws footpaths only for their owner, hides them with Mine, and builds bridges stage by stage with links only", async () => {
+    created.mode = "fake";
+    const h = withPaths();
+    const draftId = h.planBridgeDrafts!.find((row) => row.ownerMemberId === "MEM-001")!.id;
+    const decisionId = h.planBridgeDecisions![0]!.id;
+    const tent: unknown[] = [], planner: number[] = [];
+    await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY, extra: { onOpenInTent: (source: unknown) => tent.push(source), onOpenPlanner: () => planner.push(1) } })));
+    await settle();
+    const world = created.worlds[0] as FakeWorld;
+    const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
+    const now = pathMonths(h, TODAY).length - 1;
+
+    // As MEM-001: my footpath and my private plank; the partner's offer is shared with both.
+    expect(outline()).toContain("Fictional: my own long walk · only you see this");
+    expect(outline().some((t) => t.includes("partner's private errand"))).toBe(false);
+    expect(outline()).toContain("Fictional: I could cover the ferry · A plank laid, only you can see it");
+    expect(outline()).toContain("Fictional: I'll handle the vet · Offered to Our Home — waiting");
+    expect(scene().footpaths).toEqual([{ id: "footpath:TASK-MINE", month: now, done: false }]);
+    expect(scene().bridges).toEqual(expect.arrayContaining([{ id: `bridge:${draftId}`, month: now, stage: 1 }, { id: `bridge:${decisionId}`, month: now, stage: 2 }]));
+    expect(scene().bridges).toHaveLength(2);
+    expect(host.querySelector(".path-mark--footpath")).toBeTruthy();
+    expect(JSON.stringify(outline())).not.toMatch(/\$|73\.21|7321|65\.43|6543/);
+
+    // The footpath card is a link into my planner.
+    await openFromOutline("Fictional: my own long walk");
+    expect($(".path-world__card").textContent).toContain("A footpath · only you see this");
+    expect($(".path-world__card").textContent).toContain("Only you can see this path");
+    expect([...host.querySelectorAll(".path-world__card .path-world__actions button")].map((b) => b.textContent)).toEqual(["Open my planner"]);
+    await click(byText("Open my planner"));
+    expect(planner).toEqual([1]);
+
+    // Mine hides my footpaths, on this device only.
+    expect(byText("Mine").getAttribute("aria-pressed")).toBe("true");
+    await click(byText("Mine"));
+    expect(byText("Mine").getAttribute("aria-pressed")).toBe("false");
+    expect(outline().some((t) => t.includes("my own long walk"))).toBe(false);
+    expect(scene().footpaths).toEqual([]);
+    expect(localStorage.getItem("hearth:pathWorld:mine")).toBe("0");
+    await click(byText("Mine"));
+    expect(outline()).toContain("Fictional: my own long walk · only you see this");
+
+    // The stage-2 bridge: words, then a link into the Plan Studio's Bridge.
+    await openFromOutline("Fictional: I'll handle the vet");
+    const card = $(".path-world__card").textContent ?? "";
+    expect(card).toContain("Offered to Our Home — waiting");
+    expect(card).toContain("offered a responsibility to Our Home");
+    expect(card).not.toMatch(/\$|65\.43|6543/);
+    await click(byText("Open the Bridge"));
+    expect(tent).toEqual([{ route: "plan", view: "household", label: "Bridge" }]);
+    expect($(".path-world__room").hidden).toBe(false);
+    await click(byText("Back to the island"));
+
+    // As MEM-002: their own footpath only; my private plank is gone; the shared offer stays.
+    await click($("#switch"));
+    expect(outline()).toContain("Fictional: partner's private errand · only you see this");
+    expect(outline().some((t) => t.includes("my own long walk"))).toBe(false);
+    expect(outline().some((t) => t.includes("I could cover the ferry"))).toBe(false);
+    expect(outline()).toContain("Fictional: I'll handle the vet · Offered to Our Home — waiting");
+    expect(scene().footpaths).toEqual([{ id: "footpath:TASK-THEIRS", month: now, done: false }]);
+    expect(scene().bridges).toEqual([{ id: `bridge:${decisionId}`, month: now, stage: 2 }]);
+  });
+
+  it("draws the owner's footpaths and the bridge bars on the flat map without WebGL", async () => {
+    await act(async () => root.render(createElement(Harness, { initial: withPaths(), today: TODAY })));
+    await settle();
+    expect(host.querySelectorAll(".path-world__flat .path-minimap__footpath")).toHaveLength(1);
+    const bars = [...host.querySelectorAll(".path-world__flat .path-minimap__bridge")].map((g) => `${g.getAttribute("data-stage")}:${g.querySelectorAll(".is-built").length}`);
+    expect(bars.sort()).toEqual(["1:1", "2:2"]);
+    await click(byText("Mine"));
+    expect(host.querySelectorAll(".path-world__flat .path-minimap__footpath")).toHaveLength(0);
+    await click(byText("Mine"));
+    await click($("#switch"));
+    expect(host.querySelectorAll(".path-world__flat .path-minimap__footpath")).toHaveLength(1);
+    expect([...host.querySelectorAll(".path-world__flat .path-minimap__bridge")].map((g) => g.getAttribute("data-stage"))).toEqual(["2"]);
   });
 });

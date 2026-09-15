@@ -31,7 +31,8 @@ export type PathStone = {
 export const PATH_STONE_LIMIT = 40;
 const LABEL_LIMIT = 60;
 
-function label(title: string): string {
+/** Shared with private footpaths: one line, at most 60 characters. */
+export function pathLabel(title: string): string {
   const text = title.trim().replace(/\s+/g, " ");
   return text.length <= LABEL_LIMIT ? text : `${text.slice(0, LABEL_LIMIT - 1).trimEnd()}…`;
 }
@@ -41,7 +42,7 @@ function label(title: string): string {
  * when it was completed (a money task can only be completed with evidence already
  * in the books), or when a money-linked task's evidence is found in the books.
  */
-function taskDone(household: Household, task: Task): boolean {
+export function pathTaskDone(household: Household, task: Task): boolean {
   const evidence = task.completedAt ? task.completionEvidence : evidenceForTask(household, task);
   return Boolean(task.completedAt) || (evidence !== null && task.moneyLink !== null);
 }
@@ -56,7 +57,7 @@ export function pathStones(household: Household, memberId: string, today: DateKe
     .slice(0, PATH_STONE_LIMIT)
     .map((task): PathStone => {
       const money = taskIsFinancial(task);
-      const done = taskDone(household, task);
+      const done = pathTaskDone(household, task);
       const lit = money && done;
       const state: PathStone["state"] = done ? "done" : money ? "waiting" : "open";
       const owner = nameOf(task.assigneeId);
@@ -70,7 +71,7 @@ export function pathStones(household: Household, memberId: string, today: DateKe
       else if (done) why.push("Done");
       return {
         id: task.id,
-        label: label(task.title),
+        label: pathLabel(task.title),
         month: (task.dueDate ?? task.createdAt).slice(0, 7),
         state,
         owner,

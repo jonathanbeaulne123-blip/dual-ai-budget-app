@@ -10,7 +10,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { OurPathWorld } from '/src/path/OurPathWorld.tsx';
 import { generateDemoSuite } from '/src/core/demoSuite.ts';
-import { catalogHousehold, setHouseholdFundMonthPlan } from '/src/core/index.ts';
+import { catalogHousehold, setHouseholdFundMonthPlan, savePlanBridgeDraft, sharePlanBridgeDraft } from '/src/core/index.ts';
 import { saveTask } from '/src/core/tasks.ts';
 import { resolveThemeScene, sceneTokens } from '/src/theme/scenes.ts';
 const q = new URLSearchParams(location.search);
@@ -52,6 +52,18 @@ function withFictionalStones(h) {
     ['TASK-PROOF-FERN', { title: 'Fictional: water the fern', assigneeId: 'MEM-002', dueDate: '2026-09-10' }],
   ];
   try { for (const [id, patch] of rows) h = saveTask(h, { memberId: 'MEM-001', id, expectedRevision: 0, task: task(patch) }).household; } catch (error) { console.warn('proof stones skipped', error); }
+  return withFictionalFootpaths(h, task);
+}
+// Proof only (?story=well): one fictional private task for MEM-001 (a footpath only MEM-001 sees), MEM-001's private Bridge draft (stage 1),
+// and one offer MEM-002 shared with Our Home (stage 2, both see it). In memory only.
+function withFictionalFootpaths(h, task) {
+  try {
+    h = saveTask(h, { memberId: 'MEM-001', id: 'TASK-PROOF-PRIVATE', expectedRevision: 0, task: task({ visibility: 'personal', title: 'Fictional: plan a quiet birthday surprise', dueDate: '2026-09-25' }) }).household;
+    h = savePlanBridgeDraft(h, { monthKey: '2026-09', kind: 'responsibility', label: 'Fictional: I can take the car to the garage', memberId: 'MEM-001', createdBy: 'MEM-001' }).household;
+    h = savePlanBridgeDraft(h, { monthKey: '2026-09', kind: 'contribution', label: 'Fictional: I can cover the ferry tickets', amountCents: 12000, memberId: 'MEM-002', createdBy: 'MEM-002' }).household;
+    const offered = h.planBridgeDrafts.find((row) => row.ownerMemberId === 'MEM-002');
+    h = sharePlanBridgeDraft(h, { draftId: offered.id, memberId: 'MEM-002', createdBy: 'MEM-002' }).household;
+  } catch (error) { console.warn('proof footpaths skipped', error); }
   return h;
 }
 // Proof only (?mist=1): a fictional cushion far above the Fund so the forecast turns misty, in memory.

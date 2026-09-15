@@ -5,6 +5,8 @@ import { completeMove, memories, movesForChapter, nextMove, openChapterFor, ourR
 import { kittyBankBackingStep, kittyBanksInView } from "../core/kittyBanks.ts";
 import { displayedKittyPiece } from "../core/kittyStudio.ts";
 import { pathStones } from "../core/pathStones.ts";
+import { pathFootpaths } from "../core/pathFootpaths.ts";
+import { pathBridges } from "../core/pathBridges.ts";
 import { pathWeather } from "../core/pathWeather.ts";
 import { charterIsSigned, charterUnsignedMemberIds } from "../core/charter.ts";
 import type { HerculesNumberSource } from "../core/herculesProvenance.ts";
@@ -67,7 +69,7 @@ type Mark = {
   id: string;
   label: string;
   sub?: string;
-  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork" | "sunrise" | "mist" | "stone" | "cottage";
+  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork" | "sunrise" | "mist" | "stone" | "cottage" | "footpath" | "bridge";
   minLevel: PathLevel;
   lantern: Lantern;
 };
@@ -88,8 +90,10 @@ const PIECE_LABEL: Record<Piece["kind"], string> = {
 };
 const LANTERN_KEY = "hearth:pathWorld:lantern";
 const QUALITY_KEY = "hearth:pathWorld:quality";
+/** Per device only: whether my private footpaths are drawn. Never synced. */
+const MINE_KEY = "hearth:pathWorld:mine";
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
-  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, cottage: 6, bill: 6, mist: 6, charter: 6, name: 7, sunrise: 7, fork: 8, memory: 8, stone: 8, cove: 9, lamp: 10, piece: 11, month: 12,
+  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, cottage: 6, bill: 6, mist: 6, charter: 6, name: 7, sunrise: 7, fork: 8, memory: 8, stone: 8, bridge: 8, footpath: 9, cove: 9, lamp: 10, piece: 11, month: 12,
 };
 /** The island shows at most this many clouds (the full timeline lives in the Fund and the Calendar). */
 const WEATHER_CLOUDS = 8;
@@ -111,6 +115,9 @@ function readNarrow(): boolean {
 function monthName(key: string, long = true): string {
   const [y, m] = key.split("-").map(Number) as [number, number];
   return new Date(y, m - 1, 1).toLocaleDateString("en-CA", long ? { month: "long", year: "numeric" } : { month: "short" });
+}
+function readMine(): boolean {
+  try { return window.localStorage.getItem(MINE_KEY) !== "0"; } catch { return true; }
 }
 function readLantern(): Lantern {
   try { const raw = window.localStorage.getItem(LANTERN_KEY); return raw === "0" ? 0 : raw === "2" ? 2 : 1; } catch { return 1; }
@@ -206,6 +213,12 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   };
   const [level, setLevel] = useState<PathLevel>(0);
   const [layers, setLayers] = useState({ weather: true, story: true, rhythm: true });
+  // "Mine": my private footpaths. Per-device UI state only; nothing about footpaths is ever stored in the household.
+  const [mine, setMine] = useState(readMine);
+  const toggleMine = () => setMine((value) => {
+    try { window.localStorage.setItem(MINE_KEY, value ? "0" : "1"); } catch { /* per-device convenience only */ }
+    return !value;
+  });
   const [selected, setSelected] = useState<string | null>(null);
   const [tentOpen, setTentOpen] = useState(false);
   const [live, setLive] = useState(false);
@@ -295,6 +308,16 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     return key > months[months.length - 1]!.key ? months.length - 1 : 0;
   }, [months]);
   const shownStones = useMemo(() => stones.map((stone) => ({ stone, month: stoneMonth(stone.month) })).filter((row) => row.month >= 0 && row.month <= shown), [stones, stoneMonth, shown]);
+  // Private footpaths: only the signed-in member's own personal tasks (the partner's never reach this device).
+  const footpaths = useMemo(() => {
+    try { return pathFootpaths(household, memberId, today); } catch { return []; }
+  }, [household, memberId, today]);
+  const shownFootpaths = useMemo(() => (mine ? footpaths : []).map((path) => ({ path, month: stoneMonth(path.month) })).filter((row) => row.month >= 0 && row.month <= shown), [footpaths, mine, stoneMonth, shown]);
+  // Bridges: my private first plank, then the shared offer as it is held, built, or set aside. Never an amount.
+  const bridges = useMemo(() => {
+    try { return pathBridges(household, memberId, today); } catch { return []; }
+  }, [household, memberId, today]);
+  const shownBridges = useMemo(() => bridges.map((bridge) => ({ bridge, month: stoneMonth(bridge.month) })).filter((row) => row.month >= 0 && row.month <= shown), [bridges, stoneMonth, shown]);
   const [narrow, setNarrow] = useState(readNarrow);
   useEffect(() => {
     const onResize = () => setNarrow(readNarrow());
@@ -389,10 +412,12 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     ],
     sunlit: (weather?.covered ?? []).map((range) => ({ fromOffset: daysFrom(today, range.from), toOffset: daysFrom(today, range.to) })),
     stones: shownStones.map(({ stone, month }) => ({ id: `stone:${stone.id}`, month, state: stone.state, lit: stone.lit, money: stone.money, owner: stone.owner !== null, backup: stone.backup !== null })),
+    footpaths: shownFootpaths.map(({ path, month }) => ({ id: `footpath:${path.id}`, month, done: path.state === "done" })),
+    bridges: shownBridges.map(({ bridge, month }) => ({ id: `bridge:${bridge.id}`, month, stage: bridge.stage })),
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
-  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks, photoUrls, keptPhotos, onOpenPlay]);
+  }), [shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks, photoUrls, keptPhotos, onOpenPlay]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -425,12 +450,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     for (const row of sunrises) list.push({ id: row.id, label: "Payday", sub: dayName(row.date), kind: "sunrise", minLevel: 2, lantern: 1 });
     if (mist) list.push({ id: "mist", label: mist.label, sub: "why?", kind: "mist", minLevel: 1, lantern: 0 });
     for (const { stone } of shownStones) list.push({ id: `stone:${stone.id}`, label: stone.label, sub: stone.why.split(" · ")[0], kind: "stone", minLevel: 3, lantern: 0 });
+    for (const { path } of shownFootpaths) list.push({ id: `footpath:${path.id}`, label: path.label, sub: "only you see this", kind: "footpath", minLevel: 3, lantern: 0 });
+    for (const { bridge } of shownBridges) list.push({ id: `bridge:${bridge.id}`, label: bridge.label, sub: bridge.stageWords, kind: "bridge", minLevel: 2, lantern: 0 });
     for (const row of unknown) list.push({ id: row.id, label: "Something new", sub: row.label, kind: "unknown", minLevel: 1, lantern: 0 });
     if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: unknown.length ? "Hercules has a suggestion" : "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
     if (onOpenPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Play", kind: "cottage", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     return list;
-  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks, onOpenPlay]);
+  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks, onOpenPlay]);
 
   // ------------------------------------------------------------ the world host
   const host = useRef<HTMLDivElement>(null);
@@ -739,6 +766,36 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         actions: onOpenPlanner ? <button type="button" className="primary" onClick={onOpenPlanner}>Open the planner</button> : undefined,
       };
     }
+    if (id.startsWith("footpath:")) {
+      const path = footpaths.find((f) => `footpath:${f.id}` === id);
+      if (!path) return null;
+      const parts = path.why.split(" · ");
+      return {
+        eyebrow: path.money ? "A footpath · only you see this · a money task" : "A footpath · only you see this",
+        title: path.label,
+        lines: [
+          ...parts.map((line, i): [Lantern, string] => [i === 0 ? 0 : 1, line]),
+          [1, path.state === "done" ? "Walked — a small flag at the end." : "A cairn waits at the end."],
+          [2, `Sits in ${monthName(path.month)}. Your partner's island has no trace of it.`],
+        ],
+        actions: onOpenPlanner ? <button type="button" className="primary" onClick={onOpenPlanner}>Open my planner</button> : undefined,
+      };
+    }
+    if (id.startsWith("bridge:")) {
+      const bridge = bridges.find((b) => `bridge:${b.id}` === id);
+      if (!bridge) return null;
+      return {
+        eyebrow: bridge.stage === 1 ? "A bridge · only you see this plank" : "A bridge to Our Home",
+        title: bridge.label,
+        lines: [
+          [0, bridge.stageWords],
+          [0, bridge.why],
+          [1, bridge.stage === 1 ? "Stage 1 of 3: one plank at your end." : bridge.stage === 2 ? "Stage 2 of 3: planks reach the middle." : bridge.stage === 3 ? "Stage 3 of 3: railings and a lantern." : "Two old stumps where a bridge was offered."],
+          [2, `For ${monthName(bridge.month)}. Amounts stay in the Plan Studio.`],
+        ],
+        actions: <button type="button" className="primary" onClick={() => { onOpenInTent?.({ route: "plan", view: "household", label: "Bridge" }); openTent(true); }}>Open the Bridge</button>,
+      };
+    }
     if (id.startsWith("unknown:")) {
       const row = unknown.find((u) => u.id === id);
       if (!row) return null;
@@ -816,7 +873,9 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <div ref={host} className="path-world__host" data-live={live} />
           {!live && (
             <div className="path-world__flat" aria-hidden="true">
-              <PathMiniMap household={household} today={today} shown={shown} theme={theme} />
+              <PathMiniMap household={household} today={today} shown={shown} theme={theme}
+                footpaths={shownFootpaths.map(({ path, month }) => ({ month, done: path.state === "done" }))}
+                bridges={shownBridges.map(({ bridge, month }) => ({ month, stage: bridge.stage }))} />
             </div>
           )}
           <div className="path-world__marks" hidden={!live}>
@@ -857,6 +916,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
               {(["weather", "story", "rhythm"] as const).map((key) => (
                 <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((v) => ({ ...v, [key]: !v[key] }))}>{key === "weather" ? "Weather" : key === "story" ? "Story" : "Rhythm"}</button>
               ))}
+              <button type="button" aria-pressed={mine} title="My private footpaths — only you ever see them" onClick={toggleMine}>Mine</button>
             </div>
           </div>
           <div className="path-world__rail" role="group" aria-label="Distance">

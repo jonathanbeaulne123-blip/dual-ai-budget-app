@@ -25,4 +25,13 @@
 .path-minimap--taylor .path-world__kerb { stroke: #9c9387; }
 .path-minimap--newfoundland .path-world__kerb { stroke: #8a8a86; }
 .path-minimap--newfoundland .path-world__kerb--closed { stroke: #5f5f5b; }
+/* My private footpaths (owner only) and bridges built stage by stage. */
+.path-minimap__footpath { stroke: #c9a36a; stroke-width: 0.7; stroke-dasharray: 1 0.8; stroke-linecap: round; opacity: 0.85; }
+.path-minimap__footpath.is-done { stroke: var(--theme-second, #4f6b4a); }
+.path-minimap__bridge rect { stroke: #6b523a; stroke-width: 0.3; }
+.path-minimap__bridge .is-built { fill: #9c7a55; }
+.path-minimap__bridge .is-open { fill: none; stroke-dasharray: 0.4 0.3; }
+.path-minimap__bridge[data-stage="0"] rect { opacity: 0.45; }
+.path-minimap--newfoundland .path-minimap__footpath { stroke: #bfa56c; }
+.path-minimap--taylor .path-minimap__footpath { stroke: #d6ae6a; }
 @media (forced-colors: active) { .path-minimap * { forced-color-adjust: auto; } }

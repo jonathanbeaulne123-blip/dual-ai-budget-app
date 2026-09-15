@@ -32,6 +32,10 @@
 .path-mark--sunrise .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; background: #fff1d6; color: #5a3a12; }
 .path-mark--mist .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; border: 1px dashed var(--muted); }
 .path-mark--stone .path-mark__label { font-size: 13px; }
+/* A private footpath: a dashed, slightly see-through label, because only you ever see it. */
+.path-mark--footpath .path-mark__label { font-size: 13px; border: 1px dashed var(--muted); background: color-mix(in srgb, var(--card) 86%, transparent); }
+.path-mark--footpath .path-mark__sub { font-style: italic; }
+.path-mark--bridge .path-mark__label { font-size: 13px; border-bottom: 3px solid #9c7a55; }
 .path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }
 
 .path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }

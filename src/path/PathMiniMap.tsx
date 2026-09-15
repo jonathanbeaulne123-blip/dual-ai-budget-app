@@ -18,7 +18,7 @@ import "./path-minimap.css";
  * two walkers on the shown month. Pure decoration (`aria-hidden`); the words
  * live beside it. Our Path's no-WebGL map and Home's window both draw this.
  */
-export function PathMiniMap({ household, today, size, shown: shownProp, className, theme: themeOverride }: {
+export function PathMiniMap({ household, today, size, shown: shownProp, className, theme: themeOverride, footpaths, bridges }: {
   household: Household;
   today: DateKey;
   /** Rendered width in px; omit to fill the container. */
@@ -28,6 +28,13 @@ export function PathMiniMap({ household, today, size, shown: shownProp, classNam
   className?: string;
   /** Proof pages only; the app follows the signed-in person's appearance. */
   theme?: ThemeId;
+  /**
+   * Our Path only: the signed-in member's own private footpaths (month index, walked or not).
+   * The caller derives them for its owner; Home's window passes none, so none are drawn there.
+   */
+  footpaths?: { month: number; done: boolean }[];
+  /** Our Path only: bridges beside their month, one segment per built stage (0 = none). */
+  bridges?: { month: number; stage: 0 | 1 | 2 | 3 }[];
 }) {
   const appearance = useAppearance();
   const theme = themeOverride ?? appearance.scene.theme;
@@ -88,6 +95,30 @@ export function PathMiniMap({ household, today, size, shown: shownProp, classNam
         const p = island.spot(m);
         return <circle key={month.key} cx={p.x * k} cy={p.z * k} r={m === shown ? 3.4 : 2.4} className={`path-world__dot path-world__dot--${pathMonthCharacter(month)}`} />;
       })}
+      {(() => {
+        // My private footpaths: short dashed strokes inland from their month.
+        const seen = new Map<number, number>();
+        return (footpaths ?? []).filter((row) => row.month >= 0 && row.month <= shown).map((row, i) => {
+          const j = seen.get(row.month) ?? 0; seen.set(row.month, j + 1);
+          const p = island.spot(row.month), dir = Math.atan2(-p.z, -p.x) + (j % 2 ? 1 : -1) * (0.5 + Math.floor(j / 2) * 0.45);
+          const x0 = p.x * k + Math.cos(dir) * 3.4, y0 = p.z * k + Math.sin(dir) * 3.4;
+          return <line key={`foot-${i}`} className={`path-minimap__footpath${row.done ? " is-done" : ""}`} x1={x0.toFixed(2)} y1={y0.toFixed(2)} x2={(x0 + Math.cos(dir) * 5).toFixed(2)} y2={(y0 + Math.sin(dir) * 5).toFixed(2)} />;
+        });
+      })()}
+      {(() => {
+        // Bridges: a small bar with one segment per built stage.
+        const seen = new Map<number, number>();
+        return (bridges ?? []).filter((row) => row.month >= 0 && row.month <= shown).map((row, i) => {
+          const j = seen.get(row.month) ?? 0; seen.set(row.month, j + 1);
+          const p = island.spot(row.month), a = p.a - 0.9 - j * 0.6;
+          const cx = p.x * k + Math.cos(a) * 5.2, cy = p.z * k + Math.sin(a) * 5.2;
+          return (
+            <g key={`bridge-${i}`} className="path-minimap__bridge" data-stage={row.stage} transform={`translate(${cx.toFixed(2)} ${cy.toFixed(2)})`}>
+              {[0, 1, 2].map((s) => <rect key={s} x={-2.4 + s * 1.65} y={-0.55} width={1.4} height={1.1} rx={0.25} className={s < row.stage ? "is-built" : "is-open"} />)}
+            </g>
+          );
+        });
+      })()}
       {charter && charterShown && (() => {
         // The Charter's stone square. Decision forks are left off the flat map.
         const p = charterSpot(island);

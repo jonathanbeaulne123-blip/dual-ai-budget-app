@@ -36,6 +36,13 @@ export type PathWorldInput = {
   sunlit?: { fromOffset: number; toOffset: number }[];
   /** Household planner tasks as stepping stones beside their month (a different thing from Chapter Moves). */
   stones?: PathStoneInput[];
+  /**
+   * My private footpaths (the signed-in member's own personal tasks). The page derives them on read
+   * from this device's Personal envelope only; the world just draws a dashed trail inland to a cairn.
+   */
+  footpaths?: PathFootpathInput[];
+  /** "Share with Our Home" as a footbridge beside its month: planks appear by stage (0 = stumps). */
+  bridges?: PathBridgeInput[];
   unknown: { id: string; month: number }[];
   name: string | null;
   layers: { weather: boolean; story: boolean; rhythm: boolean };
@@ -53,6 +60,8 @@ export type PathWorldInput = {
   cottage?: boolean;
 };
 export type PathWeatherInput = { id: string; kind: "cloud" | "storm" | "sunrise" | "mist"; weight: number; dayOffset: number };
+export type PathFootpathInput = { id: string; month: number; done: boolean };
+export type PathBridgeInput = { id: string; month: number; stage: 0 | 1 | 2 | 3 };
 export type PathStoneInput = { id: string; month: number; state: "open" | "done" | "waiting"; lit: boolean; money: boolean; owner: boolean; backup: boolean };
 /** Days ahead covered by one road segment: 31 days reach 1.2 of the way to the next month. */
 export const PATH_WEATHER_DAYS = 31;
@@ -812,6 +821,9 @@ export function createPathWorld(host: HTMLElement, options: {
     if (input.layers.weather) buildWeather(input, island);
     // Stepping stones: household planner tasks beside their month.
     buildStones(input, island);
+    // Private footpaths and bridges: static geometry beside their month.
+    buildFootpaths(input, island);
+    buildBridges(input, island);
     // Landmarks: shared Kitty Banks at their real backing step
     const seen = new Set<string>();
     const arcs = !options.reducedMotion && quality === "full";
@@ -1118,6 +1130,101 @@ export function createPathWorld(host: HTMLElement, options: {
         foot.rotation.x = -Math.PI / 2; foot.castShadow = false; foot.receiveShadow = false; g.add(foot);
       }
       anchor(stone.id, g, 1.1); dynamic.add(g);
+    }
+  }
+
+  function tint(from: string, to: string, t: number): string {
+    return `#${new THREE.Color(from).lerp(new THREE.Color(to), t).getHexString()}`;
+  }
+
+  function buildFootpaths(input: PathWorldInput, island: GrownIsland) {
+    const perMonth = new Map<number, number>();
+    for (const path of input.footpaths ?? []) {
+      if (path.month < 0 || path.month > island.cur) continue;
+      const j = perMonth.get(path.month) ?? 0;
+      perMonth.set(path.month, j + 1);
+      const p = island.spot(path.month);
+      // Inland from the month spot, fanning out so several footpaths do not overlap.
+      const inland = Math.atan2(-p.z, -p.x);
+      const fan = (j % 2 ? 1 : -1) * (0.5 + Math.floor(j / 2) * 0.45);
+      const len = 7 + (j % 3) * 1.4;
+      const colour = path.done ? tint(palette.dry, palette.grass, 0.65) : tint(palette.dry, "#ffffff", 0.2);
+      const dash = { transparent: true, opacity: path.done ? 0.85 : 0.7, depthWrite: false };
+      let x = p.x, z = p.z;
+      for (let d = 1.4, k = 0; d <= len; d += 1.2, k++) {
+        const dir = inland + fan + Math.sin(k * 0.9 + j) * 0.18;
+        x = p.x + Math.cos(inland + fan) * d + Math.cos(dir + Math.PI / 2) * Math.sin(k * 0.9) * 0.25;
+        z = p.z + Math.sin(inland + fan) * d + Math.sin(dir + Math.PI / 2) * Math.sin(k * 0.9) * 0.25;
+        const mark = part(G.disc, colour, 0.34, 0.12, 1, x, heightAt(island, x, z) + 0.05, z, dash);
+        mark.rotation.x = -Math.PI / 2; mark.rotation.z = -dir;
+        mark.castShadow = false; mark.receiveShadow = false;
+        dynamic.add(mark);
+      }
+      const end = new THREE.Group();
+      const ex = p.x + Math.cos(inland + fan) * (len + 0.8), ez = p.z + Math.sin(inland + fan) * (len + 0.8);
+      end.position.set(ex, heightAt(island, ex, ez), ez);
+      if (path.done) {
+        end.add(part(G.cyl, "#7a5436", 0.03, 0.9, 0.03, 0, 0.45, 0));
+        const flag = part(G.box, palette.grass, 0.34, 0.2, 0.02, 0.17, 0.78, 0); flag.castShadow = false; end.add(flag);
+      } else {
+        // A small cairn: three stacked stones.
+        end.add(part(G.ico, palette.rock, 0.3, 0.2, 0.3, 0, 0.12, 0), part(G.ico, palette.rock, 0.22, 0.15, 0.22, 0.02, 0.36, 0), part(G.ico, palette.rock, 0.13, 0.1, 0.13, 0, 0.53, 0));
+      }
+      anchor(path.id, end, 1);
+      dynamic.add(end);
+    }
+  }
+
+  function buildBridges(input: PathWorldInput, island: GrownIsland) {
+    const perMonth = new Map<number, number>();
+    const wood = "#9c7a55", dark = "#6b523a";
+    for (const bridge of input.bridges ?? []) {
+      if (bridge.month < 0 || bridge.month > island.cur) continue;
+      const j = perMonth.get(bridge.month) ?? 0;
+      perMonth.set(bridge.month, j + 1);
+      const p = island.spot(bridge.month);
+      const a = p.a - 0.9 - j * 0.6, d = 3.6 + (j % 2) * 1.1;
+      const x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
+      const g = new THREE.Group(); g.position.set(x, heightAt(island, x, z), z); g.rotation.y = -a;
+      // The shallow dip the bridge crosses (drawn, never carved): a wet hollow.
+      const dip = part(G.disc, palette.deep, 0.9, 1.5, 1, 0, 0.04, 0, { transparent: true, opacity: 0.55, depthWrite: false, roughness: 0.3 });
+      dip.rotation.x = -Math.PI / 2; dip.castShadow = false; dip.receiveShadow = false; g.add(dip);
+      for (const end of [-1, 1]) g.add(part(G.ico, palette.rock, 0.4, 0.2, 0.3, 0, 0.1, end * 1.75));
+      if (bridge.stage === 0) {
+        // Set aside: two old stumps, no planks.
+        for (const end of [-1, 1]) g.add(part(G.cyl, dark, 0.14, 0.35, 0.14, end * 0.45, 0.18, end * 1.5), part(G.cyl, dark, 0.14, 0.2, 0.14, -end * 0.45, 0.1, end * 1.5));
+      } else {
+        const planks = bridge.stage === 1 ? 1 : bridge.stage === 2 ? 4 : 8;
+        const ghost = bridge.stage === 1 ? { transparent: true, opacity: 0.5, depthWrite: false } : undefined;
+        for (let i = 0; i < planks; i++) {
+          const plank = part(G.box, wood, 1.2, 0.08, 0.34, 0, 0.42, -1.4 + i * 0.4, ghost);
+          if (ghost) plank.castShadow = false;
+          g.add(plank);
+        }
+        if (bridge.stage >= 2) g.add(part(G.box, dark, 0.1, 0.12, bridge.stage === 3 ? 3.1 : 1.6, 0, 0.32, bridge.stage === 3 ? 0 : -0.75));
+        if (bridge.stage === 2) {
+          // Offered: a small pennant where the planks stop.
+          g.add(part(G.cyl, dark, 0.03, 0.9, 0.03, 0.55, 0.85, -0.1));
+          const pennant = part(G.cone, palette.accent, 0.12, 0.36, 0.04, 0.72, 1.18, -0.1); pennant.rotation.z = -Math.PI / 2; pennant.castShadow = false; g.add(pennant);
+        }
+        if (bridge.stage === 3) {
+          for (const s of [-1, 1]) {
+            for (const zz of [-1.4, 0, 1.4]) g.add(part(G.cyl, dark, 0.04, 0.6, 0.04, s * 0.58, 0.72, zz));
+            g.add(part(G.box, dark, 0.05, 0.05, 2.9, s * 0.58, 1.02, 0));
+          }
+          // A lantern on the far post. It flickers only on Full with ambient motion.
+          g.add(part(G.cyl, dark, 0.04, 0.5, 0.04, 0.58, 1.27, 1.4));
+          const glow = smat(new THREE.MeshStandardMaterial({ color: "#ffd27a", emissive: "#ffb347", emissiveIntensity: 1.1, roughness: 0.4 }));
+          const lamp = new THREE.Mesh(G.sph, glow); lamp.scale.setScalar(0.13); lamp.position.set(0.58, 1.6, 1.4); g.add(lamp);
+          const phase = j * 1.3 + bridge.month;
+          tickers.push((t) => {
+            const on = ambient && quality === "full" && !options.reducedMotion;
+            glow.emissiveIntensity = on ? 1.1 + 0.25 * Math.sin(t * 7 + phase) + 0.1 * Math.sin(t * 13.1 + phase) : 1.1;
+          });
+        }
+      }
+      anchor(bridge.id, g, 1.6);
+      dynamic.add(g);
     }
   }
 
