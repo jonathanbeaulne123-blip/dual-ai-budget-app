@@ -145,6 +145,7 @@ export * from "./sitDownInfographics.ts";
 export * from "./kittyBanks.ts";
 export * from "./stressSeed.ts";
 export * from "./demoSuite.ts";
+export * from "./habitat.ts";
 export * from "./demoRandom.ts";
 export * from "./onboarding/types.ts";
 export * from "./onboarding/registry.ts";
