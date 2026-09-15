@@ -513,6 +513,15 @@
     },
     {
       "sources": [
+        "src/core/pathWeather.ts"
+      ],
+      "tests": [
+        "test/path-weather.test.ts"
+      ],
+      "reason": "Our Path weather: the Calendar's household bills become clouds with the heaviest a storm, paydays from the Calendar's pay clock become sunrises, covered stretches are contiguous and inside the window, mist carries the horizon's reasons and names the dipping bill without an amount, an unavailable horizon never throws, health bills stay unnamed, personal-account obligations never surface, and nothing posts"
+    },
+    {
+      "sources": [
         "src/core/queenRack.ts",
         "src/core/kittyNestDesigns.ts",
         "src/queen/QueenLoft.tsx",
